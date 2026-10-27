@@ -9,6 +9,7 @@
         "point": 0,
         "keys": "<f3> a b <f4> <f4>",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abab",
@@ -26,6 +27,7 @@
         "point": 0,
         "keys": "C-x ( x y C-x ) C-x e",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "xyxy",
@@ -43,6 +45,7 @@
         "point": 0,
         "keys": "<f3> z <f4> C-u 3 <f4>",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "zzzz",
@@ -60,6 +63,7 @@
         "point": 0,
         "keys": "<f3> <f3> SPC <f4> <f4> <f4>",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "0 1 2 ",
@@ -77,6 +81,7 @@
         "point": 0,
         "keys": "C-u 5 <f3> <f3> SPC <f4> <f4>",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "5 6 ",
@@ -94,6 +99,7 @@
         "point": 0,
         "keys": "<f3> C-n x <f4> <f4> <f4> <f4>",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "a\nxb\ncx",
@@ -111,6 +117,7 @@
         "point": 0,
         "keys": "<f3> C-n C-a - <f4> C-u 0 <f4>",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "a\n-b\n-c\n-d",
@@ -128,6 +135,7 @@
         "point": 0,
         "keys": "<f3> C-u 2 x <f4> <f4>",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "xxxx",
@@ -145,6 +153,7 @@
         "point": 0,
         "keys": "<f3> C-k C-k C-y C-y <f4> <f4>",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "one\none\ntwo\ntwo\nthree",
@@ -165,6 +174,7 @@
         "point": 0,
         "keys": "<f4>",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "",
@@ -182,6 +192,7 @@
         "point": 0,
         "keys": "C-x )",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "",
@@ -199,6 +210,7 @@
         "point": 0,
         "keys": "C-x ( C-x ( a C-x )",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "a",

@@ -30,6 +30,10 @@ struct Case {
     /// Modes to turn on before typing the keys.
     #[serde(default)]
     modes: Vec<String>,
+    /// A command and its arguments to call before the keys, for commands
+    /// that read the minibuffer, which batch Emacs reads from stdin.
+    #[serde(default)]
+    call: Vec<String>,
     /// The Emacs `system-type` the case holds on, if only one.
     platform: Option<String>,
 }
@@ -57,6 +61,8 @@ struct Input {
     keys: String,
     #[serde(default)]
     modes: Vec<String>,
+    #[serde(default)]
+    call: Vec<String>,
     platform: Option<String>,
 }
 
@@ -102,6 +108,12 @@ fn run(case: &Case) -> State {
     let keys = Key::parse_seq(&case.keys)
         .unwrap_or_else(|| panic!("{}: keys {:?} are not valid Emacs notation", case.name, case.keys));
     let mut error = None;
+    if let Some((name, args)) = case.call.split_first() {
+        let args = args.iter().map(|a| ember_core::Arg::Str(a.clone())).collect();
+        if let Err(e) = ed.call(name, args) {
+            error = Some(e.to_string());
+        }
+    }
     for key in keys {
         ed.handle_key(key);
         if let Some(e) = ed.take_error() {
@@ -197,6 +209,7 @@ fn ember_behaves_like_emacs() {
                 point: case.point,
                 keys: case.keys.clone(),
                 modes: case.modes.clone(),
+                call: case.call.clone(),
                 platform: case.platform.clone(),
             };
             let Some(emacs) = recorded.get(case.name.as_str()) else {

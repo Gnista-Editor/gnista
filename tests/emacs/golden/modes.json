@@ -9,6 +9,7 @@
         "point": 0,
         "keys": "C-SPC C-f C-f C-f DEL",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "def",
@@ -26,6 +27,7 @@
         "point": 0,
         "keys": "S-<right> S-<right> DEL",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "cdef",
@@ -43,6 +45,7 @@
         "point": 3,
         "keys": "C-SPC DEL",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abdef",
@@ -60,6 +63,7 @@
         "point": 0,
         "keys": "C-SPC C-f C-f C-d",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abdef",
@@ -79,6 +83,7 @@
         "modes": [
           "delete-selection-mode"
         ],
+        "call": [],
         "platform": null
       },
       "text": "x world",
@@ -98,6 +103,7 @@
         "modes": [
           "delete-selection-mode"
         ],
+        "call": [],
         "platform": null
       },
       "text": "ab\nef",
@@ -117,6 +123,7 @@
         "modes": [
           "delete-selection-mode"
         ],
+        "call": [],
         "platform": null
       },
       "text": " one",
@@ -138,6 +145,7 @@
         "modes": [
           "delete-selection-mode"
         ],
+        "call": [],
         "platform": null
       },
       "text": "axybc",
@@ -157,6 +165,7 @@
         "modes": [
           "delete-selection-mode"
         ],
+        "call": [],
         "platform": null
       },
       "text": "axbc",
@@ -174,6 +183,7 @@
         "point": 0,
         "keys": "S-<right> S-<right> x",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "hexllo",
@@ -193,6 +203,7 @@
         "modes": [
           "overwrite-mode"
         ],
+        "call": [],
         "platform": null
       },
       "text": "xycd",
@@ -212,6 +223,7 @@
         "modes": [
           "overwrite-mode"
         ],
+        "call": [],
         "platform": null
       },
       "text": "axyz\ncd",
@@ -229,6 +241,7 @@
         "point": 0,
         "keys": "<insert> x <insert> y",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "xybc",
@@ -248,6 +261,7 @@
         "modes": [
           "overwrite-mode"
         ],
+        "call": [],
         "platform": null
       },
       "text": "xxxdef",

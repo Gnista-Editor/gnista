@@ -9,6 +9,7 @@
         "point": 0,
         "keys": "h e l l o",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "hello",
@@ -26,6 +27,7 @@
         "point": 0,
         "keys": "H i SPC t h e r e",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "Hi there",
@@ -43,6 +45,7 @@
         "point": 3,
         "keys": "RET",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "one\ntwo",
@@ -60,6 +63,7 @@
         "point": 0,
         "keys": "C-f C-f C-f C-b",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abcdef",
@@ -77,6 +81,7 @@
         "point": 0,
         "keys": "<right> <down> <left>",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abc\ndef",
@@ -94,6 +99,7 @@
         "point": 2,
         "keys": "C-f",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "ab",
@@ -111,6 +117,7 @@
         "point": 0,
         "keys": "C-b",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "ab",
@@ -128,6 +135,7 @@
         "point": 10,
         "keys": "C-n C-n",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "long line here\nab\nanother long line",
@@ -145,6 +153,7 @@
         "point": 30,
         "keys": "C-p C-p",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "another long line\nab\nlong line here",
@@ -162,6 +171,7 @@
         "point": 5,
         "keys": "C-n",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abc\ndef",
@@ -179,6 +189,7 @@
         "point": 1,
         "keys": "C-p",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abc\ndef",
@@ -196,6 +207,7 @@
         "point": 6,
         "keys": "C-e C-a C-e",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "one\ntwo three",
@@ -213,6 +225,7 @@
         "point": 0,
         "keys": "M-f M-f M-f",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "alpha beta-gamma delta",
@@ -230,6 +243,7 @@
         "point": 22,
         "keys": "M-b M-b",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "alpha beta-gamma delta",
@@ -247,6 +261,7 @@
         "point": 0,
         "keys": "M-f M-f",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "  ...hello, world",
@@ -264,6 +279,7 @@
         "point": 2,
         "keys": "M->",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abc\ndef",
@@ -281,6 +297,7 @@
         "point": 5,
         "keys": "M-<",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abc\ndef",
@@ -298,6 +315,7 @@
         "point": 1,
         "keys": "C-d",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "ac",
@@ -315,6 +333,7 @@
         "point": 3,
         "keys": "C-d",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abc",
@@ -332,6 +351,7 @@
         "point": 3,
         "keys": "DEL DEL",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "a",
@@ -349,6 +369,7 @@
         "point": 0,
         "keys": "DEL",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abc",
@@ -366,6 +387,7 @@
         "point": 3,
         "keys": "<end> <home>",
         "modes": [],
+        "call": [],
         "platform": "darwin"
       },
       "text": "one two\nthree",
@@ -383,6 +405,7 @@
         "point": 5,
         "keys": "RET",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "hello\nworld",

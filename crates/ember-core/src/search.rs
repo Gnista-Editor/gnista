@@ -397,10 +397,16 @@ impl Editor {
         let text = b.slice(m.start..m.end);
         let new = expand_replacement(&text, &m, replacement, literal, fixed_case)?;
         let b = self.buffer_mut();
+        // As in Emacs, a mark at the end of the replaced text ends up at the
+        // end of the new text, even where the match was empty.
+        let mark_at_end = b.mark() == Some(m.end);
         b.set_point(m.start);
         b.delete(m.start..m.end)?;
         b.insert(&new)?;
         let end = m.start + new.chars().count();
+        if mark_at_end {
+            b.set_mark(Some(end));
+        }
         self.match_data = Some(Match { start: m.start, end, groups: vec![Some((m.start, end))] });
         Ok((m.start, end))
     }

@@ -9,6 +9,7 @@
         "point": 0,
         "keys": "C-x 2 C-n C-n C-x o",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "one\ntwo\nthree",
@@ -26,6 +27,7 @@
         "point": 0,
         "keys": "C-x 2 C-n C-n C-x o C-x o",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "one\ntwo\nthree",
@@ -43,6 +45,7 @@
         "point": 0,
         "keys": "M-> C-x 3 M-< x y C-x o",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "xyabc",
@@ -60,6 +63,7 @@
         "point": 0,
         "keys": "C-x 2 C-x o M-> C-x 0",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "one\ntwo\nthree",
@@ -77,6 +81,7 @@
         "point": 0,
         "keys": "C-x 2 C-x o M-> C-x 1",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "one\ntwo\nthree",
@@ -94,6 +99,7 @@
         "point": 0,
         "keys": "C-f C-x 0",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abc",
@@ -111,6 +117,7 @@
         "point": 0,
         "keys": "C-x 2 C-x 3 C-n C-x o M-> C-u 2 C-x o",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "one\ntwo\nthree",
@@ -128,6 +135,7 @@
         "point": 0,
         "keys": "C-x 2 C-x 3 C-n C-- C-x o C-e",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "one\ntwo\nthree",

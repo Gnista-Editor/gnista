@@ -11,6 +11,7 @@
         "modes": [
           "outline-minor-mode"
         ],
+        "call": [],
         "platform": null
       },
       "text": "* One\nbody\nmore\n* Two\nlast",
@@ -30,6 +31,7 @@
         "modes": [
           "outline-minor-mode"
         ],
+        "call": [],
         "platform": null
       },
       "text": "* One\nbody\nmore\n* Two\nlast",
@@ -49,6 +51,7 @@
         "modes": [
           "outline-minor-mode"
         ],
+        "call": [],
         "platform": null
       },
       "text": "* One\nbody\nmore\n* Two\nlast",
@@ -68,6 +71,7 @@
         "modes": [
           "outline-minor-mode"
         ],
+        "call": [],
         "platform": null
       },
       "text": "* One\nbody\nmore\n* Two\nlast",
@@ -87,6 +91,7 @@
         "modes": [
           "outline-minor-mode"
         ],
+        "call": [],
         "platform": null
       },
       "text": "* One\nbody\nmore\n* Two\nlast",
@@ -106,6 +111,7 @@
         "modes": [
           "outline-minor-mode"
         ],
+        "call": [],
         "platform": null
       },
       "text": "* One\nbody\nmore\n* Two\nlast",
@@ -125,6 +131,7 @@
         "modes": [
           "outline-minor-mode"
         ],
+        "call": [],
         "platform": null
       },
       "text": "* One\nbody\nmore\n* Two\nlast",
@@ -144,6 +151,7 @@
         "modes": [
           "outline-minor-mode"
         ],
+        "call": [],
         "platform": null
       },
       "text": "* A\na\n* B\nb\n* C\nc",
@@ -163,6 +171,7 @@
         "modes": [
           "outline-minor-mode"
         ],
+        "call": [],
         "platform": null
       },
       "text": "* One\nbody\nmore\n* Two\nlast",
@@ -182,6 +191,7 @@
         "modes": [
           "outline-minor-mode"
         ],
+        "call": [],
         "platform": null
       },
       "text": "* A\na\n** B\nb\n* C",
@@ -201,6 +211,7 @@
         "modes": [
           "outline-minor-mode"
         ],
+        "call": [],
         "platform": null
       },
       "text": "* One\nbody\nmore\n* Two\nlast",
@@ -220,6 +231,7 @@
         "modes": [
           "outline-minor-mode"
         ],
+        "call": [],
         "platform": null
       },
       "text": "* One\nbody\nmore\n* Two\nlast",

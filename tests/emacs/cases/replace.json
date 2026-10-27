@@ -1,0 +1,18 @@
+[
+  {"name": "query-replace-yes-and-no", "text": "a foo b foo c foo", "call": ["query-replace", "foo", "bar"], "keys": "y n y"},
+  {"name": "query-replace-all", "text": "foo foo foo", "call": ["query-replace", "foo", "x"], "keys": "!"},
+  {"name": "query-replace-quit", "text": "foo foo foo", "call": ["query-replace", "foo", "x"], "keys": "y q"},
+  {"name": "query-replace-replace-and-exit", "text": "foo foo foo", "call": ["query-replace", "foo", "x"], "keys": "n ."},
+  {"name": "query-replace-stay", "text": "foo foo", "call": ["query-replace", "foo", "xy"], "keys": ", y"},
+  {"name": "query-replace-follows-case", "text": "foo Foo FOO", "call": ["query-replace", "foo", "bar"], "keys": "!"},
+  {"name": "query-replace-capital-matches-exactly", "text": "foo Foo FOO", "call": ["query-replace", "Foo", "bar"], "keys": "!"},
+  {"name": "query-replace-from-point", "text": "foo foo foo", "point": 2, "call": ["query-replace", "foo", "x"], "keys": "!"},
+  {"name": "query-replace-other-key-exits", "text": "foo\nfoo", "call": ["query-replace", "foo", "x"], "keys": "y C-a"},
+  {"name": "query-replace-no-match", "text": "abc", "call": ["query-replace", "foo", "x"], "keys": "C-f"},
+  {"name": "query-replace-regexp-groups", "text": "a=1 b=2", "call": ["query-replace-regexp", "\\(\\w\\)=\\(\\w\\)", "\\2:\\1"], "keys": "y y"},
+  {"name": "query-replace-regexp-whole-match", "text": "cat dog", "call": ["query-replace-regexp", "[a-z]+", "<\\&>"], "keys": "!"},
+  {"name": "replace-string", "text": "one two one", "call": ["replace-string", "one", "1"], "keys": "C-f"},
+  {"name": "replace-regexp", "text": "a1b22c333", "call": ["replace-regexp", "[0-9]+", "#"], "keys": "C-f"},
+  {"name": "replace-regexp-empty-matches", "text": "abc", "call": ["replace-regexp", "x*", "-"], "keys": "C-f"},
+  {"name": "query-replace-backup", "text": "foo foo foo", "call": ["query-replace", "foo", "x"], "keys": "n n ^ y q"}
+]

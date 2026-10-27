@@ -112,3 +112,60 @@ fn scripts_search_and_replace() {
         .unwrap();
     assert_eq!(ed.echo(), Some("4 0 Bar bar false"));
 }
+
+fn text(ed: &Editor) -> String {
+    let b = ed.window_buffer();
+    b.slice(0..b.len())
+}
+
+#[test]
+fn query_replace_from_keys() {
+    let (mut ed, _scripting) = setup("foo foo foo");
+    ed.press("M-%").unwrap();
+    assert_eq!(ed.prompt(), Some("Query replace: "));
+    ed.type_text("foo\nbar\n");
+    assert_eq!(ed.echo(), Some("Query replacing foo with bar: (? for help) "));
+    assert_eq!(faces(&ed), [("foo".into(), true), ("foo".into(), false), ("foo".into(), false)]);
+    ed.press("y n y").unwrap();
+    assert_eq!(text(&ed), "bar foo bar");
+    assert_eq!(ed.echo(), Some("Replaced 2 occurrences"));
+    assert_eq!(ed.overriding_map(), None);
+    assert!(faces(&ed).is_empty());
+    // Each replacement can be undone.
+    ed.press("C-/").unwrap();
+    assert_eq!(text(&ed), "bar foo foo");
+}
+
+#[test]
+fn query_replace_quits_with_c_g() {
+    let (mut ed, _scripting) = setup("foo foo");
+    ed.call("query-replace", vec![Arg::Str("foo".into()), Arg::Str("x".into())]).unwrap();
+    ed.press("y C-g").unwrap();
+    assert_eq!(text(&ed), "x foo");
+    assert_eq!(ed.echo(), Some("Quit"));
+    assert_eq!(ed.overriding_map(), None);
+}
+
+#[test]
+fn replacing_in_the_region() {
+    let (mut ed, _scripting) = setup("one one one one");
+    // Select the middle two from a key, then replace there only.
+    ed.press("M-f C-SPC M-f M-f").unwrap();
+    ed.press("M-x").unwrap();
+    ed.type_text("replace-string\none\n1\n");
+    assert_eq!(text(&ed), "one 1 1 one");
+    assert_eq!(ed.echo(), Some("Replaced 2 occurrences"));
+    // Called from code, it works from point to the end.
+    ed.press("M-<").unwrap();
+    ed.call("replace-string", vec![Arg::Str("one".into()), Arg::Str("1".into())]).unwrap();
+    assert_eq!(text(&ed), "1 1 1 1");
+    assert_eq!(ed.echo(), Some("Replaced 2 occurrences"));
+}
+
+#[test]
+fn replace_regexp_reports_one_occurrence() {
+    let (mut ed, _scripting) = setup("x = 10");
+    ed.call("replace-regexp", vec![Arg::Str("[0-9]+".into()), Arg::Str("(\\&)".into())]).unwrap();
+    assert_eq!(text(&ed), "x = (10)");
+    assert_eq!(ed.echo(), Some("Replaced 1 occurrence"));
+}

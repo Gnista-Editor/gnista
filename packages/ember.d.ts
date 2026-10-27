@@ -628,6 +628,88 @@ declare global {
        */
       "python-ts-mode": [];
       /**
+       * Replace a string with another, asking at each match.
+       *
+       * At each match: y or SPC replaces it, n or DEL skips it, ! replaces the rest, . replaces it and stops, q or RET stops. Case is ignored unless the string has a capital letter, and then replacements follow the case of what they replace. Works from point to the end of the buffer, or on the region if it is active.
+       *
+       * @param from text
+       * @param to text
+       *
+       * Defined in packages/replace.ts.
+       */
+      "query-replace": [from: string, to: string];
+      /**
+       * Replace this match and go on to the next.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "query-replace-act": [];
+      /**
+       * Replace this match and stop.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "query-replace-act-and-exit": [];
+      /**
+       * Replace this match and stay here; y or n then moves on.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "query-replace-act-and-stay": [];
+      /**
+       * Replace this match and all the rest without asking.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "query-replace-automatic": [];
+      /**
+       * Go back to the last match asked about.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "query-replace-backup": [];
+      /**
+       * Stop replacing.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "query-replace-exit": [];
+      /**
+       * Say what the keys do while query-replace asks.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "query-replace-help": [];
+      /**
+       * Stop replacing and run the key typed, as query-replace does for keys it does not know.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "query-replace-other-key": [];
+      /**
+       * Stop replacing, keeping what has been replaced.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "query-replace-quit": [];
+      /**
+       * Replace matches of a regular expression, asking at each one.
+       *
+       * In the replacement, \& is the whole match and \1 to \9 its groups. See query-replace for the keys.
+       *
+       * @param regexp text
+       * @param to text
+       *
+       * Defined in packages/replace.ts.
+       */
+      "query-replace-regexp": [regexp: string, to: string];
+      /**
+       * Leave this match and go on to the next.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "query-replace-skip": [];
+      /**
        * Leave this buffer and show the one shown before it, as q does in *Help*.
        *
        * Defined in packages/help.ts.
@@ -663,6 +745,26 @@ declare global {
        * Defined in packages/repeat.ts.
        */
       "repeat": [];
+      /**
+       * Replace every match of a regular expression from point to the end of the buffer, or in the active region.
+       *
+       * In the replacement, \& is the whole match and \1 to \9 its groups.
+       *
+       * @param regexp text
+       * @param to text
+       *
+       * Defined in packages/replace.ts.
+       */
+      "replace-regexp": [regexp: string, to: string];
+      /**
+       * Replace every match of a string from point to the end of the buffer, or in the active region.
+       *
+       * @param from text
+       * @param to text
+       *
+       * Defined in packages/replace.ts.
+       */
+      "replace-string": [from: string, to: string];
       /**
        * The major mode for editing Rust, highlighted from a tree-sitter syntax tree.
        *
@@ -847,6 +949,12 @@ declare global {
        * Whether searches match upper and lower case letters to each other.
        */
       "case-fold-search": Value;
+      /**
+       * Whether replacing follows the case of the text replaced, when the search ignores case: "foo" replacing "Hello" gives "Foo", and replacing "HELLO" gives "FOO".
+       *
+       * Defined in packages/replace.ts.
+       */
+      "case-replace": Value;
       /**
        * Whether DEL and <delete> delete the active region rather than one character.
        *
@@ -1134,6 +1242,12 @@ declare global {
        * Defined in packages/outline.ts.
        */
       "outline-8": FaceAttributes;
+      /**
+       * The match query-replace is asking about.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "query-replace": FaceAttributes;
       /**
        * The active region.
        */

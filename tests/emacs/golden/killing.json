@@ -9,6 +9,7 @@
         "point": 0,
         "keys": "C-k",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "\ntwo",
@@ -28,6 +29,7 @@
         "point": 0,
         "keys": "C-k C-k",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "two",
@@ -47,6 +49,7 @@
         "point": 0,
         "keys": "C-k C-k C-k",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "\nthree",
@@ -66,6 +69,7 @@
         "point": 3,
         "keys": "C-k",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "onetwo",
@@ -85,6 +89,7 @@
         "point": 3,
         "keys": "C-k",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abc",
@@ -102,6 +107,7 @@
         "point": 0,
         "keys": "M-f C-SPC M-f C-w",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "alpha gamma",
@@ -121,6 +127,7 @@
         "point": 0,
         "keys": "C-w",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abc",
@@ -138,6 +145,7 @@
         "point": 0,
         "keys": "C-SPC M-f M-w",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "alpha beta",
@@ -157,6 +165,7 @@
         "point": 0,
         "keys": "C-k C-k C-y C-y",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "one\none\ntwo",
@@ -176,6 +185,7 @@
         "point": 0,
         "keys": "C-y",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abc",
@@ -193,6 +203,7 @@
         "point": 0,
         "keys": "M-d M-d",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": " gamma",
@@ -212,6 +223,7 @@
         "point": 16,
         "keys": "M-DEL M-DEL",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "alpha ",
@@ -231,6 +243,7 @@
         "point": 4,
         "keys": "M-d M-DEL",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": " three",
@@ -250,6 +263,7 @@
         "point": 0,
         "keys": "C-k C-n C-k",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "\n",
@@ -270,6 +284,7 @@
         "point": 0,
         "keys": "C-k C-n C-k C-y M-y",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "\na",
@@ -290,6 +305,7 @@
         "point": 0,
         "keys": "M-S-f C-w C-e C-y",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": " worldhello",
@@ -309,6 +325,7 @@
         "point": 0,
         "keys": "M-d C-n M-d C-n M-d C-y M-y M-y",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "\n\na",
@@ -330,6 +347,7 @@
         "point": 0,
         "keys": "M-d C-n M-d C-y M-y M-y",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "\nb",
@@ -350,6 +368,7 @@
         "point": 0,
         "keys": "M-d C-n M-d C-n M-d C-y M-2 M-y",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "\n\na",
@@ -371,6 +390,7 @@
         "point": 0,
         "keys": "M-d C-n M-d C-n M-d C-y M-y M-- M-y",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "\n\nc",
@@ -392,6 +412,7 @@
         "point": 0,
         "keys": "M-d C-n M-d C-u C-y M-y",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "\na",
@@ -412,6 +433,7 @@
         "point": 0,
         "keys": "M-y",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abc",
@@ -429,6 +451,7 @@
         "point": 0,
         "keys": "M-d C-n M-d C-y M-y RET C-y",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "\na\na",

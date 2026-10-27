@@ -8,7 +8,9 @@
 ;; tests/emacs/golden/*.json.  Each case is an object with `name', `text',
 ;; `keys' (space separated, in `kbd' notation), and optionally `point'
 ;; (0-based, default 0), `modes' (minor or major modes to turn on before
-;; the keys, such as "delete-selection-mode"), and `platform' (an Emacs
+;; the keys, such as "delete-selection-mode"), `call' (a command and its
+;; arguments, called before the keys, for commands that read the minibuffer,
+;; which batch Emacs would read from stdin), and `platform' (an Emacs
 ;; `system-type' such as "darwin", for cases that only hold on one platform).
 ;;
 ;; Each case runs in a fresh Fundamental mode buffer, in a single window,
@@ -56,7 +58,8 @@ while the case's keys are queued would read those instead."
   (let ((text (alist-get 'text case))
         (keys (alist-get 'keys case))
         (start (or (alist-get 'point case) 0))
-        (modes (mapcar #'intern (alist-get 'modes case))))
+        (modes (mapcar #'intern (alist-get 'modes case)))
+        (call (alist-get 'call case)))
     (delete-other-windows)
     (when (get-buffer "*ember-oracle*")
       (kill-buffer "*ember-oracle*"))
@@ -79,7 +82,11 @@ while the case's keys are queued would read those instead."
             last-repeatable-command nil
             last-kbd-macro nil
             ember-oracle--error nil
-            unread-command-events (append (listify-key-sequence (kbd keys)) '(f35)))
+            unread-command-events (append (and call '(f34))
+                                          (listify-key-sequence (kbd keys))
+                                          '(f35)))
+      (global-set-key (kbd "<f34>")
+                      (lambda () (interactive) (apply (intern (car call)) (cdr call))))
       (recursive-edit)
       (prog1 (ember-oracle--state case text start keys)
         ;; Some modes are global; turn them off again for the next case.
@@ -90,6 +97,7 @@ while the case's keys are queued would read those instead."
       `((name . ,(alist-get 'name case))
         (input . ((text . ,text) (point . ,start) (keys . ,keys)
                   (modes . ,(vconcat (alist-get 'modes case)))
+                  (call . ,(vconcat (alist-get 'call case)))
                   (platform . ,(alist-get 'platform case))))
         (text . ,(buffer-substring-no-properties (point-min) (point-max)))
         (point . ,(1- (point)))

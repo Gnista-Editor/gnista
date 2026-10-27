@@ -9,6 +9,7 @@
         "point": 0,
         "keys": "h e l l o C-/",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "",
@@ -26,6 +27,7 @@
         "point": 0,
         "keys": "a b RET c d C-/ C-/",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "ab",
@@ -43,6 +45,7 @@
         "point": 0,
         "keys": "a b C-_ C-x u",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "",
@@ -60,6 +63,7 @@
         "point": 0,
         "keys": "C-k C-/",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "one\ntwo",
@@ -79,6 +83,7 @@
         "point": 0,
         "keys": "x C-/",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abc",
@@ -96,6 +101,7 @@
         "point": 0,
         "keys": "a b c d e f g h i j k l m n o p q r s t u v w x y C-/",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abcdefghijklmnopqrstu",
@@ -113,6 +119,7 @@
         "point": 0,
         "keys": "C-/",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abc",
@@ -130,6 +137,7 @@
         "point": 0,
         "keys": "h i C-/ C-a C-/",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "hi",
@@ -147,6 +155,7 @@
         "point": 0,
         "keys": "a b C-/ C-M-_",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "ab",
@@ -164,6 +173,7 @@
         "point": 0,
         "keys": "a RET b RET c C-/ C-/ C-a C-/ C-/",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "a\nb\nc",
@@ -181,6 +191,7 @@
         "point": 0,
         "keys": "x y C-/ C-a C-/ C-a C-/",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "",
@@ -198,6 +209,7 @@
         "point": 0,
         "keys": "a RET b C-/ C-/ C-M-_ C-M-_",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "a\nb",
@@ -215,6 +227,7 @@
         "point": 0,
         "keys": "x C-M-_",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "xabc",
@@ -232,6 +245,7 @@
         "point": 0,
         "keys": "a b C-/ c C-/",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "",
@@ -249,6 +263,7 @@
         "point": 2,
         "keys": "C-d C-d C-/",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abcdef",
@@ -266,6 +281,7 @@
         "point": 4,
         "keys": "DEL DEL C-/",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "abcdef",
@@ -283,6 +299,7 @@
         "point": 0,
         "keys": "x C-/ C-a C-/",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "xabc",
@@ -300,6 +317,7 @@
         "point": 0,
         "keys": "x C-/ C-/ C-M-_",
         "modes": [],
+        "call": [],
         "platform": null
       },
       "text": "xabc",

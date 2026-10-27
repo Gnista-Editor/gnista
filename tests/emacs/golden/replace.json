@@ -1,0 +1,358 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "query-replace-yes-and-no",
+      "input": {
+        "text": "a foo b foo c foo",
+        "point": 0,
+        "keys": "y n y",
+        "modes": [],
+        "call": [
+          "query-replace",
+          "foo",
+          "bar"
+        ],
+        "platform": null
+      },
+      "text": "a bar b foo c bar",
+      "point": 17,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "query-replace-all",
+      "input": {
+        "text": "foo foo foo",
+        "point": 0,
+        "keys": "!",
+        "modes": [],
+        "call": [
+          "query-replace",
+          "foo",
+          "x"
+        ],
+        "platform": null
+      },
+      "text": "x x x",
+      "point": 5,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "query-replace-quit",
+      "input": {
+        "text": "foo foo foo",
+        "point": 0,
+        "keys": "y q",
+        "modes": [],
+        "call": [
+          "query-replace",
+          "foo",
+          "x"
+        ],
+        "platform": null
+      },
+      "text": "x foo foo",
+      "point": 5,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "query-replace-replace-and-exit",
+      "input": {
+        "text": "foo foo foo",
+        "point": 0,
+        "keys": "n .",
+        "modes": [],
+        "call": [
+          "query-replace",
+          "foo",
+          "x"
+        ],
+        "platform": null
+      },
+      "text": "foo x foo",
+      "point": 5,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "query-replace-stay",
+      "input": {
+        "text": "foo foo",
+        "point": 0,
+        "keys": ", y",
+        "modes": [],
+        "call": [
+          "query-replace",
+          "foo",
+          "xy"
+        ],
+        "platform": null
+      },
+      "text": "xy foo",
+      "point": 6,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "query-replace-follows-case",
+      "input": {
+        "text": "foo Foo FOO",
+        "point": 0,
+        "keys": "!",
+        "modes": [],
+        "call": [
+          "query-replace",
+          "foo",
+          "bar"
+        ],
+        "platform": null
+      },
+      "text": "bar Bar BAR",
+      "point": 11,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "query-replace-capital-matches-exactly",
+      "input": {
+        "text": "foo Foo FOO",
+        "point": 0,
+        "keys": "!",
+        "modes": [],
+        "call": [
+          "query-replace",
+          "Foo",
+          "bar"
+        ],
+        "platform": null
+      },
+      "text": "foo bar FOO",
+      "point": 7,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "query-replace-from-point",
+      "input": {
+        "text": "foo foo foo",
+        "point": 2,
+        "keys": "!",
+        "modes": [],
+        "call": [
+          "query-replace",
+          "foo",
+          "x"
+        ],
+        "platform": null
+      },
+      "text": "foo x x",
+      "point": 7,
+      "mark": 2,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "query-replace-other-key-exits",
+      "input": {
+        "text": "foo\nfoo",
+        "point": 0,
+        "keys": "y C-a",
+        "modes": [],
+        "call": [
+          "query-replace",
+          "foo",
+          "x"
+        ],
+        "platform": null
+      },
+      "text": "x\nfoo",
+      "point": 2,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "query-replace-no-match",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "C-f",
+        "modes": [],
+        "call": [
+          "query-replace",
+          "foo",
+          "x"
+        ],
+        "platform": null
+      },
+      "text": "abc",
+      "point": 1,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "query-replace-regexp-groups",
+      "input": {
+        "text": "a=1 b=2",
+        "point": 0,
+        "keys": "y y",
+        "modes": [],
+        "call": [
+          "query-replace-regexp",
+          "\\(\\w\\)=\\(\\w\\)",
+          "\\2:\\1"
+        ],
+        "platform": null
+      },
+      "text": "1:a 2:b",
+      "point": 7,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "query-replace-regexp-whole-match",
+      "input": {
+        "text": "cat dog",
+        "point": 0,
+        "keys": "!",
+        "modes": [],
+        "call": [
+          "query-replace-regexp",
+          "[a-z]+",
+          "<\\&>"
+        ],
+        "platform": null
+      },
+      "text": "<cat> <dog>",
+      "point": 11,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "replace-string",
+      "input": {
+        "text": "one two one",
+        "point": 0,
+        "keys": "C-f",
+        "modes": [],
+        "call": [
+          "replace-string",
+          "one",
+          "1"
+        ],
+        "platform": null
+      },
+      "text": "1 two 1",
+      "point": 7,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "End of buffer"
+    },
+    {
+      "name": "replace-regexp",
+      "input": {
+        "text": "a1b22c333",
+        "point": 0,
+        "keys": "C-f",
+        "modes": [],
+        "call": [
+          "replace-regexp",
+          "[0-9]+",
+          "#"
+        ],
+        "platform": null
+      },
+      "text": "a#b#c#",
+      "point": 6,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "End of buffer"
+    },
+    {
+      "name": "replace-regexp-empty-matches",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "C-f",
+        "modes": [],
+        "call": [
+          "replace-regexp",
+          "x*",
+          "-"
+        ],
+        "platform": null
+      },
+      "text": "-a-b-c",
+      "point": 6,
+      "mark": 1,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "query-replace-backup",
+      "input": {
+        "text": "foo foo foo",
+        "point": 0,
+        "keys": "n n ^ y q",
+        "modes": [],
+        "call": [
+          "query-replace",
+          "foo",
+          "x"
+        ],
+        "platform": null
+      },
+      "text": "foo x foo",
+      "point": 9,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

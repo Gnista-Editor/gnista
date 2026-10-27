@@ -49,6 +49,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/window.ts", include_str!("../../../packages/window.ts")),
     ("packages/mouse.ts", include_str!("../../../packages/mouse.ts")),
     ("packages/isearch.ts", include_str!("../../../packages/isearch.ts")),
+    ("packages/replace.ts", include_str!("../../../packages/replace.ts")),
 ];
 
 /// How long a script may run before it is stopped, unless changed with
