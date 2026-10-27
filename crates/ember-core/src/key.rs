@@ -19,17 +19,23 @@ pub enum KeyCode {
     PageDown,
 }
 
-/// A key press with its modifiers, written in Emacs notation such as `C-x` or `M-<`.
+/// A key press with its modifiers, written in Emacs notation such as `C-x`,
+/// `M-<` or `S-<right>`.
+///
+/// `shift` is only set where Shift is not already part of the character: on
+/// keys like `<right>`, and on letters in chords such as `C-S-f`. A plain
+/// capital letter is just the character `A`, as in Emacs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Key {
     pub code: KeyCode,
     pub ctrl: bool,
     pub meta: bool,
+    pub shift: bool,
 }
 
 impl Key {
     pub fn new(code: KeyCode) -> Key {
-        Key { code, ctrl: false, meta: false }
+        Key { code, ctrl: false, meta: false, shift: false }
     }
 
     pub fn char(c: char) -> Key {
@@ -46,28 +52,41 @@ impl Key {
         self
     }
 
+    pub fn shift(mut self) -> Key {
+        self.shift = true;
+        self
+    }
+
+    /// The same key without Shift.
+    pub fn unshifted(mut self) -> Key {
+        self.shift = false;
+        self
+    }
+
     /// The character this key inserts, if it is a plain printable character.
     pub fn printable(&self) -> Option<char> {
         match self.code {
-            KeyCode::Char(c) if !self.ctrl && !self.meta && !c.is_control() => Some(c),
+            KeyCode::Char(c) if !self.ctrl && !self.meta && !self.shift && !c.is_control() => Some(c),
             _ => None,
         }
     }
 
-    /// Parses one key in Emacs notation: `a`, `C-x`, `M-f`, `C-M-f`, `RET`, `SPC`, `<left>`.
+    /// Parses one key in Emacs notation: `a`, `C-x`, `M-f`, `C-M-f`, `RET`,
+    /// `SPC`, `<left>`, `S-<right>`, `C-S-f`.
     pub fn parse(s: &str) -> Option<Key> {
         let mut rest = s;
-        let (mut ctrl, mut meta) = (false, false);
+        let (mut ctrl, mut meta, mut shift) = (false, false, false);
         loop {
             if rest.len() > 2 && rest.starts_with("C-") {
                 ctrl = true;
-                rest = &rest[2..];
             } else if rest.len() > 2 && rest.starts_with("M-") {
                 meta = true;
-                rest = &rest[2..];
+            } else if rest.len() > 2 && rest.starts_with("S-") {
+                shift = true;
             } else {
                 break;
             }
+            rest = &rest[2..];
         }
         let code = match rest {
             "RET" => KeyCode::Enter,
@@ -93,7 +112,7 @@ impl Key {
                 KeyCode::Char(c)
             }
         };
-        Some(Key { code, ctrl, meta })
+        Some(Key { code, ctrl, meta, shift })
     }
 
     /// Parses a space separated key sequence such as `C-x C-f`.
@@ -110,6 +129,9 @@ impl fmt::Display for Key {
         }
         if self.meta {
             f.write_str("M-")?;
+        }
+        if self.shift {
+            f.write_str("S-")?;
         }
         let name = match self.code {
             KeyCode::Char(' ') => "SPC",
@@ -143,11 +165,13 @@ mod tests {
 
     #[test]
     fn parses_and_prints_emacs_notation() {
-        for s in ["a", "C-x", "M-f", "C-M-f", "RET", "SPC", "M-<", "M->", "C--", "<left>", "M-DEL"] {
+        for s in ["a", "C-x", "M-f", "C-M-f", "RET", "SPC", "M-<", "M->", "C--", "<left>", "M-DEL", "S-<right>", "C-S-f", "C-M-S-<up>"] {
             let key = Key::parse(s).unwrap_or_else(|| panic!("failed to parse {s}"));
             assert_eq!(key.to_string(), s);
         }
         assert_eq!(Key::parse("C-x"), Some(Key::char('x').ctrl()));
+        assert_eq!(Key::parse("S-<right>"), Some(Key::new(KeyCode::Right).shift()));
+        assert_eq!(Key::parse("S"), Some(Key::char('S')));
         assert_eq!(Key::parse("M-"), None);
         assert_eq!(Key::parse("ab"), None);
     }

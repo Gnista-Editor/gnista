@@ -107,6 +107,10 @@ pub struct Command {
     pub run: CommandFn,
     /// Where the command was defined, such as a script file. `None` for built-in commands.
     pub source: Option<String>,
+    /// Whether the command moves point in a way Shift can select, like the
+    /// `^` interactive spec in Emacs. With Shift it starts or extends the
+    /// region; without, it ends a region Shift started.
+    pub shift_select: bool,
 }
 
 impl Command {
@@ -121,6 +125,7 @@ impl Command {
             params: Vec::new(),
             run: Rc::new(run),
             source: None,
+            shift_select: false,
         }
     }
 
@@ -131,6 +136,12 @@ impl Command {
             kind,
             prompt: prompt.to_string(),
         });
+        self
+    }
+
+    /// Marks the command as a movement that Shift selection applies to.
+    pub fn shift_select(mut self) -> Command {
+        self.shift_select = true;
         self
     }
 

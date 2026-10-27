@@ -80,3 +80,33 @@ fn the_window_shows_the_buffer_name() {
     assert_eq!(h.state().editor.window_buffer().name, "*scratch*");
     assert!(h.state().editor.viewport_height() > 5);
 }
+
+/// The sample with a shift selection from the middle of one line, across a
+/// whole line, into the next.
+fn sample_with_selection() -> Editor {
+    let mut ed = sample();
+    ed.press("S-<down> S-<down> S-<down> S-<end>").unwrap();
+    ed
+}
+
+#[test]
+fn selection_dark() {
+    harness(sample_with_selection(), Theme::Dark).snapshot("selection_dark");
+}
+
+#[test]
+fn selection_light() {
+    harness(sample_with_selection(), Theme::Light).snapshot("selection_light");
+}
+
+#[test]
+fn shift_arrows_select_in_the_window() {
+    let mut ed = Editor::new();
+    ed.type_text("hello");
+    ed.press("C-a").unwrap();
+    let mut h = harness(ed, Theme::Dark);
+    h.key_press_modifiers(Modifiers::SHIFT, Key::ArrowRight);
+    h.key_press_modifiers(Modifiers::SHIFT, Key::ArrowRight);
+    h.run();
+    assert_eq!(h.state().editor.window_buffer().active_region(), Some(0..2));
+}

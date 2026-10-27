@@ -156,13 +156,32 @@ fn draw_buffer(
     };
 
     let clipped = painter.with_clip_rect(area.with_max_x(area.right() + PAD_X));
+    let region = b.active_region();
     for (row, line) in (b.top_line..b.line_count()).take(rows).enumerate() {
+        let text = b.line_text(line);
         let galley = if line == point_line {
             point_galley.clone()
         } else {
-            layout_line(painter, &b.line_text(line), m, t.ink)
+            layout_line(painter, &text, m, t.ink)
         };
-        let y = area.top() + row as f32 * m.line_height + (m.line_height - galley.size().y) / 2.0;
+        let top = area.top() + row as f32 * m.line_height;
+        if let Some(region) = &region {
+            let (start, end) = (b.line_start(line), b.line_end(line));
+            // The part of the region on this line, and whether it runs on past the newline.
+            if region.start <= end && region.end > start {
+                let from = expanded_len(&text, region.start.max(start) - start);
+                let to = expanded_len(&text, region.end.min(end) - start);
+                let x0 = galley.pos_from_cursor(CCursor::new(from)).min.x;
+                let mut x1 = galley.pos_from_cursor(CCursor::new(to)).min.x;
+                if region.end > end {
+                    x1 += m.char_width;
+                }
+                let left = area.left() - hscroll;
+                let rect = Rect::from_min_max(pos2(left + x0, top), pos2(left + x1, top + m.line_height));
+                clipped.rect_filled(rect, 0.0, t.selection);
+            }
+        }
+        let y = top + (m.line_height - galley.size().y) / 2.0;
         clipped.galley(pos2(area.left() - hscroll, y), galley, t.ink);
     }
 

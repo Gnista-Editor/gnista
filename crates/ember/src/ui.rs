@@ -34,9 +34,18 @@ fn draw_window(frame: &mut Frame, ed: &Editor, area: Rect) -> Position {
     let point_col = display_width(&b.slice(b.line_start(point_line)..b.point()));
     // Scroll horizontally, as Emacs does, when point would be off the right edge.
     let hscroll = if point_col < width { 0 } else { point_col - width / 2 };
+    let region = b.active_region();
     let lines: Vec<Line> = (b.top_line..b.line_count())
         .take(area.height as usize)
-        .map(|line| Line::raw(visible_part(&b.line_text(line), hscroll, width)))
+        .map(|line| {
+            let start = b.line_start(line);
+            // The region's part of this line, in characters from the line's start.
+            let selected = region
+                .as_ref()
+                .filter(|r| r.start <= b.line_end(line) && r.end > start)
+                .map(|r| r.start.max(start) - start..r.end - start);
+            line_spans(&b.line_text(line), hscroll, width, selected)
+        })
         .collect();
     frame.render_widget(Paragraph::new(lines), area);
     let row = point_line.saturating_sub(b.top_line).min(area.height as usize - 1);
@@ -85,23 +94,49 @@ fn draw_echo_area(frame: &mut Frame, ed: &Editor, area: Rect) -> Option<Position
 }
 
 /// The part of a line visible after scrolling `hscroll` columns, at most `width` wide.
+#[cfg(test)]
 fn visible_part(text: &str, hscroll: usize, width: usize) -> String {
-    let (mut out, mut glyph, mut col) = (String::new(), String::new(), 0);
-    for c in text.chars() {
+    line_spans(text, hscroll, width, None)
+        .spans
+        .iter()
+        .map(|s| s.content.as_ref())
+        .collect()
+}
+
+/// A line as it is drawn, with the selected characters in reverse video.
+/// `selected` counts characters from the start of the line; an end past the
+/// last character means the newline is selected too, shown as one cell.
+fn line_spans(text: &str, hscroll: usize, width: usize, selected: Option<std::ops::Range<usize>>) -> Line<'static> {
+    let is_selected = |i: usize| selected.as_ref().is_some_and(|r| r.contains(&i));
+    let mut spans: Vec<Span<'static>> = Vec::new();
+    let push = |spans: &mut Vec<Span<'static>>, s: &str, selected: bool| {
+        let style = if selected { Style::new().add_modifier(Modifier::REVERSED) } else { Style::new() };
+        match spans.last_mut() {
+            Some(last) if last.style == style => last.content.to_mut().push_str(s),
+            _ => spans.push(Span::styled(s.to_string(), style)),
+        }
+    };
+    let (mut glyph, mut col, mut count) = (String::new(), 0, 0);
+    for (i, c) in text.chars().enumerate() {
+        count = i + 1;
         if col >= hscroll + width {
             break;
         }
         glyph.clear();
         let w = render_char(c, col, &mut glyph);
         if col >= hscroll && col + w <= hscroll + width {
-            out.push_str(&glyph);
+            push(&mut spans, &glyph, is_selected(i));
         } else if col < hscroll && col + w > hscroll {
             // A tab that straddles the left edge still takes up its visible columns.
-            out.extend(std::iter::repeat_n(' ', col + w - hscroll));
+            push(&mut spans, &" ".repeat(col + w - hscroll), is_selected(i));
         }
         col += w;
     }
-    out
+    let len = text.chars().count();
+    if count == len && is_selected(len) && col >= hscroll && col < hscroll + width {
+        push(&mut spans, " ", true);
+    }
+    Line::from(spans)
 }
 
 #[cfg(test)]
@@ -138,6 +173,20 @@ mod tests {
         ed.type_text("find-f");
         let rows = render(&mut ed, 50, 5);
         assert_eq!(rows[4], "M-x find-f {find-file}");
+    }
+
+    #[test]
+    fn the_region_is_reverse_video() {
+        let mut ed = Editor::new();
+        ed.type_text("abc\ndef");
+        ed.press("M-< <right> S-<down>").unwrap();
+        let mut terminal = Terminal::new(TestBackend::new(20, 5)).unwrap();
+        terminal.draw(|frame| draw(frame, &ed)).unwrap();
+        let buf = terminal.backend().buffer();
+        let reversed = |x: u16, y: u16| buf[(x, y)].modifier.contains(Modifier::REVERSED);
+        // "bc" and the newline on the first line, then "d" before point.
+        assert_eq!((0..5).map(|x| reversed(x, 0)).collect::<Vec<_>>(), [false, true, true, true, false]);
+        assert_eq!((0..3).map(|x| reversed(x, 1)).collect::<Vec<_>>(), [true, false, false]);
     }
 
     #[test]

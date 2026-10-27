@@ -27,6 +27,14 @@ pub struct Buffer {
     text: Rope,
     point: usize,
     mark: Option<usize>,
+    /// Whether the region between mark and point is active and shown, as in
+    /// Emacs's transient-mark-mode.
+    mark_active: bool,
+    /// Whether Shift with a movement key activated the region. Such a region
+    /// ends when point moves without Shift.
+    shift_selected: bool,
+    /// Whether the text changed since [`Buffer::take_changed`] was last called.
+    changed: bool,
     /// How many undo groups there were when the buffer was last saved, or
     /// `None` if undo has gone back past that point and cannot reach it again.
     saved_depth: Option<usize>,
@@ -44,6 +52,9 @@ impl Buffer {
             text: Rope::new(),
             point: 0,
             mark: None,
+            mark_active: false,
+            shift_selected: false,
+            changed: false,
             saved_depth: Some(0),
             undo_groups: Vec::new(),
             open_group: Vec::new(),
@@ -111,6 +122,50 @@ impl Buffer {
 
     pub fn set_mark(&mut self, pos: Option<usize>) {
         self.mark = pos.map(|p| p.min(self.len()));
+    }
+
+    /// Sets the mark at point and activates the region.
+    pub fn activate_mark(&mut self) {
+        self.mark = Some(self.point);
+        self.mark_active = true;
+        self.shift_selected = false;
+    }
+
+    /// Activates the region between the mark and point, if there is a mark.
+    pub fn activate_region(&mut self) {
+        self.mark_active = self.mark.is_some();
+        self.shift_selected = false;
+    }
+
+    /// Hides the region. The mark stays where it is.
+    pub fn deactivate_mark(&mut self) {
+        self.mark_active = false;
+        self.shift_selected = false;
+    }
+
+    pub fn is_mark_active(&self) -> bool {
+        self.mark_active && self.mark.is_some()
+    }
+
+    pub fn is_shift_selected(&self) -> bool {
+        self.is_mark_active() && self.shift_selected
+    }
+
+    /// Starts a region at point that Shift selection owns.
+    pub fn start_shift_selection(&mut self) {
+        self.activate_mark();
+        self.shift_selected = true;
+    }
+
+    /// The region if it is active: what the front ends highlight.
+    pub fn active_region(&self) -> Option<Range<usize>> {
+        self.region().filter(|_| self.mark_active)
+    }
+
+    /// Whether the text changed since the last call. The editor uses this to
+    /// deactivate the region after a command edits the buffer.
+    pub fn take_changed(&mut self) -> bool {
+        std::mem::take(&mut self.changed)
     }
 
     /// The text between mark and point, if the mark is set.
@@ -217,6 +272,8 @@ impl Buffer {
         self.text = Rope::from_str(s);
         self.point = 0;
         self.mark = None;
+        self.mark_active = false;
+        self.shift_selected = false;
         self.top_line = 0;
         self.undo_groups.clear();
         self.open_group.clear();
@@ -246,6 +303,7 @@ impl Buffer {
             self.point = edit.point_before.min(self.len());
         }
         self.mark = self.mark.map(|m| m.min(self.len()));
+        self.changed = true;
         if self.saved_depth.is_some_and(|d| self.undo_groups.len() < d) {
             self.saved_depth = None;
         }
@@ -253,6 +311,7 @@ impl Buffer {
     }
 
     fn record(&mut self, edit: Edit) {
+        self.changed = true;
         self.open_group.push(edit);
     }
 

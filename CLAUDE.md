@@ -4,7 +4,7 @@ A Rust editor that works the way Emacs works. Ember is a placeholder name. The o
 
 ## Current state
 
-A working editor, in a terminal (`ember`) or a window (`ember-gui`), with one window: buffers, files, Emacs movement and editing keys, kill ring, undo, M-x with completion, the minibuffer, and `C-h f` / `C-h k` / `C-h b`. TypeScript extensions: `init.ts` defines commands and key bindings, `M-x load-file` reloads it, and `M-:` evaluates an expression.
+A working editor, in a terminal (`ember`) or a window (`ember-gui`), with one window: buffers, files, Emacs movement and editing keys, the active region with shift selection (transient-mark-mode and shift-select-mode, both on), kill ring, undo, M-x with completion, the minibuffer, and `C-h f` / `C-h k` / `C-h b`. TypeScript extensions: `init.ts` defines commands and key bindings, `M-x load-file` reloads it, and `M-:` evaluates an expression.
 
 ## Layout
 
@@ -14,7 +14,7 @@ A working editor, in a terminal (`ember`) or a window (`ember-gui`), with one wi
 - `crates/ember-gui`: the egui binary. `app.rs` draws, `keys.rs` translates egui events into keys, `theme.rs` holds the colour tokens and fonts. Drawing code takes colours from `Tokens`, never literals.
 - `examples/init.ts`: a sample config.
 
-Commands are defined once with named, typed parameters (`Command::new(...).param(...)`). Interactive use prompts for each parameter in the minibuffer; `Editor::call` takes them directly. Keep it that way: it is what lets scripts, and later the agent, call commands as tools.
+Commands are defined once with named, typed parameters (`Command::new(...).param(...)`). Movement commands are marked `.shift_select()`, like Emacs's `^` interactive spec: a shifted key with no binding of its own runs the unshifted key's command and selects as it moves. Interactive use prompts for each parameter in the minibuffer; `Editor::call` takes them directly. Keep it that way: it is what lets scripts, and later the agent, call commands as tools.
 
 Adding a function to the script API means three changes: the native function in `ember-script/src/lib.rs`, its wrapper in `prelude.js`, and its declaration in `types.rs`. Prefer making new behaviour a command, which needs none of these.
 

@@ -33,6 +33,8 @@ pub struct Tokens {
     pub accent: Color32,
     /// The brand blue, for text.
     pub accent_ink: Color32,
+    /// The active region: the brand blue, translucent so text stays readable.
+    pub selection: Color32,
     pub bad: Color32,
 }
 
@@ -58,6 +60,7 @@ impl Tokens {
         line: ink_alpha(0xf2f1ee, 38),
         accent: hex(0x2d81ff),
         accent_ink: hex(0x74aaff),
+        selection: ink_alpha(0x2d81ff, 92),
         bad: hex(0xff6259),
     };
 
@@ -72,6 +75,7 @@ impl Tokens {
         line: ink_alpha(0x101014, 41),
         accent: hex(0x2d81ff),
         accent_ink: hex(0x1659c4),
+        selection: ink_alpha(0x2d81ff, 64),
         bad: hex(0xb3261e),
     };
 

@@ -53,13 +53,22 @@ fn key_event(key: EguiKey, modifiers: Modifiers) -> Option<Key> {
         return None;
     }
     let (ctrl, meta) = (modifiers.ctrl, modifiers.alt);
-    let code = match special(key) {
-        Some(code) => code,
+    let (code, shift) = match special(key) {
+        Some(code) => (code, modifiers.shift),
         // Plain characters come as text events instead.
         None if !ctrl && !meta => return None,
-        None => KeyCode::Char(character(key, modifiers.shift)?),
+        None => {
+            let c = character(key, modifiers.shift)?;
+            // A letter in a chord keeps Shift as a modifier, as Emacs writes
+            // C-S-f; Shift on punctuation is part of the character, as in M-<.
+            if c.is_ascii_alphabetic() {
+                (KeyCode::Char(c.to_ascii_lowercase()), modifiers.shift)
+            } else {
+                (KeyCode::Char(c), false)
+            }
+        }
     };
-    Some(Key { code, ctrl, meta })
+    Some(Key { code, ctrl, meta, shift })
 }
 
 fn special(key: EguiKey) -> Option<KeyCode> {
@@ -164,6 +173,14 @@ mod tests {
         assert_eq!(keys(&[press(EguiKey::Comma, shift_alt)], true), "M-<");
         assert_eq!(keys(&[press(EguiKey::Enter, Modifiers::NONE)], true), "RET");
         assert_eq!(keys(&[press(EguiKey::Backspace, ALT)], true), "M-DEL");
+    }
+
+    #[test]
+    fn shift_is_kept_for_selection() {
+        assert_eq!(keys(&[press(EguiKey::ArrowRight, Modifiers::SHIFT)], true), "S-<right>");
+        let ctrl_shift = Modifiers { ctrl: true, shift: true, ..Default::default() };
+        assert_eq!(keys(&[press(EguiKey::F, ctrl_shift)], true), "C-S-f");
+        assert_eq!(keys(&[press(EguiKey::End, ctrl_shift)], true), "C-S-<end>");
     }
 
     #[test]

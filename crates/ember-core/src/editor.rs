@@ -38,6 +38,9 @@ pub struct Editor {
     /// Keys typed so far of a multi-key binding such as `C-x C-f`.
     pending_keys: Vec<Key>,
     esc_prefix: bool,
+    /// Whether the key that ran the current command had Shift removed to find
+    /// its binding. Shift selection uses it.
+    shift_translated: bool,
     commands: BTreeMap<String, Rc<Command>>,
     pub global_map: Keymap,
     pub minibuffer_map: Keymap,
@@ -71,6 +74,7 @@ impl Editor {
             reading_keys: None,
             pending_keys: Vec::new(),
             esc_prefix: false,
+            shift_translated: false,
             commands: BTreeMap::new(),
             global_map: Keymap::default(),
             minibuffer_map: Keymap::default(),
@@ -134,6 +138,7 @@ impl Editor {
     /// Runs a command the way a key binding does: prompting in the minibuffer
     /// for any parameters, and showing errors in the echo area.
     pub fn run_interactive(&mut self, name: &str) {
+        let shifted = std::mem::take(&mut self.shift_translated);
         let Some(command) = self.command(name) else {
             self.message = Some(format!("No such command: {name}"));
             return;
@@ -150,11 +155,28 @@ impl Editor {
         if !amalgamate {
             self.buffer_mut().undo_boundary();
         }
+        if command.shift_select {
+            self.shift_select(shifted);
+        }
         if command.params.is_empty() {
             self.execute(command, Vec::new());
         } else {
             self.pending_call = Some(PendingCall { command, args: Vec::new() });
             self.read_next_arg();
+        }
+    }
+
+    /// Emacs's shift selection: a movement with Shift starts a region at
+    /// point, or keeps extending one Shift started; a movement without Shift
+    /// ends a region Shift started.
+    fn shift_select(&mut self, shifted: bool) {
+        let b = self.buffer_mut();
+        if shifted {
+            if !b.is_shift_selected() {
+                b.start_shift_selection();
+            }
+        } else if b.is_shift_selected() {
+            b.deactivate_mark();
         }
     }
 
@@ -206,6 +228,12 @@ impl Editor {
         if let Some(name) = self.this_command.take() {
             self.last_command = Some(name);
         }
+        // Editing deactivates the region, as in Emacs's transient-mark-mode.
+        for b in self.buffers.iter_mut().chain(std::iter::once(&mut self.minibuffer)) {
+            if b.take_changed() {
+                b.deactivate_mark();
+            }
+        }
         result
     }
 
@@ -239,6 +267,7 @@ impl Editor {
         self.pending_keys.push(key);
         match self.lookup(&self.pending_keys) {
             Lookup::Prefix => {
+                self.shift_translated = false;
                 self.message = Some(format!("{}-", format_keys(&self.pending_keys)));
             }
             Lookup::Command(name) => {
@@ -246,7 +275,16 @@ impl Editor {
                 self.last_key = Some(key);
                 self.run_interactive(&name);
             }
+            // Shift translation, as in Emacs: a shifted key with no binding of
+            // its own acts as the key without Shift, so S-<right> runs
+            // forward-char and Shift selection applies.
+            Lookup::Unbound if key.shift => {
+                self.pending_keys.pop();
+                self.shift_translated = true;
+                self.handle_key(key.unshifted());
+            }
             Lookup::Unbound => {
+                self.shift_translated = false;
                 let keys = std::mem::take(&mut self.pending_keys);
                 if keys.len() == 1 && key.printable().is_some() {
                     self.last_key = Some(key);

@@ -21,6 +21,16 @@ fn def(
     ed.define_command(Command::new(name, doc, run));
 }
 
+/// Defines a movement command that Shift selection applies to.
+fn def_motion(
+    ed: &mut Editor,
+    name: &str,
+    doc: &str,
+    run: impl Fn(&mut Editor, &[Arg]) -> Result<()> + 'static,
+) {
+    ed.define_command(Command::new(name, doc, run).shift_select());
+}
+
 fn err<T>(message: &str) -> Result<T> {
     Err(Error::new(message))
 }
@@ -36,7 +46,7 @@ pub(crate) fn install(ed: &mut Editor) {
 }
 
 fn movement(ed: &mut Editor) {
-    def(ed, "forward-char", "Move point one character forward.", |ed, _| {
+    def_motion(ed, "forward-char", "Move point one character forward.", |ed, _| {
         let b = ed.buffer_mut();
         if b.point() >= b.len() {
             return err("End of buffer");
@@ -44,7 +54,7 @@ fn movement(ed: &mut Editor) {
         b.set_point(b.point() + 1);
         Ok(())
     });
-    def(ed, "backward-char", "Move point one character backward.", |ed, _| {
+    def_motion(ed, "backward-char", "Move point one character backward.", |ed, _| {
         let b = ed.buffer_mut();
         if b.point() == 0 {
             return err("Beginning of buffer");
@@ -52,51 +62,55 @@ fn movement(ed: &mut Editor) {
         b.set_point(b.point() - 1);
         Ok(())
     });
-    def(
+    def_motion(
         ed,
         "next-line",
         "Move point to the next line.\n\nRepeated line moves keep to the column where they started.",
         |ed, _| line_move(ed, true),
     );
-    def(
+    def_motion(
         ed,
         "previous-line",
         "Move point to the previous line.\n\nRepeated line moves keep to the column where they started.",
         |ed, _| line_move(ed, false),
     );
-    def(ed, "move-beginning-of-line", "Move point to the beginning of the line.", |ed, _| {
+    def_motion(ed, "move-beginning-of-line", "Move point to the beginning of the line.", |ed, _| {
         let b = ed.buffer_mut();
         b.set_point(b.line_start(b.line_of(b.point())));
         Ok(())
     });
-    def(ed, "move-end-of-line", "Move point to the end of the line.", |ed, _| {
+    def_motion(ed, "move-end-of-line", "Move point to the end of the line.", |ed, _| {
         let b = ed.buffer_mut();
         b.set_point(b.line_end(b.line_of(b.point())));
         Ok(())
     });
-    def(ed, "forward-word", "Move point forward to the end of the next word.", |ed, _| {
+    def_motion(ed, "forward-word", "Move point forward to the end of the next word.", |ed, _| {
         let b = ed.buffer_mut();
         b.set_point(word_end(b, b.point()));
         Ok(())
     });
-    def(ed, "backward-word", "Move point back to the start of the previous word.", |ed, _| {
+    def_motion(ed, "backward-word", "Move point back to the start of the previous word.", |ed, _| {
         let b = ed.buffer_mut();
         b.set_point(word_start(b, b.point()));
         Ok(())
     });
-    def(ed, "beginning-of-buffer", "Move point to the beginning of the buffer, leaving the mark where point was.", |ed, _| {
+    def_motion(ed, "beginning-of-buffer", "Move point to the beginning of the buffer.\n\nUnless the region is active, leaves the mark where point was.", |ed, _| {
         let b = ed.buffer_mut();
-        b.set_mark(Some(b.point()));
+        if !b.is_mark_active() {
+            b.set_mark(Some(b.point()));
+        }
         b.set_point(0);
         Ok(())
     });
-    def(ed, "end-of-buffer", "Move point to the end of the buffer, leaving the mark where point was.", |ed, _| {
+    def_motion(ed, "end-of-buffer", "Move point to the end of the buffer.\n\nUnless the region is active, leaves the mark where point was.", |ed, _| {
         let b = ed.buffer_mut();
-        b.set_mark(Some(b.point()));
+        if !b.is_mark_active() {
+            b.set_mark(Some(b.point()));
+        }
         b.set_point(b.len());
         Ok(())
     });
-    def(ed, "scroll-up-command", "Scroll the text up by nearly a screen, showing later lines.", |ed, _| {
+    def_motion(ed, "scroll-up-command", "Scroll the text up by nearly a screen, showing later lines.", |ed, _| {
         let step = scroll_step(ed);
         let b = ed.window_buffer_mut();
         let last = b.line_count() - 1;
@@ -110,7 +124,7 @@ fn movement(ed: &mut Editor) {
         }
         Ok(())
     });
-    def(ed, "scroll-down-command", "Scroll the text down by nearly a screen, showing earlier lines.", |ed, _| {
+    def_motion(ed, "scroll-down-command", "Scroll the text down by nearly a screen, showing earlier lines.", |ed, _| {
         let step = scroll_step(ed);
         let height = ed.viewport_height();
         let b = ed.window_buffer_mut();
@@ -228,26 +242,40 @@ fn editing(ed: &mut Editor) {
     def(ed, "undo", "Undo the last change. Repeat to undo earlier changes.", |ed, _| {
         ed.buffer_mut().undo()
     });
-    def(ed, "set-mark-command", "Set the mark at point.", |ed, _| {
-        let b = ed.buffer_mut();
-        b.set_mark(Some(b.point()));
-        ed.message("Mark set");
-        Ok(())
-    });
+    def(
+        ed,
+        "set-mark-command",
+        "Set the mark at point and activate the region.\n\nRepeating it straight away deactivates the region, leaving the mark set.",
+        |ed, _| {
+            let repeated = ed.last_command() == Some("set-mark-command");
+            let b = ed.buffer_mut();
+            if repeated && b.is_mark_active() && b.mark() == Some(b.point()) {
+                b.deactivate_mark();
+                ed.message("Mark deactivated");
+            } else {
+                b.activate_mark();
+                ed.message("Mark set");
+            }
+            Ok(())
+        },
+    );
     def(ed, "exchange-point-and-mark", "Put the mark where point is and point where the mark was.", |ed, _| {
         let b = ed.buffer_mut();
         let mark = b.mark().ok_or_else(|| Error::new("No mark set in this buffer"))?;
         b.set_mark(Some(b.point()));
         b.set_point(mark);
+        b.activate_region();
         Ok(())
     });
     def(ed, "mark-whole-buffer", "Put point at the beginning of the buffer and the mark at the end.", |ed, _| {
         let b = ed.buffer_mut();
         b.set_mark(Some(b.len()));
         b.set_point(0);
+        b.activate_region();
         Ok(())
     });
-    def(ed, "keyboard-quit", "Cancel the current prompt or key sequence.", |ed, _| {
+    def(ed, "keyboard-quit", "Cancel the current prompt or key sequence, and deactivate the region.", |ed, _| {
+        ed.window_buffer_mut().deactivate_mark();
         ed.abort();
         err("Quit")
     });
@@ -296,6 +324,7 @@ fn killing(ed: &mut Editor) {
         let region = region(ed.buffer())?;
         let text = ed.buffer().slice(region);
         ed.kill_ring.push(text);
+        ed.buffer_mut().deactivate_mark();
         Ok(())
     });
     def(ed, "yank", "Insert the most recent kill, leaving the mark at its start.", |ed, _| {
@@ -486,7 +515,13 @@ fn help(ed: &mut Editor) {
     ed.define_command(
         Command::new("describe-key", "Show which command a key sequence runs.", |ed, args| {
             let keys = args[0].as_keys()?;
-            let name = match ed.global_map.lookup(keys) {
+            // Fall back to the key without Shift, as typing it would.
+            let unshifted: Vec<_> = keys.iter().map(|k| k.unshifted()).collect();
+            let found = match ed.global_map.lookup(keys) {
+                Lookup::Unbound => ed.global_map.lookup(&unshifted),
+                found => found,
+            };
+            let name = match found {
                 Lookup::Command(name) => name,
                 _ if keys.len() == 1 && keys[0].printable().is_some() => {
                     "self-insert-command".to_string()
@@ -530,6 +565,9 @@ fn describe(ed: &Editor, name: &str) -> Result<String> {
     }
     text += &command.doc;
     text.push('\n');
+    if command.shift_select {
+        text += "\nWith Shift held, it selects text as it moves (shift selection).\n";
+    }
     if let Some(source) = &command.source {
         text += &format!("\nDefined in {source}.\n");
     }
