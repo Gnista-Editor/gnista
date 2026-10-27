@@ -83,7 +83,7 @@ fn window_rows(ed: &Editor, view: &WindowView, area: Rect) -> WindowRows {
     let tab_width = ed.tab_width_in(view.buffer);
     let glyph_rows: Vec<Vec<Glyph>> = rows.iter().map(|r| row_glyphs(r, tab_width)).collect();
     let point = view.point;
-    let point_row = rows.iter().position(|r| r.start <= point && point <= r.end).unwrap_or(0);
+    let point_row = rows.iter().position(|r| r.shows_point(point)).unwrap_or(0);
     let point_col: usize = glyph_rows
         .get(point_row)
         .map(|g| g[..cursor_index(g, point)].iter().map(|g| g.width).sum())
@@ -168,8 +168,14 @@ fn row_line(
         }
         col += glyph.width;
     }
-    if selected(row.end) && col >= hscroll && col < hscroll + width {
+    if selected(row.end) && !row.continued && col >= hscroll && col < hscroll + width {
         push(&mut spans, " ", Style::new().add_modifier(Modifier::REVERSED));
+    }
+    // A continued line ends with a backslash in the last column, as in Emacs.
+    if row.continued {
+        let fill = (hscroll + width).saturating_sub(col + 1);
+        push(&mut spans, &" ".repeat(fill), Style::new());
+        push(&mut spans, "\\", Style::new());
     }
     Line::from(spans)
 }
@@ -356,6 +362,18 @@ mod tests {
     }
 
     #[test]
+    fn long_lines_continue_with_a_backslash() {
+        let mut ed = Editor::new();
+        ed.type_text(&"abcdefghij".repeat(3));
+        ed.type_text("\nend");
+        let rows = render(&mut ed, 12, 6);
+        assert_eq!(rows[..4], ["abcdefghija\\", "bcdefghijab\\", "cdefghij", "end"]);
+        // C-p from the last line goes up one screen line, keeping the column.
+        ed.press("C-p").unwrap();
+        assert_eq!(ed.window_buffer().point(), 25);
+    }
+
+    #[test]
     fn control_characters_and_horizontal_scroll() {
         let mut ed = Editor::new();
         ed.window_buffer_mut().set_text("a\u{1}b\n\tx");
@@ -363,8 +381,10 @@ mod tests {
         assert_eq!(rows[0], "a^Ab");
         assert_eq!(rows[1], "        x");
 
-        // Point at column 30 of a 20 column window recentres it horizontally.
+        // With truncate-lines, point at column 30 of a 20 column window
+        // recentres it horizontally.
         let mut ed = Editor::new();
+        ed.set_variable("truncate-lines", ember_core::Value::Bool(true));
         ed.type_text(&"x".repeat(30));
         let rows = render(&mut ed, 20, 4);
         assert_eq!(rows[0], "x".repeat(10));

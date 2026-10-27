@@ -351,8 +351,13 @@ fn scroll_lines(ed: &mut Editor, lines: isize) -> bool {
 const SCROLL_KEEPS_COLUMN: &[&str] =
     &["next-line", "previous-line", "mwheel-scroll", "scroll-up-line", "scroll-down-line"];
 
-/// Moves point `n` lines, up if negative, keeping the goal column.
+/// Moves point `n` lines, up if negative, keeping the goal column. Where
+/// long lines are continued, it moves by screen lines, as Emacs's
+/// `line-move-visual` does.
 fn line_move(ed: &mut Editor, n: i64) -> Result<()> {
+    if let Some(wrap) = ed.visual_wrap() {
+        return line_move_visual(ed, n, wrap);
+    }
     let continuing = ed.last_command().is_some_and(|c| SCROLL_KEEPS_COLUMN.contains(&c));
     let b = ed.buffer();
     let line = b.line_of(b.point());
@@ -375,6 +380,52 @@ fn line_move(ed: &mut Editor, n: i64) -> Result<()> {
     }
     let start = b.line_start(target);
     b.set_point((start + goal).min(b.line_end(target)));
+    Ok(())
+}
+
+fn line_move_visual(ed: &mut Editor, n: i64, wrap: crate::rows::Wrap) -> Result<()> {
+    let continuing = ed.last_command().is_some_and(|c| SCROLL_KEEPS_COLUMN.contains(&c));
+    let b = ed.buffer();
+    let (mut rows, mut k, col) = ed.screen_position(b, b.point(), Some(wrap));
+    let goal = match ed.goal_column {
+        Some(goal) if continuing => goal,
+        _ => col,
+    };
+    let mut line = ed.row_line_in(b, b.line_of(b.point()));
+    for _ in 0..n.abs() {
+        if n > 0 && k + 1 < rows.len() {
+            k += 1;
+            continue;
+        }
+        if n < 0 && k > 0 {
+            k -= 1;
+            continue;
+        }
+        let (next, moved) = ed.move_rows_in(b, line, n.signum());
+        if moved == 0 {
+            ed.goal_column = Some(goal);
+            let b = ed.buffer_mut();
+            if n > 0 {
+                b.set_point(b.len());
+                return err("End of buffer");
+            }
+            b.set_point(0);
+            return err("Beginning of buffer");
+        }
+        line = next;
+        rows = ed.screen_rows_of(b, line, Some(wrap));
+        k = if n > 0 { 0 } else { rows.len() - 1 };
+    }
+    let row = &rows[k];
+    let glyphs = crate::display::row_glyphs(row, ed.tab_width_in(b));
+    let mut target = crate::display::position_at_column(row, &glyphs, goal);
+    // The end of a continued row shows at the start of the next, so stop
+    // on its last character instead.
+    if row.continued && target >= row.end {
+        target = row.end.saturating_sub(1).max(row.start);
+    }
+    ed.goal_column = Some(goal);
+    ed.buffer_mut().set_point(target);
     Ok(())
 }
 

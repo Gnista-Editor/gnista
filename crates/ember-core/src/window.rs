@@ -95,6 +95,18 @@ impl WindowTree {
         }
     }
 
+    /// Whether a window shares the frame's width with others, as Emacs's
+    /// `window-full-width-p` is false for it.
+    pub(crate) fn is_partial_width(&self, id: WindowId) -> bool {
+        match self {
+            WindowTree::Leaf(_) => false,
+            WindowTree::Split { side_by_side, first, second } => {
+                let inside = first.leaves().contains(&id) || second.leaves().contains(&id);
+                (*side_by_side && inside) || first.is_partial_width(id) || second.is_partial_width(id)
+            }
+        }
+    }
+
     fn split(&mut self, id: WindowId, new: WindowId, side_by_side: bool) -> bool {
         match self {
             WindowTree::Leaf(leaf) if *leaf == id => {
@@ -208,7 +220,8 @@ impl Editor {
     /// The rows a window shows, as [`Editor::window_rows`] gives the selected one's.
     pub fn rows_of_window(&self, id: WindowId, count: usize, dark: bool) -> Vec<Row> {
         let Some(view) = self.windows().into_iter().find(|v| v.id == id) else { return Vec::new() };
-        self.rows_in(view.buffer, view.top_line, count, dark)
+        let wrap = self.wrap_in(id, view.buffer);
+        self.rows_in(view.buffer, view.top_line, count, dark, wrap)
     }
 
     /// Splits a window in two, as Emacs's `split-window`: below it, or to its

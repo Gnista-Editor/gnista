@@ -36,6 +36,12 @@ declare global {
        */
       "beginning-of-buffer": [];
       /**
+       * Move point to the start of the screen line it is on, which is not the start of its line where a long line continues.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "beginning-of-visual-line": [];
+      /**
        * Delete the character before point, or as many as the prefix argument says.
        *
        * With a prefix argument, the characters are killed rather than deleted, so they can be yanked back. If the region is active, delete it instead, as the variable delete-active-region says.
@@ -127,6 +133,14 @@ declare global {
        * Unless the region is active, leaves the mark where point was. With a numeric prefix argument N, move to N tenths of the way from the end instead, at the start of the next line. Plain C-u does not leave the mark.
        */
       "end-of-buffer": [];
+      /**
+       * Move point to the end of the screen line it is on.
+       *
+       * Where the line continues on the next screen line, point stops before the last character, which shows where the line breaks.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "end-of-visual-line": [];
       /**
        * Evaluate a TypeScript expression and show its value.
        *
@@ -239,6 +253,14 @@ declare global {
        * Copy the text between point and the mark to the kill ring.
        */
       "kill-ring-save": [];
+      /**
+       * Kill the rest of the screen line, or the newline if point is at the end of a line.
+       *
+       * Where the line continues, it kills to where the next screen line starts.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "kill-visual-line": [];
       /**
        * Kill forward to the end of a word, or as many words as the prefix argument says.
        *
@@ -624,6 +646,14 @@ declare global {
        */
       "text-mode": [];
       /**
+       * Turn truncate-lines on in this buffer if it is off, and off if it is on.
+       *
+       * With truncation, long lines are cut off at the window's edge and the window scrolls sideways; without it, they continue on the next screen line. A positive prefix argument turns truncation on, and zero or a negative one turns it off.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "toggle-truncate-lines": [];
+      /**
        * Undo the last change, or as many changes as the prefix argument says.
        *
        * Repeat to undo earlier changes. Undoing is itself a change, so after any other command, undo undoes the undos: it redoes.
@@ -651,6 +681,16 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "universal-argument-more": [];
+      /**
+       * Continue long lines at word boundaries, and make C-a, C-e and C-k work on screen lines.
+       *
+       * It turns word-wrap on in the buffer and turns truncate-lines off.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "visual-line-mode": [];
       /**
        * Write the current buffer to a file and visit that file.
        *
@@ -706,6 +746,10 @@ declare global {
        */
       "frame-background-mode": Value;
       /**
+       * Whether C-n and C-p move by screen lines where long lines are continued, rather than by lines of text.
+       */
+      "line-move-visual": Value;
+      /**
        * The current buffer's major mode, as the name of the command that turns it on.
        */
       "major-mode": Value;
@@ -740,6 +784,30 @@ declare global {
        * How many columns apart tab stops are, for showing tab characters.
        */
       "tab-width": Value;
+      /**
+       * Whether long lines are cut off at the window's edge rather than continued on the next screen line.
+       *
+       * When on, the window scrolls sideways to keep point in view. The command toggle-truncate-lines changes it.
+       */
+      "truncate-lines": Value;
+      /**
+       * Windows narrower than this many columns that share the frame's width with others truncate lines, whatever truncate-lines says.
+       *
+       * Set it to 0 to let narrow windows continue lines too.
+       */
+      "truncate-partial-width-windows": Value;
+      /**
+       * Whether Visual-Line mode is on in this buffer. Use the command visual-line-mode to change it.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "visual-line-mode": Value;
+      /**
+       * Whether continued lines break at spaces and tabs rather than in the middle of a word.
+       *
+       * visual-line-mode turns it on.
+       */
+      "word-wrap": Value;
     }
 
     /** Every face, with its documentation. */
@@ -1032,6 +1100,18 @@ declare global {
        * Run after entering Text mode, after the hooks of the modes it is built on.
        */
       "text-mode-hook": Value;
+      /**
+       * Run after Visual-Line mode is turned on or off.
+       */
+      "visual-line-mode-hook": Value;
+      /**
+       * Run after Visual-Line mode is turned off.
+       */
+      "visual-line-mode-off-hook": Value;
+      /**
+       * Run after Visual-Line mode is turned on.
+       */
+      "visual-line-mode-on-hook": Value;
     }
 
     type CommandName = keyof Commands;
@@ -1341,6 +1421,13 @@ declare global {
     function lastMouseEvent():
       | { window: number; position?: number; start?: { window: number; position?: number } }
       | undefined;
+    /**
+     * The screen line a position shows on in the selected window, where long
+     * lines are continued: where it starts and ends, and whether its line of
+     * text goes on in the next screen line. Where lines are not continued,
+     * the line of text itself.
+     */
+    function screenLine(position: number): { start: number; end: number; continued: boolean };
     /** The name of the buffer a window shows, the selected one by default. */
     function windowBuffer(window?: number): string | undefined;
 

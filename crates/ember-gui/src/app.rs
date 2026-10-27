@@ -343,7 +343,7 @@ fn hit(ed: &Editor, layout: &Layout, pos: Pos2, scroll: (WindowId, f32)) -> Opti
     // The same horizontal scroll as drawing uses, in whole columns.
     let point_col = rows
         .iter()
-        .find(|r| r.start <= view.point && view.point <= r.end)
+        .find(|r| r.shows_point(view.point))
         .map_or(0, |r| {
             let glyphs = glyphs_of(r);
             glyphs[..cursor_index(&glyphs, view.point)].iter().map(|g| g.width).sum::<usize>()
@@ -389,7 +389,7 @@ fn draw_buffer(
     // Only the selected window shows the region, as in Emacs.
     let region = if window.selected { b.active_region() } else { None };
     let point = window.point;
-    let point_row = rows.iter().position(|r| r.start <= point && point <= r.end);
+    let point_row = rows.iter().position(|r| r.shows_point(point));
 
     let laid_out: Vec<(Arc<Galley>, Vec<Glyph>)> = rows
         .iter()
@@ -434,6 +434,13 @@ fn draw_buffer(
         if let Some(bold) = &emboldened[i] {
             clipped.galley(pos2(area.left() - hscroll + FAUX_BOLD_OFFSET, y), bold.clone(), t.ink);
         }
+        // A continued line ends with a faint mark in the last column, where
+        // Emacs puts an arrow in the fringe.
+        if rows[i].continued {
+            let mark = painter.layout_no_wrap("\\".to_string(), m.font.clone(), t.faint);
+            let cols = (area.width() / m.char_width).floor().max(1.0);
+            clipped.galley(pos2(area.left() + (cols - 1.0) * m.char_width, y), mark, t.faint);
+        }
     }
     if let Some((i, galley, index, under)) = cursor {
         let pos = pos2(area.left() - hscroll + cursor_x, row_top(i));
@@ -475,7 +482,7 @@ fn row_job(
         format.line_height = Some(m.line_height);
         job.append(&text, 0.0, format);
     }
-    if selected(Some(row.end)) {
+    if selected(Some(row.end)) && !row.continued {
         let mut format = text_format(m, t.ink);
         format.background = selection;
         format.line_height = Some(m.line_height);

@@ -156,6 +156,7 @@
       const start = event.start && { window: event.start.window, position: event.start.position ?? undefined };
       return { window: event.window, position: event.position ?? undefined, start };
     },
+    screenLine: (position) => native.screenLine(position),
     windowBuffer: (window) => native.windowBuffer(window ?? native.selectedWindow()) ?? undefined,
 
     treesitLanguages: () => native.treesitLanguages(),

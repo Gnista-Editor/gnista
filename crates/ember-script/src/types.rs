@@ -328,6 +328,13 @@ const API: &str = r##"
   function lastMouseEvent():
     | { window: number; position?: number; start?: { window: number; position?: number } }
     | undefined;
+  /**
+   * The screen line a position shows on in the selected window, where long
+   * lines are continued: where it starts and ends, and whether its line of
+   * text goes on in the next screen line. Where lines are not continued,
+   * the line of text itself.
+   */
+  function screenLine(position: number): { start: number; end: number; continued: boolean };
   /** The name of the buffer a window shows, the selected one by default. */
   function windowBuffer(window?: number): string | undefined;
 

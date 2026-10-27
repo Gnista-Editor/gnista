@@ -33,8 +33,28 @@ pub struct Row {
     pub line: usize,
     pub start: usize,
     /// Where the row ends: its visible newline, or the end of the buffer.
+    /// For a continued row, where the next row starts.
     pub end: usize,
     pub segments: Vec<Segment>,
+    /// Whether the line goes on in the next row because it was too long for
+    /// the window, which Emacs marks with a `\` in the last column.
+    pub continued: bool,
+}
+
+impl Row {
+    /// Whether point at `pos` is shown in this row. At the end of a
+    /// continued row, point shows at the start of the next.
+    pub fn shows_point(&self, pos: usize) -> bool {
+        self.start <= pos && (pos < self.end || (pos == self.end && !self.continued))
+    }
+}
+
+/// How a window wraps long lines: at how many columns, and whether at word
+/// boundaries (Emacs's `word-wrap`, which `visual-line-mode` turns on).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct Wrap {
+    pub(crate) width: usize,
+    pub(crate) words: bool,
 }
 
 /// What "..." looks like.
@@ -140,6 +160,67 @@ impl Editor {
         (from + 1..=to).filter(|&l| self.line_starts_row_in(b, l)).count()
     }
 
+    /// How point's window wraps lines: the selected window's way, unless the
+    /// minibuffer is active or `line-move-visual` is off, when lines move by
+    /// text lines.
+    pub(crate) fn visual_wrap(&self) -> Option<Wrap> {
+        if self.prompt.is_some() || !self.variable("line-move-visual").is_some_and(|v| v.is_true()) {
+            return None;
+        }
+        self.wrap_in(self.selected_window, self.buffer())
+    }
+
+    /// Which screen row of its row of text a position shows in, and its
+    /// column there, with those screen rows.
+    pub(crate) fn screen_position(&self, b: &Buffer, pos: usize, wrap: Option<Wrap>) -> (Vec<Row>, usize, usize) {
+        let rows = self.screen_rows_of(b, self.row_line_in(b, b.line_of(pos)), wrap);
+        let k = rows.iter().position(|r| r.shows_point(pos)).unwrap_or(rows.len().saturating_sub(1));
+        let glyphs = crate::display::row_glyphs(&rows[k], self.tab_width_in(b));
+        let col = glyphs[..crate::display::cursor_index(&glyphs, pos)].iter().map(|g| g.width).sum();
+        (rows, k, col)
+    }
+
+    /// The screen line a position of the current buffer shows on in the
+    /// selected window: where it starts and ends, and whether the line of
+    /// text goes on past it.
+    pub fn screen_line(&self, pos: usize) -> (usize, usize, bool) {
+        let b = self.buffer();
+        let wrap = self.wrap_in(self.selected_window, b);
+        let (rows, k, _) = self.screen_position(b, pos.min(b.len()), wrap);
+        (rows[k].start, rows[k].end, rows[k].continued)
+    }
+
+    /// How many screen rows the row of text starting at a line takes.
+    pub(crate) fn screen_height_in(&self, b: &Buffer, row_line: usize, wrap: Option<Wrap>) -> usize {
+        if wrap.is_none() { 1 } else { self.screen_rows_of(b, row_line, wrap).len().max(1) }
+    }
+
+    /// The row of text `screen` screen rows on from the one starting at
+    /// `line`, without passing the target, and how many screen rows that is.
+    /// Moves at least one row when it can.
+    pub(crate) fn move_screen_rows_in(&self, b: &Buffer, line: usize, screen: i64, wrap: Option<Wrap>) -> (usize, i64) {
+        if wrap.is_none() {
+            return self.move_rows_in(b, line, screen);
+        }
+        let (mut line, mut moved) = (line, 0i64);
+        loop {
+            let (next, step) = self.move_rows_in(b, line, screen.signum());
+            if step == 0 {
+                break;
+            }
+            let rows = self.screen_height_in(b, if screen > 0 { line } else { next }, wrap) as i64;
+            if moved != 0 && moved + rows > screen.abs() {
+                break;
+            }
+            moved += rows;
+            line = next;
+            if moved >= screen.abs() {
+                break;
+            }
+        }
+        (line, moved * screen.signum())
+    }
+
     /// Moves point out of invisible text, as Emacs's command loop does after
     /// each command: forward to the visible text after it if point moved
     /// forward, otherwise back to before it.
@@ -167,18 +248,62 @@ impl Editor {
     /// `default` face is left to the front end.
     pub fn window_rows(&self, count: usize, dark: bool) -> Vec<Row> {
         let b = self.window_buffer();
-        self.rows_in(b, b.top_line, count, dark)
+        let wrap = self.wrap_in(self.selected_window, b);
+        self.rows_in(b, b.top_line, count, dark, wrap)
+    }
+
+    /// How a window showing a buffer wraps lines, or `None` if it truncates
+    /// them: when `truncate-lines` is on, or when the window is narrower than
+    /// `truncate-partial-width-windows` and shares the frame's width with
+    /// others, as in Emacs. Lines wrap one column short of the window's
+    /// width, leaving the last column for the continuation mark.
+    pub(crate) fn wrap_in(&self, window: crate::window::WindowId, b: &Buffer) -> Option<Wrap> {
+        if self.variable_in(b, "truncate-lines").is_some_and(|v| v.is_true()) {
+            return None;
+        }
+        let width = self.window(window).map_or(80, |w| w.width);
+        let partial = self.window_tree.is_partial_width(window);
+        let limit = self.number_in(b, "truncate-partial-width-windows", 50.0);
+        if partial && (width as f64) < limit {
+            return None;
+        }
+        let words = self.variable_in(b, "word-wrap").is_some_and(|v| v.is_true());
+        Some(Wrap { width: width.saturating_sub(1).max(1), words })
     }
 
     /// The rows of a buffer from a top line, as a window showing it would show them.
-    pub(crate) fn rows_in(&self, b: &Buffer, top_line: usize, count: usize, dark: bool) -> Vec<Row> {
+    pub(crate) fn rows_in(&self, b: &Buffer, top_line: usize, count: usize, dark: bool, wrap: Option<Wrap>) -> Vec<Row> {
+        self.rows_from(b, top_line, count, usize::MAX, Some(dark), wrap)
+    }
+
+    /// The screen rows of the row starting at a line, unstyled, for moving
+    /// by screen lines.
+    pub(crate) fn screen_rows_of(&self, b: &Buffer, row_line: usize, wrap: Option<Wrap>) -> Vec<Row> {
+        self.rows_from(b, row_line, usize::MAX, 1, None, wrap)
+    }
+
+    /// Up to `count` screen rows from up to `lines` rows of text from a top
+    /// line, styled for a dark or light background, or unstyled with `None`.
+    fn rows_from(
+        &self,
+        b: &Buffer,
+        top_line: usize,
+        count: usize,
+        lines: usize,
+        dark: Option<bool>,
+        wrap: Option<Wrap>,
+    ) -> Vec<Row> {
         let len = b.len();
+        let mut logical = 0;
+        // How many lines to work syntax faces out for at a time.
+        let hint = count.min(lines).min(1000);
         let mut styles: HashMap<Vec<String>, Style> = HashMap::new();
         let mut rows = Vec::new();
         let mut pos = b.line_start(self.row_line_in(b, top_line.min(b.line_count() - 1)));
         // Syntax faces, worked out for a window's worth of lines at a time.
         let mut syntax = SyntaxFaces::default();
-        while rows.len() < count {
+        while rows.len() < count && logical < lines {
+            logical += 1;
             let (start, line) = (pos, b.line_of(pos));
             let mut segments: Vec<Segment> = Vec::new();
             let end = loop {
@@ -204,15 +329,32 @@ impl Editor {
                     break pos;
                 }
                 let mut chunk_end = b.next_char_property_change(pos).min(line_end);
-                let syntax_face = syntax.at(b, pos, count);
-                chunk_end = syntax.next_change(b, pos, chunk_end, count);
-                let mut faces = self.faces_at(b, pos);
-                faces.extend(syntax_face.map(String::from));
-                let style = styles.entry(faces).or_insert_with_key(|f| self.style_for(f, dark)).clone();
+                let style = match dark {
+                    Some(dark) => {
+                        let syntax_face = syntax.at(b, pos, hint);
+                        chunk_end = syntax.next_change(b, pos, chunk_end, hint);
+                        let mut faces = self.faces_at(b, pos);
+                        faces.extend(syntax_face.map(String::from));
+                        styles.entry(faces).or_insert_with_key(|f| self.style_for(f, dark)).clone()
+                    }
+                    None => Style::default(),
+                };
                 segments.push(Segment { start: pos, text: b.slice(pos..chunk_end), style, ellipsis: false });
                 pos = chunk_end;
             };
-            rows.push(Row { line, start, end, segments });
+            let row = Row { line, start, end, segments, continued: false };
+            match wrap {
+                Some(wrap) => {
+                    let tab_width = self.tab_width_in(b);
+                    let wrapped = wrap_row(row, wrap, tab_width);
+                    let room = count - rows.len();
+                    rows.extend(wrapped.into_iter().take(room).map(|mut r| {
+                        r.line = b.line_of(r.start);
+                        r
+                    }));
+                }
+                None => rows.push(row),
+            }
             if end >= len {
                 break;
             }
@@ -235,6 +377,98 @@ impl Editor {
         }
         faces
     }
+}
+
+/// Splits a row of text into screen rows no wider than the wrap width, at
+/// the last space before the edge with word wrap, otherwise at the edge.
+/// Tabs are measured from the start of each screen row. An ellipsis is
+/// never split.
+fn wrap_row(row: Row, wrap: Wrap, tab_width: usize) -> Vec<Row> {
+    // Every character of the row, as (segment, index in the segment).
+    let items: Vec<(usize, usize)> = row
+        .segments
+        .iter()
+        .enumerate()
+        .flat_map(|(s, seg)| (0..seg.text.chars().count()).map(move |i| (s, i)))
+        .collect();
+    let chars: Vec<Vec<char>> = row.segments.iter().map(|s| s.text.chars().collect()).collect();
+    let char_of = |k: usize| chars[items[k].0][items[k].1];
+    let in_ellipsis = |k: usize| row.segments[items[k].0].ellipsis;
+    let mut scratch = String::new();
+    let mut width_of = |c: char, col: usize| {
+        scratch.clear();
+        crate::display::render_char(c, col, tab_width, &mut scratch)
+    };
+    let mut breaks = Vec::new();
+    let (mut row_start, mut col, mut last_space) = (0, 0, None);
+    let mut k = 0;
+    while k < items.len() {
+        let w = width_of(char_of(k), col);
+        if col + w > wrap.width && k > row_start {
+            let mut at = match last_space {
+                Some(space) if wrap.words && space > row_start => space,
+                _ => k,
+            };
+            // Back to the start of an ellipsis, or past it if it starts the row.
+            while at > row_start && in_ellipsis(at) && items[at - 1].0 == items[at].0 {
+                at -= 1;
+            }
+            if at == row_start {
+                at = k;
+                while at < items.len() && in_ellipsis(at) && at > 0 && items[at - 1].0 == items[at].0 {
+                    at += 1;
+                }
+            }
+            if at >= items.len() {
+                break;
+            }
+            breaks.push(at);
+            row_start = at;
+            last_space = None;
+            col = 0;
+            k = at;
+            continue;
+        }
+        col += w;
+        if wrap.words && matches!(char_of(k), ' ' | '\t') {
+            last_space = Some(k + 1);
+        }
+        k += 1;
+    }
+    if breaks.is_empty() {
+        return vec![row];
+    }
+    let position_of = |k: usize| {
+        let (s, i) = items[k];
+        let seg = &row.segments[s];
+        if seg.ellipsis { seg.start } else { seg.start + i }
+    };
+    let mut bounds = vec![0];
+    bounds.extend(&breaks);
+    bounds.push(items.len());
+    let mut out = Vec::new();
+    for (n, pair) in bounds.windows(2).enumerate() {
+        let (from, to) = (pair[0], pair[1]);
+        let mut segments: Vec<Segment> = Vec::new();
+        for k in from..to {
+            let (s, i) = items[k];
+            let seg = &row.segments[s];
+            match segments.last_mut() {
+                Some(last) if k > from && items[k - 1].0 == s => last.text.push(chars[s][i]),
+                _ => segments.push(Segment {
+                    start: if seg.ellipsis { seg.start } else { seg.start + i },
+                    text: chars[s][i].to_string(),
+                    style: seg.style.clone(),
+                    ellipsis: seg.ellipsis,
+                }),
+            }
+        }
+        let last = n + 2 == bounds.len();
+        let start = if n == 0 { row.start } else { position_of(from) };
+        let end = if last { row.end } else { position_of(to) };
+        out.push(Row { line: row.line, start, end, segments, continued: !last });
+    }
+    out
 }
 
 /// The faces tree-sitter gives a stretch of the buffer.

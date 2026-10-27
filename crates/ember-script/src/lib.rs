@@ -753,6 +753,17 @@ fn install_native_windows<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs
         })?,
     )?;
     native.set(
+        "screenLine",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pos: usize| {
+            let (start, end, continued) = with_editor(&ctx, |ed| Ok(ed.screen_line(pos)))?;
+            let object = Object::new(ctx.clone())?;
+            object.set("start", start)?;
+            object.set("end", end)?;
+            object.set("continued", continued)?;
+            Ok::<_, rquickjs::Error>(object)
+        })?,
+    )?;
+    native.set(
         "windowBuffer",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64| {
             with_editor(&ctx, |ed| Ok(ed.window_buffer_name(window).map(str::to_string)))

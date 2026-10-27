@@ -332,3 +332,19 @@ fn double_click_selects_a_word() {
     let start = b.line_start(2);
     assert_eq!(b.active_region(), Some(start + 3..start + 9), "\"editor\"");
 }
+
+#[test]
+fn long_lines_wrap() {
+    let mut ed = Editor::new();
+    let _scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    ed.type_text(
+        "A long line that goes on and on, far past the right edge of the window, so that it has to be \
+         continued on the next screen line, and then once more after that, as Emacs does it.\n\
+         \n\
+         In visual-line-mode, as here, long lines break between words rather than in the middle of them.",
+    );
+    ed.press("M-< C-n C-n").unwrap();
+    ed.call("visual-line-mode", vec![]).unwrap();
+    ed.press("C-p C-p").unwrap();
+    harness(ed, Theme::Dark).snapshot("wrapped_dark");
+}

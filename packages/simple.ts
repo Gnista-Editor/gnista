@@ -156,3 +156,82 @@ const overwriteMode = ember.defineMinorMode({
     "At the end of a line, characters are inserted as usual.",
 });
 ember.bindKey("<insert>", overwriteMode);
+
+// Long lines, after simple.el: toggle-truncate-lines, and visual-line-mode
+// with commands that move by screen lines.
+
+ember.defineCommand({
+  name: "toggle-truncate-lines",
+  doc:
+    "Turn truncate-lines on in this buffer if it is off, and off if it is on.\n\n" +
+    "With truncation, long lines are cut off at the window's edge and the window scrolls sideways; " +
+    "without it, they continue on the next screen line. A positive prefix argument turns truncation on, " +
+    "and zero or a negative one turns it off.",
+  run: () => {
+    const arg = ember.prefixArg();
+    const on = arg === null ? !ember.variable("truncate-lines") : ember.prefixNumericValue(arg) > 0;
+    ember.setVariable("truncate-lines", on);
+    ember.message(`Truncate long lines ${on ? "enabled" : "disabled"}`);
+  },
+});
+
+const beginningOfVisualLine = ember.defineCommand({
+  name: "beginning-of-visual-line",
+  doc: "Move point to the start of the screen line it is on, which is not the start of its line where a long line continues.",
+  run: () => {
+    ember.gotoChar(ember.screenLine(ember.point()).start);
+  },
+});
+
+const endOfVisualLine = ember.defineCommand({
+  name: "end-of-visual-line",
+  doc:
+    "Move point to the end of the screen line it is on.\n\n" +
+    "Where the line continues on the next screen line, point stops before the last character, which shows where the line breaks.",
+  run: () => {
+    const line = ember.screenLine(ember.point());
+    ember.gotoChar(line.continued ? Math.max(line.start, line.end - 1) : line.end);
+  },
+});
+
+const killVisualLine = ember.defineCommand({
+  name: "kill-visual-line",
+  doc:
+    "Kill the rest of the screen line, or the newline if point is at the end of a line.\n\n" +
+    "Where the line continues, it kills to where the next screen line starts.",
+  run: () => {
+    const point = ember.point();
+    const line = ember.screenLine(point);
+    if (point >= line.end) {
+      ember.call("kill-line");
+    } else {
+      // kill-region kills between point and the mark; the mark is put back after.
+      const mark = ember.mark();
+      ember.setMark(line.end);
+      ember.call("kill-region");
+      ember.setMark(mark ?? null);
+    }
+  },
+});
+
+ember.defineMinorMode({
+  name: "visual-line-mode",
+  lighter: " Wrap",
+  doc:
+    "Continue long lines at word boundaries, and make C-a, C-e and C-k work on screen lines.\n\n" +
+    "It turns word-wrap on in the buffer and turns truncate-lines off.",
+  bindings: {
+    "C-a": beginningOfVisualLine,
+    "C-e": endOfVisualLine,
+    "C-k": killVisualLine,
+  },
+  onChange: (on) => {
+    if (on) {
+      ember.setVariable("word-wrap", true);
+      ember.setVariable("truncate-lines", false);
+    } else {
+      ember.killLocalVariable("word-wrap");
+      ember.killLocalVariable("truncate-lines");
+    }
+  },
+});

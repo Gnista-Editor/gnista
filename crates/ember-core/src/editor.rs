@@ -983,13 +983,27 @@ impl Editor {
     /// Scrolls the selected window so point is visible, recentring when it
     /// has moved off screen.
     pub fn ensure_point_visible(&mut self) {
-        let height = self.viewport_height() as i64;
+        let height = self.viewport_height();
         let b = self.window_buffer();
+        let wrap = self.wrap_in(self.selected_window, b);
         let point_row = self.row_line_in(b, b.line_of(b.point()));
         let mut top = self.row_line_in(b, b.top_line.min(b.line_count() - 1));
-        let bottom = self.move_rows_in(b, top, height - 1).0;
-        if point_row < top || point_row > bottom {
-            top = self.move_rows_in(b, point_row, -(height / 2)).0;
+        // Screen rows from the top of the window down to point's, counting
+        // continued lines, up to the window's height.
+        let mut visible = point_row >= top;
+        if visible {
+            let (_, k, _) = self.screen_position(b, b.point(), wrap);
+            let (mut line, mut rows) = (top, k);
+            while line < point_row && rows < height {
+                rows += self.screen_height_in(b, line, wrap);
+                line = self.move_rows_in(b, line, 1).0;
+            }
+            visible = rows < height;
+        }
+        if !visible {
+            let (_, k, _) = self.screen_position(b, b.point(), wrap);
+            let back = (height / 2).saturating_sub(k) as i64;
+            top = if back == 0 { point_row } else { self.move_screen_rows_in(b, point_row, -back, wrap).0 };
         }
         self.window_buffer_mut().top_line = top;
     }

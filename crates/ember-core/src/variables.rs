@@ -335,6 +335,28 @@ pub(crate) fn install(ed: &mut Editor) {
             false,
         )
         .local(),
+        Variable::new(
+            "truncate-lines",
+            "Whether long lines are cut off at the window's edge rather than continued on the next screen line.\n\nWhen on, the window scrolls sideways to keep point in view. The command toggle-truncate-lines changes it.",
+            false,
+        )
+        .local(),
+        Variable::new(
+            "line-move-visual",
+            "Whether C-n and C-p move by screen lines where long lines are continued, rather than by lines of text.",
+            true,
+        ),
+        Variable::new(
+            "word-wrap",
+            "Whether continued lines break at spaces and tabs rather than in the middle of a word.\n\nvisual-line-mode turns it on.",
+            false,
+        )
+        .local(),
+        Variable::new(
+            "truncate-partial-width-windows",
+            "Windows narrower than this many columns that share the frame's width with others truncate lines, whatever truncate-lines says.\n\nSet it to 0 to let narrow windows continue lines too.",
+            50.0,
+        ),
     ] {
         ed.define_variable(var);
     }
