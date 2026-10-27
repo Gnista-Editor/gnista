@@ -413,6 +413,8 @@ declare global {
       "mark-whole-buffer": [];
       /**
        * Complete the minibuffer input as far as it is unambiguous.
+       *
+       * Which names match the input is up to completion-styles.
        */
       "minibuffer-complete": [];
       /**
@@ -489,6 +491,12 @@ declare global {
        * Insert a newline, or as many as the prefix argument says.
        */
       "newline": [];
+      /**
+       * Replace the minibuffer input with the next answer in the prompt's history, or what was typed.
+       *
+       * With a prefix argument, go that many answers on.
+       */
+      "next-history-element": [];
       /**
        * Move point down a line, or as many as the prefix argument says.
        *
@@ -605,6 +613,12 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "overwrite-mode": [];
+      /**
+       * Replace the minibuffer input with the answer before, from the prompt's history.
+       *
+       * With a prefix argument, go that many answers back.
+       */
+      "previous-history-element": [];
       /**
        * Move point up a line, or as many as the prefix argument says.
        *
@@ -946,6 +960,10 @@ declare global {
        */
       "buffer-invisibility-spec": Value;
       /**
+       * Buffer names answered in the minibuffer, newest first.
+       */
+      "buffer-name-history": Value;
+      /**
        * Whether searches match upper and lower case letters to each other.
        */
       "case-fold-search": Value;
@@ -955,6 +973,12 @@ declare global {
        * Defined in packages/replace.ts.
        */
       "case-replace": Value;
+      /**
+       * How minibuffer input matches what it completes to, as a list of styles tried in order until one matches.
+       *
+       * basic matches names that start with the input. partial-completion matches each word of the input, up to a -, _, / or ., against the start of a word in turn, so f-f matches find-file. substring matches names containing the input, and flex names containing its characters in order.
+       */
+      "completion-styles": Value;
       /**
        * Whether DEL and <delete> delete the active region rather than one character.
        *
@@ -968,9 +992,25 @@ declare global {
        */
       "delete-selection-mode": Value;
       /**
+       * Commands run with M-x, newest first.
+       */
+      "extended-command-history": Value;
+      /**
+       * Face names answered in the minibuffer, newest first.
+       */
+      "face-name-history": Value;
+      /**
+       * File names answered in the minibuffer, newest first.
+       */
+      "file-name-history": Value;
+      /**
        * Whether the terminal's background is "dark" or "light", for choosing face colours there. The graphical front end follows the system instead.
        */
       "frame-background-mode": Value;
+      /**
+       * How many earlier answers each minibuffer history keeps.
+       */
+      "history-length": Value;
       /**
        * How many other matches incremental search highlights at most, around point.
        *
@@ -985,6 +1025,10 @@ declare global {
        * The current buffer's major mode, as the name of the command that turns it on.
        */
       "major-mode": Value;
+      /**
+       * Earlier answers to minibuffer prompts for text, newest first.
+       */
+      "minibuffer-history": Value;
       /**
        * The current buffer's major mode as the mode line shows it.
        */
@@ -1012,6 +1056,12 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "overwrite-mode": Value;
+      /**
+       * Strings and replacements answered to query-replace and the other replace commands, newest first.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "query-replace-history": Value;
       /**
        * Regular expressions searched for with incremental search, most recent first.
        *
@@ -1044,6 +1094,10 @@ declare global {
        * Set it to 0 to let narrow windows continue lines too.
        */
       "truncate-partial-width-windows": Value;
+      /**
+       * Variable names answered in the minibuffer, newest first.
+       */
+      "variable-name-history": Value;
       /**
        * Whether Visual-Line mode is on in this buffer. Use the command visual-line-mode to change it.
        *
@@ -1401,6 +1455,12 @@ declare global {
       kind?: ParamKind;
       /** The minibuffer prompt. Defaults to the name followed by ": ". */
       prompt?: string;
+      /**
+       * The variable holding earlier answers, which M-p and M-n go through in
+       * the minibuffer. Defaults to the kind's: minibuffer-history for strings,
+       * extended-command-history for commands, file-name-history and so on.
+       */
+      history?: string;
     }
 
     interface CommandDefinition {

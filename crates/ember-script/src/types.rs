@@ -36,6 +36,12 @@ const API: &str = r##"
     kind?: ParamKind;
     /** The minibuffer prompt. Defaults to the name followed by ": ". */
     prompt?: string;
+    /**
+     * The variable holding earlier answers, which M-p and M-n go through in
+     * the minibuffer. Defaults to the kind's: minibuffer-history for strings,
+     * extended-command-history for commands, file-name-history and so on.
+     */
+    history?: string;
   }
 
   interface CommandDefinition {

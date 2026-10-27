@@ -16,6 +16,12 @@ ember.defineFace({
 });
 
 ember.defineVariable({
+  name: "query-replace-history",
+  doc: "Strings and replacements answered to query-replace and the other replace commands, newest first.",
+  value: [],
+});
+
+ember.defineVariable({
   name: "case-replace",
   doc:
     "Whether replacing follows the case of the text replaced, when the search ignores case: " +
@@ -264,8 +270,8 @@ const queryReplace = ember.defineCommand({
     "q or RET stops. Case is ignored unless the string has a capital letter, and then replacements follow " +
     "the case of what they replace. Works from point to the end of the buffer, or on the region if it is active.",
   params: [
-    { name: "from", prompt: "Query replace: " },
-    { name: "to", prompt: "Query replace with: " },
+    { name: "from", prompt: "Query replace: ", history: "query-replace-history" },
+    { name: "to", prompt: "Query replace with: ", history: "query-replace-history" },
   ],
   run: (from, to) => start(from, to, false, true),
 });
@@ -276,8 +282,8 @@ const queryReplaceRegexp = ember.defineCommand({
     "Replace matches of a regular expression, asking at each one.\n\n" +
     "In the replacement, \\& is the whole match and \\1 to \\9 its groups. See query-replace for the keys.",
   params: [
-    { name: "regexp", prompt: "Query replace regexp: " },
-    { name: "to", prompt: "Query replace regexp with: " },
+    { name: "regexp", prompt: "Query replace regexp: ", history: "query-replace-history" },
+    { name: "to", prompt: "Query replace regexp with: ", history: "query-replace-history" },
   ],
   run: (from, to) => start(from, to, true, true),
 });
@@ -286,8 +292,8 @@ ember.defineCommand({
   name: "replace-string",
   doc: "Replace every match of a string from point to the end of the buffer, or in the active region.",
   params: [
-    { name: "from", prompt: "Replace string: " },
-    { name: "to", prompt: "Replace string with: " },
+    { name: "from", prompt: "Replace string: ", history: "query-replace-history" },
+    { name: "to", prompt: "Replace string with: ", history: "query-replace-history" },
   ],
   run: (from, to) => start(from, to, false, false),
 });
@@ -298,8 +304,8 @@ ember.defineCommand({
     "Replace every match of a regular expression from point to the end of the buffer, or in the active region.\n\n" +
     "In the replacement, \\& is the whole match and \\1 to \\9 its groups.",
   params: [
-    { name: "regexp", prompt: "Replace regexp: " },
-    { name: "to", prompt: "Replace regexp with: " },
+    { name: "regexp", prompt: "Replace regexp: ", history: "query-replace-history" },
+    { name: "to", prompt: "Replace regexp with: ", history: "query-replace-history" },
   ],
   run: (from, to) => start(from, to, true, false),
 });

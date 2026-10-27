@@ -13,13 +13,19 @@ use crate::key::{Key, KeyCode, MouseKind, format_keys};
 use crate::keymap::{Keymap, Lookup};
 use crate::faces::{self, Face};
 use crate::modes::{MinorMode, NamedKeymap};
-use crate::variables::{self, HookEntry, Variable};
+use crate::variables::{self, HookEntry, Value, Variable};
 use crate::prefix::{PrefixArg, prefix_numeric_value};
 
 /// A minibuffer prompt waiting for the user to type an argument.
 pub(crate) struct Prompt {
     pub(crate) text: String,
     pub(crate) kind: ParamKind,
+    /// The variable with earlier answers.
+    pub(crate) history: String,
+    /// How far back in the history M-p has gone: 0 for the input typed.
+    pub(crate) history_pos: usize,
+    /// The input typed, kept while M-p shows history.
+    pub(crate) typed: String,
 }
 
 /// A command as it last ran, so it can be repeated (Emacs's
@@ -372,7 +378,14 @@ impl Editor {
                 self.message = Some(param.prompt.clone());
             } else {
                 let initial = self.initial_input(param.kind);
-                self.prompt = Some(Prompt { text: param.prompt.clone(), kind: param.kind });
+                let history = param.history.clone().unwrap_or_else(|| param.kind.history().to_string());
+                self.prompt = Some(Prompt {
+                    text: param.prompt.clone(),
+                    kind: param.kind,
+                    history,
+                    history_pos: 0,
+                    typed: String::new(),
+                });
                 self.minibuffer.set_text(&initial);
                 self.minibuffer.set_point(self.minibuffer.len());
             }
@@ -952,30 +965,77 @@ impl Editor {
         }
     }
 
-    /// Completion candidates for minibuffer input of a given kind.
+    /// Completion candidates for minibuffer input of a given kind, matched
+    /// by the styles in `completion-styles`. File names complete by prefix.
     pub fn completions(&self, kind: ParamKind, input: &str) -> Vec<String> {
-        match kind {
-            ParamKind::Command => self
-                .command_names()
-                .filter(|name| name.starts_with(input))
-                .map(str::to_string)
-                .collect(),
-            ParamKind::Buffer => self
-                .buffers
-                .iter()
-                .map(|b| b.name.clone())
-                .filter(|name| name.starts_with(input))
-                .collect(),
-            ParamKind::File => file_completions(input),
-            ParamKind::Variable => self
-                .variables
-                .keys()
-                .filter(|name| name.starts_with(input))
-                .cloned()
-                .collect(),
-            ParamKind::Face => self.faces.keys().filter(|name| name.starts_with(input)).cloned().collect(),
-            ParamKind::String | ParamKind::Keys => Vec::new(),
+        let names: Vec<String> = match kind {
+            ParamKind::Command => self.command_names().map(str::to_string).collect(),
+            ParamKind::Buffer => self.buffers.iter().map(|b| b.name.clone()).collect(),
+            ParamKind::File => return file_completions(input),
+            ParamKind::Variable => self.variables.keys().cloned().collect(),
+            ParamKind::Face => self.faces.keys().cloned().collect(),
+            ParamKind::String | ParamKind::Keys => return Vec::new(),
+        };
+        crate::completion::complete(&self.completion_styles(), input, &names)
+    }
+
+    /// The styles in `completion-styles`, in order.
+    fn completion_styles(&self) -> Vec<String> {
+        match self.variable("completion-styles") {
+            Some(Value::List(items)) => items.iter().filter_map(|v| v.as_str().map(str::to_string)).collect(),
+            _ => vec!["basic".to_string()],
         }
+    }
+
+    /// Adds an answer to a history variable, newest first, as the minibuffer
+    /// does on RET: not an empty answer or a repeat of the newest, and no
+    /// more than `history-length` of them.
+    pub(crate) fn add_to_history(&mut self, history: &str, answer: &str) {
+        if answer.is_empty() {
+            return;
+        }
+        let mut items = match self.variable(history) {
+            Some(Value::List(items)) => items,
+            _ => Vec::new(),
+        };
+        if items.first().and_then(Value::as_str) == Some(answer) {
+            return;
+        }
+        items.insert(0, Value::Str(answer.to_string()));
+        let max = self.number_in(self.window_buffer(), "history-length", 100.0).max(1.0) as usize;
+        items.truncate(max);
+        if self.variables.contains_key(history) {
+            self.set_variable(history, Value::List(items));
+        } else {
+            self.define_variable(Variable::new(history, "Earlier answers to minibuffer prompts, newest first.", Value::List(items)));
+        }
+    }
+
+    /// Shows an earlier or later answer in the minibuffer: `step` back
+    /// through the history if positive, forward if negative.
+    pub(crate) fn minibuffer_history(&mut self, step: i64) -> Result<()> {
+        let prompt = self.prompt.as_ref().ok_or_else(|| Error::new("Not in the minibuffer"))?;
+        let items: Vec<String> = match self.variable(&prompt.history) {
+            Some(Value::List(items)) => items.iter().filter_map(|v| v.as_str().map(str::to_string)).collect(),
+            _ => Vec::new(),
+        };
+        let pos = prompt.history_pos as i64 + step;
+        if pos > items.len() as i64 {
+            return Err(Error::new("Beginning of history; no preceding item"));
+        }
+        if pos < 0 {
+            return Err(Error::new("End of history; no default available"));
+        }
+        let input = self.minibuffer.slice(0..self.minibuffer.len());
+        let prompt = self.prompt.as_mut().expect("checked above");
+        if prompt.history_pos == 0 {
+            prompt.typed = input;
+        }
+        prompt.history_pos = pos as usize;
+        let text = if pos == 0 { prompt.typed.clone() } else { items[pos as usize - 1].clone() };
+        self.minibuffer.set_text(&text);
+        self.minibuffer.set_point(self.minibuffer.len());
+        Ok(())
     }
 
     /// Candidates for the open prompt as they should be listed: file names

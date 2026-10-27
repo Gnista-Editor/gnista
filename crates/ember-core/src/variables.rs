@@ -342,6 +342,21 @@ pub(crate) fn install(ed: &mut Editor) {
         )
         .local(),
         Variable::new(
+            "completion-styles",
+            "How minibuffer input matches what it completes to, as a list of styles tried in order until one matches.\n\n\
+             basic matches names that start with the input. partial-completion matches each word of the input, \
+             up to a -, _, / or ., against the start of a word in turn, so f-f matches find-file. substring \
+             matches names containing the input, and flex names containing its characters in order.",
+            Value::List(["basic", "partial-completion", "emacs22"].map(|s| Value::Str(s.into())).to_vec()),
+        ),
+        Variable::new("history-length", "How many earlier answers each minibuffer history keeps.", 100.0),
+        Variable::new("minibuffer-history", "Earlier answers to minibuffer prompts for text, newest first.", Value::List(Vec::new())),
+        Variable::new("extended-command-history", "Commands run with M-x, newest first.", Value::List(Vec::new())),
+        Variable::new("file-name-history", "File names answered in the minibuffer, newest first.", Value::List(Vec::new())),
+        Variable::new("buffer-name-history", "Buffer names answered in the minibuffer, newest first.", Value::List(Vec::new())),
+        Variable::new("variable-name-history", "Variable names answered in the minibuffer, newest first.", Value::List(Vec::new())),
+        Variable::new("face-name-history", "Face names answered in the minibuffer, newest first.", Value::List(Vec::new())),
+        Variable::new(
             "case-fold-search",
             "Whether searches match upper and lower case letters to each other.",
             true,

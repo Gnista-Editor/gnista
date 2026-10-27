@@ -284,6 +284,9 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
                         return Err(Exception::throw_type(&ctx, &message));
                     };
                     command = command.param(&param_name, kind, &prompt);
+                    if let Some(history) = param.get::<_, Option<String>>("history")? {
+                        command = command.history(&history);
+                    }
                 }
                 with_editor(&ctx, |ed| {
                     ed.define_command(command);

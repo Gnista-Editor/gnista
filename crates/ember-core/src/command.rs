@@ -63,6 +63,18 @@ impl ParamKind {
             ParamKind::Face => "face name",
         }
     }
+
+    /// The history variable answers of this kind go in, by Emacs's names.
+    pub fn history(self) -> &'static str {
+        match self {
+            ParamKind::Command => "extended-command-history",
+            ParamKind::File => "file-name-history",
+            ParamKind::Buffer => "buffer-name-history",
+            ParamKind::Variable => "variable-name-history",
+            ParamKind::Face => "face-name-history",
+            ParamKind::String | ParamKind::Keys => "minibuffer-history",
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -70,6 +82,9 @@ pub struct Param {
     pub name: String,
     pub kind: ParamKind,
     pub prompt: String,
+    /// The variable holding earlier answers, which M-p and M-n go through.
+    /// `None` uses the kind's usual history, as [`ParamKind::history`] says.
+    pub history: Option<String>,
 }
 
 /// An argument value passed to a command.
@@ -145,7 +160,16 @@ impl Command {
             name: name.to_string(),
             kind,
             prompt: prompt.to_string(),
+            history: None,
         });
+        self
+    }
+
+    /// Gives the last parameter added its own history variable.
+    pub fn history(mut self, variable: &str) -> Command {
+        if let Some(param) = self.params.last_mut() {
+            param.history = Some(variable.to_string());
+        }
         self
     }
 

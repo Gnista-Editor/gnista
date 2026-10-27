@@ -15,7 +15,7 @@ These tests check that Ember behaves like GNU Emacs by running the same keys on 
    { "name": "kill-line-twice-kills-the-newline", "text": "one\ntwo", "keys": "C-k C-k" }
    ```
 
-   `keys` are space separated, in Emacs's `kbd` notation (`C-x C-f`, `M-S-f`, `<f3>`, `SPC`). `point` is optional and counts characters from 0. `modes` is optional: commands that turn modes on before the keys, such as `["delete-selection-mode"]`, called with a prefix argument of 1 in both editors. `platform` is optional, for cases that only hold on one platform, as an Emacs `system-type` such as `"darwin"`.
+   `keys` are space separated, in Emacs's `kbd` notation (`C-x C-f`, `M-S-f`, `<f3>`, `SPC`). `point` is optional and counts characters from 0. `modes` is optional: commands that turn modes on before the keys, such as `["delete-selection-mode"]`, called with a prefix argument of 1 in both editors. `call` is optional: a command and its arguments, called before the keys, as in `["query-replace", "foo", "bar"]`, for commands that would otherwise prompt. `platform` is optional, for cases that only hold on one platform, as an Emacs `system-type` such as `"darwin"`.
 
 2. Record what Emacs does:
 
@@ -36,9 +36,11 @@ Each case starts in a fresh Fundamental mode buffer, with no mark and an empty k
 Batch Emacs has no window system, so some keys act as they would on a terminal rather than in GUI Emacs:
 
 - `<delete>` is translated to `DEL`, so it deletes backwards. GUI Emacs, and Ember, delete forwards. Don't write cases with `<delete>`.
-- The minibuffer reads from standard input in batch mode, not from the typed keys, so cases cannot use it: no `M-x`, `C-x C-f` or other prompts. A case that prompts makes the recorder wait forever. Ember's own tests cover the minibuffer.
+- The minibuffer reads from standard input in batch mode, not from the typed keys, so cases cannot use it: no `M-x`, `C-x C-f` or other prompts. A case that prompts makes the recorder wait forever. Give the command its arguments with `call` instead; keys it reads itself, as `query-replace` reads `y` and `n`, still work. Ember's own tests cover the minibuffer.
+- `C-g` typed as a key makes batch Emacs wait forever too, so cases cannot quit isearch or query-replace with it.
 - `this-single-command-keys` sees only the last key of a sequence in batch mode, so commands that look at it act differently. In particular `C-x e` installs no repeat key, so `C-x e e` cannot be recorded. Ember's own tests cover it.
-- The window has a fixed small size, so leave scrolling and window commands to Ember's own tests.
+- The window is 80 columns by 24 lines. Splitting and selecting windows works, so window cases can check each window's point, but leave scrolling to Ember's own tests.
+- Text is not laid out, so `C-n` moves by lines of text even where long lines would wrap, and `word-wrap` has no effect. Ember's own tests cover line wrapping.
 - Display, faces and the mouse are invisible to the oracle. The GUI's snapshot tests cover those.
 
 Golden files record the Emacs version and platform. Emacs on macOS binds `<home>` and `<end>` to the ends of the buffer, and so does Ember on macOS; cases like that are marked `"platform": "darwin"`.

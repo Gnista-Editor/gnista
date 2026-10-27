@@ -877,27 +877,51 @@ fn minibuffer(ed: &mut Editor) {
         } else {
             input
         };
-        ed.prompt = None;
+        let history = ed.prompt.take().map(|p| p.history).unwrap_or_default();
+        ed.add_to_history(&history, &value);
         ed.minibuffer.set_text("");
         ed.supply_arg(Arg::Str(value));
         Ok(())
     });
-    def(ed, "minibuffer-complete", "Complete the minibuffer input as far as it is unambiguous.", |ed, _| {
-        let kind = ed.prompt.as_ref().ok_or_else(|| Error::new("Not in the minibuffer"))?.kind;
-        let input = ed.minibuffer.slice(0..ed.minibuffer.len());
-        let candidates = ed.completions(kind, &input);
-        if candidates.is_empty() {
-            return err("[No match]");
-        }
-        let common = common_prefix(&candidates);
-        if common.len() > input.len() {
-            ed.minibuffer.set_text(&common);
-            ed.minibuffer.set_point(ed.minibuffer.len());
-        } else if candidates.len() == 1 {
-            ed.message("[Sole completion]");
-        }
-        Ok(())
-    });
+    def(
+        ed,
+        "minibuffer-complete",
+        "Complete the minibuffer input as far as it is unambiguous.\n\nWhich names match the input is up to completion-styles.",
+        |ed, _| {
+            let kind = ed.prompt.as_ref().ok_or_else(|| Error::new("Not in the minibuffer"))?.kind;
+            let input = ed.minibuffer.slice(0..ed.minibuffer.len());
+            let candidates = ed.completions(kind, &input);
+            if candidates.is_empty() {
+                return err("[No match]");
+            }
+            let common = crate::completion::common_prefix(&candidates);
+            let completed = match candidates.as_slice() {
+                [only] => only.clone(),
+                _ => common,
+            };
+            if completed != input && completed.chars().count() >= input.chars().count() {
+                ed.minibuffer.set_text(&completed);
+                ed.minibuffer.set_point(ed.minibuffer.len());
+            } else if candidates.len() == 1 {
+                ed.message("[Sole completion]");
+            } else if candidates.contains(&input) {
+                ed.message("[Complete, but not unique]");
+            }
+            Ok(())
+        },
+    );
+    def(
+        ed,
+        "previous-history-element",
+        "Replace the minibuffer input with the answer before, from the prompt's history.\n\nWith a prefix argument, go that many answers back.",
+        |ed, _| ed.minibuffer_history(ed.prefix_numeric()),
+    );
+    def(
+        ed,
+        "next-history-element",
+        "Replace the minibuffer input with the next answer in the prompt's history, or what was typed.\n\nWith a prefix argument, go that many answers on.",
+        |ed, _| ed.minibuffer_history(-ed.prefix_numeric()),
+    );
     ed.define_command(
         Command::new(
             "execute-extended-command",
@@ -910,21 +934,6 @@ fn minibuffer(ed: &mut Editor) {
         )
         .param("command", ParamKind::Command, "M-x "),
     );
-}
-
-fn common_prefix(items: &[String]) -> String {
-    let Some(first) = items.first() else { return String::new() };
-    let mut len = first.len();
-    for item in &items[1..] {
-        len = first
-            .char_indices()
-            .zip(item.chars())
-            .take_while(|((_, a), b)| a == b)
-            .last()
-            .map_or(0, |((i, a), _)| i + a.len_utf8())
-            .min(len);
-    }
-    first[..len].to_string()
 }
 
 fn help(ed: &mut Editor) {
@@ -1068,6 +1077,10 @@ fn bind_defaults(ed: &mut Editor) {
         ("RET", "exit-minibuffer"),
         ("TAB", "minibuffer-complete"),
         ("C-g", "keyboard-quit"),
+        ("M-p", "previous-history-element"),
+        ("M-n", "next-history-element"),
+        ("<up>", "previous-history-element"),
+        ("<down>", "next-history-element"),
     ] {
         ed.minibuffer_map.bind_str(keys, command);
     }

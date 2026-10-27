@@ -63,6 +63,7 @@
           name: String(p.name),
           kind: p.kind ?? "string",
           prompt: p.prompt ?? `${p.name}: `,
+          history: p.history === undefined ? null : String(p.history),
         })),
         run,
       );

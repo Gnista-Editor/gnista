@@ -69,6 +69,8 @@ Progress: slice 1 is done ([ADR 0007](adr/0007-text-properties-faces-and-display
 
 Exit: oracle cases for searching and replacing.
 
+Done ([ADR 0011](adr/0011-search-and-the-minibuffer.md)). Regular expressions in Emacs's syntax are translated to the `regex` crate. `isearch.ts` and `replace.ts` follow `isearch.el` and `replace.el`, built on an overriding keymap with a default binding and unread keys. Prompts have Emacs's history variables, with `M-p` and `M-n`, and `completion-styles` adds partial, substring and flex completion. Oracle cases can call a command with arguments before the keys, which the replace cases need: 213 of 215 cases match.
+
 **5. Org mode as a TypeScript package.**
 - Headings, and folding with `TAB` and `S-TAB`.
 - Structure editing with `M-<arrow>` keys.

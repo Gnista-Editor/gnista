@@ -6,6 +6,7 @@
 
 mod buffer;
 mod command;
+mod completion;
 mod commands;
 pub mod display;
 mod editor;
