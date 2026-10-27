@@ -20,7 +20,7 @@ declare global {
 ";
 
 /// Everything in the namespace that does not depend on the registry.
-const API: &str = r#"
+const API: &str = r##"
   type CommandName = keyof Commands;
 
   const definedCommand: unique symbol;
@@ -28,7 +28,7 @@ const API: &str = r#"
   type DefinedCommand = string & { readonly [definedCommand]: true };
 
   /** How the minibuffer reads a parameter when the command runs from a key or M-x. */
-  type ParamKind = "string" | "file" | "buffer" | "command" | "keys" | "variable";
+  type ParamKind = "string" | "file" | "buffer" | "command" | "keys" | "variable" | "face";
 
   interface Param {
     name: string;
@@ -261,13 +261,111 @@ const API: &str = r#"
   function calledInteractively(): boolean;
   /** Whether the region is active: shown, and what region commands act on (Emacs's region-active-p). */
   function regionActive(): boolean;
+
+  type FaceName = keyof Faces;
+  /** A face's own attributes. Colours are palette names, such as "accent" or "muted", or "#rrggbb" and "#rrggbbaa". */
+  interface FaceAttributes {
+    foreground?: string;
+    background?: string;
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
+    strike?: boolean;
+    /** A face to take the attributes this one does not set from. */
+    inherit?: FaceName | (string & {});
+  }
+  interface FaceDefinition {
+    /** Lowercase words joined by dashes, ending in -face for faces of a mode: "outline-1". */
+    name: string;
+    doc?: string;
+    /** Attributes for both light and dark backgrounds. */
+    attributes?: FaceAttributes;
+    /** What changes on a dark background. */
+    dark?: FaceAttributes;
+    /** What changes on a light background. */
+    light?: FaceAttributes;
+  }
+  /** Define a face (Emacs's defface). A face that exists keeps its attributes, which may be customised. */
+  function defineFace(definition: FaceDefinition): void;
+  /** Change some of a face's attributes, for both backgrounds or one (Emacs's set-face-attribute). */
+  function setFaceAttribute(
+    name: FaceName | (string & {}),
+    attributes: FaceAttributes,
+    options?: { background?: "both" | "dark" | "light" },
+  ): void;
+  /** A face's attributes with what it inherits filled in, for a dark background unless told otherwise. */
+  function faceAttributes(name: FaceName | (string & {}), options?: { dark?: boolean }): FaceAttributes;
+  /** A face's documentation and own attributes, or undefined if there is no such face. */
+  function faceInfo(name: FaceName | (string & {})):
+    | { doc: string; source?: string; attributes: FaceAttributes; dark: FaceAttributes; light: FaceAttributes }
+    | undefined;
+
+  /**
+   * Set a text property on the characters from start up to end (Emacs's
+   * put-text-property). "face" names a face or a list of faces, earlier ones
+   * winning; "invisible" hides text, as buffer-invisibility-spec says.
+   */
+  function putTextProperty(start: number, end: number, name: string, value: Value): void;
+  function removeTextProperty(start: number, end: number, name: string): void;
+  /** The text properties of the character at a position. */
+  function textPropertiesAt(position: number): { [name: string]: Value };
+  function getTextProperty(position: number, name: string): Value | undefined;
+  /** A property from the highest priority overlay that has it, otherwise from the text (Emacs's get-char-property). */
+  function charProperty(position: number, name: string): Value | undefined;
+  /** The next position where text properties change, if any. */
+  function nextPropertyChange(position: number): number | undefined;
+  /** The next position where text properties or overlays change. */
+  function nextCharPropertyChange(position: number): number;
+
+  /**
+   * Lay an overlay over the text from start up to end, with properties such
+   * as "face", "invisible", "priority" (higher wins) and "evaporate" (deleted
+   * when it becomes empty). Its ends move with edits. Returns its id.
+   */
+  function makeOverlay(start: number, end: number, properties?: { [name: string]: Value }): number;
+  function overlayPut(overlay: number, name: string, value: Value): void;
+  function overlayGet(overlay: number, name: string): Value | undefined;
+  function overlayStart(overlay: number): number | undefined;
+  function overlayEnd(overlay: number): number | undefined;
+  function moveOverlay(overlay: number, start: number, end: number): void;
+  function deleteOverlay(overlay: number): void;
+  /** Overlays overlapping the range, and empty ones inside it. */
+  function overlaysIn(start: number, end: number): number[];
+  /** Overlays covering the character at a position. */
+  function overlaysAt(position: number): number[];
+
+  /** Whether the character at a position is hidden. */
+  function invisibleAt(position: number): boolean;
+  /** How many lines the buffer has, counting the empty line after a final newline. */
+  function lineCount(): number;
+  /** The line, counting from 0, that a position is on. */
+  function lineOf(position: number): number;
+  /** The position where a line starts. */
+  function lineStart(line: number): number;
+  /** The position where a line ends, before its newline. */
+  function lineEnd(line: number): number;
+  /** A line's text, without its newline. */
+  function lineText(line: number): string;
+  /**
+   * How many characters the buffer has. Positions count characters, while
+   * JavaScript string indices count UTF-16 units, which differ for emoji and
+   * other characters outside the Basic Multilingual Plane; work with lines
+   * and positions from these functions rather than indices into bufferText().
+   */
+  function bufferSize(): number;
+  /**
+   * Make text whose invisible property is `name` hidden in this buffer
+   * (Emacs's add-to-invisibility-spec); with `ellipsis`, shown as "...".
+   */
+  function addToInvisibilitySpec(name: string, options?: { ellipsis?: boolean }): void;
+  function removeFromInvisibilitySpec(name: string): void;
 }
 
 var console: {
   /** Show values in the echo area, separated by spaces. */
   log(...values: unknown[]): void;
 };
-"#;
+"##;
 
 /// TypeScript declarations for the `ember` global and every command the editor has now.
 pub fn type_definitions(ed: &Editor) -> String {
@@ -291,6 +389,13 @@ pub fn type_definitions(ed: &Editor) -> String {
     for var in ed.variables().filter(|v| !v.hook) {
         out += &variable_comment(&var.doc, var.source.as_deref(), "    ");
         out += &format!("    \"{}\": Value;\n", escape(&var.name));
+    }
+    out += "  }\n\n";
+    out += "  /** Every face, with its documentation. */\n";
+    out += "  interface Faces {\n";
+    for face in ed.faces() {
+        out += &variable_comment(&face.doc, face.source.as_deref(), "    ");
+        out += &format!("    \"{}\": FaceAttributes;\n", escape(&face.name));
     }
     out += "  }\n\n";
     out += "  /** Every hook, with its documentation. */\n";

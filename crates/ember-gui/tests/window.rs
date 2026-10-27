@@ -15,7 +15,11 @@ fn harness(editor: Editor, theme: Theme) -> Harness<'static, EmberApp> {
         .with_size(vec2(640.0, 360.0))
         .with_theme(theme)
         // Through eframe, as the real window runs, rather than inside a test panel.
-        .build_eframe(move |_cc| EmberApp::new(editor));
+        .build_eframe(move |cc| {
+            // egui's built-in fonts only, so snapshots look the same everywhere.
+            ember_gui::theme::install_fonts(&cc.egui_ctx, false);
+            EmberApp::new(editor)
+        });
     harness.run();
     harness
 }
@@ -175,4 +179,51 @@ fn ctrl_wheel_does_not_scroll() {
     let mut h = harness(long_buffer(), Theme::Dark);
     trackpad(&mut h, -100.0, Modifiers::CTRL);
     assert_eq!(h.state().editor.window_buffer().top_line, 0);
+}
+
+/// An outline with heading faces, a folded subtree and some faces in the text.
+fn faces_and_folding() -> (Editor, ember_script::Scripting) {
+    let mut ed = Editor::new();
+    let scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    ed.window_buffer_mut().set_text(
+        "* Faces and folding\n\
+         Text with a link, some bold, a warning and italics.\n\
+         ** A folded heading\n\
+         Hidden text under it.\n\
+         More hidden text.\n\
+         ** An open heading\n\
+         Text under it.\n\
+         *** A deeper heading\n",
+    );
+    ed.call("outline-mode", vec![]).unwrap();
+    scripting
+        .eval_typescript(
+            &mut ed,
+            "test.ts",
+            r#"
+            const line = ember.lineStart(1);
+            ember.putTextProperty(line + 12, line + 16, "face", "link");
+            ember.putTextProperty(line + 23, line + 27, "face", "bold");
+            ember.putTextProperty(line + 31, line + 38, "face", "warning");
+            ember.putTextProperty(line + 43, line + 50, "face", "italic");
+            ember.gotoChar(ember.lineStart(2));
+            ember.call("outline-hide-subtree");
+            ember.gotoChar(0);
+            "#
+            .into(),
+        )
+        .unwrap();
+    (ed, scripting)
+}
+
+#[test]
+fn faces_and_folding_dark() {
+    let (ed, _scripting) = faces_and_folding();
+    harness(ed, Theme::Dark).snapshot("faces_dark");
+}
+
+#[test]
+fn faces_and_folding_light() {
+    let (ed, _scripting) = faces_and_folding();
+    harness(ed, Theme::Light).snapshot("faces_light");
 }

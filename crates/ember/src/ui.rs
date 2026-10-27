@@ -1,10 +1,12 @@
 //! Draws the editor: one window, the mode line and the echo area.
 
-use ember_core::Editor;
-use ember_core::display::{display_width, render_char};
+use std::ops::Range;
+
+use ember_core::display::{Glyph, cursor_index, display_width, row_glyphs};
+use ember_core::{Color as FaceColor, Editor, Row, Style as FaceStyle, palette};
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Position, Rect};
-use ratatui::style::{Modifier, Style};
+use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 
@@ -26,31 +28,96 @@ pub fn draw(frame: &mut Frame, ed: &Editor) {
     frame.set_cursor_position(echo_cursor.unwrap_or(window_cursor));
 }
 
-/// Draws the window's buffer and returns where point is on screen.
+/// Draws the window's rows and returns where point is on screen.
 fn draw_window(frame: &mut Frame, ed: &Editor, area: Rect) -> Position {
     let b = ed.window_buffer();
-    let tab_width = ed.tab_width();
+    let dark = ed.variable("frame-background-mode").is_none_or(|v| v.as_str() != Some("light"));
     let width = area.width as usize;
-    let point_line = b.line_of(b.point());
-    let point_col = display_width(&b.slice(b.line_start(point_line)..b.point()), tab_width);
+    let rows = ed.window_rows(area.height as usize, dark);
+    let glyph_rows: Vec<Vec<Glyph>> = rows.iter().map(|r| row_glyphs(r, ed.tab_width())).collect();
+    let point = b.point();
+    let point_row = rows.iter().position(|r| r.start <= point && point <= r.end).unwrap_or(0);
+    let point_col: usize = glyph_rows
+        .get(point_row)
+        .map(|g| g[..cursor_index(g, point)].iter().map(|g| g.width).sum())
+        .unwrap_or(0);
     // Scroll horizontally, as Emacs does, when point would be off the right edge.
     let hscroll = if point_col < width { 0 } else { point_col - width / 2 };
     let region = b.active_region();
-    let lines: Vec<Line> = (b.top_line..b.line_count())
-        .take(area.height as usize)
-        .map(|line| {
-            let start = b.line_start(line);
-            // The region's part of this line, in characters from the line's start.
-            let selected = region
-                .as_ref()
-                .filter(|r| r.start <= b.line_end(line) && r.end > start)
-                .map(|r| r.start.max(start) - start..r.end - start);
-            line_spans(&b.line_text(line), hscroll, width, tab_width, selected)
-        })
+    let lines: Vec<Line> = rows
+        .iter()
+        .zip(&glyph_rows)
+        .map(|(row, glyphs)| row_line(row, glyphs, hscroll, width, region.as_ref(), dark))
         .collect();
     frame.render_widget(Paragraph::new(lines), area);
-    let row = point_line.saturating_sub(b.top_line).min(area.height as usize - 1);
-    Position::new(area.x + (point_col - hscroll) as u16, area.y + row as u16)
+    Position::new(area.x + (point_col - hscroll) as u16, area.y + point_row as u16)
+}
+
+/// A row as a terminal line: faces as true colour, the region in reverse
+/// video. A selected newline shows as one reversed cell.
+fn row_line(
+    row: &Row,
+    glyphs: &[Glyph],
+    hscroll: usize,
+    width: usize,
+    region: Option<&Range<usize>>,
+    dark: bool,
+) -> Line<'static> {
+    let selected = |pos: usize| region.is_some_and(|r| r.contains(&pos));
+    let mut spans: Vec<Span<'static>> = Vec::new();
+    let push = |spans: &mut Vec<Span<'static>>, s: &str, style: Style| match spans.last_mut() {
+        Some(last) if last.style == style => last.content.to_mut().push_str(s),
+        _ => spans.push(Span::styled(s.to_string(), style)),
+    };
+    let mut col = 0;
+    for glyph in glyphs {
+        if col >= hscroll + width {
+            break;
+        }
+        let mut style = terminal_style(&row.segments[glyph.segment].style, dark);
+        if glyph.pos.is_some_and(selected) {
+            style = style.add_modifier(Modifier::REVERSED);
+        }
+        if col >= hscroll && col + glyph.width <= hscroll + width {
+            push(&mut spans, &glyph.text, style);
+        } else if col < hscroll && col + glyph.width > hscroll {
+            // A tab that straddles the left edge still takes up its visible columns.
+            push(&mut spans, &" ".repeat(col + glyph.width - hscroll), style);
+        }
+        col += glyph.width;
+    }
+    if selected(row.end) && col >= hscroll && col < hscroll + width {
+        push(&mut spans, " ", Style::new().add_modifier(Modifier::REVERSED));
+    }
+    Line::from(spans)
+}
+
+/// A face's style for the terminal. Translucent colours are blended over the
+/// palette's background, as the graphical front end draws them.
+fn terminal_style(style: &FaceStyle, dark: bool) -> Style {
+    let bg = palette("bg", dark).expect("the palette has bg");
+    let rgb = |c: FaceColor| {
+        let mix = |fg: u8, bg: u8| ((fg as u16 * c.a as u16 + bg as u16 * (255 - c.a as u16)) / 255) as u8;
+        Color::Rgb(mix(c.r, bg.r), mix(c.g, bg.g), mix(c.b, bg.b))
+    };
+    let mut out = Style::new();
+    if let Some(c) = style.foreground {
+        out = out.fg(rgb(c));
+    }
+    if let Some(c) = style.background {
+        out = out.bg(rgb(c));
+    }
+    for (on, modifier) in [
+        (style.bold, Modifier::BOLD),
+        (style.italic, Modifier::ITALIC),
+        (style.underline, Modifier::UNDERLINED),
+        (style.strike, Modifier::CROSSED_OUT),
+    ] {
+        if on {
+            out = out.add_modifier(modifier);
+        }
+    }
+    out
 }
 
 fn draw_mode_line(frame: &mut Frame, ed: &Editor, area: Rect) {
@@ -94,58 +161,6 @@ fn draw_echo_area(frame: &mut Frame, ed: &Editor, area: Rect) -> Option<Position
     frame.render_widget(Paragraph::new(Line::from(spans)), area);
     let x = display_width(prompt, 8) + display_width(&mb.slice(0..mb.point()), 8);
     Some(Position::new(area.x + x.min(area.width as usize - 1) as u16, area.y))
-}
-
-/// The part of a line visible after scrolling `hscroll` columns, at most `width` wide.
-#[cfg(test)]
-fn visible_part(text: &str, hscroll: usize, width: usize) -> String {
-    line_spans(text, hscroll, width, 8, None)
-        .spans
-        .iter()
-        .map(|s| s.content.as_ref())
-        .collect()
-}
-
-/// A line as it is drawn, with the selected characters in reverse video.
-/// `selected` counts characters from the start of the line; an end past the
-/// last character means the newline is selected too, shown as one cell.
-fn line_spans(
-    text: &str,
-    hscroll: usize,
-    width: usize,
-    tab_width: usize,
-    selected: Option<std::ops::Range<usize>>,
-) -> Line<'static> {
-    let is_selected = |i: usize| selected.as_ref().is_some_and(|r| r.contains(&i));
-    let mut spans: Vec<Span<'static>> = Vec::new();
-    let push = |spans: &mut Vec<Span<'static>>, s: &str, selected: bool| {
-        let style = if selected { Style::new().add_modifier(Modifier::REVERSED) } else { Style::new() };
-        match spans.last_mut() {
-            Some(last) if last.style == style => last.content.to_mut().push_str(s),
-            _ => spans.push(Span::styled(s.to_string(), style)),
-        }
-    };
-    let (mut glyph, mut col, mut count) = (String::new(), 0, 0);
-    for (i, c) in text.chars().enumerate() {
-        count = i + 1;
-        if col >= hscroll + width {
-            break;
-        }
-        glyph.clear();
-        let w = render_char(c, col, tab_width, &mut glyph);
-        if col >= hscroll && col + w <= hscroll + width {
-            push(&mut spans, &glyph, is_selected(i));
-        } else if col < hscroll && col + w > hscroll {
-            // A tab that straddles the left edge still takes up its visible columns.
-            push(&mut spans, &" ".repeat(col + w - hscroll), is_selected(i));
-        }
-        col += w;
-    }
-    let len = text.chars().count();
-    if count == len && is_selected(len) && col >= hscroll && col < hscroll + width {
-        push(&mut spans, " ", true);
-    }
-    Line::from(spans)
 }
 
 #[cfg(test)]
@@ -199,11 +214,30 @@ mod tests {
     }
 
     #[test]
+    fn faces_and_hidden_text() {
+        let mut ed = Editor::new();
+        ed.type_text("plain bold\nhidden\nlast");
+        let b = ed.window_buffer_mut();
+        b.put_text_property(6..10, "face", ember_core::Value::Str("bold".into()));
+        // The first newline and "hidden" with its newline.
+        b.put_text_property(10..18, "invisible", ember_core::Value::Bool(true));
+        let mut terminal = Terminal::new(TestBackend::new(20, 5)).unwrap();
+        terminal.draw(|frame| draw(frame, &ed)).unwrap();
+        let buf = terminal.backend().buffer();
+        let row: String = (0..20).map(|x| buf[(x, 0)].symbol()).collect();
+        // The hidden newline joins the first and third lines into one row.
+        assert_eq!(row.trim_end(), "plain boldlast");
+        assert!(buf[(6, 0)].modifier.contains(Modifier::BOLD));
+        assert!(!buf[(0, 0)].modifier.contains(Modifier::BOLD));
+    }
+
+    #[test]
     fn control_characters_and_horizontal_scroll() {
-        assert_eq!(visible_part("a\u{1}b", 0, 10), "a^Ab");
-        assert_eq!(display_width("a\tb", 8), 9);
-        assert_eq!(visible_part("abcdefgh", 3, 3), "def");
-        assert_eq!(visible_part("\tx", 4, 10), "    x");
+        let mut ed = Editor::new();
+        ed.window_buffer_mut().set_text("a\u{1}b\n\tx");
+        let rows = render(&mut ed, 20, 4);
+        assert_eq!(rows[0], "a^Ab");
+        assert_eq!(rows[1], "        x");
 
         // Point at column 30 of a 20 column window recentres it horizontally.
         let mut ed = Editor::new();

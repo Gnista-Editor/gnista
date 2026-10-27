@@ -142,6 +142,54 @@
     calledInteractively: () => native.calledInteractively(),
     regionActive: () => native.regionActive(),
 
+    putTextProperty: (start, end, name, value) => native.putTextProperty(start, end, String(name), value ?? null),
+    removeTextProperty: (start, end, name) => native.removeTextProperty(start, end, String(name)),
+    textPropertiesAt: (pos) => native.textPropertiesAt(pos),
+    getTextProperty: (pos, name) => native.textPropertiesAt(pos)[String(name)],
+    charProperty: (pos, name) => native.charProperty(pos, String(name)),
+    nextPropertyChange: (pos) => native.nextPropertyChange(pos),
+    nextCharPropertyChange: (pos) => native.nextCharPropertyChange(pos),
+    makeOverlay(start, end, properties = {}) {
+      const id = native.makeOverlay(start, end);
+      for (const [name, value] of Object.entries(properties)) native.overlayPut(id, name, value ?? null);
+      return id;
+    },
+    overlayPut: (id, name, value) => native.overlayPut(id, String(name), value ?? null),
+    overlayGet: (id, name) => native.overlayGet(id, String(name)),
+    overlayStart: (id) => native.overlayRange(id)?.[0],
+    overlayEnd: (id) => native.overlayRange(id)?.[1],
+    moveOverlay: (id, start, end) => native.moveOverlay(id, start, end),
+    deleteOverlay: (id) => native.deleteOverlay(id),
+    overlaysIn: (start, end) => native.overlaysIn(start, end),
+    overlaysAt: (pos) => native.overlaysIn(pos, pos + 1).filter((id) => native.overlayRange(id)[0] <= pos && pos < native.overlayRange(id)[1]),
+    invisibleAt: (pos) => native.invisibleAt(pos),
+    lineCount: () => native.lineCount(),
+    lineOf: (pos) => native.lineOf(pos),
+    lineStart: (line) => native.lineStart(line),
+    lineEnd: (line) => native.lineEnd(line),
+    lineText: (line) => native.lineText(line),
+    bufferSize: () => native.bufferSize(),
+    // As Emacs's add-to-invisibility-spec: a spec of true becomes a list
+    // that still hides text whose invisible property is true.
+    addToInvisibilitySpec(name, { ellipsis = false } = {}) {
+      const spec = native.variable("buffer-invisibility-spec");
+      const entries = Array.isArray(spec) ? spec.filter((e) => (Array.isArray(e) ? e[0] : e) !== name) : [true];
+      native.setVariable("buffer-invisibility-spec", [...entries, ellipsis ? [String(name), true] : String(name)]);
+    },
+    removeFromInvisibilitySpec(name) {
+      const spec = native.variable("buffer-invisibility-spec");
+      if (Array.isArray(spec)) {
+        native.setVariable("buffer-invisibility-spec", spec.filter((e) => (Array.isArray(e) ? e[0] : e) !== name));
+      }
+    },
+    defineFace({ name, doc = "", attributes = {}, dark = {}, light = {} }) {
+      native.defineFace(String(name), String(doc), attributes, dark, light);
+    },
+    setFaceAttribute: (name, attributes, { background = "both" } = {}) =>
+      native.setFaceAttribute(String(name), attributes, String(background)),
+    faceAttributes: (name, { dark = true } = {}) => native.faceAttributes(String(name), Boolean(dark)),
+    faceInfo: (name) => native.faceInfo(String(name)) ?? undefined,
+
     defineMajorMode({ name, modeName, parent = null, doc = "", bindings, setup }) {
       if (parent !== null && !majorModes.has(parent)) {
         throw new TypeError(`Major mode ${name} is built on ${parent}, which is not a major mode`);

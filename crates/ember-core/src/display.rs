@@ -50,6 +50,44 @@ pub fn expanded_len(text: &str, chars: usize, tab_width: usize) -> usize {
     expand(&text.chars().take(chars).collect::<String>(), tab_width).chars().count()
 }
 
+/// One character cell or more, as a row shows it.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Glyph {
+    /// What is drawn: a character, a tab's spaces, or `^X`.
+    pub text: String,
+    /// Columns taken.
+    pub width: usize,
+    /// The buffer position it shows, or `None` for an ellipsis.
+    pub pos: Option<usize>,
+    /// Which of the row's segments it belongs to, for its style.
+    pub segment: usize,
+}
+
+/// A row as glyphs, with tabs expanded from the start of the row.
+pub fn row_glyphs(row: &crate::Row, tab_width: usize) -> Vec<Glyph> {
+    let mut glyphs = Vec::new();
+    let mut col = 0;
+    for (segment, seg) in row.segments.iter().enumerate() {
+        for (i, c) in seg.text.chars().enumerate() {
+            let mut text = String::new();
+            let width = render_char(c, col, tab_width, &mut text);
+            let pos = (!seg.ellipsis).then_some(seg.start + i);
+            glyphs.push(Glyph { text, width, pos, segment });
+            col += width;
+        }
+    }
+    glyphs
+}
+
+/// Where point goes among a row's glyphs: before the first glyph at or after
+/// it, or after the visible text if point is at hidden text or the row's end.
+pub fn cursor_index(glyphs: &[Glyph], point: usize) -> usize {
+    glyphs
+        .iter()
+        .rposition(|g| g.pos.is_some_and(|p| p < point))
+        .map_or(0, |i| i + 1)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

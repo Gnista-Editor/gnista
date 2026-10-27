@@ -21,8 +21,8 @@ use std::time::{Duration, Instant};
 use std::rc::Rc;
 
 use ember_core::{
-    Arg, Command, Editor, Error, HookFn, Key, Keymap, MinorMode, ParamKind, PrefixArg, Result,
-    Value as EditorValue, Variable, abbreviate_path, expand_file_name,
+    Arg, Background, Command, Editor, Error, Face, FaceAttrs, HookFn, Key, Keymap, MinorMode, ParamKind,
+    PrefixArg, Result, Value as EditorValue, Variable, abbreviate_path, expand_file_name,
 };
 use rquickjs::context::EvalOptions;
 use rquickjs::function::{Opt, Rest};
@@ -39,6 +39,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/simple.ts", include_str!("../../../packages/simple.ts")),
     ("packages/files.ts", include_str!("../../../packages/files.ts")),
     ("packages/text-mode.ts", include_str!("../../../packages/text-mode.ts")),
+    ("packages/outline.ts", include_str!("../../../packages/outline.ts")),
     ("packages/delsel.ts", include_str!("../../../packages/delsel.ts")),
     ("packages/help.ts", include_str!("../../../packages/help.ts")),
     ("packages/repeat.ts", include_str!("../../../packages/repeat.ts")),
@@ -666,6 +667,7 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
         "thisCommand",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.this_command().map(str::to_string))))?,
     )?;
+    install_native_text(ctx, native)?;
     native.set(
         "regionActive",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer().is_mark_active())))?,
@@ -675,6 +677,241 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.called_interactively())))?,
     )?;
     Ok(())
+}
+
+/// Text properties, overlays, faces and invisibility.
+fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::Result<()> {
+    native.set(
+        "putTextProperty",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, start: usize, end: usize, name: String, value: Value<'js>| {
+            let value = value_from_js(&ctx, value)?;
+            with_editor(&ctx, |ed| {
+                ed.buffer_mut().put_text_property(start..end, &name, value);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "removeTextProperty",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, start: usize, end: usize, name: String| {
+            with_editor(&ctx, |ed| {
+                ed.buffer_mut().remove_text_property(start..end, &name);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "textPropertiesAt",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pos: usize| {
+            let props = with_editor(&ctx, |ed| Ok(ed.buffer().text_properties_at(pos).cloned().unwrap_or_default()))?;
+            props_to_js(&ctx, &props)
+        })?,
+    )?;
+    native.set(
+        "charProperty",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pos: usize, name: String| {
+            let value = with_editor(&ctx, |ed| Ok(ed.buffer().char_property(pos, &name).cloned()))?;
+            value.map(|v| value_to_js(&ctx, &v)).transpose()
+        })?,
+    )?;
+    native.set(
+        "nextPropertyChange",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pos: usize| {
+            with_editor(&ctx, |ed| Ok(ed.buffer().next_property_change(pos)))
+        })?,
+    )?;
+    native.set(
+        "nextCharPropertyChange",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pos: usize| {
+            with_editor(&ctx, |ed| Ok(ed.buffer().next_char_property_change(pos)))
+        })?,
+    )?;
+    native.set(
+        "makeOverlay",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, start: usize, end: usize| {
+            with_editor(&ctx, |ed| Ok(ed.buffer_mut().make_overlay(start..end) as f64))
+        })?,
+    )?;
+    native.set(
+        "overlayPut",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, id: f64, name: String, value: Value<'js>| {
+            let value = value_from_js(&ctx, value)?;
+            with_editor(&ctx, |ed| ed.buffer_mut().overlay_put(id as u64, &name, value))
+        })?,
+    )?;
+    native.set(
+        "overlayGet",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, id: f64, name: String| {
+            let value =
+                with_editor(&ctx, |ed| Ok(ed.buffer().overlay(id as u64).and_then(|o| o.props.get(&name).cloned())))?;
+            value.map(|v| value_to_js(&ctx, &v)).transpose()
+        })?,
+    )?;
+    native.set(
+        "overlayRange",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, id: f64| {
+            with_editor(&ctx, |ed| Ok(ed.buffer().overlay(id as u64).map(|o| vec![o.start, o.end])))
+        })?,
+    )?;
+    native.set(
+        "moveOverlay",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, id: f64, start: usize, end: usize| {
+            with_editor(&ctx, |ed| ed.buffer_mut().move_overlay(id as u64, start..end))
+        })?,
+    )?;
+    native.set(
+        "deleteOverlay",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, id: f64| {
+            with_editor(&ctx, |ed| {
+                ed.buffer_mut().delete_overlay(id as u64);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "overlaysIn",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, start: usize, end: usize| {
+            with_editor(&ctx, |ed| {
+                // Overlays that overlap the range, and empty ones inside it, as Emacs's overlays-in.
+                Ok(ed
+                    .buffer()
+                    .overlays()
+                    .iter()
+                    .filter(|o| (o.start < end && o.end > start) || (o.start == o.end && o.start >= start && o.start <= end))
+                    .map(|o| o.id as f64)
+                    .collect::<Vec<f64>>())
+            })
+        })?,
+    )?;
+    native.set(
+        "lineCount",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer().line_count())))?,
+    )?;
+    native.set(
+        "lineOf",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pos: usize| {
+            with_editor(&ctx, |ed| Ok(ed.buffer().line_of(pos.min(ed.buffer().len()))))
+        })?,
+    )?;
+    native.set(
+        "lineStart",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, line: usize| {
+            with_editor(&ctx, |ed| Ok(ed.buffer().line_start(line.min(ed.buffer().line_count() - 1))))
+        })?,
+    )?;
+    native.set(
+        "lineEnd",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, line: usize| {
+            with_editor(&ctx, |ed| Ok(ed.buffer().line_end(line.min(ed.buffer().line_count() - 1))))
+        })?,
+    )?;
+    native.set(
+        "lineText",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, line: usize| {
+            with_editor(&ctx, |ed| Ok(ed.buffer().line_text(line.min(ed.buffer().line_count() - 1))))
+        })?,
+    )?;
+    native.set(
+        "bufferSize",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer().len())))?,
+    )?;
+    native.set(
+        "invisibleAt",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pos: usize| {
+            with_editor(&ctx, |ed| Ok(ed.invisible_in(ed.buffer(), pos).is_some()))
+        })?,
+    )?;
+    native.set(
+        "defineFace",
+        Function::new(
+            ctx.clone(),
+            |ctx: Ctx<'js>, name: String, doc: String, attrs: Object<'js>, dark: Object<'js>, light: Object<'js>| {
+                let mut face = Face::new(&name, &doc, face_attrs_from_js(&attrs)?);
+                face.dark = face_attrs_from_js(&dark)?;
+                face.light = face_attrs_from_js(&light)?;
+                face.source = LOADING.with_borrow(|files| files.last().cloned());
+                with_editor(&ctx, |ed| {
+                    ed.define_face(face);
+                    Ok(())
+                })
+            },
+        )?,
+    )?;
+    native.set(
+        "setFaceAttribute",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, attrs: Object<'js>, background: String| {
+            let attrs = face_attrs_from_js(&attrs)?;
+            let background = match background.as_str() {
+                "dark" => Background::Dark,
+                "light" => Background::Light,
+                _ => Background::Both,
+            };
+            with_editor(&ctx, |ed| {
+                ed.set_face_attributes(&name, attrs, background);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "faceAttributes",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, dark: bool| {
+            let attrs = with_editor(&ctx, |ed| Ok(ed.face_attrs(&name, dark)))?;
+            face_attrs_to_js(&ctx, &attrs)
+        })?,
+    )?;
+    native.set(
+        "faceInfo",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| -> rquickjs::Result<Option<Object<'js>>> {
+            let face = with_editor(&ctx, |ed| Ok(ed.face(&name).cloned()))?;
+            let Some(face) = face else { return Ok(None) };
+            let info = Object::new(ctx.clone())?;
+            info.set("doc", face.doc)?;
+            info.set("source", face.source)?;
+            info.set("attributes", face_attrs_to_js(&ctx, &face.attrs)?)?;
+            info.set("dark", face_attrs_to_js(&ctx, &face.dark)?)?;
+            info.set("light", face_attrs_to_js(&ctx, &face.light)?)?;
+            Ok(Some(info))
+        })?,
+    )?;
+    Ok(())
+}
+
+fn props_to_js<'js>(ctx: &Ctx<'js>, props: &ember_core::Props) -> rquickjs::Result<Object<'js>> {
+    let object = Object::new(ctx.clone())?;
+    for (name, value) in props {
+        object.set(name.as_str(), value_to_js(ctx, value)?)?;
+    }
+    Ok(object)
+}
+
+/// Face attributes from an object such as `{ foreground: "accent", bold: true }`.
+fn face_attrs_from_js<'js>(object: &Object<'js>) -> rquickjs::Result<FaceAttrs> {
+    let text = |key: &str| object.get::<_, Option<String>>(key);
+    let flag = |key: &str| object.get::<_, Option<bool>>(key);
+    Ok(FaceAttrs {
+        foreground: text("foreground")?,
+        background: text("background")?,
+        bold: flag("bold")?,
+        italic: flag("italic")?,
+        underline: flag("underline")?,
+        strike: flag("strike")?,
+        inherit: text("inherit")?,
+    })
+}
+
+fn face_attrs_to_js<'js>(ctx: &Ctx<'js>, attrs: &FaceAttrs) -> rquickjs::Result<Object<'js>> {
+    let object = Object::new(ctx.clone())?;
+    for (key, value) in [("foreground", &attrs.foreground), ("background", &attrs.background), ("inherit", &attrs.inherit)] {
+        if let Some(v) = value {
+            object.set(key, v.as_str())?;
+        }
+    }
+    for (key, value) in [("bold", attrs.bold), ("italic", attrs.italic), ("underline", attrs.underline), ("strike", attrs.strike)] {
+        if let Some(v) = value {
+            object.set(key, v)?;
+        }
+    }
+    Ok(object)
 }
 
 /// A variable's value as scripts see it: null, a boolean, a number, a string or an array.

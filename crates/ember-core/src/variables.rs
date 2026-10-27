@@ -318,6 +318,17 @@ pub(crate) fn install(ed: &mut Editor) {
             true,
         ),
         Variable::new(
+            "buffer-invisibility-spec",
+            "Which text the invisible property hides.\n\nIf true, any text whose invisible property is true is hidden. If a list, text is hidden when its invisible property names an entry: \"name\", or [\"name\", true] to show \"...\" in its place.",
+            true,
+        )
+        .local(),
+        Variable::new(
+            "frame-background-mode",
+            "Whether the terminal's background is \"dark\" or \"light\", for choosing face colours there. The graphical front end follows the system instead.",
+            "dark",
+        ),
+        Variable::new(
             "overwrite-mode",
             "Whether typed characters replace the text after point rather than being inserted.\n\nThe command overwrite-mode, on <insert>, turns it on and off.",
             false,

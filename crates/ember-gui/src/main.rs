@@ -36,7 +36,7 @@ fn main() -> eframe::Result {
         "Ember",
         options,
         Box::new(move |cc| {
-            theme::install_fonts(&cc.egui_ctx);
+            theme::install_fonts(&cc.egui_ctx, true);
             // Commands defined by scripts hold the runtime; keep the handle alive with them.
             let _ = &scripting;
             Ok(Box::new(EmberApp::new(editor)))

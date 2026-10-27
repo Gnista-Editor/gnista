@@ -76,5 +76,25 @@ const describeMode = ember.defineCommand({
   },
 });
 
+ember.defineCommand({
+  name: "describe-face",
+  doc: "Show a face's documentation and attributes, and what it looks like on dark and light backgrounds.",
+  params: [{ name: "face", kind: "face", prompt: "Describe face: " }],
+  run: (name) => {
+    const info = ember.faceInfo(name);
+    if (info === undefined) {
+      throw new Error(`No such face: ${name}`);
+    }
+    const show = (attrs: ember.FaceAttributes) => (Object.keys(attrs).length === 0 ? "none" : JSON.stringify(attrs));
+    let text = `${name} is a face${info.source ? ` defined in ${info.source}` : ""}.\n\n${info.doc}\n\n`;
+    text += `Its own attributes: ${show(info.attributes)}\n`;
+    if (Object.keys(info.dark).length > 0) text += `  On a dark background: ${show(info.dark)}\n`;
+    if (Object.keys(info.light).length > 0) text += `  On a light background: ${show(info.light)}\n`;
+    text += `\nWith what it inherits, on a dark background: ${show(ember.faceAttributes(name, { dark: true }))}\n`;
+    text += `On a light background: ${show(ember.faceAttributes(name, { dark: false }))}\n`;
+    ember.showHelp(text);
+  },
+});
+
 ember.bindKey("C-h v", describeVariable);
 ember.bindKey("C-h m", describeMode);

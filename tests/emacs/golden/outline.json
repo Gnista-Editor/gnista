@@ -1,0 +1,234 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "next-line-skips-a-folded-subtree",
+      "input": {
+        "text": "* One\nbody\nmore\n* Two\nlast",
+        "point": 0,
+        "keys": "C-c @ C-d C-n",
+        "modes": [
+          "outline-minor-mode"
+        ],
+        "platform": null
+      },
+      "text": "* One\nbody\nmore\n* Two\nlast",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "previous-line-onto-a-folded-heading",
+      "input": {
+        "text": "* One\nbody\nmore\n* Two\nlast",
+        "point": 0,
+        "keys": "C-c @ C-d C-n C-p",
+        "modes": [
+          "outline-minor-mode"
+        ],
+        "platform": null
+      },
+      "text": "* One\nbody\nmore\n* Two\nlast",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "end-of-line-on-a-folded-heading",
+      "input": {
+        "text": "* One\nbody\nmore\n* Two\nlast",
+        "point": 0,
+        "keys": "C-c @ C-d C-e",
+        "modes": [
+          "outline-minor-mode"
+        ],
+        "platform": null
+      },
+      "text": "* One\nbody\nmore\n* Two\nlast",
+      "point": 15,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-char-into-hidden-text",
+      "input": {
+        "text": "* One\nbody\nmore\n* Two\nlast",
+        "point": 0,
+        "keys": "C-c @ C-d C-e C-f",
+        "modes": [
+          "outline-minor-mode"
+        ],
+        "platform": null
+      },
+      "text": "* One\nbody\nmore\n* Two\nlast",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-char-twice-past-hidden-text",
+      "input": {
+        "text": "* One\nbody\nmore\n* Two\nlast",
+        "point": 0,
+        "keys": "C-c @ C-d C-e C-f C-f",
+        "modes": [
+          "outline-minor-mode"
+        ],
+        "platform": null
+      },
+      "text": "* One\nbody\nmore\n* Two\nlast",
+      "point": 17,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backward-char-out-of-the-next-heading",
+      "input": {
+        "text": "* One\nbody\nmore\n* Two\nlast",
+        "point": 0,
+        "keys": "C-c @ C-d C-n C-b",
+        "modes": [
+          "outline-minor-mode"
+        ],
+        "platform": null
+      },
+      "text": "* One\nbody\nmore\n* Two\nlast",
+      "point": 15,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "next-visible-heading",
+      "input": {
+        "text": "* One\nbody\nmore\n* Two\nlast",
+        "point": 0,
+        "keys": "C-c @ C-n",
+        "modes": [
+          "outline-minor-mode"
+        ],
+        "platform": null
+      },
+      "text": "* One\nbody\nmore\n* Two\nlast",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "hide-body-then-move-down",
+      "input": {
+        "text": "* A\na\n* B\nb\n* C\nc",
+        "point": 0,
+        "keys": "C-c @ C-t C-n C-n",
+        "modes": [
+          "outline-minor-mode"
+        ],
+        "platform": null
+      },
+      "text": "* A\na\n* B\nb\n* C\nc",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "show-all-then-move-down",
+      "input": {
+        "text": "* One\nbody\nmore\n* Two\nlast",
+        "point": 0,
+        "keys": "C-c @ C-d C-c @ C-a C-n",
+        "modes": [
+          "outline-minor-mode"
+        ],
+        "platform": null
+      },
+      "text": "* One\nbody\nmore\n* Two\nlast",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "hide-entry-keeps-subheadings",
+      "input": {
+        "text": "* A\na\n** B\nb\n* C",
+        "point": 0,
+        "keys": "C-c @ C-c C-n",
+        "modes": [
+          "outline-minor-mode"
+        ],
+        "platform": null
+      },
+      "text": "* A\na\n** B\nb\n* C",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "beginning-of-line-from-the-end-of-a-folded-row",
+      "input": {
+        "text": "* One\nbody\nmore\n* Two\nlast",
+        "point": 0,
+        "keys": "C-c @ C-d C-e C-a",
+        "modes": [
+          "outline-minor-mode"
+        ],
+        "platform": null
+      },
+      "text": "* One\nbody\nmore\n* Two\nlast",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backward-char-into-hidden-text",
+      "input": {
+        "text": "* One\nbody\nmore\n* Two\nlast",
+        "point": 0,
+        "keys": "C-c @ C-d C-e C-b C-b",
+        "modes": [
+          "outline-minor-mode"
+        ],
+        "platform": null
+      },
+      "text": "* One\nbody\nmore\n* Two\nlast",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    }
+  ]
+}

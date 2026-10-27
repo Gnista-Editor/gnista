@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use ropey::Rope;
 
 use crate::error::{Error, Result};
+use crate::properties::{Overlay, Props, SavedProps, TextProperties};
 use crate::variables::{HookEntry, Value};
 
 /// One change to the text, recorded so it can be undone.
@@ -14,6 +15,8 @@ use crate::variables::{HookEntry, Value};
 struct Edit {
     pos: usize,
     deleted: String,
+    /// The text properties the deleted text had, for undo to restore.
+    deleted_props: SavedProps,
     inserted: String,
     point_before: usize,
 }
@@ -76,6 +79,9 @@ pub struct Buffer {
     pub(crate) local_hooks: BTreeMap<String, Vec<HookEntry>>,
     /// The major mode's keymap.
     pub(crate) local_map: Option<String>,
+    properties: TextProperties,
+    overlays: Vec<Overlay>,
+    next_overlay_id: u64,
 }
 
 impl Buffer {
@@ -101,6 +107,9 @@ impl Buffer {
             locals: BTreeMap::new(),
             local_hooks: BTreeMap::new(),
             local_map: None,
+            properties: TextProperties::default(),
+            overlays: Vec::new(),
+            next_overlay_id: 0,
         }
     }
 
@@ -317,7 +326,17 @@ impl Buffer {
                 *m += n;
             }
         }
-        self.record(Edit { pos, deleted: String::new(), inserted: s.to_string(), point_before });
+        self.properties.insert(pos, n);
+        for overlay in &mut self.overlays {
+            overlay.insert(pos, n);
+        }
+        self.record(Edit {
+            pos,
+            deleted: String::new(),
+            deleted_props: Vec::new(),
+            inserted: s.to_string(),
+            point_before,
+        });
     }
 
     fn apply_delete(&mut self, start: usize, end: usize) -> String {
@@ -332,14 +351,137 @@ impl Buffer {
         for m in self.mark.iter_mut().chain(self.mark_ring.iter_mut()) {
             *m = shift(*m);
         }
-        self.record(Edit { pos: start, deleted: deleted.clone(), inserted: String::new(), point_before });
+        let deleted_props = self.properties.delete(start, end);
+        for overlay in &mut self.overlays {
+            overlay.delete(start, end);
+        }
+        self.overlays.retain(|o| !o.evaporates());
+        self.record(Edit {
+            pos: start,
+            deleted: deleted.clone(),
+            deleted_props,
+            inserted: String::new(),
+            point_before,
+        });
         deleted
+    }
+
+    // Text properties
+
+    /// Sets a property on every character in a range (Emacs's `put-text-property`).
+    /// Like Emacs's font-lock, property changes do not mark the buffer modified.
+    pub fn put_text_property(&mut self, range: Range<usize>, name: &str, value: Value) {
+        let end = range.end.min(self.len());
+        self.properties.modify(range.start, end, |p| {
+            p.insert(name.to_string(), value.clone());
+        });
+    }
+
+    pub fn remove_text_property(&mut self, range: Range<usize>, name: &str) {
+        let end = range.end.min(self.len());
+        self.properties.modify(range.start, end, |p| {
+            p.remove(name);
+        });
+    }
+
+    /// The properties of the character at `pos`.
+    pub fn text_properties_at(&self, pos: usize) -> Option<&Props> {
+        self.properties.at(pos)
+    }
+
+    pub fn text_property(&self, pos: usize, name: &str) -> Option<&Value> {
+        self.properties.at(pos)?.get(name)
+    }
+
+    /// The next position after `pos` where text properties change.
+    pub fn next_property_change(&self, pos: usize) -> Option<usize> {
+        self.properties.next_change(pos).filter(|&p| p <= self.len())
+    }
+
+    /// The last position before `pos` where text properties change.
+    pub fn previous_property_change(&self, pos: usize) -> Option<usize> {
+        self.properties.previous_change(pos)
+    }
+
+    // Overlays
+
+    /// Lays a new overlay over a range and returns its id.
+    pub fn make_overlay(&mut self, range: Range<usize>) -> u64 {
+        self.next_overlay_id += 1;
+        let (start, end) = (range.start.min(self.len()), range.end.min(self.len()));
+        self.overlays.push(Overlay { id: self.next_overlay_id, start, end, props: Props::new() });
+        self.next_overlay_id
+    }
+
+    pub fn overlay(&self, id: u64) -> Option<&Overlay> {
+        self.overlays.iter().find(|o| o.id == id)
+    }
+
+    fn overlay_mut(&mut self, id: u64) -> Result<&mut Overlay> {
+        self.overlays
+            .iter_mut()
+            .find(|o| o.id == id)
+            .ok_or_else(|| Error::new(format!("No such overlay: {id}")))
+    }
+
+    pub fn overlay_put(&mut self, id: u64, name: &str, value: Value) -> Result<()> {
+        self.overlay_mut(id)?.props.insert(name.to_string(), value);
+        Ok(())
+    }
+
+    pub fn move_overlay(&mut self, id: u64, range: Range<usize>) -> Result<()> {
+        let len = self.len();
+        let overlay = self.overlay_mut(id)?;
+        overlay.start = range.start.min(len);
+        overlay.end = range.end.min(len).max(overlay.start);
+        Ok(())
+    }
+
+    pub fn delete_overlay(&mut self, id: u64) {
+        self.overlays.retain(|o| o.id != id);
+    }
+
+    /// Every overlay, in the order they were made.
+    pub fn overlays(&self) -> &[Overlay] {
+        &self.overlays
+    }
+
+    /// Overlays covering the character at `pos`, highest priority first,
+    /// and the most recently made first among equals.
+    pub fn overlays_at(&self, pos: usize) -> Vec<&Overlay> {
+        let mut found: Vec<&Overlay> = self.overlays.iter().filter(|o| o.start <= pos && pos < o.end).collect();
+        found.sort_by(|a, b| b.priority().total_cmp(&a.priority()).then(b.id.cmp(&a.id)));
+        found
+    }
+
+    /// A property at `pos`, from the highest priority overlay that has it,
+    /// otherwise from the text, as Emacs's `get-char-property` gives it.
+    pub fn char_property(&self, pos: usize, name: &str) -> Option<&Value> {
+        self.overlays_at(pos)
+            .into_iter()
+            .find_map(|o| o.props.get(name))
+            .or_else(|| self.text_property(pos, name))
+    }
+
+    /// The next position after `pos` where text properties or overlays change.
+    pub fn next_char_property_change(&self, pos: usize) -> usize {
+        let mut next = self.next_property_change(pos).unwrap_or(self.len());
+        for o in &self.overlays {
+            for edge in [o.start, o.end] {
+                if edge > pos && edge < next {
+                    next = edge;
+                }
+            }
+        }
+        next
     }
 
     /// Replaces all text without recording undo and ignoring read-only.
     /// For buffers the editor generates, such as `*Help*`.
     pub fn set_text(&mut self, s: &str) {
         self.text = Rope::from_str(s);
+        self.properties.clear();
+        self.overlays.clear();
         self.point = 0;
         self.mark = None;
         self.mark_ring.clear();
@@ -423,6 +565,7 @@ impl Buffer {
                 self.apply_delete(edit.pos, edit.pos + inserted);
             }
             self.apply_insert(edit.pos, &edit.deleted);
+            self.properties.restore(edit.pos, &edit.deleted_props);
             self.point = edit.point_before.min(self.len());
         }
         if group.unmodified_at == Some(self.save_generation) {

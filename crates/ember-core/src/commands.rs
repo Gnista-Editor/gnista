@@ -75,24 +75,31 @@ fn movement(ed: &mut Editor) {
     def_motion(
         ed,
         "move-beginning-of-line",
-        "Move point to the beginning of the line.\n\nWith a prefix argument N, move forward N - 1 lines first.",
+        "Move point to the beginning of the line.\n\nWith a prefix argument N, move forward N - 1 lines first. Where text is hidden, this is the start of the row on screen, as in Emacs.",
         |ed, _| {
             let n = ed.prefix_numeric();
-            let b = ed.buffer_mut();
+            let b = ed.buffer();
             let pos = if n == 1 { b.point() } else { forward_line(b, b.point(), n - 1) };
-            b.set_point(b.line_start(b.line_of(pos)));
+            let row = ed.row_line_in(b, b.line_of(pos));
+            let b = ed.buffer_mut();
+            b.set_point(b.line_start(row));
             Ok(())
         },
     );
     def_motion(
         ed,
         "move-end-of-line",
-        "Move point to the end of the line.\n\nWith a prefix argument N, move forward N - 1 lines first.",
+        "Move point to the end of the line.\n\nWith a prefix argument N, move forward N - 1 lines first. Where text is hidden, this is the end of the row on screen, after the hidden text, as in Emacs.",
         |ed, _| {
             let n = ed.prefix_numeric();
-            let b = ed.buffer_mut();
+            let b = ed.buffer();
             let pos = if n == 1 { b.point() } else { forward_line(b, b.point(), n - 1) };
-            b.set_point(b.line_end(b.line_of(pos)));
+            // Past hidden text that runs on from the end of the line, to the row's end.
+            let mut end = b.line_end(b.line_of(pos));
+            while ed.invisible_in(b, end).is_some() {
+                end = b.line_end(b.line_of(ed.skip_invisible_in(b, end).0));
+            }
+            ed.buffer_mut().set_point(end);
             Ok(())
         },
     );
@@ -164,16 +171,18 @@ fn movement(ed: &mut Editor) {
             Some(PrefixArg::Minus) => return scroll_screen_down(ed),
             Some(arg) => return scroll_lines_or_error(ed, arg.numeric()),
         }
-        let step = scroll_step(ed);
+        let step = scroll_step(ed) as i64;
+        let b = ed.window_buffer();
+        let (top, moved) = ed.move_rows_in(b, ed.row_line_in(b, b.top_line), step);
+        let point_row = ed.row_line_in(b, b.line_of(b.point()));
         let b = ed.window_buffer_mut();
-        let last = b.line_count() - 1;
-        if b.top_line + step > last {
+        if moved < step {
             b.set_point(b.len());
             return err("End of buffer");
         }
-        b.top_line += step;
-        if b.line_of(b.point()) < b.top_line {
-            b.set_point(b.line_start(b.top_line));
+        b.top_line = top;
+        if point_row < top {
+            b.set_point(b.line_start(top));
         }
         Ok(())
     });
@@ -212,8 +221,8 @@ fn movement(ed: &mut Editor) {
         |ed, _| {
             let height = ed.viewport_height() as i64;
             let arg = ed.current_prefix_arg();
-            let b = ed.window_buffer_mut();
-            let line = b.line_of(b.point()) as i64;
+            let b = ed.window_buffer();
+            let point_row = ed.row_line_in(b, b.line_of(b.point()));
             let row = match arg {
                 Some(arg @ (PrefixArg::Number(_) | PrefixArg::Minus)) => {
                     let n = arg.numeric();
@@ -221,7 +230,8 @@ fn movement(ed: &mut Editor) {
                 }
                 _ => height / 2,
             };
-            b.top_line = (line - row).max(0) as usize;
+            let top = ed.move_rows_in(b, point_row, -row).0;
+            ed.window_buffer_mut().top_line = top;
             Ok(())
         },
     );
@@ -284,16 +294,20 @@ fn scroll_lines_or_error(ed: &mut Editor, lines: i64) -> Result<()> {
 
 /// Scrolls back by nearly a screen, as M-v does.
 fn scroll_screen_down(ed: &mut Editor) -> Result<()> {
-    let step = scroll_step(ed);
-    let height = ed.viewport_height();
+    let step = scroll_step(ed) as i64;
+    let height = ed.viewport_height() as i64;
+    let b = ed.window_buffer();
+    let old_top = ed.row_line_in(b, b.top_line);
+    let top = ed.move_rows_in(b, old_top, -step).0;
+    let bottom = ed.move_rows_in(b, top, height - 1).0;
+    let point_row = ed.row_line_in(b, b.line_of(b.point()));
     let b = ed.window_buffer_mut();
-    if b.top_line == 0 {
+    if old_top == 0 {
         b.set_point(0);
         return err("Beginning of buffer");
     }
-    b.top_line = b.top_line.saturating_sub(step);
-    let bottom = b.top_line + height - 1;
-    if b.line_of(b.point()) > bottom {
+    b.top_line = top;
+    if point_row > bottom {
         b.set_point(b.line_start(bottom));
     }
     Ok(())
@@ -312,16 +326,17 @@ fn scroll_lines(ed: &mut Editor, lines: isize) -> bool {
         _ => b.column(b.point()),
     };
     ed.goal_column = Some(goal);
-    let b = ed.window_buffer_mut();
-    let last = b.line_count() - 1;
-    let top = (b.top_line as isize + lines).clamp(0, last as isize) as usize;
-    if top == b.top_line {
+    let b = ed.window_buffer();
+    let (top, moved) = ed.move_rows_in(b, ed.row_line_in(b, b.top_line), lines as i64);
+    if moved == 0 {
         return false;
     }
+    let bottom = ed.move_rows_in(b, top, height as i64 - 1).0;
+    let point_row = ed.row_line_in(b, b.line_of(b.point()));
+    let target = point_row.clamp(top, bottom);
+    let b = ed.window_buffer_mut();
     b.top_line = top;
-    let line = b.line_of(b.point());
-    let target = line.clamp(top, top + height.saturating_sub(1));
-    if target != line {
+    if target != point_row {
         let start = b.line_start(target);
         b.set_point((start + goal).min(b.line_end(target)));
     }
@@ -342,18 +357,20 @@ fn line_move(ed: &mut Editor, n: i64) -> Result<()> {
         _ => b.column(b.point()),
     };
     ed.goal_column = Some(goal);
+    // Lines inside hidden text are skipped, as Emacs's line-move-ignore-invisible does.
+    let b = ed.buffer();
+    let (target, moved) = ed.move_rows_in(b, ed.row_line_in(b, line), n);
     let b = ed.buffer_mut();
-    let target = line as i64 + n;
-    if target >= b.line_count() as i64 {
-        b.set_point(b.len());
-        return err("End of buffer");
-    }
-    if target < 0 {
+    if moved != n {
+        if n > 0 {
+            b.set_point(b.len());
+            return err("End of buffer");
+        }
         b.set_point(0);
         return err("Beginning of buffer");
     }
-    let start = b.line_start(target as usize);
-    b.set_point((start + goal).min(b.line_end(target as usize)));
+    let start = b.line_start(target);
+    b.set_point((start + goal).min(b.line_end(target)));
     Ok(())
 }
 

@@ -3,8 +3,8 @@
 
 use std::sync::Arc;
 
-use ember_core::display::{expand, expanded_len};
-use ember_core::{Arg, Buffer, Editor};
+use ember_core::display::{Glyph, cursor_index, row_glyphs};
+use ember_core::{Arg, Editor, Row, Style};
 use egui::text::{CCursor, LayoutJob, TextFormat};
 use egui::{
     Color32, FontFamily, FontId, Galley, Painter, Rect, Stroke, StrokeKind, Ui, ViewportCommand,
@@ -12,7 +12,7 @@ use egui::{
 };
 
 use crate::keys::{Input, translate};
-use crate::theme::{LINE_SPACING, TEXT_SIZE, Tokens};
+use crate::theme::{self, LINE_SPACING, TEXT_SIZE, Tokens, bold_mono, color32};
 
 /// Space around the buffer text.
 const PAD_X: f32 = 16.0;
@@ -201,7 +201,7 @@ fn draw(ui: &Ui, ed: &Editor, layout: &Layout, t: Tokens, focused: bool, scroll_
         pos2(layout.text_rect.right() + PAD_X, layout.mode_rect.top()),
     );
     let view = View { area: layout.text_rect, clip, rows: ed.viewport_height(), scroll_offset };
-    draw_buffer(&painter, ed.window_buffer(), &view, m, t, window_cursor);
+    draw_buffer(&painter, ed, &view, m, t, window_cursor);
     draw_mode_line(&painter, ed, layout.mode_rect, m, t);
     let echo_cursor = if focused { CursorStyle::Filled } else { CursorStyle::Hollow };
     draw_echo_area(&painter, ed, layout.echo_rect, m, t, echo_cursor);
@@ -215,18 +215,47 @@ struct View {
     scroll_offset: f32,
 }
 
-fn layout_line(painter: &Painter, text: &str, m: &Metrics, color: Color32) -> Arc<Galley> {
-    painter.layout_no_wrap(expand(text, m.tab_width), m.font.clone(), color)
-}
-
-fn draw_buffer(painter: &Painter, b: &Buffer, view: &View, m: &Metrics, t: Tokens, cursor: CursorStyle) {
+fn draw_buffer(painter: &Painter, ed: &Editor, view: &View, m: &Metrics, t: Tokens, style: CursorStyle) {
     let area = view.area;
-    let point_line = b.line_of(b.point());
-    let point_text = b.line_text(point_line);
-    let point_index = expanded_len(&point_text, b.column(b.point()), m.tab_width);
-    let point_galley = layout_line(painter, &point_text, m, t.ink);
-    let cursor_x = point_galley.pos_from_cursor(CCursor::new(point_index)).min.x;
+    let b = ed.window_buffer();
+    // One extra row, partly shown, when scrolled between lines.
+    let rows = ed.window_rows(view.rows + 1, t.dark);
+    let default_style = ed.style_for(&["default".to_string()], t.dark);
+    let region_style = ed.style_for(&["region".to_string()], t.dark);
+    let selection = region_style.background.map(color32).unwrap_or(t.selection);
+    let region = b.active_region();
+    let point = b.point();
+    let point_row = rows.iter().position(|r| r.start <= point && point <= r.end);
+
+    let laid_out: Vec<(Arc<Galley>, Vec<Glyph>)> = rows
+        .iter()
+        .map(|row| {
+            let glyphs = row_glyphs(row, m.tab_width);
+            let job = row_job(row, &glyphs, region.as_ref(), &default_style, selection, m, t);
+            (painter.layout_job(job), glyphs)
+        })
+        .collect();
+    // Without a bold face, bold text is drawn a second time just to the right.
+    let emboldened: Vec<Option<Arc<Galley>>> = rows
+        .iter()
+        .zip(&laid_out)
+        .map(|(row, (_, glyphs))| {
+            let bold = theme::faux_bold() && row.segments.iter().any(|s| s.style.bold);
+            bold.then(|| painter.layout_job(bold_only_job(row, glyphs, &default_style, m, t)))
+        })
+        .collect();
+
     // Scroll horizontally, as Emacs does, when point would be off the right edge.
+    let cursor = point_row.map(|i| {
+        let (galley, glyphs) = &laid_out[i];
+        let index = cursor_index(glyphs, point);
+        let char_index: usize = glyphs[..index].iter().map(|g| g.text.chars().count()).sum();
+        let under = glyphs.get(index).filter(|g| g.pos == Some(point)).and_then(|g| g.text.chars().next());
+        (i, galley.clone(), char_index, under)
+    });
+    let cursor_x = cursor
+        .as_ref()
+        .map_or(0.0, |(_, galley, index, _)| galley.pos_from_cursor(CCursor::new(*index)).min.x);
     let hscroll = if cursor_x + m.char_width <= area.width() {
         0.0
     } else {
@@ -234,43 +263,104 @@ fn draw_buffer(painter: &Painter, b: &Buffer, view: &View, m: &Metrics, t: Token
     };
 
     let clipped = painter.with_clip_rect(view.clip);
-    let region = b.active_region();
     let row_top = |row: usize| area.top() + row as f32 * m.line_height - view.scroll_offset;
-    // One extra row, partly shown, when scrolled between lines.
-    for (row, line) in (b.top_line..b.line_count()).take(view.rows + 1).enumerate() {
-        let text = b.line_text(line);
-        let galley = if line == point_line {
-            point_galley.clone()
-        } else {
-            layout_line(painter, &text, m, t.ink)
-        };
-        let top = row_top(row);
-        if let Some(region) = &region {
-            let (start, end) = (b.line_start(line), b.line_end(line));
-            // The part of the region on this line, and whether it runs on past the newline.
-            if region.start <= end && region.end > start {
-                let from = expanded_len(&text, region.start.max(start) - start, m.tab_width);
-                let to = expanded_len(&text, region.end.min(end) - start, m.tab_width);
-                let x0 = galley.pos_from_cursor(CCursor::new(from)).min.x;
-                let mut x1 = galley.pos_from_cursor(CCursor::new(to)).min.x;
-                if region.end > end {
-                    x1 += m.char_width;
-                }
-                let left = area.left() - hscroll;
-                let rect = Rect::from_min_max(pos2(left + x0, top), pos2(left + x1, top + m.line_height));
-                clipped.rect_filled(rect, 0.0, t.selection);
-            }
+    for (i, (galley, _)) in laid_out.iter().enumerate() {
+        let y = row_top(i) + (m.line_height - galley.size().y) / 2.0;
+        clipped.galley(pos2(area.left() - hscroll, y), galley.clone(), t.ink);
+        if let Some(bold) = &emboldened[i] {
+            clipped.galley(pos2(area.left() - hscroll + FAUX_BOLD_OFFSET, y), bold.clone(), t.ink);
         }
-        let y = top + (m.line_height - galley.size().y) / 2.0;
-        clipped.galley(pos2(area.left() - hscroll, y), galley, t.ink);
     }
+    if let Some((i, galley, index, under)) = cursor {
+        let pos = pos2(area.left() - hscroll + cursor_x, row_top(i));
+        draw_cursor(&clipped, &galley, index, under, pos, m, t, style);
+    }
+}
 
-    if point_line >= b.top_line && point_line <= b.top_line + view.rows {
-        let x = area.left() - hscroll + cursor_x;
-        let y = row_top(point_line - b.top_line);
-        let under = expand(&point_text, m.tab_width).chars().nth(point_index);
-        draw_cursor(&clipped, &point_galley, point_index, under, pos2(x, y), m, t, cursor);
+/// A row as one layout job: a section for each run of glyphs with the same
+/// face and selection. A selected newline shows as one selected space.
+fn row_job(
+    row: &Row,
+    glyphs: &[Glyph],
+    region: Option<&std::ops::Range<usize>>,
+    default_style: &Style,
+    selection: Color32,
+    m: &Metrics,
+    t: Tokens,
+) -> LayoutJob {
+    let selected = |pos: Option<usize>| pos.is_some_and(|p| region.is_some_and(|r| r.contains(&p)));
+    let mut job = LayoutJob::default();
+    let mut i = 0;
+    while i < glyphs.len() {
+        let (segment, sel) = (glyphs[i].segment, selected(glyphs[i].pos));
+        let mut text = String::new();
+        while i < glyphs.len() && glyphs[i].segment == segment && selected(glyphs[i].pos) == sel {
+            text.push_str(&glyphs[i].text);
+            i += 1;
+        }
+        let seg = &row.segments[segment];
+        let mut format = face_format(&seg.style, default_style, m, t);
+        if seg.ellipsis {
+            format.color = t.faint;
+        }
+        if sel {
+            format.background = selection;
+        }
+        // The full line height, so backgrounds such as the region's meet
+        // the rows above and below.
+        format.line_height = Some(m.line_height);
+        job.append(&text, 0.0, format);
     }
+    if selected(Some(row.end)) {
+        let mut format = text_format(m, t.ink);
+        format.background = selection;
+        format.line_height = Some(m.line_height);
+        job.append(" ", 0.0, format);
+    }
+    job
+}
+
+/// How far apart the two copies of faux bold text are drawn, in points.
+const FAUX_BOLD_OFFSET: f32 = 0.6;
+
+/// A row's bold text alone, everything else transparent and without
+/// backgrounds, laid out exactly as the row is so it can be drawn over it.
+fn bold_only_job(row: &Row, glyphs: &[Glyph], default_style: &Style, m: &Metrics, t: Tokens) -> LayoutJob {
+    let mut job = LayoutJob::default();
+    for glyph in glyphs {
+        let style = &row.segments[glyph.segment].style;
+        let mut format = face_format(style, default_style, m, t);
+        format.background = Color32::TRANSPARENT;
+        format.underline = Stroke::NONE;
+        format.strikethrough = Stroke::NONE;
+        if !style.bold {
+            format.color = Color32::TRANSPARENT;
+        }
+        format.line_height = Some(m.line_height);
+        job.append(&glyph.text, 0.0, format);
+    }
+    job
+}
+
+/// How a face style draws: its colours over the default face's, bold in the
+/// bold monospace family, and egui's italics, underline and strike-through.
+fn face_format(style: &Style, default_style: &Style, m: &Metrics, t: Tokens) -> TextFormat {
+    let color = style.foreground.or(default_style.foreground).map(color32).unwrap_or(t.ink);
+    let mut format = text_format(m, color);
+    if style.bold {
+        format.font_id = FontId::new(m.font.size, bold_mono());
+    }
+    if let Some(bg) = style.background {
+        format.background = color32(bg);
+    }
+    format.italics = style.italic;
+    if style.underline {
+        format.underline = Stroke::new(1.0, color);
+    }
+    if style.strike {
+        format.strikethrough = Stroke::new(1.0, color);
+    }
+    format
 }
 
 /// Draws a box cursor at `pos`, as wide as the character under it.
@@ -354,7 +444,8 @@ fn draw_echo_area(painter: &Painter, ed: &Editor, rect: Rect, m: &Metrics, t: To
     let mb = ed.minibuffer();
     let input = mb.slice(0..mb.len());
     let mut job = LayoutJob::default();
-    job.append(prompt, 0.0, text_format(m, t.accent_ink));
+    let prompt_style = ed.style_for(&["minibuffer-prompt".to_string()], t.dark);
+    job.append(prompt, 0.0, face_format(&prompt_style, &Style::default(), m, t));
     job.append(&input, 0.0, text_format(m, t.ink));
     let completions = ed.minibuffer_completions();
     if !completions.is_empty() {

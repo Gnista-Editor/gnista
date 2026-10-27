@@ -11,6 +11,7 @@ use crate::error::{Error, Result};
 use crate::files::{abbreviate_dir, expand_file_name};
 use crate::key::{Key, KeyCode, format_keys};
 use crate::keymap::{Keymap, Lookup};
+use crate::faces::{self, Face};
 use crate::modes::{MinorMode, NamedKeymap};
 use crate::variables::{self, HookEntry, Variable};
 use crate::prefix::{PrefixArg, prefix_numeric_value};
@@ -74,6 +75,7 @@ pub struct Editor {
     /// Most recently registered first, which is the order keys are looked up in.
     pub(crate) minor_modes: Vec<MinorMode>,
     pub(crate) variables: BTreeMap<String, Variable>,
+    pub(crate) faces: BTreeMap<String, Face>,
     /// Global hook functions by hook name.
     pub(crate) hooks: BTreeMap<String, Vec<HookEntry>>,
     pub(crate) next_hook_id: u64,
@@ -144,6 +146,7 @@ impl Editor {
             keymaps: BTreeMap::new(),
             minor_modes: Vec::new(),
             variables: BTreeMap::new(),
+            faces: BTreeMap::new(),
             hooks: BTreeMap::new(),
             next_hook_id: 0,
             interactive: false,
@@ -169,6 +172,7 @@ impl Editor {
             quit: false,
         };
         variables::install(&mut editor);
+        faces::install(&mut editor);
         commands::install(&mut editor);
         editor
     }
@@ -508,7 +512,9 @@ impl Editor {
             self.message = Some(format!("Error in pre-command-hook: {e}"));
         }
         let name = self.this_command.take().unwrap_or_else(|| name.to_string());
+        let old_point = self.buffer().point();
         self.run_interactive(&name);
+        self.adjust_point_for_invisible(old_point);
         self.this_command = self.last_command.clone();
         if let Err(e) = self.run_hooks("post-command-hook") {
             self.message = Some(format!("Error in post-command-hook: {e}"));
@@ -885,6 +891,7 @@ impl Editor {
                 .filter(|name| name.starts_with(input))
                 .cloned()
                 .collect(),
+            ParamKind::Face => self.faces.keys().filter(|name| name.starts_with(input)).cloned().collect(),
             ParamKind::String | ParamKind::Keys => Vec::new(),
         }
     }
@@ -924,12 +931,15 @@ impl Editor {
 
     /// Scrolls the window so point is visible, recentring when it has moved off screen.
     pub fn ensure_point_visible(&mut self) {
-        let height = self.viewport_height;
-        let buffer = self.window_buffer_mut();
-        let line = buffer.line_of(buffer.point());
-        if line < buffer.top_line || line >= buffer.top_line + height {
-            buffer.top_line = line.saturating_sub(height / 2);
+        let height = self.viewport_height as i64;
+        let b = self.window_buffer();
+        let point_row = self.row_line_in(b, b.line_of(b.point()));
+        let mut top = self.row_line_in(b, b.top_line.min(b.line_count() - 1));
+        let bottom = self.move_rows_in(b, top, height - 1).0;
+        if point_row < top || point_row > bottom {
+            top = self.move_rows_in(b, point_row, -(height / 2)).0;
         }
+        self.window_buffer_mut().top_line = top;
     }
 
     pub fn should_quit(&self) -> bool {

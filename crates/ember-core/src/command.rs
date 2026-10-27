@@ -20,16 +20,19 @@ pub enum ParamKind {
     Keys,
     /// A variable name, completed from the defined variables.
     Variable,
+    /// A face name, completed from the defined faces.
+    Face,
 }
 
 impl ParamKind {
-    pub const ALL: [ParamKind; 6] = [
+    pub const ALL: [ParamKind; 7] = [
         ParamKind::String,
         ParamKind::File,
         ParamKind::Buffer,
         ParamKind::Command,
         ParamKind::Keys,
         ParamKind::Variable,
+        ParamKind::Face,
     ];
 
     /// The kind's name in scripts, such as `"file"`.
@@ -41,6 +44,7 @@ impl ParamKind {
             ParamKind::Command => "command",
             ParamKind::Keys => "keys",
             ParamKind::Variable => "variable",
+            ParamKind::Face => "face",
         }
     }
 
@@ -56,6 +60,7 @@ impl ParamKind {
             ParamKind::Command => "command name",
             ParamKind::Keys => "key sequence",
             ParamKind::Variable => "variable name",
+            ParamKind::Face => "face name",
         }
     }
 }

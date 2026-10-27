@@ -74,6 +74,14 @@ declare global {
        */
       "describe-command": [command: string];
       /**
+       * Show a face's documentation and attributes, and what it looks like on dark and light backgrounds.
+       *
+       * @param face face name
+       *
+       * Defined in packages/help.ts.
+       */
+      "describe-face": [face: string];
+      /**
        * Show which command a key sequence runs.
        *
        * @param key key sequence
@@ -276,13 +284,13 @@ declare global {
       /**
        * Move point to the beginning of the line.
        *
-       * With a prefix argument N, move forward N - 1 lines first.
+       * With a prefix argument N, move forward N - 1 lines first. Where text is hidden, this is the start of the row on screen, as in Emacs.
        */
       "move-beginning-of-line": [];
       /**
        * Move point to the end of the line.
        *
-       * With a prefix argument N, move forward N - 1 lines first.
+       * With a prefix argument N, move forward N - 1 lines first. Where text is hidden, this is the end of the row on screen, after the hidden text, as in Emacs.
        */
       "move-end-of-line": [];
       /**
@@ -315,6 +323,90 @@ declare global {
        * Defined in packages/files.ts.
        */
       "normal-mode": [];
+      /**
+       * On a heading, cycle its visibility: folded, then its children, then its whole subtree.
+       *
+       * Anywhere else, indent as TAB usually does.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-cycle": [];
+      /**
+       * Cycle the whole buffer: top-level headings only, then all headings, then everything.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-cycle-buffer": [];
+      /**
+       * Hide all text except headings.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-hide-body": [];
+      /**
+       * Hide the text of the heading point is under, but not its subheadings.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-hide-entry": [];
+      /**
+       * Hide everything under the heading point is under.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-hide-subtree": [];
+      /**
+       * Fold text under headings, in any major mode. The keys start with C-c @, such as C-c @ C-d to hide a subtree.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-minor-mode": [];
+      /**
+       * The major mode for outlines: text organised under headings that start with stars.
+       *
+       * TAB on a heading cycles it between folded, its children and its whole subtree; S-TAB cycles the whole buffer. The other keys start with C-c, such as C-c C-d to hide a subtree.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-mode": [];
+      /**
+       * Move to the next heading that is not hidden.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-next-visible-heading": [];
+      /**
+       * Move to the previous heading that is not hidden.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-previous-visible-heading": [];
+      /**
+       * Show all text.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-show-all": [];
+      /**
+       * Show the headings directly under the heading point is under, hiding their text.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-show-children": [];
+      /**
+       * Show the text of the heading point is under, but not its subheadings.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-show-entry": [];
+      /**
+       * Show everything under the heading point is under.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-show-subtree": [];
       /**
        * Replace text rather than insert it: each typed character replaces the one after point.
        *
@@ -468,6 +560,12 @@ declare global {
        */
       "auto-mode-alist": Value;
       /**
+       * Which text the invisible property hides.
+       *
+       * If true, any text whose invisible property is true is hidden. If a list, text is hidden when its invisible property names an entry: "name", or ["name", true] to show "..." in its place.
+       */
+      "buffer-invisibility-spec": Value;
+      /**
        * Whether DEL and <delete> delete the active region rather than one character.
        *
        * If the value is "kill", they kill the region instead, so it can be yanked back.
@@ -480,6 +578,10 @@ declare global {
        */
       "delete-selection-mode": Value;
       /**
+       * Whether the terminal's background is "dark" or "light", for choosing face colours there. The graphical front end follows the system instead.
+       */
+      "frame-background-mode": Value;
+      /**
        * The current buffer's major mode, as the name of the command that turns it on.
        */
       "major-mode": Value;
@@ -487,6 +589,23 @@ declare global {
        * The current buffer's major mode as the mode line shows it.
        */
       "mode-name": Value;
+      /**
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline--cycle-buffer-state": Value;
+      /**
+       * Whether Outline-Minor mode is on in this buffer. Use the command outline-minor-mode to change it.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-minor-mode": Value;
+      /**
+       * What starts a heading line: a JavaScript regular expression matched at the start of a line. The length of the match is the heading's level.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-regexp": Value;
       /**
        * Whether Overwrite mode is on in this buffer. Use the command overwrite-mode to change it.
        *
@@ -497,6 +616,154 @@ declare global {
        * How many columns apart tab stops are, for showing tab characters.
        */
       "tab-width": Value;
+    }
+
+    /** Every face, with its documentation. */
+    interface Faces {
+      /**
+       * Bold text.
+       */
+      "bold": FaceAttributes;
+      /**
+       * Bold italic text.
+       */
+      "bold-italic": FaceAttributes;
+      /**
+       * The text of buffers.
+       */
+      "default": FaceAttributes;
+      /**
+       * Errors.
+       */
+      "error": FaceAttributes;
+      /**
+       * Built-in names.
+       */
+      "font-lock-builtin-face": FaceAttributes;
+      /**
+       * The characters that start and end comments.
+       */
+      "font-lock-comment-delimiter-face": FaceAttributes;
+      /**
+       * Comments.
+       */
+      "font-lock-comment-face": FaceAttributes;
+      /**
+       * Constants.
+       */
+      "font-lock-constant-face": FaceAttributes;
+      /**
+       * Documentation strings.
+       */
+      "font-lock-doc-face": FaceAttributes;
+      /**
+       * Names of functions being defined.
+       */
+      "font-lock-function-name-face": FaceAttributes;
+      /**
+       * Keywords.
+       */
+      "font-lock-keyword-face": FaceAttributes;
+      /**
+       * Strings.
+       */
+      "font-lock-string-face": FaceAttributes;
+      /**
+       * Type names.
+       */
+      "font-lock-type-face": FaceAttributes;
+      /**
+       * Names of variables being defined.
+       */
+      "font-lock-variable-name-face": FaceAttributes;
+      /**
+       * Things to notice.
+       */
+      "font-lock-warning-face": FaceAttributes;
+      /**
+       * Highlighting, such as of what the mouse is over.
+       */
+      "highlight": FaceAttributes;
+      /**
+       * Italic text.
+       */
+      "italic": FaceAttributes;
+      /**
+       * Links.
+       */
+      "link": FaceAttributes;
+      /**
+       * The minibuffer's prompt.
+       */
+      "minibuffer-prompt": FaceAttributes;
+      /**
+       * Level 1 headings, and deeper levels in turn.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-1": FaceAttributes;
+      /**
+       * Level 2 headings, and deeper levels in turn.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-2": FaceAttributes;
+      /**
+       * Level 3 headings, and deeper levels in turn.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-3": FaceAttributes;
+      /**
+       * Level 4 headings, and deeper levels in turn.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-4": FaceAttributes;
+      /**
+       * Level 5 headings, and deeper levels in turn.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-5": FaceAttributes;
+      /**
+       * Level 6 headings, and deeper levels in turn.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-6": FaceAttributes;
+      /**
+       * Level 7 headings, and deeper levels in turn.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-7": FaceAttributes;
+      /**
+       * Level 8 headings, and deeper levels in turn.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-8": FaceAttributes;
+      /**
+       * The active region.
+       */
+      "region": FaceAttributes;
+      /**
+       * Text that matters less, such as hints.
+       */
+      "shadow": FaceAttributes;
+      /**
+       * Success.
+       */
+      "success": FaceAttributes;
+      /**
+       * Underlined text.
+       */
+      "underline": FaceAttributes;
+      /**
+       * Warnings.
+       */
+      "warning": FaceAttributes;
     }
 
     /** Every hook, with its documentation. */
@@ -542,6 +809,22 @@ declare global {
        */
       "help-mode-hook": Value;
       /**
+       * Run after Outline-Minor mode is turned on or off.
+       */
+      "outline-minor-mode-hook": Value;
+      /**
+       * Run after Outline-Minor mode is turned off.
+       */
+      "outline-minor-mode-off-hook": Value;
+      /**
+       * Run after Outline-Minor mode is turned on.
+       */
+      "outline-minor-mode-on-hook": Value;
+      /**
+       * Run after entering Outline mode, after the hooks of the modes it is built on.
+       */
+      "outline-mode-hook": Value;
+      /**
        * Run after Overwrite mode is turned on or off.
        */
       "overwrite-mode-hook": Value;
@@ -574,7 +857,7 @@ declare global {
     type DefinedCommand = string & { readonly [definedCommand]: true };
 
     /** How the minibuffer reads a parameter when the command runs from a key or M-x. */
-    type ParamKind = "string" | "file" | "buffer" | "command" | "keys" | "variable";
+    type ParamKind = "string" | "file" | "buffer" | "command" | "keys" | "variable" | "face";
 
     interface Param {
       name: string;
@@ -807,6 +1090,104 @@ declare global {
     function calledInteractively(): boolean;
     /** Whether the region is active: shown, and what region commands act on (Emacs's region-active-p). */
     function regionActive(): boolean;
+
+    type FaceName = keyof Faces;
+    /** A face's own attributes. Colours are palette names, such as "accent" or "muted", or "#rrggbb" and "#rrggbbaa". */
+    interface FaceAttributes {
+      foreground?: string;
+      background?: string;
+      bold?: boolean;
+      italic?: boolean;
+      underline?: boolean;
+      strike?: boolean;
+      /** A face to take the attributes this one does not set from. */
+      inherit?: FaceName | (string & {});
+    }
+    interface FaceDefinition {
+      /** Lowercase words joined by dashes, ending in -face for faces of a mode: "outline-1". */
+      name: string;
+      doc?: string;
+      /** Attributes for both light and dark backgrounds. */
+      attributes?: FaceAttributes;
+      /** What changes on a dark background. */
+      dark?: FaceAttributes;
+      /** What changes on a light background. */
+      light?: FaceAttributes;
+    }
+    /** Define a face (Emacs's defface). A face that exists keeps its attributes, which may be customised. */
+    function defineFace(definition: FaceDefinition): void;
+    /** Change some of a face's attributes, for both backgrounds or one (Emacs's set-face-attribute). */
+    function setFaceAttribute(
+      name: FaceName | (string & {}),
+      attributes: FaceAttributes,
+      options?: { background?: "both" | "dark" | "light" },
+    ): void;
+    /** A face's attributes with what it inherits filled in, for a dark background unless told otherwise. */
+    function faceAttributes(name: FaceName | (string & {}), options?: { dark?: boolean }): FaceAttributes;
+    /** A face's documentation and own attributes, or undefined if there is no such face. */
+    function faceInfo(name: FaceName | (string & {})):
+      | { doc: string; source?: string; attributes: FaceAttributes; dark: FaceAttributes; light: FaceAttributes }
+      | undefined;
+
+    /**
+     * Set a text property on the characters from start up to end (Emacs's
+     * put-text-property). "face" names a face or a list of faces, earlier ones
+     * winning; "invisible" hides text, as buffer-invisibility-spec says.
+     */
+    function putTextProperty(start: number, end: number, name: string, value: Value): void;
+    function removeTextProperty(start: number, end: number, name: string): void;
+    /** The text properties of the character at a position. */
+    function textPropertiesAt(position: number): { [name: string]: Value };
+    function getTextProperty(position: number, name: string): Value | undefined;
+    /** A property from the highest priority overlay that has it, otherwise from the text (Emacs's get-char-property). */
+    function charProperty(position: number, name: string): Value | undefined;
+    /** The next position where text properties change, if any. */
+    function nextPropertyChange(position: number): number | undefined;
+    /** The next position where text properties or overlays change. */
+    function nextCharPropertyChange(position: number): number;
+
+    /**
+     * Lay an overlay over the text from start up to end, with properties such
+     * as "face", "invisible", "priority" (higher wins) and "evaporate" (deleted
+     * when it becomes empty). Its ends move with edits. Returns its id.
+     */
+    function makeOverlay(start: number, end: number, properties?: { [name: string]: Value }): number;
+    function overlayPut(overlay: number, name: string, value: Value): void;
+    function overlayGet(overlay: number, name: string): Value | undefined;
+    function overlayStart(overlay: number): number | undefined;
+    function overlayEnd(overlay: number): number | undefined;
+    function moveOverlay(overlay: number, start: number, end: number): void;
+    function deleteOverlay(overlay: number): void;
+    /** Overlays overlapping the range, and empty ones inside it. */
+    function overlaysIn(start: number, end: number): number[];
+    /** Overlays covering the character at a position. */
+    function overlaysAt(position: number): number[];
+
+    /** Whether the character at a position is hidden. */
+    function invisibleAt(position: number): boolean;
+    /** How many lines the buffer has, counting the empty line after a final newline. */
+    function lineCount(): number;
+    /** The line, counting from 0, that a position is on. */
+    function lineOf(position: number): number;
+    /** The position where a line starts. */
+    function lineStart(line: number): number;
+    /** The position where a line ends, before its newline. */
+    function lineEnd(line: number): number;
+    /** A line's text, without its newline. */
+    function lineText(line: number): string;
+    /**
+     * How many characters the buffer has. Positions count characters, while
+     * JavaScript string indices count UTF-16 units, which differ for emoji and
+     * other characters outside the Basic Multilingual Plane; work with lines
+     * and positions from these functions rather than indices into bufferText().
+     */
+    function bufferSize(): number;
+    /**
+     * Make text whose invisible property is `name` hidden in this buffer
+     * (Emacs's add-to-invisibility-spec); with `ellipsis`, shown as "...".
+     */
+    function addToInvisibilitySpec(name: string, options?: { ellipsis?: boolean }): void;
+    function removeFromInvisibilitySpec(name: string): void;
   }
 
   var console: {

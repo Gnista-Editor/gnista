@@ -1,0 +1,98 @@
+[
+  {
+    "name": "next-line-skips-a-folded-subtree",
+    "text": "* One\nbody\nmore\n* Two\nlast",
+    "keys": "C-c @ C-d C-n",
+    "modes": [
+      "outline-minor-mode"
+    ]
+  },
+  {
+    "name": "previous-line-onto-a-folded-heading",
+    "text": "* One\nbody\nmore\n* Two\nlast",
+    "keys": "C-c @ C-d C-n C-p",
+    "modes": [
+      "outline-minor-mode"
+    ]
+  },
+  {
+    "name": "end-of-line-on-a-folded-heading",
+    "text": "* One\nbody\nmore\n* Two\nlast",
+    "keys": "C-c @ C-d C-e",
+    "modes": [
+      "outline-minor-mode"
+    ]
+  },
+  {
+    "name": "forward-char-into-hidden-text",
+    "text": "* One\nbody\nmore\n* Two\nlast",
+    "keys": "C-c @ C-d C-e C-f",
+    "modes": [
+      "outline-minor-mode"
+    ]
+  },
+  {
+    "name": "forward-char-twice-past-hidden-text",
+    "text": "* One\nbody\nmore\n* Two\nlast",
+    "keys": "C-c @ C-d C-e C-f C-f",
+    "modes": [
+      "outline-minor-mode"
+    ]
+  },
+  {
+    "name": "backward-char-out-of-the-next-heading",
+    "text": "* One\nbody\nmore\n* Two\nlast",
+    "keys": "C-c @ C-d C-n C-b",
+    "modes": [
+      "outline-minor-mode"
+    ]
+  },
+  {
+    "name": "next-visible-heading",
+    "text": "* One\nbody\nmore\n* Two\nlast",
+    "keys": "C-c @ C-n",
+    "modes": [
+      "outline-minor-mode"
+    ]
+  },
+  {
+    "name": "hide-body-then-move-down",
+    "text": "* A\na\n* B\nb\n* C\nc",
+    "keys": "C-c @ C-t C-n C-n",
+    "modes": [
+      "outline-minor-mode"
+    ]
+  },
+  {
+    "name": "show-all-then-move-down",
+    "text": "* One\nbody\nmore\n* Two\nlast",
+    "keys": "C-c @ C-d C-c @ C-a C-n",
+    "modes": [
+      "outline-minor-mode"
+    ]
+  },
+  {
+    "name": "hide-entry-keeps-subheadings",
+    "text": "* A\na\n** B\nb\n* C",
+    "keys": "C-c @ C-c C-n",
+    "modes": [
+      "outline-minor-mode"
+    ]
+  },
+  {
+    "name": "beginning-of-line-from-the-end-of-a-folded-row",
+    "text": "* One\nbody\nmore\n* Two\nlast",
+    "keys": "C-c @ C-d C-e C-a",
+    "modes": [
+      "outline-minor-mode"
+    ]
+  },
+  {
+    "name": "backward-char-into-hidden-text",
+    "text": "* One\nbody\nmore\n* Two\nlast",
+    "keys": "C-c @ C-d C-e C-b C-b",
+    "modes": [
+      "outline-minor-mode"
+    ]
+  }
+]
