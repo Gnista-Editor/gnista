@@ -1,0 +1,47 @@
+[
+  {
+    "name": "undo-typing",
+    "text": "",
+    "keys": "h e l l o C-/"
+  },
+  {
+    "name": "undo-in-steps",
+    "text": "",
+    "keys": "a b RET c d C-/ C-/"
+  },
+  {
+    "name": "undo-with-other-keys",
+    "text": "",
+    "keys": "a b C-_ C-x u"
+  },
+  {
+    "name": "undo-a-kill",
+    "text": "one\ntwo",
+    "keys": "C-k C-/"
+  },
+  {
+    "name": "undo-back-to-unmodified",
+    "text": "abc",
+    "keys": "x C-/"
+  },
+  {
+    "name": "undo-groups-up-to-20-characters",
+    "text": "",
+    "keys": "a b c d e f g h i j k l m n o p q r s t u v w x y C-/"
+  },
+  {
+    "name": "nothing-to-undo",
+    "text": "abc",
+    "keys": "C-/"
+  },
+  {
+    "name": "undo-after-moving-redoes",
+    "text": "",
+    "keys": "h i C-/ C-a C-/"
+  },
+  {
+    "name": "undo-redo",
+    "text": "",
+    "keys": "a b C-/ C-M-_"
+  }
+]

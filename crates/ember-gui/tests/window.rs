@@ -85,7 +85,8 @@ fn the_window_shows_the_buffer_name() {
 /// whole line, into the next.
 fn sample_with_selection() -> Editor {
     let mut ed = sample();
-    ed.press("S-<down> S-<down> S-<down> S-<end>").unwrap();
+    // C-S-e rather than S-<end>, which goes to the end of the buffer on macOS.
+    ed.press("S-<down> S-<down> S-<down> C-S-e").unwrap();
     ed
 }
 

@@ -102,6 +102,7 @@ fn special_key(code: TermKey) -> Option<KeyCode> {
         TermKey::End => KeyCode::End,
         TermKey::PageUp => KeyCode::PageUp,
         TermKey::PageDown => KeyCode::PageDown,
+        TermKey::F(n) => KeyCode::F(n),
         _ => return None,
     })
 }

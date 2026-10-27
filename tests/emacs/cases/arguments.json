@@ -1,0 +1,106 @@
+[
+  {
+    "name": "c-u-with-a-number",
+    "text": "abcdef",
+    "keys": "C-u 2 C-f"
+  },
+  {
+    "name": "c-u-alone-is-four",
+    "text": "abcdefgh",
+    "keys": "C-u C-f"
+  },
+  {
+    "name": "c-u-twice-is-sixteen",
+    "text": "abcdefghijklmnopqrstu",
+    "keys": "C-u C-u C-f"
+  },
+  {
+    "name": "meta-digit",
+    "text": "abcdefgh",
+    "keys": "M-3 C-f"
+  },
+  {
+    "name": "meta-digits",
+    "text": "abcdefghijklmnopqrstu",
+    "keys": "M-1 M-2 C-f"
+  },
+  {
+    "name": "negative-argument",
+    "text": "abcdef",
+    "keys": "C-- C-f",
+    "point": 4
+  },
+  {
+    "name": "c-u-minus-number",
+    "text": "abcdef",
+    "keys": "C-u - 2 C-f",
+    "point": 4
+  },
+  {
+    "name": "repeat-a-character",
+    "text": "",
+    "keys": "C-u 3 a"
+  },
+  {
+    "name": "c-u-alone-repeats-four-times",
+    "text": "",
+    "keys": "C-u a"
+  },
+  {
+    "name": "c-u-then-digits-are-the-argument",
+    "text": "",
+    "keys": "C-u 1 2 x"
+  },
+  {
+    "name": "kill-lines-with-an-argument",
+    "text": "a\nb\nc\nd",
+    "keys": "C-u 2 C-k"
+  },
+  {
+    "name": "kill-line-backwards-with-zero",
+    "text": "one two\nthree",
+    "keys": "C-u 0 C-k",
+    "point": 4
+  },
+  {
+    "name": "next-line-with-an-argument",
+    "text": "a\nb\nc\nd\ne",
+    "keys": "C-u 3 C-n"
+  },
+  {
+    "name": "newlines-with-an-argument",
+    "text": "",
+    "keys": "C-u 3 RET"
+  },
+  {
+    "name": "delete-chars-with-an-argument",
+    "text": "abcdef",
+    "keys": "C-u 2 C-d"
+  },
+  {
+    "name": "delete-backward-with-an-argument",
+    "text": "abcdef",
+    "keys": "M-2 DEL",
+    "point": 4
+  },
+  {
+    "name": "words-with-an-argument",
+    "text": "one two three four",
+    "keys": "M-2 M-f"
+  },
+  {
+    "name": "kill-words-with-an-argument",
+    "text": "one two three four",
+    "keys": "M-2 M-d"
+  },
+  {
+    "name": "repeat-the-last-command",
+    "text": "",
+    "keys": "a C-x z"
+  },
+  {
+    "name": "repeat-again",
+    "text": "abcdef",
+    "keys": "C-f C-x z z"
+  }
+]

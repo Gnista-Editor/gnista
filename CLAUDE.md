@@ -33,11 +33,13 @@ cargo clippy --all-targets
 - `cargo run -p ember -- --print-types` prints the generated declarations.
 - The GUI uses Geist Mono and Inter if they are installed, and egui's built-in fonts otherwise.
 - GUI snapshots live in `crates/ember-gui/tests/snapshots/`. After an intended visual change, run `UPDATE_SNAPSHOTS=1 cargo test -p ember-gui`, then look at the new images before committing them.
+- `tests/emacs/` compares Ember with real GNU Emacs on recorded cases (see its README). After adding or changing cases, record them with `emacs -Q --batch -l tests/emacs/record.el`. `known-gaps.txt` lists where Ember does not match yet.
 - On macOS, `.cargo/config.toml` links with `/usr/bin/cc`, because the Nix `cc` on PATH cannot find the SDK (`library not found for -liconv`).
 
 ## Conventions
 
-- Match Emacs names, keys and messages unless there is a reason not to.
+- Match Emacs names, keys and messages unless there is a reason not to. When behaviour should match Emacs, add an oracle case in `tests/emacs/cases/` rather than guessing what Emacs does.
+- Commands Emacs writes in Lisp are written in TypeScript ([ADR 0005](docs/adr/0005-rust-core-typescript-commands.md)); Rust is for what Emacs does in C.
 - Every feature lands with tests. Behaviour a user sees gets a headless test driven by key sequences: in `crates/ember-core/tests/` for the core, `crates/ember-script/tests/` for scripts, and a snapshot in `crates/ember-gui/tests/` for anything drawn differently.
 - Decisions go in `docs/adr/NNNN-short-title.md` (template in `docs/adr/0000-template.md`), naming any new dependency and its purpose.
 - Never commit API keys or real personal org files.

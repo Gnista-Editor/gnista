@@ -1,0 +1,102 @@
+[
+  {
+    "name": "set-mark-and-move",
+    "text": "hello world",
+    "keys": "C-SPC M-f"
+  },
+  {
+    "name": "set-mark-twice-deactivates",
+    "text": "abc",
+    "keys": "C-SPC C-SPC"
+  },
+  {
+    "name": "exchange-point-and-mark",
+    "text": "hello world",
+    "keys": "C-SPC M-f C-x C-x"
+  },
+  {
+    "name": "mark-whole-buffer",
+    "text": "abc\ndef",
+    "keys": "C-x h",
+    "point": 2
+  },
+  {
+    "name": "movement-extends-the-region",
+    "text": "hello world",
+    "keys": "C-SPC M-f C-f"
+  },
+  {
+    "name": "typing-deactivates-the-region",
+    "text": "hello",
+    "keys": "C-SPC C-f x"
+  },
+  {
+    "name": "quit-deactivates-the-region",
+    "text": "hello",
+    "keys": "C-SPC C-f C-g"
+  },
+  {
+    "name": "beginning-of-buffer-leaves-the-mark",
+    "text": "abc",
+    "keys": "M-<",
+    "point": 2
+  },
+  {
+    "name": "end-of-buffer-keeps-an-active-region",
+    "text": "abc\ndef",
+    "keys": "C-SPC M->",
+    "point": 1
+  },
+  {
+    "name": "shift-select-characters",
+    "text": "hello world",
+    "keys": "S-<right> S-<right>"
+  },
+  {
+    "name": "shift-select-words",
+    "text": "hello world",
+    "keys": "M-S-f M-S-f"
+  },
+  {
+    "name": "shift-select-with-control",
+    "text": "hello world",
+    "keys": "C-S-f C-S-f C-S-f"
+  },
+  {
+    "name": "shift-select-to-end-of-line",
+    "text": "one two\nthree",
+    "keys": "C-S-e"
+  },
+  {
+    "name": "shift-select-down",
+    "text": "one\ntwo\nthree",
+    "keys": "S-<down> S-<down>",
+    "point": 1
+  },
+  {
+    "name": "unshifted-move-ends-shift-selection",
+    "text": "hello world",
+    "keys": "S-<right> <right>"
+  },
+  {
+    "name": "shift-after-set-mark-starts-again",
+    "text": "hello world",
+    "keys": "C-SPC C-f C-f S-<right>"
+  },
+  {
+    "name": "unshifted-move-keeps-set-mark-region",
+    "text": "hello world",
+    "keys": "C-SPC S-<right> <right>"
+  },
+  {
+    "name": "pop-the-mark-ring",
+    "text": "a b c d",
+    "keys": "C-SPC M-f C-SPC M-f C-u C-SPC"
+  },
+  {
+    "name": "shift-select-to-end-of-buffer-on-macos",
+    "text": "one two\nthree",
+    "keys": "S-<end>",
+    "platform": "darwin"
+  }
+]

@@ -86,8 +86,14 @@ fn special(key: EguiKey) -> Option<KeyCode> {
         EguiKey::End => KeyCode::End,
         EguiKey::PageUp => KeyCode::PageUp,
         EguiKey::PageDown => KeyCode::PageDown,
-        _ => return None,
+        key => return function_key(key).map(KeyCode::F),
     })
+}
+
+/// The number of a function key, from F1 to F35.
+fn function_key(key: EguiKey) -> Option<u8> {
+    let n: u8 = key.name().strip_prefix('F')?.parse().ok()?;
+    (1..=35).contains(&n).then_some(n)
 }
 
 /// The character a key types, with Shift applied for a US layout. egui
@@ -173,6 +179,7 @@ mod tests {
         assert_eq!(keys(&[press(EguiKey::Comma, shift_alt)], true), "M-<");
         assert_eq!(keys(&[press(EguiKey::Enter, Modifiers::NONE)], true), "RET");
         assert_eq!(keys(&[press(EguiKey::Backspace, ALT)], true), "M-DEL");
+        assert_eq!(keys(&[press(EguiKey::F3, Modifiers::NONE)], true), "<f3>");
     }
 
     #[test]

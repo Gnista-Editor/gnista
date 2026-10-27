@@ -17,6 +17,8 @@ pub enum KeyCode {
     End,
     PageUp,
     PageDown,
+    /// A function key, `<f1>` to `<f35>`.
+    F(u8),
     /// The mouse wheel or a trackpad scrolling towards the start of the buffer.
     WheelUp,
     /// The mouse wheel or a trackpad scrolling towards the end of the buffer.
@@ -109,6 +111,7 @@ impl Key {
             "<next>" => KeyCode::PageDown,
             "<wheel-up>" => KeyCode::WheelUp,
             "<wheel-down>" => KeyCode::WheelDown,
+            _ if function_key(rest).is_some() => KeyCode::F(function_key(rest).unwrap_or_default()),
             _ => {
                 let mut chars = rest.chars();
                 let c = chars.next()?;
@@ -155,11 +158,18 @@ impl fmt::Display for Key {
             KeyCode::End => "<end>",
             KeyCode::PageUp => "<prior>",
             KeyCode::PageDown => "<next>",
+            KeyCode::F(n) => return write!(f, "<f{n}>"),
             KeyCode::WheelUp => "<wheel-up>",
             KeyCode::WheelDown => "<wheel-down>",
         };
         f.write_str(name)
     }
+}
+
+/// The number of a function key written as `<f1>` to `<f35>`.
+fn function_key(name: &str) -> Option<u8> {
+    let n: u8 = name.strip_prefix("<f")?.strip_suffix('>')?.parse().ok()?;
+    (1..=35).contains(&n).then_some(n)
 }
 
 /// Writes a key sequence in Emacs notation, for example `C-x C-f`.
@@ -173,13 +183,14 @@ mod tests {
 
     #[test]
     fn parses_and_prints_emacs_notation() {
-        for s in ["a", "C-x", "M-f", "C-M-f", "RET", "SPC", "M-<", "M->", "C--", "<left>", "M-DEL", "S-<right>", "C-S-f", "C-M-S-<up>", "<wheel-down>", "C-<wheel-up>"] {
+        for s in ["a", "C-x", "M-f", "C-M-f", "RET", "SPC", "M-<", "M->", "C--", "<left>", "M-DEL", "S-<right>", "C-S-f", "C-M-S-<up>", "<wheel-down>", "C-<wheel-up>", "<f3>", "S-<f12>"] {
             let key = Key::parse(s).unwrap_or_else(|| panic!("failed to parse {s}"));
             assert_eq!(key.to_string(), s);
         }
         assert_eq!(Key::parse("C-x"), Some(Key::char('x').ctrl()));
         assert_eq!(Key::parse("S-<right>"), Some(Key::new(KeyCode::Right).shift()));
         assert_eq!(Key::parse("S"), Some(Key::char('S')));
+        assert_eq!(Key::parse("<f0>"), None);
         assert_eq!(Key::parse("M-"), None);
         assert_eq!(Key::parse("ab"), None);
     }

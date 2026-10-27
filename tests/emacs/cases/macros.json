@@ -1,0 +1,17 @@
+[
+  {
+    "name": "record-and-run-a-macro",
+    "text": "",
+    "keys": "<f3> a b <f4> <f4>"
+  },
+  {
+    "name": "run-a-macro-with-c-x-e",
+    "text": "",
+    "keys": "C-x ( x y C-x ) C-x e"
+  },
+  {
+    "name": "run-a-macro-several-times",
+    "text": "",
+    "keys": "<f3> z <f4> C-u 3 <f4>"
+  }
+]

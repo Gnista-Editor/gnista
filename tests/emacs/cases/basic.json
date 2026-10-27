@@ -1,0 +1,127 @@
+[
+  {
+    "name": "insert-text",
+    "text": "",
+    "keys": "h e l l o"
+  },
+  {
+    "name": "insert-space-and-capitals",
+    "text": "",
+    "keys": "H i SPC t h e r e"
+  },
+  {
+    "name": "newline-splits-a-line",
+    "text": "onetwo",
+    "keys": "RET",
+    "point": 3
+  },
+  {
+    "name": "forward-and-backward-char",
+    "text": "abcdef",
+    "keys": "C-f C-f C-f C-b"
+  },
+  {
+    "name": "arrow-keys",
+    "text": "abc\ndef",
+    "keys": "<right> <down> <left>"
+  },
+  {
+    "name": "forward-char-at-end",
+    "text": "ab",
+    "keys": "C-f",
+    "point": 2
+  },
+  {
+    "name": "backward-char-at-start",
+    "text": "ab",
+    "keys": "C-b"
+  },
+  {
+    "name": "next-line-keeps-the-column",
+    "text": "long line here\nab\nanother long line",
+    "keys": "C-n C-n",
+    "point": 10
+  },
+  {
+    "name": "previous-line-keeps-the-column",
+    "text": "another long line\nab\nlong line here",
+    "keys": "C-p C-p",
+    "point": 30
+  },
+  {
+    "name": "next-line-on-the-last-line",
+    "text": "abc\ndef",
+    "keys": "C-n",
+    "point": 5
+  },
+  {
+    "name": "previous-line-on-the-first-line",
+    "text": "abc\ndef",
+    "keys": "C-p",
+    "point": 1
+  },
+  {
+    "name": "end-and-beginning-of-line",
+    "text": "one\ntwo three",
+    "keys": "C-e C-a C-e",
+    "point": 6
+  },
+  {
+    "name": "forward-word",
+    "text": "alpha beta-gamma delta",
+    "keys": "M-f M-f M-f"
+  },
+  {
+    "name": "backward-word",
+    "text": "alpha beta-gamma delta",
+    "keys": "M-b M-b",
+    "point": 22
+  },
+  {
+    "name": "forward-word-over-punctuation",
+    "text": "  ...hello, world",
+    "keys": "M-f M-f"
+  },
+  {
+    "name": "end-of-buffer",
+    "text": "abc\ndef",
+    "keys": "M->",
+    "point": 2
+  },
+  {
+    "name": "beginning-of-buffer",
+    "text": "abc\ndef",
+    "keys": "M-<",
+    "point": 5
+  },
+  {
+    "name": "delete-char",
+    "text": "abc",
+    "keys": "C-d",
+    "point": 1
+  },
+  {
+    "name": "delete-char-at-end",
+    "text": "abc",
+    "keys": "C-d",
+    "point": 3
+  },
+  {
+    "name": "delete-backward-char",
+    "text": "abc",
+    "keys": "DEL DEL",
+    "point": 3
+  },
+  {
+    "name": "delete-backward-char-at-start",
+    "text": "abc",
+    "keys": "DEL"
+  },
+  {
+    "name": "home-and-end-go-to-buffer-ends-on-macos",
+    "text": "one two\nthree",
+    "keys": "<end> <home>",
+    "point": 3,
+    "platform": "darwin"
+  }
+]

@@ -1,0 +1,54 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "record-and-run-a-macro",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "<f3> a b <f4> <f4>",
+        "platform": null
+      },
+      "text": "abab",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "run-a-macro-with-c-x-e",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x ( x y C-x ) C-x e",
+        "platform": null
+      },
+      "text": "xyxy",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "run-a-macro-several-times",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "<f3> z <f4> C-u 3 <f4>",
+        "platform": null
+      },
+      "text": "zzzz",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

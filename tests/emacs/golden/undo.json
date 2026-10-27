@@ -1,0 +1,152 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "undo-typing",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "h e l l o C-/",
+        "platform": null
+      },
+      "text": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "undo-in-steps",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "a b RET c d C-/ C-/",
+        "platform": null
+      },
+      "text": "ab",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "undo-with-other-keys",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "a b C-_ C-x u",
+        "platform": null
+      },
+      "text": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No further undo information"
+    },
+    {
+      "name": "undo-a-kill",
+      "input": {
+        "text": "one\ntwo",
+        "point": 0,
+        "keys": "C-k C-/",
+        "platform": null
+      },
+      "text": "one\ntwo",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "one"
+      ],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "undo-back-to-unmodified",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "x C-/",
+        "platform": null
+      },
+      "text": "abc",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "undo-groups-up-to-20-characters",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "a b c d e f g h i j k l m n o p q r s t u v w x y C-/",
+        "platform": null
+      },
+      "text": "abcdefghijklmnopqrstu",
+      "point": 21,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "nothing-to-undo",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "C-/",
+        "platform": null
+      },
+      "text": "abc",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No further undo information"
+    },
+    {
+      "name": "undo-after-moving-redoes",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "h i C-/ C-a C-/",
+        "platform": null
+      },
+      "text": "hi",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "undo-redo",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "a b C-/ C-M-_",
+        "platform": null
+      },
+      "text": "ab",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

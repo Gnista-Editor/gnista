@@ -1,0 +1,310 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "set-mark-and-move",
+      "input": {
+        "text": "hello world",
+        "point": 0,
+        "keys": "C-SPC M-f",
+        "platform": null
+      },
+      "text": "hello world",
+      "point": 5,
+      "mark": 0,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "set-mark-twice-deactivates",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "C-SPC C-SPC",
+        "platform": null
+      },
+      "text": "abc",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "exchange-point-and-mark",
+      "input": {
+        "text": "hello world",
+        "point": 0,
+        "keys": "C-SPC M-f C-x C-x",
+        "platform": null
+      },
+      "text": "hello world",
+      "point": 0,
+      "mark": 5,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "mark-whole-buffer",
+      "input": {
+        "text": "abc\ndef",
+        "point": 2,
+        "keys": "C-x h",
+        "platform": null
+      },
+      "text": "abc\ndef",
+      "point": 0,
+      "mark": 7,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "movement-extends-the-region",
+      "input": {
+        "text": "hello world",
+        "point": 0,
+        "keys": "C-SPC M-f C-f",
+        "platform": null
+      },
+      "text": "hello world",
+      "point": 6,
+      "mark": 0,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "typing-deactivates-the-region",
+      "input": {
+        "text": "hello",
+        "point": 0,
+        "keys": "C-SPC C-f x",
+        "platform": null
+      },
+      "text": "hxello",
+      "point": 2,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "quit-deactivates-the-region",
+      "input": {
+        "text": "hello",
+        "point": 0,
+        "keys": "C-SPC C-f C-g",
+        "platform": null
+      },
+      "text": "hello",
+      "point": 1,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Quit"
+    },
+    {
+      "name": "beginning-of-buffer-leaves-the-mark",
+      "input": {
+        "text": "abc",
+        "point": 2,
+        "keys": "M-<",
+        "platform": null
+      },
+      "text": "abc",
+      "point": 0,
+      "mark": 2,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "end-of-buffer-keeps-an-active-region",
+      "input": {
+        "text": "abc\ndef",
+        "point": 1,
+        "keys": "C-SPC M->",
+        "platform": null
+      },
+      "text": "abc\ndef",
+      "point": 7,
+      "mark": 1,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "shift-select-characters",
+      "input": {
+        "text": "hello world",
+        "point": 0,
+        "keys": "S-<right> S-<right>",
+        "platform": null
+      },
+      "text": "hello world",
+      "point": 2,
+      "mark": 0,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "shift-select-words",
+      "input": {
+        "text": "hello world",
+        "point": 0,
+        "keys": "M-S-f M-S-f",
+        "platform": null
+      },
+      "text": "hello world",
+      "point": 11,
+      "mark": 0,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "shift-select-with-control",
+      "input": {
+        "text": "hello world",
+        "point": 0,
+        "keys": "C-S-f C-S-f C-S-f",
+        "platform": null
+      },
+      "text": "hello world",
+      "point": 3,
+      "mark": 0,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "shift-select-to-end-of-line",
+      "input": {
+        "text": "one two\nthree",
+        "point": 0,
+        "keys": "C-S-e",
+        "platform": null
+      },
+      "text": "one two\nthree",
+      "point": 7,
+      "mark": 0,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "shift-select-down",
+      "input": {
+        "text": "one\ntwo\nthree",
+        "point": 1,
+        "keys": "S-<down> S-<down>",
+        "platform": null
+      },
+      "text": "one\ntwo\nthree",
+      "point": 9,
+      "mark": 1,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "unshifted-move-ends-shift-selection",
+      "input": {
+        "text": "hello world",
+        "point": 0,
+        "keys": "S-<right> <right>",
+        "platform": null
+      },
+      "text": "hello world",
+      "point": 2,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "shift-after-set-mark-starts-again",
+      "input": {
+        "text": "hello world",
+        "point": 0,
+        "keys": "C-SPC C-f C-f S-<right>",
+        "platform": null
+      },
+      "text": "hello world",
+      "point": 3,
+      "mark": 2,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "unshifted-move-keeps-set-mark-region",
+      "input": {
+        "text": "hello world",
+        "point": 0,
+        "keys": "C-SPC S-<right> <right>",
+        "platform": null
+      },
+      "text": "hello world",
+      "point": 2,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "pop-the-mark-ring",
+      "input": {
+        "text": "a b c d",
+        "point": 0,
+        "keys": "C-SPC M-f C-SPC M-f C-u C-SPC",
+        "platform": null
+      },
+      "text": "a b c d",
+      "point": 1,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "shift-select-to-end-of-buffer-on-macos",
+      "input": {
+        "text": "one two\nthree",
+        "point": 0,
+        "keys": "S-<end>",
+        "platform": "darwin"
+      },
+      "text": "one two\nthree",
+      "point": 13,
+      "mark": 0,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    }
+  ]
+}

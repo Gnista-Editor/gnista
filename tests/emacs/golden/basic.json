@@ -1,0 +1,358 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "insert-text",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "h e l l o",
+        "platform": null
+      },
+      "text": "hello",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "insert-space-and-capitals",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "H i SPC t h e r e",
+        "platform": null
+      },
+      "text": "Hi there",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "newline-splits-a-line",
+      "input": {
+        "text": "onetwo",
+        "point": 3,
+        "keys": "RET",
+        "platform": null
+      },
+      "text": "one\ntwo",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "forward-and-backward-char",
+      "input": {
+        "text": "abcdef",
+        "point": 0,
+        "keys": "C-f C-f C-f C-b",
+        "platform": null
+      },
+      "text": "abcdef",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "arrow-keys",
+      "input": {
+        "text": "abc\ndef",
+        "point": 0,
+        "keys": "<right> <down> <left>",
+        "platform": null
+      },
+      "text": "abc\ndef",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-char-at-end",
+      "input": {
+        "text": "ab",
+        "point": 2,
+        "keys": "C-f",
+        "platform": null
+      },
+      "text": "ab",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "End of buffer"
+    },
+    {
+      "name": "backward-char-at-start",
+      "input": {
+        "text": "ab",
+        "point": 0,
+        "keys": "C-b",
+        "platform": null
+      },
+      "text": "ab",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Beginning of buffer"
+    },
+    {
+      "name": "next-line-keeps-the-column",
+      "input": {
+        "text": "long line here\nab\nanother long line",
+        "point": 10,
+        "keys": "C-n C-n",
+        "platform": null
+      },
+      "text": "long line here\nab\nanother long line",
+      "point": 28,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "previous-line-keeps-the-column",
+      "input": {
+        "text": "another long line\nab\nlong line here",
+        "point": 30,
+        "keys": "C-p C-p",
+        "platform": null
+      },
+      "text": "another long line\nab\nlong line here",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "next-line-on-the-last-line",
+      "input": {
+        "text": "abc\ndef",
+        "point": 5,
+        "keys": "C-n",
+        "platform": null
+      },
+      "text": "abc\ndef",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "End of buffer"
+    },
+    {
+      "name": "previous-line-on-the-first-line",
+      "input": {
+        "text": "abc\ndef",
+        "point": 1,
+        "keys": "C-p",
+        "platform": null
+      },
+      "text": "abc\ndef",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Beginning of buffer"
+    },
+    {
+      "name": "end-and-beginning-of-line",
+      "input": {
+        "text": "one\ntwo three",
+        "point": 6,
+        "keys": "C-e C-a C-e",
+        "platform": null
+      },
+      "text": "one\ntwo three",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-word",
+      "input": {
+        "text": "alpha beta-gamma delta",
+        "point": 0,
+        "keys": "M-f M-f M-f",
+        "platform": null
+      },
+      "text": "alpha beta-gamma delta",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backward-word",
+      "input": {
+        "text": "alpha beta-gamma delta",
+        "point": 22,
+        "keys": "M-b M-b",
+        "platform": null
+      },
+      "text": "alpha beta-gamma delta",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-word-over-punctuation",
+      "input": {
+        "text": "  ...hello, world",
+        "point": 0,
+        "keys": "M-f M-f",
+        "platform": null
+      },
+      "text": "  ...hello, world",
+      "point": 17,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "end-of-buffer",
+      "input": {
+        "text": "abc\ndef",
+        "point": 2,
+        "keys": "M->",
+        "platform": null
+      },
+      "text": "abc\ndef",
+      "point": 7,
+      "mark": 2,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "beginning-of-buffer",
+      "input": {
+        "text": "abc\ndef",
+        "point": 5,
+        "keys": "M-<",
+        "platform": null
+      },
+      "text": "abc\ndef",
+      "point": 0,
+      "mark": 5,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "delete-char",
+      "input": {
+        "text": "abc",
+        "point": 1,
+        "keys": "C-d",
+        "platform": null
+      },
+      "text": "ac",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-char-at-end",
+      "input": {
+        "text": "abc",
+        "point": 3,
+        "keys": "C-d",
+        "platform": null
+      },
+      "text": "abc",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "End of buffer"
+    },
+    {
+      "name": "delete-backward-char",
+      "input": {
+        "text": "abc",
+        "point": 3,
+        "keys": "DEL DEL",
+        "platform": null
+      },
+      "text": "a",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-backward-char-at-start",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "DEL",
+        "platform": null
+      },
+      "text": "abc",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Beginning of buffer"
+    },
+    {
+      "name": "home-and-end-go-to-buffer-ends-on-macos",
+      "input": {
+        "text": "one two\nthree",
+        "point": 3,
+        "keys": "<end> <home>",
+        "platform": "darwin"
+      },
+      "text": "one two\nthree",
+      "point": 0,
+      "mark": 13,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    }
+  ]
+}

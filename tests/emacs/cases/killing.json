@@ -1,0 +1,86 @@
+[
+  {
+    "name": "kill-line",
+    "text": "one\ntwo",
+    "keys": "C-k"
+  },
+  {
+    "name": "kill-line-twice-kills-the-newline",
+    "text": "one\ntwo",
+    "keys": "C-k C-k"
+  },
+  {
+    "name": "consecutive-kills-append",
+    "text": "one\ntwo\nthree",
+    "keys": "C-k C-k C-k"
+  },
+  {
+    "name": "kill-line-with-only-spaces-left",
+    "text": "one   \ntwo",
+    "keys": "C-k",
+    "point": 3
+  },
+  {
+    "name": "kill-line-at-end-of-buffer",
+    "text": "abc",
+    "keys": "C-k",
+    "point": 3
+  },
+  {
+    "name": "kill-region",
+    "text": "alpha beta gamma",
+    "keys": "M-f C-SPC M-f C-w"
+  },
+  {
+    "name": "kill-region-without-a-mark",
+    "text": "abc",
+    "keys": "C-w"
+  },
+  {
+    "name": "kill-ring-save",
+    "text": "alpha beta",
+    "keys": "C-SPC M-f M-w"
+  },
+  {
+    "name": "yank-twice",
+    "text": "one\ntwo",
+    "keys": "C-k C-k C-y C-y"
+  },
+  {
+    "name": "yank-with-an-empty-kill-ring",
+    "text": "abc",
+    "keys": "C-y"
+  },
+  {
+    "name": "kill-word",
+    "text": "alpha beta gamma",
+    "keys": "M-d M-d"
+  },
+  {
+    "name": "backward-kill-word",
+    "text": "alpha beta gamma",
+    "keys": "M-DEL M-DEL",
+    "point": 16
+  },
+  {
+    "name": "backward-kill-prepends",
+    "text": "one two three",
+    "keys": "M-d M-DEL",
+    "point": 4
+  },
+  {
+    "name": "separate-kills-do-not-append",
+    "text": "a\nb",
+    "keys": "C-k C-n C-k"
+  },
+  {
+    "name": "yank-pop",
+    "text": "a\nb",
+    "keys": "C-k C-n C-k C-y M-y"
+  },
+  {
+    "name": "kill-shift-selection-and-yank",
+    "text": "hello world",
+    "keys": "M-S-f C-w C-e C-y"
+  }
+]

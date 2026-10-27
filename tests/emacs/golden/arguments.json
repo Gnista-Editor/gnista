@@ -1,0 +1,336 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "c-u-with-a-number",
+      "input": {
+        "text": "abcdef",
+        "point": 0,
+        "keys": "C-u 2 C-f",
+        "platform": null
+      },
+      "text": "abcdef",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "c-u-alone-is-four",
+      "input": {
+        "text": "abcdefgh",
+        "point": 0,
+        "keys": "C-u C-f",
+        "platform": null
+      },
+      "text": "abcdefgh",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "c-u-twice-is-sixteen",
+      "input": {
+        "text": "abcdefghijklmnopqrstu",
+        "point": 0,
+        "keys": "C-u C-u C-f",
+        "platform": null
+      },
+      "text": "abcdefghijklmnopqrstu",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "meta-digit",
+      "input": {
+        "text": "abcdefgh",
+        "point": 0,
+        "keys": "M-3 C-f",
+        "platform": null
+      },
+      "text": "abcdefgh",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "meta-digits",
+      "input": {
+        "text": "abcdefghijklmnopqrstu",
+        "point": 0,
+        "keys": "M-1 M-2 C-f",
+        "platform": null
+      },
+      "text": "abcdefghijklmnopqrstu",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "negative-argument",
+      "input": {
+        "text": "abcdef",
+        "point": 4,
+        "keys": "C-- C-f",
+        "platform": null
+      },
+      "text": "abcdef",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "c-u-minus-number",
+      "input": {
+        "text": "abcdef",
+        "point": 4,
+        "keys": "C-u - 2 C-f",
+        "platform": null
+      },
+      "text": "abcdef",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "repeat-a-character",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-u 3 a",
+        "platform": null
+      },
+      "text": "aaa",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "c-u-alone-repeats-four-times",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-u a",
+        "platform": null
+      },
+      "text": "aaaa",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "c-u-then-digits-are-the-argument",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-u 1 2 x",
+        "platform": null
+      },
+      "text": "xxxxxxxxxxxx",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kill-lines-with-an-argument",
+      "input": {
+        "text": "a\nb\nc\nd",
+        "point": 0,
+        "keys": "C-u 2 C-k",
+        "platform": null
+      },
+      "text": "c\nd",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "a\nb\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kill-line-backwards-with-zero",
+      "input": {
+        "text": "one two\nthree",
+        "point": 4,
+        "keys": "C-u 0 C-k",
+        "platform": null
+      },
+      "text": "two\nthree",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "one "
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "next-line-with-an-argument",
+      "input": {
+        "text": "a\nb\nc\nd\ne",
+        "point": 0,
+        "keys": "C-u 3 C-n",
+        "platform": null
+      },
+      "text": "a\nb\nc\nd\ne",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "newlines-with-an-argument",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-u 3 RET",
+        "platform": null
+      },
+      "text": "\n\n\n",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-chars-with-an-argument",
+      "input": {
+        "text": "abcdef",
+        "point": 0,
+        "keys": "C-u 2 C-d",
+        "platform": null
+      },
+      "text": "cdef",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "ab"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-backward-with-an-argument",
+      "input": {
+        "text": "abcdef",
+        "point": 4,
+        "keys": "M-2 DEL",
+        "platform": null
+      },
+      "text": "abef",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "cd"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "words-with-an-argument",
+      "input": {
+        "text": "one two three four",
+        "point": 0,
+        "keys": "M-2 M-f",
+        "platform": null
+      },
+      "text": "one two three four",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "kill-words-with-an-argument",
+      "input": {
+        "text": "one two three four",
+        "point": 0,
+        "keys": "M-2 M-d",
+        "platform": null
+      },
+      "text": " three four",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "one two"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "repeat-the-last-command",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "a C-x z",
+        "platform": null
+      },
+      "text": "aa",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "repeat-again",
+      "input": {
+        "text": "abcdef",
+        "point": 0,
+        "keys": "C-f C-x z z",
+        "platform": null
+      },
+      "text": "abcdef",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    }
+  ]
+}

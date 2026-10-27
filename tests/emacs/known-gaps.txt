@@ -1,0 +1,35 @@
+# Cases where Ember does not match Emacs yet, as `file/case  # reason`.
+# The oracle test fails if a listed case starts matching: remove it then.
+
+# Milestone 1: prefix arguments (C-u, M-<digit>, C--) are not implemented.
+arguments/c-u-with-a-number  # prefix arguments
+arguments/c-u-alone-is-four  # prefix arguments
+arguments/c-u-twice-is-sixteen  # prefix arguments
+arguments/meta-digit  # prefix arguments
+arguments/meta-digits  # prefix arguments
+arguments/negative-argument  # prefix arguments
+arguments/c-u-minus-number  # prefix arguments
+arguments/repeat-a-character  # prefix arguments
+arguments/c-u-alone-repeats-four-times  # prefix arguments
+arguments/c-u-then-digits-are-the-argument  # prefix arguments
+arguments/kill-lines-with-an-argument  # prefix arguments
+arguments/kill-line-backwards-with-zero  # prefix arguments
+arguments/next-line-with-an-argument  # prefix arguments
+arguments/newlines-with-an-argument  # prefix arguments
+arguments/delete-chars-with-an-argument  # prefix arguments
+arguments/delete-backward-with-an-argument  # prefix arguments
+arguments/words-with-an-argument  # prefix arguments
+arguments/kill-words-with-an-argument  # prefix arguments
+
+# Milestone 1: repeat (C-x z) is not implemented.
+arguments/repeat-the-last-command  # repeat
+arguments/repeat-again  # repeat
+
+# Milestone 1: the rest of the command loop.
+killing/yank-pop  # M-y is not implemented
+macros/record-and-run-a-macro  # keyboard macros
+macros/run-a-macro-with-c-x-e  # keyboard macros
+macros/run-a-macro-several-times  # keyboard macros
+mark/pop-the-mark-ring  # the mark ring (C-u C-SPC)
+undo/undo-after-moving-redoes  # undo is not undoable yet
+undo/undo-redo  # undo-redo (C-M-_) is not implemented

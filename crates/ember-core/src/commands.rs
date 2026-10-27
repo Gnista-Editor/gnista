@@ -382,14 +382,15 @@ fn killing(ed: &mut Editor) {
         Ok(())
     });
     def(ed, "yank", "Insert the most recent kill, leaving the mark at its start.", |ed, _| {
+        // Emacs sets the mark before it looks at the kill ring, even if it is empty.
+        let b = ed.buffer_mut();
+        b.set_mark(Some(b.point()));
         let text = ed
             .kill_ring
             .last()
             .cloned()
             .ok_or_else(|| Error::new("Kill ring is empty"))?;
-        let b = ed.buffer_mut();
-        b.set_mark(Some(b.point()));
-        b.insert(&text)
+        ed.buffer_mut().insert(&text)
     });
 }
 
@@ -685,6 +686,12 @@ fn bind_defaults(ed: &mut Editor) {
     ];
     for (keys, command) in global {
         ed.global_map.bind_str(keys, command);
+    }
+    // Emacs on macOS follows the Mac convention that Home and End go to the
+    // ends of the document (ns-win.el); elsewhere they go to the ends of the line.
+    if cfg!(target_os = "macos") {
+        ed.global_map.bind_str("<home>", "beginning-of-buffer");
+        ed.global_map.bind_str("<end>", "end-of-buffer");
     }
     for (keys, command) in [
         ("RET", "exit-minibuffer"),

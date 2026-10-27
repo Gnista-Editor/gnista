@@ -35,6 +35,8 @@ Each milestone ends with an editor you can use and an exit check.
 
 Exit: oracle cases drawn from the manual's chapters on basic editing, the mark, killing and yanking, undo, and keyboard macros all pass.
 
+Progress: the oracle is in place (`tests/emacs/`), with 89 cases. 62 match Emacs; the 27 known gaps are the rest of this milestone.
+
 **2. Customisation.**
 - Variables with documentation, buffer-local values and `C-h v`.
 - Hooks such as `post-command-hook`, `find-file-hook`, `after-save-hook` and mode hooks.

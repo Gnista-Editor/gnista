@@ -1,0 +1,290 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "kill-line",
+      "input": {
+        "text": "one\ntwo",
+        "point": 0,
+        "keys": "C-k",
+        "platform": null
+      },
+      "text": "\ntwo",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "one"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kill-line-twice-kills-the-newline",
+      "input": {
+        "text": "one\ntwo",
+        "point": 0,
+        "keys": "C-k C-k",
+        "platform": null
+      },
+      "text": "two",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "one\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "consecutive-kills-append",
+      "input": {
+        "text": "one\ntwo\nthree",
+        "point": 0,
+        "keys": "C-k C-k C-k",
+        "platform": null
+      },
+      "text": "\nthree",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "one\ntwo"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kill-line-with-only-spaces-left",
+      "input": {
+        "text": "one   \ntwo",
+        "point": 3,
+        "keys": "C-k",
+        "platform": null
+      },
+      "text": "onetwo",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "   \n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kill-line-at-end-of-buffer",
+      "input": {
+        "text": "abc",
+        "point": 3,
+        "keys": "C-k",
+        "platform": null
+      },
+      "text": "abc",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "End of buffer"
+    },
+    {
+      "name": "kill-region",
+      "input": {
+        "text": "alpha beta gamma",
+        "point": 0,
+        "keys": "M-f C-SPC M-f C-w",
+        "platform": null
+      },
+      "text": "alpha gamma",
+      "point": 5,
+      "mark": 5,
+      "mark_active": false,
+      "kill_ring": [
+        " beta"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kill-region-without-a-mark",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "C-w",
+        "platform": null
+      },
+      "text": "abc",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "The mark is not set now, so there is no region"
+    },
+    {
+      "name": "kill-ring-save",
+      "input": {
+        "text": "alpha beta",
+        "point": 0,
+        "keys": "C-SPC M-f M-w",
+        "platform": null
+      },
+      "text": "alpha beta",
+      "point": 5,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [
+        "alpha"
+      ],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "yank-twice",
+      "input": {
+        "text": "one\ntwo",
+        "point": 0,
+        "keys": "C-k C-k C-y C-y",
+        "platform": null
+      },
+      "text": "one\none\ntwo",
+      "point": 8,
+      "mark": 4,
+      "mark_active": false,
+      "kill_ring": [
+        "one\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "yank-with-an-empty-kill-ring",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "C-y",
+        "platform": null
+      },
+      "text": "abc",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Kill ring is empty"
+    },
+    {
+      "name": "kill-word",
+      "input": {
+        "text": "alpha beta gamma",
+        "point": 0,
+        "keys": "M-d M-d",
+        "platform": null
+      },
+      "text": " gamma",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "alpha beta"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "backward-kill-word",
+      "input": {
+        "text": "alpha beta gamma",
+        "point": 16,
+        "keys": "M-DEL M-DEL",
+        "platform": null
+      },
+      "text": "alpha ",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "beta gamma"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "backward-kill-prepends",
+      "input": {
+        "text": "one two three",
+        "point": 4,
+        "keys": "M-d M-DEL",
+        "platform": null
+      },
+      "text": " three",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "one two"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "separate-kills-do-not-append",
+      "input": {
+        "text": "a\nb",
+        "point": 0,
+        "keys": "C-k C-n C-k",
+        "platform": null
+      },
+      "text": "\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "b",
+        "a"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "yank-pop",
+      "input": {
+        "text": "a\nb",
+        "point": 0,
+        "keys": "C-k C-n C-k C-y M-y",
+        "platform": null
+      },
+      "text": "\na",
+      "point": 2,
+      "mark": 1,
+      "mark_active": false,
+      "kill_ring": [
+        "b",
+        "a"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kill-shift-selection-and-yank",
+      "input": {
+        "text": "hello world",
+        "point": 0,
+        "keys": "M-S-f C-w C-e C-y",
+        "platform": null
+      },
+      "text": " worldhello",
+      "point": 11,
+      "mark": 6,
+      "mark_active": false,
+      "kill_ring": [
+        "hello"
+      ],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

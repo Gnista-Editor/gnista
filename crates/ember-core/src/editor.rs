@@ -45,6 +45,8 @@ pub struct Editor {
     pub global_map: Keymap,
     pub minibuffer_map: Keymap,
     pub(crate) message: Option<String>,
+    /// The error from the last interactive command that failed, until taken.
+    last_error: Option<Error>,
     pub(crate) kill_ring: Vec<String>,
     last_command: Option<String>,
     this_command: Option<String>,
@@ -82,6 +84,7 @@ impl Editor {
             global_map: Keymap::default(),
             minibuffer_map: Keymap::default(),
             message: None,
+            last_error: None,
             kill_ring: Vec::new(),
             last_command: None,
             this_command: None,
@@ -151,10 +154,11 @@ impl Editor {
             self.message = Some("Command attempted to use minibuffer while in minibuffer".into());
             return;
         }
-        // Consecutive self-inserts share an undo step, up to 20 characters, as in Emacs.
+        // Consecutive self-inserts share an undo step, as in Emacs: the first
+        // character and up to 20 more (amalgamating-undo-limit).
         let amalgamate = name == "self-insert-command"
             && self.last_command() == Some(name)
-            && self.self_insert_run < 20;
+            && self.self_insert_run <= 20;
         self.self_insert_run = if amalgamate { self.self_insert_run + 1 } else { 1 };
         if !amalgamate {
             self.buffer_mut().undo_boundary();
@@ -222,7 +226,14 @@ impl Editor {
     fn execute(&mut self, command: Rc<Command>, args: Vec<Arg>) {
         if let Err(e) = self.invoke(command, args) {
             self.message = Some(e.to_string());
+            self.last_error = Some(e);
         }
+    }
+
+    /// Takes the error from the last interactive command that failed. An
+    /// undefined key is not an error, as in Emacs: it only shows a message.
+    pub fn take_error(&mut self) -> Option<Error> {
+        self.last_error.take()
     }
 
     fn invoke(&mut self, command: Rc<Command>, args: Vec<Arg>) -> Result<()> {
