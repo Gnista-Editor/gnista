@@ -10,10 +10,16 @@ mod ui;
 
 use std::{env, io};
 
-use ember_core::{Editor, Key, KeyCode, expand_file_name};
+use std::time::{Duration, Instant};
+
+use ember_core::{Editor, Key, KeyCode, MouseEvent, MouseKind, WindowId, expand_file_name};
 use ember_script::{config, type_definitions};
 use ratatui::DefaultTerminal;
-use ratatui::crossterm::event::{self, Event, KeyCode as TermKey, KeyEvent, KeyEventKind, KeyModifiers};
+use ratatui::crossterm::event::{
+    self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode as TermKey, KeyEvent, KeyEventKind, KeyModifiers,
+    MouseButton, MouseEventKind,
+};
+use ratatui::crossterm::execute;
 
 fn main() -> io::Result<()> {
     let (mut no_init, mut print_types, mut files) = (false, false, Vec::new());
@@ -38,25 +44,92 @@ fn main() -> io::Result<()> {
     }
 
     let mut terminal = ratatui::init();
+    execute!(io::stdout(), EnableMouseCapture)?;
     let result = run(&mut terminal, &mut editor);
+    execute!(io::stdout(), DisableMouseCapture)?;
     ratatui::restore();
     result
 }
 
 fn run(terminal: &mut DefaultTerminal, editor: &mut Editor) -> io::Result<()> {
+    let mut mouse = Mouse::default();
     while !editor.should_quit() {
         let size = terminal.size()?;
         ui::layout_windows(editor, size.width, size.height);
         editor.ensure_point_visible();
         terminal.draw(|frame| ui::draw(frame, editor))?;
-        if let Event::Key(key) = event::read()?
-            && key.kind == KeyEventKind::Press
-            && let Some(key) = convert_key(key)
-        {
-            editor.handle_key(key);
+        match event::read()? {
+            Event::Key(key) if key.kind == KeyEventKind::Press => {
+                if let Some(key) = convert_key(key) {
+                    editor.handle_key(key);
+                }
+            }
+            Event::Mouse(event) => mouse.handle(editor, event, size.width, size.height),
+            _ => {}
         }
     }
     Ok(())
+}
+
+/// Lines a wheel notch scrolls in a terminal.
+const WHEEL_LINES: isize = 3;
+/// How soon a second click counts as a double click.
+const DOUBLE_CLICK: Duration = Duration::from_millis(400);
+
+/// Turns the terminal's mouse reports into Emacs's mouse keys.
+#[derive(Default)]
+struct Mouse {
+    /// Where the left button went down, while it is down.
+    pressed: Option<(WindowId, Option<usize>)>,
+    dragged: bool,
+    /// The last click, for counting double and triple clicks.
+    last_click: Option<(Instant, u16, u16, u8)>,
+    clicks: u8,
+}
+
+impl Mouse {
+    fn handle(&mut self, ed: &mut Editor, event: ratatui::crossterm::event::MouseEvent, width: u16, height: u16) {
+        let Some((window, position)) = ui::mouse_target(ed, width, height, event.column, event.row) else { return };
+        let shift = event.modifiers.contains(KeyModifiers::SHIFT);
+        let key = |kind| Key { code: KeyCode::Mouse(kind, 1), ctrl: false, meta: false, shift };
+        let at = MouseEvent { window, position, start: None };
+        match event.kind {
+            MouseEventKind::Down(MouseButton::Left) => {
+                let now = Instant::now();
+                self.clicks = match self.last_click {
+                    Some((t, x, y, n)) if now - t < DOUBLE_CLICK && (x, y) == (event.column, event.row) => n % 3 + 1,
+                    _ => 1,
+                };
+                self.last_click = Some((now, event.column, event.row, self.clicks));
+                self.pressed = Some((window, position));
+                self.dragged = false;
+                if self.clicks == 1 {
+                    ed.mouse(key(MouseKind::Down), at);
+                }
+            }
+            MouseEventKind::Drag(MouseButton::Left) => {
+                if let Some(start) = self.pressed
+                    && (self.dragged || start != (window, position))
+                {
+                    self.dragged = true;
+                    ed.mouse(key(MouseKind::Drag), MouseEvent { start: Some(start), ..at });
+                }
+            }
+            MouseEventKind::Up(MouseButton::Left) => {
+                if self.pressed.take().is_some() && !self.dragged {
+                    let kind = match self.clicks {
+                        2 => MouseKind::Double,
+                        3 => MouseKind::Triple,
+                        _ => MouseKind::Click,
+                    };
+                    ed.mouse(key(kind), at);
+                }
+            }
+            MouseEventKind::ScrollDown => ed.wheel_in(Some(window), WHEEL_LINES),
+            MouseEventKind::ScrollUp => ed.wheel_in(Some(window), -WHEEL_LINES),
+            _ => {}
+        }
+    }
 }
 
 /// Translates a terminal key event into the core's key type.

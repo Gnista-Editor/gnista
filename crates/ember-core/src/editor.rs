@@ -9,7 +9,7 @@ use crate::command::{Arg, Command, ParamKind};
 use crate::commands;
 use crate::error::{Error, Result};
 use crate::files::{abbreviate_dir, expand_file_name};
-use crate::key::{Key, KeyCode, format_keys};
+use crate::key::{Key, KeyCode, MouseKind, format_keys};
 use crate::keymap::{Keymap, Lookup};
 use crate::faces::{self, Face};
 use crate::modes::{MinorMode, NamedKeymap};
@@ -114,6 +114,8 @@ pub struct Editor {
     /// How many lines the last wheel event scrolls, like the data an Emacs
     /// wheel event carries. Set by [`Editor::wheel`].
     pub(crate) wheel_lines: usize,
+    /// Where the last mouse event happened, for the commands bound to it.
+    pub(crate) last_mouse: Option<crate::window::MouseEvent>,
     pub(crate) goal_column: Option<usize>,
     self_insert_run: usize,
     pub(crate) windows: Vec<crate::window::Window>,
@@ -173,6 +175,7 @@ impl Editor {
             this_command: None,
             last_key: None,
             wheel_lines: 1,
+            last_mouse: None,
             goal_column: None,
             self_insert_run: 0,
             windows: Vec::new(),
@@ -603,6 +606,20 @@ impl Editor {
                 self.shift_translated = true;
                 self.dispatch_key(key.unshifted());
             }
+            // As in Emacs, an unbound button press is dropped, and an unbound
+            // drag or repeated click acts as a plain click.
+            Lookup::Unbound if self.pending_keys.len() == 1 && matches!(key.code, KeyCode::Mouse(..)) => {
+                self.pending_keys.clear();
+                match key.code {
+                    KeyCode::Mouse(MouseKind::Down | MouseKind::Click, _) => {
+                        if matches!(key.code, KeyCode::Mouse(MouseKind::Click, _)) {
+                            self.message = Some(format!("{key} is undefined"));
+                        }
+                    }
+                    KeyCode::Mouse(_, n) => self.dispatch_key(Key { code: KeyCode::Mouse(MouseKind::Click, n), ..key }),
+                    _ => unreachable!(),
+                }
+            }
             Lookup::Unbound => {
                 self.shift_translated = false;
                 self.transient_map = None;
@@ -648,9 +665,16 @@ impl Editor {
     /// `<wheel-up>`, bound to `mwheel-scroll`, so it can be rebound and
     /// described like any key.
     pub fn wheel(&mut self, lines: isize) {
+        self.wheel_in(None, lines);
+    }
+
+    /// Feeds a wheel scroll over a window, which scrolls that window
+    /// whether or not it is selected, as Emacs's `mouse-wheel-follow-mouse`.
+    pub fn wheel_in(&mut self, window: Option<crate::window::WindowId>, lines: isize) {
         if lines == 0 {
             return;
         }
+        self.last_mouse = window.map(|window| crate::window::MouseEvent { window, position: None, start: None });
         self.wheel_lines = lines.unsigned_abs();
         let code = if lines > 0 { KeyCode::WheelDown } else { KeyCode::WheelUp };
         self.handle_key(Key::new(code));

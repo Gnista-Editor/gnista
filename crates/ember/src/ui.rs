@@ -2,7 +2,7 @@
 
 use std::ops::Range;
 
-use ember_core::display::{Glyph, cursor_index, display_width, row_glyphs};
+use ember_core::display::{Glyph, cursor_index, display_width, position_at_column, row_glyphs};
 use ember_core::{Color as FaceColor, Editor, Row, Style as FaceStyle, WindowId, WindowView, palette};
 use ratatui::Frame;
 use ratatui::layout::{Position, Rect};
@@ -67,11 +67,19 @@ pub fn draw(frame: &mut Frame, ed: &Editor) {
     frame.set_cursor_position(echo_cursor.unwrap_or(window_cursor));
 }
 
-/// Draws a window's rows and returns where its point is on screen.
-fn draw_window(frame: &mut Frame, ed: &Editor, view: &WindowView, area: Rect) -> Position {
-    let dark = ed.variable("frame-background-mode").is_none_or(|v| v.as_str() != Some("light"));
+/// A window's rows as drawn, with their glyphs, where point is, and how
+/// far the window is scrolled horizontally.
+struct WindowRows {
+    rows: Vec<Row>,
+    glyph_rows: Vec<Vec<Glyph>>,
+    point_row: usize,
+    point_col: usize,
+    hscroll: usize,
+}
+
+fn window_rows(ed: &Editor, view: &WindowView, area: Rect) -> WindowRows {
     let width = area.width as usize;
-    let rows = ed.rows_of_window(view.id, area.height as usize, dark);
+    let rows = ed.rows_of_window(view.id, area.height as usize, dark(ed));
     let tab_width = ed.tab_width_in(view.buffer);
     let glyph_rows: Vec<Vec<Glyph>> = rows.iter().map(|r| row_glyphs(r, tab_width)).collect();
     let point = view.point;
@@ -82,6 +90,40 @@ fn draw_window(frame: &mut Frame, ed: &Editor, view: &WindowView, area: Rect) ->
         .unwrap_or(0);
     // Scroll horizontally, as Emacs does, when point would be off the right edge.
     let hscroll = if point_col < width { 0 } else { point_col - width / 2 };
+    WindowRows { rows, glyph_rows, point_row, point_col, hscroll }
+}
+
+fn dark(ed: &Editor) -> bool {
+    ed.variable("frame-background-mode").is_none_or(|v| v.as_str() != Some("light"))
+}
+
+/// What is under a cell of the screen, for a mouse event: a window, and the
+/// buffer position there if the cell is over its text. Below the last line
+/// of text is the end of the buffer, as in Emacs.
+pub fn mouse_target(ed: &Editor, width: u16, height: u16, x: u16, y: u16) -> Option<(WindowId, Option<usize>)> {
+    let areas = window_areas(ed, width, height);
+    let area = areas.iter().find(|a| {
+        let r = Rect::new(a.text.x, a.text.y, a.mode_line.width, a.text.height + 1);
+        r.contains(Position::new(x, y))
+    })?;
+    if !area.text.contains(Position::new(x, y)) {
+        return Some((area.id, None));
+    }
+    let view = ed.windows().into_iter().find(|v| v.id == area.id)?;
+    let drawn = window_rows(ed, &view, area.text);
+    let row = (y - area.text.y) as usize;
+    let position = match (drawn.rows.get(row), drawn.glyph_rows.get(row)) {
+        (Some(row), Some(glyphs)) => position_at_column(row, glyphs, (x - area.text.x) as usize + drawn.hscroll),
+        _ => view.buffer.len(),
+    };
+    Some((area.id, Some(position)))
+}
+
+/// Draws a window's rows and returns where its point is on screen.
+fn draw_window(frame: &mut Frame, ed: &Editor, view: &WindowView, area: Rect) -> Position {
+    let dark = dark(ed);
+    let width = area.width as usize;
+    let WindowRows { rows, glyph_rows, point_row, point_col, hscroll } = window_rows(ed, view, area);
     // Only the selected window shows the region, as in Emacs.
     let region = if view.selected { view.buffer.active_region() } else { None };
     let lines: Vec<Line> = rows
@@ -293,6 +335,24 @@ mod tests {
         assert_eq!(rows[4], "one");
         assert!(rows[7].starts_with("-:**-  *scratch*"), "{}", rows[7]);
         assert_eq!(ed.viewport_height(), 3);
+    }
+
+    #[test]
+    fn mouse_positions_find_windows_and_text() {
+        let mut ed = Editor::new();
+        let _scripting = ember_script::Scripting::new(&mut ed).unwrap();
+        ed.type_text("one\n\ttwo\nthree");
+        ed.press("C-x 3").unwrap();
+        render(&mut ed, 41, 9);
+        let [left, right] = ed.window_list()[..] else { panic!() };
+        assert_eq!(mouse_target(&ed, 41, 9, 1, 0), Some((left, Some(1))));
+        // Inside the tab on the second line, then past the end of a line.
+        assert_eq!(mouse_target(&ed, 41, 9, 25, 1), Some((right, Some(4))));
+        assert_eq!(mouse_target(&ed, 41, 9, 35, 0), Some((right, Some(3))));
+        // Below the text is the end of the buffer; the mode line has no position.
+        assert_eq!(mouse_target(&ed, 41, 9, 2, 5), Some((left, Some(14))));
+        assert_eq!(mouse_target(&ed, 41, 9, 2, 7), Some((left, None)));
+        assert_eq!(mouse_target(&ed, 41, 9, 2, 8), None, "the echo area");
     }
 
     #[test]

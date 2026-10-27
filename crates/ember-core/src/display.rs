@@ -88,9 +88,38 @@ pub fn cursor_index(glyphs: &[Glyph], point: usize) -> usize {
         .map_or(0, |i| i + 1)
 }
 
+/// The buffer position under a column of a row, for a mouse click: the
+/// character drawn there, or the end of the row past its last glyph.
+pub fn position_at_column(row: &crate::Row, glyphs: &[Glyph], col: usize) -> usize {
+    let mut x = 0;
+    for (i, glyph) in glyphs.iter().enumerate() {
+        if col < x + glyph.width {
+            // An ellipsis stands for hidden text; clicking it goes after the text.
+            return glyph.pos.unwrap_or_else(|| glyphs[i + 1..].iter().find_map(|g| g.pos).unwrap_or(row.end));
+        }
+        x += glyph.width;
+    }
+    row.end
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn columns_map_to_positions() {
+        let row = crate::Row {
+            line: 0,
+            start: 10,
+            end: 13,
+            segments: vec![crate::Segment { start: 10, text: "a\tb".into(), style: Default::default(), ellipsis: false }],
+        };
+        let glyphs = row_glyphs(&row, 8);
+        assert_eq!(position_at_column(&row, &glyphs, 0), 10);
+        assert_eq!(position_at_column(&row, &glyphs, 5), 11, "inside the tab");
+        assert_eq!(position_at_column(&row, &glyphs, 8), 12);
+        assert_eq!(position_at_column(&row, &glyphs, 30), 13, "past the end");
+    }
 
     #[test]
     fn expands_tabs_and_control_characters() {

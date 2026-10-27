@@ -257,6 +257,12 @@ const API: &str = r##"
    * the command about to run; setThisCommand changes which one runs.
    */
   function thisCommand(): string | undefined;
+  /** Set the mark, saving the old one on the mark ring (Emacs's push-mark), and activate the region if asked. */
+  function pushMark(position: number, options?: { activate?: boolean }): void;
+  /** Activate the region between the mark and point, if there is a mark. */
+  function activateMark(): void;
+  /** Hide the region, leaving the mark where it is. */
+  function deactivateMark(): void;
   /** Whether the running command was started by keys or M-x rather than called from code. */
   function calledInteractively(): boolean;
   /** Whether the region is active: shown, and what region commands act on (Emacs's region-active-p). */
@@ -313,6 +319,15 @@ const API: &str = r##"
   function selectedWindow(): number;
   /** The windows in cyclic order, left to right and top to bottom, as other-window visits them. */
   function windowList(): number[];
+  /**
+   * Where the last mouse event happened: its window, the buffer position
+   * under the mouse if there is text there, and for a drag where it started.
+   * Commands bound to mouse keys such as "<mouse-1>" read it, as Emacs
+   * commands read their event.
+   */
+  function lastMouseEvent():
+    | { window: number; position?: number; start?: { window: number; position?: number } }
+    | undefined;
   /** The name of the buffer a window shows, the selected one by default. */
   function windowBuffer(window?: number): string | undefined;
 

@@ -140,6 +140,9 @@
     commandExists: (name) => native.commandExists(String(name)),
     thisCommand: () => native.thisCommand(),
     calledInteractively: () => native.calledInteractively(),
+    pushMark: (position, options = {}) => native.pushMark(position, Boolean(options.activate)),
+    activateMark: () => native.activateMark(),
+    deactivateMark: () => native.deactivateMark(),
     regionActive: () => native.regionActive(),
 
     splitWindow: (window, side = "below") => native.splitWindow(window ?? null, side === "right"),
@@ -147,6 +150,12 @@
     selectWindow: (window) => native.selectWindow(window),
     selectedWindow: () => native.selectedWindow(),
     windowList: () => native.windowList(),
+    lastMouseEvent() {
+      const event = native.lastMouseEvent();
+      if (event === null || event === undefined) return undefined;
+      const start = event.start && { window: event.start.window, position: event.start.position ?? undefined };
+      return { window: event.window, position: event.position ?? undefined, start };
+    },
     windowBuffer: (window) => native.windowBuffer(window ?? native.selectedWindow()) ?? undefined,
 
     treesitLanguages: () => native.treesitLanguages(),

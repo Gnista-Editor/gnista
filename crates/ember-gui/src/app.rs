@@ -4,11 +4,12 @@
 use std::sync::Arc;
 
 use ember_core::display::{Glyph, cursor_index, row_glyphs};
-use ember_core::{Arg, Editor, Row, Style, WindowId, WindowView};
+use ember_core::display::position_at_column;
+use ember_core::{Arg, Editor, Key, KeyCode, MouseEvent, MouseKind, Row, Style, WindowId, WindowView};
 use egui::text::{CCursor, LayoutJob, TextFormat};
 use egui::{
-    Color32, FontFamily, FontId, Galley, Painter, Rect, Stroke, StrokeKind, Ui, ViewportCommand,
-    pos2, vec2,
+    Color32, FontFamily, FontId, Galley, Painter, PointerButton, Pos2, Rect, Stroke, StrokeKind, Ui,
+    ViewportCommand, pos2, vec2,
 };
 
 use crate::keys::{Input, translate};
@@ -28,9 +29,27 @@ pub struct EmberApp {
     /// for smooth scrolling. Always less than one line; whole lines are the
     /// core's `top_line`.
     scroll_offset: f32,
+    /// The window the offset applies to: the one last scrolled.
+    scroll_window: WindowId,
     /// The window, buffer and top line the offset belongs to. If something
     /// else moves the view, such as C-v or switching buffers, the offset resets.
     scroll_anchor: (WindowId, String, usize),
+    mouse: Mouse,
+}
+
+/// How long a second click may follow the first to count as a double click, in seconds.
+const DOUBLE_CLICK: f64 = 0.4;
+
+/// The state of the primary button, for turning presses and moves into
+/// Emacs's mouse keys.
+#[derive(Default)]
+struct Mouse {
+    /// Where the button went down, while it is down.
+    pressed: Option<(WindowId, Option<usize>)>,
+    dragged: bool,
+    /// When and where the last press was, and how many clicks it made.
+    last_press: Option<(f64, Pos2, u8)>,
+    clicks: u8,
 }
 
 impl eframe::App for EmberApp {
@@ -46,7 +65,9 @@ impl EmberApp {
             title: String::new(),
             mac: cfg!(target_os = "macos"),
             scroll_offset: 0.0,
+            scroll_window: 0,
             scroll_anchor: (0, String::new(), 0),
+            mouse: Mouse::default(),
         }
     }
 
@@ -55,8 +76,12 @@ impl EmberApp {
         let ctx = ui.ctx().clone();
         self.handle_close(&ctx);
         // Window sizes first, for the commands this frame's keys run.
-        Layout::new(ui, &mut self.editor);
+        let before = Layout::new(ui, &mut self.editor);
         let events = ctx.input(|i| i.events.clone());
+        let time = ctx.input(|i| i.time);
+        for event in &events {
+            self.pointer(event, &before, time);
+        }
         for input in translate(&events, self.mac) {
             match input {
                 Input::Key(key) => self.editor.handle_key(key),
@@ -72,10 +97,10 @@ impl EmberApp {
         }
         // Input may have split or deleted windows.
         let layout = Layout::new(ui, &mut self.editor);
-        self.scroll(&ctx, layout.m.line_height);
+        self.scroll(&ctx, &layout);
         let top = self.editor.window_buffer().top_line;
         self.editor.ensure_point_visible();
-        if self.editor.window_buffer().top_line != top {
+        if self.editor.window_buffer().top_line != top && self.scroll_window == self.editor.selected_window() {
             self.scroll_offset = 0.0;
         }
         self.scroll_anchor = self.view();
@@ -85,32 +110,97 @@ impl EmberApp {
         }
         self.update_title(&ctx);
         let focused = ctx.input(|i| i.focused);
-        draw(ui, &self.editor, &layout, Tokens::get(&ctx), focused, self.scroll_offset);
+        let scroll = (self.scroll_window, self.scroll_offset);
+        draw(ui, &self.editor, &layout, Tokens::get(&ctx), focused, scroll);
     }
 
-    /// The selected window, its buffer and its top line.
+    /// The window the scroll offset applies to, its buffer and its top line.
     fn view(&self) -> (WindowId, String, usize) {
-        let b = self.editor.window_buffer();
-        (self.editor.selected_window(), b.name.clone(), b.top_line)
+        let ed = &self.editor;
+        let view = ed.windows().into_iter().find(|w| w.id == self.scroll_window);
+        view.map_or((0, String::new(), 0), |w| (w.id, w.buffer.name.clone(), w.top_line))
+    }
+
+    /// Turns presses, moves and releases of the primary button into
+    /// `<down-mouse-1>`, `<drag-mouse-1>`, `<mouse-1>`, `<double-mouse-1>`
+    /// and `<triple-mouse-1>`, with Shift as `S-`.
+    fn pointer(&mut self, event: &egui::Event, layout: &Layout, time: f64) {
+        let offset = (self.scroll_window, self.scroll_offset);
+        let (pos, pressed, shift) = match event {
+            egui::Event::PointerButton { pos, button: PointerButton::Primary, pressed, modifiers } => {
+                (*pos, Some(*pressed), modifiers.shift)
+            }
+            egui::Event::PointerMoved(pos) if self.mouse.pressed.is_some() => (*pos, None, false),
+            _ => return,
+        };
+        let ed = &mut self.editor;
+        let target = hit(ed, layout, pos, offset);
+        let key = |kind| Key { code: KeyCode::Mouse(kind, 1), ctrl: false, meta: false, shift };
+        let mouse = &mut self.mouse;
+        match pressed {
+            Some(true) => {
+                let Some((window, position)) = target else { return };
+                mouse.clicks = match mouse.last_press {
+                    Some((t, p, n)) if time - t < DOUBLE_CLICK && p.distance(pos) < 4.0 => n % 3 + 1,
+                    _ => 1,
+                };
+                mouse.last_press = Some((time, pos, mouse.clicks));
+                mouse.pressed = Some((window, position));
+                mouse.dragged = false;
+                if mouse.clicks == 1 {
+                    ed.mouse(key(MouseKind::Down), MouseEvent { window, position, start: None });
+                }
+            }
+            Some(false) => {
+                let Some(start) = mouse.pressed.take() else { return };
+                if mouse.dragged {
+                    return;
+                }
+                let kind = match mouse.clicks {
+                    2 => MouseKind::Double,
+                    3 => MouseKind::Triple,
+                    _ => MouseKind::Click,
+                };
+                let (window, position) = target.unwrap_or(start);
+                ed.mouse(key(kind), MouseEvent { window, position, start: None });
+            }
+            None => {
+                let (Some(start), Some((window, position))) = (mouse.pressed, target) else { return };
+                if mouse.dragged || start != (window, position) {
+                    mouse.dragged = true;
+                    ed.mouse(key(MouseKind::Drag), MouseEvent { window, position, start: Some(start) });
+                }
+            }
+        }
     }
 
     /// Smooth scrolling from the mouse wheel or a trackpad. egui smooths
     /// notched wheels over a few frames; trackpads give points directly.
     /// Whole lines go to the editor as wheel events, which run mwheel-scroll
     /// like any key, and the remainder is drawn as an offset.
-    fn scroll(&mut self, ctx: &egui::Context, line_height: f32) {
+    fn scroll(&mut self, ctx: &egui::Context, layout: &Layout) {
+        let line_height = layout.m.line_height;
         // Positive y moves the content down, revealing earlier lines.
         let dy = ctx.input(|i| i.smooth_scroll_delta.y);
         if dy == 0.0 {
             return;
         }
-        let b = self.editor.window_buffer();
-        let (top, last) = (b.top_line, b.line_count() - 1);
+        // The window under the pointer scrolls, selected or not, as in Emacs.
+        let hover = ctx.input(|i| i.pointer.hover_pos());
+        let window = hover
+            .and_then(|p| layout.windows.iter().find(|w| w.rect.contains(p)))
+            .map_or(self.editor.selected_window(), |w| w.id);
+        if window != self.scroll_window {
+            self.scroll_window = window;
+            self.scroll_offset = 0.0;
+        }
+        let top_of = |ed: &Editor| ed.windows().into_iter().find(|w| w.id == window).map(|w| (w.top_line, w.buffer.line_count()));
+        let Some((top, lines)) = top_of(&self.editor) else { return };
         let wanted = (top as f32 * line_height + self.scroll_offset - dy)
-            .clamp(0.0, last as f32 * line_height);
+            .clamp(0.0, (lines - 1) as f32 * line_height);
         let wanted_top = (wanted / line_height).floor() as usize;
-        self.editor.wheel(wanted_top as isize - top as isize);
-        let top = self.editor.window_buffer().top_line;
+        self.editor.wheel_in(Some(window), wanted_top as isize - top as isize);
+        let top = top_of(&self.editor).map_or(0, |(top, _)| top);
         // If the wheel is bound to something else, there is nothing to offset.
         self.scroll_offset = if top == wanted_top { wanted - top as f32 * line_height } else { 0.0 };
     }
@@ -208,7 +298,7 @@ impl Layout {
     }
 }
 
-fn draw(ui: &Ui, ed: &Editor, layout: &Layout, t: Tokens, focused: bool, scroll_offset: f32) {
+fn draw(ui: &Ui, ed: &Editor, layout: &Layout, t: Tokens, focused: bool, scroll: (WindowId, f32)) {
     let painter = ui.painter().clone();
     painter.rect_filled(layout.rect, 0.0, t.bg);
     let m = &layout.m;
@@ -223,7 +313,7 @@ fn draw(ui: &Ui, ed: &Editor, layout: &Layout, t: Tokens, focused: bool, scroll_
         };
         // A line scrolled partly out of view slides under the top edge of the window.
         let clip = Rect::from_min_max(w.rect.min, pos2(w.rect.right(), w.mode_rect.top()));
-        let offset = if window.selected { scroll_offset } else { 0.0 };
+        let offset = if window.id == scroll.0 { scroll.1 } else { 0.0 };
         let view = View { area: w.text_rect, clip, rows: w.rows(m), scroll_offset: offset };
         draw_buffer(&painter, ed, &window, &view, m, t, cursor);
         draw_mode_line(&painter, ed, &window, w.mode_rect, m, t);
@@ -233,6 +323,42 @@ fn draw(ui: &Ui, ed: &Editor, layout: &Layout, t: Tokens, focused: bool, scroll_
     }
     let echo_cursor = if focused { CursorStyle::Filled } else { CursorStyle::Hollow };
     draw_echo_area(&painter, ed, layout.echo_rect, m, t, echo_cursor);
+}
+
+/// What is under a point of the window, for a mouse event: an editor
+/// window, and the buffer position there if the point is over its text.
+/// Below the last line of text is the end of the buffer, as in Emacs.
+fn hit(ed: &Editor, layout: &Layout, pos: Pos2, scroll: (WindowId, f32)) -> Option<(WindowId, Option<usize>)> {
+    let m = &layout.m;
+    let w = layout.windows.iter().find(|w| w.rect.contains(pos))?;
+    if pos.y >= w.mode_rect.top() {
+        return Some((w.id, None));
+    }
+    let view = ed.windows().into_iter().find(|v| v.id == w.id)?;
+    let offset = if scroll.0 == w.id { scroll.1 } else { 0.0 };
+    let rows = ed.rows_of_window(w.id, w.rows(m) + 1, true);
+    let row = ((pos.y - w.text_rect.top() + offset) / m.line_height).floor().max(0.0) as usize;
+    let tab_width = ed.tab_width_in(view.buffer);
+    let glyphs_of = |row: &Row| row_glyphs(row, tab_width);
+    // The same horizontal scroll as drawing uses, in whole columns.
+    let point_col = rows
+        .iter()
+        .find(|r| r.start <= view.point && view.point <= r.end)
+        .map_or(0, |r| {
+            let glyphs = glyphs_of(r);
+            glyphs[..cursor_index(&glyphs, view.point)].iter().map(|g| g.width).sum::<usize>()
+        });
+    let cursor_x = point_col as f32 * m.char_width;
+    let width = w.text_rect.width();
+    let hscroll = if cursor_x + m.char_width <= width { 0.0 } else { (cursor_x - width / 2.0).max(0.0) };
+    let position = match rows.get(row) {
+        Some(r) => {
+            let col = ((pos.x - w.text_rect.left() + hscroll) / m.char_width).floor().max(0.0) as usize;
+            position_at_column(r, &glyphs_of(r), col)
+        }
+        None => view.buffer.len(),
+    };
+    Some((w.id, Some(position)))
 }
 
 /// Where buffer text goes and how far it is scrolled.

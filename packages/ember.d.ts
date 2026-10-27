@@ -312,6 +312,52 @@ declare global {
        */
       "minibuffer-complete": [];
       /**
+       * Start selecting with the mouse: select the window clicked in and move point there.
+       *
+       * Dragging then sets the region, with <drag-mouse-1>.
+       *
+       * Defined in packages/mouse.ts.
+       */
+      "mouse-drag-region": [];
+      /**
+       * Extend the region to where the mouse was clicked, setting the mark at point first if the region is not active.
+       *
+       * Emacs binds S-<down-mouse-1> to a menu of fonts; Ember binds S-<mouse-1> to this, as most editors do.
+       *
+       * Defined in packages/mouse.ts.
+       */
+      "mouse-extend-region": [];
+      /**
+       * Select the line triple-clicked on, with its newline.
+       *
+       * Emacs does this inside mouse-drag-region when it counts three clicks; Ember binds it to <triple-mouse-1>.
+       *
+       * Defined in packages/mouse.ts.
+       */
+      "mouse-select-line": [];
+      /**
+       * Select the word double-clicked on, or the run of spaces or the character.
+       *
+       * Emacs does this inside mouse-drag-region when it counts two clicks; Ember binds it to <double-mouse-1>.
+       *
+       * Defined in packages/mouse.ts.
+       */
+      "mouse-select-word": [];
+      /**
+       * Move point to where the mouse was clicked, selecting that window.
+       *
+       * Defined in packages/mouse.ts.
+       */
+      "mouse-set-point": [];
+      /**
+       * Set the region to the text the mouse was dragged over.
+       *
+       * The mark goes where the drag started and point where it ended, and the region is active.
+       *
+       * Defined in packages/mouse.ts.
+       */
+      "mouse-set-region": [];
+      /**
        * Move point to the beginning of the line.
        *
        * With a prefix argument N, move forward N - 1 lines first. Where text is hidden, this is the start of the row on screen, as in Emacs.
@@ -1224,6 +1270,12 @@ declare global {
      * the command about to run; setThisCommand changes which one runs.
      */
     function thisCommand(): string | undefined;
+    /** Set the mark, saving the old one on the mark ring (Emacs's push-mark), and activate the region if asked. */
+    function pushMark(position: number, options?: { activate?: boolean }): void;
+    /** Activate the region between the mark and point, if there is a mark. */
+    function activateMark(): void;
+    /** Hide the region, leaving the mark where it is. */
+    function deactivateMark(): void;
     /** Whether the running command was started by keys or M-x rather than called from code. */
     function calledInteractively(): boolean;
     /** Whether the region is active: shown, and what region commands act on (Emacs's region-active-p). */
@@ -1280,6 +1332,15 @@ declare global {
     function selectedWindow(): number;
     /** The windows in cyclic order, left to right and top to bottom, as other-window visits them. */
     function windowList(): number[];
+    /**
+     * Where the last mouse event happened: its window, the buffer position
+     * under the mouse if there is text there, and for a drag where it started.
+     * Commands bound to mouse keys such as "<mouse-1>" read it, as Emacs
+     * commands read their event.
+     */
+    function lastMouseEvent():
+      | { window: number; position?: number; start?: { window: number; position?: number } }
+      | undefined;
     /** The name of the buffer a window shows, the selected one by default. */
     function windowBuffer(window?: number): string | undefined;
 

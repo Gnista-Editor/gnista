@@ -47,6 +47,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/repeat.ts", include_str!("../../../packages/repeat.ts")),
     ("packages/kmacro.ts", include_str!("../../../packages/kmacro.ts")),
     ("packages/window.ts", include_str!("../../../packages/window.ts")),
+    ("packages/mouse.ts", include_str!("../../../packages/mouse.ts")),
 ];
 
 /// How long a script may run before it is stopped, unless changed with
@@ -445,6 +446,33 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
         })?,
     )?;
     native.set(
+        "pushMark",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pos: usize, activate: bool| {
+            with_editor(&ctx, |ed| {
+                ed.buffer_mut().push_mark(pos, activate);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "activateMark",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            with_editor(&ctx, |ed| {
+                ed.buffer_mut().activate_region();
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "deactivateMark",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            with_editor(&ctx, |ed| {
+                ed.buffer_mut().deactivate_mark();
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
         "repeatLastCommand",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, arg: Value<'js>| {
             let arg = prefix_from_js(&ctx, arg)?;
@@ -707,6 +735,22 @@ fn install_native_windows<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs
     native.set(
         "windowList",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.window_list())))?,
+    )?;
+    native.set(
+        "lastMouseEvent",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            let Some(event) = with_editor(&ctx, |ed| Ok(ed.last_mouse_event()))? else { return Ok::<_, rquickjs::Error>(None) };
+            let object = Object::new(ctx.clone())?;
+            object.set("window", event.window)?;
+            object.set("position", event.position)?;
+            if let Some((window, position)) = event.start {
+                let start = Object::new(ctx.clone())?;
+                start.set("window", window)?;
+                start.set("position", position)?;
+                object.set("start", start)?;
+            }
+            Ok(Some(object))
+        })?,
     )?;
     native.set(
         "windowBuffer",

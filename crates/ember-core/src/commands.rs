@@ -203,8 +203,12 @@ fn movement(ed: &mut Editor) {
                 Some(KeyCode::WheelUp) => -lines,
                 _ => lines,
             };
-            // Like mwheel-scroll in Emacs, reaching either end is not an error.
-            scroll_lines(ed, lines);
+            // Like mwheel-scroll in Emacs, reaching either end is not an
+            // error, and the window under the mouse scrolls.
+            match ed.last_mouse.map(|m| m.window) {
+                Some(window) => ed.with_selected_window(window, |ed| scroll_lines(ed, lines)),
+                None => scroll_lines(ed, lines),
+            };
             Ok(())
         },
     );

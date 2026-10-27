@@ -11,9 +11,15 @@ use egui::{Event, Key, Modifiers, Theme, vec2};
 use egui_kittest::Harness;
 
 fn harness(editor: Editor, theme: Theme) -> Harness<'static, EmberApp> {
+    harness_stepping(editor, theme, 0.25)
+}
+
+/// A harness whose frames are `step_dt` seconds apart.
+fn harness_stepping(editor: Editor, theme: Theme, step_dt: f32) -> Harness<'static, EmberApp> {
     let mut harness = Harness::builder()
         .with_size(vec2(640.0, 360.0))
         .with_theme(theme)
+        .with_step_dt(step_dt)
         // Through eframe, as the real window runs, rather than inside a test panel.
         .build_eframe(move |cc| {
             // egui's built-in fonts only, so snapshots look the same everywhere.
@@ -268,4 +274,61 @@ fn split_windows() {
     // Each window was told its size: three windows, each fewer lines than the frame.
     assert_eq!(h.state().editor.window_list().len(), 3);
     assert!(h.state().editor.viewport_height() < 10);
+}
+
+/// Presses or releases the primary button over a character of the text.
+fn press(h: &mut Harness<'_, EmberApp>, (line, col): (usize, usize), pressed: bool, modifiers: Modifiers) {
+    let pos = cell(h, line, col);
+    h.event(Event::PointerMoved(pos));
+    h.event(Event::PointerButton { pos, button: egui::PointerButton::Primary, pressed, modifiers });
+    h.run();
+}
+
+/// Where the middle of a character of the sample text is drawn, by line and column.
+fn cell(h: &Harness<'_, EmberApp>, line: usize, col: usize) -> egui::Pos2 {
+    // 16 points of padding, then the text, measured with the window's fonts.
+    let (w, lh) = h.ctx.fonts_mut(|f| {
+        let font = egui::FontId::new(ember_gui::theme::TEXT_SIZE, egui::FontFamily::Monospace);
+        (f.glyph_width(&font, 'M'), (f.row_height(&font) * ember_gui::theme::LINE_SPACING).round())
+    });
+    egui::pos2(16.0 + (col as f32 + 0.5) * w, 12.0 + (line as f32 + 0.5) * lh)
+}
+
+#[test]
+fn clicks_and_drags_move_point_and_select() {
+    let mut ed = sample();
+    let _scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    let mut h = harness(ed, Theme::Dark);
+    // "An editor that works..." is the third line.
+    press(&mut h, (2, 3), true, Modifiers::NONE);
+    press(&mut h, (2, 3), false, Modifiers::NONE);
+    let b = h.state().editor.window_buffer();
+    assert_eq!(b.point(), b.line_start(2) + 3);
+    assert_eq!(b.active_region(), None);
+
+    // Drag from the start of the line to column 9.
+    press(&mut h, (2, 0), true, Modifiers::NONE);
+    let pos = cell(&h, 2, 9);
+    h.event(Event::PointerMoved(pos));
+    h.run();
+    press(&mut h, (2, 9), false, Modifiers::NONE);
+    let b = h.state().editor.window_buffer();
+    let start = b.line_start(2);
+    assert_eq!(b.active_region(), Some(start..start + 9));
+    h.snapshot("mouse_selection_dark");
+}
+
+#[test]
+fn double_click_selects_a_word() {
+    let mut ed = sample();
+    let _scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    // Frames a sixtieth of a second apart, so the two clicks are a double click.
+    let mut h = harness_stepping(ed, Theme::Dark, 1.0 / 60.0);
+    for _ in 0..2 {
+        press(&mut h, (2, 5), true, Modifiers::NONE);
+        press(&mut h, (2, 5), false, Modifiers::NONE);
+    }
+    let b = h.state().editor.window_buffer();
+    let start = b.line_start(2);
+    assert_eq!(b.active_region(), Some(start + 3..start + 9), "\"editor\"");
 }

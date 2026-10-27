@@ -127,6 +127,16 @@ impl WindowTree {
     }
 }
 
+/// Where a mouse event happened, as the position part of an Emacs mouse
+/// event: the window, and the buffer position under the mouse if there is
+/// text there. A drag also has where it started.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct MouseEvent {
+    pub window: WindowId,
+    pub position: Option<usize>,
+    pub start: Option<(WindowId, Option<usize>)>,
+}
+
 /// A window as a front end draws it.
 pub struct WindowView<'a> {
     pub id: WindowId,
@@ -334,6 +344,30 @@ impl Editor {
         for window in moved {
             self.buffers[replacement].set_window_point(window, point);
         }
+    }
+
+    /// Feeds a mouse button event, such as `<mouse-1>` or `S-<drag-mouse-1>`,
+    /// that happened where `event` says. It runs whatever the key is bound
+    /// to, which reads the event with [`Editor::last_mouse_event`].
+    pub fn mouse(&mut self, key: crate::key::Key, event: MouseEvent) {
+        self.last_mouse = Some(event);
+        self.handle_key(key);
+    }
+
+    pub fn last_mouse_event(&self) -> Option<MouseEvent> {
+        self.last_mouse
+    }
+
+    /// Runs `f` with a window selected, then selects the one that was, as
+    /// Emacs's `with-selected-window`.
+    pub(crate) fn with_selected_window<T>(&mut self, id: WindowId, f: impl FnOnce(&mut Editor) -> T) -> T {
+        let old = self.selected_window;
+        if id == old || self.select_window(id).is_err() {
+            return f(self);
+        }
+        let result = f(self);
+        let _ = self.select_window(old);
+        result
     }
 
     /// Text lines in the selected window.

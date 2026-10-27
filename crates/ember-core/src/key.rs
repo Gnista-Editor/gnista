@@ -24,6 +24,44 @@ pub enum KeyCode {
     WheelUp,
     /// The mouse wheel or a trackpad scrolling towards the end of the buffer.
     WheelDown,
+    /// A mouse button, 1 to 5, as Emacs names its events: `<down-mouse-1>`
+    /// when pressed, `<mouse-1>` when released where it was pressed,
+    /// `<drag-mouse-1>` after moving, and `<double-mouse-1>` and
+    /// `<triple-mouse-1>` for repeated clicks. Where the event happened is
+    /// in [`crate::MouseEvent`].
+    Mouse(MouseKind, u8),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum MouseKind {
+    Down,
+    Click,
+    Drag,
+    Double,
+    Triple,
+}
+
+impl MouseKind {
+    fn prefix(self) -> &'static str {
+        match self {
+            MouseKind::Down => "down-",
+            MouseKind::Click => "",
+            MouseKind::Drag => "drag-",
+            MouseKind::Double => "double-",
+            MouseKind::Triple => "triple-",
+        }
+    }
+}
+
+/// A mouse event written as `<drag-mouse-1>`.
+fn mouse_event(name: &str) -> Option<KeyCode> {
+    let inner = name.strip_prefix('<')?.strip_suffix('>')?;
+    let (kind, rest) = [MouseKind::Down, MouseKind::Drag, MouseKind::Double, MouseKind::Triple]
+        .into_iter()
+        .find_map(|k| inner.strip_prefix(k.prefix()).map(|r| (k, r)))
+        .unwrap_or((MouseKind::Click, inner));
+    let n: u8 = rest.strip_prefix("mouse-")?.parse().ok()?;
+    (1..=5).contains(&n).then_some(KeyCode::Mouse(kind, n))
 }
 
 /// A key press with its modifiers, written in Emacs notation such as `C-x`,
@@ -114,6 +152,7 @@ impl Key {
             "<wheel-up>" => KeyCode::WheelUp,
             "<wheel-down>" => KeyCode::WheelDown,
             _ if function_key(rest).is_some() => KeyCode::F(function_key(rest).unwrap_or_default()),
+            _ if mouse_event(rest).is_some() => mouse_event(rest)?,
             _ => {
                 let mut chars = rest.chars();
                 let c = chars.next()?;
@@ -162,6 +201,7 @@ impl fmt::Display for Key {
             KeyCode::PageUp => "<prior>",
             KeyCode::PageDown => "<next>",
             KeyCode::F(n) => return write!(f, "<f{n}>"),
+            KeyCode::Mouse(kind, n) => return write!(f, "<{}mouse-{n}>", kind.prefix()),
             KeyCode::WheelUp => "<wheel-up>",
             KeyCode::WheelDown => "<wheel-down>",
         };
@@ -186,7 +226,7 @@ mod tests {
 
     #[test]
     fn parses_and_prints_emacs_notation() {
-        for s in ["a", "C-x", "M-f", "C-M-f", "RET", "SPC", "M-<", "M->", "C--", "<left>", "M-DEL", "S-<right>", "C-S-f", "C-M-S-<up>", "<wheel-down>", "C-<wheel-up>", "<f3>", "S-<f12>"] {
+        for s in ["a", "C-x", "M-f", "C-M-f", "RET", "SPC", "M-<", "M->", "C--", "<left>", "M-DEL", "S-<right>", "C-S-f", "C-M-S-<up>", "<wheel-down>", "C-<wheel-up>", "<f3>", "S-<f12>", "<mouse-1>", "<down-mouse-1>", "<drag-mouse-1>", "S-<mouse-1>", "<double-mouse-3>", "<triple-mouse-1>"] {
             let key = Key::parse(s).unwrap_or_else(|| panic!("failed to parse {s}"));
             assert_eq!(key.to_string(), s);
         }
