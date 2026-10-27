@@ -110,3 +110,68 @@ fn shift_arrows_select_in_the_window() {
     h.run();
     assert_eq!(h.state().editor.window_buffer().active_region(), Some(0..2));
 }
+
+/// Many numbered lines, with point at the top.
+fn long_buffer() -> Editor {
+    let mut ed = Editor::new();
+    let text: Vec<String> = (1..=80).map(|n| format!("Line {n}: the quick brown fox jumps over the lazy dog")).collect();
+    ed.type_text(&text.join("\n"));
+    ed.press("M-< C-g").unwrap();
+    ed
+}
+
+/// A trackpad scroll of `points`, positive moving the content down.
+fn trackpad(h: &mut Harness<'_, EmberApp>, points: f32, modifiers: Modifiers) {
+    h.event(Event::MouseWheel {
+        unit: egui::MouseWheelUnit::Point,
+        delta: vec2(0.0, points),
+        phase: egui::TouchPhase::Move,
+        source: egui::MouseWheelSource::Trackpad,
+        modifiers,
+    });
+    h.run();
+}
+
+/// Notches of a mouse wheel, positive moving the content down.
+fn mouse_wheel(h: &mut Harness<'_, EmberApp>, notches: f32) {
+    h.event(Event::MouseWheel {
+        unit: egui::MouseWheelUnit::Line,
+        delta: vec2(0.0, notches),
+        phase: egui::TouchPhase::Move,
+        source: egui::MouseWheelSource::Wheel,
+        modifiers: Modifiers::NONE,
+    });
+    h.run();
+}
+
+#[test]
+fn the_wheel_scrolls_smoothly() {
+    let mut h = harness(long_buffer(), Theme::Dark);
+    // Content moves up by 100 points: about four and a half lines.
+    trackpad(&mut h, -100.0, Modifiers::NONE);
+    let b = h.state().editor.window_buffer();
+    assert!((3..=5).contains(&b.top_line), "top line {}", b.top_line);
+    // Point was at the top, so it moved down to stay in the window.
+    assert_eq!(b.line_of(b.point()), b.top_line);
+    h.snapshot("scrolled_dark");
+
+    trackpad(&mut h, 1000.0, Modifiers::NONE);
+    assert_eq!(h.state().editor.window_buffer().top_line, 0);
+}
+
+#[test]
+fn mouse_wheel_notches_scroll_several_lines() {
+    let mut h = harness(long_buffer(), Theme::Dark);
+    mouse_wheel(&mut h, -1.0);
+    let first = h.state().editor.window_buffer().top_line;
+    assert!(first >= 1, "one notch scrolled {first} lines");
+    mouse_wheel(&mut h, -1.0);
+    assert!(h.state().editor.window_buffer().top_line > first);
+}
+
+#[test]
+fn ctrl_wheel_does_not_scroll() {
+    let mut h = harness(long_buffer(), Theme::Dark);
+    trackpad(&mut h, -100.0, Modifiers::CTRL);
+    assert_eq!(h.state().editor.window_buffer().top_line, 0);
+}

@@ -49,6 +49,9 @@ pub struct Editor {
     last_command: Option<String>,
     this_command: Option<String>,
     pub(crate) last_key: Option<Key>,
+    /// How many lines the last wheel event scrolls, like the data an Emacs
+    /// wheel event carries. Set by [`Editor::wheel`].
+    pub(crate) wheel_lines: usize,
     pub(crate) goal_column: Option<usize>,
     self_insert_run: usize,
     viewport_height: usize,
@@ -83,6 +86,7 @@ impl Editor {
             last_command: None,
             this_command: None,
             last_key: None,
+            wheel_lines: 1,
             goal_column: None,
             self_insert_run: 0,
             viewport_height: 24,
@@ -306,6 +310,20 @@ impl Editor {
             }
         }
         self.global_map.lookup(keys)
+    }
+
+    /// Feeds a mouse wheel or trackpad scroll of `lines` whole lines: positive
+    /// towards the end of the buffer. It arrives as `<wheel-down>` or
+    /// `<wheel-up>`, bound to `mwheel-scroll`, so it can be rebound and
+    /// described like any key.
+    pub fn wheel(&mut self, lines: isize) {
+        if lines == 0 {
+            return;
+        }
+        self.wheel_lines = lines.unsigned_abs();
+        let code = if lines > 0 { KeyCode::WheelDown } else { KeyCode::WheelUp };
+        self.handle_key(Key::new(code));
+        self.wheel_lines = 1;
     }
 
     /// Feeds a key sequence in Emacs notation, such as `C-x C-s`, as if typed.

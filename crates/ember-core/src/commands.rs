@@ -5,7 +5,7 @@ use crate::command::{Arg, Command, ParamKind};
 use crate::editor::Editor;
 use crate::error::{Error, Result};
 use crate::files::expand_file_name;
-use crate::key::format_keys;
+use crate::key::{KeyCode, format_keys};
 use crate::keymap::Lookup;
 
 /// Commands whose kills join onto the previous kill when run back to back.
@@ -139,6 +139,27 @@ fn movement(ed: &mut Editor) {
         }
         Ok(())
     });
+    def(
+        ed,
+        "mwheel-scroll",
+        "Scroll the window for the mouse wheel or a trackpad.\n\nScrolls by as many lines as the wheel event carries. Point stays where it is unless it would leave the window.",
+        |ed, _| {
+            let lines = ed.wheel_lines as isize;
+            let lines = match ed.last_key.map(|k| k.code) {
+                Some(KeyCode::WheelUp) => -lines,
+                _ => lines,
+            };
+            // Like mwheel-scroll in Emacs, reaching either end is not an error.
+            scroll_lines(ed, lines);
+            Ok(())
+        },
+    );
+    def(ed, "scroll-up-line", "Scroll the text up one line, showing the next line.", |ed, _| {
+        if scroll_lines(ed, 1) { Ok(()) } else { err("End of buffer") }
+    });
+    def(ed, "scroll-down-line", "Scroll the text down one line, showing the previous line.", |ed, _| {
+        if scroll_lines(ed, -1) { Ok(()) } else { err("Beginning of buffer") }
+    });
     def(ed, "recenter", "Scroll so the line with point is in the middle of the window.", |ed, _| {
         let height = ed.viewport_height();
         let b = ed.window_buffer_mut();
@@ -147,8 +168,41 @@ fn movement(ed: &mut Editor) {
     });
 }
 
+/// Scrolls the window by `lines`, positive towards the end of the buffer,
+/// until the last line is at the top. Point stays put unless it would leave
+/// the window; then it moves to the nearest visible line, keeping its column
+/// across repeated scrolls as line moves do. Returns whether anything scrolled.
+fn scroll_lines(ed: &mut Editor, lines: isize) -> bool {
+    let continuing = ed.last_command().is_some_and(|c| SCROLL_KEEPS_COLUMN.contains(&c));
+    let height = ed.viewport_height();
+    let b = ed.window_buffer();
+    let goal = match ed.goal_column {
+        Some(goal) if continuing => goal,
+        _ => b.column(b.point()),
+    };
+    ed.goal_column = Some(goal);
+    let b = ed.window_buffer_mut();
+    let last = b.line_count() - 1;
+    let top = (b.top_line as isize + lines).clamp(0, last as isize) as usize;
+    if top == b.top_line {
+        return false;
+    }
+    b.top_line = top;
+    let line = b.line_of(b.point());
+    let target = line.clamp(top, top + height.saturating_sub(1));
+    if target != line {
+        let start = b.line_start(target);
+        b.set_point((start + goal).min(b.line_end(target)));
+    }
+    true
+}
+
+/// Commands after which scrolling and line moves keep the earlier goal column.
+const SCROLL_KEEPS_COLUMN: &[&str] =
+    &["next-line", "previous-line", "mwheel-scroll", "scroll-up-line", "scroll-down-line"];
+
 fn line_move(ed: &mut Editor, down: bool) -> Result<()> {
-    let continuing = matches!(ed.last_command(), Some("next-line" | "previous-line"));
+    let continuing = ed.last_command().is_some_and(|c| SCROLL_KEEPS_COLUMN.contains(&c));
     let b = ed.buffer();
     let line = b.line_of(b.point());
     let goal = match ed.goal_column {
@@ -597,6 +651,8 @@ fn bind_defaults(ed: &mut Editor) {
         ("M-v", "scroll-down-command"),
         ("<prior>", "scroll-down-command"),
         ("C-l", "recenter"),
+        ("<wheel-up>", "mwheel-scroll"),
+        ("<wheel-down>", "mwheel-scroll"),
         ("RET", "newline"),
         ("TAB", "indent-for-tab-command"),
         ("DEL", "delete-backward-char"),

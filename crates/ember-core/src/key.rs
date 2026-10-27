@@ -17,6 +17,10 @@ pub enum KeyCode {
     End,
     PageUp,
     PageDown,
+    /// The mouse wheel or a trackpad scrolling towards the start of the buffer.
+    WheelUp,
+    /// The mouse wheel or a trackpad scrolling towards the end of the buffer.
+    WheelDown,
 }
 
 /// A key press with its modifiers, written in Emacs notation such as `C-x`,
@@ -103,6 +107,8 @@ impl Key {
             "<end>" => KeyCode::End,
             "<prior>" => KeyCode::PageUp,
             "<next>" => KeyCode::PageDown,
+            "<wheel-up>" => KeyCode::WheelUp,
+            "<wheel-down>" => KeyCode::WheelDown,
             _ => {
                 let mut chars = rest.chars();
                 let c = chars.next()?;
@@ -149,6 +155,8 @@ impl fmt::Display for Key {
             KeyCode::End => "<end>",
             KeyCode::PageUp => "<prior>",
             KeyCode::PageDown => "<next>",
+            KeyCode::WheelUp => "<wheel-up>",
+            KeyCode::WheelDown => "<wheel-down>",
         };
         f.write_str(name)
     }
@@ -165,7 +173,7 @@ mod tests {
 
     #[test]
     fn parses_and_prints_emacs_notation() {
-        for s in ["a", "C-x", "M-f", "C-M-f", "RET", "SPC", "M-<", "M->", "C--", "<left>", "M-DEL", "S-<right>", "C-S-f", "C-M-S-<up>"] {
+        for s in ["a", "C-x", "M-f", "C-M-f", "RET", "SPC", "M-<", "M->", "C--", "<left>", "M-DEL", "S-<right>", "C-S-f", "C-M-S-<up>", "<wheel-down>", "C-<wheel-up>"] {
             let key = Key::parse(s).unwrap_or_else(|| panic!("failed to parse {s}"));
             assert_eq!(key.to_string(), s);
         }

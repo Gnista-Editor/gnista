@@ -24,6 +24,13 @@ pub struct EmberApp {
     pub editor: Editor,
     title: String,
     mac: bool,
+    /// How far the view is scrolled past the window's top line, in points,
+    /// for smooth scrolling. Always less than one line; whole lines are the
+    /// core's `top_line`.
+    scroll_offset: f32,
+    /// The buffer and top line the offset belongs to. If something else
+    /// moves the view, such as C-v or switching buffers, the offset resets.
+    scroll_anchor: (String, usize),
 }
 
 impl eframe::App for EmberApp {
@@ -34,13 +41,21 @@ impl eframe::App for EmberApp {
 
 impl EmberApp {
     pub fn new(editor: Editor) -> EmberApp {
-        EmberApp { editor, title: String::new(), mac: cfg!(target_os = "macos") }
+        EmberApp {
+            editor,
+            title: String::new(),
+            mac: cfg!(target_os = "macos"),
+            scroll_offset: 0.0,
+            scroll_anchor: (String::new(), 0),
+        }
     }
 
     /// Handles this frame's input and draws the editor into `ui`.
     pub fn show(&mut self, ui: &mut Ui) {
         let ctx = ui.ctx().clone();
         self.handle_close(&ctx);
+        let layout = Layout::new(ui);
+        self.editor.set_viewport_height(layout.rows());
         let events = ctx.input(|i| i.events.clone());
         for input in translate(&events, self.mac) {
             match input {
@@ -52,12 +67,50 @@ impl EmberApp {
                 }
             }
         }
+        if self.view() != self.scroll_anchor {
+            self.scroll_offset = 0.0;
+        }
+        self.scroll(&ctx, layout.m.line_height);
+        let top = self.editor.window_buffer().top_line;
+        self.editor.ensure_point_visible();
+        if self.editor.window_buffer().top_line != top {
+            self.scroll_offset = 0.0;
+        }
+        self.scroll_anchor = self.view();
+
         if self.editor.should_quit() {
             ctx.send_viewport_cmd(ViewportCommand::Close);
         }
         self.update_title(&ctx);
         let focused = ctx.input(|i| i.focused);
-        draw(ui, &mut self.editor, Tokens::get(&ctx), focused);
+        draw(ui, &self.editor, &layout, Tokens::get(&ctx), focused, self.scroll_offset);
+    }
+
+    /// The buffer shown and its top line.
+    fn view(&self) -> (String, usize) {
+        let b = self.editor.window_buffer();
+        (b.name.clone(), b.top_line)
+    }
+
+    /// Smooth scrolling from the mouse wheel or a trackpad. egui smooths
+    /// notched wheels over a few frames; trackpads give points directly.
+    /// Whole lines go to the editor as wheel events, which run mwheel-scroll
+    /// like any key, and the remainder is drawn as an offset.
+    fn scroll(&mut self, ctx: &egui::Context, line_height: f32) {
+        // Positive y moves the content down, revealing earlier lines.
+        let dy = ctx.input(|i| i.smooth_scroll_delta.y);
+        if dy == 0.0 {
+            return;
+        }
+        let b = self.editor.window_buffer();
+        let (top, last) = (b.top_line, b.line_count() - 1);
+        let wanted = (top as f32 * line_height + self.scroll_offset - dy)
+            .clamp(0.0, last as f32 * line_height);
+        let wanted_top = (wanted / line_height).floor() as usize;
+        self.editor.wheel(wanted_top as isize - top as isize);
+        let top = self.editor.window_buffer().top_line;
+        // If the wheel is bound to something else, there is nothing to offset.
+        self.scroll_offset = if top == wanted_top { wanted - top as f32 * line_height } else { 0.0 };
     }
 
     /// Closing the window runs save-buffers-kill-terminal, so unsaved files
@@ -95,54 +148,76 @@ struct Metrics {
     char_width: f32,
 }
 
-fn draw(ui: &mut Ui, ed: &mut Editor, t: Tokens, focused: bool) {
-    let rect = ui.max_rect();
+/// Where the parts of the window go this frame.
+struct Layout {
+    rect: Rect,
+    text_rect: Rect,
+    mode_rect: Rect,
+    echo_rect: Rect,
+    m: Metrics,
+}
+
+impl Layout {
+    fn new(ui: &Ui) -> Layout {
+        let rect = ui.max_rect();
+        let font = FontId::new(TEXT_SIZE, FontFamily::Monospace);
+        let em = ui.painter().layout_no_wrap("M".to_string(), font.clone(), Color32::PLACEHOLDER);
+        let m = Metrics {
+            line_height: (em.size().y * LINE_SPACING).round(),
+            char_width: em.size().x,
+            font,
+        };
+        let bar_height = m.line_height + 2.0 * BAR_PAD;
+        let echo_rect = Rect::from_min_max(pos2(rect.left(), rect.bottom() - bar_height), rect.max);
+        let mode_rect = Rect::from_min_max(
+            pos2(rect.left(), echo_rect.top() - bar_height),
+            pos2(rect.right(), echo_rect.top()),
+        );
+        let text_rect = Rect::from_min_max(
+            rect.min + vec2(PAD_X, PAD_Y),
+            pos2(rect.right() - PAD_X, mode_rect.top()),
+        );
+        Layout { rect, text_rect, mode_rect, echo_rect, m }
+    }
+
+    /// Whole lines that fit in the text area.
+    fn rows(&self) -> usize {
+        ((self.text_rect.height() / self.m.line_height).floor() as usize).max(1)
+    }
+}
+
+fn draw(ui: &Ui, ed: &Editor, layout: &Layout, t: Tokens, focused: bool, scroll_offset: f32) {
     let painter = ui.painter().clone();
-    painter.rect_filled(rect, 0.0, t.bg);
-
-    let font = FontId::new(TEXT_SIZE, FontFamily::Monospace);
-    let em = painter.layout_no_wrap("M".to_string(), font.clone(), t.ink);
-    let m = Metrics {
-        line_height: (em.size().y * LINE_SPACING).round(),
-        char_width: em.size().x,
-        font,
-    };
-
-    let bar_height = m.line_height + 2.0 * BAR_PAD;
-    let echo_rect = Rect::from_min_max(pos2(rect.left(), rect.bottom() - bar_height), rect.max);
-    let mode_rect = Rect::from_min_max(
-        pos2(rect.left(), echo_rect.top() - bar_height),
-        pos2(rect.right(), echo_rect.top()),
-    );
-    let text_rect = Rect::from_min_max(
-        rect.min + vec2(PAD_X, PAD_Y),
-        pos2(rect.right() - PAD_X, mode_rect.top()),
-    );
-
-    ed.set_viewport_height(((text_rect.height() / m.line_height).floor() as usize).max(1));
-    ed.ensure_point_visible();
-
+    painter.rect_filled(layout.rect, 0.0, t.bg);
+    let m = &layout.m;
     let in_minibuffer = ed.prompt().is_some();
     let window_cursor = if focused && !in_minibuffer { CursorStyle::Filled } else { CursorStyle::Hollow };
-    draw_buffer(&painter, ed.window_buffer(), text_rect, ed.viewport_height(), &m, t, window_cursor);
-    draw_mode_line(&painter, ed.window_buffer(), mode_rect, &m, t);
+    // A line scrolled partly out of view slides under the top edge of the window.
+    let clip = Rect::from_min_max(
+        pos2(layout.rect.left(), layout.rect.top()),
+        pos2(layout.text_rect.right() + PAD_X, layout.mode_rect.top()),
+    );
+    let view = View { area: layout.text_rect, clip, rows: ed.viewport_height(), scroll_offset };
+    draw_buffer(&painter, ed.window_buffer(), &view, m, t, window_cursor);
+    draw_mode_line(&painter, ed.window_buffer(), layout.mode_rect, m, t);
     let echo_cursor = if focused { CursorStyle::Filled } else { CursorStyle::Hollow };
-    draw_echo_area(&painter, ed, echo_rect, &m, t, echo_cursor);
+    draw_echo_area(&painter, ed, layout.echo_rect, m, t, echo_cursor);
+}
+
+/// Where buffer text goes and how far it is scrolled.
+struct View {
+    area: Rect,
+    clip: Rect,
+    rows: usize,
+    scroll_offset: f32,
 }
 
 fn layout_line(painter: &Painter, text: &str, m: &Metrics, color: Color32) -> Arc<Galley> {
     painter.layout_no_wrap(expand(text), m.font.clone(), color)
 }
 
-fn draw_buffer(
-    painter: &Painter,
-    b: &Buffer,
-    area: Rect,
-    rows: usize,
-    m: &Metrics,
-    t: Tokens,
-    cursor: CursorStyle,
-) {
+fn draw_buffer(painter: &Painter, b: &Buffer, view: &View, m: &Metrics, t: Tokens, cursor: CursorStyle) {
+    let area = view.area;
     let point_line = b.line_of(b.point());
     let point_text = b.line_text(point_line);
     let point_index = expanded_len(&point_text, b.column(b.point()));
@@ -155,16 +230,18 @@ fn draw_buffer(
         (cursor_x - area.width() / 2.0).max(0.0)
     };
 
-    let clipped = painter.with_clip_rect(area.with_max_x(area.right() + PAD_X));
+    let clipped = painter.with_clip_rect(view.clip);
     let region = b.active_region();
-    for (row, line) in (b.top_line..b.line_count()).take(rows).enumerate() {
+    let row_top = |row: usize| area.top() + row as f32 * m.line_height - view.scroll_offset;
+    // One extra row, partly shown, when scrolled between lines.
+    for (row, line) in (b.top_line..b.line_count()).take(view.rows + 1).enumerate() {
         let text = b.line_text(line);
         let galley = if line == point_line {
             point_galley.clone()
         } else {
             layout_line(painter, &text, m, t.ink)
         };
-        let top = area.top() + row as f32 * m.line_height;
+        let top = row_top(row);
         if let Some(region) = &region {
             let (start, end) = (b.line_start(line), b.line_end(line));
             // The part of the region on this line, and whether it runs on past the newline.
@@ -185,10 +262,9 @@ fn draw_buffer(
         clipped.galley(pos2(area.left() - hscroll, y), galley, t.ink);
     }
 
-    if point_line >= b.top_line && point_line < b.top_line + rows {
-        let row = (point_line - b.top_line) as f32;
+    if point_line >= b.top_line && point_line <= b.top_line + view.rows {
         let x = area.left() - hscroll + cursor_x;
-        let y = area.top() + row * m.line_height;
+        let y = row_top(point_line - b.top_line);
         let under = expand(&point_text).chars().nth(point_index);
         draw_cursor(&clipped, &point_galley, point_index, under, pos2(x, y), m, t, cursor);
     }

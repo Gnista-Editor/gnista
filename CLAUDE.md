@@ -4,14 +4,14 @@ A Rust editor that works the way Emacs works. Ember is a placeholder name. The o
 
 ## Current state
 
-A working editor, in a terminal (`ember`) or a window (`ember-gui`), with one window: buffers, files, Emacs movement and editing keys, the active region with shift selection (transient-mark-mode and shift-select-mode, both on), kill ring, undo, M-x with completion, the minibuffer, and `C-h f` / `C-h k` / `C-h b`. TypeScript extensions: `init.ts` defines commands and key bindings, `M-x load-file` reloads it, and `M-:` evaluates an expression.
+A working editor, in a terminal (`ember`) or a window (`ember-gui`), with one window: buffers, files, Emacs movement and editing keys, the active region with shift selection (transient-mark-mode and shift-select-mode, both on), mouse wheel and trackpad scrolling, kill ring, undo, M-x with completion, the minibuffer, and `C-h f` / `C-h k` / `C-h b`. TypeScript extensions: `init.ts` defines commands and key bindings, `M-x load-file` reloads it, and `M-:` evaluates an expression.
 
 ## Layout
 
 - `crates/ember-core`: all editor state and commands. No UI or script dependencies. `display.rs` has the tab and control character rules both front ends share. `Editor` is driven by `handle_key`, `press("C-x C-f")`, `type_text`, or `call(name, args)` for code and tool calls.
 - `crates/ember-script`: the QuickJS runtime and the `ember` API for scripts. `config.rs` finds the config directory and loads `init.ts` for both front ends. `strip.rs` erases TypeScript types, `prelude.js` builds the `ember` global from native functions, `types.rs` generates `ember.d.ts`.
 - `crates/ember`: the terminal binary. `ui.rs` draws, `main.rs` reads keys.
-- `crates/ember-gui`: the egui binary. `app.rs` draws, `keys.rs` translates egui events into keys, `theme.rs` holds the colour tokens and fonts. Drawing code takes colours from `Tokens`, never literals.
+- `crates/ember-gui`: the egui binary. `app.rs` draws and scrolls smoothly: whole lines go to the core as `<wheel-up>`/`<wheel-down>` keys (bound to `mwheel-scroll`, so rebindable), and only the leftover fraction of a line is kept in the GUI as a pixel offset. `keys.rs` translates egui events into keys, `theme.rs` holds the colour tokens and fonts. Drawing code takes colours from `Tokens`, never literals.
 - `examples/init.ts`: a sample config.
 
 Commands are defined once with named, typed parameters (`Command::new(...).param(...)`). Movement commands are marked `.shift_select()`, like Emacs's `^` interactive spec: a shifted key with no binding of its own runs the unshifted key's command and selects as it moves. Interactive use prompts for each parameter in the minibuffer; `Editor::call` takes them directly. Keep it that way: it is what lets scripts, and later the agent, call commands as tools.
