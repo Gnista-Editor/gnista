@@ -1,0 +1,16 @@
+[
+  {"name": "isearch-finds-and-exits", "text": "hello world hello", "keys": "C-s h e l l o RET"},
+  {"name": "isearch-finds-the-next-match", "text": "hello world hello", "keys": "C-s h e l l o C-s RET"},
+  {"name": "isearch-backward", "text": "hello world hello", "keys": "M-> C-r h e l RET"},
+  {"name": "isearch-wraps-after-failing", "text": "hello world", "point": 6, "keys": "C-s h e l C-s RET"},
+  {"name": "isearch-delete-char", "text": "hello world", "keys": "C-s w o r DEL DEL RET"},
+  {"name": "isearch-delete-a-repeat", "text": "ab ab ab", "keys": "C-s a b C-s C-s DEL RET"},
+  {"name": "isearch-other-key-exits-and-runs", "text": "one two\nthree", "keys": "C-s t h C-a"},
+  {"name": "isearch-folds-case", "text": "Hello hello", "keys": "C-s h e l l o RET"},
+  {"name": "isearch-capital-matches-exactly", "text": "hello Hello", "keys": "C-s H RET"},
+  {"name": "isearch-regexp", "text": "abc 123 def", "keys": "C-M-s [ 0 - 9 ] + RET"},
+  {"name": "isearch-yank-word", "text": "foo bar foo bar", "keys": "C-s C-w C-s RET"},
+  {"name": "isearch-again-uses-the-last-string", "text": "xa xb xc", "keys": "C-s x RET C-s C-s RET"},
+  {"name": "isearch-turning-round", "text": "ab ab ab", "keys": "M-> C-r a b C-r C-s RET"},
+  {"name": "isearch-space", "text": "a b a  b", "keys": "C-s a SPC b RET"}
+]

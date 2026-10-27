@@ -44,7 +44,42 @@ pub(crate) fn install(ed: &mut Editor) {
     files_and_buffers(ed);
     minibuffer(ed);
     help(ed);
+    searching(ed);
     bind_defaults(ed);
+}
+
+/// The search commands Emacs has in C: literal and regular expression
+/// search, forward and backward. The prefix argument says how many matches
+/// to go through, and a negative one searches the other way.
+fn searching(ed: &mut Editor) {
+    for (name, regexp, backward, prompt, doc) in [
+        ("search-forward", false, false, "Search: ", "Search forward from point for a string, leaving point after the match."),
+        ("search-backward", false, true, "Search backward: ", "Search backward from point for a string, leaving point at the start of the match."),
+        ("re-search-forward", true, false, "RE search: ", "Search forward from point for a regular expression, leaving point after the match."),
+        ("re-search-backward", true, true, "RE search backward: ", "Search backward from point for a regular expression, leaving point at the start of the match."),
+    ] {
+        let doc = format!(
+            "{doc}\n\nA prefix argument finds that many matches, and a negative one searches the other way. \
+             Case is ignored if case-fold-search is on. Regular expressions use Emacs's syntax."
+        );
+        ed.define_command(
+            Command::new(name, &doc, move |ed, args| {
+                let pattern = args[0].as_str()?.to_string();
+                let n = ed.prefix_numeric();
+                let options = crate::search::SearchOptions {
+                    regexp,
+                    backward: backward != (n < 0),
+                    case_fold: crate::search::fold_case_for(ed, &pattern, false),
+                    bound: None,
+                };
+                match ed.search_buffer(&pattern, &options, n.unsigned_abs() as usize)? {
+                    Some(_) => Ok(()),
+                    None => Err(Error::new(format!("Search failed: \"{pattern}\""))),
+                }
+            })
+            .param("string", ParamKind::String, prompt),
+        );
+    }
 }
 
 fn movement(ed: &mut Editor) {

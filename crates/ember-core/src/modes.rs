@@ -64,6 +64,32 @@ impl Editor {
         Ok(())
     }
 
+    /// Sets the command a named keymap runs for keys it does not bind.
+    pub fn set_keymap_default(&mut self, keymap: &str, command: Option<&str>) -> Result<()> {
+        let map = self
+            .keymap_mut(keymap)
+            .ok_or_else(|| Error::new(format!("No such keymap: {keymap}")))?;
+        map.set_default(command);
+        Ok(())
+    }
+
+    /// Makes a named keymap take precedence over every other but a transient
+    /// map, or stops that with `None`, as Emacs's
+    /// `overriding-terminal-local-map`. Incremental search uses it.
+    pub fn set_overriding_map(&mut self, keymap: Option<&str>) -> Result<()> {
+        if let Some(name) = keymap
+            && self.keymap_names().all(|n| n != name)
+        {
+            return Err(Error::new(format!("No such keymap: {name}")));
+        }
+        self.overriding_map = keymap.map(str::to_string);
+        Ok(())
+    }
+
+    pub fn overriding_map(&self) -> Option<&str> {
+        self.overriding_map.as_deref()
+    }
+
     /// Looks keys up in a named keymap and then its parents.
     pub(crate) fn lookup_in(&self, name: &str, keys: &[Key]) -> Lookup {
         let mut next = Some(name.to_string());

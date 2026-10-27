@@ -48,6 +48,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/kmacro.ts", include_str!("../../../packages/kmacro.ts")),
     ("packages/window.ts", include_str!("../../../packages/window.ts")),
     ("packages/mouse.ts", include_str!("../../../packages/mouse.ts")),
+    ("packages/isearch.ts", include_str!("../../../packages/isearch.ts")),
 ];
 
 /// How long a script may run before it is stopped, unless changed with
@@ -701,6 +702,7 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     install_native_text(ctx, native)?;
     install_native_treesit(ctx, native)?;
     install_native_windows(ctx, native)?;
+    install_native_search(ctx, native)?;
     native.set(
         "regionActive",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer().is_mark_active())))?,
@@ -708,6 +710,86 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     native.set(
         "calledInteractively",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.called_interactively())))?,
+    )?;
+    Ok(())
+}
+
+/// A match as a script sees it: `{ start, end, groups }`.
+fn match_to_js<'js>(ctx: &Ctx<'js>, m: &ember_core::Match) -> rquickjs::Result<Object<'js>> {
+    let object = Object::new(ctx.clone())?;
+    object.set("start", m.start)?;
+    object.set("end", m.end)?;
+    let groups: Vec<Option<Vec<usize>>> = m.groups.iter().map(|g| g.map(|(s, e)| vec![s, e])).collect();
+    object.set("groups", groups)?;
+    Ok(object)
+}
+
+/// Searching and replacing, and the keymap primitives incremental search uses.
+fn install_native_search<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::Result<()> {
+    native.set(
+        "search",
+        Function::new(
+            ctx.clone(),
+            |ctx: Ctx<'js>, pattern: String, from: Option<usize>, regexp: bool, backward: bool, bound: Option<usize>, fold: Option<bool>| {
+                let found = with_editor(&ctx, |ed| {
+                    let case_fold = fold.unwrap_or_else(|| ember_core::search_fold_case(ed, &pattern, false));
+                    let options = ember_core::SearchOptions { regexp, backward, case_fold, bound };
+                    let from = from.unwrap_or(ed.buffer().point());
+                    let found = ember_core::search(ed.buffer(), &pattern, from, &options)?;
+                    if found.is_some() {
+                        ed.set_match_data(found.clone());
+                    }
+                    Ok(found)
+                })?;
+                found.map(|m| match_to_js(&ctx, &m)).transpose()
+            },
+        )?,
+    )?;
+    native.set(
+        "matchData",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            let m = with_editor(&ctx, |ed| Ok(ed.match_data().cloned()))?;
+            m.map(|m| match_to_js(&ctx, &m)).transpose()
+        })?,
+    )?;
+    native.set(
+        "replaceMatch",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, replacement: String, literal: bool, fixed_case: bool| {
+            with_editor(&ctx, |ed| ed.replace_match(&replacement, literal, fixed_case)).map(|(s, e)| vec![s, e])
+        })?,
+    )?;
+    native.set(
+        "foldCaseFor",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pattern: String, interactive: bool| {
+            with_editor(&ctx, |ed| Ok(ember_core::search_fold_case(ed, &pattern, interactive)))
+        })?,
+    )?;
+    native.set(
+        "setOverridingMap",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, keymap: Option<String>| {
+            with_editor(&ctx, |ed| ed.set_overriding_map(keymap.as_deref()))
+        })?,
+    )?;
+    native.set(
+        "overridingMap",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.overriding_map().map(str::to_string))))?,
+    )?;
+    native.set(
+        "setKeymapDefault",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, keymap: String, command: Option<String>| {
+            with_editor(&ctx, |ed| ed.set_keymap_default(&keymap, command.as_deref()))
+        })?,
+    )?;
+    native.set(
+        "unreadKeys",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, keys: String| {
+            with_editor(&ctx, |ed| {
+                let keys = ember_core::Key::parse_seq(&keys)
+                    .ok_or_else(|| ember_core::Error::new(format!("Invalid key sequence: {keys}")))?;
+                ed.unread_keys(&keys);
+                Ok(())
+            })
+        })?,
     )?;
     Ok(())
 }

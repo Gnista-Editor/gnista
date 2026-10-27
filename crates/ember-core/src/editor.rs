@@ -70,6 +70,11 @@ pub struct Editor {
     pub minibuffer_map: Keymap,
     /// Bindings for the next key sequence only, ahead of every other keymap.
     transient_map: Option<Keymap>,
+    /// A named keymap ahead of all but the transient map, while set.
+    pub(crate) overriding_map: Option<String>,
+    /// Keys to read next, after the current one, as Emacs's `unread-command-events`.
+    unread_keys: std::collections::VecDeque<Key>,
+    reading_unread: bool,
     /// Keymaps with names, such as a major mode's, that buffers and modes use.
     pub(crate) keymaps: BTreeMap<String, NamedKeymap>,
     /// Most recently registered first, which is the order keys are looked up in.
@@ -116,6 +121,8 @@ pub struct Editor {
     pub(crate) wheel_lines: usize,
     /// Where the last mouse event happened, for the commands bound to it.
     pub(crate) last_mouse: Option<crate::window::MouseEvent>,
+    /// The last successful search's match, as Emacs's match data.
+    pub(crate) match_data: Option<crate::search::Match>,
     pub(crate) goal_column: Option<usize>,
     self_insert_run: usize,
     pub(crate) windows: Vec<crate::window::Window>,
@@ -176,6 +183,10 @@ impl Editor {
             last_key: None,
             wheel_lines: 1,
             last_mouse: None,
+            match_data: None,
+            overriding_map: None,
+            unread_keys: Default::default(),
+            reading_unread: false,
             goal_column: None,
             self_insert_run: 0,
             windows: Vec::new(),
@@ -561,6 +572,22 @@ impl Editor {
             keys.push(key);
         }
         self.dispatch_key(key);
+        // Keys a command gave back are read next, but not recorded again.
+        if !self.reading_unread {
+            self.reading_unread = true;
+            while let Some(key) = self.unread_keys.pop_front() {
+                self.dispatch_key(key);
+            }
+            self.reading_unread = false;
+        }
+    }
+
+    /// Makes keys the next ones read, after the command running now, as
+    /// pushing onto Emacs's `unread-command-events` does.
+    pub fn unread_keys(&mut self, keys: &[Key]) {
+        for key in keys.iter().rev() {
+            self.unread_keys.push_front(*key);
+        }
     }
 
     fn dispatch_key(&mut self, mut key: Key) {
@@ -641,6 +668,12 @@ impl Editor {
     pub fn lookup(&self, keys: &[Key]) -> Lookup {
         if let Some(map) = &self.transient_map {
             match map.lookup(keys) {
+                Lookup::Unbound => {}
+                found => return found,
+            }
+        }
+        if let Some(name) = &self.overriding_map {
+            match self.lookup_in(name, keys) {
                 Lookup::Unbound => {}
                 found => return found,
             }

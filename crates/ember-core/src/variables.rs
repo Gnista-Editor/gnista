@@ -342,6 +342,17 @@ pub(crate) fn install(ed: &mut Editor) {
         )
         .local(),
         Variable::new(
+            "case-fold-search",
+            "Whether searches match upper and lower case letters to each other.",
+            true,
+        )
+        .local(),
+        Variable::new(
+            "search-upper-case",
+            "Whether an upper case letter in a search string typed interactively makes that search match case exactly.",
+            true,
+        ),
+        Variable::new(
             "line-move-visual",
             "Whether C-n and C-p move by screen lines where long lines are continued, rather than by lines of text.",
             true,

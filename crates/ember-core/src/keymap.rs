@@ -13,6 +13,9 @@ enum Binding {
 #[derive(Clone, Debug, Default)]
 pub struct Keymap {
     bindings: BTreeMap<Key, Binding>,
+    /// What any single key with no binding of its own runs, as an Emacs
+    /// keymap's `[t]` binding does.
+    default: Option<String>,
 }
 
 /// The result of looking up a key sequence.
@@ -52,10 +55,18 @@ impl Keymap {
         self.bind(&keys, command);
     }
 
+    /// Sets or removes the command for keys with no binding of their own.
+    pub fn set_default(&mut self, command: Option<&str>) {
+        self.default = command.map(str::to_string);
+    }
+
     pub fn lookup(&self, keys: &[Key]) -> Lookup {
         let mut map = self;
         for (i, key) in keys.iter().enumerate() {
             match map.bindings.get(key) {
+                None if i == 0 && keys.len() == 1 && self.default.is_some() => {
+                    return Lookup::Command(self.default.clone().expect("checked"));
+                }
                 None => return Lookup::Unbound,
                 Some(Binding::Command(c)) if i + 1 == keys.len() => {
                     return Lookup::Command(c.clone());

@@ -159,6 +159,21 @@
     screenLine: (position) => native.screenLine(position),
     windowBuffer: (window) => native.windowBuffer(window ?? native.selectedWindow()) ?? undefined,
 
+    search(pattern, options = {}) {
+      const { from, regexp = false, backward = false, bound, caseFold } = options;
+      return native.search(String(pattern), from ?? null, Boolean(regexp), Boolean(backward), bound ?? null, caseFold ?? null) ?? undefined;
+    },
+    matchData: () => native.matchData() ?? undefined,
+    replaceMatch(replacement, options = {}) {
+      const [start, end] = native.replaceMatch(String(replacement), Boolean(options.literal), Boolean(options.fixedCase));
+      return { start, end };
+    },
+    foldCaseFor: (pattern, interactive = false) => native.foldCaseFor(String(pattern), Boolean(interactive)),
+    setOverridingMap: (keymap) => native.setOverridingMap(keymap ?? null),
+    overridingMap: () => native.overridingMap() ?? undefined,
+    setKeymapDefault: (keymap, command) => native.setKeymapDefault(String(keymap), command ?? null),
+    unreadKeys: (keys) => native.unreadKeys(String(keys)),
+
     treesitLanguages: () => native.treesitLanguages(),
     treesitLanguageAvailable: (language) => native.treesitLanguages().includes(String(language)),
     treesitParserCreate: (language) => native.treesitSetLanguage(String(language)),

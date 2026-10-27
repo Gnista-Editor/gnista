@@ -1,0 +1,114 @@
+//! Searching: the search commands, incremental search and its highlighting.
+
+use ember_core::{Arg, Editor};
+use ember_script::Scripting;
+
+fn setup(text: &str) -> (Editor, Scripting) {
+    let mut ed = Editor::new();
+    let scripting = Scripting::new(&mut ed).unwrap();
+    ed.window_buffer_mut().set_text(text);
+    (ed, scripting)
+}
+
+fn point(ed: &Editor) -> usize {
+    ed.window_buffer().point()
+}
+
+/// The faces shown on the first row, by the text they cover.
+fn faces(ed: &Editor) -> Vec<(String, bool)> {
+    let isearch = ed.style_for(&["isearch".to_string()], true);
+    ed.window_rows(1, true)[0]
+        .segments
+        .iter()
+        .filter(|s| s.style.background.is_some())
+        .map(|s| (s.text.clone(), s.style.background == isearch.background))
+        .collect()
+}
+
+#[test]
+fn isearch_prompts_say_how_it_is_going() {
+    let (mut ed, _scripting) = setup("hello world hello");
+    ed.press("C-s h e l").unwrap();
+    assert_eq!(ed.echo(), Some("I-search: hel"));
+    ed.press("x").unwrap();
+    assert_eq!(ed.echo(), Some("Failing I-search: helx"));
+    assert_eq!(point(&ed), 3, "point stays at the last match");
+    ed.press("DEL C-s C-s").unwrap();
+    assert_eq!(ed.echo(), Some("Failing I-search: hel"));
+    ed.press("C-s").unwrap();
+    assert_eq!(ed.echo(), Some("Wrapped I-search: hel"));
+    assert_eq!(point(&ed), 3);
+    ed.press("C-r").unwrap();
+    assert_eq!(ed.echo(), Some("Wrapped I-search backward: hel"));
+    ed.press("RET").unwrap();
+    assert_eq!(ed.overriding_map(), None);
+}
+
+#[test]
+fn isearch_highlights_the_match_and_the_others() {
+    let (mut ed, _scripting) = setup("ab ab ab");
+    ed.press("C-s a b C-s").unwrap();
+    assert_eq!(faces(&ed), [("ab".into(), false), ("ab".into(), true), ("ab".into(), false)]);
+    ed.press("RET").unwrap();
+    assert!(faces(&ed).is_empty(), "highlighting goes when the search ends");
+}
+
+#[test]
+fn quitting_isearch() {
+    let (mut ed, _scripting) = setup("hello world");
+    ed.press("C-f C-f C-s w o r C-g").unwrap();
+    assert_eq!(point(&ed), 2, "back where it started");
+    assert_eq!(ed.echo(), Some("Quit"));
+    assert_eq!(ed.overriding_map(), None);
+    // While failing, C-g takes off what does not match and goes on searching.
+    ed.press("C-s w o x y C-g").unwrap();
+    assert_eq!(ed.echo(), Some("I-search: wo"));
+    assert_eq!(point(&ed), 8);
+    ed.press("RET").unwrap();
+    assert_eq!(ed.window_buffer().mark(), Some(2));
+}
+
+#[test]
+fn an_unfinished_regexp_is_not_an_error() {
+    let (mut ed, _scripting) = setup("a(b) ab");
+    ed.press("C-M-s a \\ (").unwrap();
+    assert_eq!(ed.echo(), Some("Regexp I-search: a\\( [incomplete input]"));
+    ed.press("b \\ ) RET").unwrap();
+    assert_eq!(point(&ed), 7);
+}
+
+#[test]
+fn search_commands() {
+    let (mut ed, _scripting) = setup("one two one two");
+    ed.call("search-forward", vec![Arg::Str("two".into())]).unwrap();
+    assert_eq!(point(&ed), 7);
+    let err = ed.call("search-forward", vec![Arg::Str("three".into())]).unwrap_err();
+    assert_eq!(err.to_string(), "Search failed: \"three\"");
+    ed.call("re-search-backward", vec![Arg::Str(r"o\(n\)e".into())]).unwrap();
+    assert_eq!(point(&ed), 0);
+    assert_eq!(ed.match_data().unwrap().groups[1], Some((1, 2)));
+    // M-x prompts for the string.
+    ed.press("M-x").unwrap();
+    ed.type_text("search-forward\nTWO\n");
+    assert_eq!(point(&ed), 7, "case is folded");
+}
+
+#[test]
+fn scripts_search_and_replace() {
+    let (mut ed, scripting) = setup("Foo foo");
+    scripting
+        .eval_typescript(
+            &mut ed,
+            "test.ts",
+            r#"
+            const m = ember.search("foo", { from: 1 })!;
+            ember.replaceMatch("bar");
+            const first = ember.search("FOO", { caseFold: true, from: 0 })!;
+            ember.replaceMatch("bar");
+            ember.message(`${m.start} ${first.start} ${ember.bufferText()} ${ember.foldCaseFor("Foo", true)}`);
+            "#
+            .into(),
+        )
+        .unwrap();
+    assert_eq!(ed.echo(), Some("4 0 Bar bar false"));
+}

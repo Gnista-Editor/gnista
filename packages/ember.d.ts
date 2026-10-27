@@ -212,6 +212,88 @@ declare global {
        */
       "insert": [text: string];
       /**
+       * While the search fails, remove what does not match; otherwise end it and go back to where it started.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-abort": [];
+      /**
+       * Search backward incrementally. See isearch-forward for the keys that work while searching.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-backward": [];
+      /**
+       * Search backward incrementally for a regular expression, in Emacs's syntax. See isearch-forward.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-backward-regexp": [];
+      /**
+       * Take back the last change to the search: the last character typed, or the last C-s or C-r.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-delete-char": [];
+      /**
+       * End the search, leaving point at the match and the mark where the search started.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-exit": [];
+      /**
+       * Search forward incrementally: as you type, point moves to the next match of what you have typed.
+       *
+       * C-s again finds the next match, and once a search fails, wraps round to the start. C-r searches backward. DEL takes back the last character or step, C-w adds the next word from the buffer and C-y the last kill. RET ends the search, leaving point at the match and the mark where the search started; any other key does the same and then runs. C-g goes back to where the search started, or while it fails, removes what does not match. Case is ignored unless the string has a capital letter.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-forward": [];
+      /**
+       * Search forward incrementally for a regular expression, in Emacs's syntax. See isearch-forward.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-forward-regexp": [];
+      /**
+       * Add the character typed to the search string, or for any other key, end the search and run the key.
+       *
+       * Bound as the default of isearch-mode-map, so it sees every key that map does not bind.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-printing-char": [];
+      /**
+       * Find the next match backward of the string being searched for.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-repeat-backward": [];
+      /**
+       * Find the next match forward of the string being searched for.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-repeat-forward": [];
+      /**
+       * Switch between searching for a string and for a regular expression.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-toggle-regexp": [];
+      /**
+       * Add the last kill to the search string.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-yank-kill": [];
+      /**
+       * Add the rest of the word after point to the search string, or the next character if point is not before a word.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-yank-word-or-char": [];
+      /**
        * The major mode for editing JavaScript, highlighted from a tree-sitter syntax tree.
        *
        * Files matching \.[cm]?js$ use it; see auto-mode-alist.
@@ -552,6 +634,22 @@ declare global {
        */
       "quit-window": [];
       /**
+       * Search backward from point for a regular expression, leaving point at the start of the match.
+       *
+       * A prefix argument finds that many matches, and a negative one searches the other way. Case is ignored if case-fold-search is on. Regular expressions use Emacs's syntax.
+       *
+       * @param string text
+       */
+      "re-search-backward": [string: string];
+      /**
+       * Search forward from point for a regular expression, leaving point after the match.
+       *
+       * A prefix argument finds that many matches, and a negative one searches the other way. Case is ignored if case-fold-search is on. Regular expressions use Emacs's syntax.
+       *
+       * @param string text
+       */
+      "re-search-forward": [string: string];
+      /**
        * Scroll so the line with point is in the middle of the window.
        *
        * With a numeric prefix argument N, put it on line N of the window instead, counting from the bottom if N is negative.
@@ -603,6 +701,22 @@ declare global {
        * Scroll the text up a line, or as many as the prefix argument says.
        */
       "scroll-up-line": [];
+      /**
+       * Search backward from point for a string, leaving point at the start of the match.
+       *
+       * A prefix argument finds that many matches, and a negative one searches the other way. Case is ignored if case-fold-search is on. Regular expressions use Emacs's syntax.
+       *
+       * @param string text
+       */
+      "search-backward": [string: string];
+      /**
+       * Search forward from point for a string, leaving point after the match.
+       *
+       * A prefix argument finds that many matches, and a negative one searches the other way. Case is ignored if case-fold-search is on. Regular expressions use Emacs's syntax.
+       *
+       * @param string text
+       */
+      "search-forward": [string: string];
       /**
        * Insert the character you typed, as many times as the prefix argument says.
        */
@@ -730,6 +844,10 @@ declare global {
        */
       "buffer-invisibility-spec": Value;
       /**
+       * Whether searches match upper and lower case letters to each other.
+       */
+      "case-fold-search": Value;
+      /**
        * Whether DEL and <delete> delete the active region rather than one character.
        *
        * If the value is "kill", they kill the region instead, so it can be yanked back.
@@ -745,6 +863,12 @@ declare global {
        * Whether the terminal's background is "dark" or "light", for choosing face colours there. The graphical front end follows the system instead.
        */
       "frame-background-mode": Value;
+      /**
+       * How many other matches incremental search highlights at most, around point.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "lazy-highlight-max-at-a-time": Value;
       /**
        * Whether C-n and C-p move by screen lines where long lines are continued, rather than by lines of text.
        */
@@ -780,6 +904,22 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "overwrite-mode": Value;
+      /**
+       * Regular expressions searched for with incremental search, most recent first.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "regexp-search-ring": Value;
+      /**
+       * Strings searched for with incremental search, most recent first.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "search-ring": Value;
+      /**
+       * Whether an upper case letter in a search string typed interactively makes that search match case exactly.
+       */
+      "search-upper-case": Value;
       /**
        * How many columns apart tab stops are, for showing tab characters.
        */
@@ -917,9 +1057,27 @@ declare global {
        */
       "highlight": FaceAttributes;
       /**
+       * The match incremental search is at.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch": FaceAttributes;
+      /**
+       * The part of the search string that does not match.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-fail": FaceAttributes;
+      /**
        * Italic text.
        */
       "italic": FaceAttributes;
+      /**
+       * Other matches for the string incremental search is looking for.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "lazy-highlight": FaceAttributes;
       /**
        * Links.
        */
@@ -1430,6 +1588,51 @@ declare global {
     function screenLine(position: number): { start: number; end: number; continued: boolean };
     /** The name of the buffer a window shows, the selected one by default. */
     function windowBuffer(window?: number): string | undefined;
+
+    /** A search match: where it starts and ends, and each group's range, group 0 being the whole match. */
+    interface Match {
+      start: number;
+      end: number;
+      groups: ([number, number] | null)[];
+    }
+    /**
+     * Search the current buffer without moving point (Emacs's search-forward
+     * and re-search-forward, apart from moving). Searches from point unless
+     * `from` says otherwise; backward, the match must end by where the search
+     * starts. `bound` limits how far it goes. Regular expressions use Emacs's
+     * syntax. Case is folded as case-fold-search says unless `caseFold` is
+     * given. A match becomes the match data that replaceMatch uses.
+     */
+    function search(
+      pattern: string,
+      options?: { from?: number; regexp?: boolean; backward?: boolean; bound?: number; caseFold?: boolean },
+    ): Match | undefined;
+    /** The last successful search's match. */
+    function matchData(): Match | undefined;
+    /**
+     * Replace the text of the last match (Emacs's replace-match). In the
+     * replacement, \\& is the whole match and \\N group N, unless `literal`.
+     * Unless `fixedCase`, it follows the case of the text replaced. Point goes
+     * after the replacement, whose range is returned.
+     */
+    function replaceMatch(replacement: string, options?: { literal?: boolean; fixedCase?: boolean }): { start: number; end: number };
+    /**
+     * Whether a search for a string should fold case: case-fold-search, unless
+     * the search is interactive, search-upper-case is on and the string has a
+     * capital letter.
+     */
+    function foldCaseFor(pattern: string, interactive?: boolean): boolean;
+    /**
+     * Put a named keymap ahead of all others but a transient map, until
+     * called with null (Emacs's overriding-terminal-local-map). Incremental
+     * search uses it while it runs.
+     */
+    function setOverridingMap(keymap: string | null): void;
+    function overridingMap(): string | undefined;
+    /** The command a keymap runs for any single key it does not bind, as an Emacs keymap's [t] binding. */
+    function setKeymapDefault(keymap: string, command: CommandName | DefinedCommand | null): void;
+    /** Read these keys next, after the running command, as if typed again (Emacs's unread-command-events). */
+    function unreadKeys(keys: string): void;
 
     /** The languages Ember has tree-sitter grammars for. */
     function treesitLanguages(): string[];

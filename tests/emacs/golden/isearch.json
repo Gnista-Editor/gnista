@@ -1,0 +1,244 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "isearch-finds-and-exits",
+      "input": {
+        "text": "hello world hello",
+        "point": 0,
+        "keys": "C-s h e l l o RET",
+        "modes": [],
+        "platform": null
+      },
+      "text": "hello world hello",
+      "point": 5,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "isearch-finds-the-next-match",
+      "input": {
+        "text": "hello world hello",
+        "point": 0,
+        "keys": "C-s h e l l o C-s RET",
+        "modes": [],
+        "platform": null
+      },
+      "text": "hello world hello",
+      "point": 17,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "isearch-backward",
+      "input": {
+        "text": "hello world hello",
+        "point": 0,
+        "keys": "M-> C-r h e l RET",
+        "modes": [],
+        "platform": null
+      },
+      "text": "hello world hello",
+      "point": 12,
+      "mark": 17,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "isearch-wraps-after-failing",
+      "input": {
+        "text": "hello world",
+        "point": 6,
+        "keys": "C-s h e l C-s RET",
+        "modes": [],
+        "platform": null
+      },
+      "text": "hello world",
+      "point": 3,
+      "mark": 6,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "isearch-delete-char",
+      "input": {
+        "text": "hello world",
+        "point": 0,
+        "keys": "C-s w o r DEL DEL RET",
+        "modes": [],
+        "platform": null
+      },
+      "text": "hello world",
+      "point": 7,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "isearch-delete-a-repeat",
+      "input": {
+        "text": "ab ab ab",
+        "point": 0,
+        "keys": "C-s a b C-s C-s DEL RET",
+        "modes": [],
+        "platform": null
+      },
+      "text": "ab ab ab",
+      "point": 5,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "isearch-other-key-exits-and-runs",
+      "input": {
+        "text": "one two\nthree",
+        "point": 0,
+        "keys": "C-s t h C-a",
+        "modes": [],
+        "platform": null
+      },
+      "text": "one two\nthree",
+      "point": 8,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "isearch-folds-case",
+      "input": {
+        "text": "Hello hello",
+        "point": 0,
+        "keys": "C-s h e l l o RET",
+        "modes": [],
+        "platform": null
+      },
+      "text": "Hello hello",
+      "point": 5,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "isearch-capital-matches-exactly",
+      "input": {
+        "text": "hello Hello",
+        "point": 0,
+        "keys": "C-s H RET",
+        "modes": [],
+        "platform": null
+      },
+      "text": "hello Hello",
+      "point": 7,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "isearch-regexp",
+      "input": {
+        "text": "abc 123 def",
+        "point": 0,
+        "keys": "C-M-s [ 0 - 9 ] + RET",
+        "modes": [],
+        "platform": null
+      },
+      "text": "abc 123 def",
+      "point": 7,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "isearch-yank-word",
+      "input": {
+        "text": "foo bar foo bar",
+        "point": 0,
+        "keys": "C-s C-w C-s RET",
+        "modes": [],
+        "platform": null
+      },
+      "text": "foo bar foo bar",
+      "point": 11,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "isearch-again-uses-the-last-string",
+      "input": {
+        "text": "xa xb xc",
+        "point": 0,
+        "keys": "C-s x RET C-s C-s RET",
+        "modes": [],
+        "platform": null
+      },
+      "text": "xa xb xc",
+      "point": 4,
+      "mark": 1,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "isearch-turning-round",
+      "input": {
+        "text": "ab ab ab",
+        "point": 0,
+        "keys": "M-> C-r a b C-r C-s RET",
+        "modes": [],
+        "platform": null
+      },
+      "text": "ab ab ab",
+      "point": 5,
+      "mark": 8,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "isearch-space",
+      "input": {
+        "text": "a b a  b",
+        "point": 0,
+        "keys": "C-s a SPC b RET",
+        "modes": [],
+        "platform": null
+      },
+      "text": "a b a  b",
+      "point": 3,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    }
+  ]
+}

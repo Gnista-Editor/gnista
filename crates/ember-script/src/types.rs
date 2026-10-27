@@ -338,6 +338,51 @@ const API: &str = r##"
   /** The name of the buffer a window shows, the selected one by default. */
   function windowBuffer(window?: number): string | undefined;
 
+  /** A search match: where it starts and ends, and each group's range, group 0 being the whole match. */
+  interface Match {
+    start: number;
+    end: number;
+    groups: ([number, number] | null)[];
+  }
+  /**
+   * Search the current buffer without moving point (Emacs's search-forward
+   * and re-search-forward, apart from moving). Searches from point unless
+   * `from` says otherwise; backward, the match must end by where the search
+   * starts. `bound` limits how far it goes. Regular expressions use Emacs's
+   * syntax. Case is folded as case-fold-search says unless `caseFold` is
+   * given. A match becomes the match data that replaceMatch uses.
+   */
+  function search(
+    pattern: string,
+    options?: { from?: number; regexp?: boolean; backward?: boolean; bound?: number; caseFold?: boolean },
+  ): Match | undefined;
+  /** The last successful search's match. */
+  function matchData(): Match | undefined;
+  /**
+   * Replace the text of the last match (Emacs's replace-match). In the
+   * replacement, \\& is the whole match and \\N group N, unless `literal`.
+   * Unless `fixedCase`, it follows the case of the text replaced. Point goes
+   * after the replacement, whose range is returned.
+   */
+  function replaceMatch(replacement: string, options?: { literal?: boolean; fixedCase?: boolean }): { start: number; end: number };
+  /**
+   * Whether a search for a string should fold case: case-fold-search, unless
+   * the search is interactive, search-upper-case is on and the string has a
+   * capital letter.
+   */
+  function foldCaseFor(pattern: string, interactive?: boolean): boolean;
+  /**
+   * Put a named keymap ahead of all others but a transient map, until
+   * called with null (Emacs's overriding-terminal-local-map). Incremental
+   * search uses it while it runs.
+   */
+  function setOverridingMap(keymap: string | null): void;
+  function overridingMap(): string | undefined;
+  /** The command a keymap runs for any single key it does not bind, as an Emacs keymap's [t] binding. */
+  function setKeymapDefault(keymap: string, command: CommandName | DefinedCommand | null): void;
+  /** Read these keys next, after the running command, as if typed again (Emacs's unread-command-events). */
+  function unreadKeys(keys: string): void;
+
   /** The languages Ember has tree-sitter grammars for. */
   function treesitLanguages(): string[];
   function treesitLanguageAvailable(language: string): boolean;
