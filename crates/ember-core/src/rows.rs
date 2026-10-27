@@ -167,10 +167,15 @@ impl Editor {
     /// `default` face is left to the front end.
     pub fn window_rows(&self, count: usize, dark: bool) -> Vec<Row> {
         let b = self.window_buffer();
+        self.rows_in(b, b.top_line, count, dark)
+    }
+
+    /// The rows of a buffer from a top line, as a window showing it would show them.
+    pub(crate) fn rows_in(&self, b: &Buffer, top_line: usize, count: usize, dark: bool) -> Vec<Row> {
         let len = b.len();
         let mut styles: HashMap<Vec<String>, Style> = HashMap::new();
         let mut rows = Vec::new();
-        let mut pos = b.line_start(self.row_line_in(b, b.top_line.min(b.line_count() - 1)));
+        let mut pos = b.line_start(self.row_line_in(b, top_line.min(b.line_count() - 1)));
         // Syntax faces, worked out for a window's worth of lines at a time.
         let mut syntax = SyntaxFaces::default();
         while rows.len() < count {

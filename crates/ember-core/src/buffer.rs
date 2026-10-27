@@ -48,11 +48,17 @@ const MARK_RING_MAX: usize = 16;
 /// Text plus the state that goes with it: point, mark, the visited file and
 /// undo history. All positions are character indices.
 pub struct Buffer {
+    /// Unique among buffers, so windows can refer to a buffer that is renamed.
+    pub(crate) id: u64,
     pub name: String,
     pub path: Option<PathBuf>,
     pub read_only: bool,
-    /// First line shown in the window. Lives here while there is only one window.
+    /// First line shown in the selected window, when it shows this buffer.
+    /// Other windows keep their own.
     pub top_line: usize,
+    /// The points of windows other than the selected one that show this
+    /// buffer, which move with edits as Emacs's window-point markers do.
+    window_points: Vec<(u64, usize)>,
     text: Rope,
     point: usize,
     mark: Option<usize>,
@@ -89,11 +95,14 @@ pub struct Buffer {
 
 impl Buffer {
     pub fn new(name: impl Into<String>) -> Buffer {
+        static NEXT_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
         Buffer {
+            id: NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
             name: name.into(),
             path: None,
             read_only: false,
             top_line: 0,
+            window_points: Vec::new(),
             text: Rope::new(),
             point: 0,
             mark: None,
@@ -329,7 +338,8 @@ impl Buffer {
         if self.point >= pos {
             self.point += n;
         }
-        for m in self.mark.iter_mut().chain(self.mark_ring.iter_mut()) {
+        let window_points = self.window_points.iter_mut().map(|(_, p)| p);
+        for m in self.mark.iter_mut().chain(self.mark_ring.iter_mut()).chain(window_points) {
             if *m > pos {
                 *m += n;
             }
@@ -360,7 +370,8 @@ impl Buffer {
         }
         let shift = |p: usize| if p >= end { p - (end - start) } else { p.min(start) };
         self.point = shift(self.point);
-        for m in self.mark.iter_mut().chain(self.mark_ring.iter_mut()) {
+        let window_points = self.window_points.iter_mut().map(|(_, p)| p);
+        for m in self.mark.iter_mut().chain(self.mark_ring.iter_mut()).chain(window_points) {
             *m = shift(*m);
         }
         let deleted_props = self.properties.delete(start, end);
@@ -503,11 +514,32 @@ impl Buffer {
         self.mark_active = false;
         self.shift_selected = false;
         self.top_line = 0;
+        for (_, p) in &mut self.window_points {
+            *p = 0;
+        }
         self.undo_groups.clear();
         self.open_group.clear();
         self.pending_undo = None;
         self.modified = false;
         self.save_generation += 1;
+    }
+
+    /// The point of a window, other than the selected one, showing this buffer.
+    pub(crate) fn window_point(&self, window: u64) -> Option<usize> {
+        self.window_points.iter().find(|(w, _)| *w == window).map(|(_, p)| *p)
+    }
+
+    pub(crate) fn set_window_point(&mut self, window: u64, pos: usize) {
+        let pos = pos.min(self.len());
+        match self.window_points.iter_mut().find(|(w, _)| *w == window) {
+            Some(entry) => entry.1 = pos,
+            None => self.window_points.push((window, pos)),
+        }
+    }
+
+    pub(crate) fn remove_window_point(&mut self, window: u64) -> Option<usize> {
+        let i = self.window_points.iter().position(|(w, _)| *w == window)?;
+        Some(self.window_points.remove(i).1)
     }
 
     /// Ends the current undo group, so the next edit starts a new one.

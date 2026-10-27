@@ -11,8 +11,8 @@
 ;; the keys, such as "delete-selection-mode"), and `platform' (an Emacs
 ;; `system-type' such as "darwin", for cases that only hold on one platform).
 ;;
-;; Each case runs in a fresh Fundamental mode buffer with an empty kill ring
-;; and no mark.  The keys are typed into Emacs's real command loop, so an
+;; Each case runs in a fresh Fundamental mode buffer, in a single window,
+;; with an empty kill ring and no mark.  The keys are typed into Emacs's real command loop, so an
 ;; error shows its message and the next key still runs, as when a person
 ;; types them.  The first error is recorded.
 
@@ -57,6 +57,7 @@ while the case's keys are queued would read those instead."
         (keys (alist-get 'keys case))
         (start (or (alist-get 'point case) 0))
         (modes (mapcar #'intern (alist-get 'modes case))))
+    (delete-other-windows)
     (when (get-buffer "*ember-oracle*")
       (kill-buffer "*ember-oracle*"))
     (with-current-buffer (get-buffer-create "*ember-oracle*")

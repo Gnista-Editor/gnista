@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use ember_core::display::{Glyph, cursor_index, row_glyphs};
-use ember_core::{Arg, Editor, Row, Style};
+use ember_core::{Arg, Editor, Row, Style, WindowId, WindowView};
 use egui::text::{CCursor, LayoutJob, TextFormat};
 use egui::{
     Color32, FontFamily, FontId, Galley, Painter, Rect, Stroke, StrokeKind, Ui, ViewportCommand,
@@ -28,9 +28,9 @@ pub struct EmberApp {
     /// for smooth scrolling. Always less than one line; whole lines are the
     /// core's `top_line`.
     scroll_offset: f32,
-    /// The buffer and top line the offset belongs to. If something else
-    /// moves the view, such as C-v or switching buffers, the offset resets.
-    scroll_anchor: (String, usize),
+    /// The window, buffer and top line the offset belongs to. If something
+    /// else moves the view, such as C-v or switching buffers, the offset resets.
+    scroll_anchor: (WindowId, String, usize),
 }
 
 impl eframe::App for EmberApp {
@@ -46,7 +46,7 @@ impl EmberApp {
             title: String::new(),
             mac: cfg!(target_os = "macos"),
             scroll_offset: 0.0,
-            scroll_anchor: (String::new(), 0),
+            scroll_anchor: (0, String::new(), 0),
         }
     }
 
@@ -54,8 +54,8 @@ impl EmberApp {
     pub fn show(&mut self, ui: &mut Ui) {
         let ctx = ui.ctx().clone();
         self.handle_close(&ctx);
-        let layout = Layout::new(ui, self.editor.tab_width());
-        self.editor.set_viewport_height(layout.rows());
+        // Window sizes first, for the commands this frame's keys run.
+        Layout::new(ui, &mut self.editor);
         let events = ctx.input(|i| i.events.clone());
         for input in translate(&events, self.mac) {
             match input {
@@ -70,6 +70,8 @@ impl EmberApp {
         if self.view() != self.scroll_anchor {
             self.scroll_offset = 0.0;
         }
+        // Input may have split or deleted windows.
+        let layout = Layout::new(ui, &mut self.editor);
         self.scroll(&ctx, layout.m.line_height);
         let top = self.editor.window_buffer().top_line;
         self.editor.ensure_point_visible();
@@ -86,10 +88,10 @@ impl EmberApp {
         draw(ui, &self.editor, &layout, Tokens::get(&ctx), focused, self.scroll_offset);
     }
 
-    /// The buffer shown and its top line.
-    fn view(&self) -> (String, usize) {
+    /// The selected window, its buffer and its top line.
+    fn view(&self) -> (WindowId, String, usize) {
         let b = self.editor.window_buffer();
-        (b.name.clone(), b.top_line)
+        (self.editor.selected_window(), b.name.clone(), b.top_line)
     }
 
     /// Smooth scrolling from the mouse wheel or a trackpad. egui smooths
@@ -146,46 +148,63 @@ struct Metrics {
     font: FontId,
     line_height: f32,
     char_width: f32,
-    /// The window buffer's tab-width.
-    tab_width: usize,
 }
 
-/// Where the parts of the window go this frame.
+/// Where the parts of the frame go this frame: the editor's windows, each
+/// with its mode line, and the echo area across the bottom.
 struct Layout {
     rect: Rect,
-    text_rect: Rect,
-    mode_rect: Rect,
+    windows: Vec<WindowLayout>,
     echo_rect: Rect,
     m: Metrics,
 }
 
+/// Where one editor window goes.
+struct WindowLayout {
+    id: WindowId,
+    rect: Rect,
+    text_rect: Rect,
+    mode_rect: Rect,
+    /// Whether another window lies to the right, past a hairline.
+    divider: bool,
+}
+
+impl WindowLayout {
+    /// Whole lines that fit in the text area.
+    fn rows(&self, m: &Metrics) -> usize {
+        ((self.text_rect.height() / m.line_height).floor() as usize).max(1)
+    }
+}
+
 impl Layout {
-    fn new(ui: &Ui, tab_width: usize) -> Layout {
+    /// Lays the frame out and tells the editor how big each window is.
+    fn new(ui: &Ui, ed: &mut Editor) -> Layout {
         let rect = ui.max_rect();
         let font = FontId::new(TEXT_SIZE, FontFamily::Monospace);
         let em = ui.painter().layout_no_wrap("M".to_string(), font.clone(), Color32::PLACEHOLDER);
-        let m = Metrics {
-            line_height: (em.size().y * LINE_SPACING).round(),
-            char_width: em.size().x,
-            font,
-            tab_width,
-        };
+        let m = Metrics { line_height: (em.size().y * LINE_SPACING).round(), char_width: em.size().x, font };
         let bar_height = m.line_height + 2.0 * BAR_PAD;
         let echo_rect = Rect::from_min_max(pos2(rect.left(), rect.bottom() - bar_height), rect.max);
-        let mode_rect = Rect::from_min_max(
-            pos2(rect.left(), echo_rect.top() - bar_height),
-            pos2(rect.right(), echo_rect.top()),
-        );
-        let text_rect = Rect::from_min_max(
-            rect.min + vec2(PAD_X, PAD_Y),
-            pos2(rect.right() - PAD_X, mode_rect.top()),
-        );
-        Layout { rect, text_rect, mode_rect, echo_rect, m }
-    }
-
-    /// Whole lines that fit in the text area.
-    fn rows(&self) -> usize {
-        ((self.text_rect.height() / self.m.line_height).floor() as usize).max(1)
+        let frame_height = echo_rect.top() - rect.top();
+        let windows: Vec<WindowLayout> = ed
+            .window_tree()
+            .rects(rect.left(), rect.top(), rect.width(), frame_height)
+            .into_iter()
+            .map(|r| {
+                let rect = Rect::from_min_size(pos2(r.x, r.y), vec2(r.width, r.height));
+                let mode_rect = Rect::from_min_max(pos2(rect.left(), rect.bottom() - bar_height), rect.max);
+                let text_rect = Rect::from_min_max(
+                    rect.min + vec2(PAD_X, PAD_Y),
+                    pos2(rect.right() - PAD_X, mode_rect.top()),
+                );
+                WindowLayout { id: r.id, rect, text_rect, mode_rect, divider: r.divider }
+            })
+            .collect();
+        for w in &windows {
+            let cols = ((w.text_rect.width() / m.char_width).floor() as usize).max(1);
+            ed.set_window_size(w.id, cols, w.rows(&m));
+        }
+        Layout { rect, windows, echo_rect, m }
     }
 }
 
@@ -194,15 +213,24 @@ fn draw(ui: &Ui, ed: &Editor, layout: &Layout, t: Tokens, focused: bool, scroll_
     painter.rect_filled(layout.rect, 0.0, t.bg);
     let m = &layout.m;
     let in_minibuffer = ed.prompt().is_some();
-    let window_cursor = if focused && !in_minibuffer { CursorStyle::Filled } else { CursorStyle::Hollow };
-    // A line scrolled partly out of view slides under the top edge of the window.
-    let clip = Rect::from_min_max(
-        pos2(layout.rect.left(), layout.rect.top()),
-        pos2(layout.text_rect.right() + PAD_X, layout.mode_rect.top()),
-    );
-    let view = View { area: layout.text_rect, clip, rows: ed.viewport_height(), scroll_offset };
-    draw_buffer(&painter, ed, &view, m, t, window_cursor);
-    draw_mode_line(&painter, ed, layout.mode_rect, m, t);
+    for window in ed.windows() {
+        let Some(w) = layout.windows.iter().find(|w| w.id == window.id) else { continue };
+        // Other windows show a hollow cursor, as Emacs's do.
+        let cursor = if window.selected && focused && !in_minibuffer {
+            CursorStyle::Filled
+        } else {
+            CursorStyle::Hollow
+        };
+        // A line scrolled partly out of view slides under the top edge of the window.
+        let clip = Rect::from_min_max(w.rect.min, pos2(w.rect.right(), w.mode_rect.top()));
+        let offset = if window.selected { scroll_offset } else { 0.0 };
+        let view = View { area: w.text_rect, clip, rows: w.rows(m), scroll_offset: offset };
+        draw_buffer(&painter, ed, &window, &view, m, t, cursor);
+        draw_mode_line(&painter, ed, &window, w.mode_rect, m, t);
+        if w.divider {
+            painter.vline(w.rect.right() - 0.5, w.rect.y_range(), Stroke::new(1.0, t.line));
+        }
+    }
     let echo_cursor = if focused { CursorStyle::Filled } else { CursorStyle::Hollow };
     draw_echo_area(&painter, ed, layout.echo_rect, m, t, echo_cursor);
 }
@@ -215,22 +243,32 @@ struct View {
     scroll_offset: f32,
 }
 
-fn draw_buffer(painter: &Painter, ed: &Editor, view: &View, m: &Metrics, t: Tokens, style: CursorStyle) {
+fn draw_buffer(
+    painter: &Painter,
+    ed: &Editor,
+    window: &WindowView,
+    view: &View,
+    m: &Metrics,
+    t: Tokens,
+    style: CursorStyle,
+) {
     let area = view.area;
-    let b = ed.window_buffer();
+    let b = window.buffer;
+    let tab_width = ed.tab_width_in(b);
     // One extra row, partly shown, when scrolled between lines.
-    let rows = ed.window_rows(view.rows + 1, t.dark);
+    let rows = ed.rows_of_window(window.id, view.rows + 1, t.dark);
     let default_style = ed.style_for(&["default".to_string()], t.dark);
     let region_style = ed.style_for(&["region".to_string()], t.dark);
     let selection = region_style.background.map(color32).unwrap_or(t.selection);
-    let region = b.active_region();
-    let point = b.point();
+    // Only the selected window shows the region, as in Emacs.
+    let region = if window.selected { b.active_region() } else { None };
+    let point = window.point;
     let point_row = rows.iter().position(|r| r.start <= point && point <= r.end);
 
     let laid_out: Vec<(Arc<Galley>, Vec<Glyph>)> = rows
         .iter()
         .map(|row| {
-            let glyphs = row_glyphs(row, m.tab_width);
+            let glyphs = row_glyphs(row, tab_width);
             let job = row_job(row, &glyphs, region.as_ref(), &default_style, selection, m, t);
             (painter.layout_job(job), glyphs)
         })
@@ -403,9 +441,11 @@ fn text_format(m: &Metrics, color: Color32) -> TextFormat {
     TextFormat { font_id: m.font.clone(), color, ..Default::default() }
 }
 
-fn draw_mode_line(painter: &Painter, ed: &Editor, rect: Rect, m: &Metrics, t: Tokens) {
-    let b = ed.window_buffer();
-    painter.rect_filled(rect, 0.0, t.sunken);
+fn draw_mode_line(painter: &Painter, ed: &Editor, window: &WindowView, rect: Rect, m: &Metrics, t: Tokens) {
+    let b = window.buffer;
+    // The selected window's mode line is a well; the others' sit on the page,
+    // as Emacs's mode-line-inactive face is plainer.
+    painter.rect_filled(rect, 0.0, if window.selected { t.sunken } else { t.bg });
     painter.hline(rect.x_range(), rect.top() + 0.5, Stroke::new(1.0, t.line));
     let (flag, flag_color) = if b.read_only {
         ("%%", t.faint)
@@ -417,10 +457,11 @@ fn draw_mode_line(painter: &Painter, ed: &Editor, rect: Rect, m: &Metrics, t: To
     let gap = m.char_width * 3.0;
     let mut job = LayoutJob::default();
     job.append(flag, 0.0, text_format(m, flag_color));
-    job.append(&b.name, gap, text_format(m, t.ink_strong));
-    let position = format!("L{} C{}", b.line_of(b.point()) + 1, b.column(b.point()));
+    let name_color = if window.selected { t.ink_strong } else { t.muted };
+    job.append(&b.name, gap, text_format(m, name_color));
+    let position = format!("L{} C{}", b.line_of(window.point) + 1, b.column(window.point));
     job.append(&position, gap, text_format(m, t.muted));
-    let modes = format!("{}{}", ed.mode_name(), ed.mode_lighters().concat());
+    let modes = format!("{}{}", ed.mode_name_in(b), ed.mode_lighters_in(b).concat());
     job.append(&modes, gap, text_format(m, t.faint));
     // Emacs shows "Def" in the mode line while a keyboard macro is being defined.
     if ed.defining_kbd_macro() {

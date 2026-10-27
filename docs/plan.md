@@ -59,7 +59,7 @@ Done ([ADR 0006](adr/0006-variables-hooks-and-modes.md)). `text-mode`, `overwrit
 
 Exit: oracle cases for windows, and snapshots for faces, wrapping and folding.
 
-Progress: slice 1 is done ([ADR 0007](adr/0007-text-properties-faces-and-display-rows.md)): text properties, overlays, faces and invisible text in the core, drawn by both front ends, with `outline.ts` folding headings. The oracle checks folding motion against Emacs's outline-minor-mode: 175 of 177 cases match. Slice 2 is done ([ADR 0008](adr/0008-tree-sitter-highlighting.md)): tree-sitter highlighting for Rust, JavaScript, JSON and Python, with `prog-mode` and `*-ts-mode` major modes. Next: windows, then the mouse and line wrapping.
+Progress: slice 1 is done ([ADR 0007](adr/0007-text-properties-faces-and-display-rows.md)): text properties, overlays, faces and invisible text in the core, drawn by both front ends, with `outline.ts` folding headings. The oracle checks folding motion against Emacs's outline-minor-mode: 175 of 177 cases match. Slice 2 is done ([ADR 0008](adr/0008-tree-sitter-highlighting.md)): tree-sitter highlighting for Rust, JavaScript, JSON and Python, with `prog-mode` and `*-ts-mode` major modes. Slice 3 is done ([ADR 0009](adr/0009-windows.md)): windows with `C-x 2`, `C-x 3`, `C-x o`, `C-x 0` and `C-x 1`, each with its own point, checked against Emacs in the oracle. Next: the mouse and line wrapping.
 
 **4. Search and the minibuffer.**
 - Incremental search (`C-s`, `C-r`) with highlighting.

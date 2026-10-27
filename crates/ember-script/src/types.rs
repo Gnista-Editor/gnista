@@ -300,6 +300,22 @@ const API: &str = r##"
     | { doc: string; source?: string; attributes: FaceAttributes; dark: FaceAttributes; light: FaceAttributes }
     | undefined;
 
+  /**
+   * Split a window, the selected one by default, in two (Emacs's
+   * split-window): the new window goes below it or to its right and shows
+   * the same buffer at the same place. Returns the new window.
+   */
+  function splitWindow(window?: number, side?: "below" | "right"): number;
+  /** Delete a window, the selected one by default, giving its space to its neighbour. */
+  function deleteWindow(window?: number): void;
+  /** Make a window the selected one, whose buffer commands act on. */
+  function selectWindow(window: number): void;
+  function selectedWindow(): number;
+  /** The windows in cyclic order, left to right and top to bottom, as other-window visits them. */
+  function windowList(): number[];
+  /** The name of the buffer a window shows, the selected one by default. */
+  function windowBuffer(window?: number): string | undefined;
+
   /** The languages Ember has tree-sitter grammars for. */
   function treesitLanguages(): string[];
   function treesitLanguageAvailable(language: string): boolean;

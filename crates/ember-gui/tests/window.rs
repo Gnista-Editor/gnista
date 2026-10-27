@@ -257,3 +257,15 @@ fn highlighted_code_light() {
     let (ed, _scripting) = highlighted_code();
     harness(ed, Theme::Light).snapshot("code_light");
 }
+
+#[test]
+fn split_windows() {
+    let mut ed = sample();
+    let _scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    ed.press("C-x 2 C-x 3 C-x o M-<").unwrap();
+    let mut h = harness(ed, Theme::Dark);
+    h.snapshot("windows_dark");
+    // Each window was told its size: three windows, each fewer lines than the frame.
+    assert_eq!(h.state().editor.window_list().len(), 3);
+    assert!(h.state().editor.viewport_height() < 10);
+}

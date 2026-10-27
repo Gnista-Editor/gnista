@@ -146,12 +146,20 @@ impl Editor {
 
     /// The window buffer's `tab-width`, for drawing tabs.
     pub fn tab_width(&self) -> usize {
-        self.number_in(self.window_buffer(), "tab-width", 8.0).max(1.0) as usize
+        self.tab_width_in(self.window_buffer())
+    }
+
+    pub fn tab_width_in(&self, b: &Buffer) -> usize {
+        self.number_in(b, "tab-width", 8.0).max(1.0) as usize
     }
 
     /// The window buffer's major mode as the mode line shows it, such as "Text".
     pub fn mode_name(&self) -> String {
-        self.variable_in(self.window_buffer(), "mode-name")
+        self.mode_name_in(self.window_buffer())
+    }
+
+    pub fn mode_name_in(&self, b: &Buffer) -> String {
+        self.variable_in(b, "mode-name")
             .and_then(|v| v.as_str().map(str::to_string))
             .unwrap_or_else(|| "Fundamental".to_string())
     }
@@ -159,7 +167,10 @@ impl Editor {
     /// What the window buffer's minor modes add to the mode line, each with
     /// its leading space as Emacs writes lighters: " Ovwrt".
     pub fn mode_lighters(&self) -> Vec<String> {
-        let b = self.window_buffer();
+        self.mode_lighters_in(self.window_buffer())
+    }
+
+    pub fn mode_lighters_in(&self, b: &Buffer) -> Vec<String> {
         self.minor_modes
             .iter()
             .rev()

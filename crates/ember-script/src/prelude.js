@@ -142,6 +142,13 @@
     calledInteractively: () => native.calledInteractively(),
     regionActive: () => native.regionActive(),
 
+    splitWindow: (window, side = "below") => native.splitWindow(window ?? null, side === "right"),
+    deleteWindow: (window) => native.deleteWindow(window ?? null),
+    selectWindow: (window) => native.selectWindow(window),
+    selectedWindow: () => native.selectedWindow(),
+    windowList: () => native.windowList(),
+    windowBuffer: (window) => native.windowBuffer(window ?? native.selectedWindow()) ?? undefined,
+
     treesitLanguages: () => native.treesitLanguages(),
     treesitLanguageAvailable: (language) => native.treesitLanguages().includes(String(language)),
     treesitParserCreate: (language) => native.treesitSetLanguage(String(language)),

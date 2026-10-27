@@ -19,6 +19,7 @@ mod prefix;
 mod properties;
 mod rows;
 mod syntax;
+mod window;
 mod variables;
 
 pub use buffer::Buffer;
@@ -34,3 +35,4 @@ pub use prefix::{PrefixArg, prefix_numeric_value};
 pub use properties::{Overlay, Props};
 pub use rows::{Row, Segment};
 pub use variables::{HookFn, Value, Variable};
+pub use window::{WindowId, WindowRect, WindowTree, WindowView};

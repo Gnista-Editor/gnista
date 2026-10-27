@@ -51,8 +51,8 @@ struct PendingCall {
 /// All editor state. A front end feeds it keys with [`Editor::handle_key`]
 /// and reads it back to draw.
 pub struct Editor {
-    buffers: Vec<Buffer>,
-    current: usize,
+    pub(crate) buffers: Vec<Buffer>,
+    pub(crate) current: usize,
     previous_buffer: Option<String>,
     pub(crate) minibuffer: Buffer,
     pub(crate) prompt: Option<Prompt>,
@@ -116,7 +116,12 @@ pub struct Editor {
     pub(crate) wheel_lines: usize,
     pub(crate) goal_column: Option<usize>,
     self_insert_run: usize,
-    viewport_height: usize,
+    pub(crate) windows: Vec<crate::window::Window>,
+    pub(crate) window_tree: crate::window::WindowTree,
+    pub(crate) selected_window: crate::window::WindowId,
+    pub(crate) next_window_id: crate::window::WindowId,
+    /// Counts window selections, to find the most recently used window.
+    pub(crate) window_use: u64,
     pub(crate) quit: bool,
 }
 
@@ -170,9 +175,21 @@ impl Editor {
             wheel_lines: 1,
             goal_column: None,
             self_insert_run: 0,
-            viewport_height: 24,
+            windows: Vec::new(),
+            window_tree: crate::window::WindowTree::Leaf(1),
+            selected_window: 1,
+            next_window_id: 1,
+            window_use: 0,
             quit: false,
         };
+        editor.windows.push(crate::window::Window {
+            id: 1,
+            buffer: editor.buffers[0].id,
+            top_line: 0,
+            width: 80,
+            height: 24,
+            used: 0,
+        });
         variables::install(&mut editor);
         faces::install(&mut editor);
         commands::install(&mut editor);
@@ -699,6 +716,7 @@ impl Editor {
         if index != self.current {
             self.previous_buffer = Some(self.buffers[self.current].name.clone());
             self.current = index;
+            self.selected_window_shows(index);
         }
     }
 
@@ -736,12 +754,17 @@ impl Editor {
         let showing = index == self.current;
         let next = self.other_buffer().map(str::to_string);
         let current_name = self.buffers[self.current].name.clone();
-        self.buffers.remove(index);
+        let gone = self.buffers.remove(index).id;
         if self.buffers.is_empty() {
             self.buffers.push(Buffer::new("*scratch*"));
         }
-        let target = if showing { next } else { Some(current_name) };
+        let target = if showing { next.clone() } else { Some(current_name) };
         self.current = target.and_then(|n| self.find_buffer(&n)).unwrap_or(0);
+        self.selected_window_shows(self.current);
+        // Other windows showing it show what the selected window now does,
+        // or the buffer it would switch to.
+        let replacement = next.and_then(|n| self.find_buffer(&n)).filter(|_| !showing).unwrap_or(self.current);
+        self.replace_buffer_in_windows(gone, replacement);
         Ok(())
     }
 
@@ -922,18 +945,21 @@ impl Editor {
         self.message = Some(text.into());
     }
 
+    /// Lines of text in the selected window.
     pub fn viewport_height(&self) -> usize {
-        self.viewport_height
+        self.selected_window_height()
     }
 
-    /// Tells the editor how many lines the window shows. Front ends call this when they draw.
+    /// Tells the editor how many lines the selected window shows. With more
+    /// than one window, front ends use [`Editor::set_window_size`] instead.
     pub fn set_viewport_height(&mut self, lines: usize) {
-        self.viewport_height = lines.max(1);
+        self.set_selected_window_height(lines);
     }
 
-    /// Scrolls the window so point is visible, recentring when it has moved off screen.
+    /// Scrolls the selected window so point is visible, recentring when it
+    /// has moved off screen.
     pub fn ensure_point_visible(&mut self) {
-        let height = self.viewport_height as i64;
+        let height = self.viewport_height() as i64;
         let b = self.window_buffer();
         let point_row = self.row_line_in(b, b.line_of(b.point()));
         let mut top = self.row_line_in(b, b.top_line.min(b.line_count() - 1));

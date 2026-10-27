@@ -54,6 +54,12 @@ declare global {
        */
       "delete-forward-char": [];
       /**
+       * Make the selected window fill the frame, deleting the others.
+       *
+       * Defined in packages/window.ts.
+       */
+      "delete-other-windows": [];
+      /**
        * Typing replaces the selection, rather than inserting next to it.
        *
        * While the region is active, typing, RET and C-y first delete it. DEL and <delete> delete it whether or not this mode is on; see delete-active-region.
@@ -63,6 +69,14 @@ declare global {
        * Defined in packages/delsel.ts.
        */
       "delete-selection-mode": [];
+      /**
+       * Delete the selected window, giving its space to its neighbour.
+       *
+       * The most recently used of the other windows is selected.
+       *
+       * Defined in packages/window.ts.
+       */
+      "delete-window": [];
       /**
        * List all key bindings.
        */
@@ -340,6 +354,14 @@ declare global {
        */
       "normal-mode": [];
       /**
+       * Select another window, the next in cyclic order.
+       *
+       * A prefix argument says how many windows on to go; a negative one goes back.
+       *
+       * Defined in packages/window.ts.
+       */
+      "other-window": [];
+      /**
        * On a heading, cycle its visibility: folded, then its children, then its whole subtree.
        *
        * Anywhere else, indent as TAB usually does.
@@ -523,6 +545,22 @@ declare global {
        * Repeating it straight away deactivates the region, leaving the mark set. With C-u, jump to the mark instead and take the previous one from the mark ring, so repeating C-u C-SPC goes back through earlier marks.
        */
       "set-mark-command": [];
+      /**
+       * Split the selected window into two, one above the other.
+       *
+       * The selected window stays on top and the new one below shows the same buffer at the same place.
+       *
+       * Defined in packages/window.ts.
+       */
+      "split-window-below": [];
+      /**
+       * Split the selected window into two, side by side.
+       *
+       * The selected window stays on the left and the new one on the right shows the same buffer at the same place.
+       *
+       * Defined in packages/window.ts.
+       */
+      "split-window-right": [];
       /**
        * Show a buffer in the window, creating it if it does not exist.
        *
@@ -1228,6 +1266,22 @@ declare global {
     function faceInfo(name: FaceName | (string & {})):
       | { doc: string; source?: string; attributes: FaceAttributes; dark: FaceAttributes; light: FaceAttributes }
       | undefined;
+
+    /**
+     * Split a window, the selected one by default, in two (Emacs's
+     * split-window): the new window goes below it or to its right and shows
+     * the same buffer at the same place. Returns the new window.
+     */
+    function splitWindow(window?: number, side?: "below" | "right"): number;
+    /** Delete a window, the selected one by default, giving its space to its neighbour. */
+    function deleteWindow(window?: number): void;
+    /** Make a window the selected one, whose buffer commands act on. */
+    function selectWindow(window: number): void;
+    function selectedWindow(): number;
+    /** The windows in cyclic order, left to right and top to bottom, as other-window visits them. */
+    function windowList(): number[];
+    /** The name of the buffer a window shows, the selected one by default. */
+    function windowBuffer(window?: number): string | undefined;
 
     /** The languages Ember has tree-sitter grammars for. */
     function treesitLanguages(): string[];

@@ -1,0 +1,142 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "other-window-has-its-own-point",
+      "input": {
+        "text": "one\ntwo\nthree",
+        "point": 0,
+        "keys": "C-x 2 C-n C-n C-x o",
+        "modes": [],
+        "platform": null
+      },
+      "text": "one\ntwo\nthree",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "back-to-the-first-window",
+      "input": {
+        "text": "one\ntwo\nthree",
+        "point": 0,
+        "keys": "C-x 2 C-n C-n C-x o C-x o",
+        "modes": [],
+        "platform": null
+      },
+      "text": "one\ntwo\nthree",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "edits-show-in-both-windows",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "M-> C-x 3 M-< x y C-x o",
+        "modes": [],
+        "platform": null
+      },
+      "text": "xyabc",
+      "point": 5,
+      "mark": 5,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "deleting-the-selected-window",
+      "input": {
+        "text": "one\ntwo\nthree",
+        "point": 0,
+        "keys": "C-x 2 C-x o M-> C-x 0",
+        "modes": [],
+        "platform": null
+      },
+      "text": "one\ntwo\nthree",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "delete-other-windows-keeps-point",
+      "input": {
+        "text": "one\ntwo\nthree",
+        "point": 0,
+        "keys": "C-x 2 C-x o M-> C-x 1",
+        "modes": [],
+        "platform": null
+      },
+      "text": "one\ntwo\nthree",
+      "point": 13,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "delete-the-sole-window",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "C-f C-x 0",
+        "modes": [],
+        "platform": null
+      },
+      "text": "abc",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Attempt to delete minibuffer or sole ordinary window"
+    },
+    {
+      "name": "other-window-with-a-count",
+      "input": {
+        "text": "one\ntwo\nthree",
+        "point": 0,
+        "keys": "C-x 2 C-x 3 C-n C-x o M-> C-u 2 C-x o",
+        "modes": [],
+        "platform": null
+      },
+      "text": "one\ntwo\nthree",
+      "point": 4,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "other-window-backwards",
+      "input": {
+        "text": "one\ntwo\nthree",
+        "point": 0,
+        "keys": "C-x 2 C-x 3 C-n C-- C-x o C-e",
+        "modes": [],
+        "platform": null
+      },
+      "text": "one\ntwo\nthree",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    }
+  ]
+}

@@ -46,7 +46,7 @@ fn main() -> io::Result<()> {
 fn run(terminal: &mut DefaultTerminal, editor: &mut Editor) -> io::Result<()> {
     while !editor.should_quit() {
         let size = terminal.size()?;
-        editor.set_viewport_height(ui::text_height(size.height));
+        ui::layout_windows(editor, size.width, size.height);
         editor.ensure_point_visible();
         terminal.draw(|frame| ui::draw(frame, editor))?;
         if let Event::Key(key) = event::read()?

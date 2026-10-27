@@ -46,6 +46,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/help.ts", include_str!("../../../packages/help.ts")),
     ("packages/repeat.ts", include_str!("../../../packages/repeat.ts")),
     ("packages/kmacro.ts", include_str!("../../../packages/kmacro.ts")),
+    ("packages/window.ts", include_str!("../../../packages/window.ts")),
 ];
 
 /// How long a script may run before it is stopped, unless changed with
@@ -671,6 +672,7 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     )?;
     install_native_text(ctx, native)?;
     install_native_treesit(ctx, native)?;
+    install_native_windows(ctx, native)?;
     native.set(
         "regionActive",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer().is_mark_active())))?,
@@ -678,6 +680,39 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     native.set(
         "calledInteractively",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.called_interactively())))?,
+    )?;
+    Ok(())
+}
+
+/// Windows, as Emacs's window primitives.
+fn install_native_windows<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::Result<()> {
+    native.set(
+        "splitWindow",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: Option<u64>, side_by_side: bool| {
+            with_editor(&ctx, |ed| ed.split_window(window, side_by_side))
+        })?,
+    )?;
+    native.set(
+        "deleteWindow",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: Option<u64>| with_editor(&ctx, |ed| ed.delete_window(window)))?,
+    )?;
+    native.set(
+        "selectWindow",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64| with_editor(&ctx, |ed| ed.select_window(window)))?,
+    )?;
+    native.set(
+        "selectedWindow",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.selected_window())))?,
+    )?;
+    native.set(
+        "windowList",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.window_list())))?,
+    )?;
+    native.set(
+        "windowBuffer",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64| {
+            with_editor(&ctx, |ed| Ok(ed.window_buffer_name(window).map(str::to_string)))
+        })?,
     )?;
     Ok(())
 }
