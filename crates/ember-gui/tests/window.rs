@@ -227,3 +227,33 @@ fn faces_and_folding_light() {
     let (ed, _scripting) = faces_and_folding();
     harness(ed, Theme::Light).snapshot("faces_light");
 }
+
+/// A Rust buffer highlighted by tree-sitter.
+fn highlighted_code() -> (Editor, ember_script::Scripting) {
+    let mut ed = Editor::new();
+    let scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    ed.window_buffer_mut().set_text(
+        "/// Greets someone, a number of times.\n\
+         fn greet(name: &str, times: u32) -> String {\n    \
+             let mut out = String::new();\n    \
+             for _ in 0..times {\n        \
+                 out.push_str(&format!(\"Hello, {name}!\\n\"));\n    \
+             }\n    \
+             out // done\n\
+         }\n",
+    );
+    ed.call("rust-ts-mode", vec![]).unwrap();
+    (ed, scripting)
+}
+
+#[test]
+fn highlighted_code_dark() {
+    let (ed, _scripting) = highlighted_code();
+    harness(ed, Theme::Dark).snapshot("code_dark");
+}
+
+#[test]
+fn highlighted_code_light() {
+    let (ed, _scripting) = highlighted_code();
+    harness(ed, Theme::Light).snapshot("code_light");
+}

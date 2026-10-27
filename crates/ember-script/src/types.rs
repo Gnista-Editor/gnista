@@ -300,6 +300,21 @@ const API: &str = r##"
     | { doc: string; source?: string; attributes: FaceAttributes; dark: FaceAttributes; light: FaceAttributes }
     | undefined;
 
+  /** The languages Ember has tree-sitter grammars for. */
+  function treesitLanguages(): string[];
+  function treesitLanguageAvailable(language: string): boolean;
+  /**
+   * Parse the current buffer with a tree-sitter grammar and highlight it from
+   * then on (Emacs's treesit-parser-create). A major mode's setup calls this;
+   * changing the major mode removes it.
+   */
+  function treesitParserCreate(language: string): void;
+  function treesitParserDelete(): void;
+  /** The current buffer's tree-sitter language, if it has one. */
+  function treesitLanguage(): string | undefined;
+  /** The smallest named syntax node at a position: its type, such as "function_item", and its range. */
+  function treesitNodeAt(position: number): { type: string; start: number; end: number } | undefined;
+
   /**
    * Set a text property on the characters from start up to end (Emacs's
    * put-text-property). "face" names a face or a list of faces, earlier ones

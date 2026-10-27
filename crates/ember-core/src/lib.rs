@@ -18,6 +18,7 @@ mod modes;
 mod prefix;
 mod properties;
 mod rows;
+mod syntax;
 mod variables;
 
 pub use buffer::Buffer;

@@ -40,6 +40,8 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/files.ts", include_str!("../../../packages/files.ts")),
     ("packages/text-mode.ts", include_str!("../../../packages/text-mode.ts")),
     ("packages/outline.ts", include_str!("../../../packages/outline.ts")),
+    ("packages/prog-mode.ts", include_str!("../../../packages/prog-mode.ts")),
+    ("packages/treesit-modes.ts", include_str!("../../../packages/treesit-modes.ts")),
     ("packages/delsel.ts", include_str!("../../../packages/delsel.ts")),
     ("packages/help.ts", include_str!("../../../packages/help.ts")),
     ("packages/repeat.ts", include_str!("../../../packages/repeat.ts")),
@@ -668,6 +670,7 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.this_command().map(str::to_string))))?,
     )?;
     install_native_text(ctx, native)?;
+    install_native_treesit(ctx, native)?;
     native.set(
         "regionActive",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer().is_mark_active())))?,
@@ -675,6 +678,41 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     native.set(
         "calledInteractively",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.called_interactively())))?,
+    )?;
+    Ok(())
+}
+
+/// Syntax trees, as Emacs's treesit.el.
+fn install_native_treesit<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::Result<()> {
+    native.set(
+        "treesitLanguages",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            with_editor(&ctx, |ed| Ok(ed.treesit_languages().into_iter().map(String::from).collect::<Vec<_>>()))
+        })?,
+    )?;
+    native.set(
+        "treesitSetLanguage",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, language: Option<String>| {
+            with_editor(&ctx, |ed| ed.set_buffer_language(language.as_deref()))
+        })?,
+    )?;
+    native.set(
+        "treesitLanguage",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer_language().map(String::from))))?,
+    )?;
+    native.set(
+        "treesitNodeAt",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pos: usize| {
+            let node = with_editor(&ctx, |ed| Ok(ed.syntax_node_at(pos)))?;
+            node.map(|(kind, start, end)| {
+                let object = Object::new(ctx.clone())?;
+                object.set("type", kind)?;
+                object.set("start", start)?;
+                object.set("end", end)?;
+                Ok::<_, rquickjs::Error>(object)
+            })
+            .transpose()
+        })?,
     )?;
     Ok(())
 }

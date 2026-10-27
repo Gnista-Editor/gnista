@@ -76,6 +76,7 @@ pub struct Editor {
     pub(crate) minor_modes: Vec<MinorMode>,
     pub(crate) variables: BTreeMap<String, Variable>,
     pub(crate) faces: BTreeMap<String, Face>,
+    pub(crate) grammars: BTreeMap<&'static str, crate::syntax::Grammar>,
     /// Global hook functions by hook name.
     pub(crate) hooks: BTreeMap<String, Vec<HookEntry>>,
     pub(crate) next_hook_id: u64,
@@ -147,6 +148,7 @@ impl Editor {
             minor_modes: Vec::new(),
             variables: BTreeMap::new(),
             faces: BTreeMap::new(),
+            grammars: crate::syntax::builtin_grammars().into_iter().collect(),
             hooks: BTreeMap::new(),
             next_hook_id: 0,
             interactive: false,

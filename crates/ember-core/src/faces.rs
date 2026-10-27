@@ -275,6 +275,16 @@ pub(crate) fn install(ed: &mut Editor) {
         ("font-lock-type-face", "Type names.", fg("warn")),
         ("font-lock-constant-face", "Constants.", fg("bad")),
         ("font-lock-warning-face", "Things to notice.", inherit("error")),
+        ("font-lock-function-call-face", "Names of functions being called.", inherit("font-lock-function-name-face")),
+        ("font-lock-variable-use-face", "Names of variables being used.", inherit("font-lock-variable-name-face")),
+        ("font-lock-property-name-face", "Names of properties and fields.", inherit("font-lock-variable-name-face")),
+        ("font-lock-property-use-face", "Properties and fields being used.", inherit("font-lock-property-name-face")),
+        ("font-lock-number-face", "Numbers.", fg("bad")),
+        ("font-lock-escape-face", "Escape sequences in strings.", inherit("font-lock-builtin-face")),
+        ("font-lock-operator-face", "Operators.", FaceAttrs::default()),
+        ("font-lock-punctuation-face", "Punctuation.", FaceAttrs::default()),
+        ("font-lock-bracket-face", "Brackets.", inherit("font-lock-punctuation-face")),
+        ("font-lock-delimiter-face", "Delimiters.", inherit("font-lock-punctuation-face")),
     ];
     for (name, doc, attrs) in faces {
         ed.define_face(Face::new(name, doc, attrs));

@@ -8,6 +8,7 @@ use ropey::Rope;
 
 use crate::error::{Error, Result};
 use crate::properties::{Overlay, Props, SavedProps, TextProperties};
+use crate::syntax::{SyntaxTree, input_edit, point_at};
 use crate::variables::{HookEntry, Value};
 
 /// One change to the text, recorded so it can be undone.
@@ -82,6 +83,8 @@ pub struct Buffer {
     properties: TextProperties,
     overlays: Vec<Overlay>,
     next_overlay_id: u64,
+    /// The tree-sitter tree, if a major mode gave the buffer a language.
+    pub(crate) syntax: Option<SyntaxTree>,
 }
 
 impl Buffer {
@@ -110,6 +113,7 @@ impl Buffer {
             properties: TextProperties::default(),
             overlays: Vec::new(),
             next_overlay_id: 0,
+            syntax: None,
         }
     }
 
@@ -316,8 +320,12 @@ impl Buffer {
             return;
         }
         let point_before = self.point;
+        let start = self.syntax.as_ref().map(|_| point_at(&self.text, pos));
         self.text.insert(pos, s);
         let n = s.chars().count();
+        if let (Some(syntax), Some(start)) = (&self.syntax, start) {
+            syntax.edit(&input_edit(start, start, point_at(&self.text, pos + n)));
+        }
         if self.point >= pos {
             self.point += n;
         }
@@ -345,7 +353,11 @@ impl Buffer {
         }
         let deleted = self.slice(start..end);
         let point_before = self.point;
+        let edit_range = self.syntax.as_ref().map(|_| (point_at(&self.text, start), point_at(&self.text, end)));
         self.text.remove(start..end);
+        if let (Some(syntax), Some((from, to))) = (&self.syntax, edit_range) {
+            syntax.edit(&input_edit(from, to, from));
+        }
         let shift = |p: usize| if p >= end { p - (end - start) } else { p.min(start) };
         self.point = shift(self.point);
         for m in self.mark.iter_mut().chain(self.mark_ring.iter_mut()) {
@@ -480,6 +492,9 @@ impl Buffer {
     /// For buffers the editor generates, such as `*Help*`.
     pub fn set_text(&mut self, s: &str) {
         self.text = Rope::from_str(s);
+        if let Some(syntax) = &self.syntax {
+            syntax.reset();
+        }
         self.properties.clear();
         self.overlays.clear();
         self.point = 0;

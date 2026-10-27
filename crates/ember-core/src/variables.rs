@@ -232,6 +232,7 @@ impl Editor {
         b.locals.clear();
         b.local_hooks.clear();
         b.local_map = None;
+        b.syntax = None;
         result
     }
 

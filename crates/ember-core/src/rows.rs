@@ -171,6 +171,8 @@ impl Editor {
         let mut styles: HashMap<Vec<String>, Style> = HashMap::new();
         let mut rows = Vec::new();
         let mut pos = b.line_start(self.row_line_in(b, b.top_line.min(b.line_count() - 1)));
+        // Syntax faces, worked out for a window's worth of lines at a time.
+        let mut syntax = SyntaxFaces::default();
         while rows.len() < count {
             let (start, line) = (pos, b.line_of(pos));
             let mut segments: Vec<Segment> = Vec::new();
@@ -196,8 +198,11 @@ impl Editor {
                     // A visible newline ends the row.
                     break pos;
                 }
-                let chunk_end = b.next_char_property_change(pos).min(line_end);
-                let faces = self.faces_at(b, pos);
+                let mut chunk_end = b.next_char_property_change(pos).min(line_end);
+                let syntax_face = syntax.at(b, pos, count);
+                chunk_end = syntax.next_change(b, pos, chunk_end, count);
+                let mut faces = self.faces_at(b, pos);
+                faces.extend(syntax_face.map(String::from));
                 let style = styles.entry(faces).or_insert_with_key(|f| self.style_for(f, dark)).clone();
                 segments.push(Segment { start: pos, text: b.slice(pos..chunk_end), style, ellipsis: false });
                 pos = chunk_end;
@@ -211,7 +216,7 @@ impl Editor {
         rows
     }
 
-    /// The faces at a position: overlays' first, highest priority first,
+    /// The faces at a position, apart from syntax: overlays' first, highest priority first,
     /// then the text's own.
     fn faces_at(&self, b: &Buffer, pos: usize) -> Vec<String> {
         let mut faces: Vec<String> = b
@@ -224,6 +229,39 @@ impl Editor {
             faces.extend(face_names(face));
         }
         faces
+    }
+}
+
+/// The faces tree-sitter gives a stretch of the buffer.
+#[derive(Default)]
+struct SyntaxFaces {
+    start: usize,
+    faces: Vec<Option<&'static str>>,
+}
+
+impl SyntaxFaces {
+    fn at(&mut self, b: &Buffer, pos: usize, lines: usize) -> Option<&'static str> {
+        let syntax = b.syntax.as_ref()?;
+        if pos < self.start || pos >= self.start + self.faces.len() {
+            let line = b.line_of(pos);
+            let end = b.line_start((line + lines.max(1)).min(b.line_count() - 1)).max(b.line_end(line));
+            self.start = pos;
+            self.faces = syntax.faces(b.text(), pos, end.max(pos + 1).min(b.len()));
+        }
+        self.faces.get(pos - self.start).copied().flatten()
+    }
+
+    /// Where the syntax face next changes after `pos`, up to `limit`.
+    fn next_change(&mut self, b: &Buffer, pos: usize, limit: usize, lines: usize) -> usize {
+        if b.syntax.is_none() {
+            return limit;
+        }
+        let face = self.at(b, pos, lines);
+        let mut next = pos + 1;
+        while next < limit && self.at(b, next, lines) == face {
+            next += 1;
+        }
+        next.min(limit)
     }
 }
 

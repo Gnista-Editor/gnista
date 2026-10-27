@@ -142,6 +142,13 @@
     calledInteractively: () => native.calledInteractively(),
     regionActive: () => native.regionActive(),
 
+    treesitLanguages: () => native.treesitLanguages(),
+    treesitLanguageAvailable: (language) => native.treesitLanguages().includes(String(language)),
+    treesitParserCreate: (language) => native.treesitSetLanguage(String(language)),
+    treesitParserDelete: () => native.treesitSetLanguage(null),
+    treesitLanguage: () => native.treesitLanguage() ?? undefined,
+    treesitNodeAt: (pos) => native.treesitNodeAt(pos) ?? undefined,
+
     putTextProperty: (start, end, name, value) => native.putTextProperty(start, end, String(name), value ?? null),
     removeTextProperty: (start, end, name) => native.removeTextProperty(start, end, String(name)),
     textPropertiesAt: (pos) => native.textPropertiesAt(pos),

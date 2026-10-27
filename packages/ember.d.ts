@@ -184,6 +184,22 @@ declare global {
        */
       "insert": [text: string];
       /**
+       * The major mode for editing JavaScript, highlighted from a tree-sitter syntax tree.
+       *
+       * Files matching \.[cm]?js$ use it; see auto-mode-alist.
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "js-ts-mode": [];
+      /**
+       * The major mode for editing JSON, highlighted from a tree-sitter syntax tree.
+       *
+       * Files matching \.json$ use it; see auto-mode-alist.
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "json-ts-mode": [];
+      /**
        * Cancel the current prompt or key sequence, and deactivate the region.
        */
       "keyboard-quit": [];
@@ -424,6 +440,22 @@ declare global {
        */
       "previous-line": [];
       /**
+       * The major mode programming language modes are built on.
+       *
+       * Put what you want in every programming mode on prog-mode-hook, which runs before each mode's own hook.
+       *
+       * Defined in packages/prog-mode.ts.
+       */
+      "prog-mode": [];
+      /**
+       * The major mode for editing Python, highlighted from a tree-sitter syntax tree.
+       *
+       * Files matching \.py[iw]?$ use it; see auto-mode-alist.
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "python-ts-mode": [];
+      /**
        * Leave this buffer and show the one shown before it, as q does in *Help*.
        *
        * Defined in packages/help.ts.
@@ -443,6 +475,14 @@ declare global {
        * Defined in packages/repeat.ts.
        */
       "repeat": [];
+      /**
+       * The major mode for editing Rust, highlighted from a tree-sitter syntax tree.
+       *
+       * Files matching \.rs$ use it; see auto-mode-alist.
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "rust-ts-mode": [];
       /**
        * Save the current buffer to its file.
        */
@@ -637,6 +677,10 @@ declare global {
        */
       "error": FaceAttributes;
       /**
+       * Brackets.
+       */
+      "font-lock-bracket-face": FaceAttributes;
+      /**
        * Built-in names.
        */
       "font-lock-builtin-face": FaceAttributes;
@@ -653,9 +697,21 @@ declare global {
        */
       "font-lock-constant-face": FaceAttributes;
       /**
+       * Delimiters.
+       */
+      "font-lock-delimiter-face": FaceAttributes;
+      /**
        * Documentation strings.
        */
       "font-lock-doc-face": FaceAttributes;
+      /**
+       * Escape sequences in strings.
+       */
+      "font-lock-escape-face": FaceAttributes;
+      /**
+       * Names of functions being called.
+       */
+      "font-lock-function-call-face": FaceAttributes;
       /**
        * Names of functions being defined.
        */
@@ -664,6 +720,26 @@ declare global {
        * Keywords.
        */
       "font-lock-keyword-face": FaceAttributes;
+      /**
+       * Numbers.
+       */
+      "font-lock-number-face": FaceAttributes;
+      /**
+       * Operators.
+       */
+      "font-lock-operator-face": FaceAttributes;
+      /**
+       * Names of properties and fields.
+       */
+      "font-lock-property-name-face": FaceAttributes;
+      /**
+       * Properties and fields being used.
+       */
+      "font-lock-property-use-face": FaceAttributes;
+      /**
+       * Punctuation.
+       */
+      "font-lock-punctuation-face": FaceAttributes;
       /**
        * Strings.
        */
@@ -676,6 +752,10 @@ declare global {
        * Names of variables being defined.
        */
       "font-lock-variable-name-face": FaceAttributes;
+      /**
+       * Names of variables being used.
+       */
+      "font-lock-variable-use-face": FaceAttributes;
       /**
        * Things to notice.
        */
@@ -809,6 +889,14 @@ declare global {
        */
       "help-mode-hook": Value;
       /**
+       * Run after entering JavaScript mode, after the hooks of the modes it is built on.
+       */
+      "js-ts-mode-hook": Value;
+      /**
+       * Run after entering JSON mode, after the hooks of the modes it is built on.
+       */
+      "json-ts-mode-hook": Value;
+      /**
        * Run after Outline-Minor mode is turned on or off.
        */
       "outline-minor-mode-hook": Value;
@@ -844,6 +932,18 @@ declare global {
        * Run before each command that keys run. A function can change this-command, and that command runs instead.
        */
       "pre-command-hook": Value;
+      /**
+       * Run after entering Prog mode, after the hooks of the modes it is built on.
+       */
+      "prog-mode-hook": Value;
+      /**
+       * Run after entering Python mode, after the hooks of the modes it is built on.
+       */
+      "python-ts-mode-hook": Value;
+      /**
+       * Run after entering Rust mode, after the hooks of the modes it is built on.
+       */
+      "rust-ts-mode-hook": Value;
       /**
        * Run after entering Text mode, after the hooks of the modes it is built on.
        */
@@ -1128,6 +1228,21 @@ declare global {
     function faceInfo(name: FaceName | (string & {})):
       | { doc: string; source?: string; attributes: FaceAttributes; dark: FaceAttributes; light: FaceAttributes }
       | undefined;
+
+    /** The languages Ember has tree-sitter grammars for. */
+    function treesitLanguages(): string[];
+    function treesitLanguageAvailable(language: string): boolean;
+    /**
+     * Parse the current buffer with a tree-sitter grammar and highlight it from
+     * then on (Emacs's treesit-parser-create). A major mode's setup calls this;
+     * changing the major mode removes it.
+     */
+    function treesitParserCreate(language: string): void;
+    function treesitParserDelete(): void;
+    /** The current buffer's tree-sitter language, if it has one. */
+    function treesitLanguage(): string | undefined;
+    /** The smallest named syntax node at a position: its type, such as "function_item", and its range. */
+    function treesitNodeAt(position: number): { type: string; start: number; end: number } | undefined;
 
     /**
      * Set a text property on the characters from start up to end (Emacs's
