@@ -125,7 +125,7 @@ fn movement(ed: &mut Editor) {
             let arg = ed.current_prefix_arg();
             let b = ed.buffer_mut();
             if !matches!(arg, Some(PrefixArg::Universal(_))) && !b.is_mark_active() {
-                b.set_mark(Some(b.point()));
+                b.push_mark(b.point(), false);
             }
             match arg {
                 Some(arg @ (PrefixArg::Number(_) | PrefixArg::Minus)) => {
@@ -145,7 +145,7 @@ fn movement(ed: &mut Editor) {
             let arg = ed.current_prefix_arg();
             let b = ed.buffer_mut();
             if !matches!(arg, Some(PrefixArg::Universal(_))) && !b.is_mark_active() {
-                b.set_mark(Some(b.point()));
+                b.push_mark(b.point(), false);
             }
             match arg {
                 Some(arg @ (PrefixArg::Number(_) | PrefixArg::Minus)) => {
@@ -423,24 +423,56 @@ fn editing(ed: &mut Editor) {
         "Delete the character after point, or as many as the prefix argument says.\n\nWith a prefix argument, the characters are killed rather than deleted, so they can be yanked back.",
         |ed, _| delete_chars(ed, ed.prefix_numeric()),
     );
-    def(ed, "undo", "Undo the last change, or as many changes as the prefix argument says.\n\nRepeat to undo earlier changes.", |ed, _| {
-        for _ in 0..ed.prefix_numeric().max(1) {
-            ed.buffer_mut().undo()?;
-        }
-        Ok(())
-    });
+    def(
+        ed,
+        "undo",
+        "Undo the last change, or as many changes as the prefix argument says.\n\nRepeat to undo earlier changes. Undoing is itself a change, so after any other command, undo undoes the undos: it redoes.",
+        |ed, _| {
+            let mut continuing = ed.last_command() == Some("undo");
+            let mut redid = false;
+            for _ in 0..ed.prefix_numeric().max(1) {
+                redid = ed.buffer_mut().undo(continuing)?;
+                continuing = true;
+            }
+            ed.message(if redid { "Redo" } else { "Undo" });
+            Ok(())
+        },
+    );
+    def(
+        ed,
+        "undo-redo",
+        "Undo the last undo, or as many as the prefix argument says: redo.\n\nUnlike undoing an undo with undo, this leaves no trace in the undo history.",
+        |ed, _| {
+            for _ in 0..ed.prefix_numeric().max(1) {
+                ed.buffer_mut().undo_redo()?;
+            }
+            // So that a following undo carries on from here.
+            ed.set_this_command("undo");
+            ed.message("Redo");
+            Ok(())
+        },
+    );
     def(
         ed,
         "set-mark-command",
-        "Set the mark at point and activate the region.\n\nRepeating it straight away deactivates the region, leaving the mark set.",
+        "Set the mark at point and activate the region, saving the old mark on the mark ring.\n\nRepeating it straight away deactivates the region, leaving the mark set. With C-u, jump to the mark instead and take the previous one from the mark ring, so repeating C-u C-SPC goes back through earlier marks.",
         |ed, _| {
+            let arg = ed.current_prefix_arg();
             let repeated = ed.last_command() == Some("set-mark-command");
             let b = ed.buffer_mut();
-            if repeated && b.is_mark_active() && b.mark() == Some(b.point()) {
+            if let Some(PrefixArg::Universal(4)) = arg {
+                let mark = b.mark().ok_or_else(|| Error::new("No mark set in this buffer"))?;
+                let popped = b.point() == mark;
+                b.set_point(mark);
+                b.pop_mark();
+                if popped {
+                    ed.message("Mark popped");
+                }
+            } else if repeated && b.is_mark_active() && b.mark() == Some(b.point()) {
                 b.deactivate_mark();
                 ed.message("Mark deactivated");
             } else {
-                b.activate_mark();
+                b.push_mark(b.point(), true);
                 ed.message("Mark set");
             }
             Ok(())
@@ -456,9 +488,9 @@ fn editing(ed: &mut Editor) {
     });
     def(ed, "mark-whole-buffer", "Put point at the beginning of the buffer and the mark at the end.", |ed, _| {
         let b = ed.buffer_mut();
-        b.set_mark(Some(b.len()));
+        b.push_mark(b.point(), false);
+        b.push_mark(b.len(), true);
         b.set_point(0);
-        b.activate_region();
         Ok(())
     });
     def(ed, "keyboard-quit", "Cancel the current prompt or key sequence, and deactivate the region.", |ed, _| {
@@ -514,7 +546,7 @@ fn killing(ed: &mut Editor) {
     def(ed, "kill-ring-save", "Copy the text between point and the mark to the kill ring.", |ed, _| {
         let region = region(ed.buffer())?;
         let text = ed.buffer().slice(region);
-        ed.kill_ring.push(text);
+        ed.kill_new(text);
         ed.buffer_mut().deactivate_mark();
         Ok(())
     });
@@ -526,17 +558,13 @@ fn killing(ed: &mut Editor) {
             let arg = ed.current_prefix_arg();
             // Emacs sets the mark before it looks at the kill ring, even if it is empty.
             let b = ed.buffer_mut();
-            b.set_mark(Some(b.point()));
-            if ed.kill_ring.is_empty() {
-                return err("Kill ring is empty");
-            }
+            b.push_mark(b.point(), false);
             let back = match arg {
                 None | Some(PrefixArg::Universal(_)) => 0,
                 Some(PrefixArg::Minus) => -2,
                 Some(PrefixArg::Number(n)) => n - 1,
             };
-            let len = ed.kill_ring.len() as i64;
-            let text = ed.kill_ring[(len - 1 - back).rem_euclid(len) as usize].clone();
+            let text = ed.current_kill(back)?;
             let b = ed.buffer_mut();
             b.insert(&text)?;
             if let Some(PrefixArg::Universal(_)) = arg {
@@ -860,6 +888,8 @@ fn bind_defaults(ed: &mut Editor) {
         ("C-/", "undo"),
         ("C-_", "undo"),
         ("C-x u", "undo"),
+        ("C-?", "undo-redo"),
+        ("C-M-_", "undo-redo"),
         ("C-g", "keyboard-quit"),
         ("M-x", "execute-extended-command"),
         ("C-x C-f", "find-file"),

@@ -763,6 +763,88 @@
       "kill_ring": [],
       "modified": false,
       "error": null
+    },
+    {
+      "name": "repeat-repeats-again-with-z",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "x C-x z z z",
+        "platform": null
+      },
+      "text": "xxxx",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "repeat-keeps-the-argument",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-u 2 a C-x z",
+        "platform": null
+      },
+      "text": "aaaa",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "repeat-with-a-new-argument",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "a C-u 3 C-x z",
+        "platform": null
+      },
+      "text": "aaaa",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "repeat-a-kill",
+      "input": {
+        "text": "one\ntwo\nthree",
+        "point": 0,
+        "keys": "C-k C-x z",
+        "platform": null
+      },
+      "text": "two\nthree",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "one\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "nothing-to-repeat",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x z",
+        "platform": null
+      },
+      "text": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "There is nothing to repeat"
     }
   ]
 }

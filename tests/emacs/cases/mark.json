@@ -98,5 +98,30 @@
     "text": "one two\nthree",
     "keys": "S-<end>",
     "platform": "darwin"
+  },
+  {
+    "name": "pop-the-mark-twice",
+    "text": "a b c d e",
+    "keys": "C-SPC M-f C-SPC M-f C-SPC M-f C-u C-SPC C-u C-SPC"
+  },
+  {
+    "name": "beginning-of-buffer-pushes-the-mark",
+    "text": "abc def",
+    "keys": "M-f M-> C-u C-SPC"
+  },
+  {
+    "name": "mark-whole-buffer-pushes-the-mark",
+    "text": "abc def",
+    "keys": "M-f C-x h C-g C-u C-SPC C-u C-SPC"
+  },
+  {
+    "name": "pop-with-no-mark",
+    "text": "abc",
+    "keys": "C-u C-SPC"
+  },
+  {
+    "name": "yank-pushes-the-mark",
+    "text": "a b",
+    "keys": "M-d C-e C-y C-u C-SPC"
   }
 ]

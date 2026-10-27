@@ -33,7 +33,11 @@ const PRELUDE: &str = include_str!("prelude.js");
 /// The packages that ship with Ember, in the order they load. Like the Lisp
 /// that Emacs preloads, they are part of the editor: `-q` skips init.ts but
 /// not these. Named by their path in the repository.
-const PACKAGES: &[(&str, &str)] = &[("packages/simple.ts", include_str!("../../../packages/simple.ts"))];
+const PACKAGES: &[(&str, &str)] = &[
+    ("packages/simple.ts", include_str!("../../../packages/simple.ts")),
+    ("packages/repeat.ts", include_str!("../../../packages/repeat.ts")),
+    ("packages/kmacro.ts", include_str!("../../../packages/kmacro.ts")),
+];
 
 /// How long a script may run before it is stopped, unless changed with
 /// [`Scripting::set_time_limit`]. The editor is single threaded, so a script
@@ -393,6 +397,65 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
                 Ok(())
             })
         })?,
+    )?;
+    native.set(
+        "currentKill",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, n: Opt<i64>| {
+            with_editor(&ctx, |ed| ed.current_kill(n.0.unwrap_or(0)))
+        })?,
+    )?;
+    native.set(
+        "lastCommand",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            with_editor(&ctx, |ed| Ok(ed.last_command().map(str::to_string)))
+        })?,
+    )?;
+    native.set(
+        "setThisCommand",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
+            with_editor(&ctx, |ed| {
+                ed.set_this_command(&name);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "setMark",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pos: Option<usize>| {
+            with_editor(&ctx, |ed| {
+                ed.buffer_mut().set_mark(pos);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "repeatLastCommand",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, arg: Value<'js>| {
+            let arg = prefix_from_js(&ctx, arg)?;
+            with_editor(&ctx, |ed| ed.repeat_last_command(arg))
+        })?,
+    )?;
+    native.set(
+        "startKbdMacro",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| ed.start_kbd_macro()))?,
+    )?;
+    native.set(
+        "endKbdMacro",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| ed.end_kbd_macro()))?,
+    )?;
+    native.set(
+        "callLastKbdMacro",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, count: i64| {
+            with_editor(&ctx, |ed| ed.call_last_kbd_macro(count))
+        })?,
+    )?;
+    native.set(
+        "definingKbdMacro",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.defining_kbd_macro())))?,
+    )?;
+    native.set(
+        "executingKbdMacro",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.executing_kbd_macro())))?,
     )?;
     ctx.globals().set("__ember", native)
 }

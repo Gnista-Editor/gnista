@@ -147,6 +147,150 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "undo-twice-then-redo-twice",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "a RET b RET c C-/ C-/ C-a C-/ C-/",
+        "platform": null
+      },
+      "text": "a\nb\nc",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "redo-then-undo-again",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "x y C-/ C-a C-/ C-a C-/",
+        "platform": null
+      },
+      "text": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "undo-redo-twice",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "a RET b C-/ C-/ C-M-_ C-M-_",
+        "platform": null
+      },
+      "text": "a\nb",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "undo-redo-with-nothing-to-redo",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "x C-M-_",
+        "platform": null
+      },
+      "text": "xabc",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "No undone changes to redo"
+    },
+    {
+      "name": "undo-then-type-then-undo",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "a b C-/ c C-/",
+        "platform": null
+      },
+      "text": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "undo-a-deletion-leaves-point",
+      "input": {
+        "text": "abcdef",
+        "point": 2,
+        "keys": "C-d C-d C-/",
+        "platform": null
+      },
+      "text": "abcdef",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "undo-a-backspace-leaves-point",
+      "input": {
+        "text": "abcdef",
+        "point": 4,
+        "keys": "DEL DEL C-/",
+        "platform": null
+      },
+      "text": "abcdef",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "redo-back-to-modified",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "x C-/ C-a C-/",
+        "platform": null
+      },
+      "text": "xabc",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "undo-redo-back-to-unmodified",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "x C-/ C-/ C-M-_",
+        "platform": null
+      },
+      "text": "xabc",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "No further undo information"
     }
   ]
 }

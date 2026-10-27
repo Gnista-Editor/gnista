@@ -285,6 +285,139 @@
       ],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "yank-pop-twice",
+      "input": {
+        "text": "a\nb\nc",
+        "point": 0,
+        "keys": "M-d C-n M-d C-n M-d C-y M-y M-y",
+        "platform": null
+      },
+      "text": "\n\na",
+      "point": 3,
+      "mark": 2,
+      "mark_active": false,
+      "kill_ring": [
+        "c",
+        "b",
+        "a"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "yank-pop-wraps-around",
+      "input": {
+        "text": "a\nb",
+        "point": 0,
+        "keys": "M-d C-n M-d C-y M-y M-y",
+        "platform": null
+      },
+      "text": "\nb",
+      "point": 2,
+      "mark": 1,
+      "mark_active": false,
+      "kill_ring": [
+        "b",
+        "a"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "yank-pop-with-an-argument",
+      "input": {
+        "text": "a\nb\nc",
+        "point": 0,
+        "keys": "M-d C-n M-d C-n M-d C-y M-2 M-y",
+        "platform": null
+      },
+      "text": "\n\na",
+      "point": 3,
+      "mark": 2,
+      "mark_active": false,
+      "kill_ring": [
+        "c",
+        "b",
+        "a"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "yank-pop-backwards",
+      "input": {
+        "text": "a\nb\nc",
+        "point": 0,
+        "keys": "M-d C-n M-d C-n M-d C-y M-y M-- M-y",
+        "platform": null
+      },
+      "text": "\n\nc",
+      "point": 3,
+      "mark": 2,
+      "mark_active": false,
+      "kill_ring": [
+        "c",
+        "b",
+        "a"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "yank-pop-after-c-u-yank",
+      "input": {
+        "text": "a\nb",
+        "point": 0,
+        "keys": "M-d C-n M-d C-u C-y M-y",
+        "platform": null
+      },
+      "text": "\na",
+      "point": 1,
+      "mark": 2,
+      "mark_active": false,
+      "kill_ring": [
+        "b",
+        "a"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "yank-pop-without-a-yank",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "M-y",
+        "platform": null
+      },
+      "text": "abc",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Kill ring is empty"
+    },
+    {
+      "name": "yank-after-yank-pop-takes-the-same-kill",
+      "input": {
+        "text": "a\nb",
+        "point": 0,
+        "keys": "M-d C-n M-d C-y M-y RET C-y",
+        "platform": null
+      },
+      "text": "\na\na",
+      "point": 4,
+      "mark": 3,
+      "mark_active": false,
+      "kill_ring": [
+        "b",
+        "a"
+      ],
+      "modified": true,
+      "error": null
     }
   ]
 }

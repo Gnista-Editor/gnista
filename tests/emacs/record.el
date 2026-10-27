@@ -24,13 +24,18 @@
 (defvar ember-oracle--error nil
   "The first error a case signalled.")
 
-(defvar ember-oracle--queued nil
-  "Typed keys set aside while a keyboard macro runs.")
+(defun ember-oracle--set-aside-typed-keys (run &rest args)
+  "Call RUN with ARGS while the keys still waiting to be typed are set aside.
+Emacs reads waiting keys before a keyboard macro's own keys, so a macro run
+while the case's keys are queued would read those instead."
+  (let ((queued unread-command-events))
+    (setq unread-command-events nil)
+    (unwind-protect
+        (apply run args)
+      (setq unread-command-events (append unread-command-events queued)))))
 
-(defconst ember-oracle--macro-commands
-  '(kmacro-end-or-call-macro kmacro-end-and-call-macro kmacro-call-macro call-last-kbd-macro)
-  "Commands that run a keyboard macro.  Emacs reads keys already waiting to
-be typed before a macro's own keys, so they are set aside while these run.")
+(advice-add 'call-last-kbd-macro :around #'ember-oracle--set-aside-typed-keys)
+(advice-add 'execute-kbd-macro :around #'ember-oracle--set-aside-typed-keys)
 
 (defun ember-oracle--done ()
   "End the case: leave the command loop."
@@ -44,18 +49,6 @@ be typed before a macro's own keys, so they are set aside while these run.")
         (unless ember-oracle--error
           (setq ember-oracle--error
                 (if (eq (car data) 'quit) "Quit" (error-message-string data))))))
-
-(add-hook 'pre-command-hook
-          (lambda ()
-            (when (memq this-command ember-oracle--macro-commands)
-              (setq ember-oracle--queued unread-command-events
-                    unread-command-events nil))))
-
-(add-hook 'post-command-hook
-          (lambda ()
-            (when (and ember-oracle--queued (not executing-kbd-macro))
-              (setq unread-command-events (append unread-command-events ember-oracle--queued)
-                    ember-oracle--queued nil))))
 
 (defun ember-oracle--run (case)
   "Type CASE's keys and return the buffer's state afterwards, as an alist."
@@ -78,9 +71,10 @@ be typed before a macro's own keys, so they are set aside while these run.")
             kill-ring-yank-pointer nil
             last-command nil
             this-command nil
+            real-this-command nil
+            last-repeatable-command nil
             last-kbd-macro nil
             ember-oracle--error nil
-            ember-oracle--queued nil
             unread-command-events (append (listify-key-sequence (kbd keys)) '(f35)))
       (recursive-edit)
       `((name . ,(alist-get 'name case))

@@ -82,5 +82,40 @@
     "name": "kill-shift-selection-and-yank",
     "text": "hello world",
     "keys": "M-S-f C-w C-e C-y"
+  },
+  {
+    "name": "yank-pop-twice",
+    "text": "a\nb\nc",
+    "keys": "M-d C-n M-d C-n M-d C-y M-y M-y"
+  },
+  {
+    "name": "yank-pop-wraps-around",
+    "text": "a\nb",
+    "keys": "M-d C-n M-d C-y M-y M-y"
+  },
+  {
+    "name": "yank-pop-with-an-argument",
+    "text": "a\nb\nc",
+    "keys": "M-d C-n M-d C-n M-d C-y M-2 M-y"
+  },
+  {
+    "name": "yank-pop-backwards",
+    "text": "a\nb\nc",
+    "keys": "M-d C-n M-d C-n M-d C-y M-y M-- M-y"
+  },
+  {
+    "name": "yank-pop-after-c-u-yank",
+    "text": "a\nb",
+    "keys": "M-d C-n M-d C-u C-y M-y"
+  },
+  {
+    "name": "yank-pop-without-a-yank",
+    "text": "abc",
+    "keys": "M-y"
+  },
+  {
+    "name": "yank-after-yank-pop-takes-the-same-kill",
+    "text": "a\nb",
+    "keys": "M-d C-n M-d C-y M-y RET C-y"
   }
 ]

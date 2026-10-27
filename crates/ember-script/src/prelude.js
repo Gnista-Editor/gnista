@@ -47,6 +47,16 @@
       arg === null ? 1 : arg === "-" ? -1 : Array.isArray(arg) ? arg[0] : arg,
     setPrefixArg: (arg) => native.setPrefixArg(arg ?? null),
     lastKey: () => native.lastKey(),
+    currentKill: (n = 0) => native.currentKill(n),
+    lastCommand: () => native.lastCommand(),
+    setThisCommand: (name) => native.setThisCommand(String(name)),
+    setMark: (position) => native.setMark(position ?? undefined),
+    repeatLastCommand: (arg) => native.repeatLastCommand(arg ?? null),
+    startKbdMacro: () => native.startKbdMacro(),
+    endKbdMacro: () => native.endKbdMacro(),
+    callLastKbdMacro: (count = 1) => native.callLastKbdMacro(count),
+    definingKbdMacro: () => native.definingKbdMacro(),
+    executingKbdMacro: () => native.executingKbdMacro(),
     setTransientMap: (bindings) =>
       native.setTransientMap(
         Object.fromEntries(Object.entries(bindings).map(([keys, command]) => [String(keys), String(command)])),

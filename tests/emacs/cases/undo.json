@@ -43,5 +43,52 @@
     "name": "undo-redo",
     "text": "",
     "keys": "a b C-/ C-M-_"
+  },
+  {
+    "name": "undo-twice-then-redo-twice",
+    "text": "",
+    "keys": "a RET b RET c C-/ C-/ C-a C-/ C-/"
+  },
+  {
+    "name": "redo-then-undo-again",
+    "text": "",
+    "keys": "x y C-/ C-a C-/ C-a C-/"
+  },
+  {
+    "name": "undo-redo-twice",
+    "text": "",
+    "keys": "a RET b C-/ C-/ C-M-_ C-M-_"
+  },
+  {
+    "name": "undo-redo-with-nothing-to-redo",
+    "text": "abc",
+    "keys": "x C-M-_"
+  },
+  {
+    "name": "undo-then-type-then-undo",
+    "text": "",
+    "keys": "a b C-/ c C-/"
+  },
+  {
+    "name": "undo-a-deletion-leaves-point",
+    "text": "abcdef",
+    "keys": "C-d C-d C-/",
+    "point": 2
+  },
+  {
+    "name": "undo-a-backspace-leaves-point",
+    "text": "abcdef",
+    "keys": "DEL DEL C-/",
+    "point": 4
+  },
+  {
+    "name": "redo-back-to-modified",
+    "text": "abc",
+    "keys": "x C-/ C-a C-/"
+  },
+  {
+    "name": "undo-redo-back-to-unmodified",
+    "text": "abc",
+    "keys": "x C-/ C-/ C-M-_"
   }
 ]

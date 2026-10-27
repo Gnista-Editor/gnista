@@ -99,3 +99,40 @@ for (let digit = 0; digit <= 9; digit++) {
 for (const keys of ["M--", "C--", "C-M--"]) {
   ember.bindKey(keys, negativeArgument);
 }
+
+// Yanking older kills: M-y.
+
+const yankPop = ember.defineCommand({
+  name: "yank-pop",
+  doc:
+    "Replace the text just yanked with an earlier kill.\n\n" +
+    "Only right after C-y or M-y. Repeat it to go further back through the kill ring; " +
+    "a prefix argument N goes N kills back at once, and a negative one goes forward.",
+  run: () => {
+    // Emacs 28 and later read a kill from the minibuffer when the last
+    // command was not a yank; Ember does not do that yet. Like Emacs, it
+    // fails first if there is nothing to choose from.
+    if (ember.lastCommand() !== "yank") {
+      ember.currentKill(0);
+      throw new Error("Previous command was not a yank");
+    }
+    // So that another M-y can follow this one.
+    ember.setThisCommand("yank");
+    const point = ember.point();
+    const mark = ember.mark();
+    if (mark === undefined) {
+      throw new Error("The mark is not set now, so there is no region");
+    }
+    const pointWasFirst = point < mark;
+    const start = Math.min(point, mark);
+    ember.deleteRegion(start, Math.max(point, mark));
+    ember.setMark(start);
+    ember.insert(ember.currentKill(ember.prefixNumericValue()));
+    if (pointWasFirst) {
+      const end = ember.point();
+      ember.gotoChar(start);
+      ember.setMark(end);
+    }
+  },
+});
+ember.bindKey("M-y", yankPop);

@@ -105,6 +105,40 @@ const API: &str = r#"
    * continue the argument.
    */
   function setTransientMap(bindings: { [keys: string]: CommandName | DefinedCommand }): void;
+
+  /**
+   * The kill `n` entries back from the one yanked last, moving the yank
+   * pointer there (Emacs's current-kill). 0, the default, is what C-y would
+   * insert now; M-y asks for 1, the kill before it.
+   */
+  function currentKill(n?: number): string;
+  /** The command that ran before this one (Emacs's last-command). */
+  function lastCommand(): string | undefined;
+  /**
+   * Make the running command count as another one afterwards (Emacs's
+   * this-command). yank-pop sets "yank", so that M-y can follow M-y.
+   */
+  function setThisCommand(name: CommandName | DefinedCommand): void;
+  /** Put the mark at a position without activating the region, or remove it with null. */
+  function setMark(position: number | null): void;
+  /**
+   * Run the last command again, with the same arguments and key, and with
+   * `arg` as its prefix argument if given (Emacs's last-repeatable-command).
+   */
+  function repeatLastCommand(arg?: PrefixArg): void;
+  /** Start recording typed keys into a keyboard macro (Emacs's start-kbd-macro). */
+  function startKbdMacro(): void;
+  /** Finish the keyboard macro, leaving out the keys that ended it (Emacs's end-kbd-macro). */
+  function endKbdMacro(): void;
+  /**
+   * Type the last keyboard macro `count` times, 1 by default, or until an
+   * error if `count` is 0. The first error stops it and is thrown.
+   */
+  function callLastKbdMacro(count?: number): void;
+  /** Whether a keyboard macro is being recorded. */
+  function definingKbdMacro(): boolean;
+  /** Whether a keyboard macro is running. */
+  function executingKbdMacro(): boolean;
 }
 
 var console: {

@@ -270,3 +270,25 @@ fn packages_type_definitions_are_current() {
         "packages/ember.d.ts is out of date; run UPDATE_TYPES=1 cargo test -p ember-script"
     );
 }
+
+#[test]
+fn macros_repeat_and_yank_pop_from_packages() {
+    // C-x e e runs the macro again; batch Emacs cannot record this, so the
+    // oracle does not cover it.
+    let (mut ed, _scripting) = setup();
+    ed.press("C-x ( a C-x ) C-x e e e").unwrap();
+    assert_eq!(text(&ed), "aaaa");
+    assert!(!ed.defining_kbd_macro());
+
+    // The mode line's "Def" comes from this state.
+    ed.press("<f3>").unwrap();
+    assert!(ed.defining_kbd_macro());
+    assert_eq!(ed.echo(), Some("Defining kbd macro..."));
+    ed.press("<f4>").unwrap();
+    assert_eq!(ed.echo(), Some("Keyboard macro defined"));
+
+    // C-x z z repeats the last command twice more.
+    let (mut ed, _scripting) = setup();
+    ed.press("x C-x z z").unwrap();
+    assert_eq!(text(&ed), "xxx");
+}

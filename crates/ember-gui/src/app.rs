@@ -199,7 +199,7 @@ fn draw(ui: &Ui, ed: &Editor, layout: &Layout, t: Tokens, focused: bool, scroll_
     );
     let view = View { area: layout.text_rect, clip, rows: ed.viewport_height(), scroll_offset };
     draw_buffer(&painter, ed.window_buffer(), &view, m, t, window_cursor);
-    draw_mode_line(&painter, ed.window_buffer(), layout.mode_rect, m, t);
+    draw_mode_line(&painter, ed, layout.mode_rect, m, t);
     let echo_cursor = if focused { CursorStyle::Filled } else { CursorStyle::Hollow };
     draw_echo_area(&painter, ed, layout.echo_rect, m, t, echo_cursor);
 }
@@ -310,7 +310,8 @@ fn text_format(m: &Metrics, color: Color32) -> TextFormat {
     TextFormat { font_id: m.font.clone(), color, ..Default::default() }
 }
 
-fn draw_mode_line(painter: &Painter, b: &Buffer, rect: Rect, m: &Metrics, t: Tokens) {
+fn draw_mode_line(painter: &Painter, ed: &Editor, rect: Rect, m: &Metrics, t: Tokens) {
+    let b = ed.window_buffer();
     painter.rect_filled(rect, 0.0, t.sunken);
     painter.hline(rect.x_range(), rect.top() + 0.5, Stroke::new(1.0, t.line));
     let (flag, flag_color) = if b.read_only {
@@ -327,6 +328,10 @@ fn draw_mode_line(painter: &Painter, b: &Buffer, rect: Rect, m: &Metrics, t: Tok
     let position = format!("L{} C{}", b.line_of(b.point()) + 1, b.column(b.point()));
     job.append(&position, gap, text_format(m, t.muted));
     job.append("Fundamental", gap, text_format(m, t.faint));
+    // Emacs shows "Def" in the mode line while a keyboard macro is being defined.
+    if ed.defining_kbd_macro() {
+        job.append("Def", m.char_width, text_format(m, t.accent_ink));
+    }
     let galley = painter.layout_job(job);
     let y = rect.center().y - galley.size().y / 2.0;
     painter.with_clip_rect(rect).galley(pos2(rect.left() + PAD_X, y), galley, t.ink);

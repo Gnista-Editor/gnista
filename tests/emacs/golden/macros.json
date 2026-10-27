@@ -49,6 +49,153 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "macro-counter",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "<f3> <f3> SPC <f4> <f4> <f4>",
+        "platform": null
+      },
+      "text": "0 1 2 ",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "macro-counter-with-a-start",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-u 5 <f3> <f3> SPC <f4> <f4>",
+        "platform": null
+      },
+      "text": "5 6 ",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "an-error-stops-the-macro",
+      "input": {
+        "text": "a\nb\nc",
+        "point": 0,
+        "keys": "<f3> C-n x <f4> <f4> <f4> <f4>",
+        "platform": null
+      },
+      "text": "a\nxb\ncx",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "End of buffer"
+    },
+    {
+      "name": "run-until-it-fails",
+      "input": {
+        "text": "a\nb\nc\nd",
+        "point": 0,
+        "keys": "<f3> C-n C-a - <f4> C-u 0 <f4>",
+        "platform": null
+      },
+      "text": "a\n-b\n-c\n-d",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "End of buffer"
+    },
+    {
+      "name": "macro-with-a-prefix-argument-inside",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "<f3> C-u 2 x <f4> <f4>",
+        "platform": null
+      },
+      "text": "xxxx",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "macro-that-kills-and-yanks",
+      "input": {
+        "text": "one\ntwo\nthree",
+        "point": 0,
+        "keys": "<f3> C-k C-k C-y C-y <f4> <f4>",
+        "platform": null
+      },
+      "text": "one\none\ntwo\ntwo\nthree",
+      "point": 16,
+      "mark": 12,
+      "mark_active": false,
+      "kill_ring": [
+        "two\n",
+        "one\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "call-without-a-macro",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "<f4>",
+        "platform": null
+      },
+      "text": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No kbd macro has been defined"
+    },
+    {
+      "name": "end-without-defining",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x )",
+        "platform": null
+      },
+      "text": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Not defining kbd macro"
+    },
+    {
+      "name": "start-while-defining",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x ( C-x ( a C-x )",
+        "platform": null
+      },
+      "text": "a",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
     }
   ]
 }

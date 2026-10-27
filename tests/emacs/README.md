@@ -37,6 +37,7 @@ Batch Emacs has no window system, so some keys act as they would on a terminal r
 
 - `<delete>` is translated to `DEL`, so it deletes backwards. GUI Emacs, and Ember, delete forwards. Don't write cases with `<delete>`.
 - The minibuffer reads from standard input in batch mode, not from the typed keys, so cases cannot use it: no `M-x`, `C-x C-f` or other prompts. A case that prompts makes the recorder wait forever. Ember's own tests cover the minibuffer.
+- `this-single-command-keys` sees only the last key of a sequence in batch mode, so commands that look at it act differently. In particular `C-x e` installs no repeat key, so `C-x e e` cannot be recorded. Ember's own tests cover it.
 - The window has a fixed small size, so leave scrolling and window commands to Ember's own tests.
 - Display, faces and the mouse are invisible to the oracle. The GUI's snapshot tests cover those.
 

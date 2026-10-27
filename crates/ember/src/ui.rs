@@ -63,7 +63,8 @@ fn draw_mode_line(frame: &mut Frame, ed: &Editor, area: Rect) {
     };
     let line = b.line_of(b.point()) + 1;
     let col = b.column(b.point());
-    let mut text = format!("-:{flag}-  {:<18} L{line:<5} C{col:<4} (Fundamental) ", b.name);
+    let def = if ed.defining_kbd_macro() { " Def" } else { "" };
+    let mut text = format!("-:{flag}-  {:<18} L{line:<5} C{col:<4} (Fundamental{def}) ", b.name);
     let fill = (area.width as usize).saturating_sub(display_width(&text));
     text.push_str(&"-".repeat(fill));
     let style = Style::new().add_modifier(Modifier::REVERSED);

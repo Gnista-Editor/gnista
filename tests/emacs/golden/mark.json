@@ -305,6 +305,88 @@
       "kill_ring": [],
       "modified": false,
       "error": null
+    },
+    {
+      "name": "pop-the-mark-twice",
+      "input": {
+        "text": "a b c d e",
+        "point": 0,
+        "keys": "C-SPC M-f C-SPC M-f C-SPC M-f C-u C-SPC C-u C-SPC",
+        "platform": null
+      },
+      "text": "a b c d e",
+      "point": 1,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "beginning-of-buffer-pushes-the-mark",
+      "input": {
+        "text": "abc def",
+        "point": 0,
+        "keys": "M-f M-> C-u C-SPC",
+        "platform": null
+      },
+      "text": "abc def",
+      "point": 3,
+      "mark": 3,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "mark-whole-buffer-pushes-the-mark",
+      "input": {
+        "text": "abc def",
+        "point": 0,
+        "keys": "M-f C-x h C-g C-u C-SPC C-u C-SPC",
+        "platform": null
+      },
+      "text": "abc def",
+      "point": 3,
+      "mark": 7,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Quit"
+    },
+    {
+      "name": "pop-with-no-mark",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "C-u C-SPC",
+        "platform": null
+      },
+      "text": "abc",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No mark set in this buffer"
+    },
+    {
+      "name": "yank-pushes-the-mark",
+      "input": {
+        "text": "a b",
+        "point": 0,
+        "keys": "M-d C-e C-y C-u C-SPC",
+        "platform": null
+      },
+      "text": " ba",
+      "point": 2,
+      "mark": 2,
+      "mark_active": false,
+      "kill_ring": [
+        "a"
+      ],
+      "modified": true,
+      "error": null
     }
   ]
 }

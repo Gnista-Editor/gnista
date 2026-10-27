@@ -19,6 +19,24 @@ pub(crate) struct Prompt {
     pub(crate) kind: ParamKind,
 }
 
+/// A command as it last ran, so it can be repeated (Emacs's
+/// `last-repeatable-command`, with the arguments and key it ran with).
+#[derive(Clone)]
+struct Repeatable {
+    command: Rc<Command>,
+    args: Vec<Arg>,
+    prefix: Option<PrefixArg>,
+    key: Option<Key>,
+}
+
+/// Commands that Emacs groups into one undo step when repeated (those that
+/// call `undo-auto-amalgamate`).
+const AMALGAMATING: &[&str] = &["self-insert-command", "delete-char", "delete-backward-char"];
+
+/// How many times a keyboard macro run "until an error" may repeat before
+/// it is stopped, in case nothing ever fails.
+const MACRO_REPEAT_LIMIT: usize = 100_000;
+
 /// A command whose arguments are still being read.
 struct PendingCall {
     command: Rc<Command>,
@@ -59,6 +77,21 @@ pub struct Editor {
     /// The error from the last interactive command that failed, until taken.
     last_error: Option<Error>,
     pub(crate) kill_ring: Vec<String>,
+    /// Which kill yanking takes next, counting back from the newest (Emacs's
+    /// `kill-ring-yank-pointer`).
+    yank_pointer: usize,
+    last_repeatable: Option<Repeatable>,
+    /// Counts recorded repeatable commands, so that when one command runs
+    /// another, as M-x does, the innermost is the one repeated.
+    repeatable_count: u64,
+    /// The keys typed so far while defining a keyboard macro.
+    defining_macro: Option<Vec<Key>>,
+    /// Where in the macro the key sequence being typed began, so ending the
+    /// macro can leave out the keys that ended it.
+    macro_sequence_start: usize,
+    last_macro: Option<Vec<Key>>,
+    /// How many keyboard macros are running, one inside another.
+    executing_macro: usize,
     last_command: Option<String>,
     this_command: Option<String>,
     pub(crate) last_key: Option<Key>,
@@ -100,6 +133,13 @@ impl Editor {
             message: None,
             last_error: None,
             kill_ring: Vec::new(),
+            yank_pointer: 0,
+            last_repeatable: None,
+            repeatable_count: 0,
+            defining_macro: None,
+            macro_sequence_start: 0,
+            last_macro: None,
+            executing_macro: 0,
             last_command: None,
             this_command: None,
             last_key: None,
@@ -215,9 +255,9 @@ impl Editor {
             self.message = Some("Command attempted to use minibuffer while in minibuffer".into());
             return;
         }
-        // Consecutive self-inserts share an undo step, as in Emacs: the first
-        // character and up to 20 more (amalgamating-undo-limit).
-        let amalgamate = name == "self-insert-command"
+        // Runs of typing, or of C-d or DEL, share an undo step, as in Emacs:
+        // the first and up to 20 more (amalgamating-undo-limit).
+        let amalgamate = AMALGAMATING.contains(&name)
             && self.last_command() == Some(name)
             && self.self_insert_run <= 20;
         self.self_insert_run = if amalgamate { self.self_insert_run + 1 } else { 1 };
@@ -287,18 +327,110 @@ impl Editor {
     }
 
     fn execute(&mut self, command: Rc<Command>, args: Vec<Arg>, prefix: Option<PrefixArg>) {
-        let saved = std::mem::replace(&mut self.current_prefix_arg, prefix);
-        let last = self.last_command.clone();
-        if let Err(e) = self.invoke(command, args) {
+        if let Err(e) = self.run_command(command, args, prefix) {
             self.message = Some(e.to_string());
             self.last_error = Some(e);
         }
+    }
+
+    /// Runs a command interactively with its arguments and prefix argument,
+    /// and remembers it for `repeat`.
+    fn run_command(&mut self, command: Rc<Command>, args: Vec<Arg>, prefix: Option<PrefixArg>) -> Result<()> {
+        let saved = std::mem::replace(&mut self.current_prefix_arg, prefix);
+        let last = self.last_command.clone();
+        let key = self.last_key;
+        let count = self.repeatable_count;
+        let result = self.invoke(command.clone(), args.clone());
         self.current_prefix_arg = saved;
-        // A prefix command leaves an argument for the next command and stays
-        // out of the way, as Emacs's prefix-command-preserve-state does.
         if self.prefix_arg.is_some() {
+            // A prefix command leaves an argument for the next command and stays
+            // out of the way, as Emacs's prefix-command-preserve-state does.
             self.last_command = last;
+        } else if self.repeatable_count == count && command.name != "repeat" {
+            // Only the innermost command is remembered: after M-x forward-char,
+            // repeat runs forward-char, not M-x.
+            self.last_repeatable = Some(Repeatable { command, args, prefix, key });
+            self.repeatable_count += 1;
         }
+        result
+    }
+
+    /// Runs the last repeatable command again, with the same arguments and
+    /// key, and with `prefix` if given or else its own prefix argument.
+    pub fn repeat_last_command(&mut self, prefix: Option<PrefixArg>) -> Result<()> {
+        let last = self
+            .last_repeatable
+            .clone()
+            .ok_or_else(|| Error::new("There is nothing to repeat"))?;
+        self.last_key = last.key;
+        self.buffer_mut().undo_boundary();
+        self.run_command(last.command, last.args, prefix.or(last.prefix))
+    }
+
+    // Keyboard macros
+
+    /// Starts recording keys into a keyboard macro.
+    pub fn start_kbd_macro(&mut self) -> Result<()> {
+        if self.defining_macro.is_some() {
+            return Err(Error::new("Already defining keyboard macro"));
+        }
+        self.defining_macro = Some(Vec::new());
+        self.macro_sequence_start = 0;
+        Ok(())
+    }
+
+    /// Finishes the keyboard macro being defined. The keys that ended it
+    /// are left out.
+    pub fn end_kbd_macro(&mut self) -> Result<()> {
+        let mut keys = self
+            .defining_macro
+            .take()
+            .ok_or_else(|| Error::new("Not defining kbd macro"))?;
+        keys.truncate(self.macro_sequence_start);
+        self.last_macro = Some(keys);
+        Ok(())
+    }
+
+    /// Types the last keyboard macro `count` times, or until an error if
+    /// `count` is 0. The first error stops it, as it would stop the macro in
+    /// Emacs, and becomes this call's error.
+    pub fn call_last_kbd_macro(&mut self, count: i64) -> Result<()> {
+        let keys = self
+            .last_macro
+            .clone()
+            .ok_or_else(|| Error::new("No kbd macro has been defined"))?;
+        if count < 0 {
+            return Err(Error::new("Negative repetition argument"));
+        }
+        self.executing_macro += 1;
+        let result = self.type_keys(&keys, count);
+        self.executing_macro -= 1;
+        result
+    }
+
+    fn type_keys(&mut self, keys: &[Key], count: i64) -> Result<()> {
+        let mut done = 0;
+        while count == 0 || done < count {
+            for &key in keys {
+                self.handle_key(key);
+                if let Some(e) = self.take_error() {
+                    return Err(e);
+                }
+            }
+            done += 1;
+            if count == 0 && done as usize >= MACRO_REPEAT_LIMIT {
+                return Err(Error::new("Keyboard macro repeated too many times"));
+            }
+        }
+        Ok(())
+    }
+
+    pub fn defining_kbd_macro(&self) -> bool {
+        self.defining_macro.is_some()
+    }
+
+    pub fn executing_kbd_macro(&self) -> bool {
+        self.executing_macro > 0
     }
 
     /// Takes the error from the last interactive command that failed. An
@@ -327,7 +459,22 @@ impl Editor {
 
     /// Handles one key press: runs the command it completes, waits for more
     /// keys after a prefix, or inserts it if it is a plain unbound character.
-    pub fn handle_key(&mut self, mut key: Key) {
+    pub fn handle_key(&mut self, key: Key) {
+        // While a keyboard macro is being defined, record the keys typed.
+        if self.executing_macro == 0
+            && let Some(keys) = &mut self.defining_macro
+        {
+            let starts_sequence =
+                self.pending_keys.is_empty() && !self.esc_prefix && self.reading_keys.is_none();
+            if starts_sequence {
+                self.macro_sequence_start = keys.len();
+            }
+            keys.push(key);
+        }
+        self.dispatch_key(key);
+    }
+
+    fn dispatch_key(&mut self, mut key: Key) {
         if self.esc_prefix {
             self.esc_prefix = false;
             key.meta = true;
@@ -368,7 +515,7 @@ impl Editor {
             Lookup::Unbound if key.shift => {
                 self.pending_keys.pop();
                 self.shift_translated = true;
-                self.handle_key(key.unshifted());
+                self.dispatch_key(key.unshifted());
             }
             Lookup::Unbound => {
                 self.shift_translated = false;
@@ -583,6 +730,7 @@ impl Editor {
         let continuing = self
             .last_command()
             .is_some_and(|c| commands::KILL_COMMANDS.contains(&c));
+        self.yank_pointer = 0;
         match self.kill_ring.last_mut() {
             Some(last) if continuing => {
                 if prepend {
@@ -593,6 +741,24 @@ impl Editor {
             }
             _ => self.kill_ring.push(text),
         }
+    }
+
+    /// Adds text to the kill ring as a new entry, as copying does.
+    pub(crate) fn kill_new(&mut self, text: String) {
+        self.yank_pointer = 0;
+        self.kill_ring.push(text);
+    }
+
+    /// The kill `n` entries back from the one yanked last, moving the yank
+    /// pointer there, as Emacs's `current-kill` does. 0 is the kill yanking
+    /// would insert now; M-y asks for 1, the one before it.
+    pub fn current_kill(&mut self, n: i64) -> Result<String> {
+        if self.kill_ring.is_empty() {
+            return Err(Error::new("Kill ring is empty"));
+        }
+        let len = self.kill_ring.len() as i64;
+        self.yank_pointer = (self.yank_pointer as i64 + n).rem_euclid(len) as usize;
+        Ok(self.kill_ring[(len - 1) as usize - self.yank_pointer].clone())
     }
 
     pub fn kill_ring(&self) -> &[String] {

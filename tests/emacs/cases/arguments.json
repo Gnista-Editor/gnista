@@ -238,5 +238,30 @@
     "name": "prefix-argument-with-shift-selection",
     "text": "abcdefgh",
     "keys": "C-u 3 S-<right>"
+  },
+  {
+    "name": "repeat-repeats-again-with-z",
+    "text": "",
+    "keys": "x C-x z z z"
+  },
+  {
+    "name": "repeat-keeps-the-argument",
+    "text": "",
+    "keys": "C-u 2 a C-x z"
+  },
+  {
+    "name": "repeat-with-a-new-argument",
+    "text": "",
+    "keys": "a C-u 3 C-x z"
+  },
+  {
+    "name": "repeat-a-kill",
+    "text": "one\ntwo\nthree",
+    "keys": "C-k C-x z"
+  },
+  {
+    "name": "nothing-to-repeat",
+    "text": "",
+    "keys": "C-x z"
   }
 ]

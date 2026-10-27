@@ -13,5 +13,50 @@
     "name": "run-a-macro-several-times",
     "text": "",
     "keys": "<f3> z <f4> C-u 3 <f4>"
+  },
+  {
+    "name": "macro-counter",
+    "text": "",
+    "keys": "<f3> <f3> SPC <f4> <f4> <f4>"
+  },
+  {
+    "name": "macro-counter-with-a-start",
+    "text": "",
+    "keys": "C-u 5 <f3> <f3> SPC <f4> <f4>"
+  },
+  {
+    "name": "an-error-stops-the-macro",
+    "text": "a\nb\nc",
+    "keys": "<f3> C-n x <f4> <f4> <f4> <f4>"
+  },
+  {
+    "name": "run-until-it-fails",
+    "text": "a\nb\nc\nd",
+    "keys": "<f3> C-n C-a - <f4> C-u 0 <f4>"
+  },
+  {
+    "name": "macro-with-a-prefix-argument-inside",
+    "text": "",
+    "keys": "<f3> C-u 2 x <f4> <f4>"
+  },
+  {
+    "name": "macro-that-kills-and-yanks",
+    "text": "one\ntwo\nthree",
+    "keys": "<f3> C-k C-k C-y C-y <f4> <f4>"
+  },
+  {
+    "name": "call-without-a-macro",
+    "text": "",
+    "keys": "<f4>"
+  },
+  {
+    "name": "end-without-defining",
+    "text": "",
+    "keys": "C-x )"
+  },
+  {
+    "name": "start-while-defining",
+    "text": "",
+    "keys": "C-x ( C-x ( a C-x )"
   }
 ]

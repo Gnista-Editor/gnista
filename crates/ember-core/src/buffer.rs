@@ -16,6 +16,29 @@ struct Edit {
     point_before: usize,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum GroupKind {
+    /// Ordinary editing.
+    Change,
+    /// The changes an undo made, reverting the group at index `undid`.
+    Undo { undid: usize },
+}
+
+/// One undo step: the edits of one command.
+#[derive(Clone, Debug)]
+struct Group {
+    edits: Vec<Edit>,
+    kind: GroupKind,
+    /// If the buffer was unmodified when the group began, which save it
+    /// matched. Reverting the group returns to that state, so if it is still
+    /// the latest save the buffer is unmodified again. Emacs records the
+    /// file's modification time for the same purpose.
+    unmodified_at: Option<u64>,
+}
+
+/// How many positions the mark ring keeps, as Emacs's `mark-ring-max`.
+const MARK_RING_MAX: usize = 16;
+
 /// Text plus the state that goes with it: point, mark, the visited file and
 /// undo history. All positions are character indices.
 pub struct Buffer {
@@ -27,6 +50,8 @@ pub struct Buffer {
     text: Rope,
     point: usize,
     mark: Option<usize>,
+    /// Earlier marks, most recent first, as Emacs's `mark-ring`.
+    mark_ring: Vec<usize>,
     /// Whether the region between mark and point is active and shown, as in
     /// Emacs's transient-mark-mode.
     mark_active: bool,
@@ -35,11 +60,15 @@ pub struct Buffer {
     shift_selected: bool,
     /// Whether the text changed since [`Buffer::take_changed`] was last called.
     changed: bool,
-    /// How many undo groups there were when the buffer was last saved, or
-    /// `None` if undo has gone back past that point and cannot reach it again.
-    saved_depth: Option<usize>,
-    undo_groups: Vec<Vec<Edit>>,
+    modified: bool,
+    /// Counts saves, so undo can tell whether it returned to the saved text.
+    save_generation: u64,
+    undo_groups: Vec<Group>,
     open_group: Vec<Edit>,
+    open_unmodified_at: Option<u64>,
+    /// Where a run of consecutive undos continues: the group to undo next,
+    /// or `None` once the history is used up.
+    pending_undo: Option<usize>,
 }
 
 impl Buffer {
@@ -52,12 +81,16 @@ impl Buffer {
             text: Rope::new(),
             point: 0,
             mark: None,
+            mark_ring: Vec::new(),
             mark_active: false,
             shift_selected: false,
             changed: false,
-            saved_depth: Some(0),
+            modified: false,
+            save_generation: 0,
             undo_groups: Vec::new(),
             open_group: Vec::new(),
+            open_unmodified_at: None,
+            pending_undo: None,
         }
     }
 
@@ -87,7 +120,8 @@ impl Buffer {
         self.text.write_to(&mut out)?;
         out.flush()?;
         self.undo_boundary();
-        self.saved_depth = Some(self.undo_groups.len());
+        self.save_generation += 1;
+        self.modified = false;
         Ok(())
     }
 
@@ -103,9 +137,9 @@ impl Buffer {
         self.len() == 0
     }
 
-    /// Whether the text differs from the last save, judged by undo history.
+    /// Whether the text changed since it was visited or last saved.
     pub fn is_modified(&self) -> bool {
-        !self.open_group.is_empty() || self.saved_depth != Some(self.undo_groups.len())
+        self.modified
     }
 
     pub fn point(&self) -> usize {
@@ -124,11 +158,36 @@ impl Buffer {
         self.mark = pos.map(|p| p.min(self.len()));
     }
 
-    /// Sets the mark at point and activates the region.
-    pub fn activate_mark(&mut self) {
-        self.mark = Some(self.point);
-        self.mark_active = true;
-        self.shift_selected = false;
+    /// Sets the mark at `pos`, first saving the old mark on the mark ring, as
+    /// Emacs's `push-mark` does. With `activate`, the region becomes active.
+    pub fn push_mark(&mut self, pos: usize, activate: bool) {
+        if let Some(old) = self.mark {
+            self.mark_ring.insert(0, old);
+            self.mark_ring.truncate(MARK_RING_MAX);
+        }
+        self.mark = Some(pos.min(self.len()));
+        if activate {
+            self.mark_active = true;
+            self.shift_selected = false;
+        }
+    }
+
+    /// Replaces the mark with the most recent entry of the mark ring, which
+    /// moves the current mark to the end of the ring, and deactivates the
+    /// region, as Emacs's `pop-mark` does.
+    pub fn pop_mark(&mut self) {
+        if !self.mark_ring.is_empty() {
+            if let Some(mark) = self.mark {
+                self.mark_ring.push(mark);
+            }
+            self.mark = Some(self.mark_ring.remove(0));
+        }
+        self.deactivate_mark();
+    }
+
+    /// Earlier marks, most recent first.
+    pub fn mark_ring(&self) -> &[usize] {
+        &self.mark_ring
     }
 
     /// Activates the region between the mark and point, if there is a mark.
@@ -153,7 +212,7 @@ impl Buffer {
 
     /// Starts a region at point that Shift selection owns.
     pub fn start_shift_selection(&mut self) {
-        self.activate_mark();
+        self.push_mark(self.point, true);
         self.shift_selected = true;
     }
 
@@ -220,27 +279,7 @@ impl Buffer {
 
     pub fn insert_at(&mut self, pos: usize, s: &str) -> Result<()> {
         self.check_writable()?;
-        if s.is_empty() {
-            return Ok(());
-        }
-        let pos = pos.min(self.len());
-        let point_before = self.point;
-        self.text.insert(pos, s);
-        let n = s.chars().count();
-        if self.point >= pos {
-            self.point += n;
-        }
-        if let Some(m) = &mut self.mark
-            && *m > pos
-        {
-            *m += n;
-        }
-        self.record(Edit {
-            pos,
-            deleted: String::new(),
-            inserted: s.to_string(),
-            point_before,
-        });
+        self.apply_insert(pos.min(self.len()), s);
         Ok(())
     }
 
@@ -248,22 +287,43 @@ impl Buffer {
     pub fn delete(&mut self, range: Range<usize>) -> Result<String> {
         self.check_writable()?;
         let (start, end) = (range.start.min(self.len()), range.end.min(self.len()));
+        Ok(self.apply_delete(start, end))
+    }
+
+    /// Inserts text, moving point, the mark and the mark ring as Emacs moves
+    /// its markers: point and positions after `pos` move with the text.
+    fn apply_insert(&mut self, pos: usize, s: &str) {
+        if s.is_empty() {
+            return;
+        }
+        let point_before = self.point;
+        self.text.insert(pos, s);
+        let n = s.chars().count();
+        if self.point >= pos {
+            self.point += n;
+        }
+        for m in self.mark.iter_mut().chain(self.mark_ring.iter_mut()) {
+            if *m > pos {
+                *m += n;
+            }
+        }
+        self.record(Edit { pos, deleted: String::new(), inserted: s.to_string(), point_before });
+    }
+
+    fn apply_delete(&mut self, start: usize, end: usize) -> String {
         if start >= end {
-            return Ok(String::new());
+            return String::new();
         }
         let deleted = self.slice(start..end);
         let point_before = self.point;
         self.text.remove(start..end);
         let shift = |p: usize| if p >= end { p - (end - start) } else { p.min(start) };
-        self.mark = self.mark.map(shift);
         self.point = shift(self.point);
-        self.record(Edit {
-            pos: start,
-            deleted: deleted.clone(),
-            inserted: String::new(),
-            point_before,
-        });
-        Ok(deleted)
+        for m in self.mark.iter_mut().chain(self.mark_ring.iter_mut()) {
+            *m = shift(*m);
+        }
+        self.record(Edit { pos: start, deleted: deleted.clone(), inserted: String::new(), point_before });
+        deleted
     }
 
     /// Replaces all text without recording undo and ignoring read-only.
@@ -272,46 +332,110 @@ impl Buffer {
         self.text = Rope::from_str(s);
         self.point = 0;
         self.mark = None;
+        self.mark_ring.clear();
         self.mark_active = false;
         self.shift_selected = false;
         self.top_line = 0;
         self.undo_groups.clear();
         self.open_group.clear();
-        self.saved_depth = Some(0);
+        self.pending_undo = None;
+        self.modified = false;
+        self.save_generation += 1;
     }
 
     /// Ends the current undo group, so the next edit starts a new one.
     /// The editor calls this before each command.
     pub fn undo_boundary(&mut self) {
+        self.close_group(GroupKind::Change);
+    }
+
+    fn close_group(&mut self, kind: GroupKind) {
         if !self.open_group.is_empty() {
-            self.undo_groups.push(std::mem::take(&mut self.open_group));
+            let edits = std::mem::take(&mut self.open_group);
+            self.undo_groups.push(Group { edits, kind, unmodified_at: self.open_unmodified_at });
         }
     }
 
-    /// Reverts the most recent undo group.
-    pub fn undo(&mut self) -> Result<()> {
+    /// Undoes one step, the way Emacs's `undo` does.
+    ///
+    /// Undoing is itself recorded as a change, so it can be undone too. A run
+    /// of undos (`continuing`, when the last command was an undo) works back
+    /// through history; after any other command, undo starts again from the
+    /// most recent change, which may be an earlier undo, so undoing it redoes.
+    /// Returns whether this undo redid something.
+    pub fn undo(&mut self, continuing: bool) -> Result<bool> {
         self.check_writable()?;
         self.undo_boundary();
-        let group = self
-            .undo_groups
-            .pop()
-            .ok_or_else(|| Error::new("No further undo information"))?;
-        for edit in group.iter().rev() {
-            self.text
-                .remove(edit.pos..edit.pos + edit.inserted.chars().count());
-            self.text.insert(edit.pos, &edit.deleted);
-            self.point = edit.point_before.min(self.len());
-        }
-        self.mark = self.mark.map(|m| m.min(self.len()));
-        self.changed = true;
-        if self.saved_depth.is_some_and(|d| self.undo_groups.len() < d) {
-            self.saved_depth = None;
-        }
+        let top_is_undo = matches!(self.undo_groups.last(), Some(g) if g.kind != GroupKind::Change);
+        let index = if continuing && top_is_undo {
+            self.pending_undo
+        } else {
+            self.undo_groups.len().checked_sub(1)
+        };
+        let index = index.ok_or_else(|| Error::new("No further undo information"))?;
+        let redo = self.undo_groups[index].kind != GroupKind::Change;
+        self.revert(index);
+        self.close_group(GroupKind::Undo { undid: index });
+        self.pending_undo = index.checked_sub(1);
+        Ok(redo)
+    }
+
+    /// Undoes the most recent undo, as Emacs's `undo-redo` does. The undo and
+    /// its reversal both leave the history, so the change is simply back.
+    pub fn undo_redo(&mut self) -> Result<()> {
+        self.check_writable()?;
+        self.undo_boundary();
+        let index = match self.undo_groups.last() {
+            Some(Group { kind: GroupKind::Undo { .. }, .. }) => self.undo_groups.len() - 1,
+            _ => return Err(Error::new("No undone changes to redo")),
+        };
+        self.revert(index);
+        self.open_group.clear();
+        self.undo_groups.truncate(index);
+        // A following undo continues from where the undo below this one stopped.
+        self.pending_undo = match self.undo_groups.last() {
+            Some(Group { kind: GroupKind::Undo { undid }, .. }) => undid.checked_sub(1),
+            _ => None,
+        };
         Ok(())
     }
 
+    /// Applies the inverse of the group at `index`, recording the edits in
+    /// the open group.
+    fn revert(&mut self, index: usize) {
+        let group = self.undo_groups[index].clone();
+        for edit in group.edits.iter().rev() {
+            let inserted = edit.inserted.chars().count();
+            if inserted > 0 {
+                // Point goes to the start of the text first, as in Emacs, so
+                // that undoing this undo leaves point there and not where it is now.
+                self.point = edit.pos;
+                self.apply_delete(edit.pos, edit.pos + inserted);
+            }
+            self.apply_insert(edit.pos, &edit.deleted);
+            self.point = edit.point_before.min(self.len());
+        }
+        if group.unmodified_at == Some(self.save_generation) {
+            self.modified = false;
+        }
+    }
+
     fn record(&mut self, edit: Edit) {
+        if self.open_group.is_empty() {
+            self.open_unmodified_at = (!self.modified).then_some(self.save_generation);
+        }
         self.changed = true;
+        self.modified = true;
+        // Typing joins onto the insertion before it, as Emacs records it: one
+        // insertion for a run of characters, not one per character.
+        if let Some(last) = self.open_group.last_mut()
+            && edit.deleted.is_empty()
+            && last.deleted.is_empty()
+            && last.pos + last.inserted.chars().count() == edit.pos
+        {
+            last.inserted.push_str(&edit.inserted);
+            return;
+        }
         self.open_group.push(edit);
     }
 
@@ -362,11 +486,44 @@ mod tests {
         b.delete(1..2).unwrap();
         b.undo_boundary();
         b.insert("XY").unwrap();
-        b.undo().unwrap();
+        b.undo(false).unwrap();
         assert_eq!(b.slice(0..b.len()), "ac");
-        b.undo().unwrap();
+        b.undo(true).unwrap();
         assert_eq!(b.slice(0..b.len()), "abc");
         assert_eq!(b.point(), 1);
+    }
+
+    #[test]
+    fn undo_can_be_undone() {
+        let mut b = buffer("");
+        b.insert("hi").unwrap();
+        b.undo(false).unwrap();
+        assert_eq!(b.slice(0..b.len()), "");
+        // A fresh undo after something else undoes the undo.
+        assert!(b.undo(false).unwrap());
+        assert_eq!(b.slice(0..b.len()), "hi");
+    }
+
+    #[test]
+    fn undo_redo_reverses_the_last_undo() {
+        let mut b = buffer("");
+        b.insert("ab").unwrap();
+        b.undo(false).unwrap();
+        b.undo_redo().unwrap();
+        assert_eq!(b.slice(0..b.len()), "ab");
+        assert_eq!(b.undo_redo().unwrap_err().to_string(), "No undone changes to redo");
+    }
+
+    #[test]
+    fn the_mark_ring_follows_edits() {
+        let mut b = buffer("hello world");
+        b.push_mark(2, false);
+        b.push_mark(8, false);
+        assert_eq!(b.mark_ring(), [2]);
+        b.insert_at(0, ">> ").unwrap();
+        assert_eq!((b.mark(), b.mark_ring()), (Some(11), &[5][..]));
+        b.pop_mark();
+        assert_eq!((b.mark(), b.mark_ring()), (Some(5), &[11][..]));
     }
 
     #[test]
@@ -378,11 +535,14 @@ mod tests {
         assert!(!b.is_modified());
         b.insert("!").unwrap();
         assert!(b.is_modified());
-        b.undo().unwrap();
+        b.undo(false).unwrap();
         assert!(!b.is_modified());
-        // Undoing past the save cannot get back to it without redo.
-        b.undo().unwrap();
+        // Undoing past the save leaves the text different from the file again.
+        b.undo(true).unwrap();
         assert!(b.is_modified());
+        // Redoing back to the saved text is unmodified once more.
+        b.undo_redo().unwrap();
+        assert!(!b.is_modified());
         b.insert("saved").unwrap();
         assert!(b.is_modified());
     }
