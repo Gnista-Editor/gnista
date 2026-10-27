@@ -2,6 +2,8 @@
 
 A Rust editor that works the way Emacs works. Ember is a placeholder name. The original vision is in [docs/brief.md](docs/brief.md), but [ADR 0002](docs/adr/0002-start-simple.md) overrides it: start simple, no sandbox, AI starts as tool calls to commands, and org mode is a package rather than part of the core. Extensions are TypeScript on QuickJS ([ADR 0003](docs/adr/0003-typescript-on-quickjs.md)). The graphical front end is egui with ArtCraft's look ([ADR 0004](docs/adr/0004-egui-front-end.md)).
 
+The plan for growing Ember towards Emacs parity is in [docs/plan.md](docs/plan.md).
+
 ## Current state
 
 A working editor, in a terminal (`ember`) or a window (`ember-gui`), with one window: buffers, files, Emacs movement and editing keys, the active region with shift selection (transient-mark-mode and shift-select-mode, both on), mouse wheel and trackpad scrolling, kill ring, undo, M-x with completion, the minibuffer, and `C-h f` / `C-h k` / `C-h b`. TypeScript extensions: `init.ts` defines commands and key bindings, `M-x load-file` reloads it, and `M-:` evaluates an expression.
