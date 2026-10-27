@@ -1,14 +1,12 @@
 //! Draws the editor: one window, the mode line and the echo area.
 
 use ember_core::Editor;
+use ember_core::display::{display_width, render_char};
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Position, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
-use unicode_width::UnicodeWidthChar;
-
-const TAB_WIDTH: usize = 8;
 
 /// Lines of text shown for a terminal of the given height: all but the mode line and echo area.
 pub fn text_height(terminal_height: u16) -> usize {
@@ -84,35 +82,6 @@ fn draw_echo_area(frame: &mut Frame, ed: &Editor, area: Rect) -> Option<Position
     frame.render_widget(Paragraph::new(Line::from(spans)), area);
     let x = display_width(prompt) + display_width(&mb.slice(0..mb.point()));
     Some(Position::new(area.x + x.min(area.width as usize - 1) as u16, area.y))
-}
-
-/// Appends how a character appears on screen and returns its width: tabs
-/// expand to the next tab stop and control characters show as `^X`.
-fn render_char(c: char, col: usize, out: &mut String) -> usize {
-    match c {
-        '\t' => {
-            let n = TAB_WIDTH - col % TAB_WIDTH;
-            out.extend(std::iter::repeat_n(' ', n));
-            n
-        }
-        c if c.is_control() => {
-            out.push('^');
-            out.push(char::from_u32(c as u32 ^ 0x40).unwrap_or('?'));
-            2
-        }
-        c => {
-            out.push(c);
-            c.width().unwrap_or(0)
-        }
-    }
-}
-
-fn display_width(text: &str) -> usize {
-    let mut scratch = String::new();
-    text.chars().fold(0, |col, c| {
-        scratch.clear();
-        col + render_char(c, col, &mut scratch)
-    })
 }
 
 /// The part of a line visible after scrolling `hscroll` columns, at most `width` wide.

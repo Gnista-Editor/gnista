@@ -6,13 +6,12 @@
 //! - `--print-types`: print the TypeScript declarations for the `ember` API
 //!   (after loading `init.ts`, so its commands are included) and exit.
 
-mod config;
 mod ui;
 
 use std::{env, io};
 
 use ember_core::{Editor, Key, KeyCode, expand_file_name};
-use ember_script::{Scripting, type_definitions};
+use ember_script::{config, type_definitions};
 use ratatui::DefaultTerminal;
 use ratatui::crossterm::event::{self, Event, KeyCode as TermKey, KeyEvent, KeyEventKind, KeyModifiers};
 
@@ -27,18 +26,10 @@ fn main() -> io::Result<()> {
     }
 
     let mut editor = Editor::new();
-    let dir = config::config_dir();
-    match Scripting::new(&mut editor) {
-        Ok(scripting) if !no_init => config::load_init(&mut editor, &scripting, &dir),
-        Ok(_) => {}
-        Err(e) => editor.message(format!("Scripting is unavailable: {e}")),
-    }
+    let _scripting = config::setup(&mut editor, !no_init);
     if print_types {
         print!("{}", type_definitions(&editor));
         return Ok(());
-    }
-    if let Err(e) = config::write_type_files(&editor, &dir) {
-        editor.message(format!("Could not write ember.d.ts: {e}"));
     }
     for file in files {
         if let Err(e) = editor.visit_file(&expand_file_name(&file)) {

@@ -7,6 +7,7 @@
 mod buffer;
 mod command;
 mod commands;
+pub mod display;
 mod editor;
 mod error;
 mod files;

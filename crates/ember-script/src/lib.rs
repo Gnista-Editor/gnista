@@ -4,6 +4,7 @@
 //! the `ember` global; [`type_definitions`] generates its TypeScript
 //! declarations from the command registry.
 
+pub mod config;
 mod strip;
 mod types;
 

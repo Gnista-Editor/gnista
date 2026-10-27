@@ -1,0 +1,16 @@
+[package]
+name = "ember-gui"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+eframe = "0.37"
+egui = "0.37"
+ember-core = { version = "0.1.0", path = "../ember-core" }
+ember-script = { version = "0.1.0", path = "../ember-script" }
+fontique = "0.11"
+
+[dev-dependencies]
+egui_kittest = { version = "0.37", features = ["wgpu", "snapshot", "eframe"] }
+tempfile = "3.27.0"

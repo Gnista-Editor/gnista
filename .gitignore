@@ -5,3 +5,8 @@ spikes/*/target/
 # Secrets and personal data never belong in this repository.
 .env
 *.key
+
+# Written by egui_kittest when a snapshot differs; the committed .png is the reference.
+*.new.png
+*.diff.png
+*.old.png

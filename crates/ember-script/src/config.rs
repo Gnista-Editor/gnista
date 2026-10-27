@@ -7,7 +7,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use ember_core::Editor;
-use ember_script::{Scripting, type_definitions};
+use crate::{Scripting, type_definitions};
 
 /// `$EMBER_CONFIG_DIR`, else `$XDG_CONFIG_HOME/ember`, else `~/.config/ember`.
 pub fn config_dir() -> PathBuf {
@@ -18,6 +18,26 @@ pub fn config_dir() -> PathBuf {
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from(env::var_os("HOME").unwrap_or_default()).join(".config"));
     base.join("ember")
+}
+
+/// Starts scripting, loads `init.ts` unless `load_init` is false, and writes
+/// the type files. Problems are shown in the echo area; the editor starts anyway.
+pub fn setup(ed: &mut Editor, load_init: bool) -> Option<Scripting> {
+    let dir = config_dir();
+    let scripting = match Scripting::new(ed) {
+        Ok(scripting) => scripting,
+        Err(e) => {
+            ed.message(format!("Scripting is unavailable: {e}"));
+            return None;
+        }
+    };
+    if load_init {
+        self::load_init(ed, &scripting, &dir);
+    }
+    if let Err(e) = write_type_files(ed, &dir) {
+        ed.message(format!("Could not write ember.d.ts: {e}"));
+    }
+    Some(scripting)
 }
 
 /// Loads `init.ts` if there is one. Errors are shown in the echo area, as
