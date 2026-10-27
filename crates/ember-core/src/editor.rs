@@ -99,6 +99,11 @@ impl Editor {
         self.commands.get(name).cloned()
     }
 
+    /// All commands, sorted by name.
+    pub fn commands(&self) -> impl Iterator<Item = &Command> {
+        self.commands.values().map(|c| c.as_ref())
+    }
+
     pub fn command_names(&self) -> impl Iterator<Item = &str> {
         self.commands.keys().map(String::as_str)
     }

@@ -21,6 +21,29 @@ pub enum ParamKind {
 }
 
 impl ParamKind {
+    pub const ALL: [ParamKind; 5] = [
+        ParamKind::String,
+        ParamKind::File,
+        ParamKind::Buffer,
+        ParamKind::Command,
+        ParamKind::Keys,
+    ];
+
+    /// The kind's name in scripts, such as `"file"`.
+    pub fn name(&self) -> &'static str {
+        match self {
+            ParamKind::String => "string",
+            ParamKind::File => "file",
+            ParamKind::Buffer => "buffer",
+            ParamKind::Command => "command",
+            ParamKind::Keys => "keys",
+        }
+    }
+
+    pub fn from_name(name: &str) -> Option<ParamKind> {
+        ParamKind::ALL.into_iter().find(|k| k.name() == name)
+    }
+
     pub fn describe(&self) -> &'static str {
         match self {
             ParamKind::String => "text",
@@ -44,6 +67,16 @@ pub struct Param {
 pub enum Arg {
     Str(String),
     Keys(Vec<Key>),
+}
+
+impl std::fmt::Display for Arg {
+    /// Text as is; key sequences in Emacs notation.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Arg::Str(s) => f.write_str(s),
+            Arg::Keys(k) => f.write_str(&crate::key::format_keys(k)),
+        }
+    }
 }
 
 impl Arg {
@@ -72,6 +105,8 @@ pub struct Command {
     pub doc: String,
     pub params: Vec<Param>,
     pub run: CommandFn,
+    /// Where the command was defined, such as a script file. `None` for built-in commands.
+    pub source: Option<String>,
 }
 
 impl Command {
@@ -85,6 +120,7 @@ impl Command {
             doc: doc.to_string(),
             params: Vec::new(),
             run: Rc::new(run),
+            source: None,
         }
     }
 

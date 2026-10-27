@@ -31,19 +31,24 @@ pub fn expand_file_name(input: &str) -> PathBuf {
     }
 }
 
-/// Writes a directory the way the minibuffer shows it: home as `~`, with a trailing slash.
-pub fn abbreviate_dir(dir: &Path) -> String {
-    let s = match home_dir() {
-        Some(home) if dir.starts_with(&home) => {
-            let rest = dir.strip_prefix(&home).unwrap_or(dir);
+/// Writes a path with the home directory as `~`.
+pub fn abbreviate_path(path: &Path) -> String {
+    match home_dir() {
+        Some(home) if path.starts_with(&home) => {
+            let rest = path.strip_prefix(&home).unwrap_or(path);
             if rest.as_os_str().is_empty() {
                 "~".to_string()
             } else {
                 format!("~/{}", rest.display())
             }
         }
-        _ => dir.display().to_string(),
-    };
+        _ => path.display().to_string(),
+    }
+}
+
+/// Writes a directory the way the minibuffer shows it: home as `~`, with a trailing slash.
+pub fn abbreviate_dir(dir: &Path) -> String {
+    let s = abbreviate_path(dir);
     if s.ends_with('/') { s } else { s + "/" }
 }
 

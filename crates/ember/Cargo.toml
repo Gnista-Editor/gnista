@@ -6,5 +6,9 @@ license.workspace = true
 
 [dependencies]
 ember-core = { version = "0.1.0", path = "../ember-core" }
+ember-script = { version = "0.1.0", path = "../ember-script" }
 ratatui = "0.30"
 unicode-width = "0.2"
+
+[dev-dependencies]
+tempfile = "3.27.0"

@@ -17,6 +17,6 @@ pub use buffer::Buffer;
 pub use command::{Arg, Command, Param, ParamKind};
 pub use editor::Editor;
 pub use error::{Error, Result};
-pub use files::{abbreviate_dir, expand_file_name};
+pub use files::{abbreviate_dir, abbreviate_path, expand_file_name};
 pub use key::{Key, KeyCode, format_keys};
 pub use keymap::{Keymap, Lookup};

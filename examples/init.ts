@@ -1,0 +1,49 @@
+// An example init.ts. Copy it to ~/.config/ember/init.ts (or $EMBER_CONFIG_DIR).
+//
+// Ember loads this file at startup. After editing it, run M-x load-file to
+// reload it into the running editor. Ember writes ember.d.ts and tsconfig.json
+// next to it, so `tsc -p ~/.config/ember` checks it against the real commands.
+//
+// C-c followed by a letter is reserved for your own bindings, as in Emacs.
+
+const insertDate = ember.defineCommand({
+  name: "insert-date",
+  doc: "Insert today's date, such as 2026-10-27.",
+  run: () => {
+    ember.insert(new Date().toISOString().slice(0, 10));
+  },
+});
+ember.bindKey("C-c d", insertDate);
+
+const surroundRegion = ember.defineCommand({
+  name: "surround-region",
+  doc: "Put text before and after the region.\n\nWith no region, inserts both at point.",
+  params: [
+    { name: "before", prompt: "Before: " },
+    { name: "after", prompt: "After (empty for the same): " },
+  ],
+  run: (before, after) => {
+    const point = ember.point();
+    const mark = ember.mark() ?? point;
+    const [start, end] = [Math.min(point, mark), Math.max(point, mark)];
+    ember.gotoChar(end);
+    ember.insert(after === "" ? before : after);
+    ember.gotoChar(start);
+    ember.insert(before);
+  },
+});
+ember.bindKey("C-c s", surroundRegion);
+
+// Built-in commands are checked too: a misspelt name or a missing argument is
+// a type error.
+ember.bindKey("C-c f", "find-file");
+
+const countWords = ember.defineCommand({
+  name: "count-words",
+  doc: "Show how many words the buffer has.",
+  run: () => {
+    const words = ember.bufferText().split(/\s+/).filter((w) => w !== "");
+    ember.message(`${ember.bufferName()} has ${words.length} words`);
+  },
+});
+ember.bindKey("C-c w", countWords);

@@ -530,6 +530,9 @@ fn describe(ed: &Editor, name: &str) -> Result<String> {
     }
     text += &command.doc;
     text.push('\n');
+    if let Some(source) = &command.source {
+        text += &format!("\nDefined in {source}.\n");
+    }
     Ok(text)
 }
 
