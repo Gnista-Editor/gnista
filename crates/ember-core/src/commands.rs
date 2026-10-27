@@ -8,6 +8,7 @@ use crate::files::expand_file_name;
 use crate::key::{KeyCode, format_keys};
 use crate::keymap::Lookup;
 use crate::prefix::PrefixArg;
+use crate::variables::Value;
 
 /// Commands whose kills join onto the previous kill when run back to back.
 pub(crate) const KILL_COMMANDS: &[&str] =
@@ -395,6 +396,14 @@ fn editing(ed: &mut Editor) {
         if n < 0 {
             return Err(Error::new(format!("Negative repetition argument {n}")));
         }
+        // In overwrite mode each character replaces the one after point,
+        // except at the end of a line, as in Emacs.
+        if ed.variable("overwrite-mode").is_some_and(|v| v.is_true()) {
+            let b = ed.buffer_mut();
+            let p = b.point();
+            let line_end = b.line_end(b.line_of(p));
+            b.delete(p..(p + n as usize).min(line_end))?;
+        }
         ed.buffer_mut().insert(&c.to_string().repeat(n as usize))
     });
     ed.define_command(
@@ -414,9 +423,26 @@ fn editing(ed: &mut Editor) {
     def(
         ed,
         "delete-backward-char",
-        "Delete the character before point, or as many as the prefix argument says.\n\nWith a prefix argument, the characters are killed rather than deleted, so they can be yanked back.",
-        |ed, _| delete_chars(ed, -ed.prefix_numeric()),
+        "Delete the character before point, or as many as the prefix argument says.\n\nWith a prefix argument, the characters are killed rather than deleted, so they can be yanked back. If the region is active, delete it instead, as the variable delete-active-region says.",
+        |ed, _| {
+            if delete_active_region(ed)? {
+                return Ok(());
+            }
+            delete_chars(ed, -ed.prefix_numeric())
+        },
     );
+    def(
+        ed,
+        "delete-forward-char",
+        "Delete the character after point, or as many as the prefix argument says.\n\nWith a prefix argument, the characters are killed rather than deleted. If the region is active, delete it instead, as the variable delete-active-region says.",
+        |ed, _| {
+            if delete_active_region(ed)? {
+                return Ok(());
+            }
+            delete_chars(ed, ed.prefix_numeric())
+        },
+    );
+    def(ed, "ignore", "Do nothing. A pre-command-hook function can make a command this one, to cancel it.", |_, _| Ok(()));
     def(
         ed,
         "delete-char",
@@ -599,6 +625,23 @@ fn delete_chars(ed: &mut Editor, n: i64) -> Result<()> {
     Ok(())
 }
 
+/// Deletes the active region for DEL and <delete>, as Emacs does when
+/// `delete-active-region` is on and there is no count other than 1. Kills it
+/// instead if the variable is "kill". Returns whether it did.
+fn delete_active_region(ed: &mut Editor) -> Result<bool> {
+    let setting = ed.variable("delete-active-region").unwrap_or(Value::Null);
+    let region = ed.buffer().active_region().filter(|r| !r.is_empty());
+    let (Some(region), true) = (region, setting.is_true() && ed.prefix_numeric() == 1) else {
+        return Ok(false);
+    };
+    let deleted = ed.buffer_mut().delete(region)?;
+    if setting.as_str() == Some("kill") {
+        ed.kill(deleted, false);
+        ed.set_this_command("kill-region");
+    }
+    Ok(true)
+}
+
 /// Kills `n` words after point, or before it if negative.
 fn kill_words(ed: &mut Editor, n: i64) -> Result<()> {
     let b = ed.buffer_mut();
@@ -635,10 +678,12 @@ fn files_and_buffers(ed: &mut Editor) {
             ed.message("(No changes need to be saved)");
             return Ok(());
         }
+        ed.run_hooks("before-save-hook")?;
+        let b = ed.window_buffer_mut();
         b.save()?;
         let path = b.path.as_ref().expect("checked above").display().to_string();
         ed.message(format!("Wrote {path}"));
-        Ok(())
+        ed.run_hooks("after-save-hook")
     });
     ed.define_command(
         Command::new("write-file", "Write the current buffer to a file and visit that file.", |ed, args| {
@@ -651,9 +696,10 @@ fn files_and_buffers(ed: &mut Editor) {
             let b = ed.window_buffer_mut();
             b.path = Some(path.clone());
             b.name = name;
-            b.save()?;
+            ed.run_hooks("before-save-hook")?;
+            ed.window_buffer_mut().save()?;
             ed.message(format!("Wrote {}", path.display()));
-            Ok(())
+            ed.run_hooks("after-save-hook")
         })
         .param("file", ParamKind::File, "Write file: "),
     );
@@ -788,8 +834,8 @@ fn help(ed: &mut Editor) {
             let keys = args[0].as_keys()?;
             // Fall back to the key without Shift, as typing it would.
             let unshifted: Vec<_> = keys.iter().map(|k| k.unshifted()).collect();
-            let found = match ed.global_map.lookup(keys) {
-                Lookup::Unbound => ed.global_map.lookup(&unshifted),
+            let found = match ed.lookup(keys) {
+                Lookup::Unbound => ed.lookup(&unshifted),
                 found => found,
             };
             let name = match found {
@@ -820,7 +866,7 @@ fn describe(ed: &Editor, name: &str) -> Result<String> {
         .command(name)
         .ok_or_else(|| Error::new(format!("No such command: {name}")))?;
     let mut text = format!("{name} is a command.\n\n");
-    let keys = ed.global_map.keys_for(name);
+    let keys = ed.keys_for(name);
     if keys.is_empty() {
         text += "It is not bound to any keys.\n\n";
     } else {
@@ -874,7 +920,7 @@ fn bind_defaults(ed: &mut Editor) {
         ("TAB", "indent-for-tab-command"),
         ("DEL", "delete-backward-char"),
         ("C-d", "delete-char"),
-        ("<delete>", "delete-char"),
+        ("<delete>", "delete-forward-char"),
         ("C-k", "kill-line"),
         ("M-d", "kill-word"),
         ("M-DEL", "backward-kill-word"),

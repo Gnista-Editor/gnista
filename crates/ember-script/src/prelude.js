@@ -4,6 +4,46 @@
   const native = globalThis.__ember;
   delete globalThis.__ember;
 
+  // Hook ids by function, so a function can be removed by passing it again.
+  const hookIds = new Map();
+  const hookKey = (hook, local) => (local ? `${hook} in ${native.bufferName()}` : hook);
+
+  // Major modes by name, for building a mode on its parent.
+  const majorModes = new Map();
+  const isTrue = (value) => value !== null && value !== undefined && value !== false;
+  // "delete-selection-mode" is called "Delete-Selection mode" in messages, as in Emacs.
+  const prettyName = (name) =>
+    name
+      .replace(/-mode$/, "")
+      .split("-")
+      .map((word) => (word ? word[0].toUpperCase() + word.slice(1) : word))
+      .join("-");
+
+  function bindAll(keymap, bindings) {
+    for (const [keys, command] of Object.entries(bindings ?? {})) {
+      native.bindKey(String(keys), String(command), keymap);
+    }
+  }
+
+  // Turns on a major mode, as Emacs's define-derived-mode does: clear the
+  // buffer's own variables, set up each mode from the root down, then run
+  // their hooks, parent's first.
+  function enterMajorMode(name) {
+    const chain = [];
+    for (let mode = majorModes.get(name); mode; mode = mode.parent === null ? undefined : majorModes.get(mode.parent)) {
+      chain.unshift(mode);
+    }
+    native.killAllLocalVariables();
+    for (const mode of chain) {
+      native.setVariable("major-mode", mode.name);
+      native.setVariable("mode-name", mode.modeName);
+      native.useLocalMap(mode.keymap);
+      if (mode.setup) mode.setup();
+    }
+    for (const mode of chain) native.runHooks(`${mode.name}-hook`);
+    native.runHooks("after-change-major-mode-hook");
+  }
+
   globalThis.ember = Object.freeze({
     defineCommand(definition) {
       if (typeof definition !== "object" || definition === null) {
@@ -28,7 +68,7 @@
       );
       return name;
     },
-    bindKey: (keys, command) => native.bindKey(String(keys), String(command)),
+    bindKey: (keys, command, keymap = "global-map") => native.bindKey(String(keys), String(command), String(keymap)),
     call: (name, ...args) => native.call(String(name), ...args.map(String)),
     message: (text) => native.message(String(text)),
     insert: (text) => native.insert(String(text)),
@@ -57,6 +97,100 @@
     callLastKbdMacro: (count = 1) => native.callLastKbdMacro(count),
     definingKbdMacro: () => native.definingKbdMacro(),
     executingKbdMacro: () => native.executingKbdMacro(),
+    defineVariable({ name, doc = "", value = null, local = false }) {
+      native.defineVariable(String(name), String(doc), value, Boolean(local));
+    },
+    variable: (name) => native.variable(String(name)),
+    setVariable: (name, value) => native.setVariable(String(name), value ?? null),
+    defaultValue: (name) => native.defaultValue(String(name)),
+    setDefault: (name, value) => native.setDefault(String(name), value ?? null),
+    makeLocalVariable: (name) => native.makeLocalVariable(String(name)),
+    killLocalVariable: (name) => native.killLocalVariable(String(name)),
+    isLocalVariable: (name) => native.isLocalVariable(String(name)),
+    variableDocumentation: (name) => native.variableDocumentation(String(name)),
+    variableSource: (name) => native.variableSource(String(name)),
+    isHook: (name) => native.isHook(String(name)),
+    killAllLocalVariables: () => native.killAllLocalVariables(),
+    defineHook: (name, doc = "") => native.defineHook(String(name), String(doc)),
+    addHook(hook, run, { local = false } = {}) {
+      if (typeof run !== "function") throw new TypeError("addHook takes a function");
+      const key = hookKey(String(hook), local);
+      const ids = hookIds.get(run) ?? new Map();
+      // As in Emacs, a function already on the hook is not added again.
+      if (ids.has(key)) return;
+      ids.set(key, native.addHook(String(hook), run.name || "anonymous function", run, Boolean(local)));
+      hookIds.set(run, ids);
+    },
+    removeHook(hook, run, { local = false } = {}) {
+      const ids = hookIds.get(run);
+      const key = hookKey(String(hook), local);
+      if (ids?.has(key)) {
+        native.removeHook(String(hook), ids.get(key), Boolean(local));
+        ids.delete(key);
+      }
+    },
+    runHooks: (hook) => native.runHooks(String(hook)),
+    defineKeymap: (name, parent = null) => native.defineKeymap(String(name), parent === null ? null : String(parent)),
+    useLocalMap: (name) => native.useLocalMap(name ?? undefined),
+    enabledMinorModes: () => native.enabledMinorModes(),
+    documentation: (name) => native.documentation(String(name)),
+    commandSource: (name) => native.commandSource(String(name)),
+    showHelp: (text) => native.showHelp(String(text)),
+    bufferFileName: () => native.bufferFileName(),
+    commandExists: (name) => native.commandExists(String(name)),
+    thisCommand: () => native.thisCommand(),
+    calledInteractively: () => native.calledInteractively(),
+    regionActive: () => native.regionActive(),
+
+    defineMajorMode({ name, modeName, parent = null, doc = "", bindings, setup }) {
+      if (parent !== null && !majorModes.has(parent)) {
+        throw new TypeError(`Major mode ${name} is built on ${parent}, which is not a major mode`);
+      }
+      const keymap = `${name}-map`;
+      native.defineKeymap(keymap, parent === null ? null : `${parent}-map`);
+      bindAll(keymap, bindings);
+      native.defineHook(`${name}-hook`, `Run after entering ${modeName} mode, after the hooks of the modes it is built on.`);
+      majorModes.set(name, { name, parent, modeName: String(modeName), keymap, setup });
+      return ember.defineCommand({ name, doc, run: () => enterMajorMode(name) });
+    },
+
+    defineMinorMode({ name, lighter = "", doc = "", global = false, bindings, onChange }) {
+      const pretty = prettyName(name);
+      const keymap = `${name}-map`;
+      native.defineVariable(
+        name,
+        `Whether ${pretty} mode is on${global ? "" : " in this buffer"}. Use the command ${name} to change it.`,
+        false,
+        !global,
+      );
+      native.defineKeymap(keymap, null);
+      bindAll(keymap, bindings);
+      native.defineHook(`${name}-hook`, `Run after ${pretty} mode is turned on or off.`);
+      native.defineHook(`${name}-on-hook`, `Run after ${pretty} mode is turned on.`);
+      native.defineHook(`${name}-off-hook`, `Run after ${pretty} mode is turned off.`);
+      native.registerMinorMode(name, String(lighter), keymap, Boolean(global));
+      return ember.defineCommand({
+        name,
+        doc:
+          `${doc}\n\nRun from a key or M-x, it turns the mode on if it is off and off if it is on. ` +
+          "A positive prefix argument turns it on and zero or a negative one turns it off. " +
+          "Called from code without an argument, it turns the mode on.",
+        run: () => {
+          const arg = native.prefixArg();
+          const interactive = native.calledInteractively();
+          const enable =
+            arg === null ? (interactive ? !isTrue(native.variable(name)) : true) : ember.prefixNumericValue(arg) > 0;
+          native.setVariable(name, enable);
+          if (onChange) onChange(enable);
+          native.runHooks(`${name}-hook`);
+          native.runHooks(`${name}-${enable ? "on" : "off"}-hook`);
+          if (interactive) {
+            native.message(`${pretty} mode ${enable ? "enabled" : "disabled"}${global ? "" : " in current buffer"}`);
+          }
+        },
+      });
+    },
+
     setTransientMap: (bindings) =>
       native.setTransientMap(
         Object.fromEntries(Object.entries(bindings).map(([keys, command]) => [String(keys), String(command)])),

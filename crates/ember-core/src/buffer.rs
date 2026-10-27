@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fs;
 use std::io::{self, BufReader, BufWriter, Write};
 use std::ops::Range;
@@ -6,6 +7,7 @@ use std::path::{Path, PathBuf};
 use ropey::Rope;
 
 use crate::error::{Error, Result};
+use crate::variables::{HookEntry, Value};
 
 /// One change to the text, recorded so it can be undone.
 #[derive(Clone, Debug)]
@@ -69,6 +71,11 @@ pub struct Buffer {
     /// Where a run of consecutive undos continues: the group to undo next,
     /// or `None` once the history is used up.
     pending_undo: Option<usize>,
+    /// The buffer's own values of variables, as Emacs's buffer-local variables.
+    pub(crate) locals: BTreeMap<String, Value>,
+    pub(crate) local_hooks: BTreeMap<String, Vec<HookEntry>>,
+    /// The major mode's keymap.
+    pub(crate) local_map: Option<String>,
 }
 
 impl Buffer {
@@ -91,6 +98,9 @@ impl Buffer {
             open_group: Vec::new(),
             open_unmodified_at: None,
             pending_undo: None,
+            locals: BTreeMap::new(),
+            local_hooks: BTreeMap::new(),
+            local_map: None,
         }
     }
 

@@ -11,6 +11,8 @@ use crate::error::{Error, Result};
 use crate::files::{abbreviate_dir, expand_file_name};
 use crate::key::{Key, KeyCode, format_keys};
 use crate::keymap::{Keymap, Lookup};
+use crate::modes::{MinorMode, NamedKeymap};
+use crate::variables::{self, HookEntry, Variable};
 use crate::prefix::{PrefixArg, prefix_numeric_value};
 
 /// A minibuffer prompt waiting for the user to type an argument.
@@ -67,6 +69,17 @@ pub struct Editor {
     pub minibuffer_map: Keymap,
     /// Bindings for the next key sequence only, ahead of every other keymap.
     transient_map: Option<Keymap>,
+    /// Keymaps with names, such as a major mode's, that buffers and modes use.
+    pub(crate) keymaps: BTreeMap<String, NamedKeymap>,
+    /// Most recently registered first, which is the order keys are looked up in.
+    pub(crate) minor_modes: Vec<MinorMode>,
+    pub(crate) variables: BTreeMap<String, Variable>,
+    /// Global hook functions by hook name.
+    pub(crate) hooks: BTreeMap<String, Vec<HookEntry>>,
+    pub(crate) next_hook_id: u64,
+    /// Whether the running command was started by keys or M-x rather than
+    /// called from code (Emacs's `called-interactively-p`).
+    interactive: bool,
     /// The prefix argument for the next command, as prefix commands leave it
     /// (Emacs's `prefix-arg`).
     prefix_arg: Option<PrefixArg>,
@@ -128,6 +141,12 @@ impl Editor {
             global_map: Keymap::default(),
             minibuffer_map: Keymap::default(),
             transient_map: None,
+            keymaps: BTreeMap::new(),
+            minor_modes: Vec::new(),
+            variables: BTreeMap::new(),
+            hooks: BTreeMap::new(),
+            next_hook_id: 0,
+            interactive: false,
             prefix_arg: None,
             current_prefix_arg: None,
             message: None,
@@ -149,6 +168,7 @@ impl Editor {
             viewport_height: 24,
             quit: false,
         };
+        variables::install(&mut editor);
         commands::install(&mut editor);
         editor
     }
@@ -199,9 +219,27 @@ impl Editor {
         }
         self.buffer_mut().undo_boundary();
         let saved = std::mem::replace(&mut self.current_prefix_arg, prefix);
-        let result = self.invoke(command, args);
+        let interactive = std::mem::replace(&mut self.interactive, false);
+        // Unlike a command that keys run, a call from code does not become
+        // this-command or last-command, as calling a function from Lisp does not.
+        let this = self.this_command.clone();
+        let result = (command.run)(self, &args);
+        self.deactivate_changed_regions();
+        self.this_command = this;
+        self.interactive = interactive;
         self.current_prefix_arg = saved;
         result
+    }
+
+    /// Whether the running command was started by keys or M-x rather than
+    /// called from code. Commands use it to decide whether to show a message.
+    pub fn called_interactively(&self) -> bool {
+        self.interactive
+    }
+
+    /// The command that is running, or about to run while `pre-command-hook` runs.
+    pub fn this_command(&self) -> Option<&str> {
+        self.this_command.as_deref()
     }
 
     // Prefix arguments
@@ -337,10 +375,12 @@ impl Editor {
     /// and remembers it for `repeat`.
     fn run_command(&mut self, command: Rc<Command>, args: Vec<Arg>, prefix: Option<PrefixArg>) -> Result<()> {
         let saved = std::mem::replace(&mut self.current_prefix_arg, prefix);
+        let interactive = std::mem::replace(&mut self.interactive, true);
         let last = self.last_command.clone();
         let key = self.last_key;
         let count = self.repeatable_count;
         let result = self.invoke(command.clone(), args.clone());
+        self.interactive = interactive;
         self.current_prefix_arg = saved;
         if self.prefix_arg.is_some() {
             // A prefix command leaves an argument for the next command and stays
@@ -446,13 +486,34 @@ impl Editor {
         if let Some(name) = self.this_command.take() {
             self.last_command = Some(name);
         }
-        // Editing deactivates the region, as in Emacs's transient-mark-mode.
+        self.deactivate_changed_regions();
+        result
+    }
+
+    /// Editing deactivates the region, as in Emacs's transient-mark-mode.
+    fn deactivate_changed_regions(&mut self) {
         for b in self.buffers.iter_mut().chain(std::iter::once(&mut self.minibuffer)) {
             if b.take_changed() {
                 b.deactivate_mark();
             }
         }
-        result
+    }
+
+    /// Runs a command for a key, as Emacs's command loop does: first
+    /// `pre-command-hook`, which can change this-command, and that command
+    /// runs instead; then `post-command-hook`.
+    fn command_loop_run(&mut self, name: &str) {
+        self.this_command = Some(name.to_string());
+        if let Err(e) = self.run_hooks("pre-command-hook") {
+            self.message = Some(format!("Error in pre-command-hook: {e}"));
+        }
+        let name = self.this_command.take().unwrap_or_else(|| name.to_string());
+        self.run_interactive(&name);
+        self.this_command = self.last_command.clone();
+        if let Err(e) = self.run_hooks("post-command-hook") {
+            self.message = Some(format!("Error in post-command-hook: {e}"));
+        }
+        self.this_command = None;
     }
 
     // Keys
@@ -507,7 +568,7 @@ impl Editor {
                 self.pending_keys.clear();
                 self.transient_map = None;
                 self.last_key = Some(key);
-                self.run_interactive(&name);
+                self.command_loop_run(&name);
             }
             // Shift translation, as in Emacs: a shifted key with no binding of
             // its own acts as the key without Shift, so S-<right> runs
@@ -523,7 +584,7 @@ impl Editor {
                 let keys = std::mem::take(&mut self.pending_keys);
                 if keys.len() == 1 && key.printable().is_some() {
                     self.last_key = Some(key);
-                    self.run_interactive("self-insert-command");
+                    self.command_loop_run("self-insert-command");
                 } else {
                     self.message = Some(format!("{} is undefined", format_keys(&keys)));
                 }
@@ -531,8 +592,10 @@ impl Editor {
         }
     }
 
-    /// Looks a key sequence up in the active keymaps: a transient map first,
-    /// then the minibuffer's while it is active, then the global map.
+    /// Looks a key sequence up in the active keymaps, in Emacs's order: a
+    /// transient map, the minibuffer's map while it is active, the maps of
+    /// minor modes that are on, the major mode's map, and the global map.
+    /// The first that binds the keys wins.
     pub fn lookup(&self, keys: &[Key]) -> Lookup {
         if let Some(map) = &self.transient_map {
             match map.lookup(keys) {
@@ -542,6 +605,12 @@ impl Editor {
         }
         if self.prompt.is_some() {
             match self.minibuffer_map.lookup(keys) {
+                Lookup::Unbound => {}
+                found => return found,
+            }
+        }
+        for map in self.mode_keymaps() {
+            match self.lookup_in(&map, keys) {
                 Lookup::Unbound => {}
                 found => return found,
             }
@@ -685,6 +754,15 @@ impl Editor {
         if is_new {
             self.message = Some("(New file)".into());
         }
+        // As Emacs's after-find-file does: choose the major mode, then run the hook.
+        if self.command("normal-mode").is_some()
+            && let Err(e) = self.call("normal-mode", Vec::new())
+        {
+            self.message = Some(format!("File mode specification error: {e}"));
+        }
+        if let Err(e) = self.run_hooks("find-file-hook") {
+            self.message = Some(format!("Error in find-file-hook: {e}"));
+        }
         Ok(())
     }
 
@@ -708,6 +786,9 @@ impl Editor {
         });
         self.buffers[index].set_text(text);
         self.select(index);
+        if self.command("help-mode").is_some() {
+            let _ = self.call("help-mode", Vec::new());
+        }
     }
 
     /// Where relative file names are looked up: the directory of the current
@@ -798,6 +879,12 @@ impl Editor {
                 .filter(|name| name.starts_with(input))
                 .collect(),
             ParamKind::File => file_completions(input),
+            ParamKind::Variable => self
+                .variables
+                .keys()
+                .filter(|name| name.starts_with(input))
+                .cloned()
+                .collect(),
             ParamKind::String | ParamKind::Keys => Vec::new(),
         }
     }

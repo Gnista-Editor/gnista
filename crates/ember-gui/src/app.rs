@@ -54,7 +54,7 @@ impl EmberApp {
     pub fn show(&mut self, ui: &mut Ui) {
         let ctx = ui.ctx().clone();
         self.handle_close(&ctx);
-        let layout = Layout::new(ui);
+        let layout = Layout::new(ui, self.editor.tab_width());
         self.editor.set_viewport_height(layout.rows());
         let events = ctx.input(|i| i.events.clone());
         for input in translate(&events, self.mac) {
@@ -146,6 +146,8 @@ struct Metrics {
     font: FontId,
     line_height: f32,
     char_width: f32,
+    /// The window buffer's tab-width.
+    tab_width: usize,
 }
 
 /// Where the parts of the window go this frame.
@@ -158,7 +160,7 @@ struct Layout {
 }
 
 impl Layout {
-    fn new(ui: &Ui) -> Layout {
+    fn new(ui: &Ui, tab_width: usize) -> Layout {
         let rect = ui.max_rect();
         let font = FontId::new(TEXT_SIZE, FontFamily::Monospace);
         let em = ui.painter().layout_no_wrap("M".to_string(), font.clone(), Color32::PLACEHOLDER);
@@ -166,6 +168,7 @@ impl Layout {
             line_height: (em.size().y * LINE_SPACING).round(),
             char_width: em.size().x,
             font,
+            tab_width,
         };
         let bar_height = m.line_height + 2.0 * BAR_PAD;
         let echo_rect = Rect::from_min_max(pos2(rect.left(), rect.bottom() - bar_height), rect.max);
@@ -213,14 +216,14 @@ struct View {
 }
 
 fn layout_line(painter: &Painter, text: &str, m: &Metrics, color: Color32) -> Arc<Galley> {
-    painter.layout_no_wrap(expand(text), m.font.clone(), color)
+    painter.layout_no_wrap(expand(text, m.tab_width), m.font.clone(), color)
 }
 
 fn draw_buffer(painter: &Painter, b: &Buffer, view: &View, m: &Metrics, t: Tokens, cursor: CursorStyle) {
     let area = view.area;
     let point_line = b.line_of(b.point());
     let point_text = b.line_text(point_line);
-    let point_index = expanded_len(&point_text, b.column(b.point()));
+    let point_index = expanded_len(&point_text, b.column(b.point()), m.tab_width);
     let point_galley = layout_line(painter, &point_text, m, t.ink);
     let cursor_x = point_galley.pos_from_cursor(CCursor::new(point_index)).min.x;
     // Scroll horizontally, as Emacs does, when point would be off the right edge.
@@ -246,8 +249,8 @@ fn draw_buffer(painter: &Painter, b: &Buffer, view: &View, m: &Metrics, t: Token
             let (start, end) = (b.line_start(line), b.line_end(line));
             // The part of the region on this line, and whether it runs on past the newline.
             if region.start <= end && region.end > start {
-                let from = expanded_len(&text, region.start.max(start) - start);
-                let to = expanded_len(&text, region.end.min(end) - start);
+                let from = expanded_len(&text, region.start.max(start) - start, m.tab_width);
+                let to = expanded_len(&text, region.end.min(end) - start, m.tab_width);
                 let x0 = galley.pos_from_cursor(CCursor::new(from)).min.x;
                 let mut x1 = galley.pos_from_cursor(CCursor::new(to)).min.x;
                 if region.end > end {
@@ -265,7 +268,7 @@ fn draw_buffer(painter: &Painter, b: &Buffer, view: &View, m: &Metrics, t: Token
     if point_line >= b.top_line && point_line <= b.top_line + view.rows {
         let x = area.left() - hscroll + cursor_x;
         let y = row_top(point_line - b.top_line);
-        let under = expand(&point_text).chars().nth(point_index);
+        let under = expand(&point_text, m.tab_width).chars().nth(point_index);
         draw_cursor(&clipped, &point_galley, point_index, under, pos2(x, y), m, t, cursor);
     }
 }
@@ -327,7 +330,8 @@ fn draw_mode_line(painter: &Painter, ed: &Editor, rect: Rect, m: &Metrics, t: To
     job.append(&b.name, gap, text_format(m, t.ink_strong));
     let position = format!("L{} C{}", b.line_of(b.point()) + 1, b.column(b.point()));
     job.append(&position, gap, text_format(m, t.muted));
-    job.append("Fundamental", gap, text_format(m, t.faint));
+    let modes = format!("{}{}", ed.mode_name(), ed.mode_lighters().concat());
+    job.append(&modes, gap, text_format(m, t.faint));
     // Emacs shows "Def" in the mode line while a keyboard macro is being defined.
     if ed.defining_kbd_macro() {
         job.append("Def", m.char_width, text_format(m, t.accent_ink));

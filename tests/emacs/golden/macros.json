@@ -8,6 +8,7 @@
         "text": "",
         "point": 0,
         "keys": "<f3> a b <f4> <f4>",
+        "modes": [],
         "platform": null
       },
       "text": "abab",
@@ -24,6 +25,7 @@
         "text": "",
         "point": 0,
         "keys": "C-x ( x y C-x ) C-x e",
+        "modes": [],
         "platform": null
       },
       "text": "xyxy",
@@ -40,6 +42,7 @@
         "text": "",
         "point": 0,
         "keys": "<f3> z <f4> C-u 3 <f4>",
+        "modes": [],
         "platform": null
       },
       "text": "zzzz",
@@ -56,6 +59,7 @@
         "text": "",
         "point": 0,
         "keys": "<f3> <f3> SPC <f4> <f4> <f4>",
+        "modes": [],
         "platform": null
       },
       "text": "0 1 2 ",
@@ -72,6 +76,7 @@
         "text": "",
         "point": 0,
         "keys": "C-u 5 <f3> <f3> SPC <f4> <f4>",
+        "modes": [],
         "platform": null
       },
       "text": "5 6 ",
@@ -88,6 +93,7 @@
         "text": "a\nb\nc",
         "point": 0,
         "keys": "<f3> C-n x <f4> <f4> <f4> <f4>",
+        "modes": [],
         "platform": null
       },
       "text": "a\nxb\ncx",
@@ -104,6 +110,7 @@
         "text": "a\nb\nc\nd",
         "point": 0,
         "keys": "<f3> C-n C-a - <f4> C-u 0 <f4>",
+        "modes": [],
         "platform": null
       },
       "text": "a\n-b\n-c\n-d",
@@ -120,6 +127,7 @@
         "text": "",
         "point": 0,
         "keys": "<f3> C-u 2 x <f4> <f4>",
+        "modes": [],
         "platform": null
       },
       "text": "xxxx",
@@ -136,6 +144,7 @@
         "text": "one\ntwo\nthree",
         "point": 0,
         "keys": "<f3> C-k C-k C-y C-y <f4> <f4>",
+        "modes": [],
         "platform": null
       },
       "text": "one\none\ntwo\ntwo\nthree",
@@ -155,6 +164,7 @@
         "text": "",
         "point": 0,
         "keys": "<f4>",
+        "modes": [],
         "platform": null
       },
       "text": "",
@@ -171,6 +181,7 @@
         "text": "",
         "point": 0,
         "keys": "C-x )",
+        "modes": [],
         "platform": null
       },
       "text": "",
@@ -187,6 +198,7 @@
         "text": "",
         "point": 0,
         "keys": "C-x ( C-x ( a C-x )",
+        "modes": [],
         "platform": null
       },
       "text": "a",

@@ -18,15 +18,18 @@ pub enum ParamKind {
     Command,
     /// A key sequence, read key by key rather than typed as text.
     Keys,
+    /// A variable name, completed from the defined variables.
+    Variable,
 }
 
 impl ParamKind {
-    pub const ALL: [ParamKind; 5] = [
+    pub const ALL: [ParamKind; 6] = [
         ParamKind::String,
         ParamKind::File,
         ParamKind::Buffer,
         ParamKind::Command,
         ParamKind::Keys,
+        ParamKind::Variable,
     ];
 
     /// The kind's name in scripts, such as `"file"`.
@@ -37,6 +40,7 @@ impl ParamKind {
             ParamKind::Buffer => "buffer",
             ParamKind::Command => "command",
             ParamKind::Keys => "keys",
+            ParamKind::Variable => "variable",
         }
     }
 
@@ -51,6 +55,7 @@ impl ParamKind {
             ParamKind::Buffer => "buffer name",
             ParamKind::Command => "command name",
             ParamKind::Keys => "key sequence",
+            ParamKind::Variable => "variable name",
         }
     }
 }

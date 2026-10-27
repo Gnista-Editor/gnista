@@ -8,6 +8,7 @@
         "text": "one\ntwo",
         "point": 0,
         "keys": "C-k",
+        "modes": [],
         "platform": null
       },
       "text": "\ntwo",
@@ -26,6 +27,7 @@
         "text": "one\ntwo",
         "point": 0,
         "keys": "C-k C-k",
+        "modes": [],
         "platform": null
       },
       "text": "two",
@@ -44,6 +46,7 @@
         "text": "one\ntwo\nthree",
         "point": 0,
         "keys": "C-k C-k C-k",
+        "modes": [],
         "platform": null
       },
       "text": "\nthree",
@@ -62,6 +65,7 @@
         "text": "one   \ntwo",
         "point": 3,
         "keys": "C-k",
+        "modes": [],
         "platform": null
       },
       "text": "onetwo",
@@ -80,6 +84,7 @@
         "text": "abc",
         "point": 3,
         "keys": "C-k",
+        "modes": [],
         "platform": null
       },
       "text": "abc",
@@ -96,6 +101,7 @@
         "text": "alpha beta gamma",
         "point": 0,
         "keys": "M-f C-SPC M-f C-w",
+        "modes": [],
         "platform": null
       },
       "text": "alpha gamma",
@@ -114,6 +120,7 @@
         "text": "abc",
         "point": 0,
         "keys": "C-w",
+        "modes": [],
         "platform": null
       },
       "text": "abc",
@@ -130,6 +137,7 @@
         "text": "alpha beta",
         "point": 0,
         "keys": "C-SPC M-f M-w",
+        "modes": [],
         "platform": null
       },
       "text": "alpha beta",
@@ -148,6 +156,7 @@
         "text": "one\ntwo",
         "point": 0,
         "keys": "C-k C-k C-y C-y",
+        "modes": [],
         "platform": null
       },
       "text": "one\none\ntwo",
@@ -166,6 +175,7 @@
         "text": "abc",
         "point": 0,
         "keys": "C-y",
+        "modes": [],
         "platform": null
       },
       "text": "abc",
@@ -182,6 +192,7 @@
         "text": "alpha beta gamma",
         "point": 0,
         "keys": "M-d M-d",
+        "modes": [],
         "platform": null
       },
       "text": " gamma",
@@ -200,6 +211,7 @@
         "text": "alpha beta gamma",
         "point": 16,
         "keys": "M-DEL M-DEL",
+        "modes": [],
         "platform": null
       },
       "text": "alpha ",
@@ -218,6 +230,7 @@
         "text": "one two three",
         "point": 4,
         "keys": "M-d M-DEL",
+        "modes": [],
         "platform": null
       },
       "text": " three",
@@ -236,6 +249,7 @@
         "text": "a\nb",
         "point": 0,
         "keys": "C-k C-n C-k",
+        "modes": [],
         "platform": null
       },
       "text": "\n",
@@ -255,6 +269,7 @@
         "text": "a\nb",
         "point": 0,
         "keys": "C-k C-n C-k C-y M-y",
+        "modes": [],
         "platform": null
       },
       "text": "\na",
@@ -274,6 +289,7 @@
         "text": "hello world",
         "point": 0,
         "keys": "M-S-f C-w C-e C-y",
+        "modes": [],
         "platform": null
       },
       "text": " worldhello",
@@ -292,6 +308,7 @@
         "text": "a\nb\nc",
         "point": 0,
         "keys": "M-d C-n M-d C-n M-d C-y M-y M-y",
+        "modes": [],
         "platform": null
       },
       "text": "\n\na",
@@ -312,6 +329,7 @@
         "text": "a\nb",
         "point": 0,
         "keys": "M-d C-n M-d C-y M-y M-y",
+        "modes": [],
         "platform": null
       },
       "text": "\nb",
@@ -331,6 +349,7 @@
         "text": "a\nb\nc",
         "point": 0,
         "keys": "M-d C-n M-d C-n M-d C-y M-2 M-y",
+        "modes": [],
         "platform": null
       },
       "text": "\n\na",
@@ -351,6 +370,7 @@
         "text": "a\nb\nc",
         "point": 0,
         "keys": "M-d C-n M-d C-n M-d C-y M-y M-- M-y",
+        "modes": [],
         "platform": null
       },
       "text": "\n\nc",
@@ -371,6 +391,7 @@
         "text": "a\nb",
         "point": 0,
         "keys": "M-d C-n M-d C-u C-y M-y",
+        "modes": [],
         "platform": null
       },
       "text": "\na",
@@ -390,6 +411,7 @@
         "text": "abc",
         "point": 0,
         "keys": "M-y",
+        "modes": [],
         "platform": null
       },
       "text": "abc",
@@ -406,6 +428,7 @@
         "text": "a\nb",
         "point": 0,
         "keys": "M-d C-n M-d C-y M-y RET C-y",
+        "modes": [],
         "platform": null
       },
       "text": "\na\na",

@@ -77,6 +77,7 @@ fn special(key: EguiKey) -> Option<KeyCode> {
         EguiKey::Tab => KeyCode::Tab,
         EguiKey::Backspace => KeyCode::Backspace,
         EguiKey::Delete => KeyCode::Delete,
+        EguiKey::Insert => KeyCode::Insert,
         EguiKey::Escape => KeyCode::Esc,
         EguiKey::ArrowLeft => KeyCode::Left,
         EguiKey::ArrowRight => KeyCode::Right,

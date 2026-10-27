@@ -46,6 +46,8 @@ Done. The oracle (`tests/emacs/`) has 150 cases from these chapters, and 149 mat
 
 Exit: `text-mode` and one minor mode written as TypeScript packages, with tests.
 
+Done ([ADR 0006](adr/0006-variables-hooks-and-modes.md)). `text-mode`, `overwrite-mode` and `delete-selection-mode` are TypeScript packages, and the oracle checks the minor modes against Emacs's own: oracle cases can name modes to turn on first. 163 of 165 cases match. The open gap is `electric-indent-mode`, which re-indents after RET; it needs indentation, which comes with milestone 3's syntax support.
+
 **3. Text properties, faces, windows and the mouse.**
 - Proper markers, text properties and overlays.
 - Faces as named styles, with themes built on the existing tokens.

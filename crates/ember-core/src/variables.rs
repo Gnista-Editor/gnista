@@ -1,0 +1,340 @@
+//! Variables and hooks, as Emacs has them: each variable is documented and
+//! has a global value, and a buffer can have its own value. A hook is a
+//! named list of functions that the editor runs at a particular moment.
+
+use std::fmt;
+use std::rc::Rc;
+
+use crate::buffer::Buffer;
+use crate::editor::Editor;
+use crate::error::Result;
+
+/// A variable's value. These are the values scripts can hold too.
+#[derive(Clone, Debug, PartialEq)]
+pub enum Value {
+    Null,
+    Bool(bool),
+    Number(f64),
+    Str(String),
+    List(Vec<Value>),
+}
+
+impl Value {
+    /// Whether the value counts as true: anything but null and false, as
+    /// anything but nil counts as true in Emacs.
+    pub fn is_true(&self) -> bool {
+        !matches!(self, Value::Null | Value::Bool(false))
+    }
+
+    pub fn as_number(&self) -> Option<f64> {
+        match self {
+            Value::Number(n) => Some(*n),
+            _ => None,
+        }
+    }
+
+    pub fn as_str(&self) -> Option<&str> {
+        match self {
+            Value::Str(s) => Some(s),
+            _ => None,
+        }
+    }
+}
+
+impl fmt::Display for Value {
+    /// As a script would write it: `null`, `true`, `8`, `"text"`, `["a", 1]`.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Value::Null => f.write_str("null"),
+            Value::Bool(b) => write!(f, "{b}"),
+            Value::Number(n) if n.fract() == 0.0 && n.abs() < 1e15 => write!(f, "{}", *n as i64),
+            Value::Number(n) => write!(f, "{n}"),
+            Value::Str(s) => write!(f, "{s:?}"),
+            Value::List(items) => {
+                f.write_str("[")?;
+                for (i, item) in items.iter().enumerate() {
+                    if i > 0 {
+                        f.write_str(", ")?;
+                    }
+                    write!(f, "{item}")?;
+                }
+                f.write_str("]")
+            }
+        }
+    }
+}
+
+impl From<bool> for Value {
+    fn from(b: bool) -> Value {
+        Value::Bool(b)
+    }
+}
+
+impl From<f64> for Value {
+    fn from(n: f64) -> Value {
+        Value::Number(n)
+    }
+}
+
+impl From<&str> for Value {
+    fn from(s: &str) -> Value {
+        Value::Str(s.to_string())
+    }
+}
+
+/// A documented variable.
+#[derive(Clone, Debug)]
+pub struct Variable {
+    pub name: String,
+    pub doc: String,
+    /// The global value, which buffers without their own value see.
+    pub default: Value,
+    /// Whether setting it always gives the current buffer its own value,
+    /// as with Emacs's `defvar-local`.
+    pub local: bool,
+    /// Whether it is a hook, whose value is its functions.
+    pub hook: bool,
+    /// Where it was defined, such as a script file. `None` for built-in variables.
+    pub source: Option<String>,
+}
+
+impl Variable {
+    pub fn new(name: &str, doc: &str, default: impl Into<Value>) -> Variable {
+        Variable {
+            name: name.to_string(),
+            doc: doc.to_string(),
+            default: default.into(),
+            local: false,
+            hook: false,
+            source: None,
+        }
+    }
+
+    /// Makes the variable automatically buffer-local.
+    pub fn local(mut self) -> Variable {
+        self.local = true;
+        self
+    }
+}
+
+pub type HookFn = Rc<dyn Fn(&mut Editor) -> Result<()>>;
+
+#[derive(Clone)]
+pub(crate) struct HookEntry {
+    id: u64,
+    /// What `describe-variable` shows for the function.
+    name: String,
+    run: HookFn,
+}
+
+impl Editor {
+    /// Defines a variable, as Emacs's `defvar` does: if it already has a
+    /// value, that value is kept, and only the documentation changes.
+    pub fn define_variable(&mut self, var: Variable) {
+        match self.variables.get_mut(&var.name) {
+            Some(existing) => {
+                existing.doc = var.doc;
+                existing.local = var.local;
+                existing.hook |= var.hook;
+                if var.source.is_some() {
+                    existing.source = var.source;
+                }
+            }
+            None => {
+                self.variables.insert(var.name.clone(), var);
+            }
+        }
+    }
+
+    pub fn variable_definition(&self, name: &str) -> Option<&Variable> {
+        self.variables.get(name)
+    }
+
+    /// All variables, hooks included, sorted by name.
+    pub fn variables(&self) -> impl Iterator<Item = &Variable> {
+        self.variables.values()
+    }
+
+    /// A variable's value in the current buffer: the buffer's own value if
+    /// it has one, otherwise the global value. A hook's value is the names
+    /// of its functions.
+    pub fn variable(&self, name: &str) -> Option<Value> {
+        self.variable_in(self.buffer(), name)
+    }
+
+    /// A variable's value as a given buffer sees it.
+    pub fn variable_in(&self, b: &Buffer, name: &str) -> Option<Value> {
+        if let Some(value) = b.locals.get(name) {
+            return Some(value.clone());
+        }
+        let var = self.variables.get(name)?;
+        if var.hook {
+            let names = self.hook_function_names_in(b, name);
+            return Some(Value::List(names.into_iter().map(Value::Str).collect()));
+        }
+        Some(var.default.clone())
+    }
+
+    /// A number variable in a buffer, or `default` if it is unset or not a number.
+    pub fn number_in(&self, b: &Buffer, name: &str, default: f64) -> f64 {
+        self.variable_in(b, name).and_then(|v| v.as_number()).unwrap_or(default)
+    }
+
+    /// Sets a variable as Emacs's `setq` does: the current buffer's own value
+    /// if it has one or the variable is automatically buffer-local,
+    /// otherwise the global value. Setting an unknown variable defines it.
+    pub fn set_variable(&mut self, name: &str, value: Value) {
+        let local = self.variables.get(name).is_some_and(|v| v.local);
+        let b = self.buffer_mut();
+        if local || b.locals.contains_key(name) {
+            b.locals.insert(name.to_string(), value);
+        } else {
+            self.set_default(name, value);
+        }
+    }
+
+    /// Sets the global value, which buffers without their own value see.
+    pub fn set_default(&mut self, name: &str, value: Value) {
+        match self.variables.get_mut(name) {
+            Some(var) => var.default = value,
+            None => {
+                self.variables.insert(name.to_string(), Variable::new(name, "", value));
+            }
+        }
+    }
+
+    pub fn default_value(&self, name: &str) -> Option<Value> {
+        self.variables.get(name).map(|v| v.default.clone())
+    }
+
+    /// Gives the current buffer its own value of a variable, starting from
+    /// the value it sees now, as Emacs's `make-local-variable` does.
+    pub fn make_local_variable(&mut self, name: &str) {
+        let value = self.variable(name).unwrap_or(Value::Null);
+        self.buffer_mut().locals.entry(name.to_string()).or_insert(value);
+    }
+
+    /// Removes the current buffer's own value, so it sees the global one again.
+    pub fn kill_local_variable(&mut self, name: &str) {
+        self.buffer_mut().locals.remove(name);
+    }
+
+    pub fn is_local_variable(&self, name: &str) -> bool {
+        self.buffer().locals.contains_key(name)
+    }
+
+    /// Removes all of the current buffer's own values, local hooks and
+    /// local keymap, as a new major mode does first. Runs
+    /// `change-major-mode-hook` beforehand, as Emacs does.
+    pub fn kill_all_local_variables(&mut self) -> Result<()> {
+        let result = self.run_hooks("change-major-mode-hook");
+        let b = self.buffer_mut();
+        b.locals.clear();
+        b.local_hooks.clear();
+        b.local_map = None;
+        result
+    }
+
+    // Hooks
+
+    /// Defines a hook: a documented variable whose value is its functions.
+    pub fn define_hook(&mut self, name: &str, doc: &str) {
+        let mut var = Variable::new(name, doc, Value::List(Vec::new()));
+        var.hook = true;
+        self.define_variable(var);
+    }
+
+    /// Adds a function to a hook, first in line, as Emacs's `add-hook` adds.
+    /// With `local`, only for the current buffer. Returns an id for
+    /// [`Editor::remove_hook`].
+    pub fn add_hook(&mut self, hook: &str, name: &str, run: HookFn, local: bool) -> u64 {
+        self.next_hook_id += 1;
+        let entry = HookEntry { id: self.next_hook_id, name: name.to_string(), run };
+        let list = if local {
+            self.buffer_mut().local_hooks.entry(hook.to_string()).or_default()
+        } else {
+            self.hooks.entry(hook.to_string()).or_default()
+        };
+        list.insert(0, entry);
+        self.next_hook_id
+    }
+
+    pub fn remove_hook(&mut self, hook: &str, id: u64, local: bool) {
+        let list = if local {
+            self.buffer_mut().local_hooks.get_mut(hook)
+        } else {
+            self.hooks.get_mut(hook)
+        };
+        if let Some(list) = list {
+            list.retain(|entry| entry.id != id);
+        }
+    }
+
+    /// Runs a hook's functions: the current buffer's own first, then the
+    /// global ones. The first error stops it.
+    pub fn run_hooks(&mut self, hook: &str) -> Result<()> {
+        let b = self.buffer();
+        let functions: Vec<HookFn> = b
+            .local_hooks
+            .get(hook)
+            .into_iter()
+            .chain(self.hooks.get(hook))
+            .flatten()
+            .map(|entry| entry.run.clone())
+            .collect();
+        for run in functions {
+            run(self)?;
+        }
+        Ok(())
+    }
+
+    fn hook_function_names_in(&self, b: &Buffer, hook: &str) -> Vec<String> {
+        b.local_hooks
+            .get(hook)
+            .into_iter()
+            .chain(self.hooks.get(hook))
+            .flatten()
+            .map(|entry| entry.name.clone())
+            .collect()
+    }
+}
+
+/// The variables and hooks the core itself uses.
+pub(crate) fn install(ed: &mut Editor) {
+    for var in [
+        Variable::new(
+            "major-mode",
+            "The current buffer's major mode, as the name of the command that turns it on.",
+            "fundamental-mode",
+        )
+        .local(),
+        Variable::new("mode-name", "The current buffer's major mode as the mode line shows it.", "Fundamental")
+            .local(),
+        Variable::new("tab-width", "How many columns apart tab stops are, for showing tab characters.", 8.0)
+            .local(),
+        Variable::new(
+            "delete-active-region",
+            "Whether DEL and <delete> delete the active region rather than one character.\n\nIf the value is \"kill\", they kill the region instead, so it can be yanked back.",
+            true,
+        ),
+        Variable::new(
+            "overwrite-mode",
+            "Whether typed characters replace the text after point rather than being inserted.\n\nThe command overwrite-mode, on <insert>, turns it on and off.",
+            false,
+        )
+        .local(),
+    ] {
+        ed.define_variable(var);
+    }
+    for (name, doc) in [
+        ("pre-command-hook", "Run before each command that keys run. A function can change this-command, and that command runs instead."),
+        ("post-command-hook", "Run after each command that keys run."),
+        ("find-file-hook", "Run after visiting a file, once its major mode is chosen."),
+        ("before-save-hook", "Run before saving a buffer to its file."),
+        ("after-save-hook", "Run after saving a buffer to its file."),
+        ("change-major-mode-hook", "Run before a major mode clears the buffer's own variables."),
+        ("after-change-major-mode-hook", "Run after a major mode and its hooks have run."),
+    ] {
+        ed.define_hook(name, doc);
+    }
+}

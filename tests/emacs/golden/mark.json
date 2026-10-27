@@ -8,6 +8,7 @@
         "text": "hello world",
         "point": 0,
         "keys": "C-SPC M-f",
+        "modes": [],
         "platform": null
       },
       "text": "hello world",
@@ -24,6 +25,7 @@
         "text": "abc",
         "point": 0,
         "keys": "C-SPC C-SPC",
+        "modes": [],
         "platform": null
       },
       "text": "abc",
@@ -40,6 +42,7 @@
         "text": "hello world",
         "point": 0,
         "keys": "C-SPC M-f C-x C-x",
+        "modes": [],
         "platform": null
       },
       "text": "hello world",
@@ -56,6 +59,7 @@
         "text": "abc\ndef",
         "point": 2,
         "keys": "C-x h",
+        "modes": [],
         "platform": null
       },
       "text": "abc\ndef",
@@ -72,6 +76,7 @@
         "text": "hello world",
         "point": 0,
         "keys": "C-SPC M-f C-f",
+        "modes": [],
         "platform": null
       },
       "text": "hello world",
@@ -88,6 +93,7 @@
         "text": "hello",
         "point": 0,
         "keys": "C-SPC C-f x",
+        "modes": [],
         "platform": null
       },
       "text": "hxello",
@@ -104,6 +110,7 @@
         "text": "hello",
         "point": 0,
         "keys": "C-SPC C-f C-g",
+        "modes": [],
         "platform": null
       },
       "text": "hello",
@@ -120,6 +127,7 @@
         "text": "abc",
         "point": 2,
         "keys": "M-<",
+        "modes": [],
         "platform": null
       },
       "text": "abc",
@@ -136,6 +144,7 @@
         "text": "abc\ndef",
         "point": 1,
         "keys": "C-SPC M->",
+        "modes": [],
         "platform": null
       },
       "text": "abc\ndef",
@@ -152,6 +161,7 @@
         "text": "hello world",
         "point": 0,
         "keys": "S-<right> S-<right>",
+        "modes": [],
         "platform": null
       },
       "text": "hello world",
@@ -168,6 +178,7 @@
         "text": "hello world",
         "point": 0,
         "keys": "M-S-f M-S-f",
+        "modes": [],
         "platform": null
       },
       "text": "hello world",
@@ -184,6 +195,7 @@
         "text": "hello world",
         "point": 0,
         "keys": "C-S-f C-S-f C-S-f",
+        "modes": [],
         "platform": null
       },
       "text": "hello world",
@@ -200,6 +212,7 @@
         "text": "one two\nthree",
         "point": 0,
         "keys": "C-S-e",
+        "modes": [],
         "platform": null
       },
       "text": "one two\nthree",
@@ -216,6 +229,7 @@
         "text": "one\ntwo\nthree",
         "point": 1,
         "keys": "S-<down> S-<down>",
+        "modes": [],
         "platform": null
       },
       "text": "one\ntwo\nthree",
@@ -232,6 +246,7 @@
         "text": "hello world",
         "point": 0,
         "keys": "S-<right> <right>",
+        "modes": [],
         "platform": null
       },
       "text": "hello world",
@@ -248,6 +263,7 @@
         "text": "hello world",
         "point": 0,
         "keys": "C-SPC C-f C-f S-<right>",
+        "modes": [],
         "platform": null
       },
       "text": "hello world",
@@ -264,6 +280,7 @@
         "text": "hello world",
         "point": 0,
         "keys": "C-SPC S-<right> <right>",
+        "modes": [],
         "platform": null
       },
       "text": "hello world",
@@ -280,6 +297,7 @@
         "text": "a b c d",
         "point": 0,
         "keys": "C-SPC M-f C-SPC M-f C-u C-SPC",
+        "modes": [],
         "platform": null
       },
       "text": "a b c d",
@@ -296,6 +314,7 @@
         "text": "one two\nthree",
         "point": 0,
         "keys": "S-<end>",
+        "modes": [],
         "platform": "darwin"
       },
       "text": "one two\nthree",
@@ -312,6 +331,7 @@
         "text": "a b c d e",
         "point": 0,
         "keys": "C-SPC M-f C-SPC M-f C-SPC M-f C-u C-SPC C-u C-SPC",
+        "modes": [],
         "platform": null
       },
       "text": "a b c d e",
@@ -328,6 +348,7 @@
         "text": "abc def",
         "point": 0,
         "keys": "M-f M-> C-u C-SPC",
+        "modes": [],
         "platform": null
       },
       "text": "abc def",
@@ -344,6 +365,7 @@
         "text": "abc def",
         "point": 0,
         "keys": "M-f C-x h C-g C-u C-SPC C-u C-SPC",
+        "modes": [],
         "platform": null
       },
       "text": "abc def",
@@ -360,6 +382,7 @@
         "text": "abc",
         "point": 0,
         "keys": "C-u C-SPC",
+        "modes": [],
         "platform": null
       },
       "text": "abc",
@@ -376,6 +399,7 @@
         "text": "a b",
         "point": 0,
         "keys": "M-d C-e C-y C-u C-SPC",
+        "modes": [],
         "platform": null
       },
       "text": " ba",

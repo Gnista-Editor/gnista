@@ -29,9 +29,10 @@ pub fn draw(frame: &mut Frame, ed: &Editor) {
 /// Draws the window's buffer and returns where point is on screen.
 fn draw_window(frame: &mut Frame, ed: &Editor, area: Rect) -> Position {
     let b = ed.window_buffer();
+    let tab_width = ed.tab_width();
     let width = area.width as usize;
     let point_line = b.line_of(b.point());
-    let point_col = display_width(&b.slice(b.line_start(point_line)..b.point()));
+    let point_col = display_width(&b.slice(b.line_start(point_line)..b.point()), tab_width);
     // Scroll horizontally, as Emacs does, when point would be off the right edge.
     let hscroll = if point_col < width { 0 } else { point_col - width / 2 };
     let region = b.active_region();
@@ -44,7 +45,7 @@ fn draw_window(frame: &mut Frame, ed: &Editor, area: Rect) -> Position {
                 .as_ref()
                 .filter(|r| r.start <= b.line_end(line) && r.end > start)
                 .map(|r| r.start.max(start) - start..r.end - start);
-            line_spans(&b.line_text(line), hscroll, width, selected)
+            line_spans(&b.line_text(line), hscroll, width, tab_width, selected)
         })
         .collect();
     frame.render_widget(Paragraph::new(lines), area);
@@ -64,8 +65,9 @@ fn draw_mode_line(frame: &mut Frame, ed: &Editor, area: Rect) {
     let line = b.line_of(b.point()) + 1;
     let col = b.column(b.point());
     let def = if ed.defining_kbd_macro() { " Def" } else { "" };
-    let mut text = format!("-:{flag}-  {:<18} L{line:<5} C{col:<4} (Fundamental{def}) ", b.name);
-    let fill = (area.width as usize).saturating_sub(display_width(&text));
+    let modes = format!("{}{}{def}", ed.mode_name(), ed.mode_lighters().concat());
+    let mut text = format!("-:{flag}-  {:<18} L{line:<5} C{col:<4} ({modes}) ", b.name);
+    let fill = (area.width as usize).saturating_sub(display_width(&text, 8));
     text.push_str(&"-".repeat(fill));
     let style = Style::new().add_modifier(Modifier::REVERSED);
     frame.render_widget(Paragraph::new(text).style(style), area);
@@ -90,14 +92,14 @@ fn draw_echo_area(frame: &mut Frame, ed: &Editor, area: Rect) -> Option<Position
         spans.push(Span::raw(format!(" {message}")));
     }
     frame.render_widget(Paragraph::new(Line::from(spans)), area);
-    let x = display_width(prompt) + display_width(&mb.slice(0..mb.point()));
+    let x = display_width(prompt, 8) + display_width(&mb.slice(0..mb.point()), 8);
     Some(Position::new(area.x + x.min(area.width as usize - 1) as u16, area.y))
 }
 
 /// The part of a line visible after scrolling `hscroll` columns, at most `width` wide.
 #[cfg(test)]
 fn visible_part(text: &str, hscroll: usize, width: usize) -> String {
-    line_spans(text, hscroll, width, None)
+    line_spans(text, hscroll, width, 8, None)
         .spans
         .iter()
         .map(|s| s.content.as_ref())
@@ -107,7 +109,13 @@ fn visible_part(text: &str, hscroll: usize, width: usize) -> String {
 /// A line as it is drawn, with the selected characters in reverse video.
 /// `selected` counts characters from the start of the line; an end past the
 /// last character means the newline is selected too, shown as one cell.
-fn line_spans(text: &str, hscroll: usize, width: usize, selected: Option<std::ops::Range<usize>>) -> Line<'static> {
+fn line_spans(
+    text: &str,
+    hscroll: usize,
+    width: usize,
+    tab_width: usize,
+    selected: Option<std::ops::Range<usize>>,
+) -> Line<'static> {
     let is_selected = |i: usize| selected.as_ref().is_some_and(|r| r.contains(&i));
     let mut spans: Vec<Span<'static>> = Vec::new();
     let push = |spans: &mut Vec<Span<'static>>, s: &str, selected: bool| {
@@ -124,7 +132,7 @@ fn line_spans(text: &str, hscroll: usize, width: usize, selected: Option<std::op
             break;
         }
         glyph.clear();
-        let w = render_char(c, col, &mut glyph);
+        let w = render_char(c, col, tab_width, &mut glyph);
         if col >= hscroll && col + w <= hscroll + width {
             push(&mut spans, &glyph, is_selected(i));
         } else if col < hscroll && col + w > hscroll {
@@ -193,7 +201,7 @@ mod tests {
     #[test]
     fn control_characters_and_horizontal_scroll() {
         assert_eq!(visible_part("a\u{1}b", 0, 10), "a^Ab");
-        assert_eq!(display_width("a\tb"), 9);
+        assert_eq!(display_width("a\tb", 8), 9);
         assert_eq!(visible_part("abcdefgh", 3, 3), "def");
         assert_eq!(visible_part("\tx", 4, 10), "    x");
 

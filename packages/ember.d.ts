@@ -38,7 +38,7 @@ declare global {
       /**
        * Delete the character before point, or as many as the prefix argument says.
        *
-       * With a prefix argument, the characters are killed rather than deleted, so they can be yanked back.
+       * With a prefix argument, the characters are killed rather than deleted, so they can be yanked back. If the region is active, delete it instead, as the variable delete-active-region says.
        */
       "delete-backward-char": [];
       /**
@@ -47,6 +47,22 @@ declare global {
        * With a prefix argument, the characters are killed rather than deleted, so they can be yanked back.
        */
       "delete-char": [];
+      /**
+       * Delete the character after point, or as many as the prefix argument says.
+       *
+       * With a prefix argument, the characters are killed rather than deleted. If the region is active, delete it instead, as the variable delete-active-region says.
+       */
+      "delete-forward-char": [];
+      /**
+       * Typing replaces the selection, rather than inserting next to it.
+       *
+       * While the region is active, typing, RET and C-y first delete it. DEL and <delete> delete it whether or not this mode is on; see delete-active-region.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/delsel.ts.
+       */
+      "delete-selection-mode": [];
       /**
        * List all key bindings.
        */
@@ -63,6 +79,20 @@ declare global {
        * @param key key sequence
        */
       "describe-key": [key: string];
+      /**
+       * Show the documentation of the current buffer's major mode and of the minor modes that are on.
+       *
+       * Defined in packages/help.ts.
+       */
+      "describe-mode": [];
+      /**
+       * Show a variable's documentation, its value in the current buffer, and its global value.
+       *
+       * @param variable variable name
+       *
+       * Defined in packages/help.ts.
+       */
+      "describe-variable": [variable: string];
       /**
        * Add the digit typed to the prefix argument, as M-5 or the digits after C-u do.
        *
@@ -119,6 +149,22 @@ declare global {
        * A negative argument moves backward.
        */
       "forward-word": [];
+      /**
+       * The major mode with no specialisations. Other major modes are defined by how they differ from it.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "fundamental-mode": [];
+      /**
+       * The major mode of the *Help* buffer. q goes back to the buffer before it.
+       *
+       * Defined in packages/help.ts.
+       */
+      "help-mode": [];
+      /**
+       * Do nothing. A pre-command-hook function can make a command this one, to cancel it.
+       */
+      "ignore": [];
       /**
        * Indent the current line. For now this inserts a tab.
        */
@@ -262,11 +308,35 @@ declare global {
        */
       "next-line": [];
       /**
+       * Choose the current buffer's major mode, as when its file is visited.
+       *
+       * A mode named on the first line, as in -*- text -*-, comes first; then auto-mode-alist, matched against the file name; otherwise Fundamental mode.
+       *
+       * Defined in packages/files.ts.
+       */
+      "normal-mode": [];
+      /**
+       * Replace text rather than insert it: each typed character replaces the one after point.
+       *
+       * At the end of a line, characters are inserted as usual.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "overwrite-mode": [];
+      /**
        * Move point up a line, or as many as the prefix argument says.
        *
        * Repeated line moves keep to the column where they started.
        */
       "previous-line": [];
+      /**
+       * Leave this buffer and show the one shown before it, as q does in *Help*.
+       *
+       * Defined in packages/help.ts.
+       */
+      "quit-window": [];
       /**
        * Scroll so the line with point is in the middle of the window.
        *
@@ -330,6 +400,14 @@ declare global {
        */
       "switch-to-buffer": [buffer: string];
       /**
+       * The major mode for writing text meant for people to read.
+       *
+       * Files ending in .txt and .text use it; see auto-mode-alist. Run text-mode-hook to set up anything you want for prose.
+       *
+       * Defined in packages/text-mode.ts.
+       */
+      "text-mode": [];
+      /**
        * Undo the last change, or as many changes as the prefix argument says.
        *
        * Repeat to undo earlier changes. Undoing is itself a change, so after any other command, undo undoes the undos: it redoes.
@@ -379,6 +457,116 @@ declare global {
       "yank-pop": [];
     }
 
+    /** Every variable, with its documentation. */
+    interface Variables {
+      /**
+       * Which major mode files get, by name: a list of [pattern, mode] pairs, tried in order.
+       *
+       * Each pattern is a JavaScript regular expression matched against the whole file name, and mode is the command that turns the mode on. Files that match nothing get Fundamental mode.
+       *
+       * Defined in packages/files.ts.
+       */
+      "auto-mode-alist": Value;
+      /**
+       * Whether DEL and <delete> delete the active region rather than one character.
+       *
+       * If the value is "kill", they kill the region instead, so it can be yanked back.
+       */
+      "delete-active-region": Value;
+      /**
+       * Whether Delete-Selection mode is on. Use the command delete-selection-mode to change it.
+       *
+       * Defined in packages/delsel.ts.
+       */
+      "delete-selection-mode": Value;
+      /**
+       * The current buffer's major mode, as the name of the command that turns it on.
+       */
+      "major-mode": Value;
+      /**
+       * The current buffer's major mode as the mode line shows it.
+       */
+      "mode-name": Value;
+      /**
+       * Whether Overwrite mode is on in this buffer. Use the command overwrite-mode to change it.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "overwrite-mode": Value;
+      /**
+       * How many columns apart tab stops are, for showing tab characters.
+       */
+      "tab-width": Value;
+    }
+
+    /** Every hook, with its documentation. */
+    interface Hooks {
+      /**
+       * Run after a major mode and its hooks have run.
+       */
+      "after-change-major-mode-hook": Value;
+      /**
+       * Run after saving a buffer to its file.
+       */
+      "after-save-hook": Value;
+      /**
+       * Run before saving a buffer to its file.
+       */
+      "before-save-hook": Value;
+      /**
+       * Run before a major mode clears the buffer's own variables.
+       */
+      "change-major-mode-hook": Value;
+      /**
+       * Run after Delete-Selection mode is turned on or off.
+       */
+      "delete-selection-mode-hook": Value;
+      /**
+       * Run after Delete-Selection mode is turned off.
+       */
+      "delete-selection-mode-off-hook": Value;
+      /**
+       * Run after Delete-Selection mode is turned on.
+       */
+      "delete-selection-mode-on-hook": Value;
+      /**
+       * Run after visiting a file, once its major mode is chosen.
+       */
+      "find-file-hook": Value;
+      /**
+       * Run after entering Fundamental mode, after the hooks of the modes it is built on.
+       */
+      "fundamental-mode-hook": Value;
+      /**
+       * Run after entering Help mode, after the hooks of the modes it is built on.
+       */
+      "help-mode-hook": Value;
+      /**
+       * Run after Overwrite mode is turned on or off.
+       */
+      "overwrite-mode-hook": Value;
+      /**
+       * Run after Overwrite mode is turned off.
+       */
+      "overwrite-mode-off-hook": Value;
+      /**
+       * Run after Overwrite mode is turned on.
+       */
+      "overwrite-mode-on-hook": Value;
+      /**
+       * Run after each command that keys run.
+       */
+      "post-command-hook": Value;
+      /**
+       * Run before each command that keys run. A function can change this-command, and that command runs instead.
+       */
+      "pre-command-hook": Value;
+      /**
+       * Run after entering Text mode, after the hooks of the modes it is built on.
+       */
+      "text-mode-hook": Value;
+    }
+
     type CommandName = keyof Commands;
 
     const definedCommand: unique symbol;
@@ -386,7 +574,7 @@ declare global {
     type DefinedCommand = string & { readonly [definedCommand]: true };
 
     /** How the minibuffer reads a parameter when the command runs from a key or M-x. */
-    type ParamKind = "string" | "file" | "buffer" | "command" | "keys";
+    type ParamKind = "string" | "file" | "buffer" | "command" | "keys" | "variable";
 
     interface Param {
       name: string;
@@ -412,8 +600,11 @@ declare global {
      * Returns the name, which bindKey and call accept before this file is regenerated.
      */
     function defineCommand(definition: CommandDefinition): DefinedCommand;
-    /** Bind a key sequence in Emacs notation, such as "C-c d", to a command. */
-    function bindKey(keys: string, command: CommandName | DefinedCommand): void;
+    /**
+     * Bind a key sequence in Emacs notation, such as "C-c d", to a command, in
+     * the global keymap or a named one such as "text-mode-map".
+     */
+    function bindKey(keys: string, command: CommandName | DefinedCommand, keymap?: string): void;
     /** Run a command with its arguments. Throws if the command fails. */
     function call<N extends CommandName | DefinedCommand>(
       name: N,
@@ -497,6 +688,125 @@ declare global {
     function definingKbdMacro(): boolean;
     /** Whether a keyboard macro is running. */
     function executingKbdMacro(): boolean;
+
+    /** A variable's value: what a variable can hold. */
+    type Value = null | boolean | number | string | Value[];
+    type VariableName = keyof Variables;
+    type HookName = keyof Hooks;
+
+    interface VariableDefinition {
+      /** Lowercase words joined by dashes, as in Emacs: "fill-column". */
+      name: string;
+      /** Shown by describe-variable (C-h v). */
+      doc?: string;
+      /** The starting global value. A variable that is already defined keeps its value, as Emacs's defvar does. */
+      value?: Value;
+      /** Whether setting it gives the current buffer its own value (Emacs's defvar-local). */
+      local?: boolean;
+    }
+
+    /** Define a documented variable (Emacs's defvar). */
+    function defineVariable(definition: VariableDefinition): void;
+    /** The value in the current buffer, or undefined if the variable is not defined. */
+    function variable(name: VariableName | (string & {})): Value | undefined;
+    /**
+     * Set a variable (Emacs's setq): the current buffer's own value if it has
+     * one or the variable is buffer-local, otherwise the global value.
+     */
+    function setVariable(name: VariableName | (string & {}), value: Value): void;
+    /** The global value, which buffers without their own value see. */
+    function defaultValue(name: VariableName | (string & {})): Value | undefined;
+    /** Set the global value. */
+    function setDefault(name: VariableName | (string & {}), value: Value): void;
+    /** Give the current buffer its own value, starting from the one it sees now. */
+    function makeLocalVariable(name: VariableName | (string & {})): void;
+    /** Remove the current buffer's own value, so it sees the global one again. */
+    function killLocalVariable(name: VariableName | (string & {})): void;
+    /** Whether the current buffer has its own value. */
+    function isLocalVariable(name: VariableName | (string & {})): boolean;
+    function variableDocumentation(name: VariableName | (string & {})): string | undefined;
+    /** The file that defined a variable, if a script did. */
+    function variableSource(name: VariableName | (string & {})): string | undefined;
+    /** Whether a variable is a hook. A hook's value is the names of its functions. */
+    function isHook(name: string): boolean;
+    /** Remove all of the current buffer's own values, hooks and keymap, as a new major mode does first. */
+    function killAllLocalVariables(): void;
+
+    /** Define a documented hook. */
+    function defineHook(name: string, doc?: string): void;
+    /**
+     * Add a function to a hook, first in line (Emacs's add-hook). With `local`,
+     * only for the current buffer; those run before the global ones.
+     */
+    function addHook(hook: HookName | (string & {}), run: () => void, options?: { local?: boolean }): void;
+    /** Remove a function from a hook, passing the same function. */
+    function removeHook(hook: HookName | (string & {}), run: () => void, options?: { local?: boolean }): void;
+    /** Run a hook's functions. */
+    function runHooks(hook: HookName | (string & {})): void;
+
+    /** Define a named keymap; keys it does not bind are looked up in the parent. */
+    function defineKeymap(name: string, parent?: string | null): void;
+    /** Make a named keymap the current buffer's local map, the major mode's keymap. */
+    function useLocalMap(name: string | null): void;
+
+    interface MajorModeDefinition {
+      /** The command that turns the mode on, such as "text-mode". */
+      name: string;
+      /** What the mode line shows, such as "Text". */
+      modeName: string;
+      /** The mode it is built on, which is set up first (Emacs's define-derived-mode). */
+      parent?: CommandName | DefinedCommand | null;
+      doc?: string;
+      /** Keys for the mode's keymap, NAME-map, whose parent is the parent mode's keymap. */
+      bindings?: { [keys: string]: CommandName | DefinedCommand };
+      /** Runs after the buffer's own variables are cleared and the parent modes are set up, before the hooks. */
+      setup?: () => void;
+    }
+
+    /**
+     * Define a major mode. Turning it on clears the buffer's own variables, sets
+     * up the parent modes and then this one, and runs the mode hooks, parent's
+     * first, then after-change-major-mode-hook.
+     */
+    function defineMajorMode(definition: MajorModeDefinition): DefinedCommand;
+
+    interface MinorModeDefinition {
+      /** The command that turns it on and off, and the variable that says whether it is on. */
+      name: string;
+      /** What the mode line shows while it is on, with a leading space: " Ovwrt". */
+      lighter?: string;
+      doc?: string;
+      /** Whether it applies to every buffer rather than one at a time. */
+      global?: boolean;
+      /** Keys for the mode's keymap, NAME-map, which is used while the mode is on. */
+      bindings?: { [keys: string]: CommandName | DefinedCommand };
+      /** Runs after the variable changes, before the mode's hooks. */
+      onChange?: (enabled: boolean) => void;
+    }
+
+    /** Define a minor mode (Emacs's define-minor-mode). */
+    function defineMinorMode(definition: MinorModeDefinition): DefinedCommand;
+    /** The minor modes on in the current buffer. */
+    function enabledMinorModes(): string[];
+
+    /** A command's documentation, or undefined if there is no such command. */
+    function documentation(name: CommandName | DefinedCommand | (string & {})): string | undefined;
+    /** The file that defined a command, if a script did. */
+    function commandSource(name: CommandName | DefinedCommand | (string & {})): string | undefined;
+    /** Show text in the read-only *Help* buffer. */
+    function showHelp(text: string): void;
+    /** The file the current buffer visits, if any. */
+    function bufferFileName(): string | undefined;
+    function commandExists(name: string): boolean;
+    /**
+     * The command that is running (Emacs's this-command). In pre-command-hook,
+     * the command about to run; setThisCommand changes which one runs.
+     */
+    function thisCommand(): string | undefined;
+    /** Whether the running command was started by keys or M-x rather than called from code. */
+    function calledInteractively(): boolean;
+    /** Whether the region is active: shown, and what region commands act on (Emacs's region-active-p). */
+    function regionActive(): boolean;
   }
 
   var console: {

@@ -123,5 +123,11 @@
     "keys": "<end> <home>",
     "point": 3,
     "platform": "darwin"
+  },
+  {
+    "name": "newline-reindents",
+    "text": "hello world",
+    "keys": "RET",
+    "point": 5
   }
 ]

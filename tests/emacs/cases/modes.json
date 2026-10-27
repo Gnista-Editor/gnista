@@ -1,0 +1,100 @@
+[
+  {
+    "name": "del-deletes-the-active-region",
+    "text": "abcdef",
+    "keys": "C-SPC C-f C-f C-f DEL"
+  },
+  {
+    "name": "del-deletes-a-shift-selection",
+    "text": "abcdef",
+    "keys": "S-<right> S-<right> DEL"
+  },
+  {
+    "name": "del-with-an-empty-region-deletes-a-character",
+    "text": "abcdef",
+    "keys": "C-SPC DEL",
+    "point": 3
+  },
+  {
+    "name": "c-d-ignores-the-region",
+    "text": "abcdef",
+    "keys": "C-SPC C-f C-f C-d"
+  },
+  {
+    "name": "typing-replaces-the-selection",
+    "text": "hello world",
+    "keys": "S-<right> S-<right> S-<right> S-<right> S-<right> x",
+    "modes": [
+      "delete-selection-mode"
+    ]
+  },
+  {
+    "name": "return-replaces-the-selection",
+    "text": "abcdef",
+    "keys": "S-<right> S-<right> RET",
+    "modes": [
+      "delete-selection-mode"
+    ],
+    "point": 2
+  },
+  {
+    "name": "yank-replaces-the-selection",
+    "text": "one two",
+    "keys": "M-d C-e M-S-b C-y",
+    "modes": [
+      "delete-selection-mode"
+    ]
+  },
+  {
+    "name": "typing-without-a-selection-inserts",
+    "text": "abc",
+    "keys": "x y",
+    "point": 1,
+    "modes": [
+      "delete-selection-mode"
+    ]
+  },
+  {
+    "name": "typing-after-deactivating-inserts",
+    "text": "abc",
+    "keys": "C-SPC C-f C-g x",
+    "modes": [
+      "delete-selection-mode"
+    ]
+  },
+  {
+    "name": "without-the-mode-typing-inserts",
+    "text": "hello",
+    "keys": "S-<right> S-<right> x"
+  },
+  {
+    "name": "overwrite-replaces-characters",
+    "text": "abcd",
+    "keys": "x y",
+    "modes": [
+      "overwrite-mode"
+    ]
+  },
+  {
+    "name": "overwrite-inserts-at-the-end-of-a-line",
+    "text": "ab\ncd",
+    "keys": "x y z",
+    "point": 1,
+    "modes": [
+      "overwrite-mode"
+    ]
+  },
+  {
+    "name": "insert-toggles-overwrite",
+    "text": "abc",
+    "keys": "<insert> x <insert> y"
+  },
+  {
+    "name": "overwrite-with-an-argument",
+    "text": "abcdef",
+    "keys": "C-u 3 x",
+    "modes": [
+      "overwrite-mode"
+    ]
+  }
+]

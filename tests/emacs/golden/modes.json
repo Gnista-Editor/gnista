@@ -1,0 +1,262 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "del-deletes-the-active-region",
+      "input": {
+        "text": "abcdef",
+        "point": 0,
+        "keys": "C-SPC C-f C-f C-f DEL",
+        "modes": [],
+        "platform": null
+      },
+      "text": "def",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "del-deletes-a-shift-selection",
+      "input": {
+        "text": "abcdef",
+        "point": 0,
+        "keys": "S-<right> S-<right> DEL",
+        "modes": [],
+        "platform": null
+      },
+      "text": "cdef",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "del-with-an-empty-region-deletes-a-character",
+      "input": {
+        "text": "abcdef",
+        "point": 3,
+        "keys": "C-SPC DEL",
+        "modes": [],
+        "platform": null
+      },
+      "text": "abdef",
+      "point": 2,
+      "mark": 2,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "c-d-ignores-the-region",
+      "input": {
+        "text": "abcdef",
+        "point": 0,
+        "keys": "C-SPC C-f C-f C-d",
+        "modes": [],
+        "platform": null
+      },
+      "text": "abdef",
+      "point": 2,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "typing-replaces-the-selection",
+      "input": {
+        "text": "hello world",
+        "point": 0,
+        "keys": "S-<right> S-<right> S-<right> S-<right> S-<right> x",
+        "modes": [
+          "delete-selection-mode"
+        ],
+        "platform": null
+      },
+      "text": "x world",
+      "point": 1,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "return-replaces-the-selection",
+      "input": {
+        "text": "abcdef",
+        "point": 2,
+        "keys": "S-<right> S-<right> RET",
+        "modes": [
+          "delete-selection-mode"
+        ],
+        "platform": null
+      },
+      "text": "ab\nef",
+      "point": 3,
+      "mark": 2,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "yank-replaces-the-selection",
+      "input": {
+        "text": "one two",
+        "point": 0,
+        "keys": "M-d C-e M-S-b C-y",
+        "modes": [
+          "delete-selection-mode"
+        ],
+        "platform": null
+      },
+      "text": " one",
+      "point": 4,
+      "mark": 1,
+      "mark_active": false,
+      "kill_ring": [
+        "one"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "typing-without-a-selection-inserts",
+      "input": {
+        "text": "abc",
+        "point": 1,
+        "keys": "x y",
+        "modes": [
+          "delete-selection-mode"
+        ],
+        "platform": null
+      },
+      "text": "axybc",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "typing-after-deactivating-inserts",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "C-SPC C-f C-g x",
+        "modes": [
+          "delete-selection-mode"
+        ],
+        "platform": null
+      },
+      "text": "axbc",
+      "point": 2,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Quit"
+    },
+    {
+      "name": "without-the-mode-typing-inserts",
+      "input": {
+        "text": "hello",
+        "point": 0,
+        "keys": "S-<right> S-<right> x",
+        "modes": [],
+        "platform": null
+      },
+      "text": "hexllo",
+      "point": 3,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "overwrite-replaces-characters",
+      "input": {
+        "text": "abcd",
+        "point": 0,
+        "keys": "x y",
+        "modes": [
+          "overwrite-mode"
+        ],
+        "platform": null
+      },
+      "text": "xycd",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "overwrite-inserts-at-the-end-of-a-line",
+      "input": {
+        "text": "ab\ncd",
+        "point": 1,
+        "keys": "x y z",
+        "modes": [
+          "overwrite-mode"
+        ],
+        "platform": null
+      },
+      "text": "axyz\ncd",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "insert-toggles-overwrite",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "<insert> x <insert> y",
+        "modes": [],
+        "platform": null
+      },
+      "text": "xybc",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "overwrite-with-an-argument",
+      "input": {
+        "text": "abcdef",
+        "point": 0,
+        "keys": "C-u 3 x",
+        "modes": [
+          "overwrite-mode"
+        ],
+        "platform": null
+      },
+      "text": "xxxdef",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

@@ -18,9 +18,11 @@ use std::ptr::NonNull;
 use std::thread::LocalKey;
 use std::time::{Duration, Instant};
 
+use std::rc::Rc;
+
 use ember_core::{
-    Arg, Command, Editor, Error, Key, Keymap, ParamKind, PrefixArg, Result, abbreviate_path,
-    expand_file_name,
+    Arg, Command, Editor, Error, HookFn, Key, Keymap, MinorMode, ParamKind, PrefixArg, Result,
+    Value as EditorValue, Variable, abbreviate_path, expand_file_name,
 };
 use rquickjs::context::EvalOptions;
 use rquickjs::function::{Opt, Rest};
@@ -35,6 +37,10 @@ const PRELUDE: &str = include_str!("prelude.js");
 /// not these. Named by their path in the repository.
 const PACKAGES: &[(&str, &str)] = &[
     ("packages/simple.ts", include_str!("../../../packages/simple.ts")),
+    ("packages/files.ts", include_str!("../../../packages/files.ts")),
+    ("packages/text-mode.ts", include_str!("../../../packages/text-mode.ts")),
+    ("packages/delsel.ts", include_str!("../../../packages/delsel.ts")),
+    ("packages/help.ts", include_str!("../../../packages/help.ts")),
     ("packages/repeat.ts", include_str!("../../../packages/repeat.ts")),
     ("packages/kmacro.ts", include_str!("../../../packages/kmacro.ts")),
 ];
@@ -223,36 +229,43 @@ fn with_editor<T>(ctx: &Ctx<'_>, f: impl FnOnce(&mut Editor) -> Result<T>) -> rq
 }
 
 /// A command implemented by a script function.
-struct ScriptCommand {
+/// A script function the editor holds on to, as a command or a hook function.
+struct ScriptFunction {
     // Declared before `context` so the function is freed before the runtime can be.
     run: Persistent<Function<'static>>,
     context: Context,
 }
 
-impl ScriptCommand {
-    fn into_fn(self) -> impl Fn(&mut Editor, &[Arg]) -> Result<()> {
-        move |ed, args| {
-            let args: Vec<String> = args.iter().map(Arg::to_string).collect();
-            enter(&self.context, ed, |ctx| {
-                let run = self.run.clone().restore(&ctx).map_err(|e| js_error(&ctx, e))?;
-                run.call::<_, Value>((Rest(args),))
-                    .map(drop)
-                    .map_err(|e| js_error(&ctx, e))
-            })
-        }
+impl ScriptFunction {
+    fn call(&self, ed: &mut Editor, args: Vec<String>) -> Result<()> {
+        enter(&self.context, ed, |ctx| {
+            let run = self.run.clone().restore(&ctx).map_err(|e| js_error(&ctx, e))?;
+            run.call::<_, Value>((Rest(args),))
+                .map(drop)
+                .map_err(|e| js_error(&ctx, e))
+        })
+    }
+
+    fn into_command(self) -> impl Fn(&mut Editor, &[Arg]) -> Result<()> {
+        move |ed, args| self.call(ed, args.iter().map(Arg::to_string).collect())
+    }
+
+    fn into_hook(self) -> HookFn {
+        Rc::new(move |ed| self.call(ed, Vec::new()))
     }
 }
 
 fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()> {
     let native = Object::new(ctx.clone())?;
+    install_native_variables(ctx, &native, context)?;
     let context = context.clone();
     native.set(
         "defineCommand",
         Function::new(
             ctx.clone(),
             move |ctx: Ctx<'js>, name: String, doc: String, params: Vec<Object<'js>>, run: Function<'js>| {
-                let script = ScriptCommand { run: Persistent::save(&ctx, run), context: context.clone() };
-                let mut command = Command::new(&name, &doc, script.into_fn());
+                let script = ScriptFunction { run: Persistent::save(&ctx, run), context: context.clone() };
+                let mut command = Command::new(&name, &doc, script.into_command());
                 command.source = LOADING.with_borrow(|files| files.last().cloned());
                 for param in params {
                     let param_name: String = param.get("name")?;
@@ -274,12 +287,11 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
     )?;
     native.set(
         "bindKey",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, keys: String, command: String| {
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, keys: String, command: String, keymap: Opt<String>| {
             with_editor(&ctx, |ed| {
                 let parsed = Key::parse_seq(&keys)
                     .ok_or_else(|| Error::new(format!("Invalid key sequence: {keys:?}")))?;
-                ed.global_map.bind(&parsed, &command);
-                Ok(())
+                ed.bind_key_in(keymap.0.as_deref().unwrap_or("global-map"), &parsed, &command)
             })
         })?,
     )?;
@@ -458,6 +470,253 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.executing_kbd_macro())))?,
     )?;
     ctx.globals().set("__ember", native)
+}
+
+/// Variables, hooks, keymaps, modes and help.
+fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: &Context) -> rquickjs::Result<()> {
+    native.set(
+        "defineVariable",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, doc: String, value: Value<'js>, local: bool| {
+            let value = value_from_js(&ctx, value)?;
+            with_editor(&ctx, |ed| {
+                let mut var = Variable::new(&name, &doc, value);
+                var.local = local;
+                var.source = LOADING.with_borrow(|files| files.last().cloned());
+                ed.define_variable(var);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "variable",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
+            let value = with_editor(&ctx, |ed| Ok(ed.variable(&name)))?;
+            value.map(|v| value_to_js(&ctx, &v)).transpose()
+        })?,
+    )?;
+    native.set(
+        "setVariable",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, value: Value<'js>| {
+            let value = value_from_js(&ctx, value)?;
+            with_editor(&ctx, |ed| {
+                ed.set_variable(&name, value);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "defaultValue",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
+            let value = with_editor(&ctx, |ed| Ok(ed.default_value(&name)))?;
+            value.map(|v| value_to_js(&ctx, &v)).transpose()
+        })?,
+    )?;
+    native.set(
+        "setDefault",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, value: Value<'js>| {
+            let value = value_from_js(&ctx, value)?;
+            with_editor(&ctx, |ed| {
+                ed.set_default(&name, value);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "makeLocalVariable",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
+            with_editor(&ctx, |ed| {
+                ed.make_local_variable(&name);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "killLocalVariable",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
+            with_editor(&ctx, |ed| {
+                ed.kill_local_variable(&name);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "isLocalVariable",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
+            with_editor(&ctx, |ed| Ok(ed.is_local_variable(&name)))
+        })?,
+    )?;
+    native.set(
+        "variableDocumentation",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
+            with_editor(&ctx, |ed| Ok(ed.variable_definition(&name).map(|v| v.doc.clone())))
+        })?,
+    )?;
+    native.set(
+        "variableSource",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
+            with_editor(&ctx, |ed| Ok(ed.variable_definition(&name).and_then(|v| v.source.clone())))
+        })?,
+    )?;
+    native.set(
+        "isHook",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
+            with_editor(&ctx, |ed| Ok(ed.variable_definition(&name).is_some_and(|v| v.hook)))
+        })?,
+    )?;
+    native.set(
+        "killAllLocalVariables",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| ed.kill_all_local_variables()))?,
+    )?;
+    native.set(
+        "defineHook",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, doc: String| {
+            with_editor(&ctx, |ed| {
+                ed.define_hook(&name, &doc);
+                Ok(())
+            })
+        })?,
+    )?;
+    let hook_context = context.clone();
+    native.set(
+        "addHook",
+        Function::new(
+            ctx.clone(),
+            move |ctx: Ctx<'js>, hook: String, name: String, run: Function<'js>, local: bool| {
+                let script = ScriptFunction { run: Persistent::save(&ctx, run), context: hook_context.clone() };
+                with_editor(&ctx, |ed| Ok(ed.add_hook(&hook, &name, script.into_hook(), local) as f64))
+            },
+        )?,
+    )?;
+    native.set(
+        "removeHook",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, hook: String, id: f64, local: bool| {
+            with_editor(&ctx, |ed| {
+                ed.remove_hook(&hook, id as u64, local);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "runHooks",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, hook: String| with_editor(&ctx, |ed| ed.run_hooks(&hook)))?,
+    )?;
+    native.set(
+        "defineKeymap",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, parent: Opt<Option<String>>| {
+            with_editor(&ctx, |ed| {
+                ed.define_keymap(&name, parent.0.flatten().as_deref());
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "useLocalMap",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: Option<String>| {
+            with_editor(&ctx, |ed| {
+                ed.use_local_map(name.as_deref());
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "registerMinorMode",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, lighter: String, keymap: String, global: bool| {
+            with_editor(&ctx, |ed| {
+                ed.register_minor_mode(MinorMode { name, lighter, keymap: Some(keymap), global });
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "enabledMinorModes",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.enabled_minor_modes())))?,
+    )?;
+    native.set(
+        "documentation",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
+            with_editor(&ctx, |ed| Ok(ed.command(&name).map(|c| c.doc.clone())))
+        })?,
+    )?;
+    native.set(
+        "commandSource",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
+            with_editor(&ctx, |ed| Ok(ed.command(&name).and_then(|c| c.source.clone())))
+        })?,
+    )?;
+    native.set(
+        "showHelp",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, text: String| {
+            with_editor(&ctx, |ed| {
+                ed.show_help(&text);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "bufferFileName",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            with_editor(&ctx, |ed| Ok(ed.buffer().path.as_ref().map(|p| p.display().to_string())))
+        })?,
+    )?;
+    native.set(
+        "commandExists",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| with_editor(&ctx, |ed| Ok(ed.command(&name).is_some())))?,
+    )?;
+    native.set(
+        "thisCommand",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.this_command().map(str::to_string))))?,
+    )?;
+    native.set(
+        "regionActive",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer().is_mark_active())))?,
+    )?;
+    native.set(
+        "calledInteractively",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.called_interactively())))?,
+    )?;
+    Ok(())
+}
+
+/// A variable's value as scripts see it: null, a boolean, a number, a string or an array.
+fn value_to_js<'js>(ctx: &Ctx<'js>, value: &EditorValue) -> rquickjs::Result<Value<'js>> {
+    Ok(match value {
+        EditorValue::Null => Value::new_null(ctx.clone()),
+        EditorValue::Bool(b) => Value::new_bool(ctx.clone(), *b),
+        EditorValue::Number(n) => Value::new_number(ctx.clone(), *n),
+        EditorValue::Str(s) => rquickjs::String::from_str(ctx.clone(), s)?.into_value(),
+        EditorValue::List(items) => {
+            let list = rquickjs::Array::new(ctx.clone())?;
+            for (i, item) in items.iter().enumerate() {
+                list.set(i, value_to_js(ctx, item)?)?;
+            }
+            list.into_value()
+        }
+    })
+}
+
+fn value_from_js<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> rquickjs::Result<EditorValue> {
+    if value.is_null() || value.is_undefined() {
+        return Ok(EditorValue::Null);
+    }
+    if let Some(b) = value.as_bool() {
+        return Ok(EditorValue::Bool(b));
+    }
+    if let Some(n) = value.as_number() {
+        return Ok(EditorValue::Number(n));
+    }
+    if let Some(s) = value.as_string() {
+        return Ok(EditorValue::Str(s.to_string()?));
+    }
+    if let Some(list) = value.as_array() {
+        let items = (0..list.len())
+            .map(|i| value_from_js(ctx, list.get(i)?))
+            .collect::<rquickjs::Result<Vec<_>>>()?;
+        return Ok(EditorValue::List(items));
+    }
+    Err(Exception::throw_type(
+        ctx,
+        "A variable holds null, a boolean, a number, a string, or an array of these",
+    ))
 }
 
 /// A prefix argument as scripts see it, in Emacs's forms: null, a number,

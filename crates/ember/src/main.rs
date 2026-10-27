@@ -93,6 +93,7 @@ fn special_key(code: TermKey) -> Option<KeyCode> {
         TermKey::Tab => KeyCode::Tab,
         TermKey::Backspace => KeyCode::Backspace,
         TermKey::Delete => KeyCode::Delete,
+        TermKey::Insert => KeyCode::Insert,
         TermKey::Esc => KeyCode::Esc,
         TermKey::Left => KeyCode::Left,
         TermKey::Right => KeyCode::Right,

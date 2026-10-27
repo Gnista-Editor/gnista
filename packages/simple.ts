@@ -136,3 +136,23 @@ const yankPop = ember.defineCommand({
   },
 });
 ember.bindKey("M-y", yankPop);
+
+// Fundamental mode, the major mode with no specialisations, and the mode
+// new buffers start in.
+
+ember.defineMajorMode({
+  name: "fundamental-mode",
+  modeName: "Fundamental",
+  doc: "The major mode with no specialisations. Other major modes are defined by how they differ from it.",
+});
+
+// Overwrite mode: <insert>.
+
+const overwriteMode = ember.defineMinorMode({
+  name: "overwrite-mode",
+  lighter: " Ovwrt",
+  doc:
+    "Replace text rather than insert it: each typed character replaces the one after point.\n\n" +
+    "At the end of a line, characters are inserted as usual.",
+});
+ember.bindKey("<insert>", overwriteMode);

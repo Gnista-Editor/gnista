@@ -28,7 +28,7 @@ const API: &str = r#"
   type DefinedCommand = string & { readonly [definedCommand]: true };
 
   /** How the minibuffer reads a parameter when the command runs from a key or M-x. */
-  type ParamKind = "string" | "file" | "buffer" | "command" | "keys";
+  type ParamKind = "string" | "file" | "buffer" | "command" | "keys" | "variable";
 
   interface Param {
     name: string;
@@ -54,8 +54,11 @@ const API: &str = r#"
    * Returns the name, which bindKey and call accept before this file is regenerated.
    */
   function defineCommand(definition: CommandDefinition): DefinedCommand;
-  /** Bind a key sequence in Emacs notation, such as "C-c d", to a command. */
-  function bindKey(keys: string, command: CommandName | DefinedCommand): void;
+  /**
+   * Bind a key sequence in Emacs notation, such as "C-c d", to a command, in
+   * the global keymap or a named one such as "text-mode-map".
+   */
+  function bindKey(keys: string, command: CommandName | DefinedCommand, keymap?: string): void;
   /** Run a command with its arguments. Throws if the command fails. */
   function call<N extends CommandName | DefinedCommand>(
     name: N,
@@ -139,6 +142,125 @@ const API: &str = r#"
   function definingKbdMacro(): boolean;
   /** Whether a keyboard macro is running. */
   function executingKbdMacro(): boolean;
+
+  /** A variable's value: what a variable can hold. */
+  type Value = null | boolean | number | string | Value[];
+  type VariableName = keyof Variables;
+  type HookName = keyof Hooks;
+
+  interface VariableDefinition {
+    /** Lowercase words joined by dashes, as in Emacs: "fill-column". */
+    name: string;
+    /** Shown by describe-variable (C-h v). */
+    doc?: string;
+    /** The starting global value. A variable that is already defined keeps its value, as Emacs's defvar does. */
+    value?: Value;
+    /** Whether setting it gives the current buffer its own value (Emacs's defvar-local). */
+    local?: boolean;
+  }
+
+  /** Define a documented variable (Emacs's defvar). */
+  function defineVariable(definition: VariableDefinition): void;
+  /** The value in the current buffer, or undefined if the variable is not defined. */
+  function variable(name: VariableName | (string & {})): Value | undefined;
+  /**
+   * Set a variable (Emacs's setq): the current buffer's own value if it has
+   * one or the variable is buffer-local, otherwise the global value.
+   */
+  function setVariable(name: VariableName | (string & {}), value: Value): void;
+  /** The global value, which buffers without their own value see. */
+  function defaultValue(name: VariableName | (string & {})): Value | undefined;
+  /** Set the global value. */
+  function setDefault(name: VariableName | (string & {}), value: Value): void;
+  /** Give the current buffer its own value, starting from the one it sees now. */
+  function makeLocalVariable(name: VariableName | (string & {})): void;
+  /** Remove the current buffer's own value, so it sees the global one again. */
+  function killLocalVariable(name: VariableName | (string & {})): void;
+  /** Whether the current buffer has its own value. */
+  function isLocalVariable(name: VariableName | (string & {})): boolean;
+  function variableDocumentation(name: VariableName | (string & {})): string | undefined;
+  /** The file that defined a variable, if a script did. */
+  function variableSource(name: VariableName | (string & {})): string | undefined;
+  /** Whether a variable is a hook. A hook's value is the names of its functions. */
+  function isHook(name: string): boolean;
+  /** Remove all of the current buffer's own values, hooks and keymap, as a new major mode does first. */
+  function killAllLocalVariables(): void;
+
+  /** Define a documented hook. */
+  function defineHook(name: string, doc?: string): void;
+  /**
+   * Add a function to a hook, first in line (Emacs's add-hook). With `local`,
+   * only for the current buffer; those run before the global ones.
+   */
+  function addHook(hook: HookName | (string & {}), run: () => void, options?: { local?: boolean }): void;
+  /** Remove a function from a hook, passing the same function. */
+  function removeHook(hook: HookName | (string & {}), run: () => void, options?: { local?: boolean }): void;
+  /** Run a hook's functions. */
+  function runHooks(hook: HookName | (string & {})): void;
+
+  /** Define a named keymap; keys it does not bind are looked up in the parent. */
+  function defineKeymap(name: string, parent?: string | null): void;
+  /** Make a named keymap the current buffer's local map, the major mode's keymap. */
+  function useLocalMap(name: string | null): void;
+
+  interface MajorModeDefinition {
+    /** The command that turns the mode on, such as "text-mode". */
+    name: string;
+    /** What the mode line shows, such as "Text". */
+    modeName: string;
+    /** The mode it is built on, which is set up first (Emacs's define-derived-mode). */
+    parent?: CommandName | DefinedCommand | null;
+    doc?: string;
+    /** Keys for the mode's keymap, NAME-map, whose parent is the parent mode's keymap. */
+    bindings?: { [keys: string]: CommandName | DefinedCommand };
+    /** Runs after the buffer's own variables are cleared and the parent modes are set up, before the hooks. */
+    setup?: () => void;
+  }
+
+  /**
+   * Define a major mode. Turning it on clears the buffer's own variables, sets
+   * up the parent modes and then this one, and runs the mode hooks, parent's
+   * first, then after-change-major-mode-hook.
+   */
+  function defineMajorMode(definition: MajorModeDefinition): DefinedCommand;
+
+  interface MinorModeDefinition {
+    /** The command that turns it on and off, and the variable that says whether it is on. */
+    name: string;
+    /** What the mode line shows while it is on, with a leading space: " Ovwrt". */
+    lighter?: string;
+    doc?: string;
+    /** Whether it applies to every buffer rather than one at a time. */
+    global?: boolean;
+    /** Keys for the mode's keymap, NAME-map, which is used while the mode is on. */
+    bindings?: { [keys: string]: CommandName | DefinedCommand };
+    /** Runs after the variable changes, before the mode's hooks. */
+    onChange?: (enabled: boolean) => void;
+  }
+
+  /** Define a minor mode (Emacs's define-minor-mode). */
+  function defineMinorMode(definition: MinorModeDefinition): DefinedCommand;
+  /** The minor modes on in the current buffer. */
+  function enabledMinorModes(): string[];
+
+  /** A command's documentation, or undefined if there is no such command. */
+  function documentation(name: CommandName | DefinedCommand | (string & {})): string | undefined;
+  /** The file that defined a command, if a script did. */
+  function commandSource(name: CommandName | DefinedCommand | (string & {})): string | undefined;
+  /** Show text in the read-only *Help* buffer. */
+  function showHelp(text: string): void;
+  /** The file the current buffer visits, if any. */
+  function bufferFileName(): string | undefined;
+  function commandExists(name: string): boolean;
+  /**
+   * The command that is running (Emacs's this-command). In pre-command-hook,
+   * the command about to run; setThisCommand changes which one runs.
+   */
+  function thisCommand(): string | undefined;
+  /** Whether the running command was started by keys or M-x rather than called from code. */
+  function calledInteractively(): boolean;
+  /** Whether the region is active: shown, and what region commands act on (Emacs's region-active-p). */
+  function regionActive(): boolean;
 }
 
 var console: {
@@ -162,6 +284,20 @@ pub fn type_definitions(ed: &Editor) -> String {
             .map(|(i, p)| format!("{}: string", label(&p.name, i)))
             .collect();
         out += &format!("    \"{}\": [{}];\n", escape(&command.name), params.join(", "));
+    }
+    out += "  }\n\n";
+    out += "  /** Every variable, with its documentation. */\n";
+    out += "  interface Variables {\n";
+    for var in ed.variables().filter(|v| !v.hook) {
+        out += &variable_comment(&var.doc, var.source.as_deref(), "    ");
+        out += &format!("    \"{}\": Value;\n", escape(&var.name));
+    }
+    out += "  }\n\n";
+    out += "  /** Every hook, with its documentation. */\n";
+    out += "  interface Hooks {\n";
+    for var in ed.variables().filter(|v| v.hook) {
+        out += &variable_comment(&var.doc, var.source.as_deref(), "    ");
+        out += &format!("    \"{}\": Value;\n", escape(&var.name));
     }
     out += "  }\n";
     out += API;
@@ -192,6 +328,26 @@ fn doc_comment(command: &Command, indent: &str) -> String {
     if let Some(source) = &command.source {
         lines.push(String::new());
         lines.push(format!("Defined in {source}."));
+    }
+    let mut out = format!("{indent}/**\n");
+    for line in lines {
+        if line.is_empty() {
+            out += &format!("{indent} *\n");
+        } else {
+            out += &format!("{indent} * {line}\n");
+        }
+    }
+    out + &format!("{indent} */\n")
+}
+
+fn variable_comment(doc: &str, source: Option<&str>, indent: &str) -> String {
+    let mut lines: Vec<String> = doc.lines().map(|l| l.replace("*/", "*\\/")).collect();
+    if let Some(source) = source {
+        lines.push(String::new());
+        lines.push(format!("Defined in {source}."));
+    }
+    if lines.iter().all(|l| l.is_empty()) {
+        return String::new();
     }
     let mut out = format!("{indent}/**\n");
     for line in lines {
@@ -237,6 +393,13 @@ mod tests {
         assert!(dts.contains("    \"forward-char\": [];\n"));
         assert!(dts.contains(" * Visit a file in a buffer.\n"));
         assert!(dts.contains(" * @param file file name\n"));
+    }
+
+    #[test]
+    fn param_kinds_are_all_declared() {
+        for kind in ember_core::ParamKind::ALL {
+            assert!(API.contains(&format!("\"{}\"", kind.name())), "{} is missing from ParamKind", kind.name());
+        }
     }
 
     #[test]

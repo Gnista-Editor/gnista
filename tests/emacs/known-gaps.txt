@@ -1,5 +1,8 @@
 # Cases where Ember does not match Emacs yet, as `file/case  # reason`.
 # The oracle test fails if a listed case starts matching: remove it then.
 
+# electric-indent-mode, on by default in Emacs, re-indents after RET; Ember has no indentation yet.
+basic/newline-reindents  # electric-indent-mode
+
 # Intentional differences, not to be fixed.
 arguments/delete-more-than-there-is  # Emacs reports an internal "Args out of range" error naming the buffer; Ember says "End of buffer". The text is unchanged in both.

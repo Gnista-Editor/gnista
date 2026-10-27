@@ -7,8 +7,9 @@
 ;; Reads every tests/emacs/cases/*.json and writes the matching
 ;; tests/emacs/golden/*.json.  Each case is an object with `name', `text',
 ;; `keys' (space separated, in `kbd' notation), and optionally `point'
-;; (0-based, default 0) and `platform' (an Emacs `system-type' such as
-;; "darwin", for cases that only hold on one platform).
+;; (0-based, default 0), `modes' (minor or major modes to turn on before
+;; the keys, such as "delete-selection-mode"), and `platform' (an Emacs
+;; `system-type' such as "darwin", for cases that only hold on one platform).
 ;;
 ;; Each case runs in a fresh Fundamental mode buffer with an empty kill ring
 ;; and no mark.  The keys are typed into Emacs's real command loop, so an
@@ -54,7 +55,8 @@ while the case's keys are queued would read those instead."
   "Type CASE's keys and return the buffer's state afterwards, as an alist."
   (let ((text (alist-get 'text case))
         (keys (alist-get 'keys case))
-        (start (or (alist-get 'point case) 0)))
+        (start (or (alist-get 'point case) 0))
+        (modes (mapcar #'intern (alist-get 'modes case))))
     (when (get-buffer "*ember-oracle*")
       (kill-buffer "*ember-oracle*"))
     (with-current-buffer (get-buffer-create "*ember-oracle*")
@@ -65,6 +67,7 @@ while the case's keys are queued would read those instead."
       (buffer-enable-undo)
       (set-buffer-modified-p nil)
       (goto-char (1+ start))
+      (dolist (mode modes) (funcall mode 1))
       (setq mark-active nil
             mark-ring nil
             kill-ring nil
@@ -77,8 +80,15 @@ while the case's keys are queued would read those instead."
             ember-oracle--error nil
             unread-command-events (append (listify-key-sequence (kbd keys)) '(f35)))
       (recursive-edit)
+      (prog1 (ember-oracle--state case text start keys)
+        ;; Some modes are global; turn them off again for the next case.
+        (dolist (mode modes) (funcall mode -1))))))
+
+(defun ember-oracle--state (case text start keys)
+  "The current buffer's state after CASE, as an alist."
       `((name . ,(alist-get 'name case))
         (input . ((text . ,text) (point . ,start) (keys . ,keys)
+                  (modes . ,(vconcat (alist-get 'modes case)))
                   (platform . ,(alist-get 'platform case))))
         (text . ,(buffer-substring-no-properties (point-min) (point-max)))
         (point . ,(1- (point)))
@@ -86,7 +96,7 @@ while the case's keys are queued would read those instead."
         (mark_active . ,(if (and mark-active (mark t)) t :json-false))
         (kill_ring . ,(vconcat (mapcar #'substring-no-properties kill-ring)))
         (modified . ,(if (buffer-modified-p) t :json-false))
-        (error . ,ember-oracle--error)))))
+        (error . ,ember-oracle--error)))
 
 (defun ember-oracle--record-file (file golden-dir)
   "Run the cases in FILE and write their results into GOLDEN-DIR."

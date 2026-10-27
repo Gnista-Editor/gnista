@@ -8,6 +8,7 @@
         "text": "abcdef",
         "point": 0,
         "keys": "C-u 2 C-f",
+        "modes": [],
         "platform": null
       },
       "text": "abcdef",
@@ -24,6 +25,7 @@
         "text": "abcdefgh",
         "point": 0,
         "keys": "C-u C-f",
+        "modes": [],
         "platform": null
       },
       "text": "abcdefgh",
@@ -40,6 +42,7 @@
         "text": "abcdefghijklmnopqrstu",
         "point": 0,
         "keys": "C-u C-u C-f",
+        "modes": [],
         "platform": null
       },
       "text": "abcdefghijklmnopqrstu",
@@ -56,6 +59,7 @@
         "text": "abcdefgh",
         "point": 0,
         "keys": "M-3 C-f",
+        "modes": [],
         "platform": null
       },
       "text": "abcdefgh",
@@ -72,6 +76,7 @@
         "text": "abcdefghijklmnopqrstu",
         "point": 0,
         "keys": "M-1 M-2 C-f",
+        "modes": [],
         "platform": null
       },
       "text": "abcdefghijklmnopqrstu",
@@ -88,6 +93,7 @@
         "text": "abcdef",
         "point": 4,
         "keys": "C-- C-f",
+        "modes": [],
         "platform": null
       },
       "text": "abcdef",
@@ -104,6 +110,7 @@
         "text": "abcdef",
         "point": 4,
         "keys": "C-u - 2 C-f",
+        "modes": [],
         "platform": null
       },
       "text": "abcdef",
@@ -120,6 +127,7 @@
         "text": "",
         "point": 0,
         "keys": "C-u 3 a",
+        "modes": [],
         "platform": null
       },
       "text": "aaa",
@@ -136,6 +144,7 @@
         "text": "",
         "point": 0,
         "keys": "C-u a",
+        "modes": [],
         "platform": null
       },
       "text": "aaaa",
@@ -152,6 +161,7 @@
         "text": "",
         "point": 0,
         "keys": "C-u 1 2 x",
+        "modes": [],
         "platform": null
       },
       "text": "xxxxxxxxxxxx",
@@ -168,6 +178,7 @@
         "text": "a\nb\nc\nd",
         "point": 0,
         "keys": "C-u 2 C-k",
+        "modes": [],
         "platform": null
       },
       "text": "c\nd",
@@ -186,6 +197,7 @@
         "text": "one two\nthree",
         "point": 4,
         "keys": "C-u 0 C-k",
+        "modes": [],
         "platform": null
       },
       "text": "two\nthree",
@@ -204,6 +216,7 @@
         "text": "a\nb\nc\nd\ne",
         "point": 0,
         "keys": "C-u 3 C-n",
+        "modes": [],
         "platform": null
       },
       "text": "a\nb\nc\nd\ne",
@@ -220,6 +233,7 @@
         "text": "",
         "point": 0,
         "keys": "C-u 3 RET",
+        "modes": [],
         "platform": null
       },
       "text": "\n\n\n",
@@ -236,6 +250,7 @@
         "text": "abcdef",
         "point": 0,
         "keys": "C-u 2 C-d",
+        "modes": [],
         "platform": null
       },
       "text": "cdef",
@@ -254,6 +269,7 @@
         "text": "abcdef",
         "point": 4,
         "keys": "M-2 DEL",
+        "modes": [],
         "platform": null
       },
       "text": "abef",
@@ -272,6 +288,7 @@
         "text": "one two three four",
         "point": 0,
         "keys": "M-2 M-f",
+        "modes": [],
         "platform": null
       },
       "text": "one two three four",
@@ -288,6 +305,7 @@
         "text": "one two three four",
         "point": 0,
         "keys": "M-2 M-d",
+        "modes": [],
         "platform": null
       },
       "text": " three four",
@@ -306,6 +324,7 @@
         "text": "",
         "point": 0,
         "keys": "a C-x z",
+        "modes": [],
         "platform": null
       },
       "text": "aa",
@@ -322,6 +341,7 @@
         "text": "abcdef",
         "point": 0,
         "keys": "C-f C-x z z",
+        "modes": [],
         "platform": null
       },
       "text": "abcdef",
@@ -338,6 +358,7 @@
         "text": "abc",
         "point": 0,
         "keys": "C-u 9 C-f",
+        "modes": [],
         "platform": null
       },
       "text": "abc",
@@ -354,6 +375,7 @@
         "text": "a\nb\nc",
         "point": 0,
         "keys": "C-u 9 C-n",
+        "modes": [],
         "platform": null
       },
       "text": "a\nb\nc",
@@ -370,6 +392,7 @@
         "text": "a\nb\nc",
         "point": 4,
         "keys": "C-u 9 C-p",
+        "modes": [],
         "platform": null
       },
       "text": "a\nb\nc",
@@ -386,6 +409,7 @@
         "text": "",
         "point": 0,
         "keys": "C-u 1 2 C-u 3",
+        "modes": [],
         "platform": null
       },
       "text": "333333333333",
@@ -402,6 +426,7 @@
         "text": "",
         "point": 0,
         "keys": "C-u 3 -",
+        "modes": [],
         "platform": null
       },
       "text": "---",
@@ -418,6 +443,7 @@
         "text": "abcdefghijklmn",
         "point": 13,
         "keys": "M-- 0 1 C-f",
+        "modes": [],
         "platform": null
       },
       "text": "abcdefghijklmn",
@@ -434,6 +460,7 @@
         "text": "",
         "point": 0,
         "keys": "M-- a",
+        "modes": [],
         "platform": null
       },
       "text": "",
@@ -450,6 +477,7 @@
         "text": "abc",
         "point": 0,
         "keys": "M-0 x",
+        "modes": [],
         "platform": null
       },
       "text": "abc",
@@ -466,6 +494,7 @@
         "text": "1\n2\n3\n4\n5\n6",
         "point": 0,
         "keys": "C-u C-k",
+        "modes": [],
         "platform": null
       },
       "text": "5\n6",
@@ -484,6 +513,7 @@
         "text": "1\n2\n3\n4",
         "point": 5,
         "keys": "M-- C-k",
+        "modes": [],
         "platform": null
       },
       "text": "1\n\n4",
@@ -502,6 +532,7 @@
         "text": "a\nb",
         "point": 0,
         "keys": "C-u 5 C-k",
+        "modes": [],
         "platform": null
       },
       "text": "",
@@ -520,6 +551,7 @@
         "text": "1\n2\n3\n4",
         "point": 0,
         "keys": "C-k C-k C-u 2 C-k",
+        "modes": [],
         "platform": null
       },
       "text": "4",
@@ -538,6 +570,7 @@
         "text": "one two",
         "point": 0,
         "keys": "M-d C-e C-u C-y",
+        "modes": [],
         "platform": null
       },
       "text": " twoone",
@@ -556,6 +589,7 @@
         "text": "a\nb\nc",
         "point": 0,
         "keys": "M-d C-n M-d C-n M-d M-3 C-y",
+        "modes": [],
         "platform": null
       },
       "text": "\n\na",
@@ -576,6 +610,7 @@
         "text": "abcdef",
         "point": 0,
         "keys": "C-u 2 C-d C-u 2 C-d",
+        "modes": [],
         "platform": null
       },
       "text": "ef",
@@ -594,6 +629,7 @@
         "text": "abc",
         "point": 0,
         "keys": "C-u 5 C-d",
+        "modes": [],
         "platform": null
       },
       "text": "abc",
@@ -610,6 +646,7 @@
         "text": "",
         "point": 0,
         "keys": "a RET b RET c M-2 C-/",
+        "modes": [],
         "platform": null
       },
       "text": "a\nb",
@@ -626,6 +663,7 @@
         "text": "abcdef",
         "point": 0,
         "keys": "C-u 3 C-g C-f",
+        "modes": [],
         "platform": null
       },
       "text": "abcdef",
@@ -642,6 +680,7 @@
         "text": "one\ntwo\nthree",
         "point": 1,
         "keys": "C-u 3 C-a",
+        "modes": [],
         "platform": null
       },
       "text": "one\ntwo\nthree",
@@ -658,6 +697,7 @@
         "text": "one\ntwo\nthree",
         "point": 0,
         "keys": "M-2 C-e",
+        "modes": [],
         "platform": null
       },
       "text": "one\ntwo\nthree",
@@ -674,6 +714,7 @@
         "text": "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n",
         "point": 0,
         "keys": "M-3 M-<",
+        "modes": [],
         "platform": null
       },
       "text": "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n",
@@ -690,6 +731,7 @@
         "text": "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n",
         "point": 0,
         "keys": "M-3 M->",
+        "modes": [],
         "platform": null
       },
       "text": "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n",
@@ -706,6 +748,7 @@
         "text": "abc\ndef",
         "point": 5,
         "keys": "C-u M-<",
+        "modes": [],
         "platform": null
       },
       "text": "abc\ndef",
@@ -722,6 +765,7 @@
         "text": "a b c d e f g",
         "point": 0,
         "keys": "C-u M-f",
+        "modes": [],
         "platform": null
       },
       "text": "a b c d e f g",
@@ -738,6 +782,7 @@
         "text": "a b c d e",
         "point": 9,
         "keys": "M-3 M-b",
+        "modes": [],
         "platform": null
       },
       "text": "a b c d e",
@@ -754,6 +799,7 @@
         "text": "abcdefgh",
         "point": 0,
         "keys": "C-u 3 S-<right>",
+        "modes": [],
         "platform": null
       },
       "text": "abcdefgh",
@@ -770,6 +816,7 @@
         "text": "",
         "point": 0,
         "keys": "x C-x z z z",
+        "modes": [],
         "platform": null
       },
       "text": "xxxx",
@@ -786,6 +833,7 @@
         "text": "",
         "point": 0,
         "keys": "C-u 2 a C-x z",
+        "modes": [],
         "platform": null
       },
       "text": "aaaa",
@@ -802,6 +850,7 @@
         "text": "",
         "point": 0,
         "keys": "a C-u 3 C-x z",
+        "modes": [],
         "platform": null
       },
       "text": "aaaa",
@@ -818,6 +867,7 @@
         "text": "one\ntwo\nthree",
         "point": 0,
         "keys": "C-k C-x z",
+        "modes": [],
         "platform": null
       },
       "text": "two\nthree",
@@ -836,6 +886,7 @@
         "text": "",
         "point": 0,
         "keys": "C-x z",
+        "modes": [],
         "platform": null
       },
       "text": "",

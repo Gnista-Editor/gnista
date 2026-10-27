@@ -15,7 +15,7 @@ These tests check that Ember behaves like GNU Emacs by running the same keys on 
    { "name": "kill-line-twice-kills-the-newline", "text": "one\ntwo", "keys": "C-k C-k" }
    ```
 
-   `keys` are space separated, in Emacs's `kbd` notation (`C-x C-f`, `M-S-f`, `<f3>`, `SPC`). `point` is optional and counts characters from 0. `platform` is optional, for cases that only hold on one platform, as an Emacs `system-type` such as `"darwin"`.
+   `keys` are space separated, in Emacs's `kbd` notation (`C-x C-f`, `M-S-f`, `<f3>`, `SPC`). `point` is optional and counts characters from 0. `modes` is optional: commands that turn modes on before the keys, such as `["delete-selection-mode"]`, called with a prefix argument of 1 in both editors. `platform` is optional, for cases that only hold on one platform, as an Emacs `system-type` such as `"darwin"`.
 
 2. Record what Emacs does:
 
