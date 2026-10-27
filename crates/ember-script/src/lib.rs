@@ -19,7 +19,8 @@ use std::thread::LocalKey;
 use std::time::{Duration, Instant};
 
 use ember_core::{
-    Arg, Command, Editor, Error, Key, ParamKind, Result, abbreviate_path, expand_file_name,
+    Arg, Command, Editor, Error, Key, Keymap, ParamKind, PrefixArg, Result, abbreviate_path,
+    expand_file_name,
 };
 use rquickjs::context::EvalOptions;
 use rquickjs::function::{Opt, Rest};
@@ -28,6 +29,11 @@ use rquickjs::{
 };
 
 const PRELUDE: &str = include_str!("prelude.js");
+
+/// The packages that ship with Ember, in the order they load. Like the Lisp
+/// that Emacs preloads, they are part of the editor: `-q` skips init.ts but
+/// not these. Named by their path in the repository.
+const PACKAGES: &[(&str, &str)] = &[("packages/simple.ts", include_str!("../../../packages/simple.ts"))];
 
 /// How long a script may run before it is stopped, unless changed with
 /// [`Scripting::set_time_limit`]. The editor is single threaded, so a script
@@ -53,8 +59,9 @@ pub struct Scripting {
 }
 
 impl Scripting {
-    /// Starts a runtime, installs the `ember` global, and adds the script
-    /// commands `load-file` and `eval-expression` (M-:) to the editor.
+    /// Starts a runtime, installs the `ember` global, adds the script commands
+    /// `load-file` and `eval-expression` (M-:) to the editor, and loads the
+    /// packages that ship with Ember.
     pub fn new(ed: &mut Editor) -> Result<Scripting> {
         let runtime = Runtime::new().map_err(|e| Error::new(e.to_string()))?;
         runtime.set_interrupt_handler(Some(Box::new(|| {
@@ -69,6 +76,12 @@ impl Scripting {
                 .map_err(|e| js_error(&ctx, e))
         })?;
         scripting.define_commands(ed);
+        for (name, source) in PACKAGES {
+            LOADING.with_borrow_mut(|files| files.push(name.to_string()));
+            let result = scripting.eval_typescript(ed, name, source.to_string());
+            LOADING.with_borrow_mut(|files| files.pop());
+            result?;
+        }
         Ok(scripting)
     }
 
@@ -341,7 +354,83 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
         "mark",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer().mark())))?,
     )?;
+    native.set(
+        "prefixArg",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            let arg = with_editor(&ctx, |ed| Ok(ed.current_prefix_arg()))?;
+            prefix_to_js(&ctx, arg)
+        })?,
+    )?;
+    native.set(
+        "setPrefixArg",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, arg: Value<'js>| {
+            let arg = prefix_from_js(&ctx, arg)?;
+            with_editor(&ctx, |ed| {
+                ed.set_prefix_arg(arg);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "lastKey",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            with_editor(&ctx, |ed| Ok(ed.last_key().map(|k| k.to_string())))
+        })?,
+    )?;
+    native.set(
+        "setTransientMap",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, bindings: Object<'js>| {
+            let mut map = Keymap::default();
+            for entry in bindings.props::<String, String>() {
+                let (keys, command) = entry?;
+                let Some(parsed) = Key::parse_seq(&keys) else {
+                    return Err(Exception::throw_message(&ctx, &format!("Invalid key sequence: {keys:?}")));
+                };
+                map.bind(&parsed, &command);
+            }
+            with_editor(&ctx, |ed| {
+                ed.set_transient_map(map);
+                Ok(())
+            })
+        })?,
+    )?;
     ctx.globals().set("__ember", native)
+}
+
+/// A prefix argument as scripts see it, in Emacs's forms: null, a number,
+/// "-", or a one-element array such as [4] for C-u.
+fn prefix_to_js<'js>(ctx: &Ctx<'js>, arg: Option<PrefixArg>) -> rquickjs::Result<Value<'js>> {
+    Ok(match arg {
+        None => Value::new_null(ctx.clone()),
+        Some(PrefixArg::Number(n)) => Value::new_number(ctx.clone(), n as f64),
+        Some(PrefixArg::Minus) => rquickjs::String::from_str(ctx.clone(), "-")?.into_value(),
+        Some(PrefixArg::Universal(n)) => {
+            let list = rquickjs::Array::new(ctx.clone())?;
+            list.set(0, n as f64)?;
+            list.into_value()
+        }
+    })
+}
+
+fn prefix_from_js<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> rquickjs::Result<Option<PrefixArg>> {
+    if value.is_null() || value.is_undefined() {
+        return Ok(None);
+    }
+    if let Some(n) = value.as_number() {
+        return Ok(Some(PrefixArg::Number(n as i64)));
+    }
+    if let Some(s) = value.as_string()
+        && s.to_string()? == "-"
+    {
+        return Ok(Some(PrefixArg::Minus));
+    }
+    if let Some(list) = value.as_array()
+        && list.len() == 1
+    {
+        let n: f64 = list.get(0)?;
+        return Ok(Some(PrefixArg::Universal(n as i64)));
+    }
+    Err(Exception::throw_type(ctx, "A prefix argument is null, a number, \"-\" or [n]"))
 }
 
 /// What a failed script threw: its message, whether it looks like a bug in

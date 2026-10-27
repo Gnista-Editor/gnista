@@ -7,6 +7,7 @@ use crate::error::{Error, Result};
 use crate::files::expand_file_name;
 use crate::key::{KeyCode, format_keys};
 use crate::keymap::Lookup;
+use crate::prefix::PrefixArg;
 
 /// Commands whose kills join onto the previous kill when run back to back.
 pub(crate) const KILL_COMMANDS: &[&str] =
@@ -46,71 +47,122 @@ pub(crate) fn install(ed: &mut Editor) {
 }
 
 fn movement(ed: &mut Editor) {
-    def_motion(ed, "forward-char", "Move point one character forward.", |ed, _| {
-        let b = ed.buffer_mut();
-        if b.point() >= b.len() {
-            return err("End of buffer");
-        }
-        b.set_point(b.point() + 1);
-        Ok(())
-    });
-    def_motion(ed, "backward-char", "Move point one character backward.", |ed, _| {
-        let b = ed.buffer_mut();
-        if b.point() == 0 {
-            return err("Beginning of buffer");
-        }
-        b.set_point(b.point() - 1);
-        Ok(())
-    });
+    def_motion(
+        ed,
+        "forward-char",
+        "Move point forward a character, or as many as the prefix argument says.\n\nA negative argument moves backward.",
+        |ed, _| move_chars(ed, ed.prefix_numeric()),
+    );
+    def_motion(
+        ed,
+        "backward-char",
+        "Move point backward a character, or as many as the prefix argument says.\n\nA negative argument moves forward.",
+        |ed, _| move_chars(ed, -ed.prefix_numeric()),
+    );
     def_motion(
         ed,
         "next-line",
-        "Move point to the next line.\n\nRepeated line moves keep to the column where they started.",
-        |ed, _| line_move(ed, true),
+        "Move point down a line, or as many as the prefix argument says.\n\nRepeated line moves keep to the column where they started.",
+        |ed, _| line_move(ed, ed.prefix_numeric()),
     );
     def_motion(
         ed,
         "previous-line",
-        "Move point to the previous line.\n\nRepeated line moves keep to the column where they started.",
-        |ed, _| line_move(ed, false),
+        "Move point up a line, or as many as the prefix argument says.\n\nRepeated line moves keep to the column where they started.",
+        |ed, _| line_move(ed, -ed.prefix_numeric()),
     );
-    def_motion(ed, "move-beginning-of-line", "Move point to the beginning of the line.", |ed, _| {
-        let b = ed.buffer_mut();
-        b.set_point(b.line_start(b.line_of(b.point())));
-        Ok(())
-    });
-    def_motion(ed, "move-end-of-line", "Move point to the end of the line.", |ed, _| {
-        let b = ed.buffer_mut();
-        b.set_point(b.line_end(b.line_of(b.point())));
-        Ok(())
-    });
-    def_motion(ed, "forward-word", "Move point forward to the end of the next word.", |ed, _| {
-        let b = ed.buffer_mut();
-        b.set_point(word_end(b, b.point()));
-        Ok(())
-    });
-    def_motion(ed, "backward-word", "Move point back to the start of the previous word.", |ed, _| {
-        let b = ed.buffer_mut();
-        b.set_point(word_start(b, b.point()));
-        Ok(())
-    });
-    def_motion(ed, "beginning-of-buffer", "Move point to the beginning of the buffer.\n\nUnless the region is active, leaves the mark where point was.", |ed, _| {
-        let b = ed.buffer_mut();
-        if !b.is_mark_active() {
-            b.set_mark(Some(b.point()));
+    def_motion(
+        ed,
+        "move-beginning-of-line",
+        "Move point to the beginning of the line.\n\nWith a prefix argument N, move forward N - 1 lines first.",
+        |ed, _| {
+            let n = ed.prefix_numeric();
+            let b = ed.buffer_mut();
+            let pos = if n == 1 { b.point() } else { forward_line(b, b.point(), n - 1) };
+            b.set_point(b.line_start(b.line_of(pos)));
+            Ok(())
+        },
+    );
+    def_motion(
+        ed,
+        "move-end-of-line",
+        "Move point to the end of the line.\n\nWith a prefix argument N, move forward N - 1 lines first.",
+        |ed, _| {
+            let n = ed.prefix_numeric();
+            let b = ed.buffer_mut();
+            let pos = if n == 1 { b.point() } else { forward_line(b, b.point(), n - 1) };
+            b.set_point(b.line_end(b.line_of(pos)));
+            Ok(())
+        },
+    );
+    def_motion(
+        ed,
+        "forward-word",
+        "Move point forward to the end of a word, or as many words as the prefix argument says.\n\nA negative argument moves backward.",
+        |ed, _| {
+            let n = ed.prefix_numeric();
+            let b = ed.buffer_mut();
+            b.set_point(move_words(b, b.point(), n));
+            Ok(())
+        },
+    );
+    def_motion(
+        ed,
+        "backward-word",
+        "Move point back to the start of a word, or as many words as the prefix argument says.\n\nA negative argument moves forward.",
+        |ed, _| {
+            let n = ed.prefix_numeric();
+            let b = ed.buffer_mut();
+            b.set_point(move_words(b, b.point(), -n));
+            Ok(())
+        },
+    );
+    def_motion(
+        ed,
+        "beginning-of-buffer",
+        "Move point to the beginning of the buffer.\n\nUnless the region is active, leaves the mark where point was. With a numeric prefix argument N, move to N tenths of the way through the buffer instead, at the start of the next line. Plain C-u does not leave the mark.",
+        |ed, _| {
+            let arg = ed.current_prefix_arg();
+            let b = ed.buffer_mut();
+            if !matches!(arg, Some(PrefixArg::Universal(_))) && !b.is_mark_active() {
+                b.set_mark(Some(b.point()));
+            }
+            match arg {
+                Some(arg @ (PrefixArg::Number(_) | PrefixArg::Minus)) => {
+                    let pos = (1 + tenths(b.len(), arg.numeric())).clamp(0, b.len() as i64) as usize;
+                    b.set_point(forward_line(b, pos, 1));
+                }
+                _ => b.set_point(0),
+            }
+            Ok(())
+        },
+    );
+    def_motion(
+        ed,
+        "end-of-buffer",
+        "Move point to the end of the buffer.\n\nUnless the region is active, leaves the mark where point was. With a numeric prefix argument N, move to N tenths of the way from the end instead, at the start of the next line. Plain C-u does not leave the mark.",
+        |ed, _| {
+            let arg = ed.current_prefix_arg();
+            let b = ed.buffer_mut();
+            if !matches!(arg, Some(PrefixArg::Universal(_))) && !b.is_mark_active() {
+                b.set_mark(Some(b.point()));
+            }
+            match arg {
+                Some(arg @ (PrefixArg::Number(_) | PrefixArg::Minus)) => {
+                    let pos = (b.len() as i64 - tenths(b.len(), arg.numeric())).clamp(0, b.len() as i64) as usize;
+                    b.set_point(forward_line(b, pos, 1));
+                }
+                _ => b.set_point(b.len()),
+            }
+            Ok(())
+        },
+    );
+    def_motion(ed, "scroll-up-command", "Scroll the text up by nearly a screen, showing later lines.\n\nWith a numeric prefix argument, scroll that many lines; with C-- alone, scroll the other way.", |ed, _| {
+        match ed.current_prefix_arg() {
+            None => {}
+            Some(PrefixArg::Minus) => return scroll_screen_down(ed),
+            Some(arg) => return scroll_lines_or_error(ed, arg.numeric()),
         }
-        b.set_point(0);
-        Ok(())
-    });
-    def_motion(ed, "end-of-buffer", "Move point to the end of the buffer.\n\nUnless the region is active, leaves the mark where point was.", |ed, _| {
-        let b = ed.buffer_mut();
-        if !b.is_mark_active() {
-            b.set_mark(Some(b.point()));
-        }
-        b.set_point(b.len());
-        Ok(())
-    });
-    def_motion(ed, "scroll-up-command", "Scroll the text up by nearly a screen, showing later lines.", |ed, _| {
         let step = scroll_step(ed);
         let b = ed.window_buffer_mut();
         let last = b.line_count() - 1;
@@ -124,20 +176,12 @@ fn movement(ed: &mut Editor) {
         }
         Ok(())
     });
-    def_motion(ed, "scroll-down-command", "Scroll the text down by nearly a screen, showing earlier lines.", |ed, _| {
-        let step = scroll_step(ed);
-        let height = ed.viewport_height();
-        let b = ed.window_buffer_mut();
-        if b.top_line == 0 {
-            b.set_point(0);
-            return err("Beginning of buffer");
+    def_motion(ed, "scroll-down-command", "Scroll the text down by nearly a screen, showing earlier lines.\n\nWith a numeric prefix argument, scroll that many lines; with C-- alone, scroll the other way.", |ed, _| {
+        match ed.current_prefix_arg() {
+            None => scroll_screen_down(ed),
+            Some(PrefixArg::Minus) => ed.call("scroll-up-command", Vec::new()),
+            Some(arg) => scroll_lines_or_error(ed, -arg.numeric()),
         }
-        b.top_line = b.top_line.saturating_sub(step);
-        let bottom = b.top_line + height - 1;
-        if b.line_of(b.point()) > bottom {
-            b.set_point(b.line_start(bottom));
-        }
-        Ok(())
     });
     def(
         ed,
@@ -154,18 +198,104 @@ fn movement(ed: &mut Editor) {
             Ok(())
         },
     );
-    def(ed, "scroll-up-line", "Scroll the text up one line, showing the next line.", |ed, _| {
-        if scroll_lines(ed, 1) { Ok(()) } else { err("End of buffer") }
+    def(ed, "scroll-up-line", "Scroll the text up a line, or as many as the prefix argument says.", |ed, _| {
+        scroll_lines_or_error(ed, ed.prefix_numeric())
     });
-    def(ed, "scroll-down-line", "Scroll the text down one line, showing the previous line.", |ed, _| {
-        if scroll_lines(ed, -1) { Ok(()) } else { err("Beginning of buffer") }
+    def(ed, "scroll-down-line", "Scroll the text down a line, or as many as the prefix argument says.", |ed, _| {
+        scroll_lines_or_error(ed, -ed.prefix_numeric())
     });
-    def(ed, "recenter", "Scroll so the line with point is in the middle of the window.", |ed, _| {
-        let height = ed.viewport_height();
-        let b = ed.window_buffer_mut();
-        b.top_line = b.line_of(b.point()).saturating_sub(height / 2);
+    def(
+        ed,
+        "recenter",
+        "Scroll so the line with point is in the middle of the window.\n\nWith a numeric prefix argument N, put it on line N of the window instead, counting from the bottom if N is negative.",
+        |ed, _| {
+            let height = ed.viewport_height() as i64;
+            let arg = ed.current_prefix_arg();
+            let b = ed.window_buffer_mut();
+            let line = b.line_of(b.point()) as i64;
+            let row = match arg {
+                Some(arg @ (PrefixArg::Number(_) | PrefixArg::Minus)) => {
+                    let n = arg.numeric();
+                    if n >= 0 { n.min(height - 1) } else { (height + n).max(0) }
+                }
+                _ => height / 2,
+            };
+            b.top_line = (line - row).max(0) as usize;
+            Ok(())
+        },
+    );
+}
+
+/// Moves point `n` characters, backward if negative. Like Emacs, going past
+/// either end stops there and signals an error.
+fn move_chars(ed: &mut Editor, n: i64) -> Result<()> {
+    let b = ed.buffer_mut();
+    let target = b.point() as i64 + n;
+    if target < 0 {
+        b.set_point(0);
+        return err("Beginning of buffer");
+    }
+    if target > b.len() as i64 {
+        b.set_point(b.len());
+        return err("End of buffer");
+    }
+    b.set_point(target as usize);
+    Ok(())
+}
+
+/// The start of the line `n` lines from the one containing `pos`, as Emacs's
+/// `forward-line` moves: line 0 is the current line, and going past the last
+/// line stops at the end of the buffer.
+fn forward_line(b: &Buffer, pos: usize, n: i64) -> usize {
+    let line = b.line_of(pos) as i64 + n;
+    if line < 0 {
+        0
+    } else if line as usize >= b.line_count() {
+        b.len()
+    } else {
+        b.line_start(line as usize)
+    }
+}
+
+/// `n` tenths of `size`, rounding towards zero as Emacs's integer division does.
+fn tenths(size: usize, n: i64) -> i64 {
+    size as i64 * n / 10
+}
+
+/// The position after moving `n` words from `pos`, backward if negative.
+fn move_words(b: &Buffer, mut pos: usize, n: i64) -> usize {
+    for _ in 0..n.unsigned_abs() {
+        pos = if n > 0 { word_end(b, pos) } else { word_start(b, pos) };
+    }
+    pos
+}
+
+/// Scrolls `lines` lines, signalling an error if the window cannot scroll at all.
+fn scroll_lines_or_error(ed: &mut Editor, lines: i64) -> Result<()> {
+    if scroll_lines(ed, lines as isize) {
         Ok(())
-    });
+    } else if lines < 0 {
+        err("Beginning of buffer")
+    } else {
+        err("End of buffer")
+    }
+}
+
+/// Scrolls back by nearly a screen, as M-v does.
+fn scroll_screen_down(ed: &mut Editor) -> Result<()> {
+    let step = scroll_step(ed);
+    let height = ed.viewport_height();
+    let b = ed.window_buffer_mut();
+    if b.top_line == 0 {
+        b.set_point(0);
+        return err("Beginning of buffer");
+    }
+    b.top_line = b.top_line.saturating_sub(step);
+    let bottom = b.top_line + height - 1;
+    if b.line_of(b.point()) > bottom {
+        b.set_point(b.line_start(bottom));
+    }
+    Ok(())
 }
 
 /// Scrolls the window by `lines`, positive towards the end of the buffer,
@@ -201,7 +331,8 @@ fn scroll_lines(ed: &mut Editor, lines: isize) -> bool {
 const SCROLL_KEEPS_COLUMN: &[&str] =
     &["next-line", "previous-line", "mwheel-scroll", "scroll-up-line", "scroll-down-line"];
 
-fn line_move(ed: &mut Editor, down: bool) -> Result<()> {
+/// Moves point `n` lines, up if negative, keeping the goal column.
+fn line_move(ed: &mut Editor, n: i64) -> Result<()> {
     let continuing = ed.last_command().is_some_and(|c| SCROLL_KEEPS_COLUMN.contains(&c));
     let b = ed.buffer();
     let line = b.line_of(b.point());
@@ -211,21 +342,17 @@ fn line_move(ed: &mut Editor, down: bool) -> Result<()> {
     };
     ed.goal_column = Some(goal);
     let b = ed.buffer_mut();
-    let target = if down {
-        if line + 1 >= b.line_count() {
-            b.set_point(b.len());
-            return err("End of buffer");
-        }
-        line + 1
-    } else {
-        if line == 0 {
-            b.set_point(0);
-            return err("Beginning of buffer");
-        }
-        line - 1
-    };
-    let start = b.line_start(target);
-    b.set_point((start + goal).min(b.line_end(target)));
+    let target = line as i64 + n;
+    if target >= b.line_count() as i64 {
+        b.set_point(b.len());
+        return err("End of buffer");
+    }
+    if target < 0 {
+        b.set_point(0);
+        return err("Beginning of buffer");
+    }
+    let start = b.line_start(target as usize);
+    b.set_point((start + goal).min(b.line_end(target as usize)));
     Ok(())
 }
 
@@ -259,12 +386,16 @@ fn word_start(b: &Buffer, mut pos: usize) -> usize {
 }
 
 fn editing(ed: &mut Editor) {
-    def(ed, "self-insert-command", "Insert the character you typed.", |ed, _| {
+    def(ed, "self-insert-command", "Insert the character you typed, as many times as the prefix argument says.", |ed, _| {
         let c = ed
             .last_key
             .and_then(|k| k.printable())
             .ok_or_else(|| Error::new("self-insert-command must be run from a key"))?;
-        ed.buffer_mut().insert(c.encode_utf8(&mut [0; 4]))
+        let n = ed.prefix_numeric();
+        if n < 0 {
+            return Err(Error::new(format!("Negative repetition argument {n}")));
+        }
+        ed.buffer_mut().insert(&c.to_string().repeat(n as usize))
     });
     ed.define_command(
         Command::new("insert", "Insert text at point.", |ed, args| {
@@ -273,28 +404,30 @@ fn editing(ed: &mut Editor) {
         })
         .param("text", ParamKind::String, "Insert: "),
     );
-    def(ed, "newline", "Insert a newline.", |ed, _| ed.buffer_mut().insert("\n"));
+    def(ed, "newline", "Insert a newline, or as many as the prefix argument says.", |ed, _| {
+        let n = ed.prefix_numeric().max(0) as usize;
+        ed.buffer_mut().insert(&"\n".repeat(n))
+    });
     def(ed, "indent-for-tab-command", "Indent the current line. For now this inserts a tab.", |ed, _| {
         ed.buffer_mut().insert("\t")
     });
-    def(ed, "delete-backward-char", "Delete the character before point.", |ed, _| {
-        let b = ed.buffer_mut();
-        if b.point() == 0 {
-            return err("Beginning of buffer");
+    def(
+        ed,
+        "delete-backward-char",
+        "Delete the character before point, or as many as the prefix argument says.\n\nWith a prefix argument, the characters are killed rather than deleted, so they can be yanked back.",
+        |ed, _| delete_chars(ed, -ed.prefix_numeric()),
+    );
+    def(
+        ed,
+        "delete-char",
+        "Delete the character after point, or as many as the prefix argument says.\n\nWith a prefix argument, the characters are killed rather than deleted, so they can be yanked back.",
+        |ed, _| delete_chars(ed, ed.prefix_numeric()),
+    );
+    def(ed, "undo", "Undo the last change, or as many changes as the prefix argument says.\n\nRepeat to undo earlier changes.", |ed, _| {
+        for _ in 0..ed.prefix_numeric().max(1) {
+            ed.buffer_mut().undo()?;
         }
-        let p = b.point();
-        b.delete(p - 1..p).map(drop)
-    });
-    def(ed, "delete-char", "Delete the character after point.", |ed, _| {
-        let b = ed.buffer_mut();
-        if b.point() >= b.len() {
-            return err("End of buffer");
-        }
-        let p = b.point();
-        b.delete(p..p + 1).map(drop)
-    });
-    def(ed, "undo", "Undo the last change. Repeat to undo earlier changes.", |ed, _| {
-        ed.buffer_mut().undo()
+        Ok(())
     });
     def(
         ed,
@@ -339,35 +472,39 @@ fn killing(ed: &mut Editor) {
     def(
         ed,
         "kill-line",
-        "Kill the rest of the line, or the newline if only whitespace is left.\n\nConsecutive kills join into one kill ring entry.",
+        "Kill the rest of the line, or the newline if only spaces and tabs are left.\n\nWith a prefix argument N, kill N whole lines, newlines included; 0 kills back to the start of the line, and a negative N kills lines backward. Consecutive kills join into one kill ring entry.",
         |ed, _| {
+            let arg = ed.current_prefix_arg();
             let b = ed.buffer_mut();
             let p = b.point();
-            if p >= b.len() {
-                return err("End of buffer");
-            }
-            let end = b.line_end(b.line_of(p));
-            let rest_is_blank = b.slice(p..end).trim().is_empty();
-            let to = if rest_is_blank && end < b.len() { end + 1 } else { end };
-            let killed = b.delete(p..to)?;
-            ed.kill(killed, false);
+            let to = match arg {
+                Some(arg) => forward_line(b, p, arg.numeric()),
+                None => {
+                    if p >= b.len() {
+                        return err("End of buffer");
+                    }
+                    let end = b.line_end(b.line_of(p));
+                    let rest_is_blank = b.slice(p..end).chars().all(|c| c == ' ' || c == '\t');
+                    if rest_is_blank && end < b.len() { end + 1 } else { end }
+                }
+            };
+            let killed = b.delete(p.min(to)..p.max(to))?;
+            ed.kill(killed, to < p);
             Ok(())
         },
     );
-    def(ed, "kill-word", "Kill forward to the end of the next word.", |ed, _| {
-        let b = ed.buffer_mut();
-        let p = b.point();
-        let killed = b.delete(p..word_end(b, p))?;
-        ed.kill(killed, false);
-        Ok(())
-    });
-    def(ed, "backward-kill-word", "Kill back to the start of the previous word.", |ed, _| {
-        let b = ed.buffer_mut();
-        let p = b.point();
-        let killed = b.delete(word_start(b, p)..p)?;
-        ed.kill(killed, true);
-        Ok(())
-    });
+    def(
+        ed,
+        "kill-word",
+        "Kill forward to the end of a word, or as many words as the prefix argument says.\n\nA negative argument kills backward.",
+        |ed, _| kill_words(ed, ed.prefix_numeric()),
+    );
+    def(
+        ed,
+        "backward-kill-word",
+        "Kill back to the start of a word, or as many words as the prefix argument says.\n\nA negative argument kills forward.",
+        |ed, _| kill_words(ed, -ed.prefix_numeric()),
+    );
     def(ed, "kill-region", "Kill the text between point and the mark.", |ed, _| {
         let region = region(ed.buffer())?;
         let killed = ed.buffer_mut().delete(region)?;
@@ -381,17 +518,67 @@ fn killing(ed: &mut Editor) {
         ed.buffer_mut().deactivate_mark();
         Ok(())
     });
-    def(ed, "yank", "Insert the most recent kill, leaving the mark at its start.", |ed, _| {
-        // Emacs sets the mark before it looks at the kill ring, even if it is empty.
-        let b = ed.buffer_mut();
-        b.set_mark(Some(b.point()));
-        let text = ed
-            .kill_ring
-            .last()
-            .cloned()
-            .ok_or_else(|| Error::new("Kill ring is empty"))?;
-        ed.buffer_mut().insert(&text)
-    });
+    def(
+        ed,
+        "yank",
+        "Insert the most recent kill, leaving the mark at its start.\n\nWith a numeric prefix argument N, insert the Nth most recent kill. With plain C-u, leave point at the start and the mark at the end.",
+        |ed, _| {
+            let arg = ed.current_prefix_arg();
+            // Emacs sets the mark before it looks at the kill ring, even if it is empty.
+            let b = ed.buffer_mut();
+            b.set_mark(Some(b.point()));
+            if ed.kill_ring.is_empty() {
+                return err("Kill ring is empty");
+            }
+            let back = match arg {
+                None | Some(PrefixArg::Universal(_)) => 0,
+                Some(PrefixArg::Minus) => -2,
+                Some(PrefixArg::Number(n)) => n - 1,
+            };
+            let len = ed.kill_ring.len() as i64;
+            let text = ed.kill_ring[(len - 1 - back).rem_euclid(len) as usize].clone();
+            let b = ed.buffer_mut();
+            b.insert(&text)?;
+            if let Some(PrefixArg::Universal(_)) = arg {
+                let mark = b.mark().expect("set above");
+                b.set_mark(Some(b.point()));
+                b.set_point(mark);
+            }
+            Ok(())
+        },
+    );
+}
+
+/// Deletes `n` characters after point, or before it if negative. With a
+/// prefix argument they are killed instead, as Emacs's delete-char does.
+/// Like Emacs, asking for more characters than there are deletes nothing.
+fn delete_chars(ed: &mut Editor, n: i64) -> Result<()> {
+    let kill = ed.current_prefix_arg().is_some();
+    let b = ed.buffer_mut();
+    let p = b.point() as i64;
+    let (start, end) = if n >= 0 { (p, p + n) } else { (p + n, p) };
+    if start < 0 {
+        return err("Beginning of buffer");
+    }
+    if end > b.len() as i64 {
+        return err("End of buffer");
+    }
+    let deleted = b.delete(start as usize..end as usize)?;
+    if kill {
+        ed.kill(deleted, n < 0);
+        ed.set_this_command("kill-region");
+    }
+    Ok(())
+}
+
+/// Kills `n` words after point, or before it if negative.
+fn kill_words(ed: &mut Editor, n: i64) -> Result<()> {
+    let b = ed.buffer_mut();
+    let p = b.point();
+    let to = move_words(b, p, n);
+    let killed = b.delete(p.min(to)..p.max(to))?;
+    ed.kill(killed, to < p);
+    Ok(())
 }
 
 fn region(b: &Buffer) -> Result<std::ops::Range<usize>> {
@@ -533,8 +720,9 @@ fn minibuffer(ed: &mut Editor) {
     ed.define_command(
         Command::new(
             "execute-extended-command",
-            "Read a command name, with completion, and run it.",
+            "Read a command name, with completion, and run it.\n\nA prefix argument given to M-x goes to the command it runs.",
             |ed, args| {
+                ed.set_prefix_arg(ed.current_prefix_arg());
                 ed.run_interactive(args[0].as_str()?);
                 Ok(())
             },

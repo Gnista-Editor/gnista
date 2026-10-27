@@ -11,6 +11,7 @@ use crate::error::{Error, Result};
 use crate::files::{abbreviate_dir, expand_file_name};
 use crate::key::{Key, KeyCode, format_keys};
 use crate::keymap::{Keymap, Lookup};
+use crate::prefix::{PrefixArg, prefix_numeric_value};
 
 /// A minibuffer prompt waiting for the user to type an argument.
 pub(crate) struct Prompt {
@@ -22,6 +23,8 @@ pub(crate) struct Prompt {
 struct PendingCall {
     command: Rc<Command>,
     args: Vec<Arg>,
+    /// The prefix argument the command was started with, kept for when it runs.
+    prefix: Option<PrefixArg>,
 }
 
 /// All editor state. A front end feeds it keys with [`Editor::handle_key`]
@@ -44,6 +47,14 @@ pub struct Editor {
     commands: BTreeMap<String, Rc<Command>>,
     pub global_map: Keymap,
     pub minibuffer_map: Keymap,
+    /// Bindings for the next key sequence only, ahead of every other keymap.
+    transient_map: Option<Keymap>,
+    /// The prefix argument for the next command, as prefix commands leave it
+    /// (Emacs's `prefix-arg`).
+    prefix_arg: Option<PrefixArg>,
+    /// The prefix argument of the command that is running (Emacs's
+    /// `current-prefix-arg`).
+    current_prefix_arg: Option<PrefixArg>,
     pub(crate) message: Option<String>,
     /// The error from the last interactive command that failed, until taken.
     last_error: Option<Error>,
@@ -83,6 +94,9 @@ impl Editor {
             commands: BTreeMap::new(),
             global_map: Keymap::default(),
             minibuffer_map: Keymap::default(),
+            transient_map: None,
+            prefix_arg: None,
+            current_prefix_arg: None,
             message: None,
             last_error: None,
             kill_ring: Vec::new(),
@@ -128,6 +142,11 @@ impl Editor {
     /// prompting for them. This is how code, scripts and tool calls invoke
     /// commands; errors are returned rather than shown.
     pub fn call(&mut self, name: &str, args: Vec<Arg>) -> Result<()> {
+        self.call_with_prefix(name, args, None)
+    }
+
+    /// Like [`Editor::call`], with a prefix argument, as if typed after C-u or M-5.
+    pub fn call_with_prefix(&mut self, name: &str, args: Vec<Arg>, prefix: Option<PrefixArg>) -> Result<()> {
         let command = self
             .command(name)
             .ok_or_else(|| Error::new(format!("No such command: {name}")))?;
@@ -139,13 +158,55 @@ impl Editor {
             )));
         }
         self.buffer_mut().undo_boundary();
-        self.invoke(command, args)
+        let saved = std::mem::replace(&mut self.current_prefix_arg, prefix);
+        let result = self.invoke(command, args);
+        self.current_prefix_arg = saved;
+        result
+    }
+
+    // Prefix arguments
+
+    /// The prefix argument of the running command, if it was given one.
+    pub fn current_prefix_arg(&self) -> Option<PrefixArg> {
+        self.current_prefix_arg
+    }
+
+    /// The running command's prefix argument as a count: 1 when there is none.
+    pub fn prefix_numeric(&self) -> i64 {
+        prefix_numeric_value(self.current_prefix_arg)
+    }
+
+    /// Gives the next command a prefix argument, as prefix commands such as
+    /// C-u do. A command that leaves one is transparent: it does not become
+    /// the last command, so C-k C-u 2 C-k still joins the kills.
+    pub fn set_prefix_arg(&mut self, arg: Option<PrefixArg>) {
+        self.prefix_arg = arg;
+    }
+
+    /// Binds keys for the next key sequence only, ahead of every other
+    /// keymap, as Emacs's `set-transient-map` does. Prefix commands use it
+    /// so that digits continue the argument.
+    pub fn set_transient_map(&mut self, map: Keymap) {
+        self.transient_map = Some(map);
+    }
+
+    /// Names the running command, for commands that should count as another
+    /// one afterwards. Deleting with a prefix argument kills, so it counts
+    /// as `kill-region` and the next kill joins onto it.
+    pub fn set_this_command(&mut self, name: &str) {
+        self.this_command = Some(name.to_string());
+    }
+
+    /// The last key typed: the one that ran the current command.
+    pub fn last_key(&self) -> Option<Key> {
+        self.last_key
     }
 
     /// Runs a command the way a key binding does: prompting in the minibuffer
     /// for any parameters, and showing errors in the echo area.
     pub fn run_interactive(&mut self, name: &str) {
         let shifted = std::mem::take(&mut self.shift_translated);
+        let prefix = self.prefix_arg.take();
         let Some(command) = self.command(name) else {
             self.message = Some(format!("No such command: {name}"));
             return;
@@ -167,9 +228,9 @@ impl Editor {
             self.shift_select(shifted);
         }
         if command.params.is_empty() {
-            self.execute(command, Vec::new());
+            self.execute(command, Vec::new(), prefix);
         } else {
-            self.pending_call = Some(PendingCall { command, args: Vec::new() });
+            self.pending_call = Some(PendingCall { command, args: Vec::new(), prefix });
             self.read_next_arg();
         }
     }
@@ -203,7 +264,7 @@ impl Editor {
             return;
         }
         let call = self.pending_call.take().expect("checked above");
-        self.execute(call.command, call.args);
+        self.execute(call.command, call.args, call.prefix);
     }
 
     /// Hands the next argument to the command waiting for it.
@@ -221,12 +282,22 @@ impl Editor {
         self.reading_keys = None;
         self.pending_keys.clear();
         self.minibuffer.set_text("");
+        self.transient_map = None;
+        self.prefix_arg = None;
     }
 
-    fn execute(&mut self, command: Rc<Command>, args: Vec<Arg>) {
+    fn execute(&mut self, command: Rc<Command>, args: Vec<Arg>, prefix: Option<PrefixArg>) {
+        let saved = std::mem::replace(&mut self.current_prefix_arg, prefix);
+        let last = self.last_command.clone();
         if let Err(e) = self.invoke(command, args) {
             self.message = Some(e.to_string());
             self.last_error = Some(e);
+        }
+        self.current_prefix_arg = saved;
+        // A prefix command leaves an argument for the next command and stays
+        // out of the way, as Emacs's prefix-command-preserve-state does.
+        if self.prefix_arg.is_some() {
+            self.last_command = last;
         }
     }
 
@@ -287,6 +358,7 @@ impl Editor {
             }
             Lookup::Command(name) => {
                 self.pending_keys.clear();
+                self.transient_map = None;
                 self.last_key = Some(key);
                 self.run_interactive(&name);
             }
@@ -300,6 +372,7 @@ impl Editor {
             }
             Lookup::Unbound => {
                 self.shift_translated = false;
+                self.transient_map = None;
                 let keys = std::mem::take(&mut self.pending_keys);
                 if keys.len() == 1 && key.printable().is_some() {
                     self.last_key = Some(key);
@@ -311,9 +384,15 @@ impl Editor {
         }
     }
 
-    /// Looks a key sequence up in the active keymaps: the minibuffer's first
-    /// while it is active, then the global map.
+    /// Looks a key sequence up in the active keymaps: a transient map first,
+    /// then the minibuffer's while it is active, then the global map.
     pub fn lookup(&self, keys: &[Key]) -> Lookup {
+        if let Some(map) = &self.transient_map {
+            match map.lookup(keys) {
+                Lookup::Unbound => {}
+                found => return found,
+            }
+        }
         if self.prompt.is_some() {
             match self.minibuffer_map.lookup(keys) {
                 Lookup::Unbound => {}

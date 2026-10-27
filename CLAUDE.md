@@ -6,7 +6,7 @@ The plan for growing Ember towards Emacs parity is in [docs/plan.md](docs/plan.m
 
 ## Current state
 
-A working editor, in a terminal (`ember`) or a window (`ember-gui`), with one window: buffers, files, Emacs movement and editing keys, the active region with shift selection (transient-mark-mode and shift-select-mode, both on), mouse wheel and trackpad scrolling, kill ring, undo, M-x with completion, the minibuffer, and `C-h f` / `C-h k` / `C-h b`. TypeScript extensions: `init.ts` defines commands and key bindings, `M-x load-file` reloads it, and `M-:` evaluates an expression.
+A working editor, in a terminal (`ember`) or a window (`ember-gui`), with one window: buffers, files, Emacs movement and editing keys, the active region with shift selection (transient-mark-mode and shift-select-mode, both on), prefix arguments (`C-u`, `M-<digit>`, `C--`), mouse wheel and trackpad scrolling, kill ring, undo, M-x with completion, the minibuffer, and `C-h f` / `C-h k` / `C-h b`. TypeScript extensions: `init.ts` defines commands and key bindings, `M-x load-file` reloads it, and `M-:` evaluates an expression.
 
 ## Layout
 
@@ -14,9 +14,10 @@ A working editor, in a terminal (`ember`) or a window (`ember-gui`), with one wi
 - `crates/ember-script`: the QuickJS runtime and the `ember` API for scripts. `config.rs` finds the config directory and loads `init.ts` for both front ends. `strip.rs` erases TypeScript types, `prelude.js` builds the `ember` global from native functions, `types.rs` generates `ember.d.ts`.
 - `crates/ember`: the terminal binary. `ui.rs` draws, `main.rs` reads keys.
 - `crates/ember-gui`: the egui binary. `app.rs` draws and scrolls smoothly: whole lines go to the core as `<wheel-up>`/`<wheel-down>` keys (bound to `mwheel-scroll`, so rebindable), and only the leftover fraction of a line is kept in the GUI as a pixel offset. `keys.rs` translates egui events into keys, `theme.rs` holds the colour tokens and fonts. Drawing code takes colours from `Tokens`, never literals.
+- `packages/`: TypeScript packages that ship with Ember, as Emacs ships its preloaded Lisp. `simple.ts` follows Emacs's simple.el and has the prefix argument commands. They load at startup, before init.ts, even with `-q`; the list is `PACKAGES` in `ember-script/src/lib.rs`. `packages/ember.d.ts` is generated: after changing commands or the script API, run `UPDATE_TYPES=1 cargo test -p ember-script`, then `tsc -p packages` to type-check the packages.
 - `examples/init.ts`: a sample config.
 
-Commands are defined once with named, typed parameters (`Command::new(...).param(...)`). Movement commands are marked `.shift_select()`, like Emacs's `^` interactive spec: a shifted key with no binding of its own runs the unshifted key's command and selects as it moves. Interactive use prompts for each parameter in the minibuffer; `Editor::call` takes them directly. Keep it that way: it is what lets scripts, and later the agent, call commands as tools.
+Commands are defined once with named, typed parameters (`Command::new(...).param(...)`). A command reads its prefix argument with `ed.prefix_numeric()` (a count, 1 by default) or `ed.current_prefix_arg()` (the raw form, to tell plain C-u from a number), as Emacs's interactive "p" and "P" do. Movement commands are marked `.shift_select()`, like Emacs's `^` interactive spec: a shifted key with no binding of its own runs the unshifted key's command and selects as it moves. Interactive use prompts for each parameter in the minibuffer; `Editor::call` takes them directly. Keep it that way: it is what lets scripts, and later the agent, call commands as tools.
 
 Adding a function to the script API means three changes: the native function in `ember-script/src/lib.rs`, its wrapper in `prelude.js`, and its declaration in `types.rs`. Prefer making new behaviour a command, which needs none of these.
 

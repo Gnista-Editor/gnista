@@ -60,6 +60,8 @@ const TSCONFIG: &str = r#"{
     "target": "es2023",
     "lib": ["es2023"],
     "types": [],
+    // Each .ts file is its own module, as Ember runs each file in its own scope.
+    "moduleDetection": "force",
     // Ember erases types rather than compiling them, so enums and the like are not allowed.
     "erasableSyntaxOnly": true
   },

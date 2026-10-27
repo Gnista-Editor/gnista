@@ -331,6 +331,438 @@
       "kill_ring": [],
       "modified": false,
       "error": null
+    },
+    {
+      "name": "forward-past-the-end-stops-there",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "C-u 9 C-f",
+        "platform": null
+      },
+      "text": "abc",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "End of buffer"
+    },
+    {
+      "name": "next-line-past-the-end",
+      "input": {
+        "text": "a\nb\nc",
+        "point": 0,
+        "keys": "C-u 9 C-n",
+        "platform": null
+      },
+      "text": "a\nb\nc",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "End of buffer"
+    },
+    {
+      "name": "previous-line-past-the-start",
+      "input": {
+        "text": "a\nb\nc",
+        "point": 4,
+        "keys": "C-u 9 C-p",
+        "platform": null
+      },
+      "text": "a\nb\nc",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Beginning of buffer"
+    },
+    {
+      "name": "c-u-then-c-u-ends-the-digits",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-u 1 2 C-u 3",
+        "platform": null
+      },
+      "text": "333333333333",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "minus-after-digits-is-typed",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-u 3 -",
+        "platform": null
+      },
+      "text": "---",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "minus-zero-stays-negative",
+      "input": {
+        "text": "abcdefghijklmn",
+        "point": 13,
+        "keys": "M-- 0 1 C-f",
+        "platform": null
+      },
+      "text": "abcdefghijklmn",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "negative-self-insert-is-an-error",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-- a",
+        "platform": null
+      },
+      "text": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Negative repetition argument -1"
+    },
+    {
+      "name": "zero-self-insert-does-nothing",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "M-0 x",
+        "platform": null
+      },
+      "text": "abc",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "c-u-c-k-kills-four-lines",
+      "input": {
+        "text": "1\n2\n3\n4\n5\n6",
+        "point": 0,
+        "keys": "C-u C-k",
+        "platform": null
+      },
+      "text": "5\n6",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "1\n2\n3\n4\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "negative-kill-line-kills-backward",
+      "input": {
+        "text": "1\n2\n3\n4",
+        "point": 5,
+        "keys": "M-- C-k",
+        "platform": null
+      },
+      "text": "1\n\n4",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "2\n3"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kill-lines-past-the-end",
+      "input": {
+        "text": "a\nb",
+        "point": 0,
+        "keys": "C-u 5 C-k",
+        "platform": null
+      },
+      "text": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "a\nb"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kills-join-across-a-prefix-argument",
+      "input": {
+        "text": "1\n2\n3\n4",
+        "point": 0,
+        "keys": "C-k C-k C-u 2 C-k",
+        "platform": null
+      },
+      "text": "4",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "1\n2\n3\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "c-u-c-y-leaves-point-before",
+      "input": {
+        "text": "one two",
+        "point": 0,
+        "keys": "M-d C-e C-u C-y",
+        "platform": null
+      },
+      "text": " twoone",
+      "point": 4,
+      "mark": 7,
+      "mark_active": false,
+      "kill_ring": [
+        "one"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "numeric-yank-takes-an-older-kill",
+      "input": {
+        "text": "a\nb\nc",
+        "point": 0,
+        "keys": "M-d C-n M-d C-n M-d M-3 C-y",
+        "platform": null
+      },
+      "text": "\n\na",
+      "point": 3,
+      "mark": 2,
+      "mark_active": false,
+      "kill_ring": [
+        "c",
+        "b",
+        "a"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "killing-deletes-join-the-kill-ring",
+      "input": {
+        "text": "abcdef",
+        "point": 0,
+        "keys": "C-u 2 C-d C-u 2 C-d",
+        "platform": null
+      },
+      "text": "ef",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "abcd"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-more-than-there-is",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "C-u 5 C-d",
+        "platform": null
+      },
+      "text": "abc",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Args out of range: #<buffer *ember-oracle*>, 1, 6"
+    },
+    {
+      "name": "undo-with-an-argument",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "a RET b RET c M-2 C-/",
+        "platform": null
+      },
+      "text": "a\nb",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "c-g-cancels-the-argument",
+      "input": {
+        "text": "abcdef",
+        "point": 0,
+        "keys": "C-u 3 C-g C-f",
+        "platform": null
+      },
+      "text": "abcdef",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Quit"
+    },
+    {
+      "name": "move-beginning-of-line-with-an-argument",
+      "input": {
+        "text": "one\ntwo\nthree",
+        "point": 1,
+        "keys": "C-u 3 C-a",
+        "platform": null
+      },
+      "text": "one\ntwo\nthree",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "move-end-of-line-with-an-argument",
+      "input": {
+        "text": "one\ntwo\nthree",
+        "point": 0,
+        "keys": "M-2 C-e",
+        "platform": null
+      },
+      "text": "one\ntwo\nthree",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "beginning-of-buffer-with-an-argument",
+      "input": {
+        "text": "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n",
+        "point": 0,
+        "keys": "M-3 M-<",
+        "platform": null
+      },
+      "text": "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n",
+      "point": 8,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "end-of-buffer-with-an-argument",
+      "input": {
+        "text": "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n",
+        "point": 0,
+        "keys": "M-3 M->",
+        "platform": null
+      },
+      "text": "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n",
+      "point": 16,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "c-u-beginning-of-buffer-leaves-no-mark",
+      "input": {
+        "text": "abc\ndef",
+        "point": 5,
+        "keys": "C-u M-<",
+        "platform": null
+      },
+      "text": "abc\ndef",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "c-u-word-argument",
+      "input": {
+        "text": "a b c d e f g",
+        "point": 0,
+        "keys": "C-u M-f",
+        "platform": null
+      },
+      "text": "a b c d e f g",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backward-words-with-an-argument",
+      "input": {
+        "text": "a b c d e",
+        "point": 9,
+        "keys": "M-3 M-b",
+        "platform": null
+      },
+      "text": "a b c d e",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "prefix-argument-with-shift-selection",
+      "input": {
+        "text": "abcdefgh",
+        "point": 0,
+        "keys": "C-u 3 S-<right>",
+        "platform": null
+      },
+      "text": "abcdefgh",
+      "point": 3,
+      "mark": 0,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
     }
   ]
 }

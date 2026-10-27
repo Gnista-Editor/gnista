@@ -35,7 +35,7 @@ Each milestone ends with an editor you can use and an exit check.
 
 Exit: oracle cases drawn from the manual's chapters on basic editing, the mark, killing and yanking, undo, and keyboard macros all pass.
 
-Progress: the oracle is in place (`tests/emacs/`), with 89 cases. 62 match Emacs; the 27 known gaps are the rest of this milestone.
+Progress: the oracle is in place (`tests/emacs/`). Prefix arguments are done, with the prefix commands as Ember's first bundled TypeScript package (`packages/simple.ts`). 105 of 115 cases match Emacs; the remaining gaps are repeat, keyboard macros, `M-y`, the mark ring and undo-redo.
 
 **2. Customisation.**
 - Variables with documentation, buffer-local values and `C-h v`.

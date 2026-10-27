@@ -13,6 +13,7 @@ mod error;
 mod files;
 mod key;
 mod keymap;
+mod prefix;
 
 pub use buffer::Buffer;
 pub use command::{Arg, Command, Param, ParamKind};
@@ -21,3 +22,4 @@ pub use error::{Error, Result};
 pub use files::{abbreviate_dir, abbreviate_path, expand_file_name};
 pub use key::{Key, KeyCode, format_keys};
 pub use keymap::{Keymap, Lookup};
+pub use prefix::{PrefixArg, prefix_numeric_value};

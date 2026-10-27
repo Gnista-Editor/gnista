@@ -5,7 +5,7 @@ These tests check that Ember behaves like GNU Emacs by running the same keys on 
 - `cases/*.json`: the cases, one file per chapter of the Emacs manual.
 - `golden/*.json`: what Emacs did, recorded by `record.el`. Committed, so the tests run without Emacs.
 - `known-gaps.txt`: cases where Ember does not match Emacs yet, with the reason. This is the to-do list.
-- `crates/ember-core/tests/emacs.rs`: the test that compares Ember with the golden files.
+- `crates/ember-script/tests/emacs.rs`: the test that compares Ember, with its bundled packages, against the golden files.
 
 ## Adding a case
 
@@ -23,7 +23,7 @@ These tests check that Ember behaves like GNU Emacs by running the same keys on 
    emacs -Q --batch -l tests/emacs/record.el
    ```
 
-3. Run `cargo test -p ember-core --test emacs`. If Ember differs and the fix is not part of the current work, add the case to `known-gaps.txt` with a reason.
+3. Run `cargo test -p ember-script --test emacs`. If Ember differs and the fix is not part of the current work, add the case to `known-gaps.txt` with a reason.
 
 The test fails if a case is missing from the golden files, if a case changed since it was recorded, if Ember differs on a case that is not a known gap, or if a known gap starts matching. Each failure names the case and says what to do.
 
@@ -36,6 +36,7 @@ Each case starts in a fresh Fundamental mode buffer, with no mark and an empty k
 Batch Emacs has no window system, so some keys act as they would on a terminal rather than in GUI Emacs:
 
 - `<delete>` is translated to `DEL`, so it deletes backwards. GUI Emacs, and Ember, delete forwards. Don't write cases with `<delete>`.
+- The minibuffer reads from standard input in batch mode, not from the typed keys, so cases cannot use it: no `M-x`, `C-x C-f` or other prompts. A case that prompts makes the recorder wait forever. Ember's own tests cover the minibuffer.
 - The window has a fixed small size, so leave scrolling and window commands to Ember's own tests.
 - Display, faces and the mouse are invisible to the oracle. The GUI's snapshot tests cover those.
 

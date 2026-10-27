@@ -102,5 +102,141 @@
     "name": "repeat-again",
     "text": "abcdef",
     "keys": "C-f C-x z z"
+  },
+  {
+    "name": "forward-past-the-end-stops-there",
+    "text": "abc",
+    "keys": "C-u 9 C-f"
+  },
+  {
+    "name": "next-line-past-the-end",
+    "text": "a\nb\nc",
+    "keys": "C-u 9 C-n"
+  },
+  {
+    "name": "previous-line-past-the-start",
+    "text": "a\nb\nc",
+    "keys": "C-u 9 C-p",
+    "point": 4
+  },
+  {
+    "name": "c-u-then-c-u-ends-the-digits",
+    "text": "",
+    "keys": "C-u 1 2 C-u 3"
+  },
+  {
+    "name": "minus-after-digits-is-typed",
+    "text": "",
+    "keys": "C-u 3 -"
+  },
+  {
+    "name": "minus-zero-stays-negative",
+    "text": "abcdefghijklmn",
+    "keys": "M-- 0 1 C-f",
+    "point": 13
+  },
+  {
+    "name": "negative-self-insert-is-an-error",
+    "text": "",
+    "keys": "M-- a"
+  },
+  {
+    "name": "zero-self-insert-does-nothing",
+    "text": "abc",
+    "keys": "M-0 x"
+  },
+  {
+    "name": "c-u-c-k-kills-four-lines",
+    "text": "1\n2\n3\n4\n5\n6",
+    "keys": "C-u C-k"
+  },
+  {
+    "name": "negative-kill-line-kills-backward",
+    "text": "1\n2\n3\n4",
+    "keys": "M-- C-k",
+    "point": 5
+  },
+  {
+    "name": "kill-lines-past-the-end",
+    "text": "a\nb",
+    "keys": "C-u 5 C-k"
+  },
+  {
+    "name": "kills-join-across-a-prefix-argument",
+    "text": "1\n2\n3\n4",
+    "keys": "C-k C-k C-u 2 C-k"
+  },
+  {
+    "name": "c-u-c-y-leaves-point-before",
+    "text": "one two",
+    "keys": "M-d C-e C-u C-y"
+  },
+  {
+    "name": "numeric-yank-takes-an-older-kill",
+    "text": "a\nb\nc",
+    "keys": "M-d C-n M-d C-n M-d M-3 C-y"
+  },
+  {
+    "name": "killing-deletes-join-the-kill-ring",
+    "text": "abcdef",
+    "keys": "C-u 2 C-d C-u 2 C-d"
+  },
+  {
+    "name": "delete-more-than-there-is",
+    "text": "abc",
+    "keys": "C-u 5 C-d"
+  },
+  {
+    "name": "undo-with-an-argument",
+    "text": "",
+    "keys": "a RET b RET c M-2 C-/"
+  },
+  {
+    "name": "c-g-cancels-the-argument",
+    "text": "abcdef",
+    "keys": "C-u 3 C-g C-f"
+  },
+  {
+    "name": "move-beginning-of-line-with-an-argument",
+    "text": "one\ntwo\nthree",
+    "keys": "C-u 3 C-a",
+    "point": 1
+  },
+  {
+    "name": "move-end-of-line-with-an-argument",
+    "text": "one\ntwo\nthree",
+    "keys": "M-2 C-e"
+  },
+  {
+    "name": "beginning-of-buffer-with-an-argument",
+    "text": "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n",
+    "keys": "M-3 M-<"
+  },
+  {
+    "name": "end-of-buffer-with-an-argument",
+    "text": "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n",
+    "keys": "M-3 M->"
+  },
+  {
+    "name": "c-u-beginning-of-buffer-leaves-no-mark",
+    "text": "abc\ndef",
+    "keys": "C-u M-<",
+    "point": 5
+  },
+  {
+    "name": "c-u-word-argument",
+    "text": "a b c d e f g",
+    "keys": "C-u M-f"
+  },
+  {
+    "name": "backward-words-with-an-argument",
+    "text": "a b c d e",
+    "keys": "M-3 M-b",
+    "point": 9
+  },
+  {
+    "name": "prefix-argument-with-shift-selection",
+    "text": "abcdefgh",
+    "keys": "C-u 3 S-<right>"
   }
 ]

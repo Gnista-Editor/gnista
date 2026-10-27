@@ -1334,8 +1334,6 @@ name = "ember-core"
 version = "0.1.0"
 dependencies = [
  "ropey",
- "serde",
- "serde_json",
  "tempfile",
  "unicode-width",
 ]
@@ -1359,6 +1357,8 @@ version = "0.1.0"
 dependencies = [
  "ember-core",
  "rquickjs",
+ "serde",
+ "serde_json",
  "swc_common",
  "swc_ts_fast_strip",
  "tempfile",

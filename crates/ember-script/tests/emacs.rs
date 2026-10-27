@@ -1,5 +1,9 @@
 //! Compares Ember with GNU Emacs on the recorded cases in `tests/emacs/`.
 //!
+//! It lives here rather than in ember-core because Ember includes the
+//! packages that ship with it, such as the prefix argument commands in
+//! packages/simple.ts, just as Emacs includes its preloaded Lisp.
+//!
 //! Each case's keys are typed into a fresh editor, as record.el types them
 //! into Emacs: an error shows its message and the next key still runs. The
 //! result, including the first error, is compared with what Emacs did. Cases listed in `known-gaps.txt` are expected to differ; the
@@ -13,6 +17,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use ember_core::{Editor, Key};
+use ember_script::Scripting;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -81,6 +86,7 @@ fn oracle_dir() -> PathBuf {
 /// Runs a case through Ember the way record.el runs it through Emacs.
 fn run(case: &Case) -> State {
     let mut ed = Editor::new();
+    let _scripting = Scripting::new(&mut ed).expect("scripting starts");
     let b = ed.window_buffer_mut();
     b.set_text(&case.text);
     b.set_point(case.point);

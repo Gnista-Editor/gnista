@@ -42,6 +42,15 @@
     deleteRegion: (start, end) => native.deleteRegion(start, end),
     bufferName: () => native.bufferName(),
     mark: () => native.mark(),
+    prefixArg: () => native.prefixArg(),
+    prefixNumericValue: (arg = native.prefixArg()) =>
+      arg === null ? 1 : arg === "-" ? -1 : Array.isArray(arg) ? arg[0] : arg,
+    setPrefixArg: (arg) => native.setPrefixArg(arg ?? null),
+    lastKey: () => native.lastKey(),
+    setTransientMap: (bindings) =>
+      native.setTransientMap(
+        Object.fromEntries(Object.entries(bindings).map(([keys, command]) => [String(keys), String(command)])),
+      ),
   });
 
   globalThis.console = Object.freeze({

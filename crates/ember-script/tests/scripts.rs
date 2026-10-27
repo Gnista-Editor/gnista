@@ -234,3 +234,39 @@ fn reloading_a_file_with_top_level_constants() {
     ed.press("C-c g").unwrap();
     assert_eq!(text(&ed), "hi");
 }
+
+#[test]
+fn prefix_arguments_come_from_simple_ts() {
+    let (mut ed, _scripting) = setup();
+    ed.type_text("abcdefgh");
+    ed.press("C-a C-u 3").unwrap();
+    assert_eq!(ed.echo(), Some("C-u 3-"));
+    ed.press("C-f").unwrap();
+    assert_eq!(ed.window_buffer().point(), 3);
+    let command = ed.command("universal-argument").unwrap();
+    assert_eq!(command.source.as_deref(), Some("packages/simple.ts"));
+
+    // M-x hands its prefix argument to the command it runs; the oracle
+    // cannot check this, because batch Emacs reads the minibuffer from stdin.
+    ed.press("C-u 2 M-x").unwrap();
+    ed.type_text("forward-char\n");
+    assert_eq!(ed.window_buffer().point(), 5);
+}
+
+/// packages/ember.d.ts declares the API for Ember's own packages, so tsc can
+/// check them. It is generated; run `UPDATE_TYPES=1 cargo test -p ember-script`
+/// after changing commands or the API, and commit the result.
+#[test]
+fn packages_type_definitions_are_current() {
+    let (ed, _scripting) = setup();
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../packages/ember.d.ts");
+    let generated = type_definitions(&ed);
+    if std::env::var_os("UPDATE_TYPES").is_some() {
+        fs::write(&path, &generated).unwrap();
+    }
+    let committed = fs::read_to_string(&path).unwrap_or_default();
+    assert!(
+        committed == generated,
+        "packages/ember.d.ts is out of date; run UPDATE_TYPES=1 cargo test -p ember-script"
+    );
+}
