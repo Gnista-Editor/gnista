@@ -1,0 +1,7 @@
+# Link with Apple's toolchain on macOS. A cc from Nix or Homebrew on PATH may not
+# find the macOS SDK, which fails with "library not found for -liconv".
+[target.aarch64-apple-darwin]
+linker = "/usr/bin/cc"
+
+[target.x86_64-apple-darwin]
+linker = "/usr/bin/cc"

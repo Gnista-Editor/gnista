@@ -1,0 +1,7 @@
+/target/
+spikes/*/target/
+.DS_Store
+
+# Secrets and personal data never belong in this repository.
+.env
+*.key

@@ -1,0 +1,69 @@
+use std::env;
+use std::path::{Path, PathBuf};
+
+fn home_dir() -> Option<PathBuf> {
+    env::var_os("HOME").map(PathBuf::from)
+}
+
+/// Turns minibuffer input into an absolute path the Emacs way: `~` means the
+/// home directory, and typing `//` or `/~/` after the default directory starts
+/// over from the root or from home.
+pub fn expand_file_name(input: &str) -> PathBuf {
+    let mut s = input;
+    if let Some(i) = s.rfind("//") {
+        s = &s[i + 1..];
+    }
+    if let Some(i) = s.rfind("/~/") {
+        s = &s[i + 1..];
+    }
+    let home = home_dir().unwrap_or_default();
+    let path = if s == "~" {
+        home
+    } else if let Some(rest) = s.strip_prefix("~/") {
+        home.join(rest)
+    } else {
+        PathBuf::from(s)
+    };
+    if path.is_absolute() {
+        path
+    } else {
+        env::current_dir().unwrap_or_default().join(path)
+    }
+}
+
+/// Writes a directory the way the minibuffer shows it: home as `~`, with a trailing slash.
+pub fn abbreviate_dir(dir: &Path) -> String {
+    let s = match home_dir() {
+        Some(home) if dir.starts_with(&home) => {
+            let rest = dir.strip_prefix(&home).unwrap_or(dir);
+            if rest.as_os_str().is_empty() {
+                "~".to_string()
+            } else {
+                format!("~/{}", rest.display())
+            }
+        }
+        _ => dir.display().to_string(),
+    };
+    if s.ends_with('/') { s } else { s + "/" }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn double_slash_and_tilde_start_over() {
+        assert_eq!(expand_file_name("~/proj//tmp/x"), PathBuf::from("/tmp/x"));
+        let home = home_dir().unwrap();
+        assert_eq!(expand_file_name("/a/b/~/notes.org"), home.join("notes.org"));
+        assert_eq!(expand_file_name("~"), home);
+    }
+
+    #[test]
+    fn abbreviates_home() {
+        let home = home_dir().unwrap();
+        assert_eq!(abbreviate_dir(&home.join("proj")), "~/proj/");
+        assert_eq!(abbreviate_dir(&home), "~/");
+        assert_eq!(abbreviate_dir(Path::new("/tmp")), "/tmp/");
+    }
+}

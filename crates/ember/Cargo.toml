@@ -1,0 +1,10 @@
+[package]
+name = "ember"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+ember-core = { version = "0.1.0", path = "../ember-core" }
+ratatui = "0.30"
+unicode-width = "0.2"
