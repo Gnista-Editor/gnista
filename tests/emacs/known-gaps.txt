@@ -17,5 +17,9 @@ org-fuzz-8/seed13-0613-c-e-m-s-return  # copying Org's stale match data
 # planning timestamps.
 org-fuzz-9/seed16-0666-m-s-right---c-return  # malformed planning timestamp
 
+# Org's bracket links may hold a newline, which font-lock matches across lines;
+# Ember fontifies a line at a time, so a link split by a newline shows.
+org-fuzz-9/newline-inside-a-link-inherits-its-hiding  # links across lines
+
 # Intentional differences, not to be fixed.
 arguments/delete-more-than-there-is  # Emacs reports an internal "Args out of range" error naming the buffer; Ember says "End of buffer". The text is unchanged in both.

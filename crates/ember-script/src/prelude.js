@@ -76,6 +76,7 @@
     message: (text) => native.message(String(text)),
     insert: (text) => native.insert(String(text)),
     insertBeforeMarkers: (text) => native.insertBeforeMarkers(String(text)),
+    insertAndInherit: (text) => native.insertAndInherit(String(text)),
     point: () => native.point(),
     gotoChar: (position) => native.gotoChar(position),
     // Omitted arguments must not reach the native function as undefined.

@@ -452,6 +452,48 @@ impl Buffer {
         deleted
     }
 
+    /// Inserts text at point that takes on the text properties around it,
+    /// as Emacs's `insert-and-inherit` does for typing: those of the
+    /// character before, which stick to its end unless its `rear-nonsticky`
+    /// names them, and those of the character after that its
+    /// `front-sticky` names. Properties in Emacs's default
+    /// `text-property-default-nonsticky` are not inherited.
+    pub fn insert_and_inherit(&mut self, s: &str) -> Result<()> {
+        const NONSTICKY: [&str; 4] = ["syntax-table", "display", "composition", "cursor"];
+        let names = |list: Option<&Value>, name: &str| match list {
+            Some(Value::Bool(true)) => true,
+            Some(Value::Str(one)) => one == name,
+            Some(Value::List(items)) => items.iter().any(|v| matches!(v, Value::Str(x) if x == name)),
+            _ => false,
+        };
+        let pos = self.point;
+        let mut inherited: Vec<(String, Value)> = Vec::new();
+        if pos > 0
+            && let Some(before) = self.text_properties_at(pos - 1)
+        {
+            let nonsticky = before.get("rear-nonsticky");
+            for (name, value) in before {
+                if !NONSTICKY.contains(&name.as_str()) && !names(nonsticky, name) {
+                    inherited.push((name.clone(), value.clone()));
+                }
+            }
+        }
+        if let Some(after) = self.text_properties_at(pos) {
+            let front = after.get("front-sticky");
+            for (name, value) in after {
+                if names(front, name) && !inherited.iter().any(|(n, _)| n == name) {
+                    inherited.push((name.clone(), value.clone()));
+                }
+            }
+        }
+        self.insert(s)?;
+        let n = s.chars().count();
+        for (name, value) in inherited {
+            self.put_text_property(pos..pos + n, &name, value);
+        }
+        Ok(())
+    }
+
     // Text properties
 
     /// Sets a property on every character in a range (Emacs's `put-text-property`).

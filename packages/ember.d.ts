@@ -1901,6 +1901,12 @@ declare global {
        */
       "org-cycle-subtree-status": Value;
       /**
+       * How far the lines of a source block are indented past its #+begin_src line.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-edit-src-content-indentation": Value;
+      /**
        * What typing or deleting next to folded text does: "smart" unfolds it and goes ahead where the edit is predictable, and otherwise stops so it can be repeated with the text showing; "show" unfolds and goes ahead, "show-and-error" unfolds and stops, "error" stops, and false allows the edit.
        *
        * Defined in packages/org.ts.
@@ -2775,6 +2781,13 @@ declare global {
      * any overlay start or end at point move past it too.
      */
     function insertBeforeMarkers(text: string): void;
+    /**
+     * Insert text at point that takes on the text properties around it, as
+     * Emacs's insert-and-inherit does for typing: those of the character
+     * before, unless its rear-nonsticky names them, and those of the
+     * character after that its front-sticky names.
+     */
+    function insertAndInherit(text: string): void;
     /** Point, as a character offset from the start of the buffer, counting from 0. */
     function point(): number;
     /** Move point to a character offset. */

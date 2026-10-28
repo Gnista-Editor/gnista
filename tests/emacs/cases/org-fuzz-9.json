@@ -208,5 +208,169 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "seed19-1397-ret",
+    "text": "#+BEGIN_SRC\ncode here\n#+END_SRC",
+    "keys": "RET",
+    "point": 21,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed19-1726-m-down",
+    "text": "plan <2026-10-22 Wed>\n# a comment",
+    "keys": "M-<down>",
+    "point": 14,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed19-0369-c-spc-c-w",
+    "text": "",
+    "keys": "C-SPC C-w",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed19-0212-c-u-tab-c-p",
+    "text": "plan beta\n** call\n|---+---|",
+    "keys": "C-u TAB C-p",
+    "point": 24,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed19-0610-c-j-c-c--",
+    "text": "see [[*notes][the notes]] now",
+    "keys": "C-j C-c -",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed19-1760-c-u-tab-m-up",
+    "text": "** DONE plan\n1. plan\n3. notes",
+    "keys": "C-u TAB M-<up>",
+    "point": 21,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed19-0814-backtab-m-f-c-p",
+    "text": "plan <2026-10-27 Wed>\n** DONE [#C] gamma\n*** notes :work:",
+    "keys": "<backtab> M-f C-p",
+    "point": 40,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed19-1599-c-c-at-m-f-m-right",
+    "text": "** alpha alpha\n2) fix\n*** TODO fix",
+    "keys": "C-c @ M-f M-<right>",
+    "point": 15,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed19-0740-m-down-m-up-c-c-c-t",
+    "text": "* notes beta\n# a comment\nalpha <2026-10-21 Wed>",
+    "keys": "M-<down> M-<up> C-c C-t",
+    "point": 26,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed19-1612-c-spc-m-f-c-f-c-c-star",
+    "text": "- call\n- call",
+    "keys": "C-SPC M-f C-f C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed19-1036-c-c-at---c-n-c-k-m-down",
+    "text": "* DONE fix\n* gamma call\n3. notes",
+    "keys": "C-c @ - C-n C-k M-<down>",
+    "point": 7,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed19-1806-backtab-c-c-c-x-m-w-c-c-c-x-c-y",
+    "text": "** notes notes\n|ccc|yy|\n",
+    "keys": "<backtab> C-c C-x M-w C-c C-x C-y",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "newline-inside-a-link-inherits-its-hiding",
+    "text": "see [[*notes][the notes]] now",
+    "keys": "C-j",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "typing-inside-a-link-inherits-its-hiding",
+    "text": "see [[*notes][the notes]] now",
+    "keys": "x",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "ret-in-an-indented-src-block",
+    "text": "  #+begin_src\n  code\n  #+end_src\n",
+    "keys": "C-n C-e RET",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "a-lone-star-ends-a-paragraph",
+    "text": "text\n*\nmore\n",
+    "keys": "M-<down>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "a-rule-ends-a-paragraph",
+    "text": "text\n-----\nmore\n",
+    "keys": "M-<down>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "drag-a-comment-down",
+    "text": "# c\ntext\n",
+    "keys": "M-<down>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "demote-in-a-region-starting-mid-heading",
+    "text": "* a\n** b\n",
+    "keys": "C-f C-SPC M-> M-<right>",
+    "modes": [
+      "org-mode"
+    ]
   }
 ]

@@ -135,5 +135,11 @@
     "text": "one two",
     "keys": "M-> C-k C-SPC M-b M-w",
     "point": 0
+  },
+  {
+    "name": "kill-an-empty-region-deactivates-it",
+    "text": "abc",
+    "keys": "C-SPC C-w",
+    "point": 1
   }
 ]

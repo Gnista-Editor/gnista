@@ -443,13 +443,14 @@ fn line_move(ed: &mut Editor, n: i64) -> Result<()> {
 
 /// The column of a position as Emacs's current-column counts it: from the
 /// start of its line, with tabs to tab stops, wide characters taking two
-/// columns, and hidden text taking none.
+/// columns, and hidden text taking none, unless it shows an ellipsis, as
+/// folds do: that counts as if shown.
 fn current_column(ed: &Editor, b: &Buffer, pos: usize) -> usize {
     use unicode_width::UnicodeWidthChar;
     let tab = ed.tab_width_in(b).max(1);
     let mut col = 0;
     for p in b.line_start(b.line_of(pos))..pos {
-        if ed.invisible_in(b, p).is_some() {
+        if ed.invisible_in(b, p) == Some(false) {
             continue;
         }
         col = match b.char_at(p) {
@@ -556,7 +557,8 @@ fn editing(ed: &mut Editor) {
             let line_end = b.line_end(b.line_of(p));
             b.delete(p..(p + n as usize).min(line_end))?;
         }
-        ed.buffer_mut().insert(&c.to_string().repeat(n as usize))
+        // As Emacs's self-insert-command, the text takes on the properties around it.
+        ed.buffer_mut().insert_and_inherit(&c.to_string().repeat(n as usize))
     });
     ed.define_command(
         Command::new("insert", "Insert text at point.", |ed, args| {
@@ -567,7 +569,8 @@ fn editing(ed: &mut Editor) {
     );
     def(ed, "newline", "Insert a newline, or as many as the prefix argument says.", |ed, _| {
         let n = ed.prefix_numeric().max(0) as usize;
-        ed.buffer_mut().insert(&"\n".repeat(n))
+        // newline self-inserts, so the newlines take on the properties around them.
+        ed.buffer_mut().insert_and_inherit(&"\n".repeat(n))
     });
     def(ed, "indent-for-tab-command", "Indent the current line. For now this inserts a tab.", |ed, _| {
         ed.buffer_mut().insert("\t")
@@ -727,6 +730,8 @@ fn killing(ed: &mut Editor) {
         let backward = ed.buffer().mark().is_some_and(|m| ed.buffer().point() < m);
         let killed = ed.buffer_mut().delete(region)?;
         ed.kill(killed, backward);
+        // As kill-region sets deactivate-mark, even when nothing was killed.
+        ed.buffer_mut().deactivate_mark();
         // As in Emacs, so the next kill or copy joins this one even when a
         // command such as org-cut-subtree called it.
         ed.set_this_command("kill-region");

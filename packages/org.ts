@@ -806,6 +806,13 @@ function checkFold(id: number): void {
   const lastLine = lineAt(end);
   let valid: boolean;
   if (spec === "outline") {
+    // The line before the fold shows whole, as org-fold--reveal-outline-maybe
+    // makes sure first, unless it is folded itself.
+    const openerStart = ember.lineStart(before);
+    if (!folded(openerStart, "outline") && start < ember.lineEnd(before)) {
+      flag(Math.max(0, openerStart - 1), ember.lineEnd(before), false);
+      start = ember.lineEnd(before);
+    }
     valid = start > 0 && (ITEM_RE.test(opener) || /^\*+ /.test(opener));
     if (valid) {
       // A top-level heading is never hidden, nor one partly hidden at the end.
@@ -2760,8 +2767,19 @@ function expectedIndent(el: Elem | undefined, contentsp: boolean, line: number):
 /** Indents a line as org-indent-line does, keeping point in the text or after the indentation. */
 function indentLine(line: number): void {
   const text = ember.lineText(line);
-  if (isHeadingLine(text) || blockBefore(line) !== undefined) return;
   const ls = ember.lineStart(line);
+  const block = elementAt(ls);
+  if (block?.type === "src-block" && line > lineAt(block.begin) && line < lineAt(endBeforeBlank(block))) {
+    // Org hands the line to the language's mode, which Ember lacks, then
+    // gives an empty line the block's content indentation.
+    if (!preservesIndentation(block) && text === "" && ember.point() === ls) {
+      const ind = textIndentation(ember.lineText(lineAt(block.begin))) + Number(ember.variable("org-edit-src-content-indentation") ?? 2);
+      indentLineTo(line, ind);
+      ember.gotoChar(ember.lineEnd(line));
+    }
+    return;
+  }
+  if (isHeadingLine(text) || blockBefore(line) !== undefined) return;
   const el = elementAt(ls);
   if (el && (el.type === "plain-list" || el.type === "item") && el.begin === ls) return;
   const want = expectedIndent(el, false, line);
@@ -2910,6 +2928,12 @@ function orgIndentRegion(start: number, end: number): void {
   }
   dropMarker(endM);
 }
+
+ember.defineVariable({
+  name: "org-edit-src-content-indentation",
+  doc: "How far the lines of a source block are indented past its #+begin_src line.",
+  value: 2,
+});
 
 /** Whether an example block keeps its lines' indentation, with its -i switch or org-src-preserve-indentation. */
 function preservesIndentation(el: Elem): boolean {
@@ -3193,7 +3217,8 @@ ember.defineCommand({
  * so electric-indent-mode indents the new line, and from code for C-j, so it does not.
  */
 function orgReturnWith(electric: boolean): void {
-  const newline = (n: number): void => (electric ? electricNewline(n) : ember.insert("\n".repeat(n)));
+  // Org's newline self-inserts, so the newlines take on the text properties around them.
+  const newline = (n: number): void => (electric ? electricNewline(n) : ember.insertAndInherit("\n".repeat(n)));
   checkInvisibleEditMaybe();
   const line = lineAt();
   const p = ember.point();
@@ -3246,7 +3271,7 @@ function orgReturnWith(electric: boolean): void {
  * electric-indent-mode: spaces left at the end of the line before go.
  */
 function electricNewline(n: number): void {
-  ember.insert("\n".repeat(n));
+  ember.insertAndInherit("\n".repeat(n));
   const before = ember.point() - 1;
   const text = ember.bufferText(ember.lineStart(lineAt(before)), before);
   const spaces = text.length - text.replace(/[ \t]+$/, "").length;
@@ -3671,12 +3696,22 @@ function changeSubtreeLevel(by: number): void {
   fixPositionAfterPromote();
 }
 
+/**
+ * With the region active, the headings org-map-region goes through: those
+ * starting in it, from its beginning on, which may be none.
+ */
 function headingsInRegion(): Heading[] | undefined {
   if (!orgRegionActive()) return undefined;
   const mark = ember.mark() ?? ember.point();
   const [from, to] = [Math.min(mark, ember.point()), Math.max(mark, ember.point())];
-  const inside = headings().filter((h) => h.start >= ember.lineStart(lineAt(from)) && h.start < to);
-  return inside.length > 0 ? inside : undefined;
+  return headings().filter((h) => h.start >= from && h.start < to);
+}
+
+/** Whether the active region begins on a heading's line, as org-metaleft and org-metaright check. */
+function regionStartsAtHeading(): boolean {
+  if (!orgRegionActive()) return false;
+  const mark = ember.mark() ?? ember.point();
+  return parseHeading(lineAt(Math.min(mark, ember.point()))) !== undefined;
 }
 
 ember.defineCommand({
@@ -3925,6 +3960,9 @@ function blockAt(line: number, limit: number): { type: string; close: number } |
   return undefined;
 }
 
+/** A comment line, as org-element reads one: a hash, then a space or nothing. */
+const COMMENT_LINE = /^[ \t]*#(?: |$)/;
+
 /** A fixed-width line, as org-element reads one: a colon, then a space or nothing. */
 const FIXED_WIDTH = /^[ \t]*:(?: |$)/;
 
@@ -3941,6 +3979,15 @@ function startsElement(line: number, limit: number): boolean {
     ITEM_RE.test(text) ||
     /^[ \t]*#\+\S*:/.test(text) ||
     FIXED_WIDTH.test(text) ||
+    COMMENT_LINE.test(text) ||
+    // As org-element-paragraph-separate has them: lines that look like an
+    // item, rules, footnote definitions, diary sexps, table.el tables and clocks.
+    /^[ \t]*(?:[-+*]|[0-9]+[.)])(?:[ \t]|$)/.test(text) ||
+    /^[ \t]*-{5,}[ \t]*$/.test(text) ||
+    /^\[fn:[-_\w]+\]/.test(text) ||
+    /^%%\(/.test(text) ||
+    /^[ \t]*\+(?:-+\+)+[ \t]*$/.test(text) ||
+    /^[ \t]*CLOCK:/.test(text) ||
     (DRAWER_RE.test(text) && drawerEnd(line, limit) !== undefined) ||
     blockAt(line, limit) !== undefined
   );
@@ -4019,6 +4066,16 @@ function parseElements(
       e = elem(block.type, p, Math.min(lineStartOrEnd(block.close + 1), to), parent, greater && inside ? lineStartOrEnd(line + 1) : undefined);
       if (greater && inside) e.contentsEnd = ember.lineStart(block.close);
       if (GREATER_BLOCKS.includes(block.type) && inside) parseElements(e, e.contentsBegin as number, e.contentsEnd as number, false);
+    } else if (p === ember.lineStart(line) && /^[ \t]*-{5,}[ \t]*$/.test(text)) {
+      e = elem("horizontal-rule", p, Math.min(next, to), parent);
+    } else if (p === ember.lineStart(line) && /^[ \t]*CLOCK:/.test(text)) {
+      e = elem("clock", p, Math.min(next, to), parent);
+    } else if (p === ember.lineStart(line) && /^%%\(/.test(text)) {
+      e = elem("diary-sexp", p, Math.min(next, to), parent);
+    } else if (p === ember.lineStart(line) && COMMENT_LINE.test(text)) {
+      let last = line;
+      while (last + 1 < ember.lineCount() && lineStartOrEnd(last + 1) < to && COMMENT_LINE.test(ember.lineText(last + 1))) last++;
+      e = elem("comment", p, Math.min(lineStartOrEnd(last + 1), to), parent);
     } else if (p === ember.lineStart(line) && FIXED_WIDTH.test(text)) {
       let last = line;
       while (last + 1 < ember.lineCount() && lineStartOrEnd(last + 1) < to && FIXED_WIDTH.test(ember.lineText(last + 1))) last++;
@@ -4389,8 +4446,12 @@ function pasteSubtree(level: ember.PrefixArg): void {
     if (ember.point() !== ember.lineStart(lineAt())) ember.insert("\n");
   }
   let beg = ember.point();
-  ember.insert(txt);
-  if (!txt.endsWith("\n")) ember.insert("\n");
+  // Org combines the paste's changes into one, after which its fold checks
+  // change nothing here.
+  withoutFoldChecks(() => {
+    ember.insert(txt);
+    if (!txt.endsWith("\n")) ember.insert("\n");
+  });
   const end = ember.point();
   ember.gotoChar(beg);
   while (ember.point() < ember.bufferSize() && /[ \t\n\r]/.test(ember.bufferText(ember.point(), ember.point() + 1))) {
@@ -5584,7 +5645,7 @@ const metaLeft = ember.defineCommand({
   doc: "M-<left> in Org: promote a heading, outdent an item, move a table column left, or move back a word.",
   run: () => {
     if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-move-column-left");
-    else if (headingsInRegion() || headingHere()) {
+    else if (regionStartsAtHeading() || headingHere()) {
       if (hiddenBelow("headlines")) hiddenTreeError();
       ember.call("org-do-promote");
     } else if (itemHere()) {
@@ -5602,7 +5663,7 @@ const metaRight = ember.defineCommand({
     if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-move-column-right");
     else if (DRAWER_RE.test(ember.lineText(lineAt()))) ember.call("org-indent-drawer");
     else if (atBlock()) ember.call("org-indent-block");
-    else if (headingsInRegion() || headingHere()) {
+    else if (regionStartsAtHeading() || headingHere()) {
       if (hiddenBelow("headlines")) hiddenTreeError();
       ember.call("org-do-demote");
     } else if (itemHere()) {
@@ -6361,10 +6422,14 @@ function listToSubtree(pos: number, limit: number): number {
     const text = ember.lineText(l);
     const item = items.find((e) => e.pos === ember.lineStart(l));
     if (item) {
+      // Org reads the list narrowed to the limit, so a line it cuts is read as far as it goes.
+      const lineEnd = Math.min(ember.lineEnd(l), limit);
       const parts = itemParts(l) as ItemParts;
-      const box = parts.checkbox === undefined ? "" : `${parts.checkbox === "[X]" ? done : todo} `;
-      const tag = item.tag !== undefined ? ` ${item.tag} ` : "";
-      entries.push({ depth: depth(item), title: box + tag + ember.bufferText(parts.matchEnd, ember.lineEnd(l)), body: "" });
+      const within = parts.matchEnd <= lineEnd;
+      const box = parts.checkbox === undefined || !within ? "" : `${parts.checkbox === "[X]" ? done : todo} `;
+      const tag = item.tag !== undefined && within ? ` ${item.tag} ` : "";
+      const title = within ? ember.bufferText(parts.matchEnd, lineEnd) : "";
+      entries.push({ depth: depth(item), title: box + tag + title, body: "" });
       blanks = 0;
     } else if (/^[ \t]*$/.test(text)) blanks++;
     else if (entries.length > 0) {

@@ -552,6 +552,27 @@
       ],
       "modified": false,
       "error": "End of buffer"
+    },
+    {
+      "name": "kill-an-empty-region-deactivates-it",
+      "input": {
+        "text": "abc",
+        "point": 1,
+        "keys": "C-SPC C-w",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "abc",
+      "visible": "abc",
+      "point": 1,
+      "mark": 1,
+      "mark_active": false,
+      "kill_ring": [
+        ""
+      ],
+      "modified": false,
+      "error": null
     }
   ]
 }

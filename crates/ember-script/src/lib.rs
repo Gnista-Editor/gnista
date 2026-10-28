@@ -393,6 +393,15 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
         })?,
     )?;
     native.set(
+        "insertAndInherit",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, text: String| {
+            with_editor(&ctx, |ed| {
+                ed.buffer_mut().insert_and_inherit(&text)?;
+                ed.run_after_change_functions()
+            })
+        })?,
+    )?;
+    native.set(
         "point",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer().point())))?,
     )?;

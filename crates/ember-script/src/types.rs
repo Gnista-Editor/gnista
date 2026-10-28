@@ -93,6 +93,13 @@ const API: &str = r##"
    * any overlay start or end at point move past it too.
    */
   function insertBeforeMarkers(text: string): void;
+  /**
+   * Insert text at point that takes on the text properties around it, as
+   * Emacs's insert-and-inherit does for typing: those of the character
+   * before, unless its rear-nonsticky names them, and those of the
+   * character after that its front-sticky names.
+   */
+  function insertAndInherit(text: string): void;
   /** Point, as a character offset from the start of the buffer, counting from 0. */
   function point(): number;
   /** Move point to a character offset. */
