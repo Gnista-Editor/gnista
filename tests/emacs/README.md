@@ -50,10 +50,22 @@ Golden files record the Emacs version and platform. Emacs on macOS binds `<home>
 
 ## Fuzzing org-mode
 
-`crates/ember-script/tests/org_fuzz.rs` looks for differences instead of checking known ones. It writes random Org documents, with headings, TODO states, lists, checkboxes, tables, timestamps and drawers. It types random Org keys into them, records what Emacs does through record.el (with `EMBER_ORACLE_DIR` pointing it at a scratch directory), and runs the same cases through Ember. Each case that differs is shrunk, a key or a line at a time, to a small one that still differs in the same way. It needs Emacs, so it only runs when asked:
+`crates/ember-script/tests/org_fuzz.rs` looks for differences instead of checking known ones. It writes random Org documents with headings, TODO states, lists, checkboxes, tables, timestamps, drawers, blocks, comments and links. It then types random keys into them: Org's, motion, typing, and editing keys such as yank, kill, undo and transposing. It records what Emacs does through record.el, with `EMBER_ORACLE_DIR` pointing it at a scratch directory, and runs the same cases through Ember. Each case that differs is shrunk, a key or a line at a time, to a small one that still differs in the same way. It needs Emacs, so it only runs when asked:
 
 ```bash
-EMBER_FUZZ_SEED=1 EMBER_FUZZ_CASES=300 cargo test --release -p ember-script --test org_fuzz -- --ignored --nocapture
+EMBER_FUZZ_SEED=1 EMBER_FUZZ_CASES=2000 cargo test --release -p ember-script --test org_fuzz behaves -- --ignored --nocapture
 ```
 
-A seed repeats a run. The shrunk cases are printed and written to `target/org-fuzz/differences.json`. Turn the ones worth fixing into cases in `cases/org-fuzz.json`, so they stay fixed. A command that would prompt is an error in the recorder, and the fuzzer leaves those cases out.
+A seed repeats a run. The shrunk cases are printed and written to `target/org-fuzz/differences.json`, and `EMBER_FUZZ_REPLAY` replays such a file without shrinking:
+
+```bash
+cargo test --release -p ember-script --test org_fuzz replays -- --ignored --nocapture
+```
+
+Turn the ones worth fixing into cases in a `cases/org-fuzz-*.json` file, so they stay fixed. Some cases are left out of the comparison:
+
+- **Prompts.** A command that would prompt is an error in the recorder.
+- **Hangs.** Org can loop forever, so recording has a time limit. A run that takes too long is split until the case that hangs is left out.
+- **Clock times.** The minute of a logged time can differ because Emacs runs first, so it is ignored.
+
+record.el also makes opening a link in a browser or another program an error, so a case cannot start one.

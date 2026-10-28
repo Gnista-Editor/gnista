@@ -63,15 +63,15 @@ The Emacs oracle now records the text left visible after fontifying, which check
 
 ## Consequences
 
+[ADR 0013](0013-following-org-closely.md) later ported these commands closely from Org's Lisp. That added the logging of repeating tasks and the dragging of elements, which had been gaps.
+
 Daily notes work without Emacs, and the same jit-lock hook is there for any mode that styles text with properties.
 
 The deliberate gaps:
 
 - **Not implemented:** the agenda, capture, refile, archiving, clocking, export and Babel.
 - **External links:** `http`, `mailto` and other external links are not opened. That needs a way to start a browser, which was left for a decision of its own.
-- **Repeating tasks:** marking one done does not log the change or set `LAST_REPEAT`, as Emacs's `org-log-repeat` does.
 - **Shift selection:** `org-support-shift-select` exists, but setting it does not turn Shift selection on in Org.
-- **Dragging elements:** `M-<up>` and `M-<down>` on a paragraph are an error rather than dragging it.
 - **Fontifying:** source blocks are not highlighted in their language, and emphasis does not span lines.
 - **Prompts:** the minibuffer has no initial input, so `C-c C-q` does not start from the current tags, and `C-c ,` needs `RET` after the letter.
 
