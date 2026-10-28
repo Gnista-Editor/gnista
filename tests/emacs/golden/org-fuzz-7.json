@@ -654,6 +654,279 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "seed12-0226-s-left",
+      "input": {
+        "text": "** read",
+        "point": 1,
+        "keys": "S-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** DONE read",
+      "visible": "** DONE read",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed12-1997-c-f-s-left",
+      "input": {
+        "text": "*** [#A] call call",
+        "point": 0,
+        "keys": "C-f S-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "*** DONE [#A] call call",
+      "visible": "*** DONE [#A] call call",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed12-1877-c-c-c-t-spc",
+      "input": {
+        "text": "** call",
+        "point": 1,
+        "keys": "C-c C-t SPC",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* * TODO call",
+      "visible": "* * TODO call",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed12-1437-s-right-bar-s-up",
+      "input": {
+        "text": "** fix :home:x:",
+        "point": 1,
+        "keys": "S-<right> | S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "*|* TODO fix                                                          :home:x:",
+      "visible": "*|* TODO fix                                                          :home:x:",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "To use shift-selection with Org mode, customize ‘org-support-shift-select’"
+    },
+    {
+      "name": "seed12-0202-c-c-star-c-c--",
+      "input": {
+        "text": ":PROPERTIES:",
+        "point": 11,
+        "keys": "C-c * C-c -",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- ",
+      "visible": "- ",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-item-tags-only-b",
+      "input": {
+        "text": "* :PROPERTIES:",
+        "point": 13,
+        "keys": "C-c -",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- ",
+      "visible": "- ",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-item-tags-only-d",
+      "input": {
+        "text": "* :PROPERTIES:\n",
+        "point": 3,
+        "keys": "C-c -",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- \n",
+      "visible": "- \n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-item-tags-only-e",
+      "input": {
+        "text": "* :a:",
+        "point": 0,
+        "keys": "C-c -",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- ",
+      "visible": "- ",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-item-tags-only-f",
+      "input": {
+        "text": "* x :a:",
+        "point": 0,
+        "keys": "C-c -",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- x",
+      "visible": "- x",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "todo-in-the-keyword-moves-point-past-it",
+      "input": {
+        "text": "* TODO One\n",
+        "point": 4,
+        "keys": "C-c C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* DONE One\n",
+      "visible": "* DONE One\n",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "todo-right-after-the-stars",
+      "input": {
+        "text": "** One\n",
+        "point": 2,
+        "keys": "C-c C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** TODO One\n",
+      "visible": "** TODO One\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "todo-collapses-spaces-after-the-keyword",
+      "input": {
+        "text": "* TODO    One\n",
+        "point": 12,
+        "keys": "C-c C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* DONE One\n",
+      "visible": "* DONE One\n",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "todo-off-collapses-spaces",
+      "input": {
+        "text": "* DONE    One\n",
+        "point": 12,
+        "keys": "C-c C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n",
+      "visible": "* One\n",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
     }
   ]
 }

@@ -4315,21 +4315,24 @@ function replaceTodoKeyword(h: Heading, state: string | undefined): void {
   dropMarker(p);
 }
 
-/** Moves point just past a heading's TODO keyword if it is near it, as org-todo does last. */
+/**
+ * Leaves one space after a heading's TODO keyword, or its stars, as org-todo's
+ * last step does. Org moves there inside save-excursion, so point stays
+ * where it was, moved only by the edit.
+ */
 function fixPositionAfterTodo(line: number): void {
   const fresh = parseHeading(line);
   if (!fresh) return;
-  const at = ember.point();
   const end = fresh.todoAt !== undefined ? fresh.todoAt + charCount(fresh.todo ?? "") : fresh.start + fresh.level;
-  if (lineAt(at) === line && at !== fresh.start && at < end + 2) {
-    ember.gotoChar(end);
-    const after = ember.bufferText(end, fresh.end);
-    if (/^ /.test(after) && !/^ *:/.test(after)) {
-      // just-one-space
-      const spaces = /^[ \t]*/.exec(after)?.[0].length ?? 0;
-      replaceText(end, end + spaces, " ");
-      ember.gotoChar(end + 1);
-    }
+  const after = ember.bufferText(end, ember.lineEnd(line));
+  if (!/^ /.test(after) || /^ *:/.test(after)) return;
+  // just-one-space
+  const spaces = /^[ \t]*/.exec(after)?.[0].length ?? 0;
+  if (spaces > 1) {
+    const p = marker(ember.point());
+    edDelete(end + 1, end + spaces);
+    ember.gotoChar(p.pos);
+    dropMarker(p);
   }
 }
 
@@ -4588,14 +4591,16 @@ function alignTagsAway(line: number): void {
   dropMarker(p);
 }
 
+/** Gives the heading point is under these tags, as org-set-tags does. */
 function setTags(tags: string[]): void {
   const [all, i] = backToHeading();
   const h = all[i];
-  if (h.tagsAt !== undefined) {
-    const text = ember.lineText(h.line);
-    const before = text.slice(0, indexOf(h.line, text, h.tagsAt)).trimEnd();
-    replaceText(h.start + charCount(before), h.end, "");
-  }
+  if (tags.join(":") === h.tags.join(":")) return;
+  // The tags go, and the spaces before them, or trailing spaces if there are none.
+  const text = ember.lineText(h.line);
+  const before = text.slice(0, h.tagsAt !== undefined ? indexOf(h.line, text, h.tagsAt) : text.length).replace(/[ \t]+$/, "");
+  replaceText(h.start + charCount(before), h.end, "");
+  if (!parseHeading(h.line)) replaceText(ember.lineEnd(h.line), ember.lineEnd(h.line), " ");
   if (tags.length === 0) return;
   const end = ember.lineEnd(h.line);
   replaceText(end, end, ` :${tags.join(":")}:`);
@@ -5752,6 +5757,8 @@ function deleteMetadata(line: number): void {
   if (h.tagsAt !== undefined) {
     const before = text.slice(0, indexOf(line, text, h.tagsAt)).trimEnd();
     edDelete(ember.lineStart(line) + charCount(before), h.end);
+    // As org-set-tags does, a heading that was only tags keeps its space.
+    if (!parseHeading(line)) replaceText(ember.lineEnd(line), ember.lineEnd(line), " ");
   }
   const all = headings();
   const i = headingIndex(all, line) as number;

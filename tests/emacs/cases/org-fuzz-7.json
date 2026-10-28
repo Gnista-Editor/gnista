@@ -255,5 +255,119 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "seed12-0226-s-left",
+    "text": "** read",
+    "keys": "S-<left>",
+    "point": 1,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed12-1997-c-f-s-left",
+    "text": "*** [#A] call call",
+    "keys": "C-f S-<left>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed12-1877-c-c-c-t-spc",
+    "text": "** call",
+    "keys": "C-c C-t SPC",
+    "point": 1,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed12-1437-s-right-bar-s-up",
+    "text": "** fix :home:x:",
+    "keys": "S-<right> | S-<up>",
+    "point": 1,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed12-0202-c-c-star-c-c--",
+    "text": ":PROPERTIES:",
+    "keys": "C-c * C-c -",
+    "point": 11,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-item-tags-only-b",
+    "text": "* :PROPERTIES:",
+    "keys": "C-c -",
+    "point": 13,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-item-tags-only-d",
+    "text": "* :PROPERTIES:\n",
+    "keys": "C-c -",
+    "point": 3,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-item-tags-only-e",
+    "text": "* :a:",
+    "keys": "C-c -",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-item-tags-only-f",
+    "text": "* x :a:",
+    "keys": "C-c -",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "todo-in-the-keyword-moves-point-past-it",
+    "text": "* TODO One\n",
+    "keys": "C-c C-t",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "todo-right-after-the-stars",
+    "text": "** One\n",
+    "keys": "C-c C-t",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "todo-collapses-spaces-after-the-keyword",
+    "text": "* TODO    One\n",
+    "keys": "C-c C-t",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "todo-off-collapses-spaces",
+    "text": "* DONE    One\n",
+    "keys": "C-c C-t",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
   }
 ]
