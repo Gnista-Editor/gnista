@@ -104,6 +104,20 @@ fn list(rng: &mut Rng, out: &mut Vec<String>) {
     }
 }
 
+/// Drawers, blocks, keywords, comments, links and closed planning lines.
+fn other(rng: &mut Rng, out: &mut Vec<String>) {
+    let lines: &[&str] = match rng.below(7) {
+        0 => &[":LOGBOOK:", "- note", ":END:"],
+        1 => &["#+BEGIN_SRC", "code here", "#+END_SRC"],
+        2 => &["#+begin_quote", "quoted", "#+end_quote"],
+        3 => &["#+TITLE: notes"],
+        4 => &["# a comment"],
+        5 => &["see [[*notes][the notes]] now"],
+        _ => &["CLOSED: [2026-10-20 Tue 10:00]"],
+    };
+    out.extend(lines.iter().map(|l| l.to_string()));
+}
+
 fn table(rng: &mut Rng, out: &mut Vec<String>) {
     let rows = 2 + rng.below(2);
     for r in 0..rows {
@@ -135,6 +149,7 @@ fn document(rng: &mut Rng) -> String {
             6 => table(rng, &mut out),
             7 => out.push(format!("{} <2026-10-{} Wed>", rng.pick(WORDS), 10 + rng.below(19))),
             8 => out.push(String::new()),
+            9 if rng.chance(50) => other(rng, &mut out),
             _ => out.push(format!("{}{} {}", rng.pick(&["", "  "]), rng.pick(WORDS), rng.pick(WORDS))),
         }
     }
@@ -151,16 +166,20 @@ const ORG_KEYS: &[&str] = &[
     "M-S-<left>", "M-S-<right>", "M-S-<up>", "M-S-<down>", "S-<left>", "S-<right>", "S-<up>", "S-<down>",
     "C-c C-t", "C-c C-c", "C-c -", "C-c *", "C-c C-x C-b", "C-c C-n", "C-c C-p", "C-c C-f", "C-c C-b", "C-c C-u",
     "C-c @", "RET", "DEL", "C-d", "C-k", "C-c C-x C-w", "C-c C-x M-w", "C-c C-x C-y", "C-u TAB",
+    "C-c SPC", "C-c C-o",
 ];
+/// Editing keys from outside Org, which Org leaves alone or remaps.
+const EDIT_KEYS: &[&str] = &["C-y", "M-y", "C-w", "M-w", "C-SPC", "C-/", "C-o", "M-d", "M-DEL", "C-t", "C-j", "M-<", "M->"];
 const MOTION_KEYS: &[&str] = &["C-n", "C-p", "C-f", "C-b", "C-a", "C-e", "M-f", "M-b"];
 const TYPING_KEYS: &[&str] = &["x", "SPC", "-", "|", "1"];
 
 fn keys(rng: &mut Rng) -> String {
     let n = 1 + rng.below(5);
     (0..n)
-        .map(|_| match rng.below(20) {
+        .map(|_| match rng.below(22) {
             0..=10 => rng.pick(ORG_KEYS),
             11..=16 => rng.pick(MOTION_KEYS),
+            17 | 18 => rng.pick(EDIT_KEYS),
             _ => rng.pick(TYPING_KEYS),
         })
         .collect::<Vec<_>>()

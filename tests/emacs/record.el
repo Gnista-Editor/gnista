@@ -61,6 +61,14 @@ while the case's keys are queued would read those instead."
               read-char-exclusive read-key y-or-n-p yes-or-no-p))
   (advice-add fn :override #'ember-oracle--no-minibuffer))
 
+;; Cases must not reach outside Emacs: opening a link would start the
+;; system's browser, or another program, for every case that does it.
+(defun ember-oracle--no-external (&rest _)
+  (error "Opening outside Emacs in batch"))
+(dolist (fn '(browse-url browse-url-default-browser browse-url-default-macosx-browser
+              browse-url-xdg-open org-open-file org-link-open-as-file))
+  (advice-add fn :override #'ember-oracle--no-external))
+
 (setq command-error-function
       (lambda (data _context _caller)
         (unless ember-oracle--error
