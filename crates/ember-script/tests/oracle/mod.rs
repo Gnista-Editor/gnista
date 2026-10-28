@@ -25,6 +25,9 @@ pub struct Case {
     pub call: Vec<String>,
     /// The Emacs `system-type` the case holds on, if only one.
     pub platform: Option<String>,
+    /// Whether to compare the windows too: what each shows and its size.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub windows: bool,
 }
 
 #[derive(Deserialize)]
@@ -53,6 +56,19 @@ pub struct Input {
     #[serde(default)]
     pub call: Vec<String>,
     pub platform: Option<String>,
+    #[serde(default)]
+    pub windows: bool,
+}
+
+/// One window, as `record.el` reports it: the buffer it shows, its point,
+/// and its total size in columns and lines, mode line and divider included.
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+pub struct WindowState {
+    pub buffer: String,
+    pub point: usize,
+    pub width: usize,
+    pub height: usize,
+    pub selected: bool,
 }
 
 /// What a case leaves behind, as both editors report it.
@@ -68,6 +84,9 @@ pub struct State {
     pub kill_ring: Vec<String>,
     pub modified: bool,
     pub error: Option<String>,
+    /// The frame's windows in cyclic order, for cases that ask.
+    #[serde(default)]
+    pub windows: Option<Vec<WindowState>>,
 }
 
 /// This platform as Emacs's `system-type` names it.
@@ -89,6 +108,8 @@ pub fn oracle_dir() -> PathBuf {
 pub fn run(case: &Case) -> State {
     let mut ed = Editor::new();
     let _scripting = Scripting::new(&mut ed).expect("scripting starts");
+    // Batch Emacs's frame: 80 columns, and 24 lines above the echo area.
+    ed.set_frame_size(80, 24);
     let b = ed.window_buffer_mut();
     // record.el's buffer, which some messages name.
     b.name = "*ember-oracle*".into();
@@ -100,8 +121,12 @@ pub fn run(case: &Case) -> State {
     }
     // Fontified as redisplay would before the keys; record.el does the same.
     ed.font_lock_ensure().unwrap_or_else(|e| panic!("{}: fontifying: {e}", case.name));
-    let keys = Key::parse_seq(&case.keys)
-        .unwrap_or_else(|| panic!("{}: keys {:?} are not valid Emacs notation", case.name, case.keys));
+    // A case may be only a call, with no keys after it.
+    let keys = if case.keys.is_empty() {
+        Vec::new()
+    } else {
+        Key::parse_seq(&case.keys).unwrap_or_else(|| panic!("{}: keys {:?} are not valid Emacs notation", case.name, case.keys))
+    };
     let mut error = None;
     if let Some((name, args)) = case.call.split_first() {
         let args = args.iter().map(|a| ember_core::Arg::Str(a.clone())).collect();
@@ -123,6 +148,16 @@ pub fn run(case: &Case) -> State {
         }
     }
     ed.font_lock_ensure().unwrap_or_else(|e| panic!("{}: fontifying: {e}", case.name));
+    let windows = case.windows.then(|| {
+        let sizes = ed.window_total_sizes();
+        ed.windows()
+            .iter()
+            .map(|w| {
+                let (width, height) = sizes.iter().find(|s| s.0 == w.id).map_or((0, 0), |s| (s.1, s.2));
+                WindowState { buffer: w.buffer.name.clone(), point: w.point, width, height, selected: w.selected }
+            })
+            .collect()
+    });
     let b = ed.window_buffer();
     let visible = (0..b.len()).filter(|&p| ed.invisible_in(b, p).is_none()).filter_map(|p| b.char_at(p)).collect();
     State {
@@ -134,6 +169,7 @@ pub fn run(case: &Case) -> State {
         kill_ring: ed.kill_ring().iter().rev().cloned().collect(),
         modified: b.is_modified(),
         error,
+        windows,
     }
 }
 
@@ -151,9 +187,16 @@ pub fn differences(emacs: &State, ember: &State) -> String {
         )*};
     }
     compare!(text, visible, point, mark, mark_active, kill_ring, modified, error);
+    if emacs.windows.is_some() && emacs.windows != ember.windows {
+        out.push(format!("    windows: Emacs {:?}, Ember {:?}", emacs.windows, ember.windows));
+    }
     out.join("\n")
 }
 
+
+fn is_false(b: &bool) -> bool {
+    !b
+}
 
 fn is_zero(n: &usize) -> bool {
     *n == 0

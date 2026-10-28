@@ -204,6 +204,7 @@ fn random_case(rng: &mut Rng, name: String) -> Case {
         modes: vec!["org-mode".into()],
         call: Vec::new(),
         platform: None,
+        windows: false,
     }
 }
 
@@ -397,15 +398,31 @@ const EDIT_ONLY_KEYS: &[&str] = &[
     "RET", "C-u", "M-2", "C--", "S-<right>", "S-<left>", "S-<down>", "C-g",
 ];
 
+/// Keys for windows, mixed into some cases, whose windows are compared too.
+/// C-x - and scrolling down in another window are left out: batch Emacs,
+/// which never redisplays, gets them differently from an Emacs on screen.
+const WINDOW_KEYS: &[&str] = &[
+    "C-x 2", "C-x 3", "C-x o", "C-x 0", "C-x 1", "C-x ^", "C-x }", "C-x {", "C-x +", "C-M-v",
+];
+
 fn random_text_case(rng: &mut Rng, name: String) -> Case {
     let text = text_document(rng);
     let point = rng.below(text.chars().count() + 1);
-    let n = 1 + rng.below(6);
+    let windows = rng.chance(25);
+    let n = 1 + rng.below(if windows { 8 } else { 6 });
     let keys = (0..n)
-        .map(|_| if rng.chance(80) { rng.pick(EDIT_ONLY_KEYS) } else { rng.pick(&["x", "SPC", "1"]) })
+        .map(|_| {
+            if windows && rng.chance(50) {
+                rng.pick(WINDOW_KEYS)
+            } else if rng.chance(80) {
+                rng.pick(EDIT_ONLY_KEYS)
+            } else {
+                rng.pick(&["x", "SPC", "1"])
+            }
+        })
         .collect::<Vec<_>>()
         .join(" ");
-    Case { name, point, text, keys, modes: Vec::new(), call: Vec::new(), platform: None }
+    Case { name, point, text, keys, modes: Vec::new(), call: Vec::new(), platform: None, windows }
 }
 
 /// Fuzzes editing outside any mode, as the org fuzzer does org-mode.

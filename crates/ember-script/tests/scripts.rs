@@ -47,8 +47,12 @@ fn defines_a_command_and_binds_a_key() {
     ed.press("C-/").unwrap();
     assert_eq!(text(&ed), "");
     ed.press("C-h k C-c g").unwrap();
-    assert!(text(&ed).contains("C-c g runs the command insert-greeting."), "{}", text(&ed));
-    assert!(text(&ed).contains("Insert a friendly greeting."));
+    // Help shows in another window, as in Emacs.
+    let help = ed.buffers().iter().find(|b| b.name == "*Help*").expect("a *Help* buffer");
+    let help = help.slice(0..help.len());
+    assert!(help.contains("C-c g runs the command insert-greeting."), "{help}");
+    assert!(help.contains("Insert a friendly greeting."));
+    assert_eq!(ed.window_list().len(), 2);
 }
 
 #[test]

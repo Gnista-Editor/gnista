@@ -23,9 +23,19 @@ The core keeps a tree of splits; front ends lay it out.
 - The primitives (split, delete, select, list) are Rust, as in Emacs's C. The commands are in `packages/window.ts`, after `window.el`, and `other-window` takes a prefix count.
 - Only the selected window shows the region and a filled cursor; other windows show a hollow cursor and a plainer mode line, as in Emacs.
 
+### Sizes and displaying buffers
+
+Added later, on 2026-10-28:
+
+- **Splits can have sizes of their own.** A split halves its window until a resize gives it a size of its own, the first part's total size in lines or columns. `WindowTree::rects` takes a cell size to lay that out in, so a terminal's cells and a window's points share the rule.
+- **The core knows the frame's size.** Front ends call `set_frame_size` with the frame in columns and lines, mode lines included, and the core lays the windows out in it, so window sizes follow without a front end, as the oracle needs. A front end may then refine each window with `set_window_size`.
+- **Resizing is a primitive, as Emacs's `window-resize`.** It moves the line between the window and its neighbour in the nearest split of that kind, as far as `window-min-height` and `window-min-width` allow. `balance-windows` shares each run of splits of one kind equally, and `split-window` takes a size from a prefix argument. Dragging a mode line or divider in the GUI moves that edge.
+- **Displaying buffers follows window.el's default actions, in `window.ts`.** `display-buffer` reuses a window showing the buffer, else splits the only window or one tall or wide enough (`split-height-threshold`, `split-width-threshold`), else uses the least recently used window, preferring full-width ones. `pop-to-buffer`, the `C-x 4` commands and `scroll-other-window` build on it. Each window remembers, as Emacs's `quit-restore` parameter does, whether it was made for the buffer or showed another one before, which `quit-window` (`q` in `*Help*`) undoes. Help now shows in another window.
+- **The oracle compares windows.** A case with `"windows": true` records each window's buffer, point and total size in Emacs's cyclic order, and the plain-editing fuzzer mixes window keys into a quarter of its cases.
+
 ## Consequences
 
-Scripts and, later, the agent can split and select windows through the same commands. The oracle checks window points, cycling and deletion against Emacs. Resizing windows (`C-x ^`, `C-x }`), `C-x 4` commands, and scrolling the window under the mouse are not done yet; the last comes with the mouse in the next slice.
+Scripts and, later, the agent can split, select, resize and display buffers in windows through the same commands, and the oracle checks them against Emacs. Batch Emacs never redisplays, so commands that depend on what a window shows, such as `shrink-window-if-larger-than-buffer` and scrolling down another window, are tested headlessly instead.
 
 ## Dependencies introduced
 

@@ -1,12 +1,6 @@
 // Help: the *Help* buffer's mode, and describing variables and modes, after
 // Emacs's help-mode.el and help-fns.el.
 
-ember.defineCommand({
-  name: "quit-window",
-  doc: "Leave this buffer and show the one shown before it, as q does in *Help*.",
-  run: () => ember.call("switch-to-buffer", ""),
-});
-
 ember.defineMajorMode({
   name: "help-mode",
   modeName: "Help",

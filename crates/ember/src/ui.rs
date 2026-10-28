@@ -23,7 +23,7 @@ struct WindowArea {
 fn window_areas(ed: &Editor, width: u16, height: u16) -> Vec<WindowArea> {
     let height = height.saturating_sub(1).max(2);
     ed.window_tree()
-        .rects(0.0, 0.0, width as f32, height as f32)
+        .rects(0.0, 0.0, width as f32, height as f32, (1.0, 1.0))
         .into_iter()
         .map(|r| {
             let (x, y, w, h) = (r.x as u16, r.y as u16, (r.width as u16).max(1), (r.height as u16).max(2));
@@ -41,6 +41,7 @@ fn window_areas(ed: &Editor, width: u16, height: u16) -> Vec<WindowArea> {
 /// Tells the editor how big each window is on a screen of this size, so
 /// scrolling knows. Call before drawing.
 pub fn layout_windows(ed: &mut Editor, width: u16, height: u16) {
+    ed.set_frame_size(width as usize, height.saturating_sub(1).max(2) as usize);
     for area in window_areas(ed, width, height) {
         ed.set_window_size(area.id, area.text.width as usize, area.text.height as usize);
     }

@@ -362,9 +362,11 @@ const API: &str = r##"
   /**
    * Split a window, the selected one by default, in two (Emacs's
    * split-window): the new window goes below it or to its right and shows
-   * the same buffer at the same place. Returns the new window.
+   * the same buffer at the same place. With `size`, the window split gets
+   * that many lines or columns, or the new one does if it is negative, as
+   * split-window's SIZE. Returns the new window.
    */
-  function splitWindow(window?: number, side?: "below" | "right"): number;
+  function splitWindow(window?: number, side?: "below" | "right", size?: number): number;
   /** Delete a window, the selected one by default, giving its space to its neighbour. */
   function deleteWindow(window?: number): void;
   /** Make a window the selected one, whose buffer commands act on. */
@@ -390,6 +392,34 @@ const API: &str = r##"
   function screenLine(position: number): { start: number; end: number; continued: boolean };
   /** The name of the buffer a window shows, the selected one by default. */
   function windowBuffer(window?: number): string | undefined;
+  /** Make a buffer of this name if there is none, without showing it, as get-buffer-create. */
+  function getBufferCreate(name: string): void;
+  /** Visit a file without showing it, as find-file-noselect, and return its buffer's name. */
+  function findFileNoselect(file: string): string;
+  /**
+   * Show a buffer in a window, as Emacs's set-window-buffer: in the selected
+   * window it becomes the current buffer; another shows it from its top.
+   */
+  function setWindowBuffer(window: number | undefined, buffer: string): void;
+  /**
+   * A window's size: columns and lines of text, its total size with its
+   * divider and mode line, as window-total-width and -height count them,
+   * and whether it spans the frame's width, as window-full-width-p.
+   */
+  function windowSize(
+    window?: number,
+  ): { width: number; height: number; totalWidth: number; totalHeight: number; fullWidth: boolean } | undefined;
+  /** When a window was last selected, as a count: higher is more recent. */
+  function windowUseTime(window?: number): number | undefined;
+  /**
+   * Grow a window by `delta` lines, or columns if `horizontal`, taking them
+   * from its neighbour; a negative delta shrinks it. Goes as far as the
+   * windows' smallest sizes allow, and returns how far; with `apply` false,
+   * only says how far it could go, as window-resizable does.
+   */
+  function resizeWindow(window: number | undefined, delta: number, horizontal?: boolean, apply?: boolean): number;
+  /** Make windows the same size as their neighbours, as balance-windows does. */
+  function balanceWindows(): void;
 
   /** A search match: where it starts and ends, and each group's range, group 0 being the whole match. */
   interface Match {

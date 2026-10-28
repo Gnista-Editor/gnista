@@ -66,6 +66,8 @@ fn describe_variable_shows_the_value_and_where_it_came_from() {
         .unwrap();
     ed.press("C-h v").unwrap();
     ed.type_text("my-wi\t\n");
+    // In the window display-buffer pops up for it, as in Emacs.
+    ed.press("C-x o").unwrap();
     assert_eq!(ed.window_buffer().name, "*Help*");
     let help = text(&ed);
     assert!(help.starts_with("my-width is a variable"), "{help}");
@@ -209,7 +211,7 @@ fn describe_mode_lists_the_major_and_minor_modes() {
     let (mut ed, _scripting) = setup();
     ed.call("text-mode", vec![]).unwrap();
     ed.press("<insert>").unwrap();
-    ed.press("C-h m").unwrap();
+    ed.press("C-h m C-x o").unwrap();
     let help = text(&ed);
     assert!(help.starts_with("The major mode is Text mode (text-mode), defined in packages/text-mode.ts:"), "{help}");
     assert!(help.contains("Minor modes that are on: Overwrite mode."), "{help}");

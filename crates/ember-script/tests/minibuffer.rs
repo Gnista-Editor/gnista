@@ -72,7 +72,7 @@ fn prompts_keep_separate_histories() {
 fn partial_completion_completes_word_by_word() {
     let (mut ed, _scripting) = setup();
     ed.press("M-x").unwrap();
-    ed.type_text("s-w-b");
+    ed.type_text("s-w-be");
     assert_eq!(ed.minibuffer_completions(), ["split-window-below"]);
     ed.press("TAB").unwrap();
     assert_eq!(input(&ed), "split-window-below");

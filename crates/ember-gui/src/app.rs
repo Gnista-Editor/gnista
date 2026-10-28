@@ -50,6 +50,9 @@ struct Mouse {
     /// When and where the last press was, and how many clicks it made.
     last_press: Option<(f64, Pos2, u8)>,
     clicks: u8,
+    /// A mode line or divider being dragged: its window, whether it is a
+    /// divider, and where along the drag the edge last moved to.
+    resizing: Option<(WindowId, bool, f32)>,
 }
 
 impl eframe::App for EmberApp {
@@ -130,9 +133,12 @@ impl EmberApp {
             egui::Event::PointerButton { pos, button: PointerButton::Primary, pressed, modifiers } => {
                 (*pos, Some(*pressed), modifiers.shift)
             }
-            egui::Event::PointerMoved(pos) if self.mouse.pressed.is_some() => (*pos, None, false),
+            egui::Event::PointerMoved(pos) if self.mouse.pressed.is_some() || self.mouse.resizing.is_some() => (*pos, None, false),
             _ => return,
         };
+        if self.resize_drag(pos, pressed, layout) {
+            return;
+        }
         let ed = &mut self.editor;
         let target = hit(ed, layout, pos, offset);
         let key = |kind| Key { code: KeyCode::Mouse(kind, 1), ctrl: false, meta: false, shift };
@@ -171,6 +177,41 @@ impl EmberApp {
                     ed.mouse(key(MouseKind::Drag), MouseEvent { window, position, start: Some(start) });
                 }
             }
+        }
+    }
+
+    /// Dragging a window's mode line or the divider on its right moves that
+    /// edge, a whole line or column at a time, as Emacs's
+    /// mouse-drag-mode-line and mouse-drag-vertical-line do. Returns whether
+    /// the event was part of such a drag.
+    fn resize_drag(&mut self, pos: Pos2, pressed: Option<bool>, layout: &Layout) -> bool {
+        let m = &layout.m;
+        match (pressed, self.mouse.resizing) {
+            (Some(true), _) => {
+                let bottom = layout.echo_rect.top();
+                let grip = layout.windows.iter().find_map(|w| {
+                    let on_divider = w.divider && (pos.x - w.rect.right()).abs() <= 3.0 && w.rect.y_range().contains(pos.y);
+                    let on_mode_line = w.mode_rect.contains(pos) && w.rect.bottom() < bottom - 1.0;
+                    (on_divider || on_mode_line).then_some((w.id, on_divider))
+                });
+                let Some((window, divider)) = grip else { return false };
+                self.mouse.resizing = Some((window, divider, if divider { pos.x } else { pos.y }));
+                true
+            }
+            (Some(false), Some(_)) => {
+                self.mouse.resizing = None;
+                true
+            }
+            (None, Some((window, divider, from))) => {
+                let (along, unit) = if divider { (pos.x, m.char_width) } else { (pos.y, m.line_height) };
+                let delta = ((along - from) / unit).trunc() as i64;
+                if delta != 0 {
+                    let moved = self.editor.move_window_edge(window, delta, divider);
+                    self.mouse.resizing = Some((window, divider, from + moved as f32 * unit));
+                }
+                true
+            }
+            _ => false,
         }
     }
 
@@ -276,9 +317,11 @@ impl Layout {
         let bar_height = m.line_height + 2.0 * BAR_PAD;
         let echo_rect = Rect::from_min_max(pos2(rect.left(), rect.bottom() - bar_height), rect.max);
         let frame_height = echo_rect.top() - rect.top();
+        // The frame in cells, which resized windows' sizes count in.
+        ed.set_frame_size((rect.width() / m.char_width) as usize, (frame_height / m.line_height) as usize);
         let windows: Vec<WindowLayout> = ed
             .window_tree()
-            .rects(rect.left(), rect.top(), rect.width(), frame_height)
+            .rects(rect.left(), rect.top(), rect.width(), frame_height, (m.char_width, m.line_height))
             .into_iter()
             .map(|r| {
                 let rect = Rect::from_min_size(pos2(r.x, r.y), vec2(r.width, r.height));

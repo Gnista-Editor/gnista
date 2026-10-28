@@ -137,7 +137,8 @@ fn line_moves_skip_folded_text_and_point_leaves_it() {
 fn describe_face_shows_attributes() {
     let (mut ed, _scripting) = setup("");
     ed.call("describe-face", vec![ember_core::Arg::Str("outline-1".into())]).unwrap();
-    let b = ed.window_buffer();
+    // In the *Help* window, which display-buffer pops up.
+    let b = ed.buffers().iter().find(|b| b.name == "*Help*").expect("a *Help* buffer");
     let help = b.slice(0..b.len());
     assert!(help.starts_with("outline-1 is a face defined in packages/outline.ts."), "{help}");
     assert!(help.contains(r#"{"inherit":"font-lock-function-name-face"}"#), "{help}");

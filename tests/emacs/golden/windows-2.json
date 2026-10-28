@@ -1,0 +1,1123 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "enlarge-the-top-window",
+      "input": {
+        "text": "one\ntwo",
+        "point": 0,
+        "keys": "C-x 2 C-x ^",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one\ntwo",
+      "visible": "one\ntwo",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 13,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 11,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "enlarge-by-three",
+      "input": {
+        "text": "one\ntwo",
+        "point": 0,
+        "keys": "C-x 2 C-u 3 C-x ^",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one\ntwo",
+      "visible": "one\ntwo",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 15,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 9,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "enlarge-the-bottom-window",
+      "input": {
+        "text": "one\ntwo",
+        "point": 0,
+        "keys": "C-x 2 C-x o C-x ^",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one\ntwo",
+      "visible": "one\ntwo",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 11,
+          "selected": false
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 13,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "enlarge-a-sole-window",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "C-x ^",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one",
+      "visible": "one",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot enlarge selected window vertically",
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 24,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "enlarge-too-far",
+      "input": {
+        "text": "one\ntwo",
+        "point": 0,
+        "keys": "C-x 2 C-u 3 0 C-x ^",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one\ntwo",
+      "visible": "one\ntwo",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot enlarge selected window vertically",
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "shrink-with-a-negative-count",
+      "input": {
+        "text": "one\ntwo",
+        "point": 0,
+        "keys": "C-x 2 C-u - 2 C-x ^",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one\ntwo",
+      "visible": "one\ntwo",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 10,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 14,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "widen-the-left-window",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "C-x 3 C-x }",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one",
+      "visible": "one",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 41,
+          "height": 24,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 39,
+          "height": 24,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "narrow-the-left-window",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "C-x 3 C-u 5 C-x {",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one",
+      "visible": "one",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 35,
+          "height": 24,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 45,
+          "height": 24,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "widen-the-right-window",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "C-x 3 C-x o C-x }",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one",
+      "visible": "one",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 39,
+          "height": 24,
+          "selected": false
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 41,
+          "height": 24,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "balance-three-windows",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "C-x 2 C-x 2 C-x +",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one",
+      "visible": "one",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 8,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 8,
+          "selected": false
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 8,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "balance-after-resizing",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "C-x 2 C-u 4 C-x ^ C-x +",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one",
+      "visible": "one",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "enlarge-inside-side-by-side",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "C-x 3 C-x 2 C-x ^",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one",
+      "visible": "one",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 40,
+          "height": 13,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 40,
+          "height": 11,
+          "selected": false
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 40,
+          "height": 24,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "help-pops-up-a-window",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "C-h b",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one",
+      "visible": "one",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        },
+        {
+          "buffer": "*Help*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "help-uses-the-other-window",
+      "input": {
+        "text": "one\ntwo",
+        "point": 0,
+        "keys": "C-x 2 C-n C-h b",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one\ntwo",
+      "visible": "one\ntwo",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 4,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        },
+        {
+          "buffer": "*Help*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "help-reuses-its-window",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "C-h b C-h b",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one",
+      "visible": "one",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        },
+        {
+          "buffer": "*Help*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "quit-window-deletes-the-help-window",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "C-h b C-x o q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one",
+      "visible": "one",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 24,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "quit-window-shows-the-buffer-before",
+      "input": {
+        "text": "one\ntwo",
+        "point": 0,
+        "keys": "C-x 2 C-h b C-x o q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one\ntwo",
+      "visible": "one\ntwo",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "help-with-three-windows",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "C-x 2 C-x 3 C-h b",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one",
+      "visible": "one",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 40,
+          "height": 12,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 40,
+          "height": 12,
+          "selected": false
+        },
+        {
+          "buffer": "*Help*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "switch-to-buffer-other-window",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "",
+        "modes": [],
+        "call": [
+          "switch-to-buffer-other-window",
+          "other"
+        ],
+        "platform": null,
+        "windows": true
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        },
+        {
+          "buffer": "other",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "switch-to-buffer-other-window-with-two",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "C-x o C-x 2 C-x o",
+        "modes": [],
+        "call": [
+          "switch-to-buffer-other-window",
+          "other"
+        ],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one",
+      "visible": "one",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 6,
+          "selected": false
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 6,
+          "selected": true
+        },
+        {
+          "buffer": "other",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "find-file-other-window",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "",
+        "modes": [],
+        "call": [
+          "find-file-other-window",
+          "ember-oracle-new.txt"
+        ],
+        "platform": null,
+        "windows": true
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        },
+        {
+          "buffer": "ember-oracle-new.txt",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "kill-buffer-and-window",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "C-x 4 0",
+        "modes": [],
+        "call": [
+          "switch-to-buffer-other-window",
+          "other"
+        ],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one",
+      "visible": "one",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 24,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "scroll-other-window",
+      "input": {
+        "text": "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12\nline 13\nline 14\nline 15\nline 16\nline 17\nline 18\nline 19\nline 20\nline 21\nline 22\nline 23\nline 24\nline 25\nline 26\nline 27\nline 28\nline 29\nline 30\nline 31\nline 32\nline 33\nline 34\nline 35\nline 36\nline 37\nline 38\nline 39\nline 40\nline 41\nline 42\nline 43\nline 44\nline 45\nline 46\nline 47\nline 48\nline 49\nline 50\nline 51\nline 52\nline 53\nline 54\nline 55\nline 56\nline 57\nline 58\nline 59\nline 60",
+        "point": 0,
+        "keys": "C-x 2 C-M-v",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12\nline 13\nline 14\nline 15\nline 16\nline 17\nline 18\nline 19\nline 20\nline 21\nline 22\nline 23\nline 24\nline 25\nline 26\nline 27\nline 28\nline 29\nline 30\nline 31\nline 32\nline 33\nline 34\nline 35\nline 36\nline 37\nline 38\nline 39\nline 40\nline 41\nline 42\nline 43\nline 44\nline 45\nline 46\nline 47\nline 48\nline 49\nline 50\nline 51\nline 52\nline 53\nline 54\nline 55\nline 56\nline 57\nline 58\nline 59\nline 60",
+      "visible": "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12\nline 13\nline 14\nline 15\nline 16\nline 17\nline 18\nline 19\nline 20\nline 21\nline 22\nline 23\nline 24\nline 25\nline 26\nline 27\nline 28\nline 29\nline 30\nline 31\nline 32\nline 33\nline 34\nline 35\nline 36\nline 37\nline 38\nline 39\nline 40\nline 41\nline 42\nline 43\nline 44\nline 45\nline 46\nline 47\nline 48\nline 49\nline 50\nline 51\nline 52\nline 53\nline 54\nline 55\nline 56\nline 57\nline 58\nline 59\nline 60",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 63,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "display-buffer-does-not-select",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "",
+        "modes": [],
+        "call": [
+          "display-buffer",
+          "*ember-oracle*"
+        ],
+        "platform": null,
+        "windows": true
+      },
+      "text": "one",
+      "visible": "one",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 24,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "split-with-too-small-a-size",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-- C-x 2",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Size of new window too small",
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 24,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "split-right-with-a-size",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-u C-x 3",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 4,
+          "height": 24,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 76,
+          "height": 24,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "split-below-with-a-size",
+      "input": {
+        "text": "x, three, foo_bar",
+        "point": 10,
+        "keys": "C-u C-x 2",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "x, three, foo_bar",
+      "visible": "x, three, foo_bar",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 10,
+          "width": 80,
+          "height": 4,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 10,
+          "width": 80,
+          "height": 20,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "shrinking-a-narrow-window-fails",
+      "input": {
+        "text": "three",
+        "point": 0,
+        "keys": "C-u C-x 3 C-x {",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "three",
+      "visible": "three",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot shrink selected window horizontally",
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 4,
+          "height": 24,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 76,
+          "height": 24,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "scrolling-another-window-at-the-end-leaves-its-point",
+      "input": {
+        "text": "  foo_bar\n",
+        "point": 9,
+        "keys": "x C-x 3 C-M-v C-x 0 S-<right> C-/",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "  foo_barx\n",
+      "visible": "  foo_barx\n",
+      "point": 11,
+      "mark": 10,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": true,
+      "error": "End of buffer",
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 11,
+          "width": 80,
+          "height": 24,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "transposing-keeps-the-other-windows-point",
+      "input": {
+        "text": "\tfoo_bar, two foo_bar",
+        "point": 1,
+        "keys": "C-x 3 C-t",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "f\too_bar, two foo_bar",
+      "visible": "f\too_bar, two foo_bar",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 2,
+          "width": 40,
+          "height": 24,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 1,
+          "width": 40,
+          "height": 24,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "transposing-words-keeps-the-other-windows-point",
+      "input": {
+        "text": "  foo_bar three one. three three",
+        "point": 15,
+        "keys": "C-x 3 M-t",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "  foo_bar one three. three three",
+      "visible": "  foo_bar one three. three three",
+      "point": 19,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 19,
+          "width": 40,
+          "height": 24,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 13,
+          "width": 40,
+          "height": 24,
+          "selected": false
+        }
+      ]
+    }
+  ]
+}

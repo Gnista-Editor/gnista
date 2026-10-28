@@ -908,8 +908,8 @@ fn install_native_search<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs:
 fn install_native_windows<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::Result<()> {
     native.set(
         "splitWindow",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: Option<u64>, side_by_side: bool| {
-            with_editor(&ctx, |ed| ed.split_window(window, side_by_side))
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: Option<u64>, side_by_side: bool, size: Option<i64>| {
+            with_editor(&ctx, |ed| ed.split_window_sized(window, side_by_side, size))
         })?,
     )?;
     native.set(
@@ -959,6 +959,56 @@ fn install_native_windows<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs
         "windowBuffer",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64| {
             with_editor(&ctx, |ed| Ok(ed.window_buffer_name(window).map(str::to_string)))
+        })?,
+    )?;
+    native.set(
+        "getBufferCreate",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
+            with_editor(&ctx, |ed| {
+                ed.get_buffer_create(&name);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "findFileNoselect",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| {
+            with_editor(&ctx, |ed| ed.find_file_noselect(&ember_core::expand_file_name(&file)))
+        })?,
+    )?;
+    native.set(
+        "setWindowBuffer",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64, buffer: String| {
+            with_editor(&ctx, |ed| ed.set_window_buffer(window, &buffer))
+        })?,
+    )?;
+    native.set(
+        "windowSize",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64| {
+            with_editor(&ctx, |ed| {
+                let total = ed.window_total_sizes().into_iter().find(|s| s.0 == window);
+                let full = usize::from(ed.window_full_width(window));
+                Ok(ed.window_size(window).zip(total).map(|((w, h), (_, tw, th))| vec![w, h, tw, th, full]))
+            })
+        })?,
+    )?;
+    native.set(
+        "windowUseTime",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64| with_editor(&ctx, |ed| Ok(ed.window_use_time(window))))?,
+    )?;
+    native.set(
+        "resizeWindow",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: Option<u64>, delta: i64, horizontal: bool, apply: bool| {
+            with_editor(&ctx, |ed| ed.resize_window(window, delta, horizontal, apply))
+        })?,
+    )?;
+    native.set(
+        "balanceWindows",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            with_editor(&ctx, |ed| {
+                ed.balance_windows();
+                Ok(())
+            })
         })?,
     )?;
     Ok(())

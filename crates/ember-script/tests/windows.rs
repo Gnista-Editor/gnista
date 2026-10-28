@@ -137,3 +137,34 @@ fn scripts_split_and_select_windows() {
         .unwrap();
     assert_eq!(ed.echo(), Some("1,2 true *scratch*"));
 }
+
+/// Each window's total height, mode line included, in cyclic order.
+fn heights(ed: &Editor) -> Vec<usize> {
+    let sizes = ed.window_total_sizes();
+    ed.window_list().iter().map(|id| sizes.iter().find(|s| s.0 == *id).map_or(0, |s| s.2)).collect()
+}
+
+#[test]
+fn windows_resize_and_shrink_to_fit_their_buffer() {
+    let (mut ed, _scripting) = setup("one\ntwo\n");
+    ed.set_frame_size(80, 23);
+    ed.press("C-x 2 C-u 3 C-x ^").unwrap();
+    assert_eq!(heights(&ed), [15, 8]);
+    // Three lines of text, counting the empty last one, and the mode line.
+    ed.press("C-x -").unwrap();
+    assert_eq!(heights(&ed), [4, 19]);
+    ed.press("C-x +").unwrap();
+    assert_eq!(heights(&ed), [12, 11]);
+    // The text lines each window has to show follow its size.
+    assert_eq!(ed.window_size(ed.selected_window()), Some((80, 11)));
+}
+
+#[test]
+fn help_pops_up_a_window_that_q_takes_away() {
+    let (mut ed, _scripting) = setup("one\n");
+    ed.set_frame_size(80, 23);
+    ed.press("C-h b").unwrap();
+    assert_eq!(windows(&ed), [("*scratch*".into(), 0, true), ("*Help*".into(), 0, false)]);
+    ed.press("C-x o q").unwrap();
+    assert_eq!(windows(&ed), [("*scratch*".into(), 0, true)]);
+}

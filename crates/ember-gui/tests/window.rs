@@ -390,3 +390,34 @@ fn org_notes_light() {
     let (ed, _scripting) = org_notes();
     harness(ed, Theme::Light).snapshot("org_light");
 }
+
+#[test]
+fn dragging_a_mode_line_resizes_the_windows() {
+    let mut ed = sample();
+    let _scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    ed.press("C-x 2").unwrap();
+    let mut h = harness(ed, Theme::Dark);
+    let heights = |h: &Harness<'_, EmberApp>| h.state().editor.window_total_sizes().iter().map(|s| s.2).collect::<Vec<_>>();
+    let before = heights(&h);
+    // The top window's mode line: the frame above the echo area is halved.
+    let lh = h.ctx.fonts_mut(|f| {
+        let font = egui::FontId::new(ember_gui::theme::TEXT_SIZE, egui::FontFamily::Monospace);
+        (f.row_height(&font) * ember_gui::theme::LINE_SPACING).round()
+    });
+    let bar = lh + 12.0;
+    let y = ((360.0 - bar) / 2.0_f32).ceil() - bar / 2.0;
+    let start = egui::pos2(100.0, y);
+    let end = egui::pos2(100.0, y + 3.0 * lh + 1.0);
+    h.event(Event::PointerMoved(start));
+    h.event(Event::PointerButton { pos: start, button: egui::PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
+    h.run();
+    h.event(Event::PointerMoved(end));
+    h.run();
+    h.event(Event::PointerButton { pos: end, button: egui::PointerButton::Primary, pressed: false, modifiers: Modifiers::NONE });
+    h.run();
+    let after = heights(&h);
+    assert_eq!(after[0], before[0] + 3, "{before:?} then {after:?}");
+    assert_eq!(after[1], before[1] - 3);
+    // A drag on the mode line is not a click in the text.
+    assert_eq!(h.state().editor.window_buffer().active_region(), None);
+}

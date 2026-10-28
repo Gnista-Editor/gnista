@@ -162,7 +162,7 @@
     },
     regionActive: () => native.regionActive(),
 
-    splitWindow: (window, side = "below") => native.splitWindow(window ?? null, side === "right"),
+    splitWindow: (window, side = "below", size) => native.splitWindow(window ?? null, side === "right", size ?? null),
     deleteWindow: (window) => native.deleteWindow(window ?? null),
     selectWindow: (window) => native.selectWindow(window),
     selectedWindow: () => native.selectedWindow(),
@@ -175,6 +175,19 @@
     },
     screenLine: (position) => native.screenLine(position),
     windowBuffer: (window) => native.windowBuffer(window ?? native.selectedWindow()) ?? undefined,
+    getBufferCreate: (name) => native.getBufferCreate(name),
+    findFileNoselect: (file) => native.findFileNoselect(file),
+    setWindowBuffer: (window, buffer) => native.setWindowBuffer(window ?? native.selectedWindow(), buffer),
+    windowSize: (window) => {
+      const size = native.windowSize(window ?? native.selectedWindow());
+      return size
+        ? { width: size[0], height: size[1], totalWidth: size[2], totalHeight: size[3], fullWidth: size[4] === 1 }
+        : undefined;
+    },
+    windowUseTime: (window) => native.windowUseTime(window ?? native.selectedWindow()) ?? undefined,
+    resizeWindow: (window, delta, horizontal = false, apply = true) =>
+      native.resizeWindow(window ?? null, delta, horizontal, apply),
+    balanceWindows: () => native.balanceWindows(),
 
     search(pattern, options = {}) {
       const { from, regexp = false, backward = false, bound, caseFold } = options;

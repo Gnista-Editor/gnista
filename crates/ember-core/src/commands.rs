@@ -231,8 +231,9 @@ fn movement(ed: &mut Editor) {
         let (top, moved) = ed.move_rows_in(b, ed.row_line_in(b, b.top_line), step);
         let point_row = ed.row_line_in(b, b.line_of(b.point()));
         let b = ed.window_buffer_mut();
+        // As scroll-up with scroll-error-top-bottom off: the end showing
+        // already is an error, and point stays.
         if moved < step {
-            b.set_point(b.len());
             return err("End of buffer");
         }
         b.top_line = top;

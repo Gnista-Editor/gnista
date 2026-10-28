@@ -277,9 +277,12 @@ function transposeRegions(pos1: [number, number], pos2: [number, number]): void 
   const markers = [point, ...(mark === undefined ? [] : [{ pos: mark }])];
   const boundary = { pos: b[0] };
   markers.push(boundary);
+  // The insertion before markers is a real one, so the markers the core
+  // keeps, such as other windows' points, move as Emacs's do too.
   const insert = (at: number, text: string, beforeMarkers: boolean): void => {
     ember.gotoChar(at);
-    ember.insert(text);
+    if (beforeMarkers) ember.insertBeforeMarkers(text);
+    else ember.insert(text);
     for (const m of markers) if (m.pos > at || (beforeMarkers && m.pos === at)) m.pos += text.length;
   };
   const remove = (from: number, to: number): string => {

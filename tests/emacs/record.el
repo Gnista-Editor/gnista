@@ -83,8 +83,16 @@ while the case's keys are queued would read those instead."
         (modes (mapcar #'intern (alist-get 'modes case)))
         (call (alist-get 'call case)))
     (delete-other-windows)
-    (when (get-buffer "*ember-oracle*")
-      (kill-buffer "*ember-oracle*"))
+    ;; The frame laid out afresh: an earlier case's incremental search can
+    ;; grow the echo area and leave the windows a line short after it.
+    (set-frame-size (selected-frame) 80 24)
+    (set-frame-size (selected-frame) 80 25)
+    ;; A fresh set of buffers, as Ember starts each case with: only the
+    ;; ones Emacs needs, whose names start with a space, and its own.
+    (dolist (b (buffer-list))
+      (unless (or (string-prefix-p " " (buffer-name b))
+                  (member (buffer-name b) '("*scratch*" "*Messages*")))
+        (kill-buffer b)))
     (with-current-buffer (get-buffer-create "*ember-oracle*")
       (fundamental-mode)
       (switch-to-buffer (current-buffer))
@@ -144,7 +152,8 @@ done-headline keyword can fail to match its second group."
         (input . ((text . ,text) (point . ,start) (keys . ,keys)
                   (modes . ,(vconcat (alist-get 'modes case)))
                   (call . ,(vconcat (alist-get 'call case)))
-                  (platform . ,(alist-get 'platform case))))
+                  (platform . ,(alist-get 'platform case))
+                  ,@(and (alist-get 'windows case) '((windows . t)))))
         (text . ,(buffer-substring-no-properties (point-min) (point-max)))
         (visible . ,(progn (ember-oracle--fontify) (ember-oracle--visible)))
         (point . ,(1- (point)))
@@ -152,7 +161,20 @@ done-headline keyword can fail to match its second group."
         (mark_active . ,(if (and mark-active (mark t)) t :json-false))
         (kill_ring . ,(vconcat (mapcar #'substring-no-properties kill-ring)))
         (modified . ,(if (buffer-modified-p) t :json-false))
-        (error . ,ember-oracle--error)))
+        (error . ,ember-oracle--error)
+        ,@(and (alist-get 'windows case)
+               `((windows . ,(ember-oracle--windows))))))
+
+(defun ember-oracle--windows ()
+  "The frame's windows in cyclic order: buffer, point and total size."
+  (vconcat
+   (mapcar (lambda (w)
+             `((buffer . ,(buffer-name (window-buffer w)))
+               (point . ,(1- (window-point w)))
+               (width . ,(window-total-width w))
+               (height . ,(window-total-height w))
+               (selected . ,(if (eq w (selected-window)) t :json-false))))
+           (window-list nil 'nomini (frame-first-window)))))
 
 (defun ember-oracle--record-file (file golden-dir)
   "Run the cases in FILE and write their results into GOLDEN-DIR."

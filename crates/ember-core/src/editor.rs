@@ -163,6 +163,9 @@ pub struct Editor {
     pub(crate) next_window_id: crate::window::WindowId,
     /// Counts window selections, to find the most recently used window.
     pub(crate) window_use: u64,
+    /// The frame's size in columns and lines, mode lines included and the
+    /// echo area not, once a front end has said; windows are laid out in it.
+    pub(crate) frame_size: Option<(usize, usize)>,
     pub(crate) quit: bool,
 }
 
@@ -233,6 +236,7 @@ impl Editor {
             window_tree: crate::window::WindowTree::Leaf(1),
             selected_window: 1,
             next_window_id: 1,
+            frame_size: None,
             window_use: 0,
             quit: false,
         };
@@ -928,12 +932,35 @@ impl Editor {
         self.buffers.iter().position(|b| b.name == name)
     }
 
-    fn select(&mut self, index: usize) {
+    pub(crate) fn select(&mut self, index: usize) {
         if index != self.current {
             self.previous_buffer = Some(self.buffers[self.current].name.clone());
             self.current = index;
             self.selected_window_shows(index);
         }
+    }
+
+    /// The named buffer, made empty if there is none, as Emacs's
+    /// `get-buffer-create`. It is not shown.
+    pub fn get_buffer_create(&mut self, name: &str) -> usize {
+        self.find_buffer(name).unwrap_or_else(|| {
+            self.buffers.push(Buffer::new(name));
+            self.buffers.len() - 1
+        })
+    }
+
+    /// Visits a file in a buffer without showing it, as Emacs's
+    /// `find-file-noselect`, and returns the buffer's name.
+    pub fn find_file_noselect(&mut self, path: &Path) -> Result<String> {
+        let (current, previous) = (self.buffers[self.current].id, self.previous_buffer.clone());
+        let visited = self.visit_file(path);
+        let name = self.buffers[self.current].name.clone();
+        if let Some(back) = self.buffers.iter().position(|b| b.id == current) {
+            self.current = back;
+            self.selected_window_shows(back);
+        }
+        self.previous_buffer = previous;
+        visited.map(|()| name)
     }
 
     /// Shows the named buffer, creating an empty one if there is none.
@@ -1023,7 +1050,9 @@ impl Editor {
             .expect("some name is free")
     }
 
-    /// Shows text in the read-only `*Help*` buffer.
+    /// Shows text in the read-only `*Help*` buffer, in another window as
+    /// Emacs's `with-help-window` does through `display-buffer`, or in the
+    /// selected one without the window commands.
     pub fn show_help(&mut self, text: &str) {
         let index = self.find_buffer("*Help*").unwrap_or_else(|| {
             let mut help = Buffer::new("*Help*");
@@ -1032,9 +1061,15 @@ impl Editor {
             self.buffers.len() - 1
         });
         self.buffers[index].set_text(text);
-        self.select(index);
         if self.command("help-mode").is_some() {
-            let _ = self.call("help-mode", Vec::new());
+            self.with_current_buffer(index, |ed| {
+                let _ = ed.call("help-mode", Vec::new());
+            });
+        }
+        if self.command("display-buffer").is_some() {
+            let _ = self.call("display-buffer", vec![crate::Arg::Str("*Help*".into())]);
+        } else {
+            self.select(index);
         }
     }
 

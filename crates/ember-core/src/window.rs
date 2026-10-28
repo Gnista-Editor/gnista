@@ -32,8 +32,9 @@ pub(crate) struct Window {
     pub(crate) used: u64,
 }
 
-/// How the frame is divided. Each split halves a window, the first part
-/// above or to the left keeping the extra line or column of an odd size.
+/// How the frame is divided. A split halves a window, the first part above
+/// or to the left keeping the extra line or column of an odd size, until a
+/// window is resized and the split takes a size of its own.
 #[derive(Clone, Debug, PartialEq)]
 pub enum WindowTree {
     Leaf(WindowId),
@@ -42,7 +43,18 @@ pub enum WindowTree {
         side_by_side: bool,
         first: Box<WindowTree>,
         second: Box<WindowTree>,
+        /// The first part's total size, in lines or columns, once a resize
+        /// has set it; half otherwise.
+        first_size: Option<usize>,
     },
+}
+
+/// How resizing a window went: not in this part of the tree, in it but with
+/// no split of the right kind above it yet, or resized by this much.
+enum Resize {
+    Elsewhere,
+    Pending,
+    Done(i64),
 }
 
 /// Where a window goes, in whatever units a front end lays out in.
@@ -73,26 +85,108 @@ impl WindowTree {
 
     /// Divides a rectangle among the windows. Sizes are rounded to whole
     /// units, so cells for a terminal and points for a window both work.
-    pub fn rects(&self, x: f32, y: f32, width: f32, height: f32) -> Vec<WindowRect> {
+    /// `cell` is a column's width and a line's height, in which a resized
+    /// split's size is counted.
+    pub fn rects(&self, x: f32, y: f32, width: f32, height: f32, cell: (f32, f32)) -> Vec<WindowRect> {
         let mut out = Vec::new();
-        self.rects_into(x, y, width, height, false, &mut out);
+        self.rects_into(x, y, width, height, cell, false, &mut out);
         out
     }
 
-    fn rects_into(&self, x: f32, y: f32, w: f32, h: f32, divider: bool, out: &mut Vec<WindowRect>) {
+    #[allow(clippy::too_many_arguments)]
+    fn rects_into(&self, x: f32, y: f32, w: f32, h: f32, cell: (f32, f32), divider: bool, out: &mut Vec<WindowRect>) {
+        // The first part's share of `extent`: its own size if a resize set
+        // one, kept clear of the edges, or half.
+        let share = |size: &Option<usize>, extent: f32, unit: f32| match size {
+            Some(n) => (*n as f32 * unit).round().clamp(unit.min(extent), (extent - unit).max(0.0)),
+            None => (extent / 2.0).ceil(),
+        };
         match self {
             WindowTree::Leaf(id) => out.push(WindowRect { id: *id, x, y, width: w, height: h, divider }),
-            WindowTree::Split { side_by_side: true, first, second } => {
-                let left = (w / 2.0).ceil();
-                first.rects_into(x, y, left, h, true, out);
-                second.rects_into(x + left, y, w - left, h, divider, out);
+            WindowTree::Split { side_by_side: true, first, second, first_size } => {
+                let left = share(first_size, w, cell.0);
+                first.rects_into(x, y, left, h, cell, true, out);
+                second.rects_into(x + left, y, w - left, h, cell, divider, out);
             }
-            WindowTree::Split { side_by_side: false, first, second } => {
-                let top = (h / 2.0).ceil();
-                first.rects_into(x, y, w, top, divider, out);
-                second.rects_into(x, y + top, w, h - top, divider, out);
+            WindowTree::Split { side_by_side: false, first, second, first_size } => {
+                let top = share(first_size, h, cell.1);
+                first.rects_into(x, y, w, top, cell, divider, out);
+                second.rects_into(x, y + top, w, h - top, cell, divider, out);
             }
         }
+    }
+
+    /// The smallest a part of the tree can be across or down, as Emacs's
+    /// `window-min-width` and `window-min-height` allow for each window.
+    fn min_size(&self, horizontal: bool) -> usize {
+        match self {
+            WindowTree::Leaf(_) => {
+                if horizontal {
+                    WINDOW_MIN_WIDTH
+                } else {
+                    WINDOW_MIN_HEIGHT
+                }
+            }
+            WindowTree::Split { side_by_side, first, second, .. } => {
+                let (a, b) = (first.min_size(horizontal), second.min_size(horizontal));
+                if *side_by_side == horizontal { a + b } else { a.max(b) }
+            }
+        }
+    }
+
+    /// Grows or shrinks a window by up to `delta` lines or columns, taking
+    /// them from or giving them to its neighbour in the nearest split of
+    /// that kind, as Emacs's `window-resize`. `extent` is this part's size
+    /// in cells; with `apply` off, only works out how far it could go.
+    /// With `edge`, only a split below or to the right of the window moves,
+    /// as dragging its mode line or divider moves that edge.
+    #[allow(clippy::too_many_arguments)]
+    fn resize(&mut self, id: WindowId, delta: i64, horizontal: bool, extent: (usize, usize), apply: bool, edge: bool) -> Resize {
+        let WindowTree::Split { side_by_side, first, second, first_size } = self else {
+            return if *self == WindowTree::Leaf(id) { Resize::Pending } else { Resize::Elsewhere };
+        };
+        let along = if *side_by_side { extent.0 } else { extent.1 };
+        let size = first_size.unwrap_or(along.div_ceil(2)).min(along);
+        let parts = |n: usize| if *side_by_side { ((n, extent.1), (extent.0 - n, extent.1)) } else { ((extent.0, n), (extent.0, extent.1 - n)) };
+        let (first_extent, second_extent) = parts(size);
+        let (inner, in_first) = match first.resize(id, delta, horizontal, first_extent, apply, edge) {
+            Resize::Elsewhere => (second.resize(id, delta, horizontal, second_extent, apply, edge), false),
+            found => (found, true),
+        };
+        if !matches!(inner, Resize::Pending) || *side_by_side != horizontal || (edge && !in_first) {
+            return inner;
+        }
+        // This split divides the window from its neighbour: move the line.
+        let lowest = first.min_size(horizontal) as i64;
+        let highest = along as i64 - second.min_size(horizontal) as i64;
+        let wanted = size as i64 + if in_first { delta } else { -delta };
+        let moved = wanted.clamp(lowest.min(size as i64), highest.max(size as i64));
+        if apply {
+            *first_size = Some(moved as usize);
+        }
+        Resize::Done(if in_first { moved - size as i64 } else { size as i64 - moved })
+    }
+
+    /// Makes windows side by side as wide as each other, and windows one
+    /// above the other as tall, as Emacs's `balance-windows`.
+    fn balance(&mut self, extent: (usize, usize)) {
+        // How many windows share a run of splits of one kind.
+        fn count(tree: &WindowTree, side_by_side: bool) -> usize {
+            match tree {
+                WindowTree::Split { side_by_side: s, first, second, .. } if *s == side_by_side => {
+                    count(first, side_by_side) + count(second, side_by_side)
+                }
+                _ => 1,
+            }
+        }
+        let WindowTree::Split { side_by_side, first, second, first_size } = self else { return };
+        let along = if *side_by_side { extent.0 } else { extent.1 };
+        let (a, b) = (count(first, *side_by_side), count(second, *side_by_side));
+        let size = (along * a).div_ceil(a + b);
+        *first_size = Some(size);
+        let (fe, se) = if *side_by_side { ((size, extent.1), (along - size, extent.1)) } else { ((extent.0, size), (extent.0, along - size)) };
+        first.balance(fe);
+        second.balance(se);
     }
 
     /// Whether a window shares the frame's width with others, as Emacs's
@@ -100,26 +194,27 @@ impl WindowTree {
     pub(crate) fn is_partial_width(&self, id: WindowId) -> bool {
         match self {
             WindowTree::Leaf(_) => false,
-            WindowTree::Split { side_by_side, first, second } => {
+            WindowTree::Split { side_by_side, first, second, .. } => {
                 let inside = first.leaves().contains(&id) || second.leaves().contains(&id);
                 (*side_by_side && inside) || first.is_partial_width(id) || second.is_partial_width(id)
             }
         }
     }
 
-    fn split(&mut self, id: WindowId, new: WindowId, side_by_side: bool) -> bool {
+    fn split(&mut self, id: WindowId, new: WindowId, side_by_side: bool, first_size: Option<usize>) -> bool {
         match self {
             WindowTree::Leaf(leaf) if *leaf == id => {
                 *self = WindowTree::Split {
                     side_by_side,
                     first: Box::new(WindowTree::Leaf(id)),
                     second: Box::new(WindowTree::Leaf(new)),
+                    first_size,
                 };
                 true
             }
             WindowTree::Leaf(_) => false,
             WindowTree::Split { first, second, .. } => {
-                first.split(id, new, side_by_side) || second.split(id, new, side_by_side)
+                first.split(id, new, side_by_side, first_size) || second.split(id, new, side_by_side, first_size)
             }
         }
     }
@@ -224,9 +319,134 @@ impl Editor {
         self.rows_in(view.buffer, view.top_line, count, dark, wrap)
     }
 
+    /// Tells the editor how big the frame is, in columns and in lines with
+    /// the mode lines but not the echo area, as Emacs's root window counts
+    /// them. The windows are laid out in it; a front end may then refine
+    /// each with [`Editor::set_window_size`].
+    pub fn set_frame_size(&mut self, cols: usize, lines: usize) {
+        self.frame_size = Some((cols.max(1), lines.max(1)));
+        self.relayout();
+    }
+
+    /// Each window's total size, in columns with its divider and lines with
+    /// its mode line, as Emacs's `window-total-width` and `-height`.
+    pub fn window_total_sizes(&self) -> Vec<(WindowId, usize, usize)> {
+        let (cols, lines) = self.frame_cells();
+        self.window_tree
+            .rects(0.0, 0.0, cols as f32, lines as f32, (1.0, 1.0))
+            .iter()
+            .map(|r| (r.id, r.width as usize, r.height as usize))
+            .collect()
+    }
+
+    /// The frame in cells: as a front end said, or as the windows add up to.
+    fn frame_cells(&self) -> (usize, usize) {
+        self.frame_size.unwrap_or_else(|| {
+            let w = self.window(self.selected_window);
+            (w.map_or(80, |w| w.width), w.map_or(24, |w| w.height + 1))
+        })
+    }
+
+    /// Lays the windows out in the frame, as their sizes in the tree say.
+    fn relayout(&mut self) {
+        let Some((cols, lines)) = self.frame_size else { return };
+        for r in self.window_tree.rects(0.0, 0.0, cols as f32, lines as f32, (1.0, 1.0)) {
+            let divider = usize::from(r.divider);
+            if let Some(w) = self.window_mut(r.id) {
+                w.width = (r.width as usize).saturating_sub(divider).max(1);
+                w.height = (r.height as usize).saturating_sub(1).max(1);
+            }
+        }
+    }
+
+    /// Grows a window by `delta` lines, or columns if `horizontal`, taking
+    /// them from its neighbour; a negative delta shrinks it. As far as the
+    /// windows' smallest sizes allow, as Emacs's `window-resize` with
+    /// `window--resizable` does: returns how far it went, or with `apply`
+    /// off, how far it could.
+    pub fn resize_window(&mut self, id: Option<WindowId>, delta: i64, horizontal: bool, apply: bool) -> Result<i64> {
+        let id = id.unwrap_or(self.selected_window);
+        if self.window(id).is_none() {
+            return Err(Error::new("No such window"));
+        }
+        let extent = self.frame_cells();
+        let moved = match self.window_tree.resize(id, delta, horizontal, extent, apply, false) {
+            Resize::Done(n) => n,
+            _ => 0,
+        };
+        if apply {
+            self.relayout();
+        }
+        Ok(moved)
+    }
+
+    /// Moves a window's bottom edge, or its right edge if `horizontal`, by
+    /// `delta` lines or columns, as dragging its mode line or divider does
+    /// in Emacs. A window with nothing below or to its right stays as it is.
+    pub fn move_window_edge(&mut self, id: WindowId, delta: i64, horizontal: bool) -> i64 {
+        let extent = self.frame_cells();
+        let moved = match self.window_tree.resize(id, delta, horizontal, extent, true, true) {
+            Resize::Done(n) => n,
+            _ => 0,
+        };
+        self.relayout();
+        moved
+    }
+
+    /// Makes the windows the same size as their neighbours, as Emacs's
+    /// `balance-windows`.
+    pub fn balance_windows(&mut self) {
+        let extent = self.frame_cells();
+        self.window_tree.balance(extent);
+        self.relayout();
+    }
+
+    /// Shows a buffer in a window, as Emacs's `set-window-buffer`: in the
+    /// selected window it becomes the current buffer; another window shows
+    /// it from its top, with its own point where the buffer's is.
+    pub fn set_window_buffer(&mut self, id: WindowId, name: &str) -> Result<()> {
+        let index = self.find_buffer(name).ok_or_else(|| Error::new(format!("No such buffer {name}")))?;
+        if id == self.selected_window {
+            self.select(index);
+            return Ok(());
+        }
+        let w = self.window(id).ok_or_else(|| Error::new("No such window"))?;
+        let old = self.buffer_index(w.buffer);
+        self.buffers[old].remove_window_point(id);
+        let buffer = self.buffers[index].id;
+        let point = self.buffers[index].point();
+        let w = self.window_mut(id).expect("checked");
+        w.buffer = buffer;
+        w.top_line = 0;
+        self.buffers[index].set_window_point(id, point);
+        Ok(())
+    }
+
+    /// When a window was last selected, as a count: higher is more recent.
+    pub fn window_use_time(&self, id: WindowId) -> Option<u64> {
+        self.window(id).map(|w| w.used)
+    }
+
+    /// Whether a window spans the frame's width, as `window-full-width-p`.
+    pub fn window_full_width(&self, id: WindowId) -> bool {
+        !self.window_tree.is_partial_width(id)
+    }
+
+    /// A window's size: columns, and lines of text without the mode line.
+    pub fn window_size(&self, id: WindowId) -> Option<(usize, usize)> {
+        self.window(id).map(|w| (w.width, w.height))
+    }
+
     /// Splits a window in two, as Emacs's `split-window`: below it, or to its
     /// right. The new window shows the same buffer at the same place. Returns it.
     pub fn split_window(&mut self, id: Option<WindowId>, side_by_side: bool) -> Result<WindowId> {
+        self.split_window_sized(id, side_by_side, None)
+    }
+
+    /// Splits a window as [`Editor::split_window`] does, with `size` lines or
+    /// columns for the window split, or for the new one if it is negative,
+    /// as Emacs's `split-window` takes them; half each without.
+    pub fn split_window_sized(&mut self, id: Option<WindowId>, side_by_side: bool, size: Option<i64>) -> Result<WindowId> {
         let id = id.unwrap_or(self.selected_window);
         let view = self
             .windows()
@@ -242,7 +462,29 @@ impl Editor {
         } else {
             height + 1 < 2 * WINDOW_MIN_HEIGHT
         };
-        if too_small {
+        // An explicit size only has to leave each window its safe minimum,
+        // as window-safe-min-height and -width give: a line and the mode
+        // line, or two columns.
+        let first_size = match size {
+            None => None,
+            Some(size) => {
+                let total = self
+                    .window_total_sizes()
+                    .into_iter()
+                    .find(|s| s.0 == id)
+                    .map_or(0, |s| if side_by_side { s.1 } else { s.2 }) as i64;
+                let safe = 2;
+                let (old, new) = if size >= 0 { (size, total - size) } else { (total + size, -size) };
+                if new < safe {
+                    return Err(Error::new("Size of new window too small"));
+                }
+                if old < safe {
+                    return Err(Error::new("Size of window too small"));
+                }
+                Some(old as usize)
+            }
+        };
+        if too_small && first_size.is_none() {
             return Err(Error::new(format!("Window #<window {id} on {buffer_name}> too small for splitting")));
         }
         self.next_window_id += 1;
@@ -266,7 +508,8 @@ impl Editor {
         });
         let index = self.buffer_index(view.2);
         self.buffers[index].set_window_point(new, view.0);
-        self.window_tree.split(id, new, side_by_side);
+        self.window_tree.split(id, new, side_by_side, first_size);
+        self.relayout();
         Ok(new)
     }
 
@@ -296,6 +539,7 @@ impl Editor {
         self.buffers[index].remove_window_point(id);
         self.windows.retain(|w| w.id != id);
         self.window_tree.remove(id);
+        self.relayout();
         Ok(())
     }
 
@@ -403,10 +647,10 @@ mod tests {
     #[test]
     fn splits_halve_and_odd_sizes_go_first() {
         let mut tree = WindowTree::Leaf(1);
-        tree.split(1, 2, false);
-        tree.split(1, 3, true);
+        tree.split(1, 2, false, None);
+        tree.split(1, 3, true, None);
         assert_eq!(tree.leaves(), [1, 3, 2]);
-        let rects = tree.rects(0.0, 0.0, 81.0, 25.0);
+        let rects = tree.rects(0.0, 0.0, 81.0, 25.0, (1.0, 1.0));
         let size = |r: &WindowRect| (r.id, r.x, r.y, r.width, r.height, r.divider);
         assert_eq!(
             rects.iter().map(size).collect::<Vec<_>>(),

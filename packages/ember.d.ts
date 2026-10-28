@@ -30,6 +30,12 @@ declare global {
        */
       "backward-word": [];
       /**
+       * Make windows side by side the same width and windows one above another the same height.
+       *
+       * Defined in packages/window.ts.
+       */
+      "balance-windows": [];
+      /**
        * Move point to the beginning of the buffer.
        *
        * Unless the region is active, leaves the mark where point was. With a numeric prefix argument N, move to N tenths of the way through the buffer instead, at the start of the next line. Plain C-u does not leave the mark.
@@ -128,6 +134,16 @@ declare global {
        */
       "digit-argument": [];
       /**
+       * Show a buffer in some window without selecting it.
+       *
+       * A window that already shows it is used, else a new window split off a large enough one, else the least recently used window.
+       *
+       * @param buffer buffer name
+       *
+       * Defined in packages/window.ts.
+       */
+      "display-buffer": [buffer: string];
+      /**
        * Insert a newline. With electric-indent-mode on, as it is by default, that is all; RET is the key that indents.
        *
        * Defined in packages/simple.ts.
@@ -147,6 +163,18 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "end-of-visual-line": [];
+      /**
+       * Make the selected window taller by the prefix argument's lines, taking them from its neighbour.
+       *
+       * Defined in packages/window.ts.
+       */
+      "enlarge-window": [];
+      /**
+       * Make the selected window wider by the prefix argument's columns, taking them from its neighbour.
+       *
+       * Defined in packages/window.ts.
+       */
+      "enlarge-window-horizontally": [];
       /**
        * Evaluate a TypeScript expression and show its value.
        *
@@ -181,6 +209,14 @@ declare global {
        * @param file file name
        */
       "find-file": [file: string];
+      /**
+       * Visit a file in another window and select it.
+       *
+       * @param file file name
+       *
+       * Defined in packages/window.ts.
+       */
+      "find-file-other-window": [file: string];
       /**
        * Fontify the whole buffer now, rather than as it comes into view.
        */
@@ -337,6 +373,12 @@ declare global {
        * @param buffer buffer name
        */
       "kill-buffer": [buffer: string];
+      /**
+       * Kill the current buffer and delete the selected window.
+       *
+       * Defined in packages/window.ts.
+       */
+      "kill-buffer-and-window": [];
       /**
        * Kill the rest of the line, or the newline if only spaces and tabs are left.
        *
@@ -1429,6 +1471,14 @@ declare global {
        */
       "overwrite-mode": [];
       /**
+       * Show a buffer in some window, as display-buffer does, and select that window.
+       *
+       * @param buffer buffer name
+       *
+       * Defined in packages/window.ts.
+       */
+      "pop-to-buffer": [buffer: string];
+      /**
        * Replace the minibuffer input with the answer before, from the prompt's history.
        *
        * With a prefix argument, go that many answers back.
@@ -1539,9 +1589,11 @@ declare global {
        */
       "query-replace-skip": [];
       /**
-       * Leave this buffer and show the one shown before it, as q does in *Help*.
+       * Quit the selected window and bury its buffer.
        *
-       * Defined in packages/help.ts.
+       * A window made to show the buffer is deleted; one that showed another buffer before shows it again. Then the window that was selected when the buffer was shown is selected again.
+       *
+       * Defined in packages/window.ts.
        */
       "quit-window": [];
       /**
@@ -1623,6 +1675,18 @@ declare global {
        */
       "scroll-down-line": [];
       /**
+       * Scroll the next window up a screen, as C-v does in the selected one. A prefix argument says how many lines.
+       *
+       * Defined in packages/window.ts.
+       */
+      "scroll-other-window": [];
+      /**
+       * Scroll the next window down a screen, as M-v does in the selected one. A prefix argument says how many lines.
+       *
+       * Defined in packages/window.ts.
+       */
+      "scroll-other-window-down": [];
+      /**
        * Scroll the text up by nearly a screen, showing later lines.
        *
        * With a numeric prefix argument, scroll that many lines; with C-- alone, scroll the other way.
@@ -1659,9 +1723,29 @@ declare global {
        */
       "set-mark-command": [];
       /**
+       * Make the selected window shorter by the prefix argument's lines, giving them to its neighbour.
+       *
+       * Defined in packages/window.ts.
+       */
+      "shrink-window": [];
+      /**
+       * Make the selected window narrower by the prefix argument's columns, giving them to its neighbour.
+       *
+       * Defined in packages/window.ts.
+       */
+      "shrink-window-horizontally": [];
+      /**
+       * Shrink the selected window to fit its buffer, if the buffer is shorter than the window.
+       *
+       * The window keeps at least window-min-height lines, and a window alone in its column is left as it is.
+       *
+       * Defined in packages/window.ts.
+       */
+      "shrink-window-if-larger-than-buffer": [];
+      /**
        * Split the selected window into two, one above the other.
        *
-       * The selected window stays on top and the new one below shows the same buffer at the same place.
+       * The selected window stays on top and the new one below shows the same buffer at the same place. A prefix argument gives the selected window that many lines, or the new one if it is negative.
        *
        * Defined in packages/window.ts.
        */
@@ -1669,7 +1753,7 @@ declare global {
       /**
        * Split the selected window into two, side by side.
        *
-       * The selected window stays on the left and the new one on the right shows the same buffer at the same place.
+       * The selected window stays on the left and the new one on the right shows the same buffer at the same place. A prefix argument gives the selected window that many columns, or the new one if it is negative.
        *
        * Defined in packages/window.ts.
        */
@@ -1682,6 +1766,14 @@ declare global {
        * @param buffer buffer name
        */
       "switch-to-buffer": [buffer: string];
+      /**
+       * Show a buffer in another window and select it, creating the buffer if there is none.
+       *
+       * @param buffer buffer name
+       *
+       * Defined in packages/window.ts.
+       */
+      "switch-to-buffer-other-window": [buffer: string];
       /**
        * The major mode for writing text meant for people to read.
        *
@@ -3062,9 +3154,11 @@ declare global {
     /**
      * Split a window, the selected one by default, in two (Emacs's
      * split-window): the new window goes below it or to its right and shows
-     * the same buffer at the same place. Returns the new window.
+     * the same buffer at the same place. With `size`, the window split gets
+     * that many lines or columns, or the new one does if it is negative, as
+     * split-window's SIZE. Returns the new window.
      */
-    function splitWindow(window?: number, side?: "below" | "right"): number;
+    function splitWindow(window?: number, side?: "below" | "right", size?: number): number;
     /** Delete a window, the selected one by default, giving its space to its neighbour. */
     function deleteWindow(window?: number): void;
     /** Make a window the selected one, whose buffer commands act on. */
@@ -3090,6 +3184,34 @@ declare global {
     function screenLine(position: number): { start: number; end: number; continued: boolean };
     /** The name of the buffer a window shows, the selected one by default. */
     function windowBuffer(window?: number): string | undefined;
+    /** Make a buffer of this name if there is none, without showing it, as get-buffer-create. */
+    function getBufferCreate(name: string): void;
+    /** Visit a file without showing it, as find-file-noselect, and return its buffer's name. */
+    function findFileNoselect(file: string): string;
+    /**
+     * Show a buffer in a window, as Emacs's set-window-buffer: in the selected
+     * window it becomes the current buffer; another shows it from its top.
+     */
+    function setWindowBuffer(window: number | undefined, buffer: string): void;
+    /**
+     * A window's size: columns and lines of text, its total size with its
+     * divider and mode line, as window-total-width and -height count them,
+     * and whether it spans the frame's width, as window-full-width-p.
+     */
+    function windowSize(
+      window?: number,
+    ): { width: number; height: number; totalWidth: number; totalHeight: number; fullWidth: boolean } | undefined;
+    /** When a window was last selected, as a count: higher is more recent. */
+    function windowUseTime(window?: number): number | undefined;
+    /**
+     * Grow a window by `delta` lines, or columns if `horizontal`, taking them
+     * from its neighbour; a negative delta shrinks it. Goes as far as the
+     * windows' smallest sizes allow, and returns how far; with `apply` false,
+     * only says how far it could go, as window-resizable does.
+     */
+    function resizeWindow(window: number | undefined, delta: number, horizontal?: boolean, apply?: boolean): number;
+    /** Make windows the same size as their neighbours, as balance-windows does. */
+    function balanceWindows(): void;
 
     /** A search match: where it starts and ends, and each group's range, group 0 being the whole match. */
     interface Match {
