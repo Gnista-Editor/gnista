@@ -156,5 +156,57 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "seed18-0962-m-s-down-c-p",
+    "text": "* DONE [#A] notes :work:\nsee [[*notes][the notes]] now",
+    "keys": "M-S-<down> C-p",
+    "point": 22,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed18-0494-m-del-m-d-m-down",
+    "text": ":END:\n** alpha\nSCHEDULED: <2026-10-28 Wed>\n   + plan",
+    "keys": "M-DEL M-d M-<down>",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed18-0699-m-b-ret-c-c-spc-x",
+    "text": "|  | x |\n|  | yy |",
+    "keys": "M-b RET C-c SPC x",
+    "point": 13,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "drag-a-fixed-width-line",
+    "text": ": fixed\npara\n",
+    "keys": "M-<down>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "fixed-width-lines-are-one-element",
+    "text": ": a\n:\n: b\npara\n",
+    "keys": "M-<down>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "typing-after-an-undefined-key-in-a-table",
+    "text": "| a | b |\n| c | d |\n",
+    "keys": "RET C-c SPC x",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
   }
 ]

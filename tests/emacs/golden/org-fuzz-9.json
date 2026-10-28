@@ -383,6 +383,134 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "seed18-0962-m-s-down-c-p",
+      "input": {
+        "text": "* DONE [#A] notes :work:\nsee [[*notes][the notes]] now",
+        "point": 22,
+        "keys": "M-S-<down> C-p",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "see [[*notes][the notes]] now\n* DONE [#A] notes :work:\n",
+      "visible": "see the notes now\n* DONE [#A] notes :work:\n",
+      "point": 29,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed18-0494-m-del-m-d-m-down",
+      "input": {
+        "text": ":END:\n** alpha\nSCHEDULED: <2026-10-28 Wed>\n   + plan",
+        "point": 9,
+        "keys": "M-DEL M-d M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "SCHEDULED: <2026-10-28 Wed>\n:\n   + plan",
+      "visible": "SCHEDULED: <2026-10-28 Wed>\n:\n   + plan",
+      "point": 29,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "END:\n** alpha"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed18-0699-m-b-ret-c-c-spc-x",
+      "input": {
+        "text": "|  | x |\n|  | yy |",
+        "point": 13,
+        "keys": "M-b RET C-c SPC x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "|   | x  |\n|   | xyy |\n",
+      "visible": "|   | x  |\n|   | xyy |\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "drag-a-fixed-width-line",
+      "input": {
+        "text": ": fixed\npara\n",
+        "point": 0,
+        "keys": "M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "para\n: fixed\n",
+      "visible": "para\n: fixed\n",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fixed-width-lines-are-one-element",
+      "input": {
+        "text": ": a\n:\n: b\npara\n",
+        "point": 0,
+        "keys": "M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "para\n: a\n:\n: b\n",
+      "visible": "para\n: a\n:\n: b\n",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "typing-after-an-undefined-key-in-a-table",
+      "input": {
+        "text": "| a | b |\n| c | d |\n",
+        "point": 2,
+        "keys": "RET C-c SPC x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a | b |\n| xc | d |\n",
+      "visible": "| a | b |\n| xc | d |\n",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
     }
   ]
 }

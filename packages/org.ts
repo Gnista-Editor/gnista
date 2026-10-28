@@ -3925,6 +3925,9 @@ function blockAt(line: number, limit: number): { type: string; close: number } |
   return undefined;
 }
 
+/** A fixed-width line, as org-element reads one: a colon, then a space or nothing. */
+const FIXED_WIDTH = /^[ \t]*:(?: |$)/;
+
 /** Blocks whose contents are elements, which org-element parses inside them. */
 const GREATER_BLOCKS = ["center-block", "quote-block", "special-block"];
 
@@ -3937,6 +3940,7 @@ function startsElement(line: number, limit: number): boolean {
     /^[ \t]*\|/.test(text) ||
     ITEM_RE.test(text) ||
     /^[ \t]*#\+\S*:/.test(text) ||
+    FIXED_WIDTH.test(text) ||
     (DRAWER_RE.test(text) && drawerEnd(line, limit) !== undefined) ||
     blockAt(line, limit) !== undefined
   );
@@ -4015,6 +4019,10 @@ function parseElements(
       e = elem(block.type, p, Math.min(lineStartOrEnd(block.close + 1), to), parent, greater && inside ? lineStartOrEnd(line + 1) : undefined);
       if (greater && inside) e.contentsEnd = ember.lineStart(block.close);
       if (GREATER_BLOCKS.includes(block.type) && inside) parseElements(e, e.contentsBegin as number, e.contentsEnd as number, false);
+    } else if (p === ember.lineStart(line) && FIXED_WIDTH.test(text)) {
+      let last = line;
+      while (last + 1 < ember.lineCount() && lineStartOrEnd(last + 1) < to && FIXED_WIDTH.test(ember.lineText(last + 1))) last++;
+      e = elem("fixed-width", p, Math.min(lineStartOrEnd(last + 1), to), parent);
     } else if (p === ember.lineStart(line) && /^[ \t]*#\+\S*:/.test(text)) {
       e = elem("keyword", p, Math.min(next, to), parent);
     } else {

@@ -744,6 +744,9 @@ impl Editor {
                     self.command_loop_run("self-insert-command");
                 } else {
                     self.message = Some(format!("{} is undefined", format_keys(&keys)));
+                    // Emacs runs the command `undefined` for the keys, so the
+                    // next command does not follow the one before them.
+                    self.last_command = Some("undefined".into());
                 }
             }
         }

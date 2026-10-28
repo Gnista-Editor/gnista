@@ -303,7 +303,8 @@ fn org_mode_behaves_like_emacs_on_random_cases() {
         .and_then(|s| s.parse().ok())
         .unwrap_or_else(|| std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
     let count: usize = std::env::var("EMBER_FUZZ_CASES").ok().and_then(|s| s.parse().ok()).unwrap_or(300);
-    let mut rng = Rng(seed | 1);
+    // Mixed first, so seeds differing in their lowest bit give different cases.
+    let mut rng = Rng(seed.wrapping_mul(0x9e37_79b9_7f4a_7c15).wrapping_add(0x9e37_79b9_7f4a_7c15) | 1);
     let work = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/org-fuzz");
     let cases: Vec<Case> = (0..count).map(|i| random_case(&mut rng, format!("f{i:04}"))).collect();
     let recorded = record(&work.join("run"), &cases);

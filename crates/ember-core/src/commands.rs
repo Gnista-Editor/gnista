@@ -406,6 +406,10 @@ fn line_move(ed: &mut Editor, n: i64) -> Result<()> {
         return line_move_visual(ed, n, wrap);
     }
     let continuing = ed.last_command().is_some_and(|c| SCROLL_KEEPS_COLUMN.contains(&c));
+    // Columns depend on what font-lock hides, which redisplay would have
+    // brought up to date before this command.
+    let p = ed.buffer().point();
+    let _ = ed.fontify_region(p..p);
     let b = ed.buffer();
     let line = b.line_of(b.point());
     let goal = match ed.goal_column {
@@ -425,6 +429,8 @@ fn line_move(ed: &mut Editor, n: i64) -> Result<()> {
         b.set_point(0);
         return err("Beginning of buffer");
     }
+    let start = ed.buffer().line_start(target);
+    let _ = ed.fontify_region(start..start);
     let b = ed.buffer();
     let rows = ed.screen_rows_of(b, target, None);
     let pos = match rows.first() {
