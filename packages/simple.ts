@@ -377,10 +377,9 @@ const transposeChars = ember.defineCommand({
     "character before point that many characters forward, or back if negative; with 0, exchange the " +
     "characters at point and the mark.",
   run: () => {
-    const arg = ember.prefixArg();
     const p = ember.point();
-    // At the end of a line it goes back a character first, with C-- too, as Emacs's does.
-    if ((arg === null || arg === "-") && p === ember.lineEnd(ember.lineOf(p)) && p > 0) ember.gotoChar(p - 1);
+    // At the end of a line it goes back a character first, whatever the argument, as Emacs's does.
+    if (p === ember.lineEnd(ember.lineOf(p)) && p > 0) ember.gotoChar(p - 1);
     transposeSubr(forwardChar, ember.prefixNumericValue());
   },
 });

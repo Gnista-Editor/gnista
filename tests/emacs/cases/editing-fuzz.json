@@ -541,5 +541,54 @@
     "name": "transpose-negative-e",
     "text": "abcd",
     "keys": "C-f C-f C-- C-t"
+  },
+  {
+    "name": "plain2-1041-s-left-c-spc-m-b",
+    "text": "one-x-42  three!",
+    "keys": "S-<left> C-SPC M-b",
+    "point": 5
+  },
+  {
+    "name": "plain2-0013-c-u-c---c-e",
+    "text": "Hello three it's, foo_bar. x",
+    "keys": "C-u C-- C-e"
+  },
+  {
+    "name": "plain2-2103-c-u-c-t-c-spc",
+    "text": "\ta.b  a.b\n  foo_bar, it's a.b  it's, Hello.",
+    "keys": "C-u C-t C-SPC",
+    "point": 9
+  },
+  {
+    "name": "plain2-0844-s-left-c-x-c-x-m-b",
+    "text": "",
+    "keys": "S-<left> C-x C-x M-b"
+  },
+  {
+    "name": "plain2-1112-c-y-c-u-c-x-c-x",
+    "text": "",
+    "keys": "C-y C-u C-x C-x"
+  },
+  {
+    "name": "plain2-1827-1-s-right-c-slash-m-w",
+    "text": "42",
+    "keys": "1 S-<right> C-/ M-w"
+  },
+  {
+    "name": "plain2-0421-s-left-c-x-c-x-m-",
+    "text": "\t42-a.b one  it's two",
+    "keys": "S-<left> C-x C-x M->",
+    "point": 1
+  },
+  {
+    "name": "plain2-2349-c-u-c---c-e-c-x-c-x-spc-del",
+    "text": "  Hello-a.b-42 Hello",
+    "keys": "C-u C-- C-e C-x C-x SPC DEL"
+  },
+  {
+    "name": "undo-in-a-region-with-a-change-inside",
+    "text": "Hello. x. Hello a.b",
+    "keys": "M-t S-<right> C-/ 1",
+    "point": 15
   }
 ]

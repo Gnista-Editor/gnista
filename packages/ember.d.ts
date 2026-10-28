@@ -157,6 +157,8 @@ declare global {
       "eval-expression": [expression: string];
       /**
        * Put the mark where point is and point where the mark was.
+       *
+       * With a prefix argument, deactivate the region if it is active, and otherwise leave it inactive.
        */
       "exchange-point-and-mark": [];
       /**

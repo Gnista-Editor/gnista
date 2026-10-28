@@ -141,6 +141,13 @@ fn movement(ed: &mut Editor) {
         |ed, _| {
             let n = ed.prefix_numeric();
             let b = ed.buffer();
+            // Emacs moves N lines to the start of one and then back over its
+            // newline, so going back to the first line or past it stops at the
+            // start of the buffer.
+            if n <= 0 && b.line_of(b.point()) as i64 + n <= 0 {
+                ed.buffer_mut().set_point(0);
+                return Ok(());
+            }
             let pos = if n == 1 { b.point() } else { forward_line(b, b.point(), n - 1) };
             // Past hidden text that runs on from the end of the line, to the row's end.
             let mut end = b.line_end(b.line_of(pos));
@@ -683,6 +690,13 @@ fn editing(ed: &mut Editor) {
                 return err("The mark is not set now, so there is no region");
             }
             let in_region = ed.buffer().is_mark_active() || region_arg;
+            // Only changes inside a region that is not empty can be undone there.
+            if in_region
+                && let Some(region) = ed.buffer().region().filter(|r| !r.is_empty())
+                && !ed.buffer().has_undo_in(region)
+            {
+                return err("No further undo information for region");
+            }
             // A count undoes that many changes, stopping quietly if there are fewer.
             let count = match arg {
                 Some(PrefixArg::Number(n)) => n,
@@ -723,6 +737,10 @@ fn editing(ed: &mut Editor) {
             let arg = ed.current_prefix_arg();
             let repeated = ed.last_command() == Some("set-mark-command");
             let b = ed.buffer_mut();
+            // A region Shift made goes first, as Emacs's does.
+            if b.is_shift_selected() {
+                b.deactivate_mark();
+            }
             // Any argument but C-u C-u pops the mark, as in Emacs, a number included.
             if arg.is_some() && !matches!(arg, Some(PrefixArg::Universal(n)) if n > 4) {
                 let mark = b.mark().ok_or_else(|| Error::new("No mark set in this buffer"))?;
@@ -742,14 +760,27 @@ fn editing(ed: &mut Editor) {
             Ok(())
         },
     );
-    def(ed, "exchange-point-and-mark", "Put the mark where point is and point where the mark was.", |ed, _| {
-        let b = ed.buffer_mut();
-        let mark = b.mark().ok_or_else(|| Error::new("No mark set in this buffer"))?;
-        b.set_mark(Some(b.point()));
-        b.set_point(mark);
-        b.activate_region();
-        Ok(())
-    });
+    def(
+        ed,
+        "exchange-point-and-mark",
+        "Put the mark where point is and point where the mark was.\n\nWith a prefix argument, deactivate the region if it is active, and otherwise leave it inactive.",
+        |ed, _| {
+            let arg = ed.current_prefix_arg().is_some();
+            let b = ed.buffer_mut();
+            let mark = b.mark().ok_or_else(|| Error::new("No mark set in this buffer"))?;
+            let temporary = b.is_shift_selected();
+            b.set_mark(Some(b.point()));
+            b.set_point(mark);
+            // As Emacs's: setting the mark activates it, then a prefix
+            // argument deactivates it, unless Shift made the region.
+            if temporary || !arg {
+                b.activate_region();
+            } else {
+                b.deactivate_mark();
+            }
+            Ok(())
+        },
+    );
     def(ed, "mark-whole-buffer", "Put point at the beginning of the buffer and the mark at the end.", |ed, _| {
         let b = ed.buffer_mut();
         b.push_mark(b.point(), false);

@@ -256,9 +256,10 @@ impl Buffer {
     }
 
     /// Activates the region between the mark and point, if there is a mark.
+    /// A region Shift made stays temporary, as Emacs's activate-mark
+    /// leaves transient-mark-mode's `only' state alone.
     pub fn activate_region(&mut self) {
         self.mark_active = self.mark.is_some();
-        self.shift_selected = false;
     }
 
     /// Hides the region. The mark stays where it is.
@@ -723,6 +724,27 @@ impl Buffer {
         self.pending_undo = index.checked_sub(1);
         self.boundary_point = self.point;
         Ok(redo)
+    }
+
+    /// Whether any change in the undo history lies inside a range, as
+    /// Emacs's undo-elt-in-region decides for undoing in a region: an
+    /// insertion wholly inside it, or a deletion at a position in it.
+    pub fn has_undo_in(&self, range: Range<usize>) -> bool {
+        self.undo_groups.iter().chain(std::iter::once(&Group {
+            edits: self.open_group.clone(),
+            kind: GroupKind::Change,
+            unmodified_at: None,
+            point: None,
+        }))
+        .flat_map(|g| g.edits.iter())
+        .any(|e| {
+            let inserted = e.inserted.chars().count();
+            if inserted > 0 {
+                e.pos >= range.start && e.pos + inserted <= range.end
+            } else {
+                e.pos >= range.start && e.pos <= range.end
+            }
+        })
     }
 
     /// Undoes the most recent undo, as Emacs's `undo-redo` does. The undo and
