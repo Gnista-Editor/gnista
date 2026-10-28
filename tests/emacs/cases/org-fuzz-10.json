@@ -461,5 +461,23 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "return-on-bare-stars-hides-the-entrys-drawers",
+    "text": "** fix\n:PROPERTIES:\n:END:\n",
+    "point": 26,
+    "keys": "C-u TAB M-<left> M-RET DEL C-j",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "return-on-bare-stars-before-the-first-heading",
+    "text": "**\n:NOTES:\nx\n:END:\n* h",
+    "point": 2,
+    "keys": "RET",
+    "modes": [
+      "org-mode"
+    ]
   }
 ]

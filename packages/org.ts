@@ -3321,16 +3321,24 @@ function orgReturnWith(electric: boolean): void {
     return;
   }
   const h = p > ls ? parseHeading(line) : undefined;
-  if (h) {
-    const titleEnd = h.titleAt + charCount(h.title);
-    const rest = h.title !== "" && p >= h.titleAt && p <= titleEnd ? ember.deleteRegion(p, titleEnd) : undefined;
-    if (rest !== undefined && h.tagsAt !== undefined) alignTags(line);
+  // org-complex-heading-regexp also matches a line of bare stars, which
+  // is not a heading, so the entry shown is the one it is in.
+  const bareStars = p > ls && /^\*+[ \t]*$/.test(ember.lineText(line));
+  if (h || bareStars) {
+    const titleEnd = h ? h.titleAt + charCount(h.title) : p;
+    const rest = h && h.title !== "" && p >= h.titleAt && p <= titleEnd ? ember.deleteRegion(p, titleEnd) : undefined;
+    if (rest !== undefined && h?.tagsAt !== undefined) alignTags(line);
     ember.gotoChar(ember.lineEnd(line));
     const all = headings();
     const i = headingIndex(all, line);
     if (i !== undefined) {
       showEntry(all, i);
-      hideDrawersIn(line + 1, entryEnd(all, i));
+      hideDrawersIn(all[i].line + 1, entryEnd(all, i));
+    } else {
+      // Before the first heading, org-fold-show-entry works from the buffer's start.
+      const end = all[0]?.start ?? ember.bufferSize();
+      flag(0, end, false);
+      hideDrawersIn(0, end);
     }
     newline(n);
     if (rest !== undefined) {

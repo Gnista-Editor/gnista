@@ -705,6 +705,11 @@ fn editing(ed: &mut Editor) {
                 Some(PrefixArg::Number(n)) => n,
                 _ => 1,
             };
+            // As undo-more, a count of 0 or less undoes nothing but still
+            // fails when there is nothing left to undo.
+            if count <= 0 && !ed.buffer().undoing_in_region() && !ed.buffer().can_undo(continuing) {
+                return err(if in_region { "No further undo information for region" } else { "No further undo information" });
+            }
             if ed.buffer().undoing_in_region() {
                 ed.buffer_mut().undo_in_region(count.max(0) as usize)?;
             } else {

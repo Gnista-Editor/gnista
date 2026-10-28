@@ -2333,6 +2333,44 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "undo-with-a-negative-count-and-no-history",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-- 1 C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No further undo information"
+    },
+    {
+      "name": "undo-with-a-zero-count-after-a-change",
+      "input": {
+        "text": "ab",
+        "point": 0,
+        "keys": "x M-0 C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "xab",
+      "visible": "xab",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
     }
   ]
 }

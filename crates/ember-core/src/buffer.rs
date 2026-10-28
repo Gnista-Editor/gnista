@@ -977,6 +977,16 @@ impl Buffer {
         Ok(())
     }
 
+    /// Whether [`Buffer::undo`] would find something to undo.
+    pub fn can_undo(&self, continuing: bool) -> bool {
+        let top_is_undo = matches!(self.undo_groups.last(), Some(g) if g.kind != GroupKind::Change);
+        if continuing && top_is_undo {
+            self.pending_undo.is_some()
+        } else {
+            !self.undo_groups.is_empty() || !self.open_group.is_empty()
+        }
+    }
+
     /// Applies the inverse of the group at `index`, recording the edits in
     /// the open group.
     fn revert(&mut self, index: usize) {

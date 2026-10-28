@@ -679,5 +679,15 @@
     "text": "abc def ghi",
     "point": 4,
     "keys": "C-d C-d C-e y C-a C-SPC C-e C-/"
+  },
+  {
+    "name": "undo-with-a-negative-count-and-no-history",
+    "text": "",
+    "keys": "C-- 1 C-/"
+  },
+  {
+    "name": "undo-with-a-zero-count-after-a-change",
+    "text": "ab",
+    "keys": "x M-0 C-/"
   }
 ]

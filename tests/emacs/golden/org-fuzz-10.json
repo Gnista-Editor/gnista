@@ -1139,6 +1139,48 @@
       "kill_ring": [],
       "modified": true,
       "error": "Beginning of buffer"
+    },
+    {
+      "name": "return-on-bare-stars-hides-the-entrys-drawers",
+      "input": {
+        "text": "** fix\n:PROPERTIES:\n:END:\n",
+        "point": 26,
+        "keys": "C-u TAB M-<left> M-RET DEL C-j",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** fix\n**\n\n:PROPERTIES:\n:END:\n",
+      "visible": "** fix\n**\n\n:PROPERTIES:\n",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "return-on-bare-stars-before-the-first-heading",
+      "input": {
+        "text": "**\n:NOTES:\nx\n:END:\n* h",
+        "point": 2,
+        "keys": "RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "**\n\n:NOTES:\nx\n:END:\n* h",
+      "visible": "**\n\n:NOTES:\n* h",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
     }
   ]
 }
