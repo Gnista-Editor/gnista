@@ -136,7 +136,8 @@ fn draw_window(frame: &mut Frame, ed: &Editor, view: &WindowView, area: Rect) ->
 }
 
 /// A row as a terminal line: faces as true colour, the region in reverse
-/// video. A selected newline shows as one reversed cell.
+/// video. A selected newline fills the rest of the row, as Emacs's region
+/// face extends to the window's edge.
 fn row_line(
     row: &Row,
     glyphs: &[Glyph],
@@ -168,8 +169,9 @@ fn row_line(
         }
         col += glyph.width;
     }
-    if selected(row.end) && !row.continued && col >= hscroll && col < hscroll + width {
-        push(&mut spans, " ", Style::new().add_modifier(Modifier::REVERSED));
+    if selected(row.end) && !row.continued && col < hscroll + width {
+        let fill = hscroll + width - col.max(hscroll);
+        push(&mut spans, &" ".repeat(fill), Style::new().add_modifier(Modifier::REVERSED));
     }
     // A continued line ends with a backslash in the last column, as in Emacs.
     if row.continued {
@@ -301,8 +303,9 @@ mod tests {
         terminal.draw(|frame| draw(frame, &ed)).unwrap();
         let buf = terminal.backend().buffer();
         let reversed = |x: u16, y: u16| buf[(x, y)].modifier.contains(Modifier::REVERSED);
-        // "bc" and the newline on the first line, then "d" before point.
-        assert_eq!((0..5).map(|x| reversed(x, 0)).collect::<Vec<_>>(), [false, true, true, true, false]);
+        // "bc" and the newline on the first line, which fills the row to its
+        // edge, then "d" before point.
+        assert_eq!((0..20).map(|x| reversed(x, 0)).collect::<Vec<_>>(), [vec![false], vec![true; 19]].concat());
         assert_eq!((0..3).map(|x| reversed(x, 1)).collect::<Vec<_>>(), [true, false, false]);
     }
 

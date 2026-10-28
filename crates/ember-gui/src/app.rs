@@ -395,7 +395,7 @@ fn draw_buffer(
         .iter()
         .map(|row| {
             let glyphs = row_glyphs(row, tab_width);
-            let job = row_job(row, &glyphs, region.as_ref(), &default_style, selection, m, t);
+            let job = row_job(row, &glyphs, &default_style, m, t);
             (painter.layout_job(job), glyphs)
         })
         .collect();
@@ -429,6 +429,14 @@ fn draw_buffer(
     let clipped = painter.with_clip_rect(view.clip);
     let row_top = |row: usize| area.top() + row as f32 * m.line_height - view.scroll_offset;
     for (i, (galley, _)) in laid_out.iter().enumerate() {
+        if let Some(r) = &region
+            && let Some((from, to)) = region_span(&rows[i], &laid_out[i].1, galley, r)
+        {
+            let left = area.left() - hscroll;
+            let right = to.map_or(area.right(), |x| left + x);
+            let top = row_top(i);
+            clipped.rect_filled(Rect::from_min_max(pos2(left + from, top), pos2(right, top + m.line_height)), 0.0, selection);
+        }
         let y = row_top(i) + (m.line_height - galley.size().y) / 2.0;
         clipped.galley(pos2(area.left() - hscroll, y), galley.clone(), t.ink);
         if let Some(bold) = &emboldened[i] {
@@ -448,24 +456,33 @@ fn draw_buffer(
     }
 }
 
+/// Where the region covers a row, as x offsets into its galley: from the
+/// first selected glyph to the end of the last, or to the window's edge
+/// (`None`) when the row's newline is selected too, as Emacs's region face
+/// extends.
+fn region_span(row: &Row, glyphs: &[Glyph], galley: &Galley, region: &std::ops::Range<usize>) -> Option<(f32, Option<f32>)> {
+    let selected = |g: &Glyph| g.pos.is_some_and(|p| region.contains(&p));
+    let chars = |gs: &[Glyph]| gs.iter().map(|g| g.text.chars().count()).sum::<usize>();
+    let x = |index: usize| galley.pos_from_cursor(CCursor::new(index)).min.x;
+    let extends = !row.continued && region.contains(&row.end);
+    match glyphs.iter().position(selected) {
+        Some(first) => {
+            let last = glyphs.iter().rposition(selected).expect("one is selected");
+            Some((x(chars(&glyphs[..first])), (!extends).then(|| x(chars(&glyphs[..=last])))))
+        }
+        None => extends.then(|| (galley.size().x, None)),
+    }
+}
+
 /// A row as one layout job: a section for each run of glyphs with the same
-/// face and selection. A selected newline shows as one selected space.
-fn row_job(
-    row: &Row,
-    glyphs: &[Glyph],
-    region: Option<&std::ops::Range<usize>>,
-    default_style: &Style,
-    selection: Color32,
-    m: &Metrics,
-    t: Tokens,
-) -> LayoutJob {
-    let selected = |pos: Option<usize>| pos.is_some_and(|p| region.is_some_and(|r| r.contains(&p)));
+/// face. The region is painted under it by `draw_buffer`.
+fn row_job(row: &Row, glyphs: &[Glyph], default_style: &Style, m: &Metrics, t: Tokens) -> LayoutJob {
     let mut job = LayoutJob::default();
     let mut i = 0;
     while i < glyphs.len() {
-        let (segment, sel) = (glyphs[i].segment, selected(glyphs[i].pos));
+        let segment = glyphs[i].segment;
         let mut text = String::new();
-        while i < glyphs.len() && glyphs[i].segment == segment && selected(glyphs[i].pos) == sel {
+        while i < glyphs.len() && glyphs[i].segment == segment {
             text.push_str(&glyphs[i].text);
             i += 1;
         }
@@ -474,19 +491,10 @@ fn row_job(
         if seg.ellipsis {
             format.color = t.faint;
         }
-        if sel {
-            format.background = selection;
-        }
         // The full line height, so backgrounds such as the region's meet
         // the rows above and below.
         format.line_height = Some(m.line_height);
         job.append(&text, 0.0, format);
-    }
-    if selected(Some(row.end)) && !row.continued {
-        let mut format = text_format(m, t.ink);
-        format.background = selection;
-        format.line_height = Some(m.line_height);
-        job.append(" ", 0.0, format);
     }
     job
 }
@@ -571,7 +579,9 @@ fn draw_cursor(
 }
 
 fn text_format(m: &Metrics, color: Color32) -> TextFormat {
-    TextFormat { font_id: m.font.clone(), color, ..Default::default() }
+    // Backgrounds exactly the glyphs' size: egui grows them by a point by
+    // default, which makes the region's rows overlap.
+    TextFormat { font_id: m.font.clone(), color, expand_bg: 0.0, ..Default::default() }
 }
 
 fn draw_mode_line(painter: &Painter, ed: &Editor, window: &WindowView, rect: Rect, m: &Metrics, t: Tokens) {
@@ -621,13 +631,15 @@ fn draw_echo_area(painter: &Painter, ed: &Editor, rect: Rect, m: &Metrics, t: To
     let prompt_style = ed.style_for(&["minibuffer-prompt".to_string()], t.dark);
     job.append(prompt, 0.0, face_format(&prompt_style, &Style::default(), m, t));
     job.append(&input, 0.0, text_format(m, t.ink));
+    // A space before what follows the input is text, not layout spacing, so
+    // the cursor at the end of the input sits right after it.
     let completions = ed.minibuffer_completions();
     if !completions.is_empty() {
-        let list = format!("{{{}}}", completions.join(" | "));
-        job.append(&list, m.char_width, text_format(m, t.faint));
+        let list = format!(" {{{}}}", completions.join(" | "));
+        job.append(&list, 0.0, text_format(m, t.faint));
     }
     if let Some(message) = ed.echo() {
-        job.append(message, m.char_width, text_format(m, t.muted));
+        job.append(&format!(" {message}"), 0.0, text_format(m, t.muted));
     }
     let galley = painter.layout_job(job);
     let y = rect.center().y - galley.size().y / 2.0;
