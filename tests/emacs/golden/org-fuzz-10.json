@@ -885,6 +885,27 @@
       "kill_ring": [],
       "modified": false,
       "error": "Beginning of buffer"
+    },
+    {
+      "name": "seed27-0974-c-b-1-m-up",
+      "input": {
+        "text": ":LOGBOOK:\n- note\n:END:\n",
+        "point": 23,
+        "keys": "C-b 1 M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": ":LOGBOOK:\n:END:1\n- note\n",
+      "visible": ":LOGBOOK:\n:END:1\n- note\n",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
     }
   ]
 }

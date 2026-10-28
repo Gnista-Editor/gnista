@@ -355,5 +355,14 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "seed27-0974-c-b-1-m-up",
+    "text": ":LOGBOOK:\n- note\n:END:\n",
+    "keys": "C-b 1 M-<up>",
+    "point": 23,
+    "modes": [
+      "org-mode"
+    ]
   }
 ]

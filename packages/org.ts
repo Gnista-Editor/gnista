@@ -1283,8 +1283,7 @@ function readItem(line: number, ind: number): ListItem {
 }
 
 /** The structure of the list the item on a line is in, as org-list-struct reads it. */
-function listStruct(line: number): Struct {
-  const ctx = listContext(line);
+function listStruct(line: number, ctx: { up: number; down: number; type?: string } = listContext(line)): Struct {
   let textMinInd = 10000;
   let begCell: [number, number] = [ember.lineStart(line), textIndentation(ember.lineText(line))];
   let itmLst: Struct = [];
@@ -4106,7 +4105,9 @@ function parseElements(
       for (let l = line; l <= last; l++) elem("table-row", ember.lineStart(l), Math.min(lineStartOrEnd(l + 1), to), e);
     } else if (p === ember.lineStart(line) && itemLine(line)) {
       const [struct, prevs, parents] = list ?? (() => {
-        const s = listStruct(line);
+        // Bounded by what holds the list, as org-element--list-struct is, not
+        // by the drawer org-list-context may take a line for.
+        const s = listStruct(line, { up: from, down: to });
         return [s, prevsAlist(s), parentsAlist(s)] as [Struct, Alist, Alist];
       })();
       // As org-element-plain-list-parser does, the list goes on through the
