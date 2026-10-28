@@ -278,6 +278,13 @@ impl Buffer {
         std::mem::take(&mut self.changed)
     }
 
+    /// Restores the flag [`Buffer::take_changed`] reads, so code can make
+    /// edits that leave the region active, as binding Emacs's
+    /// `deactivate-mark` to nil does.
+    pub fn set_changed(&mut self, changed: bool) {
+        self.changed = changed;
+    }
+
     /// The text between mark and point, if the mark is set.
     pub fn region(&self) -> Option<Range<usize>> {
         self.mark

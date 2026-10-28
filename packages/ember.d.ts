@@ -704,6 +704,13 @@ declare global {
        */
       "org-global-cycle": [];
       /**
+       * Indent the drawer at point.
+       * Signal an error when not at a drawer.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-indent-drawer": [];
+      /**
        * Make the item point is on a child of the item before it, leaving its children where they are.
        *
        * Defined in packages/org.ts.
@@ -2886,6 +2893,11 @@ declare global {
     function activateMark(): void;
     /** Hide the region, leaving the mark where it is. */
     function deactivateMark(): void;
+    /**
+     * Run fn without its edits deactivating the region after the command, as
+     * binding Emacs's deactivate-mark to nil around them does.
+     */
+    function keepMarkActive<T>(fn: () => T): T;
     /** Whether the running command was started by keys or M-x rather than called from code. */
     function calledInteractively(): boolean;
     /** Whether the region is active: shown, and what region commands act on (Emacs's region-active-p). */

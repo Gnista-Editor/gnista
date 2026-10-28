@@ -382,3 +382,21 @@ fn buffers_can_be_marked_unmodified() {
     ed.call("edit-then-unmark", vec![]).unwrap();
     assert!(!ed.window_buffer().is_modified());
 }
+
+#[test]
+fn edits_can_leave_the_region_active() {
+    let (mut ed, scripting) = setup();
+    eval(
+        &mut ed,
+        &scripting,
+        r#"
+        ember.defineCommand({ name: "edit", run: () => ember.insert("x") });
+        ember.defineCommand({ name: "edit-keeping-region", run: () => ember.keepMarkActive(() => ember.insert("x")) });
+        "#,
+    );
+    ed.press("C-SPC").unwrap();
+    ed.call("edit-keeping-region", vec![]).unwrap();
+    assert!(ed.window_buffer().is_mark_active());
+    ed.call("edit", vec![]).unwrap();
+    assert!(!ed.window_buffer().is_mark_active());
+}

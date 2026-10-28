@@ -147,6 +147,15 @@
     pushMark: (position, options = {}) => native.pushMark(position, Boolean(options.activate)),
     activateMark: () => native.activateMark(),
     deactivateMark: () => native.deactivateMark(),
+    keepMarkActive: (fn) => {
+      const changed = native.takeChanged();
+      try {
+        return fn();
+      } finally {
+        native.takeChanged();
+        native.setChanged(changed);
+      }
+    },
     regionActive: () => native.regionActive(),
 
     splitWindow: (window, side = "below") => native.splitWindow(window ?? null, side === "right"),

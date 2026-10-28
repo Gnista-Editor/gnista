@@ -933,6 +933,8 @@ function textIndentation(text: string): number {
 
 /** The whitespace that indents to a column, with tabs if indent-tabs-mode is on. */
 function indentString(col: number, from = 0): string {
+  // As indent-to does, a column at or before where it starts adds nothing.
+  if (col <= from) return "";
   if (ember.variable("indent-tabs-mode") === true) {
     const width = Number(ember.variable("tab-width") ?? 8);
     let s = "";
@@ -1007,14 +1009,43 @@ function edReplace(from: number, to: number, text: string): void {
   if (checks) fixFoldsAround(from, from + n);
 }
 
-/** Sets a line's indentation, as indent-line-to does. */
+/** Sets a line's indentation, as indent-line-to does: only the difference is inserted or deleted. */
 function indentLineTo(line: number, col: number): void {
-  const text = ember.lineText(line);
-  const ws = /^[ \t]*/.exec(text)?.[0] ?? "";
-  if (textIndentation(text) === col && ws === indentString(col)) return;
   const ls = ember.lineStart(line);
-  edDelete(ls, ls + charCount(ws));
-  edInsert(ls, indentString(col));
+  const ws = /^[ \t]*/.exec(ember.lineText(line))?.[0] ?? "";
+  const end = ls + charCount(ws);
+  const cur = textIndentation(ws);
+  const width = Number(ember.variable("tab-width") ?? 8);
+  if (cur < col) {
+    let from = cur;
+    let at = end;
+    if (col - Math.floor(cur / width) * width >= width) {
+      const spaces = / *$/.exec(ws)?.[0].length ?? 0;
+      edDelete(end - spaces, end);
+      at = end - spaces;
+      from = textIndentation(ws.slice(0, ws.length - spaces));
+    }
+    edInsert(at, indentString(col, from));
+  } else if (cur > col) {
+    // move-to-column with force: a tab it lands inside becomes spaces.
+    let c = 0;
+    let i = 0;
+    while (i < ws.length) {
+      const next = ws[i] === "\t" ? (Math.floor(c / 8) + 1) * 8 : c + 1;
+      if (next > col) {
+        if (c < col) {
+          edDelete(ls + i, ls + i + 1);
+          edInsert(ls + i, " ".repeat(next - c));
+          edDelete(ls + i + (col - c), ls + charCount(/^[ \t]*/.exec(ember.lineText(line))?.[0] ?? ""));
+          return;
+        }
+        break;
+      }
+      c = next;
+      i++;
+    }
+    edDelete(ls + i, end);
+  }
 }
 
 /**
@@ -1871,27 +1902,30 @@ function indentItemGeneric(arg: number, noSubtree: boolean, struct: Struct): voi
   const beg = lastIndentBegin.pos;
   const end = lastIndentEnd.pos;
   try {
-    if (special) {
-      const offset = arg < 0 ? -1 : 1;
-      const first = struct.find((e) => e.pos === beg) ?? struct[0];
-      const old = copyStruct(struct);
-      if (first.ind + offset < 0) throw new Error("Cannot outdent beyond margin");
-      if (first.ind + offset === 0 && first.bullet.includes("*")) first.bullet = bulletString("-");
-      for (const e of struct) e.ind += offset;
-      fixBul(struct, prevs);
-      applyStruct(struct, old);
-    } else if (
-      arg < 0 &&
-      ((noSubtree && !region && hasChild(struct, beg) !== undefined) ||
-        hasChild(struct, [...struct].reverse().find((e) => e.pos < end)?.pos ?? beg) !== undefined)
-    ) {
-      throw new Error("Cannot outdent an item without its children");
-    } else {
-      const old = copyStruct(struct);
-      const newParents = arg < 0 ? structOutdent(beg, end, struct, parents) : structIndent(beg, end, struct, parents, prevs);
-      writeStruct(struct, newParents, old);
-      updateCheckboxCount();
-    }
+    // As Org binds deactivate-mark to nil, a region stays active.
+    ember.keepMarkActive(() => {
+      if (special) {
+        const offset = arg < 0 ? -1 : 1;
+        const first = struct.find((e) => e.pos === beg) ?? struct[0];
+        const old = copyStruct(struct);
+        if (first.ind + offset < 0) throw new Error("Cannot outdent beyond margin");
+        if (first.ind + offset === 0 && first.bullet.includes("*")) first.bullet = bulletString("-");
+        for (const e of struct) e.ind += offset;
+        fixBul(struct, prevs);
+        applyStruct(struct, old);
+      } else if (
+        arg < 0 &&
+        ((noSubtree && !region && hasChild(struct, beg) !== undefined) ||
+          hasChild(struct, [...struct].reverse().find((e) => e.pos < end)?.pos ?? beg) !== undefined)
+      ) {
+        throw new Error("Cannot outdent an item without its children");
+      } else {
+        const old = copyStruct(struct);
+        const newParents = arg < 0 ? structOutdent(beg, end, struct, parents) : structIndent(beg, end, struct, parents, prevs);
+        writeStruct(struct, newParents, old);
+        updateCheckboxCount();
+      }
+    });
   } finally {
     ember.gotoChar(saved.pos);
     dropMarker(saved);
@@ -2044,12 +2078,6 @@ function moveItemUp(): void {
   struct = swapItems(prev, item, struct);
   writeStruct(struct, parentsAlist(struct));
   moveToColumn(col);
-}
-
-/** Moves to a column of point's line, or its end, as move-to-column does. */
-function moveToColumn(col: number): void {
-  const line = lineAt();
-  ember.gotoChar(ember.lineStart(line) + Math.min(col, ember.lineEnd(line) - ember.lineStart(line)));
 }
 
 function previousItem(): void {
@@ -2674,10 +2702,151 @@ function indentLine(line: number): void {
   const want = expectedIndent(el, false, line);
   const ws = /^[ \t]*/.exec(text)?.[0] ?? "";
   const p = ember.point();
-  const inIndentation = lineAt(p) === line && p - ls <= charCount(ws);
-  if (textIndentation(text) !== want || ws !== indentString(want)) replaceText(ls, ls + charCount(ws), indentString(want));
-  if (inIndentation) ember.gotoChar(ls + charCount(indentString(want)));
+  if (lineAt(p) === line && p - ls <= charCount(ws)) {
+    indentLineTo(line, want);
+    ember.gotoChar(ls + charCount(/^[ \t]*/.exec(ember.lineText(line))?.[0] ?? ""));
+  } else {
+    const m = marker(p);
+    indentLineTo(line, want);
+    ember.gotoChar(m.pos);
+    dropMarker(m);
+  }
+  if (el?.type === "node-property") {
+    const column = ember.stringWidth(ember.bufferText(ls, ember.point()).replace(/\t/g, "        "));
+    alignNodeProperty(line);
+    moveToColumn(column);
+  }
 }
+
+/** Moves point to a column on its line, or to the line's end, as move-to-column does. */
+function moveToColumn(column: number): void {
+  const line = lineAt();
+  let p = ember.lineStart(line);
+  let c = 0;
+  for (const ch of ember.lineText(line)) {
+    if (c >= column) break;
+    c = ch === "\t" ? (Math.floor(c / 8) + 1) * 8 : c + ember.stringWidth(ch);
+    p++;
+  }
+  ember.gotoChar(p);
+}
+
+/** A node property line's parts, as org-property-re matches them: indentation, :KEY:, and value. */
+const PROPERTY_RE = /^([ \t]*)(:(\S+):)(?:()$|[ \t]+(.*?))([ \t]*)$/;
+
+/** Aligns the node property on a line by org-property-format ("%-10s %s"), as org--align-node-property does. */
+function alignNodeProperty(line: number): void {
+  const text = ember.lineText(line);
+  const m = PROPERTY_RE.exec(text);
+  if (!m) return;
+  const key = m[2];
+  const formatted = `${key}${" ".repeat(Math.max(0, 10 - ember.stringWidth(key)))} ${m[5] ?? ""}`;
+  const replacement = m[1] + formatted.replace(/^[ \t\n\r]+|[ \t\n\r]+$/g, "");
+  const ls = ember.lineStart(line);
+  // Deleted and inserted again rather than replaced, so markers in the line go to its start.
+  const checks = !foldChecksOff;
+  withoutFoldChecks(() => {
+    edDelete(ls, ls + charCount(text));
+    edInsert(ls, replacement);
+  });
+  if (checks) fixFoldsAround(ls, ls + charCount(replacement));
+}
+
+/** Changes the indentation of the lines from start to end by offset, as indent-rigidly does. */
+function indentRigidly(start: number, end: number, offset: number): void {
+  const endM = marker(end);
+  for (let line = lineAt(start); line < ember.lineCount() && ember.lineStart(line) < endM.pos; line++) {
+    const text = ember.lineText(line);
+    const ws = /^[ \t]*/.exec(text)?.[0] ?? "";
+    const ls = ember.lineStart(line);
+    if (ws.length === text.length) edDelete(ls, ls + charCount(ws));
+    else {
+      const added = indentString(Math.max(0, textIndentation(text) + offset));
+      edInsert(ls, added);
+      edDelete(ls + charCount(added), ls + charCount(added) + charCount(ws));
+    }
+  }
+  dropMarker(endM);
+}
+
+/** Indents the non-blank lines from start to end, each element as a whole, as org-indent-region does. */
+function orgIndentRegion(start: number, end: number): void {
+  const endM = marker(end);
+  const size = (): number => ember.bufferSize();
+  let p = start;
+  while (p < size() && /[ \r\t\n]/.test(ember.bufferText(p, p + 1))) p++;
+  if (p < size()) p = ember.lineStart(lineAt(p));
+  // Gives lines up to pos the indentation ind, leaving p after pos.
+  const indentTo = (ind: number, pos: number): void => {
+    const limit = marker(pos);
+    while (p < limit.pos) {
+      const line = lineAt(p);
+      if (!/^[ \t]*$/.test(ember.lineText(line))) indentLineTo(line, ind);
+      p = lineStartOrEnd(line + 1);
+      if (line + 1 >= ember.lineCount()) p = size();
+    }
+    dropMarker(limit);
+  };
+  while (p < endM.pos) {
+    const line = lineAt(p);
+    const el = isHeadingLine(ember.lineText(line)) ? undefined : elementAt(p);
+    if (!el) {
+      p = line + 1 < ember.lineCount() ? ember.lineStart(line + 1) : size();
+      continue;
+    }
+    const type = el.type;
+    const elementEnd = marker(el.end);
+    const ind = expectedIndent(el, false, line);
+    if (["paragraph", "table", "table-row"].includes(type) || el.contentsBegin === undefined) {
+      if (type === "node-property") {
+        const pm = marker(p);
+        alignNodeProperty(lineAt(p));
+        p = ember.lineStart(lineAt(pm.pos));
+        dropMarker(pm);
+      }
+      indentTo(ind, Math.min(elementEnd.pos, endM.pos));
+    } else {
+      let cb = el.contentsBegin;
+      if (type === "item" || type === "plain-list") {
+        let q = ember.lineEnd(lineAt(el.begin));
+        while (q < size() && /[ \r\t\n]/.test(ember.bufferText(q, q + 1))) q++;
+        cb = q >= size() ? q : ember.lineStart(lineAt(q));
+      }
+      const cbeg = marker(cb);
+      const cend = { pos: el.contentsEnd ?? el.end, before: true };
+      markers.push(cend);
+      if (type === "plain-list") {
+        const offset = ind - textIndentation(ember.lineText(lineAt(p)));
+        if (offset !== 0) indentRigidly(el.begin, elementEnd.pos, offset);
+        p = cbeg.pos;
+      } else if (type === "item") p = cbeg.pos;
+      else indentTo(ind, Math.min(cbeg.pos, endM.pos));
+      if (p < endM.pos) {
+        orgIndentRegion(p, Math.min(cend.pos, endM.pos));
+        p = Math.min(cend.pos, endM.pos);
+        if (p < endM.pos) indentTo(ind, Math.min(elementEnd.pos, endM.pos));
+      }
+      dropMarker(cbeg);
+      dropMarker(cend);
+    }
+    dropMarker(elementEnd);
+  }
+  dropMarker(endM);
+}
+
+ember.defineCommand({
+  name: "org-indent-drawer",
+  doc: "Indent the drawer at point.\nSignal an error when not at a drawer.",
+  run: () => {
+    const el = elementAt(ember.point());
+    if (el?.type !== "drawer" && el?.type !== "property-drawer") throw new Error("Not at a drawer");
+    const pt = marker(ember.point());
+    orgIndentRegion(el.begin, el.end);
+    ember.gotoChar(pt.pos);
+    dropMarker(pt);
+    ember.message("Drawer at point indented");
+  },
+});
 
 // Commands: visibility
 
@@ -3364,7 +3533,9 @@ ember.defineCommand({
   run: () => {
     const region = headingsInRegion();
     if (region) {
-      for (const h of [...region].reverse()) changeLevel(parseHeading(h.line) ?? h, -1);
+      ember.keepMarkActive(() => {
+        for (const h of [...region].reverse()) changeLevel(parseHeading(h.line) ?? h, -1);
+      });
     } else {
       const [all, i] = backToHeading();
       changeLevel(all[i], -1);
@@ -3379,7 +3550,9 @@ ember.defineCommand({
   run: () => {
     const region = headingsInRegion();
     if (region) {
-      for (const h of [...region].reverse()) changeLevel(parseHeading(h.line) ?? h, 1);
+      ember.keepMarkActive(() => {
+        for (const h of [...region].reverse()) changeLevel(parseHeading(h.line) ?? h, 1);
+      });
     } else {
       const [all, i] = backToHeading();
       changeLevel(all[i], 1);
@@ -3652,6 +3825,8 @@ function parseElements(
       const close = drawerEnd(line, to) as number;
       e = elem("drawer", p, Math.min(lineStartOrEnd(close + 1), to), parent, lineStartOrEnd(line + 1));
       e.contentsEnd = ember.lineStart(close);
+      if (close > line + 1) parseElements(e, e.contentsBegin as number, e.contentsEnd, false);
+      else e.contentsBegin = undefined;
     } else if (p === ember.lineStart(line) && /^[ \t]*#\+\S*:/.test(text)) {
       e = elem("keyword", p, Math.min(next, to), parent);
     } else {
@@ -5056,6 +5231,7 @@ const metaRight = ember.defineCommand({
   doc: "M-<right> in Org: demote a heading, indent an item, move a table column right, or move forward a word.",
   run: () => {
     if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-move-column-right");
+    else if (DRAWER_RE.test(ember.lineText(lineAt()))) ember.call("org-indent-drawer");
     else if (headingsInRegion() || headingHere()) {
       if (hiddenBelow("headlines")) hiddenTreeError();
       ember.call("org-do-demote");
@@ -5106,7 +5282,7 @@ function metaRegion(up: boolean): boolean {
           throw new Error("Cannot move past superior level or buffer limit");
         }
         ember.gotoChar(before.start);
-        while (ember.point() < end.pos) moveSubtree(1);
+        while (ember.point() < end.pos) ember.keepMarkActive(() => moveSubtree(1));
         dropMarker(end);
       } else {
         const beg = marker(rb);
@@ -5116,7 +5292,7 @@ function metaRegion(up: boolean): boolean {
           throw new Error("Cannot move past superior level or buffer limit");
         }
         ember.gotoChar(after.start);
-        while (ember.point() > beg.pos) moveSubtree(-1);
+        while (ember.point() > beg.pos) ember.keepMarkActive(() => moveSubtree(-1));
         dropMarker(beg);
       }
     } finally {
@@ -5129,6 +5305,14 @@ function metaRegion(up: boolean): boolean {
   const atBol = (x: number): boolean => x === ember.lineStart(lineAt(x));
   const b = atBol(re) && re > 0 ? re - 1 : ember.lineEnd(lineAt(re));
   const swap = pt < mark;
+  ember.keepMarkActive(() => transposeRegionLines(up, a, b));
+  if (swap) ember.call("exchange-point-and-mark");
+  return true;
+}
+
+/** The region case of org-metaup and org-metadown: the region's lines and the line before or after swap places. */
+function transposeRegionLines(up: boolean, a: number, b: number): void {
+  const atBol = (x: number): boolean => x === ember.lineStart(lineAt(x));
   if (up) {
     const prev = Math.max(0, lineAt(a) - 1);
     const [c, d] = [ember.lineStart(prev), ember.lineEnd(prev)];
@@ -5142,8 +5326,6 @@ function metaRegion(up: boolean): boolean {
     ember.setMark(1 + a + (d - c));
     ember.gotoChar(1 + a + (d - c) + (b - a));
   }
-  if (swap) ember.call("exchange-point-and-mark");
-  return true;
 }
 
 const metaUp = ember.defineCommand({

@@ -56,7 +56,7 @@ pub struct Input {
 }
 
 /// What a case leaves behind, as both editors report it.
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct State {
     pub text: String,
     /// The text without what is invisible, once fontified.

@@ -1,0 +1,124 @@
+[
+  {
+    "name": "seed8-0840-m-right",
+    "text": ":PROPERTIES:\n:END:",
+    "keys": "M-<right>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed8-0688-m-right",
+    "text": ":PROPERTIES:\n:ID: 1\n:END:",
+    "keys": "M-<right>",
+    "point": 22,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed8-0977-m-right-m-b",
+    "text": ":END:",
+    "keys": "M-<right> M-b",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed8-0061-spc-m-s-left",
+    "text": "1) [X] alpha\n2) [X] fix",
+    "keys": "SPC M-S-<left>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed8-0695-c-n-m-right",
+    "text": "*** DONE fix call :work:\n:PROPERTIES:\n:ID: 1\n:END:",
+    "keys": "C-n M-<right>",
+    "point": 11,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed8-0306-c-c-@-m-up-c-c-@",
+    "text": "** TODO plan gamma\n** [#B] beta\n",
+    "keys": "C-c @ M-<up> C-c @",
+    "point": 32,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "indent-drawer-with-point-in-a-property",
+    "text": "* One\n:PROPERTIES:\n:ID: 1\n:CATEGORY:   work  \n:END:\n",
+    "keys": "M-<right>",
+    "point": 22,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "indent-drawer-with-an-empty-property",
+    "text": "* One\n:PROPERTIES:\n:A:\n:END:\n",
+    "keys": "M-<right>",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "indent-an-indented-drawer",
+    "text": "* One\n  :LOGBOOK:\n    text\n  :END:\n",
+    "keys": "M-<right>",
+    "point": 8,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "indent-a-drawer-holding-a-list",
+    "text": "* One\n:NOTES:\n   - a\n     b\n   - c\n:END:\n",
+    "keys": "M-<right>",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "indent-a-drawer-in-a-list",
+    "text": "- item\n  :NOTES:\nx\n  :END:\n",
+    "keys": "M-<right>",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-right-on-an-unclosed-drawer",
+    "text": "* One\n:NOTES:\ntext\n",
+    "keys": "M-<right>",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "promote-headings-in-a-region-keeps-it",
+    "text": "** A\n** B\n",
+    "keys": "C-SPC C-n C-e M-<left>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "indent-items-in-a-region-keeps-it",
+    "text": "- a\n- b\n- c\n",
+    "keys": "C-n C-SPC C-n M-<right>",
+    "modes": [
+      "org-mode"
+    ]
+  }
+]

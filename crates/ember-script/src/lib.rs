@@ -532,6 +532,19 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
         })?,
     )?;
     native.set(
+        "takeChanged",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer_mut().take_changed())))?,
+    )?;
+    native.set(
+        "setChanged",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, changed: bool| {
+            with_editor(&ctx, |ed| {
+                ed.buffer_mut().set_changed(changed);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
         "repeatLastCommand",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, arg: Value<'js>| {
             let arg = prefix_from_js(&ctx, arg)?;

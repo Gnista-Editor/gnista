@@ -208,9 +208,30 @@ fn compare(case: &Case, emacs: &State) -> Option<String> {
     }
     let ember = std::panic::catch_unwind(|| run(case));
     match ember {
-        Ok(ember) => Some(differences(emacs, &ember)),
+        Ok(ember) => Some(differences(&without_clock_times(emacs), &without_clock_times(&ember))),
         Err(_) => Some("    Ember panicked".into()),
     }
+}
+
+/// A state with the times of inactive timestamps blanked out. Org logs the
+/// time of a change, and Emacs ran a while before Ember, so the minute can
+/// differ.
+fn without_clock_times(state: &State) -> State {
+    let blank = |s: &str| -> String {
+        let mut chars: Vec<char> = s.chars().collect();
+        for i in 0..chars.len() {
+            // "[2026-10-28 Wed 11:46]": the time is the five characters before the bracket.
+            if chars[i] == ']' && i >= 21 && chars[i - 21] == '[' && chars[i - 3] == ':' {
+                for c in &mut chars[i - 5..i] {
+                    if *c != ':' {
+                        *c = '0';
+                    }
+                }
+            }
+        }
+        chars.into_iter().collect()
+    };
+    State { text: blank(&state.text), visible: blank(&state.visible), kill_ring: state.kill_ring.iter().map(|k| blank(k)).collect(), ..state.clone() }
 }
 
 /// The names of the fields that differ, so shrinking keeps to the same difference.
