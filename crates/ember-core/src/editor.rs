@@ -291,7 +291,7 @@ impl Editor {
         let result = (command.run)(self, &args);
         self.running -= 1;
         let result = result.and(self.run_after_change_functions());
-        self.deactivate_changed_regions();
+        self.deactivate_changed_regions(result.is_ok());
         if !self.this_command_set {
             self.this_command = this;
         }
@@ -603,14 +603,20 @@ impl Editor {
         if let Some(name) = self.this_command.take() {
             self.last_command = Some(name);
         }
-        self.deactivate_changed_regions();
+        self.deactivate_changed_regions(result.is_ok());
         result
     }
 
-    /// Editing deactivates the region, as in Emacs's transient-mark-mode.
-    fn deactivate_changed_regions(&mut self) {
+    /// Editing deactivates the region, as in Emacs's transient-mark-mode,
+    /// unless the command failed: Emacs's command loop skips deactivating
+    /// then, and the next command starts afresh. A command called from code
+    /// that fails leaves its changes for the command around it.
+    fn deactivate_changed_regions(&mut self, succeeded: bool) {
+        if !succeeded && self.running > 0 {
+            return;
+        }
         for b in self.buffers.iter_mut().chain(std::iter::once(&mut self.minibuffer)) {
-            if b.take_changed() {
+            if b.take_changed() && succeeded {
                 b.deactivate_mark();
             }
         }
@@ -631,16 +637,17 @@ impl Editor {
         let (old_point, old_buffer, old_tick) = (self.buffer().point(), self.buffer().id, self.buffer().modified_tick());
         self.command_failed = false;
         self.run_interactive(&name);
-        let modified = self.buffer().id != old_buffer || self.buffer().modified_tick() != old_tick;
-        // As in Emacs, an error leaves the command loop before point is adjusted.
-        if !self.command_failed {
-            self.adjust_point_for_invisible(old_point, modified);
-        }
         self.this_command = self.last_command.clone();
         if let Err(e) = self.run_hooks("post-command-hook") {
             self.message = Some(format!("Error in post-command-hook: {e}"));
         }
         self.this_command = None;
+        // As in Emacs's command loop, point is adjusted after post-command-hook
+        // has run, and not at all after an error.
+        let modified = self.buffer().id != old_buffer || self.buffer().modified_tick() != old_tick;
+        if !self.command_failed {
+            self.adjust_point_for_invisible(old_point, modified);
+        }
     }
 
     // Keys

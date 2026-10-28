@@ -1,0 +1,237 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "seed21-1635-m-s-return",
+      "input": {
+        "text": "1. beta\n2. notes\n   + gamma\n   notes",
+        "point": 31,
+        "keys": "M-S-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1. beta\n2. notes\n   + gamma\n3. [ ] \n   notes",
+      "visible": "1. beta\n2. notes\n   + gamma\n3. [ ] \n   notes",
+      "point": 35,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed21-1489-c-spc-backtab",
+      "input": {
+        "text": "|---+---|\n| ccc | yy |",
+        "point": 0,
+        "keys": "C-SPC <backtab>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "|-----+----|\n| ccc | yy |",
+      "visible": "|-----+----|\n| ccc | yy |",
+      "point": 12,
+      "mark": 0,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Cannot move to previous table field"
+    },
+    {
+      "name": "seed21-0650-m-b-m-ret",
+      "input": {
+        "text": "- gamma\n- alpha\n  - alpha\n  gamma",
+        "point": 30,
+        "keys": "M-b M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- gamma\n- alpha\n  - alpha\n- \n  gamma",
+      "visible": "- gamma\n- alpha\n  - alpha\n- \n  gamma",
+      "point": 28,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed21-2068-backtab-m-s-down",
+      "input": {
+        "text": "fix <2026-10-11 Wed>\n* TODO read plan\n+ notes",
+        "point": 38,
+        "keys": "<backtab> M-S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "fix <2026-10-11 Wed>\n+ notes\n* TODO read plan\n",
+      "visible": "fix <2026-10-11 Wed>\n+ notes\n* TODO read plan\n",
+      "point": 29,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed21-1646-c-t-ret",
+      "input": {
+        "text": "** DONE read alpha\nDEADLINE: <2026-11-01 Sun +1w>",
+        "point": 35,
+        "keys": "C-t RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** DONE read alpha\nDEADLINE: <20261-1-01 Sun +1w>",
+      "visible": "** DONE read alpha\nDEADLINE: <20261-1-01 Sun +1w>",
+      "point": 36,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Not an Org time string: <20261-1-01 Sun +1w"
+    },
+    {
+      "name": "seed21-0914-bar-c-f-bar-s-up",
+      "input": {
+        "text": "\ngamma <2026-10-24 Wed>",
+        "point": 0,
+        "keys": "| C-f | S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "|\n|gamma <2026-10-24 Wed>",
+      "visible": "|\n|gamma <2026-10-24 Wed>",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Cannot move cell further"
+    },
+    {
+      "name": "planning-timestamp-without-a-date-fails",
+      "input": {
+        "text": "* a\nDEADLINE: <20-26-11-01 Sun +1w>\n",
+        "point": 0,
+        "keys": "C-n C-e RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\nDEADLINE: <20-26-11-01 Sun +1w>\n",
+      "visible": "* a\nDEADLINE: <20-26-11-01 Sun +1w>\n",
+      "point": 35,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Not an Org time string: <20-26-11-01 Sun +1w"
+    },
+    {
+      "name": "drag-the-last-line-of-a-fold",
+      "input": {
+        "text": "x\n* a\n- b",
+        "point": 9,
+        "keys": "<backtab> M-S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "x\n- b\n* a\n",
+      "visible": "x\n- b\n* a\n",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "error-keeps-the-region",
+      "input": {
+        "text": "| a |\n",
+        "point": 0,
+        "keys": "C-SPC <backtab>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a |\n",
+      "visible": "| a |\n",
+      "point": 0,
+      "mark": 0,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot move to previous table field"
+    },
+    {
+      "name": "move-cell-in-a-table-with-an-empty-first-row",
+      "input": {
+        "text": "|\n|a|\n",
+        "point": 0,
+        "keys": "C-n C-f S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "|\n|a|\n",
+      "visible": "|\n|a|\n",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot move cell further"
+    },
+    {
+      "name": "insert-an-item-after-a-nested-item",
+      "input": {
+        "text": "- a\n- b\n  - c\n  d",
+        "point": 0,
+        "keys": "C-n C-n C-n C-e M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- a\n- b\n  - c\n  d\n- ",
+      "visible": "- a\n- b\n  - c\n  d\n- ",
+      "point": 20,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

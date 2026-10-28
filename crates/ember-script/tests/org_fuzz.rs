@@ -18,8 +18,10 @@ mod oracle;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
+use std::io::Read;
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Stdio};
+use std::time::{Duration, Instant};
 
 use oracle::{Case, Golden, State, differences, oracle_dir, run};
 
@@ -206,19 +208,58 @@ fn random_case(rng: &mut Rng, name: String) -> Case {
 }
 
 /// Records what Emacs does with the cases, in a directory of their own.
+/// Org can loop forever on some cases, so a run that takes too long is
+/// stopped and the cases are recorded in halves, leaving out any case that
+/// hangs by itself.
 fn record(dir: &Path, cases: &[Case]) -> BTreeMap<String, State> {
+    match record_within(dir, cases, Duration::from_secs(10 + cases.len() as u64 / 100)) {
+        Some(states) => states,
+        None if cases.len() == 1 => {
+            eprintln!("Emacs hangs on {}; leaving it out", cases[0].name);
+            BTreeMap::new()
+        }
+        None => {
+            let (a, b) = cases.split_at(cases.len() / 2);
+            let mut states = record(dir, a);
+            states.extend(record(dir, b));
+            states
+        }
+    }
+}
+
+/// Records the cases with one run of Emacs, or `None` if it takes longer than `limit`.
+fn record_within(dir: &Path, cases: &[Case], limit: Duration) -> Option<BTreeMap<String, State>> {
     let _ = fs::remove_dir_all(dir);
     fs::create_dir_all(dir.join("cases")).unwrap();
     fs::write(dir.join("cases/fuzz.json"), serde_json::to_string_pretty(cases).unwrap()).unwrap();
-    let status = Command::new("emacs")
+    let mut child = Command::new("emacs")
         .args(["-Q", "--batch", "-l"])
         .arg(oracle_dir().join("record.el"))
         .env("EMBER_ORACLE_DIR", dir)
-        .output()
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped())
+        .spawn()
         .expect("emacs runs");
-    assert!(status.status.success(), "Emacs failed: {}", String::from_utf8_lossy(&status.stderr));
+    let started = Instant::now();
+    let status = loop {
+        if let Some(status) = child.try_wait().unwrap() {
+            break status;
+        }
+        if started.elapsed() > limit {
+            let _ = child.kill();
+            let _ = child.wait();
+            return None;
+        }
+        std::thread::sleep(Duration::from_millis(20));
+    };
+    let mut stderr = String::new();
+    if let Some(mut err) = child.stderr.take() {
+        let _ = err.read_to_string(&mut stderr);
+    }
+    assert!(status.success(), "Emacs failed: {stderr}");
     let golden: Golden = serde_json::from_str(&fs::read_to_string(dir.join("golden/fuzz.json")).unwrap()).unwrap();
-    golden.cases.into_iter().map(|r| (r.name, r.state)).collect()
+    Some(golden.cases.into_iter().map(|r| (r.name, r.state)).collect())
 }
 
 /// Which of a case's fields differ between Emacs and Ember, or `None` if
@@ -312,7 +353,7 @@ fn org_mode_behaves_like_emacs_on_random_cases() {
     let mut failing: Vec<(Case, String)> = Vec::new();
     let mut compared = 0;
     for case in &cases {
-        if let Some(diff) = compare(case, &recorded[&case.name]) {
+        if let Some(diff) = recorded.get(&case.name).and_then(|emacs| compare(case, emacs)) {
             compared += 1;
             if !diff.is_empty() {
                 failing.push((case.clone(), diff));
@@ -342,7 +383,7 @@ fn org_mode_behaves_like_emacs_on_random_cases() {
             if taken.contains(&k) {
                 continue;
             }
-            let Some(diff) = compare(&smaller, &recorded[&smaller.name]) else { continue };
+            let Some(diff) = recorded.get(&smaller.name).and_then(|emacs| compare(&smaller, emacs)) else { continue };
             if !diff.is_empty() && fields(&diff) == fields(&failing[k].1) {
                 let name = failing[k].0.name.clone();
                 failing[k] = (Case { name, ..smaller }, diff);
@@ -379,7 +420,7 @@ fn org_mode_replays_differences() {
     let recorded = record(&work.join("replay"), &cases);
     let mut failing = 0;
     for case in &cases {
-        let Some(diff) = compare(case, &recorded[&case.name]) else { continue };
+        let Some(diff) = recorded.get(&case.name).and_then(|emacs| compare(case, emacs)) else { continue };
         if !diff.is_empty() {
             failing += 1;
             eprintln!("\n{}: text {:?}, point {}, keys {:?}\n{diff}", case.name, case.text, case.point, case.keys);

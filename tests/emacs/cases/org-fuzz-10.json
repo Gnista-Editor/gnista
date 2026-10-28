@@ -1,0 +1,95 @@
+[
+  {
+    "name": "seed21-1635-m-s-return",
+    "text": "1. beta\n2. notes\n   + gamma\n   notes",
+    "keys": "M-S-<return>",
+    "point": 31,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed21-1489-c-spc-backtab",
+    "text": "|---+---|\n| ccc | yy |",
+    "keys": "C-SPC <backtab>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed21-0650-m-b-m-ret",
+    "text": "- gamma\n- alpha\n  - alpha\n  gamma",
+    "keys": "M-b M-RET",
+    "point": 30,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed21-2068-backtab-m-s-down",
+    "text": "fix <2026-10-11 Wed>\n* TODO read plan\n+ notes",
+    "keys": "<backtab> M-S-<down>",
+    "point": 38,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed21-1646-c-t-ret",
+    "text": "** DONE read alpha\nDEADLINE: <2026-11-01 Sun +1w>",
+    "keys": "C-t RET",
+    "point": 35,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed21-0914-bar-c-f-bar-s-up",
+    "text": "\ngamma <2026-10-24 Wed>",
+    "keys": "| C-f | S-<up>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "planning-timestamp-without-a-date-fails",
+    "text": "* a\nDEADLINE: <20-26-11-01 Sun +1w>\n",
+    "keys": "C-n C-e RET",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "drag-the-last-line-of-a-fold",
+    "text": "x\n* a\n- b",
+    "keys": "<backtab> M-S-<down>",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "error-keeps-the-region",
+    "text": "| a |\n",
+    "keys": "C-SPC <backtab>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-cell-in-a-table-with-an-empty-first-row",
+    "text": "|\n|a|\n",
+    "keys": "C-n C-f S-<up>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "insert-an-item-after-a-nested-item",
+    "text": "- a\n- b\n  - c\n  d",
+    "keys": "C-n C-n C-n C-e M-RET",
+    "modes": [
+      "org-mode"
+    ]
+  }
+]

@@ -1412,13 +1412,20 @@ function getItem(struct: Struct, pos: number): ListItem {
 }
 
 function prevsAlist(struct: Struct): Alist {
-  return new Map(struct.map((e) => [e.pos, struct.find((x) => x.end === e.pos)?.pos]));
+  // The first entry for a position wins, as assq finds it.
+  const out: Alist = new Map();
+  for (const e of struct) if (!out.has(e.pos)) out.set(e.pos, struct.find((x) => x.end === e.pos)?.pos);
+  return out;
 }
 
 function parentsAlist(struct: Struct): Alist {
   let indToOri: [number, number | undefined][] = [[struct[0].ind, undefined]];
   const prevPos = [struct[0].pos];
+  // A structure Org has just edited can hold two items at one position;
+  // assq finds the first, so the first one's entry is kept here too.
   const out: Alist = new Map([[struct[0].pos, undefined]]);
+  const set = out.set.bind(out);
+  out.set = (key: number, value: number | undefined) => (out.has(key) ? out : set(key, value));
   for (const item of struct.slice(1)) {
     const prevInd = indToOri[0][0];
     prevPos.unshift(item.pos);
@@ -1552,7 +1559,9 @@ function fixBul(struct: Struct, prevs: Alist): void {
 /** Indents items under their parents' text, or as the first item, as org-list-struct-fix-ind does. */
 function fixInd(struct: Struct, parents: Alist, bulletSize?: number): void {
   const topInd = struct[0].ind;
-  for (const e of struct.slice(1)) {
+  // By position, as Org goes, setting the first item there, as assq finds it.
+  for (const { pos } of struct.slice(1)) {
+    const e = getItem(struct, pos);
     const parent = parents.get(e.pos);
     if (parent === undefined) e.ind = topInd;
     else {
@@ -4160,8 +4169,29 @@ function parseBuffer(): Elem {
   return root;
 }
 
+/**
+ * Fails as Org's timestamp parser does on a planning line's timestamp that
+ * only its loose form matches, <N-N-N ... +Nw>, and that holds no date.
+ */
+function checkPlanningTimestamps(line: number): void {
+  const text = ember.lineText(line);
+  for (const m of text.matchAll(/(?:SCHEDULED|DEADLINE|CLOSED):[ \t]*/g)) {
+    const rest = text.slice((m.index ?? 0) + m[0].length);
+    if (/^[<[]\d{4}-\d{2}-\d{2}(?: .*?)?[\]>]/.test(rest)) continue;
+    if (!/^<[0-9]+-[0-9]+-[0-9]+[^>\n]+?\+[0-9]+[dwmy]>/.test(rest)) continue;
+    const start = /^[<[].*?(?=[\]>])/.exec(rest)?.[0] ?? rest;
+    if (!/\d{4}-\d{2}-\d{2}/.test(start)) throw new Error(`Not an Org time string: ${start}`);
+  }
+}
+
 /** The element at a position, as org-element-at-point finds it: the innermost, but not inside one starting there. */
 function elementAt(pos: number): Elem | undefined {
+  const found = elementAt_(pos);
+  if (found?.type === "planning") checkPlanningTimestamps(lineAt(found.begin));
+  return found;
+}
+
+function elementAt_(pos: number): Elem | undefined {
   let node = parseBuffer();
   const size = ember.bufferSize();
   for (;;) {

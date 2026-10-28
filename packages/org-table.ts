@@ -572,10 +572,25 @@ function gotoDataLine(n: number): boolean {
 function columnCount(): number {
   const lines = dataLines();
   if (lines.length === 0) return 0;
-  const pieces = ember.lineText(lines[0]).split(/[ \t]*\|[ \t]*/);
-  if (pieces.length > 1 && pieces[0] === "") pieces.shift();
-  if (pieces.length > 1 && pieces[pieces.length - 1] === "") pieces.pop();
-  return pieces.length;
+  return orgSplitString(ember.lineText(lines[0]), /[ \t]*\|[ \t]*/g).length;
+}
+
+/**
+ * Splits a string at a separator, as org-split-string does: a separator at
+ * the very start or end makes no empty piece, so a row of just "|" has none.
+ */
+function orgSplitString(text: string, separator: RegExp): string[] {
+  const matches = [...text.matchAll(separator)].filter((m) => m[0] !== "");
+  if (matches.length === 0) return [text];
+  const out: string[] = [];
+  let i = 0;
+  for (const m of matches) {
+    const at = m.index ?? 0;
+    if (!(at === 0 && i === 0)) out.push(text.slice(i, at));
+    i = at + m[0].length;
+  }
+  if (i !== text.length) out.push(text.slice(i));
+  return out;
 }
 
 /** Swaps the field at point with the one next to it, as org-table--move-cell does. */
