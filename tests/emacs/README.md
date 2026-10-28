@@ -47,3 +47,13 @@ Batch Emacs has no window system, so some keys act as they would on a terminal r
 - Display, faces and the mouse are invisible to the oracle, apart from the visible text. Ember's own tests and the GUI's snapshot tests cover those.
 
 Golden files record the Emacs version and platform. Emacs on macOS binds `<home>` and `<end>` to the ends of the buffer, and so does Ember on macOS; cases like that are marked `"platform": "darwin"`.
+
+## Fuzzing org-mode
+
+`crates/ember-script/tests/org_fuzz.rs` looks for differences instead of checking known ones. It writes random Org documents, with headings, TODO states, lists, checkboxes, tables, timestamps and drawers. It types random Org keys into them, records what Emacs does through record.el (with `EMBER_ORACLE_DIR` pointing it at a scratch directory), and runs the same cases through Ember. Each case that differs is shrunk, a key or a line at a time, to a small one that still differs in the same way. It needs Emacs, so it only runs when asked:
+
+```bash
+EMBER_FUZZ_SEED=1 EMBER_FUZZ_CASES=300 cargo test --release -p ember-script --test org_fuzz -- --ignored --nocapture
+```
+
+A seed repeats a run. The shrunk cases are printed and written to `target/org-fuzz/differences.json`. Turn the ones worth fixing into cases in `cases/org-fuzz.json`, so they stay fixed. A command that would prompt is an error in the recorder, and the fuzzer leaves those cases out.

@@ -34,7 +34,7 @@ cargo clippy --all-targets
 - `cargo run -p ember -- --print-types` prints the generated declarations.
 - The GUI uses Geist Mono and Inter if they are installed, and egui's built-in fonts otherwise. Without Geist Mono Bold, bold text is drawn twice, slightly apart.
 - GUI snapshots live in `crates/ember-gui/tests/snapshots/`. After an intended visual change, run `UPDATE_SNAPSHOTS=1 cargo test -p ember-gui`, then look at the new images before committing them.
-- `tests/emacs/` compares Ember with real GNU Emacs on recorded cases (see its README). After adding or changing cases, record them with `emacs -Q --batch -l tests/emacs/record.el`. `known-gaps.txt` lists where Ember does not match yet.
+- `tests/emacs/` compares Ember with real GNU Emacs on recorded cases (see its README). After adding or changing cases, record them with `emacs -Q --batch -l tests/emacs/record.el`. `known-gaps.txt` lists where Ember does not match yet. `tests/emacs/README.md` also says how to run the org-mode fuzzer, which finds new differences from Emacs on random documents and keys.
 - On macOS, `.cargo/config.toml` links with `/usr/bin/cc`, because the Nix `cc` on PATH cannot find the SDK (`library not found for -liconv`).
 
 ## Conventions

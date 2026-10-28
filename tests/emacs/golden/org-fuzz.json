@@ -1,0 +1,766 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "shift-right-on-the-third-numbered-item",
+      "input": {
+        "text": "1. one\n2. two\n3. three\n",
+        "point": 14,
+        "keys": "S-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1) one\n2) two\n3) three\n",
+      "visible": "1) one\n2) two\n3) three\n",
+      "point": 14,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-left-on-the-third-numbered-item",
+      "input": {
+        "text": "1. one\n2. two\n3. three\n",
+        "point": 14,
+        "keys": "S-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "+ one\n+ two\n+ three\n",
+      "visible": "+ one\n+ two\n+ three\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-right-twice-on-a-later-item",
+      "input": {
+        "text": "- one\n- two\n- three\n",
+        "point": 12,
+        "keys": "S-<right> S-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1. one\n2. two\n3. three\n",
+      "visible": "1. one\n2. two\n3. three\n",
+      "point": 14,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "bullet-change-reindents-item-text",
+      "input": {
+        "text": "2) [ ] call\n   fix",
+        "point": 0,
+        "keys": "S-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- [ ] call\n  fix",
+      "visible": "- [ ] call\n  fix",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "bullet-change-reindents-children",
+      "input": {
+        "text": "1. one\n   - sub\n2. two\n",
+        "point": 8,
+        "keys": "S-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1. one\n   1) sub\n2. two\n",
+      "visible": "1. one\n   1) sub\n2. two\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "up-heading-from-a-level-two-heading-without-a-parent",
+      "input": {
+        "text": "** plan gamma\n",
+        "point": 14,
+        "keys": "C-c C-u",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** plan gamma\n",
+      "visible": "** plan gamma\n",
+      "point": 0,
+      "mark": 14,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "up-heading-on-a-level-two-heading-line",
+      "input": {
+        "text": "** plan gamma\n",
+        "point": 5,
+        "keys": "C-c C-u",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** plan gamma\n",
+      "visible": "** plan gamma\n",
+      "point": 0,
+      "mark": 5,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "move-subtree-down-without-a-sibling-goes-to-the-heading",
+      "input": {
+        "text": "* fix :work:\n",
+        "point": 12,
+        "keys": "M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* fix :work:\n",
+      "visible": "* fix :work:\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot move past superior level or buffer limit"
+    },
+    {
+      "name": "move-subtree-up-keeps-the-column",
+      "input": {
+        "text": "* One\nbody\n* Two\n",
+        "point": 13,
+        "keys": "M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* Two\n* One\nbody\n",
+      "visible": "* Two\n* One\nbody\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "ret-deletes-spaces-before-point",
+      "input": {
+        "text": "* plan alpha",
+        "point": 7,
+        "keys": "RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* plan\nalpha",
+      "visible": "* plan\nalpha",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "ret-in-text-deletes-spaces-before-point",
+      "input": {
+        "text": "* One\nsome   text\n",
+        "point": 13,
+        "keys": "RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nsome\ntext\n",
+      "visible": "* One\nsome\ntext\n",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "meta-return-in-the-todo-keyword",
+      "input": {
+        "text": "** DONE call",
+        "point": 6,
+        "keys": "M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** DONE call\n** ",
+      "visible": "** DONE call\n** ",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "meta-shift-return-in-the-stars",
+      "input": {
+        "text": "** DONE call",
+        "point": 1,
+        "keys": "M-S-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** DONE call\n** TODO ",
+      "visible": "** DONE call\n** TODO ",
+      "point": 21,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "new-heading-keeps-a-blank-line-before-it",
+      "input": {
+        "text": "\n* DONE alpha\n",
+        "point": 13,
+        "keys": "M-S-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n* DONE alpha\n\n* TODO \n",
+      "visible": "\n* DONE alpha\n\n* TODO \n",
+      "point": 22,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "split-heading-keeps-a-blank-line-before-it",
+      "input": {
+        "text": "\n** TODO read",
+        "point": 11,
+        "keys": "M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n** TODO re\n\n** ad",
+      "visible": "\n** TODO re\n\n** ad",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "control-return-before-the-first-heading",
+      "input": {
+        "text": "gamma <2026-10-13 Wed>",
+        "point": 0,
+        "keys": "C-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "gamma <2026-10-13 Wed>\n* \n",
+      "visible": "gamma <2026-10-13 Wed>\n* \n",
+      "point": 25,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "control-return-at-a-buffer-end-without-a-newline",
+      "input": {
+        "text": "* One\nbody",
+        "point": 2,
+        "keys": "C-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n* \n",
+      "visible": "* One\nbody\n* \n",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-on-a-checkbox-item",
+      "input": {
+        "text": "+ [ ] read",
+        "point": 2,
+        "keys": "C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO read\n",
+      "visible": "* TODO read\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-on-a-checked-item",
+      "input": {
+        "text": "- [X] read\n",
+        "point": 0,
+        "keys": "C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* DONE read\n",
+      "visible": "* DONE read\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-item-on-a-done-heading",
+      "input": {
+        "text": "** DONE gamma",
+        "point": 9,
+        "keys": "C-c -",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- [X] gamma",
+      "visible": "- [X] gamma",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-item-on-a-heading-with-tags",
+      "input": {
+        "text": "* gamma fix :work:",
+        "point": 4,
+        "keys": "C-c -",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- gamma fix",
+      "visible": "- gamma fix",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "copy-subtree-keeps-point",
+      "input": {
+        "text": "* TODO read read\nbody\n",
+        "point": 8,
+        "keys": "C-c C-x M-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO read read\nbody\n",
+      "visible": "* TODO read read\nbody\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "* TODO read read\nbody\n"
+      ],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "cut-subtree-without-a-final-newline",
+      "input": {
+        "text": "* One\n* Two",
+        "point": 8,
+        "keys": "C-c C-x C-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n",
+      "visible": "* One\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "* Two"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "before-first-headline-says-position-1",
+      "input": {
+        "text": "| a | 3 |",
+        "point": 3,
+        "keys": "C-c C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a | 3 |",
+      "visible": "| a | 3 |",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Before first headline at position 1 in buffer *ember-oracle*"
+    },
+    {
+      "name": "ctrl-c-minus-on-an-empty-line",
+      "input": {
+        "text": "4. [X] beta\n",
+        "point": 12,
+        "keys": "C-c -",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "4. [X] beta\n",
+      "visible": "4. [X] beta\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Not at an item"
+    },
+    {
+      "name": "meta-left-on-the-first-item",
+      "input": {
+        "text": "- [ ] fix",
+        "point": 0,
+        "keys": "M-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- [ ] fix",
+      "visible": "- [ ] fix",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "At first item: use S-M-<left/right> to move the whole list"
+    },
+    {
+      "name": "meta-shift-right-on-the-first-item",
+      "input": {
+        "text": "- [ ] call",
+        "point": 0,
+        "keys": "M-S-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": " - [ ] call",
+      "visible": " - [ ] call",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "meta-shift-left-outside-a-context",
+      "input": {
+        "text": "plain text\n",
+        "point": 2,
+        "keys": "M-S-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "plain text\n",
+      "visible": "plain text\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "This command is active in special context like tables, headlines or items"
+    },
+    {
+      "name": "toggle-checkbox-outside-an-item",
+      "input": {
+        "text": "plan read",
+        "point": 0,
+        "keys": "C-c C-x C-b",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "plan read",
+      "visible": "plan read",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Not at an item or heading, and no active region"
+    },
+    {
+      "name": "mark-subtree-before-the-first-heading",
+      "input": {
+        "text": "text\n",
+        "point": 0,
+        "keys": "C-c @",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "text\n",
+      "visible": "text\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Not in a subtree"
+    },
+    {
+      "name": "shift-right-on-a-later-item-of-a-spaced-list",
+      "input": {
+        "text": "1. one\n\n2. two\n\n3. three\n",
+        "point": 16,
+        "keys": "S-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1) one\n\n2) two\n\n3) three\n",
+      "visible": "1) one\n\n2) two\n\n3) three\n",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-left-on-a-later-item-of-a-spaced-list",
+      "input": {
+        "text": "- one\n\n- two\n\n- three\n",
+        "point": 14,
+        "keys": "S-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1) one\n\n2) two\n\n3) three\n",
+      "visible": "1) one\n\n2) two\n\n3) three\n",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "meta-return-in-a-spaced-numbered-list",
+      "input": {
+        "text": "1. one\n\n2. two\n",
+        "point": 14,
+        "keys": "M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1. one\n\n2. two\n\n3. \n",
+      "visible": "1. one\n\n2. two\n\n3. \n",
+      "point": 19,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-in-the-middle-of-text",
+      "input": {
+        "text": "some text\n",
+        "point": 5,
+        "keys": "C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* some text\n",
+      "visible": "* some text\n",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-without-a-newline",
+      "input": {
+        "text": "some text",
+        "point": 2,
+        "keys": "C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* some text",
+      "visible": "* some text",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-item-in-the-middle-of-text",
+      "input": {
+        "text": "some text\n",
+        "point": 5,
+        "keys": "C-c -",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- some text\n",
+      "visible": "- some text\n",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

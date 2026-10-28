@@ -1,0 +1,319 @@
+[
+  {
+    "name": "shift-right-on-the-third-numbered-item",
+    "text": "1. one\n2. two\n3. three\n",
+    "keys": "S-<right>",
+    "point": 14,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-left-on-the-third-numbered-item",
+    "text": "1. one\n2. two\n3. three\n",
+    "keys": "S-<left>",
+    "point": 14,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-right-twice-on-a-later-item",
+    "text": "- one\n- two\n- three\n",
+    "keys": "S-<right> S-<right>",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "bullet-change-reindents-item-text",
+    "text": "2) [ ] call\n   fix",
+    "keys": "S-<right>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "bullet-change-reindents-children",
+    "text": "1. one\n   - sub\n2. two\n",
+    "keys": "S-<left>",
+    "point": 8,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "up-heading-from-a-level-two-heading-without-a-parent",
+    "text": "** plan gamma\n",
+    "keys": "C-c C-u",
+    "point": 14,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "up-heading-on-a-level-two-heading-line",
+    "text": "** plan gamma\n",
+    "keys": "C-c C-u",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-subtree-down-without-a-sibling-goes-to-the-heading",
+    "text": "* fix :work:\n",
+    "keys": "M-<down>",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-subtree-up-keeps-the-column",
+    "text": "* One\nbody\n* Two\n",
+    "keys": "M-<up>",
+    "point": 13,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "ret-deletes-spaces-before-point",
+    "text": "* plan alpha",
+    "keys": "RET",
+    "point": 7,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "ret-in-text-deletes-spaces-before-point",
+    "text": "* One\nsome   text\n",
+    "keys": "RET",
+    "point": 13,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-return-in-the-todo-keyword",
+    "text": "** DONE call",
+    "keys": "M-RET",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-shift-return-in-the-stars",
+    "text": "** DONE call",
+    "keys": "M-S-<return>",
+    "point": 1,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "new-heading-keeps-a-blank-line-before-it",
+    "text": "\n* DONE alpha\n",
+    "keys": "M-S-<return>",
+    "point": 13,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "split-heading-keeps-a-blank-line-before-it",
+    "text": "\n** TODO read",
+    "keys": "M-RET",
+    "point": 11,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "control-return-before-the-first-heading",
+    "text": "gamma <2026-10-13 Wed>",
+    "keys": "C-<return>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "control-return-at-a-buffer-end-without-a-newline",
+    "text": "* One\nbody",
+    "keys": "C-<return>",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-on-a-checkbox-item",
+    "text": "+ [ ] read",
+    "keys": "C-c *",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-on-a-checked-item",
+    "text": "- [X] read\n",
+    "keys": "C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-item-on-a-done-heading",
+    "text": "** DONE gamma",
+    "keys": "C-c -",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-item-on-a-heading-with-tags",
+    "text": "* gamma fix :work:",
+    "keys": "C-c -",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "copy-subtree-keeps-point",
+    "text": "* TODO read read\nbody\n",
+    "keys": "C-c C-x M-w",
+    "point": 8,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "cut-subtree-without-a-final-newline",
+    "text": "* One\n* Two",
+    "keys": "C-c C-x C-w",
+    "point": 8,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "before-first-headline-says-position-1",
+    "text": "| a | 3 |",
+    "keys": "C-c C-t",
+    "point": 3,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "ctrl-c-minus-on-an-empty-line",
+    "text": "4. [X] beta\n",
+    "keys": "C-c -",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-left-on-the-first-item",
+    "text": "- [ ] fix",
+    "keys": "M-<left>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-shift-right-on-the-first-item",
+    "text": "- [ ] call",
+    "keys": "M-S-<right>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-shift-left-outside-a-context",
+    "text": "plain text\n",
+    "keys": "M-S-<left>",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-checkbox-outside-an-item",
+    "text": "plan read",
+    "keys": "C-c C-x C-b",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "mark-subtree-before-the-first-heading",
+    "text": "text\n",
+    "keys": "C-c @",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-right-on-a-later-item-of-a-spaced-list",
+    "text": "1. one\n\n2. two\n\n3. three\n",
+    "keys": "S-<right>",
+    "point": 16,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-left-on-a-later-item-of-a-spaced-list",
+    "text": "- one\n\n- two\n\n- three\n",
+    "keys": "S-<left>",
+    "point": 14,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-return-in-a-spaced-numbered-list",
+    "text": "1. one\n\n2. two\n",
+    "keys": "M-RET",
+    "point": 14,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-in-the-middle-of-text",
+    "text": "some text\n",
+    "keys": "C-c *",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-without-a-newline",
+    "text": "some text",
+    "keys": "C-c *",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-item-in-the-middle-of-text",
+    "text": "some text\n",
+    "keys": "C-c -",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  }
+]

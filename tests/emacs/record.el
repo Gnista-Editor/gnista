@@ -5,7 +5,8 @@
 ;;   emacs -Q --batch -l tests/emacs/record.el
 ;;
 ;; Reads every tests/emacs/cases/*.json and writes the matching
-;; tests/emacs/golden/*.json.  Each case is an object with `name', `text',
+;; tests/emacs/golden/*.json, or those under $EMBER_ORACLE_DIR if it is set,
+;; as the fuzzer sets it.  Each case is an object with `name', `text',
 ;; `keys' (space separated, in `kbd' notation), and optionally `point'
 ;; (0-based, default 0), `modes' (minor or major modes to turn on before
 ;; the keys, such as "delete-selection-mode" or "org-mode"), `call' (a command and its
@@ -50,6 +51,15 @@ while the case's keys are queued would read those instead."
   (exit-recursive-edit))
 
 (global-set-key (kbd "<f35>") #'ember-oracle--done)
+
+;; Batch Emacs reads the minibuffer from standard input, so a command that
+;; prompts would wait forever.  Make prompting an error instead; the
+;; fuzzer leaves out cases that hit it.
+(defun ember-oracle--no-minibuffer (&rest _)
+  (error "Minibuffer read in batch"))
+(dolist (fn '(read-from-minibuffer read-string completing-read read-char
+              read-char-exclusive read-key y-or-n-p yes-or-no-p))
+  (advice-add fn :override #'ember-oracle--no-minibuffer))
 
 (setq command-error-function
       (lambda (data _context _caller)
@@ -146,7 +156,7 @@ while the case's keys are queued would read those instead."
       (insert "\n"))
     (message "%s: %d cases" (file-name-nondirectory file) (length results))))
 
-(let* ((dir (file-name-directory load-file-name))
+(let* ((dir (or (getenv "EMBER_ORACLE_DIR") (file-name-directory load-file-name)))
        (golden (expand-file-name "golden" dir)))
   (make-directory golden t)
   ;; Messages from the cases themselves go to stderr; keep the output to the summary.
