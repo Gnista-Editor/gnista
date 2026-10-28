@@ -846,7 +846,8 @@ ember.defineCommand({
       const i = rest.search(/[|\r\n]/);
       ember.gotoChar(ember.point() + charCount(i < 0 ? rest : rest.slice(0, i)));
     }
-    const m = /^([^|]+)\|/.exec(restOfLine());
+    // As Org's looking-at, the field may run on past the line's end to the next bar.
+    const m = /^([^|]+)\|/.exec(ember.bufferText(ember.point(), ember.bufferSize()));
     if (m) {
       const p = ember.point();
       edDelete(p, p + charCount(m[0]));

@@ -431,14 +431,34 @@ fn line_move(ed: &mut Editor, n: i64) -> Result<()> {
     }
     let start = ed.buffer().line_start(target);
     let _ = ed.fontify_region(start..start);
-    let b = ed.buffer();
-    let rows = ed.screen_rows_of(b, target, None);
-    let pos = match rows.first() {
-        Some(row) => crate::display::position_at_column(row, &crate::display::row_glyphs(row, ed.tab_width_in(b)), goal),
-        None => b.line_start(target),
-    };
+    let pos = position_at_goal_column(ed, ed.buffer(), target, goal);
     ed.buffer_mut().set_point(pos);
     Ok(())
+}
+
+/// Where a line move lands on a line for a goal column, as Emacs's
+/// move-to-column does: the first position the column is reached at, even
+/// if hidden text starts there, past a character that spans the column, or
+/// the line's end.
+fn position_at_goal_column(ed: &Editor, b: &Buffer, line: usize, goal: usize) -> usize {
+    use unicode_width::UnicodeWidthChar;
+    let tab = ed.tab_width_in(b).max(1);
+    let end = b.line_end(line);
+    let mut col = 0;
+    let mut p = b.line_start(line);
+    while p < end && col < goal {
+        if ed.invisible_in(b, p) == Some(false) {
+            p += 1;
+            continue;
+        }
+        col = match b.char_at(p) {
+            Some('\t') => (col / tab + 1) * tab,
+            Some(c) => col + c.width().unwrap_or(0),
+            None => col,
+        };
+        p += 1;
+    }
+    p
 }
 
 /// The column of a position as Emacs's current-column counts it: from the
@@ -497,7 +517,20 @@ fn line_move_visual(ed: &mut Editor, n: i64, wrap: crate::rows::Wrap) -> Result<
     }
     let row = &rows[k];
     let glyphs = crate::display::row_glyphs(row, ed.tab_width_in(b));
-    let mut target = crate::display::position_at_column(row, &glyphs, goal);
+    // As move-to-column does: where the column is first reached, so past a
+    // character that spans it, and before hidden text that starts there.
+    let mut target = row.end;
+    let (mut x, mut last_end) = (0, row.start);
+    for glyph in &glyphs {
+        if x >= goal {
+            target = last_end;
+            break;
+        }
+        x += glyph.width;
+        if let Some(p) = glyph.pos {
+            last_end = p + 1;
+        }
+    }
     // The end of a continued row shows at the start of the next, so stop
     // on its last character instead.
     if row.continued && target >= row.end {

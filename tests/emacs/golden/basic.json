@@ -837,6 +837,25 @@
       "kill_ring": [],
       "modified": false,
       "error": null
+    },
+    {
+      "name": "next-line-into-a-tab",
+      "input": {
+        "text": "abcde\n\tx\n",
+        "point": 0,
+        "keys": "C-f C-f C-f C-n",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "abcde\n\tx\n",
+      "visible": "abcde\n\tx\n",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
     }
   ]
 }

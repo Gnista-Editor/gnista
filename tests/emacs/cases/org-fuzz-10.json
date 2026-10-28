@@ -117,5 +117,64 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "seed23-0487-bar-m-ret",
+    "text": "gamma <2026-10-27 Wed>\n|||\n",
+    "keys": "| M-RET",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed23-1092-spc-m-down",
+    "text": "* [#A] read\nDEADLINE: <2026-11-01 Sun +1w>\n",
+    "keys": "SPC M-<down>",
+    "point": 43,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed23-0939-c-p-c-n",
+    "text": "DEADLINE: <2026-11-01 Sun +1w>\nsee [[*notes][the notes]] now",
+    "keys": "C-p C-n",
+    "point": 43,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed23-1955-c-c-c-p-bar",
+    "text": "see [[*notes][the notes]] now\n",
+    "keys": "C-c C-p |",
+    "point": 30,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "next-line-onto-hidden-link-text",
+    "text": "abcd\nsee [[*x][y]] z\n",
+    "keys": "C-f C-f C-f C-f C-n",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "next-line-into-a-wide-character",
+    "text": "abc\n日本\n",
+    "keys": "C-f C-n",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "a-link-in-a-table",
+    "text": "| [[*x][y]] | b |\n",
+    "keys": "C-e",
+    "modes": [
+      "org-mode"
+    ]
   }
 ]

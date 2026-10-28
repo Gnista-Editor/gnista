@@ -251,5 +251,10 @@
     "name": "next-line-after-a-tab",
     "text": "\tx\nabcdefghijk",
     "keys": "C-f C-n"
+  },
+  {
+    "name": "next-line-into-a-tab",
+    "text": "abcde\n\tx\n",
+    "keys": "C-f C-f C-f C-n"
   }
 ]

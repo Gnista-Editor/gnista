@@ -2692,6 +2692,8 @@ function fontify(start: number, end: number): void {
     }
     if (/^[ \t]*\|/.test(text)) {
       face(ls + indentation(text), le, "org-table");
+      // Links, timestamps and the like are styled in tables too, as Org's font-lock does everywhere.
+      fontifyObjects(line, text, 0);
       continue;
     }
     if (DRAWER.test(text)) {
@@ -4138,7 +4140,29 @@ function parseElements(
       while (last + 1 < ember.lineCount() && lineStartOrEnd(last + 1) < to && !startsElement(last + 1, to)) last++;
       e = elem("paragraph", p, Math.min(lineStartOrEnd(last + 1), to), parent, p);
     }
-    postBlank(e, to);
+    // Org gives a planning line no blank lines after it: they belong to no
+    // element, so there is none at point there.
+    if (e.type !== "planning") postBlank(e, to);
+    else {
+      let q = e.end;
+      while (q < to && q === lineStartOrEnd(lineAt(q)) && isBlank(ember.lineText(lineAt(q)))) {
+        const after = lineStartOrEnd(lineAt(q) + 1);
+        if (after <= q) {
+          q = to;
+          break;
+        }
+        q = Math.min(after, to);
+      }
+      if (q >= to && e.end < to && isBlank(ember.bufferText(e.end, to))) {
+        previous = e.type;
+        break;
+      }
+      if (q > e.end && q < to) {
+        previous = e.type;
+        p = q;
+        continue;
+      }
+    }
     previous = e.type;
     if (e.end <= p) break;
     p = e.end;

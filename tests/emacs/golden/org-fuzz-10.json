@@ -297,6 +297,153 @@
       "kill_ring": [],
       "modified": false,
       "error": null
+    },
+    {
+      "name": "seed23-0487-bar-m-ret",
+      "input": {
+        "text": "gamma <2026-10-27 Wed>\n|||\n",
+        "point": 0,
+        "keys": "| M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "|                        |   |   |\n| gamma <2026-10-27 Wed> |   |   |\n",
+      "visible": "|                        |   |   |\n| gamma <2026-10-27 Wed> |   |   |\n",
+      "point": 37,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed23-1092-spc-m-down",
+      "input": {
+        "text": "* [#A] read\nDEADLINE: <2026-11-01 Sun +1w>\n",
+        "point": 43,
+        "keys": "SPC M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* [#A] read\nDEADLINE: <2026-11-01 Sun +1w>\n ",
+      "visible": "* [#A] read\nDEADLINE: <2026-11-01 Sun +1w>\n ",
+      "point": 44,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "No element at point"
+    },
+    {
+      "name": "seed23-0939-c-p-c-n",
+      "input": {
+        "text": "DEADLINE: <2026-11-01 Sun +1w>\nsee [[*notes][the notes]] now",
+        "point": 43,
+        "keys": "C-p C-n",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "DEADLINE: <2026-11-01 Sun +1w>\nsee [[*notes][the notes]] now",
+      "visible": "DEADLINE: <2026-11-01 Sun +1w>\nsee the notes now",
+      "point": 35,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed23-1955-c-c-c-p-bar",
+      "input": {
+        "text": "see [[*notes][the notes]] now\n",
+        "point": 30,
+        "keys": "C-c C-p |",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "|see [[*notes][the notes]] now\n",
+      "visible": "|see the notes now\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "next-line-onto-hidden-link-text",
+      "input": {
+        "text": "abcd\nsee [[*x][y]] z\n",
+        "point": 0,
+        "keys": "C-f C-f C-f C-f C-n",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "abcd\nsee [[*x][y]] z\n",
+      "visible": "abcd\nsee y z\n",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "next-line-into-a-wide-character",
+      "input": {
+        "text": "abc\n日本\n",
+        "point": 0,
+        "keys": "C-f C-n",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "abc\n日本\n",
+      "visible": "abc\n日本\n",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "a-link-in-a-table",
+      "input": {
+        "text": "| [[*x][y]] | b |\n",
+        "point": 0,
+        "keys": "C-e",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| [[*x][y]] | b |\n",
+      "visible": "| y | b |\n",
+      "point": 17,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
     }
   ]
 }
