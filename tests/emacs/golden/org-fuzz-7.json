@@ -1,0 +1,659 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "seed11-1149-c-d",
+      "input": {
+        "text": "| 12 |  |",
+        "point": 4,
+        "keys": "C-d",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| 12 |  |",
+      "visible": "| 12 |  |",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed11-0974-c-d",
+      "input": {
+        "text": "|---+---|\n",
+        "point": 1,
+        "keys": "C-d",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "|--+--- |\n",
+      "visible": "|--+--- |\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed11-1074-c-d-c-k",
+      "input": {
+        "text": "|---+---|\n",
+        "point": 4,
+        "keys": "C-d C-k",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "|---\n",
+      "visible": "|---\n",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "--- |"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed11-1826-backtab-m-s-return",
+      "input": {
+        "text": "** call :work:\n*** beta read",
+        "point": 1,
+        "keys": "<backtab> M-S-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** call :work:\n** TODO \n*** beta read",
+      "visible": "** call :work:\n** TODO \n*** beta read",
+      "point": 23,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed11-1153-c-c-@-c-c-star",
+      "input": {
+        "text": "** DONE plan :work:\nplan <2026-10-22 Wed>\n*** alpha",
+        "point": 27,
+        "keys": "C-c @ C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "DONE plan :work:\nplan <2026-10-22 Wed>\nalpha",
+      "visible": "DONE plan :work:\nplan <2026-10-22 Wed>\nalpha",
+      "point": 0,
+      "mark": 44,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-list2",
+      "input": {
+        "text": "- a\n- b\n",
+        "point": 0,
+        "keys": "C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\n- b\n",
+      "visible": "* a\n- b\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-nested",
+      "input": {
+        "text": "* H\n- [ ] a\n  - b\n- [X] c\nafter\n",
+        "point": 4,
+        "keys": "C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* H\n** TODO a\n  - b\n- [X] c\nafter\n",
+      "visible": "* H\n** TODO a\n  - b\n- [X] c\nafter\n",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-second",
+      "input": {
+        "text": "- a\n- b\n- c\n",
+        "point": 4,
+        "keys": "C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- a\n* b\n- c\n",
+      "visible": "- a\n* b\n- c\n",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-region-text",
+      "input": {
+        "text": "* H\none\n\ntwo\n- item\nthree",
+        "point": 4,
+        "keys": "C-SPC M-> C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* H\n** one\n\n** two\n- item\n** three",
+      "visible": "* H\n** one\n\n** two\n- item\n** three",
+      "point": 34,
+      "mark": 4,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-region-heads",
+      "input": {
+        "text": "* a\ntext\n** b\n",
+        "point": 0,
+        "keys": "C-SPC M-> C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\ntext\nb\n",
+      "visible": "a\ntext\nb\n",
+      "point": 9,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-region-items",
+      "input": {
+        "text": "- a\n- b\ntext\n- c\n",
+        "point": 0,
+        "keys": "C-SPC M-> C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\n* b\ntext\n** c\n",
+      "visible": "* a\n* b\ntext\n** c\n",
+      "point": 13,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-prefix-text",
+      "input": {
+        "text": "one\ntwo\n",
+        "point": 0,
+        "keys": "C-SPC M-> C-u C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": " one\ntwo\n",
+      "visible": " one\ntwo\n",
+      "point": 9,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-numeric",
+      "input": {
+        "text": "one\ntwo\n",
+        "point": 0,
+        "keys": "C-SPC M-> C-u 3 C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "*** one\n*** two\n",
+      "visible": "*** one\n*** two\n",
+      "point": 16,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-region-ends-at-bol",
+      "input": {
+        "text": "one\ntwo\nthree\n",
+        "point": 0,
+        "keys": "C-SPC C-n C-n C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* one\n* two\nthree\n",
+      "visible": "* one\n* two\nthree\n",
+      "point": 12,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-comment",
+      "input": {
+        "text": "# c\none\n",
+        "point": 0,
+        "keys": "C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "# c\none\n",
+      "visible": "# c\none\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-blank-first",
+      "input": {
+        "text": "\n\none\n",
+        "point": 0,
+        "keys": "C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n\none\n",
+      "visible": "\n\none\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-item-text",
+      "input": {
+        "text": "- a\n  more\n- b\n",
+        "point": 0,
+        "keys": "C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\n  more\n- b\n",
+      "visible": "* a\n  more\n- b\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-r-nest",
+      "input": {
+        "text": "- a\n  - b\n    - c\n- d\n",
+        "point": 0,
+        "keys": "C-SPC M-> C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\n** b\n*** c\n* d\n",
+      "visible": "* a\n** b\n*** c\n* d\n",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-r-body",
+      "input": {
+        "text": "- a\n  more\n  lines\n- b\n",
+        "point": 0,
+        "keys": "C-SPC M-> C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\nmore\nlines\n* b\n",
+      "visible": "* a\nmore\nlines\n* b\n",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-r-cb",
+      "input": {
+        "text": "- [ ] a\n- [X] b\n- [-] c\n",
+        "point": 0,
+        "keys": "C-SPC M-> C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO a\n* DONE b\n* TODO c\n",
+      "visible": "* TODO a\n* DONE b\n* TODO c\n",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-r-under",
+      "input": {
+        "text": "* H\n- a\n  - b\n- c\n",
+        "point": 0,
+        "keys": "C-SPC M-> C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "H\n- a\n  - b\n- c\n",
+      "visible": "H\n- a\n  - b\n- c\n",
+      "point": 16,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-r-blank",
+      "input": {
+        "text": "- a\n\n- b\n",
+        "point": 0,
+        "keys": "C-SPC M-> C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\n* b\n",
+      "visible": "* a\n* b\n",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-r-num",
+      "input": {
+        "text": "1. a\n2. b\n",
+        "point": 0,
+        "keys": "C-SPC M-> C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\n* b\n",
+      "visible": "* a\n* b\n",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-r-tag",
+      "input": {
+        "text": "- t :: d\n- u :: e\n",
+        "point": 0,
+        "keys": "C-SPC M-> C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "*  t d\n*  u e\n",
+      "visible": "*  t d\n*  u e\n",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-r-partial",
+      "input": {
+        "text": "- a\n- b\n- c\n",
+        "point": 0,
+        "keys": "C-SPC M-> C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\n* b\n* c\n",
+      "visible": "* a\n* b\n* c\n",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-r-after",
+      "input": {
+        "text": "- a\n- b\ntext\n",
+        "point": 0,
+        "keys": "C-SPC M-> C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\n* b\ntext\n",
+      "visible": "* a\n* b\ntext\n",
+      "point": 13,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-r-para",
+      "input": {
+        "text": "- a\n\n  para\n- b\n",
+        "point": 0,
+        "keys": "C-SPC M-> C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\n\npara\n* b\n",
+      "visible": "* a\n\npara\n* b\n",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-r-partial2",
+      "input": {
+        "text": "- a\n- b\n- c\n",
+        "point": 0,
+        "keys": "C-SPC C-n C-e C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\n* b\n- c\n",
+      "visible": "* a\n* b\n- c\n",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-r-mid",
+      "input": {
+        "text": "- a\n- b\n- c\n",
+        "point": 0,
+        "keys": "C-n C-SPC M-> C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- a\n* b\n* c\n",
+      "visible": "- a\n* b\n* c\n",
+      "point": 4,
+      "mark": 4,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-char-at-the-last-fields-end",
+      "input": {
+        "text": "| a | bb |",
+        "point": 8,
+        "keys": "C-d",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a | b b|",
+      "visible": "| a | b b|",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "insert-heading-on-a-folded-heading-shows-its-children",
+      "input": {
+        "text": "* a\n** b\ntext\n",
+        "point": 0,
+        "keys": "TAB C-e M-RET x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\n* x\n** b\ntext\n",
+      "visible": "* a\n* x\n** b",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

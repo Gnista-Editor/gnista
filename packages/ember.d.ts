@@ -1258,7 +1258,9 @@ declare global {
        */
       "org-toggle-checkbox": [];
       /**
-       * Turn the line into a heading, or a heading into plain text; an item becomes a heading.
+       * Turn lines into headings, or headings into plain text, as org-toggle-heading does.
+       *
+       * Starting at a heading, take the stars off every heading in the region, or on the line. Starting at an item, turn the lists in the region into headings, checkboxes into TODO states. Otherwise make every line of text a heading, a level below the one it is under; with a number, at that level; with C-u, only the first line.
        *
        * Defined in packages/org.ts.
        */

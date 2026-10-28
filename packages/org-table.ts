@@ -1030,9 +1030,10 @@ function orgDeleteChar(n: number): void {
     const p = ember.point();
     const end = p + charCount(m[0]);
     edDelete(p, p + 1);
-    // Emacs adjusts the match data for the deletion, so the end Org goes
-    // back two characters from is one less than it was.
-    saveExcursion(() => edInsert(end - 3, " "));
+    // Org goes back two characters from the match's end as it was. Org's
+    // after-change functions save and restore the match data as markers,
+    // though, which cannot be past the end of the buffer.
+    saveExcursion(() => edInsert(Math.min(end, ember.bufferSize()) - 2, " "));
     if (noalign && !update) markAligned();
   } else deleteChars(n);
 }

@@ -1,0 +1,259 @@
+[
+  {
+    "name": "seed11-1149-c-d",
+    "text": "| 12 |  |",
+    "keys": "C-d",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed11-0974-c-d",
+    "text": "|---+---|\n",
+    "keys": "C-d",
+    "point": 1,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed11-1074-c-d-c-k",
+    "text": "|---+---|\n",
+    "keys": "C-d C-k",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed11-1826-backtab-m-s-return",
+    "text": "** call :work:\n*** beta read",
+    "keys": "<backtab> M-S-<return>",
+    "point": 1,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed11-1153-c-c-@-c-c-star",
+    "text": "** DONE plan :work:\nplan <2026-10-22 Wed>\n*** alpha",
+    "keys": "C-c @ C-c *",
+    "point": 27,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-list2",
+    "text": "- a\n- b\n",
+    "keys": "C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-nested",
+    "text": "* H\n- [ ] a\n  - b\n- [X] c\nafter\n",
+    "keys": "C-c *",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-second",
+    "text": "- a\n- b\n- c\n",
+    "keys": "C-c *",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-region-text",
+    "text": "* H\none\n\ntwo\n- item\nthree",
+    "keys": "C-SPC M-> C-c *",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-region-heads",
+    "text": "* a\ntext\n** b\n",
+    "keys": "C-SPC M-> C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-region-items",
+    "text": "- a\n- b\ntext\n- c\n",
+    "keys": "C-SPC M-> C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-prefix-text",
+    "text": "one\ntwo\n",
+    "keys": "C-SPC M-> C-u C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-numeric",
+    "text": "one\ntwo\n",
+    "keys": "C-SPC M-> C-u 3 C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-region-ends-at-bol",
+    "text": "one\ntwo\nthree\n",
+    "keys": "C-SPC C-n C-n C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-comment",
+    "text": "# c\none\n",
+    "keys": "C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-blank-first",
+    "text": "\n\none\n",
+    "keys": "C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-item-text",
+    "text": "- a\n  more\n- b\n",
+    "keys": "C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-r-nest",
+    "text": "- a\n  - b\n    - c\n- d\n",
+    "keys": "C-SPC M-> C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-r-body",
+    "text": "- a\n  more\n  lines\n- b\n",
+    "keys": "C-SPC M-> C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-r-cb",
+    "text": "- [ ] a\n- [X] b\n- [-] c\n",
+    "keys": "C-SPC M-> C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-r-under",
+    "text": "* H\n- a\n  - b\n- c\n",
+    "keys": "C-SPC M-> C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-r-blank",
+    "text": "- a\n\n- b\n",
+    "keys": "C-SPC M-> C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-r-num",
+    "text": "1. a\n2. b\n",
+    "keys": "C-SPC M-> C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-r-tag",
+    "text": "- t :: d\n- u :: e\n",
+    "keys": "C-SPC M-> C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-r-partial",
+    "text": "- a\n- b\n- c\n",
+    "keys": "C-SPC M-> C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-r-after",
+    "text": "- a\n- b\ntext\n",
+    "keys": "C-SPC M-> C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-r-para",
+    "text": "- a\n\n  para\n- b\n",
+    "keys": "C-SPC M-> C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-r-partial2",
+    "text": "- a\n- b\n- c\n",
+    "keys": "C-SPC C-n C-e C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-r-mid",
+    "text": "- a\n- b\n- c\n",
+    "keys": "C-n C-SPC M-> C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "delete-char-at-the-last-fields-end",
+    "text": "| a | bb |",
+    "keys": "C-d",
+    "point": 8,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "insert-heading-on-a-folded-heading-shows-its-children",
+    "text": "* a\n** b\ntext\n",
+    "keys": "TAB C-e M-RET x",
+    "modes": [
+      "org-mode"
+    ]
+  }
+]

@@ -818,8 +818,35 @@ function checkFold(id: number): void {
       if (close.test(ember.lineText(l)) || isHeadingLine(ember.lineText(l))) valid = false;
     }
   }
-  if (!valid) for (const other of ids) ember.deleteOverlay(other);
+  if (!valid) revealAfterCommand(start, end);
 }
+
+/**
+ * Regions to show once the command is over, each held by an overlay that
+ * hides nothing, so it moves with the text as Org's markers do.
+ */
+let delayedReveals: number[] = [];
+
+/**
+ * Shows a region, every kind of fold in it, once the command is over, as
+ * org-fold-core--region-delayed does: Org's fragility checks run from
+ * after-change-functions, and commands may assume those leave what shows
+ * alone.
+ */
+function revealAfterCommand(start: number, end: number): void {
+  delayedReveals.push(ember.makeOverlay(start, end));
+}
+
+ember.addHook("post-command-hook", () => {
+  const ids = delayedReveals;
+  delayedReveals = [];
+  for (const id of ids) {
+    const [start, end] = [ember.overlayStart(id), ember.overlayEnd(id)];
+    ember.deleteOverlay(id);
+    if (start === undefined || end === undefined || start >= end) continue;
+    for (const spec of FOLD_SPECS) flag(start, end, false, spec);
+  }
+});
 
 const DRAWER = /^[ \t]*:([\w-]+):[ \t]*$/;
 const BLOCK_BEGIN = /^[ \t]*#\+begin_(\S+)/i;
@@ -3318,6 +3345,15 @@ function maybeAddBlankAfter(blank: boolean): void {
  * stars. `arg` is the raw prefix argument: C-u inserts after the subtree,
  * C-u C-u after the parent's.
  */
+/**
+ * Inserts strings one after another, as Emacs's insert does with several
+ * arguments: each is a change of its own, so Org's fold checks see the
+ * text between them.
+ */
+function insertPieces(...pieces: string[]): void {
+  for (const piece of pieces) if (piece !== "") ember.insert(piece);
+}
+
 function insertHeading(arg: ember.PrefixArg, invisibleOk = false): void {
   const parentEnd = Array.isArray(arg) && arg[0] === 16;
   const blank = blankBeforeHeading(parentEnd);
@@ -3350,7 +3386,7 @@ function insertHeading(arg: ember.PrefixArg, invisibleOk = false): void {
       ember.gotoChar(ember.point() - 1);
     }
     if (!(blank && previousLineEmpty())) emptyLinesBeforeCurrent(blank ? 1 : 0);
-    ember.insert(`${stars} \n`);
+    insertPieces(stars, " ", "\n");
     ember.gotoChar(ember.point() - 1);
     maybeAddBlankAfter(blank);
     if (!invisibleOk) {
@@ -3367,7 +3403,7 @@ function insertHeading(arg: ember.PrefixArg, invisibleOk = false): void {
         ember.insert("\n");
         ember.gotoChar(p);
       }
-      ember.insert(`${stars} \n`);
+      insertPieces(stars, " \n");
       ember.gotoChar(p);
       if (!(blank && previousLineEmpty())) emptyLinesBeforeCurrent(blank ? 1 : 0);
       ember.gotoChar(ember.lineEnd(lineAt()));
@@ -3380,25 +3416,25 @@ function insertHeading(arg: ember.PrefixArg, invisibleOk = false): void {
       else alignTags(line);
       ember.gotoChar(ember.lineEnd(line));
       if (blank) ember.insert("\n");
-      ember.insert(`\n${stars} `);
+      insertPieces("\n", stars, " ");
       maybeAddBlankAfter(blank);
       if (/\S/.test(split)) ember.insert(split);
       return;
     }
     ember.gotoChar(ember.lineEnd(line));
     if (blank) ember.insert("\n");
-    ember.insert(`\n${stars} `);
+    insertPieces("\n", stars, " ");
     maybeAddBlankAfter(blank);
     return;
   }
   if (atBol()) {
-    ember.insert(`${stars} `);
+    insertPieces(stars, " ");
     if (!(blank && previousLineEmpty())) emptyLinesBeforeCurrent(blank ? 1 : 0);
     maybeAddBlankAfter(blank);
     return;
   }
   if (ember.variable("org-M-RET-may-split-line") === false) ember.gotoChar(ember.lineEnd(line));
-  ember.insert(`\n${stars} `);
+  insertPieces("\n", stars, " ");
   if (!(blank && previousLineEmpty())) emptyLinesBeforeCurrent(blank ? 1 : 0);
   maybeAddBlankAfter(blank);
 }
@@ -5854,52 +5890,149 @@ const ctrlCStar = ember.defineCommand({
 
 const toggleHeading = ember.defineCommand({
   name: "org-toggle-heading",
-  doc: "Turn the line into a heading, or a heading into plain text; an item becomes a heading.",
-  run: () => {
-    let line = lineAt();
-    // Blank lines are skipped, but not past the line point is on.
-    while (line < ember.lineCount() - 1 && isBlank(ember.lineText(line))) line++;
-    if (line !== lineAt()) {
-      ember.message("Cannot toggle heading from here");
-      return;
-    }
-    const text = ember.lineText(line);
-    const ls = ember.lineStart(line);
-    const existing = /^\*+ /.exec(text);
-    if (existing) {
-      replaceKeepingPoint(ls, ls + existing[0].length, "");
-      return;
-    }
-    const all = headings();
-    const i = headingIndex(all, line);
-    const stars = `${"*".repeat((i === undefined ? 0 : all[i].level) + 1)} `;
-    if (itemLine(line)) {
-      // A checkbox becomes a TODO state, done if it was ticked.
-      const item = parseItem(line) as Item;
-      const set = todoSets()[0];
-      const state = item.checkbox === undefined ? "" : `${(item.checkbox === "X" ? set?.done[0] : set?.todo[0]) ?? "TODO"} `;
-      const end = item.checkboxAt !== undefined ? Math.min(item.checkboxAt + 4, ember.lineEnd(line)) : item.contentAt;
-      // As org-list-to-subtree does, the item is deleted first, and the
-      // heading's level comes from the heading at or above where it was.
-      const rest = ember.bufferText(end, ember.lineEnd(line));
-      const next = lineStartOrEnd(line + 1);
-      const hadNewline = next > ember.lineEnd(line);
-      edDelete(ls, next);
-      const above = headingIndex(headings(), lineAt(ls));
-      const level = above === undefined ? 1 : (headings()[above].level ?? 0) + 1;
-      edInsert(ls, `${"*".repeat(level)} ${state}${rest}${hadNewline ? "\n" : ""}`);
-      if (ember.lineEnd(line) === ember.bufferSize()) {
-        ember.gotoChar(ember.bufferSize());
-        ember.insert("\n");
-      }
-      ember.gotoChar(ls);
-      return;
-    }
-    const m = /^([ \t]*)(\S)/.exec(text);
-    if (m) replaceKeepingPoint(ls, ls + charCount(m[0]), stars + m[2]);
-    else ember.message("Cannot toggle heading from here");
-  },
+  doc:
+    "Turn lines into headings, or headings into plain text, as org-toggle-heading does.\n\n" +
+    "Starting at a heading, take the stars off every heading in the region, or on the line. Starting at an item, " +
+    "turn the lists in the region into headings, checkboxes into TODO states. Otherwise make every line of text a " +
+    "heading, a level below the one it is under; with a number, at that level; with C-u, only the first line.",
+  run: () => orgToggleHeading(ember.prefixArg()),
 });
+
+/** Whether a line is a comment, as org-at-comment-p says. */
+function commentLine(line: number): boolean {
+  return /^[ \t]*#(?: |$)/.test(ember.lineText(line));
+}
+
+function orgToggleHeading(nstars: ember.PrefixArg): void {
+  // The start of the first line that is not blank or a comment, from pos's.
+  const skipBlanks = (pos: number): number => {
+    let line = lineAt(pos);
+    while (line < ember.lineCount() - 1 && commentLine(line)) line++;
+    let q = line === lineAt(pos) ? pos : ember.lineStart(line);
+    while (q < ember.bufferSize() && /[ \r\t\n]/.test(ember.bufferText(q, q + 1))) q++;
+    return ember.lineStart(lineAt(q));
+  };
+  if (nstars != null && itemLine(lineAt())) {
+    // As org-mark-element does when called from code: the region is the item.
+    const el = elementAt(ember.point());
+    ember.gotoChar(ember.lineEnd(lineAt()));
+    if (el) {
+      ember.pushMark(Math.min(ember.bufferSize(), el.end), { activate: true });
+      ember.gotoChar(el.begin);
+    }
+  }
+  const mark = ember.mark();
+  const region = ember.regionActive() && mark !== undefined;
+  let beg: number;
+  let end: { pos: number };
+  if (region) {
+    const [rb, re] = [Math.min(mark as number, ember.point()), Math.max(mark as number, ember.point())];
+    beg = skipBlanks(rb);
+    end = marker(re === ember.lineStart(lineAt(re)) ? re : ember.lineEnd(lineAt(re)));
+  } else {
+    beg = skipBlanks(ember.lineStart(lineAt()));
+    end = marker(ember.lineEnd(lineAt()));
+  }
+  const origin = marker(ember.point());
+  let toggled = false;
+  let p = beg;
+  const forwardLine = (): void => {
+    const l = lineAt(p);
+    p = l + 1 < ember.lineCount() ? ember.lineStart(l + 1) : ember.bufferSize();
+  };
+  try {
+    if (parseHeading(lineAt(beg))) {
+      while (p < end.pos) {
+        const m = /^\*+ /.exec(ember.lineText(lineAt(p)));
+        if (parseHeading(lineAt(p)) && m) {
+          edReplace(p, p + m[0].length, "");
+          toggled = true;
+        }
+        forwardLine();
+      }
+    } else if (itemLine(lineAt(beg))) {
+      while (p < end.pos) {
+        if (itemLine(lineAt(p))) {
+          const struct = listStruct(lineAt(p));
+          p = listToSubtree(p, Math.min(bottomPoint(struct), end.pos + 1));
+          toggled = true;
+        }
+        forwardLine();
+      }
+    } else {
+      const all = headings();
+      const i = headingIndex(all, lineAt(beg));
+      const count = typeof nstars === "number" ? nstars : i === undefined ? 0 : all[i].level;
+      const stars = "*".repeat(count);
+      const add = nstars != null ? "" : stars === "" ? "*" : ember.variable("org-odd-levels-only") === true ? "**" : "*";
+      const rpl = `${stars}${add} `;
+      const limit = Array.isArray(nstars) && nstars[0] === 4 ? marker(ember.lineEnd(lineAt(beg))) : end;
+      while (p < limit.pos) {
+        const line = lineAt(p);
+        const m = /^([ \t]*)(\S)/.exec(ember.lineText(line));
+        if (!parseHeading(line) && !itemLine(line) && !commentLine(line) && m) {
+          edReplace(p, p + charCount(m[0]), rpl + m[2]);
+          toggled = true;
+        }
+        forwardLine();
+      }
+      if (limit !== end) dropMarker(limit);
+    }
+  } finally {
+    ember.gotoChar(origin.pos);
+    dropMarker(origin);
+    dropMarker(end);
+  }
+  if (!toggled) ember.message("Cannot toggle heading from here");
+}
+
+/**
+ * Turns the list items from pos up to limit into headings, as
+ * org-list-to-subtree does with what org-list-to-lisp takes out: an item's
+ * depth in the list adds levels, checkboxes become TODO states, and the
+ * lines under an item lose their indentation. Returns where the headings end.
+ */
+function listToSubtree(pos: number, limit: number): number {
+  const struct = listStruct(lineAt(pos));
+  const parents = parentsAlist(struct);
+  const items = struct.filter((e) => e.pos >= pos && e.pos < limit);
+  const depth = (e: ListItem): number => {
+    const parent = parents.get(e.pos);
+    const up = parent === undefined ? undefined : items.find((x) => x.pos === parent);
+    return up ? depth(up) + 1 : 1;
+  };
+  const bottom = Math.min(Math.max(...items.map((e) => e.end)), limit);
+  const done = todoSets()[0]?.done[0] ?? "DONE";
+  const todo = todoSets()[0]?.todo[0] ?? "TODO";
+  // Each item's heading, without its stars, then the lines of text under it.
+  const entries: { depth: number; title: string; body: string }[] = [];
+  let blanks = 0;
+  for (let l = lineAt(pos); l < ember.lineCount() && ember.lineStart(l) < bottom; l++) {
+    const text = ember.lineText(l);
+    const item = items.find((e) => e.pos === ember.lineStart(l));
+    if (item) {
+      const parts = itemParts(l) as ItemParts;
+      const box = parts.checkbox === undefined ? "" : `${parts.checkbox === "[X]" ? done : todo} `;
+      const tag = item.tag !== undefined ? ` ${item.tag} ` : "";
+      entries.push({ depth: depth(item), title: box + tag + ember.bufferText(parts.matchEnd, ember.lineEnd(l)), body: "" });
+      blanks = 0;
+    } else if (/^[ \t]*$/.test(text)) blanks++;
+    else if (entries.length > 0) {
+      entries[entries.length - 1].body += "\n".repeat(blanks + 1) + text.replace(/^[ \t]+/, "");
+      blanks = 0;
+    }
+  }
+  edDelete(pos, bottom);
+  const all = headings();
+  const above = headingIndex(all, lineAt(pos));
+  const level = above === undefined ? 1 : all[above].level + 1;
+  // org-blank-before-new-entry's "auto": a blank line before the heading above means one between these.
+  const previous = [...all].reverse().find((h) => h.start < pos);
+  const blank = previous !== undefined && previous.start > 0 && /^[ \t]*$/.test(ember.lineText(previous.line - 1));
+  const text = entries.map((e) => `${"*".repeat(level + e.depth - 1)} ${e.title}${e.body}`).join(blank ? "\n\n" : "\n");
+  edInsert(pos, `${text}\n`);
+  return pos + charCount(text) + 1;
+}
 
 // The mode
 
