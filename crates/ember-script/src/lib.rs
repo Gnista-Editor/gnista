@@ -393,6 +393,15 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
         })?,
     )?;
     native.set(
+        "undoAutoAmalgamate",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            with_editor(&ctx, |ed| {
+                ed.undo_auto_amalgamate();
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
         "currentColumn",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.current_column())))?,
     )?;

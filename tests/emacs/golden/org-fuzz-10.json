@@ -927,6 +927,48 @@
       "kill_ring": [],
       "modified": false,
       "error": null
+    },
+    {
+      "name": "org-return-twice-undoes-as-one",
+      "input": {
+        "text": "* a\nbody",
+        "point": 0,
+        "keys": "C-n C-e RET RET C-/",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\nbody",
+      "visible": "* a\nbody",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "org-return-in-a-table-then-undo",
+      "input": {
+        "text": "| a |\n| b |\n",
+        "point": 0,
+        "keys": "C-f RET RET C-/",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a |\n| b |\n",
+      "visible": "| a |\n| b |\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
     }
   ]
 }

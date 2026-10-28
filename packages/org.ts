@@ -3281,8 +3281,13 @@ ember.defineCommand({
  * so electric-indent-mode indents the new line, and from code for C-j, so it does not.
  */
 function orgReturnWith(electric: boolean): void {
-  // Org's newline self-inserts, so the newlines take on the text properties around them.
-  const newline = (n: number): void => (electric ? electricNewline(n) : ember.insertAndInherit("\n".repeat(n)));
+  // Org's newline self-inserts, so the newlines take on the text properties
+  // around them, and runs of them undo together.
+  const newline = (n: number): void => {
+    ember.undoAutoAmalgamate();
+    if (electric) electricNewline(n);
+    else ember.insertAndInherit("\n".repeat(n));
+  };
   checkInvisibleEditMaybe();
   const line = lineAt();
   const p = ember.point();
@@ -5987,7 +5992,11 @@ function transposeLinesWithFolds(): void {
     if (n > 0) {
       let short = forwardLine(n);
       if (ember.point() === 0 || ember.bufferText(ember.point() - 1, ember.point()) !== "\n") short++;
-      if (short > 0) ember.insert("\n".repeat(short));
+      // Through newline, which amalgamates undo as self-insert-command does.
+      if (short > 0) {
+        ember.undoAutoAmalgamate();
+        ember.insert("\n".repeat(short));
+      }
     } else forwardLine(n);
   };
   const aux = (x: number): [number, number] => {

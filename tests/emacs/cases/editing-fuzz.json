@@ -590,5 +590,35 @@
     "text": "Hello. x. Hello a.b",
     "keys": "M-t S-<right> C-/ 1",
     "point": 15
+  },
+  {
+    "name": "newlines-share-an-undo-step-rr",
+    "text": "ab",
+    "keys": "C-f RET RET C-/"
+  },
+  {
+    "name": "newlines-share-an-undo-step-rx",
+    "text": "ab",
+    "keys": "C-f RET x C-/"
+  },
+  {
+    "name": "newlines-share-an-undo-step-xr",
+    "text": "ab",
+    "keys": "C-f x RET C-/"
+  },
+  {
+    "name": "newlines-share-an-undo-step-oo",
+    "text": "ab",
+    "keys": "C-f C-o C-o C-/"
+  },
+  {
+    "name": "newlines-share-an-undo-step-jj",
+    "text": "ab",
+    "keys": "C-f C-j C-j C-/"
+  },
+  {
+    "name": "transpose-lines-twice-at-the-end-undoes-as-one",
+    "text": "",
+    "keys": "C-x C-t C-x C-t C-/"
   }
 ]

@@ -105,6 +105,13 @@ const API: &str = r##"
    * wide characters as two, and text hidden without an ellipsis as none.
    */
   function currentColumn(): number;
+  /**
+   * Join the running command's undo step to the one before, as Emacs's
+   * undo-auto-amalgamate does when self-insert-command runs, if the command
+   * before was this one and did the same. For commands that insert newlines
+   * as newline does.
+   */
+  function undoAutoAmalgamate(): void;
   /** Move point to a column of its line, as Emacs's move-to-column does, and return the column reached. */
   function moveToColumn(column: number): number;
   /** Point, as a character offset from the start of the buffer, counting from 0. */

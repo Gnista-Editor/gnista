@@ -2004,6 +2004,120 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "newlines-share-an-undo-step-rr",
+      "input": {
+        "text": "ab",
+        "point": 0,
+        "keys": "C-f RET RET C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "ab",
+      "visible": "ab",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "newlines-share-an-undo-step-rx",
+      "input": {
+        "text": "ab",
+        "point": 0,
+        "keys": "C-f RET x C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\nb",
+      "visible": "a\nb",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "newlines-share-an-undo-step-xr",
+      "input": {
+        "text": "ab",
+        "point": 0,
+        "keys": "C-f x RET C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "axb",
+      "visible": "axb",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "newlines-share-an-undo-step-oo",
+      "input": {
+        "text": "ab",
+        "point": 0,
+        "keys": "C-f C-o C-o C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "ab",
+      "visible": "ab",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "newlines-share-an-undo-step-jj",
+      "input": {
+        "text": "ab",
+        "point": 0,
+        "keys": "C-f C-j C-j C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "ab",
+      "visible": "ab",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "transpose-lines-twice-at-the-end-undoes-as-one",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-t C-x C-t C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
     }
   ]
 }

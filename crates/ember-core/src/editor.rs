@@ -40,7 +40,17 @@ struct Repeatable {
 
 /// Commands that Emacs groups into one undo step when repeated (those that
 /// call `undo-auto-amalgamate`).
-const AMALGAMATING: &[&str] = &["self-insert-command", "delete-char", "delete-backward-char"];
+/// Commands whose runs share an undo step, as Emacs's undo-auto-amalgamate
+/// gives them: typing and deleting, and the commands that insert newlines
+/// through self-insert-command, which amalgamates when it is called.
+const AMALGAMATING: &[&str] = &[
+    "self-insert-command",
+    "delete-char",
+    "delete-backward-char",
+    "newline",
+    "open-line",
+    "electric-newline-and-maybe-indent",
+];
 
 /// How many times a keyboard macro run "until an error" may repeat before
 /// it is stopped, in case nothing ever fails.
@@ -141,6 +151,12 @@ pub struct Editor {
     pub(crate) match_data: Option<crate::search::Match>,
     pub(crate) goal_column: Option<usize>,
     self_insert_run: usize,
+    /// The run of amalgamating commands before the one now running, and
+    /// whether that one was amalgamating, for undo_auto_amalgamate.
+    previous_run: usize,
+    previous_amalgamating: bool,
+    /// Whether the command now running amalgamates its undo step.
+    amalgamating_now: bool,
     pub(crate) windows: Vec<crate::window::Window>,
     pub(crate) window_tree: crate::window::WindowTree,
     pub(crate) selected_window: crate::window::WindowId,
@@ -210,6 +226,9 @@ impl Editor {
             reading_unread: false,
             goal_column: None,
             self_insert_run: 0,
+            previous_run: 0,
+            previous_amalgamating: false,
+            amalgamating_now: false,
             windows: Vec::new(),
             window_tree: crate::window::WindowTree::Leaf(1),
             selected_window: 1,
@@ -369,10 +388,11 @@ impl Editor {
         // A remapped command, such as org's for typing, amalgamates as the
         // command it stands in for.
         let base = self.remapped_from.take();
-        let amalgamate = AMALGAMATING.contains(&base.as_deref().unwrap_or(name))
-            && self.last_command() == Some(name)
-            && self.self_insert_run <= 20;
+        let listed = AMALGAMATING.contains(&base.as_deref().unwrap_or(name));
+        let amalgamate = listed && self.last_command() == Some(name) && self.self_insert_run <= 20;
+        self.previous_run = self.self_insert_run;
         self.self_insert_run = if amalgamate { self.self_insert_run + 1 } else { 1 };
+        self.amalgamating_now = listed;
         if !amalgamate {
             self.buffer_mut().undo_boundary();
         }
@@ -586,6 +606,22 @@ impl Editor {
         result
     }
 
+    /// Joins the running command's undo step to the one before, as Emacs's
+    /// `undo-auto-amalgamate` does when self-insert-command runs: when the
+    /// command before was this one and amalgamated too, up to 20 in a row.
+    /// Commands that insert newlines through it, such as org-return, call this.
+    pub fn undo_auto_amalgamate(&mut self) {
+        if self.amalgamating_now {
+            return;
+        }
+        self.amalgamating_now = true;
+        let same = self.this_command.is_some() && self.this_command == self.last_command;
+        if same && self.previous_amalgamating && self.previous_run <= 20 {
+            self.buffer_mut().amalgamate_undo();
+            self.self_insert_run = self.previous_run + 1;
+        }
+    }
+
     /// Point's column as Emacs's `current-column` counts it: tabs to tab
     /// stops, wide characters as two, and text hidden without an ellipsis as none.
     pub fn current_column(&self) -> usize {
@@ -657,6 +693,7 @@ impl Editor {
         let (old_point, old_buffer, old_tick) = (self.buffer().point(), self.buffer().id, self.buffer().modified_tick());
         self.command_failed = false;
         self.run_interactive(&name);
+        self.previous_amalgamating = self.amalgamating_now;
         self.this_command = self.last_command.clone();
         if let Err(e) = self.run_hooks("post-command-hook") {
             self.message = Some(format!("Error in post-command-hook: {e}"));

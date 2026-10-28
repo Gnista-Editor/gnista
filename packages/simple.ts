@@ -346,7 +346,11 @@ const transposeLines = ember.defineCommand({
       if (n > 0) {
         let short = forwardLine(n);
         if (ember.point() === 0 || ember.bufferText(ember.point() - 1, ember.point()) !== "\n") short++;
-        if (short > 0) ember.insert("\n".repeat(short));
+        // Through newline, which amalgamates undo as self-insert-command does.
+        if (short > 0) {
+          ember.undoAutoAmalgamate();
+          ember.insert("\n".repeat(short));
+        }
       } else {
         forwardLine(n);
       }

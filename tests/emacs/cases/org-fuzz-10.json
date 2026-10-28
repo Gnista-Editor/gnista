@@ -373,5 +373,21 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "org-return-twice-undoes-as-one",
+    "text": "* a\nbody",
+    "keys": "C-n C-e RET RET C-/",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "org-return-in-a-table-then-undo",
+    "text": "| a |\n| b |\n",
+    "keys": "C-f RET RET C-/",
+    "modes": [
+      "org-mode"
+    ]
   }
 ]

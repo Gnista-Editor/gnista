@@ -684,6 +684,18 @@ impl Buffer {
         Some(self.window_points.remove(i).1)
     }
 
+    /// Takes the boundary before the open undo group away, so its edits and
+    /// the group before undo together, as Emacs's undo-auto-amalgamate does.
+    pub fn amalgamate_undo(&mut self) {
+        if let Some(last) = self.undo_groups.pop_if(|g| g.kind == GroupKind::Change) {
+            let mut edits = last.edits;
+            edits.append(&mut self.open_group);
+            self.open_group = edits;
+            self.open_unmodified_at = last.unmodified_at;
+            self.open_point = last.point;
+        }
+    }
+
     /// Ends the current undo group, so the next edit starts a new one.
     /// The editor calls this before each command.
     pub fn undo_boundary(&mut self) {

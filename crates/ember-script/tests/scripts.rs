@@ -425,3 +425,21 @@ fn columns_count_as_emacs_counts_them() {
     ed.call("columns", vec![]).unwrap();
     assert_eq!(ed.variable("fill-column").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("9 4 6"));
 }
+
+#[test]
+fn a_command_can_share_its_undo_step_with_the_one_before() {
+    let (mut ed, scripting) = setup();
+    eval(
+        &mut ed,
+        &scripting,
+        r#"
+        ember.defineCommand({ name: "add-dot", run: () => { ember.undoAutoAmalgamate(); ember.insert("."); } });
+        ember.bindKey("C-c d", "add-dot");
+        "#,
+    );
+    ed.press("x C-c d C-c d C-c d").unwrap();
+    assert_eq!(text(&ed), "x...");
+    // The three runs undo together, but not with the typing before them.
+    ed.press("C-/").unwrap();
+    assert_eq!(text(&ed), "x");
+}
