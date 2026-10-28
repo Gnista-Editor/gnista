@@ -372,5 +372,74 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "seed20-1420-c-p-c-k-s-right",
+    "text": ":PROPERTIES:\n:ID: 1\n:END:",
+    "keys": "C-p C-k S-<right>",
+    "point": 22,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed20-1430-s-right-c-c-c-c",
+    "text": "* DONE [#C] call read [1/2] :home:x:",
+    "keys": "S-<right> C-c C-c",
+    "point": 34,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed20-1598-c-c-at-s-left",
+    "text": "* beta plan [/] :home:x:\n** gamma fix",
+    "keys": "C-c @ S-<left>",
+    "point": 25,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed20-1971-c-e-c-p-ret",
+    "text": "see [[*notes][the notes]] now\n| a | 3 |",
+    "keys": "C-e C-p RET",
+    "point": 30,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "a-link-split-by-ret-stays-a-link",
+    "text": "see [[*a][the notes]] now\n",
+    "keys": "RET",
+    "point": 15,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "a-split-link-across-an-item-is-no-link",
+    "text": "see [[*a][the\n- notes]] now\n",
+    "keys": "C-a",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "ctrl-c-ctrl-c-in-tags-after-a-cookie",
+    "text": "* a [1/2] :x:\n** TODO b\n",
+    "keys": "C-e C-b C-c C-c",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "a-property-drawer-with-a-non-property",
+    "text": "* a\n:PROPERTIES:\n:\n:END:\n",
+    "keys": "C-n C-n S-<right>",
+    "modes": [
+      "org-mode"
+    ]
   }
 ]

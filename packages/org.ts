@@ -2417,6 +2417,8 @@ function writeCookies(line: number, done: number, total: number): void {
     const start = at(line, text, m.index ?? 0);
     edInsert(start, value);
     edDelete(start + charCount(value), start + charCount(value) + charCount(m[0]));
+    // org-fix-tags-on-the-fly, with org-auto-align-tags on.
+    if (parseHeading(line)?.tagsAt !== undefined) alignTagsAway(line);
   }
   ember.gotoChar(pt.pos);
   dropMarker(pt);
@@ -2712,6 +2714,38 @@ function fontify(start: number, end: number): void {
     const footnote = /^\[fn:[^\]\s]+\]/.exec(text);
     if (footnote) face(ls, ls + footnote[0].length, "org-footnote");
     fontifyObjects(line, text, objectsFrom);
+  }
+  fontifyLinksAcrossLines(from, Math.min(Math.max(end, from + 1), ember.bufferSize()));
+}
+
+/**
+ * Styles the bracket links between two positions that hold a newline,
+ * which Org's link regexp allows and its font-lock matches across lines.
+ */
+function fontifyLinksAcrossLines(from: number, to: number): void {
+  const text = ember.bufferText(from, to);
+  if (!text.includes("\n")) return;
+  const linkRe = /\[\[((?:[^\][\\]|\\.)+)\](?:\[([^]+?)\])?\]/g;
+  for (const m of text.matchAll(linkRe)) {
+    if (!m[0].includes("\n")) continue;
+    const start = from + charCount(text.slice(0, m.index ?? 0));
+    const pos = (k: number): number => start + charCount(m[0].slice(0, k));
+    // A link stays within its paragraph: no line it goes on to may start an element.
+    const lines = m[0].split("\n").length - 1;
+    const first = lineAt(start);
+    let within = true;
+    for (let l = first + 1; l <= first + lines; l++) if (startsElement(l, ember.bufferSize())) within = false;
+    if (!within) continue;
+    face(start, pos(m[0].length), "org-link");
+    if (ember.variable("org-link-descriptive") !== true) continue;
+    if (m[2] !== undefined) {
+      const desc = 2 + m[1].length + 2;
+      hide(start, pos(desc));
+      hide(pos(desc + m[2].length), pos(m[0].length));
+    } else {
+      hide(start, pos(2));
+      hide(pos(m[0].length - 2), pos(m[0].length));
+    }
   }
 }
 
@@ -4015,7 +4049,11 @@ function parseElements(
       (afterHeadline || (firstSection && p === 0)) &&
       (previous === undefined || previous === "planning") &&
       /^[ \t]*:PROPERTIES:[ \t]*$/i.test(text) &&
-      drawerEnd(line, to) !== undefined
+      drawerEnd(line, to) !== undefined &&
+      // As org-property-drawer-re has it, every line inside is a property.
+      Array.from({ length: (drawerEnd(line, to) as number) - line - 1 }, (_, k) => ember.lineText(line + 1 + k)).every((l) =>
+        /^[ \t]*:\S+:(?:[ \t].*)?[ \t]*$/.test(l),
+      )
     ) {
       const close = drawerEnd(line, to) as number;
       e = elem("property-drawer", p, Math.min(lineStartOrEnd(close + 1), to), parent, lineStartOrEnd(line + 1));
@@ -4752,6 +4790,7 @@ function updateParentTodoStatistics(line: number): void {
   if (i === undefined) return;
   const parent = ancestors(all, i)[0];
   if (parent === undefined || !HAS_COOKIE.test(ember.lineText(all[parent].line))) return;
+  if (mapRegionStart && all[parent].start < mapRegionStart.pos) return;
   const level = all[i].level;
   const end = subtreeRegion(all, parent)[1];
   const children = all.filter((h, k) => k > parent && h.start < end && h.level === level);
@@ -4781,10 +4820,18 @@ const todoCommand = ember.defineCommand({
  * does for commands when org-loop-over-headlines-in-active-region is on.
  * Returns whether it applied.
  */
+/**
+ * Where org-map-entries has narrowed to the region it loops over, if it is
+ * looping: headings above it are out of reach, so their cookies stay.
+ */
+let mapRegionStart: { pos: number } | undefined;
+
 function forEachHeadingInRegion(body: () => void): boolean {
   const mark = ember.mark();
   if (!orgRegionActive() || mark === undefined || ember.variable("org-loop-over-headlines-in-active-region") !== true) return false;
   const [rb, re] = [Math.min(mark, ember.point()), Math.max(mark, ember.point())];
+  const outer = mapRegionStart;
+  mapRegionStart = marker(rb);
   const atHeadingStart = re === ember.lineStart(lineAt(re)) && parseHeading(lineAt(re)) !== undefined;
   const end = marker(atHeadingStart ? re : (headings().find((h) => h.start > re)?.start ?? ember.bufferSize()));
   const origin = marker(ember.point());
@@ -4804,6 +4851,8 @@ function forEachHeadingInRegion(body: () => void): boolean {
     ember.gotoChar(origin.pos);
     dropMarker(origin);
     dropMarker(end);
+    dropMarker(mapRegionStart);
+    mapRegionStart = outer;
   }
   return true;
 }
@@ -6062,6 +6111,19 @@ function ctrlCCtrlCItem(line: number, arg: ember.PrefixArg): void {
   updateCheckboxCount();
 }
 
+/**
+ * Whether point is past a heading's title, which ends with a statistics
+ * cookie. Org's org-element-context narrows to the title there, so it finds
+ * the title's last object, and C-c C-c updates that cookie.
+ */
+function cookieEndsTitleBeforePoint(): boolean {
+  const h = parseHeading(lineAt());
+  if (!h || h.title === "") return false;
+  const titleEnd = h.titleAt + charCount(h.title);
+  if (ember.point() <= titleEnd) return false;
+  return new RegExp(`(?:${COOKIE.source})$`).test(h.title);
+}
+
 const ctrlCCtrlC = ember.defineCommand({
   name: "org-ctrl-c-ctrl-c",
   doc:
@@ -6087,7 +6149,7 @@ const ctrlCCtrlC = ember.defineCommand({
       ember.message("Local setup has been refreshed");
       return;
     }
-    if (cookieHere()) {
+    if (cookieHere() || cookieEndsTitleBeforePoint()) {
       ember.call("org-update-statistics-cookies");
       return;
     }

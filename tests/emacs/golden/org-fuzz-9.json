@@ -916,6 +916,176 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "seed20-1420-c-p-c-k-s-right",
+      "input": {
+        "text": ":PROPERTIES:\n:ID: 1\n:END:",
+        "point": 22,
+        "keys": "C-p C-k S-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": ":PROPERTIES:\n:I\n:END:",
+      "visible": ":PROPERTIES:\n:I\n:END:",
+      "point": 15,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "D: 1"
+      ],
+      "modified": true,
+      "error": "To use shift-selection with Org mode, customize ‘org-support-shift-select’"
+    },
+    {
+      "name": "seed20-1430-s-right-c-c-c-c",
+      "input": {
+        "text": "* DONE [#C] call read [1/2] :home:x:",
+        "point": 34,
+        "keys": "S-<right> C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* [#C] call read [0/0]                                               :home:x:",
+      "visible": "* [#C] call read [0/0]                                               :home:x:",
+      "point": 75,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed20-1598-c-c-at-s-left",
+      "input": {
+        "text": "* beta plan [/] :home:x:\n** gamma fix",
+        "point": 25,
+        "keys": "C-c @ S-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* beta plan [/] :home:x:\n** DONE gamma fix",
+      "visible": "* beta plan [/] :home:x:\n** DONE gamma fix",
+      "point": 25,
+      "mark": 42,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed20-1971-c-e-c-p-ret",
+      "input": {
+        "text": "see [[*notes][the notes]] now\n| a | 3 |",
+        "point": 30,
+        "keys": "C-e C-p RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "see [[*notes][the n\notes]] now\n| a | 3 |",
+      "visible": "see the n\notes now\n| a | 3 |",
+      "point": 20,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "a-link-split-by-ret-stays-a-link",
+      "input": {
+        "text": "see [[*a][the notes]] now\n",
+        "point": 15,
+        "keys": "RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "see [[*a][the n\notes]] now\n",
+      "visible": "see the n\notes now\n",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "a-split-link-across-an-item-is-no-link",
+      "input": {
+        "text": "see [[*a][the\n- notes]] now\n",
+        "point": 0,
+        "keys": "C-a",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "see [[*a][the\n- notes]] now\n",
+      "visible": "see [[*a][the\n- notes]] now\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "ctrl-c-ctrl-c-in-tags-after-a-cookie",
+      "input": {
+        "text": "* a [1/2] :x:\n** TODO b\n",
+        "point": 0,
+        "keys": "C-e C-b C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a [0/1]                                                                 :x:\n** TODO b\n",
+      "visible": "* a [0/1]                                                                 :x:\n** TODO b\n",
+      "point": 76,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "a-property-drawer-with-a-non-property",
+      "input": {
+        "text": "* a\n:PROPERTIES:\n:\n:END:\n",
+        "point": 0,
+        "keys": "C-n C-n S-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\n:PROPERTIES:\n:\n:END:\n",
+      "visible": "* a\n:PROPERTIES:\n:\n:END:\n",
+      "point": 17,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "To use shift-selection with Org mode, customize ‘org-support-shift-select’"
     }
   ]
 }
