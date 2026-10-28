@@ -4094,14 +4094,18 @@ ember.defineCommand({
  * org-copy-subtree does. Point and the mark stay where they were, moving
  * as markers do when the text goes.
  */
-function copySubtree(cut: boolean, n: number): void {
+/**
+ * Kills or copies the subtree point is in, as org-copy-subtree does. Called
+ * interactively it takes what looks like the subtree, the nearest heading
+ * that shows; otherwise, as org-cut-subtree calls it, what is really there.
+ */
+function copySubtree(cut: boolean, n: number, visible: boolean): void {
   const p = ember.point();
   const [all, found] = backToHeading(true);
-  // As org-back-to-heading does without invisible-ok, the nearest heading that shows.
   let i = found;
   for (const a of [found, ...ancestors(all, found)]) {
     i = a;
-    if (!ember.invisibleAt(all[a].start)) break;
+    if (!visible || !ember.invisibleAt(all[a].start)) break;
   }
   let j = i;
   for (let k = 1; k < n; k++) j = sibling(all, j, 1) ?? j;
@@ -4120,13 +4124,13 @@ function copySubtree(cut: boolean, n: number): void {
 ember.defineCommand({
   name: "org-cut-subtree",
   doc: "Kill the subtree point is in, so C-c C-x C-y or C-y can put it back.",
-  run: () => copySubtree(true, ember.prefixNumericValue()),
+  run: () => copySubtree(true, ember.prefixNumericValue(), false),
 });
 
 ember.defineCommand({
   name: "org-copy-subtree",
   doc: "Copy the subtree point is in to the kill ring.",
-  run: () => copySubtree(false, ember.prefixNumericValue()),
+  run: () => copySubtree(false, ember.prefixNumericValue(), ember.calledInteractively()),
 });
 
 /** Whether text is one or more subtrees: it starts with a heading and none after is higher, as org-kill-is-subtree-p says. */
@@ -4238,13 +4242,13 @@ ember.defineCommand({
 ember.defineCommand({
   name: "org-cut-special",
   doc: "Cut the subtree point is in, or in a table, blank the field at point or the fields in the region.",
-  run: () => ember.call(/^[ \t]*\|/.test(ember.lineText(lineAt())) ? "org-table-cut-region" : "org-cut-subtree"),
+  run: () => ember.callInteractively(/^[ \t]*\|/.test(ember.lineText(lineAt())) ? "org-table-cut-region" : "org-cut-subtree"),
 });
 
 ember.defineCommand({
   name: "org-copy-special",
   doc: "Copy the subtree point is in, or in a table, the field at point or the fields in the region.",
-  run: () => ember.call(/^[ \t]*\|/.test(ember.lineText(lineAt())) ? "org-table-copy-region" : "org-copy-subtree"),
+  run: () => ember.callInteractively(/^[ \t]*\|/.test(ember.lineText(lineAt())) ? "org-table-copy-region" : "org-copy-subtree"),
 });
 
 // Commands: TODO states, priorities and tags
@@ -5546,7 +5550,10 @@ const shiftRight = ember.defineCommand({
   doc: "S-<right> in Org: move a timestamp a day on, change a heading to its next TODO state, or change list bullets.",
   run: () => {
     if (timestampHere()) ember.callWithPrefix(ember.prefixArg(), "org-timestamp-up-day");
-    else if (headingHere()) todo(1);
+    // org-todo, which loops over the headings in an active region.
+    else if (headingHere()) {
+      if (!forEachHeadingInRegion(() => todo(1))) todo(1);
+    }
     else if (itemLine(lineAt())) cycleListBullet();
     else if (elementAt(ember.point())?.type === "node-property") nextAllowedValue();
     else if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-move-cell-right");
@@ -5559,7 +5566,10 @@ const shiftLeft = ember.defineCommand({
   doc: "S-<left> in Org: move a timestamp a day back, change a heading to its previous TODO state, or change list bullets.",
   run: () => {
     if (timestampHere()) ember.callWithPrefix(ember.prefixArg(), "org-timestamp-down-day");
-    else if (headingHere()) todo(-1);
+    // org-todo, which loops over the headings in an active region.
+    else if (headingHere()) {
+      if (!forEachHeadingInRegion(() => todo(-1))) todo(-1);
+    }
     else if (itemLine(lineAt())) cycleListBullet("previous");
     else if (elementAt(ember.point())?.type === "node-property") nextAllowedValue();
     else if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-move-cell-left");
@@ -5616,6 +5626,11 @@ const ctrlCCtrlC = ember.defineCommand({
     const line = lineAt();
     const text = ember.lineText(line);
     if (/^[ \t]*$/.test(text)) nothingUseful();
+    if (elementAt(ember.point())?.type === "table") {
+      // At the table's start, Org recalculates every row and does not align.
+      ember.call("org-table-recalculate");
+      return;
+    }
     if (/^[ \t]*\|/.test(text)) {
       ember.call("org-table-maybe-eval-formula");
       ember.call("org-table-align");
@@ -5663,8 +5678,13 @@ ember.defineCommand({
       updateCheckboxCount();
       return;
     }
+    // Point goes back where it was, kept by a marker, as in Org: inside a
+    // cookie that changed, that is the cookie's start.
+    const pos = marker(ember.point());
     const all = headings();
     updateHeadingCookies(all, headingIndex(all, lineAt()) as number);
+    ember.gotoChar(pos.pos);
+    dropMarker(pos);
   },
 });
 

@@ -641,7 +641,11 @@ fn editing(ed: &mut Editor) {
         Ok(())
     });
     def(ed, "keyboard-quit", "Cancel the current prompt or key sequence, and deactivate the region.", |ed, _| {
-        ed.window_buffer_mut().deactivate_mark();
+        // Quitting a prompt leaves the buffer's region alone, as Emacs's
+        // abort-minibuffers does.
+        if ed.prompt().is_none() {
+            ed.window_buffer_mut().deactivate_mark();
+        }
         ed.abort();
         err("Quit")
     });

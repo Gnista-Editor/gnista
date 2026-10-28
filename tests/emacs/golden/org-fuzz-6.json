@@ -295,6 +295,348 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "seed9-1474-c-c-c-c-spc",
+      "input": {
+        "text": "|12||",
+        "point": 0,
+        "keys": "C-c C-c SPC",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "|12||",
+      "visible": "|12||",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Not in table data field"
+    },
+    {
+      "name": "seed9-1465-c-c-c-c-c-b",
+      "input": {
+        "text": "* fix [/]",
+        "point": 7,
+        "keys": "C-c C-c C-b",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* fix [0/0]",
+      "visible": "* fix [0/0]",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "ctrl-c-ctrl-c-at-an-indented-tables-start",
+      "input": {
+        "text": "  |a|bb|\n",
+        "point": 0,
+        "keys": "C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "  |a|bb|\n",
+      "visible": "  |a|bb|\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "ctrl-c-ctrl-c-at-a-later-rows-start",
+      "input": {
+        "text": "|a|bb|\n|c|d|\n",
+        "point": 7,
+        "keys": "C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a | bb |\n| c | d  |\n",
+      "visible": "| a | bb |\n| c | d  |\n",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "ctrl-c-ctrl-c-after-a-paragraph",
+      "input": {
+        "text": "text\n|a|bb|\n",
+        "point": 5,
+        "keys": "C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "text\n|a|bb|\n",
+      "visible": "text\n|a|bb|\n",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "update-two-cookies-from-inside-the-second",
+      "input": {
+        "text": "* fix [/] a [%]",
+        "point": 13,
+        "keys": "C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* fix [0/0] a [100%]",
+      "visible": "* fix [0/0] a [100%]",
+      "point": 14,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed10-0955-c-d-c-e",
+      "input": {
+        "text": "| ccc | 3 |",
+        "point": 9,
+        "keys": "C-d C-e",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| ccc |  3|",
+      "visible": "| ccc |  3|",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed10-1376-bar-backtab-1",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "| <backtab> 1",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1||\n",
+      "visible": "1||\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Cannot move to previous table field"
+    },
+    {
+      "name": "seed10-1153-c-c-@-s-right",
+      "input": {
+        "text": "** DONE plan :work:\nplan <2026-10-22 Wed>\n*** alpha",
+        "point": 27,
+        "keys": "C-c @ S-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** plan                                                                :work:\nplan <2026-10-22 Wed>\n*** TODO alpha",
+      "visible": "** plan                                                                :work:\nplan <2026-10-22 Wed>\n*** TODO alpha",
+      "point": 0,
+      "mark": 114,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed10-0159-s-left-c-c-@-c-c-c-c",
+      "input": {
+        "text": "** [#C] fix call\n",
+        "point": 17,
+        "keys": "S-<left> C-c @ C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** [#C] fix call\n",
+      "visible": "** [#C] fix call\n",
+      "point": 0,
+      "mark": 17,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": "To use shift-selection with Org mode, customize ‘org-support-shift-select’"
+    },
+    {
+      "name": "seed10-0397-c-u-tab-c-c-c-x-c-w",
+      "input": {
+        "text": "* [#A] notes plan\n** [#B] read\n",
+        "point": 31,
+        "keys": "C-u TAB C-c C-x C-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* [#A] notes plan\n",
+      "visible": "* [#A] notes plan",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "** [#B] read\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed10-0339-c-u-tab-c-c-c-c-c-c-c-x-c-w",
+      "input": {
+        "text": "* DONE gamma :home:x:\n** read read\n",
+        "point": 35,
+        "keys": "C-u TAB C-c C-c C-c C-x C-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* DONE gamma :home:x:\n",
+      "visible": "* DONE gamma :home:x:",
+      "point": 22,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "** read read\n"
+      ],
+      "modified": true,
+      "error": "‘C-c C-c’ can do nothing useful here"
+    },
+    {
+      "name": "delete-char-before-a-bar-in-a-wide-field",
+      "input": {
+        "text": "| abc  | 3 |\n",
+        "point": 4,
+        "keys": "C-d",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| ab   | 3 |\n",
+      "visible": "| ab   | 3 |\n",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "copy-special-of-a-folded-child-takes-the-parent",
+      "input": {
+        "text": "* A\n** B\n",
+        "point": 9,
+        "keys": "C-u TAB C-c C-x M-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* A\n** B\n",
+      "visible": "* A\n",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "* A\n** B\n"
+      ],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "shift-left-over-headings-in-a-region",
+      "input": {
+        "text": "* TODO a\n* b\n",
+        "point": 0,
+        "keys": "C-SPC C-n C-e S-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\n* DONE b\n",
+      "visible": "* a\n* DONE b\n",
+      "point": 12,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "typing-after-a-failed-backtab-blanks-the-field",
+      "input": {
+        "text": "| a | b |\n",
+        "point": 3,
+        "keys": "<backtab> x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| x | b |\n",
+      "visible": "| x | b |\n",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Cannot move to previous table field"
     }
   ]
 }

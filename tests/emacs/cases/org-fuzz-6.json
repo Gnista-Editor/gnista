@@ -120,5 +120,145 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "seed9-1474-c-c-c-c-spc",
+    "text": "|12||",
+    "keys": "C-c C-c SPC",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed9-1465-c-c-c-c-c-b",
+    "text": "* fix [/]",
+    "keys": "C-c C-c C-b",
+    "point": 7,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "ctrl-c-ctrl-c-at-an-indented-tables-start",
+    "text": "  |a|bb|\n",
+    "keys": "C-c C-c",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "ctrl-c-ctrl-c-at-a-later-rows-start",
+    "text": "|a|bb|\n|c|d|\n",
+    "keys": "C-c C-c",
+    "point": 7,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "ctrl-c-ctrl-c-after-a-paragraph",
+    "text": "text\n|a|bb|\n",
+    "keys": "C-c C-c",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "update-two-cookies-from-inside-the-second",
+    "text": "* fix [/] a [%]",
+    "keys": "C-c C-c",
+    "point": 13,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed10-0955-c-d-c-e",
+    "text": "| ccc | 3 |",
+    "keys": "C-d C-e",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed10-1376-bar-backtab-1",
+    "text": "",
+    "keys": "| <backtab> 1",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed10-1153-c-c-@-s-right",
+    "text": "** DONE plan :work:\nplan <2026-10-22 Wed>\n*** alpha",
+    "keys": "C-c @ S-<right>",
+    "point": 27,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed10-0159-s-left-c-c-@-c-c-c-c",
+    "text": "** [#C] fix call\n",
+    "keys": "S-<left> C-c @ C-c C-c",
+    "point": 17,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed10-0397-c-u-tab-c-c-c-x-c-w",
+    "text": "* [#A] notes plan\n** [#B] read\n",
+    "keys": "C-u TAB C-c C-x C-w",
+    "point": 31,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed10-0339-c-u-tab-c-c-c-c-c-c-c-x-c-w",
+    "text": "* DONE gamma :home:x:\n** read read\n",
+    "keys": "C-u TAB C-c C-c C-c C-x C-w",
+    "point": 35,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "delete-char-before-a-bar-in-a-wide-field",
+    "text": "| abc  | 3 |\n",
+    "keys": "C-d",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "copy-special-of-a-folded-child-takes-the-parent",
+    "text": "* A\n** B\n",
+    "keys": "C-u TAB C-c C-x M-w",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-left-over-headings-in-a-region",
+    "text": "* TODO a\n* b\n",
+    "keys": "C-SPC C-n C-e S-<left>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "typing-after-a-failed-backtab-blanks-the-field",
+    "text": "| a | b |\n",
+    "keys": "<backtab> x",
+    "point": 3,
+    "modes": [
+      "org-mode"
+    ]
   }
 ]

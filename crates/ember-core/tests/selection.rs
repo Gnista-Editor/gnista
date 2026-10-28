@@ -132,3 +132,14 @@ fn describe_key_follows_shift_translation() {
     assert!(text(&ed).starts_with("S-<right> runs the command forward-char."), "{}", text(&ed));
     assert!(text(&ed).contains("shift selection"));
 }
+
+#[test]
+fn quitting_a_prompt_keeps_the_region() {
+    let mut ed = editor("hello world");
+    press(&mut ed, "C-SPC C-f C-f");
+    let _ = ed.press("M-x C-g");
+    assert_eq!(region(&ed), Some(0..2));
+    // Out of the prompt, C-g deactivates it.
+    let _ = ed.press("C-g");
+    assert_eq!(region(&ed), None);
+}

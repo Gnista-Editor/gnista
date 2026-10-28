@@ -115,10 +115,12 @@ while the case's keys are queued would read those instead."
         (dolist (mode modes) (ignore-errors (funcall mode -1)))))))
 
 (defun ember-oracle--fontify ()
-  "Fontify the whole buffer, as redisplay would fontify what it shows."
+  "Fontify the whole buffer, as redisplay would fontify what it shows.
+Redisplay carries on when fontifying fails, so this does too: Org's
+done-headline keyword can fail to match its second group."
   (let ((font-lock-fontified nil)
         (inhibit-message t))
-    (font-lock-ensure)))
+    (ignore-errors (font-lock-ensure))))
 
 (defun ember-oracle--visible ()
   "The buffer's text without the characters that are invisible."

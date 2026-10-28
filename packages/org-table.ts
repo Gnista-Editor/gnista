@@ -481,6 +481,8 @@ function blankField(): void {
   checkInsideDataField();
   const before = beforeOnLine();
   const bar = ember.lineStart(lineAt()) + charCount(before.slice(0, before.lastIndexOf("|")));
+  // Point goes back to the bar first, so it stays there when the field is empty.
+  ember.gotoChar(bar);
   const m = /^\|[^|\n]+/.exec(restOfLine(bar));
   if (m) {
     const len = ember.stringWidth(m[0]);
@@ -1028,7 +1030,9 @@ function orgDeleteChar(n: number): void {
     const p = ember.point();
     const end = p + charCount(m[0]);
     edDelete(p, p + 1);
-    saveExcursion(() => edInsert(end - 2, " "));
+    // Emacs adjusts the match data for the deletion, so the end Org goes
+    // back two characters from is one less than it was.
+    saveExcursion(() => edInsert(end - 3, " "));
     if (noalign && !update) markAligned();
   } else deleteChars(n);
 }
