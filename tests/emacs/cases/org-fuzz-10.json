@@ -364,5 +364,14 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "seed29-2244-c-c-at-c-u-tab-s-left",
+    "text": "** TODO plan call :home:x:\n*** alpha read\n",
+    "keys": "C-c @ C-u TAB S-<left>",
+    "point": 42,
+    "modes": [
+      "org-mode"
+    ]
   }
 ]

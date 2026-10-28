@@ -4883,7 +4883,7 @@ const todoCommand = ember.defineCommand({
     "date repeats, such as <2026-10-28 Wed +1w>, moves the date on and keeps it to do. With the region active, " +
     "every heading in it changes (org-loop-over-headlines-in-active-region).",
   run: () => {
-    if (!forEachHeadingInRegion(() => todo(1))) todo(1);
+    if (!forEachHeadingInRegion(() => todo(1), true)) todo(1);
   },
 });
 
@@ -4898,10 +4898,19 @@ const todoCommand = ember.defineCommand({
  */
 let mapRegionStart: { pos: number } | undefined;
 
-function forEachHeadingInRegion(body: () => void): boolean {
+function forEachHeadingInRegion(body: () => void, todoQuirk = false): boolean {
   const mark = ember.mark();
   if (!orgRegionActive() || mark === undefined || ember.variable("org-loop-over-headlines-in-active-region") !== true) return false;
   const [rb, re] = [Math.min(mark, ember.point()), Math.max(mark, ember.point())];
+  if (todoQuirk && ember.invisibleAt(ember.point())) {
+    // org-todo gives org-map-entries (when (org-invisible-p) (org-end-of-subtree
+    // nil t)) to skip with, which runs once, there and then: point goes to the
+    // end of the hidden subtree, and that position skips every heading.
+    const all = headings();
+    const i = headingIndex(all, lineAt());
+    ember.gotoChar(i === undefined ? ember.bufferSize() : subtreeRegion(all, i)[1]);
+    return true;
+  }
   const outer = mapRegionStart;
   mapRegionStart = marker(rb);
   const atHeadingStart = re === ember.lineStart(lineAt(re)) && parseHeading(lineAt(re)) !== undefined;
@@ -6124,7 +6133,7 @@ const shiftRight = ember.defineCommand({
     if (timestampHere()) ember.callWithPrefix(ember.prefixArg(), "org-timestamp-up-day");
     // org-todo, which loops over the headings in an active region.
     else if (headingHere()) {
-      if (!forEachHeadingInRegion(() => todo(1))) todo(1);
+      if (!forEachHeadingInRegion(() => todo(1), true)) todo(1);
     }
     else if (itemLine(lineAt())) cycleListBullet();
     else if (elementAt(ember.point())?.type === "node-property") nextAllowedValue();
@@ -6140,7 +6149,7 @@ const shiftLeft = ember.defineCommand({
     if (timestampHere()) ember.callWithPrefix(ember.prefixArg(), "org-timestamp-down-day");
     // org-todo, which loops over the headings in an active region.
     else if (headingHere()) {
-      if (!forEachHeadingInRegion(() => todo(-1))) todo(-1);
+      if (!forEachHeadingInRegion(() => todo(-1), true)) todo(-1);
     }
     else if (itemLine(lineAt())) cycleListBullet("previous");
     else if (elementAt(ember.point())?.type === "node-property") nextAllowedValue();

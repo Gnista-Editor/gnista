@@ -906,6 +906,27 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "seed29-2244-c-c-at-c-u-tab-s-left",
+      "input": {
+        "text": "** TODO plan call :home:x:\n*** alpha read\n",
+        "point": 42,
+        "keys": "C-c @ C-u TAB S-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** TODO plan call :home:x:\n*** alpha read\n",
+      "visible": "** TODO plan call :home:x:\n",
+      "point": 42,
+      "mark": 42,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
     }
   ]
 }
