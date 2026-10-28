@@ -2,7 +2,7 @@
 
 use std::ops::Range;
 
-use ember_core::display::{Glyph, cursor_index, display_width, position_at_column, row_glyphs};
+use ember_core::display::{Glyph, completion_list, cursor_index, display_width, position_at_column, row_glyphs};
 use ember_core::{Color as FaceColor, Editor, Row, Style as FaceStyle, WindowId, WindowView, palette};
 use ratatui::Frame;
 use ratatui::layout::{Position, Rect};
@@ -244,11 +244,13 @@ fn draw_echo_area(frame: &mut Frame, ed: &Editor, area: Rect) -> Option<Position
     };
     let mb = ed.minibuffer();
     let input = mb.slice(0..mb.len());
+    let used = display_width(prompt, 8) + display_width(&input, 8);
     let mut spans = vec![Span::raw(prompt), Span::raw(input)];
     let completions = ed.minibuffer_completions();
     if !completions.is_empty() {
         let dim = Style::new().add_modifier(Modifier::DIM);
-        spans.push(Span::styled(format!(" {{{}}}", completions.join(" | ")), dim));
+        let room = (area.width as usize).saturating_sub(used);
+        spans.push(Span::styled(completion_list(&completions, room), dim));
     }
     if let Some(message) = ed.echo() {
         spans.push(Span::raw(format!(" {message}")));

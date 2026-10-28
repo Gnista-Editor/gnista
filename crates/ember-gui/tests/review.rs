@@ -128,8 +128,10 @@ fn scenes() {
 
         // Tabs, wide characters and point on a tab.
         let (mut ed, _s) = editor();
-        ed.type_text("\tTabbed line\nWide: 日本語 テキスト and emoji 🙂 end\nab\tcd\tef\n");
-        ed.press("M-< C-n C-n C-f C-f").unwrap();
+        // The line under the wide one has a character in the same column as
+        // each character above, so the grid shows.
+        ed.type_text("\tTabbed line\nWide: 日本語 テキスト and emoji 🙂 end\nAscii ab_cd_ fg_hi_jk and emoji :) end\nab\tcd\tef\n");
+        ed.press("M-< C-n C-n C-n C-f C-f").unwrap();
         render(&format!("tabs_wide_{t}"), ed, theme);
     }
 }

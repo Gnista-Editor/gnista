@@ -91,11 +91,22 @@ pub fn bold_mono() -> FontFamily {
     FontFamily::Name("mono-bold".into())
 }
 
+/// Fonts to fall back on, by kind: Japanese and Chinese, Korean, emoji.
+/// Each list names macOS's font first, then Linux's and Windows's, with how
+/// far to move its glyphs down, as a fraction of the font size, so they sit
+/// on the main font's line: CJK fonts' taller ascent lifts them otherwise.
+const FALLBACKS: [(&[&str], f32); 3] = [
+    (&["Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", "Microsoft YaHei"], 0.15),
+    (&["Apple SD Gothic Neo", "Noto Sans CJK KR", "Malgun Gothic"], 0.15),
+    (&["Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji"], 0.0),
+];
+
 /// Puts Geist Mono first for monospace text and Inter first for interface
 /// text, if they are installed and `system_fonts` is on, and adds a bold
 /// monospace family, Geist Mono Bold if installed. egui's built-in fonts stay
 /// as fallbacks, so the editor looks plainer but works without them; without
-/// a bold face, bold text uses the regular one. Returns the faces found.
+/// a bold face, bold text uses the regular one. Fonts for CJK text and emoji
+/// come last, from [`FALLBACKS`]. Returns the faces found.
 pub fn install_fonts(ctx: &egui::Context, system_fonts: bool) -> Vec<&'static str> {
     let mut fonts = FontDefinitions::default();
     let mut found = Vec::new();
@@ -111,6 +122,21 @@ pub fn install_fonts(ctx: &egui::Context, system_fonts: bool) -> Vec<&'static st
             let Some(data) = load_family(&mut collection, &mut cache, family_name, weight) else { continue };
             fonts.font_data.insert(name.to_string(), Arc::new(data));
             fonts.families.entry(family).or_default().insert(0, name.to_string());
+            found.push(name);
+        }
+        // For what the main fonts lack, such as CJK text and emoji, the first
+        // installed of each kind, after all the others.
+        for (kind, y_offset_factor) in FALLBACKS {
+            let Some((name, mut data)) = kind.iter().find_map(|name| {
+                load_family(&mut collection, &mut cache, name, FontWeight::NORMAL).map(|data| (*name, data))
+            }) else {
+                continue;
+            };
+            data.tweak.y_offset_factor = y_offset_factor;
+            fonts.font_data.insert(name.to_string(), Arc::new(data));
+            for family in [FontFamily::Monospace, FontFamily::Proportional] {
+                fonts.families.entry(family).or_default().push(name.to_string());
+            }
             found.push(name);
         }
     }

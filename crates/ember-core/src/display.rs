@@ -36,6 +36,36 @@ pub fn display_width(text: &str, tab_width: usize) -> usize {
     })
 }
 
+/// Completion candidates as the minibuffer lists them after the input, as
+/// Emacs's icomplete does: " {one | two}", with as many as fit in `room`
+/// columns, and " | …" before the closing brace when some are left out.
+pub fn completion_list(candidates: &[String], room: usize) -> String {
+    const SEPARATOR: &str = " | ";
+    const ELLIPSIS: &str = "…";
+    let mut shown: Vec<&str> = Vec::new();
+    let mut width = display_width(" {}", 8);
+    for (i, candidate) in candidates.iter().enumerate() {
+        let added = display_width(candidate, 8) + if shown.is_empty() { 0 } else { SEPARATOR.len() };
+        // Room for the ellipsis too, unless this is the last one.
+        let reserve = if i + 1 < candidates.len() { SEPARATOR.len() + 1 } else { 0 };
+        if width + added + reserve > room {
+            break;
+        }
+        width += added;
+        shown.push(candidate);
+    }
+    let more = shown.len() < candidates.len();
+    let mut list = format!(" {{{}", shown.join(SEPARATOR));
+    if more {
+        if !shown.is_empty() {
+            list.push_str(SEPARATOR);
+        }
+        list.push_str(ELLIPSIS);
+    }
+    list.push('}');
+    list
+}
+
 /// Text as it is displayed, with tabs expanded and control characters as `^X`.
 pub fn expand(text: &str, tab_width: usize) -> String {
     let (mut out, mut col) = (String::new(), 0);
@@ -104,6 +134,15 @@ pub fn position_at_column(row: &crate::Row, glyphs: &[Glyph], col: usize) -> usi
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn completion_lists_end_with_an_ellipsis_when_cut() {
+        let c: Vec<String> = ["alpha", "beta", "gamma"].iter().map(|s| s.to_string()).collect();
+        assert_eq!(super::completion_list(&c, 80), " {alpha | beta | gamma}");
+        // " {alpha | beta | …}" is 19 columns; gamma does not fit as well.
+        assert_eq!(super::completion_list(&c, 20), " {alpha | beta | …}");
+        assert_eq!(super::completion_list(&c, 4), " {…}");
+    }
+
     use super::*;
 
     #[test]

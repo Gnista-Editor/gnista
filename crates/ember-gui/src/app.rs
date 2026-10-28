@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use ember_core::display::{Glyph, cursor_index, row_glyphs};
+use ember_core::display::{Glyph, completion_list, cursor_index, display_width, row_glyphs};
 use ember_core::display::position_at_column;
 use ember_core::{Arg, Editor, Key, KeyCode, MouseEvent, MouseKind, Row, Style, WindowId, WindowView};
 use egui::text::{CCursor, LayoutJob, TextFormat};
@@ -395,7 +395,8 @@ fn draw_buffer(
         .iter()
         .map(|row| {
             let glyphs = row_glyphs(row, tab_width);
-            let job = row_job(row, &glyphs, &default_style, m, t);
+            let advance = |font: &FontId, c: char| painter.ctx().fonts_mut(|f| f.glyph_width(font, c));
+            let job = row_job(row, &glyphs, &default_style, m, t, &advance);
             (painter.layout_job(job), glyphs)
         })
         .collect();
@@ -474,15 +475,35 @@ fn region_span(row: &Row, glyphs: &[Glyph], galley: &Galley, region: &std::ops::
     }
 }
 
+/// Whether a glyph is one character drawn wider than a column, such as CJK
+/// text or an emoji, which gets a section of its own to fit the grid.
+fn is_wide(glyph: &Glyph) -> bool {
+    glyph.width > 1 && glyph.text.chars().count() == 1
+}
+
 /// A row as one layout job: a section for each run of glyphs with the same
-/// face. The region is painted under it by `draw_buffer`.
-fn row_job(row: &Row, glyphs: &[Glyph], default_style: &Style, m: &Metrics, t: Tokens) -> LayoutJob {
+/// face. A wide character is spaced to take exactly its columns, as a
+/// fallback font draws it at its own width. The region is painted under it
+/// by `draw_buffer`.
+fn row_job(
+    row: &Row,
+    glyphs: &[Glyph],
+    default_style: &Style,
+    m: &Metrics,
+    t: Tokens,
+    advance: &dyn Fn(&FontId, char) -> f32,
+) -> LayoutJob {
     let mut job = LayoutJob::default();
     let mut i = 0;
     while i < glyphs.len() {
         let segment = glyphs[i].segment;
+        let wide = is_wide(&glyphs[i]);
         let mut text = String::new();
-        while i < glyphs.len() && glyphs[i].segment == segment {
+        while i < glyphs.len() && glyphs[i].segment == segment && !is_wide(&glyphs[i]) {
+            text.push_str(&glyphs[i].text);
+            i += 1;
+        }
+        if wide {
             text.push_str(&glyphs[i].text);
             i += 1;
         }
@@ -490,6 +511,10 @@ fn row_job(row: &Row, glyphs: &[Glyph], default_style: &Style, m: &Metrics, t: T
         let mut format = face_format(&seg.style, default_style, m, t);
         if seg.ellipsis {
             format.color = t.faint;
+        }
+        if wide {
+            let c = text.chars().next().expect("a wide glyph is one character");
+            format.extra_letter_spacing = glyphs[i - 1].width as f32 * m.char_width - advance(&format.font_id, c);
         }
         // The full line height, so backgrounds such as the region's meet
         // the rows above and below.
@@ -635,7 +660,9 @@ fn draw_echo_area(painter: &Painter, ed: &Editor, rect: Rect, m: &Metrics, t: To
     // the cursor at the end of the input sits right after it.
     let completions = ed.minibuffer_completions();
     if !completions.is_empty() {
-        let list = format!(" {{{}}}", completions.join(" | "));
+        let columns = ((rect.width() - 2.0 * PAD_X) / m.char_width).floor() as usize;
+        let used = display_width(prompt, 8) + display_width(&input, 8);
+        let list = completion_list(&completions, columns.saturating_sub(used));
         job.append(&list, 0.0, text_format(m, t.faint));
     }
     if let Some(message) = ed.echo() {
