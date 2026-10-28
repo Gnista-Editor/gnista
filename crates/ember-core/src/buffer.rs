@@ -20,10 +20,19 @@ struct Edit {
     deleted_props: SavedProps,
     inserted: String,
     point_before: usize,
-    /// How far into the deleted text the mark and the mark ring's entries
-    /// were, as Emacs's record_marker_adjustments keeps them, so undoing the
-    /// deletion puts them back: `None` for the mark, the index for the ring.
-    marks: Vec<(Option<usize>, usize)>,
+    /// How far into the deleted text the mark, the mark ring's entries and
+    /// other windows' points were, as Emacs's record_marker_adjustments
+    /// keeps them, so undoing the deletion puts them back.
+    marks: Vec<(MarkRef, usize)>,
+}
+
+/// A marker that undo puts back into text it reinserts.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum MarkRef {
+    Mark,
+    Ring(usize),
+    /// Another window's point, by the window.
+    Window(u64),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -58,7 +67,7 @@ enum Selective {
     Inserted(usize, usize),
     /// Text deleted at a position, which undoing puts back; `at_end` if point
     /// was after it, as a negative position in Emacs's list says.
-    Deleted { pos: usize, text: String, props: SavedProps, at_end: bool, marks: Vec<(Option<usize>, usize)> },
+    Deleted { pos: usize, text: String, props: SavedProps, at_end: bool, marks: Vec<(MarkRef, usize)> },
     /// Where point was before the command.
     Point(usize),
     /// The buffer was unmodified, as of this save.
@@ -103,6 +112,9 @@ pub struct Buffer {
     open_unmodified_at: Option<u64>,
     /// Point at the last undo boundary, before the command now running.
     boundary_point: usize,
+    /// The accessible portion when the buffer is narrowed, as Emacs's BEGV
+    /// and ZV: commands, display and search keep inside it.
+    restriction: Option<(usize, usize)>,
     /// Whether the text changed since the last command began, as Emacs's
     /// `undo-auto--undoably-changed-buffers` tracks for its boundaries.
     edited_since_command: bool,
@@ -161,6 +173,7 @@ impl Buffer {
             open_unmodified_at: None,
             boundary_point: 0,
             edited_since_command: false,
+            restriction: None,
             open_point: None,
             pending_undo: None,
             selective_undo: None,
@@ -239,8 +252,38 @@ impl Buffer {
         self.point
     }
 
+    /// Moves point, kept inside the accessible portion as Emacs's `goto-char` keeps it.
     pub fn set_point(&mut self, pos: usize) {
-        self.point = pos.min(self.len());
+        self.point = pos.clamp(self.point_min(), self.point_max());
+    }
+
+    /// Where the accessible portion starts: 0 unless the buffer is narrowed,
+    /// as Emacs's `point-min`.
+    pub fn point_min(&self) -> usize {
+        self.restriction.map_or(0, |(start, _)| start)
+    }
+
+    /// Where the accessible portion ends: the buffer's end unless it is
+    /// narrowed, as Emacs's `point-max`.
+    pub fn point_max(&self) -> usize {
+        self.restriction.map_or(self.len(), |(_, end)| end.min(self.len()))
+    }
+
+    pub fn is_narrowed(&self) -> bool {
+        self.restriction.is_some()
+    }
+
+    /// Restricts editing and display to a range, as Emacs's
+    /// `narrow-to-region`; point moves inside it.
+    pub fn narrow(&mut self, start: usize, end: usize) {
+        let (start, end) = (start.min(end).min(self.len()), start.max(end).min(self.len()));
+        self.restriction = (start != 0 || end != self.len()).then_some((start, end));
+        self.point = self.point.clamp(start, end);
+    }
+
+    /// Makes the whole buffer accessible again, as Emacs's `widen`.
+    pub fn widen(&mut self) {
+        self.restriction = None;
     }
 
     pub fn mark(&self) -> Option<usize> {
@@ -434,6 +477,16 @@ impl Buffer {
         self.unfontify_from(pos);
         self.tick += 1;
         self.pending_changes.push((pos, pos + n, 0));
+        // Text inserted in the accessible portion widens it; at its start,
+        // it goes inside, as the start is no marker in Emacs either.
+        if let Some((start, end)) = &mut self.restriction {
+            if pos < *start {
+                *start += n;
+            }
+            if pos <= *end {
+                *end += n;
+            }
+        }
         self.record(Edit {
             pos,
             deleted: String::new(),
@@ -451,14 +504,18 @@ impl Buffer {
         let deleted = self.slice(start..end);
         let point_before = self.point;
         let inside = |m: usize| (start < m && m <= end).then(|| m - start);
-        let mut marks: Vec<(Option<usize>, usize)> = self.mark.and_then(inside).map(|o| (None, o)).into_iter().collect();
-        marks.extend(self.mark_ring.iter().enumerate().filter_map(|(i, &m)| inside(m).map(|o| (Some(i), o))));
+        let mut marks: Vec<(MarkRef, usize)> = self.mark.and_then(inside).map(|o| (MarkRef::Mark, o)).into_iter().collect();
+        marks.extend(self.mark_ring.iter().enumerate().filter_map(|(i, &m)| inside(m).map(|o| (MarkRef::Ring(i), o))));
+        marks.extend(self.window_points.iter().filter_map(|&(w, m)| inside(m).map(|o| (MarkRef::Window(w), o))));
         let edit_range = self.syntax.as_ref().map(|_| (point_at(&self.text, start), point_at(&self.text, end)));
         self.text.remove(start..end);
         if let (Some(syntax), Some((from, to))) = (&self.syntax, edit_range) {
             syntax.edit(&input_edit(from, to, from));
         }
         let shift = |p: usize| if p >= end { p - (end - start) } else { p.min(start) };
+        if let Some((a, b)) = &mut self.restriction {
+            (*a, *b) = (shift(*a), shift(*b));
+        }
         self.point = shift(self.point);
         let window_points = self.window_points.iter_mut().map(|(_, p)| p);
         for m in self.mark.iter_mut().chain(self.mark_ring.iter_mut()).chain(window_points) {
@@ -686,6 +743,7 @@ impl Buffer {
         for (_, p) in &mut self.window_points {
             *p = 0;
         }
+        self.restriction = None;
         self.undo_groups.clear();
         self.open_group.clear();
         self.pending_undo = None;
@@ -844,8 +902,9 @@ impl Buffer {
                             let marks = marks
                                 .into_iter()
                                 .filter(|&(which, _)| in_region(match which {
-                                    None => self.mark,
-                                    Some(i) => self.mark_ring.get(i).copied(),
+                                    MarkRef::Mark => self.mark,
+                                    MarkRef::Ring(i) => self.mark_ring.get(i).copied(),
+                                    MarkRef::Window(w) => self.window_point(w),
                                 }))
                                 .collect();
                             Selective::Deleted { pos: pos as usize, text, props, at_end, marks }
@@ -940,8 +999,9 @@ impl Buffer {
                         let mut valid = Vec::new();
                         for (which, offset) in marks {
                             let m = match which {
-                                None => self.mark,
-                                Some(i) => self.mark_ring.get(i).copied(),
+                                MarkRef::Mark => self.mark,
+                                MarkRef::Ring(i) => self.mark_ring.get(i).copied(),
+                                MarkRef::Window(w) => self.window_point(w),
                             };
                             if m == Some(pos) {
                                 valid.push((which, offset));
@@ -957,8 +1017,9 @@ impl Buffer {
                         }
                         for (which, offset) in valid {
                             let slot = match which {
-                                None => self.mark.as_mut(),
-                                Some(i) => self.mark_ring.get_mut(i),
+                                MarkRef::Mark => self.mark.as_mut(),
+                                MarkRef::Ring(i) => self.mark_ring.get_mut(i),
+                                MarkRef::Window(w) => self.window_points.iter_mut().find(|e| e.0 == w).map(|e| &mut e.1),
                             };
                             if let Some(m) = slot {
                                 *m = pos + offset;
@@ -1027,8 +1088,9 @@ impl Buffer {
             // Marks that were inside the text, and are still where it went back, go back into it.
             for &(which, offset) in &edit.marks {
                 let slot = match which {
-                    None => self.mark.as_mut(),
-                    Some(i) => self.mark_ring.get_mut(i),
+                    MarkRef::Mark => self.mark.as_mut(),
+                    MarkRef::Ring(i) => self.mark_ring.get_mut(i),
+                    MarkRef::Window(w) => self.window_points.iter_mut().find(|e| e.0 == w).map(|e| &mut e.1),
                 };
                 if let Some(m) = slot
                     && *m == edit.pos

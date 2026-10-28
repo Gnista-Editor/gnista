@@ -11,7 +11,10 @@
 ;; (0-based, default 0), `modes' (minor or major modes to turn on before
 ;; the keys, such as "delete-selection-mode" or "org-mode"), `call' (a command and its
 ;; arguments, called before the keys, for commands that read the minibuffer,
-;; which batch Emacs would read from stdin), and `platform' (an Emacs
+;; which batch Emacs would read from stdin), `answers' (strings answering
+;; the prompts the keys open, in order), `visit' (a file name the buffer
+;; seems to visit, in the temporary directory), `windows' (true to record the
+;; windows too), and `platform' (an Emacs
 ;; `system-type' such as "darwin", for cases that only hold on one platform).
 ;;
 ;; Each case runs in a fresh Fundamental mode buffer, in a single window,
@@ -28,6 +31,10 @@
 ;; Batch mode starts with these off; interactive Emacs has them on.
 (transient-mark-mode 1)
 (setq shift-select-mode t)
+;; Emacs asks before narrowing to a region the first time; Ember does not.
+(put 'narrow-to-region 'disabled nil)
+;; A case's buffer may visit a file it never writes; leave no lock files.
+(setq create-lockfiles nil)
 
 (defvar ember-oracle--error nil
   "The first error a case signalled.")
@@ -53,12 +60,37 @@ while the case's keys are queued would read those instead."
 (global-set-key (kbd "<f35>") #'ember-oracle--done)
 
 ;; Batch Emacs reads the minibuffer from standard input, so a command that
-;; prompts would wait forever.  Make prompting an error instead; the
-;; fuzzer leaves out cases that hit it.
+;; prompts would wait forever.  A case's `answers' answer its prompts in
+;; order, as if typed and confirmed with RET; with none left, prompting is
+;; an error instead, and the fuzzer leaves out cases that hit it.
+(defvar ember-oracle--answers nil
+  "The answers left for the case's prompts.")
+
+(defun ember-oracle--answer (default)
+  "The next answer, or DEFAULT for an empty one, as RET on empty input gives."
+  (unless ember-oracle--answers
+    (error "Minibuffer read in batch"))
+  (let ((answer (pop ember-oracle--answers)))
+    (if (and (equal answer "") default)
+        (if (consp default) (car default) default)
+      answer)))
+
+(defun ember-oracle--read-from-minibuffer (_prompt &optional _initial _keymap _read _hist default &rest _)
+  (ember-oracle--answer default))
+(defun ember-oracle--read-string (_prompt &optional _initial _hist default &rest _)
+  (ember-oracle--answer default))
+(defun ember-oracle--completing-read (_prompt _collection &optional _pred _match _initial _hist default &rest _)
+  (ember-oracle--answer default))
+(defun ember-oracle--yes (&rest _)
+  (member (ember-oracle--answer nil) '("y" "yes")))
 (defun ember-oracle--no-minibuffer (&rest _)
   (error "Minibuffer read in batch"))
-(dolist (fn '(read-from-minibuffer read-string completing-read read-char
-              read-char-exclusive read-key y-or-n-p yes-or-no-p))
+(advice-add 'read-from-minibuffer :override #'ember-oracle--read-from-minibuffer)
+(advice-add 'read-string :override #'ember-oracle--read-string)
+(advice-add 'completing-read :override #'ember-oracle--completing-read)
+(advice-add 'y-or-n-p :override #'ember-oracle--yes)
+(advice-add 'yes-or-no-p :override #'ember-oracle--yes)
+(dolist (fn '(read-char read-char-exclusive read-key))
   (advice-add fn :override #'ember-oracle--no-minibuffer))
 
 ;; Cases must not reach outside Emacs: opening a link would start the
@@ -98,6 +130,11 @@ while the case's keys are queued would read those instead."
       (switch-to-buffer (current-buffer))
       (buffer-disable-undo)
       (insert text)
+      ;; As if visiting a file, for commands such as org-refile that need
+      ;; one; nothing is written to it.
+      (when-let* ((visit (alist-get 'visit case)))
+        (setq buffer-file-name (expand-file-name visit temporary-file-directory)
+              buffer-file-truename (abbreviate-file-name (file-truename buffer-file-name))))
       (buffer-enable-undo)
       (set-buffer-modified-p nil)
       (goto-char (1+ start))
@@ -120,6 +157,7 @@ while the case's keys are queued would read those instead."
             org-subtree-clip nil
             org-subtree-clip-folded nil
             ember-oracle--error nil
+            ember-oracle--answers (alist-get 'answers case)
             unread-command-events (append (and call '(f34))
                                           (listify-key-sequence (kbd keys))
                                           '(f35)))
@@ -147,13 +185,23 @@ done-headline keyword can fail to match its second group."
     (concat (nreverse out))))
 
 (defun ember-oracle--state (case text start keys)
-  "The current buffer's state after CASE, as an alist."
+  "The current buffer's state after CASE, as an alist.
+The whole buffer, even if the case left it narrowed."
+  (save-restriction
+    (widen)
+    (ember-oracle--whole-state case text start keys)))
+
+(defun ember-oracle--whole-state (case text start keys)
+  "The current buffer's state after CASE, widened, as an alist."
       `((name . ,(alist-get 'name case))
         (input . ((text . ,text) (point . ,start) (keys . ,keys)
                   (modes . ,(vconcat (alist-get 'modes case)))
                   (call . ,(vconcat (alist-get 'call case)))
                   (platform . ,(alist-get 'platform case))
-                  ,@(and (alist-get 'windows case) '((windows . t)))))
+                  ,@(and (alist-get 'windows case) '((windows . t)))
+                  ,@(and (alist-get 'visit case) `((visit . ,(alist-get 'visit case))))
+                  ,@(and (alist-get 'answers case)
+                         `((answers . ,(vconcat (alist-get 'answers case)))))))
         (text . ,(buffer-substring-no-properties (point-min) (point-max)))
         (visible . ,(progn (ember-oracle--fontify) (ember-oracle--visible)))
         (point . ,(1- (point)))

@@ -247,16 +247,18 @@ ember.defineMinorMode({
 function forwardLine(n: number): number {
   const start = ember.point();
   const line = ember.lineOf(start);
-  const last = ember.lineCount() - 1;
+  // The accessible lines, when the buffer is narrowed.
+  const first = ember.lineOf(ember.pointMin());
+  const last = ember.lineOf(ember.pointMax());
   if (n <= 0) {
-    ember.gotoChar(ember.lineStart(Math.max(0, line + n)));
-    return Math.min(0, line + n);
+    ember.gotoChar(ember.lineStart(Math.max(first, line + n)));
+    return Math.min(0, line + n - first);
   }
   if (line + n <= last) {
     ember.gotoChar(ember.lineStart(line + n));
     return 0;
   }
-  ember.gotoChar(ember.bufferSize());
+  ember.gotoChar(ember.pointMax());
   let shortfall = n - (last - line);
   if (ember.point() !== start && ember.bufferText(ember.point() - 1, ember.point()) !== "\n") shortfall--;
   return shortfall;
@@ -365,12 +367,12 @@ ember.bindKey("C-x C-t", transposeLines);
 /** Moves point n characters, stopping at the buffer's ends with forward-char's errors. */
 function forwardChar(n: number): void {
   const to = ember.point() + n;
-  if (to < 0) {
-    ember.gotoChar(0);
+  if (to < ember.pointMin()) {
+    ember.gotoChar(ember.pointMin());
     throw new Error("Beginning of buffer");
   }
-  if (to > ember.bufferSize()) {
-    ember.gotoChar(ember.bufferSize());
+  if (to > ember.pointMax()) {
+    ember.gotoChar(ember.pointMax());
     throw new Error("End of buffer");
   }
   ember.gotoChar(to);

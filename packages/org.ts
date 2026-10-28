@@ -352,7 +352,9 @@ let headingCache: { key: string; headings: readonly Heading[] } | undefined;
  */
 function headings(): Heading[] {
   const keywords = allKeywords();
-  const key = `${ember.bufferName()}\n${ember.bufferModifiedTick()}\n${keywords.join(" ")}`;
+  // A narrowed buffer's headings are the accessible ones, as Org's searches find them.
+  const [min, max] = [ember.pointMin(), ember.pointMax()];
+  const key = `${ember.bufferName()}\n${ember.bufferModifiedTick()}\n${keywords.join(" ")}\n${min}-${max}`;
   if (headingCache?.key === key) return headingCache.headings as Heading[];
   const found: Heading[] = [];
   // The whole text at once, counting lines up to each line that starts with
@@ -368,7 +370,7 @@ function headings(): Heading[] {
       counted = nl + 1;
     }
     const h = parseHeading(line, keywords, m[0], sorted);
-    if (h) found.push(Object.freeze(h));
+    if (h && h.start >= min && h.start < max) found.push(Object.freeze(h));
   }
   headingCache = { key, headings: Object.freeze(found) };
   return found;
@@ -429,18 +431,21 @@ function nextSameOrHigher(all: Heading[], i: number): Heading | undefined {
  */
 function subtreeEnd(all: Heading[], i: number): number {
   const next = nextSameOrHigher(all, i);
-  return next ? next.start - 1 : ember.bufferSize();
+  return next ? next.start - 1 : ember.pointMax();
 }
 
 /** Where a heading's entry ends for showing it: at the next heading, as org-fold-show-entry takes it. */
 function entryEnd(all: Heading[], i: number): number {
-  return all[i + 1]?.start ?? ember.bufferSize();
+  return all[i + 1]?.start ?? ember.pointMax();
 }
 
-/** Where a subtree's text starts and ends for moving or killing it: whole lines. */
+/**
+ * Where a subtree's text starts and ends for moving or killing it: whole
+ * lines, up to the end of the accessible portion if the buffer is narrowed.
+ */
 function subtreeRegion(all: Heading[], i: number): [number, number] {
   const next = nextSameOrHigher(all, i);
-  return [all[i].start, next ? next.start : ember.bufferSize()];
+  return [all[i].start, next ? next.start : ember.pointMax()];
 }
 
 // Folding, after org-fold.el and org-cycle.el
@@ -670,14 +675,15 @@ function overview(): void {
     last = h.end;
     level = h.level;
   }
-  flag(last, ember.bufferSize(), true);
+  // Up to the end of the accessible portion, where Org's search stops.
+  flag(last, ember.pointMax(), true);
 }
 
 /** Shows the headings up to a level, or all of them, as org-cycle-content does. */
 function showLevels(levels: number): void {
-  flag(0, ember.bufferSize(), false);
+  flag(ember.pointMin(), ember.pointMax(), false);
   hideTopDrawers();
-  let last = ember.bufferSize();
+  let last = ember.pointMax();
   for (const h of [...headings()].reverse()) {
     if (h.level > levels) continue;
     flag(h.end, last, true);
@@ -2357,8 +2363,296 @@ function entryPut(headingLine: number, property: string, value: string): void {
       edInsert(at, "\n");
     }
     edInsert(at, `:${property}: ${value}`);
+    // As org-entry-put ends with org-indent-line, which aligns a property's value.
+    alignNodeProperty(lineAt(at));
   });
 }
+
+/** A property's value in a heading's property drawer, as org-entry-get reads it, ignoring case. */
+function entryGet(headingLine: number, property: string): string | undefined {
+  let line = headingLine + 1;
+  if (line < ember.lineCount() && PLANNING.test(ember.lineText(line))) line++;
+  const close = propertyDrawerEnd(line);
+  if (close === undefined) return undefined;
+  const re = new RegExp(`^[ \\t]*:${property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:(?:[ \\t]+(.*?))?[ \\t]*$`, "i");
+  for (let l = line + 1; l < close; l++) {
+    const m = re.exec(ember.lineText(l));
+    if (m) return m[1] ?? "";
+  }
+  return undefined;
+}
+
+/** The properties Org works out itself, which org-entry-put cannot set, as org-special-properties lists them. */
+const SPECIAL_PROPERTIES = [
+  "ALLTAGS", "BLOCKED", "CLOCKSUM", "CLOCKSUM_T", "CLOSED", "FILE", "ITEM", "TAGS", "TIMESTAMP", "TIMESTAMP_IA",
+];
+
+/** The heading whose entry point is in, as org-back-to-heading with invisible-ok finds it. */
+function entryHeading(): Heading | undefined {
+  const all = headings();
+  const i = headingIndex(all, lineAt());
+  return i === undefined ? undefined : all[i];
+}
+
+const setProperty = ember.defineCommand({
+  name: "org-set-property",
+  doc: "In the current entry, set a property to a value, adding a property drawer if there is none.",
+  params: [
+    { name: "property", kind: "string", prompt: "Property: " },
+    { name: "value", kind: "string", prompt: "Value: " },
+  ],
+  run: (property, value) => {
+    if (property === "" || /\s/.test(property)) throw new Error(`Invalid property name: "${property}"`);
+    const h = entryHeading();
+    if (!h) throw new Error("Before first headline at position 1 in buffer " + ember.bufferName());
+    const upper = property.toUpperCase();
+    if (upper === "TODO") {
+      if (value !== "" && !allKeywords().includes(value)) throw new Error(`"${value}" is not a valid TODO state`);
+      setTodo(h, value === "" ? undefined : value);
+      return;
+    }
+    if (SPECIAL_PROPERTIES.includes(upper)) throw new Error(`The ${property} property cannot be set with \`org-entry-put'`);
+    if (entryGet(h.line, property) === value) return;
+    const p = marker(ember.point());
+    entryPut(h.line, property, value);
+    ember.gotoChar(p.pos);
+    dropMarker(p);
+  },
+});
+
+ember.defineCommand({
+  name: "org-delete-property",
+  doc: "In the current entry, delete a property, and the property drawer with it if that leaves it empty.",
+  params: [{ name: "property", kind: "string", prompt: "Property: " }],
+  run: (property) => {
+    const h = entryHeading();
+    if (!h) throw new Error("Before first headline at position 1 in buffer " + ember.bufferName());
+    let line = h.line + 1;
+    if (line < ember.lineCount() && PLANNING.test(ember.lineText(line))) line++;
+    const close = propertyDrawerEnd(line);
+    if (close === undefined) {
+      ember.message("No property to delete in this entry");
+      return;
+    }
+    const p = marker(ember.point());
+    // The property and its accumulated form, PROPERTY+, as org-entry-delete removes them.
+    const re = new RegExp(`^[ \\t]*:${property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\+?:`, "i");
+    let end = close;
+    for (let l = line + 1; l < end; ) {
+      if (re.test(ember.lineText(l))) {
+        edDelete(ember.lineStart(l), ember.lineStart(l + 1));
+        end--;
+      } else l++;
+    }
+    // An emptied drawer goes altogether.
+    if (end === line + 1) edDelete(ember.lineStart(line), lineStartOrEnd(line + 2));
+    ember.gotoChar(p.pos);
+    dropMarker(p);
+    ember.message(`Property "${property}" deleted`);
+  },
+});
+
+ember.defineCommand({
+  name: "org--insert-named-drawer",
+  doc: "Insert a drawer of the name given at point, with point inside it, as org-insert-drawer does without a prefix argument.",
+  params: [{ name: "drawer", kind: "string", prompt: "Drawer: " }],
+  run: (drawer) => {
+    if (!/^[\w-]+$/.test(drawer)) throw new Error("Invalid drawer name");
+    if (ember.point() !== ember.lineStart(lineAt())) ember.insert("\n");
+    ember.insert(`:${drawer}:\n\n:END:\n`);
+    ember.gotoChar(ember.lineStart(lineAt() - 2));
+  },
+});
+
+const insertDrawer = ember.defineCommand({
+  name: "org-insert-drawer",
+  doc:
+    "Insert a drawer at point, asking for its name, with point inside it.\n\n" +
+    "With a prefix argument, insert the entry's property drawer instead.",
+  run: () => {
+    if (ember.prefixArg() === null) {
+      // The name is asked for only without a prefix argument, as Org's interactive form does.
+      ember.callInteractively("org--insert-named-drawer");
+      return;
+    }
+    {
+      const h = entryHeading();
+      if (!h) throw new Error("Before first headline at position 1 in buffer " + ember.bufferName());
+      let line = h.line + 1;
+      if (line < ember.lineCount() && PLANNING.test(ember.lineText(line))) line++;
+      if (propertyDrawerEnd(line) === undefined) {
+        // An empty drawer made and opened, with a line inside it, as
+        // org-insert-property-drawer and org-insert-drawer leave it.
+        entryPut(h.line, "X", "");
+        const close = propertyDrawerEnd(line) as number;
+        edDelete(ember.lineStart(close - 1), ember.lineStart(close));
+      }
+      const close = propertyDrawerEnd(line) as number;
+      flag(ember.lineEnd(line), ember.lineStart(close), false, "org-hide-drawer");
+      ember.gotoChar(ember.lineStart(close));
+      if (close === line + 1) {
+        ember.insert("\n");
+        ember.gotoChar(ember.point() - 1);
+      }
+    }
+  },
+});
+
+// Refiling, as org-refile.el does with its default targets.
+
+/**
+ * Where org-refile can file a subtree: as org-refile-targets of nil gives
+ * them, the buffer's top-level headings that have a title, by their titles.
+ */
+function refileTargets(): { name: string; heading: Heading }[] {
+  const [min, max] = [ember.pointMin(), ember.pointMax()];
+  ember.widen();
+  try {
+    return headings()
+      .filter((h) => h.level === 1 && h.title !== "")
+      .map((h) => ({ name: h.title, heading: h }));
+  } finally {
+    if (min !== 0 || max !== ember.bufferSize()) ember.narrowToRegion(min, max);
+  }
+}
+
+/**
+ * Files the subtree at point under a target heading, as its last child, as
+ * org-refile does: copied there with org-paste-subtree, then deleted where
+ * it was, unless `keep`.
+ */
+function refile(target: string, keep: boolean): void {
+  const h = entryHeading();
+  if (!h) throw new Error(`Before first headline at position ${ember.lineStart(lineAt()) + 1} in buffer ${ember.bufferName()}`);
+  const t = refileTargets().find((x) => x.name === target);
+  if (!t) throw new Error("Invalid target location");
+  const all = headings();
+  const i = all.findIndex((x) => x.start === h.start);
+  const [start, end] = subtreeRegion(all, i);
+  if (t.heading.start >= start && t.heading.start < end) throw new Error("Cannot refile to position inside the tree or region");
+  const origin = ember.point();
+  copySubtree(false, 1, false);
+  const ti = all.findIndex((x) => x.start === t.heading.start);
+  // After the target's subtree, at its next sibling or the end.
+  const at = subtreeRegion(all, ti)[1];
+  const before = ember.bufferSize();
+  ember.gotoChar(at);
+  if (ember.point() !== ember.lineStart(lineAt())) ember.call("newline");
+  pasteSubtree(Math.max(1, t.heading.level + 1) as ember.PrefixArg);
+  ember.popKill();
+  // Back to the subtree where it was, after what was pasted before it.
+  const moved = at <= start ? ember.bufferSize() - before : 0;
+  ember.gotoChar(origin + moved);
+  if (!keep) {
+    edDelete(start + moved, end + moved);
+    ember.gotoChar(start + moved);
+  }
+  const file = ember.bufferFileName() ?? ember.bufferName();
+  ember.message(`${keep ? "Copy" : "Refile"} to "${t.name}" in file ${file}: done`);
+}
+
+ember.defineCommand({
+  name: "org--refile-to",
+  doc: "File the subtree at point under the target heading given, as org-refile does once it has asked.",
+  params: [{ name: "target", kind: "string", prompt: "Refile subtree to: " }],
+  run: (target) => refile(target, false),
+});
+
+ember.defineCommand({
+  name: "org--refile-copy-to",
+  doc: "Copy the subtree at point under the target heading given, as org-refile-copy does once it has asked.",
+  params: [{ name: "target", kind: "string", prompt: "Copy subtree to: " }],
+  run: (target) => refile(target, true),
+});
+
+ember.defineCommand({
+  name: "org--refile-goto",
+  doc: "Go to the refile target given, as org-refile with C-u does.",
+  params: [{ name: "target", kind: "string", prompt: "Goto: " }],
+  run: (target) => {
+    const t = refileTargets().find((x) => x.name === target);
+    if (!t) throw new Error("Invalid target location");
+    ember.gotoChar(t.heading.start);
+  },
+});
+
+const refileCommand = ember.defineCommand({
+  name: "org-refile",
+  doc:
+    "Move the subtree at point under another heading, asking which: one of the buffer's top-level headings.\n\n" +
+    "It goes in as that heading's last child. With C-u, go to the heading instead.",
+  run: () => {
+    const goto = Array.isArray(ember.prefixArg());
+    if (!goto && !entryHeading()) {
+      throw new Error(`Before first headline at position ${ember.lineStart(lineAt()) + 1} in buffer ${ember.bufferName()}`);
+    }
+    ember.callInteractively(goto ? "org--refile-goto" : "org--refile-to");
+  },
+});
+
+const refileCopyCommand = ember.defineCommand({
+  name: "org-refile-copy",
+  doc: "Copy the subtree at point under another heading, asking which, as org-refile does but keeping the original.",
+  run: () => {
+    if (!entryHeading()) {
+      throw new Error(`Before first headline at position ${ember.lineStart(lineAt()) + 1} in buffer ${ember.bufferName()}`);
+    }
+    ember.callInteractively("org--refile-copy-to");
+  },
+});
+
+// Narrowing, as org.el's org-narrow-to-subtree and its kin.
+
+const narrowToSubtree = ember.defineCommand({
+  name: "org-narrow-to-subtree",
+  doc: "Narrow the buffer to the current subtree: the heading point is under and everything below it.",
+  run: () => {
+    const all = headings();
+    const i = headingIndex(all, lineAt());
+    if (i === undefined || all[i].start < ember.pointMin()) throw new Error("Before first heading");
+    const end = subtreeRegion(all, i)[1];
+    // The subtree's last newline stays outside, and an existing narrowing is not widened.
+    ember.narrowToRegion(all[i].start, Math.min(ember.pointMax(), end === ember.pointMax() ? end : end - 1));
+  },
+});
+
+ember.defineCommand({
+  name: "org-toggle-narrow-to-subtree",
+  doc: "Narrow to the current subtree, or widen if the buffer is narrowed.",
+  run: () => {
+    if (ember.pointMin() !== 0 || ember.pointMax() !== ember.bufferSize()) {
+      ember.widen();
+      ember.message("Buffer widen");
+    } else {
+      ember.call("org-narrow-to-subtree");
+      ember.message("Buffer narrowed to current subtree");
+    }
+  },
+});
+
+const narrowToElement = ember.defineCommand({
+  name: "org-narrow-to-element",
+  doc: "Narrow the buffer to the element at point: a heading's subtree, a greater element's contents, or the element.",
+  run: () => {
+    const e = elementAt(ember.point());
+    if (!e) throw new Error("No element at point");
+    if (e.type !== "headline" && GREATER_ELEMENTS.includes(e.type) && e.contentsBegin !== undefined) {
+      ember.narrowToRegion(e.contentsBegin, e.contentsEnd ?? e.end);
+    } else {
+      ember.narrowToRegion(e.begin, e.end);
+    }
+  },
+});
+
+const narrowToBlock = ember.defineCommand({
+  name: "org-narrow-to-block",
+  doc: "Narrow the buffer to the block at point.",
+  run: () => {
+    const e = elementAt(ember.point());
+    if (!e || !e.type.includes("block")) throw new Error("Not in a block");
+    ember.call("org-narrow-to-element");
+  },
+});
 
 /** Where notes about state changes go in a heading's entry, as org-log-beginning finds it. */
 function logBeginning(h: Heading): number {
@@ -4282,7 +4576,7 @@ let parseCache: { key: string; root: Elem } | undefined;
 function parseFor(pos: number): Elem {
   const all = headings();
   const branch = headingIndex(all, lineAt(pos));
-  const key = `${ember.bufferName()}\n${ember.bufferModifiedTick()}\n${allKeywords().join(" ")}\n${branch ?? -1}`;
+  const key = `${ember.bufferName()}\n${ember.bufferModifiedTick()}\n${allKeywords().join(" ")}\n${branch ?? -1}\n${ember.pointMin()}-${ember.pointMax()}`;
   if (parseCache?.key !== key) parseCache = { key, root: parseBranch(all, branch) };
   return parseCache.root;
 }
@@ -4338,7 +4632,8 @@ function elementAt(pos: number): Elem | undefined {
 
 function elementAt_(pos: number): Elem | undefined {
   let node = parseFor(pos);
-  const size = ember.bufferSize();
+  // At the end of the accessible portion, the element that ends there.
+  const size = ember.pointMax();
   for (;;) {
     const child =
       node.children.find((c) => c.begin <= pos && pos < c.end) ??
@@ -6759,6 +7054,13 @@ const keys: { [keys: string]: ember.CommandName | ember.DefinedCommand } = {
   "C-c C-q": setTagsCommand,
   "C-c C-c": ctrlCCtrlC,
   "C-c C-x C-b": "org-toggle-checkbox",
+  "C-c C-x p": setProperty,
+  "C-c C-w": refileCommand,
+  "C-c M-w": refileCopyCommand,
+  "C-c C-x d": insertDrawer,
+  "C-x n s": narrowToSubtree,
+  "C-x n e": narrowToElement,
+  "C-x n b": narrowToBlock,
   "C-c C-l": insertLink,
   "C-c C-o": openAtPoint,
   "C-c .": timestamp,

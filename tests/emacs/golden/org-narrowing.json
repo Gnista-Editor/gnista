@@ -1,0 +1,399 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "narrow-to-subtree-then-end",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 11,
+        "keys": "C-x n s M->",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "visible": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "point": 30,
+      "mark": 11,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "narrow-to-subtree-then-start-and-up",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 24,
+        "keys": "C-x n s M-< C-p",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "visible": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "point": 22,
+      "mark": 24,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Beginning of buffer"
+    },
+    {
+      "name": "type-at-the-end-of-a-narrowed-subtree",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 11,
+        "keys": "C-x n s M-> x C-x n w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* one\nbody\n* two\nmore\n** childx\n* three\n",
+      "visible": "* one\nbody\n* two\nmore\n** childx\n* three\n",
+      "point": 31,
+      "mark": 11,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "search-stays-in-the-narrowed-subtree",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 11,
+        "keys": "C-x n s C-s t h r e e RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "visible": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "point": 14,
+      "mark": 11,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "cycle-the-narrowed-buffer",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 11,
+        "keys": "C-x n s S-<tab>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "visible": "* one\nbody\n* two\n* three\n",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "move-a-subtree-up-at-the-narrowed-start",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 11,
+        "keys": "C-x n s M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "visible": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot move past superior level or buffer limit"
+    },
+    {
+      "name": "move-a-subtree-down-at-the-narrowed-end",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 22,
+        "keys": "C-x n s M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "visible": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "point": 22,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot move past superior level or buffer limit"
+    },
+    {
+      "name": "kill-the-whole-narrowed-buffer",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 11,
+        "keys": "C-x n s C-x h C-w C-x n w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* one\nbody\n\n* three\n",
+      "visible": "* one\nbody\n\n* three\n",
+      "point": 11,
+      "mark": 11,
+      "mark_active": false,
+      "kill_ring": [
+        "* two\nmore\n** child"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "next-line-past-the-narrowed-end",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 22,
+        "keys": "C-x n s C-n C-n C-n",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "visible": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "point": 30,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "End of buffer"
+    },
+    {
+      "name": "narrow-before-the-first-heading",
+      "input": {
+        "text": "intro\n* one\n",
+        "point": 0,
+        "keys": "C-x n s",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "intro\n* one\n",
+      "visible": "intro\n* one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Before first heading"
+    },
+    {
+      "name": "narrow-to-a-paragraph",
+      "input": {
+        "text": "* one\nSome text here.\n\n#+begin_src rust\nfn main() {}\n#+end_src\n* two\n",
+        "point": 8,
+        "keys": "C-x n e M-> M-<",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* one\nSome text here.\n\n#+begin_src rust\nfn main() {}\n#+end_src\n* two\n",
+      "visible": "* one\nSome text here.\n\n#+begin_src rust\nfn main() {}\n#+end_src\n* two\n",
+      "point": 6,
+      "mark": 23,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "narrow-to-a-block",
+      "input": {
+        "text": "* one\nSome text here.\n\n#+begin_src rust\nfn main() {}\n#+end_src\n* two\n",
+        "point": 40,
+        "keys": "C-x n b M-< C-x n w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* one\nSome text here.\n\n#+begin_src rust\nfn main() {}\n#+end_src\n* two\n",
+      "visible": "* one\nSome text here.\n\n#+begin_src rust\nfn main() {}\n#+end_src\n* two\n",
+      "point": 23,
+      "mark": 40,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "narrow-to-a-block-outside-one",
+      "input": {
+        "text": "* one\nSome text here.\n\n#+begin_src rust\nfn main() {}\n#+end_src\n* two\n",
+        "point": 8,
+        "keys": "C-x n b",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* one\nSome text here.\n\n#+begin_src rust\nfn main() {}\n#+end_src\n* two\n",
+      "visible": "* one\nSome text here.\n\n#+begin_src rust\nfn main() {}\n#+end_src\n* two\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Not in a block"
+    },
+    {
+      "name": "new-heading-in-a-narrowed-subtree",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 12,
+        "keys": "C-x n s M-RET x C-x n w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* one\nbody\n* two\n* x\nmore\n** child\n* three\n",
+      "visible": "* one\nbody\n* two\n* x\nmore\n** child\n* three\n",
+      "point": 20,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "widen-after-narrowing",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 11,
+        "keys": "C-x n s C-x n w M->",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "visible": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "point": 39,
+      "mark": 11,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "narrow-to-region-then-end",
+      "input": {
+        "text": "one\ntwo\nthree\nfour",
+        "point": 4,
+        "keys": "C-SPC C-n C-n C-x n n M-> x",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\nthree\nxfour",
+      "visible": "one\ntwo\nthree\nxfour",
+      "point": 15,
+      "mark": 4,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "narrow-to-region-without-a-mark",
+      "input": {
+        "text": "one\ntwo",
+        "point": 0,
+        "keys": "C-x n n",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo",
+      "visible": "one\ntwo",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "The mark is not set now, so there is no region"
+    },
+    {
+      "name": "forward-char-past-the-narrowed-end",
+      "input": {
+        "text": "one\ntwo\nthree",
+        "point": 4,
+        "keys": "C-SPC C-e C-x n n C-a C-f C-f C-f C-f",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\nthree",
+      "visible": "one\ntwo\nthree",
+      "point": 7,
+      "mark": 4,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": "End of buffer"
+    },
+    {
+      "name": "delete-at-the-narrowed-start",
+      "input": {
+        "text": "one\ntwo\nthree",
+        "point": 4,
+        "keys": "C-SPC C-e C-x n n C-a DEL",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\nthree",
+      "visible": "one\ntwo\nthree",
+      "point": 4,
+      "mark": 4,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Beginning of buffer"
+    }
+  ]
+}

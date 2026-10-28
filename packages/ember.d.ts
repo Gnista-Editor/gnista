@@ -540,6 +540,10 @@ declare global {
        */
       "mwheel-scroll": [];
       /**
+       * Restrict editing in this buffer to the region: the rest is hidden and out of reach until widen (C-x n w).
+       */
+      "narrow-to-region": [];
+      /**
        * Make the prefix argument negative, as C-- or M-- does.
        *
        * Defined in packages/simple.ts.
@@ -579,6 +583,38 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "open-line": [];
+      /**
+       * Insert a drawer of the name given at point, with point inside it, as org-insert-drawer does without a prefix argument.
+       *
+       * @param drawer text
+       *
+       * Defined in packages/org.ts.
+       */
+      "org--insert-named-drawer": [drawer: string];
+      /**
+       * Copy the subtree at point under the target heading given, as org-refile-copy does once it has asked.
+       *
+       * @param target text
+       *
+       * Defined in packages/org.ts.
+       */
+      "org--refile-copy-to": [target: string];
+      /**
+       * Go to the refile target given, as org-refile with C-u does.
+       *
+       * @param target text
+       *
+       * Defined in packages/org.ts.
+       */
+      "org--refile-goto": [target: string];
+      /**
+       * File the subtree at point under the target heading given, as org-refile does once it has asked.
+       *
+       * @param target text
+       *
+       * Defined in packages/org.ts.
+       */
+      "org--refile-to": [target: string];
       /**
        * Put the tags of the heading point is under at org-tags-column; with a prefix argument, every heading's.
        *
@@ -685,6 +721,14 @@ declare global {
        * Defined in packages/org-table.ts.
        */
       "org-delete-char": [];
+      /**
+       * In the current entry, delete a property, and the property drawer with it if that leaves it empty.
+       *
+       * @param property text
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-delete-property": [property: string];
       /**
        * Make the subtree point is in one level lower.
        *
@@ -795,6 +839,14 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-indent-line": [];
+      /**
+       * Insert a drawer at point, asking for its name, with point inside it.
+       *
+       * With a prefix argument, insert the entry's property drawer instead.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-insert-drawer": [];
       /**
        * Insert a heading at the level of the one point is under. See org-meta-return.
        *
@@ -923,6 +975,24 @@ declare global {
        */
       "org-move-subtree-up": [];
       /**
+       * Narrow the buffer to the block at point.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-narrow-to-block": [];
+      /**
+       * Narrow the buffer to the element at point: a heading's subtree, a greater element's contents, or the element.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-narrow-to-element": [];
+      /**
+       * Narrow the buffer to the current subtree: the heading point is under and everything below it.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-narrow-to-subtree": [];
+      /**
        * Move to the item after the one point is in.
        *
        * Defined in packages/org.ts.
@@ -1015,6 +1085,20 @@ declare global {
        */
       "org-promote-subtree": [];
       /**
+       * Move the subtree at point under another heading, asking which: one of the buffer's top-level headings.
+       *
+       * It goes in as that heading's last child. With C-u, go to the heading instead.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-refile": [];
+      /**
+       * Copy the subtree at point under another heading, asking which, as org-refile does but keeping the original.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-refile-copy": [];
+      /**
        * RET in Org: in a table, move to the next row; elsewhere start a new line, indented as org-indent-line does.
        *
        * On a heading, the title after point goes to the new line, but the state, priority and tags stay. In a list item, the text after point moves to the new line after it is indented.
@@ -1044,6 +1128,15 @@ declare global {
        * Defined in packages/org-table.ts.
        */
       "org-self-insert-command": [];
+      /**
+       * In the current entry, set a property to a value, adding a property drawer if there is none.
+       *
+       * @param property text
+       * @param value text
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-set-property": [property: string, value: string];
       /**
        * Set the tags of the heading point is under, written as :work:home: or work home; empty removes them.
        *
@@ -1350,6 +1443,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-toggle-item": [];
+      /**
+       * Narrow to the current subtree, or widen if the buffer is narrowed.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-toggle-narrow-to-subtree": [];
       /**
        * Bring the statistics cookies, such as [1/3], of the heading or item point is in up to date.
        *
@@ -1852,6 +1951,10 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "visual-line-mode": [];
+      /**
+       * Remove the restriction on this buffer, making all of it accessible again.
+       */
+      "widen": [];
       /**
        * Write the current buffer to a file and visit that file.
        *
@@ -2953,6 +3056,8 @@ declare global {
      * insert now; M-y asks for 1, the kill before it.
      */
     function currentKill(n?: number): string;
+    /** Take the newest kill off the kill ring and return it, as (pop kill-ring) does. */
+    function popKill(): string | undefined;
     /** The command that ran before this one (Emacs's last-command). */
     function lastCommand(): string | undefined;
     /**
@@ -3357,6 +3462,14 @@ declare global {
      * and positions from these functions rather than indices into bufferText().
      */
     function bufferSize(): number;
+    /** Where the accessible portion starts: 0 unless the buffer is narrowed, as point-min. */
+    function pointMin(): number;
+    /** Where the accessible portion ends: the buffer's size unless it is narrowed, as point-max. */
+    function pointMax(): number;
+    /** Restrict editing and display to a range, as narrow-to-region. */
+    function narrowToRegion(start: number, end: number): void;
+    /** Make the whole buffer accessible again, as widen. */
+    function widen(): void;
     /**
      * A count of the changes to the current buffer's text, as Emacs's
      * buffer-modified-tick: it is larger after any edit.

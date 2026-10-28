@@ -220,10 +220,12 @@ fn draw_mode_line(frame: &mut Frame, ed: &Editor, view: &WindowView, area: Rect)
     } else {
         "--"
     };
-    let line = b.line_of(view.point) + 1;
+    // Lines count from the start of the accessible portion, as Emacs's %l.
+    let line = b.line_of(view.point) - b.line_of(b.point_min()) + 1;
     let col = b.column(view.point);
     let def = if ed.defining_kbd_macro() { " Def" } else { "" };
-    let modes = format!("{}{}{def}", ed.mode_name_in(b), ed.mode_lighters_in(b).concat());
+    let narrow = if b.is_narrowed() { " Narrow" } else { "" };
+    let modes = format!("{}{}{narrow}{def}", ed.mode_name_in(b), ed.mode_lighters_in(b).concat());
     let mut text = format!("-:{flag}-  {:<18} L{line:<5} C{col:<4} ({modes}) ", b.name);
     let fill = (area.width as usize).saturating_sub(display_width(&text, 8));
     text.push_str(&"-".repeat(fill));

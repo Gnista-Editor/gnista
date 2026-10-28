@@ -195,7 +195,7 @@ fn movement(ed: &mut Editor) {
                     let pos = (1 + tenths(b.len(), arg.numeric())).clamp(0, b.len() as i64) as usize;
                     b.set_point(forward_line(b, pos, 1));
                 }
-                _ => b.set_point(0),
+                _ => b.set_point(b.point_min()),
             }
             Ok(())
         },
@@ -215,7 +215,7 @@ fn movement(ed: &mut Editor) {
                     let pos = (b.len() as i64 - tenths(b.len(), arg.numeric())).clamp(0, b.len() as i64) as usize;
                     b.set_point(forward_line(b, pos, 1));
                 }
-                _ => b.set_point(b.len()),
+                _ => b.set_point(b.point_max()),
             }
             Ok(())
         },
@@ -302,12 +302,12 @@ fn movement(ed: &mut Editor) {
 fn move_chars(ed: &mut Editor, n: i64) -> Result<()> {
     let b = ed.buffer_mut();
     let target = b.point() as i64 + n;
-    if target < 0 {
-        b.set_point(0);
+    if target < b.point_min() as i64 {
+        b.set_point(b.point_min());
         return err("Beginning of buffer");
     }
-    if target > b.len() as i64 {
-        b.set_point(b.len());
+    if target > b.point_max() as i64 {
+        b.set_point(b.point_max());
         return err("End of buffer");
     }
     b.set_point(target as usize);
@@ -319,12 +319,13 @@ fn move_chars(ed: &mut Editor, n: i64) -> Result<()> {
 /// line stops at the end of the buffer.
 fn forward_line(b: &Buffer, pos: usize, n: i64) -> usize {
     let line = b.line_of(pos) as i64 + n;
-    if line < 0 {
-        0
-    } else if line as usize >= b.line_count() {
-        b.len()
+    let (first, last) = (b.line_of(b.point_min()) as i64, b.line_of(b.point_max()) as i64);
+    if line < first {
+        b.point_min()
+    } else if line > last || line as usize >= b.line_count() {
+        b.point_max()
     } else {
-        b.line_start(line as usize)
+        b.line_start(line as usize).max(b.point_min())
     }
 }
 
@@ -432,10 +433,10 @@ fn line_move(ed: &mut Editor, n: i64) -> Result<()> {
     if moved != n {
         let b = ed.buffer_mut();
         if n > 0 {
-            b.set_point(b.len());
+            b.set_point(b.point_max());
             return err("End of buffer");
         }
-        b.set_point(0);
+        b.set_point(b.point_min());
         return err("Beginning of buffer");
     }
     let start = ed.buffer().line_start(target);
@@ -542,10 +543,10 @@ fn line_move_visual(ed: &mut Editor, n: i64, wrap: crate::rows::Wrap) -> Result<
             ed.goal_column = Some(goal);
             let b = ed.buffer_mut();
             if n > 0 {
-                b.set_point(b.len());
+                b.set_point(b.point_max());
                 return err("End of buffer");
             }
-            b.set_point(0);
+            b.set_point(b.point_min());
             return err("Beginning of buffer");
         }
         line = next;
@@ -794,11 +795,25 @@ fn editing(ed: &mut Editor) {
             Ok(())
         },
     );
+    def(
+        ed,
+        "narrow-to-region",
+        "Restrict editing in this buffer to the region: the rest is hidden and out of reach until widen (C-x n w).",
+        |ed, _| {
+            let region = region(ed.buffer())?;
+            ed.buffer_mut().narrow(region.start, region.end);
+            Ok(())
+        },
+    );
+    def(ed, "widen", "Remove the restriction on this buffer, making all of it accessible again.", |ed, _| {
+        ed.buffer_mut().widen();
+        Ok(())
+    });
     def(ed, "mark-whole-buffer", "Put point at the beginning of the buffer and the mark at the end.", |ed, _| {
         let b = ed.buffer_mut();
         b.push_mark(b.point(), false);
-        b.push_mark(b.len(), true);
-        b.set_point(0);
+        b.push_mark(b.point_max(), true);
+        b.set_point(b.point_min());
         Ok(())
     });
     def(ed, "keyboard-quit", "Cancel the current prompt or key sequence, and deactivate the region.", |ed, _| {
@@ -823,14 +838,15 @@ fn killing(ed: &mut Editor) {
             let to = match arg {
                 Some(arg) => forward_line(ed.buffer(), p, arg.numeric()),
                 None => {
-                    if p >= ed.buffer().len() {
+                    if p >= ed.buffer().point_max() {
                         return err("End of buffer");
                     }
                     // The end of the visible line: a folded heading's hidden text goes too.
                     let end = ed.end_of_visible_line(p);
                     let b = ed.buffer();
                     let rest_is_blank = b.slice(p..end).chars().all(|c| c == ' ' || c == '\t');
-                    if rest_is_blank && end < b.len() { end + 1 } else { end }
+                    let end = end.min(b.point_max());
+                    if rest_is_blank && end < b.point_max() { end + 1 } else { end }
                 }
             };
             // Emacs kills through kill-region.
@@ -900,10 +916,10 @@ fn delete_chars(ed: &mut Editor, n: i64) -> Result<()> {
     let b = ed.buffer_mut();
     let p = b.point() as i64;
     let (start, end) = if n >= 0 { (p, p + n) } else { (p + n, p) };
-    if start < 0 {
+    if start < b.point_min() as i64 {
         return err("Beginning of buffer");
     }
-    if end > b.len() as i64 {
+    if end > b.point_max() as i64 {
         return err("End of buffer");
     }
     if kill {
@@ -1254,6 +1270,8 @@ fn bind_defaults(ed: &mut Editor) {
         ("C-x C-w", "write-file"),
         ("C-x b", "switch-to-buffer"),
         ("C-x k", "kill-buffer"),
+        ("C-x n n", "narrow-to-region"),
+        ("C-x n w", "widen"),
         ("C-x C-c", "save-buffers-kill-terminal"),
         ("C-h f", "describe-command"),
         ("C-h k", "describe-key"),

@@ -457,10 +457,14 @@ impl Editor {
         let w = self.window(id).expect("listed windows exist");
         let (width, height) = (w.width, w.height);
         let buffer_name = self.window_buffer_name(id).unwrap_or_default().to_string();
+        // Total sizes, divider and mode line included, as window-min-width
+        // and window-min-height count them.
+        let total = self.window_total_sizes().into_iter().find(|s| s.0 == id);
+        let (total_width, total_height) = total.map_or((width, height + 1), |s| (s.1, s.2));
         let too_small = if side_by_side {
-            width < 2 * WINDOW_MIN_WIDTH
+            total_width < 2 * WINDOW_MIN_WIDTH
         } else {
-            height + 1 < 2 * WINDOW_MIN_HEIGHT
+            total_height < 2 * WINDOW_MIN_HEIGHT
         };
         // An explicit size only has to leave each window its safe minimum,
         // as window-safe-min-height and -width give: a line and the mode

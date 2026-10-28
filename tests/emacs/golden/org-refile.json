@@ -1,0 +1,331 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "refile-under-the-next-heading",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 0,
+        "keys": "C-c C-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "visit": "ember-oracle-refile.org",
+        "answers": [
+          "two"
+        ]
+      },
+      "text": "* two\nmore\n** child\n** one\nbody\n* three\n",
+      "visible": "* two\nmore\n** child\n** one\nbody\n* three\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "refile-under-an-earlier-heading",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 31,
+        "keys": "C-c C-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "visit": "ember-oracle-refile.org",
+        "answers": [
+          "one"
+        ]
+      },
+      "text": "* one\nbody\n** three\n* two\nmore\n** child\n",
+      "visible": "* one\nbody\n** three\n* two\nmore\n** child\n",
+      "point": 40,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "refile-under-the-last-heading",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 0,
+        "keys": "C-c C-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "visit": "ember-oracle-refile.org",
+        "answers": [
+          "three"
+        ]
+      },
+      "text": "* two\nmore\n** child\n* three\n** one\nbody\n",
+      "visible": "* two\nmore\n** child\n* three\n** one\nbody\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "refile-a-child",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 24,
+        "keys": "C-c C-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "visit": "ember-oracle-refile.org",
+        "answers": [
+          "three"
+        ]
+      },
+      "text": "* one\nbody\n* two\nmore\n* three\n** child\n",
+      "visible": "* one\nbody\n* two\nmore\n* three\n** child\n",
+      "point": 22,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "refile-into-itself",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 11,
+        "keys": "C-c C-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "visit": "ember-oracle-refile.org",
+        "answers": [
+          "two"
+        ]
+      },
+      "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "visible": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot refile to position inside the tree or region"
+    },
+    {
+      "name": "refile-to-no-target",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 0,
+        "keys": "C-c C-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "visit": "ember-oracle-refile.org",
+        "answers": [
+          "nowhere"
+        ]
+      },
+      "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "visible": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Invalid target location"
+    },
+    {
+      "name": "refile-before-the-first-heading",
+      "input": {
+        "text": "intro\n* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 0,
+        "keys": "C-c C-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "visit": "ember-oracle-refile.org",
+        "answers": [
+          "two"
+        ]
+      },
+      "text": "intro\n* one\nbody\n* two\nmore\n** child\n* three\n",
+      "visible": "intro\n* one\nbody\n* two\nmore\n** child\n* three\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Before first headline at position 1 in buffer *ember-oracle*"
+    },
+    {
+      "name": "refile-copy",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 0,
+        "keys": "C-c M-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "visit": "ember-oracle-refile.org",
+        "answers": [
+          "three"
+        ]
+      },
+      "text": "* one\nbody\n* two\nmore\n** child\n* three\n** one\nbody\n",
+      "visible": "* one\nbody\n* two\nmore\n** child\n* three\n** one\nbody\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "refile-goto",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 0,
+        "keys": "C-u C-c C-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "visit": "ember-oracle-refile.org",
+        "answers": [
+          "three"
+        ]
+      },
+      "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "visible": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "point": 31,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "refile-a-folded-subtree",
+      "input": {
+        "text": "* one\nbody\n** sub\n* two\nmore\n",
+        "point": 0,
+        "keys": "TAB C-c C-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "visit": "ember-oracle-refile.org",
+        "answers": [
+          "two"
+        ]
+      },
+      "text": "* two\nmore\n** one\nbody\n*** sub\n",
+      "visible": "* two\nmore\n** one",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "refile-with-todo-and-tags",
+      "input": {
+        "text": "* TODO [#A] one :work:\nbody\n* DONE two :home:\n",
+        "point": 0,
+        "keys": "C-c C-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "visit": "ember-oracle-refile.org",
+        "answers": [
+          "two"
+        ]
+      },
+      "text": "* DONE two :home:\n** TODO [#A] one                                                       :work:\nbody\n",
+      "visible": "* DONE two :home:\n** TODO [#A] one                                                       :work:\nbody\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "refile-then-undo",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 0,
+        "keys": "C-c C-w C-/",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "visit": "ember-oracle-refile.org",
+        "answers": [
+          "two"
+        ]
+      },
+      "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "visible": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "refile-at-the-end-without-a-newline",
+      "input": {
+        "text": "* one\nbody\n* two",
+        "point": 0,
+        "keys": "C-c C-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "visit": "ember-oracle-refile.org",
+        "answers": [
+          "two"
+        ]
+      },
+      "text": "* two\n** one\nbody\n",
+      "visible": "* two\n** one\nbody\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

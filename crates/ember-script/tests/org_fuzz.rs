@@ -11,7 +11,8 @@
 //! ```
 //!
 //! `EMBER_FUZZ_SEED` picks the random cases, so a run can be repeated, and
-//! `EMBER_FUZZ_CASES` says how many to try (300 by default). The shrunk
+//! `EMBER_FUZZ_CASES` says how many to try (300 by default), and
+//! `EMBER_FUZZ_SHRINK_ROUNDS` how many rounds of shrinking (20). The shrunk
 //! cases are written to `target/org-fuzz/differences.json`.
 
 mod oracle;
@@ -170,7 +171,7 @@ const ORG_KEYS: &[&str] = &[
     "M-S-<left>", "M-S-<right>", "M-S-<up>", "M-S-<down>", "S-<left>", "S-<right>", "S-<up>", "S-<down>",
     "C-c C-t", "C-c C-c", "C-c -", "C-c *", "C-c C-x C-b", "C-c C-n", "C-c C-p", "C-c C-f", "C-c C-b", "C-c C-u",
     "C-c @", "RET", "DEL", "C-d", "C-k", "C-c C-x C-w", "C-c C-x M-w", "C-c C-x C-y", "C-u TAB",
-    "C-c SPC",
+    "C-c SPC", "C-x n s", "C-x n e", "C-x n b", "C-x n w",
 ];
 /// Editing keys from outside Org, which Org leaves alone or remaps.
 const EDIT_KEYS: &[&str] = &["C-y", "M-y", "C-w", "M-w", "C-SPC", "C-/", "C-o", "M-d", "M-DEL", "C-t", "C-j", "M-<", "M->"];
@@ -205,6 +206,8 @@ fn random_case(rng: &mut Rng, name: String) -> Case {
         call: Vec::new(),
         platform: None,
         windows: false,
+        answers: Vec::new(),
+        visit: None,
     }
 }
 
@@ -422,7 +425,7 @@ fn random_text_case(rng: &mut Rng, name: String) -> Case {
         })
         .collect::<Vec<_>>()
         .join(" ");
-    Case { name, point, text, keys, modes: Vec::new(), call: Vec::new(), platform: None, windows }
+    Case { name, point, text, keys, modes: Vec::new(), call: Vec::new(), platform: None, windows, answers: Vec::new(), visit: None }
 }
 
 /// Fuzzes editing outside any mode, as the org fuzzer does org-mode.
@@ -460,8 +463,10 @@ fn fuzz(dir: &str, generate: fn(&mut Rng, String) -> Case) {
     eprintln!("seed {seed}: {compared} cases compared, {} differ", failing.len());
 
     // Shrink every failing case a step at a time, recording each round's
-    // candidates with one run of Emacs.
-    for round in 0..20 {
+    // candidates with one run of Emacs. EMBER_FUZZ_SHRINK_ROUNDS caps the
+    // rounds, for runs where Emacs hangs on many candidates.
+    let rounds: usize = std::env::var("EMBER_FUZZ_SHRINK_ROUNDS").ok().and_then(|s| s.parse().ok()).unwrap_or(20);
+    for round in 0..rounds {
         let mut candidates = Vec::new();
         for (k, (case, _)) in failing.iter().enumerate() {
             for (j, mut smaller) in shrinks(case).into_iter().enumerate() {

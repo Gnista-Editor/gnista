@@ -1118,6 +1118,94 @@
           "selected": false
         }
       ]
+    },
+    {
+      "name": "split-a-twenty-column-window",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x 3 C-x 3 C-x 3",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 10,
+          "height": 24,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 10,
+          "height": 24,
+          "selected": false
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 20,
+          "height": 24,
+          "selected": false
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 40,
+          "height": 24,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "undo-puts-back-the-other-windows-point",
+      "input": {
+        "text": "\ttwo a.b a.b\n",
+        "point": 7,
+        "keys": "C-x 2 M-DEL C-/",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "\ttwo a.b a.b\n",
+      "visible": "\ttwo a.b a.b\n",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "a."
+      ],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 7,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 7,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        }
+      ]
     }
   ]
 }

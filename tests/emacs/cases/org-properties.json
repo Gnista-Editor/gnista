@@ -1,0 +1,226 @@
+[
+  {
+    "name": "set-a-property-makes-a-drawer",
+    "text": "* TODO task\nbody\n",
+    "point": 3,
+    "call": [
+      "org-set-property",
+      "ID",
+      "42"
+    ],
+    "keys": "",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "set-a-property-from-keys",
+    "text": "* TODO task\nbody\n",
+    "point": 3,
+    "keys": "C-c C-x p",
+    "answers": [
+      "ID",
+      "42"
+    ],
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "set-a-second-property",
+    "text": "* task\n:PROPERTIES:\n:ID: 1\n:END:\nbody\n",
+    "point": 3,
+    "call": [
+      "org-set-property",
+      "OWNER",
+      "me"
+    ],
+    "keys": "",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "set-a-property-again",
+    "text": "* task\n:PROPERTIES:\n:ID: 1\n:END:\nbody\n",
+    "point": 3,
+    "call": [
+      "org-set-property",
+      "id",
+      "2"
+    ],
+    "keys": "",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "set-a-property-to-what-it-is",
+    "text": "* task\n:PROPERTIES:\n:ID: 1\n:END:\n",
+    "point": 3,
+    "call": [
+      "org-set-property",
+      "ID",
+      "1"
+    ],
+    "keys": "",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "set-an-invalid-property",
+    "text": "* TODO task\nbody\n",
+    "point": 3,
+    "keys": "C-c C-x p",
+    "answers": [
+      "a b",
+      "1"
+    ],
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "set-a-property-after-planning",
+    "text": "* task\nSCHEDULED: <2026-10-28 Wed>\nbody\n",
+    "point": 3,
+    "call": [
+      "org-set-property",
+      "ID",
+      "7"
+    ],
+    "keys": "",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "set-a-property-from-the-body",
+    "text": "* TODO task\nbody\n",
+    "point": 15,
+    "call": [
+      "org-set-property",
+      "ID",
+      "42"
+    ],
+    "keys": "",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "set-a-property-at-the-end-of-the-buffer",
+    "text": "* task",
+    "point": 3,
+    "call": [
+      "org-set-property",
+      "ID",
+      "42"
+    ],
+    "keys": "",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "set-a-property-in-a-subheading",
+    "text": "* one\n** two\nbody\n",
+    "point": 8,
+    "call": [
+      "org-set-property",
+      "ID",
+      "9"
+    ],
+    "keys": "",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "set-the-todo-property",
+    "text": "* TODO task\nbody\n",
+    "point": 3,
+    "call": [
+      "org-set-property",
+      "TODO",
+      "DONE"
+    ],
+    "keys": "",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "delete-the-only-property",
+    "text": "* task\n:PROPERTIES:\n:ID: 1\n:END:\nbody\n",
+    "point": 3,
+    "call": [
+      "org-delete-property",
+      "ID"
+    ],
+    "keys": "",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "delete-one-of-two-properties",
+    "text": "* task\n:PROPERTIES:\n:ID: 1\n:OWNER: me\n:END:\nbody\n",
+    "point": 3,
+    "call": [
+      "org-delete-property",
+      "ID"
+    ],
+    "keys": "",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "delete-a-property-with-no-drawer",
+    "text": "* TODO task\nbody\n",
+    "point": 3,
+    "call": [
+      "org-delete-property",
+      "ID"
+    ],
+    "keys": "",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "insert-a-drawer",
+    "text": "* task\nbody\n",
+    "point": 7,
+    "keys": "C-c C-x d x",
+    "answers": [
+      "NOTES"
+    ],
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "insert-a-drawer-mid-line",
+    "text": "* task\nbody\n",
+    "point": 9,
+    "keys": "C-c C-x d",
+    "answers": [
+      "LOG"
+    ],
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "insert-the-property-drawer",
+    "text": "* task\nbody\n",
+    "point": 9,
+    "keys": "C-u C-c C-x d x",
+    "modes": [
+      "org-mode"
+    ]
+  }
+]

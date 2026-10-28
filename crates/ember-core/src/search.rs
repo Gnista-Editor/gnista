@@ -234,15 +234,18 @@ pub fn compile(pattern: &str, options: &SearchOptions) -> Result<Regex> {
 pub fn search(b: &Buffer, pattern: &str, from: usize, options: &SearchOptions) -> Result<Option<Match>> {
     let re = compile(pattern, options)?;
     let rope = b.text();
-    let from = from.min(b.len());
-    let line_start = |pos: usize| b.line_start(b.line_of(pos.min(b.len())));
+    // A narrowed buffer is searched only where it is accessible, as in Emacs,
+    // and its start is where \` matches.
+    let (min, max) = (b.point_min(), b.point_max());
+    let from = from.clamp(min, max);
+    let line_start = |pos: usize| b.line_start(b.line_of(pos.min(max))).max(min);
     let anchored_at_start = re.as_str().contains(r"\A");
     let (lo, hi) = if options.backward {
-        let lo = if anchored_at_start { 0 } else { options.bound.map_or(0, line_start) };
+        let lo = if anchored_at_start { min } else { options.bound.map_or(min, line_start) };
         (lo, from)
     } else {
-        let lo = if anchored_at_start { 0 } else { line_start(from) };
-        (lo, options.bound.map_or(b.len(), |bound| bound.min(b.len())))
+        let lo = if anchored_at_start { min } else { line_start(from) };
+        (lo, options.bound.map_or(max, |bound| bound.clamp(min, max)))
     };
     if lo > hi || from > hi {
         return Ok(None);

@@ -28,6 +28,14 @@ pub struct Case {
     /// Whether to compare the windows too: what each shows and its size.
     #[serde(default, skip_serializing_if = "is_false")]
     pub windows: bool,
+    /// Answers to the prompts the keys open, in order, each typed and
+    /// confirmed with RET.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub answers: Vec<String>,
+    /// A file name the buffer seems to visit in Emacs, for commands that
+    /// need one there; Ember's do not.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub visit: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -58,6 +66,10 @@ pub struct Input {
     pub platform: Option<String>,
     #[serde(default)]
     pub windows: bool,
+    #[serde(default)]
+    pub answers: Vec<String>,
+    #[serde(default)]
+    pub visit: Option<String>,
 }
 
 /// One window, as `record.el` reports it: the buffer it shows, its point,
@@ -134,17 +146,27 @@ pub fn run(case: &Case) -> State {
             error = Some(e.to_string());
         }
     }
+    let mut answers = case.answers.iter();
     for key in keys {
         ed.handle_key(key);
         if let Some(e) = ed.take_error() {
             error.get_or_insert(e.to_string());
         }
-        // record.el makes reading the minibuffer an error, as batch Emacs
-        // would read it from standard input; do the same here.
-        if ed.prompt().is_some() {
-            ed.handle_key(Key::parse("C-g").expect("C-g parses"));
-            ed.take_error();
-            error.get_or_insert("Minibuffer read in batch".into());
+        // Prompts take the case's answers in order, as record.el gives them;
+        // with none left, reading the minibuffer is an error, as batch Emacs
+        // would read it from standard input.
+        while ed.prompt().is_some() {
+            let Some(answer) = answers.next() else {
+                ed.handle_key(Key::parse("C-g").expect("C-g parses"));
+                ed.take_error();
+                error.get_or_insert("Minibuffer read in batch".into());
+                break;
+            };
+            ed.type_text(answer);
+            ed.handle_key(Key::parse("RET").expect("RET parses"));
+            if let Some(e) = ed.take_error() {
+                error.get_or_insert(e.to_string());
+            }
         }
     }
     ed.font_lock_ensure().unwrap_or_else(|e| panic!("{}: fontifying: {e}", case.name));

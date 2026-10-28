@@ -699,9 +699,12 @@ fn draw_mode_line(painter: &Painter, ed: &Editor, window: &WindowView, rect: Rec
     job.append(flag, 0.0, text_format(m, flag_color));
     let name_color = if window.selected { t.ink_strong } else { t.muted };
     job.append(&b.name, gap, text_format(m, name_color));
-    let position = format!("L{} C{}", b.line_of(window.point) + 1, b.column(window.point));
+    // Lines count from the start of the accessible portion, as Emacs's %l.
+    let line = b.line_of(window.point) - b.line_of(b.point_min()) + 1;
+    let position = format!("L{line} C{}", b.column(window.point));
     job.append(&position, gap, text_format(m, t.muted));
-    let modes = format!("{}{}", ed.mode_name_in(b), ed.mode_lighters_in(b).concat());
+    let narrow = if b.is_narrowed() { " Narrow" } else { "" };
+    let modes = format!("{}{}{narrow}", ed.mode_name_in(b), ed.mode_lighters_in(b).concat());
     job.append(&modes, gap, text_format(m, t.faint));
     // Emacs shows "Def" in the mode line while a keyboard macro is being defined.
     if ed.defining_kbd_macro() {

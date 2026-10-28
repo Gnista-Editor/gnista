@@ -1,0 +1,171 @@
+[
+  {
+    "name": "refile-under-the-next-heading",
+    "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 0,
+    "keys": "C-c C-w",
+    "answers": [
+      "two"
+    ],
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-oracle-refile.org"
+  },
+  {
+    "name": "refile-under-an-earlier-heading",
+    "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 31,
+    "keys": "C-c C-w",
+    "answers": [
+      "one"
+    ],
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-oracle-refile.org"
+  },
+  {
+    "name": "refile-under-the-last-heading",
+    "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 0,
+    "keys": "C-c C-w",
+    "answers": [
+      "three"
+    ],
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-oracle-refile.org"
+  },
+  {
+    "name": "refile-a-child",
+    "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 24,
+    "keys": "C-c C-w",
+    "answers": [
+      "three"
+    ],
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-oracle-refile.org"
+  },
+  {
+    "name": "refile-into-itself",
+    "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 11,
+    "keys": "C-c C-w",
+    "answers": [
+      "two"
+    ],
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-oracle-refile.org"
+  },
+  {
+    "name": "refile-to-no-target",
+    "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 0,
+    "keys": "C-c C-w",
+    "answers": [
+      "nowhere"
+    ],
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-oracle-refile.org"
+  },
+  {
+    "name": "refile-before-the-first-heading",
+    "text": "intro\n* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 0,
+    "keys": "C-c C-w",
+    "answers": [
+      "two"
+    ],
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-oracle-refile.org"
+  },
+  {
+    "name": "refile-copy",
+    "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 0,
+    "keys": "C-c M-w",
+    "answers": [
+      "three"
+    ],
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-oracle-refile.org"
+  },
+  {
+    "name": "refile-goto",
+    "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 0,
+    "keys": "C-u C-c C-w",
+    "answers": [
+      "three"
+    ],
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-oracle-refile.org"
+  },
+  {
+    "name": "refile-a-folded-subtree",
+    "text": "* one\nbody\n** sub\n* two\nmore\n",
+    "point": 0,
+    "keys": "TAB C-c C-w",
+    "answers": [
+      "two"
+    ],
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-oracle-refile.org"
+  },
+  {
+    "name": "refile-with-todo-and-tags",
+    "text": "* TODO [#A] one :work:\nbody\n* DONE two :home:\n",
+    "point": 0,
+    "keys": "C-c C-w",
+    "answers": [
+      "two"
+    ],
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-oracle-refile.org"
+  },
+  {
+    "name": "refile-then-undo",
+    "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 0,
+    "keys": "C-c C-w C-/",
+    "answers": [
+      "two"
+    ],
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-oracle-refile.org"
+  },
+  {
+    "name": "refile-at-the-end-without-a-newline",
+    "text": "* one\nbody\n* two",
+    "point": 0,
+    "keys": "C-c C-w",
+    "answers": [
+      "two"
+    ],
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-oracle-refile.org"
+  }
+]

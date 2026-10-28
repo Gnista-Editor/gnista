@@ -153,11 +153,13 @@ impl Editor {
     /// many rows it moved.
     pub fn move_rows_in(&self, b: &Buffer, mut line: usize, n: i64) -> (usize, i64) {
         let mut moved = 0;
+        // Only the accessible lines, when the buffer is narrowed.
+        let (first, last) = (b.line_of(b.point_min()), b.line_of(b.point_max()));
         while moved < n.abs() {
             let next = if n > 0 {
-                (line + 1..b.line_count()).find(|&l| self.line_starts_row_in(b, l))
+                (line + 1..=last.min(b.line_count() - 1)).find(|&l| self.line_starts_row_in(b, l))
             } else {
-                (0..line).rev().find(|&l| self.line_starts_row_in(b, l))
+                (first..line).rev().find(|&l| self.line_starts_row_in(b, l))
             };
             match next {
                 Some(l) => line = l,
@@ -369,13 +371,14 @@ impl Editor {
         dark: Option<bool>,
         wrap: Option<Wrap>,
     ) -> Vec<Row> {
-        let len = b.len();
+        // Only the accessible portion shows, as in a narrowed Emacs buffer.
+        let len = b.point_max();
         let mut logical = 0;
         // How many lines to work syntax faces out for at a time.
         let hint = count.min(lines).min(1000);
         let mut styles: HashMap<Vec<String>, Style> = HashMap::new();
         let mut rows = Vec::new();
-        let mut pos = b.line_start(self.row_line_in(b, top_line.min(b.line_count() - 1)));
+        let mut pos = b.line_start(self.row_line_in(b, top_line.min(b.line_count() - 1))).max(b.point_min());
         // Syntax faces, worked out for a window's worth of lines at a time.
         let mut syntax = SyntaxFaces::default();
         while rows.len() < count && logical < lines {
@@ -399,7 +402,7 @@ impl Editor {
                     pos = visible;
                     continue;
                 }
-                let line_end = b.line_end(b.line_of(pos));
+                let line_end = b.line_end(b.line_of(pos)).min(len);
                 if pos == line_end {
                     // A visible newline ends the row.
                     break pos;

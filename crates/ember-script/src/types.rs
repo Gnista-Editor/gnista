@@ -161,6 +161,8 @@ const API: &str = r##"
    * insert now; M-y asks for 1, the kill before it.
    */
   function currentKill(n?: number): string;
+  /** Take the newest kill off the kill ring and return it, as (pop kill-ring) does. */
+  function popKill(): string | undefined;
   /** The command that ran before this one (Emacs's last-command). */
   function lastCommand(): string | undefined;
   /**
@@ -565,6 +567,14 @@ const API: &str = r##"
    * and positions from these functions rather than indices into bufferText().
    */
   function bufferSize(): number;
+  /** Where the accessible portion starts: 0 unless the buffer is narrowed, as point-min. */
+  function pointMin(): number;
+  /** Where the accessible portion ends: the buffer's size unless it is narrowed, as point-max. */
+  function pointMax(): number;
+  /** Restrict editing and display to a range, as narrow-to-region. */
+  function narrowToRegion(start: number, end: number): void;
+  /** Make the whole buffer accessible again, as widen. */
+  function widen(): void;
   /**
    * A count of the changes to the current buffer's text, as Emacs's
    * buffer-modified-tick: it is larger after any edit.

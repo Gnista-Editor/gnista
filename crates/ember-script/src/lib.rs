@@ -507,6 +507,10 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
         })?,
     )?;
     native.set(
+        "popKill",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.pop_kill())))?,
+    )?;
+    native.set(
         "lastCommand",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| {
             with_editor(&ctx, |ed| Ok(ed.last_command().map(str::to_string)))
@@ -1014,6 +1018,22 @@ fn install_native_windows<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs
     Ok(())
 }
 
+/// Where a line starts and ends within the accessible portion, as Emacs's
+/// `line-beginning-position` and `line-end-position` stop at `point-min`
+/// and `point-max` in a narrowed buffer: a line the narrowing cuts through
+/// is only its accessible part. A line wholly outside is left whole, as
+/// code that looks there is looking past the buffer's ends.
+fn accessible_line(b: &ember_core::Buffer, line: usize) -> (usize, usize) {
+    let line = line.min(b.line_count() - 1);
+    let (start, end) = (b.line_start(line), b.line_end(line));
+    let (min, max) = (b.point_min(), b.point_max());
+    if end < min || start > max {
+        return (start, end);
+    }
+    let start = start.clamp(min, max);
+    (start, end.clamp(start, max))
+}
+
 /// Syntax trees, as Emacs's treesit.el.
 fn install_native_treesit<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::Result<()> {
     native.set(
@@ -1175,24 +1195,53 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
     native.set(
         "lineStart",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, line: usize| {
-            with_editor(&ctx, |ed| Ok(ed.buffer().line_start(line.min(ed.buffer().line_count() - 1))))
+            with_editor(&ctx, |ed| Ok(accessible_line(ed.buffer(), line).0))
         })?,
     )?;
     native.set(
         "lineEnd",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, line: usize| {
-            with_editor(&ctx, |ed| Ok(ed.buffer().line_end(line.min(ed.buffer().line_count() - 1))))
+            with_editor(&ctx, |ed| Ok(accessible_line(ed.buffer(), line).1))
         })?,
     )?;
     native.set(
         "lineText",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, line: usize| {
-            with_editor(&ctx, |ed| Ok(ed.buffer().line_text(line.min(ed.buffer().line_count() - 1))))
+            with_editor(&ctx, |ed| {
+                let (start, end) = accessible_line(ed.buffer(), line);
+                Ok(ed.buffer().slice(start..end))
+            })
         })?,
     )?;
     native.set(
         "bufferSize",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer().len())))?,
+    )?;
+    native.set(
+        "pointMin",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer().point_min())))?,
+    )?;
+    native.set(
+        "pointMax",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer().point_max())))?,
+    )?;
+    native.set(
+        "narrowToRegion",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, start: usize, end: usize| {
+            with_editor(&ctx, |ed| {
+                ed.buffer_mut().narrow(start, end);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "widen",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            with_editor(&ctx, |ed| {
+                ed.buffer_mut().widen();
+                Ok(())
+            })
+        })?,
     )?;
     native.set(
         "bufferModified",

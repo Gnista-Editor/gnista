@@ -208,5 +208,18 @@
     "point": 15,
     "keys": "C-x 3 M-t",
     "windows": true
+  },
+  {
+    "name": "split-a-twenty-column-window",
+    "text": "",
+    "keys": "C-x 3 C-x 3 C-x 3",
+    "windows": true
+  },
+  {
+    "name": "undo-puts-back-the-other-windows-point",
+    "text": "\ttwo a.b a.b\n",
+    "point": 7,
+    "keys": "C-x 2 M-DEL C-/",
+    "windows": true
   }
 ]

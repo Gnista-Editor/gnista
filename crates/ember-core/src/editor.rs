@@ -1122,6 +1122,14 @@ impl Editor {
         &self.kill_ring
     }
 
+    /// Takes the newest kill off the kill ring, as `(pop kill-ring)` does in
+    /// Lisp, and returns it.
+    pub fn pop_kill(&mut self) -> Option<String> {
+        let kill = self.kill_ring.pop();
+        self.yank_pointer = self.yank_pointer.min(self.kill_ring.len().saturating_sub(1));
+        kill
+    }
+
     // Minibuffer
 
     /// The open prompt's text, such as `Find file: `.

@@ -1,0 +1,159 @@
+[
+  {
+    "name": "narrow-to-subtree-then-end",
+    "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 11,
+    "keys": "C-x n s M->",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "narrow-to-subtree-then-start-and-up",
+    "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 24,
+    "keys": "C-x n s M-< C-p",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "type-at-the-end-of-a-narrowed-subtree",
+    "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 11,
+    "keys": "C-x n s M-> x C-x n w",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "search-stays-in-the-narrowed-subtree",
+    "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 11,
+    "keys": "C-x n s C-s t h r e e RET",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "cycle-the-narrowed-buffer",
+    "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 11,
+    "keys": "C-x n s S-<tab>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-a-subtree-up-at-the-narrowed-start",
+    "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 11,
+    "keys": "C-x n s M-<up>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-a-subtree-down-at-the-narrowed-end",
+    "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 22,
+    "keys": "C-x n s M-<down>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "kill-the-whole-narrowed-buffer",
+    "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 11,
+    "keys": "C-x n s C-x h C-w C-x n w",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "next-line-past-the-narrowed-end",
+    "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 22,
+    "keys": "C-x n s C-n C-n C-n",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "narrow-before-the-first-heading",
+    "text": "intro\n* one\n",
+    "keys": "C-x n s",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "narrow-to-a-paragraph",
+    "text": "* one\nSome text here.\n\n#+begin_src rust\nfn main() {}\n#+end_src\n* two\n",
+    "point": 8,
+    "keys": "C-x n e M-> M-<",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "narrow-to-a-block",
+    "text": "* one\nSome text here.\n\n#+begin_src rust\nfn main() {}\n#+end_src\n* two\n",
+    "point": 40,
+    "keys": "C-x n b M-< C-x n w",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "narrow-to-a-block-outside-one",
+    "text": "* one\nSome text here.\n\n#+begin_src rust\nfn main() {}\n#+end_src\n* two\n",
+    "point": 8,
+    "keys": "C-x n b",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "new-heading-in-a-narrowed-subtree",
+    "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 12,
+    "keys": "C-x n s M-RET x C-x n w",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "widen-after-narrowing",
+    "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+    "point": 11,
+    "keys": "C-x n s C-x n w M->",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "narrow-to-region-then-end",
+    "text": "one\ntwo\nthree\nfour",
+    "point": 4,
+    "keys": "C-SPC C-n C-n C-x n n M-> x"
+  },
+  {
+    "name": "narrow-to-region-without-a-mark",
+    "text": "one\ntwo",
+    "keys": "C-x n n"
+  },
+  {
+    "name": "forward-char-past-the-narrowed-end",
+    "text": "one\ntwo\nthree",
+    "point": 4,
+    "keys": "C-SPC C-e C-x n n C-a C-f C-f C-f C-f"
+  },
+  {
+    "name": "delete-at-the-narrowed-start",
+    "text": "one\ntwo\nthree",
+    "point": 4,
+    "keys": "C-SPC C-e C-x n n C-a DEL"
+  }
+]

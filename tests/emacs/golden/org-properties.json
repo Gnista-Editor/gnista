@@ -1,0 +1,422 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "set-a-property-makes-a-drawer",
+      "input": {
+        "text": "* TODO task\nbody\n",
+        "point": 3,
+        "keys": "",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-set-property",
+          "ID",
+          "42"
+        ],
+        "platform": null
+      },
+      "text": "* TODO task\n:PROPERTIES:\n:ID:       42\n:END:\nbody\n",
+      "visible": "* TODO task\n:PROPERTIES:\nbody\n",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "set-a-property-from-keys",
+      "input": {
+        "text": "* TODO task\nbody\n",
+        "point": 3,
+        "keys": "C-c C-x p",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "ID",
+          "42"
+        ]
+      },
+      "text": "* TODO task\n:PROPERTIES:\n:ID:       42\n:END:\nbody\n",
+      "visible": "* TODO task\n:PROPERTIES:\nbody\n",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "set-a-second-property",
+      "input": {
+        "text": "* task\n:PROPERTIES:\n:ID: 1\n:END:\nbody\n",
+        "point": 3,
+        "keys": "",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-set-property",
+          "OWNER",
+          "me"
+        ],
+        "platform": null
+      },
+      "text": "* task\n:PROPERTIES:\n:ID: 1\n:OWNER:    me\n:END:\nbody\n",
+      "visible": "* task\n:PROPERTIES:\n:ID: 1\n:OWNER:    me\n:END:\nbody\n",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "set-a-property-again",
+      "input": {
+        "text": "* task\n:PROPERTIES:\n:ID: 1\n:END:\nbody\n",
+        "point": 3,
+        "keys": "",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-set-property",
+          "id",
+          "2"
+        ],
+        "platform": null
+      },
+      "text": "* task\n:PROPERTIES:\n:id:       2\n:END:\nbody\n",
+      "visible": "* task\n:PROPERTIES:\n:id:       2\n:END:\nbody\n",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "set-a-property-to-what-it-is",
+      "input": {
+        "text": "* task\n:PROPERTIES:\n:ID: 1\n:END:\n",
+        "point": 3,
+        "keys": "",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-set-property",
+          "ID",
+          "1"
+        ],
+        "platform": null
+      },
+      "text": "* task\n:PROPERTIES:\n:ID: 1\n:END:\n",
+      "visible": "* task\n:PROPERTIES:\n:ID: 1\n:END:\n",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "set-an-invalid-property",
+      "input": {
+        "text": "* TODO task\nbody\n",
+        "point": 3,
+        "keys": "C-c C-x p",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "a b",
+          "1"
+        ]
+      },
+      "text": "* TODO task\nbody\n",
+      "visible": "* TODO task\nbody\n",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Invalid property name: \"a b\""
+    },
+    {
+      "name": "set-a-property-after-planning",
+      "input": {
+        "text": "* task\nSCHEDULED: <2026-10-28 Wed>\nbody\n",
+        "point": 3,
+        "keys": "",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-set-property",
+          "ID",
+          "7"
+        ],
+        "platform": null
+      },
+      "text": "* task\nSCHEDULED: <2026-10-28 Wed>\n:PROPERTIES:\n:ID:       7\n:END:\nbody\n",
+      "visible": "* task\nSCHEDULED: <2026-10-28 Wed>\n:PROPERTIES:\nbody\n",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "set-a-property-from-the-body",
+      "input": {
+        "text": "* TODO task\nbody\n",
+        "point": 15,
+        "keys": "",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-set-property",
+          "ID",
+          "42"
+        ],
+        "platform": null
+      },
+      "text": "* TODO task\n:PROPERTIES:\n:ID:       42\n:END:\nbody\n",
+      "visible": "* TODO task\n:PROPERTIES:\nbody\n",
+      "point": 48,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "set-a-property-at-the-end-of-the-buffer",
+      "input": {
+        "text": "* task",
+        "point": 3,
+        "keys": "",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-set-property",
+          "ID",
+          "42"
+        ],
+        "platform": null
+      },
+      "text": "* task\n:PROPERTIES:\n:ID:       42\n:END:\n",
+      "visible": "* task\n:PROPERTIES:\n",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "set-a-property-in-a-subheading",
+      "input": {
+        "text": "* one\n** two\nbody\n",
+        "point": 8,
+        "keys": "",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-set-property",
+          "ID",
+          "9"
+        ],
+        "platform": null
+      },
+      "text": "* one\n** two\n:PROPERTIES:\n:ID:       9\n:END:\nbody\n",
+      "visible": "* one\n** two\n:PROPERTIES:\nbody\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "set-the-todo-property",
+      "input": {
+        "text": "* TODO task\nbody\n",
+        "point": 3,
+        "keys": "",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-set-property",
+          "TODO",
+          "DONE"
+        ],
+        "platform": null
+      },
+      "text": "* DONE task\nbody\n",
+      "visible": "* DONE task\nbody\n",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-the-only-property",
+      "input": {
+        "text": "* task\n:PROPERTIES:\n:ID: 1\n:END:\nbody\n",
+        "point": 3,
+        "keys": "",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-delete-property",
+          "ID"
+        ],
+        "platform": null
+      },
+      "text": "* task\nbody\n",
+      "visible": "* task\nbody\n",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-one-of-two-properties",
+      "input": {
+        "text": "* task\n:PROPERTIES:\n:ID: 1\n:OWNER: me\n:END:\nbody\n",
+        "point": 3,
+        "keys": "",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-delete-property",
+          "ID"
+        ],
+        "platform": null
+      },
+      "text": "* task\n:PROPERTIES:\n:OWNER: me\n:END:\nbody\n",
+      "visible": "* task\n:PROPERTIES:\n:OWNER: me\n:END:\nbody\n",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-a-property-with-no-drawer",
+      "input": {
+        "text": "* TODO task\nbody\n",
+        "point": 3,
+        "keys": "",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-delete-property",
+          "ID"
+        ],
+        "platform": null
+      },
+      "text": "* TODO task\nbody\n",
+      "visible": "* TODO task\nbody\n",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "insert-a-drawer",
+      "input": {
+        "text": "* task\nbody\n",
+        "point": 7,
+        "keys": "C-c C-x d x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "NOTES"
+        ]
+      },
+      "text": "* task\n:NOTES:\nx\n:END:\nbody\n",
+      "visible": "* task\n:NOTES:\nx\n:END:\nbody\n",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "insert-a-drawer-mid-line",
+      "input": {
+        "text": "* task\nbody\n",
+        "point": 9,
+        "keys": "C-c C-x d",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "LOG"
+        ]
+      },
+      "text": "* task\nbo\n:LOG:\n\n:END:\ndy\n",
+      "visible": "* task\nbo\n:LOG:\n\n:END:\ndy\n",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "insert-the-property-drawer",
+      "input": {
+        "text": "* task\nbody\n",
+        "point": 9,
+        "keys": "C-u C-c C-x d x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* task\n:PROPERTIES:\nx\n:END:\nbody\n",
+      "visible": "* task\n:PROPERTIES:\nx\n:END:\nbody\n",
+      "point": 21,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

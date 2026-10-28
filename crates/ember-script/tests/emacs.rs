@@ -83,6 +83,8 @@ fn ember_behaves_like_emacs() {
                 call: case.call.clone(),
                 platform: case.platform.clone(),
                 windows: case.windows,
+                answers: case.answers.clone(),
+                visit: case.visit.clone(),
             };
             let Some(emacs) = recorded.get(case.name.as_str()) else {
                 problems.push(format!("{id}: not recorded; record it with record.el"));
