@@ -1352,8 +1352,19 @@ dependencies = [
  "egui",
  "egui_kittest",
  "ember-core",
+ "ember-mcp",
  "ember-script",
  "fontique",
+ "tempfile",
+]
+
+[[package]]
+name = "ember-mcp"
+version = "0.1.0"
+dependencies = [
+ "ember-core",
+ "ember-script",
+ "serde_json",
  "tempfile",
 ]
 

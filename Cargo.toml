@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/ember-core", "crates/ember", "crates/ember-script", "crates/ember-gui"]
+members = ["crates/ember-core", "crates/ember", "crates/ember-script", "crates/ember-gui", "crates/ember-mcp"]
 resolver = "3"
 
 [workspace.package]

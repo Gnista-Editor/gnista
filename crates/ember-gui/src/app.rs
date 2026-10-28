@@ -35,6 +35,10 @@ pub struct EmberApp {
     /// else moves the view, such as C-v or switching buffers, the offset resets.
     scroll_anchor: (WindowId, String, usize),
     mouse: Mouse,
+    /// Messages from an agent through ember-mcp, answered between frames,
+    /// and the script runtime its eval_typescript tool uses.
+    agent: Option<std::sync::mpsc::Receiver<ember_mcp::socket::Request>>,
+    scripting: Option<ember_script::Scripting>,
 }
 
 /// How long a second click may follow the first to count as a double click, in seconds.
@@ -71,6 +75,30 @@ impl EmberApp {
             scroll_window: 0,
             scroll_anchor: (0, String::new(), 0),
             mouse: Mouse::default(),
+            agent: None,
+            scripting: None,
+        }
+    }
+
+    /// Answers an agent's messages from `requests`, as ember-mcp passes them
+    /// on, with the editor this window shows. Keeps the script runtime too,
+    /// which commands that scripts define need alive.
+    pub fn with_agent(
+        mut self,
+        requests: Option<std::sync::mpsc::Receiver<ember_mcp::socket::Request>>,
+        scripting: Option<ember_script::Scripting>,
+    ) -> EmberApp {
+        self.agent = requests;
+        self.scripting = scripting;
+        self
+    }
+
+    /// Answers the agent's waiting messages, each as one call of its own.
+    fn answer_agent(&mut self) {
+        let Some(requests) = &self.agent else { return };
+        for request in requests.try_iter() {
+            let reply = ember_mcp::handle_message(&mut self.editor, self.scripting.as_ref(), &request.line);
+            let _ = request.reply.send(reply);
         }
     }
 
@@ -95,6 +123,7 @@ impl EmberApp {
                 }
             }
         }
+        self.answer_agent();
         if self.view() != self.scroll_anchor {
             self.scroll_offset = 0.0;
         }

@@ -1,0 +1,13 @@
+[package]
+name = "ember-mcp"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+ember-core = { version = "0.1.0", path = "../ember-core" }
+ember-script = { version = "0.1.0", path = "../ember-script" }
+serde_json = "1"
+
+[dev-dependencies]
+tempfile = "3.27.0"

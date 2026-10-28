@@ -1,0 +1,104 @@
+//! The local socket a running Ember listens on, so `ember-mcp` can let an
+//! agent use the editor the user sees. It is a Unix domain socket in a
+//! directory only the user can open, since whoever connects can run any
+//! command: nothing goes over a network.
+//!
+//! The editor is not shared between threads, so connections hand each
+//! message to the editor's own thread as a [`Request`] and wait for the reply.
+
+use std::io::{self, BufRead, BufReader, Write};
+use std::os::unix::fs::PermissionsExt;
+use std::os::unix::net::{UnixListener, UnixStream};
+use std::path::{Path, PathBuf};
+use std::sync::mpsc::{self, Receiver, Sender};
+use std::thread;
+
+/// One message from a connection, for the editor's thread to answer with
+/// [`crate::handle_message`] and send back on `reply`.
+pub struct Request {
+    pub line: String,
+    pub reply: Sender<Option<String>>,
+}
+
+/// Where the socket goes: `$EMBER_SOCKET`, or `gui.sock` in a directory of
+/// the user's own under the temporary directory.
+pub fn default_path() -> PathBuf {
+    if let Some(path) = std::env::var_os("EMBER_SOCKET") {
+        return PathBuf::from(path);
+    }
+    let user = std::env::var("USER").unwrap_or_else(|_| "user".to_string());
+    std::env::temp_dir().join(format!("ember-{user}")).join("gui.sock")
+}
+
+/// Listens on `path`, calling `wake` whenever a request waits so the
+/// editor's thread can take it from the receiver. Fails if another Ember is
+/// listening there already; a socket left by one that has gone is replaced.
+pub fn listen(path: &Path, wake: impl Fn() + Send + Sync + 'static) -> io::Result<Receiver<Request>> {
+    if let Some(dir) = path.parent() {
+        std::fs::create_dir_all(dir)?;
+        std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700))?;
+    }
+    if path.exists() {
+        if UnixStream::connect(path).is_ok() {
+            return Err(io::Error::new(io::ErrorKind::AddrInUse, format!("Another Ember listens on {}", path.display())));
+        }
+        std::fs::remove_file(path)?;
+    }
+    let listener = UnixListener::bind(path)?;
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))?;
+    let (tx, rx) = mpsc::channel();
+    let wake = std::sync::Arc::new(wake);
+    thread::spawn(move || {
+        for stream in listener.incoming().flatten() {
+            let (tx, wake) = (tx.clone(), wake.clone());
+            thread::spawn(move || serve(stream, &tx, &*wake));
+        }
+    });
+    Ok(rx)
+}
+
+/// Answers a connection's messages, a line each, until it closes.
+fn serve(stream: UnixStream, requests: &Sender<Request>, wake: &(dyn Fn() + Send + Sync)) {
+    let Ok(mut out) = stream.try_clone() else { return };
+    for line in BufReader::new(stream).lines() {
+        let Ok(line) = line else { return };
+        if line.trim().is_empty() {
+            continue;
+        }
+        let (reply, answer) = mpsc::channel();
+        if requests.send(Request { line, reply }).is_err() {
+            return;
+        }
+        wake();
+        match answer.recv() {
+            Ok(Some(text)) => {
+                if writeln!(out, "{text}").and_then(|()| out.flush()).is_err() {
+                    return;
+                }
+            }
+            Ok(None) => {}
+            Err(_) => return,
+        }
+    }
+}
+
+/// Passes messages between standard input and output and a running Ember's
+/// socket, until either side closes.
+pub fn proxy(stream: UnixStream) -> io::Result<()> {
+    let mut to_editor = stream.try_clone()?;
+    let from_editor = BufReader::new(stream);
+    let replies = thread::spawn(move || -> io::Result<()> {
+        let mut stdout = io::stdout();
+        for line in from_editor.lines() {
+            writeln!(stdout, "{}", line?)?;
+            stdout.flush()?;
+        }
+        Ok(())
+    });
+    for line in io::stdin().lock().lines() {
+        writeln!(to_editor, "{}", line?)?;
+        to_editor.flush()?;
+    }
+    to_editor.shutdown(std::net::Shutdown::Write)?;
+    replies.join().unwrap_or(Ok(()))
+}

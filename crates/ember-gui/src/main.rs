@@ -37,9 +37,19 @@ fn main() -> eframe::Result {
         options,
         Box::new(move |cc| {
             theme::install_fonts(&cc.egui_ctx, true);
-            // Commands defined by scripts hold the runtime; keep the handle alive with them.
-            let _ = &scripting;
-            Ok(Box::new(EmberApp::new(editor)))
+            let mut app = EmberApp::new(editor);
+            // An agent reaches this editor through ember-mcp, by a socket
+            // only this user can open; a request wakes the window to answer it.
+            let ctx = cc.egui_ctx.clone();
+            let requests = match ember_mcp::socket::listen(&ember_mcp::socket::default_path(), move || ctx.request_repaint()) {
+                Ok(requests) => Some(requests),
+                Err(e) => {
+                    app.editor.message(format!("No agent socket: {e}"));
+                    None
+                }
+            };
+            // Commands defined by scripts hold the runtime, so the app keeps it.
+            Ok(Box::new(app.with_agent(requests, scripting)))
         }),
     )
 }
