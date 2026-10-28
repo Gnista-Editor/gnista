@@ -2733,28 +2733,33 @@ function fontify(start: number, end: number): void {
  * Styles the bracket links between two positions that hold a newline,
  * which Org's link regexp allows and its font-lock matches across lines.
  */
-function fontifyLinksAcrossLines(from: number, to: number): void {
+function fontifyLinksAcrossLines(start: number, end: number): void {
+  // A line beyond each end too, as Org's font-lock extends its region for
+  // these, so fontifying one line still finds a link it shares with the next.
+  const from = ember.lineStart(Math.max(0, lineAt(start) - 1));
+  const to = lineStartOrEnd(lineAt(Math.max(start, end - 1)) + 2);
   const text = ember.bufferText(from, to);
   if (!text.includes("\n")) return;
   const linkRe = /\[\[((?:[^\][\\]|\\.)+)\](?:\[([^]+?)\])?\]/g;
   for (const m of text.matchAll(linkRe)) {
     if (!m[0].includes("\n")) continue;
-    const start = from + charCount(text.slice(0, m.index ?? 0));
-    const pos = (k: number): number => start + charCount(m[0].slice(0, k));
+    const linkStart = from + charCount(text.slice(0, m.index ?? 0));
+    if (linkStart >= end || linkStart + charCount(m[0]) <= start) continue;
+    const pos = (k: number): number => linkStart + charCount(m[0].slice(0, k));
     // A link stays within its paragraph: no line it goes on to may start an element.
     const lines = m[0].split("\n").length - 1;
-    const first = lineAt(start);
+    const first = lineAt(linkStart);
     let within = true;
     for (let l = first + 1; l <= first + lines; l++) if (startsElement(l, ember.bufferSize())) within = false;
     if (!within) continue;
-    face(start, pos(m[0].length), "org-link");
+    face(linkStart, pos(m[0].length), "org-link");
     if (ember.variable("org-link-descriptive") !== true) continue;
     if (m[2] !== undefined) {
       const desc = 2 + m[1].length + 2;
-      hide(start, pos(desc));
+      hide(linkStart, pos(desc));
       hide(pos(desc + m[2].length), pos(m[0].length));
     } else {
-      hide(start, pos(2));
+      hide(linkStart, pos(2));
       hide(pos(m[0].length - 2), pos(m[0].length));
     }
   }
@@ -3089,6 +3094,17 @@ function orgCycle(arg: ember.PrefixArg): void {
     }
     if (itemLine(line)) {
       cycleItem(line);
+      return;
+    }
+    // TAB as indent-for-tab-command does: the region if it is active, then
+    // the mark goes, as indent-region sets deactivate-mark.
+    if (orgRegionActive()) {
+      const mark = ember.mark() as number;
+      const pt = marker(ember.point());
+      orgIndentRegion(Math.min(mark, ember.point()), Math.max(mark, ember.point()));
+      ember.gotoChar(pt.pos);
+      dropMarker(pt);
+      ember.deactivateMark();
       return;
     }
     indentLine(line);
@@ -4081,7 +4097,8 @@ function parseElements(
       e = elem("property-drawer", p, Math.min(lineStartOrEnd(close + 1), to), parent, lineStartOrEnd(line + 1));
       e.contentsEnd = ember.lineStart(close);
       for (let l = line + 1; l < close; l++) elem("node-property", ember.lineStart(l), ember.lineStart(l + 1), e);
-    } else if (/^[ \t]*\|/.test(text)) {
+    } else if (p === ember.lineStart(line) && /^[ \t]*\|/.test(text)) {
+      // Anchored at the line's start, as Org's is: an item's text that starts with a bar is no table.
       let last = line;
       while (last + 1 < ember.lineCount() && lineStartOrEnd(last + 1) < to && /^[ \t]*\|/.test(ember.lineText(last + 1))) last++;
       e = elem("table", p, Math.min(lineStartOrEnd(last + 1), to), parent, p);

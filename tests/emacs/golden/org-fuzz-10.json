@@ -654,6 +654,111 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "seed25-0063-bar-ret",
+      "input": {
+        "text": "1) notes",
+        "point": 3,
+        "keys": "| RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1) |\n   notes",
+      "visible": "1) |\n   notes",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed25-0540-c-j-c-n",
+      "input": {
+        "text": "see [[*notes][the notes]] now",
+        "point": 9,
+        "keys": "C-j C-n",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "see [[*no\ntes][the notes]] now",
+      "visible": "see the notes now",
+      "point": 30,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "End of buffer"
+    },
+    {
+      "name": "seed25-2314-c-c-at-m--tab",
+      "input": {
+        "text": "# a comment\n* TODO fix plan [%]\n| bb |  |",
+        "point": 32,
+        "keys": "C-c @ M-< TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "# a comment\n* TODO fix plan [%]\n| bb |  |",
+      "visible": "# a comment\n* TODO fix plan [%]\n| bb |  |",
+      "point": 0,
+      "mark": 41,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "tab-indents-the-region",
+      "input": {
+        "text": "- a\nb\n   c\n",
+        "point": 0,
+        "keys": "C-SPC M-> TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- a\nb\nc\n",
+      "visible": "- a\nb\nc\n",
+      "point": 8,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "an-item-starting-with-a-bar-is-no-table",
+      "input": {
+        "text": "- |a|\n",
+        "point": 0,
+        "keys": "C-e RET x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- |a|\n  x\n",
+      "visible": "- |a|\n  x\n",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
     }
   ]
 }

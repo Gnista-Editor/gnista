@@ -262,5 +262,48 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "seed25-0063-bar-ret",
+    "text": "1) notes",
+    "keys": "| RET",
+    "point": 3,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed25-0540-c-j-c-n",
+    "text": "see [[*notes][the notes]] now",
+    "keys": "C-j C-n",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed25-2314-c-c-at-m--tab",
+    "text": "# a comment\n* TODO fix plan [%]\n| bb |  |",
+    "keys": "C-c @ M-< TAB",
+    "point": 32,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "tab-indents-the-region",
+    "text": "- a\nb\n   c\n",
+    "keys": "C-SPC M-> TAB",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "an-item-starting-with-a-bar-is-no-table",
+    "text": "- |a|\n",
+    "keys": "C-e RET x",
+    "modes": [
+      "org-mode"
+    ]
   }
 ]
