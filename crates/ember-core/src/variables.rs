@@ -279,6 +279,11 @@ impl Editor {
         self.run_hook_with_args(hook, &[])
     }
 
+    /// Whether a hook has any functions for the current buffer.
+    pub(crate) fn hook_has_functions(&self, hook: &str) -> bool {
+        self.buffer().local_hooks.get(hook).is_some_and(|l| !l.is_empty()) || self.hooks.get(hook).is_some_and(|l| !l.is_empty())
+    }
+
     /// Runs a hook's functions with arguments, as Emacs's `run-hook-with-args`.
     pub fn run_hook_with_args(&mut self, hook: &str, args: &[Value]) -> Result<()> {
         let b = self.buffer();
@@ -405,6 +410,10 @@ pub(crate) fn install(ed: &mut Editor) {
         (
             "jit-lock-functions",
             "Called with a start and an end to fontify that stretch of whole lines, just before it is shown. A major mode adds its function here, buffer-locally, and the function puts face and other properties on the text. Editing a line refontifies it and everything after it.",
+        ),
+        (
+            "after-change-functions",
+            "Called after each change to the text with where the new text starts and ends and how long the old text was: an insertion has an old length of 0, a deletion starts and ends where the text went. Changes the functions make do not call them again.",
         ),
         ("find-file-hook", "Run after visiting a file, once its major mode is chosen."),
         ("before-save-hook", "Run before saving a buffer to its file."),

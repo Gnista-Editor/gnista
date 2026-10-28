@@ -1,0 +1,69 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "seed7-0470-m-s-down-backtab-m-s-up",
+      "input": {
+        "text": "1. gamma\n2. call\n* beta",
+        "point": 9,
+        "keys": "M-S-<down> <backtab> M-S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1. gamma\n2. call\n* beta\n",
+      "visible": "1. gamma\n\n* beta",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed7-1069-c-u-tab-m-s-up",
+      "input": {
+        "text": "** DONE notes\n** [#C] gamma\n*** call read",
+        "point": 36,
+        "keys": "C-u TAB M-S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** DONE notes\n*** call read\n** [#C] gamma\n",
+      "visible": "** DONE notes\n",
+      "point": 14,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed7-0090-c-u-tab-m-up",
+      "input": {
+        "text": "* TODO gamma\ncall <2026-10-14 Wed>\n+ [ ] plan\n\n",
+        "point": 46,
+        "keys": "C-u TAB M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO gamma\n+ [ ] plan\ncall <2026-10-14 Wed>\n\n",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

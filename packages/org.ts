@@ -410,7 +410,9 @@ function subtreeRegion(all: Heading[], i: number): [number, number] {
 // Folding, after org-fold.el and org-cycle.el
 
 function hideOverlay(start: number, end: number, spec: string): void {
-  ember.makeOverlay(start, end, { invisible: spec, evaporate: true });
+  // Text inserted at either end goes outside, as with org-fold-core's
+  // overlays, which advance at the front only.
+  ember.makeOverlay(start, end, { invisible: spec, evaporate: true }, { frontAdvance: true });
 }
 
 /**
@@ -725,25 +727,15 @@ ember.defineCommand({
   run: () => checkInvisibleEditMaybe(),
 });
 
-ember.defineVariable({
-  name: "org-fold--checked-tick",
-  doc: "The buffer's modified tick when its folds were last checked against the text they hide.",
-  value: null,
-  local: true,
-});
-
 /**
- * After a command changes the text, unfolds folds that no longer match
- * what they hide, as Org's fragile folding specs do from
- * after-change-functions: a subtree fold must follow a heading or item
- * line and never hides a top-level heading, and a drawer or block fold
- * must still run from its first line to its last.
+ * Unfolds folds near a change that no longer match what they hide, as
+ * Org's fragile folding specs do from after-change-functions: a subtree
+ * fold must follow a heading or item line and never hides a top-level
+ * heading, and a drawer or block fold must still run from its first line
+ * to its last.
  */
-function fixFolds(): void {
-  const tick = ember.bufferModifiedTick();
-  if (ember.variable("org-fold--checked-tick") === tick) return;
-  ember.setVariable("org-fold--checked-tick", tick);
-  for (const id of ember.overlaysIn(0, ember.bufferSize())) checkFold(id);
+function foldsAfterChange(beg: number, end: number): void {
+  fixFoldsAround(beg, end);
 }
 
 /** Whether edits skip the fold checks, as org-fold-core-ignore-modifications makes them. */
@@ -791,6 +783,8 @@ function checkFold(id: number): void {
     }
   }
   const size = ember.bufferSize();
+  // Org's checks step back from the fold's start, which fails there.
+  if (start === 0) throw new Error("Beginning of buffer");
   const before = lineAt(Math.max(0, start - 1));
   const opener = ember.lineText(before);
   const lastLine = lineAt(end);
@@ -802,8 +796,15 @@ function checkFold(id: number): void {
       for (let l = before + 1; l < ember.lineCount() && ember.lineStart(l) < end; l++) {
         if (/^\* /.test(ember.lineText(l))) flag(Math.max(0, ember.lineStart(l) - 1), ember.lineEnd(l), false);
       }
-      if (end < size && end > ember.lineStart(lastLine) && isHeadingLine(ember.lineText(lastLine)) && !folded(ember.lineStart(lastLine), "outline")) {
-        flag(Math.max(0, ember.lineStart(lastLine) - 1), ember.lineEnd(lastLine), false);
+      // The heading on the line where the fold ends shows, as
+      // org-fold--reveal-headline-at-point shows it, with any blank lines after it.
+      const bol = ember.lineStart(lastLine);
+      if (isHeadingLine(ember.lineText(lastLine)) && !folded(bol, "outline")) {
+        let to = ember.lineEnd(lastLine);
+        let q = to;
+        while (q < size && /[\n\t\r ]/.test(ember.bufferText(q, q + 1))) q++;
+        if (q === ember.lineEnd(lineAt(q))) to = q;
+        flag(Math.max(0, bol - 1), to, false);
       }
     }
   } else {
@@ -969,13 +970,10 @@ function dropMarker(m: { pos: number }): void {
 function edInsert(pos: number, text: string, beforeMarkers = false): void {
   const n = charCount(text);
   if (n === 0) return;
-  const mark = ember.mark();
   ember.gotoChar(pos);
-  ember.insert(text);
-  // The mark is a marker too, which insert-before-markers moves.
-  if (beforeMarkers && mark === pos) ember.setMark(pos + n);
+  if (beforeMarkers) ember.insertBeforeMarkers(text);
+  else ember.insert(text);
   for (const m of markers) if (m.pos > pos || (m.pos === pos && (beforeMarkers || m.before))) m.pos += n;
-  fixFoldsAround(pos, pos + n);
 }
 
 function edDelete(from: number, to: number): string {
@@ -985,7 +983,6 @@ function edDelete(from: number, to: number): string {
     if (m.pos >= to) m.pos -= to - from;
     else if (m.pos > from) m.pos = from;
   }
-  fixFoldsAround(from, from);
   return text;
 }
 
@@ -997,13 +994,17 @@ function edReplace(from: number, to: number, text: string): void {
   const n = charCount(text);
   const delta = n - (to - from);
   const mark = ember.mark();
-  ember.deleteRegion(from, to);
-  ember.gotoChar(from);
-  ember.insert(text);
+  // One change, as replace-match is, so folds are checked once, after it.
+  const checks = !foldChecksOff;
+  withoutFoldChecks(() => {
+    ember.deleteRegion(from, to);
+    ember.gotoChar(from);
+    ember.insert(text);
+  });
   const moved = (x: number): number => (x >= to ? x + delta : x > from ? from : x);
   for (const m of markers) m.pos = moved(m.pos);
   if (mark !== undefined) ember.setMark(moved(mark));
-  fixFoldsAround(from, from + n);
+  if (checks) fixFoldsAround(from, from + n);
 }
 
 /** Sets a line's indentation, as indent-line-to does. */
@@ -3720,6 +3721,10 @@ function endBeforeBlank(e: Elem): number {
 
 /** Swaps two elements, a before b, leaving their blank lines, as org-element-swap-A-B does. */
 function swapElements(a: Elem, b: Elem): void {
+  withoutFoldChecks(() => swapElementsUnchecked(a, b));
+}
+
+function swapElementsUnchecked(a: Elem, b: Elem): void {
   const special = a.begin !== ember.lineStart(lineAt(a.begin));
   if (special && (b.type !== "paragraph" || b.begin !== b.contentsBegin)) {
     ember.gotoChar(a.begin);
@@ -5206,38 +5211,80 @@ const shiftMetaDown = ember.defineCommand({
 });
 
 /** Drags the line at point `n` lines down, or up if `n` is negative, as org-drag-line-forward does. */
+/**
+ * Swaps the line before point's with point's, as transpose-lines does,
+ * with the insertions and deletions of transpose-subr-1, so folds move as
+ * Emacs's overlays do. On an error, the changes are undone, as
+ * atomic-change-group does. Leaves point after both lines.
+ */
+function transposeLinesWithFolds(): void {
+  // As transpose-lines' mover: forward a line, adding a newline at the end.
+  const mover = (n: number): void => {
+    if (n > 0) {
+      let short = forwardLine(n);
+      if (ember.point() === 0 || ember.bufferText(ember.point() - 1, ember.point()) !== "\n") short++;
+      if (short > 0) ember.insert("\n".repeat(short));
+    } else forwardLine(n);
+  };
+  const aux = (x: number): [number, number] => {
+    mover(x);
+    const a = ember.point();
+    mover(-x);
+    return [a, ember.point()];
+  };
+  const pos1 = aux(-1);
+  const pos2 = aux(1);
+  const sorted = (p: [number, number]): [number, number] => (p[0] > p[1] ? [p[1], p[0]] : p);
+  let [a, b] = [sorted(pos1), sorted(pos2)];
+  if (a[0] > b[0]) [a, b] = [b, a];
+  if (a[1] > b[0]) throw new Error("Don’t have two things to transpose");
+  const lenA = a[1] - a[0];
+  const textB = ember.bufferText(b[0], b[1]);
+  const end = marker(pos2[0]);
+  const boundary = marker(b[0]);
+  const wasModified = ember.bufferModified();
+  // What to undo: insertions as [start, end], deletions as [position, text].
+  const undo: ([number, number] | [number, string])[] = [];
+  // Each step is recorded before it is made, so one whose fold check fails is undone too.
+  try {
+    undo.push([a[1], a[1] + charCount(textB)]);
+    edInsert(a[1], textB, true);
+    const textA = ember.bufferText(a[0], a[0] + lenA);
+    undo.push([a[0], textA]);
+    edDelete(a[0], a[0] + lenA);
+    const at = boundary.pos;
+    undo.push([at, at + lenA]);
+    edInsert(at, textA);
+    undo.push([at + lenA, textB]);
+    edDelete(at + lenA, at + lenA + charCount(textB));
+    ember.gotoChar(end.pos);
+  } catch (e) {
+    for (const step of undo.reverse()) {
+      if (typeof step[1] === "number") {
+        ember.gotoChar(step[0]);
+        edDelete(step[0], step[1]);
+      } else {
+        edInsert(step[0], step[1]);
+        ember.gotoChar(step[0]);
+      }
+    }
+    if (!wasModified) ember.setBufferModified(false);
+    throw e;
+  } finally {
+    dropMarker(end);
+    dropMarker(boundary);
+  }
+}
+
 function dragLine(n: number): void {
   for (let i = 0; i < Math.abs(n); i++) {
     const column = ember.point() - ember.lineStart(lineAt());
-    // Moving folded text to the start of the buffer trips Org's fold check,
-    // which errors there, and transpose-lines undoes the change.
-    const first = n > 0 ? lineAt() + 1 : lineAt();
-    if (first === 1 && first < ember.lineCount() && folded(ember.lineStart(first))) {
-      // What is left is what Emacs leaves: the newline transpose-lines adds
-      // to the last line before the error, and the newline before the
-      // folded text showing again.
-      const ls = ember.lineStart(first);
-      if (first === ember.lineCount() - 1 && ember.lineEnd(first) > ls) {
-        ember.gotoChar(ember.bufferSize());
-        ember.insert("\n");
-      }
-      for (const spec of FOLD_SPECS) flag(ls - 1, ls, false, spec);
-      ember.gotoChar(ls);
-      throw new Error("Beginning of buffer");
-    }
-    // Org's fold fixing shows folded text that moves into view, so what
-    // was folded in the two lines shows.
-    const a = first > 0 ? Math.max(0, ember.lineStart(first - 1) - 1) : 0;
-    const b = lineStartOrEnd(first + 1);
-    for (const id of ember.overlaysIn(a, b)) {
-      if (FOLD_SPECS.includes(String(ember.overlayGet(id, "invisible")))) ember.deleteOverlay(id);
-    }
     if (n > 0) {
       forwardLine(1);
-      ember.call("transpose-lines");
+      transposeLinesWithFolds();
       forwardLine(-1);
     } else {
-      ember.call("transpose-lines");
+      transposeLinesWithFolds();
       forwardLine(-2);
     }
     const line = lineAt();
@@ -5552,9 +5599,9 @@ ember.defineCommand({
           const fresh = parseHeading(line) as Heading;
           const titleAt = fresh.title === "" && fresh.priorityAt === undefined ? fresh.end : (fresh.priorityAt ?? fresh.titleAt);
           const ls = ember.lineStart(line);
+          // Org checks folds after each change, and the line is neither a
+          // heading nor an item between these two.
           edDelete(ls, titleAt);
-          // Org checks folds after each change, and the line is neither a heading nor an item now.
-          fixFolds();
           edInsert(ls, "- ");
           indentLineTo(line, 2 * delta);
           if (h.todo !== undefined) {
@@ -5721,9 +5768,8 @@ ember.defineMajorMode({
     storeTodoSets();
     if (ember.variable("org-startup-truncated") === true) ember.setVariable("truncate-lines", true);
     ember.addHook("jit-lock-functions", fontify, { local: true });
-    ember.addHook("post-command-hook", fixFolds, { local: true });
+    ember.addHook("after-change-functions", foldsAfterChange, { local: true });
     startupVisibility();
-    ember.setVariable("org-fold--checked-tick", ember.bufferModifiedTick());
   },
 });
 

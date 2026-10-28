@@ -75,6 +75,7 @@
     callWithPrefix: (prefix, name, ...args) => native.callWithPrefix(prefix ?? null, String(name), ...args.map(String)),
     message: (text) => native.message(String(text)),
     insert: (text) => native.insert(String(text)),
+    insertBeforeMarkers: (text) => native.insertBeforeMarkers(String(text)),
     point: () => native.point(),
     gotoChar: (position) => native.gotoChar(position),
     // Omitted arguments must not reach the native function as undefined.
@@ -195,8 +196,8 @@
     charProperty: (pos, name) => native.charProperty(pos, String(name)),
     nextPropertyChange: (pos) => native.nextPropertyChange(pos),
     nextCharPropertyChange: (pos) => native.nextCharPropertyChange(pos),
-    makeOverlay(start, end, properties = {}) {
-      const id = native.makeOverlay(start, end);
+    makeOverlay(start, end, properties = {}, options = {}) {
+      const id = native.makeOverlay(start, end, options.frontAdvance === true, options.rearAdvance === true);
       for (const [name, value] of Object.entries(properties)) native.overlayPut(id, name, value ?? null);
       return id;
     },
@@ -216,6 +217,8 @@
     lineText: (line) => native.lineText(line),
     bufferSize: () => native.bufferSize(),
     bufferModifiedTick: () => native.bufferModifiedTick(),
+    bufferModified: () => native.bufferModified(),
+    setBufferModified: (modified) => native.setBufferModified(Boolean(modified)),
     // As Emacs's add-to-invisibility-spec: a spec of true becomes a list
     // that still hides text whose invisible property is true.
     addToInvisibilitySpec(name, { ellipsis = false } = {}) {

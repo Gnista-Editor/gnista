@@ -377,7 +377,19 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
     native.set(
         "insert",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, text: String| {
-            with_editor(&ctx, |ed| ed.buffer_mut().insert(&text))
+            with_editor(&ctx, |ed| {
+                ed.buffer_mut().insert(&text)?;
+                ed.run_after_change_functions()
+            })
+        })?,
+    )?;
+    native.set(
+        "insertBeforeMarkers",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, text: String| {
+            with_editor(&ctx, |ed| {
+                ed.buffer_mut().insert_before_markers(&text)?;
+                ed.run_after_change_functions()
+            })
         })?,
     )?;
     native.set(
@@ -407,7 +419,11 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
     native.set(
         "deleteRegion",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, start: usize, end: usize| {
-            with_editor(&ctx, |ed| ed.buffer_mut().delete(start.min(end)..start.max(end)))
+            with_editor(&ctx, |ed| {
+                let deleted = ed.buffer_mut().delete(start.min(end)..start.max(end))?;
+                ed.run_after_change_functions()?;
+                Ok(deleted)
+            })
         })?,
     )?;
     native.set(
@@ -1002,8 +1018,8 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
     )?;
     native.set(
         "makeOverlay",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, start: usize, end: usize| {
-            with_editor(&ctx, |ed| Ok(ed.buffer_mut().make_overlay(start..end) as f64))
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, start: usize, end: usize, front: bool, rear: bool| {
+            with_editor(&ctx, |ed| Ok(ed.buffer_mut().make_overlay_advancing(start..end, front, rear) as f64))
         })?,
     )?;
     native.set(
@@ -1088,6 +1104,19 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
     native.set(
         "bufferSize",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer().len())))?,
+    )?;
+    native.set(
+        "bufferModified",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer().is_modified())))?,
+    )?;
+    native.set(
+        "setBufferModified",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, modified: bool| {
+            with_editor(&ctx, |ed| {
+                ed.buffer_mut().set_modified(modified);
+                Ok(())
+            })
+        })?,
     )?;
     native.set(
         "bufferModifiedTick",

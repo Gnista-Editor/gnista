@@ -1,0 +1,29 @@
+[
+  {
+    "name": "seed7-0470-m-s-down-backtab-m-s-up",
+    "text": "1. gamma\n2. call\n* beta",
+    "keys": "M-S-<down> <backtab> M-S-<up>",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed7-1069-c-u-tab-m-s-up",
+    "text": "** DONE notes\n** [#C] gamma\n*** call read",
+    "keys": "C-u TAB M-S-<up>",
+    "point": 36,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed7-0090-c-u-tab-m-up",
+    "text": "* TODO gamma\ncall <2026-10-14 Wed>\n+ [ ] plan\n\n",
+    "keys": "C-u TAB M-<up>",
+    "point": 46,
+    "modes": [
+      "org-mode"
+    ]
+  }
+]

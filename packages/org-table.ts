@@ -97,11 +97,9 @@ function dropMarker(m: { pos: number }): void {
 function edInsert(pos: number, text: string, beforeMarkers = false): void {
   const n = charCount(text);
   if (n === 0) return;
-  const mark = ember.mark();
   ember.gotoChar(pos);
-  ember.insert(text);
-  // The mark is a marker too, which insert-before-markers moves.
-  if (beforeMarkers && mark === pos) ember.setMark(pos + n);
+  if (beforeMarkers) ember.insertBeforeMarkers(text);
+  else ember.insert(text);
   for (const m of markers) if (m.pos > pos || (m.pos === pos && beforeMarkers)) m.pos += n;
 }
 

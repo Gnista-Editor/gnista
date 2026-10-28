@@ -292,3 +292,93 @@ fn macros_repeat_and_yank_pop_from_packages() {
     ed.press("x C-x z z").unwrap();
     assert_eq!(text(&ed), "xxx");
 }
+
+#[test]
+fn after_change_functions_see_each_change() {
+    let (mut ed, scripting) = setup();
+    eval(
+        &mut ed,
+        &scripting,
+        r#"
+        const seen: string[] = [];
+        ember.addHook("after-change-functions", (beg: number, end: number, old: number) => {
+          seen.push(`${beg}-${end}-${old}`);
+        }, { local: true });
+        ember.defineCommand({
+          name: "edit-twice",
+          run: () => {
+            ember.insert("abc");
+            ember.deleteRegion(0, 1);
+            ember.setVariable("fill-column", seen.join(" "));
+          },
+        });
+        "#,
+    );
+    ed.call("edit-twice", vec![]).unwrap();
+    assert_eq!(text(&ed), "bc");
+    // An insertion has an old length of 0; a deletion starts and ends where the text went.
+    assert_eq!(ed.variable("fill-column").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("0-3-0 0-0-1"));
+}
+
+#[test]
+fn an_error_in_after_change_functions_removes_the_buffers_functions() {
+    let (mut ed, scripting) = setup();
+    eval(
+        &mut ed,
+        &scripting,
+        r#"
+        ember.addHook("after-change-functions", () => { throw new Error("no"); }, { local: true });
+        ember.defineCommand({ name: "edit", run: () => ember.insert("x") });
+        "#,
+    );
+    assert_eq!(ed.call("edit", vec![]).unwrap_err().to_string(), "no");
+    // As in Emacs, the hook's buffer-local value is gone after the error.
+    ed.call("edit", vec![]).unwrap();
+    assert_eq!(text(&ed), "xx");
+}
+
+#[test]
+fn insert_before_markers_moves_overlays_and_the_mark() {
+    let (mut ed, scripting) = setup();
+    ed.window_buffer_mut().set_text("ab");
+    eval(
+        &mut ed,
+        &scripting,
+        r#"
+        ember.defineCommand({
+          name: "check-overlays",
+          run: () => {
+            const plain = ember.makeOverlay(1, 2);
+            const advancing = ember.makeOverlay(1, 2, {}, { frontAdvance: true });
+            const ending = ember.makeOverlay(0, 1);
+            ember.setMark(1);
+            ember.gotoChar(1);
+            ember.insert("x");
+            const afterInsert = [ember.overlayStart(plain), ember.overlayStart(advancing), ember.overlayEnd(ending), ember.mark()];
+            ember.gotoChar(1);
+            ember.insertBeforeMarkers("y");
+            const afterBefore = [ember.overlayStart(plain), ember.overlayEnd(ending), ember.mark()];
+            ember.setVariable("fill-column", `${afterInsert.join(",")} ${afterBefore.join(",")}`);
+          },
+        });
+        "#,
+    );
+    ed.call("check-overlays", vec![]).unwrap();
+    assert_eq!(text(&ed), "ayxb");
+    // Inserting at 1: a plain overlay takes the text in, a front-advance one
+    // does not, an overlay ending there does not grow, and the mark stays.
+    // Inserting before markers moves them all past the text.
+    assert_eq!(ed.variable("fill-column").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("1,2,1,1 2,2,2"));
+}
+
+#[test]
+fn buffers_can_be_marked_unmodified() {
+    let (mut ed, scripting) = setup();
+    eval(
+        &mut ed,
+        &scripting,
+        r#"ember.defineCommand({ name: "edit-then-unmark", run: () => { ember.insert("x"); ember.setBufferModified(false); } });"#,
+    );
+    ed.call("edit-then-unmark", vec![]).unwrap();
+    assert!(!ed.window_buffer().is_modified());
+}

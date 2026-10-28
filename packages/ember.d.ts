@@ -1839,12 +1839,6 @@ declare global {
        */
       "org-cycle-subtree-status": Value;
       /**
-       * The buffer's modified tick when its folds were last checked against the text they hide.
-       *
-       * Defined in packages/org.ts.
-       */
-      "org-fold--checked-tick": Value;
-      /**
        * What typing or deleting next to folded text does: "smart" unfolds it and goes ahead where the edit is predictable, and otherwise stops so it can be repeated with the text showing; "show" unfolds and goes ahead, "show-and-error" unfolds and stops, "error" stops, and false allows the edit.
        *
        * Defined in packages/org.ts.
@@ -2498,6 +2492,10 @@ declare global {
     /** Every hook, with its documentation. */
     interface Hooks {
       /**
+       * Called after each change to the text with where the new text starts and ends and how long the old text was: an insertion has an old length of 0, a deletion starts and ends where the text went. Changes the functions make do not call them again.
+       */
+      "after-change-functions": Value;
+      /**
        * Run after a major mode and its hooks have run.
        */
       "after-change-major-mode-hook": Value;
@@ -2686,6 +2684,11 @@ declare global {
     function message(text: string): void;
     /** Insert text at point in the current buffer, leaving point after it. */
     function insert(text: string): void;
+    /**
+     * Insert text at point as Emacs's insert-before-markers does: the mark and
+     * any overlay start or end at point move past it too.
+     */
+    function insertBeforeMarkers(text: string): void;
     /** Point, as a character offset from the start of the buffer, counting from 0. */
     function point(): number;
     /** Move point to a character offset. */
@@ -3061,9 +3064,17 @@ declare global {
     /**
      * Lay an overlay over the text from start up to end, with properties such
      * as "face", "invisible", "priority" (higher wins) and "evaporate" (deleted
-     * when it becomes empty). Its ends move with edits. Returns its id.
+     * when it becomes empty). Its ends move with edits: text inserted at the
+     * start goes inside it unless `frontAdvance`, and text inserted at the end
+     * goes after it unless `rearAdvance`, as Emacs's make-overlay says. Returns
+     * its id.
      */
-    function makeOverlay(start: number, end: number, properties?: { [name: string]: Value }): number;
+    function makeOverlay(
+      start: number,
+      end: number,
+      properties?: { [name: string]: Value },
+      options?: { frontAdvance?: boolean; rearAdvance?: boolean },
+    ): number;
     function overlayPut(overlay: number, name: string, value: Value): void;
     function overlayGet(overlay: number, name: string): Value | undefined;
     function overlayStart(overlay: number): number | undefined;
@@ -3099,6 +3110,10 @@ declare global {
      * buffer-modified-tick: it is larger after any edit.
      */
     function bufferModifiedTick(): number;
+    /** Whether the current buffer changed since it was visited or saved (Emacs's buffer-modified-p). */
+    function bufferModified(): boolean;
+    /** Mark the current buffer modified or not, as Emacs's set-buffer-modified-p. */
+    function setBufferModified(modified: boolean): void;
     /**
      * Make text whose invisible property is `name` hidden in this buffer
      * (Emacs's add-to-invisibility-spec); with `ellipsis`, shown as "...".

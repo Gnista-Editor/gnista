@@ -96,7 +96,8 @@ function flag(start: number, end: number, hide: boolean): void {
 }
 
 function outlineOverlay(start: number, end: number): void {
-  ember.makeOverlay(start, end, { invisible: "outline", evaporate: true });
+  // Front-advance, as outline-flag-region makes its overlays.
+  ember.makeOverlay(start, end, { invisible: "outline", evaporate: true }, { frontAdvance: true });
 }
 
 /** The heading at point, or an error as in Emacs. */

@@ -95,6 +95,9 @@ pub struct Buffer {
     pub(crate) fontified: Vec<Range<usize>>,
     /// Counts changes to the text, as Emacs's `buffer-modified-tick`.
     tick: u64,
+    /// Changes not yet passed to `after-change-functions`: where the new
+    /// text starts and ends, and how long the old text was.
+    pub(crate) pending_changes: Vec<(usize, usize, usize)>,
 }
 
 impl Buffer {
@@ -129,6 +132,7 @@ impl Buffer {
             syntax: None,
             fontified: Vec::new(),
             tick: 0,
+            pending_changes: Vec::new(),
         }
     }
 
@@ -178,6 +182,15 @@ impl Buffer {
     /// Whether the text changed since it was visited or last saved.
     pub fn is_modified(&self) -> bool {
         self.modified
+    }
+
+    /// Marks the buffer modified or not, as Emacs's `set-buffer-modified-p`:
+    /// unmodified counts as saved, so undoing back to here is unmodified too.
+    pub fn set_modified(&mut self, modified: bool) {
+        if !modified && self.modified {
+            self.save_generation += 1;
+        }
+        self.modified = modified;
     }
 
     pub fn point(&self) -> usize {
@@ -322,7 +335,15 @@ impl Buffer {
 
     pub fn insert_at(&mut self, pos: usize, s: &str) -> Result<()> {
         self.check_writable()?;
-        self.apply_insert(pos.min(self.len()), s);
+        self.apply_insert(pos.min(self.len()), s, false);
+        Ok(())
+    }
+
+    /// Inserts text at point as Emacs's `insert-before-markers` does: the
+    /// mark and overlay ends at point move past it too.
+    pub fn insert_before_markers(&mut self, s: &str) -> Result<()> {
+        self.check_writable()?;
+        self.apply_insert(self.point, s, true);
         Ok(())
     }
 
@@ -335,7 +356,7 @@ impl Buffer {
 
     /// Inserts text, moving point, the mark and the mark ring as Emacs moves
     /// its markers: point and positions after `pos` move with the text.
-    fn apply_insert(&mut self, pos: usize, s: &str) {
+    fn apply_insert(&mut self, pos: usize, s: &str, before_markers: bool) {
         if s.is_empty() {
             return;
         }
@@ -351,16 +372,17 @@ impl Buffer {
         }
         let window_points = self.window_points.iter_mut().map(|(_, p)| p);
         for m in self.mark.iter_mut().chain(self.mark_ring.iter_mut()).chain(window_points) {
-            if *m > pos {
+            if *m > pos || (*m == pos && before_markers) {
                 *m += n;
             }
         }
         self.properties.insert(pos, n);
         for overlay in &mut self.overlays {
-            overlay.insert(pos, n);
+            overlay.insert(pos, n, before_markers);
         }
         self.unfontify_from(pos);
         self.tick += 1;
+        self.pending_changes.push((pos, pos + n, 0));
         self.record(Edit {
             pos,
             deleted: String::new(),
@@ -394,6 +416,7 @@ impl Buffer {
         self.overlays.retain(|o| !o.evaporates());
         self.unfontify_from(start);
         self.tick += 1;
+        self.pending_changes.push((start, start, end - start));
         self.record(Edit {
             pos: start,
             deleted: deleted.clone(),
@@ -468,9 +491,18 @@ impl Buffer {
 
     /// Lays a new overlay over a range and returns its id.
     pub fn make_overlay(&mut self, range: Range<usize>) -> u64 {
+        self.make_overlay_advancing(range, false, false)
+    }
+
+    /// Makes an overlay whose ends advance past text inserted at them as
+    /// Emacs's `make-overlay` FRONT-ADVANCE and REAR-ADVANCE say.
+    pub fn make_overlay_advancing(&mut self, range: Range<usize>, front_advance: bool, rear_advance: bool) -> u64 {
         self.next_overlay_id += 1;
         let (start, end) = (range.start.min(self.len()), range.end.min(self.len()));
-        self.overlays.push(Overlay { id: self.next_overlay_id, start, end, props: Props::new() });
+        let mut overlay = Overlay::new(self.next_overlay_id, start, end);
+        overlay.front_advance = front_advance;
+        overlay.rear_advance = rear_advance;
+        self.overlays.push(overlay);
         self.next_overlay_id
     }
 
@@ -650,7 +682,7 @@ impl Buffer {
                 self.point = edit.pos;
                 self.apply_delete(edit.pos, edit.pos + inserted);
             }
-            self.apply_insert(edit.pos, &edit.deleted);
+            self.apply_insert(edit.pos, &edit.deleted, false);
             self.properties.restore(edit.pos, &edit.deleted_props);
             self.point = edit.point_before.min(self.len());
         }

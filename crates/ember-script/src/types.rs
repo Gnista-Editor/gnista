@@ -88,6 +88,11 @@ const API: &str = r##"
   function message(text: string): void;
   /** Insert text at point in the current buffer, leaving point after it. */
   function insert(text: string): void;
+  /**
+   * Insert text at point as Emacs's insert-before-markers does: the mark and
+   * any overlay start or end at point move past it too.
+   */
+  function insertBeforeMarkers(text: string): void;
   /** Point, as a character offset from the start of the buffer, counting from 0. */
   function point(): number;
   /** Move point to a character offset. */
@@ -463,9 +468,17 @@ const API: &str = r##"
   /**
    * Lay an overlay over the text from start up to end, with properties such
    * as "face", "invisible", "priority" (higher wins) and "evaporate" (deleted
-   * when it becomes empty). Its ends move with edits. Returns its id.
+   * when it becomes empty). Its ends move with edits: text inserted at the
+   * start goes inside it unless `frontAdvance`, and text inserted at the end
+   * goes after it unless `rearAdvance`, as Emacs's make-overlay says. Returns
+   * its id.
    */
-  function makeOverlay(start: number, end: number, properties?: { [name: string]: Value }): number;
+  function makeOverlay(
+    start: number,
+    end: number,
+    properties?: { [name: string]: Value },
+    options?: { frontAdvance?: boolean; rearAdvance?: boolean },
+  ): number;
   function overlayPut(overlay: number, name: string, value: Value): void;
   function overlayGet(overlay: number, name: string): Value | undefined;
   function overlayStart(overlay: number): number | undefined;
@@ -501,6 +514,10 @@ const API: &str = r##"
    * buffer-modified-tick: it is larger after any edit.
    */
   function bufferModifiedTick(): number;
+  /** Whether the current buffer changed since it was visited or saved (Emacs's buffer-modified-p). */
+  function bufferModified(): boolean;
+  /** Mark the current buffer modified or not, as Emacs's set-buffer-modified-p. */
+  function setBufferModified(modified: boolean): void;
   /**
    * Make text whose invisible property is `name` hidden in this buffer
    * (Emacs's add-to-invisibility-spec); with `ellipsis`, shown as "...".

@@ -178,18 +178,32 @@ pub struct Overlay {
     pub start: usize,
     pub end: usize,
     pub props: Props,
+    /// Whether text inserted at the start goes before the overlay rather
+    /// than in it, as Emacs's `make-overlay` FRONT-ADVANCE says.
+    pub front_advance: bool,
+    /// Whether text inserted at the end goes in the overlay rather than
+    /// after it, as REAR-ADVANCE says.
+    pub rear_advance: bool,
 }
 
 impl Overlay {
+    pub(crate) fn new(id: u64, start: usize, end: usize) -> Overlay {
+        Overlay { id, start, end, props: Props::new(), front_advance: false, rear_advance: false }
+    }
+
     /// Moves the overlay's ends for an insertion, as Emacs moves overlay
-    /// markers by default: text inserted at the start goes inside the
-    /// overlay, and text inserted at the end goes after it.
-    pub(crate) fn insert(&mut self, pos: usize, n: usize) {
-        if self.start > pos {
+    /// markers: by default, text inserted at the start goes inside the
+    /// overlay, and text inserted at the end goes after it. Inserting before
+    /// markers moves both ends past the text, as insert-before-markers does.
+    pub(crate) fn insert(&mut self, pos: usize, n: usize, before_markers: bool) {
+        if self.start > pos || (self.start == pos && (self.front_advance || before_markers)) {
             self.start += n;
         }
-        if self.end > pos {
+        if self.end > pos || (self.end == pos && (self.rear_advance || before_markers)) {
             self.end += n;
+        }
+        if self.end < self.start {
+            self.end = self.start;
         }
     }
 
@@ -266,10 +280,10 @@ mod tests {
 
     #[test]
     fn overlays_follow_edits() {
-        let mut o = Overlay { id: 1, start: 2, end: 5, props: Props::new() };
-        o.insert(2, 1); // at the start: goes inside
+        let mut o = Overlay::new(1, 2, 5);
+        o.insert(2, 1, false); // at the start: goes inside
         assert_eq!((o.start, o.end), (2, 6));
-        o.insert(6, 1); // at the end: goes after
+        o.insert(6, 1, false); // at the end: goes after
         assert_eq!((o.start, o.end), (2, 6));
         o.delete(0, 3);
         assert_eq!((o.start, o.end), (0, 3));

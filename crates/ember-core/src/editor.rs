@@ -111,6 +111,8 @@ pub struct Editor {
     command_failed: bool,
     /// Whether code set this-command explicitly, so a call from code keeps it.
     this_command_set: bool,
+    /// Whether `after-change-functions` are running.
+    in_change_hooks: bool,
     pub(crate) kill_ring: Vec<String>,
     /// Which kill yanking takes next, counting back from the newest (Emacs's
     /// `kill-ring-yank-pointer`).
@@ -188,6 +190,7 @@ impl Editor {
             last_error: None,
             command_failed: false,
             this_command_set: false,
+            in_change_hooks: false,
             kill_ring: Vec::new(),
             yank_pointer: 0,
             last_repeatable: None,
@@ -287,6 +290,7 @@ impl Editor {
         self.running += 1;
         let result = (command.run)(self, &args);
         self.running -= 1;
+        let result = result.and(self.run_after_change_functions());
         self.deactivate_changed_regions();
         if !self.this_command_set {
             self.this_command = this;
@@ -551,6 +555,37 @@ impl Editor {
         self.executing_macro > 0
     }
 
+    /// Runs `after-change-functions` for each change to the current buffer
+    /// since they last ran, with where the new text starts and ends and how
+    /// long the old text was, as Emacs runs them after each change. Changes
+    /// the functions make themselves do not run them again, as with Emacs's
+    /// `inhibit-modification-hooks`.
+    /// An error stops them and is returned, and, as in Emacs, the buffer's
+    /// own functions are removed from the hook.
+    pub fn run_after_change_functions(&mut self) -> Result<()> {
+        if self.in_change_hooks {
+            self.buffer_mut().pending_changes.clear();
+            return Ok(());
+        }
+        let changes = std::mem::take(&mut self.buffer_mut().pending_changes);
+        if changes.is_empty() || !self.hook_has_functions("after-change-functions") {
+            return Ok(());
+        }
+        self.in_change_hooks = true;
+        let mut result = Ok(());
+        for (beg, end, old) in changes {
+            let args = [Value::Number(beg as f64), Value::Number(end as f64), Value::Number(old as f64)];
+            if let Err(e) = self.run_hook_with_args("after-change-functions", &args) {
+                self.buffer_mut().local_hooks.remove("after-change-functions");
+                result = Err(e);
+                break;
+            }
+        }
+        self.buffer_mut().pending_changes.clear();
+        self.in_change_hooks = false;
+        result
+    }
+
     /// Takes the error from the last interactive command that failed. An
     /// undefined key is not an error, as in Emacs: it only shows a message.
     pub fn take_error(&mut self) -> Option<Error> {
@@ -563,6 +598,7 @@ impl Editor {
         self.running += 1;
         let result = (command.run)(self, &args);
         self.running -= 1;
+        let result = result.and(self.run_after_change_functions());
         // A command that ran another command (as M-x does) leaves that one as the last command.
         if let Some(name) = self.this_command.take() {
             self.last_command = Some(name);
