@@ -305,5 +305,55 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "seed26-1685-c-spc-c-u-tab-m-s-down",
+    "text": "* [#A] call call\ngamma <2026-10-20 Wed>",
+    "keys": "C-SPC C-u TAB M-S-<down>",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed26-1602-c-c---bar-c-c-star",
+    "text": "SCHEDULED: <2026-10-28 Wed>",
+    "keys": "C-c - | C-c *",
+    "point": 26,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "item-to-heading-fixes-a-day-name",
+    "text": "- meet [2026-10-28 Thu]\n",
+    "keys": "C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "item-to-heading-adds-a-day-name",
+    "text": "- meet <2026-10-28>\n",
+    "keys": "C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "item-to-heading-keeps-times-and-repeaters",
+    "text": "- meet <2026-10-28 Wed 10:00-11:00 +1w -2d>\n",
+    "keys": "C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "a-failed-drag-keeps-the-mark",
+    "text": "* a\ntext\n",
+    "keys": "C-f C-SPC C-u TAB M-S-<down>",
+    "modes": [
+      "org-mode"
+    ]
   }
 ]

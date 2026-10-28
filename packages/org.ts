@@ -5997,6 +5997,7 @@ function transposeLinesWithFolds(): void {
   const end = marker(pos2[0]);
   const boundary = marker(b[0]);
   const wasModified = ember.bufferModified();
+  const mark = ember.mark();
   // What to undo: insertions as [start, end], deletions as [position, text].
   const undo: ([number, number] | [number, string])[] = [];
   // Each step is recorded before it is made, so one whose fold check fails is undone too.
@@ -6023,6 +6024,8 @@ function transposeLinesWithFolds(): void {
       }
     }
     if (!wasModified) ember.setBufferModified(false);
+    // Undoing puts the mark back too, as Emacs's undo restores markers.
+    if (mark !== undefined) ember.setMark(mark);
     throw e;
   } finally {
     dropMarker(end);
@@ -6539,6 +6542,25 @@ function orgToggleHeading(nstars: ember.PrefixArg): void {
 }
 
 /**
+ * Writes timestamps out again from their parts, as org-element-interpret-data
+ * does: the day name worked out from the date, and anything else left out.
+ */
+function interpretTimestamps(text: string): string {
+  return text.replace(/([<[])(\d{4})-(\d{2})-(\d{2})( .*?)?[\]>]/g, (_all, open: string, y: string, mo: string, d: string, rest = "") => {
+    const time = /([012]?\d):([0-5]\d)/.exec(rest);
+    const range = /[012]?\d:[0-5]\d-([012]?\d):([0-5]\d)/.exec(rest);
+    const repeat = /[.+]?\+\d+[hdwmy]/.exec(rest);
+    const warning = /-?-\d+[hdwmy]/.exec(rest);
+    const date: DateTime = { year: Number(y), month: Number(mo), day: Number(d), hour: Number(time?.[1] ?? 0), minute: Number(time?.[2] ?? 0) };
+    let body = formatTimestamp(date, time !== null);
+    if (range) body += `-${range[1].padStart(2, "0")}:${range[2]}`;
+    if (repeat) body += ` ${repeat[0]}`;
+    if (warning) body += ` ${warning[0]}`;
+    return `${open}${body}${open === "<" ? ">" : "]"}`;
+  });
+}
+
+/**
  * Turns the list items from pos up to limit into headings, as
  * org-list-to-subtree does with what org-list-to-lisp takes out: an item's
  * depth in the list adds levels, checkboxes become TODO states, and the
@@ -6570,11 +6592,11 @@ function listToSubtree(pos: number, limit: number): number {
       const box = parts.checkbox === undefined || !within ? "" : `${parts.checkbox === "[X]" ? done : todo} `;
       const tag = item.tag !== undefined && within ? ` ${item.tag} ` : "";
       const title = within ? ember.bufferText(parts.matchEnd, lineEnd) : "";
-      entries.push({ depth: depth(item), title: box + tag + title, body: "" });
+      entries.push({ depth: depth(item), title: box + tag + interpretTimestamps(title), body: "" });
       blanks = 0;
     } else if (/^[ \t]*$/.test(text)) blanks++;
     else if (entries.length > 0) {
-      entries[entries.length - 1].body += "\n".repeat(blanks + 1) + text.replace(/^[ \t]+/, "");
+      entries[entries.length - 1].body += "\n".repeat(blanks + 1) + interpretTimestamps(text.replace(/^[ \t]+/, ""));
       blanks = 0;
     }
   }

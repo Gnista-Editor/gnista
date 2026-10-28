@@ -759,6 +759,132 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "seed26-1685-c-spc-c-u-tab-m-s-down",
+      "input": {
+        "text": "* [#A] call call\ngamma <2026-10-20 Wed>",
+        "point": 6,
+        "keys": "C-SPC C-u TAB M-S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* [#A] call call\ngamma <2026-10-20 Wed>\n",
+      "visible": "* [#A] call call\n\n",
+      "point": 17,
+      "mark": 6,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Beginning of buffer"
+    },
+    {
+      "name": "seed26-1602-c-c---bar-c-c-star",
+      "input": {
+        "text": "SCHEDULED: <2026-10-28 Wed>",
+        "point": 26,
+        "keys": "C-c - | C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* SCHEDULED: <2026-10-28 Wed>\n",
+      "visible": "* SCHEDULED: <2026-10-28 Wed>\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "item-to-heading-fixes-a-day-name",
+      "input": {
+        "text": "- meet [2026-10-28 Thu]\n",
+        "point": 0,
+        "keys": "C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* meet [2026-10-28 Wed]\n",
+      "visible": "* meet [2026-10-28 Wed]\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "item-to-heading-adds-a-day-name",
+      "input": {
+        "text": "- meet <2026-10-28>\n",
+        "point": 0,
+        "keys": "C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* meet <2026-10-28 Wed>\n",
+      "visible": "* meet <2026-10-28 Wed>\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "item-to-heading-keeps-times-and-repeaters",
+      "input": {
+        "text": "- meet <2026-10-28 Wed 10:00-11:00 +1w -2d>\n",
+        "point": 0,
+        "keys": "C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* meet <2026-10-28 Wed 10:00-11:00 +1w -2d>\n",
+      "visible": "* meet <2026-10-28 Wed 10:00-11:00 +1w -2d>\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "a-failed-drag-keeps-the-mark",
+      "input": {
+        "text": "* a\ntext\n",
+        "point": 0,
+        "keys": "C-f C-SPC C-u TAB M-S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\ntext\n",
+      "visible": "* a\n",
+      "point": 4,
+      "mark": 1,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Beginning of buffer"
     }
   ]
 }
