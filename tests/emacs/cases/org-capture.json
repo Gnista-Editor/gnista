@@ -1,0 +1,200 @@
+[
+  {
+    "name": "capture-to-the-file",
+    "text": "* one\nbody\n* Inbox\n** old\n",
+    "point": 2,
+    "keys": "n e w C-c C-c",
+    "answers": [
+      "t"
+    ],
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-capture.org",
+    "capture_templates": [
+      [
+        "t",
+        "Test",
+        "entry",
+        [
+          "file",
+          "FILE"
+        ],
+        "* TODO %?\n"
+      ]
+    ],
+    "call": [
+      "org-capture"
+    ]
+  },
+  {
+    "name": "capture-under-a-headline",
+    "text": "* one\nbody\n* Inbox\n** old\n",
+    "point": 2,
+    "keys": "n e w C-c C-c",
+    "answers": [
+      "t"
+    ],
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-capture.org",
+    "capture_templates": [
+      [
+        "t",
+        "Test",
+        "entry",
+        [
+          "file+headline",
+          "FILE",
+          "Inbox"
+        ],
+        "* %?\n"
+      ]
+    ],
+    "call": [
+      "org-capture"
+    ]
+  },
+  {
+    "name": "capture-under-a-missing-headline",
+    "text": "* one\nbody\n* Inbox\n** old\n",
+    "point": 2,
+    "keys": "n e w C-c C-c",
+    "answers": [
+      "t"
+    ],
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-capture.org",
+    "capture_templates": [
+      [
+        "t",
+        "Test",
+        "entry",
+        [
+          "file+headline",
+          "FILE",
+          "Later"
+        ],
+        "* %? :x:\n"
+      ]
+    ],
+    "call": [
+      "org-capture"
+    ]
+  },
+  {
+    "name": "capture-two-lines",
+    "text": "* one\nbody\n* Inbox\n** old\n",
+    "point": 2,
+    "keys": "n e w C-c C-c",
+    "answers": [
+      "t"
+    ],
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-capture.org",
+    "capture_templates": [
+      [
+        "t",
+        "Test",
+        "entry",
+        [
+          "file",
+          "FILE"
+        ],
+        "* NOTE %?\nbody text\n"
+      ]
+    ],
+    "call": [
+      "org-capture"
+    ]
+  },
+  {
+    "name": "capture-then-abort",
+    "text": "* one\nbody\n* Inbox\n** old\n",
+    "point": 2,
+    "keys": "n e w C-c C-k",
+    "answers": [
+      "t"
+    ],
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-capture.org",
+    "capture_templates": [
+      [
+        "t",
+        "Test",
+        "entry",
+        [
+          "file",
+          "FILE"
+        ],
+        "* TODO %?\n"
+      ]
+    ],
+    "call": [
+      "org-capture"
+    ]
+  },
+  {
+    "name": "capture-while-open",
+    "text": "* one\nbody\n* Inbox\n** old\n",
+    "point": 2,
+    "keys": "n e w",
+    "answers": [
+      "t"
+    ],
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-capture.org",
+    "capture_templates": [
+      [
+        "t",
+        "Test",
+        "entry",
+        [
+          "file",
+          "FILE"
+        ],
+        "* TODO %?\n"
+      ]
+    ],
+    "call": [
+      "org-capture"
+    ]
+  },
+  {
+    "name": "capture-without-a-cursor-mark",
+    "text": "* one\nbody\n* Inbox\n** old\n",
+    "point": 2,
+    "keys": "C-c C-c",
+    "answers": [
+      "t"
+    ],
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-capture.org",
+    "capture_templates": [
+      [
+        "t",
+        "Test",
+        "entry",
+        [
+          "file",
+          "FILE"
+        ],
+        "* Fixed text\n"
+      ]
+    ],
+    "call": [
+      "org-capture"
+    ]
+  }
+]

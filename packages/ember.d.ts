@@ -584,6 +584,14 @@ declare global {
        */
       "open-line": [];
       /**
+       * Capture with the template of the key given, as org-capture does once it has asked.
+       *
+       * @param key text
+       *
+       * Defined in packages/org.ts.
+       */
+      "org--capture-with": [key: string];
+      /**
        * Insert a drawer of the name given at point, with point inside it, as org-insert-drawer does without a prefix argument.
        *
        * @param drawer text
@@ -616,6 +624,86 @@ declare global {
        */
       "org--refile-to": [target: string];
       /**
+       * Show an agenda view, asking which by its key: a for the week's agenda, t for the TODO list.
+       *
+       * @param key text
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-agenda": [key: string];
+      /**
+       * Show the week before in the agenda.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-agenda-earlier": [];
+      /**
+       * Show the entry the agenda line at point shows in another window, and go there.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-agenda-goto": [];
+      /**
+       * Show the week with today in it, and go to today.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-agenda-goto-today": [];
+      /**
+       * Show the next week in the agenda.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-agenda-later": [];
+      /**
+       * Show the week's agenda: what is scheduled, due and timestamped each day, from org-agenda-files.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-agenda-list": [];
+      /**
+       * The mode of the *Org Agenda* buffer. n and p move between lines, RET goes to an entry and TAB shows it in another window, t changes its TODO state, g rebuilds the agenda, f and b move a week, . goes to today, and q leaves.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-agenda-mode": [];
+      /**
+       * Move to the next line of the agenda.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-agenda-next-line": [];
+      /**
+       * Move to the previous line of the agenda.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-agenda-previous-line": [];
+      /**
+       * Leave the agenda: its window goes, or another buffer takes its place.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-agenda-quit": [];
+      /**
+       * Rebuild the agenda from the files, as they are now.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-agenda-redo": [];
+      /**
+       * Go to the entry the agenda line at point shows, in this window.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-agenda-switch-to": [];
+      /**
+       * Change the TODO state of the entry the agenda line at point shows, as C-c C-t does there.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-agenda-todo": [];
+      /**
        * Put the tags of the heading point is under at org-tags-column; with a prefix argument, every heading's.
        *
        * Defined in packages/org.ts.
@@ -627,6 +715,32 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-backward-heading-same-level": [];
+      /**
+       * Capture a note, asking for the key of one of org-capture-templates: its entry goes into its target file, shown narrowed to it. C-c C-c files it and C-c C-k takes it away.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-capture": [];
+      /**
+       * Finish the capture: the entry stays in its file, which is saved, and the windows go back to how they were.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-capture-finalize": [];
+      /**
+       * Abort the capture: the entry goes again, and the windows go back to how they were.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-capture-kill": [];
+      /**
+       * On in a buffer while a capture is under way in it: C-c C-c finishes the capture and C-c C-k aborts it.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-capture-mode": [];
       /**
        * Show all headings, hiding the text under them.
        *
@@ -1416,6 +1530,12 @@ declare global {
        */
       "org-todo": [];
       /**
+       * Show the TODO items that are not done in org-agenda-files, most urgent first.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-todo-list": [];
+      /**
        * Set the TODO state of the heading point is under, or remove it with an empty state.
        *
        * @param state text
@@ -2090,6 +2210,24 @@ declare global {
        */
       "org-M-RET-may-split-line": Value;
       /**
+       * The files the agenda collects entries from, as a list of file names.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-agenda-files": Value;
+      /**
+       * Whether Org-Capture mode is on in this buffer. Use the command org-capture-mode to change it.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-capture-mode": Value;
+      /**
+       * The capture templates: lists of a key, a description, the type (entry), a target such as ["file", NAME] or ["file+headline", NAME, HEADING], and the template text.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-capture-templates": Value;
+      /**
        * What S-TAB last did: "overview", "contents" or "all".
        *
        * Defined in packages/org.ts.
@@ -2107,6 +2245,18 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-cycle-subtree-status": Value;
+      /**
+       * How many days ahead today's agenda warns of a deadline.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-deadline-warning-days": Value;
+      /**
+       * The file capture templates with an empty file name file into.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-default-notes-file": Value;
       /**
        * How far the lines of a source block are indented past its #+begin_src line.
        *
@@ -2847,6 +2997,22 @@ declare global {
        */
       "json-ts-mode-hook": Value;
       /**
+       * Run after entering Org-Agenda mode, after the hooks of the modes it is built on.
+       */
+      "org-agenda-mode-hook": Value;
+      /**
+       * Run after Org-Capture mode is turned on or off.
+       */
+      "org-capture-mode-hook": Value;
+      /**
+       * Run after Org-Capture mode is turned off.
+       */
+      "org-capture-mode-off-hook": Value;
+      /**
+       * Run after Org-Capture mode is turned on.
+       */
+      "org-capture-mode-on-hook": Value;
+      /**
        * Run after entering Org mode, after the hooks of the modes it is built on.
        */
       "org-mode-hook": Value;
@@ -3289,6 +3455,14 @@ declare global {
     function screenLine(position: number): { start: number; end: number; continued: boolean };
     /** The name of the buffer a window shows, the selected one by default. */
     function windowBuffer(window?: number): string | undefined;
+    /**
+     * Run `fn` with another buffer current, as Emacs's with-current-buffer:
+     * point, text and the other buffer functions act on it, and windows keep
+     * showing what they did. The buffer that was current is current again after.
+     */
+    function withCurrentBuffer<T>(buffer: string, fn: () => T): T;
+    /** Make the current buffer read-only, or writable again, as setting buffer-read-only does. */
+    function setReadOnly(on: boolean): void;
     /** Make a buffer of this name if there is none, without showing it, as get-buffer-create. */
     function getBufferCreate(name: string): void;
     /** Visit a file without showing it, as find-file-noselect, and return its buffer's name. */

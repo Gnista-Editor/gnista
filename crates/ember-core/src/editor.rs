@@ -949,6 +949,16 @@ impl Editor {
         })
     }
 
+    /// Makes a buffer current without showing it, as Emacs's `set-buffer`:
+    /// the selected window keeps showing what it did. Returns the name of
+    /// the buffer that was current, to set back.
+    pub fn set_current_buffer(&mut self, name: &str) -> Result<String> {
+        let index = self.find_buffer(name).ok_or_else(|| Error::new(format!("No such buffer {name}")))?;
+        let old = self.buffers[self.current].name.clone();
+        self.current = index;
+        Ok(old)
+    }
+
     /// Visits a file in a buffer without showing it, as Emacs's
     /// `find-file-noselect`, and returns the buffer's name.
     pub fn find_file_noselect(&mut self, path: &Path) -> Result<String> {

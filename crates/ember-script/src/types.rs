@@ -394,6 +394,14 @@ const API: &str = r##"
   function screenLine(position: number): { start: number; end: number; continued: boolean };
   /** The name of the buffer a window shows, the selected one by default. */
   function windowBuffer(window?: number): string | undefined;
+  /**
+   * Run `fn` with another buffer current, as Emacs's with-current-buffer:
+   * point, text and the other buffer functions act on it, and windows keep
+   * showing what they did. The buffer that was current is current again after.
+   */
+  function withCurrentBuffer<T>(buffer: string, fn: () => T): T;
+  /** Make the current buffer read-only, or writable again, as setting buffer-read-only does. */
+  function setReadOnly(on: boolean): void;
   /** Make a buffer of this name if there is none, without showing it, as get-buffer-create. */
   function getBufferCreate(name: string): void;
   /** Visit a file without showing it, as find-file-noselect, and return its buffer's name. */

@@ -1,0 +1,283 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "capture-to-the-file",
+      "input": {
+        "text": "* one\nbody\n* Inbox\n** old\n",
+        "point": 2,
+        "keys": "n e w C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-capture"
+        ],
+        "platform": null,
+        "visit": "ember-capture.org",
+        "capture_templates": [
+          [
+            "t",
+            "Test",
+            "entry",
+            [
+              "file",
+              "FILE"
+            ],
+            "* TODO %?\n"
+          ]
+        ],
+        "answers": [
+          "t"
+        ]
+      },
+      "text": "* one\nbody\n* Inbox\n** old\n* TODO new\n",
+      "visible": "* one\nbody\n* Inbox\n** old\n* TODO new\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "capture-under-a-headline",
+      "input": {
+        "text": "* one\nbody\n* Inbox\n** old\n",
+        "point": 2,
+        "keys": "n e w C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-capture"
+        ],
+        "platform": null,
+        "visit": "ember-capture.org",
+        "capture_templates": [
+          [
+            "t",
+            "Test",
+            "entry",
+            [
+              "file+headline",
+              "FILE",
+              "Inbox"
+            ],
+            "* %?\n"
+          ]
+        ],
+        "answers": [
+          "t"
+        ]
+      },
+      "text": "* one\nbody\n* Inbox\n** old\n** new\n",
+      "visible": "* one\nbody\n* Inbox\n** old\n** new\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "capture-under-a-missing-headline",
+      "input": {
+        "text": "* one\nbody\n* Inbox\n** old\n",
+        "point": 2,
+        "keys": "n e w C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-capture"
+        ],
+        "platform": null,
+        "visit": "ember-capture.org",
+        "capture_templates": [
+          [
+            "t",
+            "Test",
+            "entry",
+            [
+              "file+headline",
+              "FILE",
+              "Later"
+            ],
+            "* %? :x:\n"
+          ]
+        ],
+        "answers": [
+          "t"
+        ]
+      },
+      "text": "* one\nbody\n* Inbox\n** old\n* Later\n** new                                                                    :x:\n",
+      "visible": "* one\nbody\n* Inbox\n** old\n* Later\n** new                                                                    :x:\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "capture-two-lines",
+      "input": {
+        "text": "* one\nbody\n* Inbox\n** old\n",
+        "point": 2,
+        "keys": "n e w C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-capture"
+        ],
+        "platform": null,
+        "visit": "ember-capture.org",
+        "capture_templates": [
+          [
+            "t",
+            "Test",
+            "entry",
+            [
+              "file",
+              "FILE"
+            ],
+            "* NOTE %?\nbody text\n"
+          ]
+        ],
+        "answers": [
+          "t"
+        ]
+      },
+      "text": "* one\nbody\n* Inbox\n** old\n* NOTE new\nbody text\n",
+      "visible": "* one\nbody\n* Inbox\n** old\n* NOTE new\nbody text\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "capture-then-abort",
+      "input": {
+        "text": "* one\nbody\n* Inbox\n** old\n",
+        "point": 2,
+        "keys": "n e w C-c C-k",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-capture"
+        ],
+        "platform": null,
+        "visit": "ember-capture.org",
+        "capture_templates": [
+          [
+            "t",
+            "Test",
+            "entry",
+            [
+              "file",
+              "FILE"
+            ],
+            "* TODO %?\n"
+          ]
+        ],
+        "answers": [
+          "t"
+        ]
+      },
+      "text": "* one\nbody\n* Inbox\n** old\n",
+      "visible": "* one\nbody\n* Inbox\n** old\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "* TODO new\n"
+      ],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "capture-while-open",
+      "input": {
+        "text": "* one\nbody\n* Inbox\n** old\n",
+        "point": 2,
+        "keys": "n e w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-capture"
+        ],
+        "platform": null,
+        "visit": "ember-capture.org",
+        "capture_templates": [
+          [
+            "t",
+            "Test",
+            "entry",
+            [
+              "file",
+              "FILE"
+            ],
+            "* TODO %?\n"
+          ]
+        ],
+        "answers": [
+          "t"
+        ]
+      },
+      "text": "* one\nbody\n* Inbox\n** old\n* TODO new\n",
+      "visible": "* one\nbody\n* Inbox\n** old\n* TODO new\n",
+      "point": 36,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "capture-without-a-cursor-mark",
+      "input": {
+        "text": "* one\nbody\n* Inbox\n** old\n",
+        "point": 2,
+        "keys": "C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-capture"
+        ],
+        "platform": null,
+        "visit": "ember-capture.org",
+        "capture_templates": [
+          [
+            "t",
+            "Test",
+            "entry",
+            [
+              "file",
+              "FILE"
+            ],
+            "* Fixed text\n"
+          ]
+        ],
+        "answers": [
+          "t"
+        ]
+      },
+      "text": "* one\nbody\n* Inbox\n** old\n* Fixed text\n",
+      "visible": "* one\nbody\n* Inbox\n** old\n* Fixed text\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    }
+  ]
+}

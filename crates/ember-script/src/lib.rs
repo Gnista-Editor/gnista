@@ -966,6 +966,19 @@ fn install_native_windows<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs
         })?,
     )?;
     native.set(
+        "setReadOnly",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, on: bool| {
+            with_editor(&ctx, |ed| {
+                ed.buffer_mut().read_only = on;
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "setCurrentBuffer",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| with_editor(&ctx, |ed| ed.set_current_buffer(&name)))?,
+    )?;
+    native.set(
         "getBufferCreate",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
             with_editor(&ctx, |ed| {

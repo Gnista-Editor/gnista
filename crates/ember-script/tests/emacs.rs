@@ -85,6 +85,9 @@ fn ember_behaves_like_emacs() {
                 windows: case.windows,
                 answers: case.answers.clone(),
                 visit: case.visit.clone(),
+                today: case.today.clone(),
+                agenda_files: case.agenda_files,
+                capture_templates: case.capture_templates.clone(),
             };
             let Some(emacs) = recorded.get(case.name.as_str()) else {
                 problems.push(format!("{id}: not recorded; record it with record.el"));

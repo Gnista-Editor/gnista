@@ -177,6 +177,15 @@
     screenLine: (position) => native.screenLine(position),
     windowBuffer: (window) => native.windowBuffer(window ?? native.selectedWindow()) ?? undefined,
     getBufferCreate: (name) => native.getBufferCreate(name),
+    setReadOnly: (on) => native.setReadOnly(Boolean(on)),
+    withCurrentBuffer: (name, fn) => {
+      const old = native.setCurrentBuffer(String(name));
+      try {
+        return fn();
+      } finally {
+        native.setCurrentBuffer(old);
+      }
+    },
     findFileNoselect: (file) => native.findFileNoselect(file),
     setWindowBuffer: (window, buffer) => native.setWindowBuffer(window ?? native.selectedWindow(), buffer),
     windowSize: (window) => {

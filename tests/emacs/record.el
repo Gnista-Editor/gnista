@@ -13,7 +13,9 @@
 ;; arguments, called before the keys, for commands that read the minibuffer,
 ;; which batch Emacs would read from stdin), `answers' (strings answering
 ;; the prompts the keys open, in order), `visit' (a file name the buffer
-;; seems to visit, in the temporary directory), `windows' (true to record the
+;; seems to visit, in the temporary directory, written there), `today' (a
+;; YYYY-MM-DD day for Org's agenda to take as today), `agenda_files' (true
+;; to make the visited file the agenda's), `windows' (true to record the
 ;; windows too), and `platform' (an Emacs
 ;; `system-type' such as "darwin", for cases that only hold on one platform).
 ;;
@@ -51,6 +53,17 @@ while the case's keys are queued would read those instead."
 
 (advice-add 'call-last-kbd-macro :around #'ember-oracle--set-aside-typed-keys)
 (advice-add 'execute-kbd-macro :around #'ember-oracle--set-aside-typed-keys)
+
+(defvar ember-oracle--today nil
+  "The day a case fixes, as calendar-absolute-from-gregorian counts it.")
+
+(defun ember-oracle--today ()
+  "The case's fixed day, for org-today."
+  ember-oracle--today)
+
+(require 'calendar)
+(defvar org-agenda-files)
+(defvar org-capture-templates)
 
 (defun ember-oracle--done ()
   "End the case: leave the command loop."
@@ -90,8 +103,11 @@ while the case's keys are queued would read those instead."
 (advice-add 'completing-read :override #'ember-oracle--completing-read)
 (advice-add 'y-or-n-p :override #'ember-oracle--yes)
 (advice-add 'yes-or-no-p :override #'ember-oracle--yes)
+(defun ember-oracle--read-char (&rest _)
+  "The next answer's first character, as reading a key gives it."
+  (string-to-char (ember-oracle--answer nil)))
 (dolist (fn '(read-char read-char-exclusive read-key))
-  (advice-add fn :override #'ember-oracle--no-minibuffer))
+  (advice-add fn :override #'ember-oracle--read-char))
 
 ;; Cases must not reach outside Emacs: opening a link would start the
 ;; system's browser, or another program, for every case that does it.
@@ -133,8 +149,30 @@ while the case's keys are queued would read those instead."
       ;; As if visiting a file, for commands such as org-refile that need
       ;; one; nothing is written to it.
       (when-let* ((visit (alist-get 'visit case)))
-        (setq buffer-file-name (expand-file-name visit temporary-file-directory)
-              buffer-file-truename (abbreviate-file-name (file-truename buffer-file-name))))
+        (let ((file (expand-file-name visit temporary-file-directory)))
+          ;; On disk too, as the agenda checks its files are there.
+          (write-region text nil file nil 'quiet)
+          (setq buffer-file-name file
+                buffer-file-truename (abbreviate-file-name (file-truename file)))))
+      (setq org-agenda-files (and (alist-get 'agenda_files case) (list buffer-file-name)))
+      ;; Capture templates as JSON lists, the file "FILE" standing for the
+      ;; visited one.
+      (setq org-capture-templates
+            (mapcar (lambda (tpl)
+                      (list (nth 0 tpl) (nth 1 tpl) (intern (nth 2 tpl))
+                            (cons (intern (car (nth 3 tpl)))
+                                  (mapcar (lambda (x) (if (equal x "FILE") buffer-file-name x))
+                                          (cdr (nth 3 tpl))))
+                            (nth 4 tpl)))
+                    (alist-get 'capture_templates case)))
+      ;; A fixed day for the agenda, as YYYY-MM-DD.
+      (advice-remove 'org-today #'ember-oracle--today)
+      (when-let* ((day (alist-get 'today case)))
+        (setq ember-oracle--today
+              (calendar-absolute-from-gregorian
+               (let ((d (mapcar #'string-to-number (split-string day "-"))))
+                 (list (nth 1 d) (nth 2 d) (nth 0 d)))))
+        (advice-add 'org-today :override #'ember-oracle--today))
       (buffer-enable-undo)
       (set-buffer-modified-p nil)
       (goto-char (1+ start))
@@ -200,6 +238,10 @@ The whole buffer, even if the case left it narrowed."
                   (platform . ,(alist-get 'platform case))
                   ,@(and (alist-get 'windows case) '((windows . t)))
                   ,@(and (alist-get 'visit case) `((visit . ,(alist-get 'visit case))))
+                  ,@(and (alist-get 'today case) `((today . ,(alist-get 'today case))))
+                  ,@(and (alist-get 'agenda_files case) '((agenda_files . t)))
+                  ,@(and (alist-get 'capture_templates case)
+                         `((capture_templates . ,(vconcat (mapcar #'vconcat (alist-get 'capture_templates case))))))
                   ,@(and (alist-get 'answers case)
                          `((answers . ,(vconcat (alist-get 'answers case)))))))
         (text . ,(buffer-substring-no-properties (point-min) (point-max)))

@@ -47,3 +47,12 @@ const countWords = ember.defineCommand({
   },
 });
 ember.bindKey("C-c w", countWords);
+
+// Org's agenda and capture, on the keys Org's manual suggests. Emacs leaves
+// them unbound, as Ember does.
+ember.setVariable("org-agenda-files", ["~/org/notes.org"]);
+ember.setVariable("org-capture-templates", [
+  ["t", "Task", "entry", ["file+headline", "~/org/notes.org", "Inbox"], "* TODO %?\n  %u\n"],
+]);
+ember.bindKey("C-c a", "org-agenda");
+ember.bindKey("C-c c", "org-capture");

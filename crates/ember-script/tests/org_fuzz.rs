@@ -208,6 +208,9 @@ fn random_case(rng: &mut Rng, name: String) -> Case {
         windows: false,
         answers: Vec::new(),
         visit: None,
+        today: None,
+        agenda_files: false,
+        capture_templates: Vec::new(),
     }
 }
 
@@ -425,7 +428,7 @@ fn random_text_case(rng: &mut Rng, name: String) -> Case {
         })
         .collect::<Vec<_>>()
         .join(" ");
-    Case { name, point, text, keys, modes: Vec::new(), call: Vec::new(), platform: None, windows, answers: Vec::new(), visit: None }
+    Case { name, point, text, keys, modes: Vec::new(), call: Vec::new(), platform: None, windows, answers: Vec::new(), visit: None, today: None, agenda_files: false, capture_templates: Vec::new() }
 }
 
 /// Fuzzes editing outside any mode, as the org fuzzer does org-mode.

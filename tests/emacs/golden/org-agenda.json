@@ -1,0 +1,603 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "week-agenda",
+      "input": {
+        "text": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+        "point": 0,
+        "keys": "",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-agenda-list"
+        ],
+        "platform": null,
+        "windows": true,
+        "visit": "ember-agenda.org",
+        "today": "2026-10-28",
+        "agenda_files": true
+      },
+      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  ember-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  ember-agenda:Sched. 8x:  TODO Late task\n  ember-agenda:Scheduled:  TODO Write report\n  ember-agenda:In   2 d.:  TODO Call Ann                                 :work:\nThursday   29 October 2026\n  ember-agenda:Meeting \nFriday     30 October 2026\n  ember-agenda:Deadline:   TODO Call Ann                                 :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  ember-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  ember-agenda:Sched. 8x:  TODO Late task\n  ember-agenda:Scheduled:  TODO Write report\n  ember-agenda:In   2 d.:  TODO Call Ann                                 :work:\nThursday   29 October 2026\n  ember-agenda:Meeting \nFriday     30 October 2026\n  ember-agenda:Deadline:   TODO Call Ann                                 :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "point": 119,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 9,
+          "selected": false
+        },
+        {
+          "buffer": "*Org Agenda*",
+          "point": 119,
+          "width": 80,
+          "height": 15,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "todo-list",
+      "input": {
+        "text": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+        "point": 0,
+        "keys": "",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-todo-list"
+        ],
+        "platform": null,
+        "windows": true,
+        "visit": "ember-agenda.org",
+        "today": "2026-10-28",
+        "agenda_files": true
+      },
+      "text": "Global list of TODO items of type: ALL\nPress ‘N r’ (e.g. ‘0 r’) to search again: (0)[ALL] (1)DONE (2)TODO\n  ember-agenda:TODO [#A] Plain todo\n  ember-agenda:TODO Write report\n  ember-agenda:TODO Call Ann                                             :work:\n  ember-agenda:TODO Late task\n",
+      "visible": "Global list of TODO items of type: ALL\nPress ‘N r’ (e.g. ‘0 r’) to search again: (0)[ALL] (1)DONE (2)TODO\n  ember-agenda:TODO [#A] Plain todo\n  ember-agenda:TODO Write report\n  ember-agenda:TODO Call Ann                                             :work:\n  ember-agenda:TODO Late task\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        },
+        {
+          "buffer": "*Org Agenda*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "week-agenda-next-line",
+      "input": {
+        "text": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+        "point": 0,
+        "keys": "n n",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-agenda-list"
+        ],
+        "platform": null,
+        "windows": true,
+        "visit": "ember-agenda.org",
+        "today": "2026-10-28",
+        "agenda_files": true
+      },
+      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  ember-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  ember-agenda:Sched. 8x:  TODO Late task\n  ember-agenda:Scheduled:  TODO Write report\n  ember-agenda:In   2 d.:  TODO Call Ann                                 :work:\nThursday   29 October 2026\n  ember-agenda:Meeting \nFriday     30 October 2026\n  ember-agenda:Deadline:   TODO Call Ann                                 :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  ember-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  ember-agenda:Sched. 8x:  TODO Late task\n  ember-agenda:Scheduled:  TODO Write report\n  ember-agenda:In   2 d.:  TODO Call Ann                                 :work:\nThursday   29 October 2026\n  ember-agenda:Meeting \nFriday     30 October 2026\n  ember-agenda:Deadline:   TODO Call Ann                                 :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "point": 188,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 9,
+          "selected": false
+        },
+        {
+          "buffer": "*Org Agenda*",
+          "point": 188,
+          "width": 80,
+          "height": 15,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "week-agenda-done-from-the-agenda",
+      "input": {
+        "text": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+        "point": 0,
+        "keys": "n n t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-agenda-list"
+        ],
+        "platform": null,
+        "windows": true,
+        "visit": "ember-agenda.org",
+        "today": "2026-10-28",
+        "agenda_files": true
+      },
+      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  ember-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  ember-agenda:Sched. 8x:  TODO Late task\n  ember-agenda:Scheduled:  DONE Write report\n  ember-agenda:In   2 d.:  TODO Call Ann                                 :work:\nThursday   29 October 2026\n  ember-agenda:Meeting \nFriday     30 October 2026\n  ember-agenda:Deadline:   TODO Call Ann                                 :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  ember-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  ember-agenda:Sched. 8x:  TODO Late task\n  ember-agenda:Scheduled:  DONE Write report\n  ember-agenda:In   2 d.:  TODO Call Ann                                 :work:\nThursday   29 October 2026\n  ember-agenda:Meeting \nFriday     30 October 2026\n  ember-agenda:Deadline:   TODO Call Ann                                 :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "point": 188,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 9,
+          "selected": false
+        },
+        {
+          "buffer": "*Org Agenda*",
+          "point": 188,
+          "width": 80,
+          "height": 15,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "week-agenda-next-week",
+      "input": {
+        "text": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+        "point": 0,
+        "keys": "f",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-agenda-list"
+        ],
+        "platform": null,
+        "windows": true,
+        "visit": "ember-agenda.org",
+        "today": "2026-10-28",
+        "agenda_files": true
+      },
+      "text": "Week-agenda (W45):\nMonday      2 November 2026 W45\nTuesday     3 November 2026\nWednesday   4 November 2026\nThursday    5 November 2026\nFriday      6 November 2026\nSaturday    7 November 2026\nSunday      8 November 2026\n",
+      "visible": "Week-agenda (W45):\nMonday      2 November 2026 W45\nTuesday     3 November 2026\nWednesday   4 November 2026\nThursday    5 November 2026\nFriday      6 November 2026\nSaturday    7 November 2026\nSunday      8 November 2026\n",
+      "point": 79,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        },
+        {
+          "buffer": "*Org Agenda*",
+          "point": 79,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "week-agenda-week-before-and-today",
+      "input": {
+        "text": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+        "point": 0,
+        "keys": "b .",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-agenda-list"
+        ],
+        "platform": null,
+        "windows": true,
+        "visit": "ember-agenda.org",
+        "today": "2026-10-28",
+        "agenda_files": true
+      },
+      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  ember-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  ember-agenda:Sched. 8x:  TODO Late task\n  ember-agenda:Scheduled:  TODO Write report\n  ember-agenda:In   2 d.:  TODO Call Ann                                 :work:\nThursday   29 October 2026\n  ember-agenda:Meeting \nFriday     30 October 2026\n  ember-agenda:Deadline:   TODO Call Ann                                 :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  ember-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  ember-agenda:Sched. 8x:  TODO Late task\n  ember-agenda:Scheduled:  TODO Write report\n  ember-agenda:In   2 d.:  TODO Call Ann                                 :work:\nThursday   29 October 2026\n  ember-agenda:Meeting \nFriday     30 October 2026\n  ember-agenda:Deadline:   TODO Call Ann                                 :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "point": 119,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 9,
+          "selected": false
+        },
+        {
+          "buffer": "*Org Agenda*",
+          "point": 119,
+          "width": 80,
+          "height": 15,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "week-agenda-go-to-an-entry",
+      "input": {
+        "text": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+        "point": 0,
+        "keys": "n n RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-agenda-list"
+        ],
+        "platform": null,
+        "windows": true,
+        "visit": "ember-agenda.org",
+        "today": "2026-10-28",
+        "agenda_files": true
+      },
+      "text": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+      "visible": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+      "point": 31,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 9,
+          "selected": false
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 31,
+          "width": 80,
+          "height": 15,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "week-agenda-show-an-entry",
+      "input": {
+        "text": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+        "point": 0,
+        "keys": "n n TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-agenda-list"
+        ],
+        "platform": null,
+        "windows": true,
+        "visit": "ember-agenda.org",
+        "today": "2026-10-28",
+        "agenda_files": true
+      },
+      "text": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+      "visible": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+      "point": 7,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 7,
+          "width": 80,
+          "height": 9,
+          "selected": true
+        },
+        {
+          "buffer": "*Org Agenda*",
+          "point": 188,
+          "width": 80,
+          "height": 15,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "week-agenda-quit",
+      "input": {
+        "text": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+        "point": 0,
+        "keys": "q",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-agenda-list"
+        ],
+        "platform": null,
+        "windows": true,
+        "visit": "ember-agenda.org",
+        "today": "2026-10-28",
+        "agenda_files": true
+      },
+      "text": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+      "visible": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 24,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "week-agenda-redo",
+      "input": {
+        "text": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+        "point": 0,
+        "keys": "n g",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-agenda-list"
+        ],
+        "platform": null,
+        "windows": true,
+        "visit": "ember-agenda.org",
+        "today": "2026-10-28",
+        "agenda_files": true
+      },
+      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  ember-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  ember-agenda:Sched. 8x:  TODO Late task\n  ember-agenda:Scheduled:  TODO Write report\n  ember-agenda:In   2 d.:  TODO Call Ann                                 :work:\nThursday   29 October 2026\n  ember-agenda:Meeting \nFriday     30 October 2026\n  ember-agenda:Deadline:   TODO Call Ann                                 :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  ember-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  ember-agenda:Sched. 8x:  TODO Late task\n  ember-agenda:Scheduled:  TODO Write report\n  ember-agenda:In   2 d.:  TODO Call Ann                                 :work:\nThursday   29 October 2026\n  ember-agenda:Meeting \nFriday     30 October 2026\n  ember-agenda:Deadline:   TODO Call Ann                                 :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "point": 146,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 9,
+          "selected": false
+        },
+        {
+          "buffer": "*Org Agenda*",
+          "point": 146,
+          "width": 80,
+          "height": 15,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "todo-list-done",
+      "input": {
+        "text": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+        "point": 0,
+        "keys": "n n n t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-todo-list"
+        ],
+        "platform": null,
+        "windows": true,
+        "visit": "ember-agenda.org",
+        "today": "2026-10-28",
+        "agenda_files": true
+      },
+      "text": "Global list of TODO items of type: ALL\nPress ‘N r’ (e.g. ‘0 r’) to search again: (0)[ALL] (1)DONE (2)TODO\n  ember-agenda:TODO [#A] Plain todo\n  ember-agenda:DONE Write report\n  ember-agenda:TODO Call Ann                                             :work:\n  ember-agenda:TODO Late task\n",
+      "visible": "Global list of TODO items of type: ALL\nPress ‘N r’ (e.g. ‘0 r’) to search again: (0)[ALL] (1)DONE (2)TODO\n  ember-agenda:TODO [#A] Plain todo\n  ember-agenda:DONE Write report\n  ember-agenda:TODO Call Ann                                             :work:\n  ember-agenda:TODO Late task\n",
+      "point": 142,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        },
+        {
+          "buffer": "*Org Agenda*",
+          "point": 142,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "week-agenda-on-a-day-line",
+      "input": {
+        "text": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+        "point": 0,
+        "keys": "p t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-agenda-list"
+        ],
+        "platform": null,
+        "windows": true,
+        "visit": "ember-agenda.org",
+        "today": "2026-10-28",
+        "agenda_files": true
+      },
+      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  ember-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  ember-agenda:Sched. 8x:  TODO Late task\n  ember-agenda:Scheduled:  TODO Write report\n  ember-agenda:In   2 d.:  TODO Call Ann                                 :work:\nThursday   29 October 2026\n  ember-agenda:Meeting \nFriday     30 October 2026\n  ember-agenda:Deadline:   TODO Call Ann                                 :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\n  ember-agenda:Scheduled:  DONE Old thing\nTuesday    27 October 2026\nWednesday  28 October 2026\n  ember-agenda:Sched. 8x:  TODO Late task\n  ember-agenda:Scheduled:  TODO Write report\n  ember-agenda:In   2 d.:  TODO Call Ann                                 :work:\nThursday   29 October 2026\n  ember-agenda:Meeting \nFriday     30 October 2026\n  ember-agenda:Deadline:   TODO Call Ann                                 :work:\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "point": 92,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Command not allowed in this line",
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 9,
+          "selected": false
+        },
+        {
+          "buffer": "*Org Agenda*",
+          "point": 92,
+          "width": 80,
+          "height": 15,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "week-agenda-typing-is-read-only",
+      "input": {
+        "text": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+        "point": 0,
+        "keys": "x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-agenda-list"
+        ],
+        "platform": null,
+        "windows": true,
+        "visit": "ember-agenda.org",
+        "today": "2026-10-28",
+        "agenda_files": true
+      },
+      "text": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+      "visible": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 24,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "week-agenda-repeater-and-deadline-ago",
+      "input": {
+        "text": "* TODO Weekly :x:\nSCHEDULED: <2026-10-21 Wed +1w>\n* TODO Overdue\nDEADLINE: <2026-10-25 Sun>\n* TODO Far deadline\nDEADLINE: <2026-12-30 Wed>\n* Body stamp\nText <2026-11-01 Sun> here.\n#+CATEGORY: misc\n",
+        "point": 0,
+        "keys": "",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-agenda-list"
+        ],
+        "platform": null,
+        "visit": "ember-agenda-2.org",
+        "today": "2026-10-28",
+        "agenda_files": true
+      },
+      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\nTuesday    27 October 2026\nWednesday  28 October 2026\n  misc:       Sched. 7x:  TODO Weekly                                       :x:\n  misc:        3 d. ago:  TODO Overdue\nThursday   29 October 2026\nFriday     30 October 2026\nSaturday   31 October 2026\nSunday      1 November 2026\n  misc:       Body stamp\n",
+      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\nTuesday    27 October 2026\nWednesday  28 October 2026\n  misc:       Sched. 7x:  TODO Weekly                                       :x:\n  misc:        3 d. ago:  TODO Overdue\nThursday   29 October 2026\nFriday     30 October 2026\nSaturday   31 October 2026\nSunday      1 November 2026\n  misc:       Body stamp\n",
+      "point": 77,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "week-agenda-with-priorities",
+      "input": {
+        "text": "* TODO [#C] Low\nSCHEDULED: <2026-10-28 Wed>\n* TODO [#A] High\nSCHEDULED: <2026-10-28 Wed>\n* TODO Mid\nSCHEDULED: <2026-10-28 Wed>\n",
+        "point": 0,
+        "keys": "",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-agenda-list"
+        ],
+        "platform": null,
+        "visit": "ember-agenda-3.org",
+        "today": "2026-10-28",
+        "agenda_files": true
+      },
+      "text": "Week-agenda (W44):\nMonday     26 October 2026 W44\nTuesday    27 October 2026\nWednesday  28 October 2026\n  ember-agenda-3:Scheduled:  TODO [#A] High\n  ember-agenda-3:Scheduled:  TODO Mid\n  ember-agenda-3:Scheduled:  TODO [#C] Low\nThursday   29 October 2026\nFriday     30 October 2026\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "visible": "Week-agenda (W44):\nMonday     26 October 2026 W44\nTuesday    27 October 2026\nWednesday  28 October 2026\n  ember-agenda-3:Scheduled:  TODO [#A] High\n  ember-agenda-3:Scheduled:  TODO Mid\n  ember-agenda-3:Scheduled:  TODO [#C] Low\nThursday   29 October 2026\nFriday     30 October 2026\nSaturday   31 October 2026\nSunday      1 November 2026\n",
+      "point": 77,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

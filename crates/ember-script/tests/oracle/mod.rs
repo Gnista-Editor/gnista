@@ -36,6 +36,16 @@ pub struct Case {
     /// need one there; Ember's do not.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub visit: Option<String>,
+    /// The day Org's agenda takes as today, as YYYY-MM-DD.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub today: Option<String>,
+    /// Whether the visited file is the agenda's only file.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub agenda_files: bool,
+    /// Capture templates, as org-capture-templates lists them, with "FILE"
+    /// for the visited file.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub capture_templates: Vec<serde_json::Value>,
 }
 
 #[derive(Deserialize)]
@@ -70,6 +80,12 @@ pub struct Input {
     pub answers: Vec<String>,
     #[serde(default)]
     pub visit: Option<String>,
+    #[serde(default)]
+    pub today: Option<String>,
+    #[serde(default)]
+    pub agenda_files: bool,
+    #[serde(default)]
+    pub capture_templates: Vec<serde_json::Value>,
 }
 
 /// One window, as `record.el` reports it: the buffer it shows, its point,
@@ -127,6 +143,35 @@ pub fn run(case: &Case) -> State {
     b.name = "*ember-oracle*".into();
     b.set_text(&case.text);
     b.set_point(case.point);
+    // As record.el has it: the buffer visits a file in the temporary
+    // directory, which may be the agenda's, and the agenda's day is fixed.
+    let file = case.visit.as_ref().map(|name| std::env::temp_dir().join(name));
+    if let Some(file) = &file {
+        std::fs::write(file, &case.text).expect("the visited file can be written");
+        b.path = Some(file.clone());
+    }
+    if case.agenda_files {
+        let file = file.as_ref().expect("agenda_files needs visit");
+        ed.set_variable("org-agenda-files", ember_core::Value::List(vec![ember_core::Value::Str(file.display().to_string())]));
+    }
+    if !case.capture_templates.is_empty() {
+        let file = file.as_ref().map(|f| f.display().to_string()).unwrap_or_default();
+        let value = |v: &serde_json::Value| -> ember_core::Value {
+            fn convert(v: &serde_json::Value, file: &str) -> ember_core::Value {
+                match v {
+                    serde_json::Value::String(s) if s == "FILE" => ember_core::Value::Str(file.to_string()),
+                    serde_json::Value::String(s) => ember_core::Value::Str(s.clone()),
+                    serde_json::Value::Array(items) => ember_core::Value::List(items.iter().map(|i| convert(i, file)).collect()),
+                    _ => ember_core::Value::Null,
+                }
+            }
+            convert(v, &file)
+        };
+        ed.set_variable("org-capture-templates", ember_core::Value::List(case.capture_templates.iter().map(value).collect()));
+    }
+    if let Some(day) = &case.today {
+        ed.set_variable("ember--today", ember_core::Value::Str(day.clone()));
+    }
     for mode in &case.modes {
         ed.call_with_prefix(mode, Vec::new(), Some(PrefixArg::Number(1)))
             .unwrap_or_else(|e| panic!("{}: turning on {mode}: {e}", case.name));
@@ -140,21 +185,11 @@ pub fn run(case: &Case) -> State {
         Key::parse_seq(&case.keys).unwrap_or_else(|| panic!("{}: keys {:?} are not valid Emacs notation", case.name, case.keys))
     };
     let mut error = None;
-    if let Some((name, args)) = case.call.split_first() {
-        let args = args.iter().map(|a| ember_core::Arg::Str(a.clone())).collect();
-        if let Err(e) = ed.call(name, args) {
-            error = Some(e.to_string());
-        }
-    }
     let mut answers = case.answers.iter();
-    for key in keys {
-        ed.handle_key(key);
-        if let Some(e) = ed.take_error() {
-            error.get_or_insert(e.to_string());
-        }
-        // Prompts take the case's answers in order, as record.el gives them;
-        // with none left, reading the minibuffer is an error, as batch Emacs
-        // would read it from standard input.
+    // Prompts take the case's answers in order, as record.el gives them;
+    // with none left, reading the minibuffer is an error, as batch Emacs
+    // would read it from standard input.
+    let mut answer_prompts = |ed: &mut Editor, error: &mut Option<String>| {
         while ed.prompt().is_some() {
             let Some(answer) = answers.next() else {
                 ed.handle_key(Key::parse("C-g").expect("C-g parses"));
@@ -168,6 +203,20 @@ pub fn run(case: &Case) -> State {
                 error.get_or_insert(e.to_string());
             }
         }
+    };
+    if let Some((name, args)) = case.call.split_first() {
+        let args = args.iter().map(|a| ember_core::Arg::Str(a.clone())).collect();
+        if let Err(e) = ed.call(name, args) {
+            error = Some(e.to_string());
+        }
+        answer_prompts(&mut ed, &mut error);
+    }
+    for key in keys {
+        ed.handle_key(key);
+        if let Some(e) = ed.take_error() {
+            error.get_or_insert(e.to_string());
+        }
+        answer_prompts(&mut ed, &mut error);
     }
     ed.font_lock_ensure().unwrap_or_else(|e| panic!("{}: fontifying: {e}", case.name));
     let windows = case.windows.then(|| {
