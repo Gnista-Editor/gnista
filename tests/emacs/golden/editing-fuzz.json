@@ -2392,6 +2392,27 @@
       ],
       "modified": true,
       "error": "Don’t have two things to transpose"
+    },
+    {
+      "name": "a-failed-delete-joins-the-next-change-to-the-last",
+      "input": {
+        "text": "foo_bar\n",
+        "point": 5,
+        "keys": "M-d C-d C-d 1 C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "foo_b\n",
+      "visible": "foo_b\n",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "ar"
+      ],
+      "modified": true,
+      "error": "End of buffer"
     }
   ]
 }

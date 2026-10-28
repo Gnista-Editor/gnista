@@ -288,22 +288,28 @@ interface Heading {
 
 const TAGS = /[ \t](:[\p{L}\p{N}_@#%:]+:)[ \t]*$/u;
 
-function parseHeading(line: number, keywords = allKeywords()): Heading | undefined {
-  const text = ember.lineText(line);
+/**
+ * A heading line, if `line` is one. `text` is the line's text and `sorted`
+ * the TODO keywords, longest first, when the caller has them already, as
+ * headings() does for every heading in the buffer.
+ */
+function parseHeading(line: number, keywords = allKeywords(), text = ember.lineText(line), sorted?: string[]): Heading | undefined {
   const stars = /^(\*+) /.exec(text);
   if (!stars) return undefined;
   let i = stars[0].length;
   while (text[i] === " ") i++;
+  const start = ember.lineStart(line);
+  const at = (_line: number, text: string, i: number): number => start + charCount(text.slice(0, i));
   const h: Heading = {
     line,
-    start: ember.lineStart(line),
-    end: ember.lineEnd(line),
+    start,
+    end: start + charCount(text),
     level: stars[1].length,
     titleAt: 0,
     title: "",
     tags: [],
   };
-  for (const kw of [...keywords].sort((a, b) => b.length - a.length)) {
+  for (const kw of sorted ?? [...keywords].sort((a, b) => b.length - a.length)) {
     if (text.startsWith(kw, i) && (i + kw.length === text.length || text[i + kw.length] === " ")) {
       h.todo = kw;
       h.todoAt = at(line, text, i);
@@ -336,15 +342,35 @@ function isHeadingLine(text: string): boolean {
   return /^\*+ /.test(text);
 }
 
+/** The last buffer's headings and what they were found for. */
+let headingCache: { key: string; headings: readonly Heading[] } | undefined;
+
+/**
+ * The buffer's headings, top to bottom. Kept until the text or the TODO
+ * keywords change, since the commands and the element parser ask for them
+ * many times per key; frozen, as they are shared.
+ */
 function headings(): Heading[] {
   const keywords = allKeywords();
+  const key = `${ember.bufferName()}\n${ember.bufferModifiedTick()}\n${keywords.join(" ")}`;
+  if (headingCache?.key === key) return headingCache.headings as Heading[];
   const found: Heading[] = [];
-  for (let line = 0; line < ember.lineCount(); line++) {
-    if (ember.lineText(line).startsWith("*")) {
-      const h = parseHeading(line, keywords);
-      if (h) found.push(h);
+  // The whole text at once, counting lines up to each line that starts with
+  // a star, rather than a call per line: much the faster in a large buffer.
+  const text = ember.bufferText(0, ember.bufferSize());
+  const sorted = [...keywords].sort((a, b) => b.length - a.length);
+  let line = 0;
+  let counted = 0;
+  for (const m of text.matchAll(/^\*+ .*/gm)) {
+    const at = m.index ?? 0;
+    for (let nl = text.indexOf("\n", counted); nl !== -1 && nl < at; nl = text.indexOf("\n", nl + 1)) {
+      line++;
+      counted = nl + 1;
     }
+    const h = parseHeading(line, keywords, m[0], sorted);
+    if (h) found.push(Object.freeze(h));
   }
+  headingCache = { key, headings: Object.freeze(found) };
   return found;
 }
 
@@ -4243,9 +4269,26 @@ function parseElements(
 }
 
 /** Parses the buffer into its elements: headlines, sections and what they hold. */
-function parseBuffer(): Elem {
-  const root: Elem = { type: "org-data", begin: 0, end: ember.bufferSize(), children: [] };
+/** The last parse and what it was made for, as headings are kept. */
+let parseCache: { key: string; root: Elem } | undefined;
+
+/**
+ * The buffer's elements as far as the element at `pos` needs them: the
+ * heading whose entry holds it with its ancestors and their sections, or
+ * the text before the first heading. Other subtrees are left out, so the
+ * parse costs what the entry does, not the buffer. Kept until the text, the
+ * TODO keywords or that heading change.
+ */
+function parseFor(pos: number): Elem {
   const all = headings();
+  const branch = headingIndex(all, lineAt(pos));
+  const key = `${ember.bufferName()}\n${ember.bufferModifiedTick()}\n${allKeywords().join(" ")}\n${branch ?? -1}`;
+  if (parseCache?.key !== key) parseCache = { key, root: parseBranch(all, branch) };
+  return parseCache.root;
+}
+
+function parseBranch(all: Heading[], branch: number | undefined): Elem {
+  const root: Elem = { type: "org-data", begin: 0, end: ember.bufferSize(), children: [] };
   const section = (parent: Elem, from: number, to: number, afterHeadline: boolean): void => {
     let p = from;
     while (p < to && isBlank(ember.lineText(lineAt(p))) && p === ember.lineStart(lineAt(p))) p = lineStartOrEnd(lineAt(p) + 1);
@@ -4255,18 +4298,19 @@ function parseBuffer(): Elem {
     // Before the first heading, a property drawer may start the buffer.
     parseElements(sec, p, to, afterHeadline, undefined, parent.type === "org-data");
   };
-  const headline = (i: number, parent: Elem): number => {
+  if (branch === undefined) {
+    section(root, 0, all[0]?.start ?? ember.bufferSize(), false);
+    return root;
+  }
+  // The headings holding the branch, outermost first, each with its section.
+  let parent = root;
+  for (const i of [...ancestors(all, branch).reverse(), branch]) {
     const h = all[i];
     const end = subtreeRegion(all, i)[1];
     const e = elem("headline", h.start, end, parent);
-    const sectionEnd = Math.min(all[i + 1]?.start ?? end, end);
-    section(e, lineStartOrEnd(h.line + 1), sectionEnd, true);
-    let k = i + 1;
-    while (k < all.length && all[k].start < end) k = headline(k, e);
-    return k;
-  };
-  section(root, 0, all[0]?.start ?? ember.bufferSize(), false);
-  for (let k = 0; k < all.length; ) k = headline(k, root);
+    section(e, lineStartOrEnd(h.line + 1), Math.min(all[i + 1]?.start ?? end, end), true);
+    parent = e;
+  }
   return root;
 }
 
@@ -4293,7 +4337,7 @@ function elementAt(pos: number): Elem | undefined {
 }
 
 function elementAt_(pos: number): Elem | undefined {
-  let node = parseBuffer();
+  let node = parseFor(pos);
   const size = ember.bufferSize();
   for (;;) {
     const child =

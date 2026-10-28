@@ -695,5 +695,11 @@
     "text": "\tthree",
     "point": 3,
     "keys": "M-d M-t C-/ C-? C-y"
+  },
+  {
+    "name": "a-failed-delete-joins-the-next-change-to-the-last",
+    "text": "foo_bar\n",
+    "point": 5,
+    "keys": "M-d C-d C-d 1 C-/"
   }
 ]

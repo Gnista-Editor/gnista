@@ -103,6 +103,9 @@ pub struct Buffer {
     open_unmodified_at: Option<u64>,
     /// Point at the last undo boundary, before the command now running.
     boundary_point: usize,
+    /// Whether the text changed since the last command began, as Emacs's
+    /// `undo-auto--undoably-changed-buffers` tracks for its boundaries.
+    edited_since_command: bool,
     /// The point the open group returns to when undone, if any.
     open_point: Option<usize>,
     /// Where a run of consecutive undos continues: the group to undo next,
@@ -157,6 +160,7 @@ impl Buffer {
             open_group: Vec::new(),
             open_unmodified_at: None,
             boundary_point: 0,
+            edited_since_command: false,
             open_point: None,
             pending_undo: None,
             selective_undo: None,
@@ -690,6 +694,8 @@ impl Buffer {
         self.open_point = None;
         self.modified = false;
         self.save_generation += 1;
+        // New text, so whatever was worked out from the old is out of date.
+        self.tick += 1;
     }
 
     /// The point of a window, other than the selected one, showing this buffer.
@@ -719,6 +725,23 @@ impl Buffer {
             self.open_group = edits;
             self.open_unmodified_at = last.unmodified_at;
             self.open_point = last.point;
+        }
+    }
+
+    /// Before a command, as Emacs's command loop calls
+    /// `undo-auto--add-boundary`: an undo boundary if the text changed
+    /// since the last command began. A command that amalgamates takes the
+    /// boundary away again, so it gets none, and one that changed nothing,
+    /// such as a failed C-d after it, leaves no change to divide off.
+    pub fn command_boundary(&mut self, amalgamate: bool) {
+        let edited = std::mem::take(&mut self.edited_since_command);
+        if amalgamate {
+            return;
+        }
+        if edited {
+            self.undo_boundary();
+        } else {
+            self.boundary_point = self.point;
         }
     }
 
@@ -1037,6 +1060,7 @@ impl Buffer {
             self.open_point = (self.boundary_point != at).then_some(self.boundary_point);
         }
         self.changed = true;
+        self.edited_since_command = true;
         self.modified = true;
         // Typing joins onto the insertion before it, as Emacs records it: one
         // insertion for a run of characters, not one per character.

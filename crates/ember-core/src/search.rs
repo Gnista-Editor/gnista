@@ -226,41 +226,55 @@ pub fn compile(pattern: &str, options: &SearchOptions) -> Result<Regex> {
 }
 
 /// Searches a buffer from `from`, positions counted in characters.
+///
+/// Only the text a match could lie in is copied out of the buffer: from the
+/// start of the line the search begins on, so `^` and `\b` see what comes
+/// before them, to the bound. A pattern anchored at the buffer's start gets
+/// the text from there.
 pub fn search(b: &Buffer, pattern: &str, from: usize, options: &SearchOptions) -> Result<Option<Match>> {
     let re = compile(pattern, options)?;
-    let text = b.slice(0..b.len());
     let rope = b.text();
-    let to_char = |byte: usize| rope.byte_to_char(byte);
-    let byte_of = |pos: usize| rope.char_to_byte(pos.min(b.len()));
-    let from_byte = byte_of(from);
-    // Group offsets of a match found in `text[base..]`, as buffer positions.
-    let to_match = |base: usize, caps: regex::Captures| {
+    let from = from.min(b.len());
+    let line_start = |pos: usize| b.line_start(b.line_of(pos.min(b.len())));
+    let anchored_at_start = re.as_str().contains(r"\A");
+    let (lo, hi) = if options.backward {
+        let lo = if anchored_at_start { 0 } else { options.bound.map_or(0, line_start) };
+        (lo, from)
+    } else {
+        let lo = if anchored_at_start { 0 } else { line_start(from) };
+        (lo, options.bound.map_or(b.len(), |bound| bound.min(b.len())))
+    };
+    if lo > hi || from > hi {
+        return Ok(None);
+    }
+    let text = b.slice(lo..hi);
+    let base = rope.char_to_byte(lo);
+    let to_char = |byte: usize| rope.byte_to_char(base + byte);
+    let byte_of = |pos: usize| rope.char_to_byte(pos) - base;
+    // Group offsets of a match found in `text[start..]`, as buffer positions.
+    let to_match = |start: usize, caps: regex::Captures| {
         let groups: Vec<Option<(usize, usize)>> = (0..caps.len())
-            .map(|g| caps.get(g).map(|m| (to_char(base + m.start()), to_char(base + m.end()))))
+            .map(|g| caps.get(g).map(|m| (to_char(start + m.start()), to_char(start + m.end()))))
             .collect();
         let (start, end) = groups[0].expect("group 0 always matches");
         Match { start, end, groups }
     };
     if !options.backward {
-        let limit = options.bound.map_or(text.len(), byte_of);
-        if from_byte > limit {
-            return Ok(None);
-        }
-        return Ok(re.captures_at(&text[..limit], from_byte).map(|caps| to_match(0, caps)));
+        return Ok(re.captures_at(&text, byte_of(from)).map(|caps| to_match(0, caps)));
     }
-    let limit = options.bound.map_or(0, byte_of);
-    if from_byte < limit {
+    let limit = options.bound.map_or(0, |bound| byte_of(bound.clamp(lo, hi)));
+    if options.bound.is_some_and(|bound| from < bound) {
         return Ok(None);
     }
     // The match that starts last before `from` and ends by it, as Emacs's
     // backward search finds. The last of the non-overlapping matches gives
     // the lowest place it can start.
-    let haystack = &text[..from_byte];
+    let haystack = text.as_str();
     let Some(lowest) = re.find_iter(haystack).filter(|m| m.start() >= limit).last().map(|m| m.start()) else {
         return Ok(None);
     };
     let anchored = Regex::new(&format!(r"\A(?:{})", re.as_str())).map_err(|e| Error::new(format!("Invalid regexp: {e}")))?;
-    let found = (lowest..=from_byte)
+    let found = (lowest..=haystack.len())
         .rev()
         .filter(|&start| haystack.is_char_boundary(start))
         .find_map(|start| anchored.captures(&haystack[start..]).map(|caps| to_match(start, caps)));

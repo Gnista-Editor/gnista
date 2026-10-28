@@ -399,9 +399,7 @@ impl Editor {
         self.previous_run = self.self_insert_run;
         self.self_insert_run = if amalgamate { self.self_insert_run + 1 } else { 1 };
         self.amalgamating_now = listed;
-        if !amalgamate {
-            self.buffer_mut().undo_boundary();
-        }
+        self.buffer_mut().command_boundary(amalgamate);
         if command.shift_select {
             self.shift_select(shifted);
         }
