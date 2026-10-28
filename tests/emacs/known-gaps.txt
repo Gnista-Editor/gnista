@@ -4,5 +4,13 @@
 # electric-indent-mode, on by default in Emacs, re-indents after RET; Ember has no indentation yet.
 basic/newline-reindents  # electric-indent-mode
 
+# Undo in an active region (undo-in-region) is not implemented.
+org-fuzz-8/seed13-1143-c-c-@-c-slash  # undo in a region
+
+# Org's own list code edits at stale positions here: org-list-insert-item does
+# not count the checkbox when it shifts the sub-items it moves, and
+# org-list-struct-apply-struct then replaces using leftover match data.
+org-fuzz-8/seed13-0613-c-e-m-s-return  # copying Org's stale match data
+
 # Intentional differences, not to be fixed.
 arguments/delete-more-than-there-is  # Emacs reports an internal "Args out of range" error naming the buffer; Ember says "End of buffer". The text is unchanged in both.

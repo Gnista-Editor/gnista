@@ -166,7 +166,7 @@ const ORG_KEYS: &[&str] = &[
     "M-S-<left>", "M-S-<right>", "M-S-<up>", "M-S-<down>", "S-<left>", "S-<right>", "S-<up>", "S-<down>",
     "C-c C-t", "C-c C-c", "C-c -", "C-c *", "C-c C-x C-b", "C-c C-n", "C-c C-p", "C-c C-f", "C-c C-b", "C-c C-u",
     "C-c @", "RET", "DEL", "C-d", "C-k", "C-c C-x C-w", "C-c C-x M-w", "C-c C-x C-y", "C-u TAB",
-    "C-c SPC", "C-c C-o",
+    "C-c SPC",
 ];
 /// Editing keys from outside Org, which Org leaves alone or remaps.
 const EDIT_KEYS: &[&str] = &["C-y", "M-y", "C-w", "M-w", "C-SPC", "C-/", "C-o", "M-d", "M-DEL", "C-t", "C-j", "M-<", "M->"];

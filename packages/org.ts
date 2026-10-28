@@ -132,6 +132,16 @@ for (let i = 1; i <= 8; i++) {
 // Text and positions. Positions count characters; JavaScript strings count
 // UTF-16 units, which differ for emoji.
 
+
+/**
+ * Whether the region is active and not empty, as org-region-active-p says
+ * after use-region-p: an empty region does not count.
+ */
+function orgRegionActive(): boolean {
+  const mark = ember.mark();
+  return ember.regionActive() && mark !== undefined && mark !== ember.point();
+}
+
 function charCount(s: string): number {
   return /[\uD800-\uDFFF]/.test(s) ? Array.from(s).length : s.length;
 }
@@ -1909,7 +1919,7 @@ const lastIndentEnd = marker(0);
  */
 function indentItemGeneric(arg: number, noSubtree: boolean, struct: Struct): void {
   const saved = marker(ember.point());
-  const region = ember.regionActive() && ember.mark() !== undefined;
+  const region = orgRegionActive() && ember.mark() !== undefined;
   const mark = ember.mark() ?? ember.point();
   const [rbeg, rend] = [Math.min(mark, ember.point()), Math.max(mark, ember.point())];
   const top = struct[0].pos;
@@ -1966,7 +1976,7 @@ function structAtItem(error = "Not at an item"): Struct {
 }
 
 function indentItemCommand(arg: number, noSubtree: boolean): void {
-  const region = ember.regionActive() && ember.mark() !== undefined;
+  const region = orgRegionActive() && ember.mark() !== undefined;
   const regionStart = region ? Math.min(ember.mark() ?? 0, ember.point()) : 0;
   if (itemLine(lineAt()) || (region && itemLine(lineAt(regionStart)))) {
     const struct = listStruct(region ? lineAt(regionStart) : lineAt());
@@ -2143,7 +2153,7 @@ function toggleCheckbox(arg: ember.PrefixArg): void {
       }
       return undefined;
     };
-    if (ember.regionActive() && ember.mark() !== undefined) {
+    if (orgRegionActive() && ember.mark() !== undefined) {
       const [rb, re] = [Math.min(ember.mark() ?? 0, ember.point()), Math.max(ember.mark() ?? 0, ember.point())];
       const found = firstItemFrom(ember.lineStart(lineAt(rb)), re);
       if (found === undefined) throw new Error("No item in region");
@@ -3076,54 +3086,84 @@ const orgReturn = ember.defineCommand({
     "RET in Org: in a table, move to the next row; elsewhere start a new line, indented as org-indent-line does.\n\n" +
     "On a heading, the title after point goes to the new line, but the state, priority and tags stay. In a list " +
     "item, the text after point moves to the new line after it is indented.",
+  run: () => orgReturnWith(true),
+});
+
+ember.defineCommand({
+  name: "org-return-and-maybe-indent",
+  doc: "C-j in Org: what RET does, but the new line is not indented, as electric-indent-mode leaves C-j alone.",
+  run: () => orgReturnWith(false),
+});
+
+ember.defineVariable({
+  name: "org-special-ctrl-o",
+  doc: "Whether C-o in a table, away from the start of a line, inserts a row rather than opening a line.",
+  value: true,
+});
+
+ember.defineCommand({
+  name: "org-open-line",
+  doc: "C-o in Org: in a table, away from the start of the line, insert a row above; elsewhere open-line.",
   run: () => {
-    checkInvisibleEditMaybe();
-    const line = lineAt();
     const p = ember.point();
-    const [ls, le] = [ember.lineStart(line), ember.lineEnd(line)];
-    const n = Math.max(1, ember.prefixNumericValue());
-    if (/^[ \t]*\|/.test(ember.lineText(line))) {
-      // Before the first column or after the last, a table is split.
-      if (/^[ \t]*$/.test(ember.bufferText(p, le)) || /^[ \t]*$/.test(ember.bufferText(ls, p))) ember.insert("\n");
-      else {
-        ember.call("org-table-justify-field-maybe");
-        ember.call("org-table-next-row");
-      }
-      return;
-    }
-    const h = p > ls ? parseHeading(line) : undefined;
-    if (h) {
-      const titleEnd = h.titleAt + charCount(h.title);
-      const rest = h.title !== "" && p >= h.titleAt && p <= titleEnd ? ember.deleteRegion(p, titleEnd) : undefined;
-      if (rest !== undefined && h.tagsAt !== undefined) alignTags(line);
-      ember.gotoChar(ember.lineEnd(line));
-      const all = headings();
-      const i = headingIndex(all, line);
-      if (i !== undefined) {
-        showEntry(all, i);
-        hideDrawersIn(line + 1, entryEnd(all, i));
-      }
-      electricNewline(n);
-      if (rest !== undefined) {
-        const q = ember.point();
-        ember.insert(rest.trim());
-        ember.gotoChar(q);
-      }
-      return;
-    }
-    let context = elementAt(p)?.parent;
-    while (context && context.type !== "item") context = context.parent;
-    if (p < le && context) {
-      const rest = ember.deleteRegion(p, le);
-      electricNewline(n);
-      const q = ember.point();
-      ember.insert(rest);
-      ember.gotoChar(q);
-      return;
-    }
-    electricNewline(n);
+    if (ember.variable("org-special-ctrl-o") === true && p !== ember.lineStart(lineAt()) && /^[ \t]*\|/.test(ember.lineText(lineAt())))
+      ember.call("org-table-insert-row");
+    else ember.callWithPrefix(ember.prefixArg(), "open-line");
   },
 });
+
+/**
+ * RET in Org, as org-return does. Org calls newline interactively for RET,
+ * so electric-indent-mode indents the new line, and from code for C-j, so it does not.
+ */
+function orgReturnWith(electric: boolean): void {
+  const newline = (n: number): void => (electric ? electricNewline(n) : ember.insert("\n".repeat(n)));
+  checkInvisibleEditMaybe();
+  const line = lineAt();
+  const p = ember.point();
+  const [ls, le] = [ember.lineStart(line), ember.lineEnd(line)];
+  const n = Math.max(1, ember.prefixNumericValue());
+  if (/^[ \t]*\|/.test(ember.lineText(line))) {
+    // Before the first column or after the last, a table is split.
+    if (/^[ \t]*$/.test(ember.bufferText(p, le)) || /^[ \t]*$/.test(ember.bufferText(ls, p))) ember.insert("\n");
+    else {
+      ember.call("org-table-justify-field-maybe");
+      ember.call("org-table-next-row");
+    }
+    return;
+  }
+  const h = p > ls ? parseHeading(line) : undefined;
+  if (h) {
+    const titleEnd = h.titleAt + charCount(h.title);
+    const rest = h.title !== "" && p >= h.titleAt && p <= titleEnd ? ember.deleteRegion(p, titleEnd) : undefined;
+    if (rest !== undefined && h.tagsAt !== undefined) alignTags(line);
+    ember.gotoChar(ember.lineEnd(line));
+    const all = headings();
+    const i = headingIndex(all, line);
+    if (i !== undefined) {
+      showEntry(all, i);
+      hideDrawersIn(line + 1, entryEnd(all, i));
+    }
+    newline(n);
+    if (rest !== undefined) {
+      const q = ember.point();
+      ember.insert(rest.trim());
+      ember.gotoChar(q);
+    }
+    return;
+  }
+  let context = elementAt(p)?.parent;
+  while (context && context.type !== "item") context = context.parent;
+  if (p < le && context) {
+    const rest = ember.deleteRegion(p, le);
+    newline(n);
+    const q = ember.point();
+    ember.insert(rest);
+    ember.gotoChar(q);
+    return;
+  }
+  newline(n);
+}
 
 /**
  * Inserts newlines and indents the new line, as newline does with
@@ -3556,7 +3596,7 @@ function changeSubtreeLevel(by: number): void {
 }
 
 function headingsInRegion(): Heading[] | undefined {
-  if (!ember.regionActive()) return undefined;
+  if (!orgRegionActive()) return undefined;
   const mark = ember.mark() ?? ember.point();
   const [from, to] = [Math.min(mark, ember.point()), Math.max(mark, ember.point())];
   const inside = headings().filter((h) => h.start >= ember.lineStart(lineAt(from)) && h.start < to);
@@ -3570,7 +3610,8 @@ ember.defineCommand({
     const region = headingsInRegion();
     if (region) {
       ember.keepMarkActive(() => {
-        for (const h of [...region].reverse()) changeLevel(parseHeading(h.line) ?? h, -1);
+        // Forward, as org-map-region goes, so an error stops before the rest.
+        for (const h of region) changeLevel(parseHeading(h.line) ?? h, -1);
       });
     } else {
       const [all, i] = backToHeading();
@@ -3587,7 +3628,8 @@ ember.defineCommand({
     const region = headingsInRegion();
     if (region) {
       ember.keepMarkActive(() => {
-        for (const h of [...region].reverse()) changeLevel(parseHeading(h.line) ?? h, 1);
+        // Forward, as org-map-region goes, so an error stops before the rest.
+        for (const h of region) changeLevel(parseHeading(h.line) ?? h, 1);
       });
     } else {
       const [all, i] = backToHeading();
@@ -3791,6 +3833,25 @@ function drawerEnd(line: number, limit: number): number | undefined {
   return undefined;
 }
 
+/** The block a line opens, and the line that closes it, before limit and the next heading. */
+function blockAt(line: number, limit: number): { type: string; close: number } | undefined {
+  const m = /^[ \t]*#\+begin_(\S+)/i.exec(ember.lineText(line));
+  if (!m) return undefined;
+  const close = new RegExp(`^[ \\t]*#\\+end_${m[1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[ \\t]*$`, "i");
+  for (let l = line + 1; l < ember.lineCount() && ember.lineStart(l) < limit; l++) {
+    if (close.test(ember.lineText(l))) {
+      const name = m[1].toLowerCase();
+      const known = ["center", "quote", "comment", "example", "export", "src", "verse"];
+      return { type: known.includes(name) ? `${name}-block` : "special-block", close: l };
+    }
+    if (isHeadingLine(ember.lineText(l))) return undefined;
+  }
+  return undefined;
+}
+
+/** Blocks whose contents are elements, which org-element parses inside them. */
+const GREATER_BLOCKS = ["center-block", "quote-block", "special-block"];
+
 /** Whether a line starts an element, so a paragraph before it ends. */
 function startsElement(line: number, limit: number): boolean {
   const text = ember.lineText(line);
@@ -3800,7 +3861,8 @@ function startsElement(line: number, limit: number): boolean {
     /^[ \t]*\|/.test(text) ||
     ITEM_RE.test(text) ||
     /^[ \t]*#\+\S*:/.test(text) ||
-    (DRAWER_RE.test(text) && drawerEnd(line, limit) !== undefined)
+    (DRAWER_RE.test(text) && drawerEnd(line, limit) !== undefined) ||
+    blockAt(line, limit) !== undefined
   );
 }
 
@@ -3863,6 +3925,13 @@ function parseElements(
       e.contentsEnd = ember.lineStart(close);
       if (close > line + 1) parseElements(e, e.contentsBegin as number, e.contentsEnd, false);
       else e.contentsBegin = undefined;
+    } else if (p === ember.lineStart(line) && blockAt(line, to) !== undefined) {
+      const block = blockAt(line, to) as { type: string; close: number };
+      const greater = GREATER_BLOCKS.includes(block.type) || block.type === "verse-block";
+      const inside = block.close > line + 1;
+      e = elem(block.type, p, Math.min(lineStartOrEnd(block.close + 1), to), parent, greater && inside ? lineStartOrEnd(line + 1) : undefined);
+      if (greater && inside) e.contentsEnd = ember.lineStart(block.close);
+      if (GREATER_BLOCKS.includes(block.type) && inside) parseElements(e, e.contentsBegin as number, e.contentsEnd as number, false);
     } else if (p === ember.lineStart(line) && /^[ \t]*#\+\S*:/.test(text)) {
       e = elem("keyword", p, Math.min(next, to), parent);
     } else {
@@ -4148,9 +4217,13 @@ function copySubtree(cut: boolean, n: number, visible: boolean): void {
   const [beg, end] = [all[i].start, subtreeRegion(all, j)[1]];
   if (end <= beg) return;
   const mark = ember.mark();
+  // Whether the tree shows folded, so pasting it back can fold it again.
+  const folded = ember.invisibleAt(all[i].end);
   ember.setMark(end);
   ember.gotoChar(beg);
   ember.call(cut ? "kill-region" : "kill-ring-save");
+  ember.setVariable("org-subtree-clip-folded", folded);
+  ember.setVariable("org-subtree-clip", ember.currentKill());
   const moved = (x: number): number => (!cut || x <= beg ? x : x >= end ? x - (end - beg) : beg);
   ember.setMark(mark === undefined ? null : moved(mark));
   ember.gotoChar(moved(p));
@@ -4242,7 +4315,103 @@ function pasteSubtree(level: ember.PrefixArg): void {
   dropMarker(endMark);
   ember.gotoChar(beg);
   ember.message(`Clipboard pasted as level ${fresh} subtree`);
+  // A tree folded when it was killed or copied comes back folded.
+  if (ember.variable("org-subtree-clip") === ember.currentKill() && ember.variable("org-subtree-clip-folded") === true) {
+    foldSubtree(lineAt());
+  }
 }
+
+/** Hides everything under the heading on a line, as org-fold-subtree does. */
+function foldSubtree(line: number): void {
+  const all = headings();
+  const i = headingIndex(all, line);
+  if (i === undefined) return;
+  const next = subtreeRegion(all, i)[1];
+  const end = next >= ember.bufferSize() ? ember.bufferSize() : next - 1;
+  if (end > all[i].end) flag(all[i].end, end, true);
+}
+
+ember.defineVariable({
+  name: "org-subtree-clip",
+  doc: "The last subtree org-cut-subtree or org-copy-subtree put on the kill ring.",
+  value: null,
+});
+ember.defineVariable({
+  name: "org-subtree-clip-folded",
+  doc: "Whether the subtree in org-subtree-clip was folded when it was cut or copied.",
+  value: false,
+});
+ember.defineVariable({
+  name: "org-yank-folded-subtrees",
+  doc: "Whether C-y folds the subtrees it yanks, unless folding would hide text after them.",
+  value: true,
+});
+
+/**
+ * Yanks, as org-yank does: a kill that is a set of subtrees, yanked at the
+ * start of a line, comes in folded, unless folding would hide text after it.
+ */
+function orgYank(arg: ember.PrefixArg): void {
+  ember.setThisCommand("yank");
+  if (arg !== null) {
+    ember.callWithPrefix(arg, "yank");
+    return;
+  }
+  const p = ember.point();
+  const ls = ember.lineStart(lineAt());
+  const subtreep =
+    killIsSubtree(ember.currentKill()) &&
+    (p === ls || (/^[ \t]*$/.test(ember.bufferText(p, ember.lineEnd(lineAt()))) && /^\*+$/.test(ember.bufferText(ls, p))));
+  if (!subtreep || ember.variable("org-yank-folded-subtrees") !== true) {
+    ember.call("yank");
+    return;
+  }
+  const beg = p;
+  ember.call("yank");
+  const end = ember.point();
+  ember.gotoChar(beg);
+  const swallows = (): boolean => {
+    let q = beg;
+    while (q < end && !parseHeading(lineAt(q))) q = lineStartOrEnd(lineAt(q) + 1);
+    const level = parseHeading(lineAt(Math.min(q, end)))?.level ?? 0;
+    let r = end;
+    while (r < ember.bufferSize() && /[ \t\r\n\v\f]/.test(ember.bufferText(r, r + 1))) r++;
+    if (r >= ember.bufferSize()) return false;
+    const h = r === ember.lineStart(lineAt(r)) ? parseHeading(lineAt(r)) : undefined;
+    return !(h && h.level <= level);
+  };
+  if (beg === ember.lineStart(lineAt(beg))) {
+    if (swallows()) ember.message("Inserted text not folded because that would swallow text");
+    else {
+      let q = beg;
+      if (!parseHeading(lineAt(q))) {
+        while (q < end && !parseHeading(lineAt(q))) q = lineStartOrEnd(lineAt(q) + 1);
+        q = Math.min(q, end);
+      }
+      while (q < end && q === ember.lineStart(lineAt(q)) && parseHeading(lineAt(q))) {
+        ember.gotoChar(q);
+        foldSubtree(lineAt(q));
+        showEmptyLines("folded");
+        const all = headings();
+        const i = headingIndex(all, lineAt(q)) as number;
+        const sibling = all.find((h) => h.start >= subtreeRegion(all, i)[1]);
+        q = sibling && sibling.level === all[i].level ? sibling.start : end;
+      }
+    }
+  }
+  let r = end;
+  while (r < ember.bufferSize() && /[ \t\n\r]/.test(ember.bufferText(r, r + 1))) r++;
+  ember.gotoChar(ember.lineStart(lineAt(r)));
+  ember.pushMark(beg);
+}
+
+ember.defineCommand({
+  name: "org-yank",
+  doc:
+    "C-y in Org: yank, folding the subtrees yanked at the start of a line, as org-yank-folded-subtrees says, " +
+    "unless that would hide text after them.",
+  run: () => orgYank(ember.prefixArg()),
+});
 
 function visible_(h: Heading): boolean {
   return visible(h);
@@ -4453,7 +4622,7 @@ const todoCommand = ember.defineCommand({
  */
 function forEachHeadingInRegion(body: () => void): boolean {
   const mark = ember.mark();
-  if (!ember.regionActive() || mark === undefined || ember.variable("org-loop-over-headlines-in-active-region") !== true) return false;
+  if (!orgRegionActive() || mark === undefined || ember.variable("org-loop-over-headlines-in-active-region") !== true) return false;
   const [rb, re] = [Math.min(mark, ember.point()), Math.max(mark, ember.point())];
   const atHeadingStart = re === ember.lineStart(lineAt(re)) && parseHeading(lineAt(re)) !== undefined;
   const end = marker(atHeadingStart ? re : (headings().find((h) => h.start > re)?.start ?? ember.bufferSize()));
@@ -5213,12 +5382,65 @@ const openAtPoint = ember.defineCommand({
   doc:
     "Follow the link point is on: [[*Heading]], [[#custom-id]], [[target]] and [[Heading]] within the buffer, " +
     "and file links such as [[file:notes.org::*Heading]] in another buffer.",
-  run: () => {
-    const link = linkHere();
-    if (!link) throw new Error("No link found");
-    openLink(link);
-  },
+  run: () => openAtPoint_(),
 });
+
+/**
+ * Follows the link at point, as org-open-at-point does. Elsewhere in an
+ * entry Org's context is the heading: it follows the entry's only link,
+ * found searching on from point, or says there are none.
+ */
+function openAtPoint_(): void {
+  const link = linkHere();
+  if (link) {
+    openLink(link);
+    return;
+  }
+  const all = headings();
+  const i = headingIndex(all, lineAt());
+  if (i === undefined) throw new Error("No link found");
+  const h = all[i];
+  const p = ember.point();
+  if (lineAt() === h.line && h.tagsAt !== undefined && p >= h.tagsAt && p < h.end) {
+    throw new Error("Ember cannot show the agenda for a tag yet");
+  }
+  const end = all[i + 1]?.start ?? ember.bufferSize();
+  const { links, last } = linksIn(h.start, end);
+  if (links.length === 0) {
+    ember.message("No links");
+    return;
+  }
+  if (links.length > 1) throw new Error("Ember cannot choose between an entry's links yet");
+  // Org searches on from point to the end of the buffer, and when the link
+  // is not there, goes where the last link it found in the entry starts.
+  const rest = ember.bufferText(p, ember.bufferSize());
+  const at = rest.indexOf(links[0]);
+  ember.gotoChar(at < 0 ? last : p + charCount(rest.slice(0, at)));
+  openAtPoint_();
+}
+
+/**
+ * The different links between two positions, in order, as
+ * org-offer-links-in-entry finds them, and where the last one found starts.
+ */
+function linksIn(from: number, to: number): { links: string[]; last: number } {
+  const out: string[] = [];
+  let last = from;
+  for (let l = lineAt(from); l < ember.lineCount() && ember.lineStart(l) < to; l++) {
+    const text = ember.lineText(l);
+    const found = [LINK, ANGLE_LINK, PLAIN_LINK]
+      .flatMap((re) => [...text.matchAll(re)].map((m) => ({ index: m.index ?? 0, text: m[0] })))
+      .sort((a, b) => a.index - b.index);
+    let after = 0;
+    for (const m of found) {
+      if (m.index < after) continue;
+      after = m.index + m.text.length;
+      last = at(l, text, m.index);
+      if (!out.includes(m.text)) out.push(m.text);
+    }
+  }
+  return { links: out, last };
+}
 
 const insertLink = ember.defineCommand({
   name: "org-insert-link",
@@ -5309,7 +5531,7 @@ function transposeRegions(a: number, b: number, c: number, d: number): void {
  */
 function metaRegion(up: boolean): boolean {
   const mark = ember.mark();
-  if (!ember.regionActive() || mark === undefined) return false;
+  if (!orgRegionActive() || mark === undefined) return false;
   const pt = ember.point();
   const [rb, re] = [Math.min(mark, pt), Math.max(mark, pt)];
   if (parseHeading(lineAt(rb))) {
@@ -5547,7 +5769,7 @@ function nextAllowedValue(): never {
  * change what cannot be seen.
  */
 function hiddenBelow(what: "headlines" | "items"): boolean {
-  if (ember.regionActive()) return false;
+  if (orgRegionActive()) return false;
   let l = lineAt() + 1;
   while (l < ember.lineCount() && ember.invisibleAt(ember.lineStart(l) - 1)) l++;
   const end = lineStartOrEnd(l);
@@ -5735,7 +5957,7 @@ const ctrlCMinus = ember.defineCommand({
   run: () => {
     const line = lineAt();
     if (/^[ \t]*\|/.test(ember.lineText(line))) ember.callWithPrefix(ember.prefixArg(), "org-table-insert-hline");
-    else if (ember.regionActive()) ember.call("org-toggle-item");
+    else if (orgRegionActive()) ember.call("org-toggle-item");
     else if (inItem(line) !== undefined) cycleListBullet();
     else ember.call("org-toggle-item");
   },
@@ -5806,7 +6028,7 @@ ember.defineCommand({
     "items' text; or items back into plain lines.",
   run: () => {
     const mark = ember.mark();
-    const region = ember.regionActive() && mark !== undefined;
+    const region = orgRegionActive() && mark !== undefined;
     let beg: number;
     let end: { pos: number };
     if (region) {
@@ -5929,7 +6151,7 @@ function orgToggleHeading(nstars: ember.PrefixArg): void {
     }
   }
   const mark = ember.mark();
-  const region = ember.regionActive() && mark !== undefined;
+  const region = orgRegionActive() && mark !== undefined;
   let beg: number;
   let end: { pos: number };
   if (region) {
@@ -6047,6 +6269,9 @@ const keys: { [keys: string]: ember.CommandName | ember.DefinedCommand } = {
   TAB: cycle,
   "S-TAB": shiftTab,
   RET: orgReturn,
+  "C-y": "org-yank",
+  "C-j": "org-return-and-maybe-indent",
+  "C-o": "org-open-line",
   "M-RET": metaReturn,
   "C-RET": respectContent,
   "M-S-RET": todoHeading,
@@ -6083,7 +6308,6 @@ const keys: { [keys: string]: ember.CommandName | ember.DefinedCommand } = {
   "C-c -": ctrlCMinus,
   "C-c @": markSubtree,
   "C-c |": "org-table-create-or-convert-from-region",
-  "C-c SPC": "org-table-blank-field",
   "C-c C-x C-w": "org-cut-special",
   "C-c C-x M-w": "org-copy-special",
   "C-c C-x C-y": "org-paste-special",

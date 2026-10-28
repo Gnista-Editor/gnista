@@ -1,0 +1,1324 @@
+[
+  {
+    "name": "seed13-0075-c-j",
+    "text": "",
+    "keys": "C-j",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0310-c-o",
+    "text": "",
+    "keys": "C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0187-c-t",
+    "text": "4) plan",
+    "keys": "C-t",
+    "point": 7,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1049-c-j",
+    "text": "** alpha",
+    "keys": "C-j",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0122-c-t",
+    "text": "  + beta\n",
+    "keys": "C-t",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1210-c-o",
+    "text": "|---+---|",
+    "keys": "C-o",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0047-c-t",
+    "text": "2) [ ] beta",
+    "keys": "C-t",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0972-c-t",
+    "text": "#+end_quote",
+    "keys": "C-t",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1390-c-t",
+    "text": "4. [X] call\n",
+    "keys": "C-t",
+    "point": 10,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1080-c-t",
+    "text": "#+TITLE: notes",
+    "keys": "C-t",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0170-c-t",
+    "text": "call <2026-10-20 Wed>",
+    "keys": "C-t",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0881-c-j",
+    "text": "alpha <2026-10-20 Wed>",
+    "keys": "C-j",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0974-c-o",
+    "text": "notes <2026-10-13 Wed>\n",
+    "keys": "C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0034-c-o",
+    "text": "*** [#B] beta alpha :home:x:\n",
+    "keys": "C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0513-c-t",
+    "text": "see [[https://x.org][the site]] now\n",
+    "keys": "C-t",
+    "point": 36,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1452-m-up",
+    "text": "* [#A] beta [1/2]\nDEADLINE: <2026-11-01 Sun +1w>\n#+begin_quote\n#+end_quote\n  call plan\n",
+    "keys": "M-<up>",
+    "point": 87,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0006-c-c-spc",
+    "text": "",
+    "keys": "C-c SPC",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0137-c-j-x",
+    "text": "",
+    "keys": "C-j x",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0151-c-j--",
+    "text": "",
+    "keys": "C-j -",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0450-m-s-down-c-o",
+    "text": "",
+    "keys": "M-S-<down> C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0505-c-return-c-j",
+    "text": "",
+    "keys": "C-<return> C-j",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0697-c-j-m-s-up",
+    "text": "",
+    "keys": "C-j M-S-<up>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0704-c-return-c-o",
+    "text": "",
+    "keys": "C-<return> C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0742-x-c-j",
+    "text": "",
+    "keys": "x C-j",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0814-bar-c-o",
+    "text": "",
+    "keys": "| C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0891-bar-c-j",
+    "text": "",
+    "keys": "| C-j",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0917-c-o-m-f",
+    "text": "",
+    "keys": "C-o M-f",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1151-m-s-up-c-o",
+    "text": "",
+    "keys": "M-S-<up> C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1176-c-spc-m-up",
+    "text": "",
+    "keys": "C-SPC M-<up>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1178-c-spc-m-down",
+    "text": "",
+    "keys": "C-SPC M-<down>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1281---c-j",
+    "text": "",
+    "keys": "- C-j",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1283-c-o-m-s-return",
+    "text": "",
+    "keys": "C-o M-S-<return>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1469-c-c-spc",
+    "text": ":END:",
+    "keys": "C-c SPC",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0749-del-c-j",
+    "text": ":END:\n",
+    "keys": "DEL C-j",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1137-c-t-del",
+    "text": "|12|x|",
+    "keys": "C-t DEL",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1428-c-c-c-o",
+    "text": "* fix\n",
+    "keys": "C-c C-o",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0541-c-o-c-d",
+    "text": "* notes",
+    "keys": "C-o C-d",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0644-c-f-c-t",
+    "text": "2. call",
+    "keys": "C-f C-t",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0201-c-c-c-o",
+    "text": "* alpha\n",
+    "keys": "C-c C-o",
+    "point": 8,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1135-c-c-c-o",
+    "text": "* notes\n",
+    "keys": "C-c C-o",
+    "point": 8,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1194---c-o",
+    "text": "  + beta",
+    "keys": "- C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0176-c-t-spc",
+    "text": "** alpha\n",
+    "keys": "C-t SPC",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0721-c-c-spc",
+    "text": "  - alpha",
+    "keys": "C-c SPC",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1343-1-c-t",
+    "text": "*** alpha",
+    "keys": "1 C-t",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0614-c-c-spc",
+    "text": "  + notes\n",
+    "keys": "C-c SPC",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0966-c-c-c-o",
+    "text": "* fix [/]\n",
+    "keys": "C-c C-o",
+    "point": 10,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1182-c-c-spc",
+    "text": "  + read\n\n",
+    "keys": "C-c SPC",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0026-c-o-m-s-down",
+    "text": "** fix beta",
+    "keys": "C-o M-S-<down>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0153-c-c-spc",
+    "text": "   - alpha\n",
+    "keys": "C-c SPC",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0528-c-c-c-o",
+    "text": "* [#B] read",
+    "keys": "C-c C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0002-c-c-c-o",
+    "text": "* read beta\n",
+    "keys": "C-c C-o",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0020-c-c-c-o",
+    "text": "* alpha beta",
+    "keys": "C-c C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0232-c-c-c-o",
+    "text": "** DONE fix\n",
+    "keys": "C-c C-o",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0292-c-c-c-o",
+    "text": "* DONE call\n",
+    "keys": "C-c C-o",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0338-c-t-x",
+    "text": "1. [ ] beta\n",
+    "keys": "C-t x",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0386-c-t-c-k",
+    "text": "| bb | yy |\n",
+    "keys": "C-t C-k",
+    "point": 10,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0428-c-o-1",
+    "text": "| ccc | x |\n",
+    "keys": "C-o 1",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0756-c-c-c-o",
+    "text": "** gamma [/]",
+    "keys": "C-c C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0829-c-c-c-o",
+    "text": "* plan alpha",
+    "keys": "C-c C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0968-c-t-m-down",
+    "text": "|-\n| bb |  |",
+    "keys": "C-t M-<down>",
+    "point": 1,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1284-c-c-c-o",
+    "text": "** TODO call",
+    "keys": "C-c C-o",
+    "point": 8,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1334-c-c-c-o",
+    "text": "* DONE read\n",
+    "keys": "C-c C-o",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0242-c-c-c-o",
+    "text": "* DONE alpha\n",
+    "keys": "C-c C-o",
+    "point": 13,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0409-c-c-c-o",
+    "text": "** DONE call\n",
+    "keys": "C-c C-o",
+    "point": 13,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1014-c-j-m-s-left",
+    "text": "|-\n| a | yy |",
+    "keys": "C-j M-S-<left>",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1071-c-c-c-o",
+    "text": "* read notes\n",
+    "keys": "C-c C-o",
+    "point": 13,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0408-c-c-c-o",
+    "text": "** [#C] alpha\n",
+    "keys": "C-c C-o",
+    "point": 14,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1183-c-c-c-o",
+    "text": "** gamma call\n",
+    "keys": "C-c C-o",
+    "point": 14,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1391-c-o-ret",
+    "text": "** gamma alpha",
+    "keys": "C-o RET",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1404-c-c-c-o",
+    "text": "** plan :work:",
+    "keys": "C-c C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0979-c-c-c-o",
+    "text": "** TODO fix fix",
+    "keys": "C-c C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1277-x-c-j",
+    "text": "#+TITLE: notes\n",
+    "keys": "x C-j",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0859-m-s-down-c-t",
+    "text": "* TODO call beta",
+    "keys": "M-S-<down> C-t",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0939-c-c-c-o",
+    "text": "* TODO beta beta",
+    "keys": "C-c C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1057-c-t-c-d",
+    "text": "* TODO read call",
+    "keys": "C-t C-d",
+    "point": 7,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0443-c-c-c-o",
+    "text": "** DONE [#B] beta",
+    "keys": "C-c C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0916-c-c-c-o",
+    "text": "* beta [/] :work:",
+    "keys": "C-c C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1092-c-c-c-o",
+    "text": "* DONE alpha beta",
+    "keys": "C-c C-o",
+    "point": 16,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1218-c-c-c-o",
+    "text": "* DONE [#B] read\n",
+    "keys": "C-c C-o",
+    "point": 17,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0056-c-c-c-o",
+    "text": "* [#A] call alpha\n",
+    "keys": "C-c C-o",
+    "point": 18,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1121-c-c-c-o",
+    "text": "** TODO beta read\n",
+    "keys": "C-c C-o",
+    "point": 18,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0152-c-c-c-o",
+    "text": "** TODO gamma call\n",
+    "keys": "C-c C-o",
+    "point": 19,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0627-c-c-c-o",
+    "text": "*** TODO plan gamma",
+    "keys": "C-c C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1455-c-t-m-ret",
+    "text": "** [#B] gamma plan\n",
+    "keys": "C-t M-RET",
+    "point": 19,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0048-c-c-c-o",
+    "text": "* DONE fix [/] :work:",
+    "keys": "C-c C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0500-x-c-t",
+    "text": "beta <2026-10-13 Wed>",
+    "keys": "x C-t",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0985-x-c-o",
+    "text": "call <2026-10-26 Wed>",
+    "keys": "x C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1421-c-c-c-o",
+    "text": "** [#A] call :home:x:",
+    "keys": "C-c C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0370-c-o-m-",
+    "text": "gamma <2026-10-16 Wed>",
+    "keys": "C-o M->",
+    "point": 10,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0490-c-c-c-o",
+    "text": "* gamma read :home:x:\n",
+    "keys": "C-c C-o",
+    "point": 22,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0656-c-c-c-o",
+    "text": "* DONE [#A] beta alpha",
+    "keys": "C-c C-o",
+    "point": 10,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1094-c-j-c-d",
+    "text": "gamma <2026-10-28 Wed>",
+    "keys": "C-j C-d",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1101-c-c-c-o",
+    "text": "* notes plan :home:x:\n",
+    "keys": "C-c C-o",
+    "point": 22,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0069-c-c-spc",
+    "text": "|-\n| ccc | yy |\n| a |  |\n",
+    "keys": "C-c SPC",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0083-c-c-c-o",
+    "text": "* DONE [#A] beta\n| a | 3 |",
+    "keys": "C-c C-o",
+    "point": 17,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0957-c-c-spc",
+    "text": "|---+---|\n|  | x |\n|12|x|\n",
+    "keys": "C-c SPC",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1351-c-c-c-o",
+    "text": "* TODO notes beta\n   + fix",
+    "keys": "C-c C-o",
+    "point": 18,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1412-c-c-c-o",
+    "text": "** DONE call notes :work:\n",
+    "keys": "C-c C-o",
+    "point": 26,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1441-c-c-c-o",
+    "text": "** TODO plan [1/2] :home:x:",
+    "keys": "C-c C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0949-c-t--",
+    "text": "DEADLINE: <2026-11-01 Sun +1w>",
+    "keys": "C-t -",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0613-c-e-m-s-return",
+    "text": "2) fix\n   + alpha\n  - beta\n- alpha",
+    "keys": "C-e M-S-<return>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0366-c-c-spc",
+    "text": "+ plan\n+ read\n  + beta\n+ call\n+ call\n",
+    "keys": "C-c SPC",
+    "point": 13,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1005-c-c-spc",
+    "text": "| a | x |\n  call alpha\nalpha <2026-10-21 Wed>",
+    "keys": "C-c SPC",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1269-m-del-c-t",
+    "text": "** notes gamma\nsee [[https://x.org][the site]] now",
+    "keys": "M-DEL C-t",
+    "point": 15,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0042-c-c-spc",
+    "text": "* DONE [#C] fix\n1) [ ] alpha\n   + plan\n\n2) [ ] beta\n",
+    "keys": "C-c SPC",
+    "point": 29,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0072-spc-c-j-m-",
+    "text": "",
+    "keys": "SPC C-j M-<",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0632-c-spc-c-c-c-t",
+    "text": "",
+    "keys": "C-SPC C-c C-t",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0870-c-j-m--c-return",
+    "text": "",
+    "keys": "C-j M-< C-<return>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0461---c-t-m-f",
+    "text": ":END:",
+    "keys": "- C-t M-f",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1259-c-c-star-c-j",
+    "text": "** fix",
+    "keys": "C-c * C-j",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0593-c-spc-c-c--",
+    "text": "1. read",
+    "keys": "C-SPC C-c -",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0876-c-t-c-c-c-u",
+    "text": "  - fix\n",
+    "keys": "C-t C-c C-u",
+    "point": 8,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0895-del-c-c-spc",
+    "text": "|  | 3 |",
+    "keys": "DEL C-c SPC",
+    "point": 1,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0887-c-o-m--bar",
+    "text": "   + call",
+    "keys": "C-o M-> |",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1426-c-o-m-d-c-y",
+    "text": "** DONE fix",
+    "keys": "C-o M-d C-y",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0741-bar-c-t-s-up",
+    "text": "* DONE alpha\n",
+    "keys": "| C-t S-<up>",
+    "point": 13,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1140-c-e-c-t-1",
+    "text": "+ plan\n+ beta\n",
+    "keys": "C-e C-t 1",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1107-c-c-spc-c-t",
+    "text": "* DONE [#B] beta",
+    "keys": "C-c SPC C-t",
+    "point": 3,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1367-c-j-backtab-m-",
+    "text": "* [#B] plan\n+ read",
+    "keys": "C-j <backtab> M-<",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1272-c-c-c-t-c-j",
+    "text": "*** TODO [#A] gamma",
+    "keys": "C-c C-t C-j",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0650-c-t-c-a-ret",
+    "text": "plan <2026-10-12 Wed>",
+    "keys": "C-t C-a RET",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1313-c-o-c-c-c-c",
+    "text": "read <2026-10-21 Wed>",
+    "keys": "C-o C-c C-c",
+    "point": 19,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0531-c-c-c-t-c-o",
+    "text": "* DONE read notes :work:",
+    "keys": "C-c C-t C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0606-c-c-@-m-left",
+    "text": "* fix\n  + fix\n** read fix",
+    "keys": "C-c @ M-<left>",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1143-c-c-@-c-slash",
+    "text": "* DONE [#B] read fix [/]\n",
+    "keys": "C-c @ C-/",
+    "point": 25,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0327-c-o-c-u-tab",
+    "text": "* [#C] beta\n** notes fix [/]",
+    "keys": "C-o C-u TAB",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1103-c-o-c-c-@",
+    "text": "* notes plan [1/2]\n   - call",
+    "keys": "C-o C-c @",
+    "point": 19,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0999-c-c-star-c-t",
+    "text": "** TODO alpha\n* DONE fix :home:x:",
+    "keys": "C-c * C-t",
+    "point": 14,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1118-c-return-c-p-c-o-c-n",
+    "text": "",
+    "keys": "C-<return> C-p C-o C-n",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0289-c-e-c-c-c-c-c-t",
+    "text": "3. alpha",
+    "keys": "C-e C-c C-c C-t",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1223-c-c-spc-c-c--",
+    "text": "|  | x |",
+    "keys": "C-c SPC C-c -",
+    "point": 1,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1063-c-t-c-c-c-x-m-w",
+    "text": "| bb |  |",
+    "keys": "C-t C-c C-x M-w",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0175-c-c-c-u-c-c-spc",
+    "text": "** call read",
+    "keys": "C-c C-u C-c SPC",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0220-c-t-m-f-c-slash-c-k",
+    "text": "** DONE read",
+    "keys": "C-t M-f C-/ C-k",
+    "point": 1,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0822-m-b-c-o-bar-c-e",
+    "text": "* DONE read\n",
+    "keys": "M-b C-o | C-e",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1368-c-c-c-x-c-w-c-o",
+    "text": "*** TODO notes",
+    "keys": "C-c C-x C-w C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0287-del-c-t-c-c-c-o",
+    "text": "* read\n+ [ ] beta",
+    "keys": "DEL C-t C-c C-o",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0165-m-s-up-m-s-right-c-c--",
+    "text": "|---+---|\n| bb | 3 |",
+    "keys": "M-S-<up> M-S-<right> C-c -",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0912-c-c-c-x-c-w-c-y",
+    "text": "* DONE [#B] gamma\n- read\n",
+    "keys": "C-c C-x C-w C-y",
+    "point": 18,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0551-c-c-c-x-c-w-c-y",
+    "text": "*** TODO read :work:\n:END:\n",
+    "keys": "C-c C-x C-w C-y",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-1433-c-p-m-f-c-o-c-c-star",
+    "text": "3. call\n",
+    "keys": "C-p M-f C-o C-c *",
+    "point": 8,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0216-c-j-c-c-c-x-m-w-c-d",
+    "text": "  + plan\n\n",
+    "keys": "C-j C-c C-x M-w C-d",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0583-c-c---c-c-c-u-c-o",
+    "text": "** [#B] plan alpha",
+    "keys": "C-c - C-c C-u C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0556-backtab-c-c-spc-c-e-m-b",
+    "text": "|  | x |\n| bb | yy |",
+    "keys": "<backtab> C-c SPC C-e M-b",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0430-1-c-c-c-x-c-b-m-down",
+    "text": "* notes call\n#+begin_quote\n#+end_quote",
+    "keys": "1 C-c C-x C-b M-<down>",
+    "point": 1,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed13-0517-c-u-tab-c-c-c-x-m-w-c-c-c-x-c-y",
+    "text": "*** plan :home:x:\n  fix gamma",
+    "keys": "C-u TAB C-c C-x M-w C-c C-x C-y",
+    "point": 29,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "open-link-from-the-heading",
+    "text": "* a [[*b][to b]]\n* b\n",
+    "keys": "C-c C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "open-the-entrys-only-link",
+    "text": "* a\ntext [[*b][to b]]\n* b\n",
+    "keys": "C-c C-o",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "open-a-link-behind-point",
+    "text": "* a\ntext [[*b][to b]] more\n* b\n",
+    "keys": "C-c C-o",
+    "point": 25,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "open-in-an-entry-without-links",
+    "text": "* a\ntext\n",
+    "keys": "C-c C-o",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "yank-a-subtree-folded",
+    "text": "* a\n** b\ntext\n* c\n",
+    "keys": "C-n C-SPC C-n C-n C-w C-n C-y",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "yank-a-subtree-mid-line",
+    "text": "* a\ntext\n",
+    "keys": "C-SPC C-n C-w C-e C-y",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "drag-past-a-src-block",
+    "text": "para\n\n#+BEGIN_SRC\ncode\n#+END_SRC\n",
+    "keys": "M-<down>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "drag-a-quote-block-up",
+    "text": "para\n\n#+begin_quote\nq\n#+end_quote\n",
+    "keys": "M-<up>",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "an-unclosed-block-is-a-paragraph",
+    "text": "para\n#+begin_quote\nq\n",
+    "keys": "M-<down>",
+    "modes": [
+      "org-mode"
+    ]
+  }
+]

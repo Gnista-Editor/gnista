@@ -176,5 +176,70 @@
     "text": "done [50%]",
     "keys": "M-b",
     "point": 10
+  },
+  {
+    "name": "transpose-chars",
+    "text": "abcd",
+    "keys": "C-t",
+    "point": 2
+  },
+  {
+    "name": "transpose-chars-at-the-end-of-a-line",
+    "text": "abcd\nxy",
+    "keys": "C-t",
+    "point": 4
+  },
+  {
+    "name": "transpose-chars-at-the-start",
+    "text": "abcd",
+    "keys": "C-t"
+  },
+  {
+    "name": "transpose-chars-with-an-argument",
+    "text": "abcde",
+    "keys": "C-u 2 C-t",
+    "point": 1
+  },
+  {
+    "name": "transpose-chars-backward",
+    "text": "abcde",
+    "keys": "M-- C-t",
+    "point": 3
+  },
+  {
+    "name": "transpose-words",
+    "text": "one two three",
+    "keys": "M-t",
+    "point": 3
+  },
+  {
+    "name": "transpose-words-at-the-end",
+    "text": "one two",
+    "keys": "M-t",
+    "point": 7
+  },
+  {
+    "name": "transpose-words-twice",
+    "text": "one two three",
+    "keys": "M-t M-t",
+    "point": 1
+  },
+  {
+    "name": "open-line",
+    "text": "abcd",
+    "keys": "C-o",
+    "point": 2
+  },
+  {
+    "name": "open-line-three",
+    "text": "abcd",
+    "keys": "C-u 3 C-o x",
+    "point": 2
+  },
+  {
+    "name": "newline-with-c-j",
+    "text": "  abcd",
+    "keys": "C-j x",
+    "point": 4
   }
 ]

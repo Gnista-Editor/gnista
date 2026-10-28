@@ -590,6 +590,215 @@
       "kill_ring": [],
       "modified": false,
       "error": null
+    },
+    {
+      "name": "transpose-chars",
+      "input": {
+        "text": "abcd",
+        "point": 2,
+        "keys": "C-t",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "acbd",
+      "visible": "acbd",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "transpose-chars-at-the-end-of-a-line",
+      "input": {
+        "text": "abcd\nxy",
+        "point": 4,
+        "keys": "C-t",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "abdc\nxy",
+      "visible": "abdc\nxy",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "transpose-chars-at-the-start",
+      "input": {
+        "text": "abcd",
+        "point": 0,
+        "keys": "C-t",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "abcd",
+      "visible": "abcd",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Beginning of buffer"
+    },
+    {
+      "name": "transpose-chars-with-an-argument",
+      "input": {
+        "text": "abcde",
+        "point": 1,
+        "keys": "C-u 2 C-t",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "bcade",
+      "visible": "bcade",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "transpose-chars-backward",
+      "input": {
+        "text": "abcde",
+        "point": 3,
+        "keys": "M-- C-t",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "acbde",
+      "visible": "acbde",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "transpose-words",
+      "input": {
+        "text": "one two three",
+        "point": 3,
+        "keys": "M-t",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "two one three",
+      "visible": "two one three",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "transpose-words-at-the-end",
+      "input": {
+        "text": "one two",
+        "point": 7,
+        "keys": "M-t",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one two",
+      "visible": "one two",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Don’t have two things to transpose"
+    },
+    {
+      "name": "transpose-words-twice",
+      "input": {
+        "text": "one two three",
+        "point": 1,
+        "keys": "M-t M-t",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "two three one",
+      "visible": "two three one",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "open-line",
+      "input": {
+        "text": "abcd",
+        "point": 2,
+        "keys": "C-o",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "ab\ncd",
+      "visible": "ab\ncd",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "open-line-three",
+      "input": {
+        "text": "abcd",
+        "point": 2,
+        "keys": "C-u 3 C-o x",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "abx\n\n\ncd",
+      "visible": "abx\n\n\ncd",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "newline-with-c-j",
+      "input": {
+        "text": "  abcd",
+        "point": 4,
+        "keys": "C-j x",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  ab\nxcd",
+      "visible": "  ab\nxcd",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
     }
   ]
 }

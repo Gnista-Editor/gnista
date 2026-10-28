@@ -46,6 +46,16 @@ const NUMBER =
   /^(?:[<>]?[-+^.0-9]*[0-9][-+^.0-9eEdDx()%:]*|[<>]?[-+]?0[xX][0-9a-fA-F.]+|[<>]?[-+]?[0-9]+#[0-9a-zA-Z.]+|nan|[-+u]?inf)$/;
 
 /** How many characters a string has, which differs from its length for emoji. */
+
+/**
+ * Whether the region is active and not empty, as org-region-active-p says
+ * after use-region-p: an empty region does not count.
+ */
+function orgRegionActive(): boolean {
+  const mark = ember.mark();
+  return ember.regionActive() && mark !== undefined && mark !== ember.point();
+}
+
 function charCount(s: string): number {
   return /[\uD800-\uDFFF]/.test(s) ? Array.from(s).length : s.length;
 }
@@ -358,7 +368,11 @@ function findDataline(): void {
   const end = tableEnd();
   let line = lineAt() + 1;
   while (lineStartOrEnd(line) < end && HLINE.test(ember.lineText(line))) line++;
-  if (lineStartOrEnd(line) >= end) throw new Error("Cannot find data row for column operation");
+  if (lineStartOrEnd(line) >= end) {
+    // Org has moved down a line at a time by then.
+    ember.gotoChar(lineStartOrEnd(line));
+    throw new Error("Cannot find data row for column operation");
+  }
   ember.gotoChar(ember.lineStart(line));
   moveToColumn(col);
 }
@@ -800,7 +814,7 @@ ember.defineCommand({
   doc: "Split the field at point, as M-RET does in a table: the text after point goes to the same field in the next row.",
   run: () => {
     checkInsideDataField();
-    if (ember.regionActive()) throw new Error("Wrapping a region of a table is not supported yet");
+    if (orgRegionActive()) throw new Error("Wrapping a region of a table is not supported yet");
     if (ember.variable("org-M-RET-may-split-line") === false) {
       const rest = restOfLine();
       const i = rest.search(/[|\r\n]/);
@@ -821,7 +835,7 @@ ember.defineCommand({
 
 /** Copies a rectangle of fields, blanking them if cutting, as org-table-copy-region does. */
 function copyRegion(cut: boolean): void {
-  const region = ember.regionActive() && ember.mark() !== undefined;
+  const region = orgRegionActive() && ember.mark() !== undefined;
   const mark = ember.mark() ?? ember.point();
   const [beg, end] = region ? [Math.min(mark, ember.point()), Math.max(mark, ember.point())] : [ember.point(), ember.point()];
   ember.gotoChar(beg);
@@ -930,7 +944,7 @@ ember.defineCommand({
     "otherwise an empty one of a size read in the minibuffer, such as 3x2.",
   params: [{ name: "size", prompt: "Table size Columns x Rows [e.g. 5x2]: " }],
   run: (size) => {
-    if (ember.regionActive()) {
+    if (orgRegionActive()) {
       const mark = ember.mark() ?? ember.point();
       const from = ember.lineStart(ember.lineOf(Math.min(mark, ember.point())));
       const to = ember.lineEnd(ember.lineOf(Math.max(mark, ember.point())));
@@ -999,7 +1013,7 @@ ember.defineCommand({
     "On a heading, the tags are aligned again.",
   run: () => {
     ember.call("org-fold-check-before-invisible-edit-maybe");
-    if (ember.prefixNumericValue() === 1 && !ember.regionActive() && atTable()) {
+    if (ember.prefixNumericValue() === 1 && !orgRegionActive() && atTable()) {
       if (ember.variable("org-table-auto-blank-field") === true && BLANKING_COMMANDS.includes(ember.lastCommand() ?? "")) {
         blankField();
       }
@@ -1047,7 +1061,7 @@ ember.defineCommand({
     if (
       ember.prefixNumericValue() === 1 &&
       ember.variable("overwrite-mode") !== true &&
-      !ember.regionActive() &&
+      !orgRegionActive() &&
       p > 0 &&
       charAt(p - 1) !== "|" &&
       /[^ \t]/.test(beforeOnLine()) &&

@@ -128,6 +128,12 @@ declare global {
        */
       "digit-argument": [];
       /**
+       * Insert a newline. With electric-indent-mode on, as it is by default, that is all; RET is the key that indents.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "electric-newline-and-maybe-indent": [];
+      /**
        * Move point to the end of the buffer.
        *
        * Unless the region is active, leaves the mark where point was. With a numeric prefix argument N, move to N tenths of the way from the end instead, at the start of the next line. Plain C-u does not leave the mark.
@@ -520,6 +526,12 @@ declare global {
        */
       "normal-mode": [];
       /**
+       * Insert a newline after point, leaving point where it is; with a prefix argument, that many.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "open-line": [];
+      /**
        * Put the tags of the heading point is under at org-tags-column; with a prefix argument, every heading's.
        *
        * Defined in packages/org.ts.
@@ -874,6 +886,12 @@ declare global {
        */
       "org-open-at-point": [];
       /**
+       * C-o in Org: in a table, away from the start of the line, insert a row above; elsewhere open-line.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-open-line": [];
+      /**
        * Make the item point is on a sibling of its parent, leaving its children where they are.
        *
        * Defined in packages/org.ts.
@@ -949,6 +967,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-return": [];
+      /**
+       * C-j in Org: what RET does, but the new line is not indented, as electric-indent-mode leaves C-j alone.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-return-and-maybe-indent": [];
       /**
        * Schedule the heading point is under for a date read as org-timestamp reads it. With C-u, unschedule it.
        *
@@ -1277,6 +1301,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-update-statistics-cookies": [];
+      /**
+       * C-y in Org: yank, folding the subtrees yanked at the start of a line, as org-yank-folded-subtrees says, unless that would hide text after them.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-yank": [];
       /**
        * Select another window, the next in cyclic order.
        *
@@ -1656,6 +1686,14 @@ declare global {
        */
       "toggle-truncate-lines": [];
       /**
+       * Exchange the characters around point, moving forward one character.
+       *
+       * At the end of a line, exchange the two characters before point. With a prefix argument, move the character before point that many characters forward, or back if negative; with 0, exchange the characters at point and the mark.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "transpose-chars": [];
+      /**
        * Exchange the line point is on with the line before it, leaving point after both.
        *
        * With a prefix argument, move the line before point past that many lines; with 0, exchange the line point is on with the line the mark is on.
@@ -1663,6 +1701,14 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "transpose-lines": [];
+      /**
+       * Exchange the words around point, leaving point after both.
+       *
+       * With a prefix argument, move the word before point past that many words; with 0, exchange the words at point and the mark.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "transpose-words": [];
       /**
        * Undo the last change, or as many changes as the prefix argument says.
        *
@@ -1914,6 +1960,12 @@ declare global {
        */
       "org-read-date-history": Value;
       /**
+       * Whether C-o in a table, away from the start of a line, inserts a row rather than opening a line.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-special-ctrl-o": Value;
+      /**
        * How much of a file org-mode shows when it starts: "showeverything", "showall" (drawers folded), "content" (all headings) or "overview" (top headings). A #+STARTUP: line in the file says otherwise.
        *
        * Defined in packages/org.ts.
@@ -1925,6 +1977,18 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-startup-truncated": Value;
+      /**
+       * The last subtree org-cut-subtree or org-copy-subtree put on the kill ring.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-subtree-clip": Value;
+      /**
+       * Whether the subtree in org-subtree-clip was folded when it was cut or copied.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-subtree-clip-folded": Value;
       /**
        * Whether Shift with an arrow key selects text where it has no Org meaning. When off, it is an error there.
        *
@@ -1985,6 +2049,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-todo-keywords": Value;
+      /**
+       * Whether C-y folds the subtrees it yanks, unless folding would hide text after them.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-yank-folded-subtrees": Value;
       /**
        *
        * Defined in packages/outline.ts.

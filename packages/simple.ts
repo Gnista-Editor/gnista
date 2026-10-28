@@ -352,3 +352,65 @@ const transposeLines = ember.defineCommand({
   },
 });
 ember.bindKey("C-x C-t", transposeLines);
+
+/** Moves point n characters, stopping at the buffer's ends with forward-char's errors. */
+function forwardChar(n: number): void {
+  const to = ember.point() + n;
+  if (to < 0) {
+    ember.gotoChar(0);
+    throw new Error("Beginning of buffer");
+  }
+  if (to > ember.bufferSize()) {
+    ember.gotoChar(ember.bufferSize());
+    throw new Error("End of buffer");
+  }
+  ember.gotoChar(to);
+}
+
+const transposeChars = ember.defineCommand({
+  name: "transpose-chars",
+  doc:
+    "Exchange the characters around point, moving forward one character.\n\n" +
+    "At the end of a line, exchange the two characters before point. With a prefix argument, move the " +
+    "character before point that many characters forward, or back if negative; with 0, exchange the " +
+    "characters at point and the mark.",
+  run: () => {
+    const arg = ember.prefixArg();
+    const p = ember.point();
+    if (arg === null && p === ember.lineEnd(ember.lineOf(p)) && p > 0) ember.gotoChar(p - 1);
+    transposeSubr(forwardChar, ember.prefixNumericValue());
+  },
+});
+ember.bindKey("C-t", transposeChars);
+
+const transposeWords = ember.defineCommand({
+  name: "transpose-words",
+  doc:
+    "Exchange the words around point, leaving point after both.\n\n" +
+    "With a prefix argument, move the word before point past that many words; with 0, exchange the words " +
+    "at point and the mark.",
+  run: () => transposeSubr((n) => ember.callWithPrefix(n, "forward-word"), ember.prefixNumericValue()),
+});
+ember.bindKey("M-t", transposeWords);
+
+const openLine = ember.defineCommand({
+  name: "open-line",
+  doc: "Insert a newline after point, leaving point where it is; with a prefix argument, that many.",
+  run: () => {
+    const n = ember.prefixNumericValue();
+    if (n < 0) throw new Error("Repetition argument has to be non-negative");
+    const p = ember.point();
+    ember.insert("\n".repeat(n));
+    ember.gotoChar(p);
+  },
+});
+ember.bindKey("C-o", openLine);
+
+const electricNewline = ember.defineCommand({
+  name: "electric-newline-and-maybe-indent",
+  doc:
+    "Insert a newline. With electric-indent-mode on, as it is by default, that is all; RET is the key " +
+    "that indents.",
+  run: () => ember.call("newline"),
+});
+ember.bindKey("C-j", electricNewline);

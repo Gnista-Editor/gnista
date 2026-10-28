@@ -236,7 +236,13 @@ fn links_are_inserted_and_followed() {
     ed.window_buffer_mut().set_point(9);
     ed.press("C-c C-o").unwrap();
     assert_eq!(ed.window_buffer().point(), find(&ed, "* Two"));
+    // On the heading, as anywhere in the entry, the entry's only link is followed.
     ed.window_buffer_mut().set_point(0);
+    ed.call("org-open-at-point", vec![]).unwrap();
+    assert_eq!(ed.window_buffer().point(), find(&ed, "* Two"));
+    let (mut ed, _s) = org("text
+* One
+");
     assert_eq!(ed.call("org-open-at-point", vec![]).unwrap_err().to_string(), "No link found");
 }
 
