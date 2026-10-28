@@ -388,8 +388,14 @@ impl Editor {
         // A remapped command, such as org's for typing, amalgamates as the
         // command it stands in for.
         let base = self.remapped_from.take();
-        let listed = AMALGAMATING.contains(&base.as_deref().unwrap_or(name));
-        let amalgamate = listed && self.last_command() == Some(name) && self.self_insert_run <= 20;
+        // self-insert-command and delete-char amalgamate only for a count
+        // below 2, so `M-2 SPC` is a step of its own.
+        let listed = AMALGAMATING.contains(&base.as_deref().unwrap_or(name))
+            && crate::prefix::prefix_numeric_value(prefix).abs() < 2;
+        let amalgamate = listed
+            && self.last_command() == Some(name)
+            && self.previous_amalgamating
+            && self.self_insert_run <= 20;
         self.previous_run = self.self_insert_run;
         self.self_insert_run = if amalgamate { self.self_insert_run + 1 } else { 1 };
         self.amalgamating_now = listed;

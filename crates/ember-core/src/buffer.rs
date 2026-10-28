@@ -49,6 +49,22 @@ struct Group {
     point: Option<usize>,
 }
 
+/// One element of an undo list made for undoing in a region, as Emacs's
+/// `undo-make-selective-list` makes it: positions adjusted for the changes
+/// left out, newest first within a step.
+#[derive(Clone, Debug)]
+enum Selective {
+    /// Text inserted between two positions, which undoing deletes.
+    Inserted(usize, usize),
+    /// Text deleted at a position, which undoing puts back; `at_end` if point
+    /// was after it, as a negative position in Emacs's list says.
+    Deleted { pos: usize, text: String, props: SavedProps, at_end: bool, marks: Vec<(Option<usize>, usize)> },
+    /// Where point was before the command.
+    Point(usize),
+    /// The buffer was unmodified, as of this save.
+    Unmodified(u64),
+}
+
 /// How many positions the mark ring keeps, as Emacs's `mark-ring-max`.
 const MARK_RING_MAX: usize = 16;
 
@@ -92,6 +108,13 @@ pub struct Buffer {
     /// Where a run of consecutive undos continues: the group to undo next,
     /// or `None` once the history is used up.
     pending_undo: Option<usize>,
+    /// The steps left to undo in a region, newest first, while a run of
+    /// undos in a region goes on: Emacs's `pending-undo-list` when
+    /// `undo-in-region` is set.
+    selective_undo: Option<Vec<Vec<Selective>>>,
+    /// Whether the run of undos going on started in a region, as Emacs's
+    /// `undo-in-region`, which its messages report.
+    undo_in_region: bool,
     /// The buffer's own values of variables, as Emacs's buffer-local variables.
     pub(crate) locals: BTreeMap<String, Value>,
     pub(crate) local_hooks: BTreeMap<String, Vec<HookEntry>>,
@@ -136,6 +159,8 @@ impl Buffer {
             boundary_point: 0,
             open_point: None,
             pending_undo: None,
+            selective_undo: None,
+            undo_in_region: false,
             locals: BTreeMap::new(),
             local_hooks: BTreeMap::new(),
             local_map: None,
@@ -421,7 +446,7 @@ impl Buffer {
         }
         let deleted = self.slice(start..end);
         let point_before = self.point;
-        let inside = |m: usize| (start < m && m <= end).then_some(m - start);
+        let inside = |m: usize| (start < m && m <= end).then(|| m - start);
         let mut marks: Vec<(Option<usize>, usize)> = self.mark.and_then(inside).map(|o| (None, o)).into_iter().collect();
         marks.extend(self.mark_ring.iter().enumerate().filter_map(|(i, &m)| inside(m).map(|o| (Some(i), o))));
         let edit_range = self.syntax.as_ref().map(|_| (point_at(&self.text, start), point_at(&self.text, end)));
@@ -660,6 +685,7 @@ impl Buffer {
         self.undo_groups.clear();
         self.open_group.clear();
         self.pending_undo = None;
+        self.selective_undo = None;
         self.boundary_point = 0;
         self.open_point = None;
         self.modified = false;
@@ -738,25 +764,197 @@ impl Buffer {
         Ok(redo)
     }
 
-    /// Whether any change in the undo history lies inside a range, as
-    /// Emacs's undo-elt-in-region decides for undoing in a region: an
-    /// insertion wholly inside it, or a deletion at a position in it.
-    pub fn has_undo_in(&self, range: Range<usize>) -> bool {
-        self.undo_groups.iter().chain(std::iter::once(&Group {
-            edits: self.open_group.clone(),
-            kind: GroupKind::Change,
-            unmodified_at: None,
-            point: None,
-        }))
-        .flat_map(|g| g.edits.iter())
-        .any(|e| {
-            let inserted = e.inserted.chars().count();
-            if inserted > 0 {
-                e.pos >= range.start && e.pos + inserted <= range.end
-            } else {
-                e.pos >= range.start && e.pos <= range.end
+    /// Starts a run of undos in a region, as Emacs's `undo-start` does with
+    /// `undo-make-selective-list`: the history keeps only the changes inside
+    /// the range, their positions moved for the changes left out, and the
+    /// range grows or shrinks with each change it keeps.
+    pub fn start_undo_in_region(&mut self, range: Range<usize>) {
+        self.undo_boundary();
+        let (start, mut end) = (range.start as isize, range.end as isize);
+        // The changes left out, oldest last; a position is moved through
+        // them oldest first, as undo-adjust-pos does.
+        let mut deltas: Vec<(isize, isize)> = Vec::new();
+        let adjust = |deltas: &[(isize, isize)], mut pos: isize, before: bool| {
+            for &(at, len) in deltas.iter().rev() {
+                if if before { at < pos } else { at <= pos } {
+                    pos = at.max(pos - len);
+                }
             }
-        })
+            pos
+        };
+        let mut steps: Vec<Vec<Selective>> = Vec::new();
+        let mut step: Vec<Selective> = Vec::new();
+        for group in self.undo_groups.iter().rev() {
+            // The group's elements as Emacs's list has them, newest first.
+            let mut elements = Vec::new();
+            for e in group.edits.iter().rev() {
+                let pos = e.pos as isize;
+                if !e.inserted.is_empty() {
+                    elements.push((Selective::Inserted(e.pos, e.pos + e.inserted.chars().count()), pos, -(e.inserted.chars().count() as isize)));
+                }
+                if !e.deleted.is_empty() {
+                    let len = e.deleted.chars().count();
+                    let at_end = e.point_before == e.pos + len;
+                    let deleted = Selective::Deleted { pos: e.pos, text: e.deleted.clone(), props: e.deleted_props.clone(), at_end, marks: e.marks.clone() };
+                    elements.push((deleted, pos, len as isize));
+                }
+            }
+            if let Some(p) = group.point {
+                elements.push((Selective::Point(p), 0, 0));
+            }
+            for (element, at, len) in elements {
+                let kept = match element {
+                    Selective::Inserted(beg, stop) => {
+                        let beg = adjust(&deltas, beg as isize, false);
+                        let stop = beg.max(adjust(&deltas, stop as isize, true));
+                        (beg >= start && stop <= end).then(|| {
+                            end += beg - stop;
+                            Selective::Inserted(beg as usize, stop as usize)
+                        })
+                    }
+                    Selective::Deleted { pos, text, props, at_end, marks } => {
+                        let pos = adjust(&deltas, pos as isize, false);
+                        (pos >= start && pos <= end).then(|| {
+                            end += text.chars().count() as isize;
+                            // Marks are put back only if they are in the region now.
+                            let in_region = |m: Option<usize>| m.is_some_and(|m| start <= m as isize && m as isize <= end);
+                            let marks = marks
+                                .into_iter()
+                                .filter(|&(which, _)| in_region(match which {
+                                    None => self.mark,
+                                    Some(i) => self.mark_ring.get(i).copied(),
+                                }))
+                                .collect();
+                            Selective::Deleted { pos: pos as usize, text, props, at_end, marks }
+                        })
+                    }
+                    Selective::Point(p) => {
+                        let p = adjust(&deltas, p as isize, false);
+                        (p >= start && p <= end).then_some(Selective::Point(p as usize))
+                    }
+                    Selective::Unmodified(_) => None,
+                };
+                match kept {
+                    Some(element) => step.push(element),
+                    None if len != 0 => deltas.push((at, len)),
+                    None => {}
+                }
+            }
+            // A save is kept only while nothing has been left out.
+            if let Some(save) = group.unmodified_at
+                && deltas.is_empty()
+            {
+                step.push(Selective::Unmodified(save));
+            }
+            if !step.is_empty() {
+                steps.push(std::mem::take(&mut step));
+            }
+        }
+        steps.reverse();
+        self.selective_undo = Some(steps);
+    }
+
+    /// Whether a run of undos in a region is going on, so that an undo
+    /// straight after one carries on with it.
+    pub fn undoing_in_region(&self) -> bool {
+        self.selective_undo.is_some()
+    }
+
+    /// Whether an undo now carries on the run of undos before it, as
+    /// Emacs's undo decides: the last change was an undo, or the history
+    /// ran out.
+    pub fn undo_continues(&self) -> bool {
+        let top_is_undo = matches!(self.undo_groups.last(), Some(g) if g.kind != GroupKind::Change);
+        self.open_group.is_empty() && (top_is_undo || self.selective_undo.as_ref().is_some_and(|s| s.is_empty()))
+    }
+
+    pub fn undo_in_region_message(&self) -> bool {
+        self.undo_in_region
+    }
+
+    pub fn set_undo_in_region_message(&mut self, on: bool) {
+        self.undo_in_region = on;
+    }
+
+    /// Ends a run of undos in a region, so the next undo uses the whole history.
+    pub fn stop_undo_in_region(&mut self) {
+        self.selective_undo = None;
+    }
+
+    /// Undoes `count` more steps of the run started by
+    /// [`Buffer::start_undo_in_region`], as Emacs's `primitive-undo` does,
+    /// stopping quietly when they run out.
+    pub fn undo_in_region(&mut self, count: usize) -> Result<()> {
+        self.check_writable()?;
+        self.undo_boundary();
+        let steps = self.selective_undo.as_mut().filter(|s| !s.is_empty());
+        let Some(steps) = steps else {
+            return Err(Error::new("No further undo information for region"));
+        };
+        let n = count.min(steps.len());
+        let taken: Vec<_> = steps.drain(steps.len() - n..).rev().collect();
+        let outside = || Error::new("Changes to be undone are outside visible portion of buffer");
+        let mut result = Ok(());
+        'steps: for step in taken {
+            for element in step {
+                match element {
+                    Selective::Inserted(beg, end) => {
+                        if end > self.len() {
+                            result = Err(outside());
+                            break 'steps;
+                        }
+                        self.point = beg;
+                        self.apply_delete(beg, end);
+                    }
+                    Selective::Deleted { pos, text, props, at_end, marks } => {
+                        if pos > self.len() {
+                            result = Err(outside());
+                            break 'steps;
+                        }
+                        // Marks still where the text goes are put back, but as
+                        // primitive-undo checks them, one that has moved
+                        // drops those before it.
+                        let mut valid = Vec::new();
+                        for (which, offset) in marks {
+                            let m = match which {
+                                None => self.mark,
+                                Some(i) => self.mark_ring.get(i).copied(),
+                            };
+                            if m == Some(pos) {
+                                valid.push((which, offset));
+                            } else {
+                                valid.clear();
+                            }
+                        }
+                        self.point = pos;
+                        self.apply_insert(pos, &text, false);
+                        self.properties.restore(pos, &props);
+                        if !at_end {
+                            self.point = pos;
+                        }
+                        for (which, offset) in valid {
+                            let slot = match which {
+                                None => self.mark.as_mut(),
+                                Some(i) => self.mark_ring.get_mut(i),
+                            };
+                            if let Some(m) = slot {
+                                *m = pos + offset;
+                            }
+                        }
+                    }
+                    Selective::Point(p) => self.point = p.min(self.len()),
+                    Selective::Unmodified(save) => {
+                        if save == self.save_generation {
+                            self.modified = false;
+                        }
+                    }
+                }
+            }
+        }
+        // Undoing these changes is a redo, which has no history of its own to continue.
+        self.close_group(GroupKind::Undo { undid: 0 });
+        self.pending_undo = None;
+        result
     }
 
     /// Undoes the most recent undo, as Emacs's `undo-redo` does. The undo and

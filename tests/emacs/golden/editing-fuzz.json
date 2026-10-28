@@ -2118,6 +2118,221 @@
       "kill_ring": [],
       "modified": false,
       "error": null
+    },
+    {
+      "name": "typing-with-a-count-is-an-undo-step-of-its-own",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-2 SPC 1 C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  ",
+      "visible": "  ",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "deleting-with-a-count-is-an-undo-step-of-its-own",
+      "input": {
+        "text": "abcdef",
+        "point": 0,
+        "keys": "C-d M-2 C-d C-d C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "def",
+      "visible": "def",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "bc"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "undo-in-a-region-after-transpose-lines",
+      "input": {
+        "text": "three-x. foo_bar-a.b",
+        "point": 19,
+        "keys": "C-x C-t S-<left> C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\nthree-x. foo_bar-a.b\n\n",
+      "visible": "\nthree-x. foo_bar-a.b\n\n",
+      "point": 22,
+      "mark": 22,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "undo-in-a-region-puts-back-a-kill-inside",
+      "input": {
+        "text": "\tone 42, 42-x",
+        "point": 7,
+        "keys": "M-DEL C-y S-<left> C-/ x",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\tone 4242x, 42-x",
+      "visible": "\tone 4242x, 42-x",
+      "point": 10,
+      "mark": 7,
+      "mark_active": false,
+      "kill_ring": [
+        "42"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "undo-in-a-region-leaves-changes-outside",
+      "input": {
+        "text": "abc def ghi",
+        "point": 0,
+        "keys": "x C-e y C-a C-SPC C-f C-f C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "abc def ghiy",
+      "visible": "abc def ghiy",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "undo-in-a-region-twice-runs-out",
+      "input": {
+        "text": "abc def ghi",
+        "point": 0,
+        "keys": "x C-e y C-a C-SPC C-f C-f C-/ C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "abc def ghiy",
+      "visible": "abc def ghiy",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "No further undo information for region"
+    },
+    {
+      "name": "undo-in-a-region-carries-on-inside-it",
+      "input": {
+        "text": "abc def ghi",
+        "point": 0,
+        "keys": "x C-f z C-e y C-a C-SPC C-f C-f C-f C-f C-/ C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "abc def ghiy",
+      "visible": "abc def ghiy",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "undo-in-a-region-moves-past-a-change-before-it",
+      "input": {
+        "text": "abc def ghi",
+        "point": 4,
+        "keys": "x C-a M-d C-e y M-b C-SPC C-e C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": " xdef ghi",
+      "visible": " xdef ghi",
+      "point": 9,
+      "mark": 6,
+      "mark_active": false,
+      "kill_ring": [
+        "abc"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "undo-with-c-u-undoes-in-the-region",
+      "input": {
+        "text": "abc def ghi",
+        "point": 0,
+        "keys": "C-SPC x C-e y C-SPC C-SPC C-a C-f C-f C-u C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "xabc def ghi",
+      "visible": "xabc def ghi",
+      "point": 12,
+      "mark": 12,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "undo-in-a-region-then-undo-again-redoes",
+      "input": {
+        "text": "abc def ghi",
+        "point": 0,
+        "keys": "x C-e y C-a C-SPC C-f C-f C-/ C-f C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "xabc def ghiy",
+      "visible": "xabc def ghiy",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "undo-in-a-region-with-a-deletion-inside",
+      "input": {
+        "text": "abc def ghi",
+        "point": 4,
+        "keys": "C-d C-d C-e y C-a C-SPC C-e C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "abc f ghi",
+      "visible": "abc f ghi",
+      "point": 9,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
     }
   ]
 }

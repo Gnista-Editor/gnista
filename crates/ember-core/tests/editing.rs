@@ -29,6 +29,18 @@ fn typing_and_undo_in_steps() {
 }
 
 #[test]
+fn undo_in_a_region_undoes_only_the_changes_inside_it() {
+    let mut ed = Editor::new();
+    ed.type_text("abc def ghi");
+    press(&mut ed, "C-a x C-e y C-a C-SPC C-f C-f C-/");
+    // The x at the start is undone; the y at the end, outside the region, stays.
+    assert_eq!(text(&ed), "abc def ghiy");
+    assert_eq!(ed.echo(), Some("Undo in region"));
+    press(&mut ed, "C-/");
+    assert_eq!(ed.echo(), Some("No further undo information for region"));
+}
+
+#[test]
 fn line_moves_keep_the_goal_column() {
     let mut ed = Editor::new();
     ed.type_text("long line here\nab\nanother long line");

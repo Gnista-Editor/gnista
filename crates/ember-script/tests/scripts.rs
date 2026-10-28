@@ -443,3 +443,10 @@ fn a_command_can_share_its_undo_step_with_the_one_before() {
     ed.press("C-/").unwrap();
     assert_eq!(text(&ed), "x");
 }
+
+#[test]
+fn typing_with_a_count_is_an_undo_step_of_its_own() {
+    let (mut ed, _scripting) = setup();
+    ed.press("M-2 SPC 1 C-/").unwrap();
+    assert_eq!(text(&ed), "  ");
+}

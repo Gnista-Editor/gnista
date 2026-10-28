@@ -678,37 +678,44 @@ fn editing(ed: &mut Editor) {
         "undo",
         "Undo the last change, or as many changes as the prefix argument says.\n\nRepeat to undo earlier changes. Undoing is itself a change, so after any other command, undo undoes the undos: it redoes.",
         |ed, _| {
-            let mut continuing = ed.last_command() == Some("undo");
+            let mut continuing = ed.last_command() == Some("undo") && ed.buffer().undo_continues();
             let mut redid = false;
             // With the region active, or a C-u or C-- argument, Emacs undoes only
             // changes inside the region, but an empty region takes in the
-            // whole history. Ember does not undo in a region yet; its messages
-            // say "region" as Emacs's do.
+            // whole history. A run of undos keeps to the region it started in.
             let arg = ed.current_prefix_arg();
-            let region_arg = matches!(arg, Some(PrefixArg::Universal(_)) | Some(PrefixArg::Minus));
-            if region_arg && ed.buffer().mark().is_none() {
-                return err("The mark is not set now, so there is no region");
-            }
-            let in_region = ed.buffer().is_mark_active() || region_arg;
-            // Only changes inside a region that is not empty can be undone there.
-            if in_region
-                && let Some(region) = ed.buffer().region().filter(|r| !r.is_empty())
-                && !ed.buffer().has_undo_in(region)
-            {
-                return err("No further undo information for region");
-            }
+            let in_region = if continuing {
+                ed.buffer().undo_in_region_message()
+            } else {
+                let region_arg = matches!(arg, Some(PrefixArg::Universal(_)) | Some(PrefixArg::Minus));
+                if region_arg && ed.buffer().mark().is_none() {
+                    return err("The mark is not set now, so there is no region");
+                }
+                let in_region = ed.buffer().is_mark_active() || region_arg;
+                let b = ed.buffer_mut();
+                b.stop_undo_in_region();
+                if in_region && let Some(region) = b.region().filter(|r| !r.is_empty()) {
+                    b.start_undo_in_region(region);
+                }
+                b.set_undo_in_region_message(in_region);
+                in_region
+            };
             // A count undoes that many changes, stopping quietly if there are fewer.
             let count = match arg {
                 Some(PrefixArg::Number(n)) => n,
                 _ => 1,
             };
-            for k in 0..count.max(0) {
-                redid = match ed.buffer_mut().undo(continuing) {
-                    Err(_) if k > 0 => break,
-                    Err(_) if in_region => return err("No further undo information for region"),
-                    result => result?,
-                };
-                continuing = true;
+            if ed.buffer().undoing_in_region() {
+                ed.buffer_mut().undo_in_region(count.max(0) as usize)?;
+            } else {
+                for k in 0..count.max(0) {
+                    redid = match ed.buffer_mut().undo(continuing) {
+                        Err(_) if k > 0 => break,
+                        Err(_) if in_region => return err("No further undo information for region"),
+                        result => result?,
+                    };
+                    continuing = true;
+                }
             }
             let message = if redid { "Redo" } else { "Undo" };
             ed.message(if in_region { format!("{message} in region") } else { message.to_string() });

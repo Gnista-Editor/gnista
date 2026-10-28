@@ -620,5 +620,64 @@
     "name": "transpose-lines-twice-at-the-end-undoes-as-one",
     "text": "",
     "keys": "C-x C-t C-x C-t C-/"
+  },
+  {
+    "name": "typing-with-a-count-is-an-undo-step-of-its-own",
+    "text": "",
+    "keys": "M-2 SPC 1 C-/"
+  },
+  {
+    "name": "deleting-with-a-count-is-an-undo-step-of-its-own",
+    "text": "abcdef",
+    "keys": "C-d M-2 C-d C-d C-/"
+  },
+  {
+    "name": "undo-in-a-region-after-transpose-lines",
+    "text": "three-x. foo_bar-a.b",
+    "point": 19,
+    "keys": "C-x C-t S-<left> C-/"
+  },
+  {
+    "name": "undo-in-a-region-puts-back-a-kill-inside",
+    "text": "\tone 42, 42-x",
+    "point": 7,
+    "keys": "M-DEL C-y S-<left> C-/ x"
+  },
+  {
+    "name": "undo-in-a-region-leaves-changes-outside",
+    "text": "abc def ghi",
+    "keys": "x C-e y C-a C-SPC C-f C-f C-/"
+  },
+  {
+    "name": "undo-in-a-region-twice-runs-out",
+    "text": "abc def ghi",
+    "keys": "x C-e y C-a C-SPC C-f C-f C-/ C-/"
+  },
+  {
+    "name": "undo-in-a-region-carries-on-inside-it",
+    "text": "abc def ghi",
+    "keys": "x C-f z C-e y C-a C-SPC C-f C-f C-f C-f C-/ C-/"
+  },
+  {
+    "name": "undo-in-a-region-moves-past-a-change-before-it",
+    "text": "abc def ghi",
+    "point": 4,
+    "keys": "x C-a M-d C-e y M-b C-SPC C-e C-/"
+  },
+  {
+    "name": "undo-with-c-u-undoes-in-the-region",
+    "text": "abc def ghi",
+    "keys": "C-SPC x C-e y C-SPC C-SPC C-a C-f C-f C-u C-/"
+  },
+  {
+    "name": "undo-in-a-region-then-undo-again-redoes",
+    "text": "abc def ghi",
+    "keys": "x C-e y C-a C-SPC C-f C-f C-/ C-f C-/"
+  },
+  {
+    "name": "undo-in-a-region-with-a-deletion-inside",
+    "text": "abc def ghi",
+    "point": 4,
+    "keys": "C-d C-d C-e y C-a C-SPC C-e C-/"
   }
 ]
