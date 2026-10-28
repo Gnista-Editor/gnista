@@ -2935,7 +2935,11 @@ function orgCycle(arg: ember.PrefixArg): void {
     }
     const here = headingHere();
     if (here) {
-      cycleHeading(...here);
+      // On a hidden heading, the one cycled is the nearest that shows above,
+      // as org-back-to-heading finds it.
+      let [all, i] = here;
+      while (i > 0 && ember.invisibleAt(all[i].start)) i--;
+      cycleHeading(all, i);
       return;
     }
     if (itemLine(line)) {
@@ -3097,16 +3101,16 @@ ember.defineCommand({
 
 ember.defineVariable({
   name: "org-special-ctrl-o",
-  doc: "Whether C-o in a table, away from the start of a line, inserts a row rather than opening a line.",
+  doc: "Whether C-o in a table inserts a row rather than opening a line.",
   value: true,
 });
 
 ember.defineCommand({
   name: "org-open-line",
-  doc: "C-o in Org: in a table, away from the start of the line, insert a row above; elsewhere open-line.",
+  doc: "C-o in Org: in a table, insert a row above; elsewhere, or at the very start of the buffer, open-line.",
   run: () => {
     const p = ember.point();
-    if (ember.variable("org-special-ctrl-o") === true && p !== ember.lineStart(lineAt()) && /^[ \t]*\|/.test(ember.lineText(lineAt())))
+    if (ember.variable("org-special-ctrl-o") === true && p !== 0 && /^[ \t]*\|/.test(ember.lineText(lineAt())))
       ember.call("org-table-insert-row");
     else ember.callWithPrefix(ember.prefixArg(), "open-line");
   },
@@ -4359,8 +4363,15 @@ function orgYank(arg: ember.PrefixArg): void {
   }
   const p = ember.point();
   const ls = ember.lineStart(lineAt());
+  // As org-kill-is-subtree-p does, an empty kill ring is no subtree.
+  let kill = "";
+  try {
+    kill = ember.currentKill();
+  } catch {
+    kill = "";
+  }
   const subtreep =
-    killIsSubtree(ember.currentKill()) &&
+    killIsSubtree(kill) &&
     (p === ls || (/^[ \t]*$/.test(ember.bufferText(p, ember.lineEnd(lineAt()))) && /^\*+$/.test(ember.bufferText(ls, p))));
   if (!subtreep || ember.variable("org-yank-folded-subtrees") !== true) {
     ember.call("yank");

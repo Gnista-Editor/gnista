@@ -90,5 +90,21 @@
     "name": "undo-redo-back-to-unmodified",
     "text": "abc",
     "keys": "x C-/ C-/ C-M-_"
+  },
+  {
+    "name": "undo-returns-to-where-point-was",
+    "text": "one two three",
+    "keys": "M-> M-< M-d C-e C-/"
+  },
+  {
+    "name": "undo-a-kill-before-point-from-elsewhere",
+    "text": "one two three",
+    "keys": "C-e C-SPC M-b C-w C-a C-/"
+  },
+  {
+    "name": "undo-a-transpose",
+    "text": "abcd",
+    "keys": "C-t C-/",
+    "point": 2
   }
 ]

@@ -799,6 +799,44 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "next-line-keeps-a-column-of-wide-characters",
+      "input": {
+        "text": "日本語の\nabcdef",
+        "point": 0,
+        "keys": "C-f C-f C-n",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "日本語の\nabcdef",
+      "visible": "日本語の\nabcdef",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "next-line-after-a-tab",
+      "input": {
+        "text": "\tx\nabcdefghijk",
+        "point": 0,
+        "keys": "C-f C-n",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\tx\nabcdefghijk",
+      "visible": "\tx\nabcdefghijk",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
     }
   ]
 }

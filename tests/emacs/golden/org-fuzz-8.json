@@ -3278,6 +3278,468 @@
       "kill_ring": [],
       "modified": false,
       "error": "Cannot drag element forward"
+    },
+    {
+      "name": "seed14-0074-c-y",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-y",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Kill ring is empty"
+    },
+    {
+      "name": "seed14-0215-c-y",
+      "input": {
+        "text": "|12|3|",
+        "point": 0,
+        "keys": "C-y",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "|12|3|",
+      "visible": "|12|3|",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Kill ring is empty"
+    },
+    {
+      "name": "seed14-1259-c-y",
+      "input": {
+        "text": "4) read",
+        "point": 0,
+        "keys": "C-y",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "4) read",
+      "visible": "4) read",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Kill ring is empty"
+    },
+    {
+      "name": "seed14-1243-c-y",
+      "input": {
+        "text": "* DONE beta",
+        "point": 0,
+        "keys": "C-y",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* DONE beta",
+      "visible": "* DONE beta",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Kill ring is empty"
+    },
+    {
+      "name": "seed14-0072-c-y",
+      "input": {
+        "text": "* TODO notes",
+        "point": 0,
+        "keys": "C-y",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO notes",
+      "visible": "* TODO notes",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Kill ring is empty"
+    },
+    {
+      "name": "seed14-0299-c-y",
+      "input": {
+        "text": "* TODO alpha",
+        "point": 0,
+        "keys": "C-y",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO alpha",
+      "visible": "* TODO alpha",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Kill ring is empty"
+    },
+    {
+      "name": "seed14-1032-c-y",
+      "input": {
+        "text": "fix <2026-10-24 Wed>",
+        "point": 17,
+        "keys": "C-y",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "fix <2026-10-24 Wed>",
+      "visible": "fix <2026-10-24 Wed>",
+      "point": 17,
+      "mark": 17,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Kill ring is empty"
+    },
+    {
+      "name": "seed14-1432-c-y",
+      "input": {
+        "text": "** DONE [#A] fix alpha [/]",
+        "point": 0,
+        "keys": "C-y",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** DONE [#A] fix alpha [/]",
+      "visible": "** DONE [#A] fix alpha [/]",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Kill ring is empty"
+    },
+    {
+      "name": "seed14-0002-c-y",
+      "input": {
+        "text": "** TODO [#A] plan call [1/2]",
+        "point": 0,
+        "keys": "C-y",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** TODO [#A] plan call [1/2]",
+      "visible": "** TODO [#A] plan call [1/2]",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Kill ring is empty"
+    },
+    {
+      "name": "seed14-0176-c-y",
+      "input": {
+        "text": "DEADLINE: <2026-11-01 Sun +1w>",
+        "point": 25,
+        "keys": "C-y",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "DEADLINE: <2026-11-01 Sun +1w>",
+      "visible": "DEADLINE: <2026-11-01 Sun +1w>",
+      "point": 25,
+      "mark": 25,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Kill ring is empty"
+    },
+    {
+      "name": "seed14-1192-c-o",
+      "input": {
+        "text": "alpha <2026-10-20 Wed>\n| ccc | 3 |",
+        "point": 23,
+        "keys": "C-o",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "alpha <2026-10-20 Wed>\n|     |   |\n| ccc | 3 |",
+      "visible": "alpha <2026-10-20 Wed>\n|     |   |\n| ccc | 3 |",
+      "point": 25,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed14-1360-c-y",
+      "input": {
+        "text": "   - read\n3. call\nalpha <2026-10-21 Wed>\n",
+        "point": 0,
+        "keys": "C-y",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "   - read\n3. call\nalpha <2026-10-21 Wed>\n",
+      "visible": "   - read\n3. call\nalpha <2026-10-21 Wed>\n",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Kill ring is empty"
+    },
+    {
+      "name": "seed14-0502-backtab-c-slash",
+      "input": {
+        "text": "|a|x|",
+        "point": 1,
+        "keys": "<backtab> C-/",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "|a|x|",
+      "visible": "|a|x|",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot move to previous table field"
+    },
+    {
+      "name": "seed14-1480-s-right-c-slash",
+      "input": {
+        "text": "1) beta",
+        "point": 2,
+        "keys": "S-<right> C-/",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1) beta",
+      "visible": "1) beta",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed14-1042-c-n-c-t",
+      "input": {
+        "text": "see [[*notes][the notes]] now\n* gamma notes",
+        "point": 19,
+        "keys": "C-n C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "see [[*notes][the notes]] now\n* gamma ontes",
+      "visible": "see the notes now\n* gamma ontes",
+      "point": 40,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed14-1306-c-c-c-c-c-y",
+      "input": {
+        "text": "|  | x |",
+        "point": 0,
+        "keys": "C-c C-c C-y",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "|  | x |",
+      "visible": "|  | x |",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Kill ring is empty"
+    },
+    {
+      "name": "seed14-0886-c-u-tab-tab",
+      "input": {
+        "text": "** gamma\n*** TODO [#C] beta notes",
+        "point": 21,
+        "keys": "C-u TAB TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** gamma\n*** TODO [#C] beta notes",
+      "visible": "** gamma\n*** TODO [#C] beta notes",
+      "point": 21,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "cycle-from-hidden-point-a",
+      "input": {
+        "text": "** gamma\n*** TODO [#C] beta notes",
+        "point": 21,
+        "keys": "C-u TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** gamma\n*** TODO [#C] beta notes",
+      "visible": "** gamma",
+      "point": 21,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "cycle-from-hidden-point-b",
+      "input": {
+        "text": "** gamma\n*** TODO [#C] beta notes",
+        "point": 21,
+        "keys": "C-u TAB C-f",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** gamma\n*** TODO [#C] beta notes",
+      "visible": "** gamma",
+      "point": 33,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "cycle-from-hidden-point-c",
+      "input": {
+        "text": "** gamma\n*** TODO [#C] beta notes",
+        "point": 21,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** gamma\n*** TODO [#C] beta notes",
+      "visible": "** gamma\n*** TODO [#C] beta notes",
+      "point": 21,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "cycle-from-hidden-point-d",
+      "input": {
+        "text": "** gamma\n*** b\n",
+        "point": 12,
+        "keys": "C-u TAB TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** gamma\n*** b\n",
+      "visible": "** gamma\n*** b\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "cycle-from-hidden-point-e",
+      "input": {
+        "text": "* gamma\n** TODO [#C] beta notes",
+        "point": 20,
+        "keys": "C-u TAB TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* gamma\n** TODO [#C] beta notes",
+      "visible": "* gamma\n** TODO [#C] beta notes",
+      "point": 20,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
     }
   ]
 }

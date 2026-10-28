@@ -20,6 +20,10 @@ struct Edit {
     deleted_props: SavedProps,
     inserted: String,
     point_before: usize,
+    /// How far into the deleted text the mark and the mark ring's entries
+    /// were, as Emacs's record_marker_adjustments keeps them, so undoing the
+    /// deletion puts them back: `None` for the mark, the index for the ring.
+    marks: Vec<(Option<usize>, usize)>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -40,6 +44,9 @@ struct Group {
     /// the latest save the buffer is unmodified again. Emacs records the
     /// file's modification time for the same purpose.
     unmodified_at: Option<u64>,
+    /// Where point was before the command, if its first change was
+    /// elsewhere, as Emacs's record_point keeps it: undoing returns there.
+    point: Option<usize>,
 }
 
 /// How many positions the mark ring keeps, as Emacs's `mark-ring-max`.
@@ -78,6 +85,10 @@ pub struct Buffer {
     undo_groups: Vec<Group>,
     open_group: Vec<Edit>,
     open_unmodified_at: Option<u64>,
+    /// Point at the last undo boundary, before the command now running.
+    boundary_point: usize,
+    /// The point the open group returns to when undone, if any.
+    open_point: Option<usize>,
     /// Where a run of consecutive undos continues: the group to undo next,
     /// or `None` once the history is used up.
     pending_undo: Option<usize>,
@@ -122,6 +133,8 @@ impl Buffer {
             undo_groups: Vec::new(),
             open_group: Vec::new(),
             open_unmodified_at: None,
+            boundary_point: 0,
+            open_point: None,
             pending_undo: None,
             locals: BTreeMap::new(),
             local_hooks: BTreeMap::new(),
@@ -396,6 +409,7 @@ impl Buffer {
             deleted_props: Vec::new(),
             inserted: s.to_string(),
             point_before,
+            marks: Vec::new(),
         });
     }
 
@@ -405,6 +419,9 @@ impl Buffer {
         }
         let deleted = self.slice(start..end);
         let point_before = self.point;
+        let inside = |m: usize| (start < m && m <= end).then_some(m - start);
+        let mut marks: Vec<(Option<usize>, usize)> = self.mark.and_then(inside).map(|o| (None, o)).into_iter().collect();
+        marks.extend(self.mark_ring.iter().enumerate().filter_map(|(i, &m)| inside(m).map(|o| (Some(i), o))));
         let edit_range = self.syntax.as_ref().map(|_| (point_at(&self.text, start), point_at(&self.text, end)));
         self.text.remove(start..end);
         if let (Some(syntax), Some((from, to))) = (&self.syntax, edit_range) {
@@ -430,6 +447,7 @@ impl Buffer {
             deleted_props,
             inserted: String::new(),
             point_before,
+            marks,
         });
         deleted
     }
@@ -598,6 +616,8 @@ impl Buffer {
         self.undo_groups.clear();
         self.open_group.clear();
         self.pending_undo = None;
+        self.boundary_point = 0;
+        self.open_point = None;
         self.modified = false;
         self.save_generation += 1;
     }
@@ -624,12 +644,16 @@ impl Buffer {
     /// The editor calls this before each command.
     pub fn undo_boundary(&mut self) {
         self.close_group(GroupKind::Change);
+        self.boundary_point = self.point;
     }
 
     fn close_group(&mut self, kind: GroupKind) {
         if !self.open_group.is_empty() {
             let edits = std::mem::take(&mut self.open_group);
-            self.undo_groups.push(Group { edits, kind, unmodified_at: self.open_unmodified_at });
+            // As Emacs's undo command removes them from its own changes, an
+            // undo keeps no point: undoing it goes where the change is.
+            let point = if kind == GroupKind::Change { self.open_point } else { None };
+            self.undo_groups.push(Group { edits, kind, unmodified_at: self.open_unmodified_at, point });
         }
     }
 
@@ -654,6 +678,7 @@ impl Buffer {
         self.revert(index);
         self.close_group(GroupKind::Undo { undid: index });
         self.pending_undo = index.checked_sub(1);
+        self.boundary_point = self.point;
         Ok(redo)
     }
 
@@ -691,7 +716,22 @@ impl Buffer {
             }
             self.apply_insert(edit.pos, &edit.deleted, false);
             self.properties.restore(edit.pos, &edit.deleted_props);
+            // Marks that were inside the text, and are still where it went back, go back into it.
+            for &(which, offset) in &edit.marks {
+                let slot = match which {
+                    None => self.mark.as_mut(),
+                    Some(i) => self.mark_ring.get_mut(i),
+                };
+                if let Some(m) = slot
+                    && *m == edit.pos
+                {
+                    *m = edit.pos + offset;
+                }
+            }
             self.point = edit.point_before.min(self.len());
+        }
+        if let Some(p) = group.point {
+            self.point = p.min(self.len());
         }
         if group.unmodified_at == Some(self.save_generation) {
             self.modified = false;
@@ -701,6 +741,11 @@ impl Buffer {
     fn record(&mut self, edit: Edit) {
         if self.open_group.is_empty() {
             self.open_unmodified_at = (!self.modified).then_some(self.save_generation);
+            // As Emacs's record_point: a deletion before point compares point,
+            // anything else where the change starts.
+            let deleted_end = edit.pos + edit.deleted.chars().count();
+            let at = if edit.inserted.is_empty() && edit.point_before == deleted_end { edit.point_before } else { edit.pos };
+            self.open_point = (self.boundary_point != at).then_some(self.boundary_point);
         }
         self.changed = true;
         self.modified = true;
@@ -761,6 +806,8 @@ mod tests {
     fn undo_restores_text_and_point() {
         let mut b = buffer("abc");
         b.set_point(1);
+        // The command loop puts a boundary before each command.
+        b.undo_boundary();
         b.delete(1..2).unwrap();
         b.undo_boundary();
         b.insert("XY").unwrap();

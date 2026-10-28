@@ -154,7 +154,9 @@ fn document(rng: &mut Rng) -> String {
         }
     }
     let mut text = out.join("\n");
-    if rng.chance(85) {
+    // Org loops forever skipping comments in org-toggle-heading when the
+    // last line is one, so a comment always ends with a newline.
+    if rng.chance(85) || out.last().is_some_and(|l| l.starts_with("# ")) {
         text.push('\n');
     }
     text

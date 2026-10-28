@@ -345,6 +345,67 @@
       "kill_ring": [],
       "modified": true,
       "error": "No further undo information"
+    },
+    {
+      "name": "undo-returns-to-where-point-was",
+      "input": {
+        "text": "one two three",
+        "point": 0,
+        "keys": "M-> M-< M-d C-e C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one two three",
+      "visible": "one two three",
+      "point": 0,
+      "mark": 13,
+      "mark_active": false,
+      "kill_ring": [
+        "one"
+      ],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "undo-a-kill-before-point-from-elsewhere",
+      "input": {
+        "text": "one two three",
+        "point": 0,
+        "keys": "C-e C-SPC M-b C-w C-a C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one two three",
+      "visible": "one two three",
+      "point": 8,
+      "mark": 13,
+      "mark_active": false,
+      "kill_ring": [
+        "three"
+      ],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "undo-a-transpose",
+      "input": {
+        "text": "abcd",
+        "point": 2,
+        "keys": "C-t C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "abcd",
+      "visible": "abcd",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
     }
   ]
 }

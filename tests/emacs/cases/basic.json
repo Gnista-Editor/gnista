@@ -241,5 +241,15 @@
     "text": "  abcd",
     "keys": "C-j x",
     "point": 4
+  },
+  {
+    "name": "next-line-keeps-a-column-of-wide-characters",
+    "text": "日本語の\nabcdef",
+    "keys": "C-f C-f C-n"
+  },
+  {
+    "name": "next-line-after-a-tab",
+    "text": "\tx\nabcdefghijk",
+    "keys": "C-f C-n"
   }
 ]

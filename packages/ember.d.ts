@@ -886,7 +886,7 @@ declare global {
        */
       "org-open-at-point": [];
       /**
-       * C-o in Org: in a table, away from the start of the line, insert a row above; elsewhere open-line.
+       * C-o in Org: in a table, insert a row above; elsewhere, or at the very start of the buffer, open-line.
        *
        * Defined in packages/org.ts.
        */
@@ -1960,7 +1960,7 @@ declare global {
        */
       "org-read-date-history": Value;
       /**
-       * Whether C-o in a table, away from the start of a line, inserts a row rather than opening a line.
+       * Whether C-o in a table inserts a row rather than opening a line.
        *
        * Defined in packages/org.ts.
        */

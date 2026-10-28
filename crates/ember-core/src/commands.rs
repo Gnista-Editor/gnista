@@ -408,16 +408,18 @@ fn line_move(ed: &mut Editor, n: i64) -> Result<()> {
     let continuing = ed.last_command().is_some_and(|c| SCROLL_KEEPS_COLUMN.contains(&c));
     let b = ed.buffer();
     let line = b.line_of(b.point());
+    // The column as shown, where hidden text takes no room, as Emacs's
+    // current-column counts it.
     let goal = match ed.goal_column {
         Some(goal) if continuing => goal,
-        _ => b.column(b.point()),
+        _ => ed.screen_position(b, b.point(), None).2,
     };
     ed.goal_column = Some(goal);
     // Lines inside hidden text are skipped, as Emacs's line-move-ignore-invisible does.
     let b = ed.buffer();
     let (target, moved) = ed.move_rows_in(b, ed.row_line_in(b, line), n);
-    let b = ed.buffer_mut();
     if moved != n {
+        let b = ed.buffer_mut();
         if n > 0 {
             b.set_point(b.len());
             return err("End of buffer");
@@ -425,8 +427,13 @@ fn line_move(ed: &mut Editor, n: i64) -> Result<()> {
         b.set_point(0);
         return err("Beginning of buffer");
     }
-    let start = b.line_start(target);
-    b.set_point((start + goal).min(b.line_end(target)));
+    let b = ed.buffer();
+    let rows = ed.screen_rows_of(b, target, None);
+    let pos = match rows.first() {
+        Some(row) => crate::display::position_at_column(row, &crate::display::row_glyphs(row, ed.tab_width_in(b)), goal),
+        None => b.line_start(target),
+    };
+    ed.buffer_mut().set_point(pos);
     Ok(())
 }
 
