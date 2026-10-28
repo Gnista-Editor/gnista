@@ -573,6 +573,48 @@
       ],
       "modified": false,
       "error": null
+    },
+    {
+      "name": "kill-word-deactivates-the-region",
+      "input": {
+        "text": "one two",
+        "point": 0,
+        "keys": "C-SPC C-e C-a M-d",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": " two",
+      "visible": " two",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [
+        "one"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kill-line-deactivates-the-region",
+      "input": {
+        "text": "one two",
+        "point": 0,
+        "keys": "C-SPC C-e C-a C-k",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [
+        "one two"
+      ],
+      "modified": true,
+      "error": null
     }
   ]
 }

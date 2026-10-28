@@ -708,6 +708,8 @@ fn killing(ed: &mut Editor) {
             };
             let killed = ed.buffer_mut().delete(p.min(to)..p.max(to))?;
             ed.kill(killed, to < p);
+            // Emacs kills through kill-region, which deactivates the mark.
+            ed.buffer_mut().deactivate_mark();
             Ok(())
         },
     );
@@ -819,6 +821,8 @@ fn kill_words(ed: &mut Editor, n: i64) -> Result<()> {
     let to = move_words(b, p, n);
     let killed = b.delete(p.min(to)..p.max(to))?;
     ed.kill(killed, to < p);
+    // Emacs kills through kill-region, which deactivates the mark.
+    ed.buffer_mut().deactivate_mark();
     Ok(())
 }
 

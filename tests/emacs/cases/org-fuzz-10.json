@@ -91,5 +91,31 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "seed22-0454-c-c-at-m-del",
+    "text": "** read plan",
+    "keys": "C-c @ M-DEL",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed22-0361-backtab-tab-m-left",
+    "text": "* [#B] gamma gamma\n:PROPERTIES:\n:END:",
+    "keys": "<backtab> TAB M-<left>",
+    "point": 21,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed22-1504-c-c-at-c-e-c-c-c-c",
+    "text": "** fix\n|  | 3 |",
+    "keys": "C-c @ C-e C-c C-c",
+    "point": 3,
+    "modes": [
+      "org-mode"
+    ]
   }
 ]

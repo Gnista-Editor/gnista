@@ -3058,7 +3058,11 @@ function orgCycle(arg: ember.PrefixArg): void {
     const line = lineAt();
     const text = ember.lineText(line);
     if ((DRAWER.test(text) && !/^[ \t]*:END:/i.test(text)) || BLOCK_BEGIN.test(text)) {
-      if (toggleDrawerOrBlock(line)) return;
+      if (toggleDrawerOrBlock(line)) {
+        // As org-fold--hide-wrapper-toggle does, point is left where it shows.
+        if (ember.point() > 0 && ember.invisibleAt(ember.point() - 1)) ember.gotoChar(ember.lineStart(line));
+        return;
+      }
     }
     // On the closing line too, as org-fold--hide-wrapper-toggle allows.
     const opener = openerOf(line);
@@ -6188,6 +6192,11 @@ const ctrlCCtrlC = ember.defineCommand({
       return;
     }
     if (headingHere()) {
+      // With the region active, Org sets the tags of each heading that starts
+      // in it, which may be none.
+      const region = ember.variable("org-loop-over-headlines-in-active-region") === true ? headingsInRegion() : undefined;
+      if (region && region.length === 0) return;
+      if (region) ember.gotoChar(region[0].start);
       ember.callInteractively("org-set-tags-command");
       return;
     }

@@ -232,6 +232,71 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "seed22-0454-c-c-at-m-del",
+      "input": {
+        "text": "** read plan",
+        "point": 0,
+        "keys": "C-c @ M-DEL",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** read plan",
+      "visible": "** read plan",
+      "point": 0,
+      "mark": 12,
+      "mark_active": false,
+      "kill_ring": [
+        ""
+      ],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed22-0361-backtab-tab-m-left",
+      "input": {
+        "text": "* [#B] gamma gamma\n:PROPERTIES:\n:END:",
+        "point": 21,
+        "keys": "<backtab> TAB M-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* [#B] gamma gamma\n:PROPERTIES:\n:END:",
+      "visible": "* [#B] gamma gamma",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot promote to level 0.  UNDO to recover if necessary"
+    },
+    {
+      "name": "seed22-1504-c-c-at-c-e-c-c-c-c",
+      "input": {
+        "text": "** fix\n|  | 3 |",
+        "point": 3,
+        "keys": "C-c @ C-e C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** fix\n|  | 3 |",
+      "visible": "** fix\n|  | 3 |",
+      "point": 6,
+      "mark": 15,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
     }
   ]
 }

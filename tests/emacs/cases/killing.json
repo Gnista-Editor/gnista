@@ -141,5 +141,15 @@
     "text": "abc",
     "keys": "C-SPC C-w",
     "point": 1
+  },
+  {
+    "name": "kill-word-deactivates-the-region",
+    "text": "one two",
+    "keys": "C-SPC C-e C-a M-d"
+  },
+  {
+    "name": "kill-line-deactivates-the-region",
+    "text": "one two",
+    "keys": "C-SPC C-e C-a C-k"
   }
 ]
