@@ -234,6 +234,17 @@ impl WindowTree {
     }
 }
 
+/// A frame that is not selected: its windows and which of them was
+/// selected in it. The selected frame's are the editor's own.
+pub(crate) struct Frame {
+    pub(crate) id: FrameId,
+    tree: WindowTree,
+    selected_window: WindowId,
+    frame_size: Option<(usize, usize)>,
+}
+
+pub type FrameId = u64;
+
 /// Where a mouse event happened, as the position part of an Emacs mouse
 /// event: the window, and the buffer position under the mouse if there is
 /// text there. A drag also has where it started.
@@ -315,6 +326,136 @@ impl Editor {
     /// The rows a window shows, as [`Editor::window_rows`] gives the selected one's.
     pub fn rows_of_window(&self, id: WindowId, count: usize, dark: bool) -> Vec<Row> {
         let Some(view) = self.windows().into_iter().find(|v| v.id == id) else { return Vec::new() };
+        let wrap = self.wrap_in(id, view.buffer);
+        self.rows_in(view.buffer, view.top_line, count, dark, wrap)
+    }
+
+    /// The frames, newest first, as Emacs's `frame-list` orders them.
+    pub fn frame_list(&self) -> Vec<FrameId> {
+        self.frame_order.clone()
+    }
+
+    pub fn selected_frame(&self) -> FrameId {
+        self.selected_frame
+    }
+
+    /// Makes a frame showing a buffer, the current one by default, at point
+    /// in it, as Emacs's `make-frame` does, and selects it. Returns it.
+    pub fn make_frame(&mut self, buffer: Option<&str>) -> Result<FrameId> {
+        let index = match buffer {
+            Some(name) => self.find_buffer(name).ok_or_else(|| Error::new(format!("No such buffer {name}")))?,
+            None => self.current,
+        };
+        self.next_window_id += 1;
+        let window = self.next_window_id;
+        let (width, height) = self.window(self.selected_window).map_or((80, 23), |w| (w.width, w.height));
+        let point = self.buffers[index].point();
+        self.windows.push(Window { id: window, buffer: self.buffers[index].id, top_line: 0, width, height, used: 0 });
+        self.buffers[index].set_window_point(window, point);
+        self.next_frame_id += 1;
+        let id = self.next_frame_id;
+        self.other_frames.push(Frame { id, tree: WindowTree::Leaf(window), selected_window: window, frame_size: self.frame_size });
+        self.frame_order.insert(0, id);
+        self.select_frame(id)?;
+        Ok(id)
+    }
+
+    /// Makes a frame the selected one, whose selected window commands act
+    /// in, as Emacs's `select-frame`. Each window keeps its own point.
+    pub fn select_frame(&mut self, id: FrameId) -> Result<()> {
+        if id == self.selected_frame {
+            return Ok(());
+        }
+        let k = self.other_frames.iter().position(|f| f.id == id).ok_or_else(|| Error::new("No such frame"))?;
+        // The selected window keeps its point and top line, as when another window is selected.
+        let old = self.selected_window;
+        let b = &mut self.buffers[self.current];
+        let (point, top) = (b.point(), b.top_line);
+        b.set_window_point(old, point);
+        if let Some(w) = self.window_mut(old) {
+            w.top_line = top;
+        }
+        let frame = self.other_frames.remove(k);
+        self.other_frames.push(Frame {
+            id: self.selected_frame,
+            tree: std::mem::replace(&mut self.window_tree, frame.tree),
+            selected_window: std::mem::replace(&mut self.selected_window, frame.selected_window),
+            frame_size: std::mem::replace(&mut self.frame_size, frame.frame_size),
+        });
+        self.selected_frame = id;
+        self.window_use += 1;
+        let used = self.window_use;
+        let w = self.window_mut(self.selected_window).expect("a frame's selected window exists");
+        w.used = used;
+        let (buffer, top) = (w.buffer, w.top_line);
+        self.current = self.buffer_index(buffer);
+        let b = &mut self.buffers[self.current];
+        if let Some(point) = b.remove_window_point(self.selected_window) {
+            b.set_point(point);
+        }
+        b.top_line = top.min(b.line_count() - 1);
+        Ok(())
+    }
+
+    /// Deletes a frame and its windows, as Emacs's `delete-frame`; if it was
+    /// selected, the next frame is. The only frame cannot go.
+    pub fn delete_frame(&mut self, id: Option<FrameId>) -> Result<()> {
+        let id = id.unwrap_or(self.selected_frame);
+        if !self.frame_order.contains(&id) {
+            return Err(Error::new("No such frame"));
+        }
+        if self.frame_order.len() == 1 {
+            return Err(Error::new("Attempt to delete the sole visible or iconified frame"));
+        }
+        if id == self.selected_frame {
+            let k = self.frame_order.iter().position(|f| *f == id).expect("listed");
+            let next = self.frame_order[(k + 1) % self.frame_order.len()];
+            self.select_frame(next)?;
+        }
+        let k = self.other_frames.iter().position(|f| f.id == id).expect("not selected now");
+        let frame = self.other_frames.remove(k);
+        for window in frame.tree.leaves() {
+            if let Some(w) = self.window(window) {
+                let index = self.buffer_index(w.buffer);
+                self.buffers[index].remove_window_point(window);
+            }
+            self.windows.retain(|w| w.id != window);
+        }
+        self.frame_order.retain(|f| *f != id);
+        Ok(())
+    }
+
+    /// A frame's windows with what each shows, as [`Editor::windows`] gives
+    /// the selected frame's, so a front end can draw any frame.
+    pub fn frame_windows(&self, id: FrameId) -> Vec<WindowView<'_>> {
+        if id == self.selected_frame {
+            return self.windows();
+        }
+        let Some(frame) = self.other_frames.iter().find(|f| f.id == id) else { return Vec::new() };
+        frame
+            .tree
+            .leaves()
+            .into_iter()
+            .filter_map(|window| {
+                let w = self.window(window)?;
+                let buffer = &self.buffers[self.buffer_index(w.buffer)];
+                let point = buffer.window_point(window).unwrap_or(buffer.point());
+                Some(WindowView { id: window, selected: false, buffer, point, top_line: w.top_line })
+            })
+            .collect()
+    }
+
+    /// A frame's window tree, for laying it out.
+    pub fn frame_tree(&self, id: FrameId) -> Option<&WindowTree> {
+        if id == self.selected_frame {
+            return Some(&self.window_tree);
+        }
+        self.other_frames.iter().find(|f| f.id == id).map(|f| &f.tree)
+    }
+
+    /// The rows a window of any frame shows.
+    pub fn rows_of_frame_window(&self, frame: FrameId, id: WindowId, count: usize, dark: bool) -> Vec<Row> {
+        let Some(view) = self.frame_windows(frame).into_iter().find(|v| v.id == id) else { return Vec::new() };
         let wrap = self.wrap_in(id, view.buffer);
         self.rows_in(view.buffer, view.top_line, count, dark, wrap)
     }
@@ -525,14 +666,19 @@ impl Editor {
         if self.window(id).is_none() {
             return Err(Error::new("No such window"));
         }
-        if self.windows.len() == 1 {
+        // Only the selected frame's windows count.
+        let leaves = self.window_tree.leaves();
+        if !leaves.contains(&id) {
+            return Err(Error::new("No such window"));
+        }
+        if leaves.len() == 1 {
             return Err(Error::new("Attempt to delete minibuffer or sole ordinary window"));
         }
         if id == self.selected_window {
             let next = self
                 .windows
                 .iter()
-                .filter(|w| w.id != id)
+                .filter(|w| w.id != id && leaves.contains(&w.id))
                 .max_by_key(|w| w.used)
                 .map(|w| w.id)
                 .expect("another window");

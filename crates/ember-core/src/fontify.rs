@@ -146,10 +146,16 @@ impl Editor {
         self.fontify_windows();
     }
 
+    /// Fontifies what every frame's windows show.
     fn fontify_windows(&mut self) {
-        for id in self.window_list() {
+        let windows: Vec<(crate::window::FrameId, crate::window::WindowId)> = self
+            .frame_list()
+            .into_iter()
+            .flat_map(|f| self.frame_windows(f).into_iter().map(move |v| (f, v.id)).collect::<Vec<_>>())
+            .collect();
+        for (frame, id) in windows {
             for _ in 0..PASSES {
-                let Some(view) = self.windows().into_iter().find(|v| v.id == id) else { break };
+                let Some(view) = self.frame_windows(frame).into_iter().find(|v| v.id == id) else { break };
                 if !self.has_fontifiers(view.buffer) {
                     break;
                 }

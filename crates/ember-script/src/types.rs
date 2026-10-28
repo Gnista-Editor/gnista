@@ -400,6 +400,19 @@ const API: &str = r##"
    * showing what they did. The buffer that was current is current again after.
    */
   function withCurrentBuffer<T>(buffer: string, fn: () => T): T;
+  /**
+   * Make a frame showing a buffer, the current one by default, and select
+   * it, as make-frame does. Returns the new frame. A graphical Ember shows
+   * each frame in a window of its own; a terminal shows the selected one.
+   */
+  function makeFrame(buffer?: string): number;
+  /** Delete a frame, the selected one by default, and its windows, as delete-frame does. */
+  function deleteFrame(frame?: number): void;
+  /** Make a frame the selected one, as select-frame does. */
+  function selectFrame(frame: number): void;
+  function selectedFrame(): number;
+  /** The frames, newest first, as frame-list orders them. */
+  function frameList(): number[];
   /** Make the current buffer read-only, or writable again, as setting buffer-read-only does. */
   function setReadOnly(on: boolean): void;
   /** Make a buffer of this name if there is none, without showing it, as get-buffer-create. */

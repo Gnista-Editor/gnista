@@ -166,6 +166,11 @@ pub struct Editor {
     /// The frame's size in columns and lines, mode lines included and the
     /// echo area not, once a front end has said; windows are laid out in it.
     pub(crate) frame_size: Option<(usize, usize)>,
+    /// The frames that are not selected, and every frame's id, newest first.
+    pub(crate) other_frames: Vec<crate::window::Frame>,
+    pub(crate) frame_order: Vec<crate::window::FrameId>,
+    pub(crate) selected_frame: crate::window::FrameId,
+    pub(crate) next_frame_id: crate::window::FrameId,
     pub(crate) quit: bool,
 }
 
@@ -237,6 +242,10 @@ impl Editor {
             selected_window: 1,
             next_window_id: 1,
             frame_size: None,
+            other_frames: Vec::new(),
+            frame_order: vec![1],
+            selected_frame: 1,
+            next_frame_id: 1,
             window_use: 0,
             quit: false,
         };

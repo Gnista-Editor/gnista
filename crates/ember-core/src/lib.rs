@@ -39,4 +39,4 @@ pub use properties::{Overlay, Props};
 pub use rows::{Row, Segment};
 pub use search::{Match, SearchOptions, expand_replacement, fold_case_for as search_fold_case, search, translate_regexp};
 pub use variables::{HookFn, Value, Variable};
-pub use window::{MouseEvent, WindowId, WindowRect, WindowTree, WindowView};
+pub use window::{FrameId, MouseEvent, WindowId, WindowRect, WindowTree, WindowView};

@@ -168,3 +168,61 @@ fn help_pops_up_a_window_that_q_takes_away() {
     ed.press("C-x o q").unwrap();
     assert_eq!(windows(&ed), [("*scratch*".into(), 0, true)]);
 }
+
+/// The frames, as their selected window's buffer and point, newest first,
+/// with the selected frame's position in that list.
+fn frames(ed: &Editor) -> (Vec<(String, usize)>, usize) {
+    let list = ed.frame_list();
+    let shown = list
+        .iter()
+        .map(|&f| {
+            let views = ed.frame_windows(f);
+            let view = views.iter().find(|v| v.selected).unwrap_or(&views[0]);
+            (view.buffer.name.clone(), view.point)
+        })
+        .collect();
+    (shown, list.iter().position(|&f| f == ed.selected_frame()).unwrap())
+}
+
+// As GUI Emacs does, checked by hand, since batch Emacs cannot make frames.
+#[test]
+fn frames_each_have_their_own_windows() {
+    let (mut ed, _scripting) = setup("hello");
+    ed.window_buffer_mut().name = "one".into();
+    ed.window_buffer_mut().set_point(3);
+    ed.press("C-x 5 2").unwrap();
+    assert_eq!(frames(&ed), (vec![("one".into(), 3), ("one".into(), 3)], 0), "the new frame comes first and is selected");
+    ed.press("C-f C-f").unwrap();
+    ed.press("C-x 5 o").unwrap();
+    assert_eq!(frames(&ed), (vec![("one".into(), 5), ("one".into(), 3)], 1), "each frame keeps its own point");
+    assert_eq!(point(&ed), 3);
+    ed.press("C-x 5 b").unwrap();
+    ed.type_text("two\n");
+    assert_eq!(frames(&ed).1, 0);
+    assert_eq!(frames(&ed).0.len(), 3);
+    assert_eq!(ed.window_buffer().name, "two");
+    // Windows split in one frame stay in it.
+    ed.press("C-x 2").unwrap();
+    assert_eq!(ed.window_list().len(), 2);
+    ed.press("C-x 5 o").unwrap();
+    assert_eq!(ed.window_list().len(), 1);
+    ed.press("C-x 5 1").unwrap();
+    assert_eq!(ed.frame_list().len(), 1);
+    ed.press("C-x 5 0").unwrap();
+    assert_eq!(ed.echo(), Some("Attempt to delete the sole visible or iconified frame"));
+}
+
+#[test]
+fn deleting_the_selected_frame_selects_the_next() {
+    let (mut ed, _scripting) = setup("abc");
+    ed.press("C-x 5 2 C-x 2 C-x 5 0").unwrap();
+    assert_eq!(ed.frame_list().len(), 1);
+    assert_eq!(ed.window_list().len(), 1, "the deleted frame's windows went with it");
+    // Killing a buffer shown in another frame shows another buffer there.
+    ed.press("C-x 5 2 C-x b").unwrap();
+    ed.type_text("other\n");
+    ed.press("C-x 5 o C-x k").unwrap();
+    ed.type_text("other\n");
+    let other = ed.frame_list()[0];
+    assert_eq!(ed.frame_windows(other)[0].buffer.name, "*scratch*");
+}

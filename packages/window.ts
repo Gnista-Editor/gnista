@@ -350,6 +350,84 @@ const shrinkIfLarger = ember.defineCommand({
   },
 });
 
+// Frames, as frame.el's commands, on C-x 5.
+
+const makeFrameCommand = ember.defineCommand({
+  name: "make-frame-command",
+  doc: "Make a new frame showing the current buffer, and select it.",
+  run: () => {
+    ember.makeFrame();
+  },
+});
+
+const otherFrame = ember.defineCommand({
+  name: "other-frame",
+  doc: "Select another frame, the next in frame-list's order; a prefix argument says how many on to go.",
+  run: () => {
+    const frames = ember.frameList();
+    const count = ember.prefixNumericValue(ember.prefixArg());
+    const i = frames.indexOf(ember.selectedFrame());
+    const n = frames.length;
+    ember.selectFrame(frames[(((i + count) % n) + n) % n]);
+  },
+});
+
+const deleteFrameCommand = ember.defineCommand({
+  name: "delete-frame",
+  doc: "Delete the selected frame and its windows. The only frame cannot be deleted.",
+  run: () => ember.deleteFrame(),
+});
+
+const deleteOtherFrames = ember.defineCommand({
+  name: "delete-other-frames",
+  doc: "Delete every frame but the selected one.",
+  run: () => {
+    const selected = ember.selectedFrame();
+    for (const frame of ember.frameList()) if (frame !== selected) ember.deleteFrame(frame);
+  },
+});
+
+const switchToBufferOtherFrame = ember.defineCommand({
+  name: "switch-to-buffer-other-frame",
+  doc: "Show a buffer in a new frame and select it, creating the buffer if there is none.",
+  params: [{ name: "buffer", kind: "buffer", prompt: "Switch to buffer in other frame: " }],
+  run: (buffer) => {
+    const name = buffer === "" ? (ember.windowBuffer() ?? "*scratch*") : buffer;
+    ember.getBufferCreate(name);
+    ember.makeFrame(name);
+  },
+});
+
+const findFileOtherFrame = ember.defineCommand({
+  name: "find-file-other-frame",
+  doc: "Visit a file in a new frame and select it.",
+  params: [{ name: "file", kind: "file", prompt: "Find file in other frame: " }],
+  run: (file) => {
+    ember.makeFrame(ember.findFileNoselect(file));
+  },
+});
+
+const displayBufferOtherFrame = ember.defineCommand({
+  name: "display-buffer-other-frame",
+  doc: "Show a buffer in a new frame, leaving the selected frame selected.",
+  params: [{ name: "buffer", kind: "buffer", prompt: "Display buffer in other frame: " }],
+  run: (buffer) => {
+    const selected = ember.selectedFrame();
+    ember.getBufferCreate(buffer);
+    ember.makeFrame(buffer);
+    ember.selectFrame(selected);
+  },
+});
+
+ember.bindKey("C-x 5 2", makeFrameCommand);
+ember.bindKey("C-x 5 o", otherFrame);
+ember.bindKey("C-x 5 0", deleteFrameCommand);
+ember.bindKey("C-x 5 1", deleteOtherFrames);
+ember.bindKey("C-x 5 b", switchToBufferOtherFrame);
+ember.bindKey("C-x 5 f", findFileOtherFrame);
+ember.bindKey("C-x 5 C-f", findFileOtherFrame);
+ember.bindKey("C-x 5 C-o", displayBufferOtherFrame);
+
 ember.bindKey("C-x 2", splitBelow);
 ember.bindKey("C-x 3", splitRight);
 ember.bindKey("C-x o", otherWindow);

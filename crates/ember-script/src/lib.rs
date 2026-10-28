@@ -994,6 +994,28 @@ fn install_native_windows<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs
         })?,
     )?;
     native.set(
+        "makeFrame",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, buffer: Option<String>| {
+            with_editor(&ctx, |ed| ed.make_frame(buffer.as_deref()))
+        })?,
+    )?;
+    native.set(
+        "deleteFrame",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, frame: Option<u64>| with_editor(&ctx, |ed| ed.delete_frame(frame)))?,
+    )?;
+    native.set(
+        "selectFrame",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, frame: u64| with_editor(&ctx, |ed| ed.select_frame(frame)))?,
+    )?;
+    native.set(
+        "selectedFrame",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.selected_frame())))?,
+    )?;
+    native.set(
+        "frameList",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.frame_list())))?,
+    )?;
+    native.set(
         "setWindowBuffer",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64, buffer: String| {
             with_editor(&ctx, |ed| ed.set_window_buffer(window, &buffer))

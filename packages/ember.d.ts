@@ -66,6 +66,18 @@ declare global {
        */
       "delete-forward-char": [];
       /**
+       * Delete the selected frame and its windows. The only frame cannot be deleted.
+       *
+       * Defined in packages/window.ts.
+       */
+      "delete-frame": [];
+      /**
+       * Delete every frame but the selected one.
+       *
+       * Defined in packages/window.ts.
+       */
+      "delete-other-frames": [];
+      /**
        * Make the selected window fill the frame, deleting the others.
        *
        * Defined in packages/window.ts.
@@ -144,6 +156,14 @@ declare global {
        */
       "display-buffer": [buffer: string];
       /**
+       * Show a buffer in a new frame, leaving the selected frame selected.
+       *
+       * @param buffer buffer name
+       *
+       * Defined in packages/window.ts.
+       */
+      "display-buffer-other-frame": [buffer: string];
+      /**
        * Insert a newline. With electric-indent-mode on, as it is by default, that is all; RET is the key that indents.
        *
        * Defined in packages/simple.ts.
@@ -209,6 +229,14 @@ declare global {
        * @param file file name
        */
       "find-file": [file: string];
+      /**
+       * Visit a file in a new frame and select it.
+       *
+       * @param file file name
+       *
+       * Defined in packages/window.ts.
+       */
+      "find-file-other-frame": [file: string];
       /**
        * Visit a file in another window and select it.
        *
@@ -465,6 +493,12 @@ declare global {
        * @param file file name
        */
       "load-file": [file: string];
+      /**
+       * Make a new frame showing the current buffer, and select it.
+       *
+       * Defined in packages/window.ts.
+       */
+      "make-frame-command": [];
       /**
        * Put point at the beginning of the buffer and the mark at the end.
        */
@@ -1582,6 +1616,12 @@ declare global {
        */
       "org-yank": [];
       /**
+       * Select another frame, the next in frame-list's order; a prefix argument says how many on to go.
+       *
+       * Defined in packages/window.ts.
+       */
+      "other-frame": [];
+      /**
        * Select another window, the next in cyclic order.
        *
        * A prefix argument says how many windows on to go; a negative one goes back.
@@ -1985,6 +2025,14 @@ declare global {
        * @param buffer buffer name
        */
       "switch-to-buffer": [buffer: string];
+      /**
+       * Show a buffer in a new frame and select it, creating the buffer if there is none.
+       *
+       * @param buffer buffer name
+       *
+       * Defined in packages/window.ts.
+       */
+      "switch-to-buffer-other-frame": [buffer: string];
       /**
        * Show a buffer in another window and select it, creating the buffer if there is none.
        *
@@ -3461,6 +3509,19 @@ declare global {
      * showing what they did. The buffer that was current is current again after.
      */
     function withCurrentBuffer<T>(buffer: string, fn: () => T): T;
+    /**
+     * Make a frame showing a buffer, the current one by default, and select
+     * it, as make-frame does. Returns the new frame. A graphical Ember shows
+     * each frame in a window of its own; a terminal shows the selected one.
+     */
+    function makeFrame(buffer?: string): number;
+    /** Delete a frame, the selected one by default, and its windows, as delete-frame does. */
+    function deleteFrame(frame?: number): void;
+    /** Make a frame the selected one, as select-frame does. */
+    function selectFrame(frame: number): void;
+    function selectedFrame(): number;
+    /** The frames, newest first, as frame-list orders them. */
+    function frameList(): number[];
     /** Make the current buffer read-only, or writable again, as setting buffer-read-only does. */
     function setReadOnly(on: boolean): void;
     /** Make a buffer of this name if there is none, without showing it, as get-buffer-create. */

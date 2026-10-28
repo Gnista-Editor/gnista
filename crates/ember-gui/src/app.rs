@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use ember_core::display::{Glyph, completion_list, cursor_index, display_width, row_glyphs};
 use ember_core::display::position_at_column;
-use ember_core::{Arg, Editor, Key, KeyCode, MouseEvent, MouseKind, Row, Style, WindowId, WindowView};
+use ember_core::{Arg, Editor, FrameId, Key, KeyCode, MouseEvent, MouseKind, Row, Style, WindowId, WindowView};
 use egui::text::{CCursor, LayoutJob, TextFormat};
 use egui::{
     Color32, FontFamily, FontId, Galley, Painter, PointerButton, Pos2, Rect, Stroke, StrokeKind, Ui,
@@ -39,6 +39,12 @@ pub struct EmberApp {
     /// and the script runtime its eval_typescript tool uses.
     agent: Option<std::sync::mpsc::Receiver<ember_mcp::socket::Request>>,
     scripting: Option<ember_script::Scripting>,
+    /// The frame this native window shows; the others get windows of their own.
+    main_frame: FrameId,
+    /// Each frame's last title, and the frame last selected, to focus its
+    /// window when another is selected.
+    titles: std::collections::HashMap<FrameId, String>,
+    focused_frame: FrameId,
 }
 
 /// How long a second click may follow the first to count as a double click, in seconds.
@@ -77,6 +83,9 @@ impl EmberApp {
             mouse: Mouse::default(),
             agent: None,
             scripting: None,
+            main_frame: 1,
+            titles: std::collections::HashMap::new(),
+            focused_frame: 1,
         }
     }
 
@@ -102,34 +111,100 @@ impl EmberApp {
         }
     }
 
-    /// Handles this frame's input and draws the editor into `ui`.
+    /// Handles this frame's input and draws the editor into `ui`: the main
+    /// frame here, and each other frame in a native window of its own.
     pub fn show(&mut self, ui: &mut Ui) {
         let ctx = ui.ctx().clone();
         self.handle_close(&ctx);
-        // Window sizes first, for the commands this frame's keys run.
-        let before = Layout::new(ui, &mut self.editor);
-        let events = ctx.input(|i| i.events.clone());
-        let time = ctx.input(|i| i.time);
-        for event in &events {
-            self.pointer(event, &before, time);
+        self.answer_agent();
+        // Where native windows cannot open, embedded in this one instead, as
+        // in tests, this window shows the selected frame, as a terminal does.
+        if ctx.embed_viewports() {
+            self.main_frame = self.editor.selected_frame();
+            let main = self.main_frame;
+            self.show_frame(ui, main);
+            return;
         }
-        for input in translate(&events, self.mac) {
-            match input {
-                Input::Key(key) => self.editor.handle_key(key),
-                Input::Paste(text) => {
-                    if let Err(e) = self.editor.call("insert", vec![Arg::Str(text)]) {
-                        self.editor.message(e.to_string());
+        if !self.editor.frame_list().contains(&self.main_frame) {
+            self.main_frame = *self.editor.frame_list().last().expect("there is always a frame");
+        }
+        let main = self.main_frame;
+        self.show_frame(ui, main);
+        for frame in self.editor.frame_list() {
+            if frame == main {
+                continue;
+            }
+            let title = self.titles.get(&frame).cloned().unwrap_or_else(|| "Ember".into());
+            let builder = egui::ViewportBuilder::default().with_title(title).with_inner_size([960.0, 680.0]);
+            ctx.show_viewport_immediate(frame_viewport(frame), builder, |ctx, _class| {
+                // Closing a frame's window deletes the frame.
+                if ctx.input(|i| i.viewport().close_requested()) {
+                    let _ = self.editor.delete_frame(Some(frame));
+                    return;
+                }
+                egui::CentralPanel::default().frame(egui::Frame::NONE).show(ctx, |ui| self.show_frame(ui, frame));
+            });
+        }
+        // A frame newly selected, as by C-x 5 o, gets the focus.
+        let selected = self.editor.selected_frame();
+        if selected != self.focused_frame {
+            self.focused_frame = selected;
+            let viewport = if selected == self.main_frame { egui::ViewportId::ROOT } else { frame_viewport(selected) };
+            ctx.send_viewport_cmd_to(viewport, ViewportCommand::Focus);
+        }
+    }
+
+    /// Handles one frame's input, in the native window that shows it, and
+    /// draws it. Input there selects the frame first, as clicking or typing
+    /// in an Emacs frame selects it.
+    fn show_frame(&mut self, ui: &mut Ui, frame: FrameId) {
+        let ctx = ui.ctx().clone();
+        let events = ctx.input(|i| i.events.clone());
+        let input = events.iter().any(|e| {
+            matches!(
+                e,
+                egui::Event::Key { pressed: true, .. }
+                    | egui::Event::Text(_)
+                    | egui::Event::Paste(_)
+                    | egui::Event::PointerButton { pressed: true, .. }
+                    | egui::Event::MouseWheel { .. }
+            )
+        });
+        if input && frame != self.editor.selected_frame() {
+            let _ = self.editor.select_frame(frame);
+            self.focused_frame = frame;
+        }
+        let selected = frame == self.editor.selected_frame();
+        // Window sizes first, for the commands this frame's keys run.
+        let before = Layout::new(ui, &mut self.editor, frame);
+        if selected {
+            let time = ctx.input(|i| i.time);
+            for event in &events {
+                self.pointer(event, &before, time);
+            }
+            for input in translate(&events, self.mac) {
+                match input {
+                    Input::Key(key) => self.editor.handle_key(key),
+                    Input::Paste(text) => {
+                        if let Err(e) = self.editor.call("insert", vec![Arg::Str(text)]) {
+                            self.editor.message(e.to_string());
+                        }
                     }
                 }
             }
         }
-        self.answer_agent();
+        if !self.editor.frame_list().contains(&frame) {
+            return;
+        }
+        let frame_selected = frame == self.editor.selected_frame();
         if self.view() != self.scroll_anchor {
             self.scroll_offset = 0.0;
         }
         // Input may have split or deleted windows.
-        let layout = Layout::new(ui, &mut self.editor);
-        self.scroll(&ctx, &layout);
+        let layout = Layout::new(ui, &mut self.editor, frame);
+        if frame_selected {
+            self.scroll(&ctx, &layout);
+        }
         let top = self.editor.window_buffer().top_line;
         self.editor.redisplay();
         if self.editor.window_buffer().top_line != top && self.scroll_window == self.editor.selected_window() {
@@ -138,12 +213,13 @@ impl EmberApp {
         self.scroll_anchor = self.view();
 
         if self.editor.should_quit() {
-            ctx.send_viewport_cmd(ViewportCommand::Close);
+            ctx.send_viewport_cmd_to(egui::ViewportId::ROOT, ViewportCommand::Close);
         }
-        self.update_title(&ctx);
-        let focused = ctx.input(|i| i.focused);
-        let scroll = (self.scroll_window, self.scroll_offset);
-        draw(ui, &self.editor, &layout, Tokens::get(&ctx), focused, scroll);
+        self.update_title(&ctx, frame);
+        // The selected frame's window types into it, so only it shows filled cursors.
+        let focused = ctx.input(|i| i.focused) && frame_selected;
+        let scroll = if frame_selected { (self.scroll_window, self.scroll_offset) } else { (0, 0.0) };
+        draw(ui, &self.editor, frame, &layout, Tokens::get(&ctx), focused, scroll);
     }
 
     /// The window the scroll offset applies to, its buffer and its top line.
@@ -286,13 +362,27 @@ impl EmberApp {
         }
     }
 
-    fn update_title(&mut self, ctx: &egui::Context) {
-        let title = format!("{} — Ember", self.editor.window_buffer().name);
-        if title != self.title {
+    /// The native window's title: the buffer its frame's selected window shows.
+    fn update_title(&mut self, ctx: &egui::Context, frame: FrameId) {
+        let name = if frame == self.editor.selected_frame() {
+            self.editor.window_buffer().name.clone()
+        } else {
+            self.editor.frame_windows(frame).first().map_or_else(String::new, |w| w.buffer.name.clone())
+        };
+        let title = format!("{name} — Ember");
+        if self.titles.get(&frame) != Some(&title) {
             ctx.send_viewport_cmd(ViewportCommand::Title(title.clone()));
-            self.title = title;
+            if frame == self.main_frame {
+                self.title = title.clone();
+            }
+            self.titles.insert(frame, title);
         }
     }
+}
+
+/// The native window that shows a frame other than the main one.
+fn frame_viewport(frame: FrameId) -> egui::ViewportId {
+    egui::ViewportId::from_hash_of(("ember-frame", frame))
 }
 
 /// How the cursor is drawn. Emacs shows a hollow box when the window is not
@@ -337,8 +427,8 @@ impl WindowLayout {
 }
 
 impl Layout {
-    /// Lays the frame out and tells the editor how big each window is.
-    fn new(ui: &Ui, ed: &mut Editor) -> Layout {
+    /// Lays a frame out and tells the editor how big each of its windows is.
+    fn new(ui: &Ui, ed: &mut Editor, frame: FrameId) -> Layout {
         let rect = ui.max_rect();
         let font = FontId::new(TEXT_SIZE, FontFamily::Monospace);
         let em = ui.painter().layout_no_wrap("M".to_string(), font.clone(), Color32::PLACEHOLDER);
@@ -347,9 +437,11 @@ impl Layout {
         let echo_rect = Rect::from_min_max(pos2(rect.left(), rect.bottom() - bar_height), rect.max);
         let frame_height = echo_rect.top() - rect.top();
         // The frame in cells, which resized windows' sizes count in.
-        ed.set_frame_size((rect.width() / m.char_width) as usize, (frame_height / m.line_height) as usize);
-        let windows: Vec<WindowLayout> = ed
-            .window_tree()
+        if frame == ed.selected_frame() {
+            ed.set_frame_size((rect.width() / m.char_width) as usize, (frame_height / m.line_height) as usize);
+        }
+        let tree = ed.frame_tree(frame).cloned().unwrap_or(ember_core::WindowTree::Leaf(0));
+        let windows: Vec<WindowLayout> = tree
             .rects(rect.left(), rect.top(), rect.width(), frame_height, (m.char_width, m.line_height))
             .into_iter()
             .map(|r| {
@@ -370,12 +462,12 @@ impl Layout {
     }
 }
 
-fn draw(ui: &Ui, ed: &Editor, layout: &Layout, t: Tokens, focused: bool, scroll: (WindowId, f32)) {
+fn draw(ui: &Ui, ed: &Editor, frame: FrameId, layout: &Layout, t: Tokens, focused: bool, scroll: (WindowId, f32)) {
     let painter = ui.painter().clone();
     painter.rect_filled(layout.rect, 0.0, t.bg);
     let m = &layout.m;
     let in_minibuffer = ed.prompt().is_some();
-    for window in ed.windows() {
+    for window in ed.frame_windows(frame) {
         let Some(w) = layout.windows.iter().find(|w| w.id == window.id) else { continue };
         // Other windows show a hollow cursor, as Emacs's do.
         let cursor = if window.selected && focused && !in_minibuffer {
@@ -387,14 +479,17 @@ fn draw(ui: &Ui, ed: &Editor, layout: &Layout, t: Tokens, focused: bool, scroll:
         let clip = Rect::from_min_max(w.rect.min, pos2(w.rect.right(), w.mode_rect.top()));
         let offset = if window.id == scroll.0 { scroll.1 } else { 0.0 };
         let view = View { area: w.text_rect, clip, rows: w.rows(m), scroll_offset: offset };
-        draw_buffer(&painter, ed, &window, &view, m, t, cursor);
+        draw_buffer(&painter, ed, frame, &window, &view, m, t, cursor);
         draw_mode_line(&painter, ed, &window, w.mode_rect, m, t);
         if w.divider {
             painter.vline(w.rect.right() - 0.5, w.rect.y_range(), Stroke::new(1.0, t.line));
         }
     }
-    let echo_cursor = if focused { CursorStyle::Filled } else { CursorStyle::Hollow };
-    draw_echo_area(&painter, ed, layout.echo_rect, m, t, echo_cursor);
+    // Each frame has an echo area; the prompt shows in the selected frame's.
+    if frame == ed.selected_frame() {
+        let echo_cursor = if focused { CursorStyle::Filled } else { CursorStyle::Hollow };
+        draw_echo_area(&painter, ed, layout.echo_rect, m, t, echo_cursor);
+    }
 }
 
 /// What is under a point of the window, for a mouse event: an editor
@@ -441,9 +536,11 @@ struct View {
     scroll_offset: f32,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn draw_buffer(
     painter: &Painter,
     ed: &Editor,
+    frame: FrameId,
     window: &WindowView,
     view: &View,
     m: &Metrics,
@@ -454,7 +551,7 @@ fn draw_buffer(
     let b = window.buffer;
     let tab_width = ed.tab_width_in(b);
     // One extra row, partly shown, when scrolled between lines.
-    let rows = ed.rows_of_window(window.id, view.rows + 1, t.dark);
+    let rows = ed.rows_of_frame_window(frame, window.id, view.rows + 1, t.dark);
     let default_style = ed.style_for(&["default".to_string()], t.dark);
     let region_style = ed.style_for(&["region".to_string()], t.dark);
     let selection = region_style.background.map(color32).unwrap_or(t.selection);

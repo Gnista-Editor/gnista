@@ -176,6 +176,11 @@
     },
     screenLine: (position) => native.screenLine(position),
     windowBuffer: (window) => native.windowBuffer(window ?? native.selectedWindow()) ?? undefined,
+    makeFrame: (buffer) => native.makeFrame(buffer ?? null),
+    deleteFrame: (frame) => native.deleteFrame(frame ?? null),
+    selectFrame: (frame) => native.selectFrame(frame),
+    selectedFrame: () => native.selectedFrame(),
+    frameList: () => native.frameList(),
     getBufferCreate: (name) => native.getBufferCreate(name),
     setReadOnly: (on) => native.setReadOnly(Boolean(on)),
     withCurrentBuffer: (name, fn) => {

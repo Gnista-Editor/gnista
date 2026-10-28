@@ -421,3 +421,26 @@ fn dragging_a_mode_line_resizes_the_windows() {
     // A drag on the mode line is not a click in the text.
     assert_eq!(h.state().editor.window_buffer().active_region(), None);
 }
+
+#[test]
+fn the_selected_frame_shows_where_windows_cannot_open() {
+    let mut ed = sample();
+    let _scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    ed.press("C-x 5 2 C-x 2").unwrap();
+    let mut h = harness(ed, Theme::Dark);
+    h.run();
+    // The test harness embeds viewports, as a browser would, so the one
+    // window shows the selected frame, with its two windows, as a terminal does.
+    assert_eq!(h.state().editor.frame_list().len(), 2);
+    assert_eq!(h.state().editor.window_list().len(), 2);
+    h.event(Event::Text("x".into()));
+    h.run();
+    let b = h.state().editor.window_buffer();
+    assert!(b.slice(0..b.len()).contains("editorx"), "typing goes to the selected frame");
+    h.key_press_modifiers(Modifiers::CTRL, Key::X);
+    h.event(Event::Text("5".into()));
+    h.event(Event::Text("o".into()));
+    h.run();
+    assert_eq!(h.state().editor.selected_frame(), 1);
+    assert_eq!(h.state().editor.window_list().len(), 1, "the first frame has one window");
+}
