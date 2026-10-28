@@ -660,8 +660,17 @@ function moveColumn(left: boolean): void {
     const m = /^\|([^|\n]+)\|([^|\n]+)\|/.exec(restOfLine());
     if (m) {
       const p = ember.point();
-      edDelete(p + 1, p + 2 + charCount(m[1]) + charCount(m[2]));
-      edInsert(p + 1, `${m[2]}|${m[1]}`);
+      const [len1, len2] = [charCount(m[1]), charCount(m[2])];
+      const [start1, end1, start2, end2] = [p + 1, p + 1 + len1, p + 2 + len1, p + 2 + len1 + len2];
+      // As transpose-regions does, markers in the fields go with their text.
+      const moved = (x: number): number =>
+        x < start1 || x >= end2 ? x : x < end1 ? x + len2 + 1 : x < start2 ? x + len2 - len1 : x - len1 - 1;
+      const mark = ember.mark();
+      const saved = markers.map((k) => moved(k.pos));
+      edDelete(start1, end2);
+      edInsert(start1, `${m[2]}|${m[1]}`);
+      markers.forEach((k, i) => (k.pos = saved[i]));
+      if (mark !== undefined) ember.setMark(moved(mark));
     }
   });
   gotoColumn(colpos);

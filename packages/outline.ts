@@ -233,8 +233,10 @@ ember.defineCommand({
     if (ember.calledInteractively() && ember.lastCommand() !== "outline-up-heading") ember.pushMark(ember.point());
     ember.gotoChar(ember.lineStart(ember.lineOf(ember.point())));
     const all = headings();
-    const current = currentHeading(all);
+    let current = currentHeading(all);
     if (current === undefined) throw new Error("Before first heading");
+    // From the nearest heading that shows, as outline-back-to-heading finds it.
+    while (current > 0 && ember.invisibleAt(all[current].start)) current--;
     // As in Emacs, only a top-level heading is an error; a deeper one with
     // no heading above it goes to the start of the buffer.
     ember.gotoChar(all[current].start);
@@ -244,7 +246,9 @@ ember.defineCommand({
     for (let n = ember.prefixNumericValue(); n > 0 && i !== undefined; n--) {
       const level: number = all[i].level;
       let parent: number | undefined;
-      for (let k = i - 1; k >= 0 && parent === undefined; k--) if (all[k].level < level) parent = k;
+      for (let k = i - 1; k >= 0 && parent === undefined; k--) {
+        if (all[k].level < level && !ember.invisibleAt(all[k].start)) parent = k;
+      }
       i = parent;
       target = parent === undefined ? 0 : all[parent].start;
     }

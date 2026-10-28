@@ -1508,5 +1508,121 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "seed15-0338-c-y-m-left",
+    "text": "| 12 | yy |",
+    "keys": "C-y M-<left>",
+    "point": 8,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed15-1635-m-up-c-f-m-up",
+    "text": "   - read\n#+BEGIN_SRC\n#+END_SRC\ncall <2026-10-24 Wed>\n",
+    "keys": "M-<up> C-f M-<up>",
+    "point": 31,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed15-0886-c-u-tab-tab",
+    "text": "** gamma\nSCHEDULED: <2026-10-28 Wed>\n*** TODO [#C] beta notes",
+    "keys": "C-u TAB TAB",
+    "point": 49,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed15-1523-c-u-tab-c-c-c-u",
+    "text": "* alpha call\n** beta\n",
+    "keys": "C-u TAB C-c C-u",
+    "point": 21,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "babel-session-up",
+    "text": "x\n#+BEGIN_SRC\ncode\n#+END_SRC\n",
+    "keys": "M-<up>",
+    "point": 14,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "babel-session-down",
+    "text": "x\n#+BEGIN_SRC\ncode\n#+END_SRC\ny\n",
+    "keys": "M-<down>",
+    "point": 14,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "babel-session-up-lang",
+    "text": "x\n#+begin_src emacs-lisp\ncode\n#+end_src\n",
+    "keys": "M-<up>",
+    "point": 25,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "babel-session-down-lang",
+    "text": "x\n#+begin_src python\ncode\n#+end_src\ny\n",
+    "keys": "M-<down>",
+    "point": 22,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "babel-session-up-begin",
+    "text": "x\n#+BEGIN_SRC\ncode\n#+END_SRC\n",
+    "keys": "M-<up>",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "babel-session-up-blank-after",
+    "text": "x\n#+BEGIN_SRC\ncode\n#+END_SRC\n\ny",
+    "keys": "M-<up>",
+    "point": 27,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "babel-session-up-example",
+    "text": "x\n#+BEGIN_EXAMPLE\ncode\n#+END_EXAMPLE\n",
+    "keys": "M-<up>",
+    "point": 18,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "up-heading-from-hidden-text",
+    "text": "* a\n** b\n*** c\n",
+    "keys": "C-c C-n C-c C-n C-u TAB C-c C-u",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-column-takes-the-mark",
+    "text": "| a | bb | c |\n",
+    "keys": "C-SPC C-f M-<right>",
+    "point": 7,
+    "modes": [
+      "org-mode"
+    ]
   }
 ]

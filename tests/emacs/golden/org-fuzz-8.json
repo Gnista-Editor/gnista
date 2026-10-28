@@ -3740,6 +3740,279 @@
       "kill_ring": [],
       "modified": false,
       "error": null
+    },
+    {
+      "name": "seed15-0338-c-y-m-left",
+      "input": {
+        "text": "| 12 | yy |",
+        "point": 8,
+        "keys": "C-y M-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| yy | 12 |",
+      "visible": "| yy | 12 |",
+      "point": 2,
+      "mark": 3,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Kill ring is empty"
+    },
+    {
+      "name": "seed15-1635-m-up-c-f-m-up",
+      "input": {
+        "text": "   - read\n#+BEGIN_SRC\n#+END_SRC\ncall <2026-10-24 Wed>\n",
+        "point": 31,
+        "keys": "M-<up> C-f M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "   - read\ncall <2026-10-24 Wed>\n#+BEGIN_SRC\n#+END_SRC\n",
+      "visible": "   - read\ncall <2026-10-24 Wed>\n#+BEGIN_SRC\n#+END_SRC\n",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "No org-babel-load-session function for nil!"
+    },
+    {
+      "name": "seed15-0886-c-u-tab-tab",
+      "input": {
+        "text": "** gamma\nSCHEDULED: <2026-10-28 Wed>\n*** TODO [#C] beta notes",
+        "point": 49,
+        "keys": "C-u TAB TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** gamma\nSCHEDULED: <2026-10-28 Wed>\n*** TODO [#C] beta notes",
+      "visible": "** gamma\n*** TODO [#C] beta notes",
+      "point": 49,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed15-1523-c-u-tab-c-c-c-u",
+      "input": {
+        "text": "* alpha call\n** beta\n",
+        "point": 21,
+        "keys": "C-u TAB C-c C-u",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* alpha call\n** beta\n",
+      "visible": "* alpha call\n",
+      "point": 0,
+      "mark": 21,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Already at top level of the outline"
+    },
+    {
+      "name": "babel-session-up",
+      "input": {
+        "text": "x\n#+BEGIN_SRC\ncode\n#+END_SRC\n",
+        "point": 14,
+        "keys": "M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "x\n#+BEGIN_SRC\ncode\n#+END_SRC\n",
+      "visible": "x\n#+BEGIN_SRC\ncode\n#+END_SRC\n",
+      "point": 14,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No org-babel-load-session function for nil!"
+    },
+    {
+      "name": "babel-session-down",
+      "input": {
+        "text": "x\n#+BEGIN_SRC\ncode\n#+END_SRC\ny\n",
+        "point": 14,
+        "keys": "M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "x\n#+BEGIN_SRC\ncode\n#+END_SRC\ny\n",
+      "visible": "x\n#+BEGIN_SRC\ncode\n#+END_SRC\ny\n",
+      "point": 14,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "This block is not using a session!"
+    },
+    {
+      "name": "babel-session-up-lang",
+      "input": {
+        "text": "x\n#+begin_src emacs-lisp\ncode\n#+end_src\n",
+        "point": 25,
+        "keys": "M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "x\n#+begin_src emacs-lisp\ncode\n#+end_src\n",
+      "visible": "x\n#+begin_src emacs-lisp\ncode\n#+end_src\n",
+      "point": 25,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No org-babel-load-session function for emacs-lisp!"
+    },
+    {
+      "name": "babel-session-down-lang",
+      "input": {
+        "text": "x\n#+begin_src python\ncode\n#+end_src\ny\n",
+        "point": 22,
+        "keys": "M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "x\n#+begin_src python\ncode\n#+end_src\ny\n",
+      "visible": "x\n#+begin_src python\ncode\n#+end_src\ny\n",
+      "point": 22,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "This block is not using a session!"
+    },
+    {
+      "name": "babel-session-up-begin",
+      "input": {
+        "text": "x\n#+BEGIN_SRC\ncode\n#+END_SRC\n",
+        "point": 2,
+        "keys": "M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "x\n#+BEGIN_SRC\ncode\n#+END_SRC\n",
+      "visible": "x\n#+BEGIN_SRC\ncode\n#+END_SRC\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No org-babel-load-session function for nil!"
+    },
+    {
+      "name": "babel-session-up-blank-after",
+      "input": {
+        "text": "x\n#+BEGIN_SRC\ncode\n#+END_SRC\n\ny",
+        "point": 27,
+        "keys": "M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "x\n#+BEGIN_SRC\ncode\n#+END_SRC\n\ny",
+      "visible": "x\n#+BEGIN_SRC\ncode\n#+END_SRC\n\ny",
+      "point": 27,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No org-babel-load-session function for nil!"
+    },
+    {
+      "name": "babel-session-up-example",
+      "input": {
+        "text": "x\n#+BEGIN_EXAMPLE\ncode\n#+END_EXAMPLE\n",
+        "point": 18,
+        "keys": "M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "#+BEGIN_EXAMPLE\ncode\n#+END_EXAMPLE\nx\n",
+      "visible": "#+BEGIN_EXAMPLE\ncode\n#+END_EXAMPLE\nx\n",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "up-heading-from-hidden-text",
+      "input": {
+        "text": "* a\n** b\n*** c\n",
+        "point": 0,
+        "keys": "C-c C-n C-c C-n C-u TAB C-c C-u",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\n** b\n*** c\n",
+      "visible": "* a\n",
+      "point": 0,
+      "mark": 9,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Already at top level of the outline"
+    },
+    {
+      "name": "move-column-takes-the-mark",
+      "input": {
+        "text": "| a | bb | c |\n",
+        "point": 7,
+        "keys": "C-SPC C-f M-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a | c | bb |\n",
+      "visible": "| a | c | bb |\n",
+      "point": 10,
+      "mark": 11,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
     }
   ]
 }

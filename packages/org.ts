@@ -563,7 +563,12 @@ function endOfHidden(line: number): number {
 }
 
 /** Cycles a heading's subtree, as org-cycle-internal-local does. */
-function cycleHeading(all: Heading[], i: number): void {
+/**
+ * Cycles heading i's subtree, as org-cycle-internal-local does. Org works
+ * out the subtree from the heading that shows, but shows the children view
+ * around point, which may be on a hidden heading `at` below it.
+ */
+function cycleHeading(all: Heading[], i: number, at = i): void {
   const h = all[i];
   const eoh = h.end;
   const eos = subtreeEnd(all, i);
@@ -586,9 +591,10 @@ function cycleHeading(all: Heading[], i: number): void {
   const hiddenInOneLine = eol >= eos || /^\s*$/.test(ember.bufferText(eol, eos));
   if (hiddenInOneLine && !hasChildren) skipped = true;
   if (hiddenInOneLine && hasChildren) {
-    showEntry(all, i);
-    showChildren(all, i);
-    for (const a of ancestors(all, i)) {
+    showEntry(all, at);
+    showChildren(all, at);
+    showHeadingLine(all[at]);
+    for (const a of ancestors(all, at)) {
       showHeadingLine(all[a]);
       showChildren(all, a);
     }
@@ -2937,9 +2943,10 @@ function orgCycle(arg: ember.PrefixArg): void {
     if (here) {
       // On a hidden heading, the one cycled is the nearest that shows above,
       // as org-back-to-heading finds it.
-      let [all, i] = here;
+      const [all, at] = here;
+      let i = at;
       while (i > 0 && ember.invisibleAt(all[i].start)) i--;
-      cycleHeading(all, i);
+      cycleHeading(all, i, at);
       return;
     }
     if (itemLine(line)) {
@@ -5606,10 +5613,27 @@ function transposeRegionLines(up: boolean, a: number, b: number): void {
   }
 }
 
+/**
+ * In a source block, M-<up> and M-<down> are Babel's first, from
+ * org-metaup-hook and org-metadown-hook: they load the block into a session
+ * or go to its session. Ember has no Babel sessions, so this fails as Org
+ * does for a language without them.
+ */
+function babelSessionHook(action: "load" | "pop"): void {
+  const el = elementAt(ember.point());
+  if (el?.type !== "src-block") return;
+  const header = ember.lineText(lineAt(el.begin));
+  const lang = /^[ \t]*#\+begin_src[ \t]+([^ \t:]\S*)/i.exec(header)?.[1] ?? "nil";
+  if (action === "load") throw new Error(`No org-babel-load-session function for ${lang}!`);
+  if (!/:session/.test(header)) throw new Error("This block is not using a session!");
+  throw new Error(`No org-babel-initiate-session function for ${lang}!`);
+}
+
 const metaUp = ember.defineCommand({
   name: "org-metaup",
   doc: "M-<up> in Org: move a subtree, an item or a table row up past the one before it.",
   run: () => {
+    babelSessionHook("load");
     if (metaRegion(true)) return;
     if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-move-row-up");
     else if (headingHere()) ember.call("org-move-subtree-up");
@@ -5622,6 +5646,7 @@ const metaDown = ember.defineCommand({
   name: "org-metadown",
   doc: "M-<down> in Org: move a subtree, an item or a table row down past the one after it.",
   run: () => {
+    babelSessionHook("pop");
     if (metaRegion(false)) return;
     if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-move-row-down");
     else if (headingHere()) ember.call("org-move-subtree-down");
