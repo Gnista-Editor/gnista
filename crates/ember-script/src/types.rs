@@ -497,6 +497,11 @@ const API: &str = r##"
    */
   function bufferSize(): number;
   /**
+   * A count of the changes to the current buffer's text, as Emacs's
+   * buffer-modified-tick: it is larger after any edit.
+   */
+  function bufferModifiedTick(): number;
+  /**
    * Make text whose invisible property is `name` hidden in this buffer
    * (Emacs's add-to-invisibility-spec); with `ellipsis`, shown as "...".
    */

@@ -321,6 +321,12 @@ pub(crate) fn install(ed: &mut Editor) {
         Variable::new("tab-width", "How many columns apart tab stops are, for showing tab characters.", 8.0)
             .local(),
         Variable::new(
+            "indent-tabs-mode",
+            "Whether indenting uses tabs as well as spaces, a tab for every tab-width columns.",
+            true,
+        )
+        .local(),
+        Variable::new(
             "delete-active-region",
             "Whether DEL and <delete> delete the active region rather than one character.\n\nIf the value is \"kill\", they kill the region instead, so it can be yanked back.",
             true,

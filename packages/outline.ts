@@ -227,11 +227,16 @@ ember.defineCommand({
   name: "outline-up-heading",
   doc: "Move to the heading above the one point is under, a level higher, or as many levels as the prefix argument says.",
   run: () => {
+    // As in Emacs, the mark is pushed and point goes to the start of its
+    // line before anything can fail.
+    if (ember.calledInteractively() && ember.lastCommand() !== "outline-up-heading") ember.pushMark(ember.point());
+    ember.gotoChar(ember.lineStart(ember.lineOf(ember.point())));
     const all = headings();
     const current = currentHeading(all);
     if (current === undefined) throw new Error("Before first heading");
     // As in Emacs, only a top-level heading is an error; a deeper one with
     // no heading above it goes to the start of the buffer.
+    ember.gotoChar(all[current].start);
     if (all[current].level === 1) throw new Error("Already at top level of the outline");
     let target = all[current].start;
     let i: number | undefined = current;
@@ -242,7 +247,6 @@ ember.defineCommand({
       i = parent;
       target = parent === undefined ? 0 : all[parent].start;
     }
-    if (ember.calledInteractively() && ember.lastCommand() !== "outline-up-heading") ember.pushMark(ember.point());
     ember.gotoChar(target);
   },
 });

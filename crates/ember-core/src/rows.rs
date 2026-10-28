@@ -246,6 +246,11 @@ impl Editor {
     pub(crate) fn adjust_point_for_invisible(&mut self, last_pt: usize, modified: bool) {
         let b = self.buffer();
         let (pt, len) = (b.point(), b.len());
+        // As in Emacs's command loop, a command that leaves point where it
+        // was leaves it alone, even if its text is now hidden.
+        if pt == last_pt {
+            return;
+        }
         let (mut beg, mut end, mut ellipsis) = (pt, pt, false);
         while end < len
             && let Some(e) = self.invisible_in(b, end)

@@ -1,0 +1,2399 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "seed2-0000-m-s-up",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n\n\n",
+      "visible": "\n\n\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0009-m-down",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No element at point"
+    },
+    {
+      "name": "seed2-0137-m-s-down",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n\n\n",
+      "visible": "\n\n\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0143-m-up",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No element at point"
+    },
+    {
+      "name": "seed2-0179-m-left",
+      "input": {
+        "text": "||3|",
+        "point": 4,
+        "keys": "M-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "||3|",
+      "visible": "||3|",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Not in table data field"
+    },
+    {
+      "name": "seed2-0011-m-ret",
+      "input": {
+        "text": "|  |  |",
+        "point": 6,
+        "keys": "M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "|   |   |\n|   |   |\n",
+      "visible": "|   |   |\n|   |   |\n",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0028-ret",
+      "input": {
+        "text": "|ccc|x|",
+        "point": 0,
+        "keys": "RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n|ccc|x|",
+      "visible": "\n|ccc|x|",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0053-m-s-return",
+      "input": {
+        "text": "\n* call",
+        "point": 0,
+        "keys": "M-S-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n* TODO \n\n* call",
+      "visible": "\n* TODO \n\n* call",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0058-s-up",
+      "input": {
+        "text": "1) gamma",
+        "point": 8,
+        "keys": "S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1) gamma",
+      "visible": "1) gamma",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "On first item"
+    },
+    {
+      "name": "seed2-0078-m-ret",
+      "input": {
+        "text": "| a |  |",
+        "point": 0,
+        "keys": "M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a |  |",
+      "visible": "| a |  |",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Not in table data field"
+    },
+    {
+      "name": "seed2-0295-ret",
+      "input": {
+        "text": "|12|yy|\n",
+        "point": 0,
+        "keys": "RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n|12|yy|\n",
+      "visible": "\n|12|yy|\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0269-s-left",
+      "input": {
+        "text": "|  | yy |",
+        "point": 8,
+        "keys": "S-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| yy |   |\n",
+      "visible": "| yy |   |\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0104-s-up",
+      "input": {
+        "text": "1. [ ] fix",
+        "point": 9,
+        "keys": "S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1. [ ] fix",
+      "visible": "1. [ ] fix",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "On first item"
+    },
+    {
+      "name": "seed2-0018-m-s-left",
+      "input": {
+        "text": "| ccc | x |",
+        "point": 11,
+        "keys": "M-S-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| ccc |",
+      "visible": "| ccc |",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0034-m-ret",
+      "input": {
+        "text": "3. [X] beta",
+        "point": 6,
+        "keys": "M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1. \n2. [X] beta",
+      "visible": "1. \n2. [X] beta",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0116-m-s-return",
+      "input": {
+        "text": "  fix alpha",
+        "point": 0,
+        "keys": "M-S-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO   fix alpha",
+      "visible": "* TODO   fix alpha",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0280-ret",
+      "input": {
+        "text": "** DONE beta",
+        "point": 7,
+        "keys": "RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** DONE beta\n",
+      "visible": "** DONE beta\n",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0171-m-up",
+      "input": {
+        "text": "3) plan\n2. fix",
+        "point": 8,
+        "keys": "M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1. fix\n2. plan",
+      "visible": "1. fix\n2. plan",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0184-s-down",
+      "input": {
+        "text": "| bb | 3 |\n||3|",
+        "point": 1,
+        "keys": "S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "|    | 3 |\n| bb | 3 |\n",
+      "visible": "|    | 3 |\n| bb | 3 |\n",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0099-m-ret",
+      "input": {
+        "text": "\n** alpha gamma\n",
+        "point": 16,
+        "keys": "M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n** alpha gamma\n\n** ",
+      "visible": "\n** alpha gamma\n\n** ",
+      "point": 20,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0061-1",
+      "input": {
+        "text": "* DONE fix :work:",
+        "point": 8,
+        "keys": "1",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* DONE f1ix                                                            :work:",
+      "visible": "* DONE f1ix                                                            :work:",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0121-m-right",
+      "input": {
+        "text": "- [ ] read\n  + alpha",
+        "point": 15,
+        "keys": "M-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- [ ] read\n  + alpha",
+      "visible": "- [ ] read\n  + alpha",
+      "point": 15,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot indent the first item of a list"
+    },
+    {
+      "name": "seed2-0155-m-down",
+      "input": {
+        "text": "| 12 |  |\n| bb | x |",
+        "point": 0,
+        "keys": "M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| bb | x |\n| 12 |  |\n",
+      "visible": "| bb | x |\n| 12 |  |\n",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0026-ret",
+      "input": {
+        "text": "- [ ] call\n   - gamma",
+        "point": 11,
+        "keys": "RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- [ ] call\n\n     - gamma",
+      "visible": "- [ ] call\n\n     - gamma",
+      "point": 14,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0076-backtab",
+      "input": {
+        "text": "* read\n** TODO notes\n",
+        "point": 6,
+        "keys": "<backtab>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* read\n** TODO notes\n",
+      "visible": "* read\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed2-0160-m-up",
+      "input": {
+        "text": "beta <2026-10-17 Wed>",
+        "point": 0,
+        "keys": "M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "beta <2026-10-17 Wed>",
+      "visible": "beta <2026-10-17 Wed>",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot drag element backward"
+    },
+    {
+      "name": "seed2-0205-m-up",
+      "input": {
+        "text": "- [ ] beta\n- [ ] beta",
+        "point": 11,
+        "keys": "M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- [ ] beta\n- [ ] beta",
+      "visible": "- [ ] beta\n- [ ] beta",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0226-m-s-down",
+      "input": {
+        "text": "* TODO gamma :home:x:",
+        "point": 0,
+        "keys": "M-S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n* TODO gamma :home:x:\n",
+      "visible": "\n* TODO gamma :home:x:\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0201-x",
+      "input": {
+        "text": "** [#B] alpha fix :work:",
+        "point": 3,
+        "keys": "x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** x[#B] alpha fix                                                     :work:",
+      "visible": "** x[#B] alpha fix                                                     :work:",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0271-m-right",
+      "input": {
+        "text": "2) [ ] notes\n3) [X] read",
+        "point": 19,
+        "keys": "M-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1) [X] notes\n   1) [X] read",
+      "visible": "1) [X] notes\n   1) [X] read",
+      "point": 22,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0083-c-return",
+      "input": {
+        "text": "** TODO alpha plan\n*** alpha\n\n",
+        "point": 29,
+        "keys": "C-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** TODO alpha plan\n*** alpha\n*** \n",
+      "visible": "** TODO alpha plan\n*** alpha\n*** \n",
+      "point": 33,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0246-m-down",
+      "input": {
+        "text": "2) [ ] fix\n   alpha\n4) [ ] call",
+        "point": 19,
+        "keys": "M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "2) [ ] fix\n   alpha\n4) [ ] call",
+      "visible": "2) [ ] fix\n   alpha\n4) [ ] call",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot swap elements"
+    },
+    {
+      "name": "seed2-0098-backtab",
+      "input": {
+        "text": "* DONE notes :work:\n*** plan [/]",
+        "point": 20,
+        "keys": "<backtab>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* DONE notes :work:\n*** plan [/]",
+      "visible": "* DONE notes :work:",
+      "point": 20,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed2-0253-backtab",
+      "input": {
+        "text": "* [#A] notes read\n** plan :home:x:\n",
+        "point": 16,
+        "keys": "<backtab>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* [#A] notes read\n** plan :home:x:\n",
+      "visible": "* [#A] notes read\n",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed2-0156-backtab",
+      "input": {
+        "text": "* DONE [#C] alpha [1/2]\n** [#A] call read\n",
+        "point": 24,
+        "keys": "<backtab>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* DONE [#C] alpha [1/2]\n** [#A] call read\n",
+      "visible": "* DONE [#C] alpha [1/2]\n",
+      "point": 24,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed2-0092-s-down",
+      "input": {
+        "text": "2) call\n   gamma\n3) call\n4) gamma\n   gamma\n",
+        "point": 33,
+        "keys": "S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "2) call\n   gamma\n3) call\n4) gamma\n   gamma\n",
+      "visible": "2) call\n   gamma\n3) call\n4) gamma\n   gamma\n",
+      "point": 25,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "On last item"
+    },
+    {
+      "name": "seed2-0029-c-c-c-f",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-c C-f",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed2-0074-c-c-c-b",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-c C-b",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed2-0080-m-s-up-spc",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-S-<up> SPC",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n \n\n",
+      "visible": "\n \n\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0217-1-m-s-down",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "1 M-S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n1\n",
+      "visible": "\n1\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0198-c-c-c-t",
+      "input": {
+        "text": "\n",
+        "point": 1,
+        "keys": "C-c C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n",
+      "visible": "\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Before first headline at position 2 in buffer *ember-oracle*"
+    },
+    {
+      "name": "seed2-0110-c-c-c-b",
+      "input": {
+        "text": "|-\n",
+        "point": 3,
+        "keys": "C-c C-b",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "|-\n",
+      "visible": "|-\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed2-0035-c-c-c-b",
+      "input": {
+        "text": "3) read",
+        "point": 3,
+        "keys": "C-c C-b",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "3) read",
+      "visible": "3) read",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed2-0057-c-c-c-f",
+      "input": {
+        "text": "  - alpha",
+        "point": 0,
+        "keys": "C-c C-f",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "  - alpha",
+      "visible": "  - alpha",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed2-0283-m-s-down-x",
+      "input": {
+        "text": "read plan",
+        "point": 0,
+        "keys": "M-S-<down> x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\nxread plan\n",
+      "visible": "\nxread plan\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0039-m-down-m-s-up",
+      "input": {
+        "text": "+ [ ] read",
+        "point": 8,
+        "keys": "M-<down> M-S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n+ [ ] read\n",
+      "visible": "\n+ [ ] read\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Cannot move this item further down"
+    },
+    {
+      "name": "seed2-0186-c-c-c-b",
+      "input": {
+        "text": "+ [X] beta",
+        "point": 7,
+        "keys": "C-c C-b",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "+ [X] beta",
+      "visible": "+ [X] beta",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed2-0242-c-c-c-f",
+      "input": {
+        "text": "plan alpha",
+        "point": 0,
+        "keys": "C-c C-f",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "plan alpha",
+      "visible": "plan alpha",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed2-0258-c-c-c-f",
+      "input": {
+        "text": "notes beta",
+        "point": 1,
+        "keys": "C-c C-f",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "notes beta",
+      "visible": "notes beta",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed2-0204-c-c-c-c",
+      "input": {
+        "text": "| ccc | x |",
+        "point": 0,
+        "keys": "C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| ccc | x |",
+      "visible": "| ccc | x |",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed2-0174-c-k-m-s-up",
+      "input": {
+        "text": ":PROPERTIES:",
+        "point": 9,
+        "keys": "C-k M-S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n:PROPERTI\n",
+      "visible": "\n:PROPERTI\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "ES:"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0195-c-p-m-s-up",
+      "input": {
+        "text": "| 12 |  |\n|12|x|",
+        "point": 1,
+        "keys": "C-p M-S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "|12|x|",
+      "visible": "|12|x|",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "| 12 |  |\n"
+      ],
+      "modified": true,
+      "error": "Beginning of buffer"
+    },
+    {
+      "name": "seed2-0113-c-c-c-u",
+      "input": {
+        "text": "* TODO call beta\n",
+        "point": 17,
+        "keys": "C-c C-u",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO call beta\n",
+      "visible": "* TODO call beta\n",
+      "point": 0,
+      "mark": 17,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Already at top level of the outline"
+    },
+    {
+      "name": "seed2-0196-m-b-m-s-return",
+      "input": {
+        "text": "** DONE call gamma\n",
+        "point": 19,
+        "keys": "M-b M-S-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** DONE call \n** TODO gamma\n",
+      "visible": "** DONE call \n** TODO gamma\n",
+      "point": 22,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0213-c-c-c-b",
+      "input": {
+        "text": "* plan\n* DONE plan\n",
+        "point": 19,
+        "keys": "C-c C-b",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* plan\n* DONE plan\n",
+      "visible": "* plan\n* DONE plan\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed2-0278-m-s-return",
+      "input": {
+        "text": "** beta plan :work:",
+        "point": 15,
+        "keys": "- M-S-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** beta plan :w-\n** TODO ork:",
+      "visible": "** beta plan :w-\n** TODO ork:",
+      "point": 25,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0016-m-s-left-ret",
+      "input": {
+        "text": "+ [ ] plan\n+ [X] fix",
+        "point": 18,
+        "keys": "M-S-<left> RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "+ [ ] plan\n+ [X] f\n  ix",
+      "visible": "+ [ ] plan\n+ [X] f\n  ix",
+      "point": 21,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Cannot outdent top-level items"
+    },
+    {
+      "name": "seed2-0005-1-s-up",
+      "input": {
+        "text": "gamma <2026-10-11 Wed>",
+        "point": 20,
+        "keys": "1 S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "gamma <2026-10-11 Sun>",
+      "visible": "gamma <2026-10-11 Sun>",
+      "point": 21,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0131-m-left-m-s-return",
+      "input": {
+        "text": "   + read\n4) [X] alpha",
+        "point": 10,
+        "keys": "M-<left> M-S-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "   + read\n   + [ ] \n   + [X] alpha",
+      "visible": "   + read\n   + [ ] \n   + [X] alpha",
+      "point": 19,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Cannot outdent top-level items"
+    },
+    {
+      "name": "seed2-0151-spc-m-up",
+      "input": {
+        "text": "** [#A] alpha\n* gamma\n",
+        "point": 22,
+        "keys": "SPC M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* gamma\n \n** [#A] alpha\n",
+      "visible": "* gamma\n \n** [#A] alpha\n",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0162-backtab",
+      "input": {
+        "text": "beta <2026-10-10 Wed>\n",
+        "point": 0,
+        "keys": "| <backtab>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| beta <2026-10-10 Wed> |\n",
+      "visible": "| beta <2026-10-10 Wed> |\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Cannot move to previous table field"
+    },
+    {
+      "name": "seed2-0038-c-b-m-s-left",
+      "input": {
+        "text": "2. [X] plan\n3. [ ] beta\n",
+        "point": 24,
+        "keys": "C-b M-S-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "2. [X] plan\n3. [ ] beta\n",
+      "visible": "2. [X] plan\n3. [ ] beta\n",
+      "point": 23,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot outdent top-level items"
+    },
+    {
+      "name": "seed2-0008-c-u-tab",
+      "input": {
+        "text": "* TODO plan\n\n* call gamma\n",
+        "point": 26,
+        "keys": "C-u TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO plan\n\n* call gamma\n",
+      "visible": "* TODO plan\n* call gamma\n",
+      "point": 26,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed2-0149-c-c-c-b",
+      "input": {
+        "text": "* TODO beta notes\n* alpha\n",
+        "point": 26,
+        "keys": "C-c C-b",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO beta notes\n* alpha\n",
+      "visible": "* TODO beta notes\n* alpha\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed2-0158-c-c-c-u",
+      "input": {
+        "text": "* TODO call plan :home:x:\n",
+        "point": 26,
+        "keys": "C-c C-u",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO call plan :home:x:\n",
+      "visible": "* TODO call plan :home:x:\n",
+      "point": 0,
+      "mark": 26,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Already at top level of the outline"
+    },
+    {
+      "name": "seed2-0206-m-up-backtab",
+      "input": {
+        "text": "** alpha alpha\n- notes\n4. gamma",
+        "point": 23,
+        "keys": "M-<up> <backtab>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** alpha alpha\n1. gamma\n2. notes",
+      "visible": "** alpha alpha",
+      "point": 15,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0216-ret-m-s-return",
+      "input": {
+        "text": "DEADLINE: <2026-11-01 Sun +1w>\n",
+        "point": 31,
+        "keys": "RET M-S-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "DEADLINE: <2026-11-01 Sun +1w>\n* TODO ",
+      "visible": "DEADLINE: <2026-11-01 Sun +1w>\n* TODO ",
+      "point": 38,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0087-c-c-c-c",
+      "input": {
+        "text": "| a |  |\n1. call\n2. notes\n3. alpha\n",
+        "point": 3,
+        "keys": "C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a |   |\n1. call\n2. notes\n3. alpha\n",
+      "visible": "| a |   |\n1. call\n2. notes\n3. alpha\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0112-m-s-up-c-d",
+      "input": {
+        "text": "+ [X] plan\nSCHEDULED: <2026-10-28 Wed>",
+        "point": 11,
+        "keys": "M-S-<up> C-d",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "CHEDULED: <2026-10-28 Wed>\n+ [X] plan\n",
+      "visible": "CHEDULED: <2026-10-28 Wed>\n+ [X] plan\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0202-backtab",
+      "input": {
+        "text": "\n* [#B] alpha [%]\nDEADLINE: <2026-11-01 Sun +1w>",
+        "point": 0,
+        "keys": "- <backtab>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "-\n* [#B] alpha [%]\nDEADLINE: <2026-11-01 Sun +1w>",
+      "visible": "-\n* [#B] alpha [%]\nDEADLINE: <2026-11-01 Sun +1w>",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Cannot move item"
+    },
+    {
+      "name": "seed2-0073-c-return-c-c",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-<return> C-c -",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- \n",
+      "visible": "- \n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0086-x-c-c-c-u",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "x C-c C-u",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "x",
+      "visible": "x",
+      "point": 0,
+      "mark": 1,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Before first heading"
+    },
+    {
+      "name": "seed2-0127-1-m-s-left-m-s-down",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "1 M-S-<left> M-S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n1\n",
+      "visible": "\n1\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "This command is active in special context like tables, headlines or items"
+    },
+    {
+      "name": "seed2-0157-c-c-c-u-c-n",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-c C-u C-n",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Before first heading"
+    },
+    {
+      "name": "seed2-0004-1-c-c-c-c",
+      "input": {
+        "text": "2) fix",
+        "point": 0,
+        "keys": "1 C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1) fix",
+      "visible": "1) fix",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0056-tab-m-s-down-c-k",
+      "input": {
+        "text": "|12|x|",
+        "point": 2,
+        "keys": "TAB M-S-<down> C-k",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| \n| 12 | x |\n",
+      "visible": "| \n| 12 | x |\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "   |   |"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0051-c-c-c-u-1",
+      "input": {
+        "text": "2) notes",
+        "point": 2,
+        "keys": "C-c C-u 1",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "12) notes",
+      "visible": "12) notes",
+      "point": 1,
+      "mark": 3,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Before first heading"
+    },
+    {
+      "name": "seed2-0126-c-c-c-x-c-b",
+      "input": {
+        "text": "** notes",
+        "point": 0,
+        "keys": "C-c C-x C-b",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** notes",
+      "visible": "** notes",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No item in subtree"
+    },
+    {
+      "name": "seed2-0022-spc-c-c",
+      "input": {
+        "text": "plan call",
+        "point": 0,
+        "keys": "SPC C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* plan call",
+      "visible": "* plan call",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0041-c-c-c-x-c-w",
+      "input": {
+        "text": "| 12 |  |",
+        "point": 0,
+        "keys": "C-c C-x C-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| 12 |  |",
+      "visible": "| 12 |  |",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Not in table data field"
+    },
+    {
+      "name": "seed2-0115-c-p-m-s-return-tab",
+      "input": {
+        "text": "   - notes\n",
+        "point": 11,
+        "keys": "C-p M-S-<return> TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "   - [ ] \n   - notes\n",
+      "visible": "   - [ ] \n   - notes\n",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Cannot move item"
+    },
+    {
+      "name": "seed2-0192-c-c-m-ret",
+      "input": {
+        "text": "\n*** TODO call\n",
+        "point": 15,
+        "keys": "C-c @ M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n*** \n\n*** TODO call\n",
+      "visible": "\n*** \n\n*** TODO call\n",
+      "point": 5,
+      "mark": 21,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0199-m-s-return-m-s-up-backtab",
+      "input": {
+        "text": "* plan\n:PROPERTIES:",
+        "point": 18,
+        "keys": "M-S-<return> M-S-<up> <backtab>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* plan\n* TODO :\n:PROPERTIES\n",
+      "visible": "* plan\n* TODO :",
+      "point": 14,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0049-m-s-left-c-c-c-u",
+      "input": {
+        "text": "** TODO [#A] fix fix",
+        "point": 1,
+        "keys": "M-S-<left> C-c C-u",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO [#A] fix fix",
+      "visible": "* TODO [#A] fix fix",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Already at top level of the outline"
+    },
+    {
+      "name": "seed2-0270-c-c-c-c-m-up",
+      "input": {
+        "text": "| ccc | 3 |\n| ccc |  |",
+        "point": 12,
+        "keys": "C-c C-c M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| ccc |   |\n| ccc | 3 |\n",
+      "visible": "| ccc |   |\n| ccc | 3 |\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0274-c-c-m-down",
+      "input": {
+        "text": "** TODO notes call [%]",
+        "point": 6,
+        "keys": "C-c * M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "TODO notes call [%]",
+      "visible": "TODO notes call [%]",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Cannot drag element forward"
+    },
+    {
+      "name": "seed2-0229-c-c-c-t-m-right",
+      "input": {
+        "text": "2) [ ] plan\n4) [X] read",
+        "point": 12,
+        "keys": "C-c C-t M-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1) [X] plan\n   1) [X] read",
+      "visible": "1) [X] plan\n   1) [X] read",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Before first headline at position 13 in buffer *ember-oracle*"
+    },
+    {
+      "name": "seed2-0167-c-c-c-f-s-right",
+      "input": {
+        "text": "  + notes\n* beta\n2. [ ] beta\n",
+        "point": 0,
+        "keys": "C-c C-f S-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "  + notes\n* TODO beta\n2. [ ] beta\n",
+      "visible": "  + notes\n* TODO beta\n2. [ ] beta\n",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0128-c-c-c-c-c-e",
+      "input": {
+        "text": "* plan call [%] :work:\n  + beta\n",
+        "point": 23,
+        "keys": "C-c C-c C-e",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* plan call [0%]                                                       :work:\n  + beta\n",
+      "visible": "* plan call [0%]                                                       :work:\n  + beta\n",
+      "point": 86,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0103-backtab-c-c",
+      "input": {
+        "text": "** read\n*** TODO [#B] call alpha\n",
+        "point": 23,
+        "keys": "<backtab> C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** read\nTODO [#B] call alpha\n",
+      "visible": "** read\n",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0299-c-c-c-b",
+      "input": {
+        "text": "** TODO notes beta :home:x:\n** notes\n",
+        "point": 37,
+        "keys": "C-c C-b |",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "|** TODO notes beta :home:x:\n** notes\n",
+      "visible": "|** TODO notes beta :home:x:\n** notes\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0230-s-up-c-c",
+      "input": {
+        "text": "   + alpha\n- gamma\n** gamma [/]\n:PROPERTIES:\n:ID: 1\n:END:\n",
+        "point": 6,
+        "keys": "S-<up> C-c -",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "   * alpha\n   * gamma\n** gamma [/]\n:PROPERTIES:\n:ID: 1\n:END:\n",
+      "visible": "   * alpha\n   * gamma\n** gamma [/]\n:PROPERTIES:\n:ID: 1\n:END:\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "On first item"
+    },
+    {
+      "name": "seed2-0040-c-c-c-c-c-n",
+      "input": {
+        "text": "|  | 3 |",
+        "point": 1,
+        "keys": "C-c - C-c C-n",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "|  | 3 ||--+---|\n",
+      "visible": "|  | 3 ||--+---|\n",
+      "point": 17,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0169-m-f-m-f-x-m-up",
+      "input": {
+        "text": "2) call\n",
+        "point": 5,
+        "keys": "M-f M-f x M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "x\n2) call",
+      "visible": "x\n2) call",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0176-c-c-c-u",
+      "input": {
+        "text": "*** DONE fix",
+        "point": 0,
+        "keys": "| C-c C-u |",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "||*** DONE fix",
+      "visible": "||*** DONE fix",
+      "point": 1,
+      "mark": 2,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Before first heading"
+    },
+    {
+      "name": "seed2-0148-c-c-spc-m-s-down",
+      "input": {
+        "text": "* TODO fix beta",
+        "point": 11,
+        "keys": "C-c @ SPC M-S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n * TODO fix beta\n",
+      "visible": "\n * TODO fix beta\n",
+      "point": 2,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0075-x-c-c-c-u-m-s-down",
+      "input": {
+        "text": "** [#A] gamma :work:",
+        "point": 14,
+        "keys": "x C-c C-u M-S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n** [#A] gamma x:work:\n",
+      "visible": "\n** [#A] gamma x:work:\n",
+      "point": 1,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0107-m-s-down-c-c-c-x-c-w",
+      "input": {
+        "text": "* notes gamma\n- gamma\n",
+        "point": 22,
+        "keys": "M-S-<down> C-c C-x C-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "* notes gamma\n\n- gamma\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0066-m-down-c-c-c-x-c-w",
+      "input": {
+        "text": "* TODO alpha\n   - gamma",
+        "point": 13,
+        "keys": "M-<down> C-c C-x C-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "* TODO alpha\n   - gamma"
+      ],
+      "modified": true,
+      "error": "Cannot move this item further down"
+    },
+    {
+      "name": "seed2-0006-c-c-c-c-c-p-x",
+      "input": {
+        "text": "DEADLINE: <2026-11-01 Sun +1w>",
+        "point": 30,
+        "keys": "C-c C-c C-p x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "xDEADLINE: <2026-11-01 Sun +1w>",
+      "visible": "xDEADLINE: <2026-11-01 Sun +1w>",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Beginning of buffer"
+    },
+    {
+      "name": "seed2-0275-c-u-tab-c-n-1",
+      "input": {
+        "text": "** TODO alpha alpha\n| 12 | yy |",
+        "point": 0,
+        "keys": "C-u TAB C-n 1",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** TODO alpha alpha\n| 12 | yy |",
+      "visible": "** TODO alpha alpha\n| 12 | yy |",
+      "point": 31,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "End of buffer"
+    },
+    {
+      "name": "seed2-0159-backtab-m-ret-c-c",
+      "input": {
+        "text": "* DONE beta\nDEADLINE: <2026-11-01 Sun +1w>",
+        "point": 12,
+        "keys": "<backtab> M-RET C-c -",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* DONE beta\n- DEADLINE: <2026-11-01 Sun +1w>",
+      "visible": "* DONE beta\n- DEADLINE: <2026-11-01 Sun +1w>",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Edit in invisible region aborted, repeat to confirm with text visible"
+    },
+    {
+      "name": "seed2-0293-del-c-c-c-x-c-b",
+      "input": {
+        "text": "*** [#B] alpha call [/]\n- [X] read\n  notes",
+        "point": 42,
+        "keys": "DEL C-c C-x C-b",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "*** [#B] alpha call [/]\n- [X] read\n  note",
+      "visible": "*** [#B] alpha call [/]\n- [X] read\n  note",
+      "point": 41,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Not at an item or heading, and no active region"
+    },
+    {
+      "name": "seed2-0095-c-c-c-a",
+      "input": {
+        "text": "| bb | x |\n1) [ ] read\n\n2) [ ] alpha\n   + beta\n",
+        "point": 7,
+        "keys": "- C-c * C-a",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| bb | -x |\n1) [ ] read\n\n2) [ ] alpha\n   + beta\n",
+      "visible": "| bb | -x |\n1) [ ] read\n\n2) [ ] alpha\n   + beta\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0263-c-c-c-x-m-w",
+      "input": {
+        "text": "   - gamma\n1. [ ] call\n* gamma call\n:PROPERTIES:\n:ID: 1\n:END:\n| ccc | 3 |\n|12|3|\n| 12 | yy |\n\n",
+        "point": 12,
+        "keys": "C-c C-x M-w |",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "   - gamma\n|1. [ ] call\n* gamma call\n:PROPERTIES:\n:ID: 1\n:END:\n| ccc | 3 |\n|12|3|\n| 12 | yy |\n\n",
+      "visible": "   - gamma\n|1. [ ] call\n* gamma call\n:PROPERTIES:\n:ID: 1\n:END:\n| ccc | 3 |\n|12|3|\n| 12 | yy |\n\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Before first headline at position 12 in buffer *ember-oracle*"
+    },
+    {
+      "name": "seed2-0298-c-c-c-u-c-c-c-k",
+      "input": {
+        "text": "+ [X] gamma",
+        "point": 8,
+        "keys": "C-c C-u C-c @ C-k",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [
+        "+ [X] gamma"
+      ],
+      "modified": true,
+      "error": "Before first heading"
+    },
+    {
+      "name": "seed2-0118-c-c-c-c-c-x-c-w",
+      "input": {
+        "text": "* beta notes\n",
+        "point": 13,
+        "keys": "C-c * C-c C-x C-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "* beta notes\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0218-1-m-s-up-c-c-c-x-m-w",
+      "input": {
+        "text": "** [#B] alpha notes [%]\n",
+        "point": 24,
+        "keys": "1 M-S-<up> C-c C-x M-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1\n** [#B] alpha notes [%]\n",
+      "visible": "1\n** [#B] alpha notes [%]\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Before first headline at position 1 in buffer *ember-oracle*"
+    },
+    {
+      "name": "seed2-0248-c-d-m-s-down-c-n-c-u-tab",
+      "input": {
+        "text": "*** TODO plan read\n:ID: 1\n:END:\n",
+        "point": 23,
+        "keys": "C-d M-S-<down> C-n C-u TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "*** TODO plan read\n:END:\n:ID:1\n",
+      "visible": "*** TODO plan read",
+      "point": 31,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0272-m-s-return-c-c-c-x-m-w-backtab",
+      "input": {
+        "text": "*** TODO [#A] fix gamma [/]\n+ plan",
+        "point": 28,
+        "keys": "M-S-<return> C-c C-x M-w <backtab>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "*** TODO [#A] fix gamma [0/1]\n+ [ ] \n+ plan",
+      "visible": "*** TODO [#A] fix gamma [0/1]\n+ [ ] \n+ plan",
+      "point": 36,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "*** TODO [#A] fix gamma [0/1]\n+ [ ] \n+ plan"
+      ],
+      "modified": true,
+      "error": "Cannot move item"
+    },
+    {
+      "name": "seed2-0254-c-c-c-c-c-x-c-w",
+      "input": {
+        "text": "* TODO beta\n\n* TODO gamma fix :home:x:",
+        "point": 12,
+        "keys": "C-c @ C-c C-x C-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO gamma fix :home:x:",
+      "visible": "* TODO gamma fix :home:x:",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [
+        "* TODO beta\n\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed2-0088-c-u-tab-spc-c-c-c-b-spc",
+      "input": {
+        "text": "** [#B] gamma plan\n- notes",
+        "point": 19,
+        "keys": "C-u TAB SPC C-c C-b SPC",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": " ** [#B] gamma plan\n- notes",
+      "visible": " ** [#B] gamma plan\n- notes",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Edit in invisible region aborted, repeat to confirm with text visible"
+    },
+    {
+      "name": "seed2-0097-c-u-tab-c-c-c-x-m-w",
+      "input": {
+        "text": "* DONE [#A] read notes [/]\nbeta read\n",
+        "point": 37,
+        "keys": "C-u TAB - C-c C-x M-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* DONE [#A] read notes [/]\nbeta read\n",
+      "visible": "* DONE [#A] read notes [/]\nbeta read\n",
+      "point": 37,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "* DONE [#A] read notes [/]\nbeta read\n"
+      ],
+      "modified": false,
+      "error": "Edit in invisible region aborted, repeat to confirm with text visible"
+    }
+  ]
+}

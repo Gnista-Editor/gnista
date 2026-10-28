@@ -215,6 +215,7 @@
     lineEnd: (line) => native.lineEnd(line),
     lineText: (line) => native.lineText(line),
     bufferSize: () => native.bufferSize(),
+    bufferModifiedTick: () => native.bufferModifiedTick(),
     // As Emacs's add-to-invisibility-spec: a spec of true becomes a list
     // that still hides text whose invisible property is true.
     addToInvisibilitySpec(name, { ellipsis = false } = {}) {

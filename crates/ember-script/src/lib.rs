@@ -1090,6 +1090,10 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer().len())))?,
     )?;
     native.set(
+        "bufferModifiedTick",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer().modified_tick() as f64)))?,
+    )?;
+    native.set(
         "invisibleAt",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, pos: usize| {
             with_editor(&ctx, |ed| Ok(ed.invisible_in(ed.buffer(), pos).is_some()))

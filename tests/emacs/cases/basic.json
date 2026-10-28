@@ -129,5 +129,40 @@
     "text": "hello world",
     "keys": "RET",
     "point": 5
+  },
+  {
+    "name": "transpose-lines",
+    "text": "one\ntwo\nthree\n",
+    "keys": "C-x C-t",
+    "point": 5
+  },
+  {
+    "name": "transpose-lines-on-the-first-line",
+    "text": "one\ntwo\n",
+    "keys": "C-x C-t",
+    "point": 1
+  },
+  {
+    "name": "transpose-lines-at-the-end-without-a-newline",
+    "text": "one\ntwo",
+    "keys": "C-x C-t",
+    "point": 6
+  },
+  {
+    "name": "transpose-lines-with-a-count",
+    "text": "one\ntwo\nthree\nfour\n",
+    "keys": "C-u 2 C-x C-t",
+    "point": 4
+  },
+  {
+    "name": "transpose-lines-with-zero-swaps-with-the-mark",
+    "text": "one\ntwo\nthree\n",
+    "keys": "C-SPC C-n C-n C-u 0 C-x C-t",
+    "point": 0
+  },
+  {
+    "name": "transpose-lines-in-an-empty-buffer",
+    "text": "",
+    "keys": "C-x C-t"
   }
 ]

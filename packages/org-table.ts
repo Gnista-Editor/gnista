@@ -1,13 +1,14 @@
 // Org tables, after Emacs's org-table.el: lines starting with "|", fields
-// between bars, and rules ("|---+---|") between rows. Moving between fields
-// with TAB, S-TAB and RET aligns the table first: every column as wide as
-// its widest field, numbers to the right when most of a column's fields are
-// numbers. org-mode's TAB, S-TAB, RET and M-arrow keys call these commands
-// when point is in a table.
+// between bars, and rules ("|---+---|") between rows. The commands follow
+// org-table.el's own: moving between fields with TAB, S-TAB and RET aligns
+// the table first if it changed since it was last aligned, making every
+// column as wide as its widest field, with numbers to the right when most
+// of a column's fields are numbers. org-mode's TAB, S-TAB, RET and the
+// M-arrow and S-arrow keys call these commands when point is in a table.
 
 ember.defineVariable({
   name: "org-table-auto-blank-field",
-  doc: "Whether typing right after TAB, S-TAB or RET moved into a field replaces what the field holds.",
+  doc: "Whether typing right after TAB, S-TAB, RET or C-c C-c moved into a field replaces what the field holds.",
   value: true,
 });
 
@@ -17,335 +18,668 @@ ember.defineVariable({
   value: 0.5,
 });
 
+ember.defineVariable({
+  name: "org-table-automatic-realign",
+  doc: "Whether moving between fields aligns the table when it has changed since it was last aligned.",
+  value: true,
+});
+
+ember.defineVariable({
+  name: "org-table-tab-jumps-over-hlines",
+  doc: "Whether TAB at the end of a row goes past a rule below it to the next row, rather than adding a row.",
+  value: true,
+});
+
+ember.defineVariable({
+  name: "org-table--aligned",
+  doc:
+    "When the table was last aligned: the buffer's modified tick then, and where the table began and ended. " +
+    "A table that changed since needs aligning again, as Org's org-table-may-need-update says.",
+  value: null,
+  local: true,
+});
+
 const TABLE_LINE = /^[ \t]*\|/;
-const RULE_LINE = /^[ \t]*\|-/;
-const NUMBER = /^[<>]?[-+^.0-9]*[0-9][-+^.0-9eEdDx()%:]*$/;
+const HLINE = /^[ \t]*\|-/;
+const DATALINE = /^[ \t]*\|(?!-)/;
+const NUMBER =
+  /^(?:[<>]?[-+^.0-9]*[0-9][-+^.0-9eEdDx()%:]*|[<>]?[-+]?0[xX][0-9a-fA-F.]+|[<>]?[-+]?[0-9]+#[0-9a-zA-Z.]+|nan|[-+u]?inf)$/;
 
 /** How many characters a string has, which differs from its length for emoji. */
 function charCount(s: string): number {
   return /[\uD800-\uDFFF]/.test(s) ? Array.from(s).length : s.length;
 }
 
-type TableRow = { rule: true } | { rule: false; fields: string[] };
+function lineAt(pos = ember.point()): number {
+  return ember.lineOf(pos);
+}
 
-interface Table {
-  /** The first and last lines. */
-  first: number;
-  last: number;
-  indent: string;
-  rows: TableRow[];
+function lineStartOrEnd(line: number): number {
+  return line < ember.lineCount() ? ember.lineStart(line) : ember.bufferSize();
+}
+
+function charAt(pos: number): string {
+  return pos >= 0 && pos < ember.bufferSize() ? ember.bufferText(pos, pos + 1) : "";
+}
+
+function restOfLine(pos = ember.point()): string {
+  return ember.bufferText(pos, ember.lineEnd(lineAt(pos)));
+}
+
+function beforeOnLine(pos = ember.point()): string {
+  return ember.bufferText(ember.lineStart(lineAt(pos)), pos);
+}
+
+function atBol(): boolean {
+  return ember.point() === ember.lineStart(lineAt());
+}
+
+/** Moves point n lines, as Emacs's forward-line does: to a line's start, or the buffer's end. */
+function forwardLine(n: number): void {
+  const line = lineAt();
+  if (n <= 0) ember.gotoChar(ember.lineStart(Math.max(0, line + n)));
+  else ember.gotoChar(line + n < ember.lineCount() ? ember.lineStart(line + n) : ember.bufferSize());
+}
+
+/** Positions that move with the text as Emacs's markers do. */
+const markers: { pos: number }[] = [];
+
+function marker(pos: number): { pos: number } {
+  const m = { pos };
+  markers.push(m);
+  return m;
+}
+
+function dropMarker(m: { pos: number }): void {
+  markers.splice(markers.indexOf(m), 1);
+}
+
+function edInsert(pos: number, text: string, beforeMarkers = false): void {
+  const n = charCount(text);
+  if (n === 0) return;
+  ember.gotoChar(pos);
+  ember.insert(text);
+  for (const m of markers) if (m.pos > pos || (m.pos === pos && beforeMarkers)) m.pos += n;
+}
+
+function edDelete(from: number, to: number): string {
+  if (to <= from) return "";
+  const text = ember.deleteRegion(from, to);
+  for (const m of markers) {
+    if (m.pos >= to) m.pos -= to - from;
+    else if (m.pos > from) m.pos = from;
+  }
+  return text;
+}
+
+/** Runs body and puts point back where it was, moved as a marker, as save-excursion does. */
+function saveExcursion<T>(body: () => T): T {
+  const m = marker(ember.point());
+  try {
+    return body();
+  } finally {
+    ember.gotoChar(m.pos);
+    dropMarker(m);
+  }
 }
 
 function isTableLine(line: number): boolean {
   return line >= 0 && line < ember.lineCount() && TABLE_LINE.test(ember.lineText(line));
 }
 
-function parseRow(text: string): TableRow {
-  if (RULE_LINE.test(text)) return { rule: true };
-  let body = text.replace(/^[ \t]*\|/, "");
-  if (/\|[ \t]*$/.test(body)) body = body.replace(/\|[ \t]*$/, "");
-  return { rule: false, fields: body.split("|").map((f) => f.trim()) };
+function atTable(pos = ember.point()): boolean {
+  return isTableLine(lineAt(pos));
 }
 
-function tableAt(line: number): Table | undefined {
-  if (!isTableLine(line)) return undefined;
+function atHline(pos = ember.point()): boolean {
+  return HLINE.test(ember.lineText(lineAt(pos)));
+}
+
+function tableHere(): void {
+  if (!atTable()) throw new Error("Not at a table");
+}
+
+function firstLine(line = lineAt()): number {
   let first = line;
   while (isTableLine(first - 1)) first--;
+  return first;
+}
+
+function lastLine(line = lineAt()): number {
   let last = line;
   while (isTableLine(last + 1)) last++;
-  const rows: TableRow[] = [];
-  for (let l = first; l <= last; l++) rows.push(parseRow(ember.lineText(l)));
-  const indent = /^[ \t]*/.exec(ember.lineText(first))?.[0] ?? "";
-  return { first, last, indent, rows };
+  return last;
 }
 
-function columnCount(t: Table): number {
-  return Math.max(1, ...t.rows.map((r) => (r.rule ? 0 : r.fields.length)));
+/** Where the table at point begins: the start of its first line, as org-table-begin finds it. */
+function tableBegin(): number {
+  return ember.lineStart(firstLine());
 }
 
-/** The lines of a table, aligned. */
-function formatTable(t: Table): string[] {
-  const n = columnCount(t);
-  const widths: number[] = [];
-  const right: boolean[] = [];
-  for (let c = 0; c < n; c++) {
-    const fields = t.rows.flatMap((r) => (r.rule ? [] : [r.fields[c] ?? ""]));
-    widths.push(Math.max(1, ...fields.map((f) => ember.stringWidth(f))));
-    const filled = fields.filter((f) => f !== "");
-    const numbers = filled.filter((f) => NUMBER.test(f)).length;
-    right.push(filled.length > 0 && numbers / filled.length >= Number(ember.variable("org-table-number-fraction") ?? 0.5));
-  }
-  return t.rows.map((r) => {
-    if (r.rule) return `${t.indent}|${widths.map((w) => "-".repeat(w + 2)).join("+")}|`;
-    const cells = widths.map((w, c) => {
-      const f = r.fields[c] ?? "";
-      const pad = " ".repeat(w - ember.stringWidth(f));
-      return ` ${right[c] ? pad + f : f + pad} `;
-    });
-    return `${t.indent}|${cells.join("|")}|`;
-  });
+/** Where the table at point ends: the start of the line after it, or the end of the buffer. */
+function tableEnd(): number {
+  return lineStartOrEnd(lastLine() + 1);
 }
 
-/** Which field of its line a position is in, counting from 1: the bars before it. */
-function columnAt(pos: number): number {
-  const line = ember.lineOf(pos);
-  const before = Array.from(ember.lineText(line)).slice(0, pos - ember.lineStart(line)).join("");
-  return Math.max(1, before.split("|").length - 1);
+/** Which field point is in, counting the bars before it, as org-table-current-column does. */
+function currentColumn(pos = ember.point()): number {
+  const before = beforeOnLine(pos);
+  if (!before.includes("|")) return 0;
+  return (before.match(atHline(pos) ? /[+|]/g : /\|/g) ?? []).length;
 }
 
-/** Where field `col` of a line starts: just after its bar and one space, as Org puts point. */
-function fieldStart(line: number, col: number): number {
-  const chars = Array.from(ember.lineText(line));
-  let bars = 0;
-  for (let i = 0; i < chars.length; i++) {
-    if (chars[i] === "|" && ++bars === col) {
-      return ember.lineStart(line) + Math.min(i + (chars[i + 1] === " " ? 2 : 1), chars.length);
+/**
+ * Moves to field n of point's line, after its bar and one space, as
+ * org-table-goto-column does. With onDelim, to the bar itself; with force,
+ * adding fields that are missing.
+ */
+function gotoColumn(n: number, onDelim = false, force = false): void {
+  let p = ember.lineStart(lineAt());
+  if (n > 0) {
+    while (--n > -1) {
+      const rest = restOfLine(p);
+      const i = rest.indexOf("|");
+      if (i >= 0) p += charCount(rest.slice(0, i)) + 1;
+      else if (force) {
+        const text = ember.lineText(lineAt(p));
+        const bar = ember.lineStart(lineAt(p)) + charCount(text.slice(0, text.lastIndexOf("|") + 1));
+        edInsert(bar, " | ");
+        p = bar + 3;
+      } else break;
     }
-  }
-  return ember.lineEnd(line);
-}
-
-/** Where a field's text starts and ends, past the spaces around it. */
-function fieldText(line: number, col: number): { start: number; end: number } {
-  const chars = Array.from(ember.lineText(line));
-  let bars = 0;
-  let from = -1;
-  let to = chars.length;
-  for (let i = 0; i < chars.length; i++) {
-    if (chars[i] !== "|") continue;
-    bars++;
-    if (bars === col) from = i + 1;
-    else if (bars === col + 1) {
-      to = i;
-      break;
+    if (force && !restOfLine(p).includes("|")) {
+      const m = marker(p);
+      edInsert(ember.lineEnd(lineAt(p)), " | ");
+      p = m.pos;
+      dropMarker(m);
     }
+    if (onDelim) p -= 1;
+    else if (charAt(p) === " ") p += 1;
   }
-  if (from < 0) return { start: ember.lineEnd(line), end: ember.lineEnd(line) };
-  let start = from;
-  while (start < to && chars[start] === " ") start++;
-  let end = to;
-  while (end > start && chars[end - 1] === " ") end--;
-  const base = ember.lineStart(line);
-  return { start: base + start, end: base + end };
+  ember.gotoChar(p);
 }
 
-/** Replaces a table's lines with new ones, if they differ. */
-function replaceLines(t: Table, lines: string[]): void {
-  const start = ember.lineStart(t.first);
-  const end = ember.lineEnd(t.last);
-  const text = lines.join("\n");
-  if (ember.bufferText(start, end) !== text) {
-    ember.deleteRegion(start, end);
-    ember.gotoChar(start);
-    ember.insert(text);
+type Row = "hline" | string[];
+
+/** The table at point as rows of fields, as org-table-to-lisp reads it. */
+function tableToLisp(): Row[] {
+  const rows: Row[] = [];
+  for (let l = firstLine(); l <= lastLine(); l++) {
+    const text = ember.lineText(l);
+    let i = (/^[ \t]*/.exec(text)?.[0].length ?? 0) + 1;
+    if (text[i] === "-") {
+      rows.push("hline");
+      continue;
+    }
+    const fields: string[] = [];
+    for (;;) {
+      while (text[i] === " " || text[i] === "\t") i++;
+      if (i >= text.length) break;
+      const q = i;
+      while (i < text.length && text[i] !== "|") i++;
+      let e = i;
+      while (e > q && (text[e - 1] === " " || text[e - 1] === "\t")) e--;
+      fields.push(text.slice(q, e));
+      if (i < text.length) i++;
+    }
+    rows.push(fields);
+  }
+  return rows;
+}
+
+function needsAlign(): boolean {
+  const state = ember.variable("org-table--aligned");
+  return !Array.isArray(state) || state[0] !== ember.bufferModifiedTick();
+}
+
+/** Records that the table at point is aligned, as setting org-table-may-need-update to nil does. */
+function markAligned(): void {
+  ember.setVariable("org-table--aligned", [ember.bufferModifiedTick(), tableBegin(), tableEnd()]);
+}
+
+/** Pads a field to a width, as org-table--align-field does. */
+function alignField(field: string, width: number, align: string): string {
+  const spaces = width - ember.stringWidth(field);
+  const prefix = align === "r" ? " ".repeat(spaces) : align === "c" ? " ".repeat(Math.floor(spaces / 2)) : "";
+  return ` ${prefix}${field}${" ".repeat(spaces - prefix.length)} `;
+}
+
+/**
+ * Aligns the table at point, rewriting only the rows that change, and
+ * puts point at the start of the field it was in, as org-table-align does.
+ */
+function align(): void {
+  const lineMark = marker(ember.lineStart(lineAt()));
+  const column = currentColumn();
+  try {
+    const first = firstLine();
+    const table = tableToLisp();
+    const rows = table.filter((r): r is string[] => r !== "hline");
+    let widths: number[];
+    let aligns: string[];
+    if (rows.length === 0) {
+      const n = 1 + (ember.lineText(first).match(/\+/g) ?? []).length;
+      widths = Array(n).fill(1);
+      aligns = Array(n).fill("l");
+    } else {
+      const n = Math.max(...rows.map((r) => r.length));
+      widths = [];
+      aligns = [];
+      const fraction = Number(ember.variable("org-table-number-fraction") ?? 0.5);
+      for (let i = 0; i < n; i++) {
+        let width = 1;
+        let fixed: string | undefined;
+        let numbers = 0;
+        let nonEmpty = 0;
+        for (const row of rows) {
+          const cell = row[i] ?? "";
+          width = Math.max(width, ember.stringWidth(cell));
+          if (fixed !== undefined || cell === "") continue;
+          const cookie = /^<([lrc])[0-9]*>$/.exec(cell);
+          if (cookie) fixed = cookie[1];
+          else {
+            nonEmpty++;
+            if (NUMBER.test(cell)) numbers++;
+          }
+        }
+        widths.push(width);
+        aligns.push(fixed ?? (numbers >= fraction * nonEmpty ? "r" : "l"));
+      }
+    }
+    const rule = table.includes("hline") ? widths.map((w) => "-".repeat(w + 2)).join("+") : "";
+    const indent = /^[ \t]*\|/.exec(ember.lineText(first))?.[0] ?? "|";
+    let line = first;
+    for (const row of table) {
+      const previous = ember.lineText(line);
+      const fields = row === "hline" ? [] : [...row, ...Array(Math.max(0, widths.length - row.length)).fill("")];
+      const updated =
+        indent + (row === "hline" ? rule : fields.map((f, i) => alignField(f, widths[i], aligns[i])).join("|")) + "|";
+      if (updated !== previous) {
+        const bol = ember.lineStart(line);
+        edInsert(bol, `${updated}\n`);
+        edDelete(bol + charCount(updated) + 1, lineStartOrEnd(line + 2));
+      }
+      line++;
+    }
+  } finally {
+    ember.gotoChar(lineMark.pos);
+    dropMarker(lineMark);
+    gotoColumn(column);
+  }
+  markAligned();
+}
+
+/** What org-table-justify-field-maybe does without a new value: notices when point left the table last aligned. */
+function justifyFieldMaybe(): void {
+  if (needsAlign() || atHline()) return;
+  const state = ember.variable("org-table--aligned");
+  if (Array.isArray(state) && (ember.point() < Number(state[1]) || ember.point() >= Number(state[2]))) {
+    ember.setVariable("org-table--aligned", null);
   }
 }
 
-function tableHere(): Table {
-  const t = tableAt(ember.lineOf(ember.point()));
-  if (t === undefined) throw new Error("Not at a table");
-  return t;
+function alignIfNeeded(): void {
+  if (ember.variable("org-table-automatic-realign") === true && needsAlign()) align();
 }
 
-/** Aligns the table at point, keeping point in its field as near as it can. */
-function align(): Table {
-  const t = tableHere();
-  const p = ember.point();
-  const line = ember.lineOf(p);
-  const col = columnAt(p);
-  const old = fieldText(line, col);
-  const offset = Math.max(0, p - old.start);
-  replaceLines(t, formatTable(t));
-  const now = fieldText(line, col);
-  const start = parseRow(ember.lineText(line)).rule ? ember.lineStart(line) : now.start;
-  ember.gotoChar(Math.min(start + offset, Math.max(now.end, start)));
-  return tableAt(line) ?? t;
+/** Errors unless point is in a field of a table row, as org-table-check-inside-data-field does. */
+function checkInsideDataField(assumeTable = false): void {
+  if ((assumeTable || atTable()) && /[^ \t]/.test(beforeOnLine()) && !atHline() && !/^[ \t]*$/.test(restOfLine())) return;
+  throw new Error("Not in table data field");
 }
 
-/** Puts an empty row after a line of the table, returning its line. */
-function insertRowAfter(t: Table, line: number): number {
-  const empty = formatTable({ ...t, rows: [{ rule: false, fields: [] }] })[0];
-  const blank = formatTable({ ...t, rows: [...t.rows, { rule: false, fields: [] }] }).at(-1) ?? empty;
-  let at = ember.lineEnd(line);
-  if (line + 1 >= ember.lineCount() || at === ember.bufferSize()) {
-    ember.gotoChar(at);
-    ember.insert("\n");
-    at += 1;
-  } else {
-    at += 1;
+/** The table line as bars and spaces, as org-table-clean-line makes it. */
+function cleanLine(s: string): string {
+  if (HLINE.test(s)) return Array.from(s, (c) => (c === "|" || c === "+" ? "|" : " ")).join("");
+  for (;;) {
+    const m = /\|([ \t]*?[^ \t\r\n|][^\r\n|]*)\|/.exec(s);
+    if (!m) return s;
+    s = s.slice(0, m.index) + "|" + " ".repeat(ember.stringWidth(m[1])) + "|" + s.slice(m.index + m[0].length);
   }
+}
+
+/** Moves to the line's column, or its end, as move-to-column does. */
+function moveToColumn(col: number): void {
+  const line = lineAt();
+  ember.gotoChar(ember.lineStart(line) + Math.min(col, ember.lineEnd(line) - ember.lineStart(line)));
+}
+
+function currentColumnOfPoint(): number {
+  return ember.point() - ember.lineStart(lineAt());
+}
+
+/** Moves down onto a data row for the column commands, as org-table-find-dataline does. */
+function findDataline(): void {
+  if (!atHline()) return;
+  const col = currentColumnOfPoint();
+  const end = tableEnd();
+  let line = lineAt() + 1;
+  while (lineStartOrEnd(line) < end && HLINE.test(ember.lineText(line))) line++;
+  if (lineStartOrEnd(line) >= end) throw new Error("Cannot find data row for column operation");
+  ember.gotoChar(ember.lineStart(line));
+  moveToColumn(col);
+}
+
+function insertRow(below: boolean): void {
+  tableHere();
+  if (ember.point() === ember.bufferSize()) saveExcursion(() => edInsert(ember.point(), "\n"));
+  if (!/\|[ \t]*$/.test(ember.lineText(lineAt()))) align();
+  const line = ember.lineText(lineAt());
+  let fresh = cleanLine(line);
+  const special = /^[ \t]*\| *[#*$] *\|/.exec(line);
+  if (special) fresh = fresh.replace(/^[ \t]*\| *[#*$] *\|/, special[0]);
+  forwardLine(below ? 1 : 0);
+  if (!atBol()) edInsert(ember.point(), "\n");
+  const before = needsAlign();
+  const at = ember.point();
+  edInsert(at, `${fresh}\n`, true);
   ember.gotoChar(at);
-  ember.insert(`${blank}\n`);
-  return line + 1;
+  const m = /\| ?/.exec(restOfLine());
+  if (m) ember.gotoChar(at + charCount(restOfLine().slice(0, (m.index ?? 0) + m[0].length)));
+  if (before) align();
+  else markAligned();
 }
-
-/** Moves to a field, putting point where Org does. */
-function gotoField(line: number, col: number): void {
-  ember.gotoChar(fieldStart(line, col));
-}
-
-/** The commands after which typing blanks a field: TAB, S-TAB and RET in Org, and the table motions. */
-const motions = ["org-cycle", "org-shifttab", "org-return", "org-table-next-field", "org-table-previous-field", "org-table-next-row"];
 
 ember.defineCommand({
   name: "org-table-align",
   doc: "Align the table at point: every column as wide as its widest field, numbers to the right.",
   run: () => {
+    tableHere();
     align();
   },
 });
 
 ember.defineCommand({
   name: "org-table-next-field",
-  doc: "Align the table and move to the next field, going on to the next row, and adding one at the end.",
+  doc: "Move to the next field, going on to the next row, and adding one at the end. The table is aligned first if it changed.",
   run: () => {
-    const t = align();
-    const line = ember.lineOf(ember.point());
-    const row = t.rows[line - t.first];
-    const col = row.rule ? columnCount(t) : columnAt(ember.point());
-    if (!row.rule && col < columnCount(t)) {
-      gotoField(line, col + 1);
-      return;
+    alignIfNeeded();
+    const end = tableEnd();
+    if (atHline()) ember.gotoChar(ember.lineEnd(lineAt()));
+    const searchBar = (): void => {
+      const text = ember.bufferText(ember.point(), end);
+      const i = text.indexOf("|");
+      if (i < 0) throw new Error("Search failed");
+      ember.gotoChar(ember.point() + charCount(text.slice(0, i)) + 1);
+    };
+    try {
+      searchBar();
+      if (/^[ \t]*$/.test(restOfLine())) searchBar();
+      if (charAt(ember.point()) === "-" && ember.variable("org-table-tab-jumps-over-hlines") === true) {
+        for (let l = lineAt() + 1; lineStartOrEnd(l) < end; l++) {
+          const m = /^[ \t]*\|([^-])/.exec(ember.lineText(l));
+          if (m) {
+            ember.gotoChar(ember.lineStart(l) + m[0].length - 1);
+            break;
+          }
+        }
+      }
+      if (charAt(ember.point()) === "-") {
+        forwardLine(-1);
+        insertRow(true);
+      } else if (charAt(ember.point()) === " ") ember.gotoChar(ember.point() + 1);
+    } catch {
+      insertRow(true);
     }
-    let next = line + 1;
-    while (next <= t.last && t.rows[next - t.first].rule) next++;
-    if (next > t.last) next = insertRowAfter(t, t.last);
-    gotoField(next, 1);
   },
 });
 
 ember.defineCommand({
   name: "org-table-previous-field",
-  doc: "Align the table and move to the previous field, going back to the row before.",
+  doc: "Move to the previous field, going back to the row before. The table is aligned first if it changed.",
   run: () => {
-    const t = align();
-    const line = ember.lineOf(ember.point());
-    const row = t.rows[line - t.first];
-    const col = row.rule ? 1 : columnAt(ember.point());
-    if (!row.rule && col > 1) {
-      gotoField(line, col - 1);
-      return;
+    justifyFieldMaybe();
+    alignIfNeeded();
+    if (atHline()) ember.gotoChar(ember.lineEnd(lineAt()));
+    const start = tableBegin();
+    const origin = ember.point();
+    const barBefore = (from: number): number => {
+      const text = ember.bufferText(start, from);
+      const i = text.lastIndexOf("|");
+      if (i < 0) throw new Error("Search failed");
+      return start + charCount(text.slice(0, i));
+    };
+    try {
+      let p = barBefore(barBefore(ember.point()));
+      while (/^\|(?:-|[ \t]*$)/.test(restOfLine(p))) p = barBefore(p);
+      ember.gotoChar(p);
+    } catch {
+      ember.gotoChar(origin);
+      throw new Error("Cannot move to previous table field");
     }
-    let prev = line - 1;
-    while (prev >= t.first && t.rows[prev - t.first].rule) prev--;
-    if (prev < t.first) throw new Error("Cannot move to field 0");
-    gotoField(prev, columnCount(t));
+    const m = /^\| ?/.exec(restOfLine());
+    if (m) ember.gotoChar(ember.point() + m[0].length);
   },
 });
 
 ember.defineCommand({
   name: "org-table-next-row",
-  doc: "Align the table and move to the same field in the next row, adding a row before a rule or at the end.",
+  doc: "Move to the same field in the next row, adding a row before a rule or at the end. The table is aligned first if it changed.",
   run: () => {
-    const t = align();
-    const line = ember.lineOf(ember.point());
-    const col = Math.min(columnAt(ember.point()), columnCount(t));
-    let next = line + 1;
-    if (next > t.last || t.rows[next - t.first].rule) next = insertRowAfter(t, line);
-    gotoField(next, col);
+    alignIfNeeded();
+    const col = currentColumn();
+    forwardLine(1);
+    if (!atBol()) edInsert(ember.point(), "\n");
+    if (!atTable() || atHline()) {
+      forwardLine(-1);
+      insertRow(true);
+    }
+    gotoColumn(col);
+    const before = beforeOnLine();
+    ember.gotoChar(ember.lineStart(lineAt()) + charCount(before.slice(0, before.lastIndexOf("|") + 1)));
+    if (charAt(ember.point()) === " ") ember.gotoChar(ember.point() + 1);
   },
 });
+
+/** Blanks the field at point, keeping its width, and moves to its start, as org-table-blank-field does. */
+function blankField(): void {
+  checkInsideDataField();
+  const before = beforeOnLine();
+  const bar = ember.lineStart(lineAt()) + charCount(before.slice(0, before.lastIndexOf("|")));
+  const m = /^\|[^|\n]+/.exec(restOfLine(bar));
+  if (m) {
+    const len = ember.stringWidth(m[0]);
+    edDelete(bar, bar + charCount(m[0]));
+    edInsert(bar, "|" + " ".repeat(len - 1));
+    ember.gotoChar(bar + 2);
+  }
+}
 
 ember.defineCommand({
   name: "org-table-blank-field",
   doc: "Blank the field at point, keeping its width.",
-  run: () => {
-    const line = ember.lineOf(ember.point());
-    const { start, end } = fieldText(line, columnAt(ember.point()));
-    const width = ember.stringWidth(ember.bufferText(start, end));
-    ember.deleteRegion(start, end);
-    ember.gotoChar(start);
-    ember.insert(" ".repeat(width));
-    ember.gotoChar(start);
-  },
+  run: () => blankField(),
 });
 
-/** Rewrites the table at point with changed rows, keeping point on a line and field. */
-function rewrite(change: (t: Table) => TableRow[], line: (t: Table, line: number) => number, col: (c: number) => number): void {
-  const t = tableHere();
-  const here = ember.lineOf(ember.point());
-  const c = columnAt(ember.point());
-  const rows = change(t);
-  const updated = { ...t, rows, last: t.first + rows.length - 1 };
-  const lines = formatTable(updated);
-  const start = ember.lineStart(t.first);
-  ember.deleteRegion(start, ember.lineEnd(t.last));
+/** The text of field n of point's row, replacing it with `replace` if given, as org-table-get-field does. */
+function getField(n?: number, replace?: string): string {
+  if (n !== undefined) gotoColumn(n);
+  const before = beforeOnLine();
+  const start = ember.lineStart(lineAt()) + charCount(before.slice(0, before.lastIndexOf("|") + 1));
   ember.gotoChar(start);
-  ember.insert(lines.join("\n"));
-  const target = Math.min(Math.max(line(updated, here), t.first), updated.last);
-  if (parseRow(ember.lineText(target)).rule) ember.gotoChar(ember.lineStart(target));
-  else gotoField(target, Math.max(1, Math.min(col(c), columnCount(updated))));
+  if (start === ember.lineStart(lineAt()) || /^[ \t]*$/.test(restOfLine())) return "";
+  const val = /^[^|\r\n]*/.exec(restOfLine())?.[0] ?? "";
+  if (replace !== undefined) {
+    edDelete(start, start + charCount(val));
+    edInsert(start, replace === "" ? " " : replace);
+  }
+  ember.gotoChar(Math.min(ember.lineEnd(lineAt()), start + 1));
+  return val;
 }
 
-function moveColumn(by: number): void {
-  const t = tableHere();
-  const c = columnAt(ember.point()) - 1;
-  const n = columnCount(t);
-  if (c + by < 0) throw new Error("Cannot move column further left");
-  if (c + by >= n) throw new Error("Cannot move column further right");
-  rewrite(
-    (t) =>
-      t.rows.map((r) => {
-        if (r.rule) return r;
-        const fields = Array.from({ length: n }, (_, i) => r.fields[i] ?? "");
-        [fields[c], fields[c + by]] = [fields[c + by], fields[c]];
-        return { rule: false, fields };
-      }),
-    (_, line) => line,
-    (col) => col + by,
-  );
+/** The data lines of the table at point, in order. */
+function dataLines(): number[] {
+  const lines: number[] = [];
+  for (let l = firstLine(); l <= lastLine(); l++) if (DATALINE.test(ember.lineText(l))) lines.push(l);
+  return lines;
 }
 
-function moveRow(by: number): void {
-  const t = tableHere();
-  const i = ember.lineOf(ember.point()) - t.first;
-  if (i + by < 0 || i + by >= t.rows.length) throw new Error(`Cannot move row further ${by < 0 ? "up" : "down"}`);
-  rewrite(
-    (t) => {
-      const rows = [...t.rows];
-      [rows[i], rows[i + by]] = [rows[i + by], rows[i]];
-      return rows;
-    },
-    (_, line) => line + by,
-    (col) => col,
-  );
+/** Which data line point is on, counting from 1, as org-table-current-line counts. */
+function currentDataLine(): number {
+  const p = ember.point();
+  let count = 0;
+  for (const l of dataLines()) {
+    count++;
+    if (ember.lineEnd(l) >= p) break;
+  }
+  return count;
+}
+
+function gotoDataLine(n: number): boolean {
+  const lines = dataLines();
+  if (n < 1 || n > lines.length) return false;
+  ember.gotoChar(ember.lineStart(lines[n - 1]));
+  return true;
+}
+
+/** How many fields the table's first data row has, as org-table-analyze counts them. */
+function columnCount(): number {
+  const lines = dataLines();
+  if (lines.length === 0) return 0;
+  const pieces = ember.lineText(lines[0]).split(/[ \t]*\|[ \t]*/);
+  if (pieces.length > 1 && pieces[0] === "") pieces.shift();
+  if (pieces.length > 1 && pieces[pieces.length - 1] === "") pieces.pop();
+  return pieces.length;
+}
+
+/** Swaps the field at point with the one next to it, as org-table--move-cell does. */
+function moveCell(dRow: number, dCol: number): void {
+  checkInsideDataField();
+  const row = currentDataLine();
+  const column = currentColumn();
+  const [targetRow, targetColumn] = [row + dRow, column + dCol];
+  if (targetColumn < 1 || targetRow < 1 || targetColumn > columnCount() || targetRow > dataLines().length) {
+    throw new Error("Cannot move cell further");
+  }
+  const get = (r: number, c: number): string =>
+    saveExcursion(() => {
+      gotoDataLine(r);
+      return getField(c).trim();
+    });
+  const put = (r: number, c: number, value: string): void =>
+    saveExcursion(() => {
+      gotoDataLine(r);
+      gotoColumn(c, false, true);
+      getField(c, value);
+    });
+  const a = get(row, column);
+  const b = get(targetRow, targetColumn);
+  put(row, column, b);
+  put(targetRow, targetColumn, a);
+  gotoDataLine(targetRow);
+  gotoColumn(targetColumn);
+  align();
+}
+
+ember.defineCommand({
+  name: "org-table-move-cell-up",
+  doc: "Swap the field at point with the one above it.",
+  run: () => moveCell(-1, 0),
+});
+ember.defineCommand({
+  name: "org-table-move-cell-down",
+  doc: "Swap the field at point with the one below it.",
+  run: () => moveCell(1, 0),
+});
+ember.defineCommand({
+  name: "org-table-move-cell-left",
+  doc: "Swap the field at point with the one to its left.",
+  run: () => moveCell(0, -1),
+});
+ember.defineCommand({
+  name: "org-table-move-cell-right",
+  doc: "Swap the field at point with the one to its right.",
+  run: () => moveCell(0, 1),
+});
+
+/** Runs body at the start of each data row of the table, then goes back to the field point was in, as org-table-save-field does. */
+function eachDataRow(body: () => void): void {
+  const lineMark = marker(ember.lineStart(lineAt()));
+  const column = currentColumn();
+  const end = marker(tableEnd());
+  try {
+    for (let l = firstLine(); l < ember.lineCount() && ember.lineStart(l) < end.pos; l++) {
+      ember.gotoChar(ember.lineStart(l));
+      if (!atHline()) body();
+    }
+  } finally {
+    ember.gotoChar(lineMark.pos);
+    gotoColumn(column);
+    dropMarker(lineMark);
+    dropMarker(end);
+  }
+}
+
+function moveColumn(left: boolean): void {
+  tableHere();
+  findDataline();
+  checkInsideDataField(true);
+  const col = currentColumn();
+  const col1 = left ? col - 1 : col;
+  const colpos = left ? col - 1 : col + 1;
+  if (left && col === 1) throw new Error("Cannot move column further left");
+  if (!left && /^[^|\n]*\|[^|\n]*$/.test(restOfLine())) throw new Error("Cannot move column further right");
+  eachDataRow(() => {
+    gotoColumn(col1, true, true);
+    const m = /^\|([^|\n]+)\|([^|\n]+)\|/.exec(restOfLine());
+    if (m) {
+      const p = ember.point();
+      edDelete(p + 1, p + 2 + charCount(m[1]) + charCount(m[2]));
+      edInsert(p + 1, `${m[2]}|${m[1]}`);
+    }
+  });
+  gotoColumn(colpos);
+  align();
 }
 
 ember.defineCommand({
   name: "org-table-move-column-left",
   doc: "Swap the column at point with the one to its left.",
-  run: () => moveColumn(-1),
+  run: () => moveColumn(true),
 });
 ember.defineCommand({
   name: "org-table-move-column-right",
   doc: "Swap the column at point with the one to its right.",
-  run: () => moveColumn(1),
+  run: () => moveColumn(false),
 });
+
+/** Swaps the row at point with the one above or below it, as org-table-move-row does, without aligning. */
+function moveRow(up: boolean): void {
+  const col = currentColumnOfPoint();
+  const pos = ember.point();
+  if (up && ember.lineStart(lineAt()) === 0) throw new Error("Cannot move row further");
+  forwardLine(up ? -1 : 1);
+  if ((!up && ember.point() === ember.bufferSize()) || !atTable()) {
+    ember.gotoChar(pos);
+    throw new Error("Cannot move row further");
+  }
+  ember.gotoChar(pos);
+  const bol = ember.lineStart(lineAt());
+  const row = edDelete(bol, lineStartOrEnd(lineAt() + 1));
+  ember.gotoChar(bol);
+  forwardLine(up ? -1 : 1);
+  if (!atBol()) edInsert(ember.point(), "\n");
+  edInsert(ember.point(), row);
+  if (!atBol()) edInsert(ember.point(), "\n");
+  forwardLine(-1);
+  moveToColumn(col);
+}
+
 ember.defineCommand({
   name: "org-table-move-row-up",
   doc: "Swap the row at point with the one above it.",
-  run: () => moveRow(-1),
+  run: () => moveRow(true),
 });
 ember.defineCommand({
   name: "org-table-move-row-down",
   doc: "Swap the row at point with the one below it.",
-  run: () => moveRow(1),
+  run: () => moveRow(false),
 });
 
 ember.defineCommand({
   name: "org-table-insert-row",
   doc: "Insert an empty row above the one at point, or below it with a prefix argument.",
-  run: () => {
-    const below = ember.prefixArg() !== null;
-    rewrite(
-      (t) => {
-        const i = ember.lineOf(ember.point()) - t.first + (below ? 1 : 0);
-        return [...t.rows.slice(0, i), { rule: false, fields: [] }, ...t.rows.slice(i)];
-      },
-      (_, line) => line + (below ? 1 : 0),
-      (col) => col,
-    );
-  },
+  run: () => insertRow(ember.prefixArg() !== null),
 });
 
 ember.defineCommand({
@@ -353,17 +687,17 @@ ember.defineCommand({
   doc: "Kill the row at point, so C-y can put it back.",
   run: () => {
     tableHere();
-    const line = ember.lineOf(ember.point());
-    const col = columnAt(ember.point());
-    const start = ember.lineStart(line);
-    const mark = ember.mark() ?? null;
-    ember.setMark(Math.min(ember.lineEnd(line) + 1, ember.bufferSize()));
-    ember.gotoChar(start);
+    const col = currentColumnOfPoint();
+    const line = lineAt();
+    const [from, to] = [ember.lineStart(line), Math.min(ember.lineEnd(line) + 1, ember.bufferSize())];
+    const mark = ember.mark();
+    ember.setMark(to);
+    ember.gotoChar(from);
     ember.call("kill-region");
-    ember.setMark(mark === null ? null : Math.min(mark, ember.bufferSize()));
-    const target = isTableLine(line) ? line : line - 1;
-    if (isTableLine(target) && !parseRow(ember.lineText(target)).rule) gotoField(target, col);
-    else ember.gotoChar(ember.lineStart(Math.max(0, target)));
+    ember.setMark(mark === undefined ? null : mark >= to ? mark - (to - from) : mark > from ? from : mark);
+    ember.gotoChar(from);
+    if (!atTable()) forwardLine(-1);
+    moveToColumn(col);
   },
 });
 
@@ -371,20 +705,24 @@ ember.defineCommand({
   name: "org-table-insert-column",
   doc: "Insert an empty column to the left of the one at point.",
   run: () => {
-    const t = tableHere();
-    const c = columnAt(ember.point()) - 1;
-    const n = columnCount(t);
-    rewrite(
-      (t) =>
-        t.rows.map((r) => {
-          if (r.rule) return r;
-          const fields = Array.from({ length: n }, (_, i) => r.fields[i] ?? "");
-          fields.splice(c, 0, "");
-          return { rule: false, fields };
-        }),
-      (_, line) => line,
-      (col) => col,
-    );
+    tableHere();
+    if (ember.point() === ember.bufferSize()) saveExcursion(() => edInsert(ember.point(), "\n"));
+    if (!/\|[ \t]*$/.test(ember.lineText(lineAt()))) align();
+    findDataline();
+    const col = Math.max(1, currentColumn());
+    saveExcursion(() => {
+      const end = marker(tableEnd());
+      for (let l = firstLine(); l < ember.lineCount() && ember.lineStart(l) < end.pos; l++) {
+        ember.gotoChar(ember.lineStart(l));
+        if (!atHline()) {
+          gotoColumn(col, true);
+          edInsert(ember.point(), "|");
+        }
+      }
+      dropMarker(end);
+    });
+    gotoColumn(col);
+    align();
   },
 });
 
@@ -392,51 +730,141 @@ ember.defineCommand({
   name: "org-table-delete-column",
   doc: "Delete the column at point.",
   run: () => {
-    const t = tableHere();
-    const c = columnAt(ember.point()) - 1;
-    const n = columnCount(t);
-    if (n === 1) throw new Error("Cannot delete the only column");
-    rewrite(
-      (t) =>
-        t.rows.map((r) => {
-          if (r.rule) return r;
-          const fields = Array.from({ length: n }, (_, i) => r.fields[i] ?? "");
-          fields.splice(c, 1);
-          return { rule: false, fields };
-        }),
-      (_, line) => line,
-      (col) => Math.min(col, n - 1),
-    );
+    tableHere();
+    findDataline();
+    // After the last field, the last column goes.
+    if (/^[ \t]*$/.test(restOfLine())) {
+      const before = beforeOnLine();
+      ember.gotoChar(ember.lineStart(lineAt()) + charCount(before.slice(0, before.lastIndexOf("|"))));
+    }
+    checkInsideDataField(true);
+    const col = currentColumn();
+    eachDataRow(() => {
+      gotoColumn(col, true, true);
+      const m = /^\|[^|\n]+\|/.exec(restOfLine());
+      if (m) {
+        const p = ember.point();
+        edDelete(p, p + charCount(m[0]));
+        edInsert(p, "|");
+      }
+    });
+    align();
   },
 });
 
 ember.defineCommand({
   name: "org-table-insert-hline",
-  doc: "Insert a rule below the row at point, or above it with a prefix argument.",
+  doc: "Insert a rule below the row at point, or above it with a prefix argument, as wide as the row's fields.",
   run: () => {
-    const t = tableHere();
-    const p = ember.point();
-    const line = ember.lineOf(p);
+    tableHere();
     const above = ember.prefixArg() !== null;
-    const rule = formatTable({ ...t, rows: [...t.rows, { rule: true }] }).at(-1) ?? "|-|";
-    const offset = p - ember.lineStart(line);
-    if (above) {
-      ember.gotoChar(ember.lineStart(line));
-      ember.insert(`${rule}\n`);
-      ember.gotoChar(ember.lineStart(line + 1) + offset);
-    } else {
-      ember.gotoChar(ember.lineEnd(line));
-      ember.insert(`\n${rule}`);
-      ember.gotoChar(p);
+    if (ember.point() === ember.bufferSize()) saveExcursion(() => edInsert(ember.point(), "\n"));
+    if (!/\|[ \t]*$/.test(ember.lineText(lineAt()))) align();
+    let rule = cleanLine(ember.lineText(lineAt()));
+    const col = currentColumnOfPoint();
+    for (let m = /\|( +)\|/.exec(rule); m; m = /\|( +)\|/.exec(rule)) {
+      rule = rule.slice(0, m.index) + "+" + "-".repeat(m[1].length) + "|" + rule.slice(m.index + m[0].length);
     }
-    const aligned = tableAt(line);
-    if (aligned) {
-      const keep = ember.point();
-      replaceLines(aligned, formatTable(aligned));
-      ember.gotoChar(keep);
-    }
+    rule = rule.replace("+", "|");
+    forwardLine(above ? 0 : 1);
+    edInsert(ember.point(), `${rule}\n`);
+    forwardLine(above ? 0 : -2);
+    moveToColumn(col);
   },
 });
+
+ember.defineCommand({
+  name: "org-table-wrap-region",
+  doc: "Split the field at point, as M-RET does in a table: the text after point goes to the same field in the next row.",
+  run: () => {
+    checkInsideDataField();
+    if (ember.regionActive()) throw new Error("Wrapping a region of a table is not supported yet");
+    if (ember.variable("org-M-RET-may-split-line") === false) {
+      const rest = restOfLine();
+      const i = rest.search(/[|\r\n]/);
+      ember.gotoChar(ember.point() + charCount(i < 0 ? rest : rest.slice(0, i)));
+    }
+    const m = /^([^|]+)\|/.exec(restOfLine());
+    if (m) {
+      const p = ember.point();
+      edDelete(p, p + charCount(m[0]));
+      edInsert(p, " |");
+      ember.gotoChar(p);
+      ember.call("org-table-next-row");
+      ember.insert(`${m[1].trim()} `);
+      align();
+    } else ember.call("org-table-next-row");
+  },
+});
+
+/** Copies a rectangle of fields, blanking them if cutting, as org-table-copy-region does. */
+function copyRegion(cut: boolean): void {
+  const region = ember.regionActive() && ember.mark() !== undefined;
+  const mark = ember.mark() ?? ember.point();
+  const [beg, end] = region ? [Math.min(mark, ember.point()), Math.max(mark, ember.point())] : [ember.point(), ember.point()];
+  ember.gotoChar(beg);
+  checkInsideDataField();
+  const begLine = lineAt();
+  const c01 = currentColumn();
+  ember.gotoChar(end);
+  checkInsideDataField(true);
+  const endMark = marker(ember.lineEnd(lineAt()));
+  const c02 = currentColumn();
+  const [from, to] = [Math.min(c01, c02), Math.max(c01, c02)];
+  for (let l = begLine; l < ember.lineCount() && ember.lineStart(l) < endMark.pos; l++) {
+    ember.gotoChar(ember.lineStart(l));
+    if (atHline()) continue;
+    for (let c = from; c <= to; c++) getField(c, cut ? "  " : undefined);
+  }
+  dropMarker(endMark);
+  if (cut) align();
+}
+
+ember.defineCommand({
+  name: "org-table-cut-region",
+  doc: "Blank the field at point, or the fields in the region, as cutting them does.",
+  run: () => copyRegion(true),
+});
+
+ember.defineCommand({
+  name: "org-table-copy-region",
+  doc: "Copy the field at point, or the fields in the region.",
+  run: () => copyRegion(false),
+});
+
+ember.defineCommand({
+  name: "org-table-recalculate",
+  doc: "Recalculate the table's formulas. Ember does not support table formulas yet, so with none this does nothing, as in Org.",
+  run: () => tableHere(),
+});
+
+ember.defineCommand({
+  name: "org-table-justify-field-maybe",
+  doc: "Note whether the table at point needs aligning before moving on from a field, as TAB and RET do first.",
+  run: () => justifyFieldMaybe(),
+});
+
+
+/** Rows laid out as an aligned table, for making a new one. */
+function formatRows(indent: string, rows: Row[]): string[] {
+  const data = rows.filter((r): r is string[] => r !== "hline");
+  const n = Math.max(1, ...data.map((r) => r.length));
+  const widths = Array.from({ length: n }, (_, i) => Math.max(1, ...data.map((r) => ember.stringWidth(r[i] ?? ""))));
+  const fraction = Number(ember.variable("org-table-number-fraction") ?? 0.5);
+  const aligns = widths.map((_, i) => {
+    const cells = data.map((r) => r[i] ?? "").filter((c) => c !== "");
+    return cells.filter((c) => NUMBER.test(c)).length >= fraction * cells.length ? "r" : "l";
+  });
+  return rows.map(
+    (r) =>
+      indent +
+      "|" +
+      (r === "hline"
+        ? widths.map((w) => "-".repeat(w + 2)).join("+")
+        : widths.map((w, i) => alignField(r[i] ?? "", w, aligns[i])).join("|")) +
+      "|",
+  );
+}
 
 ember.defineCommand({
   name: "org-table-create-or-convert-from-region",
@@ -455,21 +883,22 @@ ember.defineCommand({
         : lines.every((l) => l.includes(",") || l.trim() === "")
           ? /,/
           : /\s+/;
-      const rows: TableRow[] = lines.map((l) => ({ rule: false, fields: l.trim().split(separator).map((f) => f.trim()) }));
+      const rows: Row[] = lines.map((l) => l.trim().split(separator).map((f) => f.trim()));
       ember.deactivateMark();
       ember.deleteRegion(from, to);
       ember.gotoChar(from);
-      ember.insert(formatTable({ first: 0, last: 0, indent: "", rows }).join("\n"));
-      gotoField(ember.lineOf(from), 1);
+      ember.insert(formatRows("", rows).join("\n"));
+      ember.gotoChar(from);
+      gotoColumn(1);
       return;
     }
     const match = /^\s*(\d+)\s*x\s*(\d+)\s*$/.exec(size === "" ? "5x2" : size);
     if (!match) throw new Error("Table size should be columns x rows, such as 5x2");
     const [cols, rowCount] = [Number(match[1]), Number(match[2])];
-    const rows: TableRow[] = [];
+    const rows: Row[] = [];
     for (let r = 0; r < rowCount; r++) {
-      rows.push({ rule: false, fields: Array.from({ length: cols }, () => "") });
-      if (r === 0 && rowCount > 1) rows.push({ rule: true });
+      rows.push(Array.from({ length: cols }, () => ""));
+      if (r === 0 && rowCount > 1) rows.push("hline");
     }
     const line = ember.lineOf(ember.point());
     const indent = /^[ \t]*/.exec(ember.lineText(line))?.[0] ?? "";
@@ -481,32 +910,27 @@ ember.defineCommand({
       ember.gotoChar(ember.lineStart(line));
     }
     const start = ember.point();
-    ember.insert(`${formatTable({ first: 0, last: 0, indent, rows }).join("\n")}\n`);
-    gotoField(ember.lineOf(start), 1);
+    ember.insert(`${formatRows(indent, rows).join("\n")}\n`);
+    ember.gotoChar(start);
+    gotoColumn(1);
   },
 });
 
-// Typing in a table keeps it aligned: a field with room to spare loses a
-// space before its bar as a character goes in, and deleting puts one back.
+// Typing and deleting in a table keep fields as wide as they were, as
+// org-self-insert-command, org-delete-char and org-delete-backward-char do.
 // org-mode remaps the typing and deleting commands to these.
 
-/** Whether the line at point is a table row and point is between two of its bars. */
-function inTableField(): boolean {
-  const p = ember.point();
-  const line = ember.lineOf(p);
-  if (!isTableLine(line) || parseRow(ember.lineText(line)).rule) return false;
-  const chars = Array.from(ember.lineText(line));
-  const i = p - ember.lineStart(line);
-  return chars.slice(0, i).includes("|") && chars.slice(i).includes("|");
+/** The commands after which typing blanks a field, as org-self-insert-command checks. */
+const BLANKING_COMMANDS = ["org-cycle", "org-return", "org-shifttab", "org-ctrl-c-ctrl-c"];
+
+function fixTagsOnTheFly(): void {
+  ember.call("org-fix-tags-on-the-fly");
 }
 
-/** The position of the bar ending the field at point. */
-function barAfterPoint(): number {
-  const p = ember.point();
-  const line = ember.lineOf(p);
-  const chars = Array.from(ember.lineText(line));
-  const i = chars.indexOf("|", p - ember.lineStart(line));
-  return ember.lineStart(line) + i;
+/** Deletes n characters forward, or back if n is negative, as delete-char does from Lisp: without killing them. */
+function deleteChars(n: number, backward = false): void {
+  const command = (n < 0) !== backward ? "delete-backward-char" : "delete-char";
+  for (let i = 0; i < Math.abs(n); i++) ember.call(command);
 }
 
 ember.defineCommand({
@@ -514,48 +938,68 @@ ember.defineCommand({
   doc:
     "Insert the character typed, as self-insert-command does, keeping a table aligned.\n\n" +
     "In a table field with spaces to spare, a space before the next bar goes as the character goes in. " +
-    "Typing right after TAB, S-TAB or RET moved into a field first blanks it (org-table-auto-blank-field).",
+    "Typing right after TAB, S-TAB, RET or C-c C-c moved into a field first blanks it (org-table-auto-blank-field). " +
+    "On a heading, the tags are aligned again.",
   run: () => {
-    if (!inTableField() || ember.prefixNumericValue() !== 1 || ember.variable("overwrite-mode") === true) {
-      ember.callWithPrefix(ember.prefixArg(), "self-insert-command");
-      return;
-    }
-    const last = ember.lastCommand();
-    if (ember.variable("org-table-auto-blank-field") === true && last !== undefined && motions.includes(last)) {
-      const line = ember.lineOf(ember.point());
-      const { start, end } = fieldText(line, columnAt(ember.point()));
-      if (ember.point() <= start && end > start) {
-        ember.call("org-table-blank-field");
+    ember.call("org-fold-check-before-invisible-edit-maybe");
+    if (ember.prefixNumericValue() === 1 && !ember.regionActive() && atTable()) {
+      if (ember.variable("org-table-auto-blank-field") === true && BLANKING_COMMANDS.includes(ember.lastCommand() ?? "")) {
+        blankField();
+      }
+      if (/^[^|\n]*  \|/.test(restOfLine())) {
+        ember.call("self-insert-command");
+        const rest = restOfLine();
+        const bar = ember.point() + charCount(rest.slice(0, rest.indexOf("|")));
+        saveExcursion(() => edDelete(bar - 2, bar - 1));
+        return;
       }
     }
-    const bar = barAfterPoint();
-    if (bar - ember.point() >= 2 && ember.bufferText(bar - 2, bar) === "  ") {
-      ember.deleteRegion(bar - 1, bar);
-    }
-    ember.call("self-insert-command");
+    ember.callWithPrefix(ember.prefixArg(), "self-insert-command");
+    fixTagsOnTheFly();
   },
 });
 
-function deleteInField(backward: boolean): boolean {
-  if (!inTableField() || ember.prefixNumericValue() !== 1 || ember.regionActive()) return false;
-  const p = ember.point();
-  const target = backward ? p - 1 : p;
-  if (target < 0 || ember.bufferText(target, target + 1) === "|") return false;
-  ember.deleteRegion(target, target + 1);
-  ember.gotoChar(target);
-  const bar = barAfterPoint();
-  const keep = ember.point();
-  ember.gotoChar(bar);
-  ember.insert(" ");
-  ember.gotoChar(keep);
-  return true;
+/** Deletes the character after point, putting a space back before the field's bar in a table, as org-delete-char does. */
+function orgDeleteChar(n: number): void {
+  if (n !== 1 || charAt(ember.point()) === "|" || /^[ \t]*$/.test(beforeOnLine()) || !atTable()) {
+    deleteChars(n);
+    fixTagsOnTheFly();
+    return;
+  }
+  const m = /^.(.*?)\|/.exec(restOfLine());
+  if (m) {
+    const update = needsAlign();
+    const noalign = /^.*?  \|/.test(restOfLine());
+    const p = ember.point();
+    const end = p + charCount(m[0]);
+    edDelete(p, p + 1);
+    saveExcursion(() => edInsert(end - 2, " "));
+    if (noalign && !update) markAligned();
+  } else deleteChars(n);
 }
 
 ember.defineCommand({
   name: "org-delete-backward-char",
   doc: "Delete the character before point, as delete-backward-char does, keeping a table's field as wide as it was.",
   run: () => {
-    if (!deleteInField(true)) ember.callWithPrefix(ember.prefixArg(), "delete-backward-char");
+    ember.call("org-fold-check-before-invisible-edit-maybe");
+    const p = ember.point();
+    if (
+      ember.prefixNumericValue() === 1 &&
+      ember.variable("overwrite-mode") !== true &&
+      !ember.regionActive() &&
+      p > 0 &&
+      charAt(p - 1) !== "|" &&
+      /[^ \t]/.test(beforeOnLine()) &&
+      restOfLine().includes("|") &&
+      atTable()
+    ) {
+      ember.gotoChar(p - 1);
+      orgDeleteChar(1);
+      return;
+    }
+    deleteChars(ember.prefixNumericValue(), true);
+    fixTagsOnTheFly();
   },
 });
 
@@ -563,6 +1007,7 @@ ember.defineCommand({
   name: "org-delete-char",
   doc: "Delete the character after point, as delete-char does, keeping a table's field as wide as it was.",
   run: () => {
-    if (!deleteInField(false)) ember.callWithPrefix(ember.prefixArg(), "delete-char");
+    ember.call("org-fold-check-before-invisible-edit-maybe");
+    orgDeleteChar(ember.prefixNumericValue());
   },
 });

@@ -324,3 +324,24 @@ fn org_mode_behaves_like_emacs_on_random_cases() {
     fs::write(work.join("differences.json"), serde_json::to_string_pretty(&out).unwrap()).unwrap();
     assert!(failing.is_empty(), "{} differences from Emacs; see above", failing.len());
 }
+
+/// Runs the cases in `EMBER_FUZZ_REPLAY` (by default the last run's
+/// `differences.json`) again, to check fixes without a new search.
+#[test]
+#[ignore = "needs GNU Emacs; run with --ignored"]
+fn org_mode_replays_differences() {
+    let work = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/org-fuzz");
+    let file = std::env::var("EMBER_FUZZ_REPLAY").map(Into::into).unwrap_or_else(|_| work.join("differences.json"));
+    let cases: Vec<Case> = serde_json::from_str(&fs::read_to_string(file).unwrap()).unwrap();
+    let recorded = record(&work.join("replay"), &cases);
+    let mut failing = 0;
+    for case in &cases {
+        let Some(diff) = compare(case, &recorded[&case.name]) else { continue };
+        if !diff.is_empty() {
+            failing += 1;
+            eprintln!("\n{}: text {:?}, point {}, keys {:?}\n{diff}", case.name, case.text, case.point, case.keys);
+        }
+    }
+    eprintln!("\n{failing} of {} cases differ", cases.len());
+    assert_eq!(failing, 0);
+}

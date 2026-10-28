@@ -538,13 +538,19 @@ declare global {
        */
       "org-content": [];
       /**
+       * Copy the subtree point is in, or in a table, the field at point or the fields in the region.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-copy-special": [];
+      /**
        * Copy the subtree point is in to the kill ring.
        *
        * Defined in packages/org.ts.
        */
       "org-copy-subtree": [];
       /**
-       * C-c C-c in Org: tick or untick a checkbox, align a table, update a statistics cookie, set a heading's tags, or re-read the buffer's #+ settings on a #+ line.
+       * C-c C-c in Org: tick or untick a checkbox, align a table, update a statistics cookie, set a heading's tags, fix a timestamp, or re-read the buffer's #+ settings on a #+ line.
        *
        * Defined in packages/org.ts.
        */
@@ -555,6 +561,18 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-ctrl-c-minus": [];
+      /**
+       * C-c * in Org: recalculate a table, or turn the line into a heading as org-toggle-heading does.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-ctrl-c-star": [];
+      /**
+       * Cut the subtree point is in, or in a table, blank the field at point or the fields in the region.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-cut-special": [];
       /**
        * Kill the subtree point is in, so C-c C-x C-y or C-y can put it back.
        *
@@ -569,6 +587,18 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-cycle": [];
+      /**
+       * Indent an empty item, then outdent it a level at a time, then put it back, as repeated TAB does.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-cycle-item-indentation": [];
+      /**
+       * Change the level of an empty heading: a child of the heading above, then up the levels, as repeated TAB does.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-cycle-level": [];
       /**
        * Change the bullets of the list point is in to the next kind: -, +, *, 1. and 1).
        *
@@ -614,11 +644,47 @@ declare global {
        */
       "org-do-promote": [];
       /**
+       * Move the element at point, such as a paragraph or a list, before the one above it.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-drag-element-backward": [];
+      /**
+       * Move the element at point, such as a paragraph or a list, after the one below it.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-drag-element-forward": [];
+      /**
+       * Drag the line at point up past the line before it, or as many lines as the prefix argument says.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-drag-line-backward": [];
+      /**
+       * Drag the line at point down past the next line, or as many lines as the prefix argument says.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-drag-line-forward": [];
+      /**
        * Move to the end of the line, staying on a folded heading's line rather than going past its hidden text.
        *
        * Defined in packages/org.ts.
        */
       "org-end-of-line": [];
+      /**
+       * Align the tags of the heading point is on, if point is before them, as typing on a heading does.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-fix-tags-on-the-fly": [];
+      /**
+       * Stop or unfold before an edit next to folded text, if the running command is one Org checks.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-fold-check-before-invisible-edit-maybe": [];
       /**
        * Move to the next heading at the same level, under the same parent.
        *
@@ -632,7 +698,7 @@ declare global {
        */
       "org-global-cycle": [];
       /**
-       * Make the item point is on a child of the item before it.
+       * Make the item point is on a child of the item before it, leaving its children where they are.
        *
        * Defined in packages/org.ts.
        */
@@ -662,7 +728,7 @@ declare global {
        */
       "org-insert-heading-respect-content": [];
       /**
-       * Insert an item in the list point is in, after the item point is in.
+       * Insert an item in the list point is in, at its level: before the item if point is before its text, else after it.
        *
        * Defined in packages/org.ts.
        */
@@ -688,6 +754,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-insert-todo-heading-respect-content": [];
+      /**
+       * Fix the indentation, bullets and checkboxes of the list point is in.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-list-repair": [];
       /**
        * Make the region the subtree point is in: point at its heading, the mark at its end.
        *
@@ -741,13 +813,13 @@ declare global {
        */
       "org-mouse-follow-link": [];
       /**
-       * Swap the item point is on with the one after it.
+       * Swap the item point is on, with the items under it, with the one after it.
        *
        * Defined in packages/org.ts.
        */
       "org-move-item-down": [];
       /**
-       * Swap the item point is on with the one before it.
+       * Swap the item point is on, with the items under it, with the one before it.
        *
        * Defined in packages/org.ts.
        */
@@ -783,7 +855,7 @@ declare global {
        */
       "org-open-at-point": [];
       /**
-       * Make the item point is on a sibling of its parent.
+       * Make the item point is on a sibling of its parent, leaving its children where they are.
        *
        * Defined in packages/org.ts.
        */
@@ -847,6 +919,8 @@ declare global {
       /**
        * RET in Org: in a table, move to the next row; elsewhere start a new line, indented as org-indent-line does.
        *
+       * On a heading, the title after point goes to the new line, but the state, priority and tags stay. In a list item, the text after point moves to the new line after it is indented.
+       *
        * Defined in packages/org.ts.
        */
       "org-return": [];
@@ -861,7 +935,7 @@ declare global {
       /**
        * Insert the character typed, as self-insert-command does, keeping a table aligned.
        *
-       * In a table field with spaces to spare, a space before the next bar goes as the character goes in. Typing right after TAB, S-TAB or RET moved into a field first blanks it (org-table-auto-blank-field).
+       * In a table field with spaces to spare, a space before the next bar goes as the character goes in. Typing right after TAB, S-TAB, RET or C-c C-c moved into a field first blanks it (org-table-auto-blank-field). On a heading, the tags are aligned again.
        *
        * Defined in packages/org-table.ts.
        */
@@ -887,7 +961,7 @@ declare global {
        */
       "org-shiftleft": [];
       /**
-       * M-S-<down> in Org: insert a table row above the one point is on.
+       * M-S-<down> in Org: insert a table row above the one point is on, or drag the line down.
        *
        * Defined in packages/org.ts.
        */
@@ -905,7 +979,7 @@ declare global {
        */
       "org-shiftmetaright": [];
       /**
-       * M-S-<up> in Org: delete the table row point is on.
+       * M-S-<up> in Org: delete the table row point is on, or drag the line up.
        *
        * Defined in packages/org.ts.
        */
@@ -949,6 +1023,12 @@ declare global {
        */
       "org-table-blank-field": [];
       /**
+       * Copy the field at point, or the fields in the region.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-copy-region": [];
+      /**
        * Make a table: from the active region, splitting lines at tabs, else commas, else runs of spaces; otherwise an empty one of a size read in the minibuffer, such as 3x2.
        *
        * @param size text
@@ -956,6 +1036,12 @@ declare global {
        * Defined in packages/org-table.ts.
        */
       "org-table-create-or-convert-from-region": [size: string];
+      /**
+       * Blank the field at point, or the fields in the region, as cutting them does.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-cut-region": [];
       /**
        * Delete the column at point.
        *
@@ -969,7 +1055,7 @@ declare global {
        */
       "org-table-insert-column": [];
       /**
-       * Insert a rule below the row at point, or above it with a prefix argument.
+       * Insert a rule below the row at point, or above it with a prefix argument, as wide as the row's fields.
        *
        * Defined in packages/org-table.ts.
        */
@@ -981,11 +1067,41 @@ declare global {
        */
       "org-table-insert-row": [];
       /**
+       * Note whether the table at point needs aligning before moving on from a field, as TAB and RET do first.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-justify-field-maybe": [];
+      /**
        * Kill the row at point, so C-y can put it back.
        *
        * Defined in packages/org-table.ts.
        */
       "org-table-kill-row": [];
+      /**
+       * Swap the field at point with the one below it.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-move-cell-down": [];
+      /**
+       * Swap the field at point with the one to its left.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-move-cell-left": [];
+      /**
+       * Swap the field at point with the one to its right.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-move-cell-right": [];
+      /**
+       * Swap the field at point with the one above it.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-move-cell-up": [];
       /**
        * Swap the column at point with the one to its left.
        *
@@ -1011,23 +1127,35 @@ declare global {
        */
       "org-table-move-row-up": [];
       /**
-       * Align the table and move to the next field, going on to the next row, and adding one at the end.
+       * Move to the next field, going on to the next row, and adding one at the end. The table is aligned first if it changed.
        *
        * Defined in packages/org-table.ts.
        */
       "org-table-next-field": [];
       /**
-       * Align the table and move to the same field in the next row, adding a row before a rule or at the end.
+       * Move to the same field in the next row, adding a row before a rule or at the end. The table is aligned first if it changed.
        *
        * Defined in packages/org-table.ts.
        */
       "org-table-next-row": [];
       /**
-       * Align the table and move to the previous field, going back to the row before.
+       * Move to the previous field, going back to the row before. The table is aligned first if it changed.
        *
        * Defined in packages/org-table.ts.
        */
       "org-table-previous-field": [];
+      /**
+       * Recalculate the table's formulas. Ember does not support table formulas yet, so with none this does nothing, as in Org.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-recalculate": [];
+      /**
+       * Split the field at point, as M-RET does in a table: the text after point goes to the same field in the next row.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-wrap-region": [];
       /**
        * Insert an active timestamp, such as <2026-10-28 Wed>, for a date read in the minibuffer; on a timestamp, change it.
        *
@@ -1087,7 +1215,7 @@ declare global {
        */
       "org-todo-set": [state: string];
       /**
-       * Tick or untick the checkbox of the item point is in. With C-u, add a checkbox to it, or remove its checkbox.
+       * Tick or untick the checkbox of the item point is on, or of the items in the region or under the heading. With C-u, add a checkbox to the item, or remove its checkbox.
        *
        * Defined in packages/org.ts.
        */
@@ -1099,13 +1227,13 @@ declare global {
        */
       "org-toggle-heading": [];
       /**
-       * Turn the line, or each line of the region, into a list item, or a heading into one.
+       * Turn the line into a list item, a heading into one, or an item back into a plain line.
        *
        * Defined in packages/org.ts.
        */
       "org-toggle-item": [];
       /**
-       * Bring the statistics cookies of the heading point is under, such as [1/3], up to date.
+       * Bring the statistics cookies, such as [1/3], of the heading or item point is in up to date.
        *
        * Defined in packages/org.ts.
        */
@@ -1489,6 +1617,14 @@ declare global {
        */
       "toggle-truncate-lines": [];
       /**
+       * Exchange the line point is on with the line before it, leaving point after both.
+       *
+       * With a prefix argument, move the line before point past that many lines; with 0, exchange the line point is on with the line the mark is on.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "transpose-lines": [];
+      /**
        * Undo the last change, or as many changes as the prefix argument says.
        *
        * Repeat to undo earlier changes. Undoing is itself a change, so after any other command, undo undoes the undos: it redoes.
@@ -1617,6 +1753,10 @@ declare global {
        */
       "history-length": Value;
       /**
+       * Whether indenting uses tabs as well as spaces, a tab for every tab-width columns.
+       */
+      "indent-tabs-mode": Value;
+      /**
        * How many other matches incremental search highlights at most, around point.
        *
        * Defined in packages/isearch.ts.
@@ -1668,6 +1808,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-cycle-subtree-status": Value;
+      /**
+       * What typing or deleting next to folded text does: "smart" unfolds it and goes ahead where the edit is predictable, and otherwise stops so it can be repeated with the text showing; "show" unfolds and goes ahead, "show-and-error" unfolds and stops, "error" stops, and false allows the edit.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-fold-catch-invisible-edits": Value;
       /**
        * Whether the text of a done heading gets the face org-headline-done.
        *
@@ -1735,17 +1881,35 @@ declare global {
        */
       "org-support-shift-select": Value;
       /**
-       * Whether typing right after TAB, S-TAB or RET moved into a field replaces what the field holds.
+       * When the table was last aligned: the buffer's modified tick then, and where the table began and ended. A table that changed since needs aligning again, as Org's org-table-may-need-update says.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table--aligned": Value;
+      /**
+       * Whether typing right after TAB, S-TAB, RET or C-c C-c moved into a field replaces what the field holds.
        *
        * Defined in packages/org-table.ts.
        */
       "org-table-auto-blank-field": Value;
+      /**
+       * Whether moving between fields aligns the table when it has changed since it was last aligned.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-automatic-realign": Value;
       /**
        * A column whose fields are at least this fraction numbers is aligned to the right.
        *
        * Defined in packages/org-table.ts.
        */
       "org-table-number-fraction": Value;
+      /**
+       * Whether TAB at the end of a row goes past a rule below it to the next row, rather than adding a row.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-tab-jumps-over-hlines": Value;
       /**
        * Where tags go on a heading line: a negative column aligns their end there, a positive one their start.
        *
@@ -2882,6 +3046,11 @@ declare global {
      * and positions from these functions rather than indices into bufferText().
      */
     function bufferSize(): number;
+    /**
+     * A count of the changes to the current buffer's text, as Emacs's
+     * buffer-modified-tick: it is larger after any edit.
+     */
+    function bufferModifiedTick(): number;
     /**
      * Make text whose invisible property is `name` hidden in this buffer
      * (Emacs's add-to-invisibility-spec); with `ellipsis`, shown as "...".

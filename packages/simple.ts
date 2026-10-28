@@ -235,3 +235,120 @@ ember.defineMinorMode({
     }
   },
 });
+
+// Transposing, after simple.el's transpose-subr.
+
+/**
+ * Moves point `n` lines, as Emacs's forward-line does, and returns how many
+ * lines it fell short. A non-empty last line counts as one moved over.
+ */
+function forwardLine(n: number): number {
+  const start = ember.point();
+  const line = ember.lineOf(start);
+  const last = ember.lineCount() - 1;
+  if (n <= 0) {
+    ember.gotoChar(ember.lineStart(Math.max(0, line + n)));
+    return Math.min(0, line + n);
+  }
+  if (line + n <= last) {
+    ember.gotoChar(ember.lineStart(line + n));
+    return 0;
+  }
+  ember.gotoChar(ember.bufferSize());
+  let shortfall = n - (last - line);
+  if (ember.point() !== start && ember.bufferText(ember.point() - 1, ember.point()) !== "\n") shortfall--;
+  return shortfall;
+}
+
+/**
+ * Swaps the text between two pairs of positions, as transpose-subr-1 does,
+ * with the same insertions and deletions, so point and the mark move as
+ * Emacs's markers do.
+ */
+function transposeRegions(pos1: [number, number], pos2: [number, number]): void {
+  const sorted = (p: [number, number]): [number, number] => (p[0] > p[1] ? [p[1], p[0]] : p);
+  let [a, b] = [sorted(pos1), sorted(pos2)];
+  if (a[0] > b[0]) [a, b] = [b, a];
+  if (a[1] > b[0]) throw new Error("Don\u2019t have two things to transpose");
+  const mark = ember.mark();
+  const point = { pos: ember.point() };
+  const markers = [point, ...(mark === undefined ? [] : [{ pos: mark }])];
+  const boundary = { pos: b[0] };
+  markers.push(boundary);
+  const insert = (at: number, text: string, beforeMarkers: boolean): void => {
+    ember.gotoChar(at);
+    ember.insert(text);
+    for (const m of markers) if (m.pos > at || (beforeMarkers && m.pos === at)) m.pos += text.length;
+  };
+  const remove = (from: number, to: number): string => {
+    const text = ember.deleteRegion(from, to);
+    for (const m of markers) {
+      if (m.pos >= to) m.pos -= to - from;
+      else if (m.pos > from) m.pos = from;
+    }
+    return text;
+  };
+  const word = ember.bufferText(b[0], b[1]);
+  const len1 = a[1] - a[0];
+  insert(a[1], word, true);
+  const first = remove(a[0], a[0] + len1);
+  insert(boundary.pos, first, false);
+  remove(boundary.pos + len1, boundary.pos + len1 + (b[1] - b[0]));
+  ember.gotoChar(point.pos);
+  if (mark !== undefined) ember.setMark(markers[1].pos);
+}
+
+/**
+ * Moves the object before point past `arg` objects, as transpose-subr does.
+ * `mover` moves over `n` objects, forward if positive.
+ */
+function transposeSubr(mover: (n: number) => void, arg: number): void {
+  const aux = (x: number): [number, number] => {
+    mover(x);
+    const first = ember.point();
+    mover(-x);
+    return [first, ember.point()];
+  };
+  if (arg === 0) {
+    const mark = ember.mark();
+    if (mark === undefined) throw new Error("No mark set in this buffer");
+    const p = ember.point();
+    const pos1 = aux(1);
+    ember.gotoChar(mark);
+    const pos2 = aux(1);
+    ember.gotoChar(p);
+    transposeRegions(pos1, pos2);
+    ember.call("exchange-point-and-mark");
+  } else if (arg > 0) {
+    const pos1 = aux(-1);
+    const pos2 = aux(arg);
+    transposeRegions(pos1, pos2);
+    ember.gotoChar(pos2[0]);
+  } else {
+    const pos1 = aux(-1);
+    ember.gotoChar(pos1[0]);
+    const pos2 = aux(arg);
+    transposeRegions(pos1, pos2);
+    ember.gotoChar(pos2[0] + (pos1[1] - pos1[0]));
+  }
+}
+
+const transposeLines = ember.defineCommand({
+  name: "transpose-lines",
+  doc:
+    "Exchange the line point is on with the line before it, leaving point after both.\n\n" +
+    "With a prefix argument, move the line before point past that many lines; with 0, exchange the line point " +
+    "is on with the line the mark is on.",
+  run: () => {
+    transposeSubr((n) => {
+      if (n > 0) {
+        let short = forwardLine(n);
+        if (ember.point() === 0 || ember.bufferText(ember.point() - 1, ember.point()) !== "\n") short++;
+        if (short > 0) ember.insert("\n".repeat(short));
+      } else {
+        forwardLine(n);
+      }
+    }, ember.prefixNumericValue());
+  },
+});
+ember.bindKey("C-x C-t", transposeLines);
