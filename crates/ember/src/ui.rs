@@ -355,8 +355,9 @@ mod tests {
         // Inside the tab on the second line, then past the end of a line.
         assert_eq!(mouse_target(&ed, 41, 9, 25, 1), Some((right, Some(4))));
         assert_eq!(mouse_target(&ed, 41, 9, 35, 0), Some((right, Some(3))));
-        // Below the text is the end of the buffer; the mode line has no position.
-        assert_eq!(mouse_target(&ed, 41, 9, 2, 5), Some((left, Some(14))));
+        // Below the text is the end of the buffer (RET indented "three" like
+        // the line before, so it is one longer); the mode line has no position.
+        assert_eq!(mouse_target(&ed, 41, 9, 2, 5), Some((left, Some(15))));
         assert_eq!(mouse_target(&ed, 41, 9, 2, 7), Some((left, None)));
         assert_eq!(mouse_target(&ed, 41, 9, 2, 8), None, "the echo area");
     }

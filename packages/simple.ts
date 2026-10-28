@@ -379,7 +379,8 @@ const transposeChars = ember.defineCommand({
   run: () => {
     const arg = ember.prefixArg();
     const p = ember.point();
-    if (arg === null && p === ember.lineEnd(ember.lineOf(p)) && p > 0) ember.gotoChar(p - 1);
+    // At the end of a line it goes back a character first, with C-- too, as Emacs's does.
+    if ((arg === null || arg === "-") && p === ember.lineEnd(ember.lineOf(p)) && p > 0) ember.gotoChar(p - 1);
     transposeSubr(forwardChar, ember.prefixNumericValue());
   },
 });
@@ -408,11 +409,88 @@ const openLine = ember.defineCommand({
 });
 ember.bindKey("C-o", openLine);
 
+ember.defineVariable({
+  name: "electric-indent-mode",
+  doc: "Whether RET indents the new line, as Emacs's electric-indent-mode does; on by default.",
+  value: true,
+});
+
+/** Modes whose indent-line-function is indent-relative in Emacs. */
+const INDENT_RELATIVE_MODES = ["fundamental-mode", "text-mode", "outline-mode"];
+
+/** The indentation of a line: the column its first character that is not a space or tab starts at. */
+function lineIndentation(line: number): number {
+  const ws = /^[ \t]*/.exec(ember.lineText(line))?.[0] ?? "";
+  const tab = Number(ember.variable("tab-width") ?? 8);
+  let col = 0;
+  for (const c of ws) col = c === "\t" ? (Math.floor(col / tab) + 1) * tab : col + 1;
+  return col;
+}
+
+/** Gives a line an indentation, changing only its leading spaces and tabs, as indent-line-to does. */
+function indentLineToColumn(line: number, column: number): void {
+  const start = ember.lineStart(line);
+  const ws = /^[ \t]*/.exec(ember.lineText(line))?.[0] ?? "";
+  if (lineIndentation(line) === column) return;
+  let text = "";
+  if (ember.variable("indent-tabs-mode") === true) {
+    const tab = Number(ember.variable("tab-width") ?? 8);
+    text = "\t".repeat(Math.floor(column / tab)) + " ".repeat(column % tab);
+  } else text = " ".repeat(column);
+  const p = ember.point();
+  ember.deleteRegion(start, start + ws.length);
+  ember.gotoChar(start);
+  ember.insert(text);
+  const delta = text.length - ws.length;
+  ember.gotoChar(p > start + ws.length ? p + delta : Math.min(p, start + text.length));
+}
+
+/**
+ * What electric-indent-mode does after RET where indentation is relative:
+ * the spaces at the end of the line before go, and the new line is indented
+ * like the line before it, or not at all after a blank one, as
+ * indent-according-to-mode does for indent-relative.
+ */
+function electricIndentAfterNewline(): void {
+  const line = ember.lineOf(ember.point());
+  if (line === 0) return;
+  // delete-horizontal-space backward from the end of the line before.
+  const before = ember.lineEnd(line - 1);
+  const text = ember.lineText(line - 1);
+  const trailing = text.length - text.replace(/[ \t]+$/, "").length;
+  if (trailing > 0) ember.deleteRegion(before - trailing, before);
+  const column = /^[ \t]*$/.test(ember.lineText(line - 1)) ? 0 : lineIndentation(line - 1);
+  const start = ember.lineStart(line);
+  if (ember.point() - start <= (/^[ \t]*/.exec(ember.lineText(line))?.[0].length ?? 0)) {
+    indentLineToColumn(line, column);
+    ember.gotoChar(start + (/^[ \t]*/.exec(ember.lineText(line))?.[0].length ?? 0));
+  } else indentLineToColumn(line, column);
+}
+
+ember.defineCommand({
+  name: "newline",
+  doc:
+    "Insert a newline, or as many as the prefix argument says.\n\n" +
+    "Typed, with electric-indent-mode on, it also indents the new line as the mode says, as RET does in Emacs.",
+  run: () => {
+    const n = ember.prefixNumericValue();
+    if (n < 0) throw new Error("Repetition argument has to be non-negative");
+    ember.insertAndInherit("\n".repeat(n));
+    if (
+      ember.calledInteractively() &&
+      ember.variable("electric-indent-mode") === true &&
+      INDENT_RELATIVE_MODES.includes(String(ember.variable("major-mode")))
+    ) {
+      electricIndentAfterNewline();
+    }
+  },
+});
+
 const electricNewline = ember.defineCommand({
   name: "electric-newline-and-maybe-indent",
   doc:
     "Insert a newline. With electric-indent-mode on, as it is by default, that is all; RET is the key " +
     "that indents.",
-  run: () => ember.call("newline"),
+  run: () => ember.insertAndInherit("\n"),
 });
 ember.bindKey("C-j", electricNewline);

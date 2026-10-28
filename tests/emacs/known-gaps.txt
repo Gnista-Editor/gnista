@@ -1,9 +1,6 @@
 # Cases where Ember does not match Emacs yet, as `file/case  # reason`.
 # The oracle test fails if a listed case starts matching: remove it then.
 
-# electric-indent-mode, on by default in Emacs, re-indents after RET; Ember has no indentation yet.
-basic/newline-reindents  # electric-indent-mode
-
 # Org's own list code edits at stale positions here: org-list-insert-item does
 # not count the checkbox when it shifts the sub-items it moves, and
 # org-list-struct-apply-struct then replaces using leftover match data.

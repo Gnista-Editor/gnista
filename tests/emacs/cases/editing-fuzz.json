@@ -1,0 +1,545 @@
+[
+  {
+    "name": "plain1-1334-ret",
+    "text": "\tx",
+    "keys": "RET"
+  },
+  {
+    "name": "plain1-1618-ret",
+    "text": "\ttwo",
+    "keys": "RET"
+  },
+  {
+    "name": "plain1-1372-ret",
+    "text": "  it's",
+    "keys": "RET",
+    "point": 6
+  },
+  {
+    "name": "plain1-0392-ret",
+    "text": "one. x ",
+    "keys": "RET",
+    "point": 7
+  },
+  {
+    "name": "plain1-0173-ret",
+    "text": "  foo_bar",
+    "keys": "RET"
+  },
+  {
+    "name": "plain1-1293-ret",
+    "text": "  foo_bar",
+    "keys": "RET",
+    "point": 1
+  },
+  {
+    "name": "plain1-0413-ret",
+    "text": "  a.b-it's",
+    "keys": "RET",
+    "point": 8
+  },
+  {
+    "name": "plain1-0942-ret",
+    "text": "  three. 42",
+    "keys": "RET",
+    "point": 3
+  },
+  {
+    "name": "plain1-0955-ret",
+    "text": "\ta.b 42-a.b",
+    "keys": "RET"
+  },
+  {
+    "name": "plain1-0059-ret",
+    "text": "  two  three",
+    "keys": "RET",
+    "point": 11
+  },
+  {
+    "name": "plain1-0378-ret",
+    "text": "\ttwo, x  one.",
+    "keys": "RET"
+  },
+  {
+    "name": "plain1-0982-ret",
+    "text": "\tone  a.b, a.b",
+    "keys": "RET",
+    "point": 4
+  },
+  {
+    "name": "plain1-0080-ret",
+    "text": "  one  x. three",
+    "keys": "RET",
+    "point": 9
+  },
+  {
+    "name": "plain1-0415-ret",
+    "text": "  42 foo_bar, x",
+    "keys": "RET",
+    "point": 7
+  },
+  {
+    "name": "plain1-0826-ret",
+    "text": "\tHello. 42. one",
+    "keys": "RET"
+  },
+  {
+    "name": "plain1-1810-ret",
+    "text": "  x. it's, it's",
+    "keys": "RET",
+    "point": 8
+  },
+  {
+    "name": "plain1-1113-ret",
+    "text": "\ttwo, foo_bar. x",
+    "keys": "RET",
+    "point": 1
+  },
+  {
+    "name": "plain1-0805-ret",
+    "text": "\tone-it's Hello x",
+    "keys": "RET",
+    "point": 5
+  },
+  {
+    "name": "plain1-0842-ret",
+    "text": "three, Hello x-x!",
+    "keys": "RET",
+    "point": 12
+  },
+  {
+    "name": "plain1-1223-ret",
+    "text": "  it's-one-x. a.b",
+    "keys": "RET"
+  },
+  {
+    "name": "plain1-1431-ret",
+    "text": "  foo_bar x Hello",
+    "keys": "RET",
+    "point": 2
+  },
+  {
+    "name": "plain1-1630-ret",
+    "text": "  foo_bar  one-42",
+    "keys": "RET",
+    "point": 1
+  },
+  {
+    "name": "plain1-1163-ret",
+    "text": "\t42. one one. Hello",
+    "keys": "RET",
+    "point": 13
+  },
+  {
+    "name": "plain1-0591-ret",
+    "text": "  Hello, it's. three",
+    "keys": "RET",
+    "point": 20
+  },
+  {
+    "name": "plain1-1185-ret",
+    "text": "\tone-three, 42 three",
+    "keys": "RET"
+  },
+  {
+    "name": "plain1-1315-ret",
+    "text": "  one, a.b, one one.",
+    "keys": "RET"
+  },
+  {
+    "name": "plain1-1102-ret",
+    "text": "\tHello  42 three it's",
+    "keys": "RET",
+    "point": 16
+  },
+  {
+    "name": "plain1-1889-ret",
+    "text": "  Hello-one-it's-one ",
+    "keys": "RET",
+    "point": 8
+  },
+  {
+    "name": "plain1-0452-ret",
+    "text": "it's  a.b one, foo_bar",
+    "keys": "RET",
+    "point": 5
+  },
+  {
+    "name": "plain1-0423-ret",
+    "text": "  a.b, one, one  Hello!",
+    "keys": "RET",
+    "point": 21
+  },
+  {
+    "name": "plain1-0251-ret",
+    "text": "\tthree, foo_bar, two, x?",
+    "keys": "RET",
+    "point": 4
+  },
+  {
+    "name": "plain1-0265-ret",
+    "text": "  42  three Hello. Hello",
+    "keys": "RET",
+    "point": 14
+  },
+  {
+    "name": "plain1-1425-ret",
+    "text": "  a.b, one, Hello three ",
+    "keys": "RET",
+    "point": 10
+  },
+  {
+    "name": "plain1-0482-ret",
+    "text": "  one  two  two, two  two",
+    "keys": "RET",
+    "point": 18
+  },
+  {
+    "name": "plain1-1391-ret",
+    "text": "  one foo_bar  42. x  a.b",
+    "keys": "RET",
+    "point": 3
+  },
+  {
+    "name": "plain1-1348-ret",
+    "text": "  two-one three. two, three",
+    "keys": "RET",
+    "point": 4
+  },
+  {
+    "name": "plain1-1601-ret",
+    "text": "  three  foo_bar 42-two it's",
+    "keys": "RET",
+    "point": 19
+  },
+  {
+    "name": "plain1-0427-ret",
+    "text": "\ta.b  two foo_bar  it's three ",
+    "keys": "RET",
+    "point": 22
+  },
+  {
+    "name": "plain1-1341-ret",
+    "text": "\tfoo_bar, two, foo_bar, foo_bar.",
+    "keys": "RET",
+    "point": 7
+  },
+  {
+    "name": "plain1-0082-c---c-slash",
+    "text": "",
+    "keys": "C-- C-/"
+  },
+  {
+    "name": "plain1-0497-spc-ret",
+    "text": "",
+    "keys": "SPC RET"
+  },
+  {
+    "name": "plain1-1464-c---ret",
+    "text": "",
+    "keys": "C-- RET"
+  },
+  {
+    "name": "plain1-1604-ret-m-del",
+    "text": "\ta.b",
+    "keys": "RET M-DEL",
+    "point": 4
+  },
+  {
+    "name": "plain1-1924-ret-c-k",
+    "text": "\tone, 42",
+    "keys": "RET C-k",
+    "point": 5
+  },
+  {
+    "name": "plain1-1081-ret-c-y",
+    "text": "Hello. x  x",
+    "keys": "RET C-y",
+    "point": 7
+  },
+  {
+    "name": "plain1-1479-ret-c-y",
+    "text": "\ttwo 42-two x",
+    "keys": "RET C-y",
+    "point": 9
+  },
+  {
+    "name": "plain1-1397-ret-s-left",
+    "text": "  foo_bar  two",
+    "keys": "RET S-<left>",
+    "point": 12
+  },
+  {
+    "name": "plain1-1632-ret-m-",
+    "text": "\tx-Hello Hello",
+    "keys": "RET M->"
+  },
+  {
+    "name": "plain1-1277-c-spc-ret",
+    "text": "two  a.b, Hello",
+    "keys": "C-SPC RET",
+    "point": 10
+  },
+  {
+    "name": "plain1-0684-ret-m-del",
+    "text": "x. one x foo_bar",
+    "keys": "RET M-DEL",
+    "point": 7
+  },
+  {
+    "name": "plain1-0064-ret-c-y",
+    "text": "  Hello  42. it's",
+    "keys": "RET C-y",
+    "point": 13
+  },
+  {
+    "name": "plain1-0470-ret-m-",
+    "text": "\tfoo_bar, foo_bar",
+    "keys": "RET M->"
+  },
+  {
+    "name": "plain1-0605-c---c-slash",
+    "text": "  one foo_bar x  x",
+    "keys": "C-- C-/",
+    "point": 5
+  },
+  {
+    "name": "plain1-1059-c-u-c-slash",
+    "text": "\tx. one x-it's it's",
+    "keys": "C-u C-/",
+    "point": 3
+  },
+  {
+    "name": "plain1-1513-c-u-c-slash",
+    "text": "  it's it's 42, a.b",
+    "keys": "C-u C-/"
+  },
+  {
+    "name": "plain1-1817-ret-m-",
+    "text": "  one-three two a.b",
+    "keys": "RET M-<",
+    "point": 16
+  },
+  {
+    "name": "plain1-1792-m-b-ret",
+    "text": "42, it's  three  it's",
+    "keys": "M-b RET",
+    "point": 14
+  },
+  {
+    "name": "plain1-0458-ret-m-del",
+    "text": "  x-42. two, two, two?",
+    "keys": "RET M-DEL",
+    "point": 15
+  },
+  {
+    "name": "plain1-1407-m-del-ret",
+    "text": "Hello-three 42 42  a.b",
+    "keys": "M-DEL RET",
+    "point": 17
+  },
+  {
+    "name": "plain1-0473-s-left-ret",
+    "text": "\tHello. one, two. Hello",
+    "keys": "S-<left> RET",
+    "point": 19
+  },
+  {
+    "name": "plain1-1410-m-2-ret",
+    "text": "  Hello. 42 a.b  three 42",
+    "keys": "M-2 RET",
+    "point": 1
+  },
+  {
+    "name": "plain1-1714-c-a-ret",
+    "text": "  42, foo_bar a.b two-two",
+    "keys": "C-a RET",
+    "point": 25
+  },
+  {
+    "name": "plain1-0879-c-f-ret",
+    "text": "\t42. three  a.b  two foo_bar",
+    "keys": "C-f RET",
+    "point": 21
+  },
+  {
+    "name": "plain1-1457-ret-c-k",
+    "text": "one foo_bar 42  Hello  Hello",
+    "keys": "RET C-k",
+    "point": 14
+  },
+  {
+    "name": "plain1-1005-m-2-ret",
+    "text": "\tfoo_bar  foo_bar-a.b two, Hello",
+    "keys": "M-2 RET",
+    "point": 8
+  },
+  {
+    "name": "plain1-0336-m-2-c-spc-1",
+    "text": "",
+    "keys": "M-2 C-SPC 1"
+  },
+  {
+    "name": "plain1-0794-spc-c---c-slash",
+    "text": "",
+    "keys": "SPC C-- C-/"
+  },
+  {
+    "name": "plain1-1070-spc-ret-m-",
+    "text": "",
+    "keys": "SPC RET M-<"
+  },
+  {
+    "name": "plain1-1273-m-2-c-spc-m-d",
+    "text": "",
+    "keys": "M-2 C-SPC M-d"
+  },
+  {
+    "name": "plain1-1548-spc-ret-s-down",
+    "text": "",
+    "keys": "SPC RET S-<down>"
+  },
+  {
+    "name": "plain1-0641-x-spc-ret",
+    "text": "\tone 42",
+    "keys": "x SPC RET",
+    "point": 1
+  },
+  {
+    "name": "plain1-0062-c-k-c-k-m-del",
+    "text": "a.b it's",
+    "keys": "C-k C-k M-DEL"
+  },
+  {
+    "name": "plain1-0149-ret-c-x-h",
+    "text": "  foo_bar",
+    "keys": "RET C-x h",
+    "point": 7
+  },
+  {
+    "name": "plain1-0219-ret-c-b-m-d",
+    "text": "\tHello  42",
+    "keys": "RET C-b M-d",
+    "point": 5
+  },
+  {
+    "name": "plain1-1137-c-spc-c-a-ret",
+    "text": "  x x-a.b x",
+    "keys": "C-SPC C-a RET",
+    "point": 11
+  },
+  {
+    "name": "plain1-0580-ret-c-x-h",
+    "text": "\tfoo_bar-it's",
+    "keys": "RET C-x h"
+  },
+  {
+    "name": "plain1-0063-ret-m--c-w",
+    "text": "it's three, x?",
+    "keys": "RET M-> C-w",
+    "point": 4
+  },
+  {
+    "name": "plain1-0092-c---ret-ret",
+    "text": "\tone three. three?",
+    "keys": "C-- RET RET",
+    "point": 9
+  },
+  {
+    "name": "plain1-0192-c-x-c-x-ret",
+    "text": "  one. foo_bar  foo_bar. x-it's",
+    "keys": "C-x C-x RET",
+    "point": 3
+  },
+  {
+    "name": "plain1-0483-c-x-c-t-ret",
+    "text": "  foo_bar. foo_bar. it's two\n  two, 42, one\n  one Hello, 42-a.b",
+    "keys": "C-x C-t RET",
+    "point": 30
+  },
+  {
+    "name": "plain1-1123-s-left-c-x-h-m-b",
+    "text": "",
+    "keys": "S-<left> C-x h M-b"
+  },
+  {
+    "name": "plain1-1245-x-c---1-c-slash",
+    "text": "",
+    "keys": "x C-- 1 C-/"
+  },
+  {
+    "name": "plain1-0350-c-x-c-t-m-2-c-slash",
+    "text": "it's-foo_bar",
+    "keys": "C-x C-t M-2 C-/"
+  },
+  {
+    "name": "plain1-0767-c-k-c-u-c-slash-m-t",
+    "text": "foo_bar a.b ",
+    "keys": "C-k C-u C-/ M-t",
+    "point": 4
+  },
+  {
+    "name": "plain1-0640-c-u-c-x-c-x-ret",
+    "text": "  foo_bar  it's.",
+    "keys": "C-u C-x C-x RET",
+    "point": 14
+  },
+  {
+    "name": "plain1-1242-c-x-h-c-f-ret",
+    "text": "  one a.b-one-a.b",
+    "keys": "C-x h C-f RET",
+    "point": 14
+  },
+  {
+    "name": "plain1-1784-s-down-c---c-t-m-w",
+    "text": "one three  two one",
+    "keys": "S-<down> C-- C-t M-w",
+    "point": 15
+  },
+  {
+    "name": "plain1-1589-ret-c-p-s-left-m-t",
+    "text": "\t42. it's  Hello it's",
+    "keys": "RET C-p S-<left> M-t",
+    "point": 4
+  },
+  {
+    "name": "plain1-0786-spc-s-left-m-y-c-u-c-slash",
+    "text": "  it's a.b two, foo_bar.",
+    "keys": "SPC S-<left> M-y C-u C-/",
+    "point": 10
+  },
+  {
+    "name": "plain1-1543-c-x-h-c-x-c-t-ret",
+    "text": "three\nx, one\n  Hello, a.b Hello. x",
+    "keys": "C-x h C-x C-t RET",
+    "point": 18
+  },
+  {
+    "name": "transpose-negative-a",
+    "text": "one three  two one",
+    "keys": "S-<down> C-- C-t",
+    "point": 15
+  },
+  {
+    "name": "transpose-negative-b",
+    "text": "one three  two one",
+    "keys": "C-e C-- C-t",
+    "point": 15
+  },
+  {
+    "name": "transpose-negative-c",
+    "text": "one three  two one",
+    "keys": "S-<down> C-t",
+    "point": 15
+  },
+  {
+    "name": "transpose-negative-d",
+    "text": "abc",
+    "keys": "C-e C-- C-t"
+  },
+  {
+    "name": "transpose-negative-e",
+    "text": "abcd",
+    "keys": "C-f C-f C-- C-t"
+  }
+]

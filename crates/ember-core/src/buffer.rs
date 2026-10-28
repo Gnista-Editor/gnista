@@ -230,9 +230,10 @@ impl Buffer {
             self.mark_ring.truncate(MARK_RING_MAX);
         }
         self.mark = Some(pos.min(self.len()));
+        // Activating leaves a region Shift started temporary, as Emacs's
+        // activate-mark leaves transient-mark-mode's `only' state alone.
         if activate {
             self.mark_active = true;
-            self.shift_selected = false;
         }
     }
 

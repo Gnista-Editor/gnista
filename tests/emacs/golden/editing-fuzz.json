@@ -1,0 +1,1836 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "plain1-1334-ret",
+      "input": {
+        "text": "\tx",
+        "point": 0,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\nx",
+      "visible": "\nx",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1618-ret",
+      "input": {
+        "text": "\ttwo",
+        "point": 0,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\ntwo",
+      "visible": "\ntwo",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1372-ret",
+      "input": {
+        "text": "  it's",
+        "point": 6,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  it's\n  ",
+      "visible": "  it's\n  ",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0392-ret",
+      "input": {
+        "text": "one. x ",
+        "point": 7,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one. x\n",
+      "visible": "one. x\n",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0173-ret",
+      "input": {
+        "text": "  foo_bar",
+        "point": 0,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\nfoo_bar",
+      "visible": "\nfoo_bar",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1293-ret",
+      "input": {
+        "text": "  foo_bar",
+        "point": 1,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\nfoo_bar",
+      "visible": "\nfoo_bar",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0413-ret",
+      "input": {
+        "text": "  a.b-it's",
+        "point": 8,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  a.b-it\n  's",
+      "visible": "  a.b-it\n  's",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0942-ret",
+      "input": {
+        "text": "  three. 42",
+        "point": 3,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  t\n  hree. 42",
+      "visible": "  t\n  hree. 42",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0955-ret",
+      "input": {
+        "text": "\ta.b 42-a.b",
+        "point": 0,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\na.b 42-a.b",
+      "visible": "\na.b 42-a.b",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0059-ret",
+      "input": {
+        "text": "  two  three",
+        "point": 11,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  two  thre\n  e",
+      "visible": "  two  thre\n  e",
+      "point": 14,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0378-ret",
+      "input": {
+        "text": "\ttwo, x  one.",
+        "point": 0,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\ntwo, x  one.",
+      "visible": "\ntwo, x  one.",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0982-ret",
+      "input": {
+        "text": "\tone  a.b, a.b",
+        "point": 4,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\tone\n\ta.b, a.b",
+      "visible": "\tone\n\ta.b, a.b",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0080-ret",
+      "input": {
+        "text": "  one  x. three",
+        "point": 9,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  one  x.\n  three",
+      "visible": "  one  x.\n  three",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0415-ret",
+      "input": {
+        "text": "  42 foo_bar, x",
+        "point": 7,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  42 fo\n  o_bar, x",
+      "visible": "  42 fo\n  o_bar, x",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0826-ret",
+      "input": {
+        "text": "\tHello. 42. one",
+        "point": 0,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\nHello. 42. one",
+      "visible": "\nHello. 42. one",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1810-ret",
+      "input": {
+        "text": "  x. it's, it's",
+        "point": 8,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  x. it'\n  s, it's",
+      "visible": "  x. it'\n  s, it's",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1113-ret",
+      "input": {
+        "text": "\ttwo, foo_bar. x",
+        "point": 1,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\ntwo, foo_bar. x",
+      "visible": "\ntwo, foo_bar. x",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0805-ret",
+      "input": {
+        "text": "\tone-it's Hello x",
+        "point": 5,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\tone-\n\tit's Hello x",
+      "visible": "\tone-\n\tit's Hello x",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0842-ret",
+      "input": {
+        "text": "three, Hello x-x!",
+        "point": 12,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "three, Hello\nx-x!",
+      "visible": "three, Hello\nx-x!",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1223-ret",
+      "input": {
+        "text": "  it's-one-x. a.b",
+        "point": 0,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\nit's-one-x. a.b",
+      "visible": "\nit's-one-x. a.b",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1431-ret",
+      "input": {
+        "text": "  foo_bar x Hello",
+        "point": 2,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\nfoo_bar x Hello",
+      "visible": "\nfoo_bar x Hello",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1630-ret",
+      "input": {
+        "text": "  foo_bar  one-42",
+        "point": 1,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\nfoo_bar  one-42",
+      "visible": "\nfoo_bar  one-42",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1163-ret",
+      "input": {
+        "text": "\t42. one one. Hello",
+        "point": 13,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\t42. one one.\n\tHello",
+      "visible": "\t42. one one.\n\tHello",
+      "point": 15,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0591-ret",
+      "input": {
+        "text": "  Hello, it's. three",
+        "point": 20,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  Hello, it's. three\n  ",
+      "visible": "  Hello, it's. three\n  ",
+      "point": 23,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1185-ret",
+      "input": {
+        "text": "\tone-three, 42 three",
+        "point": 0,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\none-three, 42 three",
+      "visible": "\none-three, 42 three",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1315-ret",
+      "input": {
+        "text": "  one, a.b, one one.",
+        "point": 0,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\none, a.b, one one.",
+      "visible": "\none, a.b, one one.",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1102-ret",
+      "input": {
+        "text": "\tHello  42 three it's",
+        "point": 16,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\tHello  42 three\n\tit's",
+      "visible": "\tHello  42 three\n\tit's",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1889-ret",
+      "input": {
+        "text": "  Hello-one-it's-one ",
+        "point": 8,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  Hello-\n  one-it's-one ",
+      "visible": "  Hello-\n  one-it's-one ",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0452-ret",
+      "input": {
+        "text": "it's  a.b one, foo_bar",
+        "point": 5,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "it's\na.b one, foo_bar",
+      "visible": "it's\na.b one, foo_bar",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0423-ret",
+      "input": {
+        "text": "  a.b, one, one  Hello!",
+        "point": 21,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  a.b, one, one  Hell\n  o!",
+      "visible": "  a.b, one, one  Hell\n  o!",
+      "point": 24,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0251-ret",
+      "input": {
+        "text": "\tthree, foo_bar, two, x?",
+        "point": 4,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\tthr\n\tee, foo_bar, two, x?",
+      "visible": "\tthr\n\tee, foo_bar, two, x?",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0265-ret",
+      "input": {
+        "text": "  42  three Hello. Hello",
+        "point": 14,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  42  three He\n  llo. Hello",
+      "visible": "  42  three He\n  llo. Hello",
+      "point": 17,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1425-ret",
+      "input": {
+        "text": "  a.b, one, Hello three ",
+        "point": 10,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  a.b, one\n  , Hello three ",
+      "visible": "  a.b, one\n  , Hello three ",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0482-ret",
+      "input": {
+        "text": "  one  two  two, two  two",
+        "point": 18,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  one  two  two, t\n  wo  two",
+      "visible": "  one  two  two, t\n  wo  two",
+      "point": 21,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1391-ret",
+      "input": {
+        "text": "  one foo_bar  42. x  a.b",
+        "point": 3,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  o\n  ne foo_bar  42. x  a.b",
+      "visible": "  o\n  ne foo_bar  42. x  a.b",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1348-ret",
+      "input": {
+        "text": "  two-one three. two, three",
+        "point": 4,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  tw\n  o-one three. two, three",
+      "visible": "  tw\n  o-one three. two, three",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1601-ret",
+      "input": {
+        "text": "  three  foo_bar 42-two it's",
+        "point": 19,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  three  foo_bar 42\n  -two it's",
+      "visible": "  three  foo_bar 42\n  -two it's",
+      "point": 22,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0427-ret",
+      "input": {
+        "text": "\ta.b  two foo_bar  it's three ",
+        "point": 22,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\ta.b  two foo_bar  it'\n\ts three ",
+      "visible": "\ta.b  two foo_bar  it'\n\ts three ",
+      "point": 24,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1341-ret",
+      "input": {
+        "text": "\tfoo_bar, two, foo_bar, foo_bar.",
+        "point": 7,
+        "keys": "RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\tfoo_ba\n\tr, two, foo_bar, foo_bar.",
+      "visible": "\tfoo_ba\n\tr, two, foo_bar, foo_bar.",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0082-c---c-slash",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-- C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "The mark is not set now, so there is no region"
+    },
+    {
+      "name": "plain1-0497-spc-ret",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "SPC RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n",
+      "visible": "\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1464-c---ret",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-- RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Repetition argument has to be non-negative"
+    },
+    {
+      "name": "plain1-1604-ret-m-del",
+      "input": {
+        "text": "\ta.b",
+        "point": 4,
+        "keys": "RET M-DEL",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\ta.",
+      "visible": "\ta.",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "b\n\t"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1924-ret-c-k",
+      "input": {
+        "text": "\tone, 42",
+        "point": 5,
+        "keys": "RET C-k",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\tone,\n\t",
+      "visible": "\tone,\n\t",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "42"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1081-ret-c-y",
+      "input": {
+        "text": "Hello. x  x",
+        "point": 7,
+        "keys": "RET C-y",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "Hello.\nx  x",
+      "visible": "Hello.\nx  x",
+      "point": 7,
+      "mark": 7,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Kill ring is empty"
+    },
+    {
+      "name": "plain1-1479-ret-c-y",
+      "input": {
+        "text": "\ttwo 42-two x",
+        "point": 9,
+        "keys": "RET C-y",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\ttwo 42-t\n\two x",
+      "visible": "\ttwo 42-t\n\two x",
+      "point": 11,
+      "mark": 11,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Kill ring is empty"
+    },
+    {
+      "name": "plain1-1397-ret-s-left",
+      "input": {
+        "text": "  foo_bar  two",
+        "point": 12,
+        "keys": "RET S-<left>",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  foo_bar  t\n  wo",
+      "visible": "  foo_bar  t\n  wo",
+      "point": 14,
+      "mark": 15,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1632-ret-m-",
+      "input": {
+        "text": "\tx-Hello Hello",
+        "point": 0,
+        "keys": "RET M->",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\nx-Hello Hello",
+      "visible": "\nx-Hello Hello",
+      "point": 14,
+      "mark": 1,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1277-c-spc-ret",
+      "input": {
+        "text": "two  a.b, Hello",
+        "point": 10,
+        "keys": "C-SPC RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "two  a.b,\nHello",
+      "visible": "two  a.b,\nHello",
+      "point": 10,
+      "mark": 9,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0684-ret-m-del",
+      "input": {
+        "text": "x. one x foo_bar",
+        "point": 7,
+        "keys": "RET M-DEL",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "x. x foo_bar",
+      "visible": "x. x foo_bar",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "one\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0064-ret-c-y",
+      "input": {
+        "text": "  Hello  42. it's",
+        "point": 13,
+        "keys": "RET C-y",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  Hello  42.\n  it's",
+      "visible": "  Hello  42.\n  it's",
+      "point": 15,
+      "mark": 15,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Kill ring is empty"
+    },
+    {
+      "name": "plain1-0470-ret-m-",
+      "input": {
+        "text": "\tfoo_bar, foo_bar",
+        "point": 0,
+        "keys": "RET M->",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\nfoo_bar, foo_bar",
+      "visible": "\nfoo_bar, foo_bar",
+      "point": 17,
+      "mark": 1,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0605-c---c-slash",
+      "input": {
+        "text": "  one foo_bar x  x",
+        "point": 5,
+        "keys": "C-- C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  one foo_bar x  x",
+      "visible": "  one foo_bar x  x",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "The mark is not set now, so there is no region"
+    },
+    {
+      "name": "plain1-1059-c-u-c-slash",
+      "input": {
+        "text": "\tx. one x-it's it's",
+        "point": 3,
+        "keys": "C-u C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\tx. one x-it's it's",
+      "visible": "\tx. one x-it's it's",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "The mark is not set now, so there is no region"
+    },
+    {
+      "name": "plain1-1513-c-u-c-slash",
+      "input": {
+        "text": "  it's it's 42, a.b",
+        "point": 0,
+        "keys": "C-u C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  it's it's 42, a.b",
+      "visible": "  it's it's 42, a.b",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "The mark is not set now, so there is no region"
+    },
+    {
+      "name": "plain1-1817-ret-m-",
+      "input": {
+        "text": "  one-three two a.b",
+        "point": 16,
+        "keys": "RET M-<",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  one-three two\n  a.b",
+      "visible": "  one-three two\n  a.b",
+      "point": 0,
+      "mark": 18,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1792-m-b-ret",
+      "input": {
+        "text": "42, it's  three  it's",
+        "point": 14,
+        "keys": "M-b RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "42, it's\nthree  it's",
+      "visible": "42, it's\nthree  it's",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0458-ret-m-del",
+      "input": {
+        "text": "  x-42. two, two, two?",
+        "point": 15,
+        "keys": "RET M-DEL",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  x-42. two, o, two?",
+      "visible": "  x-42. two, o, two?",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "tw\n  "
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1407-m-del-ret",
+      "input": {
+        "text": "Hello-three 42 42  a.b",
+        "point": 17,
+        "keys": "M-DEL RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "Hello-three 42\na.b",
+      "visible": "Hello-three 42\na.b",
+      "point": 15,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "42"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0473-s-left-ret",
+      "input": {
+        "text": "\tHello. one, two. Hello",
+        "point": 19,
+        "keys": "S-<left> RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\tHello. one, two.\n\tHello",
+      "visible": "\tHello. one, two.\n\tHello",
+      "point": 19,
+      "mark": 20,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1410-m-2-ret",
+      "input": {
+        "text": "  Hello. 42 a.b  three 42",
+        "point": 1,
+        "keys": "M-2 RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": " \n\nHello. 42 a.b  three 42",
+      "visible": " \n\nHello. 42 a.b  three 42",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1714-c-a-ret",
+      "input": {
+        "text": "  42, foo_bar a.b two-two",
+        "point": 25,
+        "keys": "C-a RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n42, foo_bar a.b two-two",
+      "visible": "\n42, foo_bar a.b two-two",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0879-c-f-ret",
+      "input": {
+        "text": "\t42. three  a.b  two foo_bar",
+        "point": 21,
+        "keys": "C-f RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\t42. three  a.b  two f\n\too_bar",
+      "visible": "\t42. three  a.b  two f\n\too_bar",
+      "point": 24,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1457-ret-c-k",
+      "input": {
+        "text": "one foo_bar 42  Hello  Hello",
+        "point": 14,
+        "keys": "RET C-k",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one foo_bar 42\n",
+      "visible": "one foo_bar 42\n",
+      "point": 15,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "Hello  Hello"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1005-m-2-ret",
+      "input": {
+        "text": "\tfoo_bar  foo_bar-a.b two, Hello",
+        "point": 8,
+        "keys": "M-2 RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\tfoo_bar\n\nfoo_bar-a.b two, Hello",
+      "visible": "\tfoo_bar\n\nfoo_bar-a.b two, Hello",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0336-m-2-c-spc-1",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-2 C-SPC 1",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "1",
+      "visible": "1",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "No mark set in this buffer"
+    },
+    {
+      "name": "plain1-0794-spc-c---c-slash",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "SPC C-- C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": " ",
+      "visible": " ",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "The mark is not set now, so there is no region"
+    },
+    {
+      "name": "plain1-1070-spc-ret-m-",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "SPC RET M-<",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n",
+      "visible": "\n",
+      "point": 0,
+      "mark": 1,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1273-m-2-c-spc-m-d",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-2 C-SPC M-d",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        ""
+      ],
+      "modified": false,
+      "error": "No mark set in this buffer"
+    },
+    {
+      "name": "plain1-1548-spc-ret-s-down",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "SPC RET S-<down>",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n",
+      "visible": "\n",
+      "point": 1,
+      "mark": 1,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": true,
+      "error": "End of buffer"
+    },
+    {
+      "name": "plain1-0641-x-spc-ret",
+      "input": {
+        "text": "\tone 42",
+        "point": 1,
+        "keys": "x SPC RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\tx\n\tone 42",
+      "visible": "\tx\n\tone 42",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0062-c-k-c-k-m-del",
+      "input": {
+        "text": "a.b it's",
+        "point": 0,
+        "keys": "C-k C-k M-DEL",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "",
+        "a.b it's"
+      ],
+      "modified": true,
+      "error": "End of buffer"
+    },
+    {
+      "name": "plain1-0149-ret-c-x-h",
+      "input": {
+        "text": "  foo_bar",
+        "point": 7,
+        "keys": "RET C-x h",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  foo_b\n  ar",
+      "visible": "  foo_b\n  ar",
+      "point": 0,
+      "mark": 12,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0219-ret-c-b-m-d",
+      "input": {
+        "text": "\tHello  42",
+        "point": 5,
+        "keys": "RET C-b M-d",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\tHell\n  42",
+      "visible": "\tHell\n  42",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "\to"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1137-c-spc-c-a-ret",
+      "input": {
+        "text": "  x x-a.b x",
+        "point": 11,
+        "keys": "C-SPC C-a RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\nx x-a.b x",
+      "visible": "\nx x-a.b x",
+      "point": 1,
+      "mark": 10,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0580-ret-c-x-h",
+      "input": {
+        "text": "\tfoo_bar-it's",
+        "point": 0,
+        "keys": "RET C-x h",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\nfoo_bar-it's",
+      "visible": "\nfoo_bar-it's",
+      "point": 0,
+      "mark": 13,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0063-ret-m--c-w",
+      "input": {
+        "text": "it's three, x?",
+        "point": 4,
+        "keys": "RET M-> C-w",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "it's\n",
+      "visible": "it's\n",
+      "point": 5,
+      "mark": 5,
+      "mark_active": false,
+      "kill_ring": [
+        "three, x?"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0092-c---ret-ret",
+      "input": {
+        "text": "\tone three. three?",
+        "point": 9,
+        "keys": "C-- RET RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\tone thre\n\te. three?",
+      "visible": "\tone thre\n\te. three?",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Repetition argument has to be non-negative"
+    },
+    {
+      "name": "plain1-0192-c-x-c-x-ret",
+      "input": {
+        "text": "  one. foo_bar  foo_bar. x-it's",
+        "point": 3,
+        "keys": "C-x C-x RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  o\n  ne. foo_bar  foo_bar. x-it's",
+      "visible": "  o\n  ne. foo_bar  foo_bar. x-it's",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "No mark set in this buffer"
+    },
+    {
+      "name": "plain1-0483-c-x-c-t-ret",
+      "input": {
+        "text": "  foo_bar. foo_bar. it's two\n  two, 42, one\n  one Hello, 42-a.b",
+        "point": 30,
+        "keys": "C-x C-t RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  two, 42, one\n  foo_bar. foo_bar. it's two\n\none Hello, 42-a.b",
+      "visible": "  two, 42, one\n  foo_bar. foo_bar. it's two\n\none Hello, 42-a.b",
+      "point": 45,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1123-s-left-c-x-h-m-b",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "S-<left> C-x h M-b",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Beginning of buffer"
+    },
+    {
+      "name": "plain1-1245-x-c---1-c-slash",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "x C-- 1 C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "x",
+      "visible": "x",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0350-c-x-c-t-m-2-c-slash",
+      "input": {
+        "text": "it's-foo_bar",
+        "point": 0,
+        "keys": "C-x C-t M-2 C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "it's-foo_bar",
+      "visible": "it's-foo_bar",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "plain1-0767-c-k-c-u-c-slash-m-t",
+      "input": {
+        "text": "foo_bar a.b ",
+        "point": 4,
+        "keys": "C-k C-u C-/ M-t",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "foo_",
+      "visible": "foo_",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "bar a.b "
+      ],
+      "modified": true,
+      "error": "The mark is not set now, so there is no region"
+    },
+    {
+      "name": "plain1-0640-c-u-c-x-c-x-ret",
+      "input": {
+        "text": "  foo_bar  it's.",
+        "point": 14,
+        "keys": "C-u C-x C-x RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  foo_bar  it'\n  s.",
+      "visible": "  foo_bar  it'\n  s.",
+      "point": 17,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "No mark set in this buffer"
+    },
+    {
+      "name": "plain1-1242-c-x-h-c-f-ret",
+      "input": {
+        "text": "  one a.b-one-a.b",
+        "point": 14,
+        "keys": "C-x h C-f RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\none a.b-one-a.b",
+      "visible": "\none a.b-one-a.b",
+      "point": 1,
+      "mark": 16,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-1784-s-down-c---c-t-m-w",
+      "input": {
+        "text": "one three  two one",
+        "point": 15,
+        "keys": "S-<down> C-- C-t M-w",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one three  two noe",
+      "visible": "one three  two noe",
+      "point": 16,
+      "mark": 15,
+      "mark_active": false,
+      "kill_ring": [
+        "n"
+      ],
+      "modified": true,
+      "error": "End of buffer"
+    },
+    {
+      "name": "plain1-1589-ret-c-p-s-left-m-t",
+      "input": {
+        "text": "\t42. it's  Hello it's",
+        "point": 4,
+        "keys": "RET C-p S-<left> M-t",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "it.\n\t\t42's  Hello it's",
+      "visible": "it.\n\t\t42's  Hello it's",
+      "point": 8,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "plain1-0786-spc-s-left-m-y-c-u-c-slash",
+      "input": {
+        "text": "  it's a.b two, foo_bar.",
+        "point": 10,
+        "keys": "SPC S-<left> M-y C-u C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  it's a.b two, foo_bar.",
+      "visible": "  it's a.b two, foo_bar.",
+      "point": 10,
+      "mark": 10,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Kill ring is empty"
+    },
+    {
+      "name": "plain1-1543-c-x-h-c-x-c-t-ret",
+      "input": {
+        "text": "three\nx, one\n  Hello, a.b Hello. x",
+        "point": 18,
+        "keys": "C-x h C-x C-t RET",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "x, one\nthree\n\nHello, a.b Hello. x",
+      "visible": "x, one\nthree\n\nHello, a.b Hello. x",
+      "point": 14,
+      "mark": 33,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "transpose-negative-a",
+      "input": {
+        "text": "one three  two one",
+        "point": 15,
+        "keys": "S-<down> C-- C-t",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one three  two noe",
+      "visible": "one three  two noe",
+      "point": 16,
+      "mark": 15,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "End of buffer"
+    },
+    {
+      "name": "transpose-negative-b",
+      "input": {
+        "text": "one three  two one",
+        "point": 15,
+        "keys": "C-e C-- C-t",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one three  two noe",
+      "visible": "one three  two noe",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "transpose-negative-c",
+      "input": {
+        "text": "one three  two one",
+        "point": 15,
+        "keys": "S-<down> C-t",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one three  two oen",
+      "visible": "one three  two oen",
+      "point": 18,
+      "mark": 15,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "End of buffer"
+    },
+    {
+      "name": "transpose-negative-d",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "C-e C-- C-t",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "bac",
+      "visible": "bac",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "transpose-negative-e",
+      "input": {
+        "text": "abcd",
+        "point": 0,
+        "keys": "C-f C-f C-- C-t",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "bacd",
+      "visible": "bacd",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

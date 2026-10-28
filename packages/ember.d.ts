@@ -503,6 +503,10 @@ declare global {
       "negative-argument": [];
       /**
        * Insert a newline, or as many as the prefix argument says.
+       *
+       * Typed, with electric-indent-mode on, it also indents the new line as the mode says, as RET does in Emacs.
+       *
+       * Defined in packages/simple.ts.
        */
       "newline": [];
       /**
@@ -1824,6 +1828,12 @@ declare global {
        * Defined in packages/delsel.ts.
        */
       "delete-selection-mode": Value;
+      /**
+       * Whether RET indents the new line, as Emacs's electric-indent-mode does; on by default.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "electric-indent-mode": Value;
       /**
        * Commands run with M-x, newest first.
        */

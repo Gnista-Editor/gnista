@@ -293,7 +293,21 @@ fn without_clock_times(state: &State) -> State {
         }
         chars.into_iter().collect()
     };
-    State { text: blank(&state.text), visible: blank(&state.visible), kill_ring: state.kill_ring.iter().map(|k| blank(k)).collect(), ..state.clone() }
+    // Emacs reports deleting past the buffer's ends with an internal "Args out
+    // of range" error; Ember says which end, on purpose (see known-gaps.txt).
+    let error = match state.error.as_deref() {
+        Some(e) if e.starts_with("Args out of range: #<buffer") || e == "End of buffer" || e == "Beginning of buffer" => {
+            Some("out of range".to_string())
+        }
+        _ => state.error.clone(),
+    };
+    State {
+        text: blank(&state.text),
+        visible: blank(&state.visible),
+        kill_ring: state.kill_ring.iter().map(|k| blank(k)).collect(),
+        error,
+        ..state.clone()
+    }
 }
 
 /// The names of the fields that differ, so shrinking keeps to the same difference.
@@ -339,6 +353,65 @@ fn shrinks(case: &Case) -> Vec<Case> {
 #[test]
 #[ignore = "needs GNU Emacs; run with --ignored"]
 fn org_mode_behaves_like_emacs_on_random_cases() {
+    fuzz(random_case);
+}
+
+/// Words, punctuation, indentation and blank lines for plain text.
+fn text_document(rng: &mut Rng) -> String {
+    let mut lines: Vec<String> = Vec::new();
+    for _ in 0..1 + rng.below(5) {
+        if rng.chance(15) {
+            lines.push(String::new());
+            continue;
+        }
+        let mut line = rng.pick(&["", "", "  ", "\t"]).to_string();
+        for w in 0..1 + rng.below(5) {
+            if w > 0 {
+                line.push_str(rng.pick(&[" ", " ", "  ", ", ", ". ", "-"]));
+            }
+            line.push_str(rng.pick(&["one", "two", "three", "foo_bar", "x", "Hello", "it's", "42", "a.b"]));
+        }
+        if rng.chance(20) {
+            line.push_str(rng.pick(&[".", "!", " ", "?"]));
+        }
+        lines.push(line);
+    }
+    let mut text = lines.join("\n");
+    if rng.chance(70) {
+        text.push('\n');
+    }
+    text
+}
+
+/// Keys for plain editing, outside any mode: motion, killing, yanking, the
+/// mark, undo, transposing and prefix arguments.
+const EDIT_ONLY_KEYS: &[&str] = &[
+    "C-f", "C-b", "C-n", "C-p", "C-a", "C-e", "M-f", "M-b", "M-<", "M->", "C-d", "DEL", "M-d", "M-DEL", "C-k",
+    "C-y", "M-y", "C-w", "M-w", "C-SPC", "C-x C-x", "C-x h", "C-/", "C-?", "C-t", "M-t", "C-x C-t", "C-o", "C-j",
+    "RET", "C-u", "M-2", "C--", "S-<right>", "S-<left>", "S-<down>", "C-g",
+];
+
+fn random_text_case(rng: &mut Rng, name: String) -> Case {
+    let text = text_document(rng);
+    let point = rng.below(text.chars().count() + 1);
+    let n = 1 + rng.below(6);
+    let keys = (0..n)
+        .map(|_| if rng.chance(80) { rng.pick(EDIT_ONLY_KEYS) } else { rng.pick(&["x", "SPC", "1"]) })
+        .collect::<Vec<_>>()
+        .join(" ");
+    Case { name, point, text, keys, modes: Vec::new(), call: Vec::new(), platform: None }
+}
+
+/// Fuzzes editing outside any mode, as the org fuzzer does org-mode.
+#[test]
+#[ignore = "needs GNU Emacs; run with --ignored"]
+fn plain_editing_behaves_like_emacs_on_random_cases() {
+    fuzz(random_text_case);
+}
+
+/// Generates cases with `generate`, compares Emacs and Ember on them, and
+/// shrinks those that differ.
+fn fuzz(generate: fn(&mut Rng, String) -> Case) {
     let seed: u64 = std::env::var("EMBER_FUZZ_SEED")
         .ok()
         .and_then(|s| s.parse().ok())
@@ -347,7 +420,7 @@ fn org_mode_behaves_like_emacs_on_random_cases() {
     // Mixed first, so seeds differing in their lowest bit give different cases.
     let mut rng = Rng(seed.wrapping_mul(0x9e37_79b9_7f4a_7c15).wrapping_add(0x9e37_79b9_7f4a_7c15) | 1);
     let work = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/org-fuzz");
-    let cases: Vec<Case> = (0..count).map(|i| random_case(&mut rng, format!("f{i:04}"))).collect();
+    let cases: Vec<Case> = (0..count).map(|i| generate(&mut rng, format!("f{i:04}"))).collect();
     let recorded = record(&work.join("run"), &cases);
 
     let mut failing: Vec<(Case, String)> = Vec::new();

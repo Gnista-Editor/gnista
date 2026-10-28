@@ -10,9 +10,10 @@ use crate::keymap::Lookup;
 use crate::prefix::PrefixArg;
 use crate::variables::Value;
 
-/// Commands whose kills join onto the previous kill when run back to back.
-pub(crate) const KILL_COMMANDS: &[&str] =
-    &["kill-line", "kill-region", "kill-word", "backward-kill-word"];
+/// The command a kill joins onto: every kill command sets this-command to
+/// it when it kills, as Emacs's do through kill-region, so one that fails
+/// leaves the next kill a new entry.
+pub(crate) const KILL_COMMANDS: &[&str] = &["kill-region"];
 
 fn def(
     ed: &mut Editor,
@@ -672,12 +673,24 @@ fn editing(ed: &mut Editor) {
         |ed, _| {
             let mut continuing = ed.last_command() == Some("undo");
             let mut redid = false;
-            // With the region active Emacs undoes only changes inside it, but
-            // an empty region takes in the whole history. Ember does not undo
-            // in a region yet; its messages say "region" as Emacs's do.
-            let in_region = ed.buffer().is_mark_active();
-            for _ in 0..ed.prefix_numeric().max(1) {
+            // With the region active, or a C-u or C-- argument, Emacs undoes only
+            // changes inside the region, but an empty region takes in the
+            // whole history. Ember does not undo in a region yet; its messages
+            // say "region" as Emacs's do.
+            let arg = ed.current_prefix_arg();
+            let region_arg = matches!(arg, Some(PrefixArg::Universal(_)) | Some(PrefixArg::Minus));
+            if region_arg && ed.buffer().mark().is_none() {
+                return err("The mark is not set now, so there is no region");
+            }
+            let in_region = ed.buffer().is_mark_active() || region_arg;
+            // A count undoes that many changes, stopping quietly if there are fewer.
+            let count = match arg {
+                Some(PrefixArg::Number(n)) => n,
+                _ => 1,
+            };
+            for k in 0..count.max(0) {
                 redid = match ed.buffer_mut().undo(continuing) {
+                    Err(_) if k > 0 => break,
                     Err(_) if in_region => return err("No further undo information for region"),
                     result => result?,
                 };
@@ -710,7 +723,8 @@ fn editing(ed: &mut Editor) {
             let arg = ed.current_prefix_arg();
             let repeated = ed.last_command() == Some("set-mark-command");
             let b = ed.buffer_mut();
-            if let Some(PrefixArg::Universal(4)) = arg {
+            // Any argument but C-u C-u pops the mark, as in Emacs, a number included.
+            if arg.is_some() && !matches!(arg, Some(PrefixArg::Universal(n)) if n > 4) {
                 let mark = b.mark().ok_or_else(|| Error::new("No mark set in this buffer"))?;
                 let popped = b.point() == mark;
                 b.set_point(mark);
@@ -779,6 +793,7 @@ fn killing(ed: &mut Editor) {
             ed.kill(killed, to < p);
             // Emacs kills through kill-region, which deactivates the mark.
             ed.buffer_mut().deactivate_mark();
+            ed.set_this_command("kill-region");
             Ok(())
         },
     );
@@ -892,6 +907,7 @@ fn kill_words(ed: &mut Editor, n: i64) -> Result<()> {
     ed.kill(killed, to < p);
     // Emacs kills through kill-region, which deactivates the mark.
     ed.buffer_mut().deactivate_mark();
+    ed.set_this_command("kill-region");
     Ok(())
 }
 
