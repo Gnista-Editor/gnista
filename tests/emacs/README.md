@@ -67,5 +67,8 @@ Turn the ones worth fixing into cases in a `cases/org-fuzz-*.json` file, so they
 - **Prompts.** A command that would prompt is an error in the recorder.
 - **Hangs.** Org can loop forever, so recording has a time limit. A run that takes too long is split until the case that hangs is left out.
 - **Clock times.** The minute of a logged time can differ because Emacs runs first, so it is ignored.
+- **Malformed timestamps.** A case where Org fails with "Not an Org time string" is left out. Org fails like that in nearly any command in the entry, and Ember only where it parses the timestamp.
+
+`plain_editing_behaves_like_emacs_on_random_cases` does the same for editing outside any mode: motion, killing, yanking, the mark, undo, transposing and prefix arguments in random text. Its differences go in `cases/editing-fuzz.json`. The two fuzzers work in their own directories under `target/`, so run one at a time with its full name, or both at once.
 
 record.el also makes opening a link in a browser or another program an error, so a case cannot start one.

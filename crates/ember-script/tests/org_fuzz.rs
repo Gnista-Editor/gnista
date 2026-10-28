@@ -268,6 +268,12 @@ fn compare(case: &Case, emacs: &State) -> Option<String> {
     if emacs.error.as_deref().is_some_and(|e| e.contains("Minibuffer read")) {
         return None;
     }
+    // Org's parser fails on timestamps that only its loose regexp matches,
+    // in nearly any command in their entry; Ember fails only where it parses
+    // them (see known-gaps.txt), so these cases are left out too.
+    if emacs.error.as_deref().is_some_and(|e| e.starts_with("Not an Org time string")) {
+        return None;
+    }
     let ember = std::panic::catch_unwind(|| run(case));
     match ember {
         Ok(ember) => Some(differences(&without_clock_times(emacs), &without_clock_times(&ember))),
@@ -353,7 +359,7 @@ fn shrinks(case: &Case) -> Vec<Case> {
 #[test]
 #[ignore = "needs GNU Emacs; run with --ignored"]
 fn org_mode_behaves_like_emacs_on_random_cases() {
-    fuzz(random_case);
+    fuzz("org-fuzz", random_case);
 }
 
 /// Words, punctuation, indentation and blank lines for plain text.
@@ -406,12 +412,13 @@ fn random_text_case(rng: &mut Rng, name: String) -> Case {
 #[test]
 #[ignore = "needs GNU Emacs; run with --ignored"]
 fn plain_editing_behaves_like_emacs_on_random_cases() {
-    fuzz(random_text_case);
+    fuzz("edit-fuzz", random_text_case);
 }
 
 /// Generates cases with `generate`, compares Emacs and Ember on them, and
-/// shrinks those that differ.
-fn fuzz(generate: fn(&mut Rng, String) -> Case) {
+/// shrinks those that differ, in a directory of `target` of its own, as the
+/// fuzzers can run at once.
+fn fuzz(dir: &str, generate: fn(&mut Rng, String) -> Case) {
     let seed: u64 = std::env::var("EMBER_FUZZ_SEED")
         .ok()
         .and_then(|s| s.parse().ok())
@@ -419,7 +426,7 @@ fn fuzz(generate: fn(&mut Rng, String) -> Case) {
     let count: usize = std::env::var("EMBER_FUZZ_CASES").ok().and_then(|s| s.parse().ok()).unwrap_or(300);
     // Mixed first, so seeds differing in their lowest bit give different cases.
     let mut rng = Rng(seed.wrapping_mul(0x9e37_79b9_7f4a_7c15).wrapping_add(0x9e37_79b9_7f4a_7c15) | 1);
-    let work = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/org-fuzz");
+    let work = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target").join(dir);
     let cases: Vec<Case> = (0..count).map(|i| generate(&mut rng, format!("f{i:04}"))).collect();
     let recorded = record(&work.join("run"), &cases);
 
