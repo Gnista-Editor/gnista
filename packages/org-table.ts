@@ -97,8 +97,11 @@ function dropMarker(m: { pos: number }): void {
 function edInsert(pos: number, text: string, beforeMarkers = false): void {
   const n = charCount(text);
   if (n === 0) return;
+  const mark = ember.mark();
   ember.gotoChar(pos);
   ember.insert(text);
+  // The mark is a marker too, which insert-before-markers moves.
+  if (beforeMarkers && mark === pos) ember.setMark(pos + n);
   for (const m of markers) if (m.pos > pos || (m.pos === pos && beforeMarkers)) m.pos += n;
 }
 
@@ -202,9 +205,9 @@ function gotoColumn(n: number, onDelim = false, force = false): void {
 type Row = "hline" | string[];
 
 /** The table at point as rows of fields, as org-table-to-lisp reads it. */
-function tableToLisp(): Row[] {
+function tableToLisp(line = lineAt()): Row[] {
   const rows: Row[] = [];
-  for (let l = firstLine(); l <= lastLine(); l++) {
+  for (let l = firstLine(line); l <= lastLine(line); l++) {
     const text = ember.lineText(l);
     let i = (/^[ \t]*/.exec(text)?.[0].length ?? 0) + 1;
     if (text[i] === "-") {
@@ -233,8 +236,8 @@ function needsAlign(): boolean {
 }
 
 /** Records that the table at point is aligned, as setting org-table-may-need-update to nil does. */
-function markAligned(): void {
-  ember.setVariable("org-table--aligned", [ember.bufferModifiedTick(), tableBegin(), tableEnd()]);
+function markAligned(line = lineAt()): void {
+  ember.setVariable("org-table--aligned", [ember.bufferModifiedTick(), ember.lineStart(firstLine(line)), lineStartOrEnd(lastLine(line) + 1)]);
 }
 
 /** Pads a field to a width, as org-table--align-field does. */
@@ -251,9 +254,11 @@ function alignField(field: string, width: number, align: string): string {
 function align(): void {
   const lineMark = marker(ember.lineStart(lineAt()));
   const column = currentColumn();
+  // On the line just after a table, as org-table-begin and org-table-end find it, the table is the one above.
+  const at = !isTableLine(lineAt()) && isTableLine(lineAt() - 1) ? lineAt() - 1 : lineAt();
   try {
-    const first = firstLine();
-    const table = tableToLisp();
+    const first = firstLine(at);
+    const table = tableToLisp(at);
     const rows = table.filter((r): r is string[] => r !== "hline");
     let widths: number[];
     let aligns: string[];
@@ -306,7 +311,7 @@ function align(): void {
     dropMarker(lineMark);
     gotoColumn(column);
   }
-  markAligned();
+  markAligned(isTableLine(lineAt()) ? lineAt() : Math.max(0, lineAt() - 1));
 }
 
 /** What org-table-justify-field-maybe does without a new value: notices when point left the table last aligned. */
@@ -393,6 +398,7 @@ ember.defineCommand({
   name: "org-table-next-field",
   doc: "Move to the next field, going on to the next row, and adding one at the end. The table is aligned first if it changed.",
   run: () => {
+    maybeEvalFormula();
     alignIfNeeded();
     const end = tableEnd();
     if (atHline()) ember.gotoChar(ember.lineEnd(lineAt()));
@@ -456,6 +462,7 @@ ember.defineCommand({
   name: "org-table-next-row",
   doc: "Move to the same field in the next row, adding a row before a rule or at the end. The table is aligned first if it changed.",
   run: () => {
+    maybeEvalFormula();
     alignIfNeeded();
     const col = currentColumn();
     forwardLine(1);
@@ -506,6 +513,21 @@ function getField(n?: number, replace?: string): string {
   ember.gotoChar(Math.min(ember.lineEnd(lineAt()), start + 1));
   return val;
 }
+
+/**
+ * What org-table-maybe-eval-formula does before moving on from a field,
+ * as Ember has no formulas: it reads the field, which leaves point near
+ * the field's start.
+ */
+function maybeEvalFormula(): void {
+  getField();
+}
+
+ember.defineCommand({
+  name: "org-table-maybe-eval-formula",
+  doc: "Evaluate the field at point if it is a formula. Ember does not support formulas yet, so this only reads the field.",
+  run: () => maybeEvalFormula(),
+});
 
 /** The data lines of the table at point, in order. */
 function dataLines(): number[] {
@@ -811,14 +833,49 @@ function copyRegion(cut: boolean): void {
   const endMark = marker(ember.lineEnd(lineAt()));
   const c02 = currentColumn();
   const [from, to] = [Math.min(c01, c02), Math.max(c01, c02)];
-  for (let l = begLine; l < ember.lineCount() && ember.lineStart(l) < endMark.pos; l++) {
-    ember.gotoChar(ember.lineStart(l));
-    if (atHline()) continue;
-    for (let c = from; c <= to; c++) getField(c, cut ? "  " : undefined);
+  const clip: string[][] = [];
+  ember.gotoChar(ember.lineStart(begLine));
+  // As in Org, point ends at the start of the line after the fields.
+  while (ember.point() < endMark.pos) {
+    if (!atHline()) {
+      const row: string[] = [];
+      for (let c = from; c <= to; c++) row.push(getField(c, cut ? "  " : undefined));
+      clip.push(row);
+    }
+    forwardLine(1);
   }
   dropMarker(endMark);
   if (cut) align();
+  tableClip = clip;
 }
+
+/** The fields last cut or copied from a table, as org-table-clip keeps them. */
+let tableClip: string[][] = [];
+
+ember.defineCommand({
+  name: "org-table-paste-rectangle",
+  doc: "Paste the fields last cut or copied from a table, starting at the field at point.",
+  run: () => {
+    if (tableClip.length === 0) throw new Error("First cut/copy a region to paste!");
+    checkInsideDataField();
+    const column = currentColumn();
+    const realign = ember.variable("org-table-automatic-realign");
+    ember.setVariable("org-table-automatic-realign", false);
+    try {
+      for (const row of tableClip) {
+        for (const field of row) {
+          getField(undefined, field);
+          ember.call("org-table-next-field");
+        }
+        forwardLine(1);
+        gotoColumn(column);
+      }
+    } finally {
+      ember.setVariable("org-table-automatic-realign", realign ?? true);
+    }
+    align();
+  },
+});
 
 ember.defineCommand({
   name: "org-table-cut-region",

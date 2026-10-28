@@ -487,6 +487,28 @@
       ],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "copy-right-after-a-kill-joins-it",
+      "input": {
+        "text": "one\ntwo\n",
+        "point": 0,
+        "keys": "C-k C-SPC C-n M-w",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\ntwo\n",
+      "visible": "\ntwo\n",
+      "point": 1,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [
+        "\n",
+        "one"
+      ],
+      "modified": true,
+      "error": null
     }
   ]
 }

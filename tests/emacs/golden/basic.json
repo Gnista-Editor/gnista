@@ -552,6 +552,44 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "percent-and-dollar-are-word-characters",
+      "input": {
+        "text": "cost 50% $10 now",
+        "point": 0,
+        "keys": "M-f M-f M-f",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "cost 50% $10 now",
+      "visible": "cost 50% $10 now",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backward-word-over-a-percent-sign",
+      "input": {
+        "text": "done [50%]",
+        "point": 10,
+        "keys": "M-b",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "done [50%]",
+      "visible": "done [50%]",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
     }
   ]
 }

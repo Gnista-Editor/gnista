@@ -107,6 +107,8 @@ pub struct Editor {
     pub(crate) message: Option<String>,
     /// The error from the last interactive command that failed, until taken.
     last_error: Option<Error>,
+    /// Whether the command the command loop is running failed.
+    command_failed: bool,
     pub(crate) kill_ring: Vec<String>,
     /// Which kill yanking takes next, counting back from the newest (Emacs's
     /// `kill-ring-yank-pointer`).
@@ -182,6 +184,7 @@ impl Editor {
             current_prefix_arg: None,
             message: None,
             last_error: None,
+            command_failed: false,
             kill_ring: Vec::new(),
             yank_pointer: 0,
             last_repeatable: None,
@@ -433,6 +436,7 @@ impl Editor {
         if let Err(e) = self.run_command(command, args, prefix) {
             self.message = Some(e.to_string());
             self.last_error = Some(e);
+            self.command_failed = true;
         }
     }
 
@@ -579,9 +583,13 @@ impl Editor {
             self.remapped_from = Some(std::mem::replace(&mut name, to));
         }
         let (old_point, old_buffer, old_tick) = (self.buffer().point(), self.buffer().id, self.buffer().modified_tick());
+        self.command_failed = false;
         self.run_interactive(&name);
         let modified = self.buffer().id != old_buffer || self.buffer().modified_tick() != old_tick;
-        self.adjust_point_for_invisible(old_point, modified);
+        // As in Emacs, an error leaves the command loop before point is adjusted.
+        if !self.command_failed {
+            self.adjust_point_for_invisible(old_point, modified);
+        }
         self.this_command = self.last_command.clone();
         if let Err(e) = self.run_hooks("post-command-hook") {
             self.message = Some(format!("Error in post-command-hook: {e}"));
@@ -944,12 +952,6 @@ impl Editor {
             }
             _ => self.kill_ring.push(text),
         }
-    }
-
-    /// Adds text to the kill ring as a new entry, as copying does.
-    pub(crate) fn kill_new(&mut self, text: String) {
-        self.yank_pointer = 0;
-        self.kill_ring.push(text);
     }
 
     /// The kill `n` entries back from the one yanked last, moving the yank

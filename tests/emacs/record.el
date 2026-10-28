@@ -99,6 +99,10 @@ while the case's keys are queued would read those instead."
             real-this-command nil
             last-repeatable-command nil
             last-kbd-macro nil
+            ;; Org keeps some state between commands in global variables.
+            org-table-clip nil
+            org-subtree-clip nil
+            org-subtree-clip-folded nil
             ember-oracle--error nil
             unread-command-events (append (and call '(f34))
                                           (listify-key-sequence (kbd keys))

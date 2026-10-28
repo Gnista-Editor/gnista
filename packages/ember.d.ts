@@ -873,7 +873,13 @@ declare global {
        */
       "org-overview": [];
       /**
-       * Yank a subtree, changing its levels to fit under the heading point is under, as a sibling.
+       * Paste a subtree at the right level, or in a table, the fields last cut or copied from one.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-paste-special": [];
+      /**
+       * Paste the last kill as a subtree, its levels changed to fit the headings around point.
        *
        * Defined in packages/org.ts.
        */
@@ -1079,6 +1085,12 @@ declare global {
        */
       "org-table-kill-row": [];
       /**
+       * Evaluate the field at point if it is a formula. Ember does not support formulas yet, so this only reads the field.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-maybe-eval-formula": [];
+      /**
        * Swap the field at point with the one below it.
        *
        * Defined in packages/org-table.ts.
@@ -1138,6 +1150,12 @@ declare global {
        * Defined in packages/org-table.ts.
        */
       "org-table-next-row": [];
+      /**
+       * Paste the fields last cut or copied from a table, starting at the field at point.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-paste-rectangle": [];
       /**
        * Move to the previous field, going back to the row before. The table is aligned first if it changed.
        *
@@ -1808,6 +1826,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-cycle-subtree-status": Value;
+      /**
+       * The buffer's modified tick when its folds were last checked against the text they hide.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-fold--checked-tick": Value;
       /**
        * What typing or deleting next to folded text does: "smart" unfolds it and goes ahead where the edit is predictable, and otherwise stops so it can be repeated with the text showing; "show" unfolds and goes ahead, "show-and-error" unfolds and stops, "error" stops, and false allows the edit.
        *

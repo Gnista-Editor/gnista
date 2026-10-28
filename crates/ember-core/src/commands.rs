@@ -481,8 +481,10 @@ fn scroll_step(ed: &Editor) -> usize {
     ed.viewport_height().saturating_sub(2).max(1)
 }
 
+/// Whether a character is part of a word, as Emacs's standard syntax table
+/// says: letters, digits, and `$` and `%`.
 fn is_word_char(c: char) -> bool {
-    c.is_alphanumeric()
+    c.is_alphanumeric() || c == '$' || c == '%'
 }
 
 fn word_end(b: &Buffer, mut pos: usize) -> usize {
@@ -692,7 +694,8 @@ fn killing(ed: &mut Editor) {
     def(ed, "kill-ring-save", "Copy the text between point and the mark to the kill ring.", |ed, _| {
         let region = region(ed.buffer())?;
         let text = ed.buffer().slice(region);
-        ed.kill_new(text);
+        // As copy-region-as-kill does, a copy right after a kill joins it.
+        ed.kill(text, false);
         ed.buffer_mut().deactivate_mark();
         Ok(())
     });

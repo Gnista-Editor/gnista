@@ -1,0 +1,382 @@
+[
+  {
+    "name": "seed3-0240-s-right",
+    "text": "- [X] beta",
+    "keys": "S-<right>",
+    "point": 1,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed3-0380-m-s-return-s-up",
+    "text": "",
+    "keys": "M-S-<return> S-<up>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed3-0204-c-c-c-c",
+    "text": "|---+---|",
+    "keys": "C-c C-c",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed3-0203-ret-m-f",
+    "text": "+ [X] call",
+    "keys": "RET M-f",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed3-0196-m-s-return-s-down",
+    "text": "  call beta",
+    "keys": "M-S-<return> S-<down>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed3-0356-s-left-del",
+    "text": "* DONE gamma",
+    "keys": "S-<left> DEL",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed3-0061-backtab-1",
+    "text": "* DONE fix :work:\n** [#B] alpha",
+    "keys": "<backtab> 1",
+    "point": 8,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed3-0103-backtab-c-e",
+    "text": "** read\n*** TODO [#B] call alpha",
+    "keys": "<backtab> C-e",
+    "point": 23,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed3-0334-c-c-c-x-c-y",
+    "text": "|12|yy|",
+    "keys": "C-c C-x C-y",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed3-0110-c-c-c-x-c-y",
+    "text": "| ccc |  |",
+    "keys": "C-c C-x C-y",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed3-0218-c-u-tab-m-s-up",
+    "text": "notes <2026-10-24 Wed>\n:PROPERTIES:\n:END:",
+    "keys": "C-u TAB M-S-<up>",
+    "point": 33,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed3-0337-spc-c-n-c-c-c-t",
+    "text": "* TODO fix\n* TODO beta",
+    "keys": "SPC C-n C-c C-t",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed3-0051-c-c-c-u-1-m-down",
+    "text": "1) notes\n2) notes\n1) alpha",
+    "keys": "C-c C-u 1 M-<down>",
+    "point": 11,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed3-0336-c-u-tab-c-c",
+    "text": "*** [#C] beta gamma [/]\n|ccc|3|",
+    "keys": "C-u TAB C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed3-0159-backtab-c-n-c-c",
+    "text": "  beta read\n** call [1/2]\nDEADLINE: <2026-11-01 Sun +1w>",
+    "keys": "<backtab> C-n C-c -",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0170-s-left",
+    "text": ":PROPERTIES:\n:ID: 1\n:END:",
+    "keys": "S-<left>",
+    "point": 18,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0409-tab-m-ret",
+    "text": ":PROPERTIES:\n:END:",
+    "keys": "TAB M-RET",
+    "point": 13,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0041-c-n-m-b",
+    "text": "* TODO gamma notes [%]",
+    "keys": "C-n M-b",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0149-m-s-return-m-up",
+    "text": "* TODO plan\n:PROPERTIES:\n:END:",
+    "keys": "M-S-<return> M-<up>",
+    "point": 7,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0176-backtab-m-right",
+    "text": "* TODO [#B] beta notes\n  + alpha\n+ [X] beta",
+    "keys": "<backtab> M-<right>",
+    "point": 26,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0469-c-c",
+    "text": "** [#B] notes plan [%]\n:PROPERTIES:\n:END:\n\n",
+    "keys": "C-c -",
+    "point": 21,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0207-1-c-c",
+    "text": "",
+    "keys": "1 C-c -",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0043-c-c-c-x-m-w",
+    "text": "|bb||",
+    "keys": "C-c C-x M-w",
+    "point": 3,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0401-c-c-c-x-c-y",
+    "text": "|a|x|",
+    "keys": "C-c C-x C-y",
+    "point": 1,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0181-c-c-c-x-c-y",
+    "text": "|ccc|yy|",
+    "keys": "C-c C-x C-y",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0353-c-c-c-x-c-w",
+    "text": "|  | x |",
+    "keys": "C-c C-x C-w",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0158-c-c-c-x-c-y",
+    "text": "| a | x |",
+    "keys": "C-c C-x C-y",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0542-c-c-c-x-c-y",
+    "text": "| ccc | x |",
+    "keys": "C-c C-x C-y",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0122-m-ret-m-left-spc",
+    "text": "*** beta gamma",
+    "keys": "M-RET M-<left> SPC",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0430-c-return-c-u-tab",
+    "text": "* TODO plan [/]",
+    "keys": "C-<return> C-u TAB",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0341-tab-c-c",
+    "text": "- notes\n  + beta",
+    "keys": "TAB C-c -",
+    "point": 7,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0396-c-u-tab-s-down",
+    "text": "** [#A] notes\n3) [ ] plan",
+    "keys": "C-u TAB S-<down>",
+    "point": 19,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0485-c-k-c-c-c-x-c-y",
+    "text": "+ alpha",
+    "keys": "C-k C-c C-x C-y",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0133-c-c-c-x-c-w-1",
+    "text": "|  | x |",
+    "keys": "C-c C-x C-w 1",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0367-c-c-c-x-m-w-m-s-return",
+    "text": "| a | yy |",
+    "keys": "C-c C-x M-w M-S-<return>",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0328-m-left-c-c-c-c-spc",
+    "text": "* fix :home:x:",
+    "keys": "M-<left> C-c C-c SPC",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0030-c-k-c-c-c-x-m-w",
+    "text": "* read\n4. [X] call",
+    "keys": "C-k C-c C-x M-w",
+    "point": 7,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0168-c-c-c-x-c-w-m-s-up",
+    "text": "| ccc | x |\n- beta",
+    "keys": "C-c C-x C-w M-S-<up>",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0338-c-k-c-c-c-x-c-y",
+    "text": "* TODO plan fix :home:x:\n",
+    "keys": "C-k C-c C-x C-y",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0479-m-s-return-s-left-m-left-c-d",
+    "text": "** [#B] beta\nbeta <2026-10-13 Wed>",
+    "keys": "M-S-<return> S-<left> M-<left> C-d",
+    "point": 20,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0096-c-c-c-u-1-c-c",
+    "text": "2) alpha",
+    "keys": "C-c C-u 1 C-c *",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0403-c-u-tab-c-c-c-x-m-w",
+    "text": "* alpha\n** alpha",
+    "keys": "C-u TAB C-c C-x M-w",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0448-c-c-c-x-c-w-c-c-c-x-c-y",
+    "text": "|  | 3 |\n| 12 | 3 |",
+    "keys": "C-c C-x C-w C-c C-x C-y",
+    "point": 1,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed4-0501-c-c-c-c-c-x-c-w-c-c-c-x-c-y",
+    "text": "fix <2026-10-20 Wed>\n* fix",
+    "keys": "C-c * C-c C-x C-w C-c C-x C-y",
+    "modes": [
+      "org-mode"
+    ]
+  }
+]

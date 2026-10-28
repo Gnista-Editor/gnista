@@ -164,5 +164,17 @@
     "name": "transpose-lines-in-an-empty-buffer",
     "text": "",
     "keys": "C-x C-t"
+  },
+  {
+    "name": "percent-and-dollar-are-word-characters",
+    "text": "cost 50% $10 now",
+    "keys": "M-f M-f M-f",
+    "point": 0
+  },
+  {
+    "name": "backward-word-over-a-percent-sign",
+    "text": "done [50%]",
+    "keys": "M-b",
+    "point": 10
   }
 ]

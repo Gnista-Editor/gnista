@@ -114,6 +114,13 @@ pub fn run(case: &Case) -> State {
         if let Some(e) = ed.take_error() {
             error.get_or_insert(e.to_string());
         }
+        // record.el makes reading the minibuffer an error, as batch Emacs
+        // would read it from standard input; do the same here.
+        if ed.prompt().is_some() {
+            ed.handle_key(Key::parse("C-g").expect("C-g parses"));
+            ed.take_error();
+            error.get_or_insert("Minibuffer read in batch".into());
+        }
     }
     ed.font_lock_ensure().unwrap_or_else(|e| panic!("{}: fontifying: {e}", case.name));
     let b = ed.window_buffer();

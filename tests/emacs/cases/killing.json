@@ -117,5 +117,11 @@
     "name": "yank-after-yank-pop-takes-the-same-kill",
     "text": "a\nb",
     "keys": "M-d C-n M-d C-y M-y RET C-y"
+  },
+  {
+    "name": "copy-right-after-a-kill-joins-it",
+    "text": "one\ntwo\n",
+    "keys": "C-k C-SPC C-n M-w",
+    "point": 0
   }
 ]
