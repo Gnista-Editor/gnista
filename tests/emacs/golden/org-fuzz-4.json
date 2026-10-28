@@ -1,0 +1,279 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "seed5-0149-m-s-return-m-up",
+      "input": {
+        "text": "* TODO plan\n* DONE fix\n:PROPERTIES:\n:END:",
+        "point": 7,
+        "keys": "M-S-<return> M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO plan\n* TODO \n* DONE fix\n:PROPERTIES:\n:END:",
+      "visible": "* TODO plan\n* TODO \n* DONE fix\n:PROPERTIES:",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed5-0140-backtab-c-c-c-t",
+      "input": {
+        "text": "*** plan gamma :home:x:\n|-\n|12|3|\n",
+        "point": 0,
+        "keys": "<backtab> C-c C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "*** TODO plan gamma                                                  :home:x:\n|-\n|12|3|\n",
+      "visible": "*** TODO plan gamma                                                  :home:x:",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed5-0602-c-c-m-f-m-up",
+      "input": {
+        "text": "** gamma\n",
+        "point": 9,
+        "keys": "C-c @ M-f M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** gamma\n",
+      "visible": "** gamma\n",
+      "point": 8,
+      "mark": 9,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot move past superior level or buffer limit"
+    },
+    {
+      "name": "seed5-0572-c-u-tab-c-c-c-t",
+      "input": {
+        "text": "** read\n| ccc | 3 |",
+        "point": 8,
+        "keys": "C-u TAB C-c C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** TODO read\n| ccc | 3 |",
+      "visible": "** TODO read",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed5-0643-c-u-tab-c-c-c-f",
+      "input": {
+        "text": "* fix alpha\n** alpha call",
+        "point": 21,
+        "keys": "C-u TAB C-c C-f",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* fix alpha\n** alpha call",
+      "visible": "* fix alpha",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed5-0646-c-c-c-c",
+      "input": {
+        "text": "*** gamma fix\n*** beta alpha :home:x:",
+        "point": 0,
+        "keys": "C-c - C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "**** gamma fix\n*** beta alpha :home:x:",
+      "visible": "**** gamma fix\n*** beta alpha :home:x:",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed5-0396-c-u-tab-s-down-m-down",
+      "input": {
+        "text": "** [#A] notes\n3) [ ] plan\n4) [X] gamma\n*** read",
+        "point": 19,
+        "keys": "C-u TAB S-<down> M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** [#A] notes\n3) [ ] plan\n4) [X] gamma\n*** read",
+      "visible": "** [#A] notes",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot move past superior level or buffer limit"
+    },
+    {
+      "name": "seed5-0653-c-c-c-c-c-u-tab-m-s-up",
+      "input": {
+        "text": "* DONE gamma fix\n1. fix\n",
+        "point": 20,
+        "keys": "C-c C-c C-u TAB M-S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* DONE gamma fix\n1. fix\n",
+      "visible": "* DONE gamma fix\n",
+      "point": 17,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Beginning of buffer"
+    },
+    {
+      "name": "dragging-a-folded-line-to-the-top-fails-1",
+      "input": {
+        "text": "* DONE gamma fix\n1. fix\n",
+        "point": 20,
+        "keys": "C-u TAB M-S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* DONE gamma fix\n1. fix\n",
+      "visible": "* DONE gamma fix\n",
+      "point": 17,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Beginning of buffer"
+    },
+    {
+      "name": "dragging-a-folded-line-to-the-top-fails-2",
+      "input": {
+        "text": "* a\nb\n",
+        "point": 5,
+        "keys": "C-u TAB M-S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\nb\n",
+      "visible": "* a\n",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Beginning of buffer"
+    },
+    {
+      "name": "dragging-a-folded-line-to-the-top-fails-3",
+      "input": {
+        "text": "* a\nb\nc\n",
+        "point": 5,
+        "keys": "C-u TAB M-S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\nb\nc\n",
+      "visible": "* a\n",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Beginning of buffer"
+    },
+    {
+      "name": "dragging-a-folded-line-to-the-top-fails-4",
+      "input": {
+        "text": "* a\nb",
+        "point": 5,
+        "keys": "C-u TAB M-S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\nb\n",
+      "visible": "* a\n\n",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Beginning of buffer"
+    },
+    {
+      "name": "dragging-a-folded-line-to-the-top-fails-5",
+      "input": {
+        "text": "* a\nbb\n* c\n",
+        "point": 5,
+        "keys": "C-u TAB M-S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* a\nbb\n* c\n",
+      "visible": "* a\n\n* c\n",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Beginning of buffer"
+    }
+  ]
+}

@@ -352,6 +352,17 @@ function backToHeading(move = false): [Heading[], number] {
   return [all, i];
 }
 
+/**
+ * The heading org-back-to-heading finds without invisible-ok: the one on
+ * point's line or above it, or the nearest heading above that which shows.
+ */
+function visibleHeadingIndex(all: Heading[], line: number): number | undefined {
+  const i = headingIndex(all, line);
+  if (i === undefined) return undefined;
+  for (const a of [i, ...ancestors(all, i)]) if (!ember.invisibleAt(all[a].start)) return a;
+  return i;
+}
+
 /** The heading on point's line, if it is a heading line. */
 function headingHere(): [Heading[], number] | undefined {
   if (!isHeadingLine(ember.lineText(lineAt()))) return undefined;
@@ -473,10 +484,10 @@ function ancestors(all: Heading[], i: number): number[] {
  * `state` is the new state, and for "folded" and "children" the lines are
  * those of the subtree point is in.
  */
-function showEmptyLines(state: string): void {
+function showEmptyLines(state: string, narrowed?: [number, number]): void {
   const n = Number(ember.variable("org-cycle-separator-lines") ?? 2);
   let range: [number, number] | undefined;
-  if (["overview", "contents", "t"].includes(state)) range = [0, ember.bufferSize()];
+  if (["overview", "contents", "t"].includes(state)) range = narrowed ?? [0, ember.bufferSize()];
   else if (state === "children" || state === "folded") {
     const all = headings();
     const i = headingIndex(all, lineAt());
@@ -510,11 +521,11 @@ function showEmptyLines(state: string): void {
     }
   }
   // Never hide empty lines at the end of the file.
-  const size = ember.bufferSize();
+  const size = narrowed ? narrowed[1] : ember.bufferSize();
   const last = headings()
-    .filter((h) => h.start < size)
+    .filter((h) => h.start < size && h.start >= (narrowed?.[0] ?? 0))
     .at(-1);
-  const eoh = last ? last.end : ember.lineEnd(0);
+  const eoh = last ? last.end : ember.lineEnd(lineAt(narrowed?.[0] ?? 0));
   if (eoh < size && /^[ \t\n]+$/.test(ember.bufferText(eoh, size))) flag(eoh, size, false);
 }
 
@@ -725,8 +736,23 @@ function fixFolds(): void {
   for (const id of ember.overlaysIn(0, ember.bufferSize())) checkFold(id);
 }
 
+/** Whether edits skip the fold checks, as org-fold-core-ignore-modifications makes them. */
+let foldChecksOff = false;
+
+/** Runs body with no fold checks after its edits, as Org's org-fold-core-ignore-modifications does. */
+function withoutFoldChecks<T>(body: () => T): T {
+  const was = foldChecksOff;
+  foldChecksOff = true;
+  try {
+    return body();
+  } finally {
+    foldChecksOff = was;
+  }
+}
+
 /** Checks the folds near a change, as org-fold-core--fix-folded-region does after each one. */
 function fixFoldsAround(from: number, to: number): void {
+  if (foldChecksOff) return;
   const a = ember.lineStart(Math.max(0, lineAt(from) - 1));
   const b = lineStartOrEnd(lineAt(to) + 2);
   for (const id of ember.overlaysIn(a, b)) checkFold(id);
@@ -1595,6 +1621,10 @@ function writeStruct(struct: Struct, parents: Alist, old?: Struct): Struct {
 
 /** Swaps two items of a sub-list, leaving their blank lines where they were, as org-list-swap-items does. */
 function swapItems(begA: number, begB: number, struct: Struct): Struct {
+  return withoutFoldChecks(() => swapItemsChecked(begA, begB, struct));
+}
+
+function swapItemsChecked(begA: number, begB: number, struct: Struct): Struct {
   const p = marker(ember.point());
   const endANoBlank = itemEndBeforeBlank(struct, begA);
   const endBNoBlank = itemEndBeforeBlank(struct, begB);
@@ -2158,8 +2188,10 @@ function updateCheckboxCount(): void {
     for (const c of cookies.reverse()) {
       const [on, total] = c.count;
       const value = c.percent ? `[${Math.floor((100 * on) / Math.max(1, total))}%]` : `[${on}/${total}]`;
-      edInsert(c.start, value);
-      edDelete(c.start + charCount(value), c.end + charCount(value));
+      withoutFoldChecks(() => {
+        edInsert(c.start, value);
+        edDelete(c.start + charCount(value), c.end + charCount(value));
+      });
       const h = parseHeading(lineAt(c.start));
       if (h && h.tagsAt !== undefined) alignTags(h.line);
     }
@@ -2868,7 +2900,7 @@ function sibling(all: Heading[], i: number, by: number): number | undefined {
 function forwardHeadingSameLevel(arg: number): void {
   const backward = arg < 0;
   const all = headings();
-  const current = headingIndex(all, lineAt());
+  const current = visibleHeadingIndex(all, lineAt());
   if (current === undefined) {
     if (backward) ember.gotoChar(0);
     else ember.gotoChar(all.find((h) => h.start > ember.point())?.start ?? ember.bufferSize());
@@ -3154,8 +3186,13 @@ ember.defineCommand({
  */
 function changeLevel(h: Heading, by: number): void {
   if (h.level + by < 1) throw new Error("Cannot promote to level 0.  UNDO to recover if necessary");
-  replaceKeepingPoint(h.start, h.start + h.level + 1, `${"*".repeat(h.level + by)} `);
-  if (h.tags.length > 0) alignTags(h.line);
+  // Org checks folds after promoting, but not after demoting.
+  const change = (): void => {
+    replaceKeepingPoint(h.start, h.start + h.level + 1, `${"*".repeat(h.level + by)} `);
+    if (h.tags.length > 0) alignTags(h.line);
+  };
+  if (by > 0) withoutFoldChecks(change);
+  else change();
 }
 
 /** Moves point past the space after the stars or TODO state it is at, as org-fix-position-after-promote does. */
@@ -3280,7 +3317,8 @@ function previousSiblingStart(all: Heading[], pos: number): number | undefined {
 /** Moves the subtree at point past arg siblings, back if negative, as org-move-subtree-down does. */
 function moveSubtree(arg: number): void {
   const col = ember.point() - ember.lineStart(lineAt());
-  const [all, i] = backToHeading(true);
+  const [all, found] = backToHeading(true);
+  const i = visibleHeadingIndex(all, all[found].line) ?? found;
   const beg = all[i].start;
   ember.gotoChar(beg);
   const wasFolded = folded(all[i].end, "outline");
@@ -3308,14 +3346,13 @@ function moveSubtree(arg: number): void {
     }
   }
   const txt = ember.bufferText(beg, end);
-  ember.deleteRegion(beg, end);
+  edDelete(beg, end);
   let p = ins > beg ? ins - (end - beg) : ins;
   if (beg > 0) flag(beg - 1, beg, false);
   if (p > 0) flag(p - 1, p, false);
   if (p !== ember.lineStart(lineAt(p)) && ember.bufferText(p, p + 1) === "\n") p++;
-  ember.gotoChar(p);
-  ember.insert(txt);
-  if (ember.point() !== ember.lineStart(lineAt())) ember.insert("\n");
+  edInsert(p, txt, true);
+  if (ember.point() !== ember.lineStart(lineAt())) edInsert(ember.point(), "\n");
   ember.gotoChar(p);
   while (ember.point() < ember.bufferSize() && /[ \t\n\r]/.test(ember.bufferText(ember.point(), ember.point() + 1))) {
     ember.gotoChar(ember.point() + 1);
@@ -3329,9 +3366,39 @@ function moveSubtree(arg: number): void {
       hideDrawersIn(fresh[k].line + 1, entryEnd(fresh, k));
       showChildren(fresh, k);
     }
+    cleanVisibilityAfterMove(fresh, k);
   }
   const line = lineAt();
   ember.gotoChar(ember.lineStart(line) + Math.min(col, ember.lineEnd(line) - ember.lineStart(line)));
+}
+
+/**
+ * Folds the drawers of the subtrees around one that moved, and shows the
+ * blank lines between them, as org-clean-visibility-after-subtree-move does.
+ */
+function cleanVisibilityAfterMove(all: Heading[], k: number): void {
+  let from = all[k].start;
+  for (let n = 0; n < 2; n++) from = previousSiblingStart(all, from) ?? from;
+  let to = all[k].start;
+  let last = k;
+  for (let n = 0; n < 3; n++) {
+    const next = nextSiblingStart(all, to);
+    if (next === undefined) {
+      to = ember.bufferSize();
+      last = -1;
+      break;
+    }
+    to = next;
+    last = all.findIndex((h) => h.start === next);
+  }
+  const end = last >= 0 && to !== ember.bufferSize() ? all[last].end : ember.bufferSize();
+  const re = new RegExp(`^${"\\*".repeat(all[k].level)} `);
+  for (const h of all) {
+    if (h.start < from || h.start > end || !re.test(ember.lineText(h.line))) continue;
+    if (!ember.invisibleAt(h.start) && ember.invisibleAt(h.end)) showHeadingLine(h);
+  }
+  hideDrawersIn(lineAt(from), end);
+  showEmptyLines("overview", [from, end]);
 }
 
 // Elements, after org-element.el: enough of the parse to drag paragraphs,
@@ -3856,8 +3923,10 @@ function setTodo(h: Heading, state: string | undefined): void {
   const kw = h.todo === undefined ? undefined : new RegExp(`^ +${h.todo.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?: +|[ \t]*$)`).exec(rest);
   const old = kw ? kw[0] : (/^ */.exec(rest)?.[0] ?? "");
   const p = marker(ember.point());
-  edDelete(from, from + charCount(old));
-  edInsert(from, state === undefined ? " " : ` ${state} `, true);
+  withoutFoldChecks(() => {
+    edDelete(from, from + charCount(old));
+    edInsert(from, state === undefined ? " " : ` ${state} `, true);
+  });
   ember.gotoChar(p.pos);
   dropMarker(p);
   const fresh = parseHeading(h.line);
@@ -4706,10 +4775,90 @@ const metaRight = ember.defineCommand({
   },
 });
 
+/** Swaps two stretches of text, as transpose-regions does. */
+function transposeRegions(a: number, b: number, c: number, d: number): void {
+  let [r1, r2] = [[Math.min(a, b), Math.max(a, b)], [Math.min(c, d), Math.max(c, d)]];
+  if (r1[0] > r2[0]) [r1, r2] = [r2, r1];
+  if (r1[1] > r2[0]) throw new Error("Transposed regions overlap");
+  const t1 = ember.bufferText(r1[0], r1[1]);
+  const t2 = ember.bufferText(r2[0], r2[1]);
+  edDelete(r2[0], r2[1]);
+  edInsert(r2[0], t1);
+  edDelete(r1[0], r1[1]);
+  edInsert(r1[0], t2);
+}
+
+/**
+ * M-<up> or M-<down> with an active region, as org-metaup and
+ * org-metadown do: subtrees in the region move together past the one
+ * next to them, and other lines swap with the line next to them.
+ * Returns whether it applied.
+ */
+function metaRegion(up: boolean): boolean {
+  const mark = ember.mark();
+  if (!ember.regionActive() || mark === undefined) return false;
+  const pt = ember.point();
+  const [rb, re] = [Math.min(mark, pt), Math.max(mark, pt)];
+  if (parseHeading(lineAt(rb))) {
+    const origin = marker(pt);
+    try {
+      const all = headings();
+      const level = all[headingIndex(all, lineAt(rb)) as number].level;
+      const higher = (from: number, to: number): boolean =>
+        all.some((h) => h.level < level && h.start >= from && h.start + h.level + 1 <= to);
+      if (up) {
+        const end = marker(Math.max(rb, re - 1));
+        const before = all.filter((h) => h.level === level && h.start < ember.lineStart(lineAt(rb))).at(-1);
+        if ((level > 1 && higher(rb === ember.lineStart(lineAt(rb)) ? rb : lineStartOrEnd(lineAt(rb) + 1), end.pos)) || !before) {
+          dropMarker(end);
+          throw new Error("Cannot move past superior level or buffer limit");
+        }
+        ember.gotoChar(before.start);
+        while (ember.point() < end.pos) moveSubtree(1);
+        dropMarker(end);
+      } else {
+        const beg = marker(rb);
+        const after = all.find((h) => h.level === level && h.start >= re && h.start + h.level + 1 > re);
+        if ((level > 1 && higher(rb === ember.lineStart(lineAt(rb)) ? rb : lineStartOrEnd(lineAt(rb) + 1), re)) || !after) {
+          dropMarker(beg);
+          throw new Error("Cannot move past superior level or buffer limit");
+        }
+        ember.gotoChar(after.start);
+        while (ember.point() > beg.pos) moveSubtree(-1);
+        dropMarker(beg);
+      }
+    } finally {
+      ember.gotoChar(origin.pos);
+      dropMarker(origin);
+    }
+    return true;
+  }
+  const a = ember.lineStart(lineAt(rb));
+  const atBol = (x: number): boolean => x === ember.lineStart(lineAt(x));
+  const b = atBol(re) && re > 0 ? re - 1 : ember.lineEnd(lineAt(re));
+  const swap = pt < mark;
+  if (up) {
+    const prev = Math.max(0, lineAt(a) - 1);
+    const [c, d] = [ember.lineStart(prev), ember.lineEnd(prev)];
+    transposeRegions(a, b, c, d);
+    ember.setMark(c);
+    ember.gotoChar(c + (b - a));
+  } else {
+    const next = atBol(b) ? lineAt(b) : lineAt(b) + 1;
+    const [c, d] = next < ember.lineCount() ? [ember.lineStart(next), ember.lineEnd(next)] : [ember.bufferSize(), ember.bufferSize()];
+    transposeRegions(a, b, c, d);
+    ember.setMark(1 + a + (d - c));
+    ember.gotoChar(1 + a + (d - c) + (b - a));
+  }
+  if (swap) ember.call("exchange-point-and-mark");
+  return true;
+}
+
 const metaUp = ember.defineCommand({
   name: "org-metaup",
   doc: "M-<up> in Org: move a subtree, an item or a table row up past the one before it.",
   run: () => {
+    if (metaRegion(true)) return;
     if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-move-row-up");
     else if (headingHere()) ember.call("org-move-subtree-up");
     else if (itemHere()) ember.call("org-move-item-up");
@@ -4721,6 +4870,7 @@ const metaDown = ember.defineCommand({
   name: "org-metadown",
   doc: "M-<down> in Org: move a subtree, an item or a table row down past the one after it.",
   run: () => {
+    if (metaRegion(false)) return;
     if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-move-row-down");
     else if (headingHere()) ember.call("org-move-subtree-down");
     else if (itemHere()) ember.call("org-move-item-down");
@@ -4772,6 +4922,22 @@ const shiftMetaDown = ember.defineCommand({
 function dragLine(n: number): void {
   for (let i = 0; i < Math.abs(n); i++) {
     const column = ember.point() - ember.lineStart(lineAt());
+    // Moving folded text to the start of the buffer trips Org's fold check,
+    // which errors there, and transpose-lines undoes the change.
+    const first = n > 0 ? lineAt() + 1 : lineAt();
+    if (first === 1 && first < ember.lineCount() && folded(ember.lineStart(first))) {
+      // What is left is what Emacs leaves: the newline transpose-lines adds
+      // to the last line before the error, and the newline before the
+      // folded text showing again.
+      const ls = ember.lineStart(first);
+      if (first === ember.lineCount() - 1 && ember.lineEnd(first) > ls) {
+        ember.gotoChar(ember.bufferSize());
+        ember.insert("\n");
+      }
+      for (const spec of FOLD_SPECS) flag(ls - 1, ls, false, spec);
+      ember.gotoChar(ls);
+      throw new Error("Beginning of buffer");
+    }
     if (n > 0) {
       forwardLine(1);
       ember.call("transpose-lines");
@@ -5082,10 +5248,15 @@ const toggleHeading = ember.defineCommand({
       const set = todoSets()[0];
       const state = item.checkbox === undefined ? "" : `${(item.checkbox === "X" ? set?.done[0] : set?.todo[0]) ?? "TODO"} `;
       const end = item.checkboxAt !== undefined ? Math.min(item.checkboxAt + 4, ember.lineEnd(line)) : item.contentAt;
-      // The item is deleted and written again as a heading.
+      // As org-list-to-subtree does, the item is deleted first, and the
+      // heading's level comes from the heading at or above where it was.
       const rest = ember.bufferText(end, ember.lineEnd(line));
-      edDelete(ls, ember.lineEnd(line));
-      edInsert(ls, stars + state + rest);
+      const next = lineStartOrEnd(line + 1);
+      const hadNewline = next > ember.lineEnd(line);
+      edDelete(ls, next);
+      const above = headingIndex(headings(), lineAt(ls));
+      const level = above === undefined ? 1 : (headings()[above].level ?? 0) + 1;
+      edInsert(ls, `${"*".repeat(level)} ${state}${rest}${hadNewline ? "\n" : ""}`);
       if (ember.lineEnd(line) === ember.bufferSize()) {
         ember.gotoChar(ember.bufferSize());
         ember.insert("\n");

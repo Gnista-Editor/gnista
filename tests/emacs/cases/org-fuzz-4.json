@@ -1,0 +1,117 @@
+[
+  {
+    "name": "seed5-0149-m-s-return-m-up",
+    "text": "* TODO plan\n* DONE fix\n:PROPERTIES:\n:END:",
+    "keys": "M-S-<return> M-<up>",
+    "point": 7,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed5-0140-backtab-c-c-c-t",
+    "text": "*** plan gamma :home:x:\n|-\n|12|3|\n",
+    "keys": "<backtab> C-c C-t",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed5-0602-c-c-m-f-m-up",
+    "text": "** gamma\n",
+    "keys": "C-c @ M-f M-<up>",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed5-0572-c-u-tab-c-c-c-t",
+    "text": "** read\n| ccc | 3 |",
+    "keys": "C-u TAB C-c C-t",
+    "point": 8,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed5-0643-c-u-tab-c-c-c-f",
+    "text": "* fix alpha\n** alpha call",
+    "keys": "C-u TAB C-c C-f",
+    "point": 21,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed5-0646-c-c-c-c",
+    "text": "*** gamma fix\n*** beta alpha :home:x:",
+    "keys": "C-c - C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed5-0396-c-u-tab-s-down-m-down",
+    "text": "** [#A] notes\n3) [ ] plan\n4) [X] gamma\n*** read",
+    "keys": "C-u TAB S-<down> M-<down>",
+    "point": 19,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed5-0653-c-c-c-c-c-u-tab-m-s-up",
+    "text": "* DONE gamma fix\n1. fix\n",
+    "keys": "C-c C-c C-u TAB M-S-<up>",
+    "point": 20,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "dragging-a-folded-line-to-the-top-fails-1",
+    "text": "* DONE gamma fix\n1. fix\n",
+    "keys": "C-u TAB M-S-<up>",
+    "point": 20,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "dragging-a-folded-line-to-the-top-fails-2",
+    "text": "* a\nb\n",
+    "keys": "C-u TAB M-S-<up>",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "dragging-a-folded-line-to-the-top-fails-3",
+    "text": "* a\nb\nc\n",
+    "keys": "C-u TAB M-S-<up>",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "dragging-a-folded-line-to-the-top-fails-4",
+    "text": "* a\nb",
+    "keys": "C-u TAB M-S-<up>",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "dragging-a-folded-line-to-the-top-fails-5",
+    "text": "* a\nbb\n* c\n",
+    "keys": "C-u TAB M-S-<up>",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  }
+]
