@@ -2214,7 +2214,9 @@ function toggleCheckbox(arg: ember.PrefixArg): void {
       limDown = marker(ember.lineEnd(lineAt()));
     } else throw new Error("Not at an item or heading, and no active region");
     void single;
-    const box = itemParts(lineAt(limUp))?.checkbox;
+    // As org-at-item-checkbox-p sees it: a box needs blanks after it.
+    const parts = itemParts(lineAt(limUp));
+    const box = parts?.boxAt !== undefined && /^[ \t]/.test(ember.bufferText(parts.boxAt + 3, parts.boxAt + 4)) ? parts.checkbox : undefined;
     const ref = Array.isArray(arg) && arg[0] === 16 ? "[-]" : presence ? (box ? undefined : "[ ]") : box === "[X]" ? "[ ]" : "[X]";
     let at = limUp;
     while (at < limDown.pos) {

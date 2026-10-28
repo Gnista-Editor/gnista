@@ -443,5 +443,23 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "toggling-a-box-at-the-end-of-its-line-checks-it",
+    "text": "2. [X] call",
+    "keys": "C-k C-c C-x C-b",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "a-kill-whose-change-hook-fails-is-not-saved",
+    "text": "** call\n  notes alpha",
+    "keys": "C-u TAB C-c C-f M-d",
+    "point": 8,
+    "modes": [
+      "org-mode"
+    ]
   }
 ]

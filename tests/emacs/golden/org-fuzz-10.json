@@ -1095,6 +1095,50 @@
       "kill_ring": [],
       "modified": true,
       "error": "This command is active in special context like tables, headlines or items"
+    },
+    {
+      "name": "toggling-a-box-at-the-end-of-its-line-checks-it",
+      "input": {
+        "text": "2. [X] call",
+        "point": 6,
+        "keys": "C-k C-c C-x C-b",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "2. [X]",
+      "visible": "2. [X]",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        " call"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "a-kill-whose-change-hook-fails-is-not-saved",
+      "input": {
+        "text": "** call\n  notes alpha",
+        "point": 8,
+        "keys": "C-u TAB C-c C-f M-d",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n  notes alpha",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Beginning of buffer"
     }
   ]
 }

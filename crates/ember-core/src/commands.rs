@@ -827,12 +827,8 @@ fn killing(ed: &mut Editor) {
                     if rest_is_blank && end < b.len() { end + 1 } else { end }
                 }
             };
-            let killed = ed.buffer_mut().delete(p.min(to)..p.max(to))?;
-            ed.kill(killed, to < p);
-            // Emacs kills through kill-region, which deactivates the mark.
-            ed.buffer_mut().deactivate_mark();
-            ed.set_this_command("kill-region");
-            Ok(())
+            // Emacs kills through kill-region.
+            kill_range(ed, p.min(to)..p.max(to), to < p)
         },
     );
     def(
@@ -852,14 +848,7 @@ fn killing(ed: &mut Editor) {
         // Emacs passes the mark and point unsorted, so with point before the
         // mark the text joins the front of a kill before it.
         let backward = ed.buffer().mark().is_some_and(|m| ed.buffer().point() < m);
-        let killed = ed.buffer_mut().delete(region)?;
-        ed.kill(killed, backward);
-        // As kill-region sets deactivate-mark, even when nothing was killed.
-        ed.buffer_mut().deactivate_mark();
-        // As in Emacs, so the next kill or copy joins this one even when a
-        // command such as org-cut-subtree called it.
-        ed.set_this_command("kill-region");
-        Ok(())
+        kill_range(ed, region, backward)
     });
     def(ed, "kill-ring-save", "Copy the text between point and the mark to the kill ring.", |ed, _| {
         let region = region(ed.buffer())?;
@@ -911,11 +900,10 @@ fn delete_chars(ed: &mut Editor, n: i64) -> Result<()> {
     if end > b.len() as i64 {
         return err("End of buffer");
     }
-    let deleted = b.delete(start as usize..end as usize)?;
     if kill {
-        ed.kill(deleted, n < 0);
-        ed.set_this_command("kill-region");
+        return kill_range(ed, start as usize..end as usize, n < 0);
     }
+    b.delete(start as usize..end as usize)?;
     Ok(())
 }
 
@@ -941,10 +929,21 @@ fn kill_words(ed: &mut Editor, n: i64) -> Result<()> {
     let b = ed.buffer_mut();
     let p = b.point();
     let to = move_words(b, p, n);
-    let killed = b.delete(p.min(to)..p.max(to))?;
-    ed.kill(killed, to < p);
-    // Emacs kills through kill-region, which deactivates the mark.
+    // Emacs kills through kill-region.
+    kill_range(ed, p.min(to)..p.max(to), to < p)
+}
+
+/// Deletes a range and kills its text, as Emacs's kill-region does. The
+/// change hooks run with the deletion, before the kill, so one that fails
+/// leaves the text deleted but not on the kill ring.
+fn kill_range(ed: &mut Editor, range: std::ops::Range<usize>, backward: bool) -> Result<()> {
+    let killed = ed.buffer_mut().delete(range)?;
+    ed.run_after_change_functions()?;
+    ed.kill(killed, backward);
+    // As kill-region sets deactivate-mark, even when nothing was killed.
     ed.buffer_mut().deactivate_mark();
+    // As in Emacs, so the next kill or copy joins this one even when a
+    // command such as org-cut-subtree called it.
     ed.set_this_command("kill-region");
     Ok(())
 }
