@@ -1607,6 +1607,21 @@ function applyStruct(struct: Struct, old: Struct): void {
     const e = getItem(struct, item);
     const line = lineAt(item);
     const newBul = bulletString(e.bullet);
+    const reindent = (): void => {
+      if (e.ind !== textIndentation(ember.lineText(line))) {
+        const ls = ember.lineStart(line);
+        const ws = /^[ \t]*/.exec(ember.lineText(line))?.[0] ?? "";
+        edDelete(ls, ls + charCount(ws));
+        edInsert(ls, indentString(e.ind));
+      }
+    };
+    // Org's structure can hold a position partway along a line, which its
+    // anchored regexp then fails to match: only the indentation, worked out
+    // from the line's start, changes.
+    if (item !== ember.lineStart(line)) {
+      reindent();
+      return;
+    }
     let m = itemParts(line);
     if (!m) return;
     if (getItem(old, item).bullet !== newBul) {
@@ -1640,11 +1655,7 @@ function applyStruct(struct: Struct, old: Struct): void {
       const at = m.counterEnd ?? m.bulletAt + charCount(m.bullet);
       edInsert(at, e.checkbox + (m.counterEnd !== undefined ? "" : " "));
     }
-    if (e.ind !== textIndentation(ember.lineText(line))) {
-      const ws = /^[ \t]*/.exec(ember.lineText(line))?.[0] ?? "";
-      edDelete(item, item + charCount(ws));
-      edInsert(item, indentString(e.ind));
-    }
+    reindent();
   };
   const endList: [number, number | undefined][] = [];
   let accEnd: [number, number][] = [];
@@ -2384,13 +2395,24 @@ function updateCheckboxCount(): void {
 
 /** Rewrites the statistics cookies on a line, such as [/] or [50%], for a count. */
 function writeCookies(line: number, done: number, total: number): void {
-  const text = ember.lineText(line);
-  for (const m of [...text.matchAll(COOKIE)].reverse()) {
+  // As org-update-parent-todo-statistics does, a cookie that changes gets
+  // the new text inserted before it and the old deleted after, so point
+  // inside it ends up after the new one.
+  const pt = marker(ember.point());
+  const count = [...ember.lineText(line).matchAll(COOKIE)].length;
+  for (let k = 0; k < count; k++) {
+    const text = ember.lineText(line);
+    const m = [...text.matchAll(COOKIE)][k];
+    if (!m) break;
     const percent = m[1].endsWith("%");
     const value = percent ? `[${total === 0 ? 0 : Math.floor((100 * done) / total)}%]` : `[${done}/${total}]`;
+    if (value === m[0]) continue;
     const start = at(line, text, m.index ?? 0);
-    replaceText(start, start + charCount(m[0]), value);
+    edInsert(start, value);
+    edDelete(start + charCount(value), start + charCount(value) + charCount(m[0]));
   }
+  ember.gotoChar(pt.pos);
+  dropMarker(pt);
 }
 
 /**
@@ -2695,7 +2717,7 @@ function listBodyColumn(pos: number): number {
   return m ? ember.stringWidth(m[0].replace(/\t/g, "        ")) + 1 : 0;
 }
 
-const GREATER_ELEMENTS = ["drawer", "headline", "item", "plain-list", "property-drawer", "section", "table"];
+const GREATER_ELEMENTS = ["center-block", "drawer", "headline", "item", "plain-list", "property-drawer", "quote-block", "section", "special-block", "table"];
 
 /** The column Org expects a line to start at, given the element it is in, as org--get-expected-indentation works it out. */
 function expectedIndent(el: Elem | undefined, contentsp: boolean, line: number): number {
@@ -2840,7 +2862,19 @@ function orgIndentRegion(start: number, end: number): void {
     const type = el.type;
     const elementEnd = marker(el.end);
     const ind = expectedIndent(el, false, line);
-    if (["paragraph", "table", "table-row"].includes(type) || el.contentsBegin === undefined) {
+    if (type === "export-block" || (type === "example-block" && !preservesIndentation(el))) {
+      // Indented as a whole, keeping the lines' indentation relative to each other.
+      const offset = ind - textIndentation(ember.lineText(lineAt(p)));
+      if (offset !== 0) indentRigidly(el.begin, el.end, offset);
+      p = elementEnd.pos;
+    } else if (type === "src-block" || type === "example-block") {
+      // The lines between the block's first and last are left alone: Org
+      // hands a source block's to its language's mode, which Ember lacks.
+      const lastLine = lineAt(endBeforeBlank(el));
+      indentTo(ind, Math.min(lineStartOrEnd(lineAt(el.begin) + 1), endM.pos));
+      p = Math.max(p, Math.min(ember.lineStart(lastLine), endM.pos));
+      if (p < endM.pos) indentTo(ind, Math.min(elementEnd.pos, endM.pos));
+    } else if (["paragraph", "table", "table-row"].includes(type) || el.contentsBegin === undefined) {
       if (type === "node-property") {
         const pm = marker(p);
         alignNodeProperty(lineAt(p));
@@ -2865,7 +2899,7 @@ function orgIndentRegion(start: number, end: number): void {
       } else if (type === "item") p = cbeg.pos;
       else indentTo(ind, Math.min(cbeg.pos, endM.pos));
       if (p < endM.pos) {
-        orgIndentRegion(p, Math.min(cend.pos, endM.pos));
+        if (type !== "verse-block") orgIndentRegion(p, Math.min(cend.pos, endM.pos));
         p = Math.min(cend.pos, endM.pos);
         if (p < endM.pos) indentTo(ind, Math.min(elementEnd.pos, endM.pos));
       }
@@ -2876,6 +2910,37 @@ function orgIndentRegion(start: number, end: number): void {
   }
   dropMarker(endM);
 }
+
+/** Whether an example block keeps its lines' indentation, with its -i switch or org-src-preserve-indentation. */
+function preservesIndentation(el: Elem): boolean {
+  return ember.variable("org-src-preserve-indentation") === true || /\s-i(\s|$)/.test(ember.lineText(lineAt(el.begin)));
+}
+
+const BLOCK_TYPES = ["comment-block", "center-block", "example-block", "export-block", "quote-block", "special-block", "src-block", "verse-block"];
+
+/** Whether point's line opens a block that is closed, as org-at-block-p checks with org-block-regexp. */
+function atBlock(): boolean {
+  const line = lineAt();
+  const m = /^[ \t]*#\+begin_?([^ \n]+)/i.exec(ember.lineText(line));
+  if (!m) return false;
+  const close = new RegExp(`^[ \\t]*#\\+end_?${m[1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[ \\t]*$`, "i");
+  for (let l = line + 1; l < ember.lineCount(); l++) if (close.test(ember.lineText(l))) return true;
+  return false;
+}
+
+ember.defineCommand({
+  name: "org-indent-block",
+  doc: "Indent the block at point.\nSignal an error when not at a block.",
+  run: () => {
+    const el = elementAt(ember.point());
+    if (!el || !BLOCK_TYPES.includes(el.type)) throw new Error("Not at a block");
+    const pt = marker(ember.point());
+    orgIndentRegion(el.begin, el.end);
+    ember.gotoChar(pt.pos);
+    dropMarker(pt);
+    ember.message("Block at point indented");
+  },
+});
 
 ember.defineCommand({
   name: "org-indent-drawer",
@@ -3916,7 +3981,14 @@ function parseElements(
         const s = listStruct(line);
         return [s, prevsAlist(s), parentsAlist(s)] as [Struct, Alist, Alist];
       })();
-      const items = allItems(p, prevs);
+      // As org-element-plain-list-parser does, the list goes on through the
+      // items that follow at the same indentation.
+      const items = [p];
+      for (let next = struct.find((e) => e.pos === getItem(struct, p).end); next && next.ind === getItem(struct, p).ind; ) {
+        items.push(next.pos);
+        const after = next.end;
+        next = struct.find((e) => e.pos === after);
+      }
       const end = Math.min(getItem(struct, items[items.length - 1]).end, to);
       e = elem("plain-list", p, end, parent, p);
       e.contentsEnd = end;
@@ -4230,8 +4302,10 @@ function copySubtree(cut: boolean, n: number, visible: boolean): void {
   const mark = ember.mark();
   // Whether the tree shows folded, so pasting it back can fold it again.
   const folded = ember.invisibleAt(all[i].end);
-  ember.setMark(end);
-  ember.gotoChar(beg);
+  // Point after the mark, as Org passes them in order, so a kill joining
+  // an earlier one goes after it.
+  ember.setMark(beg);
+  ember.gotoChar(end);
   ember.call(cut ? "kill-region" : "kill-ring-save");
   ember.setVariable("org-subtree-clip-folded", folded);
   ember.setVariable("org-subtree-clip", ember.currentKill());
@@ -4695,8 +4769,8 @@ function priority(direction: number): void {
     const start = h.start + charCount(cookie[0].slice(0, cookie[0].length - cookie[1].length));
     if (remove) edDelete(start, start + charCount(cookie[1]));
     else {
-      edDelete(start + 2, start + 2 + charCount(cookie[2]));
-      edInsert(start + 2, String.fromCharCode(next));
+      // replace-match on the letter alone: point after it stays after it.
+      edReplace(start + 2, start + 2 + charCount(cookie[2]), String.fromCharCode(next));
     }
   } else if (remove) {
     dropMarker(p);
@@ -5102,7 +5176,9 @@ function changeTimestamp(n: number, what?: string, updown = true): void {
   if (typeof category === "number" && what === undefined) tail = modifyTsExtra(tail, category, n, step);
   const date = normalize(d);
   const [open, close] = inactive ? ["[", "]"] : ["<", ">"];
-  ember.insert(`${open}${formatTimestamp(date, withTime)}${tail}${close}`);
+  // As org-insert-timestamp does, before markers: a mark that was in the
+  // old timestamp ends up after the new one.
+  ember.insertBeforeMarkers(`${open}${formatTimestamp(date, withTime)}${tail}${close}`);
   const fresh = tsMatches(lineAt(ts.start)).find((t) => t.start === ts.start);
   let target = origin;
   if (fresh) {
@@ -5517,6 +5593,7 @@ const metaRight = ember.defineCommand({
   run: () => {
     if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-move-column-right");
     else if (DRAWER_RE.test(ember.lineText(lineAt()))) ember.call("org-indent-drawer");
+    else if (atBlock()) ember.call("org-indent-block");
     else if (headingsInRegion() || headingHere()) {
       if (hiddenBelow("headlines")) hiddenTreeError();
       ember.call("org-do-demote");

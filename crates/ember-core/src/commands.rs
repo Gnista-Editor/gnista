@@ -408,11 +408,9 @@ fn line_move(ed: &mut Editor, n: i64) -> Result<()> {
     let continuing = ed.last_command().is_some_and(|c| SCROLL_KEEPS_COLUMN.contains(&c));
     let b = ed.buffer();
     let line = b.line_of(b.point());
-    // The column as shown, where hidden text takes no room, as Emacs's
-    // current-column counts it.
     let goal = match ed.goal_column {
         Some(goal) if continuing => goal,
-        _ => ed.screen_position(b, b.point(), None).2,
+        _ => current_column(ed, b, b.point()),
     };
     ed.goal_column = Some(goal);
     // Lines inside hidden text are skipped, as Emacs's line-move-ignore-invisible does.
@@ -435,6 +433,26 @@ fn line_move(ed: &mut Editor, n: i64) -> Result<()> {
     };
     ed.buffer_mut().set_point(pos);
     Ok(())
+}
+
+/// The column of a position as Emacs's current-column counts it: from the
+/// start of its line, with tabs to tab stops, wide characters taking two
+/// columns, and hidden text taking none.
+fn current_column(ed: &Editor, b: &Buffer, pos: usize) -> usize {
+    use unicode_width::UnicodeWidthChar;
+    let tab = ed.tab_width_in(b).max(1);
+    let mut col = 0;
+    for p in b.line_start(b.line_of(pos))..pos {
+        if ed.invisible_in(b, p).is_some() {
+            continue;
+        }
+        col = match b.char_at(p) {
+            Some('\t') => (col / tab + 1) * tab,
+            Some(c) => col + c.width().unwrap_or(0),
+            None => col,
+        };
+    }
+    col
 }
 
 fn line_move_visual(ed: &mut Editor, n: i64, wrap: crate::rows::Wrap) -> Result<()> {
@@ -698,8 +716,11 @@ fn killing(ed: &mut Editor) {
     );
     def(ed, "kill-region", "Kill the text between point and the mark.", |ed, _| {
         let region = region(ed.buffer())?;
+        // Emacs passes the mark and point unsorted, so with point before the
+        // mark the text joins the front of a kill before it.
+        let backward = ed.buffer().mark().is_some_and(|m| ed.buffer().point() < m);
         let killed = ed.buffer_mut().delete(region)?;
-        ed.kill(killed, false);
+        ed.kill(killed, backward);
         // As in Emacs, so the next kill or copy joins this one even when a
         // command such as org-cut-subtree called it.
         ed.set_this_command("kill-region");
@@ -707,9 +728,10 @@ fn killing(ed: &mut Editor) {
     });
     def(ed, "kill-ring-save", "Copy the text between point and the mark to the kill ring.", |ed, _| {
         let region = region(ed.buffer())?;
+        let backward = ed.buffer().mark().is_some_and(|m| ed.buffer().point() < m);
         let text = ed.buffer().slice(region);
         // As copy-region-as-kill does, a copy right after a kill joins it.
-        ed.kill(text, false);
+        ed.kill(text, backward);
         ed.buffer_mut().deactivate_mark();
         Ok(())
     });

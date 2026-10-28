@@ -207,7 +207,9 @@ const killVisualLine = ember.defineCommand({
     } else {
       // kill-region kills between point and the mark; the mark is put back after.
       const mark = ember.mark();
-      ember.setMark(line.end);
+      // Point after the mark, so a kill joining an earlier one goes after it.
+      ember.setMark(point);
+      ember.gotoChar(line.end);
       ember.call("kill-region");
       ember.setMark(mark ?? null);
     }

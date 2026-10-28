@@ -736,8 +736,10 @@ ember.defineCommand({
     const line = lineAt();
     const [from, to] = [ember.lineStart(line), Math.min(ember.lineEnd(line) + 1, ember.bufferSize())];
     const mark = ember.mark();
-    ember.setMark(to);
-    ember.gotoChar(from);
+    // Point after the mark, as Org passes them in order, so a kill joining
+    // an earlier one goes after it.
+    ember.setMark(from);
+    ember.gotoChar(to);
     ember.call("kill-region");
     ember.setMark(mark === undefined ? null : mark >= to ? mark - (to - from) : mark > from ? from : mark);
     ember.gotoChar(from);

@@ -716,6 +716,13 @@ declare global {
        */
       "org-global-cycle": [];
       /**
+       * Indent the block at point.
+       * Signal an error when not at a block.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-indent-block": [];
+      /**
        * Indent the drawer at point.
        * Signal an error when not at a drawer.
        *

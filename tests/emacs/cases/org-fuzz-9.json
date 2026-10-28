@@ -1,0 +1,160 @@
+[
+  {
+    "name": "seed16-1471-m-s-return",
+    "text": "4. [X] gamma\n+ call\n  + call",
+    "keys": "M-S-<return>",
+    "point": 19,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed16-1893-m-right",
+    "text": "#+BEGIN_SRC\ncode here\n#+END_SRC",
+    "keys": "M-<right>",
+    "point": 10,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed16-0212-c-e-m-s-return",
+    "text": "  - plan\n- gamma\n  - alpha",
+    "keys": "C-e M-S-<return>",
+    "point": 11,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed16-1034-c-p-s-down",
+    "text": "* [#B] alpha :work:\n* plan read",
+    "keys": "C-p S-<down>",
+    "point": 25,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed16-1615-m--c-c-c-c",
+    "text": "alpha <2026-10-19 Wed>",
+    "keys": "M-> C-c C-c",
+    "point": 19,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed16-1305-c-u-tab-c-p",
+    "text": "2. [ ] alpha\n* fix fix\n- [ ] call",
+    "keys": "C-u TAB C-p",
+    "point": 23,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed16-1183-m-f-bar-m-down",
+    "text": "3) [ ] gamma\n   - gamma\n4) [X] alpha",
+    "keys": "M-f | M-<down>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed16-1111-c-c-c-c-x",
+    "text": "** DONE [#B] fix read [1/2]\n*** [#B] beta read",
+    "keys": "C-c C-c x",
+    "point": 24,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed16-0666-m-s-right---c-return",
+    "text": "** TODO [#A] notes gamma :work:\nDEADLINE: <2026-11-01 Sun +1w>",
+    "keys": "M-S-<right> - C-<return>",
+    "point": 45,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed16-0988-c-c-at-c-k-c-w",
+    "text": "*** DONE gamma notes\n",
+    "keys": "C-c @ C-k C-w",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed16-1352-m-right-m-right-m-del-m-",
+    "text": "#+begin_quote\nquoted\n#+end_quote",
+    "keys": "M-<right> M-<right> M-DEL M->",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed16-0836-backtab-c-p-c-c-c-u",
+    "text": "* TODO call plan\n* alpha\n- [ ] alpha",
+    "keys": "<backtab> C-p C-c C-u",
+    "point": 25,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "indent-a-quote-block",
+    "text": "* H\n  #+begin_quote\n    q\n  #+end_quote\n",
+    "keys": "M-<right>",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "indent-an-example-block",
+    "text": "- item\n#+begin_example\n  x\n#+end_example\n",
+    "keys": "M-<right>",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "indent-a-src-block-in-an-item",
+    "text": "- item\n#+begin_src\n  x\n#+end_src\n",
+    "keys": "M-<right>",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "priority-with-point-after-the-letter",
+    "text": "* [#B] a\n",
+    "keys": "S-<up>",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "timestamp-change-moves-the-mark-past-it",
+    "text": "<2026-10-19 Mon>",
+    "keys": "C-SPC C-e C-SPC C-SPC C-f C-f S-<up>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "list-ends-at-a-less-indented-item",
+    "text": "para\n   - a\n- b\n",
+    "keys": "M-<down>",
+    "modes": [
+      "org-mode"
+    ]
+  }
+]

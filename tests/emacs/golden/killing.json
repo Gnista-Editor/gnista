@@ -509,6 +509,49 @@
       ],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "kill-region-backward-joins-the-front",
+      "input": {
+        "text": "one two three",
+        "point": 0,
+        "keys": "M-> C-SPC M-b C-w M-b C-w",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one ",
+      "visible": "one ",
+      "point": 4,
+      "mark": 4,
+      "mark_active": false,
+      "kill_ring": [
+        "two ",
+        "three"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kill-ring-save-backward-after-a-kill",
+      "input": {
+        "text": "one two",
+        "point": 0,
+        "keys": "M-> C-k C-SPC M-b M-w",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one two",
+      "visible": "one two",
+      "point": 4,
+      "mark": 7,
+      "mark_active": false,
+      "kill_ring": [
+        "two"
+      ],
+      "modified": false,
+      "error": "End of buffer"
     }
   ]
 }

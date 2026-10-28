@@ -1,0 +1,388 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "seed16-1471-m-s-return",
+      "input": {
+        "text": "4. [X] gamma\n+ call\n  + call",
+        "point": 19,
+        "keys": "M-S-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1. [X] gamma\n2. call\n3. [ ] \n   + call",
+      "visible": "1. [X] gamma\n2. call\n3. [ ] \n   + call",
+      "point": 28,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed16-1893-m-right",
+      "input": {
+        "text": "#+BEGIN_SRC\ncode here\n#+END_SRC",
+        "point": 10,
+        "keys": "M-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "#+BEGIN_SRC\ncode here\n#+END_SRC",
+      "visible": "#+BEGIN_SRC\ncode here\n#+END_SRC",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed16-0212-c-e-m-s-return",
+      "input": {
+        "text": "  - plan\n- gamma\n  - alpha",
+        "point": 11,
+        "keys": "C-e M-S-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "  - plan\n  - gamma\n  - [ ] \n    - alpha",
+      "visible": "  - plan\n  - gamma\n  - [ ] \n    - alpha",
+      "point": 27,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed16-1034-c-p-s-down",
+      "input": {
+        "text": "* [#B] alpha :work:\n* plan read",
+        "point": 25,
+        "keys": "C-p S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* [#C] alpha                                                           :work:\n* plan read",
+      "visible": "* [#C] alpha                                                           :work:\n* plan read",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed16-1615-m--c-c-c-c",
+      "input": {
+        "text": "alpha <2026-10-19 Wed>",
+        "point": 19,
+        "keys": "M-> C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "alpha <2026-10-19 Mon>",
+      "visible": "alpha <2026-10-19 Mon>",
+      "point": 22,
+      "mark": 22,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed16-1305-c-u-tab-c-p",
+      "input": {
+        "text": "2. [ ] alpha\n* fix fix\n- [ ] call",
+        "point": 23,
+        "keys": "C-u TAB C-p",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "2. [ ] alpha\n* fix fix\n- [ ] call",
+      "visible": "2. [ ] alpha\n* fix fix",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed16-1183-m-f-bar-m-down",
+      "input": {
+        "text": "3) [ ] gamma\n   - gamma\n4) [X] alpha",
+        "point": 0,
+        "keys": "M-f | M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "   - gamma\n3|) [ ] gamma\n4) [X] alpha",
+      "visible": "   - gamma\n3|) [ ] gamma\n4) [X] alpha",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed16-1111-c-c-c-c-x",
+      "input": {
+        "text": "** DONE [#B] fix read [1/2]\n*** [#B] beta read",
+        "point": 24,
+        "keys": "C-c C-c x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** DONE [#B] fix read [0/0]x\n*** [#B] beta read",
+      "visible": "** DONE [#B] fix read [0/0]x\n*** [#B] beta read",
+      "point": 28,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed16-0666-m-s-right---c-return",
+      "input": {
+        "text": "** TODO [#A] notes gamma :work:\nDEADLINE: <2026-11-01 Sun +1w>",
+        "point": 45,
+        "keys": "M-S-<right> - C-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** TODO [#A] notes gamma :work:\nDEADLINE: <20-26-11-01 Sun +1w>",
+      "visible": "** TODO [#A] notes gamma :work:\nDEADLINE: <20-26-11-01 Sun +1w>",
+      "point": 46,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "This command is active in special context like tables, headlines or items"
+    },
+    {
+      "name": "seed16-0988-c-c-at-c-k-c-w",
+      "input": {
+        "text": "*** DONE gamma notes\n",
+        "point": 0,
+        "keys": "C-c @ C-k C-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [
+        "\n*** DONE gamma notes"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed16-1352-m-right-m-right-m-del-m-",
+      "input": {
+        "text": "#+begin_quote\nquoted\n#+end_quote",
+        "point": 12,
+        "keys": "M-<right> M-<right> M-DEL M->",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "#+begin_e\nquoted\n#+end_quote",
+      "visible": "#+begin_e\nquoted\n#+end_quote",
+      "point": 28,
+      "mark": 8,
+      "mark_active": false,
+      "kill_ring": [
+        "quot"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed16-0836-backtab-c-p-c-c-c-u",
+      "input": {
+        "text": "* TODO call plan\n* alpha\n- [ ] alpha",
+        "point": 25,
+        "keys": "<backtab> C-p C-c C-u",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO call plan\n* alpha\n- [ ] alpha",
+      "visible": "* TODO call plan\n* alpha",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Already at top level of the outline"
+    },
+    {
+      "name": "indent-a-quote-block",
+      "input": {
+        "text": "* H\n  #+begin_quote\n    q\n  #+end_quote\n",
+        "point": 6,
+        "keys": "M-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* H\n#+begin_quote\nq\n#+end_quote\n",
+      "visible": "* H\n#+begin_quote\nq\n#+end_quote\n",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "indent-an-example-block",
+      "input": {
+        "text": "- item\n#+begin_example\n  x\n#+end_example\n",
+        "point": 9,
+        "keys": "M-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- item\n#+begin_example\n  x\n#+end_example\n",
+      "visible": "- item\n#+begin_example\n  x\n#+end_example\n",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "indent-a-src-block-in-an-item",
+      "input": {
+        "text": "- item\n#+begin_src\n  x\n#+end_src\n",
+        "point": 9,
+        "keys": "M-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- item\n#+begin_src\n  x\n#+end_src\n",
+      "visible": "- item\n#+begin_src\n  x\n#+end_src\n",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "priority-with-point-after-the-letter",
+      "input": {
+        "text": "* [#B] a\n",
+        "point": 5,
+        "keys": "S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* [#A] a\n",
+      "visible": "* [#A] a\n",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "timestamp-change-moves-the-mark-past-it",
+      "input": {
+        "text": "<2026-10-19 Mon>",
+        "point": 0,
+        "keys": "C-SPC C-e C-SPC C-SPC C-f C-f S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "<2026-10-19 Mon>",
+      "visible": "<2026-10-19 Mon>",
+      "point": 16,
+      "mark": 16,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "End of buffer"
+    },
+    {
+      "name": "list-ends-at-a-less-indented-item",
+      "input": {
+        "text": "para\n   - a\n- b\n",
+        "point": 0,
+        "keys": "M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "   - a\npara\n- b\n",
+      "visible": "   - a\npara\n- b\n",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

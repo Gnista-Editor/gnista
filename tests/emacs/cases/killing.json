@@ -123,5 +123,17 @@
     "text": "one\ntwo\n",
     "keys": "C-k C-SPC C-n M-w",
     "point": 0
+  },
+  {
+    "name": "kill-region-backward-joins-the-front",
+    "text": "one two three",
+    "keys": "M-> C-SPC M-b C-w M-b C-w",
+    "point": 0
+  },
+  {
+    "name": "kill-ring-save-backward-after-a-kill",
+    "text": "one two",
+    "keys": "M-> C-k C-SPC M-b M-w",
+    "point": 0
   }
 ]
