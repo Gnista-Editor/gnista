@@ -1,14 +1,14 @@
 # Licensing notes
 
-Status: undecided · notes for later, not a decision · 2026-10-28
+Status: GPL for now, as [ADR 0014](adr/0014-gpl.md) records · 2026-10-28
 
 Nothing here is legal advice. These notes record what we know, what we have done, and what we may have to undo before Ember is released. Talk to a lawyer before going public.
 
 ## Where we stand
 
-- `Cargo.toml` says `license = "UNLICENSED"`. There is no LICENSE file.
-- Nothing has been distributed: the repository is private. The GPL only applies when code is distributed, so private GPL-derived code, history included, carries no obligations today.
-- The aim is open source. GPL for the whole would be acceptable, but a permissive core is preferred, for the reasons below.
+- Ember is GPL-3.0-or-later as a whole for now ([ADR 0014](adr/0014-gpl.md)): `LICENSE` holds the licence and `Cargo.toml` says so. Porting from Emacs and Org can go on.
+- Nothing has been distributed: the repository is private.
+- The rest of these notes stay for if a permissive core or an App Store build becomes important later.
 
 ## The long-term aim
 
