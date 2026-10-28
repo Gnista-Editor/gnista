@@ -265,7 +265,7 @@ mod tests {
     fn render(ed: &mut Editor, width: u16, height: u16) -> Vec<String> {
         let mut terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
         layout_windows(ed, width, height);
-        ed.ensure_point_visible();
+        ed.redisplay();
         terminal.draw(|frame| draw(frame, ed)).unwrap();
         let buf = terminal.backend().buffer();
         (0..height)

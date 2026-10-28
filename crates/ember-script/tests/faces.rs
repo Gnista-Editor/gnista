@@ -103,7 +103,8 @@ fn outline_cycles_headings() {
     ed.press("S-TAB").unwrap();
     assert_eq!(rows(&ed).len(), 7);
 
-    // Headings get their level's face.
+    // Headings get their level's face once redisplay fontifies them.
+    ed.redisplay();
     let row = &ed.window_rows(1, true)[0];
     assert!(row.segments[0].style.bold, "outline-1 inherits font-lock-function-name-face");
 }

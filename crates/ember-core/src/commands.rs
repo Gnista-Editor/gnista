@@ -45,7 +45,19 @@ pub(crate) fn install(ed: &mut Editor) {
     minibuffer(ed);
     help(ed);
     searching(ed);
+    fontifying(ed);
     bind_defaults(ed);
+}
+
+/// Fontifying by hand, which redisplay otherwise does as text comes into view.
+fn fontifying(ed: &mut Editor) {
+    def(ed, "font-lock-ensure", "Fontify the whole buffer now, rather than as it comes into view.", |ed, _| {
+        ed.font_lock_ensure()
+    });
+    def(ed, "font-lock-flush", "Fontify the whole buffer again as it comes into view.", |ed, _| {
+        ed.font_lock_flush();
+        Ok(())
+    });
 }
 
 /// The search commands Emacs has in C: literal and regular expression
@@ -640,20 +652,21 @@ fn killing(ed: &mut Editor) {
         "Kill the rest of the line, or the newline if only spaces and tabs are left.\n\nWith a prefix argument N, kill N whole lines, newlines included; 0 kills back to the start of the line, and a negative N kills lines backward. Consecutive kills join into one kill ring entry.",
         |ed, _| {
             let arg = ed.current_prefix_arg();
-            let b = ed.buffer_mut();
-            let p = b.point();
+            let p = ed.buffer().point();
             let to = match arg {
-                Some(arg) => forward_line(b, p, arg.numeric()),
+                Some(arg) => forward_line(ed.buffer(), p, arg.numeric()),
                 None => {
-                    if p >= b.len() {
+                    if p >= ed.buffer().len() {
                         return err("End of buffer");
                     }
-                    let end = b.line_end(b.line_of(p));
+                    // The end of the visible line: a folded heading's hidden text goes too.
+                    let end = ed.end_of_visible_line(p);
+                    let b = ed.buffer();
                     let rest_is_blank = b.slice(p..end).chars().all(|c| c == ' ' || c == '\t');
                     if rest_is_blank && end < b.len() { end + 1 } else { end }
                 }
             };
-            let killed = b.delete(p.min(to)..p.max(to))?;
+            let killed = ed.buffer_mut().delete(p.min(to)..p.max(to))?;
             ed.kill(killed, to < p);
             Ok(())
         },

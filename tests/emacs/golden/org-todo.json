@@ -1,0 +1,426 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "todo-on-a-heading",
+      "input": {
+        "text": "* One\n",
+        "point": 0,
+        "keys": "C-c C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO One\n",
+      "visible": "* TODO One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "todo-twice",
+      "input": {
+        "text": "* One\n",
+        "point": 0,
+        "keys": "C-c C-t C-c C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* DONE One\n",
+      "visible": "* DONE One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "todo-three-times",
+      "input": {
+        "text": "* One\n",
+        "point": 0,
+        "keys": "C-c C-t C-c C-t C-c C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n",
+      "visible": "* One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "todo-from-body-text",
+      "input": {
+        "text": "* One\nbody\n",
+        "point": 8,
+        "keys": "C-c C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO One\nbody\n",
+      "visible": "* TODO One\nbody\n",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "todo-keeps-point-in-the-title",
+      "input": {
+        "text": "* One\n",
+        "point": 4,
+        "keys": "C-c C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO One\n",
+      "visible": "* TODO One\n",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "todo-with-tags",
+      "input": {
+        "text": "* One :work:\n",
+        "point": 0,
+        "keys": "C-c C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO One                                                             :work:\n",
+      "visible": "* TODO One                                                             :work:\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "todo-with-a-priority",
+      "input": {
+        "text": "* [#A] One\n",
+        "point": 0,
+        "keys": "C-c C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO [#A] One\n",
+      "visible": "* TODO [#A] One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "todo-keywords-from-the-buffer",
+      "input": {
+        "text": "#+TODO: TODO NEXT | DONE\n* One\n",
+        "point": 25,
+        "keys": "C-c C-t C-c C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "#+TODO: TODO NEXT | DONE\n* NEXT One\n",
+      "visible": "#+TODO: TODO NEXT | DONE\n* NEXT One\n",
+      "point": 25,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "todo-keywords-from-the-buffer-wrap",
+      "input": {
+        "text": "#+TODO: TODO NEXT | DONE\n* DONE One\n",
+        "point": 25,
+        "keys": "C-c C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "#+TODO: TODO NEXT | DONE\n* One\n",
+      "visible": "#+TODO: TODO NEXT | DONE\n* One\n",
+      "point": 25,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-right-on-a-heading",
+      "input": {
+        "text": "* One\n",
+        "point": 0,
+        "keys": "S-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO One\n",
+      "visible": "* TODO One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-right-twice",
+      "input": {
+        "text": "* One\n",
+        "point": 0,
+        "keys": "S-<right> S-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* DONE One\n",
+      "visible": "* DONE One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-left-on-a-heading",
+      "input": {
+        "text": "* One\n",
+        "point": 0,
+        "keys": "S-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* DONE One\n",
+      "visible": "* DONE One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-right-in-text",
+      "input": {
+        "text": "* One\nbody\n",
+        "point": 7,
+        "keys": "S-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n",
+      "visible": "* One\nbody\n",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "To use shift-selection with Org mode, customize ‘org-support-shift-select’"
+    },
+    {
+      "name": "priority-up",
+      "input": {
+        "text": "* One\n",
+        "point": 0,
+        "keys": "S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* [#B] One\n",
+      "visible": "* [#B] One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "priority-down",
+      "input": {
+        "text": "* One\n",
+        "point": 0,
+        "keys": "S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* [#B] One\n",
+      "visible": "* [#B] One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "priority-up-twice",
+      "input": {
+        "text": "* TODO One\n",
+        "point": 0,
+        "keys": "S-<up> S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO [#A] One\n",
+      "visible": "* TODO [#A] One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "todo-outside-a-heading",
+      "input": {
+        "text": "text\n",
+        "point": 0,
+        "keys": "C-c C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "text\n",
+      "visible": "text\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Before first headline at position 1 in buffer *ember-oracle*"
+    },
+    {
+      "name": "priority-up-from-the-highest",
+      "input": {
+        "text": "* [#A] One\n",
+        "point": 0,
+        "keys": "S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n",
+      "visible": "* One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "priority-down-from-the-lowest",
+      "input": {
+        "text": "* [#C] One\n",
+        "point": 0,
+        "keys": "S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n",
+      "visible": "* One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "todo-updates-the-parent-cookie",
+      "input": {
+        "text": "* Tasks [/]\n** TODO a\n** TODO b\n",
+        "point": 12,
+        "keys": "C-c C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* Tasks [1/2]\n** DONE a\n** TODO b\n",
+      "visible": "* Tasks [1/2]\n** DONE a\n** TODO b\n",
+      "point": 14,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

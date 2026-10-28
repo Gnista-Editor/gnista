@@ -50,6 +50,8 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/mouse.ts", include_str!("../../../packages/mouse.ts")),
     ("packages/isearch.ts", include_str!("../../../packages/isearch.ts")),
     ("packages/replace.ts", include_str!("../../../packages/replace.ts")),
+    ("packages/org-table.ts", include_str!("../../../packages/org-table.ts")),
+    ("packages/org.ts", include_str!("../../../packages/org.ts")),
 ];
 
 /// How long a script may run before it is stopped, unless changed with
@@ -224,6 +226,20 @@ fn enter<R>(context: &Context, ed: &mut Editor, f: impl for<'js> FnOnce(Ctx<'js>
     }
 }
 
+/// A script's string arguments for a command, as the command's parameters take them.
+fn command_args(ed: &Editor, name: &str, args: Vec<String>) -> Result<Vec<Arg>> {
+    let command = ed.command(name).ok_or_else(|| Error::new(format!("No such command: {name}")))?;
+    args.into_iter()
+        .enumerate()
+        .map(|(i, arg)| match command.params.get(i).map(|p| p.kind) {
+            Some(ParamKind::Keys) => Key::parse_seq(&arg)
+                .map(Arg::Keys)
+                .ok_or_else(|| Error::new(format!("Invalid key sequence: {arg:?}"))),
+            _ => Ok(Arg::Str(arg)),
+        })
+        .collect()
+}
+
 /// Gives a host function the editor, turning editor errors into script exceptions.
 fn with_editor<T>(ctx: &Ctx<'_>, f: impl FnOnce(&mut Editor) -> Result<T>) -> rquickjs::Result<T> {
     let Some(ptr) = EDITOR.get() else {
@@ -257,8 +273,21 @@ impl ScriptFunction {
         move |ed, args| self.call(ed, args.iter().map(Arg::to_string).collect())
     }
 
+    /// Calls the function with editor values, as hooks pass their arguments.
+    fn call_values(&self, ed: &mut Editor, args: &[EditorValue]) -> Result<()> {
+        enter(&self.context, ed, |ctx| {
+            let run = self.run.clone().restore(&ctx).map_err(|e| js_error(&ctx, e))?;
+            let args = args
+                .iter()
+                .map(|a| value_to_js(&ctx, a))
+                .collect::<rquickjs::Result<Vec<_>>>()
+                .map_err(|e| js_error(&ctx, e))?;
+            run.call::<_, Value>((Rest(args),)).map(drop).map_err(|e| js_error(&ctx, e))
+        })
+    }
+
     fn into_hook(self) -> HookFn {
-        Rc::new(move |ed| self.call(ed, Vec::new()))
+        Rc::new(move |ed, args| self.call_values(ed, args))
     }
 }
 
@@ -306,24 +335,33 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
         })?,
     )?;
     native.set(
+        "callInteractively",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
+            with_editor(&ctx, |ed| {
+                if ed.command(&name).is_none() {
+                    return Err(Error::new(format!("No such command: {name}")));
+                }
+                ed.run_interactive(&name);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
         "call",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, args: Rest<String>| {
             with_editor(&ctx, |ed| {
-                let command = ed
-                    .command(&name)
-                    .ok_or_else(|| Error::new(format!("No such command: {name}")))?;
-                let args = args
-                    .0
-                    .into_iter()
-                    .enumerate()
-                    .map(|(i, arg)| match command.params.get(i).map(|p| p.kind) {
-                        Some(ParamKind::Keys) => Key::parse_seq(&arg)
-                            .map(Arg::Keys)
-                            .ok_or_else(|| Error::new(format!("Invalid key sequence: {arg:?}"))),
-                        _ => Ok(Arg::Str(arg)),
-                    })
-                    .collect::<Result<Vec<Arg>>>()?;
+                let args = command_args(ed, &name, args.0)?;
                 ed.call(&name, args)
+            })
+        })?,
+    )?;
+    native.set(
+        "callWithPrefix",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, prefix: Value<'js>, name: String, args: Rest<String>| {
+            let prefix = prefix_from_js(&ctx, prefix)?;
+            with_editor(&ctx, |ed| {
+                let args = command_args(ed, &name, args.0)?;
+                ed.call_with_prefix(&name, args, prefix)
             })
         })?,
     )?;
@@ -635,7 +673,10 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     )?;
     native.set(
         "runHooks",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, hook: String| with_editor(&ctx, |ed| ed.run_hooks(&hook)))?,
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, hook: String, args: Opt<Vec<Value<'js>>>| {
+            let args = args.0.unwrap_or_default().into_iter().map(|v| value_from_js(&ctx, v)).collect::<rquickjs::Result<Vec<_>>>()?;
+            with_editor(&ctx, |ed| ed.run_hook_with_args(&hook, &args))
+        })?,
     )?;
     native.set(
         "defineKeymap",
@@ -785,6 +826,16 @@ fn install_native_search<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs:
         })?,
     )?;
     native.set(
+        "remapCommand",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, keymap: String, from: String, to: Option<String>| {
+            with_editor(&ctx, |ed| ed.remap_command(&keymap, &from, to.as_deref()))
+        })?,
+    )?;
+    native.set(
+        "stringWidth",
+        Function::new(ctx.clone(), |text: String| ember_core::display::display_width(&text, 8))?,
+    )?;
+    native.set(
         "unreadKeys",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, keys: String| {
             with_editor(&ctx, |ed| {
@@ -901,6 +952,15 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
             let value = value_from_js(&ctx, value)?;
             with_editor(&ctx, |ed| {
                 ed.buffer_mut().put_text_property(start..end, &name, value);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "addFaceTextProperty",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, start: usize, end: usize, face: String, append: bool| {
+            with_editor(&ctx, |ed| {
+                ed.buffer_mut().add_face_text_property(start..end, &face, append);
                 Ok(())
             })
         })?,

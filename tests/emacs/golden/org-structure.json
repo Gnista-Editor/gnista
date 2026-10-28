@@ -1,0 +1,1056 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "meta-return-at-the-end-of-a-heading",
+      "input": {
+        "text": "* One\nbody\n",
+        "point": 5,
+        "keys": "M-RET x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n* x\nbody\n",
+      "visible": "* One\n* x\nbody\n",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "meta-return-in-a-heading-splits-it",
+      "input": {
+        "text": "* One two\n",
+        "point": 5,
+        "keys": "M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n*  two\n",
+      "visible": "* One\n*  two\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "meta-return-at-the-start-of-a-heading",
+      "input": {
+        "text": "* One\n",
+        "point": 0,
+        "keys": "M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* \n* One\n",
+      "visible": "* \n* One\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "meta-return-in-body-text",
+      "input": {
+        "text": "* One\nbody\n",
+        "point": 10,
+        "keys": "M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n* \n",
+      "visible": "* One\nbody\n* \n",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "meta-return-in-the-middle-of-body-text",
+      "input": {
+        "text": "* One\nbody text\n",
+        "point": 10,
+        "keys": "M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n*  text\n",
+      "visible": "* One\nbody\n*  text\n",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "meta-return-on-a-heading-with-children",
+      "input": {
+        "text": "* One\n** A\ntext\n* Two\n",
+        "point": 10,
+        "keys": "M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n** A\n** \ntext\n* Two\n",
+      "visible": "* One\n** A\n** \ntext\n* Two\n",
+      "point": 14,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "meta-return-on-a-list-item",
+      "input": {
+        "text": "- one\n- two\n",
+        "point": 5,
+        "keys": "M-RET x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- one\n- x\n- two\n",
+      "visible": "- one\n- x\n- two\n",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "meta-return-on-a-checkbox-item",
+      "input": {
+        "text": "- [ ] one\n",
+        "point": 9,
+        "keys": "M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- [ ] one\n- \n",
+      "visible": "- [ ] one\n- \n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "meta-return-on-a-numbered-item",
+      "input": {
+        "text": "1. one\n2. two\n",
+        "point": 6,
+        "keys": "M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1. one\n2. \n3. two\n",
+      "visible": "1. one\n2. \n3. two\n",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "meta-return-on-a-folded-heading",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 0,
+        "keys": "TAB C-e M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n* \nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\n* \nbody\n** Sub\n* Two\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "control-return-respects-content",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 3,
+        "keys": "C-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* \n* Two\n",
+      "visible": "* One\nbody\n** Sub\ntext\n* \n* Two\n",
+      "point": 25,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "meta-shift-return-inserts-a-todo-heading",
+      "input": {
+        "text": "* One",
+        "point": 5,
+        "keys": "M-S-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n* TODO ",
+      "visible": "* One\n* TODO ",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "demote-a-heading",
+      "input": {
+        "text": "* One\n** Sub\n",
+        "point": 0,
+        "keys": "M-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** One\n** Sub\n",
+      "visible": "** One\n** Sub\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "promote-a-heading",
+      "input": {
+        "text": "** One\n",
+        "point": 0,
+        "keys": "M-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n",
+      "visible": "* One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "promote-a-top-level-heading",
+      "input": {
+        "text": "* One\n",
+        "point": 0,
+        "keys": "M-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n",
+      "visible": "* One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot promote to level 0.  UNDO to recover if necessary"
+    },
+    {
+      "name": "demote-a-subtree",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 0,
+        "keys": "M-S-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** One\nbody\n*** Sub\ntext\n* Two\n",
+      "visible": "** One\nbody\n*** Sub\ntext\n* Two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "promote-a-subtree",
+      "input": {
+        "text": "** One\n*** Sub\n",
+        "point": 0,
+        "keys": "M-S-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n** Sub\n",
+      "visible": "* One\n** Sub\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "move-a-subtree-down",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 0,
+        "keys": "M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* Two\n* One\nbody\n** Sub\ntext\n",
+      "visible": "* Two\n* One\nbody\n** Sub\ntext\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "move-a-subtree-up",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 23,
+        "keys": "M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* Two\n* One\nbody\n** Sub\ntext\n",
+      "visible": "* Two\n* One\nbody\n** Sub\ntext\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "move-the-first-subtree-up",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 0,
+        "keys": "M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot move past superior level or buffer limit"
+    },
+    {
+      "name": "move-the-last-subtree-down",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 23,
+        "keys": "M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "point": 23,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot move past superior level or buffer limit"
+    },
+    {
+      "name": "move-a-sub-subtree-past-its-parent",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 11,
+        "keys": "M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot move past superior level or buffer limit"
+    },
+    {
+      "name": "move-a-folded-subtree-down",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 0,
+        "keys": "TAB M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* Two\n* One\nbody\n** Sub\ntext\n",
+      "visible": "* Two\n* One",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "indent-a-list-item",
+      "input": {
+        "text": "- one\n- two\n",
+        "point": 8,
+        "keys": "M-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- one\n  - two\n",
+      "visible": "- one\n  - two\n",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "indent-the-first-list-item",
+      "input": {
+        "text": "- one\n- two\n",
+        "point": 2,
+        "keys": "M-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- one\n- two\n",
+      "visible": "- one\n- two\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "At first item: use S-M-<left/right> to move the whole list"
+    },
+    {
+      "name": "outdent-a-list-item",
+      "input": {
+        "text": "- one\n  - two\n",
+        "point": 10,
+        "keys": "M-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- one\n- two\n",
+      "visible": "- one\n- two\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "move-a-list-item-down",
+      "input": {
+        "text": "- one\n- two\n",
+        "point": 2,
+        "keys": "M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- two\n- one\n",
+      "visible": "- two\n- one\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "move-a-list-item-up",
+      "input": {
+        "text": "- one\n- two\n",
+        "point": 8,
+        "keys": "M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- two\n- one\n",
+      "visible": "- two\n- one\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "meta-left-in-text",
+      "input": {
+        "text": "* One\nsome words\n",
+        "point": 16,
+        "keys": "M-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nsome words\n",
+      "visible": "* One\nsome words\n",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "meta-right-in-text",
+      "input": {
+        "text": "* One\nsome words\n",
+        "point": 6,
+        "keys": "M-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nsome words\n",
+      "visible": "* One\nsome words\n",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "next-heading",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 0,
+        "keys": "C-c C-n",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "next-heading-twice",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 0,
+        "keys": "C-c C-n C-c C-n",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "point": 23,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "previous-heading",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 25,
+        "keys": "C-c C-p",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-same-level",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 0,
+        "keys": "C-c C-f",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "point": 23,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backward-same-level",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 23,
+        "keys": "C-c C-b",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "up-heading",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 19,
+        "keys": "C-c C-u",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "point": 0,
+      "mark": 19,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "toggle-heading",
+      "input": {
+        "text": "text\n",
+        "point": 0,
+        "keys": "C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* text\n",
+      "visible": "* text\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-heading-back",
+      "input": {
+        "text": "* text\n",
+        "point": 0,
+        "keys": "C-c *",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "text\n",
+      "visible": "text\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-item",
+      "input": {
+        "text": "text\n",
+        "point": 0,
+        "keys": "C-c -",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- text\n",
+      "visible": "- text\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-item-back",
+      "input": {
+        "text": "- text\n",
+        "point": 0,
+        "keys": "C-c -",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "+ text\n",
+      "visible": "+ text\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "mark-subtree",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 0,
+        "keys": "C-c @",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "point": 0,
+      "mark": 23,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "beginning-of-line-on-a-heading",
+      "input": {
+        "text": "* TODO One\n",
+        "point": 8,
+        "keys": "C-a",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO One\n",
+      "visible": "* TODO One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "control-return-at-the-end-of-the-buffer",
+      "input": {
+        "text": "* One\nbody\n",
+        "point": 2,
+        "keys": "C-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n* \n",
+      "visible": "* One\nbody\n* \n",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "meta-return-on-an-item-with-children",
+      "input": {
+        "text": "- one\n  - sub\n- two\n",
+        "point": 5,
+        "keys": "M-RET x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- one\n- x\n  - sub\n- two\n",
+      "visible": "- one\n- x\n  - sub\n- two\n",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "meta-return-in-the-middle-of-an-item",
+      "input": {
+        "text": "- one two\n",
+        "point": 5,
+        "keys": "M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- one\n- two\n",
+      "visible": "- one\n- two\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "meta-return-at-the-start-of-an-item",
+      "input": {
+        "text": "- one\n",
+        "point": 0,
+        "keys": "M-RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- \n- one\n",
+      "visible": "- \n- one\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "demote-a-heading-with-tags",
+      "input": {
+        "text": "* One :work:\n",
+        "point": 0,
+        "keys": "M-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** One                                                                 :work:\n",
+      "visible": "** One                                                                 :work:\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "move-an-item-with-children-down",
+      "input": {
+        "text": "- one\n  - sub\n- two\n",
+        "point": 0,
+        "keys": "M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- two\n- one\n  - sub\n",
+      "visible": "- two\n- one\n  - sub\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "next-heading-at-the-last",
+      "input": {
+        "text": "* One\n* Two\nend\n",
+        "point": 0,
+        "keys": "C-c C-n C-c C-n",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n* Two\nend\n",
+      "visible": "* One\n* Two\nend\n",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-same-level-without-a-sibling",
+      "input": {
+        "text": "* One\n** Sub\n",
+        "point": 6,
+        "keys": "C-c C-f",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n** Sub\n",
+      "visible": "* One\n** Sub\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    }
+  ]
+}

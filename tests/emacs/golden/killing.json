@@ -13,6 +13,7 @@
         "platform": null
       },
       "text": "\ntwo",
+      "visible": "\ntwo",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -33,6 +34,7 @@
         "platform": null
       },
       "text": "two",
+      "visible": "two",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -53,6 +55,7 @@
         "platform": null
       },
       "text": "\nthree",
+      "visible": "\nthree",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -73,6 +76,7 @@
         "platform": null
       },
       "text": "onetwo",
+      "visible": "onetwo",
       "point": 3,
       "mark": null,
       "mark_active": false,
@@ -93,6 +97,7 @@
         "platform": null
       },
       "text": "abc",
+      "visible": "abc",
       "point": 3,
       "mark": null,
       "mark_active": false,
@@ -111,6 +116,7 @@
         "platform": null
       },
       "text": "alpha gamma",
+      "visible": "alpha gamma",
       "point": 5,
       "mark": 5,
       "mark_active": false,
@@ -131,6 +137,7 @@
         "platform": null
       },
       "text": "abc",
+      "visible": "abc",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -149,6 +156,7 @@
         "platform": null
       },
       "text": "alpha beta",
+      "visible": "alpha beta",
       "point": 5,
       "mark": 0,
       "mark_active": false,
@@ -169,6 +177,7 @@
         "platform": null
       },
       "text": "one\none\ntwo",
+      "visible": "one\none\ntwo",
       "point": 8,
       "mark": 4,
       "mark_active": false,
@@ -189,6 +198,7 @@
         "platform": null
       },
       "text": "abc",
+      "visible": "abc",
       "point": 0,
       "mark": 0,
       "mark_active": false,
@@ -207,6 +217,7 @@
         "platform": null
       },
       "text": " gamma",
+      "visible": " gamma",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -227,6 +238,7 @@
         "platform": null
       },
       "text": "alpha ",
+      "visible": "alpha ",
       "point": 6,
       "mark": null,
       "mark_active": false,
@@ -247,6 +259,7 @@
         "platform": null
       },
       "text": " three",
+      "visible": " three",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -267,6 +280,7 @@
         "platform": null
       },
       "text": "\n",
+      "visible": "\n",
       "point": 1,
       "mark": null,
       "mark_active": false,
@@ -288,6 +302,7 @@
         "platform": null
       },
       "text": "\na",
+      "visible": "\na",
       "point": 2,
       "mark": 1,
       "mark_active": false,
@@ -309,6 +324,7 @@
         "platform": null
       },
       "text": " worldhello",
+      "visible": " worldhello",
       "point": 11,
       "mark": 6,
       "mark_active": false,
@@ -329,6 +345,7 @@
         "platform": null
       },
       "text": "\n\na",
+      "visible": "\n\na",
       "point": 3,
       "mark": 2,
       "mark_active": false,
@@ -351,6 +368,7 @@
         "platform": null
       },
       "text": "\nb",
+      "visible": "\nb",
       "point": 2,
       "mark": 1,
       "mark_active": false,
@@ -372,6 +390,7 @@
         "platform": null
       },
       "text": "\n\na",
+      "visible": "\n\na",
       "point": 3,
       "mark": 2,
       "mark_active": false,
@@ -394,6 +413,7 @@
         "platform": null
       },
       "text": "\n\nc",
+      "visible": "\n\nc",
       "point": 3,
       "mark": 2,
       "mark_active": false,
@@ -416,6 +436,7 @@
         "platform": null
       },
       "text": "\na",
+      "visible": "\na",
       "point": 1,
       "mark": 2,
       "mark_active": false,
@@ -437,6 +458,7 @@
         "platform": null
       },
       "text": "abc",
+      "visible": "abc",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -455,6 +477,7 @@
         "platform": null
       },
       "text": "\na\na",
+      "visible": "\na\na",
       "point": 4,
       "mark": 3,
       "mark_active": false,

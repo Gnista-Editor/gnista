@@ -71,6 +71,8 @@
     },
     bindKey: (keys, command, keymap = "global-map") => native.bindKey(String(keys), String(command), String(keymap)),
     call: (name, ...args) => native.call(String(name), ...args.map(String)),
+    callInteractively: (name) => native.callInteractively(String(name)),
+    callWithPrefix: (prefix, name, ...args) => native.callWithPrefix(prefix ?? null, String(name), ...args.map(String)),
     message: (text) => native.message(String(text)),
     insert: (text) => native.insert(String(text)),
     point: () => native.point(),
@@ -130,7 +132,7 @@
         ids.delete(key);
       }
     },
-    runHooks: (hook) => native.runHooks(String(hook)),
+    runHooks: (hook, ...args) => native.runHooks(String(hook), args),
     defineKeymap: (name, parent = null) => native.defineKeymap(String(name), parent === null ? null : String(parent)),
     useLocalMap: (name) => native.useLocalMap(name ?? undefined),
     enabledMinorModes: () => native.enabledMinorModes(),
@@ -173,6 +175,8 @@
     setOverridingMap: (keymap) => native.setOverridingMap(keymap ?? null),
     overridingMap: () => native.overridingMap() ?? undefined,
     setKeymapDefault: (keymap, command) => native.setKeymapDefault(String(keymap), command ?? null),
+    remapCommand: (keymap, from, to) => native.remapCommand(String(keymap), String(from), to === null ? null : String(to)),
+    stringWidth: (text) => native.stringWidth(String(text)),
     unreadKeys: (keys) => native.unreadKeys(String(keys)),
 
     treesitLanguages: () => native.treesitLanguages(),
@@ -184,6 +188,8 @@
 
     putTextProperty: (start, end, name, value) => native.putTextProperty(start, end, String(name), value ?? null),
     removeTextProperty: (start, end, name) => native.removeTextProperty(start, end, String(name)),
+    addFaceTextProperty: (start, end, face, { append = false } = {}) =>
+      native.addFaceTextProperty(start, end, String(face), Boolean(append)),
     textPropertiesAt: (pos) => native.textPropertiesAt(pos),
     getTextProperty: (pos, name) => native.textPropertiesAt(pos)[String(name)],
     charProperty: (pos, name) => native.charProperty(pos, String(name)),

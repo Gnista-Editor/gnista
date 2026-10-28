@@ -56,7 +56,7 @@ fn run(terminal: &mut DefaultTerminal, editor: &mut Editor) -> io::Result<()> {
     while !editor.should_quit() {
         let size = terminal.size()?;
         ui::layout_windows(editor, size.width, size.height);
-        editor.ensure_point_visible();
+        editor.redisplay();
         terminal.draw(|frame| ui::draw(frame, editor))?;
         match event::read()? {
             Event::Key(key) if key.kind == KeyEventKind::Press => {

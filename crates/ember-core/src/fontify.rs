@@ -1,0 +1,194 @@
+//! Fontifying text just before it is shown, as Emacs's jit-lock does.
+//!
+//! A major mode that styles text with properties, such as org-mode, adds a
+//! function to the buffer's `jit-lock-functions` hook. Before the front end
+//! draws, [`Editor::redisplay`] calls those functions with the start and end
+//! of each stretch of whole lines a window shows that is not fontified yet.
+//! Editing marks the text from the start of the edited line to the end of the
+//! buffer as needing fontifying again, because a change can restyle what
+//! follows it, such as opening a block. That is what Emacs's
+//! `jit-lock-contextually` does after a delay; here it is done at once, which
+//! costs little because only what is shown is fontified.
+
+use std::ops::Range;
+
+use crate::buffer::Buffer;
+use crate::editor::Editor;
+use crate::error::Result;
+use crate::variables::Value;
+
+/// How many times redisplay fontifies a window before giving up, in case
+/// fontifying keeps hiding text and bringing more lines into view.
+const PASSES: usize = 4;
+
+impl Buffer {
+    /// Marks everything from the start of the line `pos` is on as needing
+    /// fontifying again.
+    pub(crate) fn unfontify_from(&mut self, pos: usize) {
+        if self.fontified.is_empty() {
+            return;
+        }
+        let from = self.line_start(self.line_of(pos.min(self.len())));
+        self.fontified.retain_mut(|r| {
+            r.end = r.end.min(from);
+            r.start < r.end
+        });
+    }
+
+    /// The parts of a range that are not fontified yet.
+    pub(crate) fn unfontified_in(&self, range: Range<usize>) -> Vec<Range<usize>> {
+        let mut out = Vec::new();
+        let mut pos = range.start;
+        for r in &self.fontified {
+            if r.end <= pos {
+                continue;
+            }
+            if r.start >= range.end {
+                break;
+            }
+            if r.start > pos {
+                out.push(pos..r.start);
+            }
+            pos = pos.max(r.end);
+        }
+        if pos < range.end {
+            out.push(pos..range.end);
+        }
+        out
+    }
+
+    pub(crate) fn mark_fontified(&mut self, range: Range<usize>) {
+        if range.is_empty() {
+            return;
+        }
+        let mut merged = range;
+        let mut out = Vec::with_capacity(self.fontified.len() + 1);
+        let mut placed = false;
+        for r in self.fontified.drain(..) {
+            if r.end < merged.start {
+                out.push(r);
+            } else if r.start > merged.end {
+                if !placed {
+                    out.push(merged.clone());
+                    placed = true;
+                }
+                out.push(r);
+            } else {
+                merged = merged.start.min(r.start)..merged.end.max(r.end);
+            }
+        }
+        if !placed {
+            out.push(merged);
+        }
+        self.fontified = out;
+    }
+}
+
+impl Editor {
+    /// Runs `f` with a buffer current, as if no prompt were open, then puts
+    /// back the buffer and prompt that were, as Emacs's `with-current-buffer`.
+    pub(crate) fn with_current_buffer<T>(&mut self, index: usize, f: impl FnOnce(&mut Editor) -> T) -> T {
+        let (current, prompt) = (self.current, self.prompt.take());
+        self.current = index;
+        let result = f(self);
+        self.current = current;
+        self.prompt = prompt;
+        result
+    }
+
+    fn has_fontifiers(&self, b: &Buffer) -> bool {
+        matches!(self.variable_in(b, "jit-lock-functions"), Some(Value::List(fs)) if !fs.is_empty())
+    }
+
+    /// Fontifies whatever is not fontified yet in a range of the current
+    /// buffer, widened to whole lines, by calling `jit-lock-functions`.
+    /// Returns whether anything was fontified.
+    pub fn fontify_region(&mut self, range: Range<usize>) -> Result<bool> {
+        let b = self.buffer();
+        if !self.has_fontifiers(b) {
+            return Ok(false);
+        }
+        let start = b.line_start(b.line_of(range.start.min(b.len())));
+        let end_line = b.line_of(range.end.min(b.len()));
+        let end = if end_line + 1 < b.line_count() { b.line_start(end_line + 1) } else { b.len() };
+        let missing = b.unfontified_in(start..end.max(start));
+        let mut result = Ok(());
+        for r in &missing {
+            // Marked first, so a function that fails is not called again and again.
+            self.buffer_mut().mark_fontified(r.clone());
+            let args = [Value::Number(r.start as f64), Value::Number(r.end as f64)];
+            if let Err(e) = self.run_hook_with_args("jit-lock-functions", &args) {
+                result = Err(e);
+            }
+        }
+        result.map(|()| !missing.is_empty())
+    }
+
+    /// Fontifies the whole current buffer, as Emacs's `font-lock-ensure`.
+    pub fn font_lock_ensure(&mut self) -> Result<()> {
+        let len = self.buffer().len();
+        self.fontify_region(0..len).map(drop)
+    }
+
+    /// Marks the whole current buffer as needing fontifying again, as
+    /// Emacs's `font-lock-flush`.
+    pub fn font_lock_flush(&mut self) {
+        self.buffer_mut().fontified.clear();
+    }
+
+    /// Gets the frame ready to draw, as Emacs's redisplay does before it
+    /// draws: fontifies what each window shows, and scrolls the selected
+    /// window to keep point visible. Front ends call this before drawing,
+    /// once they have told the editor how big the windows are.
+    pub fn redisplay(&mut self) {
+        self.fontify_windows();
+        self.ensure_point_visible();
+        self.fontify_windows();
+    }
+
+    fn fontify_windows(&mut self) {
+        for id in self.window_list() {
+            for _ in 0..PASSES {
+                let Some(view) = self.windows().into_iter().find(|v| v.id == id) else { break };
+                if !self.has_fontifiers(view.buffer) {
+                    break;
+                }
+                let index = self.buffers.iter().position(|b| b.id == view.buffer.id).unwrap_or(0);
+                // A row more than fits, which a front end scrolling smoothly shows in part.
+                let height = self.window(id).map_or(24, |w| w.height) + 1;
+                let wrap = self.wrap_in(id, view.buffer);
+                let rows = self.rows_from(view.buffer, view.top_line, height, usize::MAX, None, wrap);
+                let (Some(first), Some(last)) = (rows.first(), rows.last()) else { break };
+                let range = first.start..last.end;
+                match self.with_current_buffer(index, |ed| ed.fontify_region(range)) {
+                    Ok(true) => continue,
+                    Ok(false) => break,
+                    Err(e) => {
+                        self.message(format!("Error during redisplay: {e}"));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fontified_ranges_merge_and_edits_clear_what_follows() {
+        let mut b = Buffer::new("t");
+        b.set_text("one\ntwo\nthree\nfour\n");
+        b.mark_fontified(0..4);
+        b.mark_fontified(8..14);
+        assert_eq!(b.unfontified_in(0..19), [4..8, 14..19]);
+        b.mark_fontified(4..8);
+        assert_eq!(b.fontified, vec![0..14]);
+        b.set_point(10);
+        b.insert("x").unwrap();
+        // Everything from the start of the edited line, "three", is unfontified.
+        assert_eq!(b.fontified, vec![0..8]);
+    }
+}

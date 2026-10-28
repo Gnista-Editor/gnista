@@ -13,6 +13,7 @@
         "platform": null
       },
       "text": "",
+      "visible": "",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -31,6 +32,7 @@
         "platform": null
       },
       "text": "ab",
+      "visible": "ab",
       "point": 2,
       "mark": null,
       "mark_active": false,
@@ -49,6 +51,7 @@
         "platform": null
       },
       "text": "",
+      "visible": "",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -67,6 +70,7 @@
         "platform": null
       },
       "text": "one\ntwo",
+      "visible": "one\ntwo",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -87,6 +91,7 @@
         "platform": null
       },
       "text": "abc",
+      "visible": "abc",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -105,6 +110,7 @@
         "platform": null
       },
       "text": "abcdefghijklmnopqrstu",
+      "visible": "abcdefghijklmnopqrstu",
       "point": 21,
       "mark": null,
       "mark_active": false,
@@ -123,6 +129,7 @@
         "platform": null
       },
       "text": "abc",
+      "visible": "abc",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -141,6 +148,7 @@
         "platform": null
       },
       "text": "hi",
+      "visible": "hi",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -159,6 +167,7 @@
         "platform": null
       },
       "text": "ab",
+      "visible": "ab",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -177,6 +186,7 @@
         "platform": null
       },
       "text": "a\nb\nc",
+      "visible": "a\nb\nc",
       "point": 4,
       "mark": null,
       "mark_active": false,
@@ -195,6 +205,7 @@
         "platform": null
       },
       "text": "",
+      "visible": "",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -213,6 +224,7 @@
         "platform": null
       },
       "text": "a\nb",
+      "visible": "a\nb",
       "point": 2,
       "mark": null,
       "mark_active": false,
@@ -231,6 +243,7 @@
         "platform": null
       },
       "text": "xabc",
+      "visible": "xabc",
       "point": 1,
       "mark": null,
       "mark_active": false,
@@ -249,6 +262,7 @@
         "platform": null
       },
       "text": "",
+      "visible": "",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -267,6 +281,7 @@
         "platform": null
       },
       "text": "abcdef",
+      "visible": "abcdef",
       "point": 2,
       "mark": null,
       "mark_active": false,
@@ -285,6 +300,7 @@
         "platform": null
       },
       "text": "abcdef",
+      "visible": "abcdef",
       "point": 4,
       "mark": null,
       "mark_active": false,
@@ -303,6 +319,7 @@
         "platform": null
       },
       "text": "xabc",
+      "visible": "xabc",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -321,6 +338,7 @@
         "platform": null
       },
       "text": "xabc",
+      "visible": "xabc",
       "point": 0,
       "mark": null,
       "mark_active": false,

@@ -121,6 +121,19 @@ impl Editor {
         (pos, ellipsis)
     }
 
+    /// The end of the line `pos` is on as it shows, as Emacs's
+    /// `end-of-visible-line`: past any hidden text that its newline starts,
+    /// to the next newline that shows.
+    pub fn end_of_visible_line(&self, pos: usize) -> usize {
+        let b = self.buffer();
+        let mut end = b.line_end(b.line_of(pos));
+        while end < b.len() && self.invisible_in(b, end).is_some() {
+            end = self.skip_invisible_in(b, end).0;
+            end = b.line_end(b.line_of(end));
+        }
+        end
+    }
+
     /// Whether a buffer line starts a row: the first line does, and so does
     /// any line whose newline before it is visible.
     pub fn line_starts_row_in(&self, b: &Buffer, line: usize) -> bool {
@@ -222,25 +235,83 @@ impl Editor {
     }
 
     /// Moves point out of invisible text, as Emacs's command loop does after
-    /// each command: forward to the visible text after it if point moved
-    /// forward, otherwise back to before it.
-    pub(crate) fn adjust_point_for_invisible(&mut self, old_point: usize) {
+    /// each command (`adjust_point_for_property`). Point is inside hidden
+    /// text when hidden characters lie on both sides of it. It goes to the
+    /// end of the hidden stretch in the direction it moved, or to the near
+    /// end if it came from outside the stretch. Where no ellipsis shows and
+    /// the command did not change the buffer, the hidden text is passed over
+    /// as if it were not there: a move from one edge of it to the other goes
+    /// a character further, so C-f over a hidden link's brackets moves past
+    /// the first character shown.
+    pub(crate) fn adjust_point_for_invisible(&mut self, last_pt: usize, modified: bool) {
         let b = self.buffer();
-        let p = b.point();
-        let inside = p > 0 && self.invisible_in(b, p).is_some() && self.invisible_in(b, p - 1).is_some();
-        if !inside {
+        let (pt, len) = (b.point(), b.len());
+        let (mut beg, mut end, mut ellipsis) = (pt, pt, false);
+        while end < len
+            && let Some(e) = self.invisible_in(b, end)
+        {
+            ellipsis |= e;
+            end = b.next_char_property_change(end);
+        }
+        while beg > 0
+            && let Some(e) = self.invisible_in(b, beg - 1)
+        {
+            ellipsis |= e;
+            beg = self.previous_char_property_change_in(b, beg);
+        }
+        if !(beg < pt && end > pt) {
             return;
         }
-        let target = if p >= old_point {
-            self.skip_invisible_in(b, p).0
-        } else {
-            let mut q = p;
-            while q > 0 && self.invisible_in(b, q - 1).is_some() {
-                q -= 1;
-            }
-            q
+        // Coming from outside the stretch, either end is a move the right
+        // way, so the near one is taken; from inside, the far one.
+        let outside = last_pt < beg || last_pt > end;
+        let mut target = match (outside, pt < last_pt) {
+            (true, true) => end,
+            (true, false) => beg,
+            (false, true) => beg,
+            (false, false) => end,
         };
+        if !modified && !ellipsis {
+            if last_pt == beg && target == end && end < len {
+                target = end + 1;
+            } else if last_pt == end && target == beg && beg > 0 {
+                target = beg - 1;
+            } else if target == if target < last_pt { beg } else { end } {
+                // As far as it can go without moving back the other way.
+            } else {
+                // Point sits where typed text would be hidden: go to the
+                // other end, if typing there would show.
+                let other = if target == beg { end } else { beg };
+                if self.pos_invisible_in(b, target) && !self.pos_invisible_in(b, other) {
+                    target = other;
+                }
+            }
+        }
         self.buffer_mut().set_point(target);
+    }
+
+    /// Where the `invisible` property last changes before `pos`, counting
+    /// overlays, as Emacs's `previous-single-char-property-change`.
+    fn previous_char_property_change_in(&self, b: &Buffer, pos: usize) -> usize {
+        let value = |p: usize| b.char_property(p, "invisible").cloned();
+        let here = value(pos - 1);
+        let mut p = pos - 1;
+        while p > 0 && value(p - 1) == here {
+            p -= 1;
+        }
+        p
+    }
+
+    /// Whether text inserted at `pos` would be invisible, as Emacs's
+    /// `get-pos-property` sees it: text properties are inherited from the
+    /// character before, overlays apply inside them.
+    fn pos_invisible_in(&self, b: &Buffer, pos: usize) -> bool {
+        let spec = self.invisibility_spec(b);
+        let from_overlay = b.overlays().iter().any(|o| {
+            o.start < pos && pos < o.end && o.props.get("invisible").is_some_and(|v| invisibility(v, &spec).is_some())
+        });
+        let from_text = pos > 0 && b.text_property(pos - 1, "invisible").is_some_and(|v| invisibility(v, &spec).is_some());
+        from_overlay || from_text
     }
 
     /// The rows the window shows, from its top line, styled for a dark or
@@ -284,7 +355,7 @@ impl Editor {
 
     /// Up to `count` screen rows from up to `lines` rows of text from a top
     /// line, styled for a dark or light background, or unstyled with `None`.
-    fn rows_from(
+    pub(crate) fn rows_from(
         &self,
         b: &Buffer,
         top_line: usize,

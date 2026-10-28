@@ -13,6 +13,7 @@
         "platform": null
       },
       "text": "abab",
+      "visible": "abab",
       "point": 4,
       "mark": null,
       "mark_active": false,
@@ -31,6 +32,7 @@
         "platform": null
       },
       "text": "xyxy",
+      "visible": "xyxy",
       "point": 4,
       "mark": null,
       "mark_active": false,
@@ -49,6 +51,7 @@
         "platform": null
       },
       "text": "zzzz",
+      "visible": "zzzz",
       "point": 4,
       "mark": null,
       "mark_active": false,
@@ -67,6 +70,7 @@
         "platform": null
       },
       "text": "0 1 2 ",
+      "visible": "0 1 2 ",
       "point": 6,
       "mark": null,
       "mark_active": false,
@@ -85,6 +89,7 @@
         "platform": null
       },
       "text": "5 6 ",
+      "visible": "5 6 ",
       "point": 4,
       "mark": null,
       "mark_active": false,
@@ -103,6 +108,7 @@
         "platform": null
       },
       "text": "a\nxb\ncx",
+      "visible": "a\nxb\ncx",
       "point": 7,
       "mark": null,
       "mark_active": false,
@@ -121,6 +127,7 @@
         "platform": null
       },
       "text": "a\n-b\n-c\n-d",
+      "visible": "a\n-b\n-c\n-d",
       "point": 10,
       "mark": null,
       "mark_active": false,
@@ -139,6 +146,7 @@
         "platform": null
       },
       "text": "xxxx",
+      "visible": "xxxx",
       "point": 4,
       "mark": null,
       "mark_active": false,
@@ -157,6 +165,7 @@
         "platform": null
       },
       "text": "one\none\ntwo\ntwo\nthree",
+      "visible": "one\none\ntwo\ntwo\nthree",
       "point": 16,
       "mark": 12,
       "mark_active": false,
@@ -178,6 +187,7 @@
         "platform": null
       },
       "text": "",
+      "visible": "",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -196,6 +206,7 @@
         "platform": null
       },
       "text": "",
+      "visible": "",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -214,6 +225,7 @@
         "platform": null
       },
       "text": "a",
+      "visible": "a",
       "point": 1,
       "mark": null,
       "mark_active": false,

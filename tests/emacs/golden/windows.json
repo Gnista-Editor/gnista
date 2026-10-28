@@ -13,6 +13,7 @@
         "platform": null
       },
       "text": "one\ntwo\nthree",
+      "visible": "one\ntwo\nthree",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -31,6 +32,7 @@
         "platform": null
       },
       "text": "one\ntwo\nthree",
+      "visible": "one\ntwo\nthree",
       "point": 8,
       "mark": null,
       "mark_active": false,
@@ -49,6 +51,7 @@
         "platform": null
       },
       "text": "xyabc",
+      "visible": "xyabc",
       "point": 5,
       "mark": 5,
       "mark_active": false,
@@ -67,6 +70,7 @@
         "platform": null
       },
       "text": "one\ntwo\nthree",
+      "visible": "one\ntwo\nthree",
       "point": 0,
       "mark": 0,
       "mark_active": false,
@@ -85,6 +89,7 @@
         "platform": null
       },
       "text": "one\ntwo\nthree",
+      "visible": "one\ntwo\nthree",
       "point": 13,
       "mark": 0,
       "mark_active": false,
@@ -103,6 +108,7 @@
         "platform": null
       },
       "text": "abc",
+      "visible": "abc",
       "point": 1,
       "mark": null,
       "mark_active": false,
@@ -121,6 +127,7 @@
         "platform": null
       },
       "text": "one\ntwo\nthree",
+      "visible": "one\ntwo\nthree",
       "point": 4,
       "mark": 0,
       "mark_active": false,
@@ -139,6 +146,7 @@
         "platform": null
       },
       "text": "one\ntwo\nthree",
+      "visible": "one\ntwo\nthree",
       "point": 3,
       "mark": null,
       "mark_active": false,

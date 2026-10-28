@@ -70,6 +70,8 @@ struct Input {
 #[derive(Debug, Deserialize, PartialEq)]
 struct State {
     text: String,
+    /// The text without what is invisible, once fontified.
+    visible: String,
     point: usize,
     mark: Option<usize>,
     mark_active: bool,
@@ -99,12 +101,16 @@ fn run(case: &Case) -> State {
     let mut ed = Editor::new();
     let _scripting = Scripting::new(&mut ed).expect("scripting starts");
     let b = ed.window_buffer_mut();
+    // record.el's buffer, which some messages name.
+    b.name = "*ember-oracle*".into();
     b.set_text(&case.text);
     b.set_point(case.point);
     for mode in &case.modes {
         ed.call_with_prefix(mode, Vec::new(), Some(PrefixArg::Number(1)))
             .unwrap_or_else(|e| panic!("{}: turning on {mode}: {e}", case.name));
     }
+    // Fontified as redisplay would before the keys; record.el does the same.
+    ed.font_lock_ensure().unwrap_or_else(|e| panic!("{}: fontifying: {e}", case.name));
     let keys = Key::parse_seq(&case.keys)
         .unwrap_or_else(|| panic!("{}: keys {:?} are not valid Emacs notation", case.name, case.keys));
     let mut error = None;
@@ -120,9 +126,12 @@ fn run(case: &Case) -> State {
             error.get_or_insert(e.to_string());
         }
     }
+    ed.font_lock_ensure().unwrap_or_else(|e| panic!("{}: fontifying: {e}", case.name));
     let b = ed.window_buffer();
+    let visible = (0..b.len()).filter(|&p| ed.invisible_in(b, p).is_none()).filter_map(|p| b.char_at(p)).collect();
     State {
         text: b.slice(0..b.len()),
+        visible,
         point: b.point(),
         mark: b.mark(),
         mark_active: b.is_mark_active(),
@@ -145,7 +154,7 @@ fn differences(emacs: &State, ember: &State) -> String {
             }
         )*};
     }
-    compare!(text, point, mark, mark_active, kill_ring, modified, error);
+    compare!(text, visible, point, mark, mark_active, kill_ring, modified, error);
     out.join("\n")
 }
 

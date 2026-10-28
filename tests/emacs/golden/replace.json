@@ -17,6 +17,7 @@
         "platform": null
       },
       "text": "a bar b foo c bar",
+      "visible": "a bar b foo c bar",
       "point": 17,
       "mark": 0,
       "mark_active": false,
@@ -39,6 +40,7 @@
         "platform": null
       },
       "text": "x x x",
+      "visible": "x x x",
       "point": 5,
       "mark": 0,
       "mark_active": false,
@@ -61,6 +63,7 @@
         "platform": null
       },
       "text": "x foo foo",
+      "visible": "x foo foo",
       "point": 5,
       "mark": 0,
       "mark_active": false,
@@ -83,6 +86,7 @@
         "platform": null
       },
       "text": "foo x foo",
+      "visible": "foo x foo",
       "point": 5,
       "mark": 0,
       "mark_active": false,
@@ -105,6 +109,7 @@
         "platform": null
       },
       "text": "xy foo",
+      "visible": "xy foo",
       "point": 6,
       "mark": 0,
       "mark_active": false,
@@ -127,6 +132,7 @@
         "platform": null
       },
       "text": "bar Bar BAR",
+      "visible": "bar Bar BAR",
       "point": 11,
       "mark": 0,
       "mark_active": false,
@@ -149,6 +155,7 @@
         "platform": null
       },
       "text": "foo bar FOO",
+      "visible": "foo bar FOO",
       "point": 7,
       "mark": 0,
       "mark_active": false,
@@ -171,6 +178,7 @@
         "platform": null
       },
       "text": "foo x x",
+      "visible": "foo x x",
       "point": 7,
       "mark": 2,
       "mark_active": false,
@@ -193,6 +201,7 @@
         "platform": null
       },
       "text": "x\nfoo",
+      "visible": "x\nfoo",
       "point": 2,
       "mark": 0,
       "mark_active": false,
@@ -215,6 +224,7 @@
         "platform": null
       },
       "text": "abc",
+      "visible": "abc",
       "point": 1,
       "mark": 0,
       "mark_active": false,
@@ -237,6 +247,7 @@
         "platform": null
       },
       "text": "1:a 2:b",
+      "visible": "1:a 2:b",
       "point": 7,
       "mark": 0,
       "mark_active": false,
@@ -259,6 +270,7 @@
         "platform": null
       },
       "text": "<cat> <dog>",
+      "visible": "<cat> <dog>",
       "point": 11,
       "mark": 0,
       "mark_active": false,
@@ -281,6 +293,7 @@
         "platform": null
       },
       "text": "1 two 1",
+      "visible": "1 two 1",
       "point": 7,
       "mark": 0,
       "mark_active": false,
@@ -303,6 +316,7 @@
         "platform": null
       },
       "text": "a#b#c#",
+      "visible": "a#b#c#",
       "point": 6,
       "mark": 0,
       "mark_active": false,
@@ -325,6 +339,7 @@
         "platform": null
       },
       "text": "-a-b-c",
+      "visible": "-a-b-c",
       "point": 6,
       "mark": 1,
       "mark_active": false,
@@ -347,6 +362,7 @@
         "platform": null
       },
       "text": "foo x foo",
+      "visible": "foo x foo",
       "point": 9,
       "mark": 0,
       "mark_active": false,

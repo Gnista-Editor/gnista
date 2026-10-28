@@ -99,7 +99,7 @@ impl EmberApp {
         let layout = Layout::new(ui, &mut self.editor);
         self.scroll(&ctx, &layout);
         let top = self.editor.window_buffer().top_line;
-        self.editor.ensure_point_visible();
+        self.editor.redisplay();
         if self.editor.window_buffer().top_line != top && self.scroll_window == self.editor.selected_window() {
             self.scroll_offset = 0.0;
         }

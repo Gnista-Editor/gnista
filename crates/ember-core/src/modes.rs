@@ -64,6 +64,50 @@ impl Editor {
         Ok(())
     }
 
+    /// Makes a named keymap remap a command: wherever keys would run `from`
+    /// while the keymap is active, `to` runs instead, as Emacs's
+    /// `(define-key map [remap FROM] TO)`.
+    pub fn remap_command(&mut self, keymap: &str, from: &str, to: Option<&str>) -> Result<()> {
+        let map = self
+            .keymap_mut(keymap)
+            .ok_or_else(|| Error::new(format!("No such keymap: {keymap}")))?;
+        map.remap(from, to);
+        Ok(())
+    }
+
+    /// The command that runs in place of `command` in a named keymap or its parents.
+    fn remapped_in(&self, name: &str, command: &str) -> Option<String> {
+        let mut next = Some(name.to_string());
+        for _ in 0..32 {
+            let name = next?;
+            let (map, parent) = match name.as_str() {
+                GLOBAL_MAP => (&self.global_map, None),
+                MINIBUFFER_MAP => (&self.minibuffer_map, None),
+                _ => {
+                    let k = self.keymaps.get(&name)?;
+                    (&k.map, k.parent.clone())
+                }
+            };
+            if let Some(to) = map.remapped(command) {
+                return Some(to.to_string());
+            }
+            next = parent;
+        }
+        None
+    }
+
+    /// The command that runs when keys run `command`: the first remapping of
+    /// it in the active keymaps, in the order keys are looked up, or `None`.
+    pub fn command_remapping(&self, command: &str) -> Option<String> {
+        let mut maps: Vec<String> = self.overriding_map.iter().cloned().collect();
+        if self.prompt.is_some() {
+            maps.push(MINIBUFFER_MAP.to_string());
+        }
+        maps.extend(self.mode_keymaps());
+        maps.push(GLOBAL_MAP.to_string());
+        maps.iter().find_map(|m| self.remapped_in(m, command))
+    }
+
     /// Sets the command a named keymap runs for keys it does not bind.
     pub fn set_keymap_default(&mut self, keymap: &str, command: Option<&str>) -> Result<()> {
         let map = self

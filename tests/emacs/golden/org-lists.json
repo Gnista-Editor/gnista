@@ -1,0 +1,279 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "toggle-a-checkbox",
+      "input": {
+        "text": "- [ ] one\n",
+        "point": 0,
+        "keys": "C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- [X] one\n",
+      "visible": "- [X] one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-a-checked-box",
+      "input": {
+        "text": "- [X] one\n",
+        "point": 0,
+        "keys": "C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- [ ] one\n",
+      "visible": "- [ ] one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "checkbox-statistics",
+      "input": {
+        "text": "* Tasks [/]\n- [ ] a\n- [X] b\n",
+        "point": 14,
+        "keys": "C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* Tasks [2/2]\n- [X] a\n- [X] b\n",
+      "visible": "* Tasks [2/2]\n- [X] a\n- [X] b\n",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "checkbox-percent",
+      "input": {
+        "text": "* Tasks [%]\n- [ ] a\n- [ ] b\n",
+        "point": 14,
+        "keys": "C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* Tasks [50%]\n- [X] a\n- [ ] b\n",
+      "visible": "* Tasks [50%]\n- [X] a\n- [ ] b\n",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggle-checkbox-command",
+      "input": {
+        "text": "- one\n",
+        "point": 0,
+        "keys": "C-c C-x C-b",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- one\n",
+      "visible": "- one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "shift-right-on-a-bullet",
+      "input": {
+        "text": "- one\n- two\n",
+        "point": 0,
+        "keys": "S-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "+ one\n+ two\n",
+      "visible": "+ one\n+ two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-left-on-a-bullet",
+      "input": {
+        "text": "- one\n- two\n",
+        "point": 0,
+        "keys": "S-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "1) one\n2) two\n",
+      "visible": "1) one\n2) two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "meta-shift-return-on-an-item-adds-a-checkbox",
+      "input": {
+        "text": "- one",
+        "point": 5,
+        "keys": "M-S-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- one\n- [ ] ",
+      "visible": "- one\n- [ ] ",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "ctrl-c-ctrl-c-on-text",
+      "input": {
+        "text": "text\n",
+        "point": 0,
+        "keys": "C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "text\n",
+      "visible": "text\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "‘C-c C-c’ can do nothing useful here"
+    },
+    {
+      "name": "shift-down-on-an-item-moves-to-the-next",
+      "input": {
+        "text": "- one\n- two\n",
+        "point": 0,
+        "keys": "S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- one\n- two\n",
+      "visible": "- one\n- two\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "nested-checkbox-updates-its-parent",
+      "input": {
+        "text": "- [ ] all\n  - [ ] a\n  - [X] b\n",
+        "point": 12,
+        "keys": "C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- [X] all\n  - [X] a\n  - [X] b\n",
+      "visible": "- [X] all\n  - [X] a\n  - [X] b\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "ret-after-a-checkbox-item",
+      "input": {
+        "text": "- [ ] task",
+        "point": 10,
+        "keys": "RET x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- [ ] task\n  x",
+      "visible": "- [ ] task\n  x",
+      "point": 14,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "tab-on-a-plain-list-item-indents",
+      "input": {
+        "text": "* One\n- item\n",
+        "point": 6,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n- item\n",
+      "visible": "* One\n- item\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    }
+  ]
+}

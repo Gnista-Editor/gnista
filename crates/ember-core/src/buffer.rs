@@ -91,6 +91,10 @@ pub struct Buffer {
     next_overlay_id: u64,
     /// The tree-sitter tree, if a major mode gave the buffer a language.
     pub(crate) syntax: Option<SyntaxTree>,
+    /// The stretches already fontified by `jit-lock-functions`, in order.
+    pub(crate) fontified: Vec<Range<usize>>,
+    /// Counts changes to the text, as Emacs's `buffer-modified-tick`.
+    tick: u64,
 }
 
 impl Buffer {
@@ -123,6 +127,8 @@ impl Buffer {
             overlays: Vec::new(),
             next_overlay_id: 0,
             syntax: None,
+            fontified: Vec::new(),
+            tick: 0,
         }
     }
 
@@ -304,6 +310,11 @@ impl Buffer {
         pos - self.line_start(self.line_of(pos))
     }
 
+    /// How many times the text has changed, as Emacs's `buffer-modified-tick`.
+    pub fn modified_tick(&self) -> u64 {
+        self.tick
+    }
+
     /// Inserts text at point, leaving point after it.
     pub fn insert(&mut self, s: &str) -> Result<()> {
         self.insert_at(self.point, s)
@@ -348,6 +359,8 @@ impl Buffer {
         for overlay in &mut self.overlays {
             overlay.insert(pos, n);
         }
+        self.unfontify_from(pos);
+        self.tick += 1;
         self.record(Edit {
             pos,
             deleted: String::new(),
@@ -379,6 +392,8 @@ impl Buffer {
             overlay.delete(start, end);
         }
         self.overlays.retain(|o| !o.evaporates());
+        self.unfontify_from(start);
+        self.tick += 1;
         self.record(Edit {
             pos: start,
             deleted: deleted.clone(),
@@ -397,6 +412,29 @@ impl Buffer {
         let end = range.end.min(self.len());
         self.properties.modify(range.start, end, |p| {
             p.insert(name.to_string(), value.clone());
+        });
+    }
+
+    /// Adds a face to the `face` property of every character in a range,
+    /// keeping the faces already there, as Emacs's `add-face-text-property`.
+    /// The new face wins over them unless `append` is set.
+    pub fn add_face_text_property(&mut self, range: Range<usize>, face: &str, append: bool) {
+        let end = range.end.min(self.len());
+        self.properties.modify(range.start, end, |p| {
+            let mut faces = p.get("face").map(crate::faces::face_names).unwrap_or_default();
+            if faces.iter().any(|f| f == face) {
+                return;
+            }
+            if append {
+                faces.push(face.to_string());
+            } else {
+                faces.insert(0, face.to_string());
+            }
+            let value = match faces.as_slice() {
+                [one] => Value::Str(one.clone()),
+                _ => Value::List(faces.into_iter().map(Value::Str).collect()),
+            };
+            p.insert("face".to_string(), value);
         });
     }
 
@@ -508,6 +546,7 @@ impl Buffer {
         }
         self.properties.clear();
         self.overlays.clear();
+        self.fontified.clear();
         self.point = 0;
         self.mark = None;
         self.mark_ring.clear();

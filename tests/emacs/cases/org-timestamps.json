@@ -1,0 +1,145 @@
+[
+  {
+    "name": "shift-up-on-the-day",
+    "text": "<2026-10-28 Wed>",
+    "keys": "S-<up>",
+    "point": 10,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-down-across-a-month",
+    "text": "<2026-11-01 Sun>",
+    "keys": "S-<down>",
+    "point": 10,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-up-on-the-month",
+    "text": "<2026-10-28 Wed>",
+    "keys": "S-<up>",
+    "point": 7,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-up-on-the-year",
+    "text": "<2026-10-28 Wed>",
+    "keys": "S-<up>",
+    "point": 3,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-up-on-the-weekday",
+    "text": "<2026-10-28 Wed>",
+    "keys": "S-<up>",
+    "point": 13,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-up-on-the-month-at-its-end",
+    "text": "<2026-01-31 Sat>",
+    "keys": "S-<up>",
+    "point": 7,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-right-on-a-timestamp",
+    "text": "<2026-10-28 Wed>",
+    "keys": "S-<right>",
+    "point": 10,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-left-on-a-timestamp",
+    "text": "<2026-10-28 Wed>",
+    "keys": "S-<left>",
+    "point": 10,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-up-on-an-hour",
+    "text": "[2026-10-28 Wed 10:00]",
+    "keys": "S-<up>",
+    "point": 17,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-up-on-minutes",
+    "text": "[2026-10-28 Wed 10:00]",
+    "keys": "S-<up>",
+    "point": 20,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-up-on-the-bracket",
+    "text": "<2026-10-28 Wed>",
+    "keys": "S-<up>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "timestamp-in-a-heading",
+    "text": "* Meet <2026-10-28 Wed>\n",
+    "keys": "S-<up>",
+    "point": 17,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-up-on-a-scheduled-date",
+    "text": "* One\nSCHEDULED: <2026-10-28 Wed>\n",
+    "keys": "S-<up>",
+    "point": 26,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-up-without-a-day-name",
+    "text": "<2026-10-28>",
+    "keys": "S-<up>",
+    "point": 10,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-up-keeps-a-repeater",
+    "text": "<2026-10-28 Wed +1w>",
+    "keys": "S-<up>",
+    "point": 10,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-up-on-a-time-range",
+    "text": "<2026-10-28 Wed 10:00-11:00>",
+    "keys": "S-<up>",
+    "point": 17,
+    "modes": [
+      "org-mode"
+    ]
+  }
+]

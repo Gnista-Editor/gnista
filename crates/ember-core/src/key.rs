@@ -133,9 +133,15 @@ impl Key {
             }
             rest = &rest[2..];
         }
+        // Emacs's function key names for RET and TAB, which it translates
+        // to them when nothing binds the function key itself; Ember has one
+        // key for each. `<backtab>` is what Shift and TAB send.
+        if rest == "<backtab>" {
+            shift = true;
+        }
         let code = match rest {
-            "RET" => KeyCode::Enter,
-            "TAB" => KeyCode::Tab,
+            "RET" | "<return>" => KeyCode::Enter,
+            "TAB" | "<tab>" | "<backtab>" => KeyCode::Tab,
             "DEL" => KeyCode::Backspace,
             "ESC" => KeyCode::Esc,
             "SPC" => KeyCode::Char(' '),
@@ -233,6 +239,8 @@ mod tests {
         assert_eq!(Key::parse("C-x"), Some(Key::char('x').ctrl()));
         assert_eq!(Key::parse("S-<right>"), Some(Key::new(KeyCode::Right).shift()));
         assert_eq!(Key::parse("S"), Some(Key::char('S')));
+        assert_eq!(Key::parse("C-<return>"), Key::parse("C-RET"));
+        assert_eq!(Key::parse("<backtab>"), Key::parse("S-TAB"));
         assert_eq!(Key::parse("<f0>"), None);
         assert_eq!(Key::parse("M-"), None);
         assert_eq!(Key::parse("ab"), None);

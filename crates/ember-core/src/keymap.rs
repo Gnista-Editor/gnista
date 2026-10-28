@@ -16,6 +16,9 @@ pub struct Keymap {
     /// What any single key with no binding of its own runs, as an Emacs
     /// keymap's `[t]` binding does.
     default: Option<String>,
+    /// Commands that run in place of others when keys in any keymap name
+    /// them, as an Emacs keymap's `[remap COMMAND]` bindings.
+    remaps: BTreeMap<String, String>,
 }
 
 /// The result of looking up a key sequence.
@@ -53,6 +56,20 @@ impl Keymap {
     pub fn bind_str(&mut self, seq: &str, command: &str) {
         let keys = Key::parse_seq(seq).unwrap_or_else(|| panic!("bad key sequence {seq:?}"));
         self.bind(&keys, command);
+    }
+
+    /// Makes `to` run wherever keys run `from` while this keymap is active,
+    /// or stops that with `None`.
+    pub fn remap(&mut self, from: &str, to: Option<&str>) {
+        match to {
+            Some(to) => self.remaps.insert(from.to_string(), to.to_string()),
+            None => self.remaps.remove(from),
+        };
+    }
+
+    /// The command that runs in place of `command`, if this keymap remaps it.
+    pub fn remapped(&self, command: &str) -> Option<&str> {
+        self.remaps.get(command).map(String::as_str)
     }
 
     /// Sets or removes the command for keys with no binding of their own.

@@ -117,7 +117,8 @@ impl Variable {
     }
 }
 
-pub type HookFn = Rc<dyn Fn(&mut Editor) -> Result<()>>;
+/// A hook function, called with the hook's arguments, if it has any.
+pub type HookFn = Rc<dyn Fn(&mut Editor, &[Value]) -> Result<()>>;
 
 #[derive(Clone)]
 pub(crate) struct HookEntry {
@@ -233,6 +234,7 @@ impl Editor {
         b.local_hooks.clear();
         b.local_map = None;
         b.syntax = None;
+        b.fontified.clear();
         result
     }
 
@@ -274,6 +276,11 @@ impl Editor {
     /// Runs a hook's functions: the current buffer's own first, then the
     /// global ones. The first error stops it.
     pub fn run_hooks(&mut self, hook: &str) -> Result<()> {
+        self.run_hook_with_args(hook, &[])
+    }
+
+    /// Runs a hook's functions with arguments, as Emacs's `run-hook-with-args`.
+    pub fn run_hook_with_args(&mut self, hook: &str, args: &[Value]) -> Result<()> {
         let b = self.buffer();
         let functions: Vec<HookFn> = b
             .local_hooks
@@ -284,7 +291,7 @@ impl Editor {
             .map(|entry| entry.run.clone())
             .collect();
         for run in functions {
-            run(self)?;
+            run(self, args)?;
         }
         Ok(())
     }
@@ -389,6 +396,10 @@ pub(crate) fn install(ed: &mut Editor) {
     for (name, doc) in [
         ("pre-command-hook", "Run before each command that keys run. A function can change this-command, and that command runs instead."),
         ("post-command-hook", "Run after each command that keys run."),
+        (
+            "jit-lock-functions",
+            "Called with a start and an end to fontify that stretch of whole lines, just before it is shown. A major mode adds its function here, buffer-locally, and the function puts face and other properties on the text. Editing a line refontifies it and everything after it.",
+        ),
         ("find-file-hook", "Run after visiting a file, once its major mode is chosen."),
         ("before-save-hook", "Run before saving a buffer to its file."),
         ("after-save-hook", "Run after saving a buffer to its file."),

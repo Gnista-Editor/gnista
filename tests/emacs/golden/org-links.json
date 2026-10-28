@@ -1,0 +1,216 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "links-hide-their-brackets",
+      "input": {
+        "text": "see [[https://x.org][desc]] now\n",
+        "point": 0,
+        "keys": "C-a",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "see [[https://x.org][desc]] now\n",
+      "visible": "see desc now\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "a-link-without-a-description",
+      "input": {
+        "text": "[[file.org]]\n",
+        "point": 0,
+        "keys": "C-a",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "[[file.org]]\n",
+      "visible": "file.org\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-char-into-a-link",
+      "input": {
+        "text": "a [[https://x.org][desc]]\n",
+        "point": 1,
+        "keys": "C-f C-f",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "a [[https://x.org][desc]]\n",
+      "visible": "a desc\n",
+      "point": 20,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-char-out-of-a-link",
+      "input": {
+        "text": "a [[https://x.org][desc]] b\n",
+        "point": 0,
+        "keys": "C-e C-b C-b C-b",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "a [[https://x.org][desc]] b\n",
+      "visible": "a desc b\n",
+      "point": 22,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "end-of-line-past-a-link",
+      "input": {
+        "text": "a [[https://x.org][desc]]\n",
+        "point": 0,
+        "keys": "C-e",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "a [[https://x.org][desc]]\n",
+      "visible": "a desc\n",
+      "point": 25,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "open-an-internal-link",
+      "input": {
+        "text": "* One\n[[*Two]]\n* Two\n",
+        "point": 8,
+        "keys": "C-c C-o",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n[[*Two]]\n* Two\n",
+      "visible": "* One\n*Two\n* Two\n",
+      "point": 15,
+      "mark": 8,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "open-a-heading-link-by-title",
+      "input": {
+        "text": "* One\n[[Two]]\n* Two\n",
+        "point": 8,
+        "keys": "C-c C-o",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n[[Two]]\n* Two\n",
+      "visible": "* One\nTwo\n* Two\n",
+      "point": 14,
+      "mark": 8,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "angle-links-stay-visible",
+      "input": {
+        "text": "<https://x.org> and https://y.org\n",
+        "point": 0,
+        "keys": "C-a",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "<https://x.org> and https://y.org\n",
+      "visible": "<https://x.org> and https://y.org\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "emphasis-markers-stay-visible",
+      "input": {
+        "text": "*bold* /it/ =code=\n",
+        "point": 0,
+        "keys": "C-a",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "*bold* /it/ =code=\n",
+      "visible": "*bold* /it/ =code=\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "typing-a-link",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "[ [ x ] ]",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "[[x]]",
+      "visible": "x",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

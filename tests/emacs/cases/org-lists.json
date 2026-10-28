@@ -1,0 +1,112 @@
+[
+  {
+    "name": "toggle-a-checkbox",
+    "text": "- [ ] one\n",
+    "keys": "C-c C-c",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-a-checked-box",
+    "text": "- [X] one\n",
+    "keys": "C-c C-c",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "checkbox-statistics",
+    "text": "* Tasks [/]\n- [ ] a\n- [X] b\n",
+    "keys": "C-c C-c",
+    "point": 14,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "checkbox-percent",
+    "text": "* Tasks [%]\n- [ ] a\n- [ ] b\n",
+    "keys": "C-c C-c",
+    "point": 14,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-checkbox-command",
+    "text": "- one\n",
+    "keys": "C-c C-x C-b",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-right-on-a-bullet",
+    "text": "- one\n- two\n",
+    "keys": "S-<right>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-left-on-a-bullet",
+    "text": "- one\n- two\n",
+    "keys": "S-<left>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-shift-return-on-an-item-adds-a-checkbox",
+    "text": "- one",
+    "keys": "M-S-<return>",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "ctrl-c-ctrl-c-on-text",
+    "text": "text\n",
+    "keys": "C-c C-c",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-down-on-an-item-moves-to-the-next",
+    "text": "- one\n- two\n",
+    "keys": "S-<down>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "nested-checkbox-updates-its-parent",
+    "text": "- [ ] all\n  - [ ] a\n  - [X] b\n",
+    "keys": "C-c C-c",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "ret-after-a-checkbox-item",
+    "text": "- [ ] task",
+    "keys": "RET x",
+    "point": 10,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "tab-on-a-plain-list-item-indents",
+    "text": "* One\n- item\n",
+    "keys": "TAB",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  }
+]

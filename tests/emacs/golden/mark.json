@@ -13,6 +13,7 @@
         "platform": null
       },
       "text": "hello world",
+      "visible": "hello world",
       "point": 5,
       "mark": 0,
       "mark_active": true,
@@ -31,6 +32,7 @@
         "platform": null
       },
       "text": "abc",
+      "visible": "abc",
       "point": 0,
       "mark": 0,
       "mark_active": false,
@@ -49,6 +51,7 @@
         "platform": null
       },
       "text": "hello world",
+      "visible": "hello world",
       "point": 0,
       "mark": 5,
       "mark_active": true,
@@ -67,6 +70,7 @@
         "platform": null
       },
       "text": "abc\ndef",
+      "visible": "abc\ndef",
       "point": 0,
       "mark": 7,
       "mark_active": true,
@@ -85,6 +89,7 @@
         "platform": null
       },
       "text": "hello world",
+      "visible": "hello world",
       "point": 6,
       "mark": 0,
       "mark_active": true,
@@ -103,6 +108,7 @@
         "platform": null
       },
       "text": "hxello",
+      "visible": "hxello",
       "point": 2,
       "mark": 0,
       "mark_active": false,
@@ -121,6 +127,7 @@
         "platform": null
       },
       "text": "hello",
+      "visible": "hello",
       "point": 1,
       "mark": 0,
       "mark_active": false,
@@ -139,6 +146,7 @@
         "platform": null
       },
       "text": "abc",
+      "visible": "abc",
       "point": 0,
       "mark": 2,
       "mark_active": false,
@@ -157,6 +165,7 @@
         "platform": null
       },
       "text": "abc\ndef",
+      "visible": "abc\ndef",
       "point": 7,
       "mark": 1,
       "mark_active": true,
@@ -175,6 +184,7 @@
         "platform": null
       },
       "text": "hello world",
+      "visible": "hello world",
       "point": 2,
       "mark": 0,
       "mark_active": true,
@@ -193,6 +203,7 @@
         "platform": null
       },
       "text": "hello world",
+      "visible": "hello world",
       "point": 11,
       "mark": 0,
       "mark_active": true,
@@ -211,6 +222,7 @@
         "platform": null
       },
       "text": "hello world",
+      "visible": "hello world",
       "point": 3,
       "mark": 0,
       "mark_active": true,
@@ -229,6 +241,7 @@
         "platform": null
       },
       "text": "one two\nthree",
+      "visible": "one two\nthree",
       "point": 7,
       "mark": 0,
       "mark_active": true,
@@ -247,6 +260,7 @@
         "platform": null
       },
       "text": "one\ntwo\nthree",
+      "visible": "one\ntwo\nthree",
       "point": 9,
       "mark": 1,
       "mark_active": true,
@@ -265,6 +279,7 @@
         "platform": null
       },
       "text": "hello world",
+      "visible": "hello world",
       "point": 2,
       "mark": 0,
       "mark_active": false,
@@ -283,6 +298,7 @@
         "platform": null
       },
       "text": "hello world",
+      "visible": "hello world",
       "point": 3,
       "mark": 2,
       "mark_active": true,
@@ -301,6 +317,7 @@
         "platform": null
       },
       "text": "hello world",
+      "visible": "hello world",
       "point": 2,
       "mark": 0,
       "mark_active": false,
@@ -319,6 +336,7 @@
         "platform": null
       },
       "text": "a b c d",
+      "visible": "a b c d",
       "point": 1,
       "mark": 0,
       "mark_active": false,
@@ -337,6 +355,7 @@
         "platform": "darwin"
       },
       "text": "one two\nthree",
+      "visible": "one two\nthree",
       "point": 13,
       "mark": 0,
       "mark_active": true,
@@ -355,6 +374,7 @@
         "platform": null
       },
       "text": "a b c d e",
+      "visible": "a b c d e",
       "point": 1,
       "mark": 0,
       "mark_active": false,
@@ -373,6 +393,7 @@
         "platform": null
       },
       "text": "abc def",
+      "visible": "abc def",
       "point": 3,
       "mark": 3,
       "mark_active": false,
@@ -391,6 +412,7 @@
         "platform": null
       },
       "text": "abc def",
+      "visible": "abc def",
       "point": 3,
       "mark": 7,
       "mark_active": false,
@@ -409,6 +431,7 @@
         "platform": null
       },
       "text": "abc",
+      "visible": "abc",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -427,6 +450,7 @@
         "platform": null
       },
       "text": " ba",
+      "visible": " ba",
       "point": 2,
       "mark": 2,
       "mark_active": false,

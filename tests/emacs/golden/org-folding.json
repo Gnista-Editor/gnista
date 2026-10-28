@@ -1,0 +1,680 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "tab-folds-a-heading",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 0,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\n* Two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "tab-twice-shows-children",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 0,
+        "keys": "TAB TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\nbody\n** Sub\n* Two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "tab-three-times-shows-the-subtree",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 0,
+        "keys": "TAB TAB TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "tab-four-times-folds-again",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 0,
+        "keys": "TAB TAB TAB TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\n* Two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "tab-on-an-empty-entry",
+      "input": {
+        "text": "* One\n* Two\n",
+        "point": 0,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n* Two\n",
+      "visible": "* One\n* Two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "tab-on-an-entry-with-only-text",
+      "input": {
+        "text": "* One\nbody\n* Two\n",
+        "point": 0,
+        "keys": "TAB TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n* Two\n",
+      "visible": "* One\nbody\n* Two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "children-hide-their-text",
+      "input": {
+        "text": "* One\n** A\na\n** B\nb\n",
+        "point": 0,
+        "keys": "TAB TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n** A\na\n** B\nb\n",
+      "visible": "* One\n** A\n** B",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "tab-on-a-sub-heading",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 11,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\nbody\n** Sub\n* Two\n",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backtab-shows-the-overview",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 0,
+        "keys": "<backtab>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\n* Two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backtab-twice-shows-the-contents",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 0,
+        "keys": "<backtab> <backtab>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\n** Sub\n* Two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backtab-three-times-shows-everything",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 0,
+        "keys": "<backtab> <backtab> <backtab>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "next-line-skips-a-folded-subtree",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 0,
+        "keys": "TAB C-n",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\n* Two\n",
+      "point": 23,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "end-of-line-on-a-folded-heading",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 0,
+        "keys": "TAB C-e",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+      "visible": "* One\n* Two\n",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "kill-line-on-a-folded-heading",
+      "input": {
+        "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+        "point": 0,
+        "keys": "TAB C-k",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n* Two\n",
+      "visible": "\n* Two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "* One\nbody\n** Sub\ntext"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "startup-overview",
+      "input": {
+        "text": "#+STARTUP: overview\n* One\nbody\n** Sub\ntext\n",
+        "point": 0,
+        "keys": "C-a",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "#+STARTUP: overview\n* One\nbody\n** Sub\ntext\n",
+      "visible": "#+STARTUP: overview\n* One",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "startup-content",
+      "input": {
+        "text": "#+STARTUP: content\n* One\nbody\n** Sub\ntext\n",
+        "point": 0,
+        "keys": "C-a",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "#+STARTUP: content\n* One\nbody\n** Sub\ntext\n",
+      "visible": "#+STARTUP: content\n* One\n** Sub",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "startup-showall",
+      "input": {
+        "text": "#+STARTUP: showall\n* One\nbody\n",
+        "point": 0,
+        "keys": "C-a",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "#+STARTUP: showall\n* One\nbody\n",
+      "visible": "#+STARTUP: showall\n* One\nbody\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "drawers-stay-folded-when-cycling",
+      "input": {
+        "text": "* One\n:PROPERTIES:\n:ID: 1\n:END:\nbody\n",
+        "point": 0,
+        "keys": "TAB TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n:PROPERTIES:\n:ID: 1\n:END:\nbody\n",
+      "visible": "* One\n:PROPERTIES:\n:ID: 1\n:END:\nbody\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "tab-in-body-text",
+      "input": {
+        "text": "* One\nbody\n",
+        "point": 6,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n",
+      "visible": "* One\nbody\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "tab-in-indented-body-text",
+      "input": {
+        "text": "* One\n   body\n",
+        "point": 6,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody\n",
+      "visible": "* One\nbody\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "tab-on-list-item-text",
+      "input": {
+        "text": "- item\nmore\n",
+        "point": 7,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- item\nmore\n",
+      "visible": "- item\nmore\n",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "tab-folds-a-list-item",
+      "input": {
+        "text": "- one\n  - two\n  - three\n- four\n",
+        "point": 0,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- one\n  - two\n  - three\n- four\n",
+      "visible": "- one\n- four\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "ret-after-a-heading",
+      "input": {
+        "text": "* One",
+        "point": 5,
+        "keys": "RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n",
+      "visible": "* One\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "ret-after-a-list-item",
+      "input": {
+        "text": "- item",
+        "point": 6,
+        "keys": "RET x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- item\n  x",
+      "visible": "- item\n  x",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "ret-in-indented-text",
+      "input": {
+        "text": "* One\n  body",
+        "point": 12,
+        "keys": "RET x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n  body\n  x",
+      "visible": "* One\n  body\n  x",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "startup-showall-folds-drawers",
+      "input": {
+        "text": "#+STARTUP: showall\n* One\n:PROPERTIES:\n:ID: 1\n:END:\nbody\n",
+        "point": 0,
+        "keys": "C-a",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "#+STARTUP: showall\n* One\n:PROPERTIES:\n:ID: 1\n:END:\nbody\n",
+      "visible": "#+STARTUP: showall\n* One\n:PROPERTIES:\nbody\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "tab-on-a-drawer-folds-it",
+      "input": {
+        "text": "* One\n:PROPERTIES:\n:ID: 1\n:END:\nbody\n",
+        "point": 6,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\n:PROPERTIES:\n:ID: 1\n:END:\nbody\n",
+      "visible": "* One\n:PROPERTIES:\nbody\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "tab-on-a-block-folds-it",
+      "input": {
+        "text": "#+begin_src sh\necho hi\n#+end_src\nafter\n",
+        "point": 0,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "#+begin_src sh\necho hi\n#+end_src\nafter\n",
+      "visible": "#+begin_src sh\nafter\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "one-empty-line-before-a-heading-folds",
+      "input": {
+        "text": "* One\ntext\n\n* Two\n",
+        "point": 0,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\ntext\n\n* Two\n",
+      "visible": "* One\n* Two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "two-empty-lines-keep-one-showing",
+      "input": {
+        "text": "* One\ntext\n\n\n* Two\n",
+        "point": 0,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\ntext\n\n\n* Two\n",
+      "visible": "* One\n\n* Two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "overview-with-text-before-the-first-heading",
+      "input": {
+        "text": "Intro\n* One\nbody\n* Two\nmore\n",
+        "point": 0,
+        "keys": "<backtab>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "Intro\n* One\nbody\n* Two\nmore\n",
+      "visible": "Intro\n* One\n* Two",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "tab-on-a-heading-at-the-end-without-a-newline",
+      "input": {
+        "text": "* One\nbody",
+        "point": 0,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nbody",
+      "visible": "* One",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    }
+  ]
+}

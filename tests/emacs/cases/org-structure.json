@@ -1,0 +1,431 @@
+[
+  {
+    "name": "meta-return-at-the-end-of-a-heading",
+    "text": "* One\nbody\n",
+    "keys": "M-RET x",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-return-in-a-heading-splits-it",
+    "text": "* One two\n",
+    "keys": "M-RET",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-return-at-the-start-of-a-heading",
+    "text": "* One\n",
+    "keys": "M-RET",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-return-in-body-text",
+    "text": "* One\nbody\n",
+    "keys": "M-RET",
+    "point": 10,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-return-in-the-middle-of-body-text",
+    "text": "* One\nbody text\n",
+    "keys": "M-RET",
+    "point": 10,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-return-on-a-heading-with-children",
+    "text": "* One\n** A\ntext\n* Two\n",
+    "keys": "M-RET",
+    "point": 10,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-return-on-a-list-item",
+    "text": "- one\n- two\n",
+    "keys": "M-RET x",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-return-on-a-checkbox-item",
+    "text": "- [ ] one\n",
+    "keys": "M-RET",
+    "point": 9,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-return-on-a-numbered-item",
+    "text": "1. one\n2. two\n",
+    "keys": "M-RET",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-return-on-a-folded-heading",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "TAB C-e M-RET",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "control-return-respects-content",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "C-<return>",
+    "point": 3,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-shift-return-inserts-a-todo-heading",
+    "text": "* One",
+    "keys": "M-S-<return>",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "demote-a-heading",
+    "text": "* One\n** Sub\n",
+    "keys": "M-<right>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "promote-a-heading",
+    "text": "** One\n",
+    "keys": "M-<left>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "promote-a-top-level-heading",
+    "text": "* One\n",
+    "keys": "M-<left>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "demote-a-subtree",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "M-S-<right>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "promote-a-subtree",
+    "text": "** One\n*** Sub\n",
+    "keys": "M-S-<left>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-a-subtree-down",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "M-<down>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-a-subtree-up",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "M-<up>",
+    "point": 23,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-the-first-subtree-up",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "M-<up>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-the-last-subtree-down",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "M-<down>",
+    "point": 23,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-a-sub-subtree-past-its-parent",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "M-<down>",
+    "point": 11,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-a-folded-subtree-down",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "TAB M-<down>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "indent-a-list-item",
+    "text": "- one\n- two\n",
+    "keys": "M-<right>",
+    "point": 8,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "indent-the-first-list-item",
+    "text": "- one\n- two\n",
+    "keys": "M-<right>",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "outdent-a-list-item",
+    "text": "- one\n  - two\n",
+    "keys": "M-<left>",
+    "point": 10,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-a-list-item-down",
+    "text": "- one\n- two\n",
+    "keys": "M-<down>",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-a-list-item-up",
+    "text": "- one\n- two\n",
+    "keys": "M-<up>",
+    "point": 8,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-left-in-text",
+    "text": "* One\nsome words\n",
+    "keys": "M-<left>",
+    "point": 16,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-right-in-text",
+    "text": "* One\nsome words\n",
+    "keys": "M-<right>",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "next-heading",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "C-c C-n",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "next-heading-twice",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "C-c C-n C-c C-n",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "previous-heading",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "C-c C-p",
+    "point": 25,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "forward-same-level",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "C-c C-f",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "backward-same-level",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "C-c C-b",
+    "point": 23,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "up-heading",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "C-c C-u",
+    "point": 19,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading",
+    "text": "text\n",
+    "keys": "C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-heading-back",
+    "text": "* text\n",
+    "keys": "C-c *",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-item",
+    "text": "text\n",
+    "keys": "C-c -",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggle-item-back",
+    "text": "- text\n",
+    "keys": "C-c -",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "mark-subtree",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "C-c @",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "beginning-of-line-on-a-heading",
+    "text": "* TODO One\n",
+    "keys": "C-a",
+    "point": 8,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "control-return-at-the-end-of-the-buffer",
+    "text": "* One\nbody\n",
+    "keys": "C-<return>",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-return-on-an-item-with-children",
+    "text": "- one\n  - sub\n- two\n",
+    "keys": "M-RET x",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-return-in-the-middle-of-an-item",
+    "text": "- one two\n",
+    "keys": "M-RET",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "meta-return-at-the-start-of-an-item",
+    "text": "- one\n",
+    "keys": "M-RET",
+    "point": 0,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "demote-a-heading-with-tags",
+    "text": "* One :work:\n",
+    "keys": "M-<right>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-an-item-with-children-down",
+    "text": "- one\n  - sub\n- two\n",
+    "keys": "M-<down>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "next-heading-at-the-last",
+    "text": "* One\n* Two\nend\n",
+    "keys": "C-c C-n C-c C-n",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "forward-same-level-without-a-sibling",
+    "text": "* One\n** Sub\n",
+    "keys": "C-c C-f",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  }
+]

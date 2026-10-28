@@ -8,13 +8,17 @@
 ;; tests/emacs/golden/*.json.  Each case is an object with `name', `text',
 ;; `keys' (space separated, in `kbd' notation), and optionally `point'
 ;; (0-based, default 0), `modes' (minor or major modes to turn on before
-;; the keys, such as "delete-selection-mode"), `call' (a command and its
+;; the keys, such as "delete-selection-mode" or "org-mode"), `call' (a command and its
 ;; arguments, called before the keys, for commands that read the minibuffer,
 ;; which batch Emacs would read from stdin), and `platform' (an Emacs
 ;; `system-type' such as "darwin", for cases that only hold on one platform).
 ;;
 ;; Each case runs in a fresh Fundamental mode buffer, in a single window,
-;; with an empty kill ring and no mark.  The keys are typed into Emacs's real command loop, so an
+;; with an empty kill ring and no mark.  The buffer is fontified once its
+;; modes are on, as redisplay would fontify it, and again at the end, when
+;; the text left visible is recorded: folding and org's link brackets hide
+;; text.  Batch Emacs has no redisplay, so nothing is fontified while the
+;; keys run.  The keys are typed into Emacs's real command loop, so an
 ;; error shows its message and the next key still runs, as when a person
 ;; types them.  The first error is recorded.
 
@@ -71,7 +75,11 @@ while the case's keys are queued would read those instead."
       (buffer-enable-undo)
       (set-buffer-modified-p nil)
       (goto-char (1+ start))
-      (dolist (mode modes) (funcall mode 1))
+      (dolist (mode modes)
+        ;; Major modes take no argument.
+        (condition-case nil (funcall mode 1)
+          (wrong-number-of-arguments (funcall mode))))
+      (ember-oracle--fontify)
       (setq mark-active nil
             mark-ring nil
             kill-ring nil
@@ -90,7 +98,21 @@ while the case's keys are queued would read those instead."
       (recursive-edit)
       (prog1 (ember-oracle--state case text start keys)
         ;; Some modes are global; turn them off again for the next case.
-        (dolist (mode modes) (funcall mode -1))))))
+        (dolist (mode modes) (ignore-errors (funcall mode -1)))))))
+
+(defun ember-oracle--fontify ()
+  "Fontify the whole buffer, as redisplay would fontify what it shows."
+  (let ((font-lock-fontified nil)
+        (inhibit-message t))
+    (font-lock-ensure)))
+
+(defun ember-oracle--visible ()
+  "The buffer's text without the characters that are invisible."
+  (let ((out nil))
+    (dotimes (i (buffer-size))
+      (unless (invisible-p (1+ i))
+        (push (char-after (1+ i)) out)))
+    (concat (nreverse out))))
 
 (defun ember-oracle--state (case text start keys)
   "The current buffer's state after CASE, as an alist."
@@ -100,6 +122,7 @@ while the case's keys are queued would read those instead."
                   (call . ,(vconcat (alist-get 'call case)))
                   (platform . ,(alist-get 'platform case))))
         (text . ,(buffer-substring-no-properties (point-min) (point-max)))
+        (visible . ,(progn (ember-oracle--fontify) (ember-oracle--visible)))
         (point . ,(1- (point)))
         (mark . ,(and (mark t) (1- (mark t))))
         (mark_active . ,(if (and mark-active (mark t)) t :json-false))

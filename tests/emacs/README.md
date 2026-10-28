@@ -15,7 +15,7 @@ These tests check that Ember behaves like GNU Emacs by running the same keys on 
    { "name": "kill-line-twice-kills-the-newline", "text": "one\ntwo", "keys": "C-k C-k" }
    ```
 
-   `keys` are space separated, in Emacs's `kbd` notation (`C-x C-f`, `M-S-f`, `<f3>`, `SPC`). `point` is optional and counts characters from 0. `modes` is optional: commands that turn modes on before the keys, such as `["delete-selection-mode"]`, called with a prefix argument of 1 in both editors. `call` is optional: a command and its arguments, called before the keys, as in `["query-replace", "foo", "bar"]`, for commands that would otherwise prompt. `platform` is optional, for cases that only hold on one platform, as an Emacs `system-type` such as `"darwin"`.
+   `keys` are space separated, in Emacs's `kbd` notation (`C-x C-f`, `M-S-f`, `<f3>`, `SPC`). `point` is optional and counts characters from 0. `modes` is optional: commands that turn modes on before the keys, such as `["delete-selection-mode"]` or `["org-mode"]`, called with a prefix argument of 1 in both editors (major modes take no argument in Emacs). `call` is optional: a command and its arguments, called before the keys, as in `["query-replace", "foo", "bar"]`, for commands that would otherwise prompt. `platform` is optional, for cases that only hold on one platform, as an Emacs `system-type` such as `"darwin"`.
 
 2. Record what Emacs does:
 
@@ -29,7 +29,9 @@ The test fails if a case is missing from the golden files, if a case changed sin
 
 ## How cases run
 
-Each case starts in a fresh Fundamental mode buffer, with no mark and an empty kill ring, and with `transient-mark-mode` and `shift-select-mode` on, as in interactive Emacs. The keys are typed into Emacs's real command loop, not run as a keyboard macro. An error shows its message and the next key still runs, just as when a person types, and keyboard macros can be recorded and replayed. Ember's test types the keys the same way.
+Each case starts in a fresh Fundamental mode buffer named `*ember-oracle*`, with no mark and an empty kill ring, and with `transient-mark-mode` and `shift-select-mode` on, as in interactive Emacs. Once the modes are on, the buffer is fontified, as redisplay would fontify it.
+
+Besides the text, point, mark, kill ring and first error, each case records the text left visible: the buffer without its invisible characters, fontified again at the end. That is how folding and org's hidden link brackets are checked. The keys are typed into Emacs's real command loop, not run as a keyboard macro. An error shows its message and the next key still runs, just as when a person types, and keyboard macros can be recorded and replayed. Ember's test types the keys the same way.
 
 ## Limits of batch mode
 
@@ -41,6 +43,7 @@ Batch Emacs has no window system, so some keys act as they would on a terminal r
 - `this-single-command-keys` sees only the last key of a sequence in batch mode, so commands that look at it act differently. In particular `C-x e` installs no repeat key, so `C-x e e` cannot be recorded. Ember's own tests cover it.
 - The window is 80 columns by 24 lines. Splitting and selecting windows works, so window cases can check each window's point, but leave scrolling to Ember's own tests.
 - Text is not laid out, so `C-n` moves by lines of text even where long lines would wrap, and `word-wrap` has no effect. Ember's own tests cover line wrapping.
-- Display, faces and the mouse are invisible to the oracle. The GUI's snapshot tests cover those.
+- Nothing is fontified while the keys run, since there is no redisplay; Ember's oracle test does not redisplay either. Link brackets typed by a case are hidden only in its final visible text.
+- Display, faces and the mouse are invisible to the oracle, apart from the visible text. Ember's own tests and the GUI's snapshot tests cover those.
 
 Golden files record the Emacs version and platform. Emacs on macOS binds `<home>` and `<end>` to the ends of the buffer, and so does Ember on macOS; cases like that are marked `"platform": "darwin"`.

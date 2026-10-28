@@ -1,0 +1,168 @@
+[
+  {
+    "name": "todo-on-a-heading",
+    "text": "* One\n",
+    "keys": "C-c C-t",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "todo-twice",
+    "text": "* One\n",
+    "keys": "C-c C-t C-c C-t",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "todo-three-times",
+    "text": "* One\n",
+    "keys": "C-c C-t C-c C-t C-c C-t",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "todo-from-body-text",
+    "text": "* One\nbody\n",
+    "keys": "C-c C-t",
+    "point": 8,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "todo-keeps-point-in-the-title",
+    "text": "* One\n",
+    "keys": "C-c C-t",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "todo-with-tags",
+    "text": "* One :work:\n",
+    "keys": "C-c C-t",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "todo-with-a-priority",
+    "text": "* [#A] One\n",
+    "keys": "C-c C-t",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "todo-keywords-from-the-buffer",
+    "text": "#+TODO: TODO NEXT | DONE\n* One\n",
+    "keys": "C-c C-t C-c C-t",
+    "point": 25,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "todo-keywords-from-the-buffer-wrap",
+    "text": "#+TODO: TODO NEXT | DONE\n* DONE One\n",
+    "keys": "C-c C-t",
+    "point": 25,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-right-on-a-heading",
+    "text": "* One\n",
+    "keys": "S-<right>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-right-twice",
+    "text": "* One\n",
+    "keys": "S-<right> S-<right>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-left-on-a-heading",
+    "text": "* One\n",
+    "keys": "S-<left>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "shift-right-in-text",
+    "text": "* One\nbody\n",
+    "keys": "S-<right>",
+    "point": 7,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "priority-up",
+    "text": "* One\n",
+    "keys": "S-<up>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "priority-down",
+    "text": "* One\n",
+    "keys": "S-<down>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "priority-up-twice",
+    "text": "* TODO One\n",
+    "keys": "S-<up> S-<up>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "todo-outside-a-heading",
+    "text": "text\n",
+    "keys": "C-c C-t",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "priority-up-from-the-highest",
+    "text": "* [#A] One\n",
+    "keys": "S-<up>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "priority-down-from-the-lowest",
+    "text": "* [#C] One\n",
+    "keys": "S-<down>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "todo-updates-the-parent-cookie",
+    "text": "* Tasks [/]\n** TODO a\n** TODO b\n",
+    "keys": "C-c C-t",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  }
+]

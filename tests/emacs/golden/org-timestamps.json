@@ -1,0 +1,342 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "shift-up-on-the-day",
+      "input": {
+        "text": "<2026-10-28 Wed>",
+        "point": 10,
+        "keys": "S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "<2026-10-29 Thu>",
+      "visible": "<2026-10-29 Thu>",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-down-across-a-month",
+      "input": {
+        "text": "<2026-11-01 Sun>",
+        "point": 10,
+        "keys": "S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "<2026-10-31 Sat>",
+      "visible": "<2026-10-31 Sat>",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-up-on-the-month",
+      "input": {
+        "text": "<2026-10-28 Wed>",
+        "point": 7,
+        "keys": "S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "<2026-11-28 Sat>",
+      "visible": "<2026-11-28 Sat>",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-up-on-the-year",
+      "input": {
+        "text": "<2026-10-28 Wed>",
+        "point": 3,
+        "keys": "S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "<2027-10-28 Thu>",
+      "visible": "<2027-10-28 Thu>",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-up-on-the-weekday",
+      "input": {
+        "text": "<2026-10-28 Wed>",
+        "point": 13,
+        "keys": "S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "<2026-10-29 Thu>",
+      "visible": "<2026-10-29 Thu>",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-up-on-the-month-at-its-end",
+      "input": {
+        "text": "<2026-01-31 Sat>",
+        "point": 7,
+        "keys": "S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "<2026-03-03 Tue>",
+      "visible": "<2026-03-03 Tue>",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-right-on-a-timestamp",
+      "input": {
+        "text": "<2026-10-28 Wed>",
+        "point": 10,
+        "keys": "S-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "<2026-10-29 Thu>",
+      "visible": "<2026-10-29 Thu>",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-left-on-a-timestamp",
+      "input": {
+        "text": "<2026-10-28 Wed>",
+        "point": 10,
+        "keys": "S-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "<2026-10-27 Tue>",
+      "visible": "<2026-10-27 Tue>",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-up-on-an-hour",
+      "input": {
+        "text": "[2026-10-28 Wed 10:00]",
+        "point": 17,
+        "keys": "S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "[2026-10-28 Wed 11:00]",
+      "visible": "[2026-10-28 Wed 11:00]",
+      "point": 17,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-up-on-minutes",
+      "input": {
+        "text": "[2026-10-28 Wed 10:00]",
+        "point": 20,
+        "keys": "S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "[2026-10-28 Wed 10:05]",
+      "visible": "[2026-10-28 Wed 10:05]",
+      "point": 20,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-up-on-the-bracket",
+      "input": {
+        "text": "<2026-10-28 Wed>",
+        "point": 0,
+        "keys": "S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "[2026-10-28 Wed]",
+      "visible": "[2026-10-28 Wed]",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "timestamp-in-a-heading",
+      "input": {
+        "text": "* Meet <2026-10-28 Wed>\n",
+        "point": 17,
+        "keys": "S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* Meet <2026-10-29 Thu>\n",
+      "visible": "* Meet <2026-10-29 Thu>\n",
+      "point": 17,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-up-on-a-scheduled-date",
+      "input": {
+        "text": "* One\nSCHEDULED: <2026-10-28 Wed>\n",
+        "point": 26,
+        "keys": "S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nSCHEDULED: <2026-10-29 Thu>\n",
+      "visible": "* One\nSCHEDULED: <2026-10-29 Thu>\n",
+      "point": 26,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-up-without-a-day-name",
+      "input": {
+        "text": "<2026-10-28>",
+        "point": 10,
+        "keys": "S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "<2026-10-29 Thu>",
+      "visible": "<2026-10-29 Thu>",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-up-keeps-a-repeater",
+      "input": {
+        "text": "<2026-10-28 Wed +1w>",
+        "point": 10,
+        "keys": "S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "<2026-10-29 Thu +1w>",
+      "visible": "<2026-10-29 Thu +1w>",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "shift-up-on-a-time-range",
+      "input": {
+        "text": "<2026-10-28 Wed 10:00-11:00>",
+        "point": 17,
+        "keys": "S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "<2026-10-28 Wed 11:00-12:00>",
+      "visible": "<2026-10-28 Wed 11:00-12:00>",
+      "point": 17,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

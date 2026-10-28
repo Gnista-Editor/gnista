@@ -13,6 +13,7 @@ mod editor;
 mod error;
 mod faces;
 mod files;
+mod fontify;
 mod key;
 mod keymap;
 mod modes;

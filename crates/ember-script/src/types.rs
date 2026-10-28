@@ -65,6 +65,20 @@ const API: &str = r##"
    * the global keymap or a named one such as "text-mode-map".
    */
   function bindKey(keys: string, command: CommandName | DefinedCommand, keymap?: string): void;
+  /**
+   * Run a command as keys would (Emacs's call-interactively): prompting in
+   * the minibuffer for its arguments, which it gets once they are read.
+   */
+  function callInteractively(name: CommandName | DefinedCommand): void;
+  /**
+   * Run a command with a prefix argument and its arguments, as if typed
+   * after C-u or M-5. Pass prefixArg() to hand on the running command's.
+   */
+  function callWithPrefix<N extends CommandName | DefinedCommand>(
+    prefix: PrefixArg,
+    name: N,
+    ...args: N extends CommandName ? Commands[N] : string[]
+  ): void;
   /** Run a command with its arguments. Throws if the command fails. */
   function call<N extends CommandName | DefinedCommand>(
     name: N,
@@ -196,13 +210,15 @@ const API: &str = r##"
   function defineHook(name: string, doc?: string): void;
   /**
    * Add a function to a hook, first in line (Emacs's add-hook). With `local`,
-   * only for the current buffer; those run before the global ones.
+   * only for the current buffer; those run before the global ones. The
+   * function gets the hook's arguments, such as the start and end of the
+   * text to fontify for jit-lock-functions.
    */
-  function addHook(hook: HookName | (string & {}), run: () => void, options?: { local?: boolean }): void;
+  function addHook(hook: HookName | (string & {}), run: (...args: any[]) => void, options?: { local?: boolean }): void;
   /** Remove a function from a hook, passing the same function. */
-  function removeHook(hook: HookName | (string & {}), run: () => void, options?: { local?: boolean }): void;
-  /** Run a hook's functions. */
-  function runHooks(hook: HookName | (string & {})): void;
+  function removeHook(hook: HookName | (string & {}), run: (...args: any[]) => void, options?: { local?: boolean }): void;
+  /** Run a hook's functions, passing them any arguments given (Emacs's run-hook-with-args). */
+  function runHooks(hook: HookName | (string & {}), ...args: Value[]): void;
 
   /** Define a named keymap; keys it does not bind are looked up in the parent. */
   function defineKeymap(name: string, parent?: string | null): void;
@@ -386,6 +402,18 @@ const API: &str = r##"
   function overridingMap(): string | undefined;
   /** The command a keymap runs for any single key it does not bind, as an Emacs keymap's [t] binding. */
   function setKeymapDefault(keymap: string, command: CommandName | DefinedCommand | null): void;
+  /**
+   * While a keymap is active, run `to` wherever keys would run `from`, or
+   * stop that with null, as Emacs's [remap FROM] bindings. Org remaps
+   * self-insert-command to keep tables aligned as you type.
+   */
+  function remapCommand(
+    keymap: string,
+    from: CommandName | DefinedCommand,
+    to: CommandName | DefinedCommand | null,
+  ): void;
+  /** How many columns text takes on screen, counting wide characters as two (Emacs's string-width). */
+  function stringWidth(text: string): number;
   /** Read these keys next, after the running command, as if typed again (Emacs's unread-command-events). */
   function unreadKeys(keys: string): void;
 
@@ -411,6 +439,17 @@ const API: &str = r##"
    */
   function putTextProperty(start: number, end: number, name: string, value: Value): void;
   function removeTextProperty(start: number, end: number, name: string): void;
+  /**
+   * Add a face to the face property of the text from start to end, keeping
+   * the faces already there (Emacs's add-face-text-property). The new face
+   * wins over them unless append is set.
+   */
+  function addFaceTextProperty(
+    start: number,
+    end: number,
+    face: FaceName | (string & {}),
+    options?: { append?: boolean },
+  ): void;
   /** The text properties of the character at a position. */
   function textPropertiesAt(position: number): { [name: string]: Value };
   function getTextProperty(position: number, name: string): Value | undefined;

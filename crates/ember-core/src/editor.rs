@@ -59,6 +59,10 @@ struct PendingCall {
 pub struct Editor {
     pub(crate) buffers: Vec<Buffer>,
     pub(crate) current: usize,
+    /// How many commands are running, one inside another.
+    running: usize,
+    /// The command keys named, while the command it is remapped to runs.
+    remapped_from: Option<String>,
     previous_buffer: Option<String>,
     pub(crate) minibuffer: Buffer,
     pub(crate) prompt: Option<Prompt>,
@@ -152,6 +156,8 @@ impl Editor {
         let mut editor = Editor {
             buffers: vec![Buffer::new("*scratch*")],
             current: 0,
+            running: 0,
+            remapped_from: None,
             previous_buffer: None,
             minibuffer: Buffer::new(" *Minibuf*"),
             prompt: None,
@@ -260,13 +266,19 @@ impl Editor {
                 args.len()
             )));
         }
-        self.buffer_mut().undo_boundary();
+        // A call from outside is an undo step of its own; one from a running
+        // command is part of that command's, as a Lisp function call is.
+        if self.running == 0 {
+            self.buffer_mut().undo_boundary();
+        }
         let saved = std::mem::replace(&mut self.current_prefix_arg, prefix);
         let interactive = std::mem::replace(&mut self.interactive, false);
         // Unlike a command that keys run, a call from code does not become
         // this-command or last-command, as calling a function from Lisp does not.
         let this = self.this_command.clone();
+        self.running += 1;
         let result = (command.run)(self, &args);
+        self.running -= 1;
         self.deactivate_changed_regions();
         self.this_command = this;
         self.interactive = interactive;
@@ -338,7 +350,10 @@ impl Editor {
         }
         // Runs of typing, or of C-d or DEL, share an undo step, as in Emacs:
         // the first and up to 20 more (amalgamating-undo-limit).
-        let amalgamate = AMALGAMATING.contains(&name)
+        // A remapped command, such as org's for typing, amalgamates as the
+        // command it stands in for.
+        let base = self.remapped_from.take();
+        let amalgamate = AMALGAMATING.contains(&base.as_deref().unwrap_or(name))
             && self.last_command() == Some(name)
             && self.self_insert_run <= 20;
         self.self_insert_run = if amalgamate { self.self_insert_run + 1 } else { 1 };
@@ -531,7 +546,9 @@ impl Editor {
 
     fn invoke(&mut self, command: Rc<Command>, args: Vec<Arg>) -> Result<()> {
         self.this_command = Some(command.name.clone());
+        self.running += 1;
         let result = (command.run)(self, &args);
+        self.running -= 1;
         // A command that ran another command (as M-x does) leaves that one as the last command.
         if let Some(name) = self.this_command.take() {
             self.last_command = Some(name);
@@ -557,10 +574,14 @@ impl Editor {
         if let Err(e) = self.run_hooks("pre-command-hook") {
             self.message = Some(format!("Error in pre-command-hook: {e}"));
         }
-        let name = self.this_command.take().unwrap_or_else(|| name.to_string());
-        let old_point = self.buffer().point();
+        let mut name = self.this_command.take().unwrap_or_else(|| name.to_string());
+        if let Some(to) = self.command_remapping(&name) {
+            self.remapped_from = Some(std::mem::replace(&mut name, to));
+        }
+        let (old_point, old_buffer, old_tick) = (self.buffer().point(), self.buffer().id, self.buffer().modified_tick());
         self.run_interactive(&name);
-        self.adjust_point_for_invisible(old_point);
+        let modified = self.buffer().id != old_buffer || self.buffer().modified_tick() != old_tick;
+        self.adjust_point_for_invisible(old_point, modified);
         self.this_command = self.last_command.clone();
         if let Err(e) = self.run_hooks("post-command-hook") {
             self.message = Some(format!("Error in post-command-hook: {e}"));

@@ -1,0 +1,575 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "tab-aligns-a-table",
+      "input": {
+        "text": "| a | bb |\n| ccc | d |\n",
+        "point": 1,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a   | bb |\n| ccc | d  |\n",
+      "visible": "| a   | bb |\n| ccc | d  |\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "tab-moves-to-the-next-row",
+      "input": {
+        "text": "| a | b |\n| c | d |\n",
+        "point": 1,
+        "keys": "TAB TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a | b |\n| c | d |\n",
+      "visible": "| a | b |\n| c | d |\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "tab-at-the-end-adds-a-row",
+      "input": {
+        "text": "| a | b |\n",
+        "point": 6,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a | b |\n|   |   |\n",
+      "visible": "| a | b |\n|   |   |\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "tab-makes-a-rule",
+      "input": {
+        "text": "| a | b |\n|-",
+        "point": 12,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a | b |\n|---+---|\n|   |   |\n",
+      "visible": "| a | b |\n|---+---|\n|   |   |\n",
+      "point": 22,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "tab-makes-a-table",
+      "input": {
+        "text": "|a|b",
+        "point": 4,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a | b |\n|   |   |\n",
+      "visible": "| a | b |\n|   |   |\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "ret-in-a-table",
+      "input": {
+        "text": "| a | b |\n| c | d |\n",
+        "point": 2,
+        "keys": "RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a | b |\n| c | d |\n",
+      "visible": "| a | b |\n| c | d |\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "ret-at-the-last-row",
+      "input": {
+        "text": "| a | b |\n",
+        "point": 2,
+        "keys": "RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a | b |\n|   |   |\n",
+      "visible": "| a | b |\n|   |   |\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "backtab-in-a-table",
+      "input": {
+        "text": "| a | b |\n",
+        "point": 6,
+        "keys": "<backtab>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a | b |\n",
+      "visible": "| a | b |\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "typing-in-a-field",
+      "input": {
+        "text": "| a   | b |\n",
+        "point": 3,
+        "keys": "x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| ax  | b |\n",
+      "visible": "| ax  | b |\n",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "typing-fills-a-field",
+      "input": {
+        "text": "| a | b |\n",
+        "point": 3,
+        "keys": "x y",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| axy | b |\n",
+      "visible": "| axy | b |\n",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "deleting-in-a-field",
+      "input": {
+        "text": "| ab  | b |\n",
+        "point": 4,
+        "keys": "DEL",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a   | b |\n",
+      "visible": "| a   | b |\n",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "ctrl-c-ctrl-c-aligns",
+      "input": {
+        "text": "| a | bb |\n| ccc | d |\n",
+        "point": 1,
+        "keys": "C-c C-c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a   | bb |\n| ccc | d  |\n",
+      "visible": "| a   | bb |\n| ccc | d  |\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "move-a-column-right",
+      "input": {
+        "text": "| a | b |\n| c | d |\n",
+        "point": 2,
+        "keys": "M-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| b | a |\n| d | c |\n",
+      "visible": "| b | a |\n| d | c |\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "move-a-column-left",
+      "input": {
+        "text": "| a | b |\n| c | d |\n",
+        "point": 6,
+        "keys": "M-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| b | a |\n| d | c |\n",
+      "visible": "| b | a |\n| d | c |\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "move-a-row-down",
+      "input": {
+        "text": "| a | b |\n| c | d |\n",
+        "point": 2,
+        "keys": "M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| c | d |\n| a | b |\n",
+      "visible": "| c | d |\n| a | b |\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "move-a-row-up",
+      "input": {
+        "text": "| a | b |\n| c | d |\n",
+        "point": 12,
+        "keys": "M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| c | d |\n| a | b |\n",
+      "visible": "| c | d |\n| a | b |\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "insert-a-rule",
+      "input": {
+        "text": "| a | b |\n",
+        "point": 2,
+        "keys": "C-c -",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a | b |\n|---+---|\n",
+      "visible": "| a | b |\n|---+---|\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "align-with-a-rule",
+      "input": {
+        "text": "| a | bbb |\n|-+-|\n",
+        "point": 2,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a | bbb |\n|---+-----|\n",
+      "visible": "| a | bbb |\n|---+-----|\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "tab-past-a-rule",
+      "input": {
+        "text": "| a | b |\n|---+---|\n| c | d |\n",
+        "point": 6,
+        "keys": "TAB TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a | b |\n|---+---|\n| c | d |\n",
+      "visible": "| a | b |\n|---+---|\n| c | d |\n",
+      "point": 26,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "wide-characters-align",
+      "input": {
+        "text": "| ä | b |\n| cc | d |\n",
+        "point": 1,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| ä  | b |\n| cc | d |\n",
+      "visible": "| ä  | b |\n| cc | d |\n",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "numbers-align-right",
+      "input": {
+        "text": "| a | 1 |\n| b | 100 |\n",
+        "point": 1,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a |   1 |\n| b | 100 |\n",
+      "visible": "| a |   1 |\n| b | 100 |\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "typing-after-tab-blanks-the-field",
+      "input": {
+        "text": "| one | two |\n",
+        "point": 2,
+        "keys": "TAB x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| one | x   |\n",
+      "visible": "| one | x   |\n",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "insert-a-row",
+      "input": {
+        "text": "| a | b |\n| c | d |\n",
+        "point": 12,
+        "keys": "M-S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a | b |\n|   |   |\n| c | d |\n",
+      "visible": "| a | b |\n|   |   |\n| c | d |\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kill-a-row",
+      "input": {
+        "text": "| a | b |\n| c | d |\n",
+        "point": 2,
+        "keys": "M-S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| c | d |\n",
+      "visible": "| c | d |\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "| a | b |\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "insert-a-column",
+      "input": {
+        "text": "| a | b |\n",
+        "point": 6,
+        "keys": "M-S-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| a |   | b |\n",
+      "visible": "| a |   | b |\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-a-column",
+      "input": {
+        "text": "| a | b |\n",
+        "point": 2,
+        "keys": "M-S-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| b |\n",
+      "visible": "| b |\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-forward-in-a-field",
+      "input": {
+        "text": "| ab  | b |\n",
+        "point": 2,
+        "keys": "C-d",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| b   | b |\n",
+      "visible": "| b   | b |\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

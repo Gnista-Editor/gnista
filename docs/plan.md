@@ -78,6 +78,8 @@ Done ([ADR 0011](adr/0011-search-and-the-minibuffer.md)). Regular expressions in
 
 Exit: oracle cases against the org mode that ships with Emacs, and daily notes in org without reaching for Emacs.
 
+Done ([ADR 0012](adr/0012-org-mode.md)). `org.ts` and `org-table.ts` follow Emacs's Org 9.7: folding with `TAB` and `S-TAB`, structure editing, TODO states, priorities, tags, checkboxes and cookies, timestamps, scheduling, links and tables. Rendering needed core work: text is fontified as it comes into view through `jit-lock-functions`, point steps over hidden text as in Emacs, and commands can be remapped. The oracle now checks the text left visible, and 168 org cases match Emacs: 381 of 383 cases in all. The agenda, capture, export and opening web links are left for later.
+
 **6. An agent that calls commands.** The command registry becomes the agent's tool schema, with an agent buffer and the safety rules from the brief. This is mostly independent of milestones 3 to 5, so it can move earlier if wanted.
 
 **Later:**

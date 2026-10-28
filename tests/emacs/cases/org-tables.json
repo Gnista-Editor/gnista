@@ -1,0 +1,245 @@
+[
+  {
+    "name": "tab-aligns-a-table",
+    "text": "| a | bb |\n| ccc | d |\n",
+    "keys": "TAB",
+    "point": 1,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "tab-moves-to-the-next-row",
+    "text": "| a | b |\n| c | d |\n",
+    "keys": "TAB TAB",
+    "point": 1,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "tab-at-the-end-adds-a-row",
+    "text": "| a | b |\n",
+    "keys": "TAB",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "tab-makes-a-rule",
+    "text": "| a | b |\n|-",
+    "keys": "TAB",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "tab-makes-a-table",
+    "text": "|a|b",
+    "keys": "TAB",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "ret-in-a-table",
+    "text": "| a | b |\n| c | d |\n",
+    "keys": "RET",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "ret-at-the-last-row",
+    "text": "| a | b |\n",
+    "keys": "RET",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "backtab-in-a-table",
+    "text": "| a | b |\n",
+    "keys": "<backtab>",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "typing-in-a-field",
+    "text": "| a   | b |\n",
+    "keys": "x",
+    "point": 3,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "typing-fills-a-field",
+    "text": "| a | b |\n",
+    "keys": "x y",
+    "point": 3,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "deleting-in-a-field",
+    "text": "| ab  | b |\n",
+    "keys": "DEL",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "ctrl-c-ctrl-c-aligns",
+    "text": "| a | bb |\n| ccc | d |\n",
+    "keys": "C-c C-c",
+    "point": 1,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-a-column-right",
+    "text": "| a | b |\n| c | d |\n",
+    "keys": "M-<right>",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-a-column-left",
+    "text": "| a | b |\n| c | d |\n",
+    "keys": "M-<left>",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-a-row-down",
+    "text": "| a | b |\n| c | d |\n",
+    "keys": "M-<down>",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-a-row-up",
+    "text": "| a | b |\n| c | d |\n",
+    "keys": "M-<up>",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "insert-a-rule",
+    "text": "| a | b |\n",
+    "keys": "C-c -",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "align-with-a-rule",
+    "text": "| a | bbb |\n|-+-|\n",
+    "keys": "TAB",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "tab-past-a-rule",
+    "text": "| a | b |\n|---+---|\n| c | d |\n",
+    "keys": "TAB TAB",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "wide-characters-align",
+    "text": "| ä | b |\n| cc | d |\n",
+    "keys": "TAB",
+    "point": 1,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "numbers-align-right",
+    "text": "| a | 1 |\n| b | 100 |\n",
+    "keys": "TAB",
+    "point": 1,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "typing-after-tab-blanks-the-field",
+    "text": "| one | two |\n",
+    "keys": "TAB x",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "insert-a-row",
+    "text": "| a | b |\n| c | d |\n",
+    "keys": "M-S-<down>",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "kill-a-row",
+    "text": "| a | b |\n| c | d |\n",
+    "keys": "M-S-<up>",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "insert-a-column",
+    "text": "| a | b |\n",
+    "keys": "M-S-<right>",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "delete-a-column",
+    "text": "| a | b |\n",
+    "keys": "M-S-<left>",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "delete-forward-in-a-field",
+    "text": "| ab  | b |\n",
+    "keys": "C-d",
+    "point": 2,
+    "modes": [
+      "org-mode"
+    ]
+  }
+]

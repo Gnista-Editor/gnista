@@ -174,6 +174,14 @@ declare global {
        */
       "find-file": [file: string];
       /**
+       * Fontify the whole buffer now, rather than as it comes into view.
+       */
+      "font-lock-ensure": [];
+      /**
+       * Fontify the whole buffer again as it comes into view.
+       */
+      "font-lock-flush": [];
+      /**
        * Move point forward a character, or as many as the prefix argument says.
        *
        * A negative argument moves backward.
@@ -512,6 +520,597 @@ declare global {
        */
       "normal-mode": [];
       /**
+       * Put the tags of the heading point is under at org-tags-column; with a prefix argument, every heading's.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-align-tags": [];
+      /**
+       * Move to the previous heading at the same level, under the same parent.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-backward-heading-same-level": [];
+      /**
+       * Show all headings, hiding the text under them.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-content": [];
+      /**
+       * Copy the subtree point is in to the kill ring.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-copy-subtree": [];
+      /**
+       * C-c C-c in Org: tick or untick a checkbox, align a table, update a statistics cookie, set a heading's tags, or re-read the buffer's #+ settings on a #+ line.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-ctrl-c-ctrl-c": [];
+      /**
+       * C-c - in Org: insert a table rule, change a list's bullets, or turn the line into an item.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-ctrl-c-minus": [];
+      /**
+       * Kill the subtree point is in, so C-c C-x C-y or C-y can put it back.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-cut-subtree": [];
+      /**
+       * TAB in Org: fold and unfold.
+       *
+       * On a heading, cycle its subtree: folded, then its text and its children's headings, then everything. On a list item with items under it, the same for the item. On a drawer or block line, fold or unfold it. In a table, move to the next field. Anywhere else, indent the line. With C-u, cycle the whole buffer as S-TAB does.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-cycle": [];
+      /**
+       * Change the bullets of the list point is in to the next kind: -, +, *, 1. and 1).
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-cycle-list-bullet": [];
+      /**
+       * Give the heading point is under a deadline, read as org-timestamp reads it. With C-u, remove it.
+       *
+       * @param date text
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-deadline": [date: string];
+      /**
+       * Delete the character before point, as delete-backward-char does, keeping a table's field as wide as it was.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-delete-backward-char": [];
+      /**
+       * Delete the character after point, as delete-char does, keeping a table's field as wide as it was.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-delete-char": [];
+      /**
+       * Make the subtree point is in one level lower.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-demote-subtree": [];
+      /**
+       * Make the heading point is on one level lower: one star more.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-do-demote": [];
+      /**
+       * Make the heading point is on one level higher: one star fewer.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-do-promote": [];
+      /**
+       * Move to the end of the line, staying on a folded heading's line rather than going past its hidden text.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-end-of-line": [];
+      /**
+       * Move to the next heading at the same level, under the same parent.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-forward-heading-same-level": [];
+      /**
+       * Cycle the whole buffer: top headings only, then all headings, then everything.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-global-cycle": [];
+      /**
+       * Make the item point is on a child of the item before it.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-indent-item": [];
+      /**
+       * Make the item point is on, with the items under it, a child of the item before it.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-indent-item-tree": [];
+      /**
+       * Indent the line: text under a heading to the left margin, a list item's lines to its text, others as the line before.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-indent-line": [];
+      /**
+       * Insert a heading at the level of the one point is under. See org-meta-return.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-insert-heading": [];
+      /**
+       * Insert a heading after the subtree point is in, at its level.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-insert-heading-respect-content": [];
+      /**
+       * Insert an item in the list point is in, after the item point is in.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-insert-item": [];
+      /**
+       * Insert a link as [[link][description]], or [[link]] without a description; on a link, replace it.
+       *
+       * @param link text
+       * @param description text
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-insert-link": [link: string, description: string];
+      /**
+       * Insert a heading with the first TODO state, as M-RET does; in a list, an item with a checkbox.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-insert-todo-heading": [];
+      /**
+       * Insert a heading with the first TODO state after the subtree point is in.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-insert-todo-heading-respect-content": [];
+      /**
+       * Make the region the subtree point is in: point at its heading, the mark at its end.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-mark-subtree": [];
+      /**
+       * M-RET in Org: insert a heading at the level of the one point is under, or an item in a list.
+       *
+       * At the start of a line it goes before it; in the middle, the rest of the line goes to the new heading (org-M-RET-may-split-line); at the end, after it.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-meta-return": [];
+      /**
+       * M-<down> in Org: move a subtree, an item or a table row down past the one after it.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-metadown": [];
+      /**
+       * M-<left> in Org: promote a heading, outdent an item, move a table column left, or move back a word.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-metaleft": [];
+      /**
+       * M-<right> in Org: demote a heading, indent an item, move a table column right, or move forward a word.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-metaright": [];
+      /**
+       * M-<up> in Org: move a subtree, an item or a table row up past the one before it.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-metaup": [];
+      /**
+       * The major mode for Org files: notes, plans and lists organised under headings that start with stars.
+       *
+       * TAB on a heading folds and unfolds it, and S-TAB the whole buffer. M-RET adds a heading or an item, M-<left> and M-<right> promote and demote, and M-<up> and M-<down> move a subtree. C-c C-t and S-<right> change a heading's TODO state, S-<up> its priority, and C-c C-q its tags. C-c C-c ticks a checkbox. C-c . inserts a timestamp, which S-<up> and S-<down> change, and C-c C-s schedules. C-c C-l inserts a link and C-c C-o follows it. Lines starting with | are tables: TAB moves between fields and aligns them.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-mode": [];
+      /**
+       * Move point where the mouse was clicked, and follow the link there if there is one, as mouse-1 does on Org links.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-mouse-follow-link": [];
+      /**
+       * Swap the item point is on with the one after it.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-move-item-down": [];
+      /**
+       * Swap the item point is on with the one before it.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-move-item-up": [];
+      /**
+       * Swap the subtree point is in with the one after it at the same level.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-move-subtree-down": [];
+      /**
+       * Swap the subtree point is in with the one before it at the same level.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-move-subtree-up": [];
+      /**
+       * Move to the item after the one point is in.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-next-item": [];
+      /**
+       * Move to the next heading that is not hidden, or to the end of the buffer.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-next-visible-heading": [];
+      /**
+       * Follow the link point is on: [[*Heading]], [[#custom-id]], [[target]] and [[Heading]] within the buffer, and file links such as [[file:notes.org::*Heading]] in another buffer.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-open-at-point": [];
+      /**
+       * Make the item point is on a sibling of its parent.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-outdent-item": [];
+      /**
+       * Make the item point is on, with the items under it, a sibling of its parent.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-outdent-item-tree": [];
+      /**
+       * Show only the top headings.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-overview": [];
+      /**
+       * Yank a subtree, changing its levels to fit under the heading point is under, as a sibling.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-paste-subtree": [];
+      /**
+       * Move to the item before the one point is in.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-previous-item": [];
+      /**
+       * Move to the previous heading that is not hidden, or to the start of the buffer.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-previous-visible-heading": [];
+      /**
+       * Set the priority of the heading point is under to a letter, or remove it with SPC or an empty answer.
+       *
+       * @param priority text
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-priority": [priority: string];
+      /**
+       * Lower the priority of the heading point is under: none starts at the default, and below the lowest is none.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-priority-down": [];
+      /**
+       * Raise the priority of the heading point is under: none starts at the default, and above the highest is none.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-priority-up": [];
+      /**
+       * Make the subtree point is in one level higher.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-promote-subtree": [];
+      /**
+       * RET in Org: in a table, move to the next row; elsewhere start a new line, indented as org-indent-line does.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-return": [];
+      /**
+       * Schedule the heading point is under for a date read as org-timestamp reads it. With C-u, unschedule it.
+       *
+       * @param date text
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-schedule": [date: string];
+      /**
+       * Insert the character typed, as self-insert-command does, keeping a table aligned.
+       *
+       * In a table field with spaces to spare, a space before the next bar goes as the character goes in. Typing right after TAB, S-TAB or RET moved into a field first blanks it (org-table-auto-blank-field).
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-self-insert-command": [];
+      /**
+       * Set the tags of the heading point is under, written as :work:home: or work home; empty removes them.
+       *
+       * @param tags text
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-set-tags-command": [tags: string];
+      /**
+       * S-<down> in Org: make a timestamp earlier, lower a heading's priority, or move to the next item.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-shiftdown": [];
+      /**
+       * S-<left> in Org: move a timestamp a day back, change a heading to its previous TODO state, or change list bullets.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-shiftleft": [];
+      /**
+       * M-S-<down> in Org: insert a table row above the one point is on.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-shiftmetadown": [];
+      /**
+       * M-S-<left> in Org: promote a subtree, outdent an item with its children, or delete a table column.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-shiftmetaleft": [];
+      /**
+       * M-S-<right> in Org: demote a subtree, indent an item with its children, or insert a table column.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-shiftmetaright": [];
+      /**
+       * M-S-<up> in Org: delete the table row point is on.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-shiftmetaup": [];
+      /**
+       * S-<right> in Org: move a timestamp a day on, change a heading to its next TODO state, or change list bullets.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-shiftright": [];
+      /**
+       * S-TAB in Org: cycle the whole buffer between its top headings, all its headings and everything.
+       *
+       * In a table, move to the previous field. With a number as prefix argument, show that many levels of headings.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-shifttab": [];
+      /**
+       * S-<up> in Org: make a timestamp later, raise a heading's priority, or move to the previous item.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-shiftup": [];
+      /**
+       * Show everything, drawers and blocks included.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-show-all": [];
+      /**
+       * Align the table at point: every column as wide as its widest field, numbers to the right.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-align": [];
+      /**
+       * Blank the field at point, keeping its width.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-blank-field": [];
+      /**
+       * Make a table: from the active region, splitting lines at tabs, else commas, else runs of spaces; otherwise an empty one of a size read in the minibuffer, such as 3x2.
+       *
+       * @param size text
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-create-or-convert-from-region": [size: string];
+      /**
+       * Delete the column at point.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-delete-column": [];
+      /**
+       * Insert an empty column to the left of the one at point.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-insert-column": [];
+      /**
+       * Insert a rule below the row at point, or above it with a prefix argument.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-insert-hline": [];
+      /**
+       * Insert an empty row above the one at point, or below it with a prefix argument.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-insert-row": [];
+      /**
+       * Kill the row at point, so C-y can put it back.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-kill-row": [];
+      /**
+       * Swap the column at point with the one to its left.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-move-column-left": [];
+      /**
+       * Swap the column at point with the one to its right.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-move-column-right": [];
+      /**
+       * Swap the row at point with the one below it.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-move-row-down": [];
+      /**
+       * Swap the row at point with the one above it.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-move-row-up": [];
+      /**
+       * Align the table and move to the next field, going on to the next row, and adding one at the end.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-next-field": [];
+      /**
+       * Align the table and move to the same field in the next row, adding a row before a rule or at the end.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-next-row": [];
+      /**
+       * Align the table and move to the previous field, going back to the row before.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-previous-field": [];
+      /**
+       * Insert an active timestamp, such as <2026-10-28 Wed>, for a date read in the minibuffer; on a timestamp, change it.
+       *
+       * Empty is today; +3 is three days on, and +2w, +1m and +1y work too; fri is the next Friday; 2026-11-03, 11-03 and 3 are the next such date; add a time as 10:30. With C-u, the time now goes in too.
+       *
+       * @param date text
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-timestamp": [date: string];
+      /**
+       * Change the part of the timestamp point is on one step earlier.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-timestamp-down": [];
+      /**
+       * Move the timestamp point is on a day earlier.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-timestamp-down-day": [];
+      /**
+       * Insert an inactive timestamp, such as [2026-10-28 Wed], which the agenda leaves out. See org-timestamp.
+       *
+       * @param date text
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-timestamp-inactive": [date: string];
+      /**
+       * Change the part of the timestamp point is on, the year, month, day, hour or minute, one step later.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-timestamp-up": [];
+      /**
+       * Move the timestamp point is on a day later.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-timestamp-up-day": [];
+      /**
+       * Change the TODO state of the heading point is under to the next one: none, TODO, DONE and back to none.
+       *
+       * The states are org-todo-keywords, or a #+TODO: line's. Marking an entry done whose SCHEDULED or DEADLINE date repeats, such as <2026-10-28 Wed +1w>, moves the date on and keeps it to do.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-todo": [];
+      /**
+       * Set the TODO state of the heading point is under, or remove it with an empty state.
+       *
+       * @param state text
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-todo-set": [state: string];
+      /**
+       * Tick or untick the checkbox of the item point is in. With C-u, add a checkbox to it, or remove its checkbox.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-toggle-checkbox": [];
+      /**
+       * Turn the line into a heading, or a heading into plain text; an item becomes a heading.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-toggle-heading": [];
+      /**
+       * Turn the line, or each line of the region, into a list item, or a heading into one.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-toggle-item": [];
+      /**
+       * Bring the statistics cookies of the heading point is under, such as [1/3], up to date.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-update-statistics-cookies": [];
+      /**
        * Select another window, the next in cyclic order.
        *
        * A prefix argument says how many windows on to go; a negative one goes back.
@@ -603,6 +1202,12 @@ declare global {
        * Defined in packages/outline.ts.
        */
       "outline-show-subtree": [];
+      /**
+       * Move to the heading above the one point is under, a level higher, or as many levels as the prefix argument says.
+       *
+       * Defined in packages/outline.ts.
+       */
+      "outline-up-heading": [];
       /**
        * Replace text rather than insert it: each typed character replaces the one after point.
        *
@@ -1034,6 +1639,138 @@ declare global {
        */
       "mode-name": Value;
       /**
+       * The buffer's TODO state sequences: each a list of the states not done and the states done.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org--todo-sets": Value;
+      /**
+       * Whether M-RET in the middle of a line splits it, the rest going to the new heading or item.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-M-RET-may-split-line": Value;
+      /**
+       * What S-TAB last did: "overview", "contents" or "all".
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-cycle-global-status": Value;
+      /**
+       * How many empty lines before a heading keep one of them showing when the subtree above it is folded.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-cycle-separator-lines": Value;
+      /**
+       * What TAB last did to a heading: "folded", "children" or "subtree".
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-cycle-subtree-status": Value;
+      /**
+       * Whether the text of a done heading gets the face org-headline-done.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-fontify-done-headline": Value;
+      /**
+       * Whether links show only their description, hiding the brackets and target.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-link-descriptive": Value;
+      /**
+       * Links answered to org-insert-link, newest first.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-link-history": Value;
+      /**
+       * What marking a heading done records: false for nothing, "time" for a CLOSED: timestamp under it.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-log-done": Value;
+      /**
+       * The priority S-<up> and S-<down> start from, and that headings without one count as.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-priority-default": Value;
+      /**
+       * The highest priority, a capital letter.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-priority-highest": Value;
+      /**
+       * The lowest priority, a capital letter.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-priority-lowest": Value;
+      /**
+       * Dates answered to Org's date prompt, newest first.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-read-date-history": Value;
+      /**
+       * How much of a file org-mode shows when it starts: "showeverything", "showall" (drawers folded), "content" (all headings) or "overview" (top headings). A #+STARTUP: line in the file says otherwise.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-startup-folded": Value;
+      /**
+       * Whether org-mode turns on truncate-lines, so long lines run off the window.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-startup-truncated": Value;
+      /**
+       * Whether Shift with an arrow key selects text where it has no Org meaning. When off, it is an error there.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-support-shift-select": Value;
+      /**
+       * Whether typing right after TAB, S-TAB or RET moved into a field replaces what the field holds.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-auto-blank-field": Value;
+      /**
+       * A column whose fields are at least this fraction numbers is aligned to the right.
+       *
+       * Defined in packages/org-table.ts.
+       */
+      "org-table-number-fraction": Value;
+      /**
+       * Where tags go on a heading line: a negative column aligns their end there, a positive one their start.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-tags-column": Value;
+      /**
+       * Tags answered to org-set-tags-command, newest first.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-tags-history": Value;
+      /**
+       * Minutes are rounded to the first of these when a time is inserted, and S-<up> and S-<down> change them by the second.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-time-stamp-rounding-minutes": Value;
+      /**
+       * The TODO states headings cycle through, in order: states before "|" are not done, those after it are. Without a "|", the last state is the done one. A #+TODO: line in a file gives that file its own.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-todo-keywords": Value;
+      /**
        *
        * Defined in packages/outline.ts.
        */
@@ -1249,6 +1986,228 @@ declare global {
        */
       "minibuffer-prompt": FaceAttributes;
       /**
+       * The text in blocks, such as #+begin_src.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-block": FaceAttributes;
+      /**
+       * The line starting a block.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-block-begin-line": FaceAttributes;
+      /**
+       * The line ending a block.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-block-end-line": FaceAttributes;
+      /**
+       * Checkboxes, such as [ ] and [X].
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-checkbox": FaceAttributes;
+      /**
+       * Checkbox counts with every box ticked.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-checkbox-statistics-done": FaceAttributes;
+      /**
+       * Checkbox counts, such as [1/3], with boxes left to tick.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-checkbox-statistics-todo": FaceAttributes;
+      /**
+       * ~Code~.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-code": FaceAttributes;
+      /**
+       * Timestamps.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-date": FaceAttributes;
+      /**
+       * Values of #+AUTHOR:, #+DATE: and #+EMAIL:.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-document-info": FaceAttributes;
+      /**
+       * Keywords such as #+TITLE:.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-document-info-keyword": FaceAttributes;
+      /**
+       * The title from #+TITLE:.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-document-title": FaceAttributes;
+      /**
+       * Done TODO states, such as DONE.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-done": FaceAttributes;
+      /**
+       * Drawer lines, such as :PROPERTIES: and :END:.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-drawer": FaceAttributes;
+      /**
+       * Footnotes, such as [fn:1].
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-footnote": FaceAttributes;
+      /**
+       * The text of a heading that is done.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-headline-done": FaceAttributes;
+      /**
+       * Level 1 headings, and deeper levels in turn.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-level-1": FaceAttributes;
+      /**
+       * Level 2 headings, and deeper levels in turn.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-level-2": FaceAttributes;
+      /**
+       * Level 3 headings, and deeper levels in turn.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-level-3": FaceAttributes;
+      /**
+       * Level 4 headings, and deeper levels in turn.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-level-4": FaceAttributes;
+      /**
+       * Level 5 headings, and deeper levels in turn.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-level-5": FaceAttributes;
+      /**
+       * Level 6 headings, and deeper levels in turn.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-level-6": FaceAttributes;
+      /**
+       * Level 7 headings, and deeper levels in turn.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-level-7": FaceAttributes;
+      /**
+       * Level 8 headings, and deeper levels in turn.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-level-8": FaceAttributes;
+      /**
+       * Links.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-link": FaceAttributes;
+      /**
+       * The term of a description list item, before ::.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-list-dt": FaceAttributes;
+      /**
+       * Lines such as #+STARTUP:.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-meta-line": FaceAttributes;
+      /**
+       * Priority cookies, such as [#A].
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-priority": FaceAttributes;
+      /**
+       * Property values.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-property-value": FaceAttributes;
+      /**
+       * The text in quote blocks.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-quote": FaceAttributes;
+      /**
+       * Keywords such as SCHEDULED: and property names.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-special-keyword": FaceAttributes;
+      /**
+       * +Struck through+ text.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-strike-through": FaceAttributes;
+      /**
+       * Tables.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-table": FaceAttributes;
+      /**
+       * Tags at the end of a heading.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-tag": FaceAttributes;
+      /**
+       * Link targets, such as <<target>>.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-target": FaceAttributes;
+      /**
+       * TODO states that are not done.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-todo": FaceAttributes;
+      /**
+       * =Verbatim= text.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-verbatim": FaceAttributes;
+      /**
+       * The text in verse blocks.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-verse": FaceAttributes;
+      /**
        * Level 1 headings, and deeper levels in turn.
        *
        * Defined in packages/outline.ts.
@@ -1367,6 +2326,10 @@ declare global {
        */
       "help-mode-hook": Value;
       /**
+       * Called with a start and an end to fontify that stretch of whole lines, just before it is shown. A major mode adds its function here, buffer-locally, and the function puts face and other properties on the text. Editing a line refontifies it and everything after it.
+       */
+      "jit-lock-functions": Value;
+      /**
        * Run after entering JavaScript mode, after the hooks of the modes it is built on.
        */
       "js-ts-mode-hook": Value;
@@ -1374,6 +2337,10 @@ declare global {
        * Run after entering JSON mode, after the hooks of the modes it is built on.
        */
       "json-ts-mode-hook": Value;
+      /**
+       * Run after entering Org mode, after the hooks of the modes it is built on.
+       */
+      "org-mode-hook": Value;
       /**
        * Run after Outline-Minor mode is turned on or off.
        */
@@ -1484,6 +2451,20 @@ declare global {
      * the global keymap or a named one such as "text-mode-map".
      */
     function bindKey(keys: string, command: CommandName | DefinedCommand, keymap?: string): void;
+    /**
+     * Run a command as keys would (Emacs's call-interactively): prompting in
+     * the minibuffer for its arguments, which it gets once they are read.
+     */
+    function callInteractively(name: CommandName | DefinedCommand): void;
+    /**
+     * Run a command with a prefix argument and its arguments, as if typed
+     * after C-u or M-5. Pass prefixArg() to hand on the running command's.
+     */
+    function callWithPrefix<N extends CommandName | DefinedCommand>(
+      prefix: PrefixArg,
+      name: N,
+      ...args: N extends CommandName ? Commands[N] : string[]
+    ): void;
     /** Run a command with its arguments. Throws if the command fails. */
     function call<N extends CommandName | DefinedCommand>(
       name: N,
@@ -1615,13 +2596,15 @@ declare global {
     function defineHook(name: string, doc?: string): void;
     /**
      * Add a function to a hook, first in line (Emacs's add-hook). With `local`,
-     * only for the current buffer; those run before the global ones.
+     * only for the current buffer; those run before the global ones. The
+     * function gets the hook's arguments, such as the start and end of the
+     * text to fontify for jit-lock-functions.
      */
-    function addHook(hook: HookName | (string & {}), run: () => void, options?: { local?: boolean }): void;
+    function addHook(hook: HookName | (string & {}), run: (...args: any[]) => void, options?: { local?: boolean }): void;
     /** Remove a function from a hook, passing the same function. */
-    function removeHook(hook: HookName | (string & {}), run: () => void, options?: { local?: boolean }): void;
-    /** Run a hook's functions. */
-    function runHooks(hook: HookName | (string & {})): void;
+    function removeHook(hook: HookName | (string & {}), run: (...args: any[]) => void, options?: { local?: boolean }): void;
+    /** Run a hook's functions, passing them any arguments given (Emacs's run-hook-with-args). */
+    function runHooks(hook: HookName | (string & {}), ...args: Value[]): void;
 
     /** Define a named keymap; keys it does not bind are looked up in the parent. */
     function defineKeymap(name: string, parent?: string | null): void;
@@ -1805,6 +2788,18 @@ declare global {
     function overridingMap(): string | undefined;
     /** The command a keymap runs for any single key it does not bind, as an Emacs keymap's [t] binding. */
     function setKeymapDefault(keymap: string, command: CommandName | DefinedCommand | null): void;
+    /**
+     * While a keymap is active, run `to` wherever keys would run `from`, or
+     * stop that with null, as Emacs's [remap FROM] bindings. Org remaps
+     * self-insert-command to keep tables aligned as you type.
+     */
+    function remapCommand(
+      keymap: string,
+      from: CommandName | DefinedCommand,
+      to: CommandName | DefinedCommand | null,
+    ): void;
+    /** How many columns text takes on screen, counting wide characters as two (Emacs's string-width). */
+    function stringWidth(text: string): number;
     /** Read these keys next, after the running command, as if typed again (Emacs's unread-command-events). */
     function unreadKeys(keys: string): void;
 
@@ -1830,6 +2825,17 @@ declare global {
      */
     function putTextProperty(start: number, end: number, name: string, value: Value): void;
     function removeTextProperty(start: number, end: number, name: string): void;
+    /**
+     * Add a face to the face property of the text from start to end, keeping
+     * the faces already there (Emacs's add-face-text-property). The new face
+     * wins over them unless append is set.
+     */
+    function addFaceTextProperty(
+      start: number,
+      end: number,
+      face: FaceName | (string & {}),
+      options?: { append?: boolean },
+    ): void;
     /** The text properties of the character at a position. */
     function textPropertiesAt(position: number): { [name: string]: Value };
     function getTextProperty(position: number, name: string): Value | undefined;

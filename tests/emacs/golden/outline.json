@@ -15,6 +15,7 @@
         "platform": null
       },
       "text": "* One\nbody\nmore\n* Two\nlast",
+      "visible": "* One\n* Two\nlast",
       "point": 16,
       "mark": null,
       "mark_active": false,
@@ -35,6 +36,7 @@
         "platform": null
       },
       "text": "* One\nbody\nmore\n* Two\nlast",
+      "visible": "* One\n* Two\nlast",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -55,6 +57,7 @@
         "platform": null
       },
       "text": "* One\nbody\nmore\n* Two\nlast",
+      "visible": "* One\n* Two\nlast",
       "point": 15,
       "mark": null,
       "mark_active": false,
@@ -75,6 +78,7 @@
         "platform": null
       },
       "text": "* One\nbody\nmore\n* Two\nlast",
+      "visible": "* One\n* Two\nlast",
       "point": 16,
       "mark": null,
       "mark_active": false,
@@ -95,6 +99,7 @@
         "platform": null
       },
       "text": "* One\nbody\nmore\n* Two\nlast",
+      "visible": "* One\n* Two\nlast",
       "point": 17,
       "mark": null,
       "mark_active": false,
@@ -115,6 +120,7 @@
         "platform": null
       },
       "text": "* One\nbody\nmore\n* Two\nlast",
+      "visible": "* One\n* Two\nlast",
       "point": 15,
       "mark": null,
       "mark_active": false,
@@ -135,6 +141,7 @@
         "platform": null
       },
       "text": "* One\nbody\nmore\n* Two\nlast",
+      "visible": "* One\nbody\nmore\n* Two\nlast",
       "point": 16,
       "mark": null,
       "mark_active": false,
@@ -155,6 +162,7 @@
         "platform": null
       },
       "text": "* A\na\n* B\nb\n* C\nc",
+      "visible": "* A\n* B\n* C",
       "point": 12,
       "mark": null,
       "mark_active": false,
@@ -175,6 +183,7 @@
         "platform": null
       },
       "text": "* One\nbody\nmore\n* Two\nlast",
+      "visible": "* One\nbody\nmore\n* Two\nlast",
       "point": 6,
       "mark": null,
       "mark_active": false,
@@ -195,6 +204,7 @@
         "platform": null
       },
       "text": "* A\na\n** B\nb\n* C",
+      "visible": "* A\n** B\nb\n* C",
       "point": 6,
       "mark": null,
       "mark_active": false,
@@ -215,6 +225,7 @@
         "platform": null
       },
       "text": "* One\nbody\nmore\n* Two\nlast",
+      "visible": "* One\n* Two\nlast",
       "point": 0,
       "mark": null,
       "mark_active": false,
@@ -235,6 +246,7 @@
         "platform": null
       },
       "text": "* One\nbody\nmore\n* Two\nlast",
+      "visible": "* One\n* Two\nlast",
       "point": 4,
       "mark": null,
       "mark_active": false,

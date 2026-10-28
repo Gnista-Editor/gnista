@@ -207,6 +207,8 @@ fn faces_and_folding() -> (Editor, ember_script::Scripting) {
             &mut ed,
             "test.ts",
             r#"
+            // Fontified first, as font-lock would replace these faces.
+            ember.call("font-lock-ensure");
             const line = ember.lineStart(1);
             ember.putTextProperty(line + 12, line + 16, "face", "link");
             ember.putTextProperty(line + 23, line + 27, "face", "bold");
@@ -347,4 +349,44 @@ fn long_lines_wrap() {
     ed.call("visual-line-mode", vec![]).unwrap();
     ed.press("C-p C-p").unwrap();
     harness(ed, Theme::Dark).snapshot("wrapped_dark");
+}
+
+/// Daily notes in Org: heading levels, TODO states, tags, a folded subtree,
+/// a link showing only its description, a checklist, a table and a block.
+fn org_notes() -> (Editor, ember_script::Scripting) {
+    let mut ed = Editor::new();
+    let scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    ed.window_buffer_mut().set_text(
+        "#+TITLE: Daily notes\n\
+         * TODO [#A] Finish the *report* :work:\n\
+         SCHEDULED: <2026-10-28 Wed>\n\
+         ** DONE Gather the numbers\n\
+         ** Folded heading\n\
+         Hidden under it.\n\
+         * Reading [1/2]\n\
+         - [X] The [[https://www.gnu.org/software/emacs/manual/][Emacs manual]]\n\
+         - [ ] /Structure and Interpretation/\n\
+         | Day | Hours |\n\
+         |-----+-------|\n\
+         | Mon |     3 |\n\
+         #+begin_src rust\n\
+         fn main() {}\n\
+         #+end_src\n",
+    );
+    ed.call("org-mode", vec![]).unwrap();
+    ed.call("toggle-truncate-lines", vec![]).ok();
+    ed.press("M-< C-n C-n C-n C-n TAB M-<").unwrap();
+    (ed, scripting)
+}
+
+#[test]
+fn org_notes_dark() {
+    let (ed, _scripting) = org_notes();
+    harness(ed, Theme::Dark).snapshot("org_dark");
+}
+
+#[test]
+fn org_notes_light() {
+    let (ed, _scripting) = org_notes();
+    harness(ed, Theme::Light).snapshot("org_light");
 }

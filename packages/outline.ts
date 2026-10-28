@@ -41,8 +41,9 @@ function headings(): Heading[] {
   const found: Heading[] = [];
   for (let line = 0; line < ember.lineCount(); line++) {
     const match = pattern.exec(ember.lineText(line));
-    if (match && match[0].length > 0) {
-      found.push({ line, start: ember.lineStart(line), end: ember.lineEnd(line), level: match[0].length });
+    if (match && match[0].trimEnd().length > 0) {
+      // The match's length is the level, not counting a space after the stars, as in org-mode's "\\*+ ".
+      found.push({ line, start: ember.lineStart(line), end: ember.lineEnd(line), level: match[0].trimEnd().length });
     }
   }
   return found;
@@ -222,6 +223,26 @@ ember.defineCommand({
   },
 });
 
+ember.defineCommand({
+  name: "outline-up-heading",
+  doc: "Move to the heading above the one point is under, a level higher, or as many levels as the prefix argument says.",
+  run: () => {
+    const all = headings();
+    const current = currentHeading(all);
+    if (current === undefined) throw new Error("Before first heading");
+    let i: number = current;
+    for (let n = ember.prefixNumericValue(); n > 0; n--) {
+      const level = all[i].level;
+      let parent: number | undefined;
+      for (let k = i - 1; k >= 0 && parent === undefined; k--) if (all[k].level < level) parent = k;
+      if (parent === undefined) throw new Error("Already at top level of the outline");
+      i = parent;
+    }
+    if (ember.calledInteractively() && ember.lastCommand() !== "outline-up-heading") ember.pushMark(ember.point());
+    ember.gotoChar(all[i].start);
+  },
+});
+
 const outlineKeys: { [keys: string]: ember.CommandName } = {
   "C-d": "outline-hide-subtree",
   "C-s": "outline-show-subtree",
@@ -236,11 +257,20 @@ const outlineKeys: { [keys: string]: ember.CommandName } = {
 const withPrefix = (prefix: string) =>
   Object.fromEntries(Object.entries(outlineKeys).map(([keys, command]) => [`${prefix} ${keys}`, command]));
 
-/** Gives heading lines their level's face. Stands in for font-lock, which comes later. */
-function fontifyHeadings(): void {
-  ember.removeTextProperty(0, ember.bufferSize(), "face");
-  for (const h of headings()) {
-    ember.putTextProperty(h.start, h.end, "face", `outline-${((h.level - 1) % 8) + 1}`);
+/**
+ * Gives the heading lines from start to end their level's face, as
+ * outline-mode's font-lock keywords do. Modes built on outline-mode, such as
+ * org-mode, fontify in their own way, so this only works in outline-mode.
+ */
+function fontifyHeadings(start: number, end: number): void {
+  if (ember.variable("major-mode") !== "outline-mode") return;
+  ember.removeTextProperty(start, end, "face");
+  const pattern = new RegExp(`^(?:${String(ember.variable("outline-regexp"))})`);
+  for (let line = ember.lineOf(start); line < ember.lineCount() && ember.lineStart(line) < end; line++) {
+    const match = pattern.exec(ember.lineText(line));
+    if (match && match[0].length > 0) {
+      ember.putTextProperty(ember.lineStart(line), ember.lineEnd(line), "face", `outline-${((match[0].length - 1) % 8) + 1}`);
+    }
   }
 }
 
@@ -270,7 +300,6 @@ ember.defineMajorMode({
   bindings: { ...withPrefix("C-c"), TAB: "outline-cycle", "S-TAB": "outline-cycle-buffer" },
   setup: () => {
     ember.addToInvisibilitySpec("outline", { ellipsis: true });
-    fontifyHeadings();
-    ember.addHook("post-command-hook", fontifyHeadings, { local: true });
+    ember.addHook("jit-lock-functions", fontifyHeadings, { local: true });
   },
 });

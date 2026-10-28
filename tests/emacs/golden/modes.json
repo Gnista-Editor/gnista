@@ -13,6 +13,7 @@
         "platform": null
       },
       "text": "def",
+      "visible": "def",
       "point": 0,
       "mark": 0,
       "mark_active": false,
@@ -31,6 +32,7 @@
         "platform": null
       },
       "text": "cdef",
+      "visible": "cdef",
       "point": 0,
       "mark": 0,
       "mark_active": false,
@@ -49,6 +51,7 @@
         "platform": null
       },
       "text": "abdef",
+      "visible": "abdef",
       "point": 2,
       "mark": 2,
       "mark_active": false,
@@ -67,6 +70,7 @@
         "platform": null
       },
       "text": "abdef",
+      "visible": "abdef",
       "point": 2,
       "mark": 0,
       "mark_active": false,
@@ -87,6 +91,7 @@
         "platform": null
       },
       "text": "x world",
+      "visible": "x world",
       "point": 1,
       "mark": 0,
       "mark_active": false,
@@ -107,6 +112,7 @@
         "platform": null
       },
       "text": "ab\nef",
+      "visible": "ab\nef",
       "point": 3,
       "mark": 2,
       "mark_active": false,
@@ -127,6 +133,7 @@
         "platform": null
       },
       "text": " one",
+      "visible": " one",
       "point": 4,
       "mark": 1,
       "mark_active": false,
@@ -149,6 +156,7 @@
         "platform": null
       },
       "text": "axybc",
+      "visible": "axybc",
       "point": 3,
       "mark": null,
       "mark_active": false,
@@ -169,6 +177,7 @@
         "platform": null
       },
       "text": "axbc",
+      "visible": "axbc",
       "point": 2,
       "mark": 0,
       "mark_active": false,
@@ -187,6 +196,7 @@
         "platform": null
       },
       "text": "hexllo",
+      "visible": "hexllo",
       "point": 3,
       "mark": 0,
       "mark_active": false,
@@ -207,6 +217,7 @@
         "platform": null
       },
       "text": "xycd",
+      "visible": "xycd",
       "point": 2,
       "mark": null,
       "mark_active": false,
@@ -227,6 +238,7 @@
         "platform": null
       },
       "text": "axyz\ncd",
+      "visible": "axyz\ncd",
       "point": 4,
       "mark": null,
       "mark_active": false,
@@ -245,6 +257,7 @@
         "platform": null
       },
       "text": "xybc",
+      "visible": "xybc",
       "point": 2,
       "mark": null,
       "mark_active": false,
@@ -265,6 +278,7 @@
         "platform": null
       },
       "text": "xxxdef",
+      "visible": "xxxdef",
       "point": 3,
       "mark": null,
       "mark_active": false,

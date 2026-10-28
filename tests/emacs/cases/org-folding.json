@@ -1,0 +1,266 @@
+[
+  {
+    "name": "tab-folds-a-heading",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "TAB",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "tab-twice-shows-children",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "TAB TAB",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "tab-three-times-shows-the-subtree",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "TAB TAB TAB",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "tab-four-times-folds-again",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "TAB TAB TAB TAB",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "tab-on-an-empty-entry",
+    "text": "* One\n* Two\n",
+    "keys": "TAB",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "tab-on-an-entry-with-only-text",
+    "text": "* One\nbody\n* Two\n",
+    "keys": "TAB TAB",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "children-hide-their-text",
+    "text": "* One\n** A\na\n** B\nb\n",
+    "keys": "TAB TAB",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "tab-on-a-sub-heading",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "TAB",
+    "point": 11,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "backtab-shows-the-overview",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "<backtab>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "backtab-twice-shows-the-contents",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "<backtab> <backtab>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "backtab-three-times-shows-everything",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "<backtab> <backtab> <backtab>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "next-line-skips-a-folded-subtree",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "TAB C-n",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "end-of-line-on-a-folded-heading",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "TAB C-e",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "kill-line-on-a-folded-heading",
+    "text": "* One\nbody\n** Sub\ntext\n* Two\n",
+    "keys": "TAB C-k",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "startup-overview",
+    "text": "#+STARTUP: overview\n* One\nbody\n** Sub\ntext\n",
+    "keys": "C-a",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "startup-content",
+    "text": "#+STARTUP: content\n* One\nbody\n** Sub\ntext\n",
+    "keys": "C-a",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "startup-showall",
+    "text": "#+STARTUP: showall\n* One\nbody\n",
+    "keys": "C-a",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "drawers-stay-folded-when-cycling",
+    "text": "* One\n:PROPERTIES:\n:ID: 1\n:END:\nbody\n",
+    "keys": "TAB TAB",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "tab-in-body-text",
+    "text": "* One\nbody\n",
+    "keys": "TAB",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "tab-in-indented-body-text",
+    "text": "* One\n   body\n",
+    "keys": "TAB",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "tab-on-list-item-text",
+    "text": "- item\nmore\n",
+    "keys": "TAB",
+    "point": 7,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "tab-folds-a-list-item",
+    "text": "- one\n  - two\n  - three\n- four\n",
+    "keys": "TAB",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "ret-after-a-heading",
+    "text": "* One",
+    "keys": "RET",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "ret-after-a-list-item",
+    "text": "- item",
+    "keys": "RET x",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "ret-in-indented-text",
+    "text": "* One\n  body",
+    "keys": "RET x",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "startup-showall-folds-drawers",
+    "text": "#+STARTUP: showall\n* One\n:PROPERTIES:\n:ID: 1\n:END:\nbody\n",
+    "keys": "C-a",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "tab-on-a-drawer-folds-it",
+    "text": "* One\n:PROPERTIES:\n:ID: 1\n:END:\nbody\n",
+    "keys": "TAB",
+    "point": 6,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "tab-on-a-block-folds-it",
+    "text": "#+begin_src sh\necho hi\n#+end_src\nafter\n",
+    "keys": "TAB",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "one-empty-line-before-a-heading-folds",
+    "text": "* One\ntext\n\n* Two\n",
+    "keys": "TAB",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "two-empty-lines-keep-one-showing",
+    "text": "* One\ntext\n\n\n* Two\n",
+    "keys": "TAB",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "overview-with-text-before-the-first-heading",
+    "text": "Intro\n* One\nbody\n* Two\nmore\n",
+    "keys": "<backtab>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "tab-on-a-heading-at-the-end-without-a-newline",
+    "text": "* One\nbody",
+    "keys": "TAB",
+    "modes": [
+      "org-mode"
+    ]
+  }
+]
