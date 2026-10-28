@@ -689,6 +689,9 @@ fn killing(ed: &mut Editor) {
         let region = region(ed.buffer())?;
         let killed = ed.buffer_mut().delete(region)?;
         ed.kill(killed, false);
+        // As in Emacs, so the next kill or copy joins this one even when a
+        // command such as org-cut-subtree called it.
+        ed.set_this_command("kill-region");
         Ok(())
     });
     def(ed, "kill-ring-save", "Copy the text between point and the mark to the kill ring.", |ed, _| {

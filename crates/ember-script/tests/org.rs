@@ -186,8 +186,34 @@ fn timestamps_are_inserted_from_a_date() {
 #[test]
 fn a_repeating_task_moves_on_when_done() {
     let (mut ed, _s) = org("* TODO Water plants\nSCHEDULED: <2026-10-28 Wed +1w>\n");
+    ed.set_variable("org-log-repeat", Value::Bool(false));
     ed.press("C-c C-t").unwrap();
     assert_eq!(text(&ed), "* TODO Water plants\nSCHEDULED: <2026-11-04 Wed +1w>\n");
+}
+
+#[test]
+fn a_repeat_is_logged_with_the_time() {
+    // org-log-repeat is "time" by default, as in Org. The oracle cannot
+    // check this, as the note records the time now.
+    let (mut ed, _s) = org("* TODO Water plants\nSCHEDULED: <2026-10-28 Wed +1w>\n");
+    ed.press("C-c C-t").unwrap();
+    let t = text(&ed);
+    let lines: Vec<&str> = t.lines().collect();
+    assert_eq!(lines[..3], ["* TODO Water plants", "SCHEDULED: <2026-11-04 Wed +1w>", ":PROPERTIES:"], "{t:?}");
+    // An inactive timestamp with the time, such as [2026-10-28 Wed 11:13].
+    let stamp = |s: &str| {
+        let c: Vec<char> = s.chars().collect();
+        c.len() == 22
+            && c[0] == '['
+            && c[21] == ']'
+            && c[1..5].iter().chain(&c[6..8]).chain(&c[9..11]).chain(&c[16..18]).chain(&c[19..21]).all(|d| d.is_ascii_digit())
+            && c[18] == ':'
+    };
+    assert!(lines[3].strip_prefix(":LAST_REPEAT: ").is_some_and(stamp), "{t:?}");
+    assert_eq!(lines[4], ":END:");
+    assert!(lines[5].strip_prefix("- State \"DONE\"       from \"TODO\"       ").is_some_and(stamp), "{t:?}");
+    // The drawer is folded, as org-entry-put leaves a new one.
+    assert!(ed.invisible_in(ed.window_buffer(), find(&ed, ":LAST_REPEAT:")).is_some());
 }
 
 #[test]

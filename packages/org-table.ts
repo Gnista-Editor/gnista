@@ -642,7 +642,7 @@ function moveColumn(left: boolean): void {
   if (left && col === 1) throw new Error("Cannot move column further left");
   if (!left && /^[^|\n]*\|[^|\n]*$/.test(restOfLine())) throw new Error("Cannot move column further right");
   eachDataRow(() => {
-    gotoColumn(col1, true, true);
+    gotoColumn(col1, true);
     const m = /^\|([^|\n]+)\|([^|\n]+)\|/.exec(restOfLine());
     if (m) {
       const p = ember.point();
@@ -762,7 +762,7 @@ ember.defineCommand({
     checkInsideDataField(true);
     const col = currentColumn();
     eachDataRow(() => {
-      gotoColumn(col, true, true);
+      gotoColumn(col, true);
       const m = /^\|[^|\n]+\|/.exec(restOfLine());
       if (m) {
         const p = ember.point();

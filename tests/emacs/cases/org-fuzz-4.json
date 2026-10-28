@@ -113,5 +113,128 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "seed6-0094-m-up",
+    "text": ":PROPERTIES:\n:END:\n** alpha\n** DONE alpha\n",
+    "keys": "M-<up>",
+    "point": 42,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed6-0349-m-s-return",
+    "text": "* DONE [#B] read [1/2] :home:x:\n** plan beta :home:x:\n",
+    "keys": "M-S-<return>",
+    "point": 54,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed6-0734-tab",
+    "text": "|  |  |",
+    "keys": "TAB |",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed6-0102-c-p-s-left",
+    "text": "* notes :home:x:\n:PROPERTIES:",
+    "keys": "C-p S-<left>",
+    "point": 25,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed6-0354-backtab-m-s-up",
+    "text": "** TODO alpha :work:\n  gamma beta\n** TODO fix beta [/]",
+    "keys": "<backtab> M-S-<up>",
+    "point": 42,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed6-0926-c-c-m-s-return",
+    "text": "* call fix [%]\nalpha gamma",
+    "keys": "C-c * M-S-<return>",
+    "point": 15,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed6-0090-c-u-tab-m-up",
+    "text": "* TODO gamma\n+ [ ] plan\nbeta <2026-10-18 Wed>",
+    "keys": "C-u TAB M-<up>",
+    "point": 24,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed6-0216-c-c-c-c",
+    "text": "*** TODO read read\n| bb | yy |",
+    "keys": "C-c @ C-c -",
+    "point": 19,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed6-0278-c-c-c-f-m-right",
+    "text": "* DONE notes plan [1/2] :home:x:",
+    "keys": "C-c C-f | M-<right>",
+    "point": 4,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed6-0832-m-right-c-c-c-c-s-right",
+    "text": "  fix call",
+    "keys": "| M-<right> C-c C-c S-<right>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed6-0742-c-c-m-b-c-c",
+    "text": "* [#A] notes :home:x:\n* read\n",
+    "keys": "C-c @ M-b C-c @",
+    "point": 29,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed6-0809-m-s-return-c-b-c-c-c-x-c-b",
+    "text": "+ [ ] gamma",
+    "keys": "M-S-<return> C-b C-c C-x C-b |",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed6-0623-c-c-c-x-c-w-c-c-c-x-m-w",
+    "text": "* [#B] read\n* TODO beta :home:x:\n",
+    "keys": "C-c C-x C-w C-c C-x M-w",
+    "point": 33,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed6-0463-c-c-c-n-c-c-c-u-s-left-c-c-c-t",
+    "text": "fix fix\n** fix fix\n",
+    "keys": "C-c @ C-n C-c C-u S-<left> C-c C-t",
+    "point": 19,
+    "modes": [
+      "org-mode"
+    ]
   }
 ]

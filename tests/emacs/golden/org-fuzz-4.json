@@ -274,6 +274,302 @@
       "kill_ring": [],
       "modified": false,
       "error": "Beginning of buffer"
+    },
+    {
+      "name": "seed6-0094-m-up",
+      "input": {
+        "text": ":PROPERTIES:\n:END:\n** alpha\n** DONE alpha\n",
+        "point": 42,
+        "keys": "M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": ":PROPERTIES:\n:END:\n** DONE alpha\n** alpha\n",
+      "visible": ":PROPERTIES:\n** DONE alpha\n** alpha\n",
+      "point": 33,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed6-0349-m-s-return",
+      "input": {
+        "text": "* DONE [#B] read [1/2] :home:x:\n** plan beta :home:x:\n",
+        "point": 54,
+        "keys": "M-S-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* DONE [#B] read [0/1]                                               :home:x:\n** plan beta :home:x:\n** TODO ",
+      "visible": "* DONE [#B] read [0/1]                                               :home:x:\n** plan beta :home:x:\n** TODO ",
+      "point": 108,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed6-0734-tab",
+      "input": {
+        "text": "|  |  |",
+        "point": 0,
+        "keys": "TAB |",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| |  |   |\n",
+      "visible": "| |  |   |\n",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed6-0102-c-p-s-left",
+      "input": {
+        "text": "* notes :home:x:\n:PROPERTIES:",
+        "point": 25,
+        "keys": "C-p S-<left>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* DONE notes                                                         :home:x:\n:PROPERTIES:",
+      "visible": "* DONE notes                                                         :home:x:\n:PROPERTIES:",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed6-0354-backtab-m-s-up",
+      "input": {
+        "text": "** TODO alpha :work:\n  gamma beta\n** TODO fix beta [/]",
+        "point": 42,
+        "keys": "<backtab> M-S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** TODO alpha :work:\n** TODO fix beta [/]\n  gamma beta\n",
+      "visible": "** TODO alpha :work:\n** TODO fix beta [/]\n  gamma beta\n",
+      "point": 29,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed6-0926-c-c-m-s-return",
+      "input": {
+        "text": "* call fix [%]\nalpha gamma",
+        "point": 15,
+        "keys": "C-c * M-S-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* call fix [0%]\n** TODO \n** alpha gamma",
+      "visible": "* call fix [0%]\n** TODO \n** alpha gamma",
+      "point": 24,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed6-0090-c-u-tab-m-up",
+      "input": {
+        "text": "* TODO gamma\n+ [ ] plan\nbeta <2026-10-18 Wed>",
+        "point": 24,
+        "keys": "C-u TAB M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO gamma\nbeta <2026-10-18 Wed>\n+ [ ] plan",
+      "visible": "*",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed6-0216-c-c-c-c",
+      "input": {
+        "text": "*** TODO read read\n| bb | yy |",
+        "point": 19,
+        "keys": "C-c @ C-c -",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- [ ] read read\n  | bb | yy |",
+      "visible": "- [ ] read read\n  | bb | yy |",
+      "point": 0,
+      "mark": 29,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed6-0278-c-c-c-f-m-right",
+      "input": {
+        "text": "* DONE notes plan [1/2] :home:x:",
+        "point": 4,
+        "keys": "C-c C-f | M-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| * DONE notes plan [1/2] :home:x: |\n",
+      "visible": "| * DONE notes plan [1/2] :home:x: |\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed6-0832-m-right-c-c-c-c-s-right",
+      "input": {
+        "text": "  fix call",
+        "point": 0,
+        "keys": "| M-<right> C-c C-c S-<right>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| fix call |\n",
+      "visible": "| fix call |\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Cannot move cell further"
+    },
+    {
+      "name": "seed6-0742-c-c-m-b-c-c",
+      "input": {
+        "text": "* [#A] notes :home:x:\n* read\n",
+        "point": 29,
+        "keys": "C-c @ M-b C-c @",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* [#A] notes :home:x:\n* read\n",
+      "visible": "* [#A] notes :home:x:\n* read\n",
+      "point": 0,
+      "mark": 29,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed6-0809-m-s-return-c-b-c-c-c-x-c-b",
+      "input": {
+        "text": "+ [ ] gamma",
+        "point": 0,
+        "keys": "M-S-<return> C-b C-c C-x C-b |",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "+ [X]| \n+ [ ] gamma",
+      "visible": "+ [X]| \n+ [ ] gamma",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed6-0623-c-c-c-x-c-w-c-c-c-x-m-w",
+      "input": {
+        "text": "* [#B] read\n* TODO beta :home:x:\n",
+        "point": 33,
+        "keys": "C-c C-x C-w C-c C-x M-w",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* [#B] read\n",
+      "visible": "* [#B] read\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "* TODO beta :home:x:\n* [#B] read\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed6-0463-c-c-c-n-c-c-c-u-s-left-c-c-c-t",
+      "input": {
+        "text": "fix fix\n** fix fix\n",
+        "point": 19,
+        "keys": "C-c @ C-n C-c C-u S-<left> C-c C-t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "fix fix\n** TODO fix fix\n",
+      "visible": "fix fix\n** TODO fix fix\n",
+      "point": 0,
+      "mark": 24,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "To use shift-selection with Org mode, customize ‘org-support-shift-select’"
     }
   ]
 }

@@ -686,6 +686,12 @@ declare global {
        */
       "org-fold-check-before-invisible-edit-maybe": [];
       /**
+       * Insert the character typed, as self-insert-command does, without the table handling of org-self-insert-command.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-force-self-insert": [];
+      /**
        * Move to the next heading at the same level, under the same parent.
        *
        * Defined in packages/org.ts.
@@ -760,6 +766,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-list-repair": [];
+      /**
+       * Make the region the element at point; repeated, or with the mark active, take in the next element too.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-mark-element": [];
       /**
        * Make the region the subtree point is in: point at its heading, the mark at its end.
        *
@@ -1219,7 +1231,7 @@ declare global {
       /**
        * Change the TODO state of the heading point is under to the next one: none, TODO, DONE and back to none.
        *
-       * The states are org-todo-keywords, or a #+TODO: line's. Marking an entry done whose SCHEDULED or DEADLINE date repeats, such as <2026-10-28 Wed +1w>, moves the date on and keeps it to do.
+       * The states are org-todo-keywords, or a #+TODO: line's. Marking an entry done whose SCHEDULED or DEADLINE date repeats, such as <2026-10-28 Wed +1w>, moves the date on and keeps it to do. With the region active, every heading in it changes (org-loop-over-headlines-in-active-region).
        *
        * Defined in packages/org.ts.
        */
@@ -1245,7 +1257,7 @@ declare global {
        */
       "org-toggle-heading": [];
       /**
-       * Turn the line into a list item, a heading into one, or an item back into a plain line.
+       * Turn the line, or the lines of the region, into list items; headings into items, their text into the items' text; or items back into plain lines.
        *
        * Defined in packages/org.ts.
        */
@@ -1862,6 +1874,18 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-log-done": Value;
+      /**
+       * What marking a repeating task done records: "time" for a LAST_REPEAT property and a note of the change, false for nothing.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-log-repeat": Value;
+      /**
+       * Whether commands such as C-c C-t act on every heading in the active region.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-loop-over-headlines-in-active-region": Value;
       /**
        * The priority S-<up> and S-<down> start from, and that headings without one count as.
        *

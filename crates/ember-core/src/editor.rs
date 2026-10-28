@@ -109,6 +109,8 @@ pub struct Editor {
     last_error: Option<Error>,
     /// Whether the command the command loop is running failed.
     command_failed: bool,
+    /// Whether code set this-command explicitly, so a call from code keeps it.
+    this_command_set: bool,
     pub(crate) kill_ring: Vec<String>,
     /// Which kill yanking takes next, counting back from the newest (Emacs's
     /// `kill-ring-yank-pointer`).
@@ -185,6 +187,7 @@ impl Editor {
             message: None,
             last_error: None,
             command_failed: false,
+            this_command_set: false,
             kill_ring: Vec::new(),
             yank_pointer: 0,
             last_repeatable: None,
@@ -277,13 +280,18 @@ impl Editor {
         let saved = std::mem::replace(&mut self.current_prefix_arg, prefix);
         let interactive = std::mem::replace(&mut self.interactive, false);
         // Unlike a command that keys run, a call from code does not become
-        // this-command or last-command, as calling a function from Lisp does not.
+        // this-command or last-command, as calling a function from Lisp does
+        // not, unless it sets this-command itself, as kill-region does.
         let this = self.this_command.clone();
+        let set = std::mem::replace(&mut self.this_command_set, false);
         self.running += 1;
         let result = (command.run)(self, &args);
         self.running -= 1;
         self.deactivate_changed_regions();
-        self.this_command = this;
+        if !self.this_command_set {
+            self.this_command = this;
+        }
+        self.this_command_set |= set;
         self.interactive = interactive;
         self.current_prefix_arg = saved;
         result
@@ -331,6 +339,7 @@ impl Editor {
     /// as `kill-region` and the next kill joins onto it.
     pub fn set_this_command(&mut self, name: &str) {
         self.this_command = Some(name.to_string());
+        self.this_command_set = true;
     }
 
     /// The last key typed: the one that ran the current command.
@@ -550,6 +559,7 @@ impl Editor {
 
     fn invoke(&mut self, command: Rc<Command>, args: Vec<Arg>) -> Result<()> {
         self.this_command = Some(command.name.clone());
+        self.this_command_set = false;
         self.running += 1;
         let result = (command.run)(self, &args);
         self.running -= 1;
