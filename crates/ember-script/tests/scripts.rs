@@ -400,3 +400,28 @@ fn edits_can_leave_the_region_active() {
     ed.call("edit", vec![]).unwrap();
     assert!(!ed.window_buffer().is_mark_active());
 }
+
+#[test]
+fn columns_count_as_emacs_counts_them() {
+    let (mut ed, scripting) = setup();
+    ed.window_buffer_mut().set_text("\tab\n日本語x");
+    eval(
+        &mut ed,
+        &scripting,
+        r#"
+        ember.defineCommand({
+          name: "columns",
+          run: () => {
+            ember.gotoChar(2);
+            const afterTab = ember.currentColumn();
+            ember.gotoChar(4);
+            // Into the wide characters: column 3 is inside the second, so point goes past it.
+            const reached = ember.moveToColumn(3);
+            ember.setVariable("fill-column", `${afterTab} ${reached} ${ember.point()}`);
+          },
+        });
+        "#,
+    );
+    ed.call("columns", vec![]).unwrap();
+    assert_eq!(ed.variable("fill-column").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("9 4 6"));
+}

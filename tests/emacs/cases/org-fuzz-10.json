@@ -176,5 +176,91 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "seed24-1600-m-down",
+    "text": "** [#A] read\nDEADLINE: <2026-11-01 Sun +1w>\n\n",
+    "keys": "M-<down>",
+    "point": 45,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed24-0645-c-spc-c-slash",
+    "text": "",
+    "keys": "C-SPC C-/",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed24-0519-m-up-x",
+    "text": "\n** [#C] fix fix\n* call fix\n",
+    "keys": "M-<up> x",
+    "point": 28,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed24-1213-c-n-m-up-m-s-up",
+    "text": "2. [X] alpha\n** beta gamma\n* call alpha",
+    "keys": "C-n M-<up> M-S-<up>",
+    "point": 18,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed24-0999-m-s-up-del-m-",
+    "text": "see [[*notes][the notes]] now\n** TODO read notes :work:",
+    "keys": "M-S-<up> DEL M->",
+    "point": 23,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed24-0861-c-spc-c-c-c-p-m-up",
+    "text": "# a comment\n",
+    "keys": "C-SPC C-c C-p M-<up>",
+    "point": 12,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "seed24-0011-c-return-c-c-c-b-m-up",
+    "text": "\n** DONE plan fix\n* call\n",
+    "keys": "C-<return> C-c C-b M-<up>",
+    "point": 25,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-up-past-a-deeper-heading-at-the-start",
+    "text": "** a\n* b\n",
+    "keys": "C-n M-<up>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "move-up-past-a-deeper-heading-after-text",
+    "text": "x\n** a\n* b\n",
+    "keys": "C-n C-n M-<up>",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "drag-a-line-keeps-its-shown-column",
+    "text": "x [[*a][the a]] y\nlonger line here\n",
+    "keys": "C-e M-S-<down>",
+    "modes": [
+      "org-mode"
+    ]
   }
 ]

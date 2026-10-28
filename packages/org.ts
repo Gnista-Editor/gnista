@@ -3855,7 +3855,14 @@ function previousSiblingStart(all: Heading[], pos: number): number | undefined {
   const level = all[i].level;
   let k = i - 1;
   if (k < 0) return undefined;
-  while (all[k].level > level && all[k].start > 0 && k > 0) k--;
+  // As org-get-previous-sibling climbs with outline-previous-heading: a
+  // deeper heading at the very start of the buffer stops it there, but above
+  // the first heading is the start of the buffer, which is level 0.
+  while (all[k].level > level) {
+    if (all[k].start === 0) break;
+    if (k === 0) return undefined;
+    k--;
+  }
   return all[k].level < level ? undefined : all[k].start;
 }
 
@@ -4140,27 +4147,16 @@ function parseElements(
       while (last + 1 < ember.lineCount() && lineStartOrEnd(last + 1) < to && !startsElement(last + 1, to)) last++;
       e = elem("paragraph", p, Math.min(lineStartOrEnd(last + 1), to), parent, p);
     }
-    // Org gives a planning line no blank lines after it: they belong to no
-    // element, so there is none at point there.
-    if (e.type !== "planning") postBlank(e, to);
-    else {
-      let q = e.end;
-      while (q < to && q === lineStartOrEnd(lineAt(q)) && isBlank(ember.lineText(lineAt(q)))) {
-        const after = lineStartOrEnd(lineAt(q) + 1);
-        if (after <= q) {
-          q = to;
-          break;
-        }
-        q = Math.min(after, to);
-      }
-      if (q >= to && e.end < to && isBlank(ember.bufferText(e.end, to))) {
+    postBlank(e, to);
+    if (e.type === "planning") {
+      // Org's planning parser skips the blank lines after it, then goes back to
+      // the start of the line it stopped on: a last line of only spaces, with
+      // no newline, belongs to no element.
+      const ls = ember.lineStart(lineAt(e.end));
+      if (e.end === ember.bufferSize() && ls < e.end && isBlank(ember.bufferText(ls, e.end))) {
+        e.end = ls;
         previous = e.type;
         break;
-      }
-      if (q > e.end && q < to) {
-        previous = e.type;
-        p = q;
-        continue;
       }
     }
     previous = e.type;
@@ -5784,7 +5780,9 @@ const metaRight = ember.defineCommand({
 /** Swaps two stretches of text, as transpose-regions does. */
 function transposeRegions(a: number, b: number, c: number, d: number): void {
   let [r1, r2] = [[Math.min(a, b), Math.max(a, b)], [Math.min(c, d), Math.max(c, d)]];
-  if (r1[0] > r2[0]) [r1, r2] = [r2, r1];
+  if (r1[0] > r2[0] || (r1[0] === r2[0] && r1[1] > r2[1])) [r1, r2] = [r2, r1];
+  // As transpose-regions does, an empty region next to the other changes nothing.
+  if ((r1[0] === r1[1] || r2[0] === r2[1]) && r1[1] === r2[0]) return;
   if (r1[1] > r2[0]) throw new Error("Transposed regions overlap");
   const t1 = ember.bufferText(r1[0], r1[1]);
   const t2 = ember.bufferText(r2[0], r2[1]);
@@ -5853,7 +5851,8 @@ function transposeRegionLines(up: boolean, a: number, b: number): void {
   const atBol = (x: number): boolean => x === ember.lineStart(lineAt(x));
   if (up) {
     const prev = Math.max(0, lineAt(a) - 1);
-    const [c, d] = [ember.lineStart(prev), ember.lineEnd(prev)];
+    // On the first line, move-beginning-of-line and move-end-of-line with 0 both stay at its start.
+    const [c, d] = lineAt(a) === 0 ? [0, 0] : [ember.lineStart(prev), ember.lineEnd(prev)];
     transposeRegions(a, b, c, d);
     ember.setMark(c);
     ember.gotoChar(c + (b - a));
@@ -6016,7 +6015,8 @@ function transposeLinesWithFolds(): void {
 
 function dragLine(n: number): void {
   for (let i = 0; i < Math.abs(n); i++) {
-    const column = ember.point() - ember.lineStart(lineAt());
+    // As Org does with current-column and org-move-to-column: hidden link text takes no columns.
+    const column = ember.currentColumn();
     if (n > 0) {
       forwardLine(1);
       transposeLinesWithFolds();
@@ -6025,8 +6025,7 @@ function dragLine(n: number): void {
       transposeLinesWithFolds();
       forwardLine(-2);
     }
-    const line = lineAt();
-    ember.gotoChar(ember.lineStart(line) + Math.min(column, ember.lineEnd(line) - ember.lineStart(line)));
+    ember.moveToColumn(column);
   }
 }
 

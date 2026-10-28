@@ -100,6 +100,13 @@ const API: &str = r##"
    * character after that its front-sticky names.
    */
   function insertAndInherit(text: string): void;
+  /**
+   * Point's column as Emacs's current-column counts it: tabs to tab stops,
+   * wide characters as two, and text hidden without an ellipsis as none.
+   */
+  function currentColumn(): number;
+  /** Move point to a column of its line, as Emacs's move-to-column does, and return the column reached. */
+  function moveToColumn(column: number): number;
   /** Point, as a character offset from the start of the buffer, counting from 0. */
   function point(): number;
   /** Move point to a character offset. */

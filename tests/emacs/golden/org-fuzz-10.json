@@ -444,6 +444,216 @@
       "kill_ring": [],
       "modified": false,
       "error": null
+    },
+    {
+      "name": "seed24-1600-m-down",
+      "input": {
+        "text": "** [#A] read\nDEADLINE: <2026-11-01 Sun +1w>\n\n",
+        "point": 45,
+        "keys": "M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** [#A] read\nDEADLINE: <2026-11-01 Sun +1w>\n\n",
+      "visible": "** [#A] read\nDEADLINE: <2026-11-01 Sun +1w>\n\n",
+      "point": 45,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot drag element forward"
+    },
+    {
+      "name": "seed24-0645-c-spc-c-slash",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-SPC C-/",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": 0,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No further undo information for region"
+    },
+    {
+      "name": "seed24-0519-m-up-x",
+      "input": {
+        "text": "\n** [#C] fix fix\n* call fix\n",
+        "point": 28,
+        "keys": "M-<up> x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n** [#C] fix fix\n*x call fix\n",
+      "visible": "\n** [#C] fix fix\n*x call fix\n",
+      "point": 19,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Cannot move past superior level or buffer limit"
+    },
+    {
+      "name": "seed24-1213-c-n-m-up-m-s-up",
+      "input": {
+        "text": "2. [X] alpha\n** beta gamma\n* call alpha",
+        "point": 18,
+        "keys": "C-n M-<up> M-S-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "2. [X] alpha\n* call alpha\n** beta gamma\n",
+      "visible": "2. [X] alpha\n* call alpha\n** beta gamma\n",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Cannot move past superior level or buffer limit"
+    },
+    {
+      "name": "seed24-0999-m-s-up-del-m-",
+      "input": {
+        "text": "see [[*notes][the notes]] now\n** TODO read notes :work:",
+        "point": 23,
+        "keys": "M-S-<up> DEL M->",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** TODO readnotes                                                      :work:\nsee [[*notes][the notes]] now\n",
+      "visible": "** TODO readnotes                                                      :work:\nsee the notes now\n",
+      "point": 108,
+      "mark": 12,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "seed24-0861-c-spc-c-c-c-p-m-up",
+      "input": {
+        "text": "# a comment\n",
+        "point": 12,
+        "keys": "C-SPC C-c C-p M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "# a comment\n",
+      "visible": "# a comment\n",
+      "point": 0,
+      "mark": 11,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "seed24-0011-c-return-c-c-c-b-m-up",
+      "input": {
+        "text": "\n** DONE plan fix\n* call\n",
+        "point": 25,
+        "keys": "C-<return> C-c C-b M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n** DONE plan fix\n* call\n* \n",
+      "visible": "\n** DONE plan fix\n* call\n* \n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Cannot move past superior level or buffer limit"
+    },
+    {
+      "name": "move-up-past-a-deeper-heading-at-the-start",
+      "input": {
+        "text": "** a\n* b\n",
+        "point": 0,
+        "keys": "C-n M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* b\n** a\n",
+      "visible": "* b\n** a\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "move-up-past-a-deeper-heading-after-text",
+      "input": {
+        "text": "x\n** a\n* b\n",
+        "point": 0,
+        "keys": "C-n C-n M-<up>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "x\n** a\n* b\n",
+      "visible": "x\n** a\n* b\n",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Cannot move past superior level or buffer limit"
+    },
+    {
+      "name": "drag-a-line-keeps-its-shown-column",
+      "input": {
+        "text": "x [[*a][the a]] y\nlonger line here\n",
+        "point": 0,
+        "keys": "C-e M-S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "longer line here\nx [[*a][the a]] y\n",
+      "visible": "longer line here\nx the a y\n",
+      "point": 34,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
     }
   ]
 }

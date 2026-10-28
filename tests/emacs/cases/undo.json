@@ -106,5 +106,10 @@
     "text": "abcd",
     "keys": "C-t C-/",
     "point": 2
+  },
+  {
+    "name": "undo-with-an-empty-region",
+    "text": "ab",
+    "keys": "x C-SPC C-/"
   }
 ]

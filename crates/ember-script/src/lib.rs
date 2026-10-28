@@ -393,6 +393,14 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
         })?,
     )?;
     native.set(
+        "currentColumn",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.current_column())))?,
+    )?;
+    native.set(
+        "moveToColumn",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, column: usize| with_editor(&ctx, |ed| Ok(ed.move_to_column(column))))?,
+    )?;
+    native.set(
         "insertAndInherit",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, text: String| {
             with_editor(&ctx, |ed| {

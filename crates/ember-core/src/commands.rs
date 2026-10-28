@@ -436,6 +436,34 @@ fn line_move(ed: &mut Editor, n: i64) -> Result<()> {
     Ok(())
 }
 
+/// Where move-to-column takes point on a line for a column: past text
+/// hidden without an ellipsis, then to where the column is reached, past a
+/// character that spans it, or the line's end.
+pub(crate) fn move_to_column_on(ed: &Editor, b: &Buffer, line: usize, goal: usize) -> usize {
+    use unicode_width::UnicodeWidthChar;
+    let tab = ed.tab_width_in(b).max(1);
+    let end = b.line_end(line);
+    let mut col = 0;
+    let mut p = b.line_start(line);
+    while p < end {
+        // Hidden text is skipped first, so point goes before the character the cursor shows on.
+        if ed.invisible_in(b, p) == Some(false) {
+            p += 1;
+            continue;
+        }
+        if col >= goal {
+            break;
+        }
+        col = match b.char_at(p) {
+            Some('\t') => (col / tab + 1) * tab,
+            Some(c) => col + c.width().unwrap_or(0),
+            None => col,
+        };
+        p += 1;
+    }
+    p
+}
+
 /// Where a line move lands on a line for a goal column, as Emacs's
 /// move-to-column does: the first position the column is reached at, even
 /// if hidden text starts there, past a character that spans the column, or
@@ -465,7 +493,7 @@ fn position_at_goal_column(ed: &Editor, b: &Buffer, line: usize, goal: usize) ->
 /// start of its line, with tabs to tab stops, wide characters taking two
 /// columns, and hidden text taking none, unless it shows an ellipsis, as
 /// folds do: that counts as if shown.
-fn current_column(ed: &Editor, b: &Buffer, pos: usize) -> usize {
+pub(crate) fn current_column(ed: &Editor, b: &Buffer, pos: usize) -> usize {
     use unicode_width::UnicodeWidthChar;
     let tab = ed.tab_width_in(b).max(1);
     let mut col = 0;
@@ -644,11 +672,19 @@ fn editing(ed: &mut Editor) {
         |ed, _| {
             let mut continuing = ed.last_command() == Some("undo");
             let mut redid = false;
+            // With the region active Emacs undoes only changes inside it, but
+            // an empty region takes in the whole history. Ember does not undo
+            // in a region yet; its messages say "region" as Emacs's do.
+            let in_region = ed.buffer().is_mark_active();
             for _ in 0..ed.prefix_numeric().max(1) {
-                redid = ed.buffer_mut().undo(continuing)?;
+                redid = match ed.buffer_mut().undo(continuing) {
+                    Err(_) if in_region => return err("No further undo information for region"),
+                    result => result?,
+                };
                 continuing = true;
             }
-            ed.message(if redid { "Redo" } else { "Undo" });
+            let message = if redid { "Redo" } else { "Undo" };
+            ed.message(if in_region { format!("{message} in region") } else { message.to_string() });
             Ok(())
         },
     );

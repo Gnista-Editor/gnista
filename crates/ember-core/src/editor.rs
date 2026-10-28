@@ -586,6 +586,26 @@ impl Editor {
         result
     }
 
+    /// Point's column as Emacs's `current-column` counts it: tabs to tab
+    /// stops, wide characters as two, and text hidden without an ellipsis as none.
+    pub fn current_column(&self) -> usize {
+        let b = self.buffer();
+        crate::commands::current_column(self, b, b.point())
+    }
+
+    /// Moves point to a column of its line, as Emacs's `move-to-column` does
+    /// without forcing, and returns the column reached.
+    pub fn move_to_column(&mut self, column: usize) -> usize {
+        // What font-lock hides counts, so the line is fontified first, as
+        // redisplay would have done.
+        let p = self.buffer().point();
+        let _ = self.fontify_region(p..p);
+        let b = self.buffer();
+        let pos = crate::commands::move_to_column_on(self, b, b.line_of(b.point()), column);
+        self.buffer_mut().set_point(pos);
+        self.current_column()
+    }
+
     /// Takes the error from the last interactive command that failed. An
     /// undefined key is not an error, as in Emacs: it only shows a message.
     pub fn take_error(&mut self) -> Option<Error> {

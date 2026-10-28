@@ -406,6 +406,25 @@
       "kill_ring": [],
       "modified": false,
       "error": null
+    },
+    {
+      "name": "undo-with-an-empty-region",
+      "input": {
+        "text": "ab",
+        "point": 0,
+        "keys": "x C-SPC C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "ab",
+      "visible": "ab",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
     }
   ]
 }
