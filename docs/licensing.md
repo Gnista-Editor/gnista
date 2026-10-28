@@ -1,0 +1,97 @@
+# Licensing notes
+
+Status: undecided · notes for later, not a decision · 2026-10-28
+
+Nothing here is legal advice. These notes record what we know, what we have done, and what we may have to undo before Ember is released. Talk to a lawyer before going public.
+
+## Where we stand
+
+- `Cargo.toml` says `license = "UNLICENSED"`. There is no LICENSE file.
+- Nothing has been distributed: the repository is private. The GPL only applies when code is distributed, so private GPL-derived code, history included, carries no obligations today.
+- The aim is open source. GPL for the whole would be acceptable, but a permissive core is preferred, for the reasons below.
+
+## The long-term aim
+
+Ember is meant to become a modern platform in the spirit of Emacs, not an Org editor. Org is one package among many. The editor should run in a terminal, in a window, in a web browser and as an iPhone and iPad app. A small paid App Store build could cover the Apple Developer fee.
+
+## Code derived from GPL source
+
+On 2026-10-28, against [ADR 0013](adr/0013-following-org-closely.md), code was ported closely from GNU Emacs and Org (GPLv3 or later, copyright the Free Software Foundation). A close translation from Lisp or C to TypeScript or Rust is very likely a derivative work, and the GPL explicitly covers translations.
+
+Known to be derived, from the sessions that ported them:
+
+- `packages/org.ts`: most of it, ported function by function from org.el, org-list.el, org-fold.el, org-fold-core.el, org-element.el and ol.el.
+- `packages/org-table.ts`: from org-table.el.
+- `packages/simple.ts`: parts follow simple.el, such as `transpose-chars`, `transpose-words`, `transpose-lines`, `newline`, `open-line` and `electric-newline-and-maybe-indent`.
+- `packages/outline.ts`: `outline-up-heading` follows outline.el.
+- `crates/ember-core/src/buffer.rs`: undo in a region (from simple.el's `undo-make-selective-list`, `undo-adjust-elt`, `undo-elt-in-region`, `undo-delta` and `primitive-undo`), point records after undo (from undo.c's `record_point`) and marks put back by undo (`record_marker_adjustments`).
+- `crates/ember-core/src/editor.rs` and `commands.rs`: undo amalgamation (`undo-auto-amalgamate`), `current-column` and the landing rule of `move-to-column`, and `insert-and-inherit`'s sticky properties. These follow Emacs's code to varying degrees.
+
+Not audited: the other packages (`isearch.ts`, `replace.ts`, `kmacro.ts`, `repeat.ts`, `help.ts`, `files.ts`, `delsel.ts`, `mouse.ts`, `window.ts`) and the rest of the core, from earlier sessions. The first step of any clean-up is an audit of how closely each was written from Emacs's source.
+
+Probably fine, but check:
+
+- `tests/emacs/golden/`: Emacs's output for our own inputs. A program's output is not generally covered by the program's licence.
+- `tests/emacs/record.el`: our own Emacs Lisp, which runs inside Emacs. The FSF regards Emacs Lisp packages as derived from Emacs, so this file may have to be GPL. It is a test tool, not part of Ember, so it can simply stay GPL.
+
+From now on: ask before reading or porting the source of any GPL or similar project. Running Emacs to compare behaviour is fine.
+
+## The structure we have in mind
+
+1. **A permissive core.** The Rust crates and the basic packages a usable editor needs would be MIT and/or Apache-2.0. Anyone could reuse them on any platform, App Store included.
+2. **GPL packages kept apart.** Packages derived from Emacs or Org would be GPL-3.0-or-later, in their own repositories. Each file gets an SPDX header and credits the FSF.
+3. **Packages loaded from URLs.** A user's `init.ts` would load packages from URLs they choose, such as GitHub repositories, instead of the binary bundling them. Today all packages are compiled in with `include_str!` in `crates/ember-script/src/lib.rs`, so every build contains them.
+
+Why this works for the licence:
+
+- **The direction is fine.** A permissive core combined with GPL code is fine, because permissive licences are compatible with the GPL. The reverse, a GPL core with closed plugins, is what the FSF objects to.
+- **We don't distribute the GPL code.** Its repository does, as source, which meets the GPL. The user combines it with Ember on their own device, which the GPL does not restrict.
+- **Bundling or serving it would be distribution.** If Ember bundled GPL packages, or served them from a catalogue we run, we would arguably be distributing them. A URL the user enters keeps us out of that.
+- **The web counts too.** Serving GPL JavaScript in a web build is distribution, so the same separation applies there.
+
+## The App Store
+
+What we found in October 2026, at second hand and not from Apple's own text. Read the current [App Store Review Guidelines](https://developer.apple.com/app-store/review/guidelines/) and developer agreement before building an iOS app: these rules change every year or two.
+
+- **GPL code on the App Store.** The FSF holds that Apple's terms add restrictions the GPL forbids. VLC was withdrawn in 2011 after a GPL complaint. A binary that contains GPL code is therefore a risk. A GPL exception for the App Store would only be possible for code we own, not for code derived from the FSF's.
+- **Guideline 2.5.2** bars apps from downloading or running code that adds or changes features.
+- **The developer agreement (3.3.2)** reportedly allows downloaded interpreted code if it does not change the app's primary purpose, does not create a storefront for other code, and does not bypass OS security. QuickJS is an interpreter with no JIT, which fits.
+- **Guideline 4.7** was revised to cover mini apps and plug-ins not embedded in the binary.
+- **Enforcement is inconsistent.** In March 2026 Apple removed one app that ran generated code and approved a similar one the same week.
+
+So:
+
+- **No in-app extension store.** It is close to "a storefront for other code".
+- **Present packages as the user's own configuration.** `init.ts` loads what the user asks for, as coding apps like Pythonista and Scriptable do.
+- **Bundle enough that the app is complete without downloads,** so packages don't change its primary purpose.
+- **The EU is a fallback.** Alternative marketplaces and web distribution allow a GPL build there.
+
+## Cleaning up derived code
+
+### The process
+
+If we want the permissive structure, the derived code has to be rewritten without the GPL source. This would be done with clean sub-agents:
+
+1. **Remove.** Take the derived code out (see the list above), keeping its oracle cases and fuzzer.
+2. **Specify.** A spec-writer describes behaviour from Org's manual, docstrings and observed behaviour, never the source. The 1,134 oracle cases in `tests/emacs/cases/` already pin down much of it.
+3. **Implement.** A fresh implementer works from the spec and the tests only. Its brief says not to read Emacs or Org source, and it has no access to the removed files or to history that contains them.
+4. **Check.** The oracle suite and the fuzzer decide when it is done.
+5. **Keep records.** Keep the briefs, specs and agent logs, to show the process if it is ever questioned.
+6. **Publish fresh.** Put the finished code in a new repository with no history containing the derived versions. This is not what makes it lawful, since what matters is whether the published code is derived. It does avoid publishing that history by accident.
+
+### If the clean version looks like the original
+
+Copyright protects expression, not behaviour, ideas or interfaces. Independent creation is a full defence, even if the result is identical. Proving it is the difficulty. Copying is inferred from access plus substantial similarity, and here there is access twice: this repository held the ports, and the model writing the code has very likely been trained on Emacs's source. Whether code an LLM writes counts as independent when the model has seen the original is not settled law.
+
+What helps:
+
+- **Function-dictated code is not protectable.** Code there is only one sensible way to write does not count.
+- **The language change helps.** Moving from Lisp to TypeScript or Rust makes literal overlap unlikely. Copying a program's structure still counts as copying, though.
+- **Avoid copying Org's bugs.** Reproducing a bug is strong evidence of copying. Examples are `org-delete-char`'s stale match data, and the comparison of a position with a character count in `org-fold--reveal-headline-at-point`. Reproduce a quirk only where an oracle case requires it, and work from the case, not from memory of the source.
+- **Compare with the original before publishing.** A similarity check against the Emacs and Org sources, and rewriting anything too close.
+
+## Open questions
+
+- MIT, Apache-2.0 or both for the core.
+- Whether to clean up the derived code at all, or release everything as GPL and give up a closed App Store build.
+- Whether contributors should sign a CLA, which would allow licensing exceptions later.
