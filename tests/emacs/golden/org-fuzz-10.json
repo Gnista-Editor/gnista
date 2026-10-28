@@ -969,6 +969,132 @@
       "kill_ring": [],
       "modified": false,
       "error": null
+    },
+    {
+      "name": "moving-an-item-down-in-a-folded-heading",
+      "input": {
+        "text": "* gamma\n2) [X] plan\n- call",
+        "point": 8,
+        "keys": "C-u TAB M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* gamma\n- call\n[X] plan",
+      "visible": "",
+      "point": 15,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Beginning of buffer"
+    },
+    {
+      "name": "inserting-an-item-after-a-bullet-cycle-keeps-the-sub-item",
+      "input": {
+        "text": "3) read\n   - alpha\n   read\n2. alpha",
+        "point": 27,
+        "keys": "S-<right> M-b M-S-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- read\n  - alpha\n- [ ] \n  read\n- alpha",
+      "visible": "- read\n  - alpha\n- [ ] \n  read\n- alpha",
+      "point": 23,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggling-a-checkbox-from-the-second-heading-updates-the-first",
+      "input": {
+        "text": "* plan [1/2] :work:\n* DONE call\n- call",
+        "point": 33,
+        "keys": "C-p C-c C-x C-b",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* plan [0/0]                                                           :work:\n* DONE call\n- call",
+      "visible": "* plan [0/0]                                                           :work:\n* DONE call\n- call",
+      "point": 79,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "moving-an-item-down-after-folding-to-overview",
+      "input": {
+        "text": "*** fix call\n- [ ] call\n  plan\n- [X] beta\n",
+        "point": 17,
+        "keys": "C-c C-c <backtab> M-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "*** fix call\n- [X] beta\n- [X] call\n  plan\n",
+      "visible": "",
+      "point": 42,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "toggling-a-checkbox-on-a-heading-updates-a-percent-cookie",
+      "input": {
+        "text": "* [#A] call gamma [%] :home:x:\n* read\n- call",
+        "point": 32,
+        "keys": "C-c C-x C-b M->",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* [#A] call gamma [0%]                                               :home:x:\n* read\n- call",
+      "visible": "* [#A] call gamma [0%]                                               :home:x:\n* read\n- call",
+      "point": 91,
+      "mark": 79,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "insert-heading-after-content-under-a-folded-heading",
+      "input": {
+        "text": "* alpha beta :home:x:\nSCHEDULED: <2026-10-28 Wed>\n| ccc | x |",
+        "point": 43,
+        "keys": "<backtab> M-<down> M-S-<left> C-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* alpha beta :home:x:\n| ccc | x |\nSCHEDULED: <2026-10-28 Wed>",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "This command is active in special context like tables, headlines or items"
     }
   ]
 }

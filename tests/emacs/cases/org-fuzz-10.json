@@ -389,5 +389,59 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "moving-an-item-down-in-a-folded-heading",
+    "text": "* gamma\n2) [X] plan\n- call",
+    "keys": "C-u TAB M-<down>",
+    "point": 8,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "inserting-an-item-after-a-bullet-cycle-keeps-the-sub-item",
+    "text": "3) read\n   - alpha\n   read\n2. alpha",
+    "keys": "S-<right> M-b M-S-<return>",
+    "point": 27,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggling-a-checkbox-from-the-second-heading-updates-the-first",
+    "text": "* plan [1/2] :work:\n* DONE call\n- call",
+    "keys": "C-p C-c C-x C-b",
+    "point": 33,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "moving-an-item-down-after-folding-to-overview",
+    "text": "*** fix call\n- [ ] call\n  plan\n- [X] beta\n",
+    "keys": "C-c C-c <backtab> M-<down>",
+    "point": 17,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "toggling-a-checkbox-on-a-heading-updates-a-percent-cookie",
+    "text": "* [#A] call gamma [%] :home:x:\n* read\n- call",
+    "keys": "C-c C-x C-b M->",
+    "point": 32,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "insert-heading-after-content-under-a-folded-heading",
+    "text": "* alpha beta :home:x:\nSCHEDULED: <2026-10-28 Wed>\n| ccc | x |",
+    "keys": "<backtab> M-<down> M-S-<left> C-<return>",
+    "point": 43,
+    "modes": [
+      "org-mode"
+    ]
   }
 ]

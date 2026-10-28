@@ -431,6 +431,11 @@ function hideOverlay(start: number, end: number, spec: string): void {
  * reach outside it, and a new one hides it.
  */
 function flag(start: number, end: number, hide: boolean, spec = "outline"): void {
+  // Positions outside the buffer are brought inside, as make-overlay does,
+  // so folds that reached past an item, restored relative to its new
+  // place, are cut short rather than failing.
+  start = Math.min(Math.max(start, 0), ember.bufferSize());
+  end = Math.min(Math.max(end, start), ember.bufferSize());
   for (const id of ember.overlaysIn(start, end)) {
     if (ember.overlayGet(id, "invisible") !== spec) continue;
     const [from, to] = [ember.overlayStart(id) ?? start, ember.overlayEnd(id) ?? end];
@@ -1675,16 +1680,20 @@ function applyStruct(struct: Struct, old: Struct): void {
   const endList: [number, number | undefined][] = [];
   let accEnd: [number, number][] = [];
   const itmShift = new Map<number, number>();
-  for (const e of old) {
-    const now = getItem(struct, e.pos);
-    itmShift.set(e.pos, now.ind + charCount(now.bullet) - (e.ind + charCount(e.bullet)));
-    if (!old.some((x) => x.pos === e.end)) {
-      const up = accEnd.find(([end]) => end > e.end)?.[1];
-      endList.unshift([e.end, up]);
+  for (const { pos } of old) {
+    // Looked up by position, as Org does with assq, so two items at one
+    // position both read the first.
+    const now = getItem(struct, pos);
+    const was = getItem(old, pos);
+    itmShift.set(pos, now.ind + charCount(now.bullet) - (was.ind + charCount(was.bullet)));
+    if (!old.some((x) => x.pos === was.end)) {
+      const up = accEnd.find(([end]) => end > was.end)?.[1];
+      endList.unshift([was.end, up]);
     }
-    accEnd.unshift([e.end, e.pos]);
+    accEnd.unshift([was.end, pos]);
   }
-  const allEnds = [...new Set([...itmShift.keys(), ...endList.map(([end]) => end)])].sort((a, b) => a - b);
+  // Only the ends that are not at items are made unique, as in Org.
+  const allEnds = [...old.map((e) => e.pos), ...new Set(endList.map(([end]) => end))].sort((a, b) => a - b);
   accEnd = accEnd.reverse();
   const sliced: [number, number, number][] = [];
   while (allEnds.length > 1) {
@@ -2354,9 +2363,12 @@ function updateCheckboxCount(): void {
   try {
     const all = headings();
     const p = ember.point();
-    const before = all.filter((h) => h.start < p).at(-1);
-    const start = before?.start ?? 0;
-    const end = all.find((h) => h.start > p)?.start ?? ember.bufferSize();
+    // From the heading before point, as outline-previous-heading finds it:
+    // searching back, so a heading's own stars must end before point.
+    const previousHeading = (pos: number) => all.filter((h) => h.start + h.level + 1 <= pos).at(-1)?.start ?? 0;
+    const nextHeading = (pos: number) => all.find((h) => h.start > pos)?.start ?? ember.bufferSize();
+    const start = previousHeading(p);
+    const end = nextHeading(p);
     const cookies: { start: number; end: number; percent: boolean; count: [number, number] }[] = [];
     const countIn = (from: number, to: number, item: number | undefined): [number, number] => {
       let on = 0;
@@ -2388,7 +2400,11 @@ function updateCheckboxCount(): void {
         if (container !== undefined && !isHeadingLine(text)) {
           const s = listStruct(lineAt(container));
           count = countIn(container, getItem(s, container).end, container);
-        } else count = countIn(start, end, undefined);
+        } else {
+          // A cookie elsewhere counts the boxes in its own section.
+          const from = previousHeading(cs + charCount(m[0]));
+          count = countIn(from, nextHeading(from), undefined);
+        }
         cookies.push({ start: cs, end: cs + charCount(m[0]), percent: m[1].endsWith("%"), count });
       }
     }
@@ -3582,6 +3598,18 @@ function insertHeading(arg: ember.PrefixArg, invisibleOk = false): void {
       ember.gotoChar(all.find((h) => h.start >= from)?.start ?? ember.bufferSize());
     } else {
       let i = current;
+      if (!invisibleOk) {
+        // org-back-to-heading goes up to the first heading that is not
+        // folded, leaving point at the last one it tried if none is.
+        const lineage = [i, ...ancestors(all, i)];
+        const shown = lineage.find((a) => !ember.invisibleAt(all[a].start));
+        if (shown === undefined) {
+          const last = all[lineage[lineage.length - 1]].start;
+          ember.gotoChar(last);
+          throw new Error(`Before first headline at position ${last + 1} in buffer ${ember.bufferName()}`);
+        }
+        i = shown;
+      }
       if (parentEnd) i = ancestors(all, i)[0] ?? i;
       ember.gotoChar(subtreeRegion(all, i)[1]);
     }
