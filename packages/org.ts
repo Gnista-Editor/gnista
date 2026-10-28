@@ -782,6 +782,30 @@ function fixFoldsAround(from: number, to: number): void {
 }
 
 /** Unfolds a fold that no longer matches what it hides. */
+/**
+ * Shows a line from the newline before it, as org-fold--reveal-headline-at-point
+ * does. Blank lines after it would show too, but Org compares their end
+ * with what skip-chars-forward returns after org-end-of-subtree, a count
+ * of characters, so they rarely do.
+ */
+function revealHeadlineAt(line: number): void {
+  const size = ember.bufferSize();
+  const blank = /[\n\t\r ]/;
+  const endl = ember.lineEnd(line);
+  let q = endl;
+  while (q < size && blank.test(ember.bufferText(q, q + 1))) q++;
+  const all = headings();
+  const i = headingIndex(all, line);
+  let skipped = -1;
+  if (i !== undefined) {
+    let e = nextSameOrHigher(all, i)?.start ?? size;
+    for (let k = 0; k < 2 && e > 0 && /[\n\r]/.test(ember.bufferText(e - 1, e)); k++) e--;
+    skipped = 0;
+    while (e + skipped < size && blank.test(ember.bufferText(e + skipped, e + skipped + 1))) skipped++;
+  }
+  flag(Math.max(0, ember.lineStart(line) - 1), q + 1 === skipped ? q : endl, false);
+}
+
 function checkFold(id: number): void {
   const spec = String(ember.overlayGet(id, "invisible"));
   if (!FOLD_SPECS.includes(spec)) return;
@@ -814,26 +838,18 @@ function checkFold(id: number): void {
     // The line before the fold shows whole, as org-fold--reveal-outline-maybe
     // makes sure first, unless it is folded itself.
     const openerStart = ember.lineStart(before);
-    if (!folded(openerStart, "outline") && start < ember.lineEnd(before)) {
-      flag(Math.max(0, openerStart - 1), ember.lineEnd(before), false);
-      start = ember.lineEnd(before);
+    if (!folded(openerStart, "outline")) {
+      revealHeadlineAt(before);
+      start = Math.max(start, ember.lineEnd(before));
     }
     valid = start > 0 && (ITEM_RE.test(opener) || /^\*+ /.test(opener));
     if (valid) {
       // A top-level heading is never hidden, nor one partly hidden at the end.
       for (let l = before + 1; l < ember.lineCount() && ember.lineStart(l) < end; l++) {
-        if (/^\* /.test(ember.lineText(l))) flag(Math.max(0, ember.lineStart(l) - 1), ember.lineEnd(l), false);
+        if (/^\* /.test(ember.lineText(l))) revealHeadlineAt(l);
       }
-      // The heading on the line where the fold ends shows, as
-      // org-fold--reveal-headline-at-point shows it, with any blank lines after it.
-      const bol = ember.lineStart(lastLine);
-      if (isHeadingLine(ember.lineText(lastLine)) && !folded(bol, "outline")) {
-        let to = ember.lineEnd(lastLine);
-        let q = to;
-        while (q < size && /[\n\t\r ]/.test(ember.bufferText(q, q + 1))) q++;
-        if (q === ember.lineEnd(lineAt(q))) to = q;
-        flag(Math.max(0, bol - 1), to, false);
-      }
+      // The heading on the line where the fold ends shows.
+      if (isHeadingLine(ember.lineText(lastLine)) && !folded(ember.lineStart(lastLine), "outline")) revealHeadlineAt(lastLine);
     }
   } else {
     const block = /^[ \t]*#\+begin(?::|_(\S+))/i.exec(opener);

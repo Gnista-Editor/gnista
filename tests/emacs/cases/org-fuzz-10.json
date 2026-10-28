@@ -479,5 +479,14 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "dragging-a-heading-past-planning-reveals-the-blank-line",
+    "text": "** [#C] beta\n\n** notes\nSCHEDULED: <2026-10-28 Wed>",
+    "point": 14,
+    "keys": "C-u TAB M-S-<down>",
+    "modes": [
+      "org-mode"
+    ]
   }
 ]

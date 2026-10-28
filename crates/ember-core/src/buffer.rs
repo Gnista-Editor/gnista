@@ -1013,7 +1013,11 @@ impl Buffer {
                     *m = edit.pos + offset;
                 }
             }
-            self.point = edit.point_before.min(self.len());
+            // As primitive-undo leaves it: at the start of an insertion it
+            // took out, and after text it put back if point was after it
+            // when it was deleted, else before.
+            let deleted = edit.deleted.chars().count();
+            self.point = if deleted > 0 && edit.point_before == edit.pos + deleted { edit.pos + deleted } else { edit.pos };
         }
         if let Some(p) = group.point {
             self.point = p.min(self.len());

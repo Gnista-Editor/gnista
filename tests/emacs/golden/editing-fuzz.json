@@ -2371,6 +2371,27 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "redo-leaves-point-where-the-change-is",
+      "input": {
+        "text": "\tthree",
+        "point": 3,
+        "keys": "M-d M-t C-/ C-? C-y",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\tthree",
+      "visible": "\tthree",
+      "point": 6,
+      "mark": 3,
+      "mark_active": false,
+      "kill_ring": [
+        "ree"
+      ],
+      "modified": true,
+      "error": "Don’t have two things to transpose"
     }
   ]
 }

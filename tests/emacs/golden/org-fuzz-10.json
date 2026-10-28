@@ -1181,6 +1181,27 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "dragging-a-heading-past-planning-reveals-the-blank-line",
+      "input": {
+        "text": "** [#C] beta\n\n** notes\nSCHEDULED: <2026-10-28 Wed>",
+        "point": 14,
+        "keys": "C-u TAB M-S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** [#C] beta\n\nSCHEDULED: <2026-10-28 Wed>\n** notes\n",
+      "visible": "** [#C] beta\n\nSCHEDULED: <2026-10-28 Wed>\n** notes\n",
+      "point": 42,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
     }
   ]
 }

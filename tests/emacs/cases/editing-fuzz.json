@@ -689,5 +689,11 @@
     "name": "undo-with-a-zero-count-after-a-change",
     "text": "ab",
     "keys": "x M-0 C-/"
+  },
+  {
+    "name": "redo-leaves-point-where-the-change-is",
+    "text": "\tthree",
+    "point": 3,
+    "keys": "M-d M-t C-/ C-? C-y"
   }
 ]
