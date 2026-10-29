@@ -11,6 +11,9 @@
 // "org-hide-block" for blocks. A link's brackets and target are hidden by
 // an "org-link" text property, so [[https://gnu.org][GNU]] shows as GNU.
 
+import { type Marker, dropMarker, edDelete, edInsert, marker, markers, placeMarkers } from "org-macs";
+import { charCount } from "subr";
+
 // Variables
 
 const variables: [string, string, ember.Value][] = [
@@ -142,9 +145,6 @@ function orgRegionActive(): boolean {
   return ember.regionActive() && mark !== undefined && mark !== ember.point();
 }
 
-function charCount(s: string): number {
-  return /[\uD800-\uDFFF]/.test(s) ? Array.from(s).length : s.length;
-}
 
 /** The position of index `i` of a line's text. */
 function at(line: number, text: string, i: number): number {
@@ -1056,53 +1056,6 @@ function lineStartOrEnd(line: number): number {
   return line < ember.lineCount() ? ember.lineStart(line) : ember.bufferSize();
 }
 
-/**
- * A marker of the core's, as Emacs's: it moves with every edit to its
- * buffer, however made. Setting `pos` moves it into the current buffer,
- * as move-marker does.
- */
-type Marker = { readonly id: number; pos: number };
-
-/** This package's markers, for the edits that place them by a rule of their own, as replace-match does. */
-const markers: Marker[] = [];
-
-function marker(pos: number, advances = false): Marker {
-  const id = ember.makeMarker(pos, { advances });
-  const m: Marker = {
-    id,
-    get pos() {
-      return ember.markerPosition(id) ?? 0;
-    },
-    set pos(p: number) {
-      ember.setMarker(id, p, ember.bufferName());
-    },
-  };
-  markers.push(m);
-  return m;
-}
-
-function dropMarker(m: Marker): void {
-  markers.splice(markers.indexOf(m), 1);
-  ember.deleteMarker(m.id);
-}
-
-/** Puts this package's markers in the current buffer where `moved` says, after an edit that moved them its own way. */
-function placeMarkers(saved: [Marker, number][]): void {
-  const here = ember.bufferName();
-  for (const [m, p] of saved) if (ember.markerBuffer(m.id) === here) m.pos = p;
-}
-
-function edInsert(pos: number, text: string, beforeMarkers = false): void {
-  if (text === "") return;
-  ember.gotoChar(pos);
-  if (beforeMarkers) ember.insertBeforeMarkers(text);
-  else ember.insert(text);
-}
-
-function edDelete(from: number, to: number): string {
-  if (to <= from) return "";
-  return ember.deleteRegion(from, to);
-}
 
 /**
  * Replaces text as replace-match does: markers inside it go to its start,

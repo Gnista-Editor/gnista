@@ -37,7 +37,7 @@ These become the foundations, in this order, each landing whole with its tests b
 
 Alongside: an API naming rule (kebab-case to camelCase, `-p` to `P`; `undefined` for "nil"), a declarative table generating each native function's binding, wrapper and declaration, and an oracle that shares one scripting instance across cases.
 
-Items 1 to 4 land in this round. Items 5 and 6 are the next round, decided now so no further package is written against the old patterns without knowing it will move. Items 7 to 10 follow, each in its own ADR when it starts.
+Items 1 to 5 landed in this round, with packages loaded as ES modules through a resolver that finds a package by its feature name, a shared `subr` module, and Org's marker layer moved into `org-macs`; the oracle now runs its cases in parallel, 264 s to 34 s. Item 6 is the next round, decided now so no further package is written against the old patterns without knowing it will move. Items 7 to 10 follow, each in its own ADR when it starts.
 
 ## Consequences
 

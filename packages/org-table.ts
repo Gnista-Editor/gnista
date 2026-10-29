@@ -6,6 +6,9 @@
 // of a column's fields are numbers. org-mode's TAB, S-TAB, RET and the
 // M-arrow and S-arrow keys call these commands when point is in a table.
 
+import { type Marker, dropMarker, edDelete, edInsert, marker, markers, placeMarkers } from "org-macs";
+import { charCount } from "subr";
+
 ember.defineVariable({
   name: "org-table-auto-blank-field",
   doc: "Whether typing right after TAB, S-TAB, RET or C-c C-c moved into a field replaces what the field holds.",
@@ -56,9 +59,6 @@ function orgRegionActive(): boolean {
   return ember.regionActive() && mark !== undefined && mark !== ember.point();
 }
 
-function charCount(s: string): number {
-  return /[\uD800-\uDFFF]/.test(s) ? Array.from(s).length : s.length;
-}
 
 function lineAt(pos = ember.point()): number {
   return ember.lineOf(pos);
@@ -91,53 +91,6 @@ function forwardLine(n: number): void {
   else ember.gotoChar(line + n < ember.lineCount() ? ember.lineStart(line + n) : ember.bufferSize());
 }
 
-/**
- * A marker of the core's, as Emacs's: it moves with every edit to its
- * buffer, however made. Setting `pos` moves it into the current buffer,
- * as move-marker does.
- */
-type Marker = { readonly id: number; pos: number };
-
-/** This package's markers, for the edits that place them by a rule of their own, as replace-match does. */
-const markers: Marker[] = [];
-
-function marker(pos: number, advances = false): Marker {
-  const id = ember.makeMarker(pos, { advances });
-  const m: Marker = {
-    id,
-    get pos() {
-      return ember.markerPosition(id) ?? 0;
-    },
-    set pos(p: number) {
-      ember.setMarker(id, p, ember.bufferName());
-    },
-  };
-  markers.push(m);
-  return m;
-}
-
-function dropMarker(m: Marker): void {
-  markers.splice(markers.indexOf(m), 1);
-  ember.deleteMarker(m.id);
-}
-
-/** Puts this package's markers in the current buffer where `moved` says, after an edit that moved them its own way. */
-function placeMarkers(saved: [Marker, number][]): void {
-  const here = ember.bufferName();
-  for (const [m, p] of saved) if (ember.markerBuffer(m.id) === here) m.pos = p;
-}
-
-function edInsert(pos: number, text: string, beforeMarkers = false): void {
-  if (text === "") return;
-  ember.gotoChar(pos);
-  if (beforeMarkers) ember.insertBeforeMarkers(text);
-  else ember.insert(text);
-}
-
-function edDelete(from: number, to: number): string {
-  if (to <= from) return "";
-  return ember.deleteRegion(from, to);
-}
 
 /** Runs body and puts point back where it was, moved as a marker, as save-excursion does. */
 const saveExcursion = <T>(body: () => T): T => ember.saveExcursion(body);

@@ -26,11 +26,20 @@ impl Emitter for Collector {
 }
 
 pub fn strip_types(filename: &str, source: String) -> Result<String> {
+    strip(filename, source, false)
+}
+
+/// As [`strip_types`], for an ES module: `import` and `export` are kept.
+pub fn strip_module_types(filename: &str, source: String) -> Result<String> {
+    strip(filename, source, true)
+}
+
+fn strip(filename: &str, source: String, module: bool) -> Result<String> {
     let cm: Lrc<SourceMap> = Default::default();
     let diagnostics: Diagnostics = Default::default();
     let handler = Handler::with_emitter(true, false, Box::new(Collector(diagnostics.clone())));
     let options = Options {
-        module: Some(false),
+        module: Some(module),
         filename: Some(filename.to_string()),
         mode: Mode::StripOnly,
         ..Default::default()

@@ -5,6 +5,8 @@
 // comments go to. Each major mode says what its comments look like with
 // comment-start and comment-end, and its syntax table finds them.
 
+import { truthy, numberValue as num } from "subr";
+
 const defvar = (name: string, value: ember.Value, doc: string, local = false) => ember.defineVariable({ name, value, doc, local });
 defvar("comment-start", null, "What starts a comment in this mode, with the space after it: \"// \" or \"# \". nil if the mode has no comments.", true);
 defvar("comment-end", "", "What ends a comment, with the space before it: \" */\", or \"\" when comments end with the line.", true);
@@ -15,14 +17,9 @@ defvar("comment-add", 0, "How many more comment starts comment-region and M-; on
 defvar("comment-empty-lines", false, "Whether comment-region comments blank lines too.");
 defvar("comment-inline-offset", 1, "The least space between code and the comment after it.");
 
-const truthy = (v: ember.Value | undefined): boolean => v !== undefined && v !== null && v !== false;
 const str = (name: string): string | undefined => {
   const v = ember.variable(name);
   return typeof v === "string" ? v : undefined;
-};
-const num = (name: string, fallback: number): number => {
-  const v = ember.variable(name);
-  return typeof v === "number" ? v : fallback;
 };
 const charAt = (p: number): string => ember.charAfter(p) ?? "";
 const bol = (p = ember.point()): number => ember.lineBeginningPosition(p);

@@ -8,7 +8,7 @@ pub mod config;
 mod strip;
 mod types;
 
-pub use strip::strip_types;
+pub use strip::{strip_module_types, strip_types};
 pub use types::type_definitions;
 
 use std::cell::{Cell, RefCell};
@@ -32,10 +32,50 @@ use rquickjs::{
 
 const PRELUDE: &str = include_str!("prelude.js");
 
+/// The source of the package a module name names: "subr", or as the
+/// loader names it, "packages/subr.ts".
+fn package_source(name: &str) -> Option<(&'static str, &'static str)> {
+    let feature = name.trim_start_matches("packages/").trim_end_matches(".ts");
+    PACKAGES.iter().find(|(file, _)| file.trim_start_matches("packages/").trim_end_matches(".ts") == feature).copied()
+}
+
+/// Finds a package by its feature name, as Emacs's require finds a Lisp
+/// file: `import { x } from "subr"` is packages/subr.ts.
+struct PackageResolver;
+
+impl rquickjs::loader::Resolver for PackageResolver {
+    fn resolve<'js>(
+        &mut self,
+        _ctx: &Ctx<'js>,
+        base: &str,
+        name: &str,
+        _attributes: Option<rquickjs::loader::ImportAttributes<'js>>,
+    ) -> rquickjs::Result<String> {
+        package_source(name).map(|(file, _)| file.to_string()).ok_or_else(|| rquickjs::Error::new_resolving(base, name))
+    }
+}
+
+/// Loads a package as an ES module, its types erased.
+struct PackageLoader;
+
+impl rquickjs::loader::Loader for PackageLoader {
+    fn load<'js>(
+        &mut self,
+        ctx: &Ctx<'js>,
+        name: &str,
+        _attributes: Option<rquickjs::loader::ImportAttributes<'js>>,
+    ) -> rquickjs::Result<rquickjs::Module<'js, rquickjs::module::Declared>> {
+        let (file, source) = package_source(name).ok_or_else(|| rquickjs::Error::new_loading(name))?;
+        let js = strip_module_types(file, source.to_string()).map_err(|e| rquickjs::Error::new_loading_message(name, e.to_string()))?;
+        rquickjs::Module::declare(ctx.clone(), file, js)
+    }
+}
+
 /// The packages that ship with Ember, in the order they load. Like the Lisp
 /// that Emacs preloads, they are part of the editor: `-q` skips init.ts but
 /// not these. Named by their path in the repository.
 const PACKAGES: &[(&str, &str)] = &[
+    ("packages/subr.ts", include_str!("../../../packages/subr.ts")),
     ("packages/simple.ts", include_str!("../../../packages/simple.ts")),
     ("packages/paragraphs.ts", include_str!("../../../packages/paragraphs.ts")),
     ("packages/indent.ts", include_str!("../../../packages/indent.ts")),
@@ -67,6 +107,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/xref.ts", include_str!("../../../packages/xref.ts")),
     ("packages/project.ts", include_str!("../../../packages/project.ts")),
     ("packages/replace.ts", include_str!("../../../packages/replace.ts")),
+    ("packages/org-macs.ts", include_str!("../../../packages/org-macs.ts")),
     ("packages/org-table.ts", include_str!("../../../packages/org-table.ts")),
     ("packages/org.ts", include_str!("../../../packages/org.ts")),
 ];
@@ -111,6 +152,7 @@ impl Scripting {
     /// running: returns the failures, for the front ends to show.
     pub fn start(ed: &mut Editor) -> Result<(Scripting, Vec<Error>)> {
         let runtime = Runtime::new().map_err(|e| Error::new(e.to_string()))?;
+        runtime.set_loader(PackageResolver, PackageLoader);
         runtime.set_interrupt_handler(Some(Box::new(|| {
             DEADLINE.get().is_some_and(|deadline| Instant::now() > deadline)
         })));
@@ -124,9 +166,17 @@ impl Scripting {
         })?;
         scripting.define_commands(ed);
         let mut failures = Vec::new();
-        for (name, source) in PACKAGES {
+        // Each package is an ES module, imported in this order; one that
+        // imports another not yet loaded loads it first, as require does.
+        for (name, _) in PACKAGES {
             LOADING.with_borrow_mut(|files| files.push(name.to_string()));
-            if let Err(e) = scripting.eval_typescript(ed, name, source.to_string()) {
+            let result = enter(&scripting.context, ed, |ctx| {
+                rquickjs::Module::import(&ctx, *name)
+                    .and_then(|promise| promise.finish::<Value>())
+                    .map(drop)
+                    .map_err(|e| js_error_with_location(&ctx, e))
+            });
+            if let Err(e) = result {
                 failures.push(e);
             }
             LOADING.with_borrow_mut(|files| files.pop());

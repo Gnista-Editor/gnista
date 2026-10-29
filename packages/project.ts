@@ -6,6 +6,8 @@
 // another project Ember knows. Projects used are remembered in the file
 // project-list-file, as JSON where Emacs writes Lisp.
 
+import { regexpQuote } from "subr";
+
 ember.defineVariable({
   name: "project-list-file",
   doc: "Where the projects Ember knows are saved: projects in user-emacs-directory if nil.",
@@ -311,8 +313,6 @@ function symbolAtPoint(): string | undefined {
 /** Grep's extended regexps for Emacs's, as xref--regexp-to-extended: groups and alternatives unescaped. */
 const toExtended = (re: string): string => re.replace(/\\([(){}|])|([(){}|])/g, (_, escaped, plain) => (escaped ?? `\\${plain}`));
 
-/** The regexp quoted, as regexp-quote: matching itself. */
-const regexpQuote = (s: string): string => s.replace(/[[*.\\?+^$]/g, "\\$&");
 
 ember.defineCommand({
   name: "project-find-regexp",

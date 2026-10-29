@@ -8,6 +8,8 @@
 // buffer selected, M-n and M-p move between messages, g runs the command
 // again, and C-c C-k kills it.
 
+import { truthy, numberValue as num } from "subr";
+
 // --- Faces and variables ----------------------------------------------------
 
 for (const [name, doc, attributes] of [
@@ -65,11 +67,6 @@ ember.defineHook("next-error-hook", "Run after next-error visits a message's pla
 /** How many characters, as buffer positions count them, the first `i` UTF-16 units of `s` are. */
 const chars = (s: string, i = s.length): number => [...s.slice(0, i)].length;
 
-const truthy = (v: ember.Value | undefined): boolean => v !== undefined && v !== null && v !== false;
-const num = (name: string, fallback: number): number => {
-  const v = ember.variable(name);
-  return typeof v === "number" ? v : fallback;
-};
 
 // --- Message formats ---------------------------------------------------------
 

@@ -4,6 +4,8 @@
 // show-paren-delay seconds; a paren that matches the wrong kind, or none,
 // shows as a mismatch. It is on by default, as in Emacs since 28.
 
+import { truthy } from "subr";
+
 ember.defineFace({
   name: "show-paren-match",
   doc: "A paren next to point and the one it matches, as Show Paren mode highlights them.",
@@ -56,7 +58,6 @@ ember.defineVariable({
   value: 102400,
 });
 
-const truthy = (v: ember.Value | undefined): boolean => v !== undefined && v !== null && v !== false;
 const charAt = (p: number): string => ember.charAfter(p) ?? "";
 
 /** Whether the paren at `pos` is not escaped, as show-paren--unescaped-p. */

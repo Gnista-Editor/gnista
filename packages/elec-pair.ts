@@ -6,6 +6,8 @@
 // electric-pair-preserve-balance says: it does not pair where that would
 // leave one unmatched, nor skip where that would.
 
+import { truthy } from "subr";
+
 ember.defineVariable({
   name: "electric-pair-pairs",
   doc: "Pairs of characters Electric Pair mode pairs even where the syntax table gives them no paren or quote syntax, as [open, close] lists.",
@@ -37,7 +39,6 @@ ember.defineVariable({
   value: true,
 });
 
-const truthy = (v: ember.Value | undefined): boolean => v !== undefined && v !== null && v !== false;
 const charAt = (p: number): string => ember.charAfter(p) ?? "";
 const charBefore = (p: number): string => ember.charBefore(p) ?? "";
 const pairs = (name: string): [string, string][] => {

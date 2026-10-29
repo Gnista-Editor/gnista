@@ -3,6 +3,8 @@
 // The default, indent-relative, is for tabbing rather than indenting, so
 // indent-according-to-mode indents such lines as the line before them.
 
+import { numberValue as num } from "subr";
+
 ember.defineVariable({
   name: "indent-line-function",
   doc: "The command that indents the current line, as the major mode says. indent-according-to-mode runs it.",
@@ -15,10 +17,6 @@ ember.defineVariable({
   value: ["indent-relative", "indent-relative-maybe", "indent-relative-first-indent-point"],
 });
 
-const num = (name: string, fallback: number): number => {
-  const v = ember.variable(name);
-  return typeof v === "number" ? v : fallback;
-};
 
 /** The column a line's text starts at, as current-indentation. */
 const currentIndentation = (line: number): number => ember.currentIndentation(ember.lineStart(line));

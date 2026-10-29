@@ -7,8 +7,11 @@
     "target": "es2023",
     "lib": ["es2023"],
     "types": [],
-    // Each .ts file is its own module, as Ember runs each file in its own scope.
+    // Each .ts file is an ES module, importing others by feature name, as
+    // Lisp files require each other: "subr" is subr.ts.
     "moduleDetection": "force",
+    "module": "preserve",
+    "paths": { "*": ["./*"] },
     // Ember erases types rather than compiling them, so enums and the like are not allowed.
     "erasableSyntaxOnly": true
   },

@@ -7,6 +7,8 @@
 // fill-column. Two spaces after a period end a sentence, as
 // sentence-end-double-space says, and filling keeps them.
 
+import { truthy, regexpQuote, forwardLine } from "subr";
+
 ember.defineVariable({
   name: "fill-column",
   doc: "The column filling breaks lines before. Each buffer has its own; C-x f sets it.",
@@ -62,7 +64,6 @@ ember.defineVariable({
   local: true,
 });
 
-const truthy = (v: ember.Value | undefined): boolean => v !== undefined && v !== null && v !== false;
 const fillColumn = (): number => {
   const v = ember.variable("fill-column");
   return typeof v === "number" ? v : 70;
@@ -79,13 +80,6 @@ const eobp = (): boolean => ember.point() >= ember.bufferSize();
 const skipForward = (chars: string, limit?: number): number => ember.skipCharsForward(chars, limit);
 /** Moves back over characters in `chars`, not before `limit`, as skip-chars-backward. Returns how far it went. */
 const skipBackward = (chars: string, limit?: number): number => -ember.skipCharsBackward(chars, limit);
-/** As forward-line: to the start of a later or earlier line, or an end of the buffer. */
-function forwardLine(n: number): void {
-  const line = ember.lineOf(ember.point()) + n;
-  if (line < 0) ember.gotoChar(0);
-  else if (line >= ember.lineCount()) ember.gotoChar(ember.bufferSize());
-  else ember.gotoChar(ember.lineStart(line));
-}
 /** Where an Emacs regexp matching at `p`, within its line, ends, as looking-at. */
 function lookingAt(regexp: string, p: number): number | undefined {
   const m = ember.search(regexp, { from: p, regexp: true, bound: eolAt(p), caseFold: false });
@@ -124,7 +118,6 @@ function commonPrefix(a: string, b: string): string | undefined {
   return i === 0 ? undefined : a.slice(0, i);
 }
 
-const regexpQuote = (s: string): string => s.replace(/[.*+?^$[\]\\]/g, "\\$&");
 
 /** The fill prefix a paragraph's text suggests, as fill-context-prefix. */
 function fillContextPrefix(from: number, to: number): string | undefined {
