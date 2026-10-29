@@ -3,7 +3,7 @@
 use std::ops::Range;
 
 use ember_core::display::{Glyph, cursor_index, display_width, position_at_column, row_glyphs};
-use ember_core::{Color as FaceColor, Editor, Row, Style as FaceStyle, WindowId, WindowView, palette};
+use ember_core::{Color as FaceColor, Editor, LineNumbers, Row, Style as FaceStyle, WindowId, WindowView, palette};
 use ratatui::Frame;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Color, Modifier, Style};
@@ -78,11 +78,24 @@ struct WindowRows {
     point_row: usize,
     point_col: usize,
     hscroll: usize,
+    /// The line numbers left of the text, if the buffer shows them.
+    numbers: Option<LineNumbers>,
+}
+
+/// The columns a window's line numbers take at the left of its text.
+fn gutter(numbers: &Option<LineNumbers>, area: Rect) -> u16 {
+    numbers.as_ref().map_or(0, |n| (n.width as u16).min(area.width.saturating_sub(1)))
+}
+
+/// The part of a window's text area right of its line numbers.
+fn text_area(area: Rect, gutter: u16) -> Rect {
+    Rect::new(area.x + gutter, area.y, area.width - gutter, area.height)
 }
 
 fn window_rows(ed: &Editor, view: &WindowView, area: Rect) -> WindowRows {
-    let width = area.width as usize;
     let rows = ed.rows_of_window(view.id, area.height as usize, dark(ed));
+    let numbers = ed.line_numbers(view.id, &rows);
+    let width = (area.width - gutter(&numbers, area)) as usize;
     let tab_width = ed.tab_width_in(view.buffer);
     let glyph_rows: Vec<Vec<Glyph>> = rows.iter().map(|r| row_glyphs(r, tab_width)).collect();
     let point = view.point;
@@ -93,7 +106,7 @@ fn window_rows(ed: &Editor, view: &WindowView, area: Rect) -> WindowRows {
         .unwrap_or(0);
     // Scroll horizontally, as Emacs does, when point would be off the right edge.
     let hscroll = if point_col < width { 0 } else { point_col - width / 2 };
-    WindowRows { rows, glyph_rows, point_row, point_col, hscroll }
+    WindowRows { rows, glyph_rows, point_row, point_col, hscroll, numbers }
 }
 
 fn dark(ed: &Editor) -> bool {
@@ -114,9 +127,10 @@ pub fn mouse_target(ed: &Editor, width: u16, height: u16, x: u16, y: u16) -> Opt
     }
     let view = ed.windows().into_iter().find(|v| v.id == area.id)?;
     let drawn = window_rows(ed, &view, area.text);
+    let text = text_area(area.text, gutter(&drawn.numbers, area.text));
     let row = (y - area.text.y) as usize;
     let position = match (drawn.rows.get(row), drawn.glyph_rows.get(row)) {
-        (Some(row), Some(glyphs)) => position_at_column(row, glyphs, (x - area.text.x) as usize + drawn.hscroll),
+        (Some(row), Some(glyphs)) => position_at_column(row, glyphs, x.saturating_sub(text.x) as usize + drawn.hscroll),
         _ => view.buffer.len(),
     };
     Some((area.id, Some(position)))
@@ -125,8 +139,19 @@ pub fn mouse_target(ed: &Editor, width: u16, height: u16, x: u16, y: u16) -> Opt
 /// Draws a window's rows and returns where its point is on screen.
 fn draw_window(frame: &mut Frame, ed: &Editor, view: &WindowView, area: Rect) -> Position {
     let dark = dark(ed);
+    let WindowRows { rows, glyph_rows, point_row, point_col, hscroll, numbers } = window_rows(ed, view, area);
+    // Line numbers, in their faces, left of the text.
+    let gutter = gutter(&numbers, area);
+    if let Some(numbers) = &numbers {
+        let face = |current: bool| {
+            let name = if current { "line-number-current-line" } else { "line-number" };
+            terminal_style(&ed.style_for(&[name.to_string()], dark), dark)
+        };
+        let lines: Vec<Line> = numbers.labels.iter().map(|(label, current)| Line::from(Span::styled(label.clone(), face(*current)))).collect();
+        frame.render_widget(Paragraph::new(lines), Rect::new(area.x, area.y, gutter, area.height));
+    }
+    let area = text_area(area, gutter);
     let width = area.width as usize;
-    let WindowRows { rows, glyph_rows, point_row, point_col, hscroll } = window_rows(ed, view, area);
     // Only the selected window shows the region, as in Emacs.
     let region = if view.selected { view.buffer.active_region() } else { None };
     let lines: Vec<Line> = rows
@@ -347,6 +372,21 @@ mod tests {
         assert_eq!(rows[15], format!("3/{total} M-x forw"));
         ed.press("RET").unwrap();
         assert_eq!(ed.buffer().point(), 3, "RET ran the selected command, forward-sexp");
+    }
+
+    #[test]
+    fn line_numbers_go_left_of_the_text() {
+        let mut ed = Editor::new();
+        let _scripting = ember_script::Scripting::new(&mut ed).unwrap();
+        ed.type_text("one\ntwo");
+        ed.call("display-line-numbers-mode", vec![]).unwrap();
+        let rows = render(&mut ed, 20, 5);
+        assert_eq!(rows[0], " 1 one");
+        assert_eq!(rows[1], " 2 two");
+        // The cursor is after the text, past the numbers.
+        ed.press("M-<").unwrap();
+        let rows = render(&mut ed, 20, 5);
+        assert_eq!(rows[0], " 1 one");
     }
 
     #[test]

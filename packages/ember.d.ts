@@ -589,6 +589,14 @@ declare global {
        */
       "display-buffer-other-frame": [buffer: string];
       /**
+       * Number the buffer's lines beside the text, as display-line-numbers-type says.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/display-line-numbers.ts.
+       */
+      "display-line-numbers-mode": [];
+      /**
        * Break the line before point at whitespace if it passes fill-column, as many times as it takes. Auto Fill mode runs it as you type a space or newline.
        *
        * Defined in packages/fill.ts.
@@ -822,6 +830,14 @@ declare global {
        * Defined in packages/files.ts.
        */
       "global-auto-revert-mode": [];
+      /**
+       * Number lines in every buffer, as display-line-numbers-mode does in one.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/display-line-numbers.ts.
+       */
+      "global-display-line-numbers-mode": [];
       /**
        * The major mode of the *Help* buffer. q goes back to the buffer before it.
        *
@@ -2790,6 +2806,14 @@ declare global {
        */
       "save-buffers-kill-terminal": [];
       /**
+       * Remember where point was in each file, so visiting it again goes back there, as saved in save-place-file.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/saveplace.ts.
+       */
+      "save-place-mode": [];
+      /**
        * Save some modified file buffers, asking about each: y saves it, n skips it, ! saves all the rest, . saves it and stops, and q stops.
        *
        * With a prefix argument, save them all without asking.
@@ -2797,6 +2821,20 @@ declare global {
        * Defined in packages/files.ts.
        */
       "save-some-buffers": [];
+      /**
+       * Save minibuffer history between sessions: the history of each prompt used, and savehist-additional-variables, in savehist-file, every few minutes and when Ember exits. The first time it is turned on, it reads the history back.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/savehist.ts.
+       */
+      "savehist-mode": [];
+      /**
+       * Save the minibuffer history now, to savehist-file.
+       *
+       * Defined in packages/savehist.ts.
+       */
+      "savehist-save": [];
       /**
        * Scroll the text down by nearly a screen, showing earlier lines.
        *
@@ -3306,6 +3344,42 @@ declare global {
        */
       "dired-trivial-filenames": Value;
       /**
+       * Whether and how to number lines beside the text: nil for not at all, t for each line's number, relative for how far each is from point's line, visual for the same in screen lines. display-line-numbers-mode sets it.
+       *
+       * Defined in packages/display-line-numbers.ts.
+       */
+      "display-line-numbers": Value;
+      /**
+       * Whether point's line shows its own number when the others are relative.
+       *
+       * Defined in packages/display-line-numbers.ts.
+       */
+      "display-line-numbers-current-absolute": Value;
+      /**
+       * Whether Display-Line-Numbers mode is on in this buffer. Use the command display-line-numbers-mode to change it.
+       *
+       * Defined in packages/display-line-numbers.ts.
+       */
+      "display-line-numbers-mode": Value;
+      /**
+       * What display-line-numbers-mode sets display-line-numbers to: t, relative or visual.
+       *
+       * Defined in packages/display-line-numbers.ts.
+       */
+      "display-line-numbers-type": Value;
+      /**
+       * The least number of digits line numbers take, or nil to take as many as the largest number in the window.
+       *
+       * Defined in packages/display-line-numbers.ts.
+       */
+      "display-line-numbers-width": Value;
+      /**
+       * Whether display-line-numbers-mode makes the numbers as wide as the buffer's last line needs from the start, so they do not widen as you scroll; a number counts that many lines more.
+       *
+       * Defined in packages/display-line-numbers.ts.
+       */
+      "display-line-numbers-width-start": Value;
+      /**
        * Whether RET indents the new line, as Emacs's electric-indent-mode does; on by default.
        *
        * Defined in packages/simple.ts.
@@ -3409,6 +3483,12 @@ declare global {
        * Defined in packages/files.ts.
        */
       "global-auto-revert-mode": Value;
+      /**
+       * Whether Global-Display-Line-Numbers mode is on. Use the command global-display-line-numbers-mode to change it.
+       *
+       * Defined in packages/display-line-numbers.ts.
+       */
+      "global-display-line-numbers-mode": Value;
       /**
        * How many earlier answers each minibuffer history keeps.
        */
@@ -3891,6 +3971,78 @@ declare global {
        */
       "revert-without-query": Value;
       /**
+       * The file places are saved in: places in user-emacs-directory if nil.
+       *
+       * Defined in packages/saveplace.ts.
+       */
+      "save-place-file": Value;
+      /**
+       * Whether saving the places leaves out files that are gone.
+       *
+       * Defined in packages/saveplace.ts.
+       */
+      "save-place-forget-unreadable-files": Value;
+      /**
+       * Files whose places are not saved, as a regular expression, such as Git's commit message file.
+       *
+       * Defined in packages/saveplace.ts.
+       */
+      "save-place-ignore-files-regexp": Value;
+      /**
+       * How many files' places to keep, the most recently left first, or nil for all.
+       *
+       * Defined in packages/saveplace.ts.
+       */
+      "save-place-limit": Value;
+      /**
+       * Whether Save-Place mode is on. Use the command save-place-mode to change it.
+       *
+       * Defined in packages/saveplace.ts.
+       */
+      "save-place-mode": Value;
+      /**
+       * More variables to save, such as kill-ring or search-ring.
+       *
+       * Defined in packages/savehist.ts.
+       */
+      "savehist-additional-variables": Value;
+      /**
+       * How many seconds between saves, or nil to save only when Ember exits.
+       *
+       * Defined in packages/savehist.ts.
+       */
+      "savehist-autosave-interval": Value;
+      /**
+       * The file minibuffer history is saved in: history in user-emacs-directory if nil.
+       *
+       * Defined in packages/savehist.ts.
+       */
+      "savehist-file": Value;
+      /**
+       * History variables not to save.
+       *
+       * Defined in packages/savehist.ts.
+       */
+      "savehist-ignored-variables": Value;
+      /**
+       * The history variables of the prompts used, which Savehist mode saves.
+       *
+       * Defined in packages/savehist.ts.
+       */
+      "savehist-minibuffer-history-variables": Value;
+      /**
+       * Whether Savehist mode is on. Use the command savehist-mode to change it.
+       *
+       * Defined in packages/savehist.ts.
+       */
+      "savehist-mode": Value;
+      /**
+       * Whether to save the history of each prompt used, as well as savehist-additional-variables.
+       *
+       * Defined in packages/savehist.ts.
+       */
+      "savehist-save-minibuffer-history": Value;
+      /**
        * Strings searched for with incremental search, most recent first.
        *
        * Defined in packages/isearch.ts.
@@ -4180,6 +4332,18 @@ declare global {
        * Defined in packages/isearch.ts.
        */
       "lazy-highlight": FaceAttributes;
+      /**
+       * Line numbers beside the text.
+       *
+       * Defined in packages/display-line-numbers.ts.
+       */
+      "line-number": FaceAttributes;
+      /**
+       * The number of point's line.
+       *
+       * Defined in packages/display-line-numbers.ts.
+       */
+      "line-number-current-line": FaceAttributes;
       /**
        * Links.
        */
@@ -4587,6 +4751,18 @@ declare global {
        */
       "dired-mode-hook": Value;
       /**
+       * Run after Display-Line-Numbers mode is turned on or off.
+       */
+      "display-line-numbers-mode-hook": Value;
+      /**
+       * Run after Display-Line-Numbers mode is turned off.
+       */
+      "display-line-numbers-mode-off-hook": Value;
+      /**
+       * Run after Display-Line-Numbers mode is turned on.
+       */
+      "display-line-numbers-mode-on-hook": Value;
+      /**
        * Run after Electric-Pair mode is turned on or off.
        */
       "electric-pair-mode-hook": Value;
@@ -4642,6 +4818,18 @@ declare global {
        * Run after Global-Auto-Revert mode is turned on.
        */
       "global-auto-revert-mode-on-hook": Value;
+      /**
+       * Run after Global-Display-Line-Numbers mode is turned on or off.
+       */
+      "global-display-line-numbers-mode-hook": Value;
+      /**
+       * Run after Global-Display-Line-Numbers mode is turned off.
+       */
+      "global-display-line-numbers-mode-off-hook": Value;
+      /**
+       * Run after Global-Display-Line-Numbers mode is turned on.
+       */
+      "global-display-line-numbers-mode-on-hook": Value;
       /**
        * Run after entering Help mode, after the hooks of the modes it is built on.
        */
@@ -4786,6 +4974,38 @@ declare global {
        * Run after entering Rust mode, after the hooks of the modes it is built on.
        */
       "rust-ts-mode-hook": Value;
+      /**
+       * Run after visiting a file puts point at its saved place.
+       */
+      "save-place-after-find-file-hook": Value;
+      /**
+       * Run after Save-Place mode is turned on or off.
+       */
+      "save-place-mode-hook": Value;
+      /**
+       * Run after Save-Place mode is turned off.
+       */
+      "save-place-mode-off-hook": Value;
+      /**
+       * Run after Save-Place mode is turned on.
+       */
+      "save-place-mode-on-hook": Value;
+      /**
+       * Run after Savehist mode is turned on or off.
+       */
+      "savehist-mode-hook": Value;
+      /**
+       * Run after Savehist mode is turned off.
+       */
+      "savehist-mode-off-hook": Value;
+      /**
+       * Run after Savehist mode is turned on.
+       */
+      "savehist-mode-on-hook": Value;
+      /**
+       * Run before Savehist mode saves the history.
+       */
+      "savehist-save-hook": Value;
       /**
        * Functions that say whether typing this character uses the active region, as electric-pair-mode wraps it in a pair, so Delete Selection mode leaves it.
        */
@@ -5198,6 +5418,8 @@ declare global {
       ignoreCase: boolean;
       /** How many completions are kept for the input as it is. */
       kept: number;
+      /** The variable the answer goes into, as minibuffer-history-variable. */
+      history: string;
     }
     /** What the open prompt reads, or undefined if none is open. */
     function minibufferInfo(): MinibufferInfo | undefined;

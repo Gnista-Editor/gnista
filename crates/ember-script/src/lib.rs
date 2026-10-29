@@ -42,6 +42,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/fill.ts", include_str!("../../../packages/fill.ts")),
     ("packages/lisp.ts", include_str!("../../../packages/lisp.ts")),
     ("packages/paren.ts", include_str!("../../../packages/paren.ts")),
+    ("packages/display-line-numbers.ts", include_str!("../../../packages/display-line-numbers.ts")),
     ("packages/files.ts", include_str!("../../../packages/files.ts")),
     ("packages/text-mode.ts", include_str!("../../../packages/text-mode.ts")),
     ("packages/outline.ts", include_str!("../../../packages/outline.ts")),
@@ -57,6 +58,8 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/isearch.ts", include_str!("../../../packages/isearch.ts")),
     ("packages/icomplete.ts", include_str!("../../../packages/icomplete.ts")),
     ("packages/recentf.ts", include_str!("../../../packages/recentf.ts")),
+    ("packages/savehist.ts", include_str!("../../../packages/savehist.ts")),
+    ("packages/saveplace.ts", include_str!("../../../packages/saveplace.ts")),
     ("packages/ffap.ts", include_str!("../../../packages/ffap.ts")),
     ("packages/dired.ts", include_str!("../../../packages/dired.ts")),
     ("packages/project.ts", include_str!("../../../packages/project.ts")),
@@ -913,6 +916,7 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
             object.set("initial", info.initial)?;
             object.set("ignoreCase", info.ignore_case)?;
             object.set("kept", info.kept)?;
+            object.set("history", info.history)?;
             Ok(Some(object))
         })?,
     )?;

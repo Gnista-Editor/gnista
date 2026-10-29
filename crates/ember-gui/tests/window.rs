@@ -77,6 +77,14 @@ fn vertical_completions() {
 }
 
 #[test]
+fn line_numbers() {
+    let mut ed = sample();
+    let _scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    ed.call("display-line-numbers-mode", vec![]).unwrap();
+    harness(ed, Theme::Dark).snapshot("line_numbers_dark");
+}
+
+#[test]
 fn keys_reach_the_editor() {
     let mut h = harness(Editor::new(), Theme::Dark);
     h.event(Event::Text("hello".into()));

@@ -26,6 +26,25 @@ pub struct Segment {
     pub ellipsis: bool,
 }
 
+/// How lines are numbered, as `display-line-numbers` says.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum LineNumberKind {
+    Absolute,
+    Relative,
+    Visual,
+}
+
+/// The line numbers beside a window's rows, as [`Editor::line_numbers`]
+/// gives them for a front end to draw left of the text.
+#[derive(Clone, Debug, PartialEq)]
+pub struct LineNumbers {
+    /// How many columns they take, the spaces either side included.
+    pub width: usize,
+    /// Each row's number, as wide as `width`, and whether the row is on
+    /// point's line, for the face `line-number-current-line`.
+    pub labels: Vec<(String, bool)>,
+}
+
 /// One row of a window.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Row {
@@ -346,7 +365,83 @@ impl Editor {
             return None;
         }
         let words = self.variable_in(b, "word-wrap").is_some_and(|v| v.is_true());
-        Some(Wrap { width: width.saturating_sub(1).max(1), words })
+        let numbers = self.line_number_columns(window, b);
+        Some(Wrap { width: width.saturating_sub(1 + numbers).max(1), words })
+    }
+
+    /// How a buffer numbers its lines, as `display-line-numbers` says, or
+    /// `None` if it does not.
+    fn line_number_kind(&self, b: &Buffer) -> Option<LineNumberKind> {
+        match self.variable_in(b, "display-line-numbers")? {
+            Value::Null | Value::Bool(false) => None,
+            Value::Str(s) if s == "relative" => Some(LineNumberKind::Relative),
+            Value::Str(s) if s == "visual" => Some(LineNumberKind::Visual),
+            _ => Some(LineNumberKind::Absolute),
+        }
+    }
+
+    /// A window's top line and point.
+    fn window_top_and_point(&self, window: crate::window::WindowId, b: &Buffer) -> (usize, usize) {
+        if window == self.selected_window {
+            (b.top_line, b.point())
+        } else {
+            (self.window(window).map_or(b.top_line, |w| w.top_line), b.window_point(window).unwrap_or(b.point()))
+        }
+    }
+
+    /// How many columns a window's line numbers take, the space either side
+    /// included, or 0 if its buffer shows none: as many digits as the
+    /// largest number the window can show, as Emacs's redisplay works it
+    /// out, or `display-line-numbers-width` if that is more.
+    pub(crate) fn line_number_columns(&self, window: crate::window::WindowId, b: &Buffer) -> usize {
+        let Some(kind) = self.line_number_kind(b) else { return 0 };
+        let height = self.window(window).map_or(24, |w| w.height).max(1);
+        let (top, point) = self.window_top_and_point(window, b);
+        let base = b.line_of(b.point_min());
+        let max = match kind {
+            LineNumberKind::Visual => b.line_of(point).saturating_sub(base) + height,
+            _ => top.saturating_sub(base) + height,
+        }
+        .max(1);
+        let least = self.variable_in(b, "display-line-numbers-width").and_then(|v| v.as_number()).unwrap_or(0.0) as usize;
+        max.to_string().len().max(least) + 2
+    }
+
+    /// The line numbers beside a window's rows, as Emacs's
+    /// `display-line-numbers` shows them: each line's number on its first
+    /// row, counted from the start of the accessible text, or from point's
+    /// line when relative, where point's line shows its own number unless
+    /// `display-line-numbers-current-absolute` is off. `None` if the buffer
+    /// shows none.
+    pub fn line_numbers(&self, window: crate::window::WindowId, rows: &[Row]) -> Option<LineNumbers> {
+        let b = self.frame_list().into_iter().flat_map(|f| self.frame_windows(f)).find(|v| v.id == window).map(|v| v.buffer)?;
+        let kind = self.line_number_kind(b)?;
+        let width = self.line_number_columns(window, b);
+        let (_, point) = self.window_top_and_point(window, b);
+        let base = b.line_of(b.point_min());
+        let point_line = b.line_of(point);
+        let absolute_current = self.variable_in(b, "display-line-numbers-current-absolute").is_none_or(|v| v.is_true());
+        let point_row = rows.iter().position(|r| r.shows_point(point));
+        let labels = rows
+            .iter()
+            .enumerate()
+            .map(|(i, row)| {
+                let current = row.line == point_line;
+                let first = row.start == b.line_start(row.line).max(b.point_min());
+                let number = match kind {
+                    LineNumberKind::Absolute => row.line - base + 1,
+                    LineNumberKind::Relative if current && absolute_current => row.line - base + 1,
+                    LineNumberKind::Relative => row.line.abs_diff(point_line),
+                    LineNumberKind::Visual if current && absolute_current => row.line - base + 1,
+                    LineNumberKind::Visual => point_row.map_or(0, |p| p.abs_diff(i)),
+                };
+                // Continued rows of a line, and rows past the text, have none.
+                let shown = (first || kind == LineNumberKind::Visual) && row.start <= b.point_max();
+                let text = if shown { format!("{number:>w$} ", w = width - 1) } else { " ".repeat(width) };
+                (text, current)
+            })
+            .collect();
+        Some(LineNumbers { width, labels })
     }
 
     /// The rows of a buffer from a top line, as a window showing it would show them.

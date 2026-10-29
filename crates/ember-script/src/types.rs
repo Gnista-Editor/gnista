@@ -399,6 +399,8 @@ const API: &str = r##"
     ignoreCase: boolean;
     /** How many completions are kept for the input as it is. */
     kept: number;
+    /** The variable the answer goes into, as minibuffer-history-variable. */
+    history: string;
   }
   /** What the open prompt reads, or undefined if none is open. */
   function minibufferInfo(): MinibufferInfo | undefined;

@@ -518,6 +518,8 @@ fn hit(ed: &Editor, layout: &Layout, pos: Pos2, scroll: (WindowId, f32)) -> Opti
     let view = ed.windows().into_iter().find(|v| v.id == w.id)?;
     let offset = if scroll.0 == w.id { scroll.1 } else { 0.0 };
     let rows = ed.rows_of_window(w.id, w.rows(m) + 1, true);
+    // Text starts right of the line numbers.
+    let gutter = ed.line_numbers(w.id, &rows).map_or(0.0, |n| n.width as f32 * m.char_width);
     let row = ((pos.y - w.text_rect.top() + offset) / m.line_height).floor().max(0.0) as usize;
     let tab_width = ed.tab_width_in(view.buffer);
     let glyphs_of = |row: &Row| row_glyphs(row, tab_width);
@@ -530,11 +532,11 @@ fn hit(ed: &Editor, layout: &Layout, pos: Pos2, scroll: (WindowId, f32)) -> Opti
             glyphs[..cursor_index(&glyphs, view.point)].iter().map(|g| g.width).sum::<usize>()
         });
     let cursor_x = point_col as f32 * m.char_width;
-    let width = w.text_rect.width();
+    let width = w.text_rect.width() - gutter;
     let hscroll = if cursor_x + m.char_width <= width { 0.0 } else { (cursor_x - width / 2.0).max(0.0) };
     let position = match rows.get(row) {
         Some(r) => {
-            let col = ((pos.x - w.text_rect.left() + hscroll) / m.char_width).floor().max(0.0) as usize;
+            let col = ((pos.x - w.text_rect.left() - gutter + hscroll) / m.char_width).floor().max(0.0) as usize;
             position_at_column(r, &glyphs_of(r), col)
         }
         None => view.buffer.len(),
@@ -561,12 +563,27 @@ fn draw_buffer(
     t: Tokens,
     style: CursorStyle,
 ) {
-    let area = view.area;
     let b = window.buffer;
     let tab_width = ed.tab_width_in(b);
     // One extra row, partly shown, when scrolled between lines.
     let rows = ed.rows_of_frame_window(frame, window.id, view.rows + 1, t.dark);
     let default_style = ed.style_for(&["default".to_string()], t.dark);
+    // Line numbers, in their faces, left of the text, which starts after them.
+    let numbers = ed.line_numbers(window.id, &rows);
+    let gutter = numbers.as_ref().map_or(0.0, |n| n.width as f32 * m.char_width);
+    if let Some(numbers) = &numbers {
+        let clipped = painter.with_clip_rect(view.clip);
+        for (i, (label, current)) in numbers.labels.iter().enumerate() {
+            let face = if *current { "line-number-current-line" } else { "line-number" };
+            let style = ed.style_for(&[face.to_string()], t.dark);
+            let mut job = LayoutJob::default();
+            job.append(label, 0.0, face_format(&style, &default_style, m, t));
+            let galley = painter.layout_job(job);
+            let top = view.area.top() + i as f32 * m.line_height - view.scroll_offset;
+            clipped.galley(pos2(view.area.left(), top + (m.line_height - galley.size().y) / 2.0), galley, t.ink);
+        }
+    }
+    let area = Rect::from_min_max(pos2(view.area.left() + gutter, view.area.top()), view.area.max);
     let region_style = ed.style_for(&["region".to_string()], t.dark);
     let selection = region_style.background.map(color32).unwrap_or(t.selection);
     // Only the selected window shows the region, as in Emacs.
@@ -610,7 +627,8 @@ fn draw_buffer(
         (cursor_x - area.width() / 2.0).max(0.0)
     };
 
-    let clipped = painter.with_clip_rect(view.clip);
+    // Text scrolled sideways stays out of the line numbers.
+    let clipped = painter.with_clip_rect(Rect::from_min_max(pos2(view.clip.left().max(area.left()), view.clip.top()), view.clip.max));
     let row_top = |row: usize| area.top() + row as f32 * m.line_height - view.scroll_offset;
     for (i, (galley, _)) in laid_out.iter().enumerate() {
         if let Some(r) = &region

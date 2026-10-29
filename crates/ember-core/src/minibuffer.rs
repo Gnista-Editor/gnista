@@ -96,6 +96,8 @@ pub struct MinibufferInfo {
     pub ignore_case: bool,
     /// How many completions are kept for the input as it is.
     pub kept: usize,
+    /// The variable the answer goes into, as `minibuffer-history-variable`.
+    pub history: String,
 }
 
 impl Prompt {
@@ -221,6 +223,7 @@ impl Editor {
             initial: p.initial.clone(),
             ignore_case: self.completion_ignore_case(),
             kept: self.kept_completions(),
+            history: p.history.clone(),
         })
     }
 

@@ -13,6 +13,20 @@ ember.call("fido-vertical-mode");
 // Remember recently visited files across sessions; M-x recentf-open visits one.
 ember.call("recentf-mode");
 
+// Keep minibuffer history between sessions, and go back to where you were
+// in each file when you visit it again.
+ember.call("savehist-mode");
+ember.call("save-place-mode");
+
+// Type parens and quotes in pairs.
+ember.call("electric-pair-mode");
+
+// Number lines in buffers of code.
+ember.addHook("prog-mode-hook", () => ember.call("display-line-numbers-mode"));
+
+// Break lines as you type in prose.
+ember.addHook("text-mode-hook", () => ember.call("auto-fill-mode"));
+
 const insertDate = ember.defineCommand({
   name: "insert-date",
   doc: "Insert today's date, such as 2026-10-27.",
