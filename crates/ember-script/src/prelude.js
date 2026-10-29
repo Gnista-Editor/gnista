@@ -49,7 +49,7 @@
       if (typeof definition !== "object" || definition === null) {
         throw new TypeError("defineCommand takes an object: { name, doc, params, run }");
       }
-      const { name, doc = "", params = [], run } = definition;
+      const { name, doc = "", params = [], run, shiftSelect = false } = definition;
       if (typeof name !== "string" || name === "") {
         throw new TypeError("A command needs a name");
       }
@@ -69,6 +69,7 @@
           history: p.history === undefined ? null : String(p.history),
         })),
         run,
+        Boolean(shiftSelect),
       );
       return name;
     },
@@ -76,7 +77,7 @@
     call: (name, ...args) => native.call(String(name), ...args.map(String)),
     callInteractively: (name) => native.callInteractively(String(name)),
     callWithPrefix: (prefix, name, ...args) => native.callWithPrefix(prefix ?? null, String(name), ...args.map(String)),
-    message: (text) => native.message(String(text)),
+    message: (text, { log = true } = {}) => native.message(String(text), Boolean(log)),
     insert: (text) => native.insert(String(text)),
     insertBeforeMarkers: (text) => native.insertBeforeMarkers(String(text)),
     insertAndInherit: (text) => native.insertAndInherit(String(text)),
@@ -206,6 +207,10 @@
       native.deleteDirectory(String(dir), Boolean(recursive), Boolean(trash)),
     abbreviateFileName: (file) => native.abbreviateFileName(String(file)),
     readTextFile: (file) => native.readTextFile(String(file)),
+    killNew: (text) => native.killNew(String(text)),
+    messages: () => native.messages(),
+    projectFiles: (root, { ignores = [] } = {}) => native.projectFiles(String(root), ignores.map(String)),
+    stringMatch: (regexp, text, { caseFold = false } = {}) => native.stringMatch(String(regexp), String(text), Boolean(caseFold)) ?? undefined,
     writeTextFile: (file, text) => native.writeTextFile(String(file), String(text)),
     fileNameDirectory: (file) => {
       const i = String(file).lastIndexOf("/");

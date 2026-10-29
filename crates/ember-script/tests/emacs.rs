@@ -47,6 +47,10 @@ fn ember_behaves_like_emacs() {
         .filter(|p| p.extension().is_some_and(|e| e == "json"))
         .collect();
     files.sort();
+    // EMBER_ORACLE_ONLY=dired compares only the case files whose names have it.
+    if let Ok(only) = std::env::var("EMBER_ORACLE_ONLY") {
+        files.retain(|f| f.file_stem().is_some_and(|s| s.to_string_lossy().contains(&only)));
+    }
 
     for file in files {
         let stem = file.file_stem().unwrap().to_string_lossy().into_owned();

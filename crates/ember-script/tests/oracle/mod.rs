@@ -209,6 +209,47 @@ fn listing(dir: &Path) -> BTreeMap<String, String> {
     files
 }
 
+/// A Dired buffer as each line's mark and file name, as record.el compares
+/// them, leaving out sizes and dates, with a map from positions in it.
+fn dired_normalize(text: &str, dir: Option<&tempfile::TempDir>) -> (String, Box<dyn Fn(usize) -> usize>) {
+    let line_re = regex::Regex::new(r"^(.)\s([-dlbcps][-rwxsStT]{9}[@+.]?\s*\d+ .*? (?:[A-Z][a-z]{2} [ \d]\d (?:\d\d:\d\d| \d{4}))) (.*)$").unwrap();
+    let mut out = String::new();
+    // Each line's start and end, where its name starts, and its start and length in `out`.
+    let mut lines: Vec<(usize, usize, Option<usize>, usize, usize)> = Vec::new();
+    let mut at = 0;
+    for line in text.split_inclusive('\n') {
+        let body = line.strip_suffix('\n').unwrap_or(line);
+        let len = body.chars().count();
+        let name = line_re.captures(body).map(|c| len - c[3].chars().count());
+        let shown = match name {
+            Some(n) => format!("{}{}", body.chars().take(2.min(n)).collect::<String>(), body.chars().skip(n).collect::<String>()),
+            None => without_dir(body, dir),
+        };
+        let start = out.chars().count();
+        let shown_len = shown.chars().count();
+        out.push_str(&shown);
+        out.push('\n');
+        lines.push((at, at + len, name.map(|n| at + n), start, shown_len));
+        at += line.chars().count();
+    }
+    let total = out.chars().count();
+    let map = move |pos: usize| {
+        lines
+            .iter()
+            .find(|(bol, eol, ..)| *bol <= pos && pos <= *eol)
+            .map(|&(bol, _, name, start, len)| {
+                start
+                    + match name {
+                        None => (pos - bol).min(len),
+                        Some(n) if pos >= n => (n - bol).min(2) + (pos - n),
+                        Some(_) => (pos - bol).min(2),
+                    }
+            })
+            .unwrap_or(total)
+    };
+    (out, Box::new(map))
+}
+
 /// Text with the case's directory written as DIR, as record.el writes it.
 fn without_dir(text: &str, dir: Option<&tempfile::TempDir>) -> String {
     match dir {
@@ -328,7 +369,10 @@ pub fn run(case: &Case) -> State {
         Key::parse_seq(&case.keys).unwrap_or_else(|| panic!("{}: keys {:?} are not valid Emacs notation", case.name, case.keys))
     };
     let mut error = None;
-    let mut message = None;
+    // The messages shown, in order, as *Messages* logs them, with how many
+    // times each was shown in a row.
+    let mut log: Vec<(String, usize)> = Vec::new();
+    let quit_for_answers = std::cell::Cell::new(false);
     let mut answers = case.answers.iter();
     // Prompts take the case's answers in order, as record.el gives them;
     // with none left, reading the minibuffer is an error, as batch Emacs
@@ -339,6 +383,9 @@ pub fn run(case: &Case) -> State {
                 ed.handle_key(Key::parse("C-g").expect("C-g parses"));
                 ed.take_error();
                 error.get_or_insert("Minibuffer read in batch".into());
+                // Batch Emacs errors there, with no Quit.
+                quit_for_answers.set(true);
+                ed.take_error();
                 break;
             };
             // A question read by a key takes the answer's first character,
@@ -362,6 +409,8 @@ pub fn run(case: &Case) -> State {
             }
         }
     };
+    // The messages from here on, as record.el starts each case's.
+    ed.clear_messages();
     if let Some((name, args)) = case.call.split_first() {
         let args = args.iter().map(|a| ember_core::Arg::Str(a.clone())).collect();
         if let Err(e) = ed.call(name, args) {
@@ -386,14 +435,21 @@ pub fn run(case: &Case) -> State {
         if let Some(e) = ed.take_error() {
             error.get_or_insert(e.to_string());
         }
-        if let Some(echo) = ed.echo().filter(|e| !is_prefix_echo(e)) {
-            message = Some(echo.to_string());
-        }
         answer_prompts(&mut ed, &mut error);
-        if let Some(echo) = ed.echo().filter(|e| !is_prefix_echo(e)) {
-            message = Some(echo.to_string());
+    }
+    // Batch Emacs logs no command's error, and quitting for want of answers
+    // is an error there; a message shown again straight after itself, with
+    // only errors between, is counted, as "Mark set [2 times]".
+    for entry in ed.message_log() {
+        if entry.error || (quit_for_answers.get() && entry.text == "Quit") {
+            continue;
+        }
+        match log.last_mut() {
+            Some((text, count)) if *text == entry.text => *count += entry.count,
+            _ => log.push((entry.text.clone(), entry.count)),
         }
     }
+    let message = log.last().map(|(m, n)| if *n == 1 { m.clone() } else { format!("{m} [{n} times]") });
     ed.font_lock_ensure().unwrap_or_else(|e| panic!("{}: fontifying: {e}", case.name));
     let windows = case.windows.then(|| {
         let sizes = ed.window_total_sizes();
@@ -407,13 +463,18 @@ pub fn run(case: &Case) -> State {
     });
     let b = ed.window_buffer();
     let visible = (0..b.len()).filter(|&p| ed.invisible_in(b, p).is_none()).filter_map(|p| b.char_at(p)).collect();
+    let dired = ed.mode_name_in(b).starts_with("Dired").then(|| dired_normalize(&b.slice(0..b.len()), dir.as_ref()));
+    let (text, visible, point, mark) = match &dired {
+        Some((text, map)) => (text.clone(), text.clone(), map(b.point()), b.mark().map(map)),
+        None => (b.slice(0..b.len()), visible, b.point(), b.mark()),
+    };
     State {
-        text: b.slice(0..b.len()),
+        text,
         visible,
-        point: b.point(),
-        mark: b.mark(),
+        point,
+        mark,
         mark_active: b.is_mark_active(),
-        kill_ring: ed.kill_ring().iter().rev().cloned().collect(),
+        kill_ring: ed.kill_ring().iter().rev().map(|k| without_dir(k, dir.as_ref())).collect(),
         modified: b.is_modified(),
         windows,
         files: dir.as_ref().map(|d| listing(d.path())),

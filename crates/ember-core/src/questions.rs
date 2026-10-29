@@ -95,7 +95,7 @@ impl Editor {
                 [rest @ .., last] if !rest.is_empty() => format!("{} or {last}", rest.join(", ")),
                 all => all.join(""),
             };
-            self.message = Some(format!("Please answer {answers}."));
+            self.message(format!("Please answer {answers}."));
             self.open_question(question, "");
         }
         true

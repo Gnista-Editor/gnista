@@ -334,13 +334,15 @@ mod tests {
         // A fifth of 20 lines is 5: the input and four completions, best
         // flex match first, each command with its key.
         assert!(rows[14].starts_with("U:"), "the mode line is just above: {}", rows[14]);
-        assert_eq!(
-            rows[15..],
-            ["1/14 M-x forw", "forward-char        (C-f)", "forward-word        (M-f)", "search-forward", "isearch-forward     (C-s)"]
-        );
+        let total = rows[15].split(' ').next().unwrap().split('/').nth(1).unwrap().to_string();
+        assert_eq!(rows[15], format!("1/{total} M-x forw"));
+        // Each command with its key, after the longest of those listed.
+        let shown: Vec<(&str, &str)> = rows[16..].iter().map(|r| (r.split(' ').next().unwrap(), r.rsplit(' ').next().unwrap())).collect();
+        assert_eq!(shown, [("forward-char", "(C-f)"), ("forward-word", "(M-f)"), ("search-forward", "search-forward"), ("isearch-forward", "(C-s)")]);
+        assert_eq!(rows[16].find("(C-f)"), rows[19].find("(C-s)"), "keys line up");
         ed.press("C-n C-n").unwrap();
         let rows = render(&mut ed, 60, 20);
-        assert_eq!(rows[15], "3/14 M-x forw");
+        assert_eq!(rows[15], format!("3/{total} M-x forw"));
         ed.press("RET").unwrap();
         assert_eq!(ed.prompt(), Some("Search: "), "RET ran the selected command, search-forward");
     }

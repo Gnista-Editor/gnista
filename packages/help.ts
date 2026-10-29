@@ -92,3 +92,22 @@ ember.defineCommand({
 
 ember.bindKey("C-h v", describeVariable);
 ember.bindKey("C-h m", describeMode);
+
+ember.defineCommand({
+  name: "view-echo-area-messages",
+  doc: "Show the *Messages* buffer: the messages shown in the echo area, newest last.",
+  run: () => {
+    ember.getBufferCreate("*Messages*");
+    ember.withCurrentBuffer("*Messages*", () => {
+      ember.setReadOnly(false);
+      ember.deleteRegion(0, ember.bufferSize());
+      const lines = ember.messages();
+      ember.insert(lines.length === 0 ? "" : lines.join("\n") + "\n");
+      ember.setReadOnly(true);
+      ember.setBufferModified(false);
+      ember.gotoChar(ember.bufferSize());
+    });
+    ember.call("display-buffer", "*Messages*");
+  },
+});
+ember.bindKey("C-h e", "view-echo-area-messages");

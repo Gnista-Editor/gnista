@@ -1,0 +1,591 @@
+[
+ {
+  "name": "dired-jump",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j"
+ },
+ {
+  "name": "dired-open",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x d",
+  "answers": [
+   "."
+  ]
+ },
+ {
+  "name": "dired-next-lines",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j n n"
+ },
+ {
+  "name": "dired-next-past-end",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j n n n n n"
+ },
+ {
+  "name": "dired-previous-to-header",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j p p p p"
+ },
+ {
+  "name": "dired-space-and-shift-space",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j SPC SPC S-SPC"
+ },
+ {
+  "name": "dired-dirlines",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j > <"
+ },
+ {
+  "name": "dired-dirline-none",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j > >"
+ },
+ {
+  "name": "dired-mark-two",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j m m"
+ },
+ {
+  "name": "dired-mark-then-unmark",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j m p u"
+ },
+ {
+  "name": "dired-flag-and-unmark-backward",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j d d DEL"
+ },
+ {
+  "name": "dired-mark-with-count",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j M-3 m"
+ },
+ {
+  "name": "dired-toggle-marks",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j m t"
+ },
+ {
+  "name": "dired-unmark-all",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j m m U",
+  "message": true
+ },
+ {
+  "name": "dired-mark-regexp",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j % m",
+  "answers": [
+   "\\.txt$"
+  ],
+  "message": true
+ },
+ {
+  "name": "dired-mark-directories",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j * /",
+  "message": true
+ },
+ {
+  "name": "dired-flag-backups",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n",
+   "a.txt~": "old\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j ~",
+  "message": true
+ },
+ {
+  "name": "dired-flag-dot",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j M-< n d"
+ },
+ {
+  "name": "dired-mark-dot",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j M-< n m"
+ },
+ {
+  "name": "dired-delete-flagged",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j d x",
+  "answers": [
+   "yes"
+  ],
+  "message": true
+ },
+ {
+  "name": "dired-delete-flagged-declined",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j d x",
+  "answers": [
+   "no"
+  ],
+  "message": true
+ },
+ {
+  "name": "dired-delete-nothing-flagged",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j x",
+  "message": true
+ },
+ {
+  "name": "dired-delete-marked",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j m m D",
+  "answers": [
+   "yes"
+  ],
+  "message": true
+ },
+ {
+  "name": "dired-delete-at-point",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j n D",
+  "answers": [
+   "yes"
+  ]
+ },
+ {
+  "name": "dired-delete-directory-recursively",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j > D",
+  "answers": [
+   "yes",
+   "yes"
+  ],
+  "message": true
+ },
+ {
+  "name": "dired-copy",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j C",
+  "answers": [
+   "copy.txt"
+  ],
+  "message": true
+ },
+ {
+  "name": "dired-copy-marked-into-directory",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j m m C",
+  "answers": [
+   "sub"
+  ],
+  "message": true
+ },
+ {
+  "name": "dired-copy-over-existing",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j C",
+  "answers": [
+   "b.txt",
+   "y"
+  ],
+  "message": true
+ },
+ {
+  "name": "dired-rename",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j R",
+  "answers": [
+   "moved.txt"
+  ],
+  "message": true
+ },
+ {
+  "name": "dired-rename-into-directory",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j R",
+  "answers": [
+   "sub"
+  ],
+  "message": true
+ },
+ {
+  "name": "dired-rename-visited-buffer-follows",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j R C-x b",
+  "answers": [
+   "moved.txt",
+   "a.txt"
+  ]
+ },
+ {
+  "name": "dired-create-directory",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j +",
+  "answers": [
+   "newdir"
+  ]
+ },
+ {
+  "name": "dired-create-nested-directory",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j +",
+  "answers": [
+   "new/deeper"
+  ]
+ },
+ {
+  "name": "dired-revert-keeps-marks",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j m n d g"
+ },
+ {
+  "name": "dired-visit-file",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j n RET"
+ },
+ {
+  "name": "dired-visit-directory-and-up",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j > RET ^"
+ },
+ {
+  "name": "dired-kill-lines",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j m m k",
+  "message": true
+ },
+ {
+  "name": "dired-copy-filename",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j w",
+  "message": true
+ },
+ {
+  "name": "dired-copy-marked-filenames",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j m m w",
+  "message": true
+ },
+ {
+  "name": "dired-goto-file",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j j",
+  "answers": [
+   "c.org"
+  ]
+ },
+ {
+  "name": "dired-find-file-directory",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-f",
+  "answers": [
+   "sub"
+  ]
+ },
+ {
+  "name": "dired-next-marked",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j m n m M-< M-}"
+ },
+ {
+  "name": "dired-summary",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n",
+   "sub/x.txt": "x\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j ?",
+  "message": true
+ }
+]

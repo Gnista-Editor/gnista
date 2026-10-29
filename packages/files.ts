@@ -238,7 +238,20 @@ function revertNow(): void {
  * unmodified and its file matches revert-without-query. Calls `then` once
  * reverted.
  */
+ember.defineVariable({
+  name: "revert-buffer-function",
+  doc: "The command revert-buffer runs instead of rereading the file, in buffers that set it, such as Dired's. Nil for the usual.",
+  value: null,
+});
+
 function revertBuffer(noconfirm: boolean, then: () => void = () => {}): void {
+  // A buffer such as Dired's reverts itself, as its revert-buffer-function says.
+  const own = ember.variable("revert-buffer-function");
+  if (typeof own === "string" && ember.commandExists(own)) {
+    ember.call(own as ember.CommandName);
+    then();
+    return;
+  }
   const file = visitedFile();
   if (!ember.fileExists(file)) throw new Error(`File ${file} no longer exists!`);
   const modified = ember.bufferModified();

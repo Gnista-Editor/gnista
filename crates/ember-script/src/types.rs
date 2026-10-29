@@ -66,6 +66,12 @@ const API: &str = r##"
     params?: Param[];
     /** Receives one string per parameter. Throw an Error to fail with its message. */
     run: (...args: string[]) => void;
+    /**
+     * Whether it is a motion Shift selects with, as Emacs's ^ interactive
+     * spec: with Shift it starts or extends the region, without it ends one
+     * Shift started.
+     */
+    shiftSelect?: boolean;
   }
 
   /**
@@ -97,8 +103,11 @@ const API: &str = r##"
     name: N,
     ...args: N extends CommandName ? Commands[N] : string[]
   ): void;
-  /** Show a message in the echo area. */
-  function message(text: string): void;
+  /**
+   * Show a message in the echo area, and log it in *Messages*, unless `log`
+   * is false, as for a prefix argument typed so far.
+   */
+  function message(text: string, options?: { log?: boolean }): void;
   /** Insert text at point in the current buffer, leaving point after it. */
   function insert(text: string): void;
   /**
@@ -505,6 +514,21 @@ const API: &str = r##"
   function makeDirectory(dir: string, options?: { parents?: boolean }): void;
   /** Delete a directory, as Emacs's delete-directory: one with files in it only if `recursive`. */
   function deleteDirectory(dir: string, options?: { recursive?: boolean; trash?: boolean }): void;
+  /**
+   * Where an Emacs regular expression first matches in a string, as Emacs's
+   * string-match, or undefined. Case matters unless `caseFold`.
+   */
+  function stringMatch(regexp: string, text: string, options?: { caseFold?: boolean }): number | undefined;
+  /**
+   * A project's files, as Emacs's project-files for a version-controlled
+   * project: those Git tracks and does not ignore, or outside Git every file
+   * under `root`, leaving out version control's directories and `ignores`.
+   */
+  function projectFiles(root: string, options?: { ignores?: string[] }): string[];
+  /** The messages shown, oldest first, as *Messages* logs them: one shown again straight after itself as "Mark set [2 times]". */
+  function messages(): string[];
+  /** Put text in the kill ring as a kill of its own, as Emacs's kill-new. */
+  function killNew(text: string): void;
   /** A file's text, read as UTF-8. */
   function readTextFile(file: string): string;
   /** Write text to a file, replacing what it held, as Emacs's write-region does for saved state. */

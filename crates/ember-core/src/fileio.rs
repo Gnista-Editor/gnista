@@ -321,9 +321,9 @@ impl Editor {
             }
         }
         if let Some(message) = failed {
-            self.message = Some(message);
+            self.message(message);
         } else if saved && !quiet {
-            self.message = Some("Auto-saving...done".into());
+            self.message("Auto-saving...done");
         }
         saved
     }
@@ -354,8 +354,14 @@ impl Editor {
             b.file.backed_up = false;
             b.set_modified(true);
         }
-        if b.file.auto_save.is_some() {
-            b.file.auto_save = Some(auto_save_file_name(path));
+        // An auto-save file there is moves to the new name, as Emacs's
+        // set-visited-file-name renames it.
+        if let Some(old) = b.file.auto_save.take() {
+            let new = auto_save_file_name(path);
+            if old != new && old.exists() {
+                let _ = std::fs::rename(&old, &new);
+            }
+            b.file.auto_save = Some(new);
         }
         Ok(())
     }
@@ -364,7 +370,7 @@ impl Editor {
     pub fn kill_emacs(&mut self) -> Result<()> {
         self.check_permission("quit Ember")?;
         if let Err(e) = self.run_hooks("kill-emacs-hook") {
-            self.message = Some(format!("Error in kill-emacs-hook: {e}"));
+            self.message(format!("Error in kill-emacs-hook: {e}"));
         }
         self.quit = true;
         Ok(())

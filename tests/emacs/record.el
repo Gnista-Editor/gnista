@@ -175,15 +175,39 @@ while the case's keys are queued would read those instead."
   (ember-oracle--answer default))
 (defun ember-oracle--completing-read (_prompt _collection &optional _pred _match _initial _hist default &rest _)
   (ember-oracle--answer default))
-(defun ember-oracle--yes (&rest _)
-  (member (ember-oracle--answer nil) '("y" "yes")))
+(defun ember-oracle--yes-or-no (&rest _)
+  "Answer yes-or-no-p from the case, asking again for anything but yes
+or no, as Emacs does."
+  (let ((answer (ember-oracle--answer nil)))
+    (while (not (member answer '("yes" "no")))
+      (message "Please answer yes or no.")
+      (setq answer (ember-oracle--answer nil)))
+    (equal answer "yes")))
+(defun ember-oracle--y-or-n (&rest _)
+  "Answer y-or-n-p from the case, taking an answer's first character as
+the key, and asking again for anything but y or n, as Emacs does."
+  (let ((answer (ember-oracle--answer nil)))
+    (while (not (member (substring answer 0 (min 1 (length answer))) '("y" "n")))
+      (setq answer (ember-oracle--answer nil)))
+    (string-prefix-p "y" answer)))
 (defun ember-oracle--no-minibuffer (&rest _)
   (error "Minibuffer read in batch"))
+;; Dired lists directories as Ember does, with Emacs's own ls, sorting
+;; names by their characters.
+;; *Messages* keeps everything, or the place a case's messages start
+;; would move as old ones are dropped.
+(setq message-log-max t)
+
+(require 'ls-lisp)
+(setq ls-lisp-use-insert-directory-program nil
+      ls-lisp-use-string-collate nil
+      delete-by-moving-to-trash nil)
+
 (advice-add 'read-from-minibuffer :override #'ember-oracle--read-from-minibuffer)
 (advice-add 'read-string :override #'ember-oracle--read-string)
 (advice-add 'completing-read :override #'ember-oracle--completing-read)
-(advice-add 'y-or-n-p :override #'ember-oracle--yes)
-(advice-add 'yes-or-no-p :override #'ember-oracle--yes)
+(advice-add 'y-or-n-p :override #'ember-oracle--y-or-n)
+(advice-add 'yes-or-no-p :override #'ember-oracle--yes-or-no)
 (defun ember-oracle--read-char (&rest _)
   "The next answer's first character, as reading a key gives it."
   (string-to-char (ember-oracle--answer nil)))
@@ -296,7 +320,13 @@ answers come, and then from its answers, as save-some-buffers' do."
             ember-oracle--error nil
             ember-oracle--answers (alist-get 'answers case)
             ember-oracle--disk (alist-get 'disk case)
-            ember-oracle--messages-start (with-current-buffer (messages-buffer) (point-max))
+            ;; A line of its own first, so a message repeated from the case
+            ;; before is not folded into that case's as "[2 times]".
+            ember-oracle--messages-start (with-current-buffer (messages-buffer)
+                                           (let ((inhibit-read-only t))
+                                             (goto-char (point-max))
+                                             (insert (format "-- %s\n" (alist-get 'name case)))
+                                             (point-max)))
             unread-command-events (append (and call '(f34))
                                           (listify-key-sequence (kbd keys))
                                           '(f35)))
@@ -356,6 +386,36 @@ done-headline keyword can fail to match its second group."
         (push (char-after (1+ i)) out)))
     (concat (nreverse out))))
 
+(defun ember-oracle--dired-normalize ()
+  "The Dired buffer as each line's mark and file name, leaving out the
+sizes and dates that differ between runs: the text, and a function from
+buffer positions to positions in it."
+  (let ((out "") (lines nil))
+    (save-excursion
+      (goto-char (point-min))
+      (while (not (eobp))
+        (let* ((bol (point))
+               (eol (line-end-position))
+               (name (save-excursion (dired-move-to-filename)))
+               (start (length out))
+               (line (if name
+                         (concat (buffer-substring-no-properties bol (min (+ bol 2) eol))
+                                 (buffer-substring-no-properties name eol))
+                       (ember-oracle--without-dir (buffer-substring-no-properties bol eol)))))
+          (setq out (concat out line "\n"))
+          (push (list bol eol name start (length line)) lines))
+        (forward-line 1)))
+    (cons out
+          (lambda (pos)
+            (or (seq-some
+                 (pcase-lambda (`(,bol ,eol ,name ,start ,len))
+                   (and (<= bol pos) (<= pos eol)
+                        (+ start (cond ((null name) (min (- pos bol) len))
+                                       ((>= pos name) (+ (min 2 (- name bol)) (- pos name)))
+                                       (t (min (- pos bol) 2))))))
+                 lines)
+                (length out))))))
+
 (defun ember-oracle--state (case text start keys)
   "The current buffer's state after CASE, as an alist.
 The whole buffer, even if the case left it narrowed."
@@ -382,12 +442,19 @@ The whole buffer, even if the case left it narrowed."
                   ,@(and (alist-get 'find case) `((find . ,(alist-get 'find case))))
                   ,@(and (alist-get 'disk case) `((disk . ,(alist-get 'disk case))))
                   ,@(and (alist-get 'message case) '((message . t)))))
-        (text . ,(buffer-substring-no-properties (point-min) (point-max)))
-        (visible . ,(progn (ember-oracle--fontify) (ember-oracle--visible)))
-        (point . ,(1- (point)))
-        (mark . ,(and (mark t) (1- (mark t))))
+        ,@(if (derived-mode-p 'dired-mode)
+              ;; Sizes and dates differ between runs: compare marks and names.
+              (let ((dired (ember-oracle--dired-normalize)))
+                `((text . ,(car dired))
+                  (visible . ,(car dired))
+                  (point . ,(funcall (cdr dired) (point)))
+                  (mark . ,(and (mark t) (funcall (cdr dired) (mark t))))))
+            `((text . ,(buffer-substring-no-properties (point-min) (point-max)))
+              (visible . ,(progn (ember-oracle--fontify) (ember-oracle--visible)))
+              (point . ,(1- (point)))
+              (mark . ,(and (mark t) (1- (mark t))))))
         (mark_active . ,(if (and mark-active (mark t)) t :json-false))
-        (kill_ring . ,(vconcat (mapcar #'substring-no-properties kill-ring)))
+        (kill_ring . ,(vconcat (mapcar (lambda (k) (ember-oracle--without-dir (substring-no-properties k))) kill-ring)))
         (modified . ,(if (buffer-modified-p) t :json-false))
         (error . ,(ember-oracle--without-dir ember-oracle--error))
         ,@(and (alist-get 'windows case)

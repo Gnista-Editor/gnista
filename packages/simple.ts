@@ -33,7 +33,8 @@ function continueArgument(arg: ember.PrefixArg): void {
     keys["-"] = "negative-argument";
   }
   ember.setTransientMap(keys);
-  ember.message(describeArgument(arg));
+  // Shown as Emacs echoes the keys typed, not logged.
+  ember.message(describeArgument(arg), { log: false });
 }
 
 const universalArgument = ember.defineCommand({

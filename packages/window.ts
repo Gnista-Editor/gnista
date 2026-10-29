@@ -215,7 +215,7 @@ const findFileOtherWindow = ember.defineCommand({
   name: "find-file-other-window",
   doc: "Visit a file in another window and select it.",
   params: [{ name: "file", kind: "file", prompt: "Find file in other window: " }],
-  run: (file) => popToBuffer(ember.findFileNoselect(file), true),
+  run: (file) => ember.fileDirectoryP(file) ? ember.call("dired-other-window", file) : popToBuffer(ember.findFileNoselect(file), true),
 });
 
 const killBufferAndWindow = ember.defineCommand({

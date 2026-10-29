@@ -186,6 +186,60 @@ fn target(from: &Path, to: &Path, to_is_dir_name: bool) -> PathBuf {
     }
 }
 
+/// The directories version control keeps to itself, as Emacs's
+/// `vc-directory-exclusion-list`.
+pub const VC_DIRECTORIES: &[&str] = &["SCCS", "RCS", "CVS", "MCVS", ".src", ".svn", ".git", ".hg", ".bzr", "_MTN", "_darcs", "{arch}", ".repo", ".jj"];
+
+/// A Git work tree's files, as `git ls-files` lists those it tracks and
+/// those it does not ignore, the way Emacs's `project-files` asks for them,
+/// or `None` if `root` is not in one or Git cannot be run.
+pub fn vc_files(root: &Path) -> Option<Vec<PathBuf>> {
+    let output = std::process::Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args(["ls-files", "-z", "-c", "-o", "--exclude-standard"])
+        .stderr(std::process::Stdio::null())
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let mut files: Vec<PathBuf> = output
+        .stdout
+        .split(|&b| b == 0)
+        .filter(|name| !name.is_empty())
+        .map(|name| root.join(String::from_utf8_lossy(name).as_ref()))
+        .filter(|path| path.exists())
+        .collect();
+    files.sort();
+    files.dedup();
+    Some(files)
+}
+
+/// The files under a directory, leaving out version control's own and those
+/// in `ignores`, as Emacs's `project--files-in-directory`.
+pub fn files_in_directory(dir: &Path, ignores: &[String]) -> Vec<PathBuf> {
+    fn walk(dir: &Path, ignores: &[String], out: &mut Vec<PathBuf>) {
+        let Ok(entries) = fs::read_dir(dir) else { return };
+        for entry in entries.filter_map(|e| e.ok()) {
+            let name = entry.file_name().to_string_lossy().into_owned();
+            let path = entry.path();
+            if VC_DIRECTORIES.contains(&name.as_str()) || ignores.contains(&name) {
+                continue;
+            }
+            match entry.file_type() {
+                Ok(t) if t.is_dir() => walk(&path, ignores, out),
+                Ok(_) => out.push(path),
+                Err(_) => {}
+            }
+        }
+    }
+    let mut out = Vec::new();
+    walk(dir, ignores, &mut out);
+    out.sort();
+    out
+}
+
 impl Editor {
     /// Copies a file, as Emacs's `copy-file`: into `to` if it is a directory name,
     /// keeping the modification time if asked. A file already there is

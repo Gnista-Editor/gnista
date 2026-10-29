@@ -1,0 +1,422 @@
+[
+ {
+  "name": "para-t1-fwd-0",
+  "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+  "point": 0,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t1-back-0",
+  "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+  "point": 0,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t1-fwd-1",
+  "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+  "point": 1,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t1-back-1",
+  "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+  "point": 1,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t1-fwd-9",
+  "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+  "point": 9,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t1-back-9",
+  "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+  "point": 9,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t1-fwd-13",
+  "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+  "point": 13,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t1-back-13",
+  "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+  "point": 13,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t1-fwd-26",
+  "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+  "point": 26,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t1-back-26",
+  "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+  "point": 26,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t1-fwd-27",
+  "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+  "point": 27,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t1-back-27",
+  "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+  "point": 27,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t1-fwd-many",
+  "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+  "point": 0,
+  "keys": "M-} M-} M-} M-}"
+ },
+ {
+  "name": "para-t1-back-many",
+  "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+  "point": 27,
+  "keys": "M-{ M-{ M-{ M-{"
+ },
+ {
+  "name": "para-t1-fwd-count",
+  "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+  "point": 0,
+  "keys": "M-2 M-}"
+ },
+ {
+  "name": "para-t1-back-count",
+  "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+  "point": 27,
+  "keys": "M-3 M-{"
+ },
+ {
+  "name": "para-t1-negative",
+  "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+  "point": 0,
+  "keys": "M-- M-{"
+ },
+ {
+  "name": "para-t2-fwd-0",
+  "text": "  lead\n\n   \nnext para\nline\n",
+  "point": 0,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t2-back-0",
+  "text": "  lead\n\n   \nnext para\nline\n",
+  "point": 0,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t2-fwd-1",
+  "text": "  lead\n\n   \nnext para\nline\n",
+  "point": 1,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t2-back-1",
+  "text": "  lead\n\n   \nnext para\nline\n",
+  "point": 1,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t2-fwd-9",
+  "text": "  lead\n\n   \nnext para\nline\n",
+  "point": 9,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t2-back-9",
+  "text": "  lead\n\n   \nnext para\nline\n",
+  "point": 9,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t2-fwd-13",
+  "text": "  lead\n\n   \nnext para\nline\n",
+  "point": 13,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t2-back-13",
+  "text": "  lead\n\n   \nnext para\nline\n",
+  "point": 13,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t2-fwd-26",
+  "text": "  lead\n\n   \nnext para\nline\n",
+  "point": 26,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t2-back-26",
+  "text": "  lead\n\n   \nnext para\nline\n",
+  "point": 26,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t2-fwd-27",
+  "text": "  lead\n\n   \nnext para\nline\n",
+  "point": 27,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t2-back-27",
+  "text": "  lead\n\n   \nnext para\nline\n",
+  "point": 27,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t2-fwd-many",
+  "text": "  lead\n\n   \nnext para\nline\n",
+  "point": 0,
+  "keys": "M-} M-} M-} M-}"
+ },
+ {
+  "name": "para-t2-back-many",
+  "text": "  lead\n\n   \nnext para\nline\n",
+  "point": 27,
+  "keys": "M-{ M-{ M-{ M-{"
+ },
+ {
+  "name": "para-t2-fwd-count",
+  "text": "  lead\n\n   \nnext para\nline\n",
+  "point": 0,
+  "keys": "M-2 M-}"
+ },
+ {
+  "name": "para-t2-back-count",
+  "text": "  lead\n\n   \nnext para\nline\n",
+  "point": 27,
+  "keys": "M-3 M-{"
+ },
+ {
+  "name": "para-t2-negative",
+  "text": "  lead\n\n   \nnext para\nline\n",
+  "point": 0,
+  "keys": "M-- M-{"
+ },
+ {
+  "name": "para-t3-fwd-0",
+  "text": "a\n\fb\nc\n\nd",
+  "point": 0,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t3-back-0",
+  "text": "a\n\fb\nc\n\nd",
+  "point": 0,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t3-fwd-1",
+  "text": "a\n\fb\nc\n\nd",
+  "point": 1,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t3-back-1",
+  "text": "a\n\fb\nc\n\nd",
+  "point": 1,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t3-fwd-3",
+  "text": "a\n\fb\nc\n\nd",
+  "point": 3,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t3-back-3",
+  "text": "a\n\fb\nc\n\nd",
+  "point": 3,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t3-fwd-4",
+  "text": "a\n\fb\nc\n\nd",
+  "point": 4,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t3-back-4",
+  "text": "a\n\fb\nc\n\nd",
+  "point": 4,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t3-fwd-8",
+  "text": "a\n\fb\nc\n\nd",
+  "point": 8,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t3-back-8",
+  "text": "a\n\fb\nc\n\nd",
+  "point": 8,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t3-fwd-9",
+  "text": "a\n\fb\nc\n\nd",
+  "point": 9,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t3-back-9",
+  "text": "a\n\fb\nc\n\nd",
+  "point": 9,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t3-fwd-many",
+  "text": "a\n\fb\nc\n\nd",
+  "point": 0,
+  "keys": "M-} M-} M-} M-}"
+ },
+ {
+  "name": "para-t3-back-many",
+  "text": "a\n\fb\nc\n\nd",
+  "point": 9,
+  "keys": "M-{ M-{ M-{ M-{"
+ },
+ {
+  "name": "para-t3-fwd-count",
+  "text": "a\n\fb\nc\n\nd",
+  "point": 0,
+  "keys": "M-2 M-}"
+ },
+ {
+  "name": "para-t3-back-count",
+  "text": "a\n\fb\nc\n\nd",
+  "point": 9,
+  "keys": "M-3 M-{"
+ },
+ {
+  "name": "para-t3-negative",
+  "text": "a\n\fb\nc\n\nd",
+  "point": 0,
+  "keys": "M-- M-{"
+ },
+ {
+  "name": "para-t4-fwd-0",
+  "text": "\n\nstart\n",
+  "point": 0,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t4-back-0",
+  "text": "\n\nstart\n",
+  "point": 0,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t4-fwd-1",
+  "text": "\n\nstart\n",
+  "point": 1,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t4-back-1",
+  "text": "\n\nstart\n",
+  "point": 1,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t4-fwd-2",
+  "text": "\n\nstart\n",
+  "point": 2,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t4-back-2",
+  "text": "\n\nstart\n",
+  "point": 2,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t4-fwd-4",
+  "text": "\n\nstart\n",
+  "point": 4,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t4-back-4",
+  "text": "\n\nstart\n",
+  "point": 4,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t4-fwd-7",
+  "text": "\n\nstart\n",
+  "point": 7,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t4-back-7",
+  "text": "\n\nstart\n",
+  "point": 7,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t4-fwd-8",
+  "text": "\n\nstart\n",
+  "point": 8,
+  "keys": "M-}"
+ },
+ {
+  "name": "para-t4-back-8",
+  "text": "\n\nstart\n",
+  "point": 8,
+  "keys": "M-{"
+ },
+ {
+  "name": "para-t4-fwd-many",
+  "text": "\n\nstart\n",
+  "point": 0,
+  "keys": "M-} M-} M-} M-}"
+ },
+ {
+  "name": "para-t4-back-many",
+  "text": "\n\nstart\n",
+  "point": 8,
+  "keys": "M-{ M-{ M-{ M-{"
+ },
+ {
+  "name": "para-t4-fwd-count",
+  "text": "\n\nstart\n",
+  "point": 0,
+  "keys": "M-2 M-}"
+ },
+ {
+  "name": "para-t4-back-count",
+  "text": "\n\nstart\n",
+  "point": 8,
+  "keys": "M-3 M-{"
+ },
+ {
+  "name": "para-t4-negative",
+  "text": "\n\nstart\n",
+  "point": 0,
+  "keys": "M-- M-{"
+ },
+ {
+  "name": "para-shift-select",
+  "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+  "point": 0,
+  "keys": "S-M-} S-M-}"
+ },
+ {
+  "name": "para-ctrl-down",
+  "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+  "point": 0,
+  "keys": "C-<down> C-<down> C-<up>"
+ }
+]

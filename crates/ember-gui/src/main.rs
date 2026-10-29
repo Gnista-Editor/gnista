@@ -4,7 +4,7 @@
 
 use std::env;
 
-use ember_core::{Editor, expand_file_name};
+use ember_core::{Arg, Editor, expand_file_name};
 use ember_gui::{EmberApp, theme};
 use ember_script::config;
 
@@ -20,7 +20,7 @@ fn main() -> eframe::Result {
     let mut editor = Editor::new();
     let scripting = config::setup_with(&mut editor, !no_init, ember_agent::install);
     for file in files {
-        if let Err(e) = editor.visit_file(&expand_file_name(&file)) {
+        if let Err(e) = editor.call("find-file", vec![Arg::Str(expand_file_name(&file).display().to_string())]) {
             editor.message(e.to_string());
         }
     }

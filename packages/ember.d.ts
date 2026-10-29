@@ -40,6 +40,12 @@ declare global {
        */
       "backward-kill-word": [];
       /**
+       * Move to the start of this paragraph, or the one before if between them. With a prefix argument, that many.
+       *
+       * Defined in packages/paragraphs.ts.
+       */
+      "backward-paragraph": [];
+      /**
        * Move point back to the start of a word, or as many words as the prefix argument says.
        *
        * A negative argument moves forward.
@@ -201,6 +207,331 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "digit-argument": [];
+      /**
+       * List a directory, one file a line, for visiting, marking and managing its files.
+       *
+       * RET visits a file, ^ goes up, m marks, d flags for deletion, x deletes what is flagged, C copies, R renames, D deletes and + makes a directory. ? sums up the keys.
+       *
+       * @param dirname file name
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired": [dirname: string];
+      /**
+       * Change one mark to another on every file that has it.
+       *
+       * @param old text
+       * @param new text
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-change-marks": [old: string, new: string];
+      /**
+       * Put the names of the marked files, or this line's, in the kill ring, separated by spaces.
+       *
+       * With a zero prefix argument, their whole names; with C-u, relative to this directory.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-copy-filename-as-kill": [];
+      /**
+       * Make a directory, with any missing above it, and list it here.
+       *
+       * @param directory file name
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-create-directory": [directory: string];
+      /**
+       * Make an empty file, with any missing directories above it, and list it here.
+       *
+       * @param file file name
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-create-empty-file": [file: string];
+      /**
+       * Show the file on this line in another window, staying in Dired.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-display-file": [];
+      /**
+       * Copy the marked files, or the one on this line, asking where to: a new name for one, a directory for several.
+       *
+       * Copies are marked C, as dired-keep-marker-copy says, and keep their modification times.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-do-copy": [];
+      /**
+       * Delete the marked files, or the one on this line, after asking. With a prefix argument, the next that many.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-do-delete": [];
+      /**
+       * Delete the files flagged with d, after asking. Deleting goes to the trash, as delete-by-moving-to-trash says.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-do-flagged-delete": [];
+      /**
+       * Take the marked files' lines out of the listing; with a prefix argument, the next that many lines instead. The files stay; g brings the lines back.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-do-kill-lines": [];
+      /**
+       * List the directory again, as g does.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-do-redisplay": [];
+      /**
+       * Rename the marked files, or the one on this line, asking to what: a new name for one, a directory for several, to move them there. Buffers visiting them follow.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-do-rename": [];
+      /**
+       * Visit the file or directory on this line in place of this Dired buffer, which is killed.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-find-alternate-file": [];
+      /**
+       * Visit the file or directory on this line.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-find-file": [];
+      /**
+       * Visit the file or directory on this line in another window.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-find-file-other-window": [];
+      /**
+       * Flag for deletion the auto-save files, named #like-this#. With a prefix argument, unflag them.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-flag-auto-save-files": [];
+      /**
+       * Flag for deletion the backup files, whose names end in ~. With a prefix argument, unflag them.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-flag-backup-files": [];
+      /**
+       * Flag the file on this line for deletion, which x does, and move down.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-flag-file-deletion": [];
+      /**
+       * Flag for deletion the files whose names match a regular expression.
+       *
+       * @param regexp text
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-flag-files-regexp": [regexp: string];
+      /**
+       * Go to the line of a file in this listing.
+       *
+       * @param file file name
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-goto-file": [file: string];
+      /**
+       * Show only the files' names in Dired, hiding their sizes, dates and the rest.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-hide-details-mode": [];
+      /**
+       * List the directory of the current buffer's file, with point on the file. In Dired, go up a directory.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-jump": [];
+      /**
+       * List the directory of the current buffer's file in another window, with point on the file.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-jump-other-window": [];
+      /**
+       * Mark the file on this line, and move down. With a prefix argument, the next that many; in the region, its files.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-mark": [];
+      /**
+       * Mark the directories, but not . and ... With a prefix argument, unmark them.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-mark-directories": [];
+      /**
+       * Mark the files anyone can run. With a prefix argument, unmark them.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-mark-executables": [];
+      /**
+       * Mark the files whose names match a regular expression. With a prefix argument, unmark them.
+       *
+       * @param regexp text
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-mark-files-regexp": [regexp: string];
+      /**
+       * Mark the symbolic links. With a prefix argument, unmark them.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-mark-symlinks": [];
+      /**
+       * List a directory's files, one a line, for visiting and managing them.
+       *
+       * RET or f visits the file on a line and o visits it in another window; ^ goes up a directory. m marks a file, u unmarks it, t toggles marks and U takes them all off; d flags a file for deletion and x deletes what is flagged. C copies, R renames or moves and D deletes the marked files, or the one on the line. + makes a directory, g lists the directory again, s sorts by date or name, and ( hides the details.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-mode": [];
+      /**
+       * Move down to the next directory's line, or as many as the prefix argument says.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-next-dirline": [];
+      /**
+       * Move down a line, or as many as the prefix argument says, to the file name there.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-next-line": [];
+      /**
+       * Move down to the next marked file, going round to the top if there is none below.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-next-marked-file": [];
+      /**
+       * Say how many files are marked, and their size.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-number-of-marked-files": [];
+      /**
+       * List a directory in another frame, as dired does.
+       *
+       * @param dirname file name
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-other-frame": [dirname: string];
+      /**
+       * List a directory in another window, as dired does.
+       *
+       * @param dirname file name
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-other-window": [dirname: string];
+      /**
+       * Move up to the previous directory's line, or as many as the prefix argument says.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-prev-dirline": [];
+      /**
+       * Move up to the previous marked file, going round to the bottom if there is none above.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-prev-marked-file": [];
+      /**
+       * Move up a line, or as many as the prefix argument says, to the file name there.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-previous-line": [];
+      /**
+       * List the directory again, keeping the marks and point on the same file.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-revert": [];
+      /**
+       * Sort the listing by date if it is sorted by name, else by name. With a prefix argument, type the switches.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-sort-toggle-or-edit": [];
+      /**
+       * Sum up Dired's most used keys in the echo area.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-summary": [];
+      /**
+       * Mark the files that are not marked and unmark those that are. Flags for deletion stay, and . and .. are left alone.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-toggle-marks": [];
+      /**
+       * Undo marks and flags, as far as the buffer remembers them. Changes to files stay.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-undo": [];
+      /**
+       * Take the mark or flag off the file on this line, and move down.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-unmark": [];
+      /**
+       * Take a mark off every file that has it: the mark character typed, or every mark for RET.
+       *
+       * @param mark text
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-unmark-all-files": [mark: string];
+      /**
+       * Take every mark and flag off.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-unmark-all-marks": [];
+      /**
+       * Move up a line and take the mark or flag off the file there.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-unmark-backward": [];
+      /**
+       * List the directory above this one, with point on this one. With a prefix argument, in another window.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-up-directory": [];
+      /**
+       * Visit the file on this line read-only, or list it if it is a directory.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-view-file": [];
       /**
        * Show a buffer in some window without selecting it.
        *
@@ -369,6 +700,12 @@ declare global {
        * A negative argument moves backward.
        */
       "forward-char": [];
+      /**
+       * Move to the end of this paragraph, or the next if between them. With a prefix argument, that many; back if negative.
+       *
+       * Defined in packages/paragraphs.ts.
+       */
+      "forward-paragraph": [];
       /**
        * Move point forward to the end of a word, or as many words as the prefix argument says.
        *
@@ -1998,6 +2335,68 @@ declare global {
        */
       "prog-mode": [];
       /**
+       * List the current project's root in Dired.
+       *
+       * Defined in packages/project.ts.
+       */
+      "project-dired": [];
+      /**
+       * List one of the current project's directories in Dired, with completion.
+       *
+       * Defined in packages/project.ts.
+       */
+      "project-find-dir": [];
+      /**
+       * Visit one of the current project's files, with completion: those Git tracks and does not ignore.
+       *
+       * Outside a project, it asks which one first.
+       *
+       * Defined in packages/project.ts.
+       */
+      "project-find-file": [];
+      /**
+       * Forget a project Ember knows, so C-x p p no longer offers it.
+       *
+       * @param dir text
+       *
+       * Defined in packages/project.ts.
+       */
+      "project-forget-project": [dir: string];
+      /**
+       * Forget the projects Ember knows whose directories are gone.
+       *
+       * Defined in packages/project.ts.
+       */
+      "project-forget-zombie-projects": [];
+      /**
+       * Kill the current project's buffers, after asking. With a prefix argument, without asking.
+       *
+       * Defined in packages/project.ts.
+       */
+      "project-kill-buffers": [];
+      /**
+       * Remember the projects in a directory and the directories in it, so C-x p p offers them. Says how many were new.
+       *
+       * @param dir file name
+       *
+       * Defined in packages/project.ts.
+       */
+      "project-remember-projects-under": [dir: string];
+      /**
+       * Switch to another project Ember knows, then choose what to do there, as project-switch-commands lists: f finds a file, d a directory, D lists the root in Dired, b switches to a buffer and k kills its buffers.
+       *
+       * @param dir text
+       *
+       * Defined in packages/project.ts.
+       */
+      "project-switch-project": [dir: string];
+      /**
+       * Switch to one of the current project's buffers, with completion.
+       *
+       * Defined in packages/project.ts.
+       */
+      "project-switch-to-buffer": [];
+      /**
        * The major mode for editing Python, highlighted from a tree-sitter syntax tree.
        *
        * Files matching \.py[iw]?$ use it; see auto-mode-alist.
@@ -2475,6 +2874,12 @@ declare global {
        */
       "universal-argument-more": [];
       /**
+       * Show the *Messages* buffer: the messages shown in the echo area, newest last.
+       *
+       * Defined in packages/help.ts.
+       */
+      "view-echo-area-messages": [];
+      /**
        * Continue long lines at word boundaries, and make C-a, C-e and C-k work on screen lines.
        *
        * It turns word-wrap on in the buffer and turns truncate-lines off.
@@ -2585,6 +2990,14 @@ declare global {
        */
       "case-replace": Value;
       /**
+       * The completion styles kinds of completion try before completion-styles, as [category, styles] pairs: buffer names match by substring too, and a project's files only by substring.
+       */
+      "completion-category-defaults": Value;
+      /**
+       * Completion styles for kinds of completion, as completion-category-defaults has them, that win over those.
+       */
+      "completion-category-overrides": Value;
+      /**
        * Whether minibuffer completion ignores the case of letters.
        */
       "completion-ignore-case": Value;
@@ -2622,6 +3035,84 @@ declare global {
        * Defined in packages/delsel.ts.
        */
       "delete-selection-mode": Value;
+      /**
+       * The switches this Dired buffer lists with, which s changes.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-actual-switches": Value;
+      /**
+       * Whether going back to a Dired buffer lists its directory again.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-auto-revert-buffer": Value;
+      /**
+       * Whether a copy keeps the modification time of what it copies.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-copy-preserve-time": Value;
+      /**
+       * The directory a Dired buffer lists.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-directory": Value;
+      /**
+       * Whether copying and renaming suggest the directory of a Dired buffer in another window.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-dwim-target": Value;
+      /**
+       * Whether Dired-Hide-Details mode is on in this buffer. Use the command dired-hide-details-mode to change it.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-hide-details-mode": Value;
+      /**
+       * The mark copies get, or true for the mark the file had, or nil for none.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-keep-marker-copy": Value;
+      /**
+       * Whether renamed files keep their marks, or a mark they get instead.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-keep-marker-rename": Value;
+      /**
+       * Whether visiting a directory from Dired kills the Dired buffer it came from.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-kill-when-opening-new-dired-buffer": Value;
+      /**
+       * How Dired lists a directory, as ls's switches: a lists dot files, A all but . and .., t sorts by time, S by size, r reverses, and h writes sizes as 1.2k.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-listing-switches": Value;
+      /**
+       * Whether copying a directory copies what it holds: top or always do, and nil refuses.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-recursive-copies": Value;
+      /**
+       * Whether deleting a directory with files in it asks: top asks once for each, always never asks, and nil refuses.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-recursive-deletes": Value;
+      /**
+       * Names Dired passes over when it puts point on the first file, as a regular expression: . and .., and auto-save and lock files.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-trivial-filenames": Value;
       /**
        * Whether RET indents the new line, as Emacs's electric-indent-mode does; on by default.
        *
@@ -3012,6 +3503,30 @@ declare global {
        */
       "overwrite-mode": Value;
       /**
+       * Where the projects Ember knows are saved: projects in user-emacs-directory if nil.
+       *
+       * Defined in packages/project.ts.
+       */
+      "project-list-file": Value;
+      /**
+       * What C-x p p offers once a project is chosen, as [key, command, label] lists, the key pressed then running the command.
+       *
+       * Defined in packages/project.ts.
+       */
+      "project-switch-commands": Value;
+      /**
+       * Names of files that mark a project's root as well as version control's, such as "package.json".
+       *
+       * Defined in packages/project.ts.
+       */
+      "project-vc-extra-root-markers": Value;
+      /**
+       * Names of files and directories a project outside version control leaves out of its files.
+       *
+       * Defined in packages/project.ts.
+       */
+      "project-vc-ignores": Value;
+      /**
        * Strings and replacements answered to query-replace and the other replace commands, newest first.
        *
        * Defined in packages/replace.ts.
@@ -3083,6 +3598,12 @@ declare global {
        * How the echo area fits what the minibuffer shows: grow-only grows it as needed until the prompt closes, and t also shrinks it.
        */
       "resize-mini-windows": Value;
+      /**
+       * The command revert-buffer runs instead of rereading the file, in buffers that set it, such as Dired's. Nil for the usual.
+       *
+       * Defined in packages/files.ts.
+       */
+      "revert-buffer-function": Value;
       /**
        * Files revert-buffer reverts without asking, if unmodified: a list of JavaScript regular expressions matched against the file name.
        *
@@ -3167,6 +3688,48 @@ declare global {
        * The text of buffers.
        */
       "default": FaceAttributes;
+      /**
+       * The names of directories in a listing.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-directory": FaceAttributes;
+      /**
+       * The names of files flagged for deletion.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-flagged": FaceAttributes;
+      /**
+       * The directory's name at the top of a listing.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-header": FaceAttributes;
+      /**
+       * Files of little interest, such as backups.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-ignored": FaceAttributes;
+      /**
+       * The mark at the start of a marked line.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-mark": FaceAttributes;
+      /**
+       * The names of marked files.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-marked": FaceAttributes;
+      /**
+       * The names of symbolic links in a listing.
+       *
+       * Defined in packages/dired.ts.
+       */
+      "dired-symlink": FaceAttributes;
       /**
        * Errors.
        */
@@ -3654,6 +4217,22 @@ declare global {
        */
       "delete-selection-mode-on-hook": Value;
       /**
+       * Run after Dired-Hide-Details mode is turned on or off.
+       */
+      "dired-hide-details-mode-hook": Value;
+      /**
+       * Run after Dired-Hide-Details mode is turned off.
+       */
+      "dired-hide-details-mode-off-hook": Value;
+      /**
+       * Run after Dired-Hide-Details mode is turned on.
+       */
+      "dired-hide-details-mode-on-hook": Value;
+      /**
+       * Run after entering Dired by name mode, after the hooks of the modes it is built on.
+       */
+      "dired-mode-hook": Value;
+      /**
        * Run after Fido mode is turned on or off.
        */
       "fido-mode-hook": Value;
@@ -3900,6 +4479,12 @@ declare global {
       params?: Param[];
       /** Receives one string per parameter. Throw an Error to fail with its message. */
       run: (...args: string[]) => void;
+      /**
+       * Whether it is a motion Shift selects with, as Emacs's ^ interactive
+       * spec: with Shift it starts or extends the region, without it ends one
+       * Shift started.
+       */
+      shiftSelect?: boolean;
     }
 
     /**
@@ -3931,8 +4516,11 @@ declare global {
       name: N,
       ...args: N extends CommandName ? Commands[N] : string[]
     ): void;
-    /** Show a message in the echo area. */
-    function message(text: string): void;
+    /**
+     * Show a message in the echo area, and log it in *Messages*, unless `log`
+     * is false, as for a prefix argument typed so far.
+     */
+    function message(text: string, options?: { log?: boolean }): void;
     /** Insert text at point in the current buffer, leaving point after it. */
     function insert(text: string): void;
     /**
@@ -4339,6 +4927,21 @@ declare global {
     function makeDirectory(dir: string, options?: { parents?: boolean }): void;
     /** Delete a directory, as Emacs's delete-directory: one with files in it only if `recursive`. */
     function deleteDirectory(dir: string, options?: { recursive?: boolean; trash?: boolean }): void;
+    /**
+     * Where an Emacs regular expression first matches in a string, as Emacs's
+     * string-match, or undefined. Case matters unless `caseFold`.
+     */
+    function stringMatch(regexp: string, text: string, options?: { caseFold?: boolean }): number | undefined;
+    /**
+     * A project's files, as Emacs's project-files for a version-controlled
+     * project: those Git tracks and does not ignore, or outside Git every file
+     * under `root`, leaving out version control's directories and `ignores`.
+     */
+    function projectFiles(root: string, options?: { ignores?: string[] }): string[];
+    /** The messages shown, oldest first, as *Messages* logs them: one shown again straight after itself as "Mark set [2 times]". */
+    function messages(): string[];
+    /** Put text in the kill ring as a kill of its own, as Emacs's kill-new. */
+    function killNew(text: string): void;
     /** A file's text, read as UTF-8. */
     function readTextFile(file: string): string;
     /** Write text to a file, replacing what it held, as Emacs's write-region does for saved state. */

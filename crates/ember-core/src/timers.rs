@@ -172,7 +172,7 @@ impl Editor {
         });
         for f in due {
             if let Err(e) = f(self, &[]) {
-                self.message = Some(format!("Error running timer: {e}"));
+                self.message(format!("Error running timer: {e}"));
             }
         }
     }

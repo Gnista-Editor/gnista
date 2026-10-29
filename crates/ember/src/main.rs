@@ -12,7 +12,7 @@ use std::{env, io};
 
 use std::time::{Duration, Instant};
 
-use ember_core::{Editor, Key, KeyCode, MouseEvent, MouseKind, WindowId, expand_file_name};
+use ember_core::{Arg, Editor, Key, KeyCode, MouseEvent, MouseKind, WindowId, expand_file_name};
 use ember_script::{config, type_definitions};
 use ratatui::DefaultTerminal;
 use ratatui::crossterm::event::{
@@ -38,7 +38,7 @@ fn main() -> io::Result<()> {
         return Ok(());
     }
     for file in files {
-        if let Err(e) = editor.visit_file(&expand_file_name(&file)) {
+        if let Err(e) = editor.call("find-file", vec![Arg::Str(expand_file_name(&file).display().to_string())]) {
             editor.message(e.to_string());
         }
     }

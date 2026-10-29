@@ -357,6 +357,14 @@ function fidoSetup(): void {
   setLocal("icomplete-hide-common-prefix", false);
   setLocal("icomplete-scroll", on("icomplete-vertical-mode"));
   setLocal("completion-styles", ["flex"]);
+  // Flex first in each category too, as icomplete--fido-ccd puts it.
+  const defaults = ember.variable("completion-category-defaults");
+  if (Array.isArray(defaults)) {
+    setLocal("completion-category-defaults", defaults.map((entry) => {
+      if (!Array.isArray(entry) || !Array.isArray(entry[1])) return entry;
+      return [entry[0], ["flex", ...entry[1].filter((s) => s !== "flex")]];
+    }));
+  }
   setLocal("completion-ignore-case", true);
 }
 
@@ -509,7 +517,7 @@ ember.defineCommand({
       ember.callInteractively("delete-char");
       return;
     }
-    ember.call("dired" as ember.CommandName, field.slice(0, field.lastIndexOf("/") + 1));
+    ember.call("dired", field.slice(0, field.lastIndexOf("/") + 1));
     ember.call("exit-minibuffer");
   },
 });

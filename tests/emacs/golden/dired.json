@@ -1,0 +1,1521 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "dired-jump",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-open",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x d",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "."
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-next-lines",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j n n",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 34,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-next-past-end",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j n n n n n",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 46,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-previous-to-header",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j p p p p",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-space-and-shift-space",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j SPC SPC S-SPC",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 26,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-dirlines",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j > <",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-dirline-none",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j > >",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 42,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No more subdirectories",
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-mark-two",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j m m",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\n* a.txt\n* b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n* a.txt\n* b.txt\n  c.org\n  sub\n",
+      "point": 34,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-mark-then-unmark",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j m p u",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 26,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-flag-and-unmark-backward",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j d d DEL",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\nD a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\nD a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 26,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-mark-with-count",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j M-3 m",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\n* a.txt\n* b.txt\n* c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n* a.txt\n* b.txt\n* c.org\n  sub\n",
+      "point": 42,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-toggle-marks",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j m t",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n* b.txt\n* c.org\n* sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n* b.txt\n* c.org\n* sub\n",
+      "point": 26,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-unmark-all",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j m m U",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 34,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      },
+      "message": "2 marks removed"
+    },
+    {
+      "name": "dired-mark-regexp",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j % m",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "\\.txt$"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n* a.txt\n* b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n* a.txt\n* b.txt\n  c.org\n  sub\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      },
+      "message": "2 matching files marked"
+    },
+    {
+      "name": "dired-mark-directories",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j * /",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n* sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n* sub\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      },
+      "message": "1 directory file marked"
+    },
+    {
+      "name": "dired-flag-backups",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j ~",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n",
+          "a.txt~": "old\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\nD a.txt~\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\nD a.txt~\n  b.txt\n  c.org\n  sub\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "a.txt~": "old\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      },
+      "message": "1 backup file flagged"
+    },
+    {
+      "name": "dired-flag-dot",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j M-< n d",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 13,
+      "mark": 18,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-mark-dot",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j M-< n m",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n* .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n* .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 13,
+      "mark": 18,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-delete-flagged",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j d x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "yes"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  b.txt\n  c.org\n  sub\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      },
+      "message": "Deleting...done"
+    },
+    {
+      "name": "dired-delete-flagged-declined",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j d x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "no"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\nD a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\nD a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 26,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      },
+      "message": "(No deletions performed)"
+    },
+    {
+      "name": "dired-delete-nothing-flagged",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      },
+      "message": "(No deletions requested)"
+    },
+    {
+      "name": "dired-delete-marked",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j m m D",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "yes"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  c.org\n  sub\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      },
+      "message": "Deleting...done"
+    },
+    {
+      "name": "dired-delete-at-point",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j n D",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "yes"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  c.org\n  sub\n",
+      "point": 26,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-delete-directory-recursively",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j > D",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "yes",
+          "yes"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n",
+      "point": 40,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n"
+      },
+      "message": "Deleting...done"
+    },
+    {
+      "name": "dired-copy",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j C",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "copy.txt"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\nC copy.txt\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\nC copy.txt\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "copy.txt": "one\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      },
+      "message": "Copy: 1 file done"
+    },
+    {
+      "name": "dired-copy-marked-into-directory",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j m m C",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "sub"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n* a.txt\n* b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n* a.txt\n* b.txt\n  c.org\n  sub\n",
+      "point": 26,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/a.txt": "one\n",
+        "sub/b.txt": "two\n",
+        "sub/x.txt": "x\n"
+      },
+      "message": "Copy: 2 files done"
+    },
+    {
+      "name": "dired-copy-over-existing",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j C",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "b.txt",
+          "y"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\nC b.txt\n  a.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\nC b.txt\n  a.txt\n  c.org\n  sub\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "one\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      },
+      "message": "Copy: 1 file done"
+    },
+    {
+      "name": "dired-rename",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j R",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "moved.txt"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  moved.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  moved.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "moved.txt": "one\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      },
+      "message": "Move: 1 file done"
+    },
+    {
+      "name": "dired-rename-into-directory",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j R",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "sub"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  b.txt\n  c.org\n  sub\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/a.txt": "one\n",
+        "sub/x.txt": "x\n"
+      },
+      "message": "Move: 1 file done"
+    },
+    {
+      "name": "dired-rename-visited-buffer-follows",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j R C-x b",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "moved.txt",
+          "a.txt"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "moved.txt": "one\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-create-directory",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j +",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "newdir"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\n  newdir\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  newdir\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "newdir/": "",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-create-nested-directory",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j +",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "new/deeper"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\n  new\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  new\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "new/": "",
+        "new/deeper/": "",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-revert-keeps-marks",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j m n d g",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\n* a.txt\n  b.txt\nD c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n* a.txt\n  b.txt\nD c.org\n  sub\n",
+      "point": 42,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-visit-file",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j n RET",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "two\n",
+      "visible": "two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-visit-directory-and-up",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j > RET ^",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 42,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-kill-lines",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j m m k",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  c.org\n  sub\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      },
+      "message": "Killed 2 lines."
+    },
+    {
+      "name": "dired-copy-filename",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j w",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "a.txt"
+      ],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      },
+      "message": "a.txt"
+    },
+    {
+      "name": "dired-copy-marked-filenames",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j m m w",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n* a.txt\n* b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n* a.txt\n* b.txt\n  c.org\n  sub\n",
+      "point": 34,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "a.txt b.txt"
+      ],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      },
+      "message": "a.txt b.txt"
+    },
+    {
+      "name": "dired-goto-file",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j j",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "c.org"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 34,
+      "mark": 18,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-find-file-directory",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-f",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "sub"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR/sub:\n  .\n  ..\n  x.txt\n",
+      "visible": "  DIR/sub:\n  .\n  ..\n  x.txt\n",
+      "point": 22,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-next-marked",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j m n m M-< M-}",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "  DIR:\n  .\n  ..\n* a.txt\n  b.txt\n* c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n* a.txt\n  b.txt\n* c.org\n  sub\n",
+      "point": 18,
+      "mark": 42,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "dired-summary",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j ?",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n  sub\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      },
+      "message": "d-elete, u-ndelete, x-punge, f-ind, o-ther window, R-ename, C-opy, h-elp"
+    }
+  ]
+}

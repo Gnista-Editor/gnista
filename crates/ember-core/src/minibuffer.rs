@@ -152,7 +152,7 @@ impl Editor {
         b.set_text(input);
         b.set_point(b.len());
         if let Err(e) = self.run_hooks("minibuffer-setup-hook") {
-            self.message = Some(format!("Error in minibuffer-setup-hook: {e}"));
+            self.message(format!("Error in minibuffer-setup-hook: {e}"));
         }
     }
 
@@ -161,7 +161,7 @@ impl Editor {
     pub(crate) fn close_prompt(&mut self) -> Option<Prompt> {
         self.prompt.as_ref()?;
         if let Err(e) = self.run_hooks("minibuffer-exit-hook") {
-            self.message = Some(format!("Error in minibuffer-exit-hook: {e}"));
+            self.message(format!("Error in minibuffer-exit-hook: {e}"));
         }
         let prompt = self.prompt.take();
         self.minibuffer.set_text("");

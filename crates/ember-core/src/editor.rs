@@ -42,6 +42,23 @@ pub(crate) struct Prompt {
     pub(crate) sorted: Option<(String, String, Vec<String>)>,
 }
 
+/// A message as *Messages* logs it.
+#[derive(Clone, Debug, PartialEq)]
+pub struct LoggedMessage {
+    pub text: String,
+    /// How many times it was shown in a row.
+    pub count: usize,
+    /// Whether it was a command's error.
+    pub error: bool,
+}
+
+impl LoggedMessage {
+    /// The line *Messages* shows for it.
+    pub fn shown(&self) -> String {
+        if self.count == 1 { self.text.clone() } else { format!("{} [{} times]", self.text, self.count) }
+    }
+}
+
 /// A command as it last ran, so it can be repeated (Emacs's
 /// `last-repeatable-command`, with the arguments and key it ran with).
 #[derive(Clone)]
@@ -90,6 +107,8 @@ pub struct Editor {
     previous_buffer: Option<String>,
     pub(crate) minibuffer: Buffer,
     pub(crate) prompt: Option<Prompt>,
+    /// The messages shown, as *Messages* keeps them.
+    pub(crate) message_log: Vec<LoggedMessage>,
     /// What the minibuffer shows besides its input, such as icomplete's list.
     pub(crate) minibuffer_overlay: Option<crate::minibuffer::MinibufferOverlay>,
     /// How many lines the echo area has grown to while the prompt is open.
@@ -214,6 +233,7 @@ impl Editor {
             remapped_from: None,
             previous_buffer: None,
             minibuffer: Buffer::new(" *Minibuf*"),
+            message_log: Vec::new(),
             minibuffer_overlay: None,
             mini_window_lines: 1,
             frame_lines: None,
@@ -424,11 +444,11 @@ impl Editor {
         let shifted = std::mem::take(&mut self.shift_translated);
         let prefix = self.prefix_arg.take();
         let Some(command) = self.command(name) else {
-            self.message = Some(format!("No such command: {name}"));
+            self.message(format!("No such command: {name}"));
             return;
         };
         if !command.params.is_empty() && (self.prompt.is_some() || self.reading_keys.is_some()) {
-            self.message = Some("Command attempted to use minibuffer while in minibuffer".into());
+            self.message("Command attempted to use minibuffer while in minibuffer");
             return;
         }
         // Runs of typing, or of C-d or DEL, share an undo step, as in Emacs:
@@ -553,7 +573,7 @@ impl Editor {
 
     /// Shows an error as a failed command's, in the echo area.
     pub(crate) fn fail(&mut self, e: Error) {
-        self.message = Some(e.to_string());
+        self.show_error(e.to_string());
         self.last_error = Some(e);
         self.command_failed = true;
     }
@@ -594,7 +614,7 @@ impl Editor {
                     let result = ed.run_command(command.clone(), args.clone(), prefix);
                     ed.buffers.iter_mut().for_each(|b| b.file.allow_supersession = false);
                     result?;
-                    ed.message = Some("File on disk now will become a backup file if you save these changes.".into());
+                    ed.message("File on disk now will become a backup file if you save these changes.");
                     Ok(())
                 }
                 Some(Value::Str(a)) if a == "r" => {
@@ -826,7 +846,7 @@ impl Editor {
     fn command_loop_run(&mut self, name: &str) {
         self.this_command = Some(name.to_string());
         if let Err(e) = self.run_hooks("pre-command-hook") {
-            self.message = Some(format!("Error in pre-command-hook: {e}"));
+            self.message(format!("Error in pre-command-hook: {e}"));
         }
         let mut name = self.this_command.take().unwrap_or_else(|| name.to_string());
         if let Some(to) = self.command_remapping(&name) {
@@ -838,7 +858,7 @@ impl Editor {
         self.previous_amalgamating = self.amalgamating_now;
         self.this_command = self.last_command.clone();
         if let Err(e) = self.run_hooks("post-command-hook") {
-            self.message = Some(format!("Error in post-command-hook: {e}"));
+            self.message(format!("Error in post-command-hook: {e}"));
         }
         self.this_command = None;
         // As in Emacs's command loop, point is adjusted after post-command-hook
@@ -945,7 +965,7 @@ impl Editor {
                 match key.code {
                     KeyCode::Mouse(MouseKind::Down | MouseKind::Click, _) => {
                         if matches!(key.code, KeyCode::Mouse(MouseKind::Click, _)) {
-                            self.message = Some(format!("{key} is undefined"));
+                            self.message(format!("{key} is undefined"));
                         }
                     }
                     KeyCode::Mouse(_, n) => self.dispatch_key(Key { code: KeyCode::Mouse(MouseKind::Click, n), ..key }),
@@ -960,7 +980,7 @@ impl Editor {
                     self.last_key = Some(key);
                     self.command_loop_run("self-insert-command");
                 } else {
-                    self.message = Some(format!("{} is undefined", format_keys(&keys)));
+                    self.message(format!("{} is undefined", format_keys(&keys)));
                     // Emacs runs the command `undefined` for the keys, so the
                     // next command does not follow the one before them.
                     self.last_command = Some("undefined".into());
@@ -1178,7 +1198,7 @@ impl Editor {
             let old = self.buffers[self.current].name.clone();
             if self.set_current_buffer(name).is_ok() {
                 if let Err(e) = self.run_hooks("kill-buffer-hook") {
-                    self.message = Some(format!("Error in kill-buffer-hook: {e}"));
+                    self.message(format!("Error in kill-buffer-hook: {e}"));
                 }
                 let _ = self.set_current_buffer(&old);
             }
@@ -1224,18 +1244,18 @@ impl Editor {
         }
         if Self::has_newer_auto_save(path) {
             let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-            self.message = Some(format!("{name} has auto save data; consider M-x recover-this-file"));
+            self.message(format!("{name} has auto save data; consider M-x recover-this-file"));
         } else if is_new {
-            self.message = Some("(New file)".into());
+            self.message("(New file)");
         }
         // As Emacs's after-find-file does: choose the major mode, then run the hook.
         if self.command("normal-mode").is_some()
             && let Err(e) = self.call("normal-mode", Vec::new())
         {
-            self.message = Some(format!("File mode specification error: {e}"));
+            self.message(format!("File mode specification error: {e}"));
         }
         if let Err(e) = self.run_hooks("find-file-hook") {
-            self.message = Some(format!("Error in find-file-hook: {e}"));
+            self.message(format!("Error in find-file-hook: {e}"));
         }
         Ok(())
     }
@@ -1318,6 +1338,12 @@ impl Editor {
         }
     }
 
+    /// Puts text in the kill ring as a kill of its own, as Emacs's `kill-new`.
+    pub fn kill_new(&mut self, text: &str) {
+        self.yank_pointer = 0;
+        self.kill_ring.push(text.to_string());
+    }
+
     /// The kill `n` entries back from the one yanked last, moving the yank
     /// pointer there, as Emacs's `current-kill` does. 0 is the kill yanking
     /// would insert now; M-y asks for 1, the one before it.
@@ -1384,10 +1410,35 @@ impl Editor {
 
     /// The styles in `completion-styles`, in order.
     pub(crate) fn completion_styles(&self) -> Vec<String> {
-        match self.variable("completion-styles") {
-            Some(Value::List(items)) => items.iter().filter_map(|v| v.as_str().map(str::to_string)).collect(),
+        let strings = |v: &Value| match v {
+            Value::List(items) => items.iter().filter_map(|v| v.as_str().map(str::to_string)).collect(),
+            _ => Vec::new(),
+        };
+        let mut styles: Vec<String> = match self.variable("completion-styles") {
+            Some(v @ Value::List(_)) => strings(&v),
             _ => vec!["basic".to_string()],
+        };
+        // A category's own styles come first, as Emacs's completion--styles
+        // takes them from completion-category-overrides or -defaults.
+        let category = self.prompt.as_ref().and_then(|_| self.minibuffer_info()).and_then(|i| i.category);
+        if let Some(category) = category {
+            for table in ["completion-category-overrides", "completion-category-defaults"] {
+                let Some(Value::List(entries)) = self.variable(table) else { continue };
+                let found = entries.iter().find_map(|e| match e {
+                    Value::List(pair) if pair.first().and_then(Value::as_str) == Some(category.as_str()) => pair.get(1).map(strings),
+                    _ => None,
+                });
+                if let Some(own) = found {
+                    let mut all = own;
+                    all.append(&mut styles);
+                    let mut seen = Vec::new();
+                    all.retain(|s| if seen.contains(s) { false } else { seen.push(s.clone()); true });
+                    styles = all;
+                    break;
+                }
+            }
         }
+        styles
     }
 
     /// Adds an answer to a history variable, newest first, as the minibuffer
@@ -1461,8 +1512,55 @@ impl Editor {
         self.message.as_deref()
     }
 
+    /// Shows a message in the echo area and logs it, as Emacs's `message`
+    /// does in *Messages*: once more straight after itself, it is counted
+    /// rather than logged again.
     pub fn message(&mut self, text: impl Into<String>) {
+        let text = text.into();
+        self.log_message(&text, false);
+        self.message = Some(text);
+    }
+
+    /// Shows text in the echo area without logging it, as Emacs shows the
+    /// keys of a prefix argument typed so far.
+    pub fn message_unlogged(&mut self, text: impl Into<String>) {
         self.message = Some(text.into());
+    }
+
+    /// Shows a command's error, logged as interactive Emacs logs it.
+    fn show_error(&mut self, text: String) {
+        self.log_message(&text, true);
+        self.message = Some(text);
+    }
+
+    fn log_message(&mut self, text: &str, error: bool) {
+        match self.message_log.last_mut() {
+            Some(last) if last.text == text && last.error == error => last.count += 1,
+            _ => {
+                self.message_log.push(LoggedMessage { text: text.to_string(), count: 1, error });
+                // As message-log-max keeps the newest thousand lines.
+                if self.message_log.len() > 1000 {
+                    self.message_log.remove(0);
+                }
+            }
+        }
+    }
+
+    /// The messages logged, oldest first, as *Messages* shows them: a
+    /// message repeated straight after itself as "Mark set [2 times]".
+    pub fn messages(&self) -> Vec<String> {
+        self.message_log.iter().map(LoggedMessage::shown).collect()
+    }
+
+    /// Empties the log, as erasing *Messages* does.
+    pub fn clear_messages(&mut self) {
+        self.message_log.clear();
+    }
+
+    /// The log, with whether each entry is a command's error, for code that
+    /// leaves those out, as batch Emacs logs none.
+    pub fn message_log(&self) -> &[LoggedMessage] {
+        &self.message_log
     }
 
     /// Lines of text in the selected window.

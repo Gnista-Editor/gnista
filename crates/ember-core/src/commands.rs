@@ -185,8 +185,10 @@ fn movement(ed: &mut Editor) {
         "Move point to the beginning of the buffer.\n\nUnless the region is active, leaves the mark where point was. With a numeric prefix argument N, move to N tenths of the way through the buffer instead, at the start of the next line. Plain C-u does not leave the mark.",
         |ed, _| {
             let arg = ed.current_prefix_arg();
+            let quiet = ed.executing_kbd_macro();
             let b = ed.buffer_mut();
-            if !matches!(arg, Some(PrefixArg::Universal(_))) && !b.is_mark_active() {
+            let pushed = !matches!(arg, Some(PrefixArg::Universal(_))) && !b.is_mark_active();
+            if pushed {
                 b.push_mark(b.point(), false);
             }
             match arg {
@@ -195,6 +197,10 @@ fn movement(ed: &mut Editor) {
                     b.set_point(forward_line(b, pos, 1));
                 }
                 _ => b.set_point(b.point_min()),
+            }
+            // As Emacs's push-mark says, unless a macro is running.
+            if pushed && !quiet {
+                ed.message("Mark set");
             }
             Ok(())
         },
@@ -205,8 +211,10 @@ fn movement(ed: &mut Editor) {
         "Move point to the end of the buffer.\n\nUnless the region is active, leaves the mark where point was. With a numeric prefix argument N, move to N tenths of the way from the end instead, at the start of the next line. Plain C-u does not leave the mark.",
         |ed, _| {
             let arg = ed.current_prefix_arg();
+            let quiet = ed.executing_kbd_macro();
             let b = ed.buffer_mut();
-            if !matches!(arg, Some(PrefixArg::Universal(_))) && !b.is_mark_active() {
+            let pushed = !matches!(arg, Some(PrefixArg::Universal(_))) && !b.is_mark_active();
+            if pushed {
                 b.push_mark(b.point(), false);
             }
             match arg {
@@ -215,6 +223,9 @@ fn movement(ed: &mut Editor) {
                     b.set_point(forward_line(b, pos, 1));
                 }
                 _ => b.set_point(b.point_max()),
+            }
+            if pushed && !quiet {
+                ed.message("Mark set");
             }
             Ok(())
         },
@@ -1038,6 +1049,10 @@ fn files_and_buffers(ed: &mut Editor) {
             "Visit a file in a buffer.\n\nA file that does not exist yet is created when the buffer is saved.",
             |ed, args| {
                 let path = ed.expand_file_name(args[0].as_str()?);
+                // A directory is listed in Dired, as find-file-run-dired has it.
+                if path.is_dir() && ed.command("dired").is_some() {
+                    return ed.call("dired", vec![Arg::Str(format!("{}/", path.display()))]);
+                }
                 ed.visit_file(&path)
             },
         )

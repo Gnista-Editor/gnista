@@ -515,6 +515,58 @@ fn file_editing_behaves_like_emacs_on_random_cases() {
     fuzz("file-fuzz", random_file_case);
 }
 
+/// Dired's keys, for the Dired fuzzer. Not s, whose sorting by time is
+/// a toss-up for files made at once; not ^, which leaves the case's
+/// directory for one that differs; and not M-DEL or * c, which batch Emacs
+/// reads a key for from standard input.
+const DIRED_KEYS: &[&str] = &[
+    "n", "p", "SPC", "S-SPC", "C-n", "C-p", "<down>", "<up>", ">", "<", "M-<", "M->", "m", "u", "d", "t", "U", "DEL",
+    "M-2 m", "M-2 d", "C-u m", "* /", "~", "#", "% m", "% d", "* !", "M-}", "M-{", "x", "D", "C", "R", "+", "g", "k",
+    "w", "RET", "j", "(", "* t",
+];
+
+fn random_dired_case(rng: &mut Rng, name: String) -> Case {
+    const FILES: &[&str] = &[
+        "b.txt", "c.org", "notes.md", "a.txt~", "#a.txt#", ".hidden", "sub/x.txt", "sub/y.org", "empty/", "data", "z z.txt",
+    ];
+    let mut files: std::collections::BTreeMap<String, String> = Default::default();
+    files.insert("a.txt".into(), "one\n".into());
+    for _ in 0..1 + rng.below(6) {
+        let f = rng.pick(FILES);
+        files.insert(f.to_string(), if f.ends_with('/') { String::new() } else { format!("{f}\n") });
+    }
+    let n = 1 + rng.below(7);
+    let keys = std::iter::once("C-x C-j").chain((0..n).map(|_| rng.pick(DIRED_KEYS))).collect::<Vec<_>>().join(" ");
+    const ANSWERS: &[&str] = &["yes", "no", "y", "n", "!", "copy.txt", "sub", "b.txt", "new", "txt$", "*", " "];
+    let answers = (0..rng.below(5)).map(|_| rng.pick(ANSWERS).to_string()).collect();
+    Case {
+        name,
+        point: 0,
+        text: String::new(),
+        keys,
+        modes: Vec::new(),
+        call: Vec::new(),
+        platform: None,
+        windows: false,
+        answers,
+        visit: None,
+        today: None,
+        agenda_files: false,
+        capture_templates: Vec::new(),
+        files,
+        find: Some("a.txt".to_string()),
+        disk: None,
+        message: true,
+    }
+}
+
+/// Fuzzes Dired: moving, marking, and copying, renaming and deleting files.
+#[test]
+#[ignore = "needs GNU Emacs; run with --ignored"]
+fn dired_behaves_like_emacs_on_random_cases() {
+    fuzz("dired-fuzz", random_dired_case);
+}
+
 /// Generates cases with `generate`, compares Emacs and Ember on them, and
 /// shrinks those that differ, in a directory of `target` of its own, as the
 /// fuzzers can run at once.
@@ -589,6 +641,28 @@ fn fuzz(dir: &str, generate: fn(&mut Rng, String) -> Case) {
     let out: Vec<&Case> = failing.iter().map(|(c, _)| c).collect();
     fs::write(work.join("differences.json"), serde_json::to_string_pretty(&out).unwrap()).unwrap();
     assert!(failing.is_empty(), "{} differences from Emacs; see above", failing.len());
+}
+
+/// Compares Ember again with a run Emacs has already recorded, such as
+/// `EMBER_FUZZ_RUN=target/dired-fuzz/run`, printing each difference as it is,
+/// to check fixes without recording again.
+#[test]
+#[ignore = "needs a recorded run; run with --ignored"]
+fn compares_a_recorded_run() {
+    let Ok(dir) = std::env::var("EMBER_FUZZ_RUN") else { return };
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..").join(dir);
+    let cases: Vec<Case> = serde_json::from_str(&fs::read_to_string(dir.join("cases/fuzz.json")).unwrap()).unwrap();
+    let golden: Golden = serde_json::from_str(&fs::read_to_string(dir.join("golden/fuzz.json")).unwrap()).unwrap();
+    let recorded: BTreeMap<String, State> = golden.cases.into_iter().map(|r| (r.name, r.state)).collect();
+    let mut failing = 0;
+    for case in &cases {
+        let Some(diff) = recorded.get(&case.name).and_then(|emacs| compare(case, emacs)) else { continue };
+        if !diff.is_empty() {
+            failing += 1;
+            eprintln!("\n{}: keys {:?}, answers {:?}, files {:?}\n{diff}", case.name, case.keys, case.answers, case.files.keys().collect::<Vec<_>>());
+        }
+    }
+    eprintln!("\n{failing} of {} cases differ", cases.len());
 }
 
 /// Runs the cases in `EMBER_FUZZ_REPLAY` (by default the last run's

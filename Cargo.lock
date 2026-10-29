@@ -1452,6 +1452,7 @@ name = "ember-script"
 version = "0.1.0"
 dependencies = [
  "ember-core",
+ "regex",
  "rquickjs",
  "serde",
  "serde_json",

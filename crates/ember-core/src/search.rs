@@ -12,6 +12,17 @@ use crate::buffer::Buffer;
 use crate::editor::Editor;
 use crate::error::{Error, Result};
 
+/// Where an Emacs regular expression first matches in a string, in
+/// characters, as Emacs's `string-match`.
+pub fn string_match(pattern: &str, text: &str, fold: bool) -> Result<Option<usize>> {
+    let re = regex::RegexBuilder::new(&translate_regexp(pattern)?)
+        .case_insensitive(fold)
+        .multi_line(true)
+        .build()
+        .map_err(|e| crate::error::Error::new(format!("Invalid regexp: {e}")))?;
+    Ok(re.find(text).map(|m| text[..m.start()].chars().count()))
+}
+
 /// Translates an Emacs regular expression into the `regex` crate's syntax.
 pub fn translate_regexp(emacs: &str) -> Result<String> {
     let chars: Vec<char> = emacs.chars().collect();

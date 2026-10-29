@@ -37,6 +37,7 @@ const PRELUDE: &str = include_str!("prelude.js");
 /// not these. Named by their path in the repository.
 const PACKAGES: &[(&str, &str)] = &[
     ("packages/simple.ts", include_str!("../../../packages/simple.ts")),
+    ("packages/paragraphs.ts", include_str!("../../../packages/paragraphs.ts")),
     ("packages/files.ts", include_str!("../../../packages/files.ts")),
     ("packages/text-mode.ts", include_str!("../../../packages/text-mode.ts")),
     ("packages/outline.ts", include_str!("../../../packages/outline.ts")),
@@ -52,6 +53,8 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/icomplete.ts", include_str!("../../../packages/icomplete.ts")),
     ("packages/recentf.ts", include_str!("../../../packages/recentf.ts")),
     ("packages/ffap.ts", include_str!("../../../packages/ffap.ts")),
+    ("packages/dired.ts", include_str!("../../../packages/dired.ts")),
+    ("packages/project.ts", include_str!("../../../packages/project.ts")),
     ("packages/replace.ts", include_str!("../../../packages/replace.ts")),
     ("packages/org-table.ts", include_str!("../../../packages/org-table.ts")),
     ("packages/org.ts", include_str!("../../../packages/org.ts")),
@@ -324,9 +327,10 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
         "defineCommand",
         Function::new(
             ctx.clone(),
-            move |ctx: Ctx<'js>, name: String, doc: String, params: Vec<Object<'js>>, run: Function<'js>| {
+            move |ctx: Ctx<'js>, name: String, doc: String, params: Vec<Object<'js>>, run: Function<'js>, shift_select: Opt<bool>| {
                 let script = ScriptFunction { run: Persistent::save(&ctx, run), context: context.clone() };
                 let mut command = Command::new(&name, &doc, script.into_command());
+                command.shift_select = shift_select.0 == Some(true);
                 command.source = LOADING.with_borrow(|files| files.last().cloned());
                 for param in params {
                     let param_name: String = param.get("name")?;
@@ -411,9 +415,13 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
     )?;
     native.set(
         "message",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, text: String| {
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, text: String, log: Opt<bool>| {
             with_editor(&ctx, |ed| {
-                ed.message(text);
+                if log.0 == Some(false) {
+                    ed.message_unlogged(text);
+                } else {
+                    ed.message(text);
+                }
                 Ok(())
             })
         })?,
@@ -1128,8 +1136,41 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
         })?,
     )?;
     native.set(
+        "projectFiles",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, root: String, ignores: Vec<String>| {
+            with_editor(&ctx, |ed| {
+                let root = ed.expand_file_name(&root);
+                let files = ember_core::fileops::vc_files(&root).unwrap_or_else(|| ember_core::fileops::files_in_directory(&root, &ignores));
+                Ok(files.iter().map(|p| p.display().to_string()).collect::<Vec<_>>())
+            })
+        })?,
+    )?;
+    native.set(
+        "stringMatch",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pattern: String, text: String, fold: bool| {
+            with_editor(&ctx, |_| Ok(ember_core::string_match(&pattern, &text, fold)?.map(|i| i as f64)))
+        })?,
+    )?;
+    native.set(
+        "messages",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.messages())))?,
+    )?;
+    native.set(
+        "killNew",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, text: String| {
+            with_editor(&ctx, |ed| {
+                ed.kill_new(&text);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
         "abbreviateFileName",
-        Function::new(ctx.clone(), |file: String| abbreviate_path(Path::new(&file)))?,
+        // A directory name keeps its slash, as Emacs's abbreviate-file-name.
+        Function::new(ctx.clone(), |file: String| {
+            let short = abbreviate_path(Path::new(&file));
+            if file.ends_with('/') && !short.ends_with('/') { short + "/" } else { short }
+        })?,
     )?;
     native.set(
         "fileExists",

@@ -1,0 +1,1336 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "para-t1-fwd-0",
+      "input": {
+        "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+        "point": 0,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "visible": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t1-back-0",
+      "input": {
+        "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+        "point": 0,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "visible": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t1-fwd-1",
+      "input": {
+        "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+        "point": 1,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "visible": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t1-back-1",
+      "input": {
+        "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+        "point": 1,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "visible": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t1-fwd-9",
+      "input": {
+        "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+        "point": 9,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "visible": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "point": 20,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t1-back-9",
+      "input": {
+        "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+        "point": 9,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "visible": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t1-fwd-13",
+      "input": {
+        "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+        "point": 13,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "visible": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "point": 20,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t1-back-13",
+      "input": {
+        "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+        "point": 13,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "visible": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t1-fwd-26",
+      "input": {
+        "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+        "point": 26,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "visible": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "point": 27,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t1-back-26",
+      "input": {
+        "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+        "point": 26,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "visible": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "point": 21,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t1-fwd-27",
+      "input": {
+        "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+        "point": 27,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "visible": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "point": 27,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t1-back-27",
+      "input": {
+        "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+        "point": 27,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "visible": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "point": 21,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t1-fwd-many",
+      "input": {
+        "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+        "point": 0,
+        "keys": "M-} M-} M-} M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "visible": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "point": 27,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t1-back-many",
+      "input": {
+        "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+        "point": 27,
+        "keys": "M-{ M-{ M-{ M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "visible": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t1-fwd-count",
+      "input": {
+        "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+        "point": 0,
+        "keys": "M-2 M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "visible": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "point": 20,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t1-back-count",
+      "input": {
+        "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+        "point": 27,
+        "keys": "M-3 M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "visible": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t1-negative",
+      "input": {
+        "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+        "point": 0,
+        "keys": "M-- M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "visible": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t2-fwd-0",
+      "input": {
+        "text": "  lead\n\n   \nnext para\nline\n",
+        "point": 0,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  lead\n\n   \nnext para\nline\n",
+      "visible": "  lead\n\n   \nnext para\nline\n",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t2-back-0",
+      "input": {
+        "text": "  lead\n\n   \nnext para\nline\n",
+        "point": 0,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  lead\n\n   \nnext para\nline\n",
+      "visible": "  lead\n\n   \nnext para\nline\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t2-fwd-1",
+      "input": {
+        "text": "  lead\n\n   \nnext para\nline\n",
+        "point": 1,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  lead\n\n   \nnext para\nline\n",
+      "visible": "  lead\n\n   \nnext para\nline\n",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t2-back-1",
+      "input": {
+        "text": "  lead\n\n   \nnext para\nline\n",
+        "point": 1,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  lead\n\n   \nnext para\nline\n",
+      "visible": "  lead\n\n   \nnext para\nline\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t2-fwd-9",
+      "input": {
+        "text": "  lead\n\n   \nnext para\nline\n",
+        "point": 9,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  lead\n\n   \nnext para\nline\n",
+      "visible": "  lead\n\n   \nnext para\nline\n",
+      "point": 27,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t2-back-9",
+      "input": {
+        "text": "  lead\n\n   \nnext para\nline\n",
+        "point": 9,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  lead\n\n   \nnext para\nline\n",
+      "visible": "  lead\n\n   \nnext para\nline\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t2-fwd-13",
+      "input": {
+        "text": "  lead\n\n   \nnext para\nline\n",
+        "point": 13,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  lead\n\n   \nnext para\nline\n",
+      "visible": "  lead\n\n   \nnext para\nline\n",
+      "point": 27,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t2-back-13",
+      "input": {
+        "text": "  lead\n\n   \nnext para\nline\n",
+        "point": 13,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  lead\n\n   \nnext para\nline\n",
+      "visible": "  lead\n\n   \nnext para\nline\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t2-fwd-26",
+      "input": {
+        "text": "  lead\n\n   \nnext para\nline\n",
+        "point": 26,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  lead\n\n   \nnext para\nline\n",
+      "visible": "  lead\n\n   \nnext para\nline\n",
+      "point": 27,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t2-back-26",
+      "input": {
+        "text": "  lead\n\n   \nnext para\nline\n",
+        "point": 26,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  lead\n\n   \nnext para\nline\n",
+      "visible": "  lead\n\n   \nnext para\nline\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t2-fwd-27",
+      "input": {
+        "text": "  lead\n\n   \nnext para\nline\n",
+        "point": 27,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  lead\n\n   \nnext para\nline\n",
+      "visible": "  lead\n\n   \nnext para\nline\n",
+      "point": 27,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t2-back-27",
+      "input": {
+        "text": "  lead\n\n   \nnext para\nline\n",
+        "point": 27,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  lead\n\n   \nnext para\nline\n",
+      "visible": "  lead\n\n   \nnext para\nline\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t2-fwd-many",
+      "input": {
+        "text": "  lead\n\n   \nnext para\nline\n",
+        "point": 0,
+        "keys": "M-} M-} M-} M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  lead\n\n   \nnext para\nline\n",
+      "visible": "  lead\n\n   \nnext para\nline\n",
+      "point": 27,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t2-back-many",
+      "input": {
+        "text": "  lead\n\n   \nnext para\nline\n",
+        "point": 27,
+        "keys": "M-{ M-{ M-{ M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  lead\n\n   \nnext para\nline\n",
+      "visible": "  lead\n\n   \nnext para\nline\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t2-fwd-count",
+      "input": {
+        "text": "  lead\n\n   \nnext para\nline\n",
+        "point": 0,
+        "keys": "M-2 M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  lead\n\n   \nnext para\nline\n",
+      "visible": "  lead\n\n   \nnext para\nline\n",
+      "point": 27,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t2-back-count",
+      "input": {
+        "text": "  lead\n\n   \nnext para\nline\n",
+        "point": 27,
+        "keys": "M-3 M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  lead\n\n   \nnext para\nline\n",
+      "visible": "  lead\n\n   \nnext para\nline\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t2-negative",
+      "input": {
+        "text": "  lead\n\n   \nnext para\nline\n",
+        "point": 0,
+        "keys": "M-- M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  lead\n\n   \nnext para\nline\n",
+      "visible": "  lead\n\n   \nnext para\nline\n",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t3-fwd-0",
+      "input": {
+        "text": "a\n\fb\nc\n\nd",
+        "point": 0,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\n\fb\nc\n\nd",
+      "visible": "a\n\fb\nc\n\nd",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t3-back-0",
+      "input": {
+        "text": "a\n\fb\nc\n\nd",
+        "point": 0,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\n\fb\nc\n\nd",
+      "visible": "a\n\fb\nc\n\nd",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t3-fwd-1",
+      "input": {
+        "text": "a\n\fb\nc\n\nd",
+        "point": 1,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\n\fb\nc\n\nd",
+      "visible": "a\n\fb\nc\n\nd",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t3-back-1",
+      "input": {
+        "text": "a\n\fb\nc\n\nd",
+        "point": 1,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\n\fb\nc\n\nd",
+      "visible": "a\n\fb\nc\n\nd",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t3-fwd-3",
+      "input": {
+        "text": "a\n\fb\nc\n\nd",
+        "point": 3,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\n\fb\nc\n\nd",
+      "visible": "a\n\fb\nc\n\nd",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t3-back-3",
+      "input": {
+        "text": "a\n\fb\nc\n\nd",
+        "point": 3,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\n\fb\nc\n\nd",
+      "visible": "a\n\fb\nc\n\nd",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t3-fwd-4",
+      "input": {
+        "text": "a\n\fb\nc\n\nd",
+        "point": 4,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\n\fb\nc\n\nd",
+      "visible": "a\n\fb\nc\n\nd",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t3-back-4",
+      "input": {
+        "text": "a\n\fb\nc\n\nd",
+        "point": 4,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\n\fb\nc\n\nd",
+      "visible": "a\n\fb\nc\n\nd",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t3-fwd-8",
+      "input": {
+        "text": "a\n\fb\nc\n\nd",
+        "point": 8,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\n\fb\nc\n\nd",
+      "visible": "a\n\fb\nc\n\nd",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t3-back-8",
+      "input": {
+        "text": "a\n\fb\nc\n\nd",
+        "point": 8,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\n\fb\nc\n\nd",
+      "visible": "a\n\fb\nc\n\nd",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t3-fwd-9",
+      "input": {
+        "text": "a\n\fb\nc\n\nd",
+        "point": 9,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\n\fb\nc\n\nd",
+      "visible": "a\n\fb\nc\n\nd",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t3-back-9",
+      "input": {
+        "text": "a\n\fb\nc\n\nd",
+        "point": 9,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\n\fb\nc\n\nd",
+      "visible": "a\n\fb\nc\n\nd",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t3-fwd-many",
+      "input": {
+        "text": "a\n\fb\nc\n\nd",
+        "point": 0,
+        "keys": "M-} M-} M-} M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\n\fb\nc\n\nd",
+      "visible": "a\n\fb\nc\n\nd",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t3-back-many",
+      "input": {
+        "text": "a\n\fb\nc\n\nd",
+        "point": 9,
+        "keys": "M-{ M-{ M-{ M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\n\fb\nc\n\nd",
+      "visible": "a\n\fb\nc\n\nd",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t3-fwd-count",
+      "input": {
+        "text": "a\n\fb\nc\n\nd",
+        "point": 0,
+        "keys": "M-2 M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\n\fb\nc\n\nd",
+      "visible": "a\n\fb\nc\n\nd",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t3-back-count",
+      "input": {
+        "text": "a\n\fb\nc\n\nd",
+        "point": 9,
+        "keys": "M-3 M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\n\fb\nc\n\nd",
+      "visible": "a\n\fb\nc\n\nd",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t3-negative",
+      "input": {
+        "text": "a\n\fb\nc\n\nd",
+        "point": 0,
+        "keys": "M-- M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\n\fb\nc\n\nd",
+      "visible": "a\n\fb\nc\n\nd",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t4-fwd-0",
+      "input": {
+        "text": "\n\nstart\n",
+        "point": 0,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n\nstart\n",
+      "visible": "\n\nstart\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t4-back-0",
+      "input": {
+        "text": "\n\nstart\n",
+        "point": 0,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n\nstart\n",
+      "visible": "\n\nstart\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t4-fwd-1",
+      "input": {
+        "text": "\n\nstart\n",
+        "point": 1,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n\nstart\n",
+      "visible": "\n\nstart\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t4-back-1",
+      "input": {
+        "text": "\n\nstart\n",
+        "point": 1,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n\nstart\n",
+      "visible": "\n\nstart\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t4-fwd-2",
+      "input": {
+        "text": "\n\nstart\n",
+        "point": 2,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n\nstart\n",
+      "visible": "\n\nstart\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t4-back-2",
+      "input": {
+        "text": "\n\nstart\n",
+        "point": 2,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n\nstart\n",
+      "visible": "\n\nstart\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t4-fwd-4",
+      "input": {
+        "text": "\n\nstart\n",
+        "point": 4,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n\nstart\n",
+      "visible": "\n\nstart\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t4-back-4",
+      "input": {
+        "text": "\n\nstart\n",
+        "point": 4,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n\nstart\n",
+      "visible": "\n\nstart\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t4-fwd-7",
+      "input": {
+        "text": "\n\nstart\n",
+        "point": 7,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n\nstart\n",
+      "visible": "\n\nstart\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t4-back-7",
+      "input": {
+        "text": "\n\nstart\n",
+        "point": 7,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n\nstart\n",
+      "visible": "\n\nstart\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t4-fwd-8",
+      "input": {
+        "text": "\n\nstart\n",
+        "point": 8,
+        "keys": "M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n\nstart\n",
+      "visible": "\n\nstart\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t4-back-8",
+      "input": {
+        "text": "\n\nstart\n",
+        "point": 8,
+        "keys": "M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n\nstart\n",
+      "visible": "\n\nstart\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t4-fwd-many",
+      "input": {
+        "text": "\n\nstart\n",
+        "point": 0,
+        "keys": "M-} M-} M-} M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n\nstart\n",
+      "visible": "\n\nstart\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t4-back-many",
+      "input": {
+        "text": "\n\nstart\n",
+        "point": 8,
+        "keys": "M-{ M-{ M-{ M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n\nstart\n",
+      "visible": "\n\nstart\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t4-fwd-count",
+      "input": {
+        "text": "\n\nstart\n",
+        "point": 0,
+        "keys": "M-2 M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n\nstart\n",
+      "visible": "\n\nstart\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t4-back-count",
+      "input": {
+        "text": "\n\nstart\n",
+        "point": 8,
+        "keys": "M-3 M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n\nstart\n",
+      "visible": "\n\nstart\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-t4-negative",
+      "input": {
+        "text": "\n\nstart\n",
+        "point": 0,
+        "keys": "M-- M-{",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n\nstart\n",
+      "visible": "\n\nstart\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-shift-select",
+      "input": {
+        "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+        "point": 0,
+        "keys": "S-M-} S-M-}",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "visible": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "point": 20,
+      "mark": 0,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "para-ctrl-down",
+      "input": {
+        "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+        "point": 0,
+        "keys": "C-<down> C-<down> C-<up>",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "visible": "one\ntwo\n\nthree\nfour\n\n\nfive\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    }
+  ]
+}

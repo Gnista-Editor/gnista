@@ -34,7 +34,7 @@ mod variables;
 
 pub use buffer::Buffer;
 pub use command::{Arg, Command, Param, ParamKind};
-pub use editor::Editor;
+pub use editor::{Editor, LoggedMessage};
 pub use error::{Error, Result};
 pub use faces::{Background, Color, Face, FaceAttrs, Style, face_names, palette, palette_names};
 pub use fileio::{auto_save_file_name, backup_file_name};
@@ -46,6 +46,6 @@ pub use modes::MinorMode;
 pub use prefix::{PrefixArg, prefix_numeric_value};
 pub use properties::{Overlay, Props};
 pub use rows::{Row, Segment};
-pub use search::{Match, SearchOptions, expand_replacement, fold_case_for as search_fold_case, search, translate_regexp};
+pub use search::{Match, SearchOptions, expand_replacement, fold_case_for as search_fold_case, search, string_match, translate_regexp};
 pub use variables::{HookFn, Value, Variable};
 pub use window::{FrameId, MouseEvent, WindowId, WindowRect, WindowTree, WindowView};

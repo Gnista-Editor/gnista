@@ -388,6 +388,19 @@ pub(crate) fn install(ed: &mut Editor) {
             Value::List(["basic", "partial-completion", "emacs22"].map(|s| Value::Str(s.into())).to_vec()),
         ),
         Variable::new("history-length", "How many earlier answers each minibuffer history keeps.", 100.0),
+        Variable::new(
+            "completion-category-defaults",
+            "The completion styles kinds of completion try before completion-styles, as [category, styles] pairs: buffer names match by substring too, and a project's files only by substring.",
+            Value::List(vec![
+                Value::List(vec![Value::Str("buffer".into()), Value::List(vec![Value::Str("basic".into()), Value::Str("substring".into())])]),
+                Value::List(vec![Value::Str("project-file".into()), Value::List(vec![Value::Str("substring".into())])]),
+            ]),
+        ),
+        Variable::new(
+            "completion-category-overrides",
+            "Completion styles for kinds of completion, as completion-category-defaults has them, that win over those.",
+            Value::List(Vec::new()),
+        ),
         Variable::new("completion-ignore-case", "Whether minibuffer completion ignores the case of letters.", false),
         Variable::new(
             "delete-by-moving-to-trash",
