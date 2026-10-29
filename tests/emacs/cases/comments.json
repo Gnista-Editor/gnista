@@ -1,0 +1,201 @@
+[
+ {
+  "name": "comment-at-end-of-code",
+  "text": "x = 1\n",
+  "keys": "M-;",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "comment-on-blank-line",
+  "text": "def f():\n    x = 1\n\n",
+  "keys": "M-;",
+  "point": 19,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "comment-realigns-existing",
+  "text": "x = 1 # hi\n",
+  "keys": "M-;",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "comment-region",
+  "text": "a = 1\nb = 2\n",
+  "keys": "C-x h M-;",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "uncomment-region",
+  "text": "# a = 1\n# b = 2\n",
+  "keys": "C-x h M-;",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "comment-indented-region",
+  "text": "def f():\n    a = 1\n    b = 2\n",
+  "keys": "C-n C-SPC C-n C-n M-;",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "comment-line-twice",
+  "text": "a = 1\nb = 2\nc = 3\n",
+  "keys": "C-x C-; C-x C-;",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "comment-line-uncomments",
+  "text": "# a = 1\nb = 2\n",
+  "keys": "C-x C-;",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "comment-kill",
+  "text": "x = 1  # gone\ny = 2\n",
+  "keys": "C-u M-;",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "comment-set-column",
+  "text": "abc\nx = 1\n",
+  "keys": "C-e C-x ; C-n M-;",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ],
+  "message": true
+ },
+ {
+  "name": "comment-mixed-region-comments-all",
+  "text": "# a = 1\nb = 2\n",
+  "keys": "C-x h M-;",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "uncomment-double",
+  "text": "## x\n## y\n",
+  "keys": "C-x h M-;",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "comment-region-prefix",
+  "text": "a = 1\n",
+  "keys": "C-x h C-u 2 M-;",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "comment-in-string-not-a-comment",
+  "text": "s = '# not'\n",
+  "keys": "M-;",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "comment-skips-blank-lines",
+  "text": "a = 1\n\nb = 2\n",
+  "keys": "C-x h M-;",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "comment-dwim-region-partial-line",
+  "text": "a = 1\nb = 2\nc = 3\n",
+  "keys": "C-SPC C-n C-f M-;",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "js-comment-at-end",
+  "text": "var x;\n",
+  "keys": "M-;",
+  "point": 0,
+  "modes": [
+   "js-mode"
+  ]
+ },
+ {
+  "name": "js-comment-region",
+  "text": "var x;\nvar y;\n",
+  "keys": "C-x h M-;",
+  "point": 0,
+  "modes": [
+   "js-mode"
+  ]
+ },
+ {
+  "name": "js-uncomment-region",
+  "text": "// var x;\n// var y;\n",
+  "keys": "C-x h M-;",
+  "point": 0,
+  "modes": [
+   "js-mode"
+  ]
+ },
+ {
+  "name": "js-comment-long-line",
+  "text": "var something_rather_long = another_long_name(argument);\n",
+  "keys": "M-;",
+  "point": 0,
+  "modes": [
+   "js-mode"
+  ]
+ },
+ {
+  "name": "js-comment-aligns-with-previous",
+  "text": "var x;       // one\nvar y;\n",
+  "keys": "C-n M-;",
+  "point": 0,
+  "modes": [
+   "js-mode"
+  ]
+ },
+ {
+  "name": "comment-indent-new-line",
+  "text": "# hello world\n",
+  "keys": "M-j",
+  "point": 7,
+  "modes": [
+   "python-mode"
+  ]
+ }
+]

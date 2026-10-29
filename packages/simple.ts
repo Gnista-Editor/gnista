@@ -476,6 +476,53 @@ function electricIndentAfterNewline(): void {
   } else indentLineToColumn(line, column);
 }
 
+ember.defineVariable({
+  name: "electric-indent-chars",
+  doc: "Characters that reindent the line when typed, with electric-indent-mode on: newline, and in code modes closing braces and parens.",
+  value: ["\n"],
+  local: true,
+});
+ember.defineVariable({
+  name: "electric-indent-inhibit",
+  doc: "Whether RET leaves the line it ends as it is, indenting only the new one, as modes where indentation is meaning set it.",
+  value: false,
+  local: true,
+});
+
+/**
+ * What electric-indent-mode does after RET where the mode indents for
+ * itself, as electric-indent-post-self-insert-function: reindents the line
+ * ended, unless electric-indent-inhibit, takes its trailing whitespace off,
+ * and indents the new line.
+ */
+function reindentAfterNewline(): void {
+  const line = ember.lineOf(ember.point());
+  if (line === 0) return;
+  const here = ember.makeMarker(undefined, { advances: true });
+  ember.gotoChar(ember.lineEnd(line - 1));
+  if (ember.variable("electric-indent-inhibit") !== true) ember.call("indent-according-to-mode");
+  const end = ember.lineEnd(line - 1);
+  const text = ember.lineText(line - 1);
+  const trailing = text.length - text.replace(/[ \t]+$/, "").length;
+  if (trailing > 0) ember.deleteRegion(end - trailing, end);
+  ember.gotoChar(ember.markerPosition(here)!);
+  ember.setMarker(here, null);
+  ember.call("indent-according-to-mode");
+}
+
+/** Typing a closing brace or another of electric-indent-chars reindents its line. */
+function electricIndentChar(): void {
+  if (ember.variable("electric-indent-mode") !== true) return;
+  const key = ember.lastKey();
+  if (key === undefined || [...key].length !== 1) return;
+  const chars = ember.variable("electric-indent-chars");
+  if (!Array.isArray(chars) || !chars.includes(key) || INDENT_RELATIVE_MODES.includes(String(ember.variable("major-mode")))) return;
+  const st = ember.syntaxPpss(Math.max(0, ember.point() - 1));
+  if (st.inString !== null || st.inComment !== null) return;
+  ember.call("indent-according-to-mode");
+}
+ember.addHook("post-self-insert-hook", electricIndentChar);
+
 ember.defineCommand({
   name: "newline",
   doc:
@@ -497,12 +544,9 @@ ember.defineCommand({
     // post-self-insert-hook, after Electric Pair mode's functions.
     const interactive = ember.calledInteractively();
     ember.runHooks("post-self-insert-hook");
-    if (
-      interactive &&
-      ember.variable("electric-indent-mode") === true &&
-      INDENT_RELATIVE_MODES.includes(String(ember.variable("major-mode")))
-    ) {
-      electricIndentAfterNewline();
+    if (interactive && ember.variable("electric-indent-mode") === true) {
+      if (INDENT_RELATIVE_MODES.includes(String(ember.variable("major-mode")))) electricIndentAfterNewline();
+      else reindentAfterNewline();
     }
   },
 });

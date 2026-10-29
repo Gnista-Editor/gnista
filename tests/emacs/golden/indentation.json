@@ -1,0 +1,652 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "tab-relative-to-word-above",
+      "input": {
+        "text": "foo bar baz\nx\n",
+        "point": 0,
+        "keys": "C-n TAB",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "foo bar baz\n    x\n",
+      "visible": "foo bar baz\n    x\n",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "tab-relative-twice",
+      "input": {
+        "text": "foo bar baz\nx\n",
+        "point": 0,
+        "keys": "C-n TAB TAB",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "foo bar baz\n    \tx\n",
+      "visible": "foo bar baz\n    \tx\n",
+      "point": 17,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "tab-relative-from-middle",
+      "input": {
+        "text": "foo   bar\nab\n",
+        "point": 0,
+        "keys": "C-n C-e TAB",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "foo   bar\nab    \n",
+      "visible": "foo   bar\nab    \n",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "tab-to-tab-stop-without-line-above",
+      "input": {
+        "text": "x\n",
+        "point": 0,
+        "keys": "TAB",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\tx\n",
+      "visible": "\tx\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "tab-relative-past-the-words-above",
+      "input": {
+        "text": "a b\nlonger line\n",
+        "point": 0,
+        "keys": "C-n C-e TAB",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a b\nlonger line\t\n",
+      "visible": "a b\nlonger line\t\n",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "tab-relative-skips-blank-lines",
+      "input": {
+        "text": "    foo\n\nx\n",
+        "point": 0,
+        "keys": "C-n C-n TAB",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "    foo\n\n    x\n",
+      "visible": "    foo\n\n    x\n",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "m-i-tab-to-tab-stop",
+      "input": {
+        "text": "ab\n",
+        "point": 1,
+        "keys": "M-i",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\tb\n",
+      "visible": "a\tb\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "indent-rigidly-with-count",
+      "input": {
+        "text": "a\n b\n\nc\n",
+        "point": 0,
+        "keys": "C-x h C-u 4 C-x TAB",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "    a\n     b\n\n    c\n",
+      "visible": "    a\n     b\n\n    c\n",
+      "point": 0,
+      "mark": 20,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "indent-rigidly-negative",
+      "input": {
+        "text": "    a\n   b\n",
+        "point": 0,
+        "keys": "C-x h C-u - 2 C-x TAB",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "  a\n b\n",
+      "visible": "  a\n b\n",
+      "point": 0,
+      "mark": 7,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "indent-rigidly-arrows",
+      "input": {
+        "text": "a\nb\n",
+        "point": 0,
+        "keys": "C-x h C-x TAB <right> <right> <right>",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "   a\n   b\n",
+      "visible": "   a\n   b\n",
+      "point": 0,
+      "mark": 10,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "indent-rigidly-tab-stops",
+      "input": {
+        "text": "  a\nb\n",
+        "point": 0,
+        "keys": "C-x h C-x TAB S-<right>",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\t  a\n\tb\n",
+      "visible": "\t  a\n\tb\n",
+      "point": 0,
+      "mark": 8,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "indent-region-fundamental",
+      "input": {
+        "text": "  a\nb\n   c\n",
+        "point": 0,
+        "keys": "C-x h C-M-\\",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\nb\nc\n",
+      "visible": "a\nb\nc\n",
+      "point": 0,
+      "mark": 6,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "indent-region-to-column",
+      "input": {
+        "text": "a\n  b\n",
+        "point": 0,
+        "keys": "C-x h C-u 6 C-M-\\",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "      a\n      b\n",
+      "visible": "      a\n      b\n",
+      "point": 0,
+      "mark": 16,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "js-tab-in-block",
+      "input": {
+        "text": "function f() {\nx;\n}\n",
+        "point": 0,
+        "keys": "C-n TAB",
+        "modes": [
+          "js-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "function f() {\n    x;\n}\n",
+      "visible": "function f() {\n    x;\n}\n",
+      "point": 19,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "js-tab-closing-brace",
+      "input": {
+        "text": "function f() {\n    x;\n    }\n",
+        "point": 0,
+        "keys": "C-n C-n TAB",
+        "modes": [
+          "js-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "function f() {\n    x;\n}\n",
+      "visible": "function f() {\n    x;\n}\n",
+      "point": 22,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "js-ret-after-brace",
+      "input": {
+        "text": "function f() {\n}\n",
+        "point": 0,
+        "keys": "C-e RET",
+        "modes": [
+          "js-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "function f() {\n    \n}\n",
+      "visible": "function f() {\n    \n}\n",
+      "point": 19,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "js-typed-close-brace-dedents",
+      "input": {
+        "text": "function f() {",
+        "point": 0,
+        "keys": "C-e RET y ; RET }",
+        "modes": [
+          "js-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "function f() {\n    y;\n}",
+      "visible": "function f() {\n    y;\n}",
+      "point": 23,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "js-args-align-under-first",
+      "input": {
+        "text": "foo(a,\nb);\n",
+        "point": 0,
+        "keys": "C-n TAB",
+        "modes": [
+          "js-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "foo(a,\n    b);\n",
+      "visible": "foo(a,\n    b);\n",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "js-args-on-next-line",
+      "input": {
+        "text": "foo(\na,\n);\n",
+        "point": 0,
+        "keys": "C-n TAB C-n TAB",
+        "modes": [
+          "js-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "foo(\n    a,\n);\n",
+      "visible": "foo(\n    a,\n);\n",
+      "point": 14,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "js-indent-region",
+      "input": {
+        "text": "if (x) {\nif (y) {\nz();\n}\n}\n",
+        "point": 0,
+        "keys": "C-x h C-M-\\",
+        "modes": [
+          "js-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "if (x) {\n    if (y) {\n\tz();\n    }\n}\n",
+      "visible": "if (x) {\n    if (y) {\n\tz();\n    }\n}\n",
+      "point": 0,
+      "mark": 36,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "js-condition-paren-before-brace",
+      "input": {
+        "text": "if (a &&\nb) {\n}\n",
+        "point": 0,
+        "keys": "C-n TAB",
+        "modes": [
+          "js-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "if (a &&\n    b) {\n}\n",
+      "visible": "if (a &&\n    b) {\n}\n",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "js-array",
+      "input": {
+        "text": "var a = [\n1,\n];\n",
+        "point": 0,
+        "keys": "C-n TAB C-n TAB",
+        "modes": [
+          "js-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "var a = [\n    1,\n];\n",
+      "visible": "var a = [\n    1,\n];\n",
+      "point": 19,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "js-tab-in-string-keeps",
+      "input": {
+        "text": "var s = 'a\\\nb';\n",
+        "point": 0,
+        "keys": "C-n TAB",
+        "modes": [
+          "js-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "var s = 'a\\\nb';\n",
+      "visible": "var s = 'a\\\nb';\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "js-point-stays-with-text",
+      "input": {
+        "text": "{\nfoo();\n}\n",
+        "point": 0,
+        "keys": "C-n C-e TAB",
+        "modes": [
+          "js-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "{\n    foo();\n}\n",
+      "visible": "{\n    foo();\n}\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "py-tab-after-colon",
+      "input": {
+        "text": "def f():\nx = 1\n",
+        "point": 0,
+        "keys": "C-n TAB",
+        "modes": [
+          "python-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "def f():\n    x = 1\n",
+      "visible": "def f():\n    x = 1\n",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "py-ret-after-colon",
+      "input": {
+        "text": "def f():\n",
+        "point": 0,
+        "keys": "C-e RET",
+        "modes": [
+          "python-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "def f():\n    \n",
+      "visible": "def f():\n    \n",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "py-tab-keeps-block",
+      "input": {
+        "text": "def f():\n    x = 1\ny = 2\n",
+        "point": 0,
+        "keys": "C-n C-n TAB",
+        "modes": [
+          "python-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "def f():\n    x = 1\n    y = 2\n",
+      "visible": "def f():\n    x = 1\n    y = 2\n",
+      "point": 23,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "py-dedent-after-return",
+      "input": {
+        "text": "def f():\n    return 1\nx\n",
+        "point": 0,
+        "keys": "C-n C-n TAB",
+        "modes": [
+          "python-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "def f():\n    return 1\nx\n",
+      "visible": "def f():\n    return 1\nx\n",
+      "point": 22,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "py-else-dedents",
+      "input": {
+        "text": "if a:\n    b\n    c\n    else:\n",
+        "point": 0,
+        "keys": "C-n C-n C-n TAB",
+        "modes": [
+          "python-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "if a:\n    b\n    c\nelse:\n",
+      "visible": "if a:\n    b\n    c\nelse:\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "py-parens-align",
+      "input": {
+        "text": "foo(a,\nb)\n",
+        "point": 0,
+        "keys": "C-n TAB",
+        "modes": [
+          "python-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "foo(a,\n    b)\n",
+      "visible": "foo(a,\n    b)\n",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "py-parens-hanging",
+      "input": {
+        "text": "foo(\na)\n",
+        "point": 0,
+        "keys": "C-n TAB",
+        "modes": [
+          "python-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "foo(\n    a)\n",
+      "visible": "foo(\n    a)\n",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "py-ret-keeps-indentation",
+      "input": {
+        "text": "def f():\n    x = 1\n",
+        "point": 0,
+        "keys": "C-n C-e RET",
+        "modes": [
+          "python-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "def f():\n    x = 1\n    \n",
+      "visible": "def f():\n    x = 1\n    \n",
+      "point": 23,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

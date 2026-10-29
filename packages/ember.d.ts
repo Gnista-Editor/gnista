@@ -108,6 +108,60 @@ declare global {
        */
       "check-parens": [];
       /**
+       * Comment or uncomment the region if it is active. Otherwise put a comment at the end of the line, or indent the one there, or start one on a blank line. With a prefix argument and no region, kill the line's comment.
+       *
+       * Defined in packages/newcomment.ts.
+       */
+      "comment-dwim": [];
+      /**
+       * Put a comment at the end of the line at comment-column, or indent the comment there to it.
+       *
+       * Defined in packages/newcomment.ts.
+       */
+      "comment-indent": [];
+      /**
+       * Break the line, continuing the comment point is in on the new one, as M-j does; outside a comment, a newline that indents.
+       *
+       * Defined in packages/newcomment.ts.
+       */
+      "comment-indent-new-line": [];
+      /**
+       * Kill the comment on this line. With a prefix argument, on that many lines.
+       *
+       * Defined in packages/newcomment.ts.
+       */
+      "comment-kill": [];
+      /**
+       * Comment or uncomment the current line, or the region's lines, and move to the next line. With a prefix argument N, the N lines from this one; negative, the lines above.
+       *
+       * Defined in packages/newcomment.ts.
+       */
+      "comment-line": [];
+      /**
+       * What comment-line becomes when it goes backward, so typing it again goes on backward.
+       *
+       * Defined in packages/newcomment.ts.
+       */
+      "comment-line-backward": [];
+      /**
+       * Uncomment the region's lines if they are all comments, else comment them.
+       *
+       * Defined in packages/newcomment.ts.
+       */
+      "comment-or-uncomment-region": [];
+      /**
+       * Comment out each line of the region. With a prefix argument N, use N comment starts; negative, uncomment instead.
+       *
+       * Defined in packages/newcomment.ts.
+       */
+      "comment-region": [];
+      /**
+       * Set comment-column to point's column. With C-u, to that of the comment on the line before; with a negative argument, kill the comment.
+       *
+       * Defined in packages/newcomment.ts.
+       */
+      "comment-set-column": [];
+      /**
        * Show the place of the error message at point in another window, keeping this one selected.
        *
        * Defined in packages/compile.ts.
@@ -175,6 +229,12 @@ declare global {
        * Defined in packages/files.ts.
        */
       "copy-file": [file: string, newname: string];
+      /**
+       * Break the line and indent the new one, continuing a comment point is in, as comment-indent-new-line does.
+       *
+       * Defined in packages/newcomment.ts.
+       */
+      "default-indent-new-line": [];
       /**
        * Delete the character before point, or as many as the prefix argument says.
        *
@@ -1013,9 +1073,53 @@ declare global {
        */
       "indent-according-to-mode": [];
       /**
-       * Indent the current line. For now this inserts a tab.
+       * Indent the current line as the major mode says, or the region if it is active. With tab-always-indent nil, insert a tab instead when point is past the indentation.
+       *
+       * Defined in packages/indent.ts.
        */
       "indent-for-tab-command": [];
+      /**
+       * Indent each non-empty line of the region as the major mode says. With a prefix argument, indent each to that column instead.
+       *
+       * Defined in packages/indent.ts.
+       */
+      "indent-region": [];
+      /**
+       * Indent from point to under the next start of a word on the line above, or to the next tab stop if there is none. This is how Fundamental and Text mode indent.
+       *
+       * Defined in packages/indent.ts.
+       */
+      "indent-relative": [];
+      /**
+       * Move the region's lines right by as many columns as the prefix argument says, or left if negative. Without one, adjust them with <left> and <right>, by one column, or S-<left> and S-<right> to tab stops.
+       *
+       * Defined in packages/indent.ts.
+       */
+      "indent-rigidly": [];
+      /**
+       * Move the region's lines left a column.
+       *
+       * Defined in packages/indent.ts.
+       */
+      "indent-rigidly-left": [];
+      /**
+       * Move the region's lines left to a tab stop.
+       *
+       * Defined in packages/indent.ts.
+       */
+      "indent-rigidly-left-to-tab-stop": [];
+      /**
+       * Move the region's lines right a column.
+       *
+       * Defined in packages/indent.ts.
+       */
+      "indent-rigidly-right": [];
+      /**
+       * Move the region's lines right to a tab stop.
+       *
+       * Defined in packages/indent.ts.
+       */
+      "indent-rigidly-right-to-tab-stop": [];
       /**
        * Insert text at point.
        *
@@ -1110,6 +1214,18 @@ declare global {
        * Defined in packages/isearch.ts.
        */
       "isearch-yank-word-or-char": [];
+      /**
+       * Indent the current line of code by the braces and parens it is in, as js-mode does, by js-indent-level, or the mode's own offset.
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "js-indent-line": [];
+      /**
+       * Edit JavaScript, in js-ts-mode: Ember's mode for it, as major-mode-remap-alist would have Emacs use.
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "js-mode": [];
       /**
        * The major mode for editing JavaScript, highlighted from a tree-sitter syntax tree.
        *
@@ -2647,6 +2763,18 @@ declare global {
        */
       "project-switch-to-buffer": [];
       /**
+       * Indent the current line of Python as its block says: deeper after a line ending in a colon, back after return, and else, elif, except and finally with their block.
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "python-indent-line-function": [];
+      /**
+       * Edit Python, in python-ts-mode: Ember's mode for it, as major-mode-remap-alist would have Emacs use.
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "python-mode": [];
+      /**
        * The major mode for editing Python, highlighted from a tree-sitter syntax tree.
        *
        * Files matching \.py[iw]?$ use it; see auto-mode-alist.
@@ -3104,6 +3232,12 @@ declare global {
        */
       "switch-to-buffer-other-window": [buffer: string];
       /**
+       * Insert whitespace up to the next tab stop, every tab-width columns.
+       *
+       * Defined in packages/indent.ts.
+       */
+      "tab-to-tab-stop": [];
+      /**
        * The major mode for writing text meant for people to read.
        *
        * Files ending in .txt and .text use it; see auto-mode-alist. Run text-mode-hook to set up anything you want for prose.
@@ -3143,6 +3277,12 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "transpose-words": [];
+      /**
+       * Take the comment starts and ends out of the region's lines. With a prefix argument, take out that many levels.
+       *
+       * Defined in packages/newcomment.ts.
+       */
+      "uncomment-region": [];
       /**
        * Undo the last change, or as many changes as the prefix argument says.
        *
@@ -3400,6 +3540,54 @@ declare global {
        */
       "colon-double-space": Value;
       /**
+       * How many more comment starts comment-region and M-; on a blank line add, as Lisp's ;; for comments of their own.
+       *
+       * Defined in packages/newcomment.ts.
+       */
+      "comment-add": Value;
+      /**
+       * The column comments at the end of a line go to. C-x ; sets it.
+       *
+       * Defined in packages/newcomment.ts.
+       */
+      "comment-column": Value;
+      /**
+       * Whether comment-region comments blank lines too.
+       *
+       * Defined in packages/newcomment.ts.
+       */
+      "comment-empty-lines": Value;
+      /**
+       * What ends a comment, with the space before it: " *\/", or "" when comments end with the line.
+       *
+       * Defined in packages/newcomment.ts.
+       */
+      "comment-end": Value;
+      /**
+       * The least space between code and the comment after it.
+       *
+       * Defined in packages/newcomment.ts.
+       */
+      "comment-inline-offset": Value;
+      /**
+       * What goes between a comment's start and its text.
+       *
+       * Defined in packages/newcomment.ts.
+       */
+      "comment-padding": Value;
+      /**
+       * What starts a comment in this mode, with the space after it: "// " or "# ". nil if the mode has no comments.
+       *
+       * Defined in packages/newcomment.ts.
+       */
+      "comment-start": Value;
+      /**
+       * A regexp matching a comment's start and the space after it.
+       *
+       * Defined in packages/newcomment.ts.
+       */
+      "comment-start-skip": Value;
+      /**
        * Whether starting a compilation kills one still running without asking.
        *
        * Defined in packages/compile.ts.
@@ -3644,6 +3832,18 @@ declare global {
        */
       "display-line-numbers-width-start": Value;
       /**
+       * Characters that reindent the line when typed, with electric-indent-mode on: newline, and in code modes closing braces and parens.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "electric-indent-chars": Value;
+      /**
+       * Whether RET leaves the line it ends as it is, indenting only the new one, as modes where indentation is meaning set it.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "electric-indent-inhibit": Value;
+      /**
        * Whether RET indents the new line, as Emacs's electric-indent-mode does; on by default.
        *
        * Defined in packages/simple.ts.
@@ -3827,6 +4027,18 @@ declare global {
        * Whether indenting uses tabs as well as spaces, a tab for every tab-width columns.
        */
       "indent-tabs-mode": Value;
+      /**
+       * How far JavaScript indents each level.
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "js-indent-level": Value;
+      /**
+       * How far JSON indents each level.
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "json-ts-mode-indent-offset": Value;
       /**
        * How many other matches incremental search highlights at most, around point.
        *
@@ -4181,6 +4393,12 @@ declare global {
        */
       "project-vc-ignores": Value;
       /**
+       * How far Python indents each block.
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "python-indent-offset": Value;
+      /**
        * Strings and replacements answered to query-replace and the other replace commands, newest first.
        *
        * Defined in packages/replace.ts.
@@ -4264,6 +4482,12 @@ declare global {
        * Defined in packages/files.ts.
        */
       "revert-without-query": Value;
+      /**
+       * How far Rust indents each level.
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "rust-ts-mode-indent-offset": Value;
       /**
        * The file places are saved in: places in user-emacs-directory if nil.
        *
@@ -4394,6 +4618,12 @@ declare global {
        * Defined in packages/paren.ts.
        */
       "show-paren-when-point-inside-paren": Value;
+      /**
+       * Whether TAB always indents the line, as t; nil indents only in the indentation and inserts a tab elsewhere.
+       *
+       * Defined in packages/indent.ts.
+       */
+      "tab-always-indent": Value;
       /**
        * How many columns apart tab stops are, for showing tab characters.
        */

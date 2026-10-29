@@ -676,7 +676,9 @@ fn editing(ed: &mut Editor) {
         let fill = ed.current_prefix_arg().is_none();
         after_self_insert(ed, '\n', fill)
     });
-    def(ed, "indent-for-tab-command", "Indent the current line. For now this inserts a tab.", |ed, _| {
+    // Without packages, TAB inserts a tab; indent.ts replaces this with
+    // Emacs's, which indents as the mode says.
+    def(ed, "indent-for-tab-command", "Insert a tab. The indent.ts package replaces this with one that indents the line as the mode says.", |ed, _| {
         ed.buffer_mut().insert("\t")
     });
     def(

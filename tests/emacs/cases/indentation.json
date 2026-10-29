@@ -1,0 +1,264 @@
+[
+ {
+  "name": "tab-relative-to-word-above",
+  "text": "foo bar baz\nx\n",
+  "keys": "C-n TAB",
+  "point": 0,
+  "modes": []
+ },
+ {
+  "name": "tab-relative-twice",
+  "text": "foo bar baz\nx\n",
+  "keys": "C-n TAB TAB",
+  "point": 0,
+  "modes": []
+ },
+ {
+  "name": "tab-relative-from-middle",
+  "text": "foo   bar\nab\n",
+  "keys": "C-n C-e TAB",
+  "point": 0,
+  "modes": []
+ },
+ {
+  "name": "tab-to-tab-stop-without-line-above",
+  "text": "x\n",
+  "keys": "TAB",
+  "point": 0,
+  "modes": []
+ },
+ {
+  "name": "tab-relative-past-the-words-above",
+  "text": "a b\nlonger line\n",
+  "keys": "C-n C-e TAB",
+  "point": 0,
+  "modes": []
+ },
+ {
+  "name": "tab-relative-skips-blank-lines",
+  "text": "    foo\n\nx\n",
+  "keys": "C-n C-n TAB",
+  "point": 0,
+  "modes": []
+ },
+ {
+  "name": "m-i-tab-to-tab-stop",
+  "text": "ab\n",
+  "keys": "M-i",
+  "point": 1,
+  "modes": []
+ },
+ {
+  "name": "indent-rigidly-with-count",
+  "text": "a\n b\n\nc\n",
+  "keys": "C-x h C-u 4 C-x TAB",
+  "point": 0,
+  "modes": []
+ },
+ {
+  "name": "indent-rigidly-negative",
+  "text": "    a\n   b\n",
+  "keys": "C-x h C-u - 2 C-x TAB",
+  "point": 0,
+  "modes": []
+ },
+ {
+  "name": "indent-rigidly-arrows",
+  "text": "a\nb\n",
+  "keys": "C-x h C-x TAB <right> <right> <right>",
+  "point": 0,
+  "modes": []
+ },
+ {
+  "name": "indent-rigidly-tab-stops",
+  "text": "  a\nb\n",
+  "keys": "C-x h C-x TAB S-<right>",
+  "point": 0,
+  "modes": []
+ },
+ {
+  "name": "indent-region-fundamental",
+  "text": "  a\nb\n   c\n",
+  "keys": "C-x h C-M-\\",
+  "point": 0,
+  "modes": []
+ },
+ {
+  "name": "indent-region-to-column",
+  "text": "a\n  b\n",
+  "keys": "C-x h C-u 6 C-M-\\",
+  "point": 0,
+  "modes": []
+ },
+ {
+  "name": "js-tab-in-block",
+  "text": "function f() {\nx;\n}\n",
+  "keys": "C-n TAB",
+  "point": 0,
+  "modes": [
+   "js-mode"
+  ]
+ },
+ {
+  "name": "js-tab-closing-brace",
+  "text": "function f() {\n    x;\n    }\n",
+  "keys": "C-n C-n TAB",
+  "point": 0,
+  "modes": [
+   "js-mode"
+  ]
+ },
+ {
+  "name": "js-ret-after-brace",
+  "text": "function f() {\n}\n",
+  "keys": "C-e RET",
+  "point": 0,
+  "modes": [
+   "js-mode"
+  ]
+ },
+ {
+  "name": "js-typed-close-brace-dedents",
+  "text": "function f() {",
+  "keys": "C-e RET y ; RET }",
+  "point": 0,
+  "modes": [
+   "js-mode"
+  ]
+ },
+ {
+  "name": "js-args-align-under-first",
+  "text": "foo(a,\nb);\n",
+  "keys": "C-n TAB",
+  "point": 0,
+  "modes": [
+   "js-mode"
+  ]
+ },
+ {
+  "name": "js-args-on-next-line",
+  "text": "foo(\na,\n);\n",
+  "keys": "C-n TAB C-n TAB",
+  "point": 0,
+  "modes": [
+   "js-mode"
+  ]
+ },
+ {
+  "name": "js-indent-region",
+  "text": "if (x) {\nif (y) {\nz();\n}\n}\n",
+  "keys": "C-x h C-M-\\",
+  "point": 0,
+  "modes": [
+   "js-mode"
+  ]
+ },
+ {
+  "name": "js-condition-paren-before-brace",
+  "text": "if (a &&\nb) {\n}\n",
+  "keys": "C-n TAB",
+  "point": 0,
+  "modes": [
+   "js-mode"
+  ]
+ },
+ {
+  "name": "js-array",
+  "text": "var a = [\n1,\n];\n",
+  "keys": "C-n TAB C-n TAB",
+  "point": 0,
+  "modes": [
+   "js-mode"
+  ]
+ },
+ {
+  "name": "js-tab-in-string-keeps",
+  "text": "var s = 'a\\\nb';\n",
+  "keys": "C-n TAB",
+  "point": 0,
+  "modes": [
+   "js-mode"
+  ]
+ },
+ {
+  "name": "js-point-stays-with-text",
+  "text": "{\nfoo();\n}\n",
+  "keys": "C-n C-e TAB",
+  "point": 0,
+  "modes": [
+   "js-mode"
+  ]
+ },
+ {
+  "name": "py-tab-after-colon",
+  "text": "def f():\nx = 1\n",
+  "keys": "C-n TAB",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "py-ret-after-colon",
+  "text": "def f():\n",
+  "keys": "C-e RET",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "py-tab-keeps-block",
+  "text": "def f():\n    x = 1\ny = 2\n",
+  "keys": "C-n C-n TAB",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "py-dedent-after-return",
+  "text": "def f():\n    return 1\nx\n",
+  "keys": "C-n C-n TAB",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "py-else-dedents",
+  "text": "if a:\n    b\n    c\n    else:\n",
+  "keys": "C-n C-n C-n TAB",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "py-parens-align",
+  "text": "foo(a,\nb)\n",
+  "keys": "C-n TAB",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "py-parens-hanging",
+  "text": "foo(\na)\n",
+  "keys": "C-n TAB",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ },
+ {
+  "name": "py-ret-keeps-indentation",
+  "text": "def f():\n    x = 1\n",
+  "keys": "C-n C-e RET",
+  "point": 0,
+  "modes": [
+   "python-mode"
+  ]
+ }
+]

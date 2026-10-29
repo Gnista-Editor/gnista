@@ -40,6 +40,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/paragraphs.ts", include_str!("../../../packages/paragraphs.ts")),
     ("packages/indent.ts", include_str!("../../../packages/indent.ts")),
     ("packages/fill.ts", include_str!("../../../packages/fill.ts")),
+    ("packages/newcomment.ts", include_str!("../../../packages/newcomment.ts")),
     ("packages/lisp.ts", include_str!("../../../packages/lisp.ts")),
     ("packages/paren.ts", include_str!("../../../packages/paren.ts")),
     ("packages/display-line-numbers.ts", include_str!("../../../packages/display-line-numbers.ts")),
