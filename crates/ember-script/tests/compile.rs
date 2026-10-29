@@ -133,3 +133,17 @@ fn recompile_runs_it_again_and_a_running_one_can_be_killed() {
     ed.accept_process_output(Duration::from_secs(10));
     assert!(text_of(&ed, "*compilation*").contains("\nCompilation interrupt at "), "{}", text_of(&ed, "*compilation*"));
 }
+
+#[test]
+fn messages_keep_their_places_through_edits() {
+    let dir = project();
+    let (mut ed, _s) = setup(dir.path());
+    fs::write(dir.path().join("src/c.rs"), "one\ntwo\nthree\nfour\n").unwrap();
+    compile(&mut ed, "printf 'src/c.rs:2: error: a\\nsrc/c.rs:4: error: b\\n'");
+    ed.press("M-g n").unwrap();
+    assert_eq!(ed.buffer().point(), 4);
+    // Lines added above the next error, which still goes to "four".
+    ed.press("M-< C-o C-o").unwrap();
+    ed.press("M-g n").unwrap();
+    assert_eq!(ed.buffer().slice(ed.buffer().point()..ed.buffer().point() + 4), "four");
+}

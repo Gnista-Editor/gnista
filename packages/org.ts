@@ -196,16 +196,17 @@ function indentation(text: string): number {
 function replaceText(start: number, end: number, text: string): void {
   let p = ember.point();
   const delta = charCount(text) - (end - start);
-  for (const m of markers) {
-    if (m.pos > end || (m.pos === end && end > start) || (m.pos === start && start === end && m.before)) m.pos += delta;
-    else if (m.pos > start) m.pos = start;
-  }
+  const saved: [Marker, number][] = markers.map((m) => {
+    const x = m.pos;
+    return [m, x > end || (x === end && end > start) ? x + delta : x > start ? start : x];
+  });
   // As a marker would: text inserted at point goes after it.
   if (p > end || (p === end && start < end)) p += delta;
   else if (p > start) p = Math.min(p, start + charCount(text));
   ember.deleteRegion(start, end);
   ember.gotoChar(start);
   ember.insert(text);
+  placeMarkers(saved);
   ember.gotoChar(p);
 }
 
@@ -1056,39 +1057,51 @@ function lineStartOrEnd(line: number): number {
 }
 
 /**
- * Positions that move with the text as Emacs's markers do, so commands can
- * edit a list and put point back. `before` markers move past text inserted
- * where they are.
+ * A marker of the core's, as Emacs's: it moves with every edit to its
+ * buffer, however made. Setting `pos` moves it into the current buffer,
+ * as move-marker does.
  */
-const markers: { pos: number; before?: boolean }[] = [];
+type Marker = { readonly id: number; pos: number };
 
-function marker(pos: number): { pos: number } {
-  const m = { pos };
+/** This package's markers, for the edits that place them by a rule of their own, as replace-match does. */
+const markers: Marker[] = [];
+
+function marker(pos: number, advances = false): Marker {
+  const id = ember.makeMarker(pos, { advances });
+  const m: Marker = {
+    id,
+    get pos() {
+      return ember.markerPosition(id) ?? 0;
+    },
+    set pos(p: number) {
+      ember.setMarker(id, p, ember.bufferName());
+    },
+  };
   markers.push(m);
   return m;
 }
 
-function dropMarker(m: { pos: number }): void {
+function dropMarker(m: Marker): void {
   markers.splice(markers.indexOf(m), 1);
+  ember.deleteMarker(m.id);
+}
+
+/** Puts this package's markers in the current buffer where `moved` says, after an edit that moved them its own way. */
+function placeMarkers(saved: [Marker, number][]): void {
+  const here = ember.bufferName();
+  for (const [m, p] of saved) if (ember.markerBuffer(m.id) === here) m.pos = p;
 }
 
 function edInsert(pos: number, text: string, beforeMarkers = false): void {
-  const n = charCount(text);
-  if (n === 0) return;
+  if (text === "") return;
   ember.gotoChar(pos);
   if (beforeMarkers) ember.insertBeforeMarkers(text);
   else ember.insert(text);
-  for (const m of markers) if (m.pos > pos || (m.pos === pos && (beforeMarkers || m.before))) m.pos += n;
 }
 
 function edDelete(from: number, to: number): string {
   if (to <= from) return "";
-  const text = ember.deleteRegion(from, to);
-  for (const m of markers) {
-    if (m.pos >= to) m.pos -= to - from;
-    else if (m.pos > from) m.pos = from;
-  }
-  return text;
+  return ember.deleteRegion(from, to);
 }
 
 /**
@@ -1099,6 +1112,7 @@ function edReplace(from: number, to: number, text: string): void {
   const n = charCount(text);
   const delta = n - (to - from);
   const mark = ember.mark();
+  const saved: [Marker, number][] = markers.map((m) => [m, m.pos]);
   // One change, as replace-match is, so folds are checked once, after it.
   const checks = !foldChecksOff;
   withoutFoldChecks(() => {
@@ -1107,7 +1121,7 @@ function edReplace(from: number, to: number, text: string): void {
     ember.insert(text);
   });
   const moved = (x: number): number => (x >= to ? x + delta : x > from ? from : x);
-  for (const m of markers) m.pos = moved(m.pos);
+  placeMarkers(saved.map(([m, p]) => [m, moved(p)]));
   if (mark !== undefined) ember.setMark(moved(mark));
   if (checks) fixFoldsAround(from, from + n);
 }
@@ -2234,7 +2248,7 @@ function toggleCheckbox(arg: ember.PrefixArg): void {
   const presence = Array.isArray(arg) && arg[0] === 4;
   try {
     let limUp: number;
-    let limDown: { pos: number };
+    let limDown: Marker;
     let single = false;
     const firstItemFrom = (from: number, limit: number): number | undefined => {
       for (let l = lineAt(from); l < ember.lineCount() && ember.lineStart(l) < limit; l++) {
@@ -3311,8 +3325,7 @@ function orgIndentRegion(start: number, end: number): void {
         cb = q >= size() ? q : ember.lineStart(lineAt(q));
       }
       const cbeg = marker(cb);
-      const cend = { pos: el.contentsEnd ?? el.end, before: true };
-      markers.push(cend);
+      const cend = marker(el.contentsEnd ?? el.end, true);
       if (type === "plain-list") {
         const offset = ind - textIndentation(ember.lineText(lineAt(p)));
         if (offset !== 0) indentRigidly(el.begin, elementEnd.pos, offset);
@@ -5294,7 +5307,7 @@ const todoCommand = ember.defineCommand({
  * Where org-map-entries has narrowed to the region it loops over, if it is
  * looping: headings above it are out of reach, so their cookies stay.
  */
-let mapRegionStart: { pos: number } | undefined;
+let mapRegionStart: Marker | undefined;
 
 function forEachHeadingInRegion(body: () => void, todoQuirk = false): boolean {
   const mark = ember.mark();
@@ -6737,7 +6750,7 @@ function deleteMetadata(line: number): void {
  * so the least indented goes to `ind`, as org-toggle-item's shift-text
  * does. Leaves point at end.
  */
-function shiftText(ind: number, end: { pos: number }): void {
+function shiftText(ind: number, end: Marker): void {
   let min = 1000;
   for (let l = lineAt(); l < ember.lineCount() && ember.lineStart(l) < end.pos; l++) {
     const text = ember.lineText(l);
@@ -6771,7 +6784,7 @@ ember.defineCommand({
     const mark = ember.mark();
     const region = orgRegionActive() && mark !== undefined;
     let beg: number;
-    let end: { pos: number };
+    let end: Marker;
     if (region) {
       const [rb, re] = [Math.min(mark as number, ember.point()), Math.max(mark as number, ember.point())];
       let q = rb;
@@ -6894,7 +6907,7 @@ function orgToggleHeading(nstars: ember.PrefixArg): void {
   const mark = ember.mark();
   const region = orgRegionActive() && mark !== undefined;
   let beg: number;
-  let end: { pos: number };
+  let end: Marker;
   if (region) {
     const [rb, re] = [Math.min(mark as number, ember.point()), Math.max(mark as number, ember.point())];
     beg = skipBlanks(rb);
@@ -7684,7 +7697,7 @@ function fillTemplate(template: string): { text: string; cursor?: number } {
 
 /** What a capture under way changed, to finish or undo it. */
 let capturing:
-  | { buffer: string; beg: { pos: number }; end: { pos: number }; from: string; point: number; level: number; modified: boolean }
+  | { buffer: string; from: string; point: number; level: number; modified: boolean }
   | undefined;
 
 /**
@@ -7756,7 +7769,7 @@ function captureWith(key: string): void {
     ember.callWithPrefix(1, "org-capture-mode");
     return { beg, end: endPos, level, cursor: ember.point() };
   });
-  capturing = { buffer, beg: { pos: placed.beg }, end: { pos: placed.end }, from, point, level: placed.level, modified };
+  capturing = { buffer, from, point, level: placed.level, modified };
   // The capture above, the buffer it came from below, as org-capture's windows are.
   ember.call("delete-other-windows");
   ember.splitWindow(undefined, "below");

@@ -72,3 +72,15 @@ fn a_file_opens_where_point_was_left() {
     visit(&mut ed);
     assert_eq!(ed.buffer().point(), 0);
 }
+
+#[cfg(unix)]
+#[test]
+fn the_history_file_is_private() {
+    use std::os::unix::fs::PermissionsExt;
+    let config = tempfile::tempdir().unwrap();
+    let (mut ed, _s) = session(config.path());
+    ed.call("savehist-mode", vec![]).unwrap();
+    ed.call("savehist-save", vec![]).unwrap();
+    let mode = fs::metadata(config.path().join("history")).unwrap().permissions().mode();
+    assert_eq!(mode & 0o777, 0o600);
+}

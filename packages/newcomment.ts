@@ -163,7 +163,7 @@ function commentRegion(begIn: number, endIn: number, arg: number): void {
     ember.insert("\n");
     ember.call("indent-according-to-mode");
     ember.gotoChar(ember.markerPosition(p)!);
-    ember.setMarker(p, null);
+    ember.deleteMarker(p);
   }
   const add = num("comment-add", 0) + arg - 1;
   const cs = padRight(commentStart(), add);
@@ -189,7 +189,7 @@ function commentRegion(begIn: number, endIn: number, arg: number): void {
     }
   }
   ember.gotoChar(ember.markerPosition(p)!);
-  ember.setMarker(p, null);
+  ember.deleteMarker(p);
 }
 
 /** Takes the comment starts and ends out of the region, as uncomment-region: all of them, or `arg` levels. */
@@ -224,7 +224,7 @@ function uncommentRegion(beg: number, end: number, arg?: number): void {
     ember.deleteRegion(start, q);
   }
   ember.gotoChar(ember.markerPosition(p)!);
-  ember.setMarker(p, null);
+  ember.deleteMarker(p);
   if (!found) throw new Error("Can't find any comment");
 }
 
@@ -309,7 +309,7 @@ function commentIndent(): void {
     ember.call("indent-according-to-mode");
   }
   ember.gotoChar(ember.markerPosition(cpos)!);
-  ember.setMarker(cpos, null);
+  ember.deleteMarker(cpos);
 }
 
 /** Moves the comment at point to `column`, replacing the whitespace before it. */
@@ -366,7 +366,7 @@ ember.defineCommand({
       const p = ember.makeMarker();
       ember.insert(padLeft(ce));
       ember.gotoChar(ember.markerPosition(p)!);
-      ember.setMarker(p, null);
+      ember.deleteMarker(p);
     }
   },
 });
@@ -490,9 +490,10 @@ ember.defineCommand({
       return;
     }
     const start = st.start!;
-    // The starter as written on this line, its repeats and padding.
-    let q = start;
-    while (q < ember.point() && !/\s/.test(charAt(q))) q++;
+    // The starter as written on this line: its characters, the last one's
+    // repeats, as ;; or ///, and the padding after, as comment-start-skip matches.
+    let q = start + (commentStartAt(start) ?? 1);
+    while (q < ember.point() && charAt(q) === charAt(q - 1)) q++;
     let pad = q;
     while (pad < ember.point() && " \t".includes(charAt(pad))) pad++;
     const starter = ember.bufferText(start, pad);

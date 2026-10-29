@@ -467,6 +467,48 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "review-m-j-starter-without-space",
+      "input": {
+        "text": "x; //foo bar\n",
+        "point": 0,
+        "keys": "C-e M-j",
+        "modes": [
+          "js-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "x; //foo bar\n   //\n",
+      "visible": "x; //foo bar\n   //\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "review-m-j-python-hash",
+      "input": {
+        "text": "#hello world\n",
+        "point": 0,
+        "keys": "C-e M-j",
+        "modes": [
+          "python-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "#hello world\n#\n",
+      "visible": "#hello world\n#\n",
+      "point": 14,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
     }
   ]
 }

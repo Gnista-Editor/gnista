@@ -260,5 +260,21 @@
   "modes": [
    "python-mode"
   ]
+ },
+ {
+  "name": "review-ret-keeps-relative-indentation-in-prog-mode",
+  "text": "a\n    b\n",
+  "keys": "C-n C-e RET",
+  "modes": [
+   "prog-mode"
+  ]
+ },
+ {
+  "name": "review-tab-in-prog-mode-is-relative",
+  "text": "foo bar\nx\n",
+  "keys": "C-n TAB",
+  "modes": [
+   "prog-mode"
+  ]
  }
 ]

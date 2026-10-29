@@ -63,6 +63,41 @@ Left out, or still to do:
 - The tree-sitter modes' own indentation rules.
 - `xref-find-definitions` (`M-.`), which needs a backend such as a language server.
 
+## Review
+
+A review of this work and ADR 0023's found, and the same round fixed:
+- **Processes**:
+  - output from a process could reach a later one of the same name;
+  - output was unbounded, and a fast program filled memory;
+  - a process whose child kept its output open never ended;
+  - output went to the end of a narrowing rather than the process mark;
+  - writing to a program that did not read froze the editor;
+  - processes were left running when Ember exited;
+  - a buffer with a running process was killed without asking.
+- **Undo, markers and change groups**:
+  - undo moved advancing markers;
+  - a change group cancelled across an undo boundary corrupted undo;
+  - markers did not outlive the buffer they pointed into.
+- **Packages**:
+  - fill and compile counted UTF-16 units as buffer positions, so text after an emoji went wrong;
+  - M-j took too much as the comment starter;
+  - RET reindented by the mode's name instead of its indent-line-function;
+  - Auto Fill did not continue comments;
+  - xref went to screen columns, not characters;
+  - project-find-regexp did not quote its default, fold case, or report grep's failures;
+  - compilation-directory and compilation-read-command were ignored;
+  - the history file was readable by others.
+- **Syntax**: forward-comment did not count a newline as whitespace, and a whitespace syntax descriptor was empty.
+
+Compilation messages now keep markers, as compile.el's do, and Org uses real markers in place of its own.
+
+Still open from the review:
+- Rust's char literals, such as `'"'`, confuse the syntax table, which needs `syntax-propertize`.
+- Python's `:` does not reindent `else:`.
+- js-mode's continued expressions.
+- Scanning backward past a comment parses from the nearest kept parse state.
+- In relative and visual line numbers without `display-line-numbers-current-absolute`, the gutter is sized for absolute numbers.
+
 ## Dependencies introduced
 
 None.

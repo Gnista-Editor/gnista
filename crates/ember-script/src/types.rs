@@ -536,7 +536,7 @@ const API: &str = r##"
   /** A file's text, read as UTF-8. */
   function readTextFile(file: string): string;
   /** Write text to a file, replacing what it held, as Emacs's write-region does for saved state. */
-  function writeTextFile(file: string, text: string): void;
+  function writeTextFile(file: string, text: string, options?: { mode?: number }): void;
   /** A file name with the home directory written as ~, as Emacs's abbreviate-file-name. */
   function abbreviateFileName(file: string): string;
   /** The directory part of a file name, up to its last slash, or undefined if it has none. */
@@ -887,6 +887,16 @@ const API: &str = r##"
   function callProcess(command: string[], options?: { directory?: string; input?: string }): { exit: number; output: string };
   /** Where the selected window's text starts, at the start of its top line, as window-start. */
   function windowStart(): number;
+  /**
+   * Name a function so code can call it by name, as Emacs's defun: for
+   * variables that hold a function, such as next-error-function. Unlike a
+   * command it takes and returns any values, and is not in M-x. Returns the name.
+   */
+  function defun<F extends (...args: any[]) => unknown>(name: string, fn: F): string;
+  /** Whether a function or command has this name, as fboundp. */
+  function fboundp(name: string): boolean;
+  /** Call the function named, or the command, as Emacs's funcall. */
+  function funcall(name: string, ...args: any[]): any;
   /** The character at a position, point by default, or undefined at the end of the accessible text, as char-after. */
   function charAfter(position?: number): string | undefined;
   /** The character before a position, point by default, or undefined at the start, as char-before. */
@@ -1004,13 +1014,16 @@ const API: &str = r##"
    * unless it `advances`, as a marker of insertion type t. Returns its id.
    */
   function makeMarker(position?: number, options?: { buffer?: string; advances?: boolean }): number;
+  /** Forget a marker once nothing will use it again, so it costs nothing more. */
+  function deleteMarker(marker: number): void;
   /** Where a marker is, or undefined if it points nowhere. */
   function markerPosition(marker: number): number | undefined;
   /** The buffer a marker is in, or undefined if it points nowhere. */
   function markerBuffer(marker: number): string | undefined;
   /**
    * Move a marker, as Emacs's set-marker: to a position in its buffer, or in
-   * `buffer`. With no position it points nowhere, so it no longer slows edits.
+   * `buffer`. With no position it points nowhere until set again; a marker
+   * no longer needed is better deleted with deleteMarker.
    */
   function setMarker(marker: number, position: number | null, buffer?: string): void;
 

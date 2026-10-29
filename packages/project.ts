@@ -311,6 +311,9 @@ function symbolAtPoint(): string | undefined {
 /** Grep's extended regexps for Emacs's, as xref--regexp-to-extended: groups and alternatives unescaped. */
 const toExtended = (re: string): string => re.replace(/\\([(){}|])|([(){}|])/g, (_, escaped, plain) => (escaped ?? `\\${plain}`));
 
+/** The regexp quoted, as regexp-quote: matching itself. */
+const regexpQuote = (s: string): string => s.replace(/[[*.\\?+^$]/g, "\\$&");
+
 ember.defineCommand({
   name: "project-find-regexp",
   doc: "Find matches for a regexp in the current project's files, showing them in *xref*, grouped by file.",
@@ -318,32 +321,46 @@ ember.defineCommand({
     name: "regexp",
     prompt: () => {
       const sym = symbolAtPoint();
-      return sym === undefined ? "Find regexp: " : `Find regexp (default ${sym}): `;
+      return sym === undefined ? "Find regexp: " : `Find regexp (default ${regexpQuote(sym)}): `;
     },
     history: "regexp-history",
   }],
   run: (input: string) => {
-    const regexp = input === "" ? (symbolAtPoint() ?? "") : input;
+    // The default is the symbol at point, quoted, as project--read-regexp gives it.
+    const sym = symbolAtPoint();
+    const regexp = input === "" ? (sym === undefined ? "" : regexpQuote(sym)) : input;
     if (regexp === "") throw new Error("No regexp");
+    // Case folds, as grep-expand-template does, when case-fold-search says and the regexp has no capitals.
+    const fold = ember.variable("case-fold-search") !== false && ember.variable("case-fold-search") !== null && !/[A-Z]/.test(regexp);
     withProject((root) => {
       const names = files(root);
       const dir = ember.fileNameAsDirectory(ember.expandFileName(root));
       // As xref-matches-in-files: grep over the files, their names from standard input.
-      const result = ember.callProcess(["xargs", "-0", "grep", "--null", "-snHE", "-e", toExtended(regexp)], {
-        directory: dir,
-        input: names.join("\0"),
-      });
-      const js = new RegExp(toExtended(regexp).replace(/\\</g, "\\b").replace(/\\>/g, "\\b"));
+      const result = ember.callProcess(
+        ["xargs", "-0", "grep", ...(fold ? ["-i"] : []), "--null", "-snHE", "-e", toExtended(regexp)],
+        { directory: dir, input: names.join("\0") },
+      );
+      // grep says 1 for no matches; more is a failure, as of the regexp.
+      if (result.exit > 1 && !/\0\d+:/.test(result.output)) throw new Error(`Search failed with status ${result.exit}: ${result.output.trim()}`);
+      let js: RegExp | undefined;
+      try {
+        js = new RegExp(toExtended(regexp).replace(/\\</g, "\\b").replace(/\\>/g, "\\b"), fold ? "iu" : "u");
+      } catch {
+        js = undefined;
+      }
       const xrefs = result.output
         .split("\n")
         .map((line) => /^([^\0]+)\0(\d+):(.*)$/.exec(line))
         .filter((m): m is RegExpExecArray => m !== null)
         .map((m) => {
-          const hit = js.exec(m[3]);
-          return { file: dir + m[1], line: Number(m[2]), col: hit?.index ?? 0, length: hit?.[0].length ?? 0, summary: m[3], group: m[1] };
+          const hit = js?.exec(m[3]);
+          // In characters, as buffer positions count them.
+          const col = hit ? [...m[3].slice(0, hit.index)].length : 0;
+          const length = hit ? [...hit[0]].length : 0;
+          return { file: dir + m[1], line: Number(m[2]), col, length, summary: m[3], group: m[1] };
         });
       if (xrefs.length === 0) throw new Error(`No matches for: ${regexp}`);
-      ember.call("xref-show-xrefs", JSON.stringify(xrefs));
+      ember.funcall("xref-show-xrefs", xrefs);
     });
   },
 });
@@ -351,21 +368,16 @@ ember.defineCommand({
 ember.defineCommand({
   name: "project-compile",
   doc: "Run a compilation in the current project's root, as M-x compile does there.",
-  params: [{
-    name: "command",
-    prompt: "Compile command: ",
-    initial: () => String(ember.variable("compile-command") ?? ""),
-    history: "compile-history",
-  }],
-  run: (command: string) =>
+  run: () =>
     withProject((root) => {
-      // As (let ((default-directory root)) (compile command)).
+      // As (let ((default-directory root)) (call-interactively #'compile)):
+      // compile takes its directory before it asks for the command.
       const had = ember.isLocalVariable("default-directory");
       const old = ember.variable("default-directory");
       ember.makeLocalVariable("default-directory");
       ember.setVariable("default-directory", ember.fileNameAsDirectory(ember.expandFileName(root)));
       try {
-        ember.call("compile", command);
+        ember.callInteractively("compile");
       } finally {
         if (had) ember.setVariable("default-directory", old ?? null);
         else ember.killLocalVariable("default-directory");

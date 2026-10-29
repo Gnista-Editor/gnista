@@ -53,17 +53,19 @@ function showXrefs(xrefs: Xref[]): void {
   ember.call("pop-to-buffer", name);
 }
 
-ember.defineCommand({
-  name: "xref-show-xrefs",
-  doc: "Show places in *xref*, as JSON: a list of { file, line, col, length, summary, group }. For code finding places, as project-find-regexp.",
-  params: [{ name: "places", prompt: "Places (JSON): " }],
-  run: (places: string) => showXrefs(JSON.parse(places) as Xref[]),
-});
+// For code that finds places, as project-find-regexp: a list of { file, line, col, length, summary, group }.
+ember.defun("xref-show-xrefs", showXrefs);
 
 function items(buffer = ember.bufferName()) {
   const s = shown.get(buffer);
   if (s === undefined) throw new Error("Not in an xref buffer");
   return s;
+}
+
+/** Goes to a place's line and to its column there, counted in characters as forward-char goes. */
+function gotoXref(x: Xref): void {
+  const line = Math.min(x.line - 1, ember.lineCount() - 1);
+  ember.gotoChar(Math.min(ember.lineStart(line) + x.col, ember.lineEnd(line)));
 }
 
 /** Shows a place in another window, selecting it if `select`, as xref--show-location. */
@@ -73,8 +75,7 @@ function showLocation(x: Xref, select: boolean): void {
   ember.call("pop-to-buffer", buffer);
   // Not the xref window itself.
   if (ember.selectedWindow() === from) ember.call("switch-to-buffer-other-window", buffer);
-  ember.gotoChar(ember.lineStart(Math.min(x.line - 1, ember.lineCount() - 1)));
-  ember.moveToColumn(x.col);
+  gotoXref(x);
   if (!select) ember.selectWindow(from);
 }
 
@@ -123,8 +124,7 @@ ember.defineCommand({
     ember.call("quit-window");
     const buffer = ember.findFileNoselect(x.file);
     ember.call("switch-to-buffer", buffer);
-    ember.gotoChar(ember.lineStart(Math.min(x.line - 1, ember.lineCount() - 1)));
-    ember.moveToColumn(x.col);
+    gotoXref(x);
   },
 });
 
@@ -145,33 +145,33 @@ function moveGroup(n: number): void {
 ember.defineCommand({ name: "xref-next-group", doc: "Move to the first place in the next file.", run: () => moveGroup(1) });
 ember.defineCommand({ name: "xref-prev-group", doc: "Move to the first place in the file before.", run: () => moveGroup(-1) });
 
-ember.defineCommand({
-  name: "xref--next-error-function",
-  doc: "Visit the place `count` places on in the xref buffer `buffer`, from the first if `reset` is t, as next-error does in *xref*.",
-  params: [{ name: "count", prompt: "Count: " }, { name: "reset", prompt: "Reset: " }, { name: "buffer", prompt: "Buffer: " }],
-  run: (count: string, reset: string, buffer: string) => {
-    const s = items(buffer);
-    const lines = [...s.byLine.keys()].sort((a, b) => a - b);
-    const n = Number(count) || 0;
-    const from = reset === "t" || s.current === undefined ? -1 : s.current;
-    const target = n === 0 && s.current !== undefined ? s.current : n >= 0 ? lines.filter((l) => l > from)[Math.max(n, 1) - 1] : lines.filter((l) => l < from).reverse()[-n - 1];
-    if (target === undefined) throw new Error(n < 0 ? "No previous xref" : "No next xref");
-    s.current = target;
-    const window = ember.windowList().find((w) => ember.windowBuffer(w) === buffer);
-    if (window !== undefined) {
-      const selected = ember.selectedWindow();
-      ember.selectWindow(window);
-      ember.gotoChar(ember.lineStart(target));
-      ember.selectWindow(selected);
-    }
-    const x = s.byLine.get(target)!;
-    const file = ember.findFileNoselect(x.file);
-    if (window === ember.selectedWindow()) ember.call("pop-to-buffer", file);
-    else ember.call("switch-to-buffer", file);
-    ember.gotoChar(ember.lineStart(Math.min(x.line - 1, ember.lineCount() - 1)));
-    ember.moveToColumn(x.col);
-  },
-});
+/** Visits the place `n` places on in an xref buffer, from the first if `reset`, as next-error does there. */
+function xrefNextError(n: number, reset: boolean, buffer: string): void {
+  const s = items(buffer);
+  const lines = [...s.byLine.keys()].sort((a, b) => a - b);
+  const from = reset || s.current === undefined ? -1 : s.current;
+  const target =
+    n === 0 && s.current !== undefined
+      ? s.current
+      : n >= 0
+        ? lines.filter((l) => l > from)[Math.max(n, 1) - 1]
+        : lines.filter((l) => l < from).reverse()[-n - 1];
+  if (target === undefined) throw new Error(n < 0 ? "No previous xref" : "No next xref");
+  s.current = target;
+  const window = ember.windowList().find((w) => ember.windowBuffer(w) === buffer);
+  if (window !== undefined) {
+    const selected = ember.selectedWindow();
+    ember.selectWindow(window);
+    ember.gotoChar(ember.lineStart(target));
+    ember.selectWindow(selected);
+  }
+  const x = s.byLine.get(target)!;
+  const file = ember.findFileNoselect(x.file);
+  if (window === ember.selectedWindow()) ember.call("pop-to-buffer", file);
+  else ember.call("switch-to-buffer", file);
+  gotoXref(x);
+}
+ember.defun("xref--next-error-function", xrefNextError);
 
 ember.defineMajorMode({
   name: "xref--xref-buffer-mode",

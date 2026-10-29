@@ -42,7 +42,7 @@ ember.defineCommand({
       const p = ember.makeMarker();
       ember.indentLineTo(column);
       ember.gotoChar(ember.markerPosition(p)!);
-      ember.setMarker(p, null);
+      ember.deleteMarker(p);
     }
   },
 });
@@ -100,7 +100,7 @@ ember.defineCommand({
       const m = ember.makeMarker();
       ember.indentTo(indent);
       if (ember.markerPosition(m)! > ember.point()) ember.gotoChar(ember.markerPosition(m)!);
-      ember.setMarker(m, null);
+      ember.deleteMarker(m);
     } else {
       tabToTabStop();
     }
@@ -126,7 +126,7 @@ function indentRegion(first: number, last: number): void {
     ember.call("indent-according-to-mode");
   }
   ember.gotoChar(ember.markerPosition(p)!);
-  ember.setMarker(p, null);
+  ember.deleteMarker(p);
 }
 
 /** Moves each line of the region by `n` columns, as indent-rigidly. */
@@ -142,7 +142,7 @@ function indentRigidly(first: number, last: number, n: number): void {
     if (ws < text.length) ember.indentTo(target);
   }
   ember.gotoChar(ember.markerPosition(p)!);
-  ember.setMarker(p, null);
+  ember.deleteMarker(p);
 }
 
 ember.defineCommand({

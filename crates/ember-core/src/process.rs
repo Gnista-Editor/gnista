@@ -12,8 +12,8 @@
 //! Emacs's call-process.
 
 use std::io::{Read, Write};
-use std::process::{Child, ChildStdin, Command, Stdio};
-use std::sync::mpsc::{Receiver, Sender, channel};
+use std::process::{Child, Command, Stdio};
+use std::sync::mpsc::{Receiver, Sender, SyncSender, channel, sync_channel};
 use std::time::{Duration, Instant};
 
 use crate::editor::Editor;
@@ -57,6 +57,9 @@ fn signal_name(sig: i32) -> String {
 }
 
 pub(crate) struct Process {
+    /// Unique among all processes ever started, so output read for one
+    /// that has gone never reaches another of the same name.
+    id: u64,
     pub(crate) name: String,
     /// The buffer it writes to, by buffer id.
     buffer: Option<u64>,
@@ -65,30 +68,66 @@ pub(crate) struct Process {
     command: Vec<String>,
     status: Status,
     child: Option<Child>,
-    stdin: Option<ChildStdin>,
+    /// Text for its standard input, written on a thread of its own so a
+    /// process that does not read cannot stop the editor; None closes it.
+    stdin: Option<Sender<Option<Vec<u8>>>>,
     pid: u32,
     /// Output streams still open.
     open_streams: usize,
     filter: Option<HookFn>,
     sentinel: Option<HookFn>,
     query_on_exit: bool,
+    /// When it was seen to have exited, and how, while its output was still open.
+    exited: Option<(Instant, Status)>,
 }
 
 enum Event {
-    Output(String, String),
-    Closed(String),
+    Output(u64, String),
+    Closed(u64),
 }
+
+/// How many chunks of output wait to be taken in before readers wait,
+/// so a program writing fast fills no more memory than this.
+const QUEUED_CHUNKS: usize = 64;
+/// How many chunks are taken in at a time, as read-process-output-max
+/// limits Emacs, so a flood of output leaves the editor answering.
+const CHUNKS_PER_POLL: usize = 32;
 
 pub(crate) struct Processes {
     list: Vec<Process>,
-    tx: Sender<Event>,
+    tx: SyncSender<Event>,
     rx: Receiver<Event>,
+    next_id: u64,
 }
 
 impl Default for Processes {
     fn default() -> Processes {
-        let (tx, rx) = channel();
-        Processes { list: Vec::new(), tx, rx }
+        let (tx, rx) = sync_channel(QUEUED_CHUNKS);
+        Processes { list: Vec::new(), tx, rx, next_id: 1 }
+    }
+}
+
+impl Drop for Processes {
+    /// Hangs up on the processes still running, as Emacs does when it exits.
+    fn drop(&mut self) {
+        for p in &mut self.list {
+            if p.status == Status::Run {
+                hang_up(p);
+            }
+        }
+    }
+}
+
+/// Sends SIGHUP to a process's group, then kills what is left.
+fn hang_up(p: &mut Process) {
+    #[cfg(unix)]
+    // SAFETY: kill only sends a signal; a stale pid fails harmlessly.
+    unsafe {
+        libc::kill(-(p.pid as i32), libc::SIGHUP);
+    }
+    if let Some(child) = p.child.as_mut() {
+        let _ = child.kill();
+        let _ = child.wait();
     }
 }
 
@@ -111,7 +150,7 @@ pub struct ProcessSpec {
 
 /// Reads a stream in chunks, sending each as text, a character split
 /// between chunks kept for the next.
-fn read_stream(name: String, mut stream: impl Read + Send + 'static, tx: Sender<Event>) {
+fn read_stream(id: u64, mut stream: impl Read + Send + 'static, tx: SyncSender<Event>) {
     std::thread::spawn(move || {
         let mut buf = [0u8; 4096];
         let mut pending: Vec<u8> = Vec::new();
@@ -127,16 +166,16 @@ fn read_stream(name: String, mut stream: impl Read + Send + 'static, tx: Sender<
                     };
                     let text = String::from_utf8_lossy(&pending[..valid]).into_owned();
                     pending.drain(..valid);
-                    if !text.is_empty() && tx.send(Event::Output(name.clone(), text)).is_err() {
+                    if !text.is_empty() && tx.send(Event::Output(id, text)).is_err() {
                         return;
                     }
                 }
             }
         }
         if !pending.is_empty() {
-            let _ = tx.send(Event::Output(name.clone(), String::from_utf8_lossy(&pending).into_owned()));
+            let _ = tx.send(Event::Output(id, String::from_utf8_lossy(&pending).into_owned()));
         }
-        let _ = tx.send(Event::Closed(name));
+        let _ = tx.send(Event::Closed(id));
     });
 }
 
@@ -177,15 +216,28 @@ impl Editor {
             name = format!("{}<{n}>", spec.name);
             n += 1;
         }
+        let id = self.processes.next_id;
+        self.processes.next_id += 1;
         let mut open_streams = 0;
         if let Some(out) = child.stdout.take() {
-            read_stream(name.clone(), out, self.processes.tx.clone());
+            read_stream(id, out, self.processes.tx.clone());
             open_streams += 1;
         }
         if let Some(err) = child.stderr.take() {
-            read_stream(name.clone(), err, self.processes.tx.clone());
+            read_stream(id, err, self.processes.tx.clone());
             open_streams += 1;
         }
+        let stdin = child.stdin.take().map(|mut input| {
+            let (tx, rx) = channel::<Option<Vec<u8>>>();
+            std::thread::spawn(move || {
+                while let Ok(Some(bytes)) = rx.recv() {
+                    if input.write_all(&bytes).and_then(|_| input.flush()).is_err() {
+                        break;
+                    }
+                }
+            });
+            tx
+        });
         let (buffer_id, mark) = match buffer {
             Some(index) => {
                 let b = &mut self.buffers[index];
@@ -195,18 +247,20 @@ impl Editor {
             None => (None, None),
         };
         self.processes.list.push(Process {
+            id,
             name: name.clone(),
             buffer: buffer_id,
             mark,
             command: spec.command,
             status: Status::Run,
             pid: child.id(),
-            stdin: child.stdin.take(),
+            stdin,
             child: Some(child),
             open_streams,
             filter: spec.filter,
             sentinel: spec.sentinel,
             query_on_exit: true,
+            exited: None,
         });
         Ok(name)
     }
@@ -265,14 +319,25 @@ impl Editor {
     /// Sends text to a process's standard input, as process-send-string.
     pub fn process_send_string(&mut self, name: &str, text: &str) -> Result<()> {
         let p = self.process_mut(name)?;
-        let stdin = p.stdin.as_mut().ok_or_else(|| Error::new(format!("Process {name} not running")))?;
-        stdin.write_all(text.as_bytes()).and_then(|_| stdin.flush()).map_err(|e| Error::new(format!("Writing to process: {e}")))
+        let stdin = p.stdin.as_ref().ok_or_else(|| Error::new(format!("Process {name} not running")))?;
+        stdin.send(Some(text.as_bytes().to_vec())).map_err(|_| Error::new(format!("Process {name} not running")))
     }
 
     /// Closes a process's standard input, as process-send-eof.
     pub fn process_send_eof(&mut self, name: &str) -> Result<()> {
-        self.process_mut(name)?.stdin = None;
+        if let Some(stdin) = self.process_mut(name)?.stdin.take() {
+            let _ = stdin.send(None);
+        }
         Ok(())
+    }
+
+    /// Hangs up on every process still running, as exiting Emacs does.
+    pub(crate) fn hang_up_processes(&mut self) {
+        for p in &mut self.processes.list {
+            if p.status == Status::Run {
+                hang_up(p);
+            }
+        }
     }
 
     /// Sends a signal to a process and what it started, as signal-process:
@@ -317,7 +382,7 @@ impl Editor {
             self.notify(&p);
         }
         if let Some(id) = p.mark {
-            self.set_marker(id, None, 0);
+            self.delete_marker(id);
         }
         Ok(())
     }
@@ -330,24 +395,48 @@ impl Editor {
     /// Takes in what processes have written and notices those that have
     /// ended, running filters and sentinels, as Emacs's wait_reading_process_output.
     pub(crate) fn poll_processes(&mut self) {
-        while let Ok(event) = self.processes.rx.try_recv() {
+        let mut drained = false;
+        for _ in 0..CHUNKS_PER_POLL {
+            let Ok(event) = self.processes.rx.try_recv() else {
+                drained = true;
+                break;
+            };
+            let name = |ed: &Editor, id: u64| ed.processes.list.iter().find(|p| p.id == id).map(|p| p.name.clone());
             match event {
-                Event::Output(name, text) => self.process_output(&name, &text),
-                Event::Closed(name) => {
-                    if let Ok(p) = self.process_mut(&name) {
+                Event::Output(id, text) => {
+                    if let Some(name) = name(self, id) {
+                        self.process_output(&name, &text);
+                    }
+                }
+                Event::Closed(id) => {
+                    if let Some(p) = self.processes.list.iter_mut().find(|p| p.id == id) {
                         p.open_streams = p.open_streams.saturating_sub(1);
                     }
                 }
             }
         }
-        // Those whose output has all come, and have exited.
+        // Those that have exited, once their output has all come; or, when
+        // something they started keeps their output open, a moment after
+        // they exited with nothing more arriving, as Emacs notices them.
         let mut ended = Vec::new();
+        let now = Instant::now();
         for p in &mut self.processes.list {
-            if p.status != Status::Run || p.open_streams > 0 {
+            if p.status != Status::Run {
                 continue;
             }
-            if let Some(Ok(Some(status))) = p.child.as_mut().map(|c| c.try_wait()) {
-                p.status = exit_status(status);
+            let exited = match p.exited {
+                Some(exit) => Some(exit),
+                None => match p.child.as_mut().map(|c| c.try_wait()) {
+                    Some(Ok(Some(status))) => {
+                        p.exited = Some((now, exit_status(status)));
+                        p.exited
+                    }
+                    _ => None,
+                },
+            };
+            let Some((when, status)) = exited else { continue };
+            if p.open_streams == 0 || (drained && now.duration_since(when) >= Duration::from_millis(200)) {
+                p.status = status;
                 p.stdin = None;
                 ended.push(p.name.clone());
             }
@@ -376,7 +465,7 @@ impl Editor {
             if let Some(i) = self.processes.list.iter().position(|p| p.name == name && p.status != Status::Run) {
                 let p = self.processes.list.remove(i);
                 if let Some(id) = p.mark {
-                    self.set_marker(id, None, 0);
+                    self.delete_marker(id);
                 }
             }
         }
@@ -417,16 +506,14 @@ impl Editor {
     fn insert_process_text(&mut self, buffer: Option<u64>, mark: Option<u64>, text: &str, advance: bool) {
         let (Some(id), Some(mark)) = (buffer, mark) else { return };
         let Some(b) = self.buffers.iter_mut().find(|b| b.id == id) else { return };
+        // At the mark even outside a narrowing, before markers, as Emacs
+        // inserts output: point, the mark and other windows' points there
+        // move along with it.
         let at = b.marker(mark).unwrap_or(b.len());
-        let moving = b.point() == at;
-        let point = b.point();
-        b.set_point(at);
-        if b.insert(text).is_ok() && advance {
-            let end = b.point();
-            b.set_marker(mark, end);
+        if b.insert_before_markers_at(at, text).is_ok() && !advance {
+            // A note of the end goes after the output without moving the mark.
+            b.set_marker(mark, at);
         }
-        let now = b.point();
-        b.set_point(if moving { now } else { point });
     }
 
     /// Waits up to `timeout` for processes to write or end, then takes their

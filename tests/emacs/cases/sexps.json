@@ -328,5 +328,22 @@
   "text": "bcabc\\[\\",
   "point": 0,
   "keys": "C-M-f"
+ },
+ {
+  "name": "review-forward-sexp-over-comment-lines",
+  "text": "x  \n\n  // c\n  y z\n",
+  "keys": "C-M-f C-M-f",
+  "modes": [
+   "js-mode"
+  ]
+ },
+ {
+  "name": "review-backward-sexp-over-comment-lines",
+  "text": "x\n  // c\n\n  y\n",
+  "point": 13,
+  "keys": "C-M-b C-M-b",
+  "modes": [
+   "js-mode"
+  ]
  }
 ]

@@ -424,9 +424,6 @@ ember.defineVariable({
   value: true,
 });
 
-/** Modes whose indent-line-function is indent-relative in Emacs. */
-const INDENT_RELATIVE_MODES = ["fundamental-mode", "text-mode", "outline-mode"];
-
 /** The indentation of a line: the column its first character that is not a space or tab starts at. */
 const lineIndentation = (line: number): number => ember.currentIndentation(ember.lineStart(line));
 
@@ -490,8 +487,15 @@ function reindentAfterNewline(): void {
   const trailing = text.length - text.replace(/[ \t]+$/, "").length;
   if (trailing > 0) ember.deleteRegion(end - trailing, end);
   ember.gotoChar(ember.markerPosition(here)!);
-  ember.setMarker(here, null);
+  ember.deleteMarker(here);
   ember.call("indent-according-to-mode");
+}
+
+/** Whether indent-line-function only tabs, as those in indent-line-ignored-functions do. */
+function indentsOnlyByTabbing(): boolean {
+  const fn = ember.variable("indent-line-function");
+  const ignored = ember.variable("indent-line-ignored-functions");
+  return typeof fn !== "string" || (Array.isArray(ignored) && ignored.includes(fn));
 }
 
 /** Typing a closing brace or another of electric-indent-chars reindents its line. */
@@ -500,7 +504,7 @@ function electricIndentChar(): void {
   const key = ember.lastKey();
   if (key === undefined || [...key].length !== 1) return;
   const chars = ember.variable("electric-indent-chars");
-  if (!Array.isArray(chars) || !chars.includes(key) || INDENT_RELATIVE_MODES.includes(String(ember.variable("major-mode")))) return;
+  if (!Array.isArray(chars) || !chars.includes(key) || indentsOnlyByTabbing()) return;
   const st = ember.syntaxPpss(Math.max(0, ember.point() - 1));
   if (st.inString !== null || st.inComment !== null) return;
   ember.call("indent-according-to-mode");
@@ -529,7 +533,9 @@ ember.defineCommand({
     const interactive = ember.calledInteractively();
     ember.runHooks("post-self-insert-hook");
     if (interactive && ember.variable("electric-indent-mode") === true) {
-      if (INDENT_RELATIVE_MODES.includes(String(ember.variable("major-mode")))) electricIndentAfterNewline();
+      // Where the mode's indenting only tabs, as indent-relative, the line
+      // ended is left alone, as electric-indent-functions-without-reindent says.
+      if (indentsOnlyByTabbing()) electricIndentAfterNewline();
       else reindentAfterNewline();
     }
   },

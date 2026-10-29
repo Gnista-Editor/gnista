@@ -50,7 +50,7 @@ defvar("compilation-buffer-name-function", null, "A command naming the compilati
 defvar(
   "next-error-function",
   null,
-  "The command that visits the next message's place in this buffer, as next-error uses it: given a count, \"t\" to start over, and the buffer's name.",
+  "The function, named with ember.defun, that visits the next message's place in this buffer, as next-error calls it: with a count, whether to start over, and the buffer.",
   true,
 );
 defvar("next-error-last-buffer", null, "The buffer next-error used last, which it uses again.");
@@ -61,6 +61,9 @@ ember.defineHook("compilation-start-hook", "Run with the process just started, i
 ember.defineHook("compilation-finish-functions", "Called with the compilation buffer and how it ended, as \"finished\\n\", when a compilation ends.");
 ember.defineHook("compilation-filter-hook", "Run in the compilation buffer after output is inserted.");
 ember.defineHook("next-error-hook", "Run after next-error visits a message's place.");
+
+/** How many characters, as buffer positions count them, the first `i` UTF-16 units of `s` are. */
+const chars = (s: string, i = s.length): number => [...s.slice(0, i)].length;
 
 const truthy = (v: ember.Value | undefined): boolean => v !== undefined && v !== null && v !== false;
 const num = (name: string, fallback: number): number => {
@@ -112,6 +115,8 @@ type Message = {
   line: number;
   col?: number;
   type: 0 | 1 | 2;
+  /** Where it points, once its file has been visited, moving with edits there as compile.el's markers do. */
+  marker?: number;
 };
 
 /** Each compilation buffer's messages, in order, and how far it has been read. */
@@ -157,13 +162,16 @@ function parseNewLines(): void {
           if (/^(?:warning|error|note|help)/.test(t)) break;
         }
       }
-      const fileAt = start + m.index + m[0].indexOf(file);
+      const fileAt = start + chars(text, m.index + m[0].indexOf(file));
       s.messages.push({ start, end: ember.lineEnd(line), file, line: lineNo, col: g.col === undefined ? undefined : Number(g.col), type });
       if (grep) s.matches++;
-      ember.putTextProperty(fileAt, fileAt + file.length, "face", grep ? "compilation-info" : faceFor(type));
+      ember.putTextProperty(fileAt, fileAt + chars(file), "face", grep ? "compilation-info" : faceFor(type));
       const lineText = String(lineNo);
-      const lineAt = text.indexOf(lineText, fileAt - start + file.length);
-      if (lineAt >= 0) ember.putTextProperty(start + lineAt, start + lineAt + lineText.length, "face", "compilation-line-number");
+      const lineAt = text.indexOf(lineText, m.index + m[0].indexOf(file) + file.length);
+      if (lineAt >= 0) {
+        const at = start + chars(text, lineAt);
+        ember.putTextProperty(at, at + lineText.length, "face", "compilation-line-number");
+      }
       break;
     }
     line++;
@@ -233,7 +241,10 @@ function compilationStart(command: string, mode: string, directory: string): voi
       ember.call(mode as ember.CommandName);
       ember.setVariable("default-directory", directory);
       ember.setVariable("compilation-directory", directory);
+      // And for recompile from anywhere, as compile sets its default.
+      ember.setDefault("compilation-directory", directory);
       ember.setVariable("compilation-arguments", [command, mode]);
+      for (const m of buffers.get(bufferName)?.messages ?? []) if (m.marker !== undefined) ember.deleteMarker(m.marker);
       buffers.set(bufferName, { messages: [], parsed: 0, started: Date.now(), matches: 0 });
       writable(() => {
         ember.insert(
@@ -288,10 +299,11 @@ function compilationFilter(proc: string, output: string): void {
       ember.setMarker(mark, ember.point());
     });
     ember.gotoChar(moving ? ember.markerPosition(mark)! : ember.markerPosition(point)!);
-    ember.setMarker(point, null);
+    ember.deleteMarker(point);
     parseNewLines();
     // grep separates the file name with a NUL, shown as a colon, as grep-mode's display property does.
-    if (ember.derivedModeP("grep-mode")) writable(() => ember.substCharInRegion(at, ember.markerPosition(mark)!, "\0", ":"));
+    // Only in the lines read, so an unfinished one is still read with its NUL.
+    if (ember.derivedModeP("grep-mode")) writable(() => ember.substCharInRegion(at, Math.max(at, state().parsed), "\0", ":"));
     ember.setBufferModified(false);
     ember.runHooks("compilation-filter-hook");
   });
@@ -324,7 +336,7 @@ function compilationSentinel(proc: string, event: string, modeName: string): voi
       ember.putTextProperty(word, word + status.replace(/\n$/, "").length, "face", failed ? "compilation-error" : "compilation-info");
     });
     ember.gotoChar(ember.markerPosition(point)!);
-    ember.setMarker(point, null);
+    ember.deleteMarker(point);
     ember.setBufferModified(false);
     message = `${modeName} ${status.replace(/\n$/, "")}`;
   });
@@ -350,16 +362,19 @@ ember.defineCommand({
   doc:
     "Run a shell command in the background, make -k by default, showing its output in *compilation*, where error messages are found and highlighted. " +
     "M-g n (next-error) then visits each error's place in turn. Asks to save modified buffers first.",
-  params: [{
-    name: "command",
-    prompt: "Compile command: ",
-    initial: () => String(ember.variable("compile-command") ?? ""),
-    history: "compile-history",
-  }],
-  run: (command: string) => {
+  run: () => {
     const directory = currentDirectory();
-    ember.setDefault("compile-command", command);
-    saveThen(() => compilationStart(command, "compilation-mode", directory));
+    const go = (command: string) => {
+      ember.setDefault("compile-command", command);
+      saveThen(() => compilationStart(command, "compilation-mode", directory));
+    };
+    const command = String(ember.variable("compile-command") ?? "");
+    // As compilation-read-command says, or always with a prefix argument.
+    if (truthy(ember.variable("compilation-read-command")) || ember.prefixArg() !== null) {
+      ember.readString("Compile command: ", go, { initial: command, history: "compile-history" });
+    } else {
+      go(command);
+    }
   },
 });
 
@@ -480,10 +495,23 @@ function gotoLocus(compilation: string, m: Message): void {
     ember.selectWindow(selected);
   }
   const target = ember.findFileNoselect(file);
+  // The first time a file's message is visited, every message in that file
+  // gets a marker, so edits there before going to the next keep them right.
+  if (m.marker === undefined || ember.markerBuffer(m.marker) !== target) {
+    const all = ember.withCurrentBuffer(compilation, () => state().messages.filter((x) => x.marker === undefined && messageFile(x) === file));
+    ember.withCurrentBuffer(target, () => {
+      for (const x of all.includes(m) ? all : [...all, m]) {
+        ember.saveExcursion(() => {
+          ember.gotoChar(ember.lineStart(Math.max(0, Math.min(x.line - 1, ember.lineCount() - 1))));
+          if (x.col !== undefined) ember.moveToColumn(Math.max(0, x.col - firstColumn));
+          x.marker = ember.makeMarker();
+        });
+      }
+    });
+  }
   if (fromCompilation || ember.selectedWindow() === window) ember.call("pop-to-buffer", target);
   else ember.call("switch-to-buffer", target);
-  ember.gotoChar(ember.lineStart(Math.min(m.line - 1, ember.lineCount() - 1)));
-  if (m.col !== undefined) ember.moveToColumn(Math.max(0, m.col - firstColumn));
+  ember.gotoChar(ember.markerPosition(m.marker!)!);
   // The line flashes, as next-error-highlight says.
   clearHighlight();
   const secs = ember.variable("next-error-highlight");
@@ -508,14 +536,7 @@ function compilationNextErrorFunction(n: number, reset: boolean, buffer: string)
   gotoLocus(buffer, m);
 }
 
-ember.defineCommand({
-  name: "compilation-next-error-function",
-  doc:
-    "Visit the place of the message `count` messages on in compilation buffer `buffer`, from the start if `reset` is t. " +
-    "This is next-error-function in compilation buffers; next-error calls it from the buffer it was typed in.",
-  params: [{ name: "count", prompt: "Count: " }, { name: "reset", prompt: "Reset: " }, { name: "buffer", prompt: "Buffer: " }],
-  run: (count: string, reset: string, buffer: string) => compilationNextErrorFunction(Number(count) || 0, reset === "t", buffer),
-});
+ember.defun("compilation-next-error-function", compilationNextErrorFunction);
 
 /** Whether a buffer has messages next-error can go to, as next-error-buffer-p. */
 const nextErrorBuffer = (b: string): boolean =>
@@ -536,8 +557,9 @@ function nextError(n: number, reset: boolean, select = true): void {
   const buffer = findNextErrorBuffer();
   const selected = ember.selectedWindow();
   const fn = ember.withCurrentBuffer(buffer, () => String(ember.variable("next-error-function")));
-  // Called from here, not in that buffer, so the windows it changes stay changed.
-  ember.call(fn as ember.CommandName, String(n), reset ? "t" : "", buffer);
+  // Called from here, not in that buffer, so the windows it changes stay
+  // changed; it is told which buffer, where Emacs makes it current.
+  ember.funcall(fn, n, reset, buffer);
   const previous = ember.variable("next-error-last-buffer");
   ember.setVariable("next-error-last-buffer", buffer);
   ember.runHooks("next-error-hook");

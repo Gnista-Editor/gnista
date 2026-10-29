@@ -348,8 +348,22 @@ impl Editor {
     /// `write-region` of a whole temporary buffer does, for saved state
     /// such as recentf's list.
     pub fn write_text_file(&mut self, path: &Path, text: &str) -> Result<()> {
+        self.write_text_file_with_mode(path, text, None)
+    }
+
+    /// Writes a file and, on Unix, gives it permissions `mode`, as
+    /// savehist-file-modes keeps history private.
+    pub fn write_text_file_with_mode(&mut self, path: &Path, text: &str, mode: Option<u32>) -> Result<()> {
         self.check_permission(&format!("write {}", abbreviate_path(path)))?;
-        fs::write(path, text).map_err(|e| file_error("Opening output file", &e, &[path]))
+        fs::write(path, text).map_err(|e| file_error("Opening output file", &e, &[path]))?;
+        #[cfg(unix)]
+        if let Some(mode) = mode {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(path, fs::Permissions::from_mode(mode)).map_err(|e| file_error("Setting file modes", &e, &[path]))?;
+        }
+        #[cfg(not(unix))]
+        let _ = mode;
+        Ok(())
     }
 
     fn remove(&mut self, path: &Path, trash: bool, dir: bool) -> Result<()> {

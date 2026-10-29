@@ -38,6 +38,9 @@ enum MarkRef {
 /// The undo state when a change group began.
 #[derive(Clone, Debug)]
 struct ChangeGroup {
+    /// How many undo steps there were, so steps closed since are taken back too.
+    undo_groups: usize,
+    modified: bool,
     open_group: Vec<Edit>,
     open_point: Option<usize>,
     open_unmodified_at: Option<u64>,
@@ -490,6 +493,17 @@ impl Buffer {
         self.insert_at(self.point, s)
     }
 
+    /// Inserts text at a position as insert-before-markers does there, the
+    /// narrowing aside: markers, point and the mark at it move past the text.
+    pub fn insert_before_markers_at(&mut self, pos: usize, s: &str) -> Result<()> {
+        if s.is_empty() {
+            return Ok(());
+        }
+        self.check_writable()?;
+        self.apply_insert(pos.min(self.len()), s, true);
+        Ok(())
+    }
+
     pub fn insert_at(&mut self, pos: usize, s: &str) -> Result<()> {
         if s.is_empty() {
             return Ok(());
@@ -633,7 +647,12 @@ impl Buffer {
         let mut marks: Vec<(MarkRef, usize)> = self.mark.and_then(inside).map(|o| (MarkRef::Mark, o)).into_iter().collect();
         marks.extend(self.mark_ring.iter().enumerate().filter_map(|(i, &m)| inside(m).map(|o| (MarkRef::Ring(i), o))));
         marks.extend(self.window_points.iter().filter_map(|&(w, m)| inside(m).map(|o| (MarkRef::Window(w), o))));
-        marks.extend(self.markers.iter().filter_map(|m| inside(m.pos).map(|o| (MarkRef::Marker(m.id), o))));
+        // An advancing marker at the start goes back there too, as Emacs's
+        // record_marker_adjustments records any marker the deletion moves.
+        marks.extend(self.markers.iter().filter_map(|m| {
+            let at_start = m.advances && m.pos == start && start < end;
+            if at_start { Some((MarkRef::Marker(m.id), 0)) } else { inside(m.pos).map(|o| (MarkRef::Marker(m.id), o)) }
+        }));
         let edit_range = self.syntax.as_ref().map(|_| (point_at(&self.text, start), point_at(&self.text, end)));
         self.text.remove(start..end);
         if let (Some(syntax), Some((from, to))) = (&self.syntax, edit_range) {
@@ -798,6 +817,8 @@ impl Buffer {
     /// its handle.
     pub fn prepare_change_group(&mut self) -> usize {
         self.change_groups.push(ChangeGroup {
+            undo_groups: self.undo_groups.len(),
+            modified: self.modified,
             open_group: self.open_group.clone(),
             open_point: self.open_point,
             open_unmodified_at: self.open_unmodified_at,
@@ -820,10 +841,19 @@ impl Buffer {
             if inserted > 0 {
                 self.apply_delete(edit.pos, edit.pos + inserted);
             }
+            let back: Vec<(MarkRef, usize)> =
+                edit.marks.iter().copied().filter(|&(which, _)| self.mark_ref(which) == Some(edit.pos)).collect();
             self.apply_insert(edit.pos, &edit.deleted, false);
             self.properties.restore(edit.pos, &edit.deleted_props);
+            for (which, offset) in back {
+                if let Some(m) = self.mark_ref_mut(which) {
+                    *m = edit.pos + offset;
+                }
+            }
         }
         self.cancelling = false;
+        self.undo_groups.truncate(group.undo_groups);
+        self.modified = group.modified;
         self.open_group = group.open_group;
         self.open_point = group.open_point;
         self.open_unmodified_at = group.open_unmodified_at;
@@ -871,6 +901,11 @@ impl Buffer {
     pub fn remove_marker(&mut self, id: u64) -> Option<Marker> {
         let i = self.markers.iter().position(|m| m.id == id)?;
         Some(self.markers.remove(i))
+    }
+
+    /// Takes all the buffer's markers out, as killing it does.
+    pub(crate) fn take_markers(&mut self) -> Vec<Marker> {
+        std::mem::take(&mut self.markers)
     }
 
     /// Puts a marker taken from another buffer into this one.
@@ -1308,14 +1343,15 @@ impl Buffer {
                 self.point = edit.pos;
                 self.apply_delete(edit.pos, edit.pos + inserted);
             }
+            // Marks that were inside the text, and are still where it goes
+            // back, go back into it: those there before it goes in, as an
+            // advancing marker moves when it does.
+            let back: Vec<(MarkRef, usize)> =
+                edit.marks.iter().copied().filter(|&(which, _)| self.mark_ref(which) == Some(edit.pos)).collect();
             self.apply_insert(edit.pos, &edit.deleted, false);
             self.properties.restore(edit.pos, &edit.deleted_props);
-            // Marks that were inside the text, and are still where it went back, go back into it.
-            for &(which, offset) in &edit.marks {
-                let slot = self.mark_ref_mut(which);
-                if let Some(m) = slot
-                    && *m == edit.pos
-                {
+            for (which, offset) in back {
+                if let Some(m) = self.mark_ref_mut(which) {
                     *m = edit.pos + offset;
                 }
             }

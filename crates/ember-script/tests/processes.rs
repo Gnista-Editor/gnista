@@ -96,3 +96,50 @@ fn an_agent_needs_approval_to_run_a_program() {
     assert!(ed.permission_requested());
     assert!(ed.process_list().is_empty());
 }
+
+#[test]
+fn a_new_process_of_the_same_name_gets_none_of_the_old_ones_output() {
+    let (mut ed, s) = setup();
+    eval(&mut ed, &s, r#"ember.makeProcess({ name: "p", buffer: "*old*", command: ["sh", "-c", "yes"] });"#);
+    ed.accept_process_output(Duration::from_millis(100));
+    eval(&mut ed, &s, r#"ember.deleteProcess("p"); ember.makeProcess({ name: "p", buffer: "*new*", command: ["echo", "new"] });"#);
+    ed.accept_process_output(Duration::from_secs(5));
+    assert_eq!(buffer_text(&ed, "*new*"), "new\n\nProcess p finished\n");
+}
+
+#[test]
+fn a_process_whose_child_keeps_its_output_open_still_ends() {
+    let (mut ed, s) = setup();
+    eval(&mut ed, &s, r#"ember.makeProcess({ name: "bg", buffer: "*bg*", command: ["sh", "-c", "sleep 5 & echo hi"] });"#);
+    ed.accept_process_output(Duration::from_secs(3));
+    assert!(ed.process_list().is_empty(), "noticed once it exits, though sleep holds its output");
+    assert!(buffer_text(&ed, "*bg*").starts_with("hi\n"));
+}
+
+#[test]
+fn output_goes_in_at_the_mark_whatever_the_narrowing() {
+    let (mut ed, s) = setup();
+    eval(
+        &mut ed,
+        &s,
+        r#"
+        ember.getBufferCreate("*n*");
+        ember.withCurrentBuffer("*n*", () => { ember.insert("ab\ncd\n"); ember.narrowToRegion(0, 2); });
+        ember.makeProcess({ name: "n", buffer: "*n*", command: ["echo", "out"] });
+        "#,
+    );
+    ed.accept_process_output(Duration::from_secs(5));
+    assert!(buffer_text(&ed, "*n*").starts_with("ab\ncd\nout\n"), "{:?}", buffer_text(&ed, "*n*"));
+}
+
+#[test]
+fn killing_a_buffer_with_a_running_process_asks() {
+    let (mut ed, s) = setup();
+    eval(&mut ed, &s, r#"ember.makeProcess({ name: "s", buffer: "*s*", command: ["sleep", "30"] });"#);
+    ed.press("C-x k").unwrap();
+    ed.type_text("*s*\n");
+    assert_eq!(ed.prompt(), Some("Buffer \"*s*\" has a running process; kill it? (yes or no) "));
+    ed.type_text("yes\n");
+    assert!(ed.find_buffer("*s*").is_none());
+    assert!(ed.process_list().is_empty());
+}

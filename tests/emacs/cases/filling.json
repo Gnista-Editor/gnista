@@ -383,5 +383,21 @@
   "vars": {
    "fill-column": 60
   }
+ },
+ {
+  "name": "review-fill-after-emoji",
+  "text": "a😀 b  c d.  e f g  h i j k l m n\n",
+  "keys": "M-q",
+  "vars": {
+   "fill-column": 12
+  }
+ },
+ {
+  "name": "review-justify-after-emoji",
+  "text": "a😀 b c d e f g h i j k l m n o p\n",
+  "keys": "C-u M-q",
+  "vars": {
+   "fill-column": 14
+  }
  }
 ]

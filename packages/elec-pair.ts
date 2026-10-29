@@ -287,7 +287,7 @@ function postSelfInsert(): void {
       ember.gotoChar(mark);
       insertPairChar(pair);
       ember.gotoChar(ember.markerPosition(p)!);
-      ember.setMarker(p, null);
+      ember.deleteMarker(p);
     } else {
       ember.deleteRegion(pos - 1, pos);
       insertPairChar(pair);
@@ -332,7 +332,7 @@ function postSelfInsert(): void {
       const p = ember.makeMarker();
       insertPairChar(pair);
       ember.gotoChar(ember.markerPosition(p)!);
-      ember.setMarker(p, null);
+      ember.deleteMarker(p);
     }
   }
 }
@@ -351,7 +351,7 @@ function openNewlineBetweenPairs(): void {
     const m = ember.makeMarker();
     ember.callInteractively("newline");
     ember.gotoChar(ember.markerPosition(m)!);
-    ember.setMarker(m, null);
+    ember.deleteMarker(m);
   }
 }
 

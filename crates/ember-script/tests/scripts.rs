@@ -503,3 +503,32 @@ fn subst_char_in_region_leaves_point_and_markers() {
     assert_eq!(text(&ed), "a b c");
     assert_eq!(ed.messages().last().map(String::as_str), Some("2 4"));
 }
+
+#[test]
+fn undo_puts_an_advancing_marker_back_and_markers_outlive_their_buffers() {
+    let (mut ed, scripting) = setup();
+    ed.type_text("abcdef");
+    ed.buffer_mut().undo_boundary();
+    eval(&mut ed, &scripting, "globalThis.m = ember.makeMarker(3, { advances: true }); ember.deleteRegion(1, 5);");
+    ed.press("C-/").unwrap();
+    eval(&mut ed, &scripting, "ember.message(String(ember.markerPosition(globalThis.m)));");
+    assert_eq!(ed.messages().last().map(String::as_str), Some("3"));
+    // Sent nowhere, and back.
+    eval(&mut ed, &scripting, "ember.setMarker(globalThis.m, null); ember.setMarker(globalThis.m, 2, '*scratch*'); ember.message(String(ember.markerPosition(globalThis.m)));");
+    assert_eq!(ed.messages().last().map(String::as_str), Some("2"));
+}
+
+#[test]
+fn a_cancelled_change_group_leaves_no_trace_across_undo_boundaries() {
+    let (mut ed, scripting) = setup();
+    ed.type_text("abc");
+    ed.buffer_mut().undo_boundary();
+    ed.buffer_mut().set_modified(false);
+    eval(&mut ed, &scripting, "globalThis.g = ember.prepareChangeGroup(); ember.insert('XYZ');");
+    ed.buffer_mut().undo_boundary();
+    eval(&mut ed, &scripting, "ember.cancelChangeGroup(globalThis.g);");
+    assert_eq!(text(&ed), "abc");
+    assert!(!ed.buffer().is_modified(), "unmodified again");
+    ed.press("C-/").unwrap();
+    assert_eq!(text(&ed), "", "undo goes to before the typing, without panicking");
+}

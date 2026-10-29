@@ -978,6 +978,50 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "review-fill-after-emoji",
+      "input": {
+        "text": "a😀 b  c d.  e f g  h i j k l m n\n",
+        "point": 0,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 12
+        }
+      },
+      "text": "a😀 b c d.\ne f g h i j\nk l m n\n",
+      "visible": "a😀 b c d.\ne f g h i j\nk l m n\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "review-justify-after-emoji",
+      "input": {
+        "text": "a😀 b c d e f g h i j k l m n o p\n",
+        "point": 0,
+        "keys": "C-u M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 14
+        }
+      },
+      "text": "a😀 b c  d e f\ng h i  j k l m\nn o p\n",
+      "visible": "a😀 b c  d e f\ng h i  j k l m\nn o p\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
     }
   ]
 }

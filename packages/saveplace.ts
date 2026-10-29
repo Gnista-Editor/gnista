@@ -21,7 +21,7 @@ ember.defineVariable({
 ember.defineVariable({
   name: "save-place-ignore-files-regexp",
   doc: "Files whose places are not saved, as a regular expression, such as Git's commit message file.",
-  value: "(?:COMMIT_EDITMSG|hg-editor-[a-zA-Z0-9]+\\.txt|elpa/[^/]+-autoloads\\.el|svn-commit\\.tmp|bzr_log\\.[a-zA-Z0-9]+)$",
+  value: "\\(?:COMMIT_EDITMSG\\|hg-editor-[[:alnum:]]+\\.txt\\|elpa/[^/]+-autoloads\\.el\\|svn-commit\\.tmp\\|bzr_log\\.[[:alnum:]]+\\)$",
 });
 ember.defineHook("save-place-after-find-file-hook", "Run after visiting a file puts point at its saved place.");
 
@@ -54,7 +54,12 @@ function loadPlaces(): void {
 
 function ignored(file: string): boolean {
   const re = ember.variable("save-place-ignore-files-regexp");
-  return typeof re === "string" && new RegExp(re).test(file);
+  // An Emacs regexp, as the variable's other uses take it; a bad one ignores nothing.
+  try {
+    return typeof re === "string" && ember.stringMatch(re, file) !== undefined;
+  } catch {
+    return false;
+  }
 }
 
 /** Remembers where point is in the current buffer's file, as save-place-to-alist. */

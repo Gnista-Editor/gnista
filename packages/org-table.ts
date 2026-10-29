@@ -91,36 +91,52 @@ function forwardLine(n: number): void {
   else ember.gotoChar(line + n < ember.lineCount() ? ember.lineStart(line + n) : ember.bufferSize());
 }
 
-/** Positions that move with the text as Emacs's markers do. */
-const markers: { pos: number }[] = [];
+/**
+ * A marker of the core's, as Emacs's: it moves with every edit to its
+ * buffer, however made. Setting `pos` moves it into the current buffer,
+ * as move-marker does.
+ */
+type Marker = { readonly id: number; pos: number };
 
-function marker(pos: number): { pos: number } {
-  const m = { pos };
+/** This package's markers, for the edits that place them by a rule of their own, as replace-match does. */
+const markers: Marker[] = [];
+
+function marker(pos: number, advances = false): Marker {
+  const id = ember.makeMarker(pos, { advances });
+  const m: Marker = {
+    id,
+    get pos() {
+      return ember.markerPosition(id) ?? 0;
+    },
+    set pos(p: number) {
+      ember.setMarker(id, p, ember.bufferName());
+    },
+  };
   markers.push(m);
   return m;
 }
 
-function dropMarker(m: { pos: number }): void {
+function dropMarker(m: Marker): void {
   markers.splice(markers.indexOf(m), 1);
+  ember.deleteMarker(m.id);
+}
+
+/** Puts this package's markers in the current buffer where `moved` says, after an edit that moved them its own way. */
+function placeMarkers(saved: [Marker, number][]): void {
+  const here = ember.bufferName();
+  for (const [m, p] of saved) if (ember.markerBuffer(m.id) === here) m.pos = p;
 }
 
 function edInsert(pos: number, text: string, beforeMarkers = false): void {
-  const n = charCount(text);
-  if (n === 0) return;
+  if (text === "") return;
   ember.gotoChar(pos);
   if (beforeMarkers) ember.insertBeforeMarkers(text);
   else ember.insert(text);
-  for (const m of markers) if (m.pos > pos || (m.pos === pos && beforeMarkers)) m.pos += n;
 }
 
 function edDelete(from: number, to: number): string {
   if (to <= from) return "";
-  const text = ember.deleteRegion(from, to);
-  for (const m of markers) {
-    if (m.pos >= to) m.pos -= to - from;
-    else if (m.pos > from) m.pos = from;
-  }
-  return text;
+  return ember.deleteRegion(from, to);
 }
 
 /** Runs body and puts point back where it was, moved as a marker, as save-excursion does. */
@@ -673,10 +689,10 @@ function moveColumn(left: boolean): void {
       const moved = (x: number): number =>
         x < start1 || x >= end2 ? x : x < end1 ? x + len2 + 1 : x < start2 ? x + len2 - len1 : x - len1 - 1;
       const mark = ember.mark();
-      const saved = markers.map((k) => moved(k.pos));
+      const saved: [Marker, number][] = markers.map((k) => [k, moved(k.pos)]);
       edDelete(start1, end2);
       edInsert(start1, `${m[2]}|${m[1]}`);
-      markers.forEach((k, i) => (k.pos = saved[i]));
+      placeMarkers(saved);
       if (mark !== undefined) ember.setMark(moved(mark));
     }
   });

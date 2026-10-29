@@ -77,6 +77,9 @@
     return p - start;
   }
 
+  /** Functions named for code to call by name, as Emacs's defun makes them, apart from commands. */
+  const functions = new Map();
+
   globalThis.ember = Object.freeze({
     defineCommand(definition) {
       if (typeof definition !== "object" || definition === null) {
@@ -257,7 +260,7 @@
     messages: () => native.messages(),
     projectFiles: (root, { ignores = [] } = {}) => native.projectFiles(String(root), ignores.map(String)),
     stringMatch: (regexp, text, { caseFold = false } = {}) => native.stringMatch(String(regexp), String(text), Boolean(caseFold)) ?? undefined,
-    writeTextFile: (file, text) => native.writeTextFile(String(file), String(text)),
+    writeTextFile: (file, text, { mode } = {}) => native.writeTextFile(String(file), String(text), mode ?? undefined),
     fileNameDirectory: (file) => {
       const i = String(file).lastIndexOf("/");
       return i < 0 ? undefined : String(file).slice(0, i + 1);
@@ -384,6 +387,19 @@
       return id;
     },
     killRegion: (beg, end) => native.killRegion(beg, end),
+    defun(name, fn) {
+      if (typeof fn !== "function") throw new TypeError("defun takes a name and a function");
+      functions.set(String(name), fn);
+      return String(name);
+    },
+    fboundp: (name) => functions.has(String(name)) || native.commandExists(String(name)),
+    funcall(name, ...args) {
+      const fn = functions.get(String(name));
+      if (fn !== undefined) return fn(...args);
+      // A command is a function too.
+      if (native.commandExists(String(name))) return ember.call(String(name), ...args.map(String));
+      throw new Error(`Symbol\u2019s function definition is void: ${name}`);
+    },
     charAfter: (pos) => {
       const p = pos ?? native.point();
       return p >= native.pointMin() && p < native.pointMax() ? native.bufferText(p, p + 1) : undefined;
@@ -456,7 +472,7 @@
         return fn();
       } finally {
         const p = native.markerPosition(marker);
-        native.setMarker(marker, undefined, undefined);
+        native.deleteMarker(marker);
         if (native.bufferName() !== buffer && native.bufferList().includes(buffer)) native.setCurrentBuffer(buffer);
         if (p !== undefined && p !== null) native.gotoChar(p);
       }
@@ -563,6 +579,7 @@
     substCharInRegion: (start, end, from, to) => native.substCharInRegion(start, end, String(from), String(to)),
     makeMarker: (pos, { buffer, advances = false } = {}) =>
       native.makeMarker(pos ?? native.point(), buffer === undefined ? undefined : String(buffer), Boolean(advances)),
+    deleteMarker: (m) => native.deleteMarker(m),
     markerPosition: (m) => native.markerPosition(m) ?? undefined,
     markerBuffer: (m) => native.markerBuffer(m) ?? undefined,
     setMarker: (m, pos, buffer) =>

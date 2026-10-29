@@ -1255,8 +1255,8 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     )?;
     native.set(
         "writeTextFile",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String, text: String| {
-            with_editor(&ctx, |ed| ed.write_text_file(&ed.expand_file_name(&file), &text))
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String, text: String, mode: Option<u32>| {
+            with_editor(&ctx, |ed| ed.write_text_file_with_mode(&ed.expand_file_name(&file), &text, mode))
         })?,
     )?;
     native.set(
@@ -1888,6 +1888,15 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
         })?,
     )?;
     native.set(
+        "deleteMarker",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, id: f64| {
+            with_editor(&ctx, |ed| {
+                ed.delete_marker(id as u64);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
         "markerPosition",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, id: f64| {
             with_editor(&ctx, |ed| Ok(ed.marker_position(id as u64).map(|(_, p)| p)))
@@ -1911,8 +1920,7 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
                         ed.marker_position(id as u64).map(|(b, _)| b.to_string()).unwrap_or_else(|| ed.buffer().name.clone()),
                     ),
                 };
-                ed.set_marker(id as u64, name.as_deref(), pos.unwrap_or(0));
-                Ok(())
+                ed.set_marker(id as u64, name.as_deref(), pos.unwrap_or(0))
             })
         })?,
     )?;

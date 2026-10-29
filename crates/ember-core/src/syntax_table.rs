@@ -661,7 +661,9 @@ impl<'a> Scanner<'a> {
                         Err(end) => return (end, false),
                     }
                 }
-                if e.class == Class::Whitespace {
+                // A newline that ends no comment is whitespace, as Emacs's
+                // forward-comment counts it.
+                if e.class == Class::Whitespace || (e.class == Class::EndComment && self.char_at(pos) == Some('\n')) {
                     pos += 1;
                     continue;
                 }
@@ -685,7 +687,7 @@ impl<'a> Scanner<'a> {
                     pos = start;
                     break;
                 }
-                if e.class == Class::Whitespace {
+                if e.class == Class::Whitespace || (e.class == Class::EndComment && self.char_at(pos - 1) == Some('\n')) {
                     pos -= 1;
                     continue;
                 }

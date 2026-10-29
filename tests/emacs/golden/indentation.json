@@ -647,6 +647,48 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "review-ret-keeps-relative-indentation-in-prog-mode",
+      "input": {
+        "text": "a\n    b\n",
+        "point": 0,
+        "keys": "C-n C-e RET",
+        "modes": [
+          "prog-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\n    b\n    \n",
+      "visible": "a\n    b\n    \n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "review-tab-in-prog-mode-is-relative",
+      "input": {
+        "text": "foo bar\nx\n",
+        "point": 0,
+        "keys": "C-n TAB",
+        "modes": [
+          "prog-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "foo bar\n    x\n",
+      "visible": "foo bar\n    x\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
     }
   ]
 }

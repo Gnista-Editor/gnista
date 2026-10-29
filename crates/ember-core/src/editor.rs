@@ -104,6 +104,9 @@ pub struct Editor {
     pub syntax_tables: crate::syntax_table::SyntaxTables,
     /// Programs running alongside, as Emacs's processes.
     pub(crate) processes: crate::process::Processes,
+    /// Markers that point nowhere, kept so they can be pointed again, as an
+    /// Emacs marker object outlives where it points.
+    detached_markers: Vec<crate::buffer::Marker>,
     /// What waits for the prompts and questions now open to be answered.
     prompt_waiters: Vec<variables::HookFn>,
     /// How many commands are running, one inside another.
@@ -238,6 +241,7 @@ impl Editor {
             syntax_tables: Default::default(),
             processes: Default::default(),
             prompt_waiters: Vec::new(),
+            detached_markers: Vec::new(),
             running: 0,
             remapped_from: None,
             previous_buffer: None,
@@ -1169,12 +1173,31 @@ impl Editor {
 
     /// Moves a marker to a position in a buffer, as Emacs's `set-marker`,
     /// or nowhere with no buffer.
-    pub fn set_marker(&mut self, id: u64, buffer: Option<&str>, pos: usize) {
-        let taken = self.buffers.iter_mut().find_map(|b| b.remove_marker(id));
-        if let (Some(mut marker), Some(b)) = (taken, buffer.and_then(|name| self.buffer_named_mut(name))) {
-            marker.pos = pos;
-            b.add_marker(marker);
+    pub fn set_marker(&mut self, id: u64, buffer: Option<&str>, pos: usize) -> Result<()> {
+        if let Some(name) = buffer
+            && self.find_buffer(name).is_none()
+        {
+            return Err(Error::new(format!("No such buffer {name}")));
         }
+        let taken = self.buffers.iter_mut().find_map(|b| b.remove_marker(id)).or_else(|| {
+            let i = self.detached_markers.iter().position(|m| m.id == id)?;
+            Some(self.detached_markers.remove(i))
+        });
+        let Some(mut marker) = taken else { return Ok(()) };
+        match buffer.and_then(|name| self.buffer_named_mut(name)) {
+            Some(b) => {
+                marker.pos = pos;
+                b.add_marker(marker);
+            }
+            None => self.detached_markers.push(marker),
+        }
+        Ok(())
+    }
+
+    /// Forgets a marker altogether, once nothing can refer to it.
+    pub fn delete_marker(&mut self, id: u64) {
+        let _ = self.set_marker(id, None, 0);
+        self.detached_markers.retain(|m| m.id != id);
     }
 
     pub fn find_buffer(&self, name: &str) -> Option<usize> {
@@ -1284,7 +1307,10 @@ impl Editor {
         let showing = index == self.current;
         let next = self.other_buffer().map(str::to_string);
         let current_name = self.buffers[self.current].name.clone();
-        let gone = self.buffers.remove(index).id;
+        let mut removed = self.buffers.remove(index);
+        // Its markers point nowhere now.
+        self.detached_markers.extend(removed.take_markers());
+        let gone = removed.id;
         if self.buffers.is_empty() {
             self.buffers.push(Buffer::new("*scratch*"));
         }

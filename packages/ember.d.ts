@@ -180,16 +180,6 @@ declare global {
        */
       "compilation-next-error": [];
       /**
-       * Visit the place of the message `count` messages on in compilation buffer `buffer`, from the start if `reset` is t. This is next-error-function in compilation buffers; next-error calls it from the buffer it was typed in.
-       *
-       * @param count text
-       * @param reset text
-       * @param buffer text
-       *
-       * Defined in packages/compile.ts.
-       */
-      "compilation-next-error-function": [count: string, reset: string, buffer: string];
-      /**
        * Move to the error message before, or as many back as the prefix argument says, without visiting it.
        *
        * Defined in packages/compile.ts.
@@ -198,11 +188,9 @@ declare global {
       /**
        * Run a shell command in the background, make -k by default, showing its output in *compilation*, where error messages are found and highlighted. M-g n (next-error) then visits each error's place in turn. Asks to save modified buffers first.
        *
-       * @param command text
-       *
        * Defined in packages/compile.ts.
        */
-      "compile": [command: string];
+      "compile": [];
       /**
        * Visit the place of the error message at point.
        *
@@ -2687,11 +2675,9 @@ declare global {
       /**
        * Run a compilation in the current project's root, as M-x compile does there.
        *
-       * @param command text
-       *
        * Defined in packages/project.ts.
        */
-      "project-compile": [command: string];
+      "project-compile": [];
       /**
        * List the current project's root in Dired.
        *
@@ -3348,16 +3334,6 @@ declare global {
        */
       "write-file": [file: string];
       /**
-       * Visit the place `count` places on in the xref buffer `buffer`, from the first if `reset` is t, as next-error does in *xref*.
-       *
-       * @param count text
-       * @param reset text
-       * @param buffer text
-       *
-       * Defined in packages/xref.ts.
-       */
-      "xref--next-error-function": [count: string, reset: string, buffer: string];
-      /**
        * The mode of *xref*: places found, by file. n and p show the next and previous, RET visits one, TAB visits it and quits, q quits.
        *
        * Defined in packages/xref.ts.
@@ -3405,14 +3381,6 @@ declare global {
        * Defined in packages/xref.ts.
        */
       "xref-show-location-at-point": [];
-      /**
-       * Show places in *xref*, as JSON: a list of { file, line, col, length, summary, group }. For code finding places, as project-find-regexp.
-       *
-       * @param places text
-       *
-       * Defined in packages/xref.ts.
-       */
-      "xref-show-xrefs": [places: string];
       /**
        * Insert the most recent kill, leaving the mark at its start.
        *
@@ -4078,7 +4046,7 @@ declare global {
        */
       "mode-require-final-newline": Value;
       /**
-       * The command that visits the next message's place in this buffer, as next-error uses it: given a count, "t" to start over, and the buffer's name.
+       * The function, named with ember.defun, that visits the next message's place in this buffer, as next-error calls it: with a count, whether to start over, and the buffer.
        *
        * Defined in packages/compile.ts.
        */
@@ -4536,6 +4504,12 @@ declare global {
        * Defined in packages/savehist.ts.
        */
       "savehist-file": Value;
+      /**
+       * The permissions the history file gets: only you can read it, by default, as it holds what you typed.
+       *
+       * Defined in packages/savehist.ts.
+       */
+      "savehist-file-modes": Value;
       /**
        * History variables not to save.
        *
@@ -6179,7 +6153,7 @@ declare global {
     /** A file's text, read as UTF-8. */
     function readTextFile(file: string): string;
     /** Write text to a file, replacing what it held, as Emacs's write-region does for saved state. */
-    function writeTextFile(file: string, text: string): void;
+    function writeTextFile(file: string, text: string, options?: { mode?: number }): void;
     /** A file name with the home directory written as ~, as Emacs's abbreviate-file-name. */
     function abbreviateFileName(file: string): string;
     /** The directory part of a file name, up to its last slash, or undefined if it has none. */
@@ -6530,6 +6504,16 @@ declare global {
     function callProcess(command: string[], options?: { directory?: string; input?: string }): { exit: number; output: string };
     /** Where the selected window's text starts, at the start of its top line, as window-start. */
     function windowStart(): number;
+    /**
+     * Name a function so code can call it by name, as Emacs's defun: for
+     * variables that hold a function, such as next-error-function. Unlike a
+     * command it takes and returns any values, and is not in M-x. Returns the name.
+     */
+    function defun<F extends (...args: any[]) => unknown>(name: string, fn: F): string;
+    /** Whether a function or command has this name, as fboundp. */
+    function fboundp(name: string): boolean;
+    /** Call the function named, or the command, as Emacs's funcall. */
+    function funcall(name: string, ...args: any[]): any;
     /** The character at a position, point by default, or undefined at the end of the accessible text, as char-after. */
     function charAfter(position?: number): string | undefined;
     /** The character before a position, point by default, or undefined at the start, as char-before. */
@@ -6647,13 +6631,16 @@ declare global {
      * unless it `advances`, as a marker of insertion type t. Returns its id.
      */
     function makeMarker(position?: number, options?: { buffer?: string; advances?: boolean }): number;
+    /** Forget a marker once nothing will use it again, so it costs nothing more. */
+    function deleteMarker(marker: number): void;
     /** Where a marker is, or undefined if it points nowhere. */
     function markerPosition(marker: number): number | undefined;
     /** The buffer a marker is in, or undefined if it points nowhere. */
     function markerBuffer(marker: number): string | undefined;
     /**
      * Move a marker, as Emacs's set-marker: to a position in its buffer, or in
-     * `buffer`. With no position it points nowhere, so it no longer slows edits.
+     * `buffer`. With no position it points nowhere until set again; a marker
+     * no longer needed is better deleted with deleteMarker.
      */
     function setMarker(marker: number, position: number | null, buffer?: string): void;
 

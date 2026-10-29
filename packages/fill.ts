@@ -93,7 +93,7 @@ function lookingAt(regexp: string, p: number): number | undefined {
 }
 const marker = (pos: number, advances = false): number => ember.makeMarker(pos, { advances });
 const at = (m: number): number => ember.markerPosition(m)!;
-const free = (...ms: number[]): void => ms.forEach((m) => ember.setMarker(m, null));
+const free = (...ms: number[]): void => ms.forEach((m) => ember.deleteMarker(m));
 const saveExcursion = <T>(fn: () => T): T => ember.saveExcursion(fn);
 function barfIfReadOnly(): void {
   if (ember.bufferReadOnly()) throw new Error(`Buffer is read-only: #<buffer ${ember.bufferName()}>`);
@@ -222,7 +222,9 @@ function canonicallySpaceRegion(beg: number, endMarker: number): void {
       deletions.push([start + keep, end]);
     }
   }
-  for (const [a, b] of deletions.reverse()) if (b > a) ember.deleteRegion(beg + a, beg + b);
+  // The offsets are UTF-16 units of the text; the buffer counts characters.
+  const pos = (i: number): number => beg + [...text.slice(0, i)].length;
+  for (const [a, b] of deletions.reverse()) if (b > a) ember.deleteRegion(pos(a), pos(b));
 }
 
 /** Joins a paragraph's lines into one, as fill-delete-newlines: two spaces after a sentence ending a line. */
@@ -337,7 +339,8 @@ function justifyCurrentLine(how: string | undefined, eop: boolean, prefix: strin
     ember.gotoChar(end);
     const ncols = fc - ember.currentColumn();
     const text = ember.bufferText(beg, end);
-    const gaps = [...text.matchAll(/ +/g)].map((m) => beg + m.index! + m[0].length);
+    // In characters, as the buffer counts them, not UTF-16 units.
+    const gaps = [...text.matchAll(/ +/g)].map((m) => beg + [...text.slice(0, m.index! + m[0].length)].length);
     const nspaces = gaps.length;
     if (ncols <= 0 || nspaces === 0 || eop) return;
     let frac = ncols + Math.floor(nspaces / 2);
@@ -483,7 +486,7 @@ ember.defineCommand({
       }
       const fn = ember.variable("fill-paragraph-function");
       if (typeof fn === "string") {
-        ember.call(fn as ember.CommandName);
+        ember.callWithPrefix(ember.prefixArg(), fn as ember.CommandName);
         return;
       }
       saveExcursion(() => {
@@ -549,7 +552,8 @@ ember.defineCommand({
       ember.setVariable("fill-column", n);
     };
     const arg = ember.prefixArg();
-    if (arg !== null) return set(Array.isArray(arg) ? ember.currentColumn() : arg === "-" ? -1 : arg);
+    // As set-fill-column: C-u for point's column, a number, and nothing else.
+    if (arg !== null) return set(Array.isArray(arg) ? ember.currentColumn() : arg === "-" ? NaN : arg);
     // As read-number with the current column as its default.
     const column = ember.currentColumn();
     ember.readString(`Change fill-column from ${fillColumn()} to (default ${column}): `, (text) => {
@@ -565,6 +569,11 @@ ember.defineCommand({
 
 /** Breaks a line at whitespace and starts the next as fill-prefix or the mode says, as default-indent-new-line. */
 function defaultIndentNewLine(prefix: string | undefined): void {
+  // In a comment, the new line continues it, as comment-line-break-function does.
+  if (typeof ember.variable("comment-start") === "string" && ember.syntaxPpss().inComment !== null) {
+    ember.call("comment-indent-new-line");
+    return;
+  }
   ember.insertAndInherit("\n");
   // The whitespace either side goes.
   saveExcursion(() => {

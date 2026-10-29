@@ -197,5 +197,21 @@
   "modes": [
    "python-mode"
   ]
+ },
+ {
+  "name": "review-m-j-starter-without-space",
+  "text": "x; //foo bar\n",
+  "keys": "C-e M-j",
+  "modes": [
+   "js-mode"
+  ]
+ },
+ {
+  "name": "review-m-j-python-hash",
+  "text": "#hello world\n",
+  "keys": "C-e M-j",
+  "modes": [
+   "python-mode"
+  ]
  }
 ]

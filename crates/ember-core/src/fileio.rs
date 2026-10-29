@@ -372,6 +372,7 @@ impl Editor {
         if let Err(e) = self.run_hooks("kill-emacs-hook") {
             self.message(format!("Error in kill-emacs-hook: {e}"));
         }
+        self.hang_up_processes();
         self.quit = true;
         Ok(())
     }

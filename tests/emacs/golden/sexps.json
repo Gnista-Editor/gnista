@@ -999,6 +999,48 @@
       "kill_ring": [],
       "modified": false,
       "error": "No next sexp"
+    },
+    {
+      "name": "review-forward-sexp-over-comment-lines",
+      "input": {
+        "text": "x  \n\n  // c\n  y z\n",
+        "point": 0,
+        "keys": "C-M-f C-M-f",
+        "modes": [
+          "js-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "x  \n\n  // c\n  y z\n",
+      "visible": "x  \n\n  // c\n  y z\n",
+      "point": 15,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "review-backward-sexp-over-comment-lines",
+      "input": {
+        "text": "x\n  // c\n\n  y\n",
+        "point": 13,
+        "keys": "C-M-b C-M-b",
+        "modes": [
+          "js-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "x\n  // c\n\n  y\n",
+      "visible": "x\n  // c\n\n  y\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
     }
   ]
 }

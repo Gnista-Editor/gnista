@@ -25,6 +25,11 @@ ember.defineVariable({
   value: [],
 });
 ember.defineVariable({
+  name: "savehist-file-modes",
+  doc: "The permissions the history file gets: only you can read it, by default, as it holds what you typed.",
+  value: 0o600,
+});
+ember.defineVariable({
   name: "savehist-autosave-interval",
   doc: "How many seconds between saves, or nil to save only when Ember exits.",
   value: 300,
@@ -72,7 +77,8 @@ function save(autoSave: boolean): void {
   }
   const text = `${JSON.stringify(saved, null, 1)}\n`;
   if (autoSave && text === lastSaved) return;
-  ember.writeTextFile(file, text);
+  const modes = ember.variable("savehist-file-modes");
+  ember.writeTextFile(file, text, { mode: typeof modes === "number" ? modes : undefined });
   lastSaved = text;
 }
 
