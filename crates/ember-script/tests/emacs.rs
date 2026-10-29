@@ -52,6 +52,9 @@ fn ember_behaves_like_emacs() {
         files.retain(|f| f.file_stem().is_some_and(|s| s.to_string_lossy().contains(&only)));
     }
 
+    // The cases to run, gathered first and then run in parallel, each with
+    // an editor of its own.
+    let mut jobs: Vec<(String, Case, Recorded)> = Vec::new();
     for file in files {
         let stem = file.file_stem().unwrap().to_string_lossy().into_owned();
         let cases: Vec<Case> = serde_json::from_str(&fs::read_to_string(&file).unwrap())
@@ -63,10 +66,10 @@ fn ember_behaves_like_emacs() {
         };
         let golden: Golden = serde_json::from_str(&golden)
             .unwrap_or_else(|e| panic!("{}: {e}", golden_path.display()));
-        let recorded: BTreeMap<&str, &Recorded> =
-            golden.cases.iter().map(|r| (r.name.as_str(), r)).collect();
+        let mut recorded: BTreeMap<String, Recorded> =
+            golden.cases.into_iter().map(|r| (r.name.clone(), r)).collect();
 
-        for case in &cases {
+        for case in cases {
             let id = format!("{stem}/{}", case.name);
             seen.push(id.clone());
             if let Some(platform) = &case.platform {
@@ -79,8 +82,8 @@ fn ember_behaves_like_emacs() {
                 }
             }
             total += 1;
-            let input = Input::of(case);
-            let Some(emacs) = recorded.get(case.name.as_str()) else {
+            let input = Input::of(&case);
+            let Some(emacs) = recorded.remove(case.name.as_str()) else {
                 problems.push(format!("{id}: not recorded; record it with record.el"));
                 continue;
             };
@@ -88,14 +91,36 @@ fn ember_behaves_like_emacs() {
                 problems.push(format!("{id}: the case changed since Emacs {} recorded it; record it again", golden.emacs_version));
                 continue;
             }
-            let ember = run(case);
-            let diff = differences(&emacs.state, &ember);
-            match (diff.is_empty(), gaps.contains_key(&id)) {
-                (true, false) => matching += 1,
-                (false, true) => {}
-                (true, true) => problems.push(format!("{id}: now matches Emacs; remove it from known-gaps.txt")),
-                (false, false) => problems.push(format!("{id}: keys {:?}\n{diff}", case.keys)),
-            }
+            jobs.push((id, case, emacs));
+        }
+    }
+    let next = std::sync::atomic::AtomicUsize::new(0);
+    let threads = std::thread::available_parallelism().map_or(4, |n| n.get());
+    let results: Vec<(usize, String)> = std::thread::scope(|scope| {
+        let workers: Vec<_> = (0..threads)
+            .map(|_| {
+                scope.spawn(|| {
+                    let mut out = Vec::new();
+                    loop {
+                        let i = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        let Some((_, case, emacs)) = jobs.get(i) else { break };
+                        out.push((i, differences(&emacs.state, &run(case))));
+                    }
+                    out
+                })
+            })
+            .collect();
+        workers.into_iter().flat_map(|w| w.join().expect("a case does not panic")).collect()
+    });
+    let mut results = results;
+    results.sort_by_key(|(i, _)| *i);
+    for (i, diff) in results {
+        let (id, case, _) = &jobs[i];
+        match (diff.is_empty(), gaps.contains_key(id)) {
+            (true, false) => matching += 1,
+            (false, true) => {}
+            (true, true) => problems.push(format!("{id}: now matches Emacs; remove it from known-gaps.txt")),
+            (false, false) => problems.push(format!("{id}: keys {:?}\n{diff}", case.keys)),
         }
     }
     for id in gaps.keys() {

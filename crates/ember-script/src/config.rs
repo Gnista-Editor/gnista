@@ -34,8 +34,13 @@ pub fn setup_with(
     extensions: impl FnOnce(&mut Editor, &Scripting) -> ember_core::Result<()>,
 ) -> Option<Scripting> {
     let dir = config_dir();
-    let scripting = match Scripting::new(ed) {
-        Ok(scripting) => scripting,
+    let scripting = match Scripting::start(ed) {
+        Ok((scripting, failures)) => {
+            for e in failures {
+                ed.message(format!("Error loading a package: {e}"));
+            }
+            scripting
+        }
         Err(e) => {
             ed.message(format!("Scripting is unavailable: {e}"));
             return None;

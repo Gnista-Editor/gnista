@@ -99,6 +99,17 @@ impl Scripting {
     /// `load-file` and `eval-expression` (M-:) to the editor, and loads the
     /// packages that ship with Ember.
     pub fn new(ed: &mut Editor) -> Result<Scripting> {
+        let (scripting, failures) = Scripting::start(ed)?;
+        match failures.into_iter().next() {
+            Some(e) => Err(e),
+            None => Ok(scripting),
+        }
+    }
+
+    /// As [`Scripting::new`], but a package that fails to load is left
+    /// out and the rest load, as an error in one Lisp file leaves Emacs
+    /// running: returns the failures, for the front ends to show.
+    pub fn start(ed: &mut Editor) -> Result<(Scripting, Vec<Error>)> {
         let runtime = Runtime::new().map_err(|e| Error::new(e.to_string()))?;
         runtime.set_interrupt_handler(Some(Box::new(|| {
             DEADLINE.get().is_some_and(|deadline| Instant::now() > deadline)
@@ -112,13 +123,15 @@ impl Scripting {
                 .map_err(|e| js_error(&ctx, e))
         })?;
         scripting.define_commands(ed);
+        let mut failures = Vec::new();
         for (name, source) in PACKAGES {
             LOADING.with_borrow_mut(|files| files.push(name.to_string()));
-            let result = scripting.eval_typescript(ed, name, source.to_string());
+            if let Err(e) = scripting.eval_typescript(ed, name, source.to_string()) {
+                failures.push(e);
+            }
             LOADING.with_borrow_mut(|files| files.pop());
-            result?;
         }
-        Ok(scripting)
+        Ok((scripting, failures))
     }
 
     /// Changes how long a script may run before it is stopped.
