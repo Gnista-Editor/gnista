@@ -154,8 +154,8 @@ impl Agent {
         ed.call("pop-to-buffer", vec![ember_core::Arg::Str(name.into())])?;
         if !exists {
             ed.call("agent-mode", Vec::new())?;
-            ed.window_buffer_mut().insert("* You\n")?;
-            ed.window_buffer_mut().set_modified(false);
+            ed.insert("* You\n")?;
+            ed.buffer_mut().set_modified(false);
         }
         let mut sessions = self.sessions.borrow_mut();
         match sessions.iter_mut().find(|s| s.buffer == name) {
@@ -673,16 +673,21 @@ fn shown_result(text: &str, failed: bool) -> String {
 /// Appends text to a buffer by name, keeping a window's point at the end
 /// if it was there, and returns where the text went.
 fn append(ed: &mut Editor, name: &str, text: &str) -> usize {
-    let Some(b) = ed.buffer_named_mut(name) else { return 0 };
-    let end = b.len();
-    let follow = b.point() == end;
-    let _ = b.insert_at(end, text);
-    if follow {
-        let len = b.len();
-        b.set_point(len);
-    }
-    let _ = ed.run_after_change_functions();
-    end
+    let Some(index) = ed.find_buffer(name) else { return 0 };
+    ed.with_current_buffer(index, |ed| {
+        let end = ed.buffer().len();
+        let follow = ed.buffer().point() == end;
+        // What the agent writes goes in even where the buffer is read-only.
+        let inhibit = ed.variable("inhibit-read-only");
+        ed.set_variable("inhibit-read-only", EditorValue::Bool(true));
+        let _ = ed.insert_at(end, text);
+        ed.set_variable("inhibit-read-only", inhibit.unwrap_or(EditorValue::Bool(false)));
+        if follow {
+            let len = ed.buffer().len();
+            ed.buffer_mut().set_point(len);
+        }
+        end
+    })
 }
 
 /// Ends the buffer's last line, if it is not ended.

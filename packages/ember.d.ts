@@ -3996,6 +3996,14 @@ declare global {
        */
       "indent-tabs-mode": Value;
       /**
+       * Whether changes to the text run no before-change-functions or after-change-functions. Those functions run with it on.
+       */
+      "inhibit-modification-hooks": Value;
+      /**
+       * Whether to ignore read-only buffers and text: t ignores both, and a list lets through text whose read-only property is one of its values. Bind it with letBind around code that writes into a read-only buffer.
+       */
+      "inhibit-read-only": Value;
+      /**
        * How far JavaScript indents each level.
        *
        * Defined in packages/treesit-modes.ts.
@@ -4007,6 +4015,10 @@ declare global {
        * Defined in packages/treesit-modes.ts.
        */
       "json-ts-mode-indent-offset": Value;
+      /**
+       * Whether killing read-only text only says it was copied to the kill ring, rather than signalling an error.
+       */
+      "kill-read-only-ok": Value;
       /**
        * How many other matches incremental search highlights at most, around point.
        *
@@ -5280,6 +5292,10 @@ declare global {
        * Run after Auto-Revert mode is turned on.
        */
       "auto-revert-mode-on-hook": Value;
+      /**
+       * Called before each change to the text with where the stretch about to change starts and ends: an insertion's start and end are where it goes. Changes the functions make do not call them again.
+       */
+      "before-change-functions": Value;
       /**
        * Run before revert-buffer replaces the text with the file's.
        */

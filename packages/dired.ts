@@ -162,13 +162,7 @@ function requireDired(): void {
 
 /** Runs `fn` with the read-only buffer writable, as inhibit-read-only. */
 function writable<T>(fn: () => T): T {
-  const was = ember.bufferReadOnly();
-  ember.setReadOnly(false);
-  try {
-    return fn();
-  } finally {
-    ember.setReadOnly(was);
-  }
+  return ember.letBind({ "inhibit-read-only": true }, fn);
 }
 
 /** Puts a mark on a line, as dired-mark's delete-char and insert: the buffer is modified even if it had the mark. */

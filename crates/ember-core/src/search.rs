@@ -456,14 +456,14 @@ impl Editor {
         }
         let text = b.slice(m.start..m.end);
         let new = expand_replacement(&text, &m, replacement, literal, fixed_case)?;
-        let b = self.buffer_mut();
         // As in Emacs, a mark at the end of the replaced text ends up at the
         // end of the new text, even where the match was empty.
-        let mark_at_end = b.mark() == Some(m.end);
-        b.set_point(m.start);
-        b.delete(m.start..m.end)?;
-        b.insert(&new)?;
+        let mark_at_end = self.buffer().mark() == Some(m.end);
+        self.buffer_mut().set_point(m.start);
+        self.replace_range(m.start, m.end, &new)?;
         let end = m.start + new.chars().count();
+        let b = self.buffer_mut();
+        b.set_point(end);
         if mark_at_end {
             b.set_mark(Some(end));
         }

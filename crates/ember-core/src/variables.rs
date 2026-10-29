@@ -414,6 +414,21 @@ pub(crate) fn install(ed: &mut Editor) {
             Value::Bool(false),
         ),
         Variable::new(
+            "inhibit-read-only",
+            "Whether to ignore read-only buffers and text: t ignores both, and a list lets through text whose read-only property is one of its values. Bind it with letBind around code that writes into a read-only buffer.",
+            Value::Bool(false),
+        ),
+        Variable::new(
+            "kill-read-only-ok",
+            "Whether killing read-only text only says it was copied to the kill ring, rather than signalling an error.",
+            Value::Bool(false),
+        ),
+        Variable::new(
+            "inhibit-modification-hooks",
+            "Whether changes to the text run no before-change-functions or after-change-functions. Those functions run with it on.",
+            Value::Bool(false),
+        ),
+        Variable::new(
             "default-directory",
             "Where the buffer looks up relative file names, as a directory name ending in /. Nil means the directory of its file, or else the directory Ember started in. Dired sets it to the directory it lists.",
             Value::Bool(false),
@@ -549,6 +564,10 @@ pub(crate) fn install(ed: &mut Editor) {
         (
             "jit-lock-functions",
             "Called with a start and an end to fontify that stretch of whole lines, just before it is shown. A major mode adds its function here, buffer-locally, and the function puts face and other properties on the text. Editing a line refontifies it and everything after it.",
+        ),
+        (
+            "before-change-functions",
+            "Called before each change to the text with where the stretch about to change starts and ends: an insertion's start and end are where it goes. Changes the functions make do not call them again.",
         ),
         (
             "after-change-functions",

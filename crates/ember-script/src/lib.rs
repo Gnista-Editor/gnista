@@ -537,19 +537,13 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
     native.set(
         "insert",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, text: String| {
-            with_editor(&ctx, |ed| {
-                ed.buffer_mut().insert(&text)?;
-                ed.run_after_change_functions()
-            })
+            with_editor(&ctx, |ed| ed.insert(&text))
         })?,
     )?;
     native.set(
         "insertBeforeMarkers",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, text: String| {
-            with_editor(&ctx, |ed| {
-                ed.buffer_mut().insert_before_markers(&text)?;
-                ed.run_after_change_functions()
-            })
+            with_editor(&ctx, |ed| ed.insert_before_markers(&text))
         })?,
     )?;
     native.set(
@@ -572,10 +566,7 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
     native.set(
         "insertAndInherit",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, text: String| {
-            with_editor(&ctx, |ed| {
-                ed.buffer_mut().insert_and_inherit(&text)?;
-                ed.run_after_change_functions()
-            })
+            with_editor(&ctx, |ed| ed.insert_and_inherit(&text))
         })?,
     )?;
     native.set(
@@ -605,11 +596,7 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
     native.set(
         "deleteRegion",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, start: usize, end: usize| {
-            with_editor(&ctx, |ed| {
-                let deleted = ed.buffer_mut().delete(start.min(end)..start.max(end))?;
-                ed.run_after_change_functions()?;
-                Ok(deleted)
-            })
+            with_editor(&ctx, |ed| ed.delete_region(start, end))
         })?,
     )?;
     native.set(
@@ -2002,7 +1989,7 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
             let (Some(from), Some(to)) = (from.chars().next(), to.chars().next()) else {
                 return Err(rquickjs::Error::new_from_js_message("string", "char", "substCharInRegion takes characters"));
             };
-            with_editor(&ctx, |ed| ed.buffer_mut().subst_char(start, end, from, to))
+            with_editor(&ctx, |ed| ed.subst_char_in_region(start, end, from, to))
         })?,
     )?;
     native.set(

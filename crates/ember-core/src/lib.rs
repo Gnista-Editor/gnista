@@ -17,6 +17,7 @@ mod fileio;
 pub mod fileops;
 mod files;
 mod fontify;
+mod insdel;
 mod key;
 mod keymap;
 mod minibuffer;

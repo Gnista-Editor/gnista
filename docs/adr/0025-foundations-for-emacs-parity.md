@@ -50,6 +50,14 @@ Item 6 landed next:
 - A command that runs another with `callInteractively` cannot yet await it; that waits for commands returning values (item 8).
 - project.ts and compile's prompts moved to `await`; files.ts, dired.ts and fill.ts move as they are next touched.
 
+Item 9 came next, as every new command added to the raw edits it would replace:
+- `insdel.rs` is Emacs's insdel.c: `Editor::insert`, `insert_at`, `insert_before_markers`, `insert_and_inherit`, `delete_region`, `replace_range` and `subst_char_in_region` check, announce and make each change. `Buffer`'s own edits are crate-internal, for undo, reverting, the minibuffer and process output, as Emacs's internals bypass the checks too.
+- A read-only buffer refuses unless `inhibit-read-only` is set. Text with a `read-only` property refuses deletion, and insertion where it would inherit the property, by `front-sticky` and `rear-nonsticky`, as verify_interval_modification decides; `inhibit-read-only` lifts it as t, or for the values its list holds. A string property is the error's message and data.
+- `before-change-functions` run before each change and `after-change-functions` straight after it, with Emacs's arguments, unless `inhibit-modification-hooks` is set; `replace-match` is one change, as replace_range makes it.
+- `kill-region` on read-only text copies it to the kill ring and then signals, or only says so with `kill-read-only-ok`, as simple.el does.
+- Packages bind `inhibit-read-only` with `letBind` rather than turning `buffer-read-only` off and on.
+- Still to come: the `modification-hooks`, `insert-in-front-hooks` and `insert-behind-hooks` properties of text and overlays, which hold functions and so wait for functions as values (item 7); and before-change-functions for undo, reverting and process output, which still go straight to the buffer.
+
 ## Consequences
 
 Ports can follow their Lisp closely: reading input where the Lisp does, catching the conditions it catches, binding what it binds, requiring what it requires. The cost is migrating existing packages, done as each is next touched, and a larger core.

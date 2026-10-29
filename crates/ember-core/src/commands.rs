@@ -663,26 +663,26 @@ fn editing(ed: &mut Editor) {
         // In overwrite mode each character replaces the one after point,
         // except at the end of a line, as in Emacs.
         if ed.variable("overwrite-mode").is_some_and(|v| v.is_true()) {
-            let b = ed.buffer_mut();
+            let b = ed.buffer();
             let p = b.point();
             let line_end = b.line_end(b.line_of(p));
-            b.delete(p..(p + n as usize).min(line_end))?;
+            ed.delete_region(p, (p + n as usize).min(line_end))?;
         }
         // As Emacs's self-insert-command, the text takes on the properties around it.
-        ed.buffer_mut().insert_and_inherit(&c.to_string().repeat(n as usize))?;
+        ed.insert_and_inherit(&c.to_string().repeat(n as usize))?;
         after_self_insert(ed, c, true)
     });
     ed.define_command(
         Command::new("insert", "Insert text at point.", |ed, args| {
             let text = args[0].as_str()?.to_string();
-            ed.buffer_mut().insert(&text)
+            ed.insert(&text)
         })
         .param("text", ParamKind::String, "Insert: "),
     );
     def(ed, "newline", "Insert a newline, or as many as the prefix argument says.", |ed, _| {
         let n = ed.prefix_numeric().max(0) as usize;
         // newline self-inserts, so the newlines take on the properties around them.
-        ed.buffer_mut().insert_and_inherit(&"\n".repeat(n))?;
+        ed.insert_and_inherit(&"\n".repeat(n))?;
         // With a prefix argument it does not auto-fill.
         let fill = ed.current_prefix_arg().is_none();
         after_self_insert(ed, '\n', fill)
@@ -690,7 +690,7 @@ fn editing(ed: &mut Editor) {
     // Without packages, TAB inserts a tab; indent.ts replaces this with
     // Emacs's, which indents as the mode says.
     def(ed, "indent-for-tab-command", "Insert a tab. The indent.ts package replaces this with one that indents the line as the mode says.", |ed, _| {
-        ed.buffer_mut().insert("\t")
+        ed.insert("\t")
     });
     def(
         ed,
@@ -940,9 +940,13 @@ fn killing(ed: &mut Editor) {
                 Some(PrefixArg::Minus) => -2,
                 Some(PrefixArg::Number(n)) => n - 1,
             };
+            // As push-mark says, unless a macro runs or the minibuffer is active.
+            if !ed.executing_kbd_macro() && ed.prompt().is_none() {
+                ed.message("Mark set");
+            }
             let text = ed.current_kill(back)?;
+            ed.insert(&text)?;
             let b = ed.buffer_mut();
-            b.insert(&text)?;
             if let Some(PrefixArg::Universal(_)) = arg {
                 let mark = b.mark().expect("set above");
                 b.set_mark(Some(b.point()));
@@ -970,7 +974,7 @@ fn delete_chars(ed: &mut Editor, n: i64) -> Result<()> {
     if kill {
         return kill_range(ed, start as usize..end as usize, n < 0);
     }
-    b.delete(start as usize..end as usize)?;
+    ed.delete_region(start as usize, end as usize)?;
     Ok(())
 }
 
@@ -983,7 +987,7 @@ fn delete_active_region(ed: &mut Editor) -> Result<bool> {
     let (Some(region), true) = (region, setting.is_true() && ed.prefix_numeric() == 1) else {
         return Ok(false);
     };
-    let deleted = ed.buffer_mut().delete(region)?;
+    let deleted = ed.delete_region(region.start, region.end)?;
     if setting.as_str() == Some("kill") {
         ed.kill(deleted, false);
         ed.set_this_command("kill-region");
@@ -1022,10 +1026,29 @@ fn kill_to(ed: &mut Editor, p: usize, to: usize) -> Result<()> {
 
 /// Deletes a range and kills its text, as Emacs's kill-region does. The
 /// change hooks run with the deletion, before the kill, so one that fails
-/// leaves the text deleted but not on the kill ring.
+/// leaves the text deleted but not on the kill ring. Read-only text is
+/// copied to the kill ring instead, and the error signalled, unless
+/// `kill-read-only-ok` says only to say so.
 fn kill_range(ed: &mut Editor, range: std::ops::Range<usize>, backward: bool) -> Result<()> {
-    let killed = ed.buffer_mut().delete(range)?;
-    ed.run_after_change_functions()?;
+    let killed = match ed.delete_region(range.start, range.end) {
+        Ok(killed) => killed,
+        Err(e) if e.is("buffer-read-only") || e.is("text-read-only") => {
+            let text = ed.buffer().slice(range);
+            ed.kill(text, backward);
+            ed.set_this_command("kill-region");
+            if ed.variable("kill-read-only-ok").is_some_and(|v| v.is_true()) {
+                ed.message("Read only text copied to kill ring");
+                return Ok(());
+            }
+            // As barf-if-buffer-read-only, then the text's own error.
+            if e.symbol() == "buffer-read-only" {
+                return Err(e);
+            }
+            let name = ed.buffer().name.clone();
+            return Err(Error::signal("text-read-only", format!("Text is read-only: #<buffer {name}>"), vec![Value::Str(name)]));
+        }
+        Err(e) => return Err(e),
+    };
     ed.kill(killed, backward);
     // As kill-region sets deactivate-mark, even when nothing was killed.
     ed.buffer_mut().deactivate_mark();

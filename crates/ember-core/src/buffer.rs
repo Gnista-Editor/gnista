@@ -489,13 +489,13 @@ impl Buffer {
     }
 
     /// Inserts text at point, leaving point after it.
-    pub fn insert(&mut self, s: &str) -> Result<()> {
+    pub(crate) fn insert(&mut self, s: &str) -> Result<()> {
         self.insert_at(self.point, s)
     }
 
     /// Inserts text at a position as insert-before-markers does there, the
     /// narrowing aside: markers, point and the mark at it move past the text.
-    pub fn insert_before_markers_at(&mut self, pos: usize, s: &str) -> Result<()> {
+    pub(crate) fn insert_before_markers_at(&mut self, pos: usize, s: &str) -> Result<()> {
         if s.is_empty() {
             return Ok(());
         }
@@ -504,7 +504,7 @@ impl Buffer {
         Ok(())
     }
 
-    pub fn insert_at(&mut self, pos: usize, s: &str) -> Result<()> {
+    pub(crate) fn insert_at(&mut self, pos: usize, s: &str) -> Result<()> {
         if s.is_empty() {
             return Ok(());
         }
@@ -515,7 +515,7 @@ impl Buffer {
 
     /// Inserts text at point as Emacs's `insert-before-markers` does: the
     /// mark and overlay ends at point move past it too.
-    pub fn insert_before_markers(&mut self, s: &str) -> Result<()> {
+    pub(crate) fn insert_before_markers(&mut self, s: &str) -> Result<()> {
         if s.is_empty() {
             return Ok(());
         }
@@ -525,7 +525,7 @@ impl Buffer {
     }
 
     /// Deletes a range and returns the deleted text.
-    pub fn delete(&mut self, range: Range<usize>) -> Result<String> {
+    pub(crate) fn delete(&mut self, range: Range<usize>) -> Result<String> {
         let (start, end) = (range.start.min(self.len()), range.end.min(self.len()));
         // Deleting nothing changes nothing, so it is allowed anywhere, as in Emacs.
         if start >= end {
@@ -539,7 +539,7 @@ impl Buffer {
     /// Emacs's `subst-char-in-region`: point, markers and overlays stay
     /// where they are, and the characters keep their properties. Undoing it
     /// in a buffer that was unmodified leaves point at the change.
-    pub fn subst_char(&mut self, start: usize, end: usize, from: char, to: char) -> Result<()> {
+    pub(crate) fn subst_char(&mut self, start: usize, end: usize, from: char, to: char) -> Result<()> {
         let end = end.min(self.len());
         let positions: Vec<usize> = (start..end).filter(|&p| self.char_at(p) == Some(from)).collect();
         if positions.is_empty() {
@@ -695,7 +695,7 @@ impl Buffer {
     /// names them, and those of the character after that its
     /// `front-sticky` names. Properties in Emacs's default
     /// `text-property-default-nonsticky` are not inherited.
-    pub fn insert_and_inherit(&mut self, s: &str) -> Result<()> {
+    pub(crate) fn insert_and_inherit(&mut self, s: &str) -> Result<()> {
         const NONSTICKY: [&str; 4] = ["syntax-table", "display", "composition", "cursor"];
         let names = |list: Option<&Value>, name: &str| match list {
             Some(Value::Bool(true)) => true,

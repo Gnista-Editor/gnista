@@ -7473,9 +7473,8 @@ const agendaTodo = ember.defineCommand({
     });
     // The lines showing the entry are written again where they are, as
     // org-agenda-change-all-lines does, rather than the agenda rebuilt.
-    ember.withCurrentBuffer(AGENDA, () => {
+    ember.withCurrentBuffer(AGENDA, () => ember.letBind({ "inhibit-read-only": true }, () => {
       const point = ember.point();
-      ember.setReadOnly(false);
       for (const [l, other] of agendaLines.entries()) {
         if (!other || other.buffer !== item.buffer || other.heading !== item.heading) continue;
         const text = ember.withCurrentBuffer(item.buffer, () => {
@@ -7487,9 +7486,8 @@ const agendaTodo = ember.defineCommand({
         ember.gotoChar(ember.lineStart(l));
         ember.insert(text);
       }
-      ember.setReadOnly(true);
       ember.gotoChar(point);
-    });
+    }));
   },
 });
 

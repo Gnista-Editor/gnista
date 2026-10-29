@@ -615,6 +615,78 @@
       ],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "kill-in-a-read-only-buffer-copies-the-text",
+      "input": {
+        "text": "one\ntwo",
+        "point": 0,
+        "keys": "C-x C-q C-k C-x C-q C-e C-y",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "message": true
+      },
+      "text": "oneone\ntwo",
+      "visible": "oneone\ntwo",
+      "point": 6,
+      "mark": 3,
+      "mark_active": false,
+      "kill_ring": [
+        "one"
+      ],
+      "modified": true,
+      "error": "Buffer is read-only: #<buffer *ember-oracle*>",
+      "message": "Mark set"
+    },
+    {
+      "name": "kill-read-only-ok-only-says-so",
+      "input": {
+        "text": "one\ntwo",
+        "point": 0,
+        "keys": "C-x C-q C-k C-x C-q C-e C-y",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "message": true,
+        "vars": {
+          "kill-read-only-ok": true
+        }
+      },
+      "text": "oneone\ntwo",
+      "visible": "oneone\ntwo",
+      "point": 6,
+      "mark": 3,
+      "mark_active": false,
+      "kill_ring": [
+        "one"
+      ],
+      "modified": true,
+      "error": null,
+      "message": "Mark set"
+    },
+    {
+      "name": "kill-region-in-a-read-only-buffer-keeps-point",
+      "input": {
+        "text": "alpha beta",
+        "point": 0,
+        "keys": "C-x C-q M-f C-SPC M-f C-w C-x C-q M-> C-y",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "message": true
+      },
+      "text": "alpha beta beta",
+      "visible": "alpha beta beta",
+      "point": 15,
+      "mark": 10,
+      "mark_active": false,
+      "kill_ring": [
+        " beta"
+      ],
+      "modified": true,
+      "error": "Buffer is read-only: #<buffer *ember-oracle*>",
+      "message": "Mark set"
     }
   ]
 }

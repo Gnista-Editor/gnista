@@ -197,13 +197,7 @@ function duration(ms: number): string {
 
 /** Runs `fn` with the buffer writable, as inhibit-read-only. */
 function writable<T>(fn: () => T): T {
-  const was = ember.bufferReadOnly();
-  ember.setReadOnly(false);
-  try {
-    return fn();
-  } finally {
-    ember.setReadOnly(was);
-  }
+  return ember.letBind({ "inhibit-read-only": true }, fn);
 }
 
 /** The mode's name without -mode, as it goes in the -*- line: compilation or grep. */

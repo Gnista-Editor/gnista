@@ -185,7 +185,7 @@ pub struct Editor {
     /// Whether code set this-command explicitly, so a call from code keeps it.
     this_command_set: bool,
     /// Whether `after-change-functions` are running.
-    in_change_hooks: bool,
+    pub(crate) in_change_hooks: bool,
     pub(crate) kill_ring: Vec<String>,
     /// Which kill yanking takes next, counting back from the newest (Emacs's
     /// `kill-ring-yank-pointer`).
@@ -844,7 +844,7 @@ impl Editor {
     /// An error stops them and is returned, and, as in Emacs, the buffer's
     /// own functions are removed from the hook.
     pub fn run_after_change_functions(&mut self) -> Result<()> {
-        if self.in_change_hooks {
+        if self.in_change_hooks || self.modification_hooks_inhibited() {
             self.buffer_mut().pending_changes.clear();
             return Ok(());
         }

@@ -151,5 +151,26 @@
     "name": "kill-line-deactivates-the-region",
     "text": "one two",
     "keys": "C-SPC C-e C-a C-k"
+  },
+  {
+    "name": "kill-in-a-read-only-buffer-copies-the-text",
+    "text": "one\ntwo",
+    "keys": "C-x C-q C-k C-x C-q C-e C-y",
+    "message": true
+  },
+  {
+    "name": "kill-read-only-ok-only-says-so",
+    "text": "one\ntwo",
+    "keys": "C-x C-q C-k C-x C-q C-e C-y",
+    "vars": {
+      "kill-read-only-ok": true
+    },
+    "message": true
+  },
+  {
+    "name": "kill-region-in-a-read-only-buffer-keeps-point",
+    "text": "alpha beta",
+    "keys": "C-x C-q M-f C-SPC M-f C-w C-x C-q M-> C-y",
+    "message": true
   }
 ]
