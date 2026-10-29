@@ -38,6 +38,7 @@
       native.setVariable("major-mode", mode.name);
       native.setVariable("mode-name", mode.modeName);
       native.useLocalMap(mode.keymap);
+      native.setSyntaxTable(mode.syntaxTable);
       if (mode.setup) mode.setup();
     }
     for (const mode of chain) native.runHooks(`${mode.name}-hook`);
@@ -144,6 +145,19 @@
       }
     },
     runHooks: (hook, ...args) => native.runHooks(String(hook), args),
+    runHookWithArgsUntilSuccess(hook, ...args) {
+      // The script functions on the hook, the buffer's own first.
+      for (const local of [true, false]) {
+        const key = hookKey(String(hook), local);
+        for (const [run, ids] of hookIds) {
+          if (ids.has(key) && native.hookContains(String(hook), ids.get(key), local)) {
+            const result = run(...args);
+            if (result !== undefined && result !== null && result !== false) return result;
+          }
+        }
+      }
+      return null;
+    },
     defineKeymap: (name, parent = null) => native.defineKeymap(String(name), parent === null ? null : String(parent)),
     useLocalMap: (name) => native.useLocalMap(name ?? undefined),
     enabledMinorModes: () => native.enabledMinorModes(),
@@ -337,6 +351,75 @@
       for (const [name, value] of Object.entries(properties)) native.overlayPut(id, name, value ?? null);
       return id;
     },
+    killRegion: (beg, end) => native.killRegion(beg, end),
+    windowStart: () => native.windowStart(),
+    prepareChangeGroup: () => native.prepareChangeGroup(),
+    cancelChangeGroup: (handle) => native.cancelChangeGroup(handle),
+    acceptChangeGroup: (handle) => native.acceptChangeGroup(handle),
+    atomicChangeGroup(fn) {
+      const handle = native.prepareChangeGroup();
+      try {
+        const result = fn();
+        native.acceptChangeGroup(handle);
+        return result;
+      } catch (e) {
+        native.cancelChangeGroup(handle);
+        throw e;
+      }
+    },
+    makeSyntaxTable: (name, parent) => native.makeSyntaxTable(String(name), parent === undefined ? undefined : String(parent)),
+    modifySyntaxEntry: (chars, descriptor, table) =>
+      native.modifySyntaxEntry(String(chars), String(descriptor), table === undefined ? undefined : String(table)),
+    syntaxTable: () => native.syntaxTable(),
+    setSyntaxTable: (name) => native.setSyntaxTable(String(name)),
+    syntaxEntry: (c) => native.syntaxEntry(String(c)) ?? undefined,
+    charSyntax: (c) => (native.syntaxEntry(String(c)) ?? " ")[0],
+    matchingParen: (c) => {
+      const d = native.syntaxEntry(String(c)) ?? "";
+      return "()".includes(d[0]) && d[1] !== undefined && d[1] !== " " ? d[1] : undefined;
+    },
+    scanLists: (from, count, depth) => native.scanLists(from, count, depth, false) ?? null,
+    scanSexps: (from, count) => native.scanLists(from, count, 0, true) ?? null,
+    forwardComment: (count = 1) => native.forwardComment(count),
+    backwardPrefixChars: () => native.backwardPrefixChars(),
+    parsePartialSexp: (from, to) => {
+      const st = native.parsePartialSexp(from, to);
+      for (const k of ["innermostStart", "lastComplete", "inString", "inComment", "start"]) st[k] ??= null;
+      return st;
+    },
+    syntaxPpss: (pos) => {
+      const st = native.parsePartialSexp(native.pointMin(), pos ?? native.point());
+      for (const k of ["innermostStart", "lastComplete", "inString", "inComment", "start"]) st[k] ??= null;
+      return st;
+    },
+    skipSyntaxForward: (syntaxes, limit) => {
+      const not = syntaxes.startsWith("^");
+      const set = not ? syntaxes.slice(1) : syntaxes;
+      const end = limit ?? native.pointMax();
+      let p = native.point();
+      const start = p;
+      while (p < end) {
+        const d = (native.syntaxEntry(native.bufferText(p, p + 1)) ?? " ")[0];
+        if (set.includes(d) === not) break;
+        p++;
+      }
+      native.gotoChar(p);
+      return p - start;
+    },
+    skipSyntaxBackward: (syntaxes, limit) => {
+      const not = syntaxes.startsWith("^");
+      const set = not ? syntaxes.slice(1) : syntaxes;
+      const end = limit ?? native.pointMin();
+      let p = native.point();
+      const start = p;
+      while (p > end) {
+        const d = (native.syntaxEntry(native.bufferText(p - 1, p)) ?? " ")[0];
+        if (set.includes(d) === not) break;
+        p--;
+      }
+      native.gotoChar(p);
+      return start - p;
+    },
     substCharInRegion: (start, end, from, to) => native.substCharInRegion(start, end, String(from), String(to)),
     makeMarker: (pos, { buffer, advances = false } = {}) =>
       native.makeMarker(pos ?? native.point(), buffer === undefined ? undefined : String(buffer), Boolean(advances)),
@@ -396,7 +479,7 @@
       return false;
     },
 
-    defineMajorMode({ name, modeName, parent = null, doc = "", bindings, setup }) {
+    defineMajorMode({ name, modeName, parent = null, doc = "", bindings, setup, syntax }) {
       if (parent !== null && !majorModes.has(parent)) {
         throw new TypeError(`Major mode ${name} is built on ${parent}, which is not a major mode`);
       }
@@ -404,7 +487,11 @@
       native.defineKeymap(keymap, parent === null ? null : `${parent}-map`);
       bindAll(keymap, bindings);
       native.defineHook(`${name}-hook`, `Run after entering ${modeName} mode, after the hooks of the modes it is built on.`);
-      majorModes.set(name, { name, parent, modeName: String(modeName), keymap, setup });
+      // NAME-syntax-table, built on the parent mode's, as define-derived-mode makes it.
+      const syntaxTable = `${name}-syntax-table`;
+      native.makeSyntaxTable(syntaxTable, parent === null ? undefined : `${parent}-syntax-table`);
+      for (const [chars, descriptor] of Object.entries(syntax ?? {})) native.modifySyntaxEntry(chars, String(descriptor), syntaxTable);
+      majorModes.set(name, { name, parent, modeName: String(modeName), keymap, setup, syntaxTable });
       return ember.defineCommand({ name, doc, run: () => enterMajorMode(name) });
     },
 

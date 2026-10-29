@@ -493,14 +493,17 @@ ember.defineCommand({
       ember.call(fill as ember.CommandName);
       if (ember.point() < ember.bufferSize()) ember.gotoChar(ember.point() + 1);
     }
+    // As electric-indent-post-self-insert-function, which runs late in
+    // post-self-insert-hook, after Electric Pair mode's functions.
+    const interactive = ember.calledInteractively();
+    ember.runHooks("post-self-insert-hook");
     if (
-      ember.calledInteractively() &&
+      interactive &&
       ember.variable("electric-indent-mode") === true &&
       INDENT_RELATIVE_MODES.includes(String(ember.variable("major-mode")))
     ) {
       electricIndentAfterNewline();
     }
-    ember.runHooks("post-self-insert-hook");
   },
 });
 

@@ -537,6 +537,33 @@ fn random_fill_case(rng: &mut Rng, name: String) -> Case {
     }
 }
 
+/// Keys for Electric Pair mode: parens, quotes, typing, deleting and moving.
+const PAIR_KEYS: &[&str] = &[
+    "(", ")", "[", "]", "{", "}", "\"", "\"", "(", ")", "a", "SPC", "DEL", "DEL", "RET", "C-f", "C-b", "C-x h",
+    "C-SPC", "M-f", "C-/", "\\", "C-M-f", "C-M-b", "C-M-u",
+];
+
+/// Random text with parens, brackets and strings, typed into with
+/// Electric Pair mode on, sometimes in Text mode.
+fn random_pair_case(rng: &mut Rng, name: String) -> Case {
+    let pieces = ["(", ")", "[", "]", "{", "}", "\"", "a", "bc", " ", "\n", "\\", "'"];
+    let text: String = (0..rng.below(14)).map(|_| rng.pick(&pieces)).collect();
+    let point = rng.below(text.chars().count() + 1);
+    let keys = (0..1 + rng.below(7)).map(|_| rng.pick(PAIR_KEYS)).collect::<Vec<_>>().join(" ");
+    let mut modes = vec!["electric-pair-mode".to_string()];
+    if rng.chance(25) {
+        modes.insert(0, "text-mode".to_string());
+    }
+    Case { name, text, point, keys, modes, ..random_fill_case(rng, String::new()) }
+}
+
+/// Fuzzes Electric Pair mode and the sexp commands.
+#[test]
+#[ignore = "needs GNU Emacs; run with --ignored"]
+fn electric_pair_behaves_like_emacs_on_random_cases() {
+    fuzz("pair-fuzz", random_pair_case);
+}
+
 /// Fuzzes filling, M-q and Auto Fill mode.
 #[test]
 #[ignore = "needs GNU Emacs; run with --ignored"]

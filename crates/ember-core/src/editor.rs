@@ -100,6 +100,8 @@ struct PendingCall {
 pub struct Editor {
     pub(crate) buffers: Vec<Buffer>,
     pub(crate) current: usize,
+    /// The syntax tables, by name, as Emacs's syntax-table objects.
+    pub syntax_tables: crate::syntax_table::SyntaxTables,
     /// How many commands are running, one inside another.
     running: usize,
     /// The command keys named, while the command it is remapped to runs.
@@ -229,6 +231,7 @@ impl Editor {
         let mut editor = Editor {
             buffers: vec![Buffer::new("*scratch*")],
             current: 0,
+            syntax_tables: Default::default(),
             running: 0,
             remapped_from: None,
             previous_buffer: None,
@@ -451,23 +454,27 @@ impl Editor {
             self.message("Command attempted to use minibuffer while in minibuffer");
             return;
         }
-        // Runs of typing, or of C-d or DEL, share an undo step, as in Emacs:
-        // the first and up to 20 more (amalgamating-undo-limit).
-        // A remapped command, such as org's for typing, amalgamates as the
-        // command it stands in for.
-        let base = self.remapped_from.take();
-        // self-insert-command and delete-char amalgamate only for a count
-        // below 2, so `M-2 SPC` is a step of its own.
-        let listed = AMALGAMATING.contains(&base.as_deref().unwrap_or(name))
-            && crate::prefix::prefix_numeric_value(prefix).abs() < 2;
-        let amalgamate = listed
-            && self.last_command() == Some(name)
-            && self.previous_amalgamating
-            && self.self_insert_run <= 20;
-        self.previous_run = self.self_insert_run;
-        self.self_insert_run = if amalgamate { self.self_insert_run + 1 } else { 1 };
-        self.amalgamating_now = listed;
-        self.buffer_mut().command_boundary(amalgamate);
+        // Called from a running command, as call-interactively from Lisp, it
+        // is part of that command's undo step.
+        if self.running == 0 {
+            // Runs of typing, or of C-d or DEL, share an undo step, as in Emacs:
+            // the first and up to 20 more (amalgamating-undo-limit).
+            // A remapped command, such as org's for typing, amalgamates as the
+            // command it stands in for.
+            let base = self.remapped_from.take();
+            // self-insert-command and delete-char amalgamate only for a count
+            // below 2, so `M-2 SPC` is a step of its own.
+            let listed = AMALGAMATING.contains(&base.as_deref().unwrap_or(name))
+                && crate::prefix::prefix_numeric_value(prefix).abs() < 2;
+            let amalgamate = listed
+                && self.last_command() == Some(name)
+                && self.previous_amalgamating
+                && self.self_insert_run <= 20;
+            self.previous_run = self.self_insert_run;
+            self.self_insert_run = if amalgamate { self.self_insert_run + 1 } else { 1 };
+            self.amalgamating_now = listed;
+            self.buffer_mut().command_boundary(amalgamate);
+        }
         if command.shift_select {
             self.shift_select(shifted);
         }
@@ -1102,6 +1109,29 @@ impl Editor {
 
     pub fn buffers(&self) -> &[Buffer] {
         &self.buffers
+    }
+
+    /// Kills the text from `beg` to `end`, as Emacs's kill-region from code.
+    pub fn kill_region(&mut self, beg: usize, end: usize) -> Result<()> {
+        crate::commands::kill_region(self, beg, end)
+    }
+
+    /// What a character is in the current buffer's syntax table.
+    pub fn char_syntax(&self, c: char) -> crate::syntax_table::Entry {
+        self.syntax_tables.entry(&self.buffer().syntax_table, c)
+    }
+
+    /// Reads the current buffer's accessible text through its syntax table.
+    pub fn scanner(&self) -> crate::syntax_table::Scanner<'_> {
+        let b = self.buffer();
+        crate::syntax_table::Scanner {
+            buffer: b,
+            tables: &self.syntax_tables,
+            table: &b.syntax_table,
+            ignore_comments: self.variable("parse-sexp-ignore-comments").is_some_and(|v| v.is_true()),
+            min: b.point_min(),
+            max: b.point_max(),
+        }
     }
 
     /// A marker's buffer and position, wherever it is; none once it points

@@ -1,0 +1,1004 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "forward-sexp-over-list",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 0,
+        "keys": "C-M-f",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 42,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-sexp-twice",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 0,
+        "keys": "C-M-f C-M-f",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 50,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-sexp-count",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 0,
+        "keys": "C-u 3 C-M-f",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 58,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-sexp-to-end-then-error",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 0,
+        "keys": "C-u 9 C-M-f C-M-f",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 73,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-sexp-inside-list",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 1,
+        "keys": "C-M-f C-M-f C-M-f C-M-f",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 31,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-sexp-over-string",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 17,
+        "keys": "C-M-f",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 31,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-sexp-over-escaped-string",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 59,
+        "keys": "C-M-f",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 69,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backward-sexp-from-end",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 73,
+        "keys": "C-M-b C-M-b C-M-b",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 52,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backward-sexp-over-quote-prefix",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 58,
+        "keys": "C-M-b",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 52,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backward-sexp-at-start-errors",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 0,
+        "keys": "C-M-b",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-sexp-close-paren-errors",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 43,
+        "keys": "C-M-f",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 50,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backward-sexp-inside-list-to-start",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 42,
+        "keys": "C-M-b C-M-b C-M-b C-M-b C-M-b C-M-b C-M-b",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-list",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 0,
+        "keys": "C-M-n",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 42,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-list-skips-words",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 1,
+        "keys": "C-M-n",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-list-inside",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 1,
+        "keys": "C-M-n C-M-n C-M-n",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 41,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backward-list",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 73,
+        "keys": "C-M-p",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backward-up-list",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 12,
+        "keys": "C-M-u",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backward-up-list-twice",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 12,
+        "keys": "C-M-u C-M-u",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backward-up-list-top-level",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 50,
+        "keys": "C-M-u",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 50,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "At top level"
+    },
+    {
+      "name": "backward-up-list-in-string",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 22,
+        "keys": "C-M-u",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 17,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "up-list",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 12,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "up-list"
+        ]
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "down-list",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 0,
+        "keys": "C-M-d",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "down-list-twice",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 0,
+        "keys": "C-M-d C-M-d",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "down-list-bottom",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 44,
+        "keys": "C-M-d",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 44,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "At bottom level"
+    },
+    {
+      "name": "down-list-in-string",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 20,
+        "keys": "C-M-d",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 20,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "This command doesn’t work in strings or comments"
+    },
+    {
+      "name": "kill-sexp",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 0,
+        "keys": "C-M-k",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": " bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": " bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "(defun foo (a b) \"doc (string)\" [1 2] {x})"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kill-sexp-twice-appends",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 0,
+        "keys": "C-M-k C-M-k C-y",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 50,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [
+        "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "backward-kill-sexp",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 73,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "backward-kill-sexp"
+        ]
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" ",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" ",
+      "point": 70,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "end"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kill-sexp-error",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 43,
+        "keys": "C-M-k",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x})  'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x})  'quoted \"str\\\"ing\" end",
+      "point": 43,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "bar-baz"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "mark-sexp",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 0,
+        "keys": "C-M-SPC",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 0,
+      "mark": 42,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "mark-sexp-extends",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 0,
+        "keys": "C-M-SPC C-M-SPC",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 0,
+      "mark": 50,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "mark-sexp-error",
+      "input": {
+        "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+        "point": 43,
+        "keys": "C-M-SPC",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "visible": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+      "point": 43,
+      "mark": 50,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "insert-parentheses-empty",
+      "input": {
+        "text": "foo bar",
+        "point": 4,
+        "keys": "M-(",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "foo () bar",
+      "visible": "foo () bar",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "insert-parentheses-around",
+      "input": {
+        "text": "foo bar baz",
+        "point": 4,
+        "keys": "C-u M-(",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "foo (bar baz)",
+      "visible": "foo (bar baz)",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "insert-parentheses-region",
+      "input": {
+        "text": "foo bar baz",
+        "point": 4,
+        "keys": "C-SPC M-f M-(",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "foo (bar) baz",
+      "visible": "foo (bar) baz",
+      "point": 5,
+      "mark": 4,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "insert-parentheses-spaces",
+      "input": {
+        "text": "foobar",
+        "point": 3,
+        "keys": "M-(",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "foo () bar",
+      "visible": "foo () bar",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "check-parens-ok",
+      "input": {
+        "text": "(a (b) [c])",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "check-parens"
+        ]
+      },
+      "text": "(a (b) [c])",
+      "visible": "(a (b) [c])",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "check-parens-unbalanced",
+      "input": {
+        "text": "(a (b) [c]",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "check-parens"
+        ]
+      },
+      "text": "(a (b) [c]",
+      "visible": "(a (b) [c]",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Unmatched bracket or quote"
+    },
+    {
+      "name": "check-parens-mismatch",
+      "input": {
+        "text": "(a (b] c)",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "check-parens"
+        ]
+      },
+      "text": "(a (b] c)",
+      "visible": "(a (b] c)",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "mismatched-close-forward",
+      "input": {
+        "text": "(a b] c",
+        "point": 0,
+        "keys": "C-M-f",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(a b] c",
+      "visible": "(a b] c",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "brackets-and-braces",
+      "input": {
+        "text": "[a {b (c)}] {d}",
+        "point": 0,
+        "keys": "C-M-f C-M-f",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "[a {b (c)}] {d}",
+      "visible": "[a {b (c)}] {d}",
+      "point": 15,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "shift-select-sexp",
+      "input": {
+        "text": "(a b) c",
+        "point": 0,
+        "keys": "C-M-S-f",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(a b) c",
+      "visible": "(a b) c",
+      "point": 5,
+      "mark": 0,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-sexp-symbol-chars",
+      "input": {
+        "text": "foo-bar_baz+1 next",
+        "point": 0,
+        "keys": "C-M-f",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "foo-bar_baz+1 next",
+      "visible": "foo-bar_baz+1 next",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-sexp-punctuation",
+      "input": {
+        "text": ", . ; word",
+        "point": 0,
+        "keys": "C-M-f",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": ", . ; word",
+      "visible": ", . ; word",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-sexp-negative",
+      "input": {
+        "text": "a b c d",
+        "point": 7,
+        "keys": "C-u - 2 C-M-f",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a b c d",
+      "visible": "a b c d",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "text-mode-quote-word",
+      "input": {
+        "text": "don't \"stop\" now",
+        "point": 0,
+        "keys": "C-M-f C-M-f",
+        "modes": [
+          "text-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "don't \"stop\" now",
+      "visible": "don't \"stop\" now",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "text-mode-backward-sexp",
+      "input": {
+        "text": "say \"don't\" now",
+        "point": 16,
+        "keys": "C-M-b C-M-b",
+        "modes": [
+          "text-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "say \"don't\" now",
+      "visible": "say \"don't\" now",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backslash-escape-paren",
+      "input": {
+        "text": "(a \\) b) c",
+        "point": 0,
+        "keys": "C-M-f",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(a \\) b) c",
+      "visible": "(a \\) b) c",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "word-motion-unchanged",
+      "input": {
+        "text": "it's $5 and 50% off",
+        "point": 0,
+        "keys": "M-f M-f M-f",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "it's $5 and 50% off",
+      "visible": "it's $5 and 50% off",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "word-motion-text-mode",
+      "input": {
+        "text": "it's $5 and 50% off",
+        "point": 0,
+        "keys": "M-f M-f M-f",
+        "modes": [
+          "text-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "it's $5 and 50% off",
+      "visible": "it's $5 and 50% off",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "fuzz-escape-at-end-no-next-sexp",
+      "input": {
+        "text": "bcabc\\[\\",
+        "point": 0,
+        "keys": "C-M-f",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "bcabc\\[\\",
+      "visible": "bcabc\\[\\",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No next sexp"
+    }
+  ]
+}

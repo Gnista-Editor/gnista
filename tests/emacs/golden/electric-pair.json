@@ -1,0 +1,808 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "pair-paren",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "(",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "()",
+      "visible": "()",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-then-close-skips",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "( )",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "()",
+      "visible": "()",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-word-close",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "( a )",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "(a)",
+      "visible": "(a)",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-nested",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "[ {",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "[{}]",
+      "visible": "[{}]",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-nested-close",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "[ { } ]",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "[{}]",
+      "visible": "[{}]",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-quote",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "\"",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\"\"",
+      "visible": "\"\"",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-quote-word-close",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "\" a \"",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\"a\"",
+      "visible": "\"a\"",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-del-deletes-both",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "( DEL",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-del-only-open-when-not-empty",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "( a C-b DEL",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "a)",
+      "visible": "a)",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-ret-opens-line",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "( RET",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "(\n\n)",
+      "visible": "(\n\n)",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-wraps-region",
+      "input": {
+        "text": "foo",
+        "point": 0,
+        "keys": "C-x h (",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "(foo)",
+      "visible": "(foo)",
+      "point": 1,
+      "mark": 4,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-wraps-region-close",
+      "input": {
+        "text": "foo",
+        "point": 0,
+        "keys": "C-x h )",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "(foo)",
+      "visible": "(foo)",
+      "point": 5,
+      "mark": 4,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-wraps-region-quote",
+      "input": {
+        "text": "foo",
+        "point": 0,
+        "keys": "C-x h \"",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\"foo\"",
+      "visible": "\"foo\"",
+      "point": 1,
+      "mark": 4,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-wraps-region-backward",
+      "input": {
+        "text": "foo bar",
+        "point": 0,
+        "keys": "C-SPC M-f (",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "(foo) bar",
+      "visible": "(foo) bar",
+      "point": 1,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-inhibit-unbalanced",
+      "input": {
+        "text": "a)",
+        "point": 0,
+        "keys": "(",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "(a)",
+      "visible": "(a)",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-before-word",
+      "input": {
+        "text": "foo",
+        "point": 0,
+        "keys": "(",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "()foo",
+      "visible": "()foo",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-skip-unbalanced-close",
+      "input": {
+        "text": "((a)",
+        "point": 3,
+        "keys": ")",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "((a))",
+      "visible": "((a))",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-skip-close-balanced",
+      "input": {
+        "text": "(a)",
+        "point": 2,
+        "keys": ")",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "(a)",
+      "visible": "(a)",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-skips-whitespace",
+      "input": {
+        "text": "(a  )",
+        "point": 2,
+        "keys": ")",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "(a  )",
+      "visible": "(a  )",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-escaped-quote",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "\\ \"",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\\\"",
+      "visible": "\\\"",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-quote-in-string",
+      "input": {
+        "text": "\"abc\"",
+        "point": 3,
+        "keys": "\"",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\"ab\"\"c\"",
+      "visible": "\"ab\"\"c\"",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-quote-closing-string",
+      "input": {
+        "text": "\"abc\"",
+        "point": 4,
+        "keys": "\"",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\"abc\"",
+      "visible": "\"abc\"",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-text-mode-quote",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "\"",
+        "modes": [
+          "electric-pair-mode",
+          "text-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\"\"",
+      "visible": "\"\"",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-text-mode-quote-skip",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "\" a \"",
+        "modes": [
+          "electric-pair-mode",
+          "text-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "\"a\"",
+      "visible": "\"a\"",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-curly-quotes",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "“ a ”",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "“a”",
+      "visible": "“a”",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-single-curly",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "‘ x",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "‘x’",
+      "visible": "‘x’",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-overwrite-no-pair",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "(",
+        "modes": [
+          "electric-pair-mode",
+          "overwrite-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "(",
+      "visible": "(",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-delete-selection-wraps",
+      "input": {
+        "text": "foo",
+        "point": 0,
+        "keys": "C-x h (",
+        "modes": [
+          "electric-pair-mode",
+          "delete-selection-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "(foo)",
+      "visible": "(foo)",
+      "point": 1,
+      "mark": 4,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-undo",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "( a C-/",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "pair-many",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "( ( ( ) ) )",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "((()))",
+      "visible": "((()))",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-bracket-mismatch",
+      "input": {
+        "text": "[a)",
+        "point": 2,
+        "keys": "]",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "[a])",
+      "visible": "[a])",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-del-in-middle",
+      "input": {
+        "text": "a()b",
+        "point": 2,
+        "keys": "DEL",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "ab",
+      "visible": "ab",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-ret-between-brackets",
+      "input": {
+        "text": "{}",
+        "point": 1,
+        "keys": "RET",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "{\n\n}",
+      "visible": "{\n\n}",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-prefix-arg",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-u 3 (",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "((()",
+      "visible": "((()",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-after-quote-char",
+      "input": {
+        "text": "'",
+        "point": 1,
+        "keys": "(",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "'()",
+      "visible": "'()",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "pair-close-without-open",
+      "input": {
+        "text": "abc",
+        "point": 3,
+        "keys": ")",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "abc)",
+      "visible": "abc)",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fuzz-ret-between-indents-middle",
+      "input": {
+        "text": "bc]]",
+        "point": 0,
+        "keys": "SPC { RET",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": " {\n \n}bc]]",
+      "visible": " {\n \n}bc]]",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fuzz-ret-between-undoes-whole",
+      "input": {
+        "text": "bc",
+        "point": 1,
+        "keys": "( RET C-/",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "b()c",
+      "visible": "b()c",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

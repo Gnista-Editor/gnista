@@ -328,6 +328,8 @@ mod tests {
         let mut ed = Editor::new();
         let _scripting = ember_script::Scripting::new(&mut ed).unwrap();
         ed.call("fido-vertical-mode", vec![]).unwrap();
+        ed.type_text("(a) b");
+        ed.buffer_mut().set_point(0);
         ed.press("M-x").unwrap();
         ed.type_text("forw");
         let rows = render(&mut ed, 60, 20);
@@ -338,13 +340,13 @@ mod tests {
         assert_eq!(rows[15], format!("1/{total} M-x forw"));
         // Each command with its key, after the longest of those listed.
         let shown: Vec<(&str, &str)> = rows[16..].iter().map(|r| (r.split(' ').next().unwrap(), r.rsplit(' ').next().unwrap())).collect();
-        assert_eq!(shown, [("forward-char", "(C-f)"), ("forward-word", "(M-f)"), ("search-forward", "search-forward"), ("isearch-forward", "(C-s)")]);
-        assert_eq!(rows[16].find("(C-f)"), rows[19].find("(C-s)"), "keys line up");
+        assert_eq!(shown, [("forward-char", "(C-f)"), ("forward-list", "(C-M-n)"), ("forward-sexp", "(C-M-f)"), ("forward-word", "(M-f)")]);
+        assert_eq!(rows[16].find("(C-f)"), rows[19].find("(M-f)"), "keys line up");
         ed.press("C-n C-n").unwrap();
         let rows = render(&mut ed, 60, 20);
         assert_eq!(rows[15], format!("3/{total} M-x forw"));
         ed.press("RET").unwrap();
-        assert_eq!(ed.prompt(), Some("Search: "), "RET ran the selected command, search-forward");
+        assert_eq!(ed.buffer().point(), 3, "RET ran the selected command, forward-sexp");
     }
 
     #[test]

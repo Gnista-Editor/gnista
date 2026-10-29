@@ -7089,6 +7089,8 @@ ember.defineMajorMode({
   name: "org-mode",
   modeName: "Org",
   parent: "outline-mode",
+  // As org-mode-syntax-table.
+  syntax: { '"': '"', "\\": "_", "~": "_", "<": "(>", ">": ")<" },
   doc:
     "The major mode for Org files: notes, plans and lists organised under headings that start with stars.\n\n" +
     "TAB on a heading folds and unfolds it, and S-TAB the whole buffer. M-RET adds a heading or an item, " +

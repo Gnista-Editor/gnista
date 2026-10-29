@@ -1,0 +1,332 @@
+[
+ {
+  "name": "forward-sexp-over-list",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-f",
+  "point": 0
+ },
+ {
+  "name": "forward-sexp-twice",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-f C-M-f",
+  "point": 0
+ },
+ {
+  "name": "forward-sexp-count",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-u 3 C-M-f",
+  "point": 0
+ },
+ {
+  "name": "forward-sexp-to-end-then-error",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-u 9 C-M-f C-M-f",
+  "point": 0
+ },
+ {
+  "name": "forward-sexp-inside-list",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-f C-M-f C-M-f C-M-f",
+  "point": 1
+ },
+ {
+  "name": "forward-sexp-over-string",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-f",
+  "point": 17
+ },
+ {
+  "name": "forward-sexp-over-escaped-string",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-f",
+  "point": 59
+ },
+ {
+  "name": "backward-sexp-from-end",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-b C-M-b C-M-b",
+  "point": 73
+ },
+ {
+  "name": "backward-sexp-over-quote-prefix",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-b",
+  "point": 58
+ },
+ {
+  "name": "backward-sexp-at-start-errors",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-b",
+  "point": 0
+ },
+ {
+  "name": "forward-sexp-close-paren-errors",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-f",
+  "point": 43
+ },
+ {
+  "name": "backward-sexp-inside-list-to-start",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-b C-M-b C-M-b C-M-b C-M-b C-M-b C-M-b",
+  "point": 42
+ },
+ {
+  "name": "forward-list",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-n",
+  "point": 0
+ },
+ {
+  "name": "forward-list-skips-words",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-n",
+  "point": 1
+ },
+ {
+  "name": "forward-list-inside",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-n C-M-n C-M-n",
+  "point": 1
+ },
+ {
+  "name": "backward-list",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-p",
+  "point": 73
+ },
+ {
+  "name": "backward-up-list",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-u",
+  "point": 12
+ },
+ {
+  "name": "backward-up-list-twice",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-u C-M-u",
+  "point": 12
+ },
+ {
+  "name": "backward-up-list-top-level",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-u",
+  "point": 50
+ },
+ {
+  "name": "backward-up-list-in-string",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-u",
+  "point": 22
+ },
+ {
+  "name": "up-list",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "M-x",
+  "point": 12,
+  "answers": [
+   "up-list"
+  ]
+ },
+ {
+  "name": "down-list",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-d",
+  "point": 0
+ },
+ {
+  "name": "down-list-twice",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-d C-M-d",
+  "point": 0
+ },
+ {
+  "name": "down-list-bottom",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-d",
+  "point": 44
+ },
+ {
+  "name": "down-list-in-string",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-d",
+  "point": 20
+ },
+ {
+  "name": "kill-sexp",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-k",
+  "point": 0
+ },
+ {
+  "name": "kill-sexp-twice-appends",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-k C-M-k C-y",
+  "point": 0
+ },
+ {
+  "name": "backward-kill-sexp",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "M-x",
+  "point": 73,
+  "answers": [
+   "backward-kill-sexp"
+  ]
+ },
+ {
+  "name": "kill-sexp-error",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-k",
+  "point": 43
+ },
+ {
+  "name": "mark-sexp",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-SPC",
+  "point": 0
+ },
+ {
+  "name": "mark-sexp-extends",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-SPC C-M-SPC",
+  "point": 0
+ },
+ {
+  "name": "mark-sexp-error",
+  "text": "(defun foo (a b) \"doc (string)\" [1 2] {x}) bar-baz 'quoted \"str\\\"ing\" end",
+  "keys": "C-M-SPC",
+  "point": 43
+ },
+ {
+  "name": "insert-parentheses-empty",
+  "text": "foo bar",
+  "keys": "M-(",
+  "point": 4
+ },
+ {
+  "name": "insert-parentheses-around",
+  "text": "foo bar baz",
+  "keys": "C-u M-(",
+  "point": 4
+ },
+ {
+  "name": "insert-parentheses-region",
+  "text": "foo bar baz",
+  "keys": "C-SPC M-f M-(",
+  "point": 4
+ },
+ {
+  "name": "insert-parentheses-spaces",
+  "text": "foobar",
+  "keys": "M-(",
+  "point": 3
+ },
+ {
+  "name": "check-parens-ok",
+  "text": "(a (b) [c])",
+  "keys": "M-x",
+  "point": 0,
+  "answers": [
+   "check-parens"
+  ]
+ },
+ {
+  "name": "check-parens-unbalanced",
+  "text": "(a (b) [c]",
+  "keys": "M-x",
+  "point": 0,
+  "answers": [
+   "check-parens"
+  ]
+ },
+ {
+  "name": "check-parens-mismatch",
+  "text": "(a (b] c)",
+  "keys": "M-x",
+  "point": 0,
+  "answers": [
+   "check-parens"
+  ]
+ },
+ {
+  "name": "mismatched-close-forward",
+  "text": "(a b] c",
+  "keys": "C-M-f",
+  "point": 0
+ },
+ {
+  "name": "brackets-and-braces",
+  "text": "[a {b (c)}] {d}",
+  "keys": "C-M-f C-M-f",
+  "point": 0
+ },
+ {
+  "name": "shift-select-sexp",
+  "text": "(a b) c",
+  "keys": "C-M-S-f",
+  "point": 0
+ },
+ {
+  "name": "forward-sexp-symbol-chars",
+  "text": "foo-bar_baz+1 next",
+  "keys": "C-M-f",
+  "point": 0
+ },
+ {
+  "name": "forward-sexp-punctuation",
+  "text": ", . ; word",
+  "keys": "C-M-f",
+  "point": 0
+ },
+ {
+  "name": "forward-sexp-negative",
+  "text": "a b c d",
+  "keys": "C-u - 2 C-M-f",
+  "point": 7
+ },
+ {
+  "name": "text-mode-quote-word",
+  "text": "don't \"stop\" now",
+  "keys": "C-M-f C-M-f",
+  "point": 0,
+  "modes": [
+   "text-mode"
+  ]
+ },
+ {
+  "name": "text-mode-backward-sexp",
+  "text": "say \"don't\" now",
+  "keys": "C-M-b C-M-b",
+  "point": 16,
+  "modes": [
+   "text-mode"
+  ]
+ },
+ {
+  "name": "backslash-escape-paren",
+  "text": "(a \\) b) c",
+  "keys": "C-M-f",
+  "point": 0
+ },
+ {
+  "name": "word-motion-unchanged",
+  "text": "it's $5 and 50% off",
+  "keys": "M-f M-f M-f",
+  "point": 0
+ },
+ {
+  "name": "word-motion-text-mode",
+  "text": "it's $5 and 50% off",
+  "keys": "M-f M-f M-f",
+  "point": 0,
+  "modes": [
+   "text-mode"
+  ]
+ },
+ {
+  "name": "fuzz-escape-at-end-no-next-sexp",
+  "text": "bcabc\\[\\",
+  "point": 0,
+  "keys": "C-M-f"
+ }
+]

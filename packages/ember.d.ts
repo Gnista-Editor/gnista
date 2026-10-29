@@ -42,17 +42,41 @@ declare global {
        */
       "backward-char": [];
       /**
+       * Kill the balanced expression before point. With a prefix argument, that many.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "backward-kill-sexp": [];
+      /**
        * Kill back to the start of a word, or as many words as the prefix argument says.
        *
        * A negative argument kills forward.
        */
       "backward-kill-word": [];
       /**
+       * Move back over a list in parens. With a prefix argument, that many.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "backward-list": [];
+      /**
        * Move to the start of this paragraph, or the one before if between them. With a prefix argument, that many.
        *
        * Defined in packages/paragraphs.ts.
        */
       "backward-paragraph": [];
+      /**
+       * Move back over a balanced expression. With a prefix argument, that many; forward if negative.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "backward-sexp": [];
+      /**
+       * Move back out of a list, to its open paren, or out of a string. With a prefix argument, that many levels.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "backward-up-list": [];
       /**
        * Move point back to the start of a word, or as many words as the prefix argument says.
        *
@@ -77,6 +101,12 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "beginning-of-visual-line": [];
+      /**
+       * Check the buffer for unbalanced parens and quotes, leaving point at the first one unbalanced.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "check-parens": [];
       /**
        * Copy a directory and what it holds: into the new name if that is a directory already, else as it.
        *
@@ -571,11 +601,31 @@ declare global {
        */
       "do-auto-save": [];
       /**
+       * Move forward down into a list, past its open paren. With a negative argument, back down into the one before.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "down-list": [];
+      /**
        * Insert a newline. With electric-indent-mode on, as it is by default, that is all; RET is the key that indents.
        *
        * Defined in packages/simple.ts.
        */
       "electric-newline-and-maybe-indent": [];
+      /**
+       * Delete the open and close pair point is between, as DEL does there in Electric Pair mode.
+       *
+       * Defined in packages/elec-pair.ts.
+       */
+      "electric-pair-delete-pair": [];
+      /**
+       * Type open parens and quotes in pairs: the closing one goes in after point, and typing it there moves over it. With the region active, the pair goes around it.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/elec-pair.ts.
+       */
+      "electric-pair-mode": [];
       /**
        * Move point to the end of the buffer.
        *
@@ -735,11 +785,23 @@ declare global {
        */
       "forward-char": [];
       /**
+       * Move forward over a list in parens, skipping words and strings. With a prefix argument, that many.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "forward-list": [];
+      /**
        * Move to the end of this paragraph, or the next if between them. With a prefix argument, that many; back if negative.
        *
        * Defined in packages/paragraphs.ts.
        */
       "forward-paragraph": [];
+      /**
+       * Move forward over a balanced expression: a word or symbol, a string, or a list in parens. With a prefix argument, that many; back if negative.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "forward-sexp": [];
       /**
        * Move point forward to the end of a word, or as many words as the prefix argument says.
        *
@@ -877,6 +939,12 @@ declare global {
        */
       "insert": [text: string];
       /**
+       * Put parens around the next sexp, or as many as the prefix argument says, leaving point after the open paren. With no argument, insert () and leave point between them; with the region active, put them around it.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "insert-parentheses": [];
+      /**
        * While the search fails, remove what does not match; otherwise end it and go back to where it started.
        *
        * Defined in packages/isearch.ts.
@@ -1007,6 +1075,12 @@ declare global {
        */
       "kill-ring-save": [];
       /**
+       * Kill the balanced expression after point. With a prefix argument, that many; before point if negative.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "kill-sexp": [];
+      /**
        * Kill the rest of the screen line, or the newline if point is at the end of a line.
        *
        * Where the line continues, it kills to where the next screen line starts.
@@ -1092,6 +1166,12 @@ declare global {
        * Defined in packages/window.ts.
        */
       "make-frame-command": [];
+      /**
+       * Set the mark after the next balanced expression, activating the region. Again, or with the region active, extend it by another; with a prefix argument, by that many.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "mark-sexp": [];
       /**
        * Put point at the beginning of the buffer and the mark at the end.
        */
@@ -2798,6 +2878,14 @@ declare global {
        */
       "set-mark-command": [];
       /**
+       * Highlight the paren matching the one next to point, after show-paren-delay seconds idle: a close paren before point, or an open paren after it.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/paren.ts.
+       */
+      "show-paren-mode": [];
+      /**
        * Make the selected window shorter by the prefix argument's lines, giving them to its neighbour.
        *
        * Defined in packages/window.ts.
@@ -2926,6 +3014,12 @@ declare global {
        */
       "universal-argument-more": [];
       /**
+       * Move forward out of a list, past its close paren, or out of a string. With a prefix argument, that many levels.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "up-list": [];
+      /**
        * Show the *Messages* buffer: the messages shown in the echo area, newest last.
        *
        * Defined in packages/help.ts.
@@ -3043,6 +3137,12 @@ declare global {
        * Whether backups are made by copying the old file, rather than renaming it and writing a new one. Files with more than one hard link are always copied.
        */
       "backup-by-copying": Value;
+      /**
+       * How far to look for a matching paren, in characters, or nil to look through the whole buffer.
+       *
+       * Defined in packages/paren.ts.
+       */
+      "blink-matching-paren-distance": Value;
       /**
        * How the visited file's text is written as bytes: its charset and line ends, such as utf-8-unix or undecided-dos.
        *
@@ -3211,6 +3311,48 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "electric-indent-mode": Value;
+      /**
+       * Whether DEL between an open and close pair deletes both.
+       *
+       * Defined in packages/elec-pair.ts.
+       */
+      "electric-pair-delete-adjacent-pairs": Value;
+      /**
+       * Whether Electric-Pair mode is on. Use the command electric-pair-mode to change it.
+       *
+       * Defined in packages/elec-pair.ts.
+       */
+      "electric-pair-mode": Value;
+      /**
+       * Whether RET between an open and close pair puts the close on a line of its own too.
+       *
+       * Defined in packages/elec-pair.ts.
+       */
+      "electric-pair-open-newline-between-pairs": Value;
+      /**
+       * Pairs of characters Electric Pair mode pairs even where the syntax table gives them no paren or quote syntax, as [open, close] lists.
+       *
+       * Defined in packages/elec-pair.ts.
+       */
+      "electric-pair-pairs": Value;
+      /**
+       * Whether Electric Pair mode pairs and skips only where that keeps the buffer's parens and quotes balanced.
+       *
+       * Defined in packages/elec-pair.ts.
+       */
+      "electric-pair-preserve-balance": Value;
+      /**
+       * Whether typing a close paren moves over whitespace to one already there; chomp deletes the whitespace too.
+       *
+       * Defined in packages/elec-pair.ts.
+       */
+      "electric-pair-skip-whitespace": Value;
+      /**
+       * Pairs Electric Pair mode pairs in comments and strings, as well as electric-pair-pairs.
+       *
+       * Defined in packages/elec-pair.ts.
+       */
+      "electric-pair-text-pairs": Value;
       /**
        * Commands run with M-x, newest first.
        */
@@ -3631,6 +3773,16 @@ declare global {
        */
       "overwrite-mode": Value;
       /**
+       * Whether M-( puts a space before and after the parens it inserts, where a word or other parens are next to them.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "parens-require-spaces": Value;
+      /**
+       * Whether moving over balanced expressions skips comments, as programming modes set it.
+       */
+      "parse-sexp-ignore-comments": Value;
+      /**
        * Where the projects Ember knows are saved: projects in user-emacs-directory if nil.
        *
        * Defined in packages/project.ts.
@@ -3755,6 +3907,48 @@ declare global {
        */
       "sentence-end-double-space": Value;
       /**
+       * How many seconds idle before Show Paren mode highlights. Changing it takes effect when the mode is turned on again.
+       *
+       * Defined in packages/paren.ts.
+       */
+      "show-paren-delay": Value;
+      /**
+       * Whether to highlight the open paren point is before, as well as the close paren it matches.
+       *
+       * Defined in packages/paren.ts.
+       */
+      "show-paren-highlight-openparen": Value;
+      /**
+       * Whether Show-Paren mode is on. Use the command show-paren-mode to change it.
+       *
+       * Defined in packages/paren.ts.
+       */
+      "show-paren-mode": Value;
+      /**
+       * The priority of Show Paren mode's highlighting, over other overlays.
+       *
+       * Defined in packages/paren.ts.
+       */
+      "show-paren-priority": Value;
+      /**
+       * What Show Paren mode highlights: parenthesis (the two parens), expression (all between them), or mixed (the expression if the other paren is not in the window).
+       *
+       * Defined in packages/paren.ts.
+       */
+      "show-paren-style": Value;
+      /**
+       * Whether to highlight a paren at the start or end of a line's code when point is in the whitespace before or after it.
+       *
+       * Defined in packages/paren.ts.
+       */
+      "show-paren-when-point-in-periphery": Value;
+      /**
+       * Whether to highlight when point is just inside a paren, not only outside it.
+       *
+       * Defined in packages/paren.ts.
+       */
+      "show-paren-when-point-inside-paren": Value;
+      /**
        * How many columns apart tab stops are, for showing tab characters.
        */
       "tab-width": Value;
@@ -3784,10 +3978,6 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "visual-line-mode": Value;
-      /**
-       * Characters besides letters and digits that are part of words in this buffer, for word motion and killing. It stands in for Emacs's syntax tables: Text mode, and the modes built on it, add the apostrophe.
-       */
-      "word-constituents": Value;
       /**
        * Whether continued lines break at spaces and tabs rather than in the middle of a word.
        *
@@ -4283,6 +4473,24 @@ declare global {
        */
       "shadow": FaceAttributes;
       /**
+       * A paren next to point and the one it matches, as Show Paren mode highlights them.
+       *
+       * Defined in packages/paren.ts.
+       */
+      "show-paren-match": FaceAttributes;
+      /**
+       * The whole expression between matching parens, when show-paren-style is expression.
+       *
+       * Defined in packages/paren.ts.
+       */
+      "show-paren-match-expression": FaceAttributes;
+      /**
+       * A paren next to point that matches none, or the wrong kind.
+       *
+       * Defined in packages/paren.ts.
+       */
+      "show-paren-mismatch": FaceAttributes;
+      /**
        * Success.
        */
       "success": FaceAttributes;
@@ -4378,6 +4586,18 @@ declare global {
        * Run after entering Dired by name mode, after the hooks of the modes it is built on.
        */
       "dired-mode-hook": Value;
+      /**
+       * Run after Electric-Pair mode is turned on or off.
+       */
+      "electric-pair-mode-hook": Value;
+      /**
+       * Run after Electric-Pair mode is turned off.
+       */
+      "electric-pair-mode-off-hook": Value;
+      /**
+       * Run after Electric-Pair mode is turned on.
+       */
+      "electric-pair-mode-on-hook": Value;
       /**
        * Run after Fido mode is turned on or off.
        */
@@ -4566,6 +4786,22 @@ declare global {
        * Run after entering Rust mode, after the hooks of the modes it is built on.
        */
       "rust-ts-mode-hook": Value;
+      /**
+       * Functions that say whether typing this character uses the active region, as electric-pair-mode wraps it in a pair, so Delete Selection mode leaves it.
+       */
+      "self-insert-uses-region-functions": Value;
+      /**
+       * Run after Show-Paren mode is turned on or off.
+       */
+      "show-paren-mode-hook": Value;
+      /**
+       * Run after Show-Paren mode is turned off.
+       */
+      "show-paren-mode-off-hook": Value;
+      /**
+       * Run after Show-Paren mode is turned on.
+       */
+      "show-paren-mode-on-hook": Value;
       /**
        * Run after entering Text mode, after the hooks of the modes it is built on.
        */
@@ -4850,6 +5086,8 @@ declare global {
       bindings?: { [keys: string]: CommandName | DefinedCommand };
       /** Runs after the buffer's own variables are cleared and the parent modes are set up, before the hooks. */
       setup?: () => void;
+      /** Entries for the mode's syntax table, NAME-syntax-table, as modify-syntax-entry takes them: { "'": "w p" }. */
+      syntax?: { [chars: string]: string };
     }
 
     /**
@@ -5361,6 +5599,97 @@ declare global {
     function nextPropertyChange(position: number): number | undefined;
     /** The next position where text properties or overlays change. */
     function nextCharPropertyChange(position: number): number;
+
+    /**
+     * Call the script functions on a hook in turn until one returns something
+     * other than null, undefined or false, and return that, as Emacs's
+     * run-hook-with-args-until-success; null if none does.
+     */
+    function runHookWithArgsUntilSuccess(hook: string, ...args: Value[]): Value;
+    /**
+     * Start a group of changes to the current buffer that can be taken back as
+     * if never made, leaving no trace in the undo history, as Emacs's
+     * prepare-change-group. Returns its handle.
+     */
+    function prepareChangeGroup(): number;
+    /** Take back the changes made since the group began, as cancel-change-group. */
+    function cancelChangeGroup(handle: number): void;
+    /** Keep the changes made since the group began, as accept-change-group. */
+    function acceptChangeGroup(handle: number): void;
+    /** Run `fn`, taking back its changes if it throws, as Emacs's atomic-change-group. */
+    function atomicChangeGroup<T>(fn: () => T): T;
+    /** Where the selected window's text starts, at the start of its top line, as window-start. */
+    function windowStart(): number;
+    /**
+     * Kill the text from `beg` to `end`, as Emacs's kill-region: after another
+     * kill it joins that one, before it if `end` comes first.
+     */
+    function killRegion(beg: number, end: number): void;
+    /** Where a position is among parens, strings and comments, as Emacs's parse-partial-sexp returns it. */
+    interface ParseState {
+      /** How deep in parens. */
+      depth: number;
+      /** Where the innermost list it is in starts. */
+      innermostStart: number | null;
+      /** Where the last complete expression before it starts. */
+      lastComplete: number | null;
+      /** In a string: the character that ends it, or "|" for a string fence. */
+      inString: string | null;
+      /** In a comment: -1 if it does not nest, else how deeply nested. */
+      inComment: number | null;
+      /** Whether it follows an escape character. */
+      quoted: boolean;
+      minDepth: number;
+      /** The comment's style: 0 (a), 1 (b), 2 (c), 3 for a fence. */
+      commentStyle: number;
+      /** Where the string or comment it is in starts. */
+      start: number | null;
+      /** Where each list it is in starts, outermost first. */
+      openParens: number[];
+    }
+    /**
+     * Make a syntax table that inherits what it does not say from `parent`,
+     * the standard table by default, as Emacs's make-syntax-table. A major
+     * mode gets NAME-syntax-table, built on its parent mode's.
+     */
+    function makeSyntaxTable(name: string, parent?: string): void;
+    /**
+     * Set what characters are to a syntax table, the current buffer's by
+     * default, as Emacs's modify-syntax-entry: a class ("w" word, "_" symbol,
+     * "." punctuation, " " whitespace, "(" and ")" parens with their match as
+     * "()", "\"" string quote, "\\" escape, "<" and ">" comment start and end),
+     * then flags such as "12" or "34" for two-character comment delimiters.
+     */
+    function modifySyntaxEntry(chars: string, descriptor: string, table?: string): void;
+    /** The current buffer's syntax table. */
+    function syntaxTable(): string;
+    function setSyntaxTable(name: string): void;
+    /** A character's entry in the current syntax table, as modify-syntax-entry writes it. */
+    function syntaxEntry(char: string): string | undefined;
+    /** A character's syntax class, as Emacs's char-syntax: "w", "_", "(", and so on. */
+    function charSyntax(char: string): string;
+    /** The character a paren matches, as its syntax entry says. */
+    function matchingParen(char: string): string | undefined;
+    /**
+     * Where moving over `count` lists from `from` ends, back if negative, as
+     * Emacs's scan-lists: `depth` levels in, it stops on leaving that many.
+     * Null at an end of the buffer with nothing to move over; throws a scan
+     * error ("Unbalanced parentheses") if a list does not end.
+     */
+    function scanLists(from: number, count: number, depth: number): number | null;
+    /** Where moving over `count` balanced expressions ends, as Emacs's scan-sexps. */
+    function scanSexps(from: number, count: number): number | null;
+    /** Move over comments and whitespace, as Emacs's forward-comment; true if it went over `count` comments. */
+    function forwardComment(count?: number): boolean;
+    /** Move back over expression prefixes, as Emacs's backward-prefix-chars. */
+    function backwardPrefixChars(): void;
+    /** Parse from `from` to `to`, as Emacs's parse-partial-sexp. */
+    function parsePartialSexp(from: number, to: number): ParseState;
+    /** Where a position, point by default, is, parsing from the start, as Emacs's syntax-ppss. */
+    function syntaxPpss(position?: number): ParseState;
+    /** Move over characters of these syntax classes, or not of them after "^", as skip-syntax-forward. Returns how far it went. */
+    function skipSyntaxForward(syntaxes: string, limit?: number): number;
+    function skipSyntaxBackward(syntaxes: string, limit?: number): number;
 
     /**
      * Replace each `from` character between start and end with `to`, in place,

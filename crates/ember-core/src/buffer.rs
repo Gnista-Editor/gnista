@@ -35,6 +35,15 @@ enum MarkRef {
     Marker(u64),
 }
 
+/// The undo state when a change group began.
+#[derive(Clone, Debug)]
+struct ChangeGroup {
+    open_group: Vec<Edit>,
+    open_point: Option<usize>,
+    open_unmodified_at: Option<u64>,
+    log_start: usize,
+}
+
 /// A position that moves with the text, as Emacs's markers do. Text
 /// inserted where it is goes after it, unless it advances, as a marker
 /// whose insertion type is t.
@@ -123,6 +132,14 @@ pub struct Buffer {
     undo_groups: Vec<Group>,
     open_group: Vec<Edit>,
     open_unmodified_at: Option<u64>,
+    /// Change groups being made, innermost last, as Emacs's
+    /// prepare-change-group: the undo state when each began, and where
+    /// its changes start in `change_log`.
+    change_groups: Vec<ChangeGroup>,
+    /// Every change while a change group is open, to take back if it is cancelled.
+    change_log: Vec<Edit>,
+    /// Whether changes are being taken back, so not recorded for undo.
+    cancelling: bool,
     /// Point at the last undo boundary, before the command now running.
     boundary_point: usize,
     /// The accessible portion when the buffer is narrowed, as Emacs's BEGV
@@ -153,6 +170,8 @@ pub struct Buffer {
     overlays: Vec<Overlay>,
     next_overlay_id: u64,
     markers: Vec<Marker>,
+    /// The name of the syntax table the buffer uses, as its major mode sets it.
+    pub syntax_table: String,
     /// The tree-sitter tree, if a major mode gave the buffer a language.
     pub(crate) syntax: Option<SyntaxTree>,
     /// The stretches already fontified by `jit-lock-functions`, in order.
@@ -188,6 +207,9 @@ impl Buffer {
             undo_groups: Vec::new(),
             open_group: Vec::new(),
             open_unmodified_at: None,
+            change_groups: Vec::new(),
+            change_log: Vec::new(),
+            cancelling: false,
             boundary_point: 0,
             edited_since_command: false,
             restriction: None,
@@ -202,6 +224,7 @@ impl Buffer {
             overlays: Vec::new(),
             next_overlay_id: 0,
             markers: Vec::new(),
+            syntax_table: crate::syntax_table::STANDARD.to_string(),
             syntax: None,
             fontified: Vec::new(),
             tick: 0,
@@ -518,14 +541,18 @@ impl Buffer {
             self.changed = true;
             self.edited_since_command = true;
             self.modified = true;
-            self.open_group.push(Edit {
+            let edit = Edit {
                 pos: p,
                 deleted: from.to_string(),
                 deleted_props: props,
                 inserted: to.to_string(),
                 point_before: self.point,
                 marks: Vec::new(),
-            });
+            };
+            if !self.change_groups.is_empty() {
+                self.change_log.push(edit.clone());
+            }
+            self.open_group.push(edit);
         }
         Ok(())
     }
@@ -749,6 +776,58 @@ impl Buffer {
             MarkRef::Ring(i) => self.mark_ring.get_mut(i),
             MarkRef::Window(w) => self.window_points.iter_mut().find(|e| e.0 == w).map(|e| &mut e.1),
             MarkRef::Marker(id) => self.markers.iter_mut().find(|m| m.id == id).map(|m| &mut m.pos),
+        }
+    }
+
+    // Change groups
+
+    /// Starts a group of changes that can be taken back as if never made,
+    /// as Emacs's prepare-change-group and activate-change-group. Returns
+    /// its handle.
+    pub fn prepare_change_group(&mut self) -> usize {
+        self.change_groups.push(ChangeGroup {
+            open_group: self.open_group.clone(),
+            open_point: self.open_point,
+            open_unmodified_at: self.open_unmodified_at,
+            log_start: self.change_log.len(),
+        });
+        self.change_groups.len() - 1
+    }
+
+    /// Takes back the changes made since a change group began, leaving no
+    /// trace of them in the undo history, as Emacs's cancel-change-group.
+    pub fn cancel_change_group(&mut self, handle: usize) {
+        if handle >= self.change_groups.len() {
+            return;
+        }
+        let group = self.change_groups.split_off(handle).remove(0);
+        let edits = self.change_log.split_off(group.log_start);
+        self.cancelling = true;
+        for edit in edits.iter().rev() {
+            let inserted = edit.inserted.chars().count();
+            if inserted > 0 {
+                self.apply_delete(edit.pos, edit.pos + inserted);
+            }
+            self.apply_insert(edit.pos, &edit.deleted, false);
+            self.properties.restore(edit.pos, &edit.deleted_props);
+        }
+        self.cancelling = false;
+        self.open_group = group.open_group;
+        self.open_point = group.open_point;
+        self.open_unmodified_at = group.open_unmodified_at;
+        if self.change_groups.is_empty() {
+            self.change_log.clear();
+        }
+    }
+
+    /// Keeps the changes made since a change group began, as Emacs's
+    /// accept-change-group.
+    pub fn accept_change_group(&mut self, handle: usize) {
+        if handle < self.change_groups.len() {
+            self.change_groups.truncate(handle);
+        }
+        if self.change_groups.is_empty() {
+            self.change_log.clear();
         }
     }
 
@@ -1243,6 +1322,12 @@ impl Buffer {
     }
 
     fn record(&mut self, edit: Edit) {
+        if self.cancelling {
+            return;
+        }
+        if !self.change_groups.is_empty() {
+            self.change_log.push(edit.clone());
+        }
         if self.open_group.is_empty() {
             self.open_unmodified_at = (!self.modified).then_some(self.save_generation);
             // As Emacs's record_point: a deletion before point compares point,

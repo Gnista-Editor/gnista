@@ -7,10 +7,18 @@
  */
 const replacingCommands: ReadonlySet<string> = new Set(["self-insert-command", "newline", "yank"]);
 
+ember.defineHook(
+  "self-insert-uses-region-functions",
+  "Functions that say whether typing this character uses the active region, as electric-pair-mode wraps it in a pair, so Delete Selection mode leaves it.",
+);
+
 function deleteSelectionBeforeCommand(): void {
   const command = ember.thisCommand();
   const mark = ember.mark();
   if (command === undefined || !replacingCommands.has(command) || !ember.regionActive() || mark === undefined) {
+    return;
+  }
+  if (command === "self-insert-command" && ember.runHookWithArgsUntilSuccess("self-insert-uses-region-functions") !== null) {
     return;
   }
   const point = ember.point();

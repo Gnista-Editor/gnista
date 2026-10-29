@@ -287,6 +287,8 @@ const API: &str = r##"
     bindings?: { [keys: string]: CommandName | DefinedCommand };
     /** Runs after the buffer's own variables are cleared and the parent modes are set up, before the hooks. */
     setup?: () => void;
+    /** Entries for the mode's syntax table, NAME-syntax-table, as modify-syntax-entry takes them: { "'": "w p" }. */
+    syntax?: { [chars: string]: string };
   }
 
   /**
@@ -798,6 +800,97 @@ const API: &str = r##"
   function nextPropertyChange(position: number): number | undefined;
   /** The next position where text properties or overlays change. */
   function nextCharPropertyChange(position: number): number;
+
+  /**
+   * Call the script functions on a hook in turn until one returns something
+   * other than null, undefined or false, and return that, as Emacs's
+   * run-hook-with-args-until-success; null if none does.
+   */
+  function runHookWithArgsUntilSuccess(hook: string, ...args: Value[]): Value;
+  /**
+   * Start a group of changes to the current buffer that can be taken back as
+   * if never made, leaving no trace in the undo history, as Emacs's
+   * prepare-change-group. Returns its handle.
+   */
+  function prepareChangeGroup(): number;
+  /** Take back the changes made since the group began, as cancel-change-group. */
+  function cancelChangeGroup(handle: number): void;
+  /** Keep the changes made since the group began, as accept-change-group. */
+  function acceptChangeGroup(handle: number): void;
+  /** Run `fn`, taking back its changes if it throws, as Emacs's atomic-change-group. */
+  function atomicChangeGroup<T>(fn: () => T): T;
+  /** Where the selected window's text starts, at the start of its top line, as window-start. */
+  function windowStart(): number;
+  /**
+   * Kill the text from `beg` to `end`, as Emacs's kill-region: after another
+   * kill it joins that one, before it if `end` comes first.
+   */
+  function killRegion(beg: number, end: number): void;
+  /** Where a position is among parens, strings and comments, as Emacs's parse-partial-sexp returns it. */
+  interface ParseState {
+    /** How deep in parens. */
+    depth: number;
+    /** Where the innermost list it is in starts. */
+    innermostStart: number | null;
+    /** Where the last complete expression before it starts. */
+    lastComplete: number | null;
+    /** In a string: the character that ends it, or "|" for a string fence. */
+    inString: string | null;
+    /** In a comment: -1 if it does not nest, else how deeply nested. */
+    inComment: number | null;
+    /** Whether it follows an escape character. */
+    quoted: boolean;
+    minDepth: number;
+    /** The comment's style: 0 (a), 1 (b), 2 (c), 3 for a fence. */
+    commentStyle: number;
+    /** Where the string or comment it is in starts. */
+    start: number | null;
+    /** Where each list it is in starts, outermost first. */
+    openParens: number[];
+  }
+  /**
+   * Make a syntax table that inherits what it does not say from `parent`,
+   * the standard table by default, as Emacs's make-syntax-table. A major
+   * mode gets NAME-syntax-table, built on its parent mode's.
+   */
+  function makeSyntaxTable(name: string, parent?: string): void;
+  /**
+   * Set what characters are to a syntax table, the current buffer's by
+   * default, as Emacs's modify-syntax-entry: a class ("w" word, "_" symbol,
+   * "." punctuation, " " whitespace, "(" and ")" parens with their match as
+   * "()", "\"" string quote, "\\" escape, "<" and ">" comment start and end),
+   * then flags such as "12" or "34" for two-character comment delimiters.
+   */
+  function modifySyntaxEntry(chars: string, descriptor: string, table?: string): void;
+  /** The current buffer's syntax table. */
+  function syntaxTable(): string;
+  function setSyntaxTable(name: string): void;
+  /** A character's entry in the current syntax table, as modify-syntax-entry writes it. */
+  function syntaxEntry(char: string): string | undefined;
+  /** A character's syntax class, as Emacs's char-syntax: "w", "_", "(", and so on. */
+  function charSyntax(char: string): string;
+  /** The character a paren matches, as its syntax entry says. */
+  function matchingParen(char: string): string | undefined;
+  /**
+   * Where moving over `count` lists from `from` ends, back if negative, as
+   * Emacs's scan-lists: `depth` levels in, it stops on leaving that many.
+   * Null at an end of the buffer with nothing to move over; throws a scan
+   * error ("Unbalanced parentheses") if a list does not end.
+   */
+  function scanLists(from: number, count: number, depth: number): number | null;
+  /** Where moving over `count` balanced expressions ends, as Emacs's scan-sexps. */
+  function scanSexps(from: number, count: number): number | null;
+  /** Move over comments and whitespace, as Emacs's forward-comment; true if it went over `count` comments. */
+  function forwardComment(count?: number): boolean;
+  /** Move back over expression prefixes, as Emacs's backward-prefix-chars. */
+  function backwardPrefixChars(): void;
+  /** Parse from `from` to `to`, as Emacs's parse-partial-sexp. */
+  function parsePartialSexp(from: number, to: number): ParseState;
+  /** Where a position, point by default, is, parsing from the start, as Emacs's syntax-ppss. */
+  function syntaxPpss(position?: number): ParseState;
+  /** Move over characters of these syntax classes, or not of them after "^", as skip-syntax-forward. Returns how far it went. */
+  function skipSyntaxForward(syntaxes: string, limit?: number): number;
+  function skipSyntaxBackward(syntaxes: string, limit?: number): number;
 
   /**
    * Replace each `from` character between start and end with `to`, in place,

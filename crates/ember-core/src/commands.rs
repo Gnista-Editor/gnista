@@ -163,8 +163,8 @@ fn movement(ed: &mut Editor) {
         "Move point forward to the end of a word, or as many words as the prefix argument says.\n\nA negative argument moves backward.",
         |ed, _| {
             let n = ed.prefix_numeric();
-            let b = ed.buffer_mut();
-            b.set_point(move_words(b, b.point(), n));
+            let to = move_words(ed, ed.buffer().point(), n);
+            ed.buffer_mut().set_point(to);
             Ok(())
         },
     );
@@ -174,8 +174,8 @@ fn movement(ed: &mut Editor) {
         "Move point back to the start of a word, or as many words as the prefix argument says.\n\nA negative argument moves forward.",
         |ed, _| {
             let n = ed.prefix_numeric();
-            let b = ed.buffer_mut();
-            b.set_point(move_words(b, b.point(), -n));
+            let to = move_words(ed, ed.buffer().point(), -n);
+            ed.buffer_mut().set_point(to);
             Ok(())
         },
     );
@@ -345,9 +345,11 @@ fn tenths(size: usize, n: i64) -> i64 {
 }
 
 /// The position after moving `n` words from `pos`, backward if negative.
-fn move_words(b: &Buffer, mut pos: usize, n: i64) -> usize {
+fn move_words(ed: &Editor, mut pos: usize, n: i64) -> usize {
+    let word = |c: char| ed.char_syntax(c).class == crate::syntax_table::Class::Word;
+    let b = ed.buffer();
     for _ in 0..n.unsigned_abs() {
-        pos = if n > 0 { word_end(b, pos) } else { word_start(b, pos) };
+        pos = if n > 0 { word_end(b, pos, word) } else { word_start(b, pos, word) };
     }
     pos
 }
@@ -594,33 +596,21 @@ fn scroll_step(ed: &Editor) -> usize {
     ed.viewport_height().saturating_sub(2).max(1)
 }
 
-/// Whether a character is part of a word in a buffer: a letter or digit,
-/// or one of `word-constituents`, which stands in for the major mode's
-/// syntax table: `$` and `%` as in Emacs's standard one, and in Text mode
-/// and the modes built on it, the apostrophe too.
-fn is_word_char(b: &Buffer, c: char) -> bool {
-    c.is_alphanumeric()
-        || match b.locals.get("word-constituents") {
-            Some(crate::Value::Str(chars)) => chars.contains(c),
-            _ => c == '$' || c == '%',
-        }
-}
-
-fn word_end(b: &Buffer, mut pos: usize) -> usize {
-    while b.char_at(pos).is_some_and(|c| !is_word_char(b, c)) {
+fn word_end(b: &Buffer, mut pos: usize, word: impl Fn(char) -> bool) -> usize {
+    while b.char_at(pos).is_some_and(|c| !word(c)) {
         pos += 1;
     }
-    while b.char_at(pos).is_some_and(|c| is_word_char(b, c)) {
+    while b.char_at(pos).is_some_and(&word) {
         pos += 1;
     }
     pos
 }
 
-fn word_start(b: &Buffer, mut pos: usize) -> usize {
-    while pos > 0 && b.char_at(pos - 1).is_some_and(|c| !is_word_char(b, c)) {
+fn word_start(b: &Buffer, mut pos: usize, word: impl Fn(char) -> bool) -> usize {
+    while pos > 0 && b.char_at(pos - 1).is_some_and(|c| !word(c)) {
         pos -= 1;
     }
-    while pos > 0 && b.char_at(pos - 1).is_some_and(|c| is_word_char(b, c)) {
+    while pos > 0 && b.char_at(pos - 1).is_some_and(&word) {
         pos -= 1;
     }
     pos
@@ -990,9 +980,8 @@ fn delete_active_region(ed: &mut Editor) -> Result<bool> {
 
 /// Kills `n` words after point, or before it if negative.
 fn kill_words(ed: &mut Editor, n: i64) -> Result<()> {
-    let b = ed.buffer_mut();
-    let p = b.point();
-    let to = move_words(b, p, n);
+    let p = ed.buffer().point();
+    let to = move_words(ed, p, n);
     kill_to(ed, p, to)
 }
 
@@ -1000,6 +989,13 @@ fn kill_words(ed: &mut Editor, n: i64) -> Result<()> {
 /// `(kill-region (point) (progn (forward-word) (point)))` does: point has
 /// moved there before the kill, so it stays there if the kill is refused,
 /// as when the file changed on disk.
+/// Kills from `beg` to `end`, as Emacs's kill-region called from code: the
+/// text joins the kill before it if that command killed too, before it if
+/// `end` is before `beg`.
+pub(crate) fn kill_region(ed: &mut Editor, beg: usize, end: usize) -> Result<()> {
+    kill_to(ed, beg, end)
+}
+
 fn kill_to(ed: &mut Editor, p: usize, to: usize) -> Result<()> {
     let len = ed.buffer().len();
     kill_range(ed, p.min(to)..p.max(to), to < p).inspect_err(|_| {

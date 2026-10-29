@@ -28,6 +28,7 @@ mod questions;
 mod rows;
 mod search;
 mod syntax;
+pub mod syntax_table;
 mod timers;
 mod window;
 mod variables;

@@ -1,0 +1,348 @@
+[
+ {
+  "name": "pair-paren",
+  "text": "",
+  "keys": "(",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-then-close-skips",
+  "text": "",
+  "keys": "( )",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-word-close",
+  "text": "",
+  "keys": "( a )",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-nested",
+  "text": "",
+  "keys": "[ {",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-nested-close",
+  "text": "",
+  "keys": "[ { } ]",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-quote",
+  "text": "",
+  "keys": "\"",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-quote-word-close",
+  "text": "",
+  "keys": "\" a \"",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-del-deletes-both",
+  "text": "",
+  "keys": "( DEL",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-del-only-open-when-not-empty",
+  "text": "",
+  "keys": "( a C-b DEL",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-ret-opens-line",
+  "text": "",
+  "keys": "( RET",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-wraps-region",
+  "text": "foo",
+  "keys": "C-x h (",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-wraps-region-close",
+  "text": "foo",
+  "keys": "C-x h )",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-wraps-region-quote",
+  "text": "foo",
+  "keys": "C-x h \"",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-wraps-region-backward",
+  "text": "foo bar",
+  "keys": "C-SPC M-f (",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-inhibit-unbalanced",
+  "text": "a)",
+  "keys": "(",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-before-word",
+  "text": "foo",
+  "keys": "(",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-skip-unbalanced-close",
+  "text": "((a)",
+  "keys": ")",
+  "point": 3,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-skip-close-balanced",
+  "text": "(a)",
+  "keys": ")",
+  "point": 2,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-skips-whitespace",
+  "text": "(a  )",
+  "keys": ")",
+  "point": 2,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-escaped-quote",
+  "text": "",
+  "keys": "\\ \"",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-quote-in-string",
+  "text": "\"abc\"",
+  "keys": "\"",
+  "point": 3,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-quote-closing-string",
+  "text": "\"abc\"",
+  "keys": "\"",
+  "point": 4,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-text-mode-quote",
+  "text": "",
+  "keys": "\"",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode",
+   "text-mode"
+  ]
+ },
+ {
+  "name": "pair-text-mode-quote-skip",
+  "text": "",
+  "keys": "\" a \"",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode",
+   "text-mode"
+  ]
+ },
+ {
+  "name": "pair-curly-quotes",
+  "text": "",
+  "keys": "“ a ”",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-single-curly",
+  "text": "",
+  "keys": "‘ x",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-overwrite-no-pair",
+  "text": "",
+  "keys": "(",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode",
+   "overwrite-mode"
+  ]
+ },
+ {
+  "name": "pair-delete-selection-wraps",
+  "text": "foo",
+  "keys": "C-x h (",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode",
+   "delete-selection-mode"
+  ]
+ },
+ {
+  "name": "pair-undo",
+  "text": "",
+  "keys": "( a C-/",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-many",
+  "text": "",
+  "keys": "( ( ( ) ) )",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-bracket-mismatch",
+  "text": "[a)",
+  "keys": "]",
+  "point": 2,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-del-in-middle",
+  "text": "a()b",
+  "keys": "DEL",
+  "point": 2,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-ret-between-brackets",
+  "text": "{}",
+  "keys": "RET",
+  "point": 1,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-prefix-arg",
+  "text": "",
+  "keys": "C-u 3 (",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-after-quote-char",
+  "text": "'",
+  "keys": "(",
+  "point": 1,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "pair-close-without-open",
+  "text": "abc",
+  "keys": ")",
+  "point": 3,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "fuzz-ret-between-indents-middle",
+  "text": "bc]]",
+  "point": 0,
+  "keys": "SPC { RET",
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "fuzz-ret-between-undoes-whole",
+  "text": "bc",
+  "point": 1,
+  "keys": "( RET C-/",
+  "modes": [
+   "electric-pair-mode"
+  ]
+ }
+]

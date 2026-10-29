@@ -432,6 +432,8 @@ fn auto_revert_mode_follows_the_file() {
 #[test]
 fn scripts_can_ask_and_set_timers() {
     let (mut ed, scripting) = setup();
+    // Show Paren mode's idle timer would come first.
+    ed.call_with_prefix("show-paren-mode", vec![], Some(ember_core::PrefixArg::Number(-1))).unwrap();
     scripting
         .eval_typescript(
             &mut ed,

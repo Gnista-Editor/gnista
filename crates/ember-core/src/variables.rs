@@ -245,6 +245,7 @@ impl Editor {
         b.forget_shift_selection();
         b.local_hooks.clear();
         b.local_map.clear();
+        b.syntax_table = crate::syntax_table::STANDARD.to_string();
         b.syntax = None;
         b.fontified.clear();
         result
@@ -485,9 +486,9 @@ pub(crate) fn install(ed: &mut Editor) {
         .local()
         .permanent(),
         Variable::new(
-            "word-constituents",
-            "Characters besides letters and digits that are part of words in this buffer, for word motion and killing. It stands in for Emacs's syntax tables: Text mode, and the modes built on it, add the apostrophe.",
-            "$%",
+            "parse-sexp-ignore-comments",
+            "Whether moving over balanced expressions skips comments, as programming modes set it.",
+            false,
         )
         .local(),
         Variable::new(

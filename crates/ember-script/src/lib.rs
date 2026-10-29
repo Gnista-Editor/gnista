@@ -40,12 +40,15 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/paragraphs.ts", include_str!("../../../packages/paragraphs.ts")),
     ("packages/indent.ts", include_str!("../../../packages/indent.ts")),
     ("packages/fill.ts", include_str!("../../../packages/fill.ts")),
+    ("packages/lisp.ts", include_str!("../../../packages/lisp.ts")),
+    ("packages/paren.ts", include_str!("../../../packages/paren.ts")),
     ("packages/files.ts", include_str!("../../../packages/files.ts")),
     ("packages/text-mode.ts", include_str!("../../../packages/text-mode.ts")),
     ("packages/outline.ts", include_str!("../../../packages/outline.ts")),
     ("packages/prog-mode.ts", include_str!("../../../packages/prog-mode.ts")),
     ("packages/treesit-modes.ts", include_str!("../../../packages/treesit-modes.ts")),
     ("packages/delsel.ts", include_str!("../../../packages/delsel.ts")),
+    ("packages/elec-pair.ts", include_str!("../../../packages/elec-pair.ts")),
     ("packages/help.ts", include_str!("../../../packages/help.ts")),
     ("packages/repeat.ts", include_str!("../../../packages/repeat.ts")),
     ("packages/kmacro.ts", include_str!("../../../packages/kmacro.ts")),
@@ -1601,6 +1604,141 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
             let value =
                 with_editor(&ctx, |ed| Ok(ed.buffer().overlay(id as u64).and_then(|o| o.props.get(&name).cloned())))?;
             value.map(|v| value_to_js(&ctx, &v)).transpose()
+        })?,
+    )?;
+    native.set(
+        "prepareChangeGroup",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer_mut().prepare_change_group())))?,
+    )?;
+    native.set(
+        "cancelChangeGroup",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, handle: usize| {
+            with_editor(&ctx, |ed| {
+                ed.buffer_mut().cancel_change_group(handle);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "acceptChangeGroup",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, handle: usize| {
+            with_editor(&ctx, |ed| {
+                ed.buffer_mut().accept_change_group(handle);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "windowStart",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            with_editor(&ctx, |ed| {
+                let b = ed.window_buffer();
+                Ok(b.line_start(b.top_line.min(b.line_count() - 1)))
+            })
+        })?,
+    )?;
+    native.set(
+        "killRegion",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, beg: usize, end: usize| with_editor(&ctx, |ed| ed.kill_region(beg, end)))?,
+    )?;
+    native.set(
+        "makeSyntaxTable",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, parent: Option<String>| {
+            with_editor(&ctx, |ed| {
+                if let Some(p) = &parent
+                    && !ed.syntax_tables.exists(p)
+                {
+                    return Err(Error::new(format!("No such syntax table: {p}")));
+                }
+                ed.syntax_tables.make(&name, parent.as_deref());
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "modifySyntaxEntry",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, chars: String, descriptor: String, table: Option<String>| {
+            with_editor(&ctx, |ed| {
+                let entry = ember_core::syntax_table::Entry::parse(&descriptor)?;
+                let table = table.unwrap_or_else(|| ed.buffer().syntax_table.clone());
+                if table == ember_core::syntax_table::STANDARD {
+                    return Err(Error::new("The standard syntax table cannot be changed; make a table of your own"));
+                }
+                for c in chars.chars() {
+                    ed.syntax_tables.modify(&table, c, entry);
+                }
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "syntaxTable",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer().syntax_table.clone())))?,
+    )?;
+    native.set(
+        "setSyntaxTable",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
+            with_editor(&ctx, |ed| {
+                if !ed.syntax_tables.exists(&name) {
+                    return Err(Error::new(format!("No such syntax table: {name}")));
+                }
+                ed.buffer_mut().syntax_table = name;
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "syntaxEntry",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, c: String| {
+            with_editor(&ctx, |ed| Ok(c.chars().next().map(|c| ed.char_syntax(c).descriptor())))
+        })?,
+    )?;
+    native.set(
+        "scanLists",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, from: usize, count: f64, depth: f64, sexp: bool| {
+            with_editor(&ctx, |ed| ed.scanner().scan_lists(from, count as i64, depth as i64, sexp))
+        })?,
+    )?;
+    native.set(
+        "forwardComment",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, count: f64| {
+            with_editor(&ctx, |ed| {
+                let (pos, all) = ed.scanner().forward_comment(ed.buffer().point(), count as i64);
+                ed.buffer_mut().set_point(pos);
+                Ok(all)
+            })
+        })?,
+    )?;
+    native.set(
+        "backwardPrefixChars",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            with_editor(&ctx, |ed| {
+                let pos = ed.scanner().backward_prefix_chars(ed.buffer().point());
+                ed.buffer_mut().set_point(pos);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "parsePartialSexp",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, from: usize, to: usize| -> rquickjs::Result<Object<'js>> {
+            let st = with_editor(&ctx, |ed| {
+                let scanner = ed.scanner();
+                let (from, to) = (from.clamp(scanner.min, scanner.max), to.clamp(scanner.min, scanner.max));
+                Ok(scanner.parse(from, to, Default::default()))
+            })?;
+            let object = Object::new(ctx.clone())?;
+            object.set("depth", st.depth as f64)?;
+            object.set("innermostStart", st.innermost_start)?;
+            object.set("lastComplete", st.last_complete)?;
+            object.set("inString", st.in_string.map(|c| c.to_string()))?;
+            object.set("inComment", st.in_comment.map(|n| n as f64))?;
+            object.set("quoted", st.quoted)?;
+            object.set("minDepth", st.min_depth as f64)?;
+            object.set("commentStyle", st.comment_style)?;
+            object.set("start", st.string_or_comment_start)?;
+            object.set("openParens", st.open_parens)?;
+            Ok(object)
         })?,
     )?;
     native.set(
