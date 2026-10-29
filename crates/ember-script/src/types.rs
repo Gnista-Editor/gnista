@@ -897,6 +897,13 @@ const API: &str = r##"
   function fboundp(name: string): boolean;
   /** Call the function named, or the command, as Emacs's funcall. */
   function funcall(name: string, ...args: any[]): any;
+  /**
+   * Run `fn` with variables bound to values, then put them back, as Emacs's
+   * let: a variable local in the current buffer is bound there, any other
+   * in its default value, and each is restored where it was bound, even if
+   * `fn` throws or changes buffers. Hooks cannot be bound yet.
+   */
+  function letBind<T>(bindings: { [variable: string]: Value }, fn: () => T): T;
   /** An error as a handler of conditionCase sees it: its condition, its data, and its message. */
   interface SignalledError {
     symbol: string;

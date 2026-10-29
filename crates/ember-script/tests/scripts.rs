@@ -558,3 +558,31 @@ fn errors_carry_their_conditions_both_ways() {
     assert_eq!((e.symbol(), e.message()), ("my-error", "it failed"));
     assert!(e.is("user-error"));
 }
+
+#[test]
+fn let_bind_restores_where_it_bound() {
+    let (mut ed, scripting) = setup();
+    eval(
+        &mut ed,
+        &scripting,
+        r#"
+        ember.getBufferCreate("other");
+        ember.makeLocalVariable("fill-column");
+        ember.setVariable("fill-column", 40);
+        const inside = ember.letBind({ "fill-column": 10, "case-fold-search": false }, () => {
+          // Bound in this buffer; the other buffer sees the default.
+          const other = ember.withCurrentBuffer("other", () => ember.variable("fill-column"));
+          ember.call("switch-to-buffer", "other");
+          return `${ember.withCurrentBuffer("*scratch*", () => ember.variable("fill-column"))} ${other} ${ember.variable("case-fold-search")}`;
+        });
+        let thrown = "";
+        try {
+          ember.letBind({ "case-fold-search": false }, () => { throw new Error("out"); });
+        } catch (e) {
+          thrown = `${(e as Error).message} ${ember.variable("case-fold-search")}`;
+        }
+        ember.message(`${inside} | ${ember.withCurrentBuffer("*scratch*", () => ember.variable("fill-column"))} ${ember.variable("case-fold-search")} | ${thrown}`);
+        "#,
+    );
+    assert_eq!(ed.messages().last().map(String::as_str), Some("10 70 false | 40 true | out true"));
+}

@@ -387,6 +387,37 @@
       return id;
     },
     killRegion: (beg, end) => native.killRegion(beg, end),
+    letBind(bindings, fn) {
+      // As let: a variable local in the current buffer is bound there, any
+      // other in its default value; each is restored where it was bound.
+      const restore = [];
+      try {
+        for (const [name, value] of Object.entries(bindings)) {
+          if (native.isHook(name)) throw new TypeError(`letBind cannot bind the hook ${name} yet`);
+          if (native.isLocalVariable(name)) {
+            const buffer = native.bufferName();
+            const old = native.variable(name);
+            restore.push(() => {
+              if (!native.bufferList().includes(buffer)) return;
+              const back = native.setCurrentBuffer(buffer);
+              try {
+                native.setVariable(name, old ?? null);
+              } finally {
+                native.setCurrentBuffer(back);
+              }
+            });
+            native.setVariable(name, value ?? null);
+          } else {
+            const old = native.defaultValue(name);
+            restore.push(() => native.setDefault(name, old ?? null));
+            native.setDefault(name, value ?? null);
+          }
+        }
+        return fn();
+      } finally {
+        for (const undo of restore.reverse()) undo();
+      }
+    },
     signal(symbol, message, data = []) {
       const e = new Error(String(message));
       e.symbol = String(symbol);
