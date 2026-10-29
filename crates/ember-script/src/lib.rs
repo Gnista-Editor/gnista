@@ -1840,11 +1840,17 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
     )?;
     native.set(
         "parsePartialSexp",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, from: usize, to: usize| -> rquickjs::Result<Object<'js>> {
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, from: Option<usize>, to: usize| -> rquickjs::Result<Object<'js>> {
             let st = with_editor(&ctx, |ed| {
                 let scanner = ed.scanner();
-                let (from, to) = (from.clamp(scanner.min, scanner.max), to.clamp(scanner.min, scanner.max));
-                Ok(scanner.parse(from, to, Default::default()))
+                // With no start, from the start of the buffer through its kept states, as syntax-ppss.
+                Ok(match from {
+                    None => scanner.ppss(to),
+                    Some(from) => {
+                        let (from, to) = (from.clamp(scanner.min, scanner.max), to.clamp(scanner.min, scanner.max));
+                        scanner.parse(from, to, Default::default())
+                    }
+                })
             })?;
             let object = Object::new(ctx.clone())?;
             object.set("depth", st.depth as f64)?;

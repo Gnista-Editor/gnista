@@ -45,6 +45,38 @@
     native.runHooks("after-change-major-mode-hook");
   }
 
+  /**
+   * Moves over the characters in `set`, as skip-chars-forward reads it: a
+   * leading ^ for those not in it, a-z for ranges, \\ quoting. Returns how
+   * far it went.
+   */
+  function skipChars(set, limit, dir) {
+    const not = set.startsWith("^");
+    const body = not ? set.slice(1) : set;
+    const singles = new Set();
+    const ranges = [];
+    for (let i = 0; i < body.length; i++) {
+      let c = body[i];
+      if (c === "\\" && i + 1 < body.length) c = body[++i];
+      if (body[i + 1] === "-" && i + 2 < body.length) {
+        ranges.push([c, body[i + 2]]);
+        i += 2;
+      } else {
+        singles.add(c);
+      }
+    }
+    const inSet = (c) => singles.has(c) || ranges.some(([a, b]) => c >= a && c <= b);
+    const start = native.point();
+    let p = start;
+    if (dir > 0) {
+      while (p < limit && inSet(native.bufferText(p, p + 1)) !== not) p++;
+    } else {
+      while (p > limit && inSet(native.bufferText(p - 1, p)) !== not) p--;
+    }
+    native.gotoChar(p);
+    return p - start;
+  }
+
   globalThis.ember = Object.freeze({
     defineCommand(definition) {
       if (typeof definition !== "object" || definition === null) {
@@ -352,6 +384,83 @@
       return id;
     },
     killRegion: (beg, end) => native.killRegion(beg, end),
+    charAfter: (pos) => {
+      const p = pos ?? native.point();
+      return p >= native.pointMin() && p < native.pointMax() ? native.bufferText(p, p + 1) : undefined;
+    },
+    charBefore: (pos) => {
+      const p = (pos ?? native.point()) - 1;
+      return p >= native.pointMin() && p < native.pointMax() ? native.bufferText(p, p + 1) : undefined;
+    },
+    lineBeginningPosition: (pos) => native.lineStart(native.lineOf(pos ?? native.point())),
+    lineEndPosition: (pos) => native.lineEnd(native.lineOf(pos ?? native.point())),
+    currentIndentation: (pos) => {
+      const tab = Number(native.variable("tab-width") ?? 8) || 8;
+      let col = 0;
+      for (const c of native.lineText(native.lineOf(pos ?? native.point()))) {
+        if (c === " ") col++;
+        else if (c === "\t") col += tab - (col % tab);
+        else break;
+      }
+      return col;
+    },
+    indentTo(column) {
+      const now = native.currentColumn();
+      if (now >= column) return now;
+      const tab = Number(native.variable("tab-width") ?? 8);
+      let text = "";
+      let col = now;
+      if (native.variable("indent-tabs-mode") !== false && tab > 0) {
+        while (Math.floor(col / tab) < Math.floor(column / tab)) {
+          text += "\t";
+          col = (Math.floor(col / tab) + 1) * tab;
+        }
+      }
+      native.insert(text + " ".repeat(column - col));
+      return column;
+    },
+    indentLineTo(column) {
+      // As indent.el's: to the indentation's end, then only what must change.
+      const start = native.lineStart(native.lineOf(native.point()));
+      const ws = /^[ \t]*/.exec(native.lineText(native.lineOf(start)))[0].length;
+      native.gotoChar(start + ws);
+      const cur = native.currentColumn();
+      const tab = Number(native.variable("tab-width") ?? 8) || 8;
+      if (cur < column) {
+        if (column - Math.floor(cur / tab) * tab >= tab) {
+          let a = native.point();
+          while (a > start && native.bufferText(a - 1, a) === " ") a--;
+          native.deleteRegion(a, native.point());
+          native.gotoChar(a);
+        }
+        ember.indentTo(column);
+      } else if (cur > column) {
+        native.gotoChar(start);
+        native.moveToColumn(column);
+        if (native.currentColumn() > column) {
+          // Inside a tab: the indentation is made again.
+          native.deleteRegion(start, start + ws);
+          native.gotoChar(start);
+          ember.indentTo(column);
+        } else {
+          native.deleteRegion(native.point(), start + ws);
+        }
+      }
+    },
+    skipCharsForward: (chars, limit) => skipChars(String(chars), limit ?? native.pointMax(), 1),
+    skipCharsBackward: (chars, limit) => skipChars(String(chars), limit ?? native.pointMin(), -1),
+    saveExcursion(fn) {
+      const buffer = native.bufferName();
+      const marker = native.makeMarker(native.point(), undefined, false);
+      try {
+        return fn();
+      } finally {
+        const p = native.markerPosition(marker);
+        native.setMarker(marker, undefined, undefined);
+        if (native.bufferName() !== buffer && native.bufferList().includes(buffer)) native.setCurrentBuffer(buffer);
+        if (p !== undefined && p !== null) native.gotoChar(p);
+      }
+    },
     afterPrompts: (fn) => native.afterPrompts(fn),
     makeProcess({ name, buffer, command, directory, env, filter, sentinel, stderr = true }) {
       if (!Array.isArray(command) || command.length === 0) throw new TypeError("makeProcess needs a command: [program, ...args]");
@@ -419,7 +528,7 @@
       return st;
     },
     syntaxPpss: (pos) => {
-      const st = native.parsePartialSexp(native.pointMin(), pos ?? native.point());
+      const st = native.parsePartialSexp(undefined, pos ?? native.point());
       for (const k of ["innermostStart", "lastComplete", "inString", "inComment", "start"]) st[k] ??= null;
       return st;
     },

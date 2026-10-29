@@ -24,6 +24,9 @@ fn env_usize(name: &str, default: usize) -> usize {
 
 /// One screenful drawn as a front end draws it.
 fn frame(ed: &mut Editor) {
+    // A pause after the key, as typing has, so idle timers such as Show
+    // Paren mode's run and count.
+    ed.advance_clock(std::time::Duration::from_millis(200));
     ed.redisplay();
     let w = ed.selected_window();
     std::hint::black_box(ed.rows_of_window(w, ROWS + 1, true));
@@ -152,6 +155,9 @@ fn large_org_file() {
     b.keys("typing in a paragraph", 20, "x");
     b.keys("DEL", 20, "DEL");
     b.keys("RET in a paragraph", 5, "RET");
+    b.ed.call("electric-pair-mode", vec![]).unwrap();
+    b.keys("( and ) with electric-pair and show-paren", 10, "( )");
+    b.ed.call_with_prefix("electric-pair-mode", vec![], Some(ember_core::PrefixArg::Number(-1))).unwrap();
     b.keys("C-n (next line)", 20, "C-n");
     b.goto_line(heading);
     b.keys("TAB on a heading (cycle)", 3, "TAB");
@@ -192,6 +198,9 @@ fn large_text_file() {
     b.goto_line(middle);
     b.keys("typing in the middle", 20, "x");
     b.keys("RET in the middle", 5, "RET");
+    b.ed.call("electric-pair-mode", vec![]).unwrap();
+    b.keys("( and ) with electric-pair and show-paren", 5, "( )");
+    b.ed.call_with_prefix("electric-pair-mode", vec![], Some(ember_core::PrefixArg::Number(-1))).unwrap();
     b.keys("C-k (kill line)", 5, "C-k");
     b.keys("C-/ (undo)", 5, "C-/");
     b.goto_line(0);

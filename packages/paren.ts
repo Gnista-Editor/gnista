@@ -57,7 +57,7 @@ ember.defineVariable({
 });
 
 const truthy = (v: ember.Value | undefined): boolean => v !== undefined && v !== null && v !== false;
-const charAt = (p: number): string => ember.bufferText(p, p + 1);
+const charAt = (p: number): string => ember.charAfter(p) ?? "";
 
 /** Whether the paren at `pos` is not escaped, as show-paren--unescaped-p. */
 function unescaped(pos: number): boolean {

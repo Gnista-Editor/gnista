@@ -1157,14 +1157,8 @@ impl Editor {
     /// Reads the current buffer's accessible text through its syntax table.
     pub fn scanner(&self) -> crate::syntax_table::Scanner<'_> {
         let b = self.buffer();
-        crate::syntax_table::Scanner {
-            buffer: b,
-            tables: &self.syntax_tables,
-            table: &b.syntax_table,
-            ignore_comments: self.variable("parse-sexp-ignore-comments").is_some_and(|v| v.is_true()),
-            min: b.point_min(),
-            max: b.point_max(),
-        }
+        let ignore_comments = self.variable("parse-sexp-ignore-comments").is_some_and(|v| v.is_true());
+        crate::syntax_table::Scanner::new(b, &self.syntax_tables, &b.syntax_table, ignore_comments, b.point_min(), b.point_max())
     }
 
     /// A marker's buffer and position, wherever it is; none once it points

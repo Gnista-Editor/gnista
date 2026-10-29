@@ -38,8 +38,8 @@ ember.defineVariable({
 });
 
 const truthy = (v: ember.Value | undefined): boolean => v !== undefined && v !== null && v !== false;
-const charAt = (p: number): string => (p >= ember.pointMin() && p < ember.pointMax() ? ember.bufferText(p, p + 1) : "");
-const charBefore = (p: number): string => charAt(p - 1);
+const charAt = (p: number): string => ember.charAfter(p) ?? "";
+const charBefore = (p: number): string => ember.charBefore(p) ?? "";
 const pairs = (name: string): [string, string][] => {
   const v = ember.variable(name);
   return Array.isArray(v) ? v.filter((p): p is [string, string] => Array.isArray(p) && p.length === 2).map((p) => [String(p[0]), String(p[1])]) : [];

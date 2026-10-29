@@ -80,49 +80,22 @@ for (const [name, value, doc] of [
   ember.defineVariable({ name, value, doc });
 }
 
-const tabWidth = (): number => Number(ember.variable("tab-width") ?? 8);
-const charAt = (p: number): string => (p >= 0 && p < ember.bufferSize() ? ember.bufferText(p, p + 1) : "");
+const charAt = (p: number): string => ember.charAfter(p) ?? "";
 
-/** A line's indentation, as current-indentation. */
-function indentationOf(line: number): number {
-  let col = 0;
-  for (const c of ember.lineText(line)) {
-    if (c === " ") col++;
-    else if (c === "\t") col += tabWidth() - (col % tabWidth());
-    else break;
-  }
-  return col;
+const indentationOf = (line: number): number => ember.currentIndentation(ember.lineStart(line));
+
+/** Indents point's line to `column`, point kept with the text after the indentation, as js-indent-line does. */
+function indentKeepingPoint(column: number): void {
+  const offset = ember.point() - (ember.lineBeginningPosition() + /^[ \t]*/.exec(ember.lineText(ember.lineOf(ember.point())))![0].length);
+  ember.indentLineTo(column);
+  if (offset > 0) ember.gotoChar(ember.point() + offset);
 }
 
-function columnOf(p: number): number {
-  const here = ember.point();
-  ember.gotoChar(p);
-  const c = ember.currentColumn();
-  ember.gotoChar(here);
-  return c;
-}
-
-/** Indents point's line to `column`, point staying with the text or going to the indentation's end, as indent-line-to. */
-function indentLineTo(column: number): void {
-  const line = ember.lineOf(ember.point());
-  const start = ember.lineStart(line);
-  const ws = /^[ \t]*/.exec(ember.lineText(line))![0].length;
-  const offset = ember.point() - start;
-  if (indentationOf(line) !== column || ember.lineText(line).slice(0, ws) !== whitespace(column)) {
-    ember.deleteRegion(start, start + ws);
-    ember.gotoChar(start);
-    ember.insert(whitespace(column));
-  }
-  const now = whitespace(column).length;
-  ember.gotoChar(offset <= ws ? start + now : start + now + (offset - ws));
-}
-
-function whitespace(column: number): string {
-  const tab = tabWidth();
-  return ember.variable("indent-tabs-mode") !== false && tab > 0
-    ? "\t".repeat(Math.floor(column / tab)) + " ".repeat(column % tab)
-    : " ".repeat(column);
-}
+const columnOf = (p: number): number =>
+  ember.saveExcursion(() => {
+    ember.gotoChar(p);
+    return ember.currentColumn();
+  });
 
 const offsetFor = (): number => {
   const mode = String(ember.variable("major-mode"));
@@ -171,7 +144,7 @@ ember.defineCommand({
   run: () => {
     const line = ember.lineOf(ember.point());
     const column = bracedIndentation(line);
-    if (column !== undefined) indentLineTo(column);
+    if (column !== undefined) indentKeepingPoint(column);
   },
 });
 
@@ -224,7 +197,7 @@ ember.defineCommand({
   doc: "Indent the current line of Python as its block says: deeper after a line ending in a colon, back after return, and else, elif, except and finally with their block.",
   run: () => {
     const column = pythonIndentation(ember.lineOf(ember.point()));
-    if (column !== undefined) indentLineTo(column);
+    if (column !== undefined) indentKeepingPoint(column);
   },
 });
 

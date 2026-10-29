@@ -172,6 +172,11 @@ pub struct Buffer {
     markers: Vec<Marker>,
     /// The name of the syntax table the buffer uses, as its major mode sets it.
     pub syntax_table: String,
+    /// Parse states from the start of the buffer at points along it, as
+    /// syntax-ppss keeps them, for the syntax table named first. Changes
+    /// drop those after them.
+    pub(crate) ppss_cache: std::cell::RefCell<Vec<(usize, crate::syntax_table::ParseState)>>,
+    pub(crate) ppss_table: std::cell::RefCell<String>,
     /// The tree-sitter tree, if a major mode gave the buffer a language.
     pub(crate) syntax: Option<SyntaxTree>,
     /// The stretches already fontified by `jit-lock-functions`, in order.
@@ -225,6 +230,8 @@ impl Buffer {
             next_overlay_id: 0,
             markers: Vec::new(),
             syntax_table: crate::syntax_table::STANDARD.to_string(),
+            ppss_cache: Default::default(),
+            ppss_table: Default::default(),
             syntax: None,
             fontified: Vec::new(),
             tick: 0,
@@ -431,6 +438,11 @@ impl Buffer {
 
     pub fn char_at(&self, pos: usize) -> Option<char> {
         (pos < self.len()).then(|| self.text.char(pos))
+    }
+
+    /// The characters from `start` to `end`, for code that reads many in turn.
+    pub(crate) fn chars_between(&self, start: usize, end: usize) -> Vec<char> {
+        self.text.slice(start..end).chars().collect()
     }
 
     pub fn slice(&self, range: Range<usize>) -> String {

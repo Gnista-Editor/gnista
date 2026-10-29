@@ -24,19 +24,10 @@ const num = (name: string, fallback: number): number => {
   const v = ember.variable(name);
   return typeof v === "number" ? v : fallback;
 };
-const charAt = (p: number): string => (p >= 0 && p < ember.bufferSize() ? ember.bufferText(p, p + 1) : "");
-const bol = (p = ember.point()): number => ember.lineStart(ember.lineOf(p));
-const eol = (p = ember.point()): number => ember.lineEnd(ember.lineOf(p));
-const indentation = (line: number): number => {
-  let col = 0;
-  const tab = num("tab-width", 8);
-  for (const c of ember.lineText(line)) {
-    if (c === " ") col++;
-    else if (c === "\t") col += tab - (col % tab);
-    else break;
-  }
-  return col;
-};
+const charAt = (p: number): string => ember.charAfter(p) ?? "";
+const bol = (p = ember.point()): number => ember.lineBeginningPosition(p);
+const eol = (p = ember.point()): number => ember.lineEndPosition(p);
+const indentation = (line: number): number => ember.currentIndentation(ember.lineStart(line));
 const blank = (line: number): boolean => /^[ \t]*$/.test(ember.lineText(line));
 
 /** Comment syntax, as comment-normalize-vars checks it is there. */
@@ -277,31 +268,11 @@ function chooseIndent(indent: number): number {
   return Math.max(min, Math.min(max, target));
 }
 
-function columnAt(p: number): number {
-  const here = ember.point();
-  ember.gotoChar(p);
-  const c = ember.currentColumn();
-  ember.gotoChar(here);
-  return c;
-}
-
-/** Indents to `column` with spaces, or tabs as indent-tabs-mode says, as indent-to. */
-function indentTo(column: number): void {
-  const now = ember.currentColumn();
-  if (now >= column) return;
-  const tab = num("tab-width", 8);
-  if (ember.variable("indent-tabs-mode") !== false && tab > 0) {
-    let col = now;
-    let s = "";
-    while (Math.floor(col / tab) < Math.floor(column / tab)) {
-      s += "\t";
-      col = (Math.floor(col / tab) + 1) * tab;
-    }
-    ember.insert(s + " ".repeat(column - col));
-  } else {
-    ember.insert(" ".repeat(column - now));
-  }
-}
+const columnAt = (p: number): number =>
+  ember.saveExcursion(() => {
+    ember.gotoChar(p);
+    return ember.currentColumn();
+  });
 
 /** Puts a comment at the end of the line, or indents the one there, as comment-indent. */
 function commentIndent(): void {
@@ -315,7 +286,7 @@ function commentIndent(): void {
   } else {
     ember.gotoChar(eol());
     const p = ember.point();
-    indentTo(num("comment-column", 32));
+    ember.indentTo(num("comment-column", 32));
     // A space before it, as sh needs and is neater.
     if (ember.point() > 0 && !["\n", "\t", " "].includes(charAt(ember.point() - 1))) ember.insert(" ");
     void p;
@@ -348,7 +319,7 @@ function reindent(column: number): void {
   while (q > bol() && " \t".includes(charAt(q - 1))) q--;
   ember.deleteRegion(q, ember.point());
   ember.gotoChar(q);
-  indentTo(column);
+  ember.indentTo(column);
 }
 
 /** Kills the comment on the line, and the whitespace before it, as comment-kill. */
@@ -537,12 +508,12 @@ ember.defineCommand({
     if (ce !== "") {
       // A comment with an end is continued with comment-continue's start.
       ember.insertAndInherit("\n");
-      indentTo(column);
+      ember.indentTo(column);
       ember.insert(starter.replace(/^\S/, " "));
       return;
     }
     ember.insertAndInherit("\n");
-    indentTo(column);
+    ember.indentTo(column);
     ember.insert(starter);
   },
 });

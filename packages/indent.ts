@@ -21,39 +21,7 @@ const num = (name: string, fallback: number): number => {
 };
 
 /** The column a line's text starts at, as current-indentation. */
-function currentIndentation(line: number): number {
-  let col = 0;
-  for (const c of ember.lineText(line)) {
-    if (c === " ") col++;
-    else if (c === "\t") col += num("tab-width", 8) - (col % num("tab-width", 8));
-    else break;
-  }
-  return col;
-}
-
-/** Whitespace reaching `column`, with tabs if indent-tabs-mode says, as indent-to inserts it. */
-function indentString(column: number): string {
-  const tab = num("tab-width", 8);
-  return ember.variable("indent-tabs-mode") !== false && tab > 0
-    ? "\t".repeat(Math.floor(column / tab)) + " ".repeat(column % tab)
-    : " ".repeat(column);
-}
-
-/** Indents the current line to `column`, as indent-line-to: point stays with the text, or goes after the indentation if it was in it. */
-function indentLineTo(column: number): void {
-  const line = ember.lineOf(ember.point());
-  const start = ember.lineStart(line);
-  const text = ember.lineText(line);
-  const ws = /^[ \t]*/.exec(text)![0];
-  const offset = ember.point() - start;
-  if (currentIndentation(line) !== column || ws !== indentString(column)) {
-    ember.deleteRegion(start, start + ws.length);
-    ember.gotoChar(start);
-    ember.insert(indentString(column));
-  }
-  const now = indentString(column).length;
-  ember.gotoChar(offset <= ws.length ? start + now : start + now + (offset - ws.length));
-}
+const currentIndentation = (line: number): number => ember.currentIndentation(ember.lineStart(line));
 
 ember.defineCommand({
   name: "indent-according-to-mode",
@@ -69,10 +37,10 @@ ember.defineCommand({
     const line = ember.lineOf(ember.point());
     const column = line === 0 || /^[ \t]*$/.test(ember.lineText(line - 1)) ? 0 : currentIndentation(line - 1);
     if (ember.currentColumn() <= currentIndentation(line)) {
-      indentLineTo(column);
+      ember.indentLineTo(column);
     } else {
       const p = ember.makeMarker();
-      indentLineTo(column);
+      ember.indentLineTo(column);
       ember.gotoChar(ember.markerPosition(p)!);
       ember.setMarker(p, null);
     }
@@ -85,35 +53,16 @@ ember.defineVariable({
   value: true,
 });
 
-const bol = (): number => ember.lineStart(ember.lineOf(ember.point()));
-
-/** Indents from point to `column`, as indent-to: tabs as indent-tabs-mode says, then spaces. */
-function indentTo(column: number): void {
-  const now = ember.currentColumn();
-  if (now >= column) return;
-  const tab = num("tab-width", 8);
-  if (ember.variable("indent-tabs-mode") !== false && tab > 0) {
-    let col = now;
-    let s = "";
-    while (Math.floor(col / tab) < Math.floor(column / tab)) {
-      s += "\t";
-      col = (Math.floor(col / tab) + 1) * tab;
-    }
-    ember.insert(s + " ".repeat(column - col));
-  } else {
-    ember.insert(" ".repeat(column - now));
-  }
-}
 
 /** Moves to the next tab stop, deleting the whitespace before point first, as tab-to-tab-stop. */
 function tabToTabStop(): void {
   const tab = num("tab-width", 8);
   const next = (Math.floor(ember.currentColumn() / tab) + 1) * tab;
   let a = ember.point();
-  while (a > bol() && " \t".includes(ember.bufferText(a - 1, a))) a--;
+  while (a > ember.lineBeginningPosition() && " \t".includes(ember.bufferText(a - 1, a))) a--;
   ember.deleteRegion(a, ember.point());
   ember.gotoChar(a);
-  indentTo(next);
+  ember.indentTo(next);
 }
 
 ember.defineCommand({
@@ -149,7 +98,7 @@ ember.defineCommand({
     }
     if (indent !== undefined) {
       const m = ember.makeMarker();
-      indentTo(indent);
+      ember.indentTo(indent);
       if (ember.markerPosition(m)! > ember.point()) ember.gotoChar(ember.markerPosition(m)!);
       ember.setMarker(m, null);
     } else {
@@ -190,7 +139,7 @@ function indentRigidly(first: number, last: number, n: number): void {
     const target = Math.max(0, currentIndentation(line) + n);
     ember.deleteRegion(ember.point(), ember.point() + ws);
     // Lines with nothing on them stay empty.
-    if (ws < text.length) indentTo(target);
+    if (ws < text.length) ember.indentTo(target);
   }
   ember.gotoChar(ember.markerPosition(p)!);
   ember.setMarker(p, null);

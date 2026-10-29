@@ -67,28 +67,18 @@ const fillColumn = (): number => {
   const v = ember.variable("fill-column");
   return typeof v === "number" ? v : 70;
 };
-const charAt = (p: number): string => ember.bufferText(p, Math.min(p + 1, ember.bufferSize()));
-const charBefore = (p: number): string => (p > 0 ? ember.bufferText(p - 1, p) : "");
-const bolAt = (p: number): number => ember.lineStart(ember.lineOf(p));
-const eolAt = (p: number): number => ember.lineEnd(ember.lineOf(p));
+const charAt = (p: number): string => ember.charAfter(p) ?? "";
+const charBefore = (p: number): string => ember.charBefore(p) ?? "";
+const bolAt = (p: number): number => ember.lineBeginningPosition(p);
+const eolAt = (p: number): number => ember.lineEndPosition(p);
 const bolp = (): boolean => ember.point() === bolAt(ember.point());
 const eolp = (): boolean => ember.point() === eolAt(ember.point());
 const eobp = (): boolean => ember.point() >= ember.bufferSize();
 
 /** Moves forward over characters in `chars`, not past `limit`, as skip-chars-forward. */
-function skipForward(chars: string, limit = ember.bufferSize()): void {
-  let p = ember.point();
-  while (p < limit && chars.includes(charAt(p))) p++;
-  ember.gotoChar(p);
-}
+const skipForward = (chars: string, limit?: number): number => ember.skipCharsForward(chars, limit);
 /** Moves back over characters in `chars`, not before `limit`, as skip-chars-backward. Returns how far it went. */
-function skipBackward(chars: string, limit = 0): number {
-  const start = ember.point();
-  let p = start;
-  while (p > limit && chars.includes(charBefore(p))) p--;
-  ember.gotoChar(p);
-  return start - p;
-}
+const skipBackward = (chars: string, limit?: number): number => -ember.skipCharsBackward(chars, limit);
 /** As forward-line: to the start of a later or earlier line, or an end of the buffer. */
 function forwardLine(n: number): void {
   const line = ember.lineOf(ember.point()) + n;
@@ -104,16 +94,7 @@ function lookingAt(regexp: string, p: number): number | undefined {
 const marker = (pos: number, advances = false): number => ember.makeMarker(pos, { advances });
 const at = (m: number): number => ember.markerPosition(m)!;
 const free = (...ms: number[]): void => ms.forEach((m) => ember.setMarker(m, null));
-/** Runs `fn` and puts point back where it was, moved with the text, as save-excursion. */
-function saveExcursion<T>(fn: () => T): T {
-  const p = marker(ember.point());
-  try {
-    return fn();
-  } finally {
-    ember.gotoChar(at(p));
-    free(p);
-  }
-}
+const saveExcursion = <T>(fn: () => T): T => ember.saveExcursion(fn);
 function barfIfReadOnly(): void {
   if (ember.bufferReadOnly()) throw new Error(`Buffer is read-only: #<buffer ${ember.bufferName()}>`);
 }

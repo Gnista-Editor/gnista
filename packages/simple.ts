@@ -428,30 +428,14 @@ ember.defineVariable({
 const INDENT_RELATIVE_MODES = ["fundamental-mode", "text-mode", "outline-mode"];
 
 /** The indentation of a line: the column its first character that is not a space or tab starts at. */
-function lineIndentation(line: number): number {
-  const ws = /^[ \t]*/.exec(ember.lineText(line))?.[0] ?? "";
-  const tab = Number(ember.variable("tab-width") ?? 8);
-  let col = 0;
-  for (const c of ws) col = c === "\t" ? (Math.floor(col / tab) + 1) * tab : col + 1;
-  return col;
-}
+const lineIndentation = (line: number): number => ember.currentIndentation(ember.lineStart(line));
 
-/** Gives a line an indentation, changing only its leading spaces and tabs, as indent-line-to does. */
+/** Gives a line an indentation, point kept with the text after it, as indent-line-to in save-excursion. */
 function indentLineToColumn(line: number, column: number): void {
-  const start = ember.lineStart(line);
-  const ws = /^[ \t]*/.exec(ember.lineText(line))?.[0] ?? "";
-  if (lineIndentation(line) === column) return;
-  let text = "";
-  if (ember.variable("indent-tabs-mode") === true) {
-    const tab = Number(ember.variable("tab-width") ?? 8);
-    text = "\t".repeat(Math.floor(column / tab)) + " ".repeat(column % tab);
-  } else text = " ".repeat(column);
-  const p = ember.point();
-  ember.deleteRegion(start, start + ws.length);
-  ember.gotoChar(start);
-  ember.insert(text);
-  const delta = text.length - ws.length;
-  ember.gotoChar(p > start + ws.length ? p + delta : Math.min(p, start + text.length));
+  ember.saveExcursion(() => {
+    ember.gotoChar(ember.lineStart(line));
+    ember.indentLineTo(column);
+  });
 }
 
 /**

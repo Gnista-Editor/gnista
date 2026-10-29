@@ -167,7 +167,10 @@ impl Entry {
                 s.push(c);
             }
         }
-        s.trim_end().to_string()
+        // Only the padding goes: whitespace's own class is a space.
+        let trimmed = s[1..].trim_end().len();
+        s.truncate(1 + trimmed);
+        s
     }
 
     /// The comment style a character starting or ending a comment gives
@@ -290,6 +293,11 @@ fn scan_error(message: &str, from: usize, to: usize) -> Error {
     Error::new(format!("Scan error: \"{message}\", {}, {}", from + 1, to + 1))
 }
 
+/// How many characters a scanner reads from the buffer at a time.
+const CHUNK: usize = 4096;
+/// How far apart syntax-ppss keeps parse states, as syntax-ppss-max-span.
+const PPSS_SPAN: usize = 20_000;
+
 /// Reads a buffer's text through its syntax table.
 pub struct Scanner<'a> {
     pub buffer: &'a Buffer,
@@ -300,15 +308,81 @@ pub struct Scanner<'a> {
     /// The accessible part of the buffer.
     pub min: usize,
     pub max: usize,
+    /// The text around where the scanner last read, and where it starts:
+    /// scans read along the text, and the rope is slow one character at a time.
+    chunk: std::cell::RefCell<(usize, Vec<char>)>,
+    /// The table's entries for ASCII, looked up once.
+    ascii: [Entry; 128],
 }
 
 impl<'a> Scanner<'a> {
+    pub fn new(buffer: &'a Buffer, tables: &'a SyntaxTables, table: &'a str, ignore_comments: bool, min: usize, max: usize) -> Scanner<'a> {
+        let ascii = std::array::from_fn(|i| tables.entry(table, i as u8 as char));
+        Scanner { buffer, tables, table, ignore_comments, min, max, chunk: Default::default(), ascii }
+    }
+
     pub fn char_at(&self, pos: usize) -> Option<char> {
-        if pos < self.min || pos >= self.max { None } else { self.buffer.char_at(pos) }
+        if pos < self.min || pos >= self.max {
+            return None;
+        }
+        let mut chunk = self.chunk.borrow_mut();
+        let (start, chars) = &mut *chunk;
+        if pos < *start || pos >= *start + chars.len() {
+            // Around `pos`, as scans go either way.
+            *start = pos.saturating_sub(CHUNK / 2).max(self.min);
+            *chars = self.buffer.chars_between(*start, (*start + CHUNK).min(self.max));
+        }
+        chars.get(pos - *start).copied()
+    }
+
+    /// A character's entry in the scanner's table.
+    pub fn entry(&self, c: char) -> Entry {
+        if c.is_ascii() { self.ascii[c as usize] } else { self.tables.entry(self.table, c) }
     }
 
     pub fn entry_at(&self, pos: usize) -> Option<Entry> {
-        self.char_at(pos).map(|c| self.tables.entry(self.table, c))
+        self.char_at(pos).map(|c| self.entry(c))
+    }
+
+    /// The parse state at `pos` from the start of the buffer, as syntax-ppss,
+    /// from the nearest state the buffer keeps, keeping more along the way.
+    pub fn ppss(&self, pos: usize) -> ParseState {
+        let pos = pos.min(self.buffer.len());
+        let full = Scanner::new(self.buffer, self.tables, self.table, self.ignore_comments, 0, self.buffer.len());
+        let mut cache = self.buffer.ppss_cache.borrow_mut();
+        let mut table = self.buffer.ppss_table.borrow_mut();
+        if *table != self.table {
+            cache.clear();
+            *table = self.table.to_string();
+        }
+        let (mut at, mut state) = cache.iter().rev().find(|(p, _)| *p <= pos).cloned().unwrap_or_default();
+        while pos - at > PPSS_SPAN {
+            // Kept at the start of a line, which no two-character comment
+            // delimiter or escape straddles.
+            let target = at + PPSS_SPAN;
+            let line_start = self.buffer.line_start(self.buffer.line_of(target));
+            let next = if line_start > at {
+                line_start
+            } else {
+                // On a line that long, before any character that could
+                // start a two-character delimiter or escape the next.
+                let mut p = target;
+                while p > at + 1
+                    && full.entry_at(p - 1).is_some_and(|e| {
+                        e.has(flags::START1) || e.has(flags::END1) || matches!(e.class, Class::Escape | Class::CharQuote)
+                    })
+                {
+                    p -= 1;
+                }
+                p
+            };
+            state = full.parse(at, next, state);
+            at = next;
+            if cache.last().is_none_or(|(p, _)| *p < at) {
+                cache.push((at, state.clone()));
+            }
+        }
+        full.parse(at, pos, state)
     }
 
     pub fn class_at(&self, pos: usize) -> Option<Class> {
@@ -350,7 +424,7 @@ impl<'a> Scanner<'a> {
     fn forward_comment_body(&self, mut pos: usize, style: u8, nested: bool, mut depth: i64) -> std::result::Result<usize, usize> {
         loop {
             let Some(c) = self.char_at(pos) else { return Err(pos) };
-            let e = self.tables.entry(self.table, c);
+            let e = self.entry(c);
             if style == 3 {
                 // A comment fence ends at the next fence.
                 if e.class == Class::CommentFence {
@@ -518,7 +592,7 @@ impl<'a> Scanner<'a> {
     fn skip_string_body(&self, mut pos: usize, to: usize, term: char) -> Option<usize> {
         while pos < to {
             let c = self.char_at(pos)?;
-            let class = self.tables.entry(self.table, c).class;
+            let class = self.entry(c).class;
             if term == '|' && class == Class::StringFence {
                 return Some(pos + 1);
             }
@@ -554,16 +628,16 @@ impl<'a> Scanner<'a> {
                 return None;
             }
         }
-        let before = self.parse(self.min, pos - 1, ParseState::default());
+        let before = self.ppss(pos - 1);
         if before.in_comment.is_some() {
             let start = before.string_or_comment_start?;
-            let after = self.parse(self.min, pos, ParseState::default());
+            let after = self.ppss(pos);
             return after.in_comment.is_none().then_some(start);
         }
         // A comment ender two characters long, its first already read.
         if pos >= 2 {
-            let earlier = self.parse(self.min, pos - 2, ParseState::default());
-            let after = self.parse(self.min, pos, ParseState::default());
+            let earlier = self.ppss(pos - 2);
+            let after = self.ppss(pos);
             if earlier.in_comment.is_some() && after.in_comment.is_none() {
                 return earlier.string_or_comment_start;
             }
@@ -842,5 +916,46 @@ impl<'a> Scanner<'a> {
             }
         }
         pos
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn c_tables() -> SyntaxTables {
+        let mut tables = SyntaxTables::default();
+        tables.make("c", None);
+        for (c, d) in [('/', ". 124b"), ('*', ". 23"), ('\n', "> b")] {
+            tables.modify("c", c, Entry::parse(d).unwrap());
+        }
+        tables
+    }
+
+    #[test]
+    fn descriptors_keep_their_class() {
+        assert_eq!(standard_entry(' ').descriptor(), " ");
+        assert_eq!(standard_entry('(').descriptor(), "()");
+        assert_eq!(Entry::parse(". 124b").unwrap().descriptor(), ". 124b");
+        assert_eq!(Entry::parse("w").unwrap().descriptor(), "w");
+    }
+
+    #[test]
+    fn kept_parse_states_agree_with_parsing_from_the_start() {
+        let tables = c_tables();
+        let mut b = Buffer::new("t");
+        // Delimiters near where states are kept, on long and short lines.
+        let mut text = String::new();
+        for i in 0..400 {
+            text.push_str(&" ".repeat(97 + i % 7));
+            text.push_str(if i % 3 == 0 { "/* ( \" */ x\n" } else { "(a \"b\\\" c\") // q\n" });
+        }
+        text.push_str(&" ".repeat(PPSS_SPAN - 1));
+        text.push_str("/* ( \" */ x");
+        b.insert(&text).unwrap();
+        let scanner = Scanner::new(&b, &tables, "c", true, 0, b.len());
+        for pos in (0..b.len()).step_by(997).chain([b.len()]) {
+            assert_eq!(scanner.ppss(pos), scanner.parse(0, pos, ParseState::default()), "at {pos}");
+        }
     }
 }

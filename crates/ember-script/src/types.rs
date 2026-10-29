@@ -887,6 +887,39 @@ const API: &str = r##"
   function callProcess(command: string[], options?: { directory?: string; input?: string }): { exit: number; output: string };
   /** Where the selected window's text starts, at the start of its top line, as window-start. */
   function windowStart(): number;
+  /** The character at a position, point by default, or undefined at the end of the accessible text, as char-after. */
+  function charAfter(position?: number): string | undefined;
+  /** The character before a position, point by default, or undefined at the start, as char-before. */
+  function charBefore(position?: number): string | undefined;
+  /** Where the line a position, point by default, is on starts, as line-beginning-position. */
+  function lineBeginningPosition(position?: number): number;
+  /** Where the line a position, point by default, is on ends, before its newline, as line-end-position. */
+  function lineEndPosition(position?: number): number;
+  /** The column the text of the line a position, point by default, is on starts at, as current-indentation. */
+  function currentIndentation(position?: number): number;
+  /**
+   * Insert whitespace at point up to `column`, with tabs where
+   * indent-tabs-mode allows, as indent-to. Returns the column reached.
+   */
+  function indentTo(column: number): number;
+  /**
+   * Indent point's line to `column`, as indent-line-to, leaving point at the
+   * end of the indentation and changing only what must change.
+   */
+  function indentLineTo(column: number): void;
+  /**
+   * Move over the characters in `chars`, as skip-chars-forward reads them: a
+   * leading ^ for those not in them, a-z for a range. Not past `limit`.
+   * Returns how far point moved.
+   */
+  function skipCharsForward(chars: string, limit?: number): number;
+  /** Move back over the characters in `chars`, as skip-chars-backward. Returns how far, as zero or a negative number. */
+  function skipCharsBackward(chars: string, limit?: number): number;
+  /**
+   * Run `fn` and put the current buffer and point back, point moved along
+   * with the text as a marker would be, as save-excursion.
+   */
+  function saveExcursion<T>(fn: () => T): T;
   /**
    * Kill the text from `beg` to `end`, as Emacs's kill-region: after another
    * kill it joins that one, before it if `end` comes first.

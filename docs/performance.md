@@ -26,6 +26,16 @@ On an Apple M1, release build, 2026-10-28. Times are per key.
 | `C-v`, `M->`, typing, RET, `C-k`, undo | | 0.1–0.2 ms |
 | `C-s` for a word at the end | 7.1 s | 48 ms |
 
+Each key is now followed by a pause of 0.2 s, as typing has, so idle timers such as Show Paren mode's run and count. On 2026-10-29, typing `(` then `)` with Electric Pair and Show Paren mode on:
+
+| | Before | After |
+| --- | ---: | ---: |
+| Org, 50,000 lines | 2.8 s | 19 ms |
+| Text, 10 MB | 19 s | 171 ms |
+| `C-k` and undo next to a paren, 10 MB text | 1.3 s | 0.3 ms |
+
+**syntax-ppss keeps parse states**, as Emacs's does, every 20,000 characters at the start of a line, dropping those after each change, where it parsed from the start of the buffer on each call. Scanners read the text in chunks and look ASCII up in an array instead of the rope and a hash map one character at a time. What is left in the 10 MB case is Electric Pair mode checking balance by scanning to the end of the buffer, as elec-pair.el does too.
+
 ## What changed
 
 - **Org's headings and element tree are kept between keys.** The element parser asked for the buffer's headings hundreds of times per key, and each time every line was read again. `headings()` and the parse are now kept until the text (the buffer's modified tick) or the TODO keywords change.

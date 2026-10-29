@@ -124,15 +124,7 @@ function edDelete(from: number, to: number): string {
 }
 
 /** Runs body and puts point back where it was, moved as a marker, as save-excursion does. */
-function saveExcursion<T>(body: () => T): T {
-  const m = marker(ember.point());
-  try {
-    return body();
-  } finally {
-    ember.gotoChar(m.pos);
-    dropMarker(m);
-  }
-}
+const saveExcursion = <T>(body: () => T): T => ember.saveExcursion(body);
 
 function isTableLine(line: number): boolean {
   return line >= 0 && line < ember.lineCount() && TABLE_LINE.test(ember.lineText(line));
