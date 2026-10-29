@@ -1,0 +1,656 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "copy-file",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "copy-file",
+          "a.txt",
+          "b.txt"
+        ],
+        "files": {
+          "a.txt": "one\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "one\n"
+      }
+    },
+    {
+      "name": "copy-file-into-directory",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "copy-file",
+          "a.txt",
+          "sub/"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "sub/": ""
+        },
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "sub/": "",
+        "sub/a.txt": "one\n"
+      }
+    },
+    {
+      "name": "copy-file-over-existing-confirmed",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "copy-file",
+          "a.txt",
+          "b.txt",
+          "yes"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "one\n"
+      }
+    },
+    {
+      "name": "copy-file-over-existing-declined",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "copy-file",
+          "a.txt",
+          "b.txt",
+          "no"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "File already exists: DIR/b.txt",
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n"
+      }
+    },
+    {
+      "name": "rename-file",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "rename-file",
+          "c.txt",
+          "d.txt"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "c.txt": "three\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "d.txt": "three\n"
+      }
+    },
+    {
+      "name": "rename-file-into-directory",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "rename-file",
+          "c.txt",
+          "sub/"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "c.txt": "three\n",
+          "sub/": ""
+        },
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "sub/": "",
+        "sub/c.txt": "three\n"
+      }
+    },
+    {
+      "name": "rename-file-over-existing-declined",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "rename-file",
+          "c.txt",
+          "a.txt",
+          "no"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "c.txt": "three\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "File already exists: DIR/a.txt",
+      "files": {
+        "a.txt": "one\n",
+        "c.txt": "three\n"
+      }
+    },
+    {
+      "name": "rename-directory",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "rename-file",
+          "sub",
+          "other"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "other/": "",
+        "other/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "delete-file",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "delete-file",
+          "c.txt"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "c.txt": "three\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n"
+      }
+    },
+    {
+      "name": "make-directory-with-parents",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "make-directory",
+          "x/y/"
+        ],
+        "files": {
+          "a.txt": "one\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "x/": "",
+        "x/y/": ""
+      }
+    },
+    {
+      "name": "delete-empty-directory",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "delete-directory",
+          "sub"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "sub/": ""
+        },
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n"
+      }
+    },
+    {
+      "name": "delete-full-directory-confirmed",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "delete-directory",
+          "sub",
+          "y"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n"
+      }
+    },
+    {
+      "name": "delete-full-directory-declined",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "delete-directory",
+          "sub",
+          "n"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Removing directory: Directory not empty, DIR/sub",
+      "files": {
+        "a.txt": "one\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "copy-directory",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "copy-directory",
+          "sub",
+          "other"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "sub/x.txt": "x\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "other/": "",
+        "other/x.txt": "x\n",
+        "sub/": "",
+        "sub/x.txt": "x\n"
+      }
+    },
+    {
+      "name": "rename-visited-file",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "x M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "rename-visited-file",
+          "z.txt"
+        ],
+        "files": {
+          "a.txt": "one\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "xone\n",
+      "visible": "xone\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "z.txt": "one\n"
+      }
+    },
+    {
+      "name": "rename-visited-file-then-save",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "x M-x C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "rename-visited-file",
+          "z.txt"
+        ],
+        "files": {
+          "a.txt": "one\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "xone\n",
+      "visible": "xone\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "z.txt": "xone\n",
+        "z.txt~": "one\n"
+      }
+    },
+    {
+      "name": "find-alternate-file",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-v",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "b.txt"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "two\n",
+      "visible": "two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n"
+      }
+    },
+    {
+      "name": "find-alternate-file-modified-declined",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "x C-x C-v",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "b.txt",
+          "no"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "xone\n",
+      "visible": "xone\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Aborted",
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n"
+      }
+    },
+    {
+      "name": "find-alternate-file-modified-confirmed",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "x C-x C-v",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "b.txt",
+          "yes"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "two\n",
+      "visible": "two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n"
+      }
+    },
+    {
+      "name": "read-only-mode",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-q x C-x C-q y",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "yone\n",
+      "visible": "yone\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Buffer is read-only: #<buffer a.txt>",
+      "files": {
+        "a.txt": "one\n"
+      },
+      "message": "Read-Only mode disabled in current buffer"
+    }
+  ]
+}

@@ -9,6 +9,13 @@ fn home_dir() -> Option<PathBuf> {
 /// home directory, and typing `//` or `/~/` after the default directory starts
 /// over from the root or from home.
 pub fn expand_file_name(input: &str) -> PathBuf {
+    expand_file_name_in(input, &env::current_dir().unwrap_or_default())
+}
+
+/// As [`expand_file_name`], with relative names in `dir`, as Emacs's
+/// `expand-file-name` takes them in `default-directory`. `.` and `..` are
+/// worked out as Emacs does, without looking at the disk.
+pub fn expand_file_name_in(input: &str, dir: &Path) -> PathBuf {
     let mut s = input;
     if let Some(i) = s.rfind("//") {
         s = &s[i + 1..];
@@ -24,11 +31,18 @@ pub fn expand_file_name(input: &str) -> PathBuf {
     } else {
         PathBuf::from(s)
     };
-    if path.is_absolute() {
-        path
-    } else {
-        env::current_dir().unwrap_or_default().join(path)
+    let path = if path.is_absolute() { path } else { dir.join(path) };
+    let mut out = PathBuf::new();
+    for part in path.components() {
+        match part {
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                out.pop();
+            }
+            other => out.push(other),
+        }
     }
+    out
 }
 
 /// Writes a path with the home directory as `~`.

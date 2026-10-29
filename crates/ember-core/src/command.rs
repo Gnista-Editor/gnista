@@ -77,11 +77,46 @@ impl ParamKind {
     }
 }
 
+/// A function of the arguments read so far, for working out what a
+/// parameter's prompt shows.
+pub type ArgsFn<T> = dyn Fn(&mut Editor, &[Arg]) -> Result<T>;
+
+/// Works out the names a parameter completes against from the arguments
+/// read before it.
+#[derive(Clone)]
+pub struct CollectionFn(pub Rc<ArgsFn<Vec<String>>>);
+
+impl std::fmt::Debug for CollectionFn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("CollectionFn")
+    }
+}
+
+/// Works out a parameter's prompt from the arguments read before it, as
+/// Emacs's interactive specs can: "Rename foo.txt to file: ".
+#[derive(Clone)]
+pub struct PromptFn(pub Rc<ArgsFn<String>>);
+
+impl std::fmt::Debug for PromptFn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("PromptFn")
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Param {
     pub name: String,
     pub kind: ParamKind,
     pub prompt: String,
+    /// Works the prompt out when it is asked, instead of `prompt`.
+    pub prompt_fn: Option<PromptFn>,
+    /// Works out the input the minibuffer starts with, instead of the kind's.
+    pub initial_fn: Option<PromptFn>,
+    /// Works out the names to complete against, as `completing-read`'s
+    /// collection, instead of the kind's.
+    pub collection_fn: Option<CollectionFn>,
+    /// Whether the answer must be one of the completions.
+    pub require_match: bool,
     /// The variable holding earlier answers, which M-p and M-n go through.
     /// `None` uses the kind's usual history, as [`ParamKind::history`] says.
     pub history: Option<String>,
@@ -160,8 +195,41 @@ impl Command {
             name: name.to_string(),
             kind,
             prompt: prompt.to_string(),
+            prompt_fn: None,
+            initial_fn: None,
+            collection_fn: None,
+            require_match: false,
             history: None,
         });
+        self
+    }
+
+    /// Gives the last parameter added a prompt worked out from the arguments
+    /// read before it.
+    pub fn prompt_with(mut self, prompt: impl Fn(&mut Editor, &[Arg]) -> Result<String> + 'static) -> Command {
+        if let Some(param) = self.params.last_mut() {
+            param.prompt_fn = Some(PromptFn(Rc::new(prompt)));
+        }
+        self
+    }
+
+    /// Gives the last parameter added the input the minibuffer starts with,
+    /// worked out from the arguments read before it.
+    pub fn initial_with(mut self, initial: impl Fn(&mut Editor, &[Arg]) -> Result<String> + 'static) -> Command {
+        if let Some(param) = self.params.last_mut() {
+            param.initial_fn = Some(PromptFn(Rc::new(initial)));
+        }
+        self
+    }
+
+    /// Makes the last parameter added complete against names worked out
+    /// when it is asked, as `completing-read`, which must be matched if
+    /// `require_match`.
+    pub fn collection(mut self, require_match: bool, names: impl Fn(&mut Editor, &[Arg]) -> Result<Vec<String>> + 'static) -> Command {
+        if let Some(param) = self.params.last_mut() {
+            param.collection_fn = Some(CollectionFn(Rc::new(names)));
+            param.require_match = require_match;
+        }
         self
     }
 

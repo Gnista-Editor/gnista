@@ -1160,7 +1160,7 @@ impl Buffer {
 
     fn check_writable(&mut self) -> Result<()> {
         if self.read_only {
-            return Err(Error::new(format!("Buffer is read-only: {}", self.name)));
+            return Err(Error::new(format!("Buffer is read-only: #<buffer {}>", self.name)));
         }
         self.check_supersession()
     }

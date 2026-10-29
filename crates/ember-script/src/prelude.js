@@ -62,7 +62,10 @@
         params.map((p) => ({
           name: String(p.name),
           kind: p.kind ?? "string",
-          prompt: p.prompt ?? `${p.name}: `,
+          prompt: typeof p.prompt === "function" ? p.prompt : p.prompt ?? `${p.name}: `,
+          initial: p.initial ?? null,
+          collection: typeof p.collection === "function" ? (...args) => [...p.collection(...args)].map(String) : null,
+          requireMatch: Boolean(p.requireMatch),
           history: p.history === undefined ? null : String(p.history),
         })),
         run,
@@ -191,6 +194,26 @@
     },
     composeLocalMap: (name) => native.composeLocalMap(String(name)),
     fileDirectoryP: (file) => native.fileDirectoryP(String(file)),
+    fileAttributes: (file) => native.fileAttributes(String(file)) ?? undefined,
+    directoryFiles: (dir) => native.directoryFiles(String(dir)),
+    copyFile: (from, to, { okIfExists = false, keepTime = false } = {}) =>
+      native.copyFile(String(from), String(to), Boolean(okIfExists), Boolean(keepTime)),
+    copyDirectory: (from, to, { keepTime = false } = {}) => native.copyDirectory(String(from), String(to), Boolean(keepTime)),
+    renameFile: (from, to, { okIfExists = false } = {}) => native.renameFile(String(from), String(to), Boolean(okIfExists)),
+    deleteFile: (file, { trash = false } = {}) => native.deleteFile(String(file), Boolean(trash)),
+    makeDirectory: (dir, { parents = false } = {}) => native.makeDirectory(String(dir), Boolean(parents)),
+    deleteDirectory: (dir, { recursive = false, trash = false } = {}) =>
+      native.deleteDirectory(String(dir), Boolean(recursive), Boolean(trash)),
+    abbreviateFileName: (file) => native.abbreviateFileName(String(file)),
+    readTextFile: (file) => native.readTextFile(String(file)),
+    writeTextFile: (file, text) => native.writeTextFile(String(file), String(text)),
+    fileNameDirectory: (file) => {
+      const i = String(file).lastIndexOf("/");
+      return i < 0 ? undefined : String(file).slice(0, i + 1);
+    },
+    fileNameNondirectory: (file) => String(file).slice(String(file).lastIndexOf("/") + 1),
+    fileNameAsDirectory: (file) => (String(file) === "" ? "./" : String(file).endsWith("/") ? String(file) : `${file}/`),
+    directoryFileName: (file) => (String(file).length > 1 ? String(file).replace(/\/+$/, "") || "/" : String(file)),
     whereIs: (command) => native.whereIs(String(command)) ?? undefined,
     frameSize: () => {
       const [columns, lines, maxMiniWindowLines] = native.frameSize();
@@ -203,7 +226,7 @@
     revertToVisitedFile: () => native.revertToVisitedFile(),
     recoverFromAutoSave: () => native.recoverFromAutoSave(),
     visitedFileChanged: () => native.visitedFileChanged(),
-    setVisitedFileName: (file) => native.setVisitedFileName(String(file)),
+    setVisitedFileName: (file, { alongWithFile = false } = {}) => native.setVisitedFileName(String(file), Boolean(alongWithFile)),
     expandFileName: (file) => native.expandFileName(String(file)),
     fileExists: (file) => native.fileExists(String(file)),
     autoSaveFileName: (file) => native.autoSaveFileName(String(file)),
@@ -249,6 +272,7 @@
     frameList: () => native.frameList(),
     getBufferCreate: (name) => native.getBufferCreate(name),
     setReadOnly: (on) => native.setReadOnly(Boolean(on)),
+    bufferReadOnly: () => native.bufferReadOnly(),
     withCurrentBuffer: (name, fn) => {
       const old = native.setCurrentBuffer(String(name));
       try {

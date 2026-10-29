@@ -333,6 +333,13 @@ impl Editor {
     /// save backs nothing up unless the file is there, and auto-saving
     /// moves to the new name.
     pub fn set_visited_file_name(&mut self, path: &Path) -> Result<()> {
+        self.set_visited_file_name_along(path, false)
+    }
+
+    /// As [`Editor::set_visited_file_name`]; `along_with_file` says the file
+    /// was renamed with the buffer, which then stays as modified as it was,
+    /// knowing its file, as Emacs's ALONG-WITH-FILE.
+    pub fn set_visited_file_name_along(&mut self, path: &Path, along_with_file: bool) -> Result<()> {
         let name = path
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
@@ -342,9 +349,11 @@ impl Editor {
         let b = &mut self.buffers[self.current];
         b.name = name;
         b.path = Some(path.to_path_buf());
-        b.file.modtime_known = false;
-        b.file.backed_up = false;
-        b.set_modified(true);
+        if !along_with_file {
+            b.file.modtime_known = false;
+            b.file.backed_up = false;
+            b.set_modified(true);
+        }
         if b.file.auto_save.is_some() {
             b.file.auto_save = Some(auto_save_file_name(path));
         }
@@ -354,6 +363,9 @@ impl Editor {
     /// Asks the front end to exit, as Emacs's `kill-emacs`.
     pub fn kill_emacs(&mut self) -> Result<()> {
         self.check_permission("quit Ember")?;
+        if let Err(e) = self.run_hooks("kill-emacs-hook") {
+            self.message = Some(format!("Error in kill-emacs-hook: {e}"));
+        }
         self.quit = true;
         Ok(())
     }

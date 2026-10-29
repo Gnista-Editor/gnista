@@ -41,6 +41,7 @@ pub fn setup_with(
             return None;
         }
     };
+    ed.set_variable("user-emacs-directory", ember_core::Value::Str(format!("{}/", dir.display())));
     if let Err(e) = extensions(ed, &scripting) {
         ed.message(format!("An extension failed to load: {e}"));
     }

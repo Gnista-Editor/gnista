@@ -59,25 +59,36 @@ Latin-1 for text starting \"latin-1:\"."
         (bytes (if (string-prefix-p "latin-1:" text)
                    (encode-coding-string (substring text 8) 'latin-1)
                  (encode-coding-string text 'utf-8-unix))))
-    (with-temp-buffer
-      (set-buffer-multibyte nil)
-      (insert bytes)
-      (write-region nil nil (expand-file-name name ember-oracle--files) nil 'quiet))))
+    (if (string-suffix-p "/" name)
+        (make-directory (expand-file-name name ember-oracle--files) t)
+      (make-directory (file-name-directory (expand-file-name name ember-oracle--files)) t)
+      (with-temp-buffer
+        (set-buffer-multibyte nil)
+        (insert bytes)
+        (write-region nil nil (expand-file-name name ember-oracle--files) nil 'quiet)))))
 
-(defun ember-oracle--listing ()
+(defun ember-oracle--listing (&optional dir)
   "The case's directory: each file's name and text, as UTF-8 or else
-as Latin-1 marked \"latin-1:\"."
-  (mapcar (lambda (name)
-            (let* ((raw (with-temp-buffer
-                          (set-buffer-multibyte nil)
-                          (insert-file-contents-literally (expand-file-name name ember-oracle--files))
-                          (buffer-string)))
-                   (text (decode-coding-string raw 'utf-8-unix)))
-              ;; Bytes that are not UTF-8 decode as raw-byte characters.
-              (cons name (if (seq-some (lambda (c) (>= c #x3FFF80)) text)
-                             (concat "latin-1:" (decode-coding-string raw 'latin-1))
-                           text))))
-          (directory-files ember-oracle--files nil "\\`[^.]")))
+as Latin-1 marked \"latin-1:\", and each directory as its name with a
+slash, then what it holds."
+  (let ((dir (or dir ember-oracle--files)))
+    (mapcan (lambda (name)
+              (let* ((path (expand-file-name name dir))
+                     (relative (file-relative-name path ember-oracle--files)))
+                (if (file-directory-p path)
+                    (cons (cons (concat relative "/") "")
+                          (ember-oracle--listing (file-name-as-directory path)))
+                  (let* ((raw (with-temp-buffer
+                                (set-buffer-multibyte nil)
+                                (insert-file-contents-literally path)
+                                (buffer-string)))
+                         (text (decode-coding-string raw 'utf-8-unix)))
+                    ;; Bytes that are not UTF-8 decode as raw-byte characters.
+                    (list (cons relative
+                                (if (seq-some (lambda (c) (>= c #x3FFF80)) text)
+                                    (concat "latin-1:" (decode-coding-string raw 'latin-1))
+                                  text)))))))
+            (directory-files dir nil "\\`[^.]"))))
 
 (defvar ember-oracle--disk nil
   "The text <f33> gives the visited file.")
@@ -176,8 +187,17 @@ while the case's keys are queued would read those instead."
 (defun ember-oracle--read-char (&rest _)
   "The next answer's first character, as reading a key gives it."
   (string-to-char (ember-oracle--answer nil)))
-(dolist (fn '(read-char read-char-exclusive read-key read-event))
+(dolist (fn '(read-char read-char-exclusive read-key))
   (advice-add fn :override #'ember-oracle--read-char))
+(defun ember-oracle--read-event (read &rest args)
+  "Read an event from the case's keys while they last, as query-replace's
+answers come, and then from its answers, as save-some-buffers' do."
+  (if (or unread-command-events
+          (and executing-kbd-macro
+               (< executing-kbd-macro-index (length executing-kbd-macro))))
+      (apply read args)
+    (ember-oracle--read-char)))
+(advice-add 'read-event :around #'ember-oracle--read-event)
 
 ;; Batch Emacs gives up on a file changed on disk; ask as interactive Emacs
 ;; does, taking the answer from the case.

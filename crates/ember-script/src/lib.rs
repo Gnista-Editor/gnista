@@ -50,6 +50,8 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/mouse.ts", include_str!("../../../packages/mouse.ts")),
     ("packages/isearch.ts", include_str!("../../../packages/isearch.ts")),
     ("packages/icomplete.ts", include_str!("../../../packages/icomplete.ts")),
+    ("packages/recentf.ts", include_str!("../../../packages/recentf.ts")),
+    ("packages/ffap.ts", include_str!("../../../packages/ffap.ts")),
     ("packages/replace.ts", include_str!("../../../packages/replace.ts")),
     ("packages/org-table.ts", include_str!("../../../packages/org-table.ts")),
     ("packages/org.ts", include_str!("../../../packages/org.ts")),
@@ -292,6 +294,26 @@ impl ScriptFunction {
     fn into_hook(self) -> HookFn {
         Rc::new(move |ed, args| self.call_values(ed, args))
     }
+
+    /// Calls the function with the arguments read so far, for the names it
+    /// returns, as a parameter's collection.
+    fn call_for_names(&self, ed: &mut Editor, args: &[Arg]) -> Result<Vec<String>> {
+        let args: Vec<String> = args.iter().map(Arg::to_string).collect();
+        enter(&self.context, ed, |ctx| {
+            let run = self.run.clone().restore(&ctx).map_err(|e| js_error(&ctx, e))?;
+            run.call::<_, Vec<Coerced<String>>>((Rest(args),)).map(|v| v.into_iter().map(|s| s.0).collect()).map_err(|e| js_error(&ctx, e))
+        })
+    }
+
+    /// Calls the function with the arguments read so far, for the text it
+    /// returns, as a parameter's prompt.
+    fn call_for_text(&self, ed: &mut Editor, args: &[Arg]) -> Result<String> {
+        let args: Vec<String> = args.iter().map(Arg::to_string).collect();
+        enter(&self.context, ed, |ctx| {
+            let run = self.run.clone().restore(&ctx).map_err(|e| js_error(&ctx, e))?;
+            run.call::<_, Coerced<String>>((Rest(args),)).map(|s| s.0).map_err(|e| js_error(&ctx, e))
+        })
+    }
 }
 
 fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()> {
@@ -309,13 +331,32 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
                 for param in params {
                     let param_name: String = param.get("name")?;
                     let kind: String = param.get("kind")?;
-                    let prompt: String = param.get("prompt")?;
+                    let prompt_value: Value = param.get("prompt")?;
+                    let prompt_fn = prompt_value.as_function().map(|f| ScriptFunction { run: Persistent::save(&ctx, f.clone()), context: context.clone() });
+                    let prompt: String = if prompt_fn.is_some() { String::new() } else { param.get("prompt")? };
                     let Some(kind) = ParamKind::from_name(&kind) else {
                         let kinds: Vec<&str> = ParamKind::ALL.iter().map(ParamKind::name).collect();
                         let message = format!("Unknown parameter kind {kind:?}; use one of {}", kinds.join(", "));
                         return Err(Exception::throw_type(&ctx, &message));
                     };
                     command = command.param(&param_name, kind, &prompt);
+                    if let Some(f) = prompt_fn {
+                        command = command.prompt_with(move |ed, args| f.call_for_text(ed, args));
+                    }
+                    let collection: Value = param.get("collection")?;
+                    if let Some(f) = collection.as_function() {
+                        let f = ScriptFunction { run: Persistent::save(&ctx, f.clone()), context: context.clone() };
+                        let require_match = param.get::<_, Option<bool>>("requireMatch")?.unwrap_or(false);
+                        command = command.collection(require_match, move |ed, args| f.call_for_names(ed, args));
+                    }
+                    let initial: Value = param.get("initial")?;
+                    if let Some(f) = initial.as_function() {
+                        let f = ScriptFunction { run: Persistent::save(&ctx, f.clone()), context: context.clone() };
+                        command = command.initial_with(move |ed, args| f.call_for_text(ed, args));
+                    } else if let Some(text) = initial.as_string() {
+                        let text = text.to_string()?;
+                        command = command.initial_with(move |_, _| Ok(text.clone()));
+                    }
                     if let Some(history) = param.get::<_, Option<String>>("history")? {
                         command = command.history(&history);
                     }
@@ -960,7 +1001,7 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     )?;
     native.set(
         "fileDirectoryP",
-        Function::new(ctx.clone(), |file: String| expand_file_name(&file).is_dir())?,
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| with_editor(&ctx, |ed| Ok(ed.expand_file_name(&file).is_dir())))?,
     )?;
     native.set(
         "bufferList",
@@ -986,19 +1027,113 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     )?;
     native.set(
         "setVisitedFileName",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| {
-            with_editor(&ctx, |ed| ed.set_visited_file_name(&expand_file_name(&file)))
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String, along: Opt<bool>| {
+            with_editor(&ctx, |ed| ed.set_visited_file_name_along(&ed.expand_file_name(&file), along.0 == Some(true)))
         })?,
     )?;
     native.set(
         "expandFileName",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| {
-            with_editor(&ctx, |_| Ok(expand_file_name(&file).display().to_string()))
+            with_editor(&ctx, |ed| Ok(ed.expand_file_name(&file).display().to_string()))
         })?,
     )?;
     native.set(
+        "fileAttributes",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| -> rquickjs::Result<Option<Object<'js>>> {
+            let path = with_editor(&ctx, |ed| Ok(ed.expand_file_name(&file)))?;
+            let Some(a) = ember_core::fileops::file_attributes(&path) else { return Ok(None) };
+            let ms = |t: std::time::SystemTime| t.duration_since(std::time::UNIX_EPOCH).map_or(0.0, |d| d.as_millis() as f64);
+            let object = Object::new(ctx.clone())?;
+            let (kind, link) = match &a.kind {
+                ember_core::fileops::FileKind::File => ("file", None),
+                ember_core::fileops::FileKind::Directory => ("directory", None),
+                ember_core::fileops::FileKind::Symlink(to) => ("symlink", Some(to.clone())),
+            };
+            object.set("type", kind)?;
+            object.set("linkTarget", link)?;
+            object.set("links", a.links as f64)?;
+            object.set("uid", a.uid)?;
+            object.set("gid", a.gid)?;
+            object.set("user", a.user)?;
+            object.set("group", a.group)?;
+            object.set("size", a.size as f64)?;
+            object.set("modified", ms(a.modified))?;
+            object.set("accessed", ms(a.accessed))?;
+            object.set("modes", a.modes)?;
+            object.set("inode", a.inode as f64)?;
+            Ok(Some(object))
+        })?,
+    )?;
+    native.set(
+        "directoryFiles",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, dir: String| {
+            with_editor(&ctx, |ed| ember_core::fileops::directory_files(&ed.expand_file_name(&dir)))
+        })?,
+    )?;
+    native.set(
+        "copyFile",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, from: String, to: String, ok: bool, keep_time: bool| {
+            with_editor(&ctx, |ed| {
+                let to_dir = to.ends_with('/');
+                ed.copy_file(&ed.expand_file_name(&from), &ed.expand_file_name(&to), to_dir, ok, keep_time).map(|p| p.display().to_string())
+            })
+        })?,
+    )?;
+    native.set(
+        "copyDirectory",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, from: String, to: String, keep_time: bool| {
+            with_editor(&ctx, |ed| ed.copy_directory(&ed.expand_file_name(&from), &ed.expand_file_name(&to), keep_time).map(|p| p.display().to_string()))
+        })?,
+    )?;
+    native.set(
+        "renameFile",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, from: String, to: String, ok: bool| {
+            with_editor(&ctx, |ed| {
+                let to_dir = to.ends_with('/');
+                ed.rename_file(&ed.expand_file_name(&from), &ed.expand_file_name(&to), to_dir, ok).map(|p| p.display().to_string())
+            })
+        })?,
+    )?;
+    native.set(
+        "deleteFile",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String, trash: bool| {
+            with_editor(&ctx, |ed| ed.delete_file(&ed.expand_file_name(&file), trash))
+        })?,
+    )?;
+    native.set(
+        "makeDirectory",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, dir: String, parents: bool| {
+            with_editor(&ctx, |ed| ed.make_directory(&ed.expand_file_name(&dir), parents))
+        })?,
+    )?;
+    native.set(
+        "deleteDirectory",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, dir: String, recursive: bool, trash: bool| {
+            with_editor(&ctx, |ed| ed.delete_directory(&ed.expand_file_name(&dir), recursive, trash))
+        })?,
+    )?;
+    native.set(
+        "readTextFile",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| {
+            with_editor(&ctx, |ed| {
+                let path = ed.expand_file_name(&file);
+                fs::read_to_string(&path).map_err(|e| Error::new(format!("Opening input file: {e}, {}", path.display())))
+            })
+        })?,
+    )?;
+    native.set(
+        "writeTextFile",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String, text: String| {
+            with_editor(&ctx, |ed| ed.write_text_file(&ed.expand_file_name(&file), &text))
+        })?,
+    )?;
+    native.set(
+        "abbreviateFileName",
+        Function::new(ctx.clone(), |file: String| abbreviate_path(Path::new(&file)))?,
+    )?;
+    native.set(
         "fileExists",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| with_editor(&ctx, |_| Ok(Path::new(&file).exists())))?,
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| with_editor(&ctx, |ed| Ok(ed.expand_file_name(&file).exists())))?,
     )?;
     native.set(
         "autoSaveFileName",
@@ -1215,6 +1350,10 @@ fn install_native_windows<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs
         })?,
     )?;
     native.set(
+        "bufferReadOnly",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer().read_only)))?,
+    )?;
+    native.set(
         "setCurrentBuffer",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| with_editor(&ctx, |ed| ed.set_current_buffer(&name)))?,
     )?;
@@ -1230,7 +1369,7 @@ fn install_native_windows<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs
     native.set(
         "findFileNoselect",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| {
-            with_editor(&ctx, |ed| ed.find_file_noselect(&ember_core::expand_file_name(&file)))
+            with_editor(&ctx, |ed| ed.find_file_noselect(&ed.expand_file_name(&file)))
         })?,
     )?;
     native.set(

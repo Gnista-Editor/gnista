@@ -1,0 +1,22 @@
+[
+  {"name": "copy-file", "files": {"a.txt": "one\n"}, "find": "a.txt", "text": "", "keys": "M-x", "answers": ["copy-file", "a.txt", "b.txt"]},
+  {"name": "copy-file-into-directory", "files": {"a.txt": "one\n", "sub/": ""}, "find": "a.txt", "text": "", "keys": "M-x", "answers": ["copy-file", "a.txt", "sub/"]},
+  {"name": "copy-file-over-existing-confirmed", "files": {"a.txt": "one\n", "b.txt": "two\n"}, "find": "a.txt", "text": "", "keys": "M-x", "answers": ["copy-file", "a.txt", "b.txt", "yes"]},
+  {"name": "copy-file-over-existing-declined", "files": {"a.txt": "one\n", "b.txt": "two\n"}, "find": "a.txt", "text": "", "keys": "M-x", "answers": ["copy-file", "a.txt", "b.txt", "no"]},
+  {"name": "rename-file", "files": {"a.txt": "one\n", "c.txt": "three\n"}, "find": "a.txt", "text": "", "keys": "M-x", "answers": ["rename-file", "c.txt", "d.txt"]},
+  {"name": "rename-file-into-directory", "files": {"a.txt": "one\n", "c.txt": "three\n", "sub/": ""}, "find": "a.txt", "text": "", "keys": "M-x", "answers": ["rename-file", "c.txt", "sub/"]},
+  {"name": "rename-file-over-existing-declined", "files": {"a.txt": "one\n", "c.txt": "three\n"}, "find": "a.txt", "text": "", "keys": "M-x", "answers": ["rename-file", "c.txt", "a.txt", "no"]},
+  {"name": "rename-directory", "files": {"a.txt": "one\n", "sub/x.txt": "x\n"}, "find": "a.txt", "text": "", "keys": "M-x", "answers": ["rename-file", "sub", "other"]},
+  {"name": "delete-file", "files": {"a.txt": "one\n", "c.txt": "three\n"}, "find": "a.txt", "text": "", "keys": "M-x", "answers": ["delete-file", "c.txt"]},
+  {"name": "make-directory-with-parents", "files": {"a.txt": "one\n"}, "find": "a.txt", "text": "", "keys": "M-x", "answers": ["make-directory", "x/y/"]},
+  {"name": "delete-empty-directory", "files": {"a.txt": "one\n", "sub/": ""}, "find": "a.txt", "text": "", "keys": "M-x", "answers": ["delete-directory", "sub"]},
+  {"name": "delete-full-directory-confirmed", "files": {"a.txt": "one\n", "sub/x.txt": "x\n"}, "find": "a.txt", "text": "", "keys": "M-x", "answers": ["delete-directory", "sub", "y"]},
+  {"name": "delete-full-directory-declined", "files": {"a.txt": "one\n", "sub/x.txt": "x\n"}, "find": "a.txt", "text": "", "keys": "M-x", "answers": ["delete-directory", "sub", "n"]},
+  {"name": "copy-directory", "files": {"a.txt": "one\n", "sub/x.txt": "x\n"}, "find": "a.txt", "text": "", "keys": "M-x", "answers": ["copy-directory", "sub", "other"]},
+  {"name": "rename-visited-file", "files": {"a.txt": "one\n"}, "find": "a.txt", "text": "", "keys": "x M-x", "answers": ["rename-visited-file", "z.txt"]},
+  {"name": "rename-visited-file-then-save", "files": {"a.txt": "one\n"}, "find": "a.txt", "text": "", "keys": "x M-x C-x C-s", "answers": ["rename-visited-file", "z.txt"]},
+  {"name": "find-alternate-file", "files": {"a.txt": "one\n", "b.txt": "two\n"}, "find": "a.txt", "text": "", "keys": "C-x C-v", "answers": ["b.txt"]},
+  {"name": "find-alternate-file-modified-declined", "files": {"a.txt": "one\n", "b.txt": "two\n"}, "find": "a.txt", "text": "", "keys": "x C-x C-v", "answers": ["b.txt", "no"]},
+  {"name": "find-alternate-file-modified-confirmed", "files": {"a.txt": "one\n", "b.txt": "two\n"}, "find": "a.txt", "text": "", "keys": "x C-x C-v", "answers": ["b.txt", "yes"]},
+  {"name": "read-only-mode", "files": {"a.txt": "one\n"}, "find": "a.txt", "text": "", "keys": "C-x C-q x C-x C-q y", "message": true}
+]

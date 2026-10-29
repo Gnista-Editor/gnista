@@ -4,7 +4,6 @@ use crate::buffer::Buffer;
 use crate::command::{Arg, Command, ParamKind};
 use crate::editor::Editor;
 use crate::error::{Error, Result};
-use crate::files::expand_file_name;
 use crate::key::{Key, KeyCode, format_keys};
 use crate::keymap::Lookup;
 use crate::prefix::PrefixArg;
@@ -1038,7 +1037,7 @@ fn files_and_buffers(ed: &mut Editor) {
             "find-file",
             "Visit a file in a buffer.\n\nA file that does not exist yet is created when the buffer is saved.",
             |ed, args| {
-                let path = expand_file_name(args[0].as_str()?);
+                let path = ed.expand_file_name(args[0].as_str()?);
                 ed.visit_file(&path)
             },
         )

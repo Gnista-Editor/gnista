@@ -16,3 +16,10 @@ tree-sitter-json = "0.24"
 tree-sitter-python = "0.25"
 tree-sitter-rust = "0.24"
 unicode-width = "0.2"
+# Moving deleted files to the system's trash, as Finder or a desktop's file manager does.
+trash = "5"
+
+[target.'cfg(unix)'.dependencies]
+# Owner and group names for file listings.
+libc = "0.2"
+

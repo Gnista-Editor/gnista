@@ -1,10 +1,11 @@
 use std::collections::BTreeMap;
 use std::env;
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use crate::buffer::Buffer;
-use crate::command::{Arg, Command, ParamKind};
+use crate::command::{Arg, Command, ParamKind, PromptFn};
 use crate::commands;
 use crate::error::{Error, Result};
 use crate::files::{abbreviate_dir, expand_file_name};
@@ -479,9 +480,34 @@ impl Editor {
                 self.reading_keys = Some(Vec::new());
                 self.message = Some(param.prompt.clone());
             } else {
-                let initial = self.initial_input(param.kind);
+                let mut initial = self.initial_input(param.kind);
                 let history = param.history.clone().unwrap_or_else(|| param.kind.history().to_string());
-                let prompt = Prompt::new(&param.prompt, param.kind, &history);
+                let (kind, mut text, args) = (param.kind, param.prompt.clone(), call.args.clone());
+                let (prompt_fn, initial_fn) = (param.prompt_fn.clone(), param.initial_fn.clone());
+                let (collection_fn, require_match) = (param.collection_fn.clone(), param.require_match);
+                for (f, out) in [(prompt_fn, &mut text), (initial_fn, &mut initial)] {
+                    let Some(PromptFn(f)) = f else { continue };
+                    match f(self, &args) {
+                        Ok(t) => *out = t,
+                        Err(e) => {
+                            self.pending_call = None;
+                            self.fail(e);
+                            return;
+                        }
+                    }
+                }
+                let mut prompt = Prompt::new(&text, kind, &history);
+                if let Some(crate::command::CollectionFn(f)) = collection_fn {
+                    match f(self, &args) {
+                        Ok(names) => prompt.collection = Some(names),
+                        Err(e) => {
+                            self.pending_call = None;
+                            self.fail(e);
+                            return;
+                        }
+                    }
+                    prompt.require_match |= require_match;
+                }
                 self.open_prompt(prompt, &initial);
             }
             return;
@@ -1147,6 +1173,17 @@ impl Editor {
         if b.path.is_some() && b.is_modified() {
             self.check_permission(&format!("discard the unsaved changes in {name}"))?;
         }
+        // As Emacs runs kill-buffer-hook in the buffer, before it goes.
+        if self.hook_has_functions("kill-buffer-hook") || self.buffers[index].local_hooks.contains_key("kill-buffer-hook") {
+            let old = self.buffers[self.current].name.clone();
+            if self.set_current_buffer(name).is_ok() {
+                if let Err(e) = self.run_hooks("kill-buffer-hook") {
+                    self.message = Some(format!("Error in kill-buffer-hook: {e}"));
+                }
+                let _ = self.set_current_buffer(&old);
+            }
+        }
+        let Some(index) = self.find_buffer(name) else { return Ok(()) };
         let showing = index == self.current;
         let next = self.other_buffer().map(str::to_string);
         let current_name = self.buffers[self.current].name.clone();
@@ -1176,6 +1213,8 @@ impl Editor {
         let is_new = !path.exists();
         let mut buffer = Self::read_visited_file(path)?;
         buffer.name = self.unique_buffer_name(&buffer.name);
+        // As Emacs's after-find-file, a file that cannot be written is read-only.
+        buffer.read_only = fs::metadata(path).is_ok_and(|m| m.permissions().readonly());
         self.buffers.push(buffer);
         self.select(self.buffers.len() - 1);
         // As Emacs's after-find-file: auto-saving starts, and a newer
@@ -1232,6 +1271,12 @@ impl Editor {
         } else {
             self.select(index);
         }
+    }
+
+    /// A file name made absolute, with relative names in the default
+    /// directory, as Emacs's `expand-file-name`.
+    pub fn expand_file_name(&self, input: &str) -> PathBuf {
+        crate::files::expand_file_name_in(input, &self.default_directory())
     }
 
     /// Where relative file names are looked up: the current buffer's own

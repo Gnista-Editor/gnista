@@ -64,6 +64,26 @@ declare global {
        */
       "beginning-of-visual-line": [];
       /**
+       * Copy a directory and what it holds: into the new name if that is a directory already, else as it.
+       *
+       * @param directory file name
+       * @param newname file name
+       *
+       * Defined in packages/files.ts.
+       */
+      "copy-directory": [directory: string, newname: string];
+      /**
+       * Copy a file. A name ending in a slash copies it into that directory.
+       *
+       * Typed, it asks before replacing a file; from code, a file already there is an error. With a prefix argument, the copy keeps the file's modification time.
+       *
+       * @param file file name
+       * @param newname file name
+       *
+       * Defined in packages/files.ts.
+       */
+      "copy-file": [file: string, newname: string];
+      /**
        * Delete the character before point, or as many as the prefix argument says.
        *
        * With a prefix argument, the characters are killed rather than deleted, so they can be yanked back. If the region is active, delete it instead, as the variable delete-active-region says.
@@ -75,6 +95,26 @@ declare global {
        * With a prefix argument, the characters are killed rather than deleted, so they can be yanked back.
        */
       "delete-char": [];
+      /**
+       * Delete a directory, asking first if it has files in it. With delete-by-moving-to-trash, on in Ember, it goes to the trash.
+       *
+       * With a prefix argument, delete it for good instead.
+       *
+       * @param dir file name
+       *
+       * Defined in packages/files.ts.
+       */
+      "delete-directory": [dir: string];
+      /**
+       * Delete a file. With delete-by-moving-to-trash, on in Ember, it goes to the trash, from where it can be put back.
+       *
+       * With a prefix argument, delete it for good instead.
+       *
+       * @param file file name
+       *
+       * Defined in packages/files.ts.
+       */
+      "delete-file": [file: string];
       /**
        * Delete the character after point, or as many as the prefix argument says.
        *
@@ -246,6 +286,12 @@ declare global {
        */
       "exit-minibuffer": [];
       /**
+       * Visit a file, starting from the name of the file at point, as find-file-at-point does.
+       *
+       * Defined in packages/ffap.ts.
+       */
+      "ffap": [];
+      /**
        * Show completions as icomplete-mode does, with keys that work like ido-mode's.
        *
        * Completion is flex, ignoring case, and the completions show before anything is typed. RET takes the first, or goes into a directory, DEL after a slash goes up a directory, C-d at the end opens Dired there, M-j finishes the input as typed, and C-s and C-r rotate the completions.
@@ -266,6 +312,16 @@ declare global {
        */
       "fido-vertical-mode": [];
       /**
+       * Visit another file in place of the current buffer's, which is killed.
+       *
+       * The prompt starts with the current file's name, for visiting one like it. A buffer with unsaved changes is killed only once you say so.
+       *
+       * @param file file name
+       *
+       * Defined in packages/files.ts.
+       */
+      "find-alternate-file": [file: string];
+      /**
        * Visit a file in a buffer.
        *
        * A file that does not exist yet is created when the buffer is saved.
@@ -273,6 +329,16 @@ declare global {
        * @param file file name
        */
       "find-file": [file: string];
+      /**
+       * Visit a file, starting from the name of the file at point, if there is one.
+       *
+       * The name may be relative to the buffer's directory, and a line number after a colon is left off.
+       *
+       * @param file file name
+       *
+       * Defined in packages/ffap.ts.
+       */
+      "find-file-at-point": [file: string];
       /**
        * Visit a file in a new frame and select it.
        *
@@ -635,6 +701,14 @@ declare global {
        * @param file file name
        */
       "load-file": [file: string];
+      /**
+       * Make a directory, and any directories above it that are missing.
+       *
+       * @param dir file name
+       *
+       * Defined in packages/files.ts.
+       */
+      "make-directory": [dir: string];
       /**
        * Make a new frame showing the current buffer, and select it.
        *
@@ -2038,11 +2112,61 @@ declare global {
        */
       "re-search-forward": [string: string];
       /**
+       * Make the buffer read-only, or editable again.
+       *
+       * A buffer visiting a file that cannot be written starts read-only. With a prefix argument, a positive number makes it read-only and zero or less editable.
+       *
+       * Defined in packages/files.ts.
+       */
+      "read-only-mode": [];
+      /**
        * Scroll so the line with point is in the middle of the window.
        *
        * With a numeric prefix argument N, put it on line N of the window instead, counting from the bottom if N is negative.
        */
       "recenter": [];
+      /**
+       * Visit one of the files visited or saved recently, as recentf-open does.
+       *
+       * Defined in packages/recentf.ts.
+       */
+      "recentf": [];
+      /**
+       * Take files that are gone, left out by recentf-exclude, or there twice, off the list of recent files.
+       *
+       * Defined in packages/recentf.ts.
+       */
+      "recentf-cleanup": [];
+      /**
+       * Read the list of recent files saved last time, and start file-name-history with it if it is empty.
+       *
+       * Defined in packages/recentf.ts.
+       */
+      "recentf-load-list": [];
+      /**
+       * Keep a list of the files you visit and save, newest first, saved for next time.
+       *
+       * recentf-open asks for one of them, with completion. The list is saved in user-emacs-directory when Ember exits, and read when the mode turns on, which also takes files that are gone off it.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/recentf.ts.
+       */
+      "recentf-mode": [];
+      /**
+       * Visit one of the files visited or saved recently, asking which, with completion. Turns recentf-mode on first.
+       *
+       * @param file text
+       *
+       * Defined in packages/recentf.ts.
+       */
+      "recentf-open": [file: string];
+      /**
+       * Save the list of recent files, up to recentf-max-saved-items, for next time.
+       *
+       * Defined in packages/recentf.ts.
+       */
+      "recentf-save-list": [];
       /**
        * Visit a file, taking its text from its auto-save file, #name#, after asking.
        *
@@ -2059,6 +2183,27 @@ declare global {
        * Defined in packages/files.ts.
        */
       "recover-this-file": [];
+      /**
+       * Rename a file or directory. A name ending in a slash moves it into that directory.
+       *
+       * Typed, it asks before replacing a file; from code, a file already there is an error.
+       *
+       * @param file file name
+       * @param newname file name
+       *
+       * Defined in packages/files.ts.
+       */
+      "rename-file": [file: string, newname: string];
+      /**
+       * Rename the file the buffer visits, and visit it under its new name.
+       *
+       * In a buffer visiting no file, set the file it visits instead, as set-visited-file-name does.
+       *
+       * @param file file name
+       *
+       * Defined in packages/files.ts.
+       */
+      "rename-visited-file": [file: string];
       /**
        * Repeat the last command, with the same arguments.
        *
@@ -2467,6 +2612,10 @@ declare global {
        * Whether saving a buffer deletes its auto-save file.
        */
       "delete-auto-save-files": Value;
+      /**
+       * Whether deleting files and directories moves them to the system's trash, from where they can be put back. Ember turns it on, where Emacs leaves it off.
+       */
+      "delete-by-moving-to-trash": Value;
       /**
        * Whether Delete-Selection mode is on. Use the command delete-selection-mode to change it.
        *
@@ -2877,6 +3026,48 @@ declare global {
        */
       "read-file-name-completion-ignore-case": Value;
       /**
+       * When the list of recent files loses files that are gone: mode, when recentf-mode turns on, or never.
+       *
+       * Defined in packages/recentf.ts.
+       */
+      "recentf-auto-cleanup": Value;
+      /**
+       * Regular expressions for file names left out of the list of recent files.
+       *
+       * Defined in packages/recentf.ts.
+       */
+      "recentf-exclude": Value;
+      /**
+       * Whether an empty file-name-history, which M-p goes through in file prompts, starts with the recent files.
+       *
+       * Defined in packages/recentf.ts.
+       */
+      "recentf-initialize-file-name-history": Value;
+      /**
+       * The files visited or saved most recently, newest first, as recentf-mode keeps them.
+       *
+       * Defined in packages/recentf.ts.
+       */
+      "recentf-list": Value;
+      /**
+       * How many recent files are saved for next time. Nil saves them all.
+       *
+       * Defined in packages/recentf.ts.
+       */
+      "recentf-max-saved-items": Value;
+      /**
+       * Whether Recentf mode is on. Use the command recentf-mode to change it.
+       *
+       * Defined in packages/recentf.ts.
+       */
+      "recentf-mode": Value;
+      /**
+       * Where the list of recent files is saved: recentf in user-emacs-directory if nil.
+       *
+       * Defined in packages/recentf.ts.
+       */
+      "recentf-save-file": Value;
+      /**
        * Regular expressions searched for with incremental search, most recent first.
        *
        * Defined in packages/isearch.ts.
@@ -2924,6 +3115,10 @@ declare global {
        * Set it to 0 to let narrow windows continue lines too.
        */
       "truncate-partial-width-windows": Value;
+      /**
+       * The directory Ember's configuration and its saved state are in, such as recentf's list of recent files: ~/.config/ember unless EMBER_CONFIG_DIR or XDG_CONFIG_HOME say otherwise. Nil when there is none, as in tests.
+       */
+      "user-emacs-directory": Value;
       /**
        * Variable names answered in the minibuffer, newest first.
        */
@@ -3547,6 +3742,14 @@ declare global {
        */
       "json-ts-mode-hook": Value;
       /**
+       * Run in a buffer just before it is killed.
+       */
+      "kill-buffer-hook": Value;
+      /**
+       * Run when Ember exits, as C-x C-c does.
+       */
+      "kill-emacs-hook": Value;
+      /**
        * Run when a prompt closes, in the minibuffer, before the answer is used.
        */
       "minibuffer-exit-hook": Value;
@@ -3619,6 +3822,18 @@ declare global {
        */
       "python-ts-mode-hook": Value;
       /**
+       * Run after Recentf mode is turned on or off.
+       */
+      "recentf-mode-hook": Value;
+      /**
+       * Run after Recentf mode is turned off.
+       */
+      "recentf-mode-off-hook": Value;
+      /**
+       * Run after Recentf mode is turned on.
+       */
+      "recentf-mode-on-hook": Value;
+      /**
        * Run after entering Rust mode, after the hooks of the modes it is built on.
        */
       "rust-ts-mode-hook": Value;
@@ -3653,8 +3868,21 @@ declare global {
       name: string;
       /** Defaults to "string". A "keys" parameter is passed in Emacs notation, such as "C-x C-f". */
       kind?: ParamKind;
-      /** The minibuffer prompt. Defaults to the name followed by ": ". */
-      prompt?: string;
+      /** The minibuffer prompt, or a function of the arguments read before it that gives it. Defaults to the name followed by ": ". */
+      prompt?: string | ((...earlier: string[]) => string);
+      /**
+       * The input the minibuffer starts with, or a function of the arguments
+       * read before it that gives it. A file name starts with the default
+       * directory otherwise.
+       */
+      initial?: string | ((...earlier: string[]) => string);
+      /**
+       * The names to complete against when it is typed, as completing-read's
+       * collection, worked out when it is asked. Code can pass anything.
+       */
+      collection?: (...earlier: string[]) => Iterable<string>;
+      /** With a collection, whether the answer must be one of it. */
+      requireMatch?: boolean;
       /**
        * The variable holding earlier answers, which M-p and M-n go through in
        * the minibuffer. Defaults to the kind's: minibuffer-history for strings,
@@ -4063,13 +4291,68 @@ declare global {
     function recoverFromAutoSave(): void;
     /** Whether the visited file changed on disk since it was visited or saved, as not verify-visited-file-modtime. */
     function visitedFileChanged(): boolean;
-    /** Make the current buffer visit another file, as Emacs's set-visited-file-name. */
-    function setVisitedFileName(file: string): void;
+    /**
+     * Make the current buffer visit another file, as Emacs's
+     * set-visited-file-name. `alongWithFile` says the file was renamed with
+     * it, so the buffer stays as modified as it was.
+     */
+    function setVisitedFileName(file: string, options?: { alongWithFile?: boolean }): void;
     /** A file name made absolute, with ~ for the home directory, as Emacs's expand-file-name. */
     function expandFileName(file: string): string;
     function fileExists(file: string): boolean;
     /** Whether a file name names a directory, as Emacs's file-directory-p. */
     function fileDirectoryP(file: string): boolean;
+    /** A file's attributes, as Emacs's file-attributes, for the file itself rather than what a link points to. */
+    interface FileAttributes {
+      type: "file" | "directory" | "symlink";
+      /** What a symbolic link points to. */
+      linkTarget: string | null;
+      links: number;
+      uid: number;
+      gid: number;
+      user: string;
+      group: string;
+      size: number;
+      /** When it was last changed, in milliseconds since 1970. */
+      modified: number;
+      accessed: number;
+      /** The mode as ls -l writes it, such as "-rw-r--r--". */
+      modes: string;
+      inode: number;
+    }
+    /** A file's attributes, or undefined if there is no such file. */
+    function fileAttributes(file: string): FileAttributes | undefined;
+    /** The names in a directory, with "." and "..", sorted, as Emacs's directory-files. */
+    function directoryFiles(dir: string): string[];
+    /**
+     * Copy a file, as Emacs's copy-file: into `to` if it ends in a slash. A
+     * file already there is replaced only with `okIfExists`. Returns the copy's name.
+     */
+    function copyFile(from: string, to: string, options?: { okIfExists?: boolean; keepTime?: boolean }): string;
+    /** Copy a directory and what it holds, into `to` if that is a directory, else as `to`. Returns the copy's name. */
+    function copyDirectory(from: string, to: string, options?: { keepTime?: boolean }): string;
+    /** Rename a file or directory, as Emacs's rename-file: into `to` if it ends in a slash. Returns the new name. */
+    function renameFile(from: string, to: string, options?: { okIfExists?: boolean }): string;
+    /** Delete a file, as Emacs's delete-file: to the trash with `trash`, if delete-by-moving-to-trash is on. */
+    function deleteFile(file: string, options?: { trash?: boolean }): void;
+    /** Make a directory, as Emacs's make-directory, with missing parents if `parents`. */
+    function makeDirectory(dir: string, options?: { parents?: boolean }): void;
+    /** Delete a directory, as Emacs's delete-directory: one with files in it only if `recursive`. */
+    function deleteDirectory(dir: string, options?: { recursive?: boolean; trash?: boolean }): void;
+    /** A file's text, read as UTF-8. */
+    function readTextFile(file: string): string;
+    /** Write text to a file, replacing what it held, as Emacs's write-region does for saved state. */
+    function writeTextFile(file: string, text: string): void;
+    /** A file name with the home directory written as ~, as Emacs's abbreviate-file-name. */
+    function abbreviateFileName(file: string): string;
+    /** The directory part of a file name, up to its last slash, or undefined if it has none. */
+    function fileNameDirectory(file: string): string | undefined;
+    /** A file name without its directory part. */
+    function fileNameNondirectory(file: string): string;
+    /** A directory's name with a slash at the end, as Emacs's file-name-as-directory. */
+    function fileNameAsDirectory(file: string): string;
+    /** A directory's name without a slash at the end, as Emacs's directory-file-name. */
+    function directoryFileName(file: string): string;
     /** Where a file is auto-saved: #name# beside it. */
     function autoSaveFileName(file: string): string;
     /** Whether a file's auto-save file is newer than the file. */
@@ -4195,6 +4478,8 @@ declare global {
     function frameList(): number[];
     /** Make the current buffer read-only, or writable again, as setting buffer-read-only does. */
     function setReadOnly(on: boolean): void;
+    /** Whether the current buffer is read-only, as Emacs's buffer-read-only. */
+    function bufferReadOnly(): boolean;
     /** Make a buffer of this name if there is none, without showing it, as get-buffer-create. */
     function getBufferCreate(name: string): void;
     /** Visit a file without showing it, as find-file-noselect, and return its buffer's name. */

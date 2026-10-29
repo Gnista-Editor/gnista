@@ -179,22 +179,33 @@ fn write_case_file(path: &Path, text: &str) {
     std::fs::write(path, bytes).expect("a case's file can be written");
 }
 
-/// What a case's directory holds, as record.el lists it.
+/// What a case's directory holds, as record.el lists it: each file's text,
+/// and each directory as its name with a slash, then what it holds.
 fn listing(dir: &Path) -> BTreeMap<String, String> {
-    let mut files = BTreeMap::new();
-    for entry in std::fs::read_dir(dir).expect("the case's directory can be read") {
-        let entry = entry.expect("a directory entry");
-        let name = entry.file_name().to_string_lossy().into_owned();
-        if name.starts_with('.') {
-            continue;
+    fn walk(root: &Path, dir: &Path, files: &mut BTreeMap<String, String>) {
+        for entry in std::fs::read_dir(dir).expect("the case's directory can be read") {
+            let entry = entry.expect("a directory entry");
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if name.starts_with('.') {
+                continue;
+            }
+            let path = entry.path();
+            let relative = path.strip_prefix(root).expect("inside the case's directory").display().to_string();
+            if path.is_dir() {
+                files.insert(format!("{relative}/"), String::new());
+                walk(root, &path, files);
+                continue;
+            }
+            let bytes = std::fs::read(&path).expect("a case's file can be read");
+            let text = match String::from_utf8(bytes) {
+                Ok(text) => text,
+                Err(e) => format!("latin-1:{}", e.into_bytes().iter().map(|&b| b as char).collect::<String>()),
+            };
+            files.insert(relative, text);
         }
-        let bytes = std::fs::read(entry.path()).expect("a case's file can be read");
-        let text = match String::from_utf8(bytes) {
-            Ok(text) => text,
-            Err(e) => format!("latin-1:{}", e.into_bytes().iter().map(|&b| b as char).collect::<String>()),
-        };
-        files.insert(name, text);
     }
+    let mut files = BTreeMap::new();
+    walk(dir, dir, &mut files);
     files
 }
 
@@ -233,6 +244,8 @@ pub fn oracle_dir() -> PathBuf {
 pub fn run(case: &Case) -> State {
     let mut ed = Editor::new();
     let _scripting = Scripting::new(&mut ed).expect("scripting starts");
+    // As in Emacs, deleting deletes, which also keeps cases out of the trash.
+    ed.set_variable("delete-by-moving-to-trash", ember_core::Value::Bool(false));
     // Batch Emacs's frame: 80 columns, and 24 lines above the echo area.
     ed.set_frame_size(80, 24);
     // A directory of the case's own, outside the temporary one, where
@@ -245,7 +258,13 @@ pub fn run(case: &Case) -> State {
         let mut files: Vec<_> = case.files.iter().collect();
         files.sort_by_key(|(name, _)| (name.starts_with('#'), name.as_str()));
         for (name, text) in files {
-            write_case_file(&dir.path().join(name), text);
+            let path = dir.path().join(name);
+            if name.ends_with('/') {
+                std::fs::create_dir_all(&path).expect("a case's directory can be made");
+                continue;
+            }
+            std::fs::create_dir_all(path.parent().expect("inside the case's directory")).expect("a case's directory can be made");
+            write_case_file(&path, text);
         }
     }
     let found = case.find.as_ref().map(|name| {
@@ -327,6 +346,14 @@ pub fn run(case: &Case) -> State {
             if ed.prompt_reads_char() {
                 ed.type_text(&answer.chars().take(1).collect::<String>());
             } else {
+                // record.el's answers replace what a prompt starts with; a
+                // relative file name stays in the directory it shows.
+                let input = ed.minibuffer_input();
+                if !input.is_empty() && !input.ends_with('/') && input.contains('/') {
+                    let dir = &input[..input.rfind('/').map_or(0, |i| i + 1)];
+                    let absolute = answer.starts_with('/') || answer.starts_with('~');
+                    ed.set_minibuffer_input(if absolute { "" } else { dir });
+                }
                 ed.type_text(answer);
                 ed.handle_key(Key::parse("RET").expect("RET parses"));
             }

@@ -10,6 +10,9 @@
 // first or goes into a directory, DEL goes up one, C-n and C-p move.
 ember.call("fido-vertical-mode");
 
+// Remember recently visited files across sessions; M-x recentf-open visits one.
+ember.call("recentf-mode");
+
 const insertDate = ember.defineCommand({
   name: "insert-date",
   doc: "Insert today's date, such as 2026-10-27.",

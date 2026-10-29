@@ -34,8 +34,21 @@ const API: &str = r##"
     name: string;
     /** Defaults to "string". A "keys" parameter is passed in Emacs notation, such as "C-x C-f". */
     kind?: ParamKind;
-    /** The minibuffer prompt. Defaults to the name followed by ": ". */
-    prompt?: string;
+    /** The minibuffer prompt, or a function of the arguments read before it that gives it. Defaults to the name followed by ": ". */
+    prompt?: string | ((...earlier: string[]) => string);
+    /**
+     * The input the minibuffer starts with, or a function of the arguments
+     * read before it that gives it. A file name starts with the default
+     * directory otherwise.
+     */
+    initial?: string | ((...earlier: string[]) => string);
+    /**
+     * The names to complete against when it is typed, as completing-read's
+     * collection, worked out when it is asked. Code can pass anything.
+     */
+    collection?: (...earlier: string[]) => Iterable<string>;
+    /** With a collection, whether the answer must be one of it. */
+    requireMatch?: boolean;
     /**
      * The variable holding earlier answers, which M-p and M-n go through in
      * the minibuffer. Defaults to the kind's: minibuffer-history for strings,
@@ -444,13 +457,68 @@ const API: &str = r##"
   function recoverFromAutoSave(): void;
   /** Whether the visited file changed on disk since it was visited or saved, as not verify-visited-file-modtime. */
   function visitedFileChanged(): boolean;
-  /** Make the current buffer visit another file, as Emacs's set-visited-file-name. */
-  function setVisitedFileName(file: string): void;
+  /**
+   * Make the current buffer visit another file, as Emacs's
+   * set-visited-file-name. `alongWithFile` says the file was renamed with
+   * it, so the buffer stays as modified as it was.
+   */
+  function setVisitedFileName(file: string, options?: { alongWithFile?: boolean }): void;
   /** A file name made absolute, with ~ for the home directory, as Emacs's expand-file-name. */
   function expandFileName(file: string): string;
   function fileExists(file: string): boolean;
   /** Whether a file name names a directory, as Emacs's file-directory-p. */
   function fileDirectoryP(file: string): boolean;
+  /** A file's attributes, as Emacs's file-attributes, for the file itself rather than what a link points to. */
+  interface FileAttributes {
+    type: "file" | "directory" | "symlink";
+    /** What a symbolic link points to. */
+    linkTarget: string | null;
+    links: number;
+    uid: number;
+    gid: number;
+    user: string;
+    group: string;
+    size: number;
+    /** When it was last changed, in milliseconds since 1970. */
+    modified: number;
+    accessed: number;
+    /** The mode as ls -l writes it, such as "-rw-r--r--". */
+    modes: string;
+    inode: number;
+  }
+  /** A file's attributes, or undefined if there is no such file. */
+  function fileAttributes(file: string): FileAttributes | undefined;
+  /** The names in a directory, with "." and "..", sorted, as Emacs's directory-files. */
+  function directoryFiles(dir: string): string[];
+  /**
+   * Copy a file, as Emacs's copy-file: into `to` if it ends in a slash. A
+   * file already there is replaced only with `okIfExists`. Returns the copy's name.
+   */
+  function copyFile(from: string, to: string, options?: { okIfExists?: boolean; keepTime?: boolean }): string;
+  /** Copy a directory and what it holds, into `to` if that is a directory, else as `to`. Returns the copy's name. */
+  function copyDirectory(from: string, to: string, options?: { keepTime?: boolean }): string;
+  /** Rename a file or directory, as Emacs's rename-file: into `to` if it ends in a slash. Returns the new name. */
+  function renameFile(from: string, to: string, options?: { okIfExists?: boolean }): string;
+  /** Delete a file, as Emacs's delete-file: to the trash with `trash`, if delete-by-moving-to-trash is on. */
+  function deleteFile(file: string, options?: { trash?: boolean }): void;
+  /** Make a directory, as Emacs's make-directory, with missing parents if `parents`. */
+  function makeDirectory(dir: string, options?: { parents?: boolean }): void;
+  /** Delete a directory, as Emacs's delete-directory: one with files in it only if `recursive`. */
+  function deleteDirectory(dir: string, options?: { recursive?: boolean; trash?: boolean }): void;
+  /** A file's text, read as UTF-8. */
+  function readTextFile(file: string): string;
+  /** Write text to a file, replacing what it held, as Emacs's write-region does for saved state. */
+  function writeTextFile(file: string, text: string): void;
+  /** A file name with the home directory written as ~, as Emacs's abbreviate-file-name. */
+  function abbreviateFileName(file: string): string;
+  /** The directory part of a file name, up to its last slash, or undefined if it has none. */
+  function fileNameDirectory(file: string): string | undefined;
+  /** A file name without its directory part. */
+  function fileNameNondirectory(file: string): string;
+  /** A directory's name with a slash at the end, as Emacs's file-name-as-directory. */
+  function fileNameAsDirectory(file: string): string;
+  /** A directory's name without a slash at the end, as Emacs's directory-file-name. */
+  function directoryFileName(file: string): string;
   /** Where a file is auto-saved: #name# beside it. */
   function autoSaveFileName(file: string): string;
   /** Whether a file's auto-save file is newer than the file. */
@@ -576,6 +644,8 @@ const API: &str = r##"
   function frameList(): number[];
   /** Make the current buffer read-only, or writable again, as setting buffer-read-only does. */
   function setReadOnly(on: boolean): void;
+  /** Whether the current buffer is read-only, as Emacs's buffer-read-only. */
+  function bufferReadOnly(): boolean;
   /** Make a buffer of this name if there is none, without showing it, as get-buffer-create. */
   function getBufferCreate(name: string): void;
   /** Visit a file without showing it, as find-file-noselect, and return its buffer's name. */

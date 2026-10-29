@@ -229,6 +229,15 @@ impl Editor {
         self.minibuffer.slice(0..self.minibuffer.len())
     }
 
+    /// Replaces the open prompt's input, with point at its end, as an agent
+    /// or a test answering it might.
+    pub fn set_minibuffer_input(&mut self, text: &str) {
+        if self.prompt.is_some() {
+            self.minibuffer.set_text(text);
+            self.minibuffer.set_point(self.minibuffer.len());
+        }
+    }
+
     /// What the input completes against, split as Emacs's completion
     /// boundaries split it: the part completion leaves alone, such as a file
     /// name's directory; the part that completes, before and after point;

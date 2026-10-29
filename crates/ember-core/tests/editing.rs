@@ -159,7 +159,7 @@ fn describe_key_and_command() {
     assert!(text(&ed).contains("file (file name)"));
     // Help is read-only.
     ed.type_text("x");
-    assert_eq!(ed.echo(), Some("Buffer is read-only: *Help*"));
+    assert_eq!(ed.echo(), Some("Buffer is read-only: #<buffer *Help*>"));
 
     press(&mut ed, "C-h f");
     ed.type_text("kill-line");

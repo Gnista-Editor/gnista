@@ -390,6 +390,16 @@ pub(crate) fn install(ed: &mut Editor) {
         Variable::new("history-length", "How many earlier answers each minibuffer history keeps.", 100.0),
         Variable::new("completion-ignore-case", "Whether minibuffer completion ignores the case of letters.", false),
         Variable::new(
+            "delete-by-moving-to-trash",
+            "Whether deleting files and directories moves them to the system's trash, from where they can be put back. Ember turns it on, where Emacs leaves it off.",
+            true,
+        ),
+        Variable::new(
+            "user-emacs-directory",
+            "The directory Ember's configuration and its saved state are in, such as recentf's list of recent files: ~/.config/ember unless EMBER_CONFIG_DIR or XDG_CONFIG_HOME say otherwise. Nil when there is none, as in tests.",
+            Value::Bool(false),
+        ),
+        Variable::new(
             "default-directory",
             "Where the buffer looks up relative file names, as a directory name ending in /. Nil means the directory of its file, or else the directory Ember started in. Dired sets it to the directory it lists.",
             Value::Bool(false),
@@ -524,6 +534,8 @@ pub(crate) fn install(ed: &mut Editor) {
             "Called after each change to the text with where the new text starts and ends and how long the old text was: an insertion has an old length of 0, a deletion starts and ends where the text went. Changes the functions make do not call them again.",
         ),
         ("find-file-hook", "Run after visiting a file, once its major mode is chosen."),
+        ("kill-buffer-hook", "Run in a buffer just before it is killed."),
+        ("kill-emacs-hook", "Run when Ember exits, as C-x C-c does."),
         ("before-save-hook", "Run before saving a buffer to its file."),
         ("after-save-hook", "Run after saving a buffer to its file."),
         ("change-major-mode-hook", "Run before a major mode clears the buffer's own variables."),

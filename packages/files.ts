@@ -495,6 +495,185 @@ ember.defineMinorMode({
   onChange: updateAutoRevertTimer,
 });
 
+// Managing files, after the commands of files.el and fileio.c.
+
+/** Whether to go ahead where `file` exists: asked when typed, refused from code, as `ok-if-already-exists` 0 does. */
+function confirmOverwrite(file: string, verb: string, then: () => void): void {
+  if (!ember.fileExists(file)) return then();
+  if (!ember.calledInteractively()) throw new Error(`File already exists: ${ember.expandFileName(file)}`);
+  ember.yesOrNoP(`File ${ember.abbreviateFileName(ember.expandFileName(file))} already exists; ${verb} to it anyway? `, (yes) => {
+    if (!yes) throw new Error(`File already exists: ${ember.expandFileName(file)}`);
+    then();
+  });
+}
+
+/** Where a copy or rename of `from` to `to` lands: inside `to` if it ends in a slash. */
+const targetName = (from: string, to: string): string =>
+  to.endsWith("/") ? to + ember.fileNameNondirectory(ember.directoryFileName(from)) : to;
+
+const trashing = (): boolean => {
+  const on = ember.variable("delete-by-moving-to-trash");
+  return on !== null && on !== false && ember.prefixArg() === null;
+};
+
+ember.defineCommand({
+  name: "copy-file",
+  doc:
+    "Copy a file. A name ending in a slash copies it into that directory.\n\n" +
+    "Typed, it asks before replacing a file; from code, a file already there is an error. " +
+    "With a prefix argument, the copy keeps the file's modification time.",
+  params: [
+    { name: "file", kind: "file", prompt: "Copy file: " },
+    { name: "newname", kind: "file", prompt: (file) => `Copy ${ember.abbreviateFileName(file)} to file: ` },
+  ],
+  run: (file: string, newname: string) => {
+    const keepTime = ember.prefixArg() !== null;
+    confirmOverwrite(targetName(file, newname), "copy", () => {
+      ember.copyFile(file, newname, { okIfExists: true, keepTime });
+    });
+  },
+});
+
+ember.defineCommand({
+  name: "rename-file",
+  doc:
+    "Rename a file or directory. A name ending in a slash moves it into that directory.\n\n" +
+    "Typed, it asks before replacing a file; from code, a file already there is an error.",
+  params: [
+    { name: "file", kind: "file", prompt: "Rename file: " },
+    { name: "newname", kind: "file", prompt: (file) => `Rename ${ember.abbreviateFileName(file)} to file: ` },
+  ],
+  run: (file: string, newname: string) => {
+    confirmOverwrite(targetName(file, newname), "rename", () => {
+      ember.renameFile(file, newname, { okIfExists: true });
+    });
+  },
+});
+
+ember.defineCommand({
+  name: "delete-file",
+  doc:
+    "Delete a file. With delete-by-moving-to-trash, on in Ember, it goes to the trash, from where it can be put back.\n\n" +
+    "With a prefix argument, delete it for good instead.",
+  params: [{
+    name: "file",
+    kind: "file",
+    prompt: () => trashing() ? "Move file to trash: " : "Delete file: ",
+  }],
+  run: (file: string) => ember.deleteFile(file, { trash: trashing() }),
+});
+
+ember.defineCommand({
+  name: "make-directory",
+  doc: "Make a directory, and any directories above it that are missing.",
+  params: [{ name: "dir", kind: "file", prompt: "Make directory: " }],
+  run: (dir: string) => ember.makeDirectory(dir, { parents: true }),
+});
+
+ember.defineCommand({
+  name: "delete-directory",
+  doc:
+    "Delete a directory, asking first if it has files in it. With delete-by-moving-to-trash, on in Ember, " +
+    "it goes to the trash.\n\nWith a prefix argument, delete it for good instead.",
+  params: [{
+    name: "dir",
+    kind: "file",
+    prompt: () => trashing() ? "Move directory to trash: " : "Delete directory: ",
+  }],
+  run: (dir: string) => {
+    const trash = trashing();
+    const empty = ember.directoryFiles(dir).length <= 2;
+    if (empty) return ember.deleteDirectory(dir, { trash });
+    if (!ember.calledInteractively()) return ember.deleteDirectory(dir, { trash });
+    const verb = trash ? "trash" : "delete";
+    // As in Emacs, no still tries, and fails as the directory is not empty.
+    ember.yOrNP(`Directory ${ember.abbreviateFileName(ember.directoryFileName(ember.expandFileName(dir)))} is not empty, really ${verb}? `, (yes) => {
+      ember.deleteDirectory(dir, { recursive: yes, trash });
+    });
+  },
+});
+
+ember.defineCommand({
+  name: "copy-directory",
+  doc: "Copy a directory and what it holds: into the new name if that is a directory already, else as it.",
+  params: [
+    { name: "directory", kind: "file", prompt: "Copy directory: " },
+    { name: "newname", kind: "file", prompt: (dir) => `Copy directory ${ember.abbreviateFileName(dir)} to: ` },
+  ],
+  run: (directory: string, newname: string) => {
+    ember.copyDirectory(directory, newname, { keepTime: ember.prefixArg() !== null });
+  },
+});
+
+ember.defineCommand({
+  name: "read-only-mode",
+  doc:
+    "Make the buffer read-only, or editable again.\n\n" +
+    "A buffer visiting a file that cannot be written starts read-only. With a prefix argument, " +
+    "a positive number makes it read-only and zero or less editable.",
+  run: () => {
+    const arg = ember.prefixArg();
+    const on = arg === null ? !ember.bufferReadOnly() : ember.prefixNumericValue(arg) > 0;
+    ember.setReadOnly(on);
+    if (ember.calledInteractively()) ember.message(`Read-Only mode ${on ? "enabled" : "disabled"} in current buffer`);
+  },
+});
+
+ember.defineCommand({
+  name: "find-alternate-file",
+  doc:
+    "Visit another file in place of the current buffer's, which is killed.\n\n" +
+    "The prompt starts with the current file's name, for visiting one like it. A buffer with unsaved changes " +
+    "is killed only once you say so.",
+  params: [{
+    name: "file",
+    kind: "file",
+    prompt: "Find alternate file: ",
+    initial: () => {
+      const file = ember.bufferFileName();
+      return file === undefined ? ember.abbreviateFileName(ember.fileNameAsDirectory(ember.expandFileName("."))) : ember.abbreviateFileName(file);
+    },
+  }],
+  run: (file: string) => {
+    const old = ember.bufferName();
+    const replace = () => {
+      ember.setBufferModified(false);
+      ember.call("find-file", file);
+      if (ember.bufferName() !== old) ember.call("kill-buffer", old);
+    };
+    if (ember.bufferModified() && ember.bufferFileName() !== undefined) {
+      if (!ember.calledInteractively()) throw new Error(`Buffer ${old} modified`);
+      ember.yesOrNoP(`Buffer \u2018${old}\u2019 modified; kill anyway? `, (yes) => {
+        if (!yes) throw new Error("Aborted");
+        replace();
+      });
+      return;
+    }
+    replace();
+  },
+});
+
+ember.defineCommand({
+  name: "rename-visited-file",
+  doc:
+    "Rename the file the buffer visits, and visit it under its new name.\n\n" +
+    "In a buffer visiting no file, set the file it visits instead, as set-visited-file-name does.",
+  params: [{
+    name: "file",
+    kind: "file",
+    prompt: () => ember.bufferFileName() === undefined ? "Set visited file name: " : "Rename visited file to: ",
+  }],
+  run: (input: string) => {
+    const old = ember.bufferFileName();
+    const file = ember.expandFileName(targetName(old ?? ember.bufferName(), input));
+    const along = old !== undefined && ember.fileExists(old);
+    if (along) ember.renameFile(old, file);
+    ember.setVisitedFileName(file, { alongWithFile: along });
+  },
+});
+
+ember.bindKey("C-x C-q", "read-only-mode");
+ember.bindKey("C-x C-v", "find-alternate-file");
 ember.bindKey("C-x C-s", "save-buffer");
 ember.bindKey("C-x C-w", "write-file");
 ember.bindKey("C-x s", "save-some-buffers");
