@@ -1417,6 +1417,20 @@ fn install_native_search<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs:
         )?,
     )?;
     native.set(
+        "lookingAt",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pattern: String, pos: Option<usize>, fold: Option<bool>| {
+            with_editor(&ctx, |ed| {
+                let case_fold = fold.unwrap_or_else(|| ed.variable("case-fold-search").is_none_or(|v| v.is_true()));
+                let pos = pos.unwrap_or(ed.buffer().point());
+                let found = ember_core::looking_at(ed.buffer(), &pattern, pos, case_fold)?;
+                if found.is_some() {
+                    ed.set_match_data(found.clone());
+                }
+                Ok(found.is_some())
+            })
+        })?,
+    )?;
+    native.set(
         "matchData",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| {
             let m = with_editor(&ctx, |ed| Ok(ed.match_data().cloned()))?;

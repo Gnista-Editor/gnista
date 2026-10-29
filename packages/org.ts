@@ -88,7 +88,7 @@ for (const [name, doc] of [
 
 {
   const alist = ember.variable("auto-mode-alist");
-  if (Array.isArray(alist)) ember.setDefault("auto-mode-alist", [["\\.org$", "org-mode"], ...alist]);
+  if (Array.isArray(alist)) ember.setDefault("auto-mode-alist", [["\\.org\\'", "org-mode"], ...alist]);
 }
 
 // Faces

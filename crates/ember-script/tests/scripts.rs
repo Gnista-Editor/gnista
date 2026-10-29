@@ -586,3 +586,36 @@ fn let_bind_restores_where_it_bound() {
     );
     assert_eq!(ed.messages().last().map(String::as_str), Some("10 70 false | 40 true | out true"));
 }
+
+#[test]
+fn emacs_regexps_match_as_in_emacs() {
+    let (mut ed, scripting) = setup();
+    ed.type_text("foo(bar) [x]\nnext line");
+    eval(
+        &mut ed,
+        &scripting,
+        r#"
+        const r: string[] = [];
+        const t = (re: string, s: string) => r.push(String(ember.emacsRegexp(re).test(s)));
+        t("\\.te?xt\\'", "a.txt");      // \' is the end of the string
+        t("\\.te?xt\\'", "a.txt~");
+        t("\\`\\.\\.?\\'\\|\\`\\.?#", "..");
+        t("(a|b)", "(a|b)");            // plain parens and bars are literal
+        t("\\(a\\|b\\)c", "bc");
+        t("[[:digit:]]+x", "12x");
+        t("[\\]", "\\");                 // backslash is literal in brackets
+        t("\\<bar\\>", "foo bar baz");
+        ember.gotoChar(0);
+        r.push(String(ember.lookingAt("foo(\\(\\w+\\)")), ember.matchString(1) ?? "");
+        r.push(String(ember.lookingAt("bar")));
+        ember.reSearchForward("\\[\\(.\\)\\]");
+        r.push(String(ember.point()), ember.matchString(1) ?? "");
+        r.push(ember.conditionCase(() => String(ember.reSearchForward("nowhere")), { "search-failed": (e) => e.symbol }));
+        ember.message(r.join(" "));
+        "#,
+    );
+    assert_eq!(
+        ed.messages().last().map(String::as_str),
+        Some("true false true true true true true true true bar false 12 x search-failed")
+    );
+}

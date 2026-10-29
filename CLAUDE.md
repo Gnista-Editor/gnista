@@ -44,6 +44,7 @@ cargo clippy --all-targets
 ## Conventions
 
 - Match Emacs names, keys and messages unless there is a reason not to. When behaviour should match Emacs, add an oracle case in `tests/emacs/cases/` rather than guessing what Emacs does.
+- Regexps that are data (in variables, options, or from users) are Emacs regexps, matched with `ember.emacsRegexp`, `lookingAt`, `reSearchForward` and `matchString`; JavaScript regexps are fine inside a package's own code. Errors are signalled with a condition (`ember.signal`, `userError`) and caught by condition (`ember.conditionCase`), not by their message.
 - Commands Emacs writes in Lisp are written in TypeScript ([ADR 0005](docs/adr/0005-rust-core-typescript-commands.md)); Rust is for what Emacs does in C.
 - Every feature lands with tests. Behaviour a user sees gets a headless test driven by key sequences: in `crates/ember-core/tests/` for the core, `crates/ember-script/tests/` for scripts, and a snapshot in `crates/ember-gui/tests/` for anything drawn differently.
 - Decisions go in `docs/adr/NNNN-short-title.md` (template in `docs/adr/0000-template.md`), naming any new dependency and its purpose.

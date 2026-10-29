@@ -26,7 +26,7 @@ defvar("dired-dwim-target", false, "Whether copying and renaming suggest the dir
 defvar("dired-keep-marker-copy", "C", "The mark copies get, or true for the mark the file had, or nil for none.");
 defvar("dired-keep-marker-rename", true, "Whether renamed files keep their marks, or a mark they get instead.");
 defvar("dired-copy-preserve-time", true, "Whether a copy keeps the modification time of what it copies.");
-defvar("dired-trivial-filenames", "^\\.\\.?$|^\\.?#", "Names Dired passes over when it puts point on the first file, as a regular expression: . and .., and auto-save and lock files.");
+defvar("dired-trivial-filenames", "\\`\\.\\.?\\'\\|\\`\\.?#", "Names Dired passes over when it puts point on the first file, as a regular expression: . and .., and auto-save and lock files.");
 defvar("dired-kill-when-opening-new-dired-buffer", false, "Whether visiting a directory from Dired kills the Dired buffer it came from.");
 defvar("dired-auto-revert-buffer", false, "Whether going back to a Dired buffer lists its directory again.");
 defvar("dired-directory", null, "The directory a Dired buffer lists.");
@@ -306,7 +306,7 @@ function findLine(name: string): number | undefined {
 /** Puts point on the first file worth visiting, as dired-initial-position. */
 function initialPosition(): void {
   const trivial = ember.variable("dired-trivial-filenames");
-  const re = typeof trivial === "string" ? new RegExp(trivial) : undefined;
+  const re = typeof trivial === "string" ? ember.emacsRegexp(trivial) : undefined;
   let line = 1;
   while (line < ember.lineCount() && fileLine(line) === undefined && ember.lineStart(line) < ember.bufferSize()) line++;
   if (re !== undefined) {

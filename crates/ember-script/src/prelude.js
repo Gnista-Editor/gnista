@@ -77,6 +77,75 @@
     return p - start;
   }
 
+  /** Emacs regexps translated to JavaScript, by source and case folding. */
+  const regexps = new Map();
+  const CLASSES = {
+    alnum: "\\p{L}\\p{N}", alpha: "\\p{L}", digit: "0-9", xdigit: "0-9A-Fa-f", space: "\\s", blank: " \\t",
+    upper: "\\p{Lu}", lower: "\\p{Ll}", word: "\\p{L}\\p{N}", punct: "\\p{P}\\p{S}", cntrl: "\\x00-\\x1f",
+    graph: "\\p{L}\\p{N}\\p{P}\\p{S}", print: "\\p{L}\\p{N}\\p{P}\\p{S} ", ascii: "\\x00-\\x7f", nonascii: "\\u0080-\\u{10ffff}",
+  };
+  /** An Emacs regexp as JavaScript source: groups and alternatives backslashed, brackets with literal backslashes. */
+  function translateEmacsRegexp(re) {
+    let out = "";
+    for (let i = 0; i < re.length; i++) {
+      const c = re[i];
+      if (c === "\\" && i + 1 < re.length) {
+        const n = re[++i];
+        if (n === "(") {
+          // \(?: shy groups, and \(?N: numbered ones as plain groups.
+          const m = /^\?(\d*):/.exec(re.slice(i + 1));
+          out += m ? (m[1] === "" ? "(?:" : "(") : "(";
+          if (m) i += m[0].length;
+        } else if (")|{}".includes(n)) out += n;
+        else if (n === "'") out += "(?![\\s\\S])";
+        else if (n === "`") out += "(?<![\\s\\S])";
+        else if (n === "w") out += "[\\p{L}\\p{N}]";
+        else if (n === "W") out += "[^\\p{L}\\p{N}]";
+        else if (n === "b" || n === "B") out += "\\" + n;
+        else if (n === "<") out += "(?<![\\p{L}\\p{N}])(?=[\\p{L}\\p{N}])";
+        else if (n === ">") out += "(?<=[\\p{L}\\p{N}])(?![\\p{L}\\p{N}])";
+        else if (n === "_" && (re[i + 1] === "<" || re[i + 1] === ">")) {
+          out += re[++i] === "<" ? "(?<![\\p{L}\\p{N}_])(?=[\\p{L}\\p{N}_])" : "(?<=[\\p{L}\\p{N}_])(?![\\p{L}\\p{N}_])";
+        } else if (n === "s" || n === "S") {
+          // Syntax classes, as the standard table has them.
+          const k = re[++i];
+          const set = k === "-" || k === " " ? "\\s" : k === "w" ? "\\p{L}\\p{N}" : k === "_" ? "_\\-+*/&|<>=" : k === "." ? "\\p{P}" : "\\s";
+          out += n === "s" ? `[${set}]` : `[^${set}]`;
+        } else if (/[1-9]/.test(n)) out += "\\" + n;
+        else out += /[A-Za-z0-9]/.test(n) ? n : "\\" + n;
+      } else if ("(){}|/".includes(c)) {
+        out += "\\" + c;
+      } else if (c === "[") {
+        // A bracket expression: ] first is literal, backslash is literal, [:class:] named.
+        let j = i + 1;
+        let body = "";
+        if (re[j] === "^") {
+          body += "^";
+          j++;
+        }
+        if (re[j] === "]") {
+          body += "\\]";
+          j++;
+        }
+        while (j < re.length && re[j] !== "]") {
+          const cls = /^\[:(\w+):\]/.exec(re.slice(j));
+          if (cls) {
+            body += CLASSES[cls[1]] ?? "";
+            j += cls[0].length;
+          } else {
+            body += "\\[]".includes(re[j]) ? "\\" + re[j] : re[j];
+            j++;
+          }
+        }
+        out += `[${body}]`;
+        i = j;
+      } else {
+        out += c;
+      }
+    }
+    return out;
+  }
+
   /** Functions named for code to call by name, as Emacs's defun makes them, apart from commands. */
   const functions = new Map();
 
@@ -417,6 +486,45 @@
       } finally {
         for (const undo of restore.reverse()) undo();
       }
+    },
+    emacsRegexp(regexp, { caseFold = false } = {}) {
+      const key = `${caseFold ? "i" : "c"}${regexp}`;
+      let re = regexps.get(key);
+      if (re === undefined) {
+        try {
+          re = new RegExp(translateEmacsRegexp(String(regexp)), caseFold ? "imu" : "mu");
+        } catch (e) {
+          ember.signal("invalid-regexp", `Invalid regexp: ${e instanceof Error ? e.message : e}`, [String(regexp)]);
+        }
+        regexps.set(key, re);
+      }
+      re.lastIndex = 0;
+      return re;
+    },
+    lookingAt: (regexp, pos, { caseFold } = {}) => native.lookingAt(String(regexp), pos ?? undefined, caseFold ?? undefined),
+    reSearchForward(regexp, { bound, noerror = false, caseFold } = {}) {
+      const m = ember.search(regexp, { regexp: true, bound, caseFold });
+      if (m === undefined) {
+        if (noerror) return undefined;
+        ember.signal("search-failed", `Search failed: "${regexp}"`, [String(regexp)]);
+      }
+      native.gotoChar(m.end);
+      return m.end;
+    },
+    reSearchBackward(regexp, { bound, noerror = false, caseFold } = {}) {
+      const m = ember.search(regexp, { regexp: true, backward: true, bound, caseFold });
+      if (m === undefined) {
+        if (noerror) return undefined;
+        ember.signal("search-failed", `Search failed: "${regexp}"`, [String(regexp)]);
+      }
+      native.gotoChar(m.start);
+      return m.start;
+    },
+    matchBeginning: (n = 0) => native.matchData()?.groups[n]?.[0] ?? undefined,
+    matchEnd: (n = 0) => native.matchData()?.groups[n]?.[1] ?? undefined,
+    matchString(n = 0) {
+      const g = native.matchData()?.groups[n];
+      return g ? native.bufferText(g[0], g[1]) : undefined;
     },
     signal(symbol, message, data = []) {
       const e = new Error(String(message));

@@ -19,7 +19,7 @@ pub fn string_match(pattern: &str, text: &str, fold: bool) -> Result<Option<usiz
         .case_insensitive(fold)
         .multi_line(true)
         .build()
-        .map_err(|e| crate::error::Error::new(format!("Invalid regexp: {e}")))?;
+        .map_err(|e| crate::error::Error::signal("invalid-regexp", format!("Invalid regexp: {e}"), Vec::new()))?;
     Ok(re.find(text).map(|m| text[..m.start()].chars().count()))
 }
 
@@ -233,7 +233,7 @@ pub struct Match {
 pub fn compile(pattern: &str, options: &SearchOptions) -> Result<Regex> {
     let source = if options.regexp { translate_regexp(pattern)? } else { regex::escape(pattern) };
     let source = if options.case_fold { format!("(?i){source}") } else { source };
-    Regex::new(&source).map_err(|e| Error::new(format!("Invalid regexp: {e}")))
+    Regex::new(&source).map_err(|e| Error::signal("invalid-regexp", format!("Invalid regexp: {e}"), Vec::new()))
 }
 
 /// Searches a buffer from `from`, positions counted in characters.
@@ -287,12 +287,44 @@ pub fn search(b: &Buffer, pattern: &str, from: usize, options: &SearchOptions) -
     let Some(lowest) = re.find_iter(haystack).filter(|m| m.start() >= limit).last().map(|m| m.start()) else {
         return Ok(None);
     };
-    let anchored = Regex::new(&format!(r"\A(?:{})", re.as_str())).map_err(|e| Error::new(format!("Invalid regexp: {e}")))?;
+    let anchored = Regex::new(&format!(r"\A(?:{})", re.as_str())).map_err(|e| Error::signal("invalid-regexp", format!("Invalid regexp: {e}"), Vec::new()))?;
     let found = (lowest..=haystack.len())
         .rev()
         .filter(|&start| haystack.is_char_boundary(start))
         .find_map(|start| anchored.captures(&haystack[start..]).map(|caps| to_match(start, caps)));
     Ok(found)
+}
+
+/// The match of an Emacs regexp starting exactly at `pos`, as Emacs's
+/// looking-at finds it, or `None`. It reads from the start of the line, so
+/// `^` and `\b` see what comes before, and only a little past `pos` unless
+/// the match runs on.
+pub fn looking_at(b: &Buffer, pattern: &str, pos: usize, case_fold: bool) -> Result<Option<Match>> {
+    let re = compile(pattern, &SearchOptions { regexp: true, backward: false, case_fold, bound: None })?;
+    let rope = b.text();
+    let (min, max) = (b.point_min(), b.point_max());
+    let pos = pos.clamp(min, max);
+    let lo = if re.as_str().contains(r"\A") { min } else { b.line_start(b.line_of(pos)).max(min) };
+    let mut window = 4096;
+    loop {
+        let hi = (pos + window).min(max);
+        let text = b.slice(lo..hi);
+        let base = rope.char_to_byte(lo);
+        let at = rope.char_to_byte(pos) - base;
+        let found = re.captures_at(&text, at).filter(|caps| caps.get(0).is_some_and(|m| m.start() == at));
+        match found {
+            // A match that reaches the end of what was read may run on.
+            Some(caps) if caps.get(0).is_some_and(|m| m.end() == text.len()) && hi < max => window *= 8,
+            Some(caps) => {
+                let to_char = |byte: usize| rope.byte_to_char(base + byte);
+                let groups: Vec<Option<(usize, usize)>> =
+                    (0..caps.len()).map(|g| caps.get(g).map(|m| (to_char(m.start()), to_char(m.end())))).collect();
+                let (start, end) = groups[0].expect("group 0 always matches");
+                return Ok(Some(Match { start, end, groups }));
+            }
+            None => return Ok(None),
+        }
+    }
 }
 
 /// Whether search case should be folded for a string, as Emacs decides with

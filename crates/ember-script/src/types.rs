@@ -904,6 +904,34 @@ const API: &str = r##"
    * `fn` throws or changes buffers. Hooks cannot be bound yet.
    */
   function letBind<T>(bindings: { [variable: string]: Value }, fn: () => T): T;
+  /**
+   * An Emacs regexp as a JavaScript RegExp, for matching strings quickly:
+   * \\( \\) groups, \\| alternatives, \\` and \\' for the ends of the string,
+   * \\w, \\b and \\< \\>, [[:alpha:]] classes, ^ and $ at line ends. Regexps
+   * that are data, in variables or from users, are Emacs's; use this to
+   * match them. Signals invalid-regexp if it cannot be read.
+   */
+  function emacsRegexp(regexp: string, options?: { caseFold?: boolean }): RegExp;
+  /**
+   * Whether an Emacs regexp matches at a position, point by default, as
+   * looking-at; a match becomes the match data. Case folds as
+   * case-fold-search says unless `caseFold` is given.
+   */
+  function lookingAt(regexp: string, position?: number, options?: { caseFold?: boolean }): boolean;
+  /**
+   * Search forward for an Emacs regexp and move point to the end of the
+   * match, as re-search-forward; signals search-failed unless `noerror`.
+   * Returns where point went.
+   */
+  function reSearchForward(regexp: string, options?: { bound?: number; noerror?: boolean; caseFold?: boolean }): number | undefined;
+  /** Search back for an Emacs regexp and move point to the start of the match, as re-search-backward. */
+  function reSearchBackward(regexp: string, options?: { bound?: number; noerror?: boolean; caseFold?: boolean }): number | undefined;
+  /** Where the last match, or its group `n`, starts, as match-beginning. */
+  function matchBeginning(n?: number): number | undefined;
+  /** Where the last match, or its group `n`, ends, as match-end. */
+  function matchEnd(n?: number): number | undefined;
+  /** The text of the last match in the buffer, or of its group `n`, as match-string. */
+  function matchString(n?: number): string | undefined;
   /** An error as a handler of conditionCase sees it: its condition, its data, and its message. */
   interface SignalledError {
     symbol: string;

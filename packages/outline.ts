@@ -8,7 +8,7 @@
 ember.defineVariable({
   name: "outline-regexp",
   doc:
-    "What starts a heading line: a JavaScript regular expression matched at the start of a line. " +
+    "What starts a heading line: an Emacs regular expression matched at the start of a line. " +
     "The length of the match is the heading's level.",
   value: "[*\\f]+",
   local: true,
@@ -37,7 +37,7 @@ interface Heading {
 }
 
 function headings(): Heading[] {
-  const pattern = new RegExp(`^(?:${String(ember.variable("outline-regexp"))})`);
+  const pattern = ember.emacsRegexp(`^\\(?:${String(ember.variable("outline-regexp"))}\\)`);
   const found: Heading[] = [];
   for (let line = 0; line < ember.lineCount(); line++) {
     const match = pattern.exec(ember.lineText(line));
@@ -278,7 +278,7 @@ const withPrefix = (prefix: string) =>
 function fontifyHeadings(start: number, end: number): void {
   if (ember.variable("major-mode") !== "outline-mode") return;
   ember.removeTextProperty(start, end, "face");
-  const pattern = new RegExp(`^(?:${String(ember.variable("outline-regexp"))})`);
+  const pattern = ember.emacsRegexp(`^\\(?:${String(ember.variable("outline-regexp"))}\\)`);
   for (let line = ember.lineOf(start); line < ember.lineCount() && ember.lineStart(line) < end; line++) {
     const match = pattern.exec(ember.lineText(line));
     if (match && match[0].length > 0) {

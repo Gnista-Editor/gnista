@@ -4,9 +4,9 @@ ember.defineVariable({
   name: "auto-mode-alist",
   doc:
     "Which major mode files get, by name: a list of [pattern, mode] pairs, tried in order.\n\n" +
-    "Each pattern is a JavaScript regular expression matched against the whole file name, " +
+    "Each pattern is an Emacs regular expression matched against the whole file name, as \\\\.txt\\\\', " +
     "and mode is the command that turns the mode on. Files that match nothing get Fundamental mode.",
-  value: [["\\.te?xt$", "text-mode"]],
+  value: [["\\.te?xt\\'", "text-mode"]],
 });
 
 /**
@@ -32,7 +32,7 @@ function modeFromFileName(): string | undefined {
   }
   for (const entry of alist) {
     if (Array.isArray(entry) && typeof entry[0] === "string" && typeof entry[1] === "string") {
-      if (new RegExp(entry[0]).test(file)) {
+      if (ember.emacsRegexp(entry[0]).test(file)) {
         return entry[1];
       }
     }
@@ -76,7 +76,7 @@ ember.defineVariable({
 
 ember.defineVariable({
   name: "revert-without-query",
-  doc: "Files revert-buffer reverts without asking, if unmodified: a list of JavaScript regular expressions matched against the file name.",
+  doc: "Files revert-buffer reverts without asking, if unmodified: a list of Emacs regular expressions matched against the file name.",
   value: [],
 });
 
@@ -256,7 +256,7 @@ function revertBuffer(noconfirm: boolean, then: () => void = () => {}): void {
   if (!ember.fileExists(file)) throw new Error(`File ${file} no longer exists!`);
   const modified = ember.bufferModified();
   const patterns = ember.variable("revert-without-query");
-  const unasked = !modified && Array.isArray(patterns) && patterns.some((p) => typeof p === "string" && new RegExp(p).test(file));
+  const unasked = !modified && Array.isArray(patterns) && patterns.some((p) => typeof p === "string" && ember.emacsRegexp(p).test(file));
   if (noconfirm || unasked) {
     revertNow();
     then();
