@@ -94,6 +94,9 @@ pub struct Variable {
     pub local: bool,
     /// Whether it is a hook, whose value is its functions.
     pub hook: bool,
+    /// Whether a buffer keeps its own value when its major mode changes, as
+    /// Emacs's `permanent-local` property says.
+    pub permanent: bool,
     /// Where it was defined, such as a script file. `None` for built-in variables.
     pub source: Option<String>,
 }
@@ -106,8 +109,15 @@ impl Variable {
             default: default.into(),
             local: false,
             hook: false,
+            permanent: false,
             source: None,
         }
+    }
+
+    /// Makes buffers keep their own values when their major mode changes.
+    pub fn permanent(mut self) -> Variable {
+        self.permanent = true;
+        self
     }
 
     /// Makes the variable automatically buffer-local.
@@ -229,8 +239,10 @@ impl Editor {
     /// `change-major-mode-hook` beforehand, as Emacs does.
     pub fn kill_all_local_variables(&mut self) -> Result<()> {
         let result = self.run_hooks("change-major-mode-hook");
+        let permanent: Vec<String> = self.variables.values().filter(|v| v.permanent).map(|v| v.name.clone()).collect();
         let b = self.buffer_mut();
-        b.locals.clear();
+        b.locals.retain(|name, _| permanent.contains(name));
+        b.forget_shift_selection();
         b.local_hooks.clear();
         b.local_map = None;
         b.syntax = None;
@@ -396,6 +408,54 @@ pub(crate) fn install(ed: &mut Editor) {
             false,
         )
         .local(),
+        Variable::new(
+            "buffer-file-coding-system",
+            "How the visited file's text is written as bytes: its charset and line ends, such as utf-8-unix or undecided-dos.\n\nVisiting a file sets it to what the file uses, and saving writes it that way.",
+            "utf-8-unix",
+        )
+        .local()
+        .permanent(),
+        Variable::new(
+            "word-constituents",
+            "Characters besides letters and digits that are part of words in this buffer, for word motion and killing. It stands in for Emacs's syntax tables: Text mode, and the modes built on it, add the apostrophe.",
+            "$%",
+        )
+        .local(),
+        Variable::new(
+            "make-backup-files",
+            "Whether the first save of a file in a session keeps the old file as a backup, name~ beside it.\n\nFiles in the temporary directory are not backed up.",
+            true,
+        ),
+        Variable::new(
+            "backup-by-copying",
+            "Whether backups are made by copying the old file, rather than renaming it and writing a new one. Files with more than one hard link are always copied.",
+            false,
+        ),
+        Variable::new(
+            "file-precious-flag",
+            "Whether saving writes a new file and then renames it over the old one, so a failed save cannot leave the file half written. It breaks hard links.",
+            false,
+        ),
+        Variable::new(
+            "auto-save-default",
+            "Whether buffers visiting files auto-save, to #name# beside the file.",
+            true,
+        ),
+        Variable::new(
+            "auto-save-interval",
+            "How many keys typed between auto-saves. 0 turns off auto-saving by keys.",
+            300.0,
+        ),
+        Variable::new(
+            "auto-save-timeout",
+            "How many seconds idle before auto-saving. 0 turns off auto-saving when idle.",
+            30.0,
+        ),
+        Variable::new(
+            "delete-auto-save-files",
+            "Whether saving a buffer deletes its auto-save file.",
+            true,
+        ),
         Variable::new(
             "truncate-partial-width-windows",
             "Windows narrower than this many columns that share the frame's width with others truncate lines, whatever truncate-lines says.\n\nSet it to 0 to let narrow windows continue lines too.",

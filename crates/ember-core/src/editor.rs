@@ -172,6 +172,9 @@ pub struct Editor {
     pub(crate) selected_frame: crate::window::FrameId,
     pub(crate) next_frame_id: crate::window::FrameId,
     pub(crate) quit: bool,
+    /// A question a command asked, waiting for its answer.
+    pub(crate) question: Option<crate::questions::Question>,
+    pub(crate) timers: crate::timers::Timers,
 }
 
 impl Default for Editor {
@@ -248,6 +251,8 @@ impl Editor {
             next_frame_id: 1,
             window_use: 0,
             quit: false,
+            question: None,
+            timers: Default::default(),
         };
         editor.windows.push(crate::window::Window {
             id: 1,
@@ -330,6 +335,11 @@ impl Editor {
         self.this_command_set |= set;
         self.interactive = interactive;
         self.current_prefix_arg = saved;
+        // A call from code does not stop to ask about a file changed on
+        // disk; it fails, as Emacs's file-supersession error does.
+        if self.running == 0 {
+            self.take_supersession();
+        }
         result
     }
 
@@ -463,8 +473,13 @@ impl Editor {
         self.execute(call.command, call.args, call.prefix);
     }
 
-    /// Hands the next argument to the command waiting for it.
+    /// Hands the next argument to the command waiting for it, or answers
+    /// the question asked.
     pub(crate) fn supply_arg(&mut self, arg: Arg) {
+        if self.question.is_some() {
+            self.answer_typed(&arg.to_string());
+            return;
+        }
         if let Some(call) = &mut self.pending_call {
             call.args.push(arg);
             self.read_next_arg();
@@ -474,6 +489,7 @@ impl Editor {
     /// Cancels any prompt and pending command, as `C-g` does.
     pub(crate) fn abort(&mut self) {
         self.prompt = None;
+        self.drop_question();
         self.pending_call = None;
         self.reading_keys = None;
         self.pending_keys.clear();
@@ -483,10 +499,76 @@ impl Editor {
     }
 
     fn execute(&mut self, command: Rc<Command>, args: Vec<Arg>, prefix: Option<PrefixArg>) {
-        if let Err(e) = self.run_command(command, args, prefix) {
-            self.message = Some(e.to_string());
-            self.last_error = Some(e);
-            self.command_failed = true;
+        let start = (self.buffers[self.current].id, self.buffers[self.current].point());
+        if let Err(e) = self.run_command(command.clone(), args.clone(), prefix) {
+            match self.take_supersession() {
+                Some((buffer, path)) => self.ask_about_supersession(buffer, path, command, args, prefix, start),
+                None => self.fail(e),
+            }
+        }
+    }
+
+    /// Shows an error as a failed command's, in the echo area.
+    pub(crate) fn fail(&mut self, e: Error) {
+        self.message = Some(e.to_string());
+        self.last_error = Some(e);
+        self.command_failed = true;
+    }
+
+    /// The buffer whose edit was refused because its file changed on disk,
+    /// if any, and its file.
+    fn take_supersession(&mut self) -> Option<(u64, std::path::PathBuf)> {
+        let b = self.buffers.iter_mut().find(|b| b.file.threatened)?;
+        b.file.threatened = false;
+        Some((b.id, b.path.clone()?))
+    }
+
+    /// Asks what to do about editing a buffer whose file changed on disk,
+    /// as Emacs's `ask-user-about-supersession-threat`: y runs the command
+    /// again from where it started and lets it edit, as Emacs carries on
+    /// with it, r reverts the buffer, and n gives up.
+    fn ask_about_supersession(
+        &mut self,
+        buffer: u64,
+        path: std::path::PathBuf,
+        command: Rc<Command>,
+        args: Vec<Arg>,
+        prefix: Option<PrefixArg>,
+        start: (u64, usize),
+    ) {
+        let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+        let prompt = format!("{name} changed on disk; really edit the buffer? (y, n, r or C-h) ");
+        let then: crate::variables::HookFn = Rc::new(move |ed, answer| {
+            let Some(index) = ed.buffers.iter().position(|b| b.id == buffer) else { return Ok(()) };
+            match answer.first() {
+                Some(Value::Str(a)) if a == "y" => {
+                    let b = &mut ed.buffers[index];
+                    b.file.allow_supersession = true;
+                    b.file.backed_up = false;
+                    if let Some(b) = ed.buffers.iter_mut().find(|b| b.id == start.0) {
+                        b.set_point(start.1);
+                    }
+                    let result = ed.run_command(command.clone(), args.clone(), prefix);
+                    ed.buffers.iter_mut().for_each(|b| b.file.allow_supersession = false);
+                    result?;
+                    ed.message = Some("File on disk now will become a backup file if you save these changes.".into());
+                    Ok(())
+                }
+                Some(Value::Str(a)) if a == "r" => {
+                    let old = ed.set_current_buffer(&ed.buffers[index].name.clone())?;
+                    let reverted = ed.revert_to_visited_file().and_then(|()| match ed.command("normal-mode") {
+                        Some(_) => ed.call("normal-mode", Vec::new()),
+                        None => Ok(()),
+                    });
+                    let _ = ed.set_current_buffer(&old);
+                    reverted?;
+                    Err(Error::new(format!("File reverted: {}", crate::files::abbreviate_path(&path))))
+                }
+                _ => Err(Error::new(format!("File changed on disk: {}", crate::files::abbreviate_path(&path)))),
+            }
+        });
+        if let Err(e) = self.read_char_choice(&prompt, &['y', 'n', 'r'], then) {
+            self.fail(e);
         }
     }
 
@@ -740,7 +822,14 @@ impl Editor {
             }
             keys.push(key);
         }
+        let typed = self.executing_macro == 0;
+        if typed {
+            self.note_input();
+        }
         self.dispatch_key(key);
+        if typed {
+            self.count_key_for_auto_save();
+        }
         // Keys a command gave back are read next, but not recorded again.
         if !self.reading_unread {
             self.reading_unread = true;
@@ -766,6 +855,10 @@ impl Editor {
         } else if key == Key::new(KeyCode::Esc) {
             self.esc_prefix = true;
             self.message = Some("ESC-".into());
+            return;
+        }
+
+        if self.answer_key(key) {
             return;
         }
 
@@ -1013,6 +1106,15 @@ impl Editor {
         if buffer.path.is_some() && buffer.is_modified() {
             return Err(Error::new(format!("Buffer {name} is modified; save it first")));
         }
+        self.kill_buffer_unsaved(name)
+    }
+
+    /// Kills a buffer even if it has unsaved changes, as answering yes to
+    /// kill-buffer's question does. Its auto-save file stays, for recovering.
+    pub fn kill_buffer_unsaved(&mut self, name: &str) -> Result<()> {
+        let index = self
+            .find_buffer(name)
+            .ok_or_else(|| Error::new(format!("No such buffer: {name}")))?;
         let showing = index == self.current;
         let next = self.other_buffer().map(str::to_string);
         let current_name = self.buffers[self.current].name.clone();
@@ -1040,11 +1142,19 @@ impl Editor {
             return Ok(());
         }
         let is_new = !path.exists();
-        let mut buffer = Buffer::visit(path)?;
+        let mut buffer = Self::read_visited_file(path)?;
         buffer.name = self.unique_buffer_name(&buffer.name);
         self.buffers.push(buffer);
         self.select(self.buffers.len() - 1);
-        if is_new {
+        // As Emacs's after-find-file: auto-saving starts, and a newer
+        // auto-save file is pointed out.
+        if self.variable("auto-save-default").is_none_or(|v| v.is_true()) {
+            self.set_auto_save(true);
+        }
+        if Self::has_newer_auto_save(path) {
+            let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+            self.message = Some(format!("{name} has auto save data; consider M-x recover-this-file"));
+        } else if is_new {
             self.message = Some("(New file)".into());
         }
         // As Emacs's after-find-file does: choose the major mode, then run the hook.

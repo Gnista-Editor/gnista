@@ -301,6 +301,68 @@ const API: &str = r##"
   function showHelp(text: string): void;
   /** The file the current buffer visits, if any. */
   function bufferFileName(): string | undefined;
+  /** The names of all buffers, in the order Emacs's buffer-list gives them. */
+  function bufferList(): string[];
+  /**
+   * Ask a question answered by typing "yes" or "no", as Emacs's yes-or-no-p.
+   * Emacs waits for the answer; here the command goes on, and `then` is
+   * called with the answer once it is typed. C-g quits the question.
+   */
+  function yesOrNoP(question: string, then: (yes: boolean) => void): void;
+  /** Ask a question answered by typing y or n, as Emacs's y-or-n-p; `then` gets the answer. */
+  function yOrNP(question: string, then: (yes: boolean) => void): void;
+  /**
+   * Ask a question answered by typing one of `answers` and RET, as Emacs's
+   * read-answer; the prompt lists them. `then` gets the answer.
+   */
+  function readAnswer(question: string, answers: string[], then: (answer: string) => void): void;
+  /**
+   * Ask a question answered by one of the characters in `chars`, typed
+   * alone, as Emacs's read-char-choice; the prompt says what they mean.
+   * `then` gets the character.
+   */
+  function readCharChoice(prompt: string, chars: string, then: (char: string) => void): void;
+  /**
+   * Call `fn` after `secs` seconds, and then every `repeat` seconds if given,
+   * as Emacs's run-with-timer. Returns the timer, for cancelTimer.
+   */
+  function runWithTimer(secs: number, repeat: number | null, fn: () => void): number;
+  /**
+   * Call `fn` once the editor has been idle for `secs` seconds, as Emacs's
+   * run-with-idle-timer; with `repeat`, in every idle spell that long.
+   */
+  function runWithIdleTimer(secs: number, repeat: boolean, fn: () => void): number;
+  /** Stop a timer, as Emacs's cancel-timer. */
+  function cancelTimer(id: number): void;
+  /**
+   * Write the current buffer to its file, as Emacs's basic-save-buffer-2:
+   * the first save keeps the old file as name~, the text is written in
+   * buffer-file-coding-system, and the buffer is then unmodified and its
+   * auto-save file deleted. Asks nothing; save-buffer does the asking.
+   */
+  function writeVisitedFile(): void;
+  /** Replace the current buffer's text with its file's, keeping point where it can, and mark it unmodified. */
+  function revertToVisitedFile(): void;
+  /** Replace the current buffer's text with its auto-save file's, leaving it modified. */
+  function recoverFromAutoSave(): void;
+  /** Whether the visited file changed on disk since it was visited or saved, as not verify-visited-file-modtime. */
+  function visitedFileChanged(): boolean;
+  /** Make the current buffer visit another file, as Emacs's set-visited-file-name. */
+  function setVisitedFileName(file: string): void;
+  /** A file name made absolute, with ~ for the home directory, as Emacs's expand-file-name. */
+  function expandFileName(file: string): string;
+  function fileExists(file: string): boolean;
+  /** Where a file is auto-saved: #name# beside it. */
+  function autoSaveFileName(file: string): string;
+  /** Whether a file's auto-save file is newer than the file. */
+  function hasNewerAutoSave(file: string): boolean;
+  /** Auto-save every buffer with changes not auto-saved yet, as do-auto-save; returns whether any was. */
+  function doAutoSave(options?: { quiet?: boolean }): boolean;
+  /** Turn auto-saving on or off for the current buffer, which must visit a file. */
+  function setAutoSave(on: boolean): void;
+  function autoSaving(): boolean;
+  /** Ask the front end to exit, as Emacs's kill-emacs. */
+  function killEmacs(): void;
   function commandExists(name: string): boolean;
   /**
    * The command that is running (Emacs's this-command). In pre-command-hook,

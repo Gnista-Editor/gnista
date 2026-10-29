@@ -17,6 +17,8 @@ These tests check that Ember behaves like GNU Emacs by running the same keys on 
 
    `keys` are space separated, in Emacs's `kbd` notation (`C-x C-f`, `M-S-f`, `<f3>`, `SPC`). `point` is optional and counts characters from 0. `modes` is optional: commands that turn modes on before the keys, such as `["delete-selection-mode"]` or `["org-mode"]`, called with a prefix argument of 1 in both editors (major modes take no argument in Emacs). `call` is optional: a command and its arguments, called before the keys, as in `["query-replace", "foo", "bar"]`, for commands that would otherwise prompt. `platform` is optional, for cases that only hold on one platform, as an Emacs `system-type` such as `"darwin"`.
 
+   Cases can also visit real files. `files` is an object of file names and their text, written into a fresh directory for the case (`target/oracle-files`, outside the temporary directory, as Emacs makes no backups there; text starting `latin-1:` is written as Latin-1). `find` names the file to visit instead of the case's buffer; if it is not among `files`, it holds `text`. `disk` is the text the visited file gets on disk, as if from another program, when the keys reach `<f33>`. These cases record every file in the directory afterwards, so backups (`a.txt~`) and auto-save files (`#a.txt#`) are compared too. `message: true` compares the last message, with the directory written as `DIR`; batch Emacs never says "Wrote", so save cases cannot compare it. `answers` answer the questions the keys ask, in order: typed questions take the answer and RET, and questions read by a key take its first letter.
+
 2. Record what Emacs does:
 
    ```bash
@@ -38,7 +40,8 @@ Besides the text, point, mark, kill ring and first error, each case records the 
 Batch Emacs has no window system, so some keys act as they would on a terminal rather than in GUI Emacs:
 
 - `<delete>` is translated to `DEL`, so it deletes backwards. GUI Emacs, and Ember, delete forwards. Don't write cases with `<delete>`.
-- The minibuffer reads from standard input in batch mode, not from the typed keys, so cases cannot use it: no `M-x`, `C-x C-f` or other prompts. A case that prompts makes the recorder wait forever. Give the command its arguments with `call` instead; keys it reads itself, as `query-replace` reads `y` and `n`, still work. Ember's own tests cover the minibuffer.
+- The minibuffer reads from standard input in batch mode, not from the typed keys. record.el answers minibuffer reads and questions from the case's `answers` instead; a case that prompts with no answer left records the error "Minibuffer read in batch". Commands can also be given their arguments with `call`. Ember's own tests cover typing in the minibuffer.
+- Batch Emacs does not auto-save after visiting a file, and killing a modified buffer does not ask; record.el turns auto-saving on as interactive Emacs does, but cases cannot check kill-buffer's question. Ember's own tests cover it.
 - `C-g` typed as a key makes batch Emacs wait forever too, so cases cannot quit isearch or query-replace with it.
 - `this-single-command-keys` sees only the last key of a sequence in batch mode, so commands that look at it act differently. In particular `C-x e` installs no repeat key, so `C-x e e` cannot be recorded. Ember's own tests cover it.
 - The window is 80 columns by 24 lines. Splitting and selecting windows works, so window cases can check each window's point, but leave scrolling to Ember's own tests.

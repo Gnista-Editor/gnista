@@ -75,20 +75,7 @@ fn ember_behaves_like_emacs() {
                 }
             }
             total += 1;
-            let input = Input {
-                text: case.text.clone(),
-                point: case.point,
-                keys: case.keys.clone(),
-                modes: case.modes.clone(),
-                call: case.call.clone(),
-                platform: case.platform.clone(),
-                windows: case.windows,
-                answers: case.answers.clone(),
-                visit: case.visit.clone(),
-                today: case.today.clone(),
-                agenda_files: case.agenda_files,
-                capture_templates: case.capture_templates.clone(),
-            };
+            let input = Input::of(case);
             let Some(emacs) = recorded.get(case.name.as_str()) else {
                 problems.push(format!("{id}: not recorded; record it with record.el"));
                 continue;

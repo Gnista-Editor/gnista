@@ -6,4 +6,6 @@ ember.defineMajorMode({
   doc:
     "The major mode programming language modes are built on.\n\n" +
     "Put what you want in every programming mode on prog-mode-hook, which runs before each mode's own hook.",
+  // As prog-mode.el: source files end in a newline.
+  setup: () => ember.setVariable("require-final-newline", ember.variable("mode-require-final-newline") ?? true),
 });

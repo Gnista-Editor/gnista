@@ -211,6 +211,10 @@ fn random_case(rng: &mut Rng, name: String) -> Case {
         today: None,
         agenda_files: false,
         capture_templates: Vec::new(),
+        files: Default::default(),
+        find: None,
+        disk: None,
+        message: false,
     }
 }
 
@@ -428,7 +432,25 @@ fn random_text_case(rng: &mut Rng, name: String) -> Case {
         })
         .collect::<Vec<_>>()
         .join(" ");
-    Case { name, point, text, keys, modes: Vec::new(), call: Vec::new(), platform: None, windows, answers: Vec::new(), visit: None, today: None, agenda_files: false, capture_templates: Vec::new() }
+    Case {
+        name,
+        point,
+        text,
+        keys,
+        modes: Vec::new(),
+        call: Vec::new(),
+        platform: None,
+        windows,
+        answers: Vec::new(),
+        visit: None,
+        today: None,
+        agenda_files: false,
+        capture_templates: Vec::new(),
+        files: Default::default(),
+        find: None,
+        disk: None,
+        message: false,
+    }
 }
 
 /// Fuzzes editing outside any mode, as the org fuzzer does org-mode.
@@ -436,6 +458,61 @@ fn random_text_case(rng: &mut Rng, name: String) -> Case {
 #[ignore = "needs GNU Emacs; run with --ignored"]
 fn plain_editing_behaves_like_emacs_on_random_cases() {
     fuzz("edit-fuzz", random_text_case);
+}
+
+/// Keys that save, revert and change the visited file on disk (<f33>).
+const FILE_KEYS: &[&str] = &["C-x C-s", "C-x C-s", "<f33>", "<f33>", "C-x x g", "M-~"];
+
+/// A case visiting a file for real, in Text mode or Fundamental mode,
+/// that edits, saves and reverts it while it changes on disk. Questions
+/// are answered "yes" or "no", which a question read by a key takes as y
+/// or n, so both editors take answers alike.
+fn random_file_case(rng: &mut Rng, name: String) -> Case {
+    let text = text_document(rng);
+    let point = rng.below(text.chars().count() + 1);
+    let n = 1 + rng.below(8);
+    let keys = (0..n)
+        .map(|_| {
+            if rng.chance(40) {
+                rng.pick(FILE_KEYS)
+            } else if rng.chance(80) {
+                // Not M-y, which without a yank reads a kill in the
+                // minibuffer in Emacs, where the case's answers would go.
+                rng.pick(&EDIT_ONLY_KEYS.iter().copied().filter(|k| *k != "M-y").collect::<Vec<_>>())
+            } else {
+                rng.pick(&["x", "SPC", "1"])
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ");
+    let disk = if rng.chance(30) { text.clone() } else { text_document(rng) };
+    let answers = (0..rng.below(4)).map(|_| rng.pick(&["yes", "no"]).to_string()).collect();
+    Case {
+        name,
+        point,
+        text,
+        keys,
+        modes: Vec::new(),
+        call: Vec::new(),
+        platform: None,
+        windows: false,
+        answers,
+        visit: None,
+        today: None,
+        agenda_files: false,
+        capture_templates: Vec::new(),
+        files: Default::default(),
+        find: Some(rng.pick(&["a.txt", "data"]).to_string()),
+        disk: Some(disk),
+        message: false,
+    }
+}
+
+/// Fuzzes visiting, saving and reverting files that change on disk.
+#[test]
+#[ignore = "needs GNU Emacs; run with --ignored"]
+fn file_editing_behaves_like_emacs_on_random_cases() {
+    fuzz("file-fuzz", random_file_case);
 }
 
 /// Generates cases with `generate`, compares Emacs and Ember on them, and

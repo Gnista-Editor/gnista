@@ -53,3 +53,452 @@ ember.defineCommand({
     ember.call((mode ?? "fundamental-mode") as ember.CommandName);
   },
 });
+
+// Saving, reverting and recovering files, after files.el. What touches the
+// disk is native, as Emacs's fileio.c is: writing with a backup, reading
+// back, auto-saving. Emacs's questions wait for an answer; here each one
+// calls on with it.
+
+ember.defineVariable({
+  name: "require-final-newline",
+  doc:
+    "Whether saving adds a newline to a file that does not end in one: true adds it, false leaves the file as it is, " +
+    '"ask" asks first. Text and programming modes set it from mode-require-final-newline.',
+  value: false,
+  local: true,
+});
+
+ember.defineVariable({
+  name: "mode-require-final-newline",
+  doc: "The value text and programming modes give require-final-newline in their buffers.",
+  value: true,
+});
+
+ember.defineVariable({
+  name: "revert-without-query",
+  doc: "Files revert-buffer reverts without asking, if unmodified: a list of JavaScript regular expressions matched against the file name.",
+  value: [],
+});
+
+ember.defineHook("before-revert-hook", "Run before revert-buffer replaces the text with the file's.");
+ember.defineHook("after-revert-hook", "Run after revert-buffer has reread the file.");
+
+/** The buffer's file, or an error saying it has none. */
+function visitedFile(message = "Buffer does not seem to be associated with any file"): string {
+  const file = ember.bufferFileName();
+  if (file === undefined) throw new Error(message);
+  return file;
+}
+
+/** A file name with the home directory as ~, as Emacs's abbreviate-file-name. */
+function abbreviate(file: string): string {
+  const home = ember.expandFileName("~");
+  return file.startsWith(`${home}/`) ? `~${file.slice(home.length)}` : file;
+}
+
+function nondirectory(file: string): string {
+  return file.slice(file.lastIndexOf("/") + 1);
+}
+
+/** Calls `then` in the buffer named `buffer`, current again after a question. */
+function inBuffer(buffer: string, then: () => void): () => void {
+  return () => {
+    // Already current, as after most questions; then may rename it.
+    if (ember.bufferName() === buffer) then();
+    else if (ember.bufferList().includes(buffer)) ember.withCurrentBuffer(buffer, then);
+  };
+}
+
+/**
+ * Adds the newline require-final-newline asks for, then calls `then`, as
+ * basic-save-buffer does before writing.
+ */
+function addFinalNewline(then: () => void): void {
+  const size = ember.bufferSize();
+  const require = ember.variable("require-final-newline");
+  if (size === 0 || require === false || require === null || ember.bufferText().endsWith("\n")) {
+    then();
+    return;
+  }
+  const add = () => {
+    const point = ember.point();
+    ember.gotoChar(ember.pointMax());
+    ember.insert("\n");
+    ember.gotoChar(point);
+  };
+  if (require === true || require === "visit-save") {
+    add();
+    then();
+    return;
+  }
+  const buffer = ember.bufferName();
+  ember.yOrNP(`Buffer ${buffer} does not end in newline.  Add one? `, (yes) => {
+    inBuffer(buffer, () => {
+      if (yes) add();
+      then();
+    })();
+  });
+}
+
+/** Writes the buffer, says so and runs the save hooks, as basic-save-buffer does once it may. */
+function writeBuffer(file: string): void {
+  ember.runHooks("before-save-hook");
+  ember.writeVisitedFile();
+  ember.message(`Wrote ${ember.bufferFileName() ?? file}`);
+  ember.runHooks("after-save-hook");
+}
+
+/**
+ * Saves the current buffer if it is modified, as Emacs's basic-save-buffer,
+ * then calls `then`. A file changed on disk since it was visited or saved
+ * is overwritten only if you say so.
+ */
+function basicSaveBuffer(then: () => void = () => {}): void {
+  const file = ember.bufferFileName();
+  if (!ember.bufferModified()) {
+    if (ember.calledInteractively()) ember.message("(No changes need to be saved)");
+    then();
+    return;
+  }
+  if (file === undefined) {
+    // Emacs reads a file to save in; write-file reads one too.
+    ember.callInteractively("write-file");
+    return;
+  }
+  const buffer = ember.bufferName();
+  const save = inBuffer(buffer, () => addFinalNewline(() => {
+    writeBuffer(file);
+    then();
+  }));
+  if (ember.visitedFileChanged()) {
+    ember.yesOrNoP(`${nondirectory(file)} has changed since visited or saved.  Save anyway? `, (yes) => {
+      if (!yes) throw new Error("Save not confirmed");
+      save();
+    });
+    return;
+  }
+  save();
+}
+
+ember.defineCommand({
+  name: "save-buffer",
+  doc:
+    "Save the current buffer to its file, if it has changed.\n\n" +
+    "The first save in a session keeps the file as it was in name~ (see make-backup-files). If the file changed on disk " +
+    "since you visited or saved it, you are asked before it is overwritten. A buffer with no file asks for one, as write-file does.",
+  run: () => basicSaveBuffer(),
+});
+
+ember.defineCommand({
+  name: "write-file",
+  doc:
+    "Write the current buffer to a file and visit that file instead.\n\n" +
+    "A directory writes a file of the buffer's name in it. An existing file is overwritten only if you say so.",
+  params: [{ name: "file", kind: "file", prompt: "Write file: " }],
+  run: (input: string) => {
+    let file = ember.expandFileName(input);
+    if (input.endsWith("/")) file = `${file.replace(/\/$/, "")}/${ember.bufferName()}`;
+    const write = () => {
+      ember.setVisitedFileName(file);
+      ember.setBufferModified(true);
+      basicSaveBuffer();
+    };
+    if (ember.calledInteractively() && ember.fileExists(file) && file !== ember.bufferFileName()) {
+      const buffer = ember.bufferName();
+      ember.yOrNP(`File ‘${file}’ exists; overwrite? `, (yes) => {
+        if (!yes) throw new Error("Canceled");
+        inBuffer(buffer, write)();
+      });
+      return;
+    }
+    write();
+  },
+});
+
+ember.defineCommand({
+  name: "not-modified",
+  doc: "Mark the current buffer as unmodified, not needing to be saved.\n\nWith a prefix argument, mark it as modified, so save-buffer will save it.",
+  run: () => {
+    const modified = ember.prefixArg() !== null;
+    ember.message(modified ? "Modification-flag set" : "Modification-flag cleared");
+    ember.setBufferModified(modified);
+  },
+});
+
+/** Rereads the file into the buffer and chooses its mode again, as revert-buffer--default does once it may. */
+function revertNow(): void {
+  ember.runHooks("before-revert-hook");
+  ember.revertToVisitedFile();
+  ember.call("normal-mode");
+  ember.runHooks("after-revert-hook");
+}
+
+/**
+ * Reverts the buffer, asking first unless `noconfirm`, or the buffer is
+ * unmodified and its file matches revert-without-query. Calls `then` once
+ * reverted.
+ */
+function revertBuffer(noconfirm: boolean, then: () => void = () => {}): void {
+  const file = visitedFile();
+  if (!ember.fileExists(file)) throw new Error(`File ${file} no longer exists!`);
+  const modified = ember.bufferModified();
+  const patterns = ember.variable("revert-without-query");
+  const unasked = !modified && Array.isArray(patterns) && patterns.some((p) => typeof p === "string" && new RegExp(p).test(file));
+  if (noconfirm || unasked) {
+    revertNow();
+    then();
+    return;
+  }
+  const question = modified ? `Discard edits and reread from ${file}? ` : `Revert buffer from file ${file}? `;
+  const buffer = ember.bufferName();
+  ember.yesOrNoP(question, (yes) => {
+    if (yes) inBuffer(buffer, () => {
+      revertNow();
+      then();
+    })();
+  });
+}
+
+ember.defineCommand({
+  name: "revert-buffer",
+  doc:
+    "Replace the buffer's text with its file's, after asking.\n\n" +
+    "Point stays where the text is unchanged. The major mode is chosen again, as when visiting the file. The revert can be undone.",
+  run: () => revertBuffer(false),
+});
+
+ember.defineCommand({
+  name: "revert-buffer-quick",
+  doc: "Revert the buffer from its file, asking only if it has unsaved changes.",
+  run: () => {
+    if (ember.bufferFileName() !== undefined && !ember.bufferModified()) {
+      revertBuffer(true);
+      ember.message("Reverted buffer");
+    } else {
+      revertBuffer(false);
+    }
+  },
+});
+
+ember.defineCommand({
+  name: "recover-this-file",
+  doc: "Replace the buffer's text with its auto-save file's, after asking: what was typed since the last save, before a crash.",
+  run: () => ember.call("recover-file", visitedFile("This buffer is not visiting a file")),
+});
+
+ember.defineCommand({
+  name: "recover-file",
+  doc:
+    "Visit a file, taking its text from its auto-save file, #name#, after asking.\n\n" +
+    "The buffer is left modified; save it to keep what was recovered.",
+  params: [{ name: "file", kind: "file", prompt: "Recover file: " }],
+  run: (input: string) => {
+    const file = ember.expandFileName(input);
+    if (/^#.*#$/.test(nondirectory(file))) throw new Error(`${abbreviate(file)} is an auto-save file`);
+    const auto = ember.autoSaveFileName(file);
+    if (ember.fileExists(file) && !ember.fileExists(auto)) throw new Error(`Auto save file ${abbreviate(auto)} does not exist`);
+    if (!ember.hasNewerAutoSave(file)) throw new Error(`Auto-save file ${abbreviate(auto)} not current`);
+    const ask = () =>
+      ember.readAnswer(`Recover auto save file ${auto}? `, ["yes", "no", "diff"], (answer) => {
+        if (answer === "diff") {
+          ember.message("Ember cannot show the differences yet");
+          ask();
+        } else if (answer === "yes") {
+          const buffer = ember.findFileNoselect(file);
+          ember.call("switch-to-buffer", buffer);
+          ember.recoverFromAutoSave();
+        } else {
+          throw new Error("Recover-file canceled");
+        }
+      });
+    ask();
+  },
+});
+
+ember.defineCommand({
+  name: "auto-save-mode",
+  doc: "Toggle auto-saving of the current buffer to #name# beside its file.\n\nWith a positive prefix argument, turn it on; with zero or a negative one, off.",
+  run: () => {
+    const arg = ember.prefixArg();
+    const on = arg === null ? !ember.autoSaving() : ember.prefixNumericValue(arg) > 0;
+    if (on && ember.bufferFileName() === undefined) throw new Error("Buffer does not seem to be associated with any file");
+    ember.setAutoSave(on);
+    ember.message(`Auto-save ${on ? "on" : "off"} (in this buffer)`);
+  },
+});
+
+ember.defineCommand({
+  name: "do-auto-save",
+  doc: "Auto-save every buffer that has changed since it was last saved or auto-saved.",
+  run: () => {
+    ember.doAutoSave();
+  },
+});
+
+/** The buffers save-some-buffers asks about: modified ones visiting files. */
+function buffersNeedingSave(): string[] {
+  return ember
+    .bufferList()
+    .filter((b) => ember.withCurrentBuffer(b, () => ember.bufferFileName() !== undefined && ember.bufferModified()));
+}
+
+/**
+ * Asks about saving each modified file buffer in turn, as Emacs's
+ * save-some-buffers with map-y-or-n-p: y saves it, n skips it, ! saves the
+ * rest, . saves it and stops, q stops. With `all`, saves them all without
+ * asking. Calls `then` once done, unless the questions were quit.
+ */
+function saveSomeBuffers(all: boolean, interactive: boolean, then: () => void = () => {}): void {
+  const buffers = buffersNeedingSave();
+  if (buffers.length === 0) {
+    if (interactive) ember.message("(No files need saving)");
+    then();
+    return;
+  }
+  const saveAll = (rest: string[], done: () => void) => {
+    const [first, ...later] = rest;
+    if (first === undefined) return done();
+    ember.withCurrentBuffer(first, () => basicSaveBuffer(() => saveAll(later, done)));
+  };
+  if (all) {
+    saveAll(buffers, then);
+    return;
+  }
+  const ask = (rest: string[]) => {
+    const [buffer, ...later] = rest;
+    if (buffer === undefined) return then();
+    const file = ember.withCurrentBuffer(buffer, () => ember.bufferFileName() ?? "");
+    const what = buffer === nondirectory(file) || buffer.startsWith(`${nondirectory(file)}<`) ? `file ${file}` : `file ${file} (buffer ${buffer})`;
+    ember.readCharChoice(`Save ${what}? (y, n, !, ., q, C-r, C-f, d or C-h) `, "yn!.q ", (c) => {
+      if (c === "y" || c === " ") saveAll([buffer], () => ask(later));
+      else if (c === "n") ask(later);
+      else if (c === "!") saveAll(rest, then);
+      else if (c === ".") saveAll([buffer], then);
+      else then();
+    });
+  };
+  ask(buffers);
+}
+
+ember.defineCommand({
+  name: "save-some-buffers",
+  doc:
+    "Save some modified file buffers, asking about each: y saves it, n skips it, ! saves all the rest, . saves it and stops, and q stops.\n\n" +
+    "With a prefix argument, save them all without asking.",
+  run: () => saveSomeBuffers(ember.prefixArg() !== null, ember.calledInteractively()),
+});
+
+ember.defineCommand({
+  name: "save-buffers-kill-terminal",
+  doc:
+    "Offer to save each modified file buffer, then exit.\n\n" +
+    "If any are left unsaved, you are asked whether to exit anyway. With a prefix argument, save them all without asking.",
+  run: () => {
+    saveSomeBuffers(ember.prefixArg() !== null, false, () => {
+      if (buffersNeedingSave().length === 0) {
+        ember.killEmacs();
+        return;
+      }
+      ember.yesOrNoP("Modified buffers exist; exit anyway? ", (yes) => {
+        if (yes) ember.killEmacs();
+      });
+    });
+  },
+});
+
+// Coding systems, after mule.el's set-buffer-file-coding-system.
+
+const CODING_SYSTEMS = ["undecided", "utf-8", "utf-8-with-signature", "iso-latin-1"];
+const CODING_ALIASES: Record<string, string> = { "latin-1": "iso-latin-1", "iso-8859-1": "iso-latin-1", utf8: "utf-8", "prefer-utf-8": "utf-8" };
+
+/** A coding system's full name, or undefined if Ember has no such coding. Without line ends, it keeps `eol`'s. */
+function codingSystem(name: string, eol: string): string | undefined {
+  const match = /^(.*?)(?:-(unix|dos|mac))?$/.exec(name);
+  if (!match) return undefined;
+  const base = CODING_ALIASES[match[1]!] ?? match[1]!;
+  return CODING_SYSTEMS.includes(base) ? `${base}-${match[2] ?? eol}` : undefined;
+}
+
+ember.defineCommand({
+  name: "set-buffer-file-coding-system",
+  doc:
+    "Set how the buffer is written to its file: a coding system such as utf-8, iso-latin-1 or utf-8-with-signature, " +
+    "with -unix, -dos or -mac for its line ends. Without them, the line ends stay as they are.\n\nThe buffer is then modified, to be saved that way.",
+  params: [{ name: "coding", kind: "string", prompt: "Coding system for saved file (default nil): " }],
+  run: (name: string) => {
+    if (name === "") return;
+    const current = String(ember.variable("buffer-file-coding-system") ?? "utf-8-unix");
+    const eol = /-(unix|dos|mac)$/.exec(current)?.[1] ?? "unix";
+    const coding = codingSystem(name, eol);
+    if (coding === undefined) throw new Error(`Invalid coding system: ${name}`);
+    ember.setVariable("buffer-file-coding-system", coding);
+    ember.setBufferModified(true);
+  },
+});
+
+// Reverting buffers when their files change, after autorevert.el, by
+// looking every auto-revert-interval seconds.
+
+ember.defineVariable({
+  name: "auto-revert-interval",
+  doc: "How many seconds between checks for files that changed, in buffers where auto-revert-mode or global-auto-revert-mode is on.",
+  value: 5,
+});
+
+ember.defineVariable({
+  name: "auto-revert-verbose",
+  doc: "Whether reverting a buffer because its file changed says so.",
+  value: true,
+});
+
+let autoRevertTimer: number | undefined;
+
+/** Reverts each buffer that auto-reverts, is unmodified, and whose file changed. */
+function autoRevertBuffers(): void {
+  const global = ember.variable("global-auto-revert-mode") === true;
+  for (const buffer of ember.bufferList()) {
+    ember.withCurrentBuffer(buffer, () => {
+      const file = ember.bufferFileName();
+      if (file === undefined || (!global && ember.variable("auto-revert-mode") !== true)) return;
+      if (ember.bufferModified() || !ember.visitedFileChanged() || !ember.fileExists(file)) return;
+      revertNow();
+      if (ember.variable("auto-revert-verbose") === true) ember.message(`Reverting buffer ‘${buffer}’`);
+    });
+  }
+}
+
+/** Starts checking files if any buffer auto-reverts, and stops when none does. */
+function updateAutoRevertTimer(): void {
+  const wanted =
+    ember.variable("global-auto-revert-mode") === true ||
+    ember.bufferList().some((b) => ember.withCurrentBuffer(b, () => ember.variable("auto-revert-mode") === true));
+  if (wanted && autoRevertTimer === undefined) {
+    const interval = Number(ember.variable("auto-revert-interval")) || 5;
+    autoRevertTimer = ember.runWithTimer(interval, interval, autoRevertBuffers);
+  } else if (!wanted && autoRevertTimer !== undefined) {
+    ember.cancelTimer(autoRevertTimer);
+    autoRevertTimer = undefined;
+  }
+}
+
+ember.defineMinorMode({
+  name: "auto-revert-mode",
+  lighter: " ARev",
+  doc: "Revert the buffer when its file changes on disk, if the buffer has no unsaved changes.",
+  onChange: updateAutoRevertTimer,
+});
+
+ember.defineMinorMode({
+  name: "global-auto-revert-mode",
+  global: true,
+  doc: "Revert every file buffer when its file changes on disk, if the buffer has no unsaved changes.",
+  onChange: updateAutoRevertTimer,
+});
+
+ember.bindKey("C-x C-s", "save-buffer");
+ember.bindKey("C-x C-w", "write-file");
+ember.bindKey("C-x s", "save-some-buffers");
+ember.bindKey("C-x C-c", "save-buffers-kill-terminal");
+ember.bindKey("C-x x g", "revert-buffer-quick");
+ember.bindKey("M-~", "not-modified");
+ember.bindKey("C-x RET f", "set-buffer-file-coding-system");

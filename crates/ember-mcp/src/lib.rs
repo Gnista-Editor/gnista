@@ -270,6 +270,9 @@ fn report(ed: &mut Editor, error: Option<String>) -> Result<String, String> {
     if let Some(prompt) = ed.prompt() {
         let input = ed.minibuffer().slice(0..ed.minibuffer().len());
         out.push(format!("Prompt open: {prompt}{input}"));
+        if ed.prompt_reads_char() {
+            out.push("It takes a single key: type just the letter, with no RET.".into());
+        }
     }
     if let Some(message) = ed.echo() {
         out.push(format!("Message: {message}"));

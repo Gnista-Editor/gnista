@@ -1,0 +1,836 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "save-makes-a-backup-once",
+      "input": {
+        "text": "one\n",
+        "point": 0,
+        "keys": "M-> x C-x C-s y C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "find": "a.txt"
+      },
+      "text": "one\nxy\n",
+      "visible": "one\nxy\n",
+      "point": 6,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\nxy\n",
+        "a.txt~": "one\n"
+      }
+    },
+    {
+      "name": "save-unmodified",
+      "input": {
+        "text": "one\n",
+        "point": 0,
+        "keys": "C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n"
+      }
+    },
+    {
+      "name": "save-adds-final-newline-in-text-mode",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "C-e x C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "find": "a.txt"
+      },
+      "text": "onex\n",
+      "visible": "onex\n",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "onex\n",
+        "a.txt~": "one"
+      }
+    },
+    {
+      "name": "save-leaves-end-in-fundamental-mode",
+      "input": {
+        "text": "raw",
+        "point": 0,
+        "keys": "C-e x C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "find": "data"
+      },
+      "text": "rawx",
+      "visible": "rawx",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "data": "rawx",
+        "data~": "raw"
+      }
+    },
+    {
+      "name": "save-keeps-dos-line-ends",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-> t h r e e RET C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "d.txt": "one\r\ntwo\r\n"
+        },
+        "find": "d.txt"
+      },
+      "text": "one\ntwo\nthree\n",
+      "visible": "one\ntwo\nthree\n",
+      "point": 14,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "d.txt": "one\r\ntwo\r\nthree\r\n",
+        "d.txt~": "one\r\ntwo\r\n"
+      }
+    },
+    {
+      "name": "save-keeps-mac-line-ends",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-> x C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "m.txt": "one\rtwo\r"
+        },
+        "find": "m.txt"
+      },
+      "text": "one\ntwo\nx\n",
+      "visible": "one\ntwo\nx\n",
+      "point": 9,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "m.txt": "one\rtwo\rx\r",
+        "m.txt~": "one\rtwo\r"
+      }
+    },
+    {
+      "name": "save-keeps-latin-1",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-> é t é RET C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "l.txt": "latin-1:café\n"
+        },
+        "find": "l.txt"
+      },
+      "text": "café\nété\n",
+      "visible": "café\nété\n",
+      "point": 9,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "l.txt": "latin-1:café\nété\n",
+        "l.txt~": "latin-1:café\n"
+      }
+    },
+    {
+      "name": "save-ascii-file-as-utf-8",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-> é C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "u.txt": "plain\n"
+        },
+        "find": "u.txt"
+      },
+      "text": "plain\né\n",
+      "visible": "plain\né\n",
+      "point": 7,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "u.txt": "plain\né\n",
+        "u.txt~": "plain\n"
+      }
+    },
+    {
+      "name": "save-keeps-utf-8-signature",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-> x C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "b.txt": "﻿signed\n"
+        },
+        "find": "b.txt"
+      },
+      "text": "signed\nx\n",
+      "visible": "signed\nx\n",
+      "point": 8,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "b.txt": "﻿signed\nx\n",
+        "b.txt~": "﻿signed\n"
+      }
+    },
+    {
+      "name": "save-with-coding-chosen",
+      "input": {
+        "text": "a\nb\n",
+        "point": 0,
+        "keys": "C-x RET f C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "utf-8-dos"
+        ],
+        "find": "a.txt"
+      },
+      "text": "a\nb\n",
+      "visible": "a\nb\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "a\r\nb\r\n",
+        "a.txt~": "a\nb\n"
+      }
+    },
+    {
+      "name": "save-over-changed-file-refused",
+      "input": {
+        "text": "mine\n",
+        "point": 0,
+        "keys": "x <f33> C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "no"
+        ],
+        "find": "a.txt",
+        "disk": "theirs\n"
+      },
+      "text": "xmine\n",
+      "visible": "xmine\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Save not confirmed",
+      "files": {
+        "a.txt": "theirs\n"
+      }
+    },
+    {
+      "name": "save-over-changed-file-confirmed",
+      "input": {
+        "text": "mine\n",
+        "point": 0,
+        "keys": "x <f33> C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "yes"
+        ],
+        "find": "a.txt",
+        "disk": "theirs\n"
+      },
+      "text": "xmine\n",
+      "visible": "xmine\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "xmine\n",
+        "a.txt~": "theirs\n"
+      }
+    },
+    {
+      "name": "edit-changed-file-n",
+      "input": {
+        "text": "mine\n",
+        "point": 0,
+        "keys": "<f33> x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "n"
+        ],
+        "find": "a.txt",
+        "disk": "theirs\n"
+      },
+      "text": "mine\n",
+      "visible": "mine\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "File changed on disk: DIR/a.txt",
+      "files": {
+        "a.txt": "theirs\n"
+      }
+    },
+    {
+      "name": "edit-changed-file-y",
+      "input": {
+        "text": "mine\n",
+        "point": 0,
+        "keys": "<f33> x y",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "y"
+        ],
+        "find": "a.txt",
+        "disk": "theirs\n",
+        "message": true
+      },
+      "text": "xymine\n",
+      "visible": "xymine\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "theirs\n"
+      },
+      "message": "File on disk now will become a backup file if you save these changes."
+    },
+    {
+      "name": "edit-changed-file-y-then-save",
+      "input": {
+        "text": "mine\n",
+        "point": 0,
+        "keys": "<f33> x C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "y",
+          "yes"
+        ],
+        "find": "a.txt",
+        "disk": "theirs\n"
+      },
+      "text": "xmine\n",
+      "visible": "xmine\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "xmine\n",
+        "a.txt~": "theirs\n"
+      }
+    },
+    {
+      "name": "edit-changed-file-r",
+      "input": {
+        "text": "mine\n",
+        "point": 0,
+        "keys": "<f33> x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "r"
+        ],
+        "find": "a.txt",
+        "disk": "theirs\n"
+      },
+      "text": "theirs\n",
+      "visible": "theirs\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "File reverted: DIR/a.txt",
+      "files": {
+        "a.txt": "theirs\n"
+      }
+    },
+    {
+      "name": "edit-file-changed-to-same-text",
+      "input": {
+        "text": "mine\n",
+        "point": 0,
+        "keys": "<f33> x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "find": "a.txt",
+        "disk": "mine\n"
+      },
+      "text": "xmine\n",
+      "visible": "xmine\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "mine\n"
+      }
+    },
+    {
+      "name": "revert-quick-unmodified",
+      "input": {
+        "text": "one\ntwo\nthree\n",
+        "point": 10,
+        "keys": "<f33> C-x x g",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "find": "a.txt",
+        "disk": "one\nTWO\nthree\nfour\n",
+        "message": true
+      },
+      "text": "one\nTWO\nthree\nfour\n",
+      "visible": "one\nTWO\nthree\nfour\n",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\nTWO\nthree\nfour\n"
+      },
+      "message": "Reverted buffer"
+    },
+    {
+      "name": "revert-point-in-change",
+      "input": {
+        "text": "abcdefghij",
+        "point": 4,
+        "keys": "<f33> C-x x g",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "find": "a.txt",
+        "disk": "abXYZij"
+      },
+      "text": "abXYZij",
+      "visible": "abXYZij",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "abXYZij"
+      }
+    },
+    {
+      "name": "revert-point-after-change",
+      "input": {
+        "text": "abcdefghij",
+        "point": 9,
+        "keys": "<f33> C-x x g",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "find": "a.txt",
+        "disk": "abXYZij"
+      },
+      "text": "abXYZij",
+      "visible": "abXYZij",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "abXYZij"
+      }
+    },
+    {
+      "name": "revert-modified-asks",
+      "input": {
+        "text": "one\n",
+        "point": 0,
+        "keys": "x C-x x g",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "yes"
+        ],
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n"
+      }
+    },
+    {
+      "name": "revert-modified-declined",
+      "input": {
+        "text": "one\n",
+        "point": 0,
+        "keys": "x C-x x g",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "no"
+        ],
+        "find": "a.txt"
+      },
+      "text": "xone\n",
+      "visible": "xone\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n"
+      }
+    },
+    {
+      "name": "revert-then-undo",
+      "input": {
+        "text": "one\n",
+        "point": 0,
+        "keys": "x C-x x g C-/",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "yes"
+        ],
+        "find": "a.txt"
+      },
+      "text": "xone\n",
+      "visible": "xone\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n"
+      }
+    },
+    {
+      "name": "do-auto-save-writes-auto-save-file",
+      "input": {
+        "text": "one\n",
+        "point": 0,
+        "keys": "x M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "do-auto-save"
+        ],
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "xone\n",
+      "visible": "xone\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "#a.txt#": "xone\n",
+        "a.txt": "one\n"
+      },
+      "message": "Auto-saving...done"
+    },
+    {
+      "name": "save-deletes-auto-save-file",
+      "input": {
+        "text": "one\n",
+        "point": 0,
+        "keys": "x M-x C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "do-auto-save"
+        ],
+        "find": "a.txt"
+      },
+      "text": "xone\n",
+      "visible": "xone\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "xone\n",
+        "a.txt~": "one\n"
+      }
+    },
+    {
+      "name": "recover-this-file",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "recover-this-file",
+          "yes"
+        ],
+        "files": {
+          "a.txt": "saved\n",
+          "#a.txt#": "lost work\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "lost work\n",
+      "visible": "lost work\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "#a.txt#": "lost work\n",
+        "a.txt": "saved\n"
+      }
+    },
+    {
+      "name": "recover-this-file-declined",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "recover-this-file",
+          "no"
+        ],
+        "files": {
+          "a.txt": "saved\n",
+          "#a.txt#": "lost work\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "saved\n",
+      "visible": "saved\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Recover-file canceled",
+      "files": {
+        "#a.txt#": "lost work\n",
+        "a.txt": "saved\n"
+      }
+    },
+    {
+      "name": "recover-without-auto-save",
+      "input": {
+        "text": "saved\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "recover-this-file"
+        ],
+        "find": "a.txt"
+      },
+      "text": "saved\n",
+      "visible": "saved\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Auto save file DIR/#a.txt# does not exist",
+      "files": {
+        "a.txt": "saved\n"
+      }
+    },
+    {
+      "name": "write-file-new-name",
+      "input": {
+        "text": "one\n",
+        "point": 0,
+        "keys": "x C-x C-w",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "b.txt"
+        ],
+        "find": "a.txt"
+      },
+      "text": "xone\n",
+      "visible": "xone\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "xone\n"
+      }
+    },
+    {
+      "name": "write-file-over-existing",
+      "input": {
+        "text": "one\n",
+        "point": 0,
+        "keys": "C-x C-w",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "b.txt",
+          "y"
+        ],
+        "files": {
+          "b.txt": "old\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "one\n",
+        "b.txt~": "old\n"
+      }
+    },
+    {
+      "name": "not-modified",
+      "input": {
+        "text": "one\n",
+        "point": 0,
+        "keys": "x M-~",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "xone\n",
+      "visible": "xone\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n"
+      },
+      "message": "Modification-flag cleared"
+    }
+  ]
+}

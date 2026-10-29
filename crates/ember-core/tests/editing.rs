@@ -118,43 +118,6 @@ fn edits_in_the_minibuffer_stay_there() {
 }
 
 #[test]
-fn find_file_edit_and_save() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("notes.txt");
-    fs::write(&path, "first line\n").unwrap();
-
-    let mut ed = Editor::new();
-    press(&mut ed, "C-x C-f");
-    // The prompt starts in the default directory; typing an absolute path
-    // after it starts over from the root, as in Emacs.
-    assert!(ed.minibuffer().slice(0..ed.minibuffer().len()).ends_with('/'));
-    ed.type_text(&format!("/{}", path.display()));
-    press(&mut ed, "RET");
-    assert_eq!(ed.window_buffer().name, "notes.txt");
-    assert_eq!(text(&ed), "first line\n");
-
-    press(&mut ed, "M->");
-    ed.type_text("second line\n");
-    press(&mut ed, "C-x C-s");
-    assert_eq!(fs::read_to_string(&path).unwrap(), "first line\nsecond line\n");
-    assert!(!ed.window_buffer().is_modified());
-    press(&mut ed, "C-x C-s");
-    assert_eq!(ed.echo(), Some("(No changes need to be saved)"));
-}
-
-#[test]
-fn find_file_on_a_new_file_creates_it_on_save() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("new.org");
-    let mut ed = Editor::new();
-    ed.call("find-file", vec![Arg::Str(path.display().to_string())]).unwrap();
-    assert_eq!(ed.echo(), Some("(New file)"));
-    ed.type_text("* Heading\n");
-    press(&mut ed, "C-x C-s");
-    assert_eq!(fs::read_to_string(&path).unwrap(), "* Heading\n");
-}
-
-#[test]
 fn file_name_completion() {
     let dir = tempfile::tempdir().unwrap();
     fs::write(dir.path().join("alpha.txt"), "").unwrap();
@@ -216,19 +179,6 @@ fn undefined_keys_and_esc_as_meta() {
     // ESC followed by a key acts as Meta, for terminals that do not send Meta.
     press(&mut ed, "ESC <");
     assert_eq!(ed.window_buffer().point(), 0);
-}
-
-#[test]
-fn quitting_with_unsaved_files_needs_confirmation() {
-    let dir = tempfile::tempdir().unwrap();
-    let mut ed = Editor::new();
-    ed.call("find-file", vec![Arg::Str(dir.path().join("a.txt").display().to_string())]).unwrap();
-    ed.type_text("unsaved");
-    press(&mut ed, "C-x C-c");
-    assert!(!ed.should_quit());
-    assert_eq!(ed.echo(), Some("Unsaved changes in a.txt; repeat to quit anyway"));
-    press(&mut ed, "C-x C-c");
-    assert!(ed.should_quit());
 }
 
 #[test]

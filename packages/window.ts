@@ -264,7 +264,7 @@ function otherWindowForScrolling(): number {
   return windows[(windows.indexOf(ember.selectedWindow()) + 1) % windows.length];
 }
 
-function scrollOther(command: string): void {
+function scrollOther(command: ember.CommandName): void {
   const selected = ember.selectedWindow();
   ember.selectWindow(otherWindowForScrolling());
   try {

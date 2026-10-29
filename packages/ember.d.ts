@@ -12,6 +12,22 @@ declare global {
     /** Every command, with the arguments it takes in order. */
     interface Commands {
       /**
+       * Revert the buffer when its file changes on disk, if the buffer has no unsaved changes.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/files.ts.
+       */
+      "auto-revert-mode": [];
+      /**
+       * Toggle auto-saving of the current buffer to #name# beside its file.
+       *
+       * With a positive prefix argument, turn it on; with zero or a negative one, off.
+       *
+       * Defined in packages/files.ts.
+       */
+      "auto-save-mode": [];
+      /**
        * Move point backward a character, or as many as the prefix argument says.
        *
        * A negative argument moves forward.
@@ -164,6 +180,12 @@ declare global {
        */
       "display-buffer-other-frame": [buffer: string];
       /**
+       * Auto-save every buffer that has changed since it was last saved or auto-saved.
+       *
+       * Defined in packages/files.ts.
+       */
+      "do-auto-save": [];
+      /**
        * Insert a newline. With electric-indent-mode on, as it is by default, that is all; RET is the key that indents.
        *
        * Defined in packages/simple.ts.
@@ -271,6 +293,14 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "fundamental-mode": [];
+      /**
+       * Revert every file buffer when its file changes on disk, if the buffer has no unsaved changes.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/files.ts.
+       */
+      "global-auto-revert-mode": [];
       /**
        * The major mode of the *Help* buffer. q goes back to the buffer before it.
        *
@@ -396,7 +426,7 @@ declare global {
       /**
        * Close a buffer. Empty input closes the current one.
        *
-       * Refuses to close a file buffer with unsaved changes.
+       * A file buffer with unsaved changes is closed only once you say so: yes, no, or save and then kill. Called from code, it refuses to close one.
        *
        * @param buffer buffer name
        */
@@ -611,6 +641,14 @@ declare global {
        * Defined in packages/files.ts.
        */
       "normal-mode": [];
+      /**
+       * Mark the current buffer as unmodified, not needing to be saved.
+       *
+       * With a prefix argument, mark it as modified, so save-buffer will save it.
+       *
+       * Defined in packages/files.ts.
+       */
+      "not-modified": [];
       /**
        * Insert a newline after point, leaving point where it is; with a prefix argument, that many.
        *
@@ -1878,6 +1916,22 @@ declare global {
        */
       "recenter": [];
       /**
+       * Visit a file, taking its text from its auto-save file, #name#, after asking.
+       *
+       * The buffer is left modified; save it to keep what was recovered.
+       *
+       * @param file file name
+       *
+       * Defined in packages/files.ts.
+       */
+      "recover-file": [file: string];
+      /**
+       * Replace the buffer's text with its auto-save file's, after asking: what was typed since the last save, before a crash.
+       *
+       * Defined in packages/files.ts.
+       */
+      "recover-this-file": [];
+      /**
        * Repeat the last command, with the same arguments.
        *
        * A prefix argument replaces the command's own. Typing the last key again (z, for C-x z) repeats it again.
@@ -1906,6 +1960,20 @@ declare global {
        */
       "replace-string": [from: string, to: string];
       /**
+       * Replace the buffer's text with its file's, after asking.
+       *
+       * Point stays where the text is unchanged. The major mode is chosen again, as when visiting the file. The revert can be undone.
+       *
+       * Defined in packages/files.ts.
+       */
+      "revert-buffer": [];
+      /**
+       * Revert the buffer from its file, asking only if it has unsaved changes.
+       *
+       * Defined in packages/files.ts.
+       */
+      "revert-buffer-quick": [];
+      /**
        * The major mode for editing Rust, highlighted from a tree-sitter syntax tree.
        *
        * Files matching \.rs$ use it; see auto-mode-alist.
@@ -1914,15 +1982,29 @@ declare global {
        */
       "rust-ts-mode": [];
       /**
-       * Save the current buffer to its file.
+       * Save the current buffer to its file, if it has changed.
+       *
+       * The first save in a session keeps the file as it was in name~ (see make-backup-files). If the file changed on disk since you visited or saved it, you are asked before it is overwritten. A buffer with no file asks for one, as write-file does.
+       *
+       * Defined in packages/files.ts.
        */
       "save-buffer": [];
       /**
-       * Quit the editor.
+       * Offer to save each modified file buffer, then exit.
        *
-       * If file buffers have unsaved changes, asks you to repeat the command to quit anyway.
+       * If any are left unsaved, you are asked whether to exit anyway. With a prefix argument, save them all without asking.
+       *
+       * Defined in packages/files.ts.
        */
       "save-buffers-kill-terminal": [];
+      /**
+       * Save some modified file buffers, asking about each: y saves it, n skips it, ! saves all the rest, . saves it and stops, and q stops.
+       *
+       * With a prefix argument, save them all without asking.
+       *
+       * Defined in packages/files.ts.
+       */
+      "save-some-buffers": [];
       /**
        * Scroll the text down by nearly a screen, showing earlier lines.
        *
@@ -1975,6 +2057,16 @@ declare global {
        * Insert the character you typed, as many times as the prefix argument says.
        */
       "self-insert-command": [];
+      /**
+       * Set how the buffer is written to its file: a coding system such as utf-8, iso-latin-1 or utf-8-with-signature, with -unix, -dos or -mac for its line ends. Without them, the line ends stay as they are.
+       *
+       * The buffer is then modified, to be saved that way.
+       *
+       * @param coding text
+       *
+       * Defined in packages/files.ts.
+       */
+      "set-buffer-file-coding-system": [coding: string];
       /**
        * Set the mark at point and activate the region, saving the old mark on the mark ring.
        *
@@ -2124,9 +2216,13 @@ declare global {
        */
       "widen": [];
       /**
-       * Write the current buffer to a file and visit that file.
+       * Write the current buffer to a file and visit that file instead.
+       *
+       * A directory writes a file of the buffer's name in it. An existing file is overwritten only if you say so.
        *
        * @param file file name
+       *
+       * Defined in packages/files.ts.
        */
       "write-file": [file: string];
       /**
@@ -2155,6 +2251,46 @@ declare global {
        * Defined in packages/files.ts.
        */
       "auto-mode-alist": Value;
+      /**
+       * How many seconds between checks for files that changed, in buffers where auto-revert-mode or global-auto-revert-mode is on.
+       *
+       * Defined in packages/files.ts.
+       */
+      "auto-revert-interval": Value;
+      /**
+       * Whether Auto-Revert mode is on in this buffer. Use the command auto-revert-mode to change it.
+       *
+       * Defined in packages/files.ts.
+       */
+      "auto-revert-mode": Value;
+      /**
+       * Whether reverting a buffer because its file changed says so.
+       *
+       * Defined in packages/files.ts.
+       */
+      "auto-revert-verbose": Value;
+      /**
+       * Whether buffers visiting files auto-save, to #name# beside the file.
+       */
+      "auto-save-default": Value;
+      /**
+       * How many keys typed between auto-saves. 0 turns off auto-saving by keys.
+       */
+      "auto-save-interval": Value;
+      /**
+       * How many seconds idle before auto-saving. 0 turns off auto-saving when idle.
+       */
+      "auto-save-timeout": Value;
+      /**
+       * Whether backups are made by copying the old file, rather than renaming it and writing a new one. Files with more than one hard link are always copied.
+       */
+      "backup-by-copying": Value;
+      /**
+       * How the visited file's text is written as bytes: its charset and line ends, such as utf-8-unix or undecided-dos.
+       *
+       * Visiting a file sets it to what the file uses, and saving writes it that way.
+       */
+      "buffer-file-coding-system": Value;
       /**
        * Which text the invisible property hides.
        *
@@ -2188,6 +2324,10 @@ declare global {
        */
       "delete-active-region": Value;
       /**
+       * Whether saving a buffer deletes its auto-save file.
+       */
+      "delete-auto-save-files": Value;
+      /**
        * Whether Delete-Selection mode is on. Use the command delete-selection-mode to change it.
        *
        * Defined in packages/delsel.ts.
@@ -2212,9 +2352,19 @@ declare global {
        */
       "file-name-history": Value;
       /**
+       * Whether saving writes a new file and then renames it over the old one, so a failed save cannot leave the file half written. It breaks hard links.
+       */
+      "file-precious-flag": Value;
+      /**
        * Whether the terminal's background is "dark" or "light", for choosing face colours there. The graphical front end follows the system instead.
        */
       "frame-background-mode": Value;
+      /**
+       * Whether Global-Auto-Revert mode is on. Use the command global-auto-revert-mode to change it.
+       *
+       * Defined in packages/files.ts.
+       */
+      "global-auto-revert-mode": Value;
       /**
        * How many earlier answers each minibuffer history keeps.
        */
@@ -2238,6 +2388,12 @@ declare global {
        */
       "major-mode": Value;
       /**
+       * Whether the first save of a file in a session keeps the old file as a backup, name~ beside it.
+       *
+       * Files in the temporary directory are not backed up.
+       */
+      "make-backup-files": Value;
+      /**
        * Earlier answers to minibuffer prompts for text, newest first.
        */
       "minibuffer-history": Value;
@@ -2245,6 +2401,12 @@ declare global {
        * The current buffer's major mode as the mode line shows it.
        */
       "mode-name": Value;
+      /**
+       * The value text and programming modes give require-final-newline in their buffers.
+       *
+       * Defined in packages/files.ts.
+       */
+      "mode-require-final-newline": Value;
       /**
        * The buffer's TODO state sequences: each a list of the states not done and the states done.
        *
@@ -2509,6 +2671,18 @@ declare global {
        */
       "regexp-search-ring": Value;
       /**
+       * Whether saving adds a newline to a file that does not end in one: true adds it, false leaves the file as it is, "ask" asks first. Text and programming modes set it from mode-require-final-newline.
+       *
+       * Defined in packages/files.ts.
+       */
+      "require-final-newline": Value;
+      /**
+       * Files revert-buffer reverts without asking, if unmodified: a list of JavaScript regular expressions matched against the file name.
+       *
+       * Defined in packages/files.ts.
+       */
+      "revert-without-query": Value;
+      /**
        * Strings searched for with incremental search, most recent first.
        *
        * Defined in packages/isearch.ts.
@@ -2544,6 +2718,10 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "visual-line-mode": Value;
+      /**
+       * Characters besides letters and digits that are part of words in this buffer, for word motion and killing. It stands in for Emacs's syntax tables: Text mode, and the modes built on it, add the apostrophe.
+       */
+      "word-constituents": Value;
       /**
        * Whether continued lines break at spaces and tabs rather than in the middle of a word.
        *
@@ -2997,9 +3175,29 @@ declare global {
        */
       "after-change-major-mode-hook": Value;
       /**
+       * Run after revert-buffer has reread the file.
+       */
+      "after-revert-hook": Value;
+      /**
        * Run after saving a buffer to its file.
        */
       "after-save-hook": Value;
+      /**
+       * Run after Auto-Revert mode is turned on or off.
+       */
+      "auto-revert-mode-hook": Value;
+      /**
+       * Run after Auto-Revert mode is turned off.
+       */
+      "auto-revert-mode-off-hook": Value;
+      /**
+       * Run after Auto-Revert mode is turned on.
+       */
+      "auto-revert-mode-on-hook": Value;
+      /**
+       * Run before revert-buffer replaces the text with the file's.
+       */
+      "before-revert-hook": Value;
       /**
        * Run before saving a buffer to its file.
        */
@@ -3028,6 +3226,18 @@ declare global {
        * Run after entering Fundamental mode, after the hooks of the modes it is built on.
        */
       "fundamental-mode-hook": Value;
+      /**
+       * Run after Global-Auto-Revert mode is turned on or off.
+       */
+      "global-auto-revert-mode-hook": Value;
+      /**
+       * Run after Global-Auto-Revert mode is turned off.
+       */
+      "global-auto-revert-mode-off-hook": Value;
+      /**
+       * Run after Global-Auto-Revert mode is turned on.
+       */
+      "global-auto-revert-mode-on-hook": Value;
       /**
        * Run after entering Help mode, after the hooks of the modes it is built on.
        */
@@ -3410,6 +3620,68 @@ declare global {
     function showHelp(text: string): void;
     /** The file the current buffer visits, if any. */
     function bufferFileName(): string | undefined;
+    /** The names of all buffers, in the order Emacs's buffer-list gives them. */
+    function bufferList(): string[];
+    /**
+     * Ask a question answered by typing "yes" or "no", as Emacs's yes-or-no-p.
+     * Emacs waits for the answer; here the command goes on, and `then` is
+     * called with the answer once it is typed. C-g quits the question.
+     */
+    function yesOrNoP(question: string, then: (yes: boolean) => void): void;
+    /** Ask a question answered by typing y or n, as Emacs's y-or-n-p; `then` gets the answer. */
+    function yOrNP(question: string, then: (yes: boolean) => void): void;
+    /**
+     * Ask a question answered by typing one of `answers` and RET, as Emacs's
+     * read-answer; the prompt lists them. `then` gets the answer.
+     */
+    function readAnswer(question: string, answers: string[], then: (answer: string) => void): void;
+    /**
+     * Ask a question answered by one of the characters in `chars`, typed
+     * alone, as Emacs's read-char-choice; the prompt says what they mean.
+     * `then` gets the character.
+     */
+    function readCharChoice(prompt: string, chars: string, then: (char: string) => void): void;
+    /**
+     * Call `fn` after `secs` seconds, and then every `repeat` seconds if given,
+     * as Emacs's run-with-timer. Returns the timer, for cancelTimer.
+     */
+    function runWithTimer(secs: number, repeat: number | null, fn: () => void): number;
+    /**
+     * Call `fn` once the editor has been idle for `secs` seconds, as Emacs's
+     * run-with-idle-timer; with `repeat`, in every idle spell that long.
+     */
+    function runWithIdleTimer(secs: number, repeat: boolean, fn: () => void): number;
+    /** Stop a timer, as Emacs's cancel-timer. */
+    function cancelTimer(id: number): void;
+    /**
+     * Write the current buffer to its file, as Emacs's basic-save-buffer-2:
+     * the first save keeps the old file as name~, the text is written in
+     * buffer-file-coding-system, and the buffer is then unmodified and its
+     * auto-save file deleted. Asks nothing; save-buffer does the asking.
+     */
+    function writeVisitedFile(): void;
+    /** Replace the current buffer's text with its file's, keeping point where it can, and mark it unmodified. */
+    function revertToVisitedFile(): void;
+    /** Replace the current buffer's text with its auto-save file's, leaving it modified. */
+    function recoverFromAutoSave(): void;
+    /** Whether the visited file changed on disk since it was visited or saved, as not verify-visited-file-modtime. */
+    function visitedFileChanged(): boolean;
+    /** Make the current buffer visit another file, as Emacs's set-visited-file-name. */
+    function setVisitedFileName(file: string): void;
+    /** A file name made absolute, with ~ for the home directory, as Emacs's expand-file-name. */
+    function expandFileName(file: string): string;
+    function fileExists(file: string): boolean;
+    /** Where a file is auto-saved: #name# beside it. */
+    function autoSaveFileName(file: string): string;
+    /** Whether a file's auto-save file is newer than the file. */
+    function hasNewerAutoSave(file: string): boolean;
+    /** Auto-save every buffer with changes not auto-saved yet, as do-auto-save; returns whether any was. */
+    function doAutoSave(options?: { quiet?: boolean }): boolean;
+    /** Turn auto-saving on or off for the current buffer, which must visit a file. */
+    function setAutoSave(on: boolean): void;
+    function autoSaving(): boolean;
+    /** Ask the front end to exit, as Emacs's kill-emacs. */
+    function killEmacs(): void;
     function commandExists(name: string): boolean;
     /**
      * The command that is running (Emacs's this-command). In pre-command-hook,

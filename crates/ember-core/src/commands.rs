@@ -584,27 +584,33 @@ fn scroll_step(ed: &Editor) -> usize {
     ed.viewport_height().saturating_sub(2).max(1)
 }
 
-/// Whether a character is part of a word, as Emacs's standard syntax table
-/// says: letters, digits, and `$` and `%`.
-fn is_word_char(c: char) -> bool {
-    c.is_alphanumeric() || c == '$' || c == '%'
+/// Whether a character is part of a word in a buffer: a letter or digit,
+/// or one of `word-constituents`, which stands in for the major mode's
+/// syntax table: `$` and `%` as in Emacs's standard one, and in Text mode
+/// and the modes built on it, the apostrophe too.
+fn is_word_char(b: &Buffer, c: char) -> bool {
+    c.is_alphanumeric()
+        || match b.locals.get("word-constituents") {
+            Some(crate::Value::Str(chars)) => chars.contains(c),
+            _ => c == '$' || c == '%',
+        }
 }
 
 fn word_end(b: &Buffer, mut pos: usize) -> usize {
-    while b.char_at(pos).is_some_and(|c| !is_word_char(c)) {
+    while b.char_at(pos).is_some_and(|c| !is_word_char(b, c)) {
         pos += 1;
     }
-    while b.char_at(pos).is_some_and(is_word_char) {
+    while b.char_at(pos).is_some_and(|c| is_word_char(b, c)) {
         pos += 1;
     }
     pos
 }
 
 fn word_start(b: &Buffer, mut pos: usize) -> usize {
-    while pos > 0 && b.char_at(pos - 1).is_some_and(|c| !is_word_char(c)) {
+    while pos > 0 && b.char_at(pos - 1).is_some_and(|c| !is_word_char(b, c)) {
         pos -= 1;
     }
-    while pos > 0 && b.char_at(pos - 1).is_some_and(is_word_char) {
+    while pos > 0 && b.char_at(pos - 1).is_some_and(|c| is_word_char(b, c)) {
         pos -= 1;
     }
     pos
@@ -849,8 +855,7 @@ fn killing(ed: &mut Editor) {
                     if rest_is_blank && end < b.point_max() { end + 1 } else { end }
                 }
             };
-            // Emacs kills through kill-region.
-            kill_range(ed, p.min(to)..p.max(to), to < p)
+            kill_to(ed, p, to)
         },
     );
     def(
@@ -951,8 +956,21 @@ fn kill_words(ed: &mut Editor, n: i64) -> Result<()> {
     let b = ed.buffer_mut();
     let p = b.point();
     let to = move_words(b, p, n);
-    // Emacs kills through kill-region.
-    kill_range(ed, p.min(to)..p.max(to), to < p)
+    kill_to(ed, p, to)
+}
+
+/// Kills from point to where a motion took it, as Emacs's
+/// `(kill-region (point) (progn (forward-word) (point)))` does: point has
+/// moved there before the kill, so it stays there if the kill is refused,
+/// as when the file changed on disk.
+fn kill_to(ed: &mut Editor, p: usize, to: usize) -> Result<()> {
+    let len = ed.buffer().len();
+    kill_range(ed, p.min(to)..p.max(to), to < p).inspect_err(|_| {
+        // Only a refused kill; one whose change hook failed deleted the text.
+        if ed.buffer().len() == len {
+            ed.buffer_mut().set_point(to);
+        }
+    })
 }
 
 /// Deletes a range and kills its text, as Emacs's kill-region does. The
@@ -987,40 +1005,6 @@ fn files_and_buffers(ed: &mut Editor) {
         )
         .param("file", ParamKind::File, "Find file: "),
     );
-    def(ed, "save-buffer", "Save the current buffer to its file.", |ed, _| {
-        let b = ed.window_buffer_mut();
-        if b.path.is_none() {
-            return err("Buffer is not visiting a file; use write-file (C-x C-w)");
-        }
-        if !b.is_modified() {
-            ed.message("(No changes need to be saved)");
-            return Ok(());
-        }
-        ed.run_hooks("before-save-hook")?;
-        let b = ed.window_buffer_mut();
-        b.save()?;
-        let path = b.path.as_ref().expect("checked above").display().to_string();
-        ed.message(format!("Wrote {path}"));
-        ed.run_hooks("after-save-hook")
-    });
-    ed.define_command(
-        Command::new("write-file", "Write the current buffer to a file and visit that file.", |ed, args| {
-            let path = expand_file_name(args[0].as_str()?);
-            let name = path
-                .file_name()
-                .map(|n| n.to_string_lossy().into_owned())
-                .ok_or_else(|| Error::new("Not a file name"))?;
-            let name = ed.unique_buffer_name(&name);
-            let b = ed.window_buffer_mut();
-            b.path = Some(path.clone());
-            b.name = name;
-            ed.run_hooks("before-save-hook")?;
-            ed.window_buffer_mut().save()?;
-            ed.message(format!("Wrote {}", path.display()));
-            ed.run_hooks("after-save-hook")
-        })
-        .param("file", ParamKind::File, "Write file: "),
-    );
     ed.define_command(
         Command::new(
             "switch-to-buffer",
@@ -1042,37 +1026,37 @@ fn files_and_buffers(ed: &mut Editor) {
     ed.define_command(
         Command::new(
             "kill-buffer",
-            "Close a buffer. Empty input closes the current one.\n\nRefuses to close a file buffer with unsaved changes.",
+            "Close a buffer. Empty input closes the current one.\n\nA file buffer with unsaved changes is closed only once you say so: yes, no, or save and then kill. Called from code, it refuses to close one.",
             |ed, args| {
                 let name = match args[0].as_str()? {
                     "" => ed.window_buffer().name.clone(),
                     name => name.to_string(),
                 };
-                ed.kill_buffer(&name)
+                // As Emacs's kill-buffer asks, through kill-buffer--possibly-save.
+                let modified = ed.find_buffer(&name).map(|i| &ed.buffers()[i]).is_some_and(|b| b.path.is_some() && b.is_modified());
+                if !modified || !ed.called_interactively() {
+                    return ed.kill_buffer(&name);
+                }
+                let question = format!("Buffer {name} modified; kill anyway? ");
+                let then: crate::variables::HookFn = std::rc::Rc::new(move |ed, answer| {
+                    match answer.first().and_then(|a| if let crate::Value::Str(a) = a { Some(a.as_str()) } else { None }) {
+                        Some("yes") => ed.kill_buffer_unsaved(&name),
+                        Some("save and then kill") => {
+                            let old = ed.set_current_buffer(&name)?;
+                            let saved = ed.call("save-buffer", Vec::new());
+                            if ed.find_buffer(&old).is_some() {
+                                ed.set_current_buffer(&old)?;
+                            }
+                            saved?;
+                            ed.kill_buffer(&name)
+                        }
+                        _ => Ok(()),
+                    }
+                });
+                ed.read_answer(&question, &["yes", "no", "save and then kill"], then)
             },
         )
         .param("buffer", ParamKind::Buffer, "Kill buffer: "),
-    );
-    def(
-        ed,
-        "save-buffers-kill-terminal",
-        "Quit the editor.\n\nIf file buffers have unsaved changes, asks you to repeat the command to quit anyway.",
-        |ed, _| {
-            let unsaved: Vec<&str> = ed
-                .buffers()
-                .iter()
-                .filter(|b| b.path.is_some() && b.is_modified())
-                .map(|b| b.name.as_str())
-                .collect();
-            if !unsaved.is_empty() && ed.last_command() != Some("save-buffers-kill-terminal") {
-                return Err(Error::new(format!(
-                    "Unsaved changes in {}; repeat to quit anyway",
-                    unsaved.join(", ")
-                )));
-            }
-            ed.quit = true;
-            Ok(())
-        },
     );
 }
 
@@ -1266,13 +1250,10 @@ fn bind_defaults(ed: &mut Editor) {
         ("C-g", "keyboard-quit"),
         ("M-x", "execute-extended-command"),
         ("C-x C-f", "find-file"),
-        ("C-x C-s", "save-buffer"),
-        ("C-x C-w", "write-file"),
         ("C-x b", "switch-to-buffer"),
         ("C-x k", "kill-buffer"),
         ("C-x n n", "narrow-to-region"),
         ("C-x n w", "widen"),
-        ("C-x C-c", "save-buffers-kill-terminal"),
         ("C-h f", "describe-command"),
         ("C-h k", "describe-key"),
         ("C-h b", "describe-bindings"),

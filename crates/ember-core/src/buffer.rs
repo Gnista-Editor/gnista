@@ -1,8 +1,6 @@
 use std::collections::BTreeMap;
-use std::fs;
-use std::io::{self, BufReader, BufWriter, Write};
 use std::ops::Range;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use ropey::Rope;
 
@@ -147,6 +145,8 @@ pub struct Buffer {
     /// Changes not yet passed to `after-change-functions`: where the new
     /// text starts and ends, and how long the old text was.
     pub(crate) pending_changes: Vec<(usize, usize, usize)>,
+    /// The visited file's state: modification time, backup and auto-save.
+    pub(crate) file: crate::fileio::FileState,
 }
 
 impl Buffer {
@@ -188,38 +188,23 @@ impl Buffer {
             fontified: Vec::new(),
             tick: 0,
             pending_changes: Vec::new(),
+            file: Default::default(),
         }
     }
 
-    /// Visits a file. A missing file gives an empty buffer that creates the file when saved.
-    pub fn visit(path: &Path) -> Result<Buffer> {
-        let text = match fs::File::open(path) {
-            Ok(file) => Rope::from_reader(BufReader::new(file))?,
-            Err(e) if e.kind() == io::ErrorKind::NotFound => Rope::new(),
-            Err(e) => return Err(e.into()),
-        };
-        let name = path
-            .file_name()
-            .map(|n| n.to_string_lossy().into_owned())
-            .unwrap_or_else(|| path.display().to_string());
-        let mut buffer = Buffer::new(name);
-        buffer.text = text;
-        buffer.path = Some(path.to_path_buf());
-        Ok(buffer)
+    /// Makes a region Shift started an ordinary one, as changing the major
+    /// mode does in Emacs by killing the buffer-local transient-mark-mode
+    /// that shift selection sets.
+    pub(crate) fn forget_shift_selection(&mut self) {
+        self.shift_selected = false;
     }
 
-    pub fn save(&mut self) -> Result<()> {
-        let path = self
-            .path
-            .clone()
-            .ok_or_else(|| Error::new("Buffer is not visiting a file"))?;
-        let mut out = BufWriter::new(fs::File::create(&path)?);
-        self.text.write_to(&mut out)?;
-        out.flush()?;
+    /// Marks the buffer as just saved: unmodified, with undo able to tell
+    /// it returned to this text.
+    pub(crate) fn mark_saved(&mut self) {
         self.undo_boundary();
         self.save_generation += 1;
         self.modified = false;
-        Ok(())
     }
 
     pub fn text(&self) -> &Rope {
@@ -428,6 +413,9 @@ impl Buffer {
     }
 
     pub fn insert_at(&mut self, pos: usize, s: &str) -> Result<()> {
+        if s.is_empty() {
+            return Ok(());
+        }
         self.check_writable()?;
         self.apply_insert(pos.min(self.len()), s, false);
         Ok(())
@@ -436,6 +424,9 @@ impl Buffer {
     /// Inserts text at point as Emacs's `insert-before-markers` does: the
     /// mark and overlay ends at point move past it too.
     pub fn insert_before_markers(&mut self, s: &str) -> Result<()> {
+        if s.is_empty() {
+            return Ok(());
+        }
         self.check_writable()?;
         self.apply_insert(self.point, s, true);
         Ok(())
@@ -443,8 +434,12 @@ impl Buffer {
 
     /// Deletes a range and returns the deleted text.
     pub fn delete(&mut self, range: Range<usize>) -> Result<String> {
-        self.check_writable()?;
         let (start, end) = (range.start.min(self.len()), range.end.min(self.len()));
+        // Deleting nothing changes nothing, so it is allowed anywhere, as in Emacs.
+        if start >= end {
+            return Ok(String::new());
+        }
+        self.check_writable()?;
         Ok(self.apply_delete(start, end))
     }
 
@@ -828,7 +823,6 @@ impl Buffer {
     /// most recent change, which may be an earlier undo, so undoing it redoes.
     /// Returns whether this undo redid something.
     pub fn undo(&mut self, continuing: bool) -> Result<bool> {
-        self.check_writable()?;
         self.undo_boundary();
         let top_is_undo = matches!(self.undo_groups.last(), Some(g) if g.kind != GroupKind::Change);
         let index = if continuing && top_is_undo {
@@ -837,6 +831,7 @@ impl Buffer {
             self.undo_groups.len().checked_sub(1)
         };
         let index = index.ok_or_else(|| Error::new("No further undo information"))?;
+        self.check_writable()?;
         let redo = self.undo_groups[index].kind != GroupKind::Change;
         self.revert(index);
         self.close_group(GroupKind::Undo { undid: index });
@@ -1044,12 +1039,12 @@ impl Buffer {
     /// Undoes the most recent undo, as Emacs's `undo-redo` does. The undo and
     /// its reversal both leave the history, so the change is simply back.
     pub fn undo_redo(&mut self) -> Result<()> {
-        self.check_writable()?;
         self.undo_boundary();
         let index = match self.undo_groups.last() {
             Some(Group { kind: GroupKind::Undo { .. }, .. }) => self.undo_groups.len() - 1,
             _ => return Err(Error::new("No undone changes to redo")),
         };
+        self.check_writable()?;
         self.revert(index);
         self.open_group.clear();
         self.undo_groups.truncate(index);
@@ -1137,12 +1132,11 @@ impl Buffer {
         self.open_group.push(edit);
     }
 
-    fn check_writable(&self) -> Result<()> {
+    fn check_writable(&mut self) -> Result<()> {
         if self.read_only {
-            Err(Error::new(format!("Buffer is read-only: {}", self.name)))
-        } else {
-            Ok(())
+            return Err(Error::new(format!("Buffer is read-only: {}", self.name)));
         }
+        self.check_supersession()
     }
 }
 
@@ -1228,10 +1222,9 @@ mod tests {
 
     #[test]
     fn undo_back_to_the_saved_text_is_unmodified() {
-        let dir = tempfile::tempdir().unwrap();
-        let mut b = Buffer::visit(&dir.path().join("f")).unwrap();
+        let mut b = Buffer::new("f");
         b.insert("saved").unwrap();
-        b.save().unwrap();
+        b.mark_saved();
         assert!(!b.is_modified());
         b.insert("!").unwrap();
         assert!(b.is_modified());

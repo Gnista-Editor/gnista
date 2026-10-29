@@ -78,13 +78,20 @@ Done ([ADR 0011](adr/0011-search-and-the-minibuffer.md)). Regular expressions in
 
 Exit: oracle cases against the org mode that ships with Emacs, and daily notes in org without reaching for Emacs.
 
-Done ([ADR 0012](adr/0012-org-mode.md)). `org.ts` and `org-table.ts` follow Emacs's Org 9.7: folding with `TAB` and `S-TAB`, structure editing, TODO states, priorities, tags, checkboxes and cookies, timestamps, scheduling, links and tables. Rendering needed core work: text is fontified as it comes into view through `jit-lock-functions`, point steps over hidden text as in Emacs, and commands can be remapped. The oracle now checks the text left visible, and 168 org cases match Emacs: 381 of 383 cases in all. The agenda, capture, export and opening web links are left for later.
+Done ([ADR 0012](adr/0012-org-mode.md)). `org.ts` and `org-table.ts` follow Emacs's Org 9.7: folding with `TAB` and `S-TAB`, structure editing, TODO states, priorities, tags, checkboxes and cookies, timestamps, scheduling, links and tables. Rendering needed core work: text is fontified as it comes into view through `jit-lock-functions`, point steps over hidden text as in Emacs, and commands can be remapped. The oracle now checks the text left visible, and 168 org cases match Emacs: 381 of 383 cases in all. Later rounds added narrowing, properties and refiling, then the week agenda, the TODO list and capture ([ADR 0016](adr/0016-org-agenda-and-capture.md)). Export and opening web links are left for later.
 
 **6. An agent that calls commands.** The command registry becomes the agent's tool schema, with an agent buffer and the safety rules from the brief. This is mostly independent of milestones 3 to 5, so it can move earlier if wanted.
 
+Started: `ember-mcp` serves the command registry over MCP, so an agent such as Claude Code can drive the editor the user has open ([ADR 0015](adr/0015-mcp-server.md)). Commands can now ask questions partway through, which asking before an agent acts will need ([ADR 0018](adr/0018-files-and-saving.md)). Next are an agent buffer inside Ember and the brief's safety rules.
+
+**Since then**, outside the milestones:
+- Windows as window.el has them: `display-buffer`, the `C-x 4` commands, resizing and balancing ([ADR 0009](adr/0009-windows.md)), and frames on `C-x 5`, each a native window in the GUI ([ADR 0017](adr/0017-frames.md)).
+- Large files: a benchmark of a 50,000-line Org file and a 100 MB text file, and the fixes it led to ([docs/performance.md](performance.md)).
+- Files and saving as safe as in Emacs: backups, auto-saving and recovering, reverting and `auto-revert-mode`, asking before editing or saving a file changed on disk, line ends and Latin-1, and asking about each unsaved file when quitting ([ADR 0018](adr/0018-files-and-saving.md)). Oracle cases now visit real files and compare what is on disk afterwards, and a fuzzer edits, saves and reverts files that change underneath it.
+
 **Later:**
 - Huge files, with background threads for search, highlighting and indexing kept off the core thread, as the brief describes.
-- Auto-save, backups, revert, and line endings and encodings.
+- Lock files, numbered backups and `backup-directory-alist`, and coding systems beyond UTF-8 and Latin-1.
 - Dired, and the terminal's `xterm-mouse-mode`.
 
 ## Tracking

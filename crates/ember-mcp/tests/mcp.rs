@@ -220,3 +220,16 @@ fn the_binary_passes_messages_to_a_running_editor() {
     assert!(reply.contains(r#""id":5"#), "{reply}");
     assert_eq!(text(&ed), "seen");
 }
+
+#[test]
+fn questions_say_how_they_are_answered() {
+    let (mut ed, scripting) = setup();
+    scripting
+        .eval_typescript(&mut ed, "ask.ts", r#"ember.defineCommand({ name: "ask-me", run: () => ember.yOrNP("Go? ", (yes) => ember.insert(yes ? "went" : "stayed")) });"#.into())
+        .unwrap();
+    let (out, _) = tool(&mut ed, &scripting, "call_command", json!({ "name": "ask-me" }));
+    assert!(out.contains("Prompt open: Go? (y or n) "), "{out}");
+    assert!(out.contains("single key"), "{out}");
+    tool(&mut ed, &scripting, "type_text", json!({ "text": "y" }));
+    assert_eq!(text(&ed), "went");
+}

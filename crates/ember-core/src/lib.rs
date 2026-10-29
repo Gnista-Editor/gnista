@@ -5,6 +5,7 @@
 //! scripts drive it the same way, with no terminal at all.
 
 mod buffer;
+pub mod coding;
 mod command;
 mod completion;
 mod commands;
@@ -12,6 +13,7 @@ pub mod display;
 mod editor;
 mod error;
 mod faces;
+mod fileio;
 mod files;
 mod fontify;
 mod key;
@@ -19,9 +21,11 @@ mod keymap;
 mod modes;
 mod prefix;
 mod properties;
+mod questions;
 mod rows;
 mod search;
 mod syntax;
+mod timers;
 mod window;
 mod variables;
 
@@ -30,6 +34,7 @@ pub use command::{Arg, Command, Param, ParamKind};
 pub use editor::Editor;
 pub use error::{Error, Result};
 pub use faces::{Background, Color, Face, FaceAttrs, Style, face_names, palette, palette_names};
+pub use fileio::{auto_save_file_name, backup_file_name};
 pub use files::{abbreviate_dir, abbreviate_path, expand_file_name};
 pub use key::{Key, KeyCode, MouseKind, format_keys};
 pub use keymap::{Keymap, Lookup};

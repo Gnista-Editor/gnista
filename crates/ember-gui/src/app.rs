@@ -117,6 +117,11 @@ impl EmberApp {
         let ctx = ui.ctx().clone();
         self.handle_close(&ctx);
         self.answer_agent();
+        // Timers and auto-saving, and a wake-up for the next one due.
+        self.editor.run_timers();
+        if let Some(due) = self.editor.next_timer_in() {
+            ctx.request_repaint_after(due);
+        }
         // Where native windows cannot open, embedded in this one instead, as
         // in tests, this window shows the selected frame, as a terminal does.
         if ctx.embed_viewports() {
@@ -351,8 +356,9 @@ impl EmberApp {
         self.scroll_offset = if top == wanted_top { wanted - top as f32 * line_height } else { 0.0 };
     }
 
-    /// Closing the window runs save-buffers-kill-terminal, so unsaved files
-    /// need a second close, just as C-x C-c needs repeating.
+    /// Closing the window runs save-buffers-kill-terminal, as C-x C-c does:
+    /// with unsaved files the window stays open while it asks about them,
+    /// and closes once answered.
     fn handle_close(&mut self, ctx: &egui::Context) {
         if ctx.input(|i| i.viewport().close_requested()) && !self.editor.should_quit() {
             self.editor.run_interactive("save-buffers-kill-terminal");
@@ -793,6 +799,8 @@ fn draw_mode_line(painter: &Painter, ed: &Editor, window: &WindowView, rect: Rec
     };
     let gap = m.char_width * 3.0;
     let mut job = LayoutJob::default();
+    // The coding first, as Emacs's mode-line-mule-info: U: or -\ and so on.
+    job.append(&b.coding_mnemonic(), 0.0, text_format(m, t.faint));
     job.append(flag, 0.0, text_format(m, flag_color));
     let name_color = if window.selected { t.ink_strong } else { t.muted };
     job.append(&b.name, gap, text_format(m, name_color));

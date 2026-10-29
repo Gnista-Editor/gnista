@@ -795,6 +795,121 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
             with_editor(&ctx, |ed| Ok(ed.buffer().path.as_ref().map(|p| p.display().to_string())))
         })?,
     )?;
+    // Questions and timers take a function to call later, as hooks do.
+    let ask_context = context.clone();
+    native.set(
+        "ask",
+        Function::new(
+            ctx.clone(),
+            move |ctx: Ctx<'js>, kind: String, question: String, choices: Vec<String>, run: Function<'js>| {
+                let then = ScriptFunction { run: Persistent::save(&ctx, run), context: ask_context.clone() }.into_hook();
+                with_editor(&ctx, |ed| match kind.as_str() {
+                    "yes-or-no" => ed.yes_or_no_p(&question, then),
+                    "y-or-n" => ed.y_or_n_p(&question, then),
+                    "answer" => ed.read_answer(&question, &choices.iter().map(String::as_str).collect::<Vec<_>>(), then),
+                    _ => ed.read_char_choice(&question, &choices.iter().filter_map(|c| c.chars().next()).collect::<Vec<_>>(), then),
+                })
+            },
+        )?,
+    )?;
+    let timer_context = context.clone();
+    native.set(
+        "runWithTimer",
+        Function::new(
+            ctx.clone(),
+            move |ctx: Ctx<'js>, secs: f64, repeat: Option<f64>, idle: bool, run: Function<'js>| {
+                let f = ScriptFunction { run: Persistent::save(&ctx, run), context: timer_context.clone() }.into_hook();
+                with_editor(&ctx, |ed| {
+                    Ok(if idle { ed.run_with_idle_timer(secs, repeat.is_some(), f) } else { ed.run_with_timer(secs, repeat, f) } as f64)
+                })
+            },
+        )?,
+    )?;
+    native.set(
+        "cancelTimer",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, id: f64| {
+            with_editor(&ctx, |ed| {
+                ed.cancel_timer(id as u64);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "bufferList",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            with_editor(&ctx, |ed| Ok(ed.buffers().iter().map(|b| b.name.clone()).collect::<Vec<_>>()))
+        })?,
+    )?;
+    native.set(
+        "writeVisitedFile",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| ed.write_visited_file()))?,
+    )?;
+    native.set(
+        "revertToVisitedFile",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| ed.revert_to_visited_file()))?,
+    )?;
+    native.set(
+        "recoverFromAutoSave",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| ed.recover_from_auto_save()))?,
+    )?;
+    native.set(
+        "visitedFileChanged",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.buffer().visited_file_changed())))?,
+    )?;
+    native.set(
+        "setVisitedFileName",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| {
+            with_editor(&ctx, |ed| ed.set_visited_file_name(&expand_file_name(&file)))
+        })?,
+    )?;
+    native.set(
+        "expandFileName",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| {
+            with_editor(&ctx, |_| Ok(expand_file_name(&file).display().to_string()))
+        })?,
+    )?;
+    native.set(
+        "fileExists",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| with_editor(&ctx, |_| Ok(Path::new(&file).exists())))?,
+    )?;
+    native.set(
+        "autoSaveFileName",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| {
+            with_editor(&ctx, |_| Ok(ember_core::auto_save_file_name(Path::new(&file)).display().to_string()))
+        })?,
+    )?;
+    native.set(
+        "hasNewerAutoSave",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| {
+            with_editor(&ctx, |_| Ok(Editor::has_newer_auto_save(Path::new(&file))))
+        })?,
+    )?;
+    native.set(
+        "doAutoSave",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, quiet: bool| with_editor(&ctx, |ed| Ok(ed.do_auto_save(quiet))))?,
+    )?;
+    native.set(
+        "setAutoSave",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, on: bool| {
+            with_editor(&ctx, |ed| {
+                ed.set_auto_save(on);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "autoSaving",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.auto_saving())))?,
+    )?;
+    native.set(
+        "killEmacs",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            with_editor(&ctx, |ed| {
+                ed.kill_emacs();
+                Ok(())
+            })
+        })?,
+    )?;
     native.set(
         "commandExists",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| with_editor(&ctx, |ed| Ok(ed.command(&name).is_some())))?,

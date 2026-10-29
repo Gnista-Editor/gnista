@@ -16,8 +16,14 @@
 ;; seems to visit, in the temporary directory, written there), `today' (a
 ;; YYYY-MM-DD day for Org's agenda to take as today), `agenda_files' (true
 ;; to make the visited file the agenda's), `windows' (true to record the
-;; windows too), and `platform' (an Emacs
+;; windows too), `files' (an object of file names and their text, written
+;; into a fresh directory, target/oracle-files, for the case), `find' (one
+;; of those files, or a new one holding `text', to visit for real instead
+;; of the case's buffer), `disk' (text to give the visited file, changed
+;; on disk as if by another program, when the keys reach <f33>),
+;; `message' (true to record the last message), and `platform' (an Emacs
 ;; `system-type' such as "darwin", for cases that only hold on one platform).
+;; Cases with files record what the directory holds afterwards.
 ;;
 ;; Each case runs in a fresh Fundamental mode buffer, in a single window,
 ;; with an empty kill ring and no mark.  The buffer is fontified once its
@@ -37,6 +43,70 @@
 (put 'narrow-to-region 'disabled nil)
 ;; A case's buffer may visit a file it never writes; leave no lock files.
 (setq create-lockfiles nil)
+
+(defconst ember-oracle--files
+  (expand-file-name "../../target/oracle-files/" (file-name-directory load-file-name))
+  "Where cases with `files' or `find' keep their files: outside the
+temporary directory, which Emacs makes no backups in.")
+
+;; Batch Emacs does not auto-save; interactive Emacs does, and Ember does.
+(setq auto-save-default t)
+
+(defun ember-oracle--write-file (name text)
+  "Write TEXT to NAME in the case's directory, as UTF-8 bytes, or as
+Latin-1 for text starting \"latin-1:\"."
+  (let ((coding-system-for-write 'no-conversion)
+        (bytes (if (string-prefix-p "latin-1:" text)
+                   (encode-coding-string (substring text 8) 'latin-1)
+                 (encode-coding-string text 'utf-8-unix))))
+    (with-temp-buffer
+      (set-buffer-multibyte nil)
+      (insert bytes)
+      (write-region nil nil (expand-file-name name ember-oracle--files) nil 'quiet))))
+
+(defun ember-oracle--listing ()
+  "The case's directory: each file's name and text, as UTF-8 or else
+as Latin-1 marked \"latin-1:\"."
+  (mapcar (lambda (name)
+            (let* ((raw (with-temp-buffer
+                          (set-buffer-multibyte nil)
+                          (insert-file-contents-literally (expand-file-name name ember-oracle--files))
+                          (buffer-string)))
+                   (text (decode-coding-string raw 'utf-8-unix)))
+              ;; Bytes that are not UTF-8 decode as raw-byte characters.
+              (cons name (if (seq-some (lambda (c) (>= c #x3FFF80)) text)
+                             (concat "latin-1:" (decode-coding-string raw 'latin-1))
+                           text))))
+          (directory-files ember-oracle--files nil "\\`[^.]")))
+
+(defvar ember-oracle--disk nil
+  "The text <f33> gives the visited file.")
+
+(defun ember-oracle--change-disk ()
+  "Change the visited file on disk, as another program would, a little later."
+  (interactive)
+  (let ((file buffer-file-name))
+    (ember-oracle--write-file (file-name-nondirectory file) ember-oracle--disk)
+    (set-file-times file (time-add nil 5))))
+
+(global-set-key (kbd "<f33>") #'ember-oracle--change-disk)
+
+(defvar ember-oracle--messages-start nil
+  "Where *Messages* ended when the keys began.")
+
+(defun ember-oracle--without-dir (text)
+  "TEXT with the case's directory written as DIR."
+  (and text
+       (let ((dir (directory-file-name ember-oracle--files)))
+         (dolist (form (list (file-truename dir) dir (abbreviate-file-name dir)) text)
+           (setq text (string-replace form "DIR" text))))))
+
+(defun ember-oracle--last-message ()
+  "The last message logged since the keys began, with the case's
+directory written as DIR."
+  (with-current-buffer (messages-buffer)
+    (let ((lines (split-string (buffer-substring ember-oracle--messages-start (point-max)) "\n" t)))
+      (ember-oracle--without-dir (car (last lines))))))
 
 (defvar ember-oracle--error nil
   "The first error a case signalled.")
@@ -106,8 +176,20 @@ while the case's keys are queued would read those instead."
 (defun ember-oracle--read-char (&rest _)
   "The next answer's first character, as reading a key gives it."
   (string-to-char (ember-oracle--answer nil)))
-(dolist (fn '(read-char read-char-exclusive read-key))
+(dolist (fn '(read-char read-char-exclusive read-key read-event))
   (advice-add fn :override #'ember-oracle--read-char))
+
+;; Batch Emacs gives up on a file changed on disk; ask as interactive Emacs
+;; does, taking the answer from the case.
+(defun ember-oracle--supersession (filename)
+  "Answer `ask-user-about-supersession-threat' for FILENAME from the case."
+  (pcase (ember-oracle--read-char)
+    (?r (revert-buffer nil (not (buffer-modified-p)))
+        (signal 'file-supersession (list "File reverted" filename)))
+    (?y (message "File on disk now will become a backup file if you save these changes.")
+        (setq buffer-backed-up nil))
+    (_ (signal 'file-supersession (list "File changed on disk" filename)))))
+(advice-add 'ask-user-about-supersession-threat :override #'ember-oracle--supersession)
 
 ;; Cases must not reach outside Emacs: opening a link would start the
 ;; system's browser, or another program, for every case that does it.
@@ -141,14 +223,10 @@ while the case's keys are queued would read those instead."
       (unless (or (string-prefix-p " " (buffer-name b))
                   (member (buffer-name b) '("*scratch*" "*Messages*")))
         (kill-buffer b)))
-    (with-current-buffer (get-buffer-create "*ember-oracle*")
-      (fundamental-mode)
-      (switch-to-buffer (current-buffer))
-      (buffer-disable-undo)
-      (insert text)
+    (with-current-buffer (ember-oracle--case-buffer case text)
       ;; As if visiting a file, for commands such as org-refile that need
       ;; one; nothing is written to it.
-      (when-let* ((visit (alist-get 'visit case)))
+      (when-let* ((visit (and (not (alist-get 'find case)) (alist-get 'visit case))))
         (let ((file (expand-file-name visit temporary-file-directory)))
           ;; On disk too, as the agenda checks its files are there.
           (write-region text nil file nil 'quiet)
@@ -173,8 +251,9 @@ while the case's keys are queued would read those instead."
                (let ((d (mapcar #'string-to-number (split-string day "-"))))
                  (list (nth 1 d) (nth 2 d) (nth 0 d)))))
         (advice-add 'org-today :override #'ember-oracle--today))
-      (buffer-enable-undo)
-      (set-buffer-modified-p nil)
+      (unless (alist-get 'find case)
+        (buffer-enable-undo)
+        (set-buffer-modified-p nil))
       (goto-char (1+ start))
       (dolist (mode modes)
         ;; Major modes take no argument.
@@ -196,6 +275,8 @@ while the case's keys are queued would read those instead."
             org-subtree-clip-folded nil
             ember-oracle--error nil
             ember-oracle--answers (alist-get 'answers case)
+            ember-oracle--disk (alist-get 'disk case)
+            ember-oracle--messages-start (with-current-buffer (messages-buffer) (point-max))
             unread-command-events (append (and call '(f34))
                                           (listify-key-sequence (kbd keys))
                                           '(f35)))
@@ -205,6 +286,39 @@ while the case's keys are queued would read those instead."
       (prog1 (ember-oracle--state case text start keys)
         ;; Some modes are global; turn them off again for the next case.
         (dolist (mode modes) (ignore-errors (funcall mode -1)))))))
+
+(defun ember-oracle--case-buffer (case text)
+  "Make the buffer CASE runs in current and shown, and return it.
+That is a file visited for real if CASE has `find', in a fresh directory
+holding its `files', and otherwise a fresh *ember-oracle* buffer holding TEXT."
+  (let ((files (alist-get 'files case))
+        (find (alist-get 'find case)))
+    (when (or files find)
+      (when (file-directory-p ember-oracle--files)
+        (delete-directory ember-oracle--files t))
+      (make-directory ember-oracle--files t)
+      ;; Auto-save files last, so they are newer than what they save.
+      (dolist (file (sort (copy-sequence files)
+                          (lambda (a b)
+                            (let ((a (symbol-name (car a))) (b (symbol-name (car b))))
+                              (if (eq (string-prefix-p "#" a) (string-prefix-p "#" b))
+                                  (string< a b)
+                                (string-prefix-p "#" b))))))
+        (ember-oracle--write-file (symbol-name (car file)) (cdr file)))
+      (when (and find (not (assq (intern find) files)))
+        (ember-oracle--write-file find text)))
+    (if find
+        (let ((inhibit-message t))
+          (find-file (expand-file-name find ember-oracle--files))
+          ;; after-find-file leaves auto-saving off in batch Emacs.
+          (auto-save-mode 1)
+          (current-buffer))
+      (with-current-buffer (get-buffer-create "*ember-oracle*")
+        (fundamental-mode)
+        (switch-to-buffer (current-buffer))
+        (buffer-disable-undo)
+        (insert text)
+        (current-buffer)))))
 
 (defun ember-oracle--fontify ()
   "Fontify the whole buffer, as redisplay would fontify what it shows.
@@ -243,7 +357,11 @@ The whole buffer, even if the case left it narrowed."
                   ,@(and (alist-get 'capture_templates case)
                          `((capture_templates . ,(vconcat (mapcar #'vconcat (alist-get 'capture_templates case))))))
                   ,@(and (alist-get 'answers case)
-                         `((answers . ,(vconcat (alist-get 'answers case)))))))
+                         `((answers . ,(vconcat (alist-get 'answers case)))))
+                  ,@(and (alist-get 'files case) `((files . ,(alist-get 'files case))))
+                  ,@(and (alist-get 'find case) `((find . ,(alist-get 'find case))))
+                  ,@(and (alist-get 'disk case) `((disk . ,(alist-get 'disk case))))
+                  ,@(and (alist-get 'message case) '((message . t)))))
         (text . ,(buffer-substring-no-properties (point-min) (point-max)))
         (visible . ,(progn (ember-oracle--fontify) (ember-oracle--visible)))
         (point . ,(1- (point)))
@@ -251,9 +369,13 @@ The whole buffer, even if the case left it narrowed."
         (mark_active . ,(if (and mark-active (mark t)) t :json-false))
         (kill_ring . ,(vconcat (mapcar #'substring-no-properties kill-ring)))
         (modified . ,(if (buffer-modified-p) t :json-false))
-        (error . ,ember-oracle--error)
+        (error . ,(ember-oracle--without-dir ember-oracle--error))
         ,@(and (alist-get 'windows case)
-               `((windows . ,(ember-oracle--windows))))))
+               `((windows . ,(ember-oracle--windows))))
+        ,@(and (or (alist-get 'files case) (alist-get 'find case))
+               `((files . ,(ember-oracle--listing))))
+        ,@(and (alist-get 'message case)
+               `((message . ,(ember-oracle--last-message))))))
 
 (defun ember-oracle--windows ()
   "The frame's windows in cyclic order: buffer, point and total size."

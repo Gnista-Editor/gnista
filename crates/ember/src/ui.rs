@@ -226,7 +226,8 @@ fn draw_mode_line(frame: &mut Frame, ed: &Editor, view: &WindowView, area: Rect)
     let def = if ed.defining_kbd_macro() { " Def" } else { "" };
     let narrow = if b.is_narrowed() { " Narrow" } else { "" };
     let modes = format!("{}{}{narrow}{def}", ed.mode_name_in(b), ed.mode_lighters_in(b).concat());
-    let mut text = format!("-:{flag}-  {:<18} L{line:<5} C{col:<4} ({modes}) ", b.name);
+    // The coding first, as Emacs's mode-line-mule-info: U: or -\ and so on.
+    let mut text = format!("{}{flag}-  {:<18} L{line:<5} C{col:<4} ({modes}) ", b.coding_mnemonic(), b.name);
     let fill = (area.width as usize).saturating_sub(display_width(&text, 8));
     text.push_str(&"-".repeat(fill));
     // The selected window's mode line stands out; the others are dimmed,
@@ -290,7 +291,7 @@ mod tests {
         let rows = render(&mut ed, 50, 5);
         assert_eq!(rows[0], "hello");
         assert_eq!(rows[1], "        world");
-        assert!(rows[3].starts_with("-:**-  *scratch*"), "{}", rows[3]);
+        assert!(rows[3].starts_with("U:**-  *scratch*"), "{}", rows[3]);
         assert!(rows[3].contains("L2"), "{}", rows[3]);
 
         ed.press("M-x").unwrap();
@@ -344,10 +345,10 @@ mod tests {
         // Two windows side by side on top, divided by a bar, and one below.
         assert_eq!(rows[0], "one                 |one");
         assert_eq!(rows[1], "two                 |two");
-        assert!(rows[3].starts_with("-:**-  *scratch*"), "{}", rows[3]);
-        assert!(rows[3][21..].starts_with("-:**-  *scratch*"), "{}", rows[3]);
+        assert!(rows[3].starts_with("U:**-  *scratch*"), "{}", rows[3]);
+        assert!(rows[3][21..].starts_with("U:**-  *scratch*"), "{}", rows[3]);
         assert_eq!(rows[4], "one");
-        assert!(rows[7].starts_with("-:**-  *scratch*"), "{}", rows[7]);
+        assert!(rows[7].starts_with("U:**-  *scratch*"), "{}", rows[7]);
         assert_eq!(ed.viewport_height(), 3);
     }
 
