@@ -1,0 +1,387 @@
+[
+ {
+  "name": "fill-long-paragraph",
+  "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+  "keys": "M-q"
+ },
+ {
+  "name": "fill-narrow-column",
+  "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+  "keys": "M-q",
+  "vars": {
+   "fill-column": 20
+  }
+ },
+ {
+  "name": "fill-joins-short-lines",
+  "text": "one two\nthree four\nfive six seven\neight\n",
+  "keys": "M-q"
+ },
+ {
+  "name": "fill-sentence-at-line-end-gets-two-spaces",
+  "text": "The first sentence.\nThe second one is here.\nAnd a question?\nYes!\n",
+  "keys": "M-q"
+ },
+ {
+  "name": "fill-period-one-space-no-break",
+  "text": "aaaa bbbb cccc dddd Mr. Smith went to the market and bought eggs.\n",
+  "keys": "M-q",
+  "vars": {
+   "fill-column": 25
+  }
+ },
+ {
+  "name": "fill-indented-paragraph",
+  "text": "    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+  "keys": "M-q",
+  "vars": {
+   "fill-column": 40
+  }
+ },
+ {
+  "name": "fill-quoted-lines",
+  "text": "> Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i\n> ncididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+  "keys": "M-q",
+  "vars": {
+   "fill-column": 40
+  }
+ },
+ {
+  "name": "fill-bullet-one-line",
+  "text": "- Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+  "keys": "M-q",
+  "vars": {
+   "fill-column": 40
+  }
+ },
+ {
+  "name": "fill-bullet-continued",
+  "text": "- Lorem ipsum dolor sit amet, consectetur adipiscing\n   elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+  "keys": "M-q",
+  "vars": {
+   "fill-column": 40
+  }
+ },
+ {
+  "name": "fill-between-paragraphs-fills-next",
+  "text": "first para here\n\nsecond paragraph is long enough to need breaking at forty columns wide\n",
+  "point": 16,
+  "keys": "M-q",
+  "vars": {
+   "fill-column": 40
+  }
+ },
+ {
+  "name": "fill-at-end-after-blank-lines",
+  "text": "some text that is long enough to break at twenty\n\n\n",
+  "point": 51,
+  "keys": "M-q",
+  "vars": {
+   "fill-column": 20
+  }
+ },
+ {
+  "name": "fill-region-two-paragraphs",
+  "text": "alpha beta gamma delta epsilon zeta eta theta\n\niota kappa lambda mu nu xi omicron pi rho\n",
+  "keys": "C-SPC M-> M-q",
+  "vars": {
+   "fill-column": 20
+  }
+ },
+ {
+  "name": "fill-justify-full",
+  "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+  "keys": "C-u M-q",
+  "vars": {
+   "fill-column": 40
+  }
+ },
+ {
+  "name": "fill-already-filled-stays-unmodified",
+  "text": "short line\nanother one\n",
+  "keys": "M-q"
+ },
+ {
+  "name": "fill-tabs-and-spaces",
+  "text": "word\tword   word    word.   Next  sentence\there and more words to wrap around\n",
+  "keys": "M-q",
+  "vars": {
+   "fill-column": 30
+  }
+ },
+ {
+  "name": "fill-long-word",
+  "text": "short averyveryveryverylongwordthatdoesnotfit short again\n",
+  "keys": "M-q",
+  "vars": {
+   "fill-column": 15
+  }
+ },
+ {
+  "name": "fill-keeps-point-in-word",
+  "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+  "point": 100,
+  "keys": "M-q",
+  "vars": {
+   "fill-column": 30
+  }
+ },
+ {
+  "name": "fill-point-in-middle-paragraph",
+  "text": "intro\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\noutro\n",
+  "point": 40,
+  "keys": "M-q",
+  "vars": {
+   "fill-column": 50
+  }
+ },
+ {
+  "name": "fill-no-newline-at-end",
+  "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+  "keys": "M-q",
+  "vars": {
+   "fill-column": 50
+  }
+ },
+ {
+  "name": "fill-comment-like-prefix",
+  "text": "# Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed\n#  do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+  "keys": "M-q",
+  "vars": {
+   "fill-column": 40
+  }
+ },
+ {
+  "name": "fill-prefix-set",
+  "text": "   xx one two three four five six seven eight nine ten\n",
+  "point": 6,
+  "keys": "C-x . M-q",
+  "vars": {
+   "fill-column": 25
+  }
+ },
+ {
+  "name": "set-fill-column-from-prefix",
+  "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+  "keys": "C-u 3 0 C-x f M-q",
+  "message": true
+ },
+ {
+  "name": "set-fill-column-answer",
+  "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+  "keys": "C-x f M-q",
+  "answers": [
+   "35"
+  ],
+  "message": true
+ },
+ {
+  "name": "set-fill-column-plain-cu",
+  "text": "abcdefghijklmnopqrstuvwxyz Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+  "point": 25,
+  "keys": "C-u C-x f M-q",
+  "message": true
+ },
+ {
+  "name": "auto-fill-types",
+  "text": "",
+  "keys": "t h e SPC q u i c k SPC b r o w n SPC f o x SPC j u m p s SPC o v e r SPC t h e SPC l a z y SPC d o g SPC a n d SPC k e e p s SPC r u n n i n g SPC f a r SPC a w a y SPC",
+  "modes": [
+   "auto-fill-mode"
+  ],
+  "vars": {
+   "fill-column": 20
+  }
+ },
+ {
+  "name": "auto-fill-on-return",
+  "text": "",
+  "keys": "t h e SPC q u i c k SPC b r o w n SPC f o x SPC j u m p s SPC o v e r RET n e x t",
+  "modes": [
+   "auto-fill-mode"
+  ],
+  "vars": {
+   "fill-column": 20
+  }
+ },
+ {
+  "name": "auto-fill-indented",
+  "text": "    ",
+  "point": 4,
+  "keys": "t h e SPC q u i c k SPC b r o w n SPC f o x SPC j u m p s SPC o v e r SPC t h e SPC l a z y SPC d o g SPC",
+  "modes": [
+   "auto-fill-mode"
+  ],
+  "vars": {
+   "fill-column": 20
+  }
+ },
+ {
+  "name": "auto-fill-quoted",
+  "text": "> ",
+  "point": 2,
+  "keys": "t h e SPC q u i c k SPC b r o w n SPC f o x SPC j u m p s SPC o v e r SPC t h e SPC l a z y SPC d o g SPC",
+  "modes": [
+   "auto-fill-mode"
+  ],
+  "vars": {
+   "fill-column": 20
+  }
+ },
+ {
+  "name": "auto-fill-mid-line",
+  "text": "aaa bbb ccc ddd eee fff",
+  "point": 8,
+  "keys": "x x x x SPC",
+  "modes": [
+   "auto-fill-mode"
+  ],
+  "vars": {
+   "fill-column": 20
+  }
+ },
+ {
+  "name": "auto-fill-off-no-break",
+  "text": "",
+  "keys": "t h e SPC q u i c k SPC b r o w n SPC f o x SPC j u m p s SPC o v e r SPC t h e SPC l a z y SPC d o g SPC",
+  "vars": {
+   "fill-column": 20
+  }
+ },
+ {
+  "name": "fill-then-undo",
+  "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+  "keys": "M-q C-/",
+  "vars": {
+   "fill-column": 30
+  }
+ },
+ {
+  "name": "fill-region-as-paragraph-joins",
+  "text": "one two\n\nthree four five six seven\n",
+  "keys": "C-SPC M-> M-x",
+  "vars": {
+   "fill-column": 15
+  },
+  "answers": [
+   "fill-region-as-paragraph"
+  ]
+ },
+ {
+  "name": "fill-text-mode",
+  "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+  "keys": "M-q",
+  "modes": [
+   "text-mode"
+  ],
+  "vars": {
+   "fill-column": 45
+  }
+ },
+ {
+  "name": "fill-colon-single-space",
+  "text": "Note:  this has two spaces after colon and more words here\n",
+  "keys": "M-q",
+  "vars": {
+   "fill-column": 30
+  }
+ },
+ {
+  "name": "fill-closing-paren-after-period",
+  "text": "He said (yes.)  Then he left the room quietly without saying goodbye\n",
+  "keys": "M-q",
+  "vars": {
+   "fill-column": 30
+  }
+ },
+ {
+  "name": "fuzz-undo-fill-tab-point",
+  "text": "- the end.\tMr. done,",
+  "point": 2,
+  "keys": "M-q C-/",
+  "vars": {
+   "fill-column": 12
+  }
+ },
+ {
+  "name": "fuzz-empty-region-fills-paragraph",
+  "text": "- plan\n- Mr.  a (aside) why?",
+  "point": 9,
+  "keys": "C-SPC M-q",
+  "vars": {
+   "fill-column": 12
+  }
+ },
+ {
+  "name": "fuzz-point-after-tab-at-end",
+  "text": "\ta  considerable  fixes  the supercalifragilistic",
+  "point": 39,
+  "keys": "SPC M-q",
+  "vars": {
+   "fill-column": 20
+  }
+ },
+ {
+  "name": "fuzz-auto-fill-return-tab-prefix",
+  "text": "\tplan x  done, end. considerable breaking  considerable",
+  "point": 0,
+  "keys": "C-e RET",
+  "modes": [
+   "auto-fill-mode"
+  ],
+  "vars": {
+   "fill-column": 15
+  }
+ },
+ {
+  "name": "fuzz-auto-fill-return-comment",
+  "text": ";; supercalifragilistic why? done,",
+  "point": 0,
+  "keys": "C-e RET",
+  "modes": [
+   "auto-fill-mode"
+  ],
+  "vars": {
+   "fill-column": 20
+  }
+ },
+ {
+  "name": "fuzz-fill-word-longer-than-column",
+  "text": "# end. the\tnotes why?  a a supercalifragilistic",
+  "point": 45,
+  "keys": "SPC M-q SPC",
+  "modes": [
+   "auto-fill-mode"
+  ],
+  "vars": {
+   "fill-column": 20
+  }
+ },
+ {
+  "name": "fuzz-justify-second-paragraph",
+  "text": "supercalifragilistic\tsupercalifragilistic a\tx plan  (aside)\tdone, plan\tend.\n\nsupercalifragilistic  considerable Mr. considerable supercalifragilistic (aside) notes a",
+  "point": 80,
+  "keys": "C-u M-q",
+  "vars": {
+   "fill-column": 33
+  }
+ },
+ {
+  "name": "fuzz-undo-after-second-fill",
+  "text": "done,  end. x done, fixes",
+  "point": 8,
+  "keys": "M-q M-q C-/",
+  "vars": {
+   "fill-column": 10
+  }
+ },
+ {
+  "name": "fuzz-undo-fill-unchanged-tab",
+  "text": "fixes considerable\tconsiderable breaking",
+  "point": 0,
+  "keys": "M-q C-/ y",
+  "vars": {
+   "fill-column": 60
+  }
+ }
+]

@@ -521,6 +521,12 @@ pub(crate) fn install(ed: &mut Editor) {
             30.0,
         ),
         Variable::new(
+            "auto-fill-function",
+            "The command typing a space or newline runs to break the line, when Auto Fill mode is on; nil when it is off. Each buffer has its own.",
+            Value::Null,
+        )
+        .local(),
+        Variable::new(
             "delete-auto-save-files",
             "Whether saving a buffer deletes its auto-save file.",
             true,
@@ -534,6 +540,7 @@ pub(crate) fn install(ed: &mut Editor) {
         ed.define_variable(var);
     }
     for (name, doc) in [
+        ("post-self-insert-hook", "Run after typing a character inserts it, as electric-pair-mode and electric-indent-mode use."),
         ("pre-command-hook", "Run before each command that keys run. A function can change this-command, and that command runs instead."),
         ("post-command-hook", "Run after each command that keys run."),
         ("minibuffer-setup-hook", "Run when a prompt opens, in the minibuffer."),

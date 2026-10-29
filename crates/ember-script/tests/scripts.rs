@@ -454,3 +454,52 @@ fn typing_with_a_count_is_an_undo_step_of_its_own() {
     ed.press("M-2 SPC 1 C-/").unwrap();
     assert_eq!(text(&ed), "  ");
 }
+
+#[test]
+fn markers_move_with_the_text_and_come_back_with_undo() {
+    let (mut ed, scripting) = setup();
+    ed.type_text("one two three");
+    ed.buffer_mut().undo_boundary();
+    eval(
+        &mut ed,
+        &scripting,
+        r#"
+        const stays = ember.makeMarker(4);
+        const advances = ember.makeMarker(4, { advances: true });
+        ember.gotoChar(4);
+        ember.insert("big ");
+        ember.message(`${ember.markerPosition(stays)} ${ember.markerPosition(advances)} ${ember.markerBuffer(stays)}`);
+        globalThis.inside = ember.makeMarker(9);
+        "#,
+    );
+    assert_eq!(ed.messages().last().map(String::as_str), Some("4 8 *scratch*"));
+    ed.buffer_mut().undo_boundary();
+    // Deleting the text a marker is in takes it to the start; undo puts it back.
+    eval(&mut ed, &scripting, "ember.deleteRegion(6, 12);");
+    eval(&mut ed, &scripting, "ember.message(String(ember.markerPosition(globalThis.inside)));");
+    assert_eq!(ed.messages().last().map(String::as_str), Some("6"));
+    ed.press("C-/").unwrap();
+    eval(&mut ed, &scripting, "ember.message(String(ember.markerPosition(globalThis.inside)));");
+    assert_eq!(ed.messages().last().map(String::as_str), Some("9"));
+    // A marker pointing nowhere has no position.
+    eval(&mut ed, &scripting, "ember.setMarker(globalThis.inside, null); ember.message(String(ember.markerPosition(globalThis.inside)));");
+    assert_eq!(ed.messages().last().map(String::as_str), Some("undefined"));
+}
+
+#[test]
+fn subst_char_in_region_leaves_point_and_markers() {
+    let (mut ed, scripting) = setup();
+    ed.type_text("a\tb\tc");
+    eval(
+        &mut ed,
+        &scripting,
+        r#"
+        ember.gotoChar(2);
+        const m = ember.makeMarker(4);
+        ember.substCharInRegion(0, ember.bufferSize(), "\t", " ");
+        ember.message(`${ember.point()} ${ember.markerPosition(m)}`);
+        "#,
+    );
+    assert_eq!(text(&ed), "a b c");
+    assert_eq!(ed.messages().last().map(String::as_str), Some("2 4"));
+}

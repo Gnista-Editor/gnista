@@ -1,0 +1,983 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "fill-long-paragraph",
+      "input": {
+        "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+        "point": 0,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do\neiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad\nminim veniam, quis nostrud exercitation ullamco laboris nisi ut\naliquip ex ea commodo consequat.\n",
+      "visible": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do\neiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad\nminim veniam, quis nostrud exercitation ullamco laboris nisi ut\naliquip ex ea commodo consequat.\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-narrow-column",
+      "input": {
+        "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+        "point": 0,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 20
+        }
+      },
+      "text": "Lorem ipsum dolor\nsit amet,\nconsectetur\nadipiscing elit, sed\ndo eiusmod tempor\nincididunt ut labore\net dolore magna\naliqua. Ut enim ad\nminim veniam, quis\nnostrud exercitation\nullamco laboris nisi\nut aliquip ex ea\ncommodo consequat.\n",
+      "visible": "Lorem ipsum dolor\nsit amet,\nconsectetur\nadipiscing elit, sed\ndo eiusmod tempor\nincididunt ut labore\net dolore magna\naliqua. Ut enim ad\nminim veniam, quis\nnostrud exercitation\nullamco laboris nisi\nut aliquip ex ea\ncommodo consequat.\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-joins-short-lines",
+      "input": {
+        "text": "one two\nthree four\nfive six seven\neight\n",
+        "point": 0,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one two three four five six seven eight\n",
+      "visible": "one two three four five six seven eight\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-sentence-at-line-end-gets-two-spaces",
+      "input": {
+        "text": "The first sentence.\nThe second one is here.\nAnd a question?\nYes!\n",
+        "point": 0,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "The first sentence.  The second one is here.  And a question?  Yes!\n",
+      "visible": "The first sentence.  The second one is here.  And a question?  Yes!\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-period-one-space-no-break",
+      "input": {
+        "text": "aaaa bbbb cccc dddd Mr. Smith went to the market and bought eggs.\n",
+        "point": 0,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 25
+        }
+      },
+      "text": "aaaa bbbb cccc dddd\nMr. Smith went to the\nmarket and bought eggs.\n",
+      "visible": "aaaa bbbb cccc dddd\nMr. Smith went to the\nmarket and bought eggs.\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-indented-paragraph",
+      "input": {
+        "text": "    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+        "point": 0,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 40
+        }
+      },
+      "text": "    Lorem ipsum dolor sit amet,\n    consectetur adipiscing elit, sed do\n    eiusmod tempor incididunt ut labore\n    et dolore magna aliqua. Ut enim ad\n    minim veniam, quis nostrud\n    exercitation ullamco laboris nisi ut\n    aliquip ex ea commodo consequat.\n",
+      "visible": "    Lorem ipsum dolor sit amet,\n    consectetur adipiscing elit, sed do\n    eiusmod tempor incididunt ut labore\n    et dolore magna aliqua. Ut enim ad\n    minim veniam, quis nostrud\n    exercitation ullamco laboris nisi ut\n    aliquip ex ea commodo consequat.\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-quoted-lines",
+      "input": {
+        "text": "> Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i\n> ncididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+        "point": 0,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 40
+        }
+      },
+      "text": "> Lorem ipsum dolor sit amet,\n> consectetur adipiscing elit, sed do\n> eiusmod tempor i ncididunt ut labore\n> et dolore magna aliqua. Ut enim ad\n> minim veniam, quis nostrud\n> exercitation ullamco laboris nisi ut\n> aliquip ex ea commodo consequat.\n",
+      "visible": "> Lorem ipsum dolor sit amet,\n> consectetur adipiscing elit, sed do\n> eiusmod tempor i ncididunt ut labore\n> et dolore magna aliqua. Ut enim ad\n> minim veniam, quis nostrud\n> exercitation ullamco laboris nisi ut\n> aliquip ex ea commodo consequat.\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-bullet-one-line",
+      "input": {
+        "text": "- Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+        "point": 0,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 40
+        }
+      },
+      "text": "- Lorem ipsum dolor sit amet,\n  consectetur adipiscing elit, sed do\n  eiusmod tempor incididunt ut labore et\n  dolore magna aliqua. Ut enim ad minim\n  veniam, quis nostrud exercitation\n  ullamco laboris nisi ut aliquip ex ea\n  commodo consequat.\n",
+      "visible": "- Lorem ipsum dolor sit amet,\n  consectetur adipiscing elit, sed do\n  eiusmod tempor incididunt ut labore et\n  dolore magna aliqua. Ut enim ad minim\n  veniam, quis nostrud exercitation\n  ullamco laboris nisi ut aliquip ex ea\n  commodo consequat.\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-bullet-continued",
+      "input": {
+        "text": "- Lorem ipsum dolor sit amet, consectetur adipiscing\n   elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+        "point": 0,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 40
+        }
+      },
+      "text": "- Lorem ipsum dolor sit amet,\n   consectetur adipiscing elit, sed do\n   eiusmod tempor incididunt ut labore\n   et dolore magna aliqua. Ut enim ad\n   minim veniam, quis nostrud\n   exercitation ullamco laboris nisi ut\n   aliquip ex ea commodo consequat.\n",
+      "visible": "- Lorem ipsum dolor sit amet,\n   consectetur adipiscing elit, sed do\n   eiusmod tempor incididunt ut labore\n   et dolore magna aliqua. Ut enim ad\n   minim veniam, quis nostrud\n   exercitation ullamco laboris nisi ut\n   aliquip ex ea commodo consequat.\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-between-paragraphs-fills-next",
+      "input": {
+        "text": "first para here\n\nsecond paragraph is long enough to need breaking at forty columns wide\n",
+        "point": 16,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 40
+        }
+      },
+      "text": "first para here\n\nsecond paragraph is long enough to need\nbreaking at forty columns wide\n",
+      "visible": "first para here\n\nsecond paragraph is long enough to need\nbreaking at forty columns wide\n",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-at-end-after-blank-lines",
+      "input": {
+        "text": "some text that is long enough to break at twenty\n\n\n",
+        "point": 51,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 20
+        }
+      },
+      "text": "some text that is long enough to break at twenty\n\n\n",
+      "visible": "some text that is long enough to break at twenty\n\n\n",
+      "point": 51,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "fill-region-two-paragraphs",
+      "input": {
+        "text": "alpha beta gamma delta epsilon zeta eta theta\n\niota kappa lambda mu nu xi omicron pi rho\n",
+        "point": 0,
+        "keys": "C-SPC M-> M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 20
+        }
+      },
+      "text": "alpha beta gamma\ndelta epsilon zeta\neta theta\n\niota kappa lambda mu\nnu xi omicron pi rho\n",
+      "visible": "alpha beta gamma\ndelta epsilon zeta\neta theta\n\niota kappa lambda mu\nnu xi omicron pi rho\n",
+      "point": 89,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-justify-full",
+      "input": {
+        "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+        "point": 0,
+        "keys": "C-u M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 40
+        }
+      },
+      "text": "Lorem ipsum dolor  sit amet, consectetur\nadipiscing elit,  sed do  eiusmod tempor\nincididunt  ut  labore et  dolore  magna\naliqua.  Ut enim  ad minim  veniam, quis\nnostrud  exercitation   ullamco  laboris\nnisi ut aliquip ex ea commodo consequat.\n",
+      "visible": "Lorem ipsum dolor  sit amet, consectetur\nadipiscing elit,  sed do  eiusmod tempor\nincididunt  ut  labore et  dolore  magna\naliqua.  Ut enim  ad minim  veniam, quis\nnostrud  exercitation   ullamco  laboris\nnisi ut aliquip ex ea commodo consequat.\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-already-filled-stays-unmodified",
+      "input": {
+        "text": "short line\nanother one\n",
+        "point": 0,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "short line another one\n",
+      "visible": "short line another one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-tabs-and-spaces",
+      "input": {
+        "text": "word\tword   word    word.   Next  sentence\there and more words to wrap around\n",
+        "point": 0,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 30
+        }
+      },
+      "text": "word word word word.  Next\nsentence here and more words\nto wrap around\n",
+      "visible": "word word word word.  Next\nsentence here and more words\nto wrap around\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-long-word",
+      "input": {
+        "text": "short averyveryveryverylongwordthatdoesnotfit short again\n",
+        "point": 0,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 15
+        }
+      },
+      "text": "short\naveryveryveryverylongwordthatdoesnotfit\nshort again\n",
+      "visible": "short\naveryveryveryverylongwordthatdoesnotfit\nshort again\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-keeps-point-in-word",
+      "input": {
+        "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+        "point": 100,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 30
+        }
+      },
+      "text": "Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit,\nsed do eiusmod tempor\nincididunt ut labore et dolore\nmagna aliqua. Ut enim ad minim\nveniam, quis nostrud\nexercitation ullamco laboris\nnisi ut aliquip ex ea commodo\nconsequat.\n",
+      "visible": "Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit,\nsed do eiusmod tempor\nincididunt ut labore et dolore\nmagna aliqua. Ut enim ad minim\nveniam, quis nostrud\nexercitation ullamco laboris\nnisi ut aliquip ex ea commodo\nconsequat.\n",
+      "point": 100,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-point-in-middle-paragraph",
+      "input": {
+        "text": "intro\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\noutro\n",
+        "point": 40,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 50
+        }
+      },
+      "text": "intro\n\nLorem ipsum dolor sit amet, consectetur adipiscing\nelit, sed do eiusmod tempor incididunt ut labore\net dolore magna aliqua. Ut enim ad minim veniam,\nquis nostrud exercitation ullamco laboris nisi ut\naliquip ex ea commodo consequat.\n\noutro\n",
+      "visible": "intro\n\nLorem ipsum dolor sit amet, consectetur adipiscing\nelit, sed do eiusmod tempor incididunt ut labore\net dolore magna aliqua. Ut enim ad minim veniam,\nquis nostrud exercitation ullamco laboris nisi ut\naliquip ex ea commodo consequat.\n\noutro\n",
+      "point": 40,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-no-newline-at-end",
+      "input": {
+        "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+        "point": 0,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 50
+        }
+      },
+      "text": "Lorem ipsum dolor sit amet, consectetur adipiscing\nelit, sed do eiusmod tempor incididunt ut labore\net dolore magna aliqua. Ut enim ad minim veniam,\nquis nostrud exercitation ullamco laboris nisi ut\naliquip ex ea commodo consequat.",
+      "visible": "Lorem ipsum dolor sit amet, consectetur adipiscing\nelit, sed do eiusmod tempor incididunt ut labore\net dolore magna aliqua. Ut enim ad minim veniam,\nquis nostrud exercitation ullamco laboris nisi ut\naliquip ex ea commodo consequat.",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-comment-like-prefix",
+      "input": {
+        "text": "# Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed\n#  do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+        "point": 0,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 40
+        }
+      },
+      "text": "# Lorem ipsum dolor sit amet,\n#  consectetur adipiscing elit, sed do\n#  eiusmod tempor incididunt ut labore\n#  et dolore magna aliqua. Ut enim ad\n#  minim veniam, quis nostrud\n#  exercitation ullamco laboris nisi ut\n#  aliquip ex ea commodo consequat.\n",
+      "visible": "# Lorem ipsum dolor sit amet,\n#  consectetur adipiscing elit, sed do\n#  eiusmod tempor incididunt ut labore\n#  et dolore magna aliqua. Ut enim ad\n#  minim veniam, quis nostrud\n#  exercitation ullamco laboris nisi ut\n#  aliquip ex ea commodo consequat.\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-prefix-set",
+      "input": {
+        "text": "   xx one two three four five six seven eight nine ten\n",
+        "point": 6,
+        "keys": "C-x . M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 25
+        }
+      },
+      "text": "   xx one two three four\n   xx five six seven\n   xx eight nine ten\n",
+      "visible": "   xx one two three four\n   xx five six seven\n   xx eight nine ten\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "set-fill-column-from-prefix",
+      "input": {
+        "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+        "point": 0,
+        "keys": "C-u 3 0 C-x f M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "message": true
+      },
+      "text": "Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit,\nsed do eiusmod tempor\nincididunt ut labore et dolore\nmagna aliqua. Ut enim ad minim\nveniam, quis nostrud\nexercitation ullamco laboris\nnisi ut aliquip ex ea commodo\nconsequat.\n",
+      "visible": "Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit,\nsed do eiusmod tempor\nincididunt ut labore et dolore\nmagna aliqua. Ut enim ad minim\nveniam, quis nostrud\nexercitation ullamco laboris\nnisi ut aliquip ex ea commodo\nconsequat.\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": "Fill column set to 30 (was 70)"
+    },
+    {
+      "name": "set-fill-column-answer",
+      "input": {
+        "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+        "point": 0,
+        "keys": "C-x f M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "35"
+        ],
+        "message": true
+      },
+      "text": "Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit, sed do\neiusmod tempor incididunt ut labore\net dolore magna aliqua. Ut enim ad\nminim veniam, quis nostrud\nexercitation ullamco laboris nisi\nut aliquip ex ea commodo consequat.\n",
+      "visible": "Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit, sed do\neiusmod tempor incididunt ut labore\net dolore magna aliqua. Ut enim ad\nminim veniam, quis nostrud\nexercitation ullamco laboris nisi\nut aliquip ex ea commodo consequat.\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": "Fill column set to 35 (was 70)"
+    },
+    {
+      "name": "set-fill-column-plain-cu",
+      "input": {
+        "text": "abcdefghijklmnopqrstuvwxyz Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+        "point": 25,
+        "keys": "C-u C-x f M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "message": true
+      },
+      "text": "abcdefghijklmnopqrstuvwxyz\nLorem ipsum dolor sit\namet, consectetur\nadipiscing elit, sed do\neiusmod tempor incididunt\nut labore et dolore magna\naliqua. Ut enim ad minim\nveniam, quis nostrud\nexercitation ullamco\nlaboris nisi ut aliquip\nex ea commodo consequat.\n",
+      "visible": "abcdefghijklmnopqrstuvwxyz\nLorem ipsum dolor sit\namet, consectetur\nadipiscing elit, sed do\neiusmod tempor incididunt\nut labore et dolore magna\naliqua. Ut enim ad minim\nveniam, quis nostrud\nexercitation ullamco\nlaboris nisi ut aliquip\nex ea commodo consequat.\n",
+      "point": 25,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": "Fill column set to 25 (was 70)"
+    },
+    {
+      "name": "auto-fill-types",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "t h e SPC q u i c k SPC b r o w n SPC f o x SPC j u m p s SPC o v e r SPC t h e SPC l a z y SPC d o g SPC a n d SPC k e e p s SPC r u n n i n g SPC f a r SPC a w a y SPC",
+        "modes": [
+          "auto-fill-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 20
+        }
+      },
+      "text": "the quick brown fox\njumps over the lazy\ndog and keeps\nrunning far away ",
+      "visible": "the quick brown fox\njumps over the lazy\ndog and keeps\nrunning far away ",
+      "point": 71,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "auto-fill-on-return",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "t h e SPC q u i c k SPC b r o w n SPC f o x SPC j u m p s SPC o v e r RET n e x t",
+        "modes": [
+          "auto-fill-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 20
+        }
+      },
+      "text": "the quick brown fox\njumps over\nnext",
+      "visible": "the quick brown fox\njumps over\nnext",
+      "point": 35,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "auto-fill-indented",
+      "input": {
+        "text": "    ",
+        "point": 4,
+        "keys": "t h e SPC q u i c k SPC b r o w n SPC f o x SPC j u m p s SPC o v e r SPC t h e SPC l a z y SPC d o g SPC",
+        "modes": [
+          "auto-fill-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 20
+        }
+      },
+      "text": "    the quick brown\n    fox jumps over\n    the lazy dog ",
+      "visible": "    the quick brown\n    fox jumps over\n    the lazy dog ",
+      "point": 56,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "auto-fill-quoted",
+      "input": {
+        "text": "> ",
+        "point": 2,
+        "keys": "t h e SPC q u i c k SPC b r o w n SPC f o x SPC j u m p s SPC o v e r SPC t h e SPC l a z y SPC d o g SPC",
+        "modes": [
+          "auto-fill-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 20
+        }
+      },
+      "text": "> the quick brown\n  fox jumps over the\n  lazy dog ",
+      "visible": "> the quick brown\n  fox jumps over the\n  lazy dog ",
+      "point": 50,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "auto-fill-mid-line",
+      "input": {
+        "text": "aaa bbb ccc ddd eee fff",
+        "point": 8,
+        "keys": "x x x x SPC",
+        "modes": [
+          "auto-fill-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 20
+        }
+      },
+      "text": "aaa bbb xxxx ccc ddd eee fff",
+      "visible": "aaa bbb xxxx ccc ddd eee fff",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "auto-fill-off-no-break",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "t h e SPC q u i c k SPC b r o w n SPC f o x SPC j u m p s SPC o v e r SPC t h e SPC l a z y SPC d o g SPC",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 20
+        }
+      },
+      "text": "the quick brown fox jumps over the lazy dog ",
+      "visible": "the quick brown fox jumps over the lazy dog ",
+      "point": 44,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-then-undo",
+      "input": {
+        "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+        "point": 0,
+        "keys": "M-q C-/",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 30
+        }
+      },
+      "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+      "visible": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "fill-region-as-paragraph-joins",
+      "input": {
+        "text": "one two\n\nthree four five six seven\n",
+        "point": 0,
+        "keys": "C-SPC M-> M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "fill-region-as-paragraph"
+        ],
+        "vars": {
+          "fill-column": 15
+        }
+      },
+      "text": "one two three\nfour five six\nseven\n",
+      "visible": "one two three\nfour five six\nseven\n",
+      "point": 34,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-text-mode",
+      "input": {
+        "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n",
+        "point": 0,
+        "keys": "M-q",
+        "modes": [
+          "text-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 45
+        }
+      },
+      "text": "Lorem ipsum dolor sit amet, consectetur\nadipiscing elit, sed do eiusmod tempor\nincididunt ut labore et dolore magna\naliqua. Ut enim ad minim veniam, quis nostrud\nexercitation ullamco laboris nisi ut aliquip\nex ea commodo consequat.\n",
+      "visible": "Lorem ipsum dolor sit amet, consectetur\nadipiscing elit, sed do eiusmod tempor\nincididunt ut labore et dolore magna\naliqua. Ut enim ad minim veniam, quis nostrud\nexercitation ullamco laboris nisi ut aliquip\nex ea commodo consequat.\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-colon-single-space",
+      "input": {
+        "text": "Note:  this has two spaces after colon and more words here\n",
+        "point": 0,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 30
+        }
+      },
+      "text": "Note: this has two spaces\nafter colon and more words\nhere\n",
+      "visible": "Note: this has two spaces\nafter colon and more words\nhere\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fill-closing-paren-after-period",
+      "input": {
+        "text": "He said (yes.)  Then he left the room quietly without saying goodbye\n",
+        "point": 0,
+        "keys": "M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 30
+        }
+      },
+      "text": "He said (yes.)  Then he left\nthe room quietly without\nsaying goodbye\n",
+      "visible": "He said (yes.)  Then he left\nthe room quietly without\nsaying goodbye\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fuzz-undo-fill-tab-point",
+      "input": {
+        "text": "- the end.\tMr. done,",
+        "point": 2,
+        "keys": "M-q C-/",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 12
+        }
+      },
+      "text": "- the end.\tMr. done,",
+      "visible": "- the end.\tMr. done,",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "fuzz-empty-region-fills-paragraph",
+      "input": {
+        "text": "- plan\n- Mr.  a (aside) why?",
+        "point": 9,
+        "keys": "C-SPC M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 12
+        }
+      },
+      "text": "- plan Mr.\n- a (aside)\n- why?",
+      "visible": "- plan Mr.\n- a (aside)\n- why?",
+      "point": 7,
+      "mark": 7,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fuzz-point-after-tab-at-end",
+      "input": {
+        "text": "\ta  considerable  fixes  the supercalifragilistic",
+        "point": 39,
+        "keys": "SPC M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 20
+        }
+      },
+      "text": "\ta\n\tconsiderable\n\tfixes the\n\tsupercalif\n\tragilistic",
+      "visible": "\ta\n\tconsiderable\n\tfixes the\n\tsupercalif\n\tragilistic",
+      "point": 41,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fuzz-auto-fill-return-tab-prefix",
+      "input": {
+        "text": "\tplan x  done, end. considerable breaking  considerable",
+        "point": 0,
+        "keys": "C-e RET",
+        "modes": [
+          "auto-fill-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 15
+        }
+      },
+      "text": "\tplan x\n\tdone,\n\tend. considerable\n\tbreaking\n\tconsiderable\n\t",
+      "visible": "\tplan x\n\tdone,\n\tend. considerable\n\tbreaking\n\tconsiderable\n\t",
+      "point": 59,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fuzz-auto-fill-return-comment",
+      "input": {
+        "text": ";; supercalifragilistic why? done,",
+        "point": 0,
+        "keys": "C-e RET",
+        "modes": [
+          "auto-fill-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 20
+        }
+      },
+      "text": ";; supercalifragilistic\n   why? done,\n   ",
+      "visible": ";; supercalifragilistic\n   why? done,\n   ",
+      "point": 41,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fuzz-fill-word-longer-than-column",
+      "input": {
+        "text": "# end. the\tnotes why?  a a supercalifragilistic",
+        "point": 45,
+        "keys": "SPC M-q SPC",
+        "modes": [
+          "auto-fill-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 20
+        }
+      },
+      "text": "# end. the notes\n  why?  a a\n  supercalifragilist\n   ic",
+      "visible": "# end. the notes\n  why?  a a\n  supercalifragilist\n   ic",
+      "point": 53,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fuzz-justify-second-paragraph",
+      "input": {
+        "text": "supercalifragilistic\tsupercalifragilistic a\tx plan  (aside)\tdone, plan\tend.\n\nsupercalifragilistic  considerable Mr. considerable supercalifragilistic (aside) notes a",
+        "point": 80,
+        "keys": "C-u M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 33
+        }
+      },
+      "text": "supercalifragilistic\tsupercalifragilistic a\tx plan  (aside)\tdone, plan\tend.\n\nsupercalifragilistic considerable\nMr.                  considerable\nsupercalifragilistic      (aside)\nnotes a",
+      "visible": "supercalifragilistic\tsupercalifragilistic a\tx plan  (aside)\tdone, plan\tend.\n\nsupercalifragilistic considerable\nMr.                  considerable\nsupercalifragilistic      (aside)\nnotes a",
+      "point": 80,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fuzz-undo-after-second-fill",
+      "input": {
+        "text": "done,  end. x done, fixes",
+        "point": 8,
+        "keys": "M-q M-q C-/",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 10
+        }
+      },
+      "text": "done,\nend. x\ndone,\nfixes",
+      "visible": "done,\nend. x\ndone,\nfixes",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fuzz-undo-fill-unchanged-tab",
+      "input": {
+        "text": "fixes considerable\tconsiderable breaking",
+        "point": 0,
+        "keys": "M-q C-/ y",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 60
+        }
+      },
+      "text": "fixes considerabley\tconsiderable breaking",
+      "visible": "fixes considerabley\tconsiderable breaking",
+      "point": 19,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

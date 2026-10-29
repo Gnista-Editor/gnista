@@ -800,6 +800,29 @@ const API: &str = r##"
   function nextCharPropertyChange(position: number): number;
 
   /**
+   * Replace each `from` character between start and end with `to`, in place,
+   * as Emacs's subst-char-in-region: point and markers stay where they are,
+   * and undo leaves point at the change.
+   */
+  function substCharInRegion(start: number, end: number, from: string, to: string): void;
+  /**
+   * Make a marker: a position that moves with the text as it is edited, as
+   * Emacs's copy-marker. It starts at `position`, point by default, in the
+   * current buffer or `buffer`. Text inserted where it is goes after it,
+   * unless it `advances`, as a marker of insertion type t. Returns its id.
+   */
+  function makeMarker(position?: number, options?: { buffer?: string; advances?: boolean }): number;
+  /** Where a marker is, or undefined if it points nowhere. */
+  function markerPosition(marker: number): number | undefined;
+  /** The buffer a marker is in, or undefined if it points nowhere. */
+  function markerBuffer(marker: number): string | undefined;
+  /**
+   * Move a marker, as Emacs's set-marker: to a position in its buffer, or in
+   * `buffer`. With no position it points nowhere, so it no longer slows edits.
+   */
+  function setMarker(marker: number, position: number | null, buffer?: string): void;
+
+  /**
    * Lay an overlay over the text from start up to end, with properties such
    * as "face", "invisible", "priority" (higher wins) and "evaporate" (deleted
    * when it becomes empty). Its ends move with edits: text inserted at the

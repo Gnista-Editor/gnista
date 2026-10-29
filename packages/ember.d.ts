@@ -12,6 +12,14 @@ declare global {
     /** Every command, with the arguments it takes in order. */
     interface Commands {
       /**
+       * Break lines as you type a space or newline past fill-column, as auto-fill-function says.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/fill.ts.
+       */
+      "auto-fill-mode": [];
+      /**
        * Revert the buffer when its file changes on disk, if the buffer has no unsaved changes.
        *
        * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
@@ -551,6 +559,12 @@ declare global {
        */
       "display-buffer-other-frame": [buffer: string];
       /**
+       * Break the line before point at whitespace if it passes fill-column, as many times as it takes. Auto Fill mode runs it as you type a space or newline.
+       *
+       * Defined in packages/fill.ts.
+       */
+      "do-auto-fill": [];
+      /**
        * Auto-save every buffer that has changed since it was last saved or auto-saved.
        *
        * Defined in packages/files.ts.
@@ -642,6 +656,26 @@ declare global {
        * Defined in packages/icomplete.ts.
        */
       "fido-vertical-mode": [];
+      /**
+       * Fill the paragraph at or after point, breaking lines so none passes fill-column, or each paragraph in the region if it is active.
+       *
+       * With a prefix argument, justify as well, so the lines end at fill-column too. The lines keep the prefix the paragraph's lines share, as adaptive-fill-mode finds it.
+       *
+       * Defined in packages/fill.ts.
+       */
+      "fill-paragraph": [];
+      /**
+       * Fill each paragraph in the region. With a prefix argument, justify as well.
+       *
+       * Defined in packages/fill.ts.
+       */
+      "fill-region": [];
+      /**
+       * Fill the region as one paragraph, joining its paragraphs. With a prefix argument, justify as well.
+       *
+       * Defined in packages/fill.ts.
+       */
+      "fill-region-as-paragraph": [];
       /**
        * Visit another file in place of the current buffer's, which is killed.
        *
@@ -826,6 +860,12 @@ declare global {
        * Do nothing. A pre-command-hook function can make a command this one, to cancel it.
        */
       "ignore": [];
+      /**
+       * Indent the current line as the major mode says, through indent-line-function.
+       *
+       * Defined in packages/indent.ts.
+       */
+      "indent-according-to-mode": [];
       /**
        * Indent the current line. For now this inserts a tab.
        */
@@ -2740,6 +2780,18 @@ declare global {
        */
       "set-buffer-file-coding-system": [coding: string];
       /**
+       * Set fill-column, the column filling breaks lines before, as read in the minibuffer. Plain C-u sets it to point's column, and C-u with a number to that number.
+       *
+       * Defined in packages/fill.ts.
+       */
+      "set-fill-column": [];
+      /**
+       * Make the current line's text before point the fill prefix, which filling puts at the start of each line. At the start of a line, cancel it.
+       *
+       * Defined in packages/fill.ts.
+       */
+      "set-fill-prefix": [];
+      /**
        * Set the mark at point and activate the region, saving the old mark on the mark ring.
        *
        * Repeating it straight away deactivates the region, leaving the mark set. With C-u, jump to the mark instead and take the previous one from the mark ring, so repeating C-u C-SPC goes back through earlier marks.
@@ -2922,6 +2974,34 @@ declare global {
     /** Every variable, with its documentation. */
     interface Variables {
       /**
+       * What the prefix of a paragraph's only line must look like for the lines filling makes to take it too; otherwise they take as many spaces.
+       *
+       * Defined in packages/fill.ts.
+       */
+      "adaptive-fill-first-line-regexp": Value;
+      /**
+       * Whether filling takes a paragraph's fill prefix from its text, as its second line starts, or its first if it has one line.
+       *
+       * Defined in packages/fill.ts.
+       */
+      "adaptive-fill-mode": Value;
+      /**
+       * What a fill prefix in a paragraph's text looks like, as a regular expression matched at the start of a line.
+       *
+       * Defined in packages/fill.ts.
+       */
+      "adaptive-fill-regexp": Value;
+      /**
+       * The command typing a space or newline runs to break the line, when Auto Fill mode is on; nil when it is off. Each buffer has its own.
+       */
+      "auto-fill-function": Value;
+      /**
+       * Whether Auto-Fill mode is on in this buffer. Use the command auto-fill-mode to change it.
+       *
+       * Defined in packages/fill.ts.
+       */
+      "auto-fill-mode": Value;
+      /**
        * Which major mode files get, by name: a list of [pattern, mode] pairs, tried in order.
        *
        * Each pattern is a JavaScript regular expression matched against the whole file name, and mode is the command that turns the mode on. Files that match nothing get Fundamental mode.
@@ -2990,6 +3070,12 @@ declare global {
        */
       "case-replace": Value;
       /**
+       * Whether filling leaves two spaces after a colon.
+       *
+       * Defined in packages/fill.ts.
+       */
+      "colon-double-space": Value;
+      /**
        * The completion styles kinds of completion try before completion-styles, as [category, styles] pairs: buffer names match by substring too, and a project's files only by substring.
        */
       "completion-category-defaults": Value;
@@ -3015,6 +3101,12 @@ declare global {
        * Where the buffer looks up relative file names, as a directory name ending in /. Nil means the directory of its file, or else the directory Ember started in. Dired sets it to the directory it lists.
        */
       "default-directory": Value;
+      /**
+       * How filling lines lines up: left, full (both edges), or none.
+       *
+       * Defined in packages/fill.ts.
+       */
+      "default-justification": Value;
       /**
        * Whether DEL and <delete> delete the active region rather than one character.
        *
@@ -3148,6 +3240,24 @@ declare global {
        */
       "file-precious-flag": Value;
       /**
+       * The column filling breaks lines before. Each buffer has its own; C-x f sets it.
+       *
+       * Defined in packages/fill.ts.
+       */
+      "fill-column": Value;
+      /**
+       * A command M-q runs instead of filling plain text, as major modes such as Org set it, or nil.
+       *
+       * Defined in packages/fill.ts.
+       */
+      "fill-paragraph-function": Value;
+      /**
+       * Text filling puts at the start of each line, or nil to work it out from the paragraph when adaptive-fill-mode is on. C-x . sets it.
+       *
+       * Defined in packages/fill.ts.
+       */
+      "fill-prefix": Value;
+      /**
        * Whether the terminal's background is "dark" or "light", for choosing face colours there. The graphical front end follows the system instead.
        */
       "frame-background-mode": Value;
@@ -3210,6 +3320,18 @@ declare global {
        */
       "icomplete-vertical-mode": Value;
       /**
+       * The command that indents the current line, as the major mode says. indent-according-to-mode runs it.
+       *
+       * Defined in packages/indent.ts.
+       */
+      "indent-line-function": Value;
+      /**
+       * Values of indent-line-function that only tab, so indent-according-to-mode indents as the line before instead.
+       *
+       * Defined in packages/indent.ts.
+       */
+      "indent-line-ignored-functions": Value;
+      /**
        * Whether indenting uses tabs as well as spaces, a tab for every tab-width columns.
        */
       "indent-tabs-mode": Value;
@@ -3251,6 +3373,12 @@ declare global {
        * Defined in packages/files.ts.
        */
       "mode-require-final-newline": Value;
+      /**
+       * The command Auto Fill mode puts in auto-fill-function. Some major modes set it.
+       *
+       * Defined in packages/fill.ts.
+       */
+      "normal-auto-fill-function": Value;
       /**
        * The buffer's TODO state sequences: each a list of the states not done and the states done.
        *
@@ -3620,6 +3748,12 @@ declare global {
        * Whether an upper case letter in a search string typed interactively makes that search match case exactly.
        */
       "search-upper-case": Value;
+      /**
+       * Whether a sentence ends with two spaces after its period, so a period followed by one space is no end of sentence, and filling keeps two.
+       *
+       * Defined in packages/fill.ts.
+       */
+      "sentence-end-double-space": Value;
       /**
        * How many columns apart tab stops are, for showing tab characters.
        */
@@ -4181,6 +4315,18 @@ declare global {
        */
       "after-save-hook": Value;
       /**
+       * Run after Auto-Fill mode is turned on or off.
+       */
+      "auto-fill-mode-hook": Value;
+      /**
+       * Run after Auto-Fill mode is turned off.
+       */
+      "auto-fill-mode-off-hook": Value;
+      /**
+       * Run after Auto-Fill mode is turned on.
+       */
+      "auto-fill-mode-on-hook": Value;
+      /**
        * Run after Auto-Revert mode is turned on or off.
        */
       "auto-revert-mode-hook": Value;
@@ -4388,6 +4534,10 @@ declare global {
        * Run after each command that keys run.
        */
       "post-command-hook": Value;
+      /**
+       * Run after typing a character inserts it, as electric-pair-mode and electric-indent-mode use.
+       */
+      "post-self-insert-hook": Value;
       /**
        * Run before each command that keys run. A function can change this-command, and that command runs instead.
        */
@@ -5211,6 +5361,29 @@ declare global {
     function nextPropertyChange(position: number): number | undefined;
     /** The next position where text properties or overlays change. */
     function nextCharPropertyChange(position: number): number;
+
+    /**
+     * Replace each `from` character between start and end with `to`, in place,
+     * as Emacs's subst-char-in-region: point and markers stay where they are,
+     * and undo leaves point at the change.
+     */
+    function substCharInRegion(start: number, end: number, from: string, to: string): void;
+    /**
+     * Make a marker: a position that moves with the text as it is edited, as
+     * Emacs's copy-marker. It starts at `position`, point by default, in the
+     * current buffer or `buffer`. Text inserted where it is goes after it,
+     * unless it `advances`, as a marker of insertion type t. Returns its id.
+     */
+    function makeMarker(position?: number, options?: { buffer?: string; advances?: boolean }): number;
+    /** Where a marker is, or undefined if it points nowhere. */
+    function markerPosition(marker: number): number | undefined;
+    /** The buffer a marker is in, or undefined if it points nowhere. */
+    function markerBuffer(marker: number): string | undefined;
+    /**
+     * Move a marker, as Emacs's set-marker: to a position in its buffer, or in
+     * `buffer`. With no position it points nowhere, so it no longer slows edits.
+     */
+    function setMarker(marker: number, position: number | null, buffer?: string): void;
 
     /**
      * Lay an overlay over the text from start up to end, with properties such

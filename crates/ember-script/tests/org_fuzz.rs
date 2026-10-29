@@ -215,6 +215,7 @@ fn random_case(rng: &mut Rng, name: String) -> Case {
         find: None,
         disk: None,
         message: false,
+        vars: Default::default(),
     }
 }
 
@@ -450,7 +451,97 @@ fn random_text_case(rng: &mut Rng, name: String) -> Case {
         find: None,
         disk: None,
         message: false,
+        vars: Default::default(),
     }
+}
+
+/// Words for filling, with sentence ends, an abbreviation and punctuation.
+const FILL_WORDS: &[&str] = &[
+    "a", "the", "notes", "plan", "fixes", "breaking", "considerable", "end.", "Mr.", "done,", "(aside)", "why?", "x",
+    "supercalifragilistic",
+];
+/// Prefixes a paragraph's lines can start with.
+const FILL_PREFIXES: &[&str] = &["", "", "", "  ", "    ", "> ", "- ", "# ", ";; ", "\t"];
+
+/// Paragraphs of words between blank lines, their lines starting with a
+/// prefix, the first line's sometimes different, as bullets are.
+fn fill_document(rng: &mut Rng) -> String {
+    let mut paragraphs = Vec::new();
+    for _ in 0..1 + rng.below(3) {
+        let prefix = rng.pick(FILL_PREFIXES);
+        let first = if rng.chance(30) { rng.pick(FILL_PREFIXES) } else { prefix };
+        let lines = (0..1 + rng.below(4))
+            .map(|i| {
+                let words: Vec<&str> = (0..1 + rng.below(9)).map(|_| rng.pick(FILL_WORDS)).collect();
+                let mut line = String::from(if i == 0 { first } else { prefix });
+                for (j, w) in words.iter().enumerate() {
+                    if j > 0 {
+                        line.push_str(rng.pick(&[" ", " ", " ", "  ", "\t"]));
+                    }
+                    line.push_str(w);
+                }
+                line
+            })
+            .collect::<Vec<_>>();
+        paragraphs.push(lines.join("\n"));
+    }
+    let mut text = paragraphs.join(rng.pick(&["\n\n", "\n\n", "\n \n"]));
+    if rng.chance(70) {
+        text.push('\n');
+    }
+    text
+}
+
+const FILL_KEYS: &[&str] = &[
+    "M-q", "M-q", "M-q", "C-u M-q", "C-n", "C-p", "M-f", "C-a", "C-e", "M->", "M-<", "C-SPC", "C-x h", "C-/",
+];
+
+/// Fills random paragraphs at a random fill column, sometimes typing with
+/// Auto Fill mode on.
+fn random_fill_case(rng: &mut Rng, name: String) -> Case {
+    let text = fill_document(rng);
+    let point = rng.below(text.chars().count() + 1);
+    let auto = rng.chance(40);
+    let n = 1 + rng.below(6);
+    let keys = (0..n)
+        .map(|_| {
+            if auto && rng.chance(60) {
+                rng.pick(&["x", "y", "z", "SPC", "SPC", ".", "RET"])
+            } else {
+                rng.pick(FILL_KEYS)
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ");
+    let mut vars = BTreeMap::new();
+    vars.insert("fill-column".to_string(), serde_json::json!(8 + rng.below(30)));
+    Case {
+        name,
+        point,
+        text,
+        keys,
+        modes: if auto { vec!["auto-fill-mode".to_string()] } else { Vec::new() },
+        vars,
+        call: Vec::new(),
+        platform: None,
+        windows: false,
+        answers: Vec::new(),
+        visit: None,
+        today: None,
+        agenda_files: false,
+        capture_templates: Vec::new(),
+        files: Default::default(),
+        find: None,
+        disk: None,
+        message: false,
+    }
+}
+
+/// Fuzzes filling, M-q and Auto Fill mode.
+#[test]
+#[ignore = "needs GNU Emacs; run with --ignored"]
+fn filling_behaves_like_emacs_on_random_cases() {
+    fuzz("fill-fuzz", random_fill_case);
 }
 
 /// Fuzzes editing outside any mode, as the org fuzzer does org-mode.
@@ -505,6 +596,7 @@ fn random_file_case(rng: &mut Rng, name: String) -> Case {
         find: Some(rng.pick(&["a.txt", "data"]).to_string()),
         disk: Some(disk),
         message: false,
+        vars: Default::default(),
     }
 }
 
@@ -557,6 +649,7 @@ fn random_dired_case(rng: &mut Rng, name: String) -> Case {
         find: Some("a.txt".to_string()),
         disk: None,
         message: true,
+        vars: Default::default(),
     }
 }
 

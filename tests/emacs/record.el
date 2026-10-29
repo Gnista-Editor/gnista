@@ -303,6 +303,10 @@ answers come, and then from its answers, as save-some-buffers' do."
         ;; Major modes take no argument.
         (condition-case nil (funcall mode 1)
           (wrong-number-of-arguments (funcall mode))))
+      ;; Variables for the case, buffer-local: true and false are t and nil.
+      (dolist (var (alist-get 'vars case))
+        (set (make-local-variable (car var))
+             (pcase (cdr var) (:json-false nil) ('t t) (v v))))
       (ember-oracle--fontify)
       (setq mark-active nil
             mark-ring nil
@@ -441,7 +445,8 @@ The whole buffer, even if the case left it narrowed."
                   ,@(and (alist-get 'files case) `((files . ,(alist-get 'files case))))
                   ,@(and (alist-get 'find case) `((find . ,(alist-get 'find case))))
                   ,@(and (alist-get 'disk case) `((disk . ,(alist-get 'disk case))))
-                  ,@(and (alist-get 'message case) '((message . t)))))
+                  ,@(and (alist-get 'message case) '((message . t)))
+                  ,@(and (alist-get 'vars case) `((vars . ,(alist-get 'vars case))))))
         ,@(if (derived-mode-p 'dired-mode)
               ;; Sizes and dates differ between runs: compare marks and names.
               (let ((dired (ember-oracle--dired-normalize)))
@@ -497,7 +502,9 @@ The whole buffer, even if the case left it narrowed."
   ;; Messages from the cases themselves go to stderr; keep the output to the summary.
   (let ((inhibit-message t))
     (dolist (file (directory-files (expand-file-name "cases" dir) t "\\.json\\'"))
-      (let ((inhibit-message nil))
-        (ember-oracle--record-file file golden)))))
+      ;; EMBER_ORACLE_ONLY records only the case files whose names have it.
+      (when (string-search (or (getenv "EMBER_ORACLE_ONLY") "") (file-name-nondirectory file))
+        (let ((inhibit-message nil))
+          (ember-oracle--record-file file golden))))))
 
 ;;; record.el ends here

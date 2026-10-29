@@ -626,6 +626,29 @@ fn word_start(b: &Buffer, mut pos: usize) -> usize {
     pos
 }
 
+/// What Emacs's self-insert does after inserting a character: a space or
+/// newline runs `auto-fill-function`, on the line it ends for a newline,
+/// then `post-self-insert-hook` runs.
+fn after_self_insert(ed: &mut Editor, c: char, fill: bool) -> Result<()> {
+    if fill
+        && (c == ' ' || c == '\n')
+        && let Some(Value::Str(function)) = ed.variable("auto-fill-function")
+    {
+        let newline = c == '\n';
+        if newline {
+            let p = ed.buffer().point();
+            ed.buffer_mut().set_point(p - 1);
+        }
+        ed.call(&function, Vec::new())?;
+        let b = ed.buffer_mut();
+        if newline && b.point() < b.len() {
+            let p = b.point();
+            b.set_point(p + 1);
+        }
+    }
+    ed.run_hooks("post-self-insert-hook")
+}
+
 fn editing(ed: &mut Editor) {
     def(ed, "self-insert-command", "Insert the character you typed, as many times as the prefix argument says.", |ed, _| {
         let c = ed
@@ -645,7 +668,8 @@ fn editing(ed: &mut Editor) {
             b.delete(p..(p + n as usize).min(line_end))?;
         }
         // As Emacs's self-insert-command, the text takes on the properties around it.
-        ed.buffer_mut().insert_and_inherit(&c.to_string().repeat(n as usize))
+        ed.buffer_mut().insert_and_inherit(&c.to_string().repeat(n as usize))?;
+        after_self_insert(ed, c, true)
     });
     ed.define_command(
         Command::new("insert", "Insert text at point.", |ed, args| {
@@ -657,7 +681,10 @@ fn editing(ed: &mut Editor) {
     def(ed, "newline", "Insert a newline, or as many as the prefix argument says.", |ed, _| {
         let n = ed.prefix_numeric().max(0) as usize;
         // newline self-inserts, so the newlines take on the properties around them.
-        ed.buffer_mut().insert_and_inherit(&"\n".repeat(n))
+        ed.buffer_mut().insert_and_inherit(&"\n".repeat(n))?;
+        // With a prefix argument it does not auto-fill.
+        let fill = ed.current_prefix_arg().is_none();
+        after_self_insert(ed, '\n', fill)
     });
     def(ed, "indent-for-tab-command", "Indent the current line. For now this inserts a tab.", |ed, _| {
         ed.buffer_mut().insert("\t")

@@ -31,7 +31,22 @@ enum MarkRef {
     Ring(usize),
     /// Another window's point, by the window.
     Window(u64),
+    /// A marker made by code, by its id.
+    Marker(u64),
 }
+
+/// A position that moves with the text, as Emacs's markers do. Text
+/// inserted where it is goes after it, unless it advances, as a marker
+/// whose insertion type is t.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Marker {
+    pub id: u64,
+    pub pos: usize,
+    pub advances: bool,
+}
+
+/// Marker ids, unique among all buffers so a marker can move between them.
+static NEXT_MARKER_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum GroupKind {
@@ -137,6 +152,7 @@ pub struct Buffer {
     properties: TextProperties,
     overlays: Vec<Overlay>,
     next_overlay_id: u64,
+    markers: Vec<Marker>,
     /// The tree-sitter tree, if a major mode gave the buffer a language.
     pub(crate) syntax: Option<SyntaxTree>,
     /// The stretches already fontified by `jit-lock-functions`, in order.
@@ -185,6 +201,7 @@ impl Buffer {
             properties: TextProperties::default(),
             overlays: Vec::new(),
             next_overlay_id: 0,
+            markers: Vec::new(),
             syntax: None,
             fontified: Vec::new(),
             tick: 0,
@@ -469,6 +486,50 @@ impl Buffer {
         Ok(self.apply_delete(start, end))
     }
 
+    /// Replaces each `from` between `start` and `end` with `to` in place, as
+    /// Emacs's `subst-char-in-region`: point, markers and overlays stay
+    /// where they are, and the characters keep their properties. Undoing it
+    /// in a buffer that was unmodified leaves point at the change.
+    pub fn subst_char(&mut self, start: usize, end: usize, from: char, to: char) -> Result<()> {
+        let end = end.min(self.len());
+        let positions: Vec<usize> = (start..end).filter(|&p| self.char_at(p) == Some(from)).collect();
+        if positions.is_empty() {
+            return Ok(());
+        }
+        self.check_writable()?;
+        for p in positions {
+            let props = self.properties.save(p, p + 1);
+            let edit_start = self.syntax.as_ref().map(|_| (point_at(&self.text, p), point_at(&self.text, p + 1)));
+            self.text.remove(p..p + 1);
+            self.text.insert(p, to.encode_utf8(&mut [0; 4]));
+            if let (Some(syntax), Some((s, old_end))) = (&self.syntax, edit_start) {
+                syntax.edit(&input_edit(s, old_end, point_at(&self.text, p + 1)));
+            }
+            self.unfontify_from(p);
+            self.tick += 1;
+            self.pending_changes.push((p, p + 1, 1));
+            if self.open_group.is_empty() {
+                self.open_unmodified_at = (!self.modified).then_some(self.save_generation);
+                // Emacs's modify_text records the buffer's first change
+                // before record_point looks for a boundary, so point is
+                // recorded only in a buffer already modified.
+                self.open_point = (self.modified && self.boundary_point != p).then_some(self.boundary_point);
+            }
+            self.changed = true;
+            self.edited_since_command = true;
+            self.modified = true;
+            self.open_group.push(Edit {
+                pos: p,
+                deleted: from.to_string(),
+                deleted_props: props,
+                inserted: to.to_string(),
+                point_before: self.point,
+                marks: Vec::new(),
+            });
+        }
+        Ok(())
+    }
+
     /// Inserts text, moving point, the mark and the mark ring as Emacs moves
     /// its markers: point and positions after `pos` move with the text.
     fn apply_insert(&mut self, pos: usize, s: &str, before_markers: bool) {
@@ -489,6 +550,11 @@ impl Buffer {
         for m in self.mark.iter_mut().chain(self.mark_ring.iter_mut()).chain(window_points) {
             if *m > pos || (*m == pos && before_markers) {
                 *m += n;
+            }
+        }
+        for m in &mut self.markers {
+            if m.pos > pos || (m.pos == pos && (before_markers || m.advances)) {
+                m.pos += n;
             }
         }
         self.properties.insert(pos, n);
@@ -528,6 +594,7 @@ impl Buffer {
         let mut marks: Vec<(MarkRef, usize)> = self.mark.and_then(inside).map(|o| (MarkRef::Mark, o)).into_iter().collect();
         marks.extend(self.mark_ring.iter().enumerate().filter_map(|(i, &m)| inside(m).map(|o| (MarkRef::Ring(i), o))));
         marks.extend(self.window_points.iter().filter_map(|&(w, m)| inside(m).map(|o| (MarkRef::Window(w), o))));
+        marks.extend(self.markers.iter().filter_map(|m| inside(m.pos).map(|o| (MarkRef::Marker(m.id), o))));
         let edit_range = self.syntax.as_ref().map(|_| (point_at(&self.text, start), point_at(&self.text, end)));
         self.text.remove(start..end);
         if let (Some(syntax), Some((from, to))) = (&self.syntax, edit_range) {
@@ -541,6 +608,9 @@ impl Buffer {
         let window_points = self.window_points.iter_mut().map(|(_, p)| p);
         for m in self.mark.iter_mut().chain(self.mark_ring.iter_mut()).chain(window_points) {
             *m = shift(*m);
+        }
+        for m in &mut self.markers {
+            m.pos = shift(m.pos);
         }
         let deleted_props = self.properties.delete(start, end);
         for overlay in &mut self.overlays {
@@ -661,6 +731,61 @@ impl Buffer {
     /// The last position before `pos` where text properties change.
     pub fn previous_property_change(&self, pos: usize) -> Option<usize> {
         self.properties.previous_change(pos)
+    }
+
+    /// Where a mark undo keeps track of is now.
+    fn mark_ref(&self, which: MarkRef) -> Option<usize> {
+        match which {
+            MarkRef::Mark => self.mark,
+            MarkRef::Ring(i) => self.mark_ring.get(i).copied(),
+            MarkRef::Window(w) => self.window_point(w),
+            MarkRef::Marker(id) => self.marker(id),
+        }
+    }
+
+    fn mark_ref_mut(&mut self, which: MarkRef) -> Option<&mut usize> {
+        match which {
+            MarkRef::Mark => self.mark.as_mut(),
+            MarkRef::Ring(i) => self.mark_ring.get_mut(i),
+            MarkRef::Window(w) => self.window_points.iter_mut().find(|e| e.0 == w).map(|e| &mut e.1),
+            MarkRef::Marker(id) => self.markers.iter_mut().find(|m| m.id == id).map(|m| &mut m.pos),
+        }
+    }
+
+    // Markers
+
+    /// Makes a marker at a position, as Emacs's `copy-marker`; one that
+    /// advances moves past text inserted where it is. Returns its id.
+    pub fn make_marker(&mut self, pos: usize, advances: bool) -> u64 {
+        let id = NEXT_MARKER_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.markers.push(Marker { id, pos: pos.min(self.len()), advances });
+        id
+    }
+
+    /// Where a marker of this buffer is.
+    pub fn marker(&self, id: u64) -> Option<usize> {
+        self.markers.iter().find(|m| m.id == id).map(|m| m.pos)
+    }
+
+    /// Moves a marker of this buffer.
+    pub fn set_marker(&mut self, id: u64, pos: usize) {
+        let len = self.len();
+        if let Some(m) = self.markers.iter_mut().find(|m| m.id == id) {
+            m.pos = pos.min(len);
+        }
+    }
+
+    /// Takes a marker out of this buffer, as `(set-marker m nil)`, to delete
+    /// it or put it in another.
+    pub fn remove_marker(&mut self, id: u64) -> Option<Marker> {
+        let i = self.markers.iter().position(|m| m.id == id)?;
+        Some(self.markers.remove(i))
+    }
+
+    /// Puts a marker taken from another buffer into this one.
+    pub fn add_marker(&mut self, mut marker: Marker) {
+        marker.pos = marker.pos.min(self.len());
+        self.markers.push(marker);
     }
 
     // Overlays
@@ -922,11 +1047,7 @@ impl Buffer {
                             let in_region = |m: Option<usize>| m.is_some_and(|m| start <= m as isize && m as isize <= end);
                             let marks = marks
                                 .into_iter()
-                                .filter(|&(which, _)| in_region(match which {
-                                    MarkRef::Mark => self.mark,
-                                    MarkRef::Ring(i) => self.mark_ring.get(i).copied(),
-                                    MarkRef::Window(w) => self.window_point(w),
-                                }))
+                                .filter(|&(which, _)| in_region(self.mark_ref(which)))
                                 .collect();
                             Selective::Deleted { pos: pos as usize, text, props, at_end, marks }
                         })
@@ -1019,11 +1140,7 @@ impl Buffer {
                         // drops those before it.
                         let mut valid = Vec::new();
                         for (which, offset) in marks {
-                            let m = match which {
-                                MarkRef::Mark => self.mark,
-                                MarkRef::Ring(i) => self.mark_ring.get(i).copied(),
-                                MarkRef::Window(w) => self.window_point(w),
-                            };
+                            let m = self.mark_ref(which);
                             if m == Some(pos) {
                                 valid.push((which, offset));
                             } else {
@@ -1037,11 +1154,7 @@ impl Buffer {
                             self.point = pos;
                         }
                         for (which, offset) in valid {
-                            let slot = match which {
-                                MarkRef::Mark => self.mark.as_mut(),
-                                MarkRef::Ring(i) => self.mark_ring.get_mut(i),
-                                MarkRef::Window(w) => self.window_points.iter_mut().find(|e| e.0 == w).map(|e| &mut e.1),
-                            };
+                            let slot = self.mark_ref_mut(which);
                             if let Some(m) = slot {
                                 *m = pos + offset;
                             }
@@ -1108,11 +1221,7 @@ impl Buffer {
             self.properties.restore(edit.pos, &edit.deleted_props);
             // Marks that were inside the text, and are still where it went back, go back into it.
             for &(which, offset) in &edit.marks {
-                let slot = match which {
-                    MarkRef::Mark => self.mark.as_mut(),
-                    MarkRef::Ring(i) => self.mark_ring.get_mut(i),
-                    MarkRef::Window(w) => self.window_points.iter_mut().find(|e| e.0 == w).map(|e| &mut e.1),
-                };
+                let slot = self.mark_ref_mut(which);
                 if let Some(m) = slot
                     && *m == edit.pos
                 {

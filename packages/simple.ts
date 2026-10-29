@@ -485,6 +485,14 @@ ember.defineCommand({
     const n = ember.prefixNumericValue();
     if (n < 0) throw new Error("Repetition argument has to be non-negative");
     ember.insertAndInherit("\n".repeat(n));
+    // As self-insert does: Auto Fill mode fills the line the newline ends,
+    // unless there is a prefix argument.
+    const fill = ember.variable("auto-fill-function");
+    if (typeof fill === "string" && ember.prefixArg() === null) {
+      ember.gotoChar(ember.point() - 1);
+      ember.call(fill as ember.CommandName);
+      if (ember.point() < ember.bufferSize()) ember.gotoChar(ember.point() + 1);
+    }
     if (
       ember.calledInteractively() &&
       ember.variable("electric-indent-mode") === true &&
@@ -492,6 +500,7 @@ ember.defineCommand({
     ) {
       electricIndentAfterNewline();
     }
+    ember.runHooks("post-self-insert-hook");
   },
 });
 

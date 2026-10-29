@@ -1104,6 +1104,22 @@ impl Editor {
         &self.buffers
     }
 
+    /// A marker's buffer and position, wherever it is; none once it points
+    /// nowhere, as a marker whose buffer was killed.
+    pub fn marker_position(&self, id: u64) -> Option<(&str, usize)> {
+        self.buffers.iter().find_map(|b| b.marker(id).map(|p| (b.name.as_str(), p)))
+    }
+
+    /// Moves a marker to a position in a buffer, as Emacs's `set-marker`,
+    /// or nowhere with no buffer.
+    pub fn set_marker(&mut self, id: u64, buffer: Option<&str>, pos: usize) {
+        let taken = self.buffers.iter_mut().find_map(|b| b.remove_marker(id));
+        if let (Some(mut marker), Some(b)) = (taken, buffer.and_then(|name| self.buffer_named_mut(name))) {
+            marker.pos = pos;
+            b.add_marker(marker);
+        }
+    }
+
     pub fn find_buffer(&self, name: &str) -> Option<usize> {
         self.buffers.iter().position(|b| b.name == name)
     }

@@ -60,6 +60,10 @@ pub struct Case {
     /// Whether to compare the last message.
     #[serde(default, skip_serializing_if = "is_false")]
     pub message: bool,
+    /// Variables set in the buffer after the modes are on, as setq-local:
+    /// numbers, strings, and true or false for t and nil.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub vars: BTreeMap<String, serde_json::Value>,
 }
 
 #[derive(Deserialize)]
@@ -108,6 +112,8 @@ pub struct Input {
     pub disk: Option<String>,
     #[serde(default)]
     pub message: bool,
+    #[serde(default)]
+    pub vars: BTreeMap<String, serde_json::Value>,
 }
 
 impl Input {
@@ -130,6 +136,7 @@ impl Input {
             find: case.find.clone(),
             disk: case.disk.clone(),
             message: case.message,
+            vars: case.vars.clone(),
         }
     }
 }
@@ -359,6 +366,16 @@ pub fn run(case: &Case) -> State {
     for mode in &case.modes {
         ed.call_with_prefix(mode, Vec::new(), Some(PrefixArg::Number(1)))
             .unwrap_or_else(|e| panic!("{}: turning on {mode}: {e}", case.name));
+    }
+    for (name, value) in &case.vars {
+        let value = match value {
+            serde_json::Value::Bool(b) => ember_core::Value::Bool(*b),
+            serde_json::Value::Number(n) => ember_core::Value::Number(n.as_f64().expect("a number")),
+            serde_json::Value::String(s) => ember_core::Value::Str(s.clone()),
+            _ => panic!("{}: {name} must be a number, string or boolean", case.name),
+        };
+        ed.make_local_variable(name);
+        ed.set_variable(name, value);
     }
     // Fontified as redisplay would before the keys; record.el does the same.
     ed.font_lock_ensure().unwrap_or_else(|e| panic!("{}: fontifying: {e}", case.name));

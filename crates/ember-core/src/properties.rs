@@ -79,6 +79,18 @@ impl TextProperties {
 
     /// Puts back properties saved by [`TextProperties::delete`], for text
     /// re-inserted at `pos`.
+    /// The properties of a stretch of text, as [`TextProperties::delete`]
+    /// saves them, leaving them in place.
+    pub(crate) fn save(&self, start: usize, end: usize) -> SavedProps {
+        self.runs
+            .iter()
+            .filter_map(|run| {
+                let (cut_start, cut_end) = (run.start.max(start), run.end.min(end));
+                (cut_start < cut_end).then(|| (cut_start - start..cut_end - start, run.props.clone()))
+            })
+            .collect()
+    }
+
     pub(crate) fn restore(&mut self, pos: usize, saved: &SavedProps) {
         for (range, props) in saved {
             let (start, end) = (pos + range.start, pos + range.end);

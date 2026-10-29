@@ -337,6 +337,13 @@
       for (const [name, value] of Object.entries(properties)) native.overlayPut(id, name, value ?? null);
       return id;
     },
+    substCharInRegion: (start, end, from, to) => native.substCharInRegion(start, end, String(from), String(to)),
+    makeMarker: (pos, { buffer, advances = false } = {}) =>
+      native.makeMarker(pos ?? native.point(), buffer === undefined ? undefined : String(buffer), Boolean(advances)),
+    markerPosition: (m) => native.markerPosition(m) ?? undefined,
+    markerBuffer: (m) => native.markerBuffer(m) ?? undefined,
+    setMarker: (m, pos, buffer) =>
+      native.setMarker(m, pos === null || pos === undefined ? undefined : pos, buffer === undefined ? undefined : String(buffer)),
     overlayPut: (id, name, value) => native.overlayPut(id, String(name), value ?? null),
     overlayGet: (id, name) => native.overlayGet(id, String(name)),
     overlayStart: (id) => native.overlayRange(id)?.[0],

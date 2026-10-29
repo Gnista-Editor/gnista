@@ -38,6 +38,8 @@ const PRELUDE: &str = include_str!("prelude.js");
 const PACKAGES: &[(&str, &str)] = &[
     ("packages/simple.ts", include_str!("../../../packages/simple.ts")),
     ("packages/paragraphs.ts", include_str!("../../../packages/paragraphs.ts")),
+    ("packages/indent.ts", include_str!("../../../packages/indent.ts")),
+    ("packages/fill.ts", include_str!("../../../packages/fill.ts")),
     ("packages/files.ts", include_str!("../../../packages/files.ts")),
     ("packages/text-mode.ts", include_str!("../../../packages/text-mode.ts")),
     ("packages/outline.ts", include_str!("../../../packages/outline.ts")),
@@ -1599,6 +1601,56 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
             let value =
                 with_editor(&ctx, |ed| Ok(ed.buffer().overlay(id as u64).and_then(|o| o.props.get(&name).cloned())))?;
             value.map(|v| value_to_js(&ctx, &v)).transpose()
+        })?,
+    )?;
+    native.set(
+        "substCharInRegion",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, start: usize, end: usize, from: String, to: String| {
+            let (Some(from), Some(to)) = (from.chars().next(), to.chars().next()) else {
+                return Err(rquickjs::Error::new_from_js_message("string", "char", "substCharInRegion takes characters"));
+            };
+            with_editor(&ctx, |ed| ed.buffer_mut().subst_char(start, end, from, to))
+        })?,
+    )?;
+    native.set(
+        "makeMarker",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pos: usize, buffer: Option<String>, advances: bool| {
+            with_editor(&ctx, |ed| {
+                let b = match &buffer {
+                    Some(name) => ed.buffer_named_mut(name).ok_or_else(|| Error::new(format!("No such buffer: {name}")))?,
+                    None => ed.buffer_mut(),
+                };
+                Ok(b.make_marker(pos, advances) as f64)
+            })
+        })?,
+    )?;
+    native.set(
+        "markerPosition",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, id: f64| {
+            with_editor(&ctx, |ed| Ok(ed.marker_position(id as u64).map(|(_, p)| p)))
+        })?,
+    )?;
+    native.set(
+        "markerBuffer",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, id: f64| {
+            with_editor(&ctx, |ed| Ok(ed.marker_position(id as u64).map(|(b, _)| b.to_string())))
+        })?,
+    )?;
+    native.set(
+        "setMarker",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, id: f64, pos: Option<usize>, buffer: Option<String>| {
+            with_editor(&ctx, |ed| {
+                let name = match (pos, buffer) {
+                    (None, _) => None,
+                    (Some(_), Some(name)) => Some(name),
+                    // Where it is, or the current buffer if nowhere.
+                    (Some(_), None) => Some(
+                        ed.marker_position(id as u64).map(|(b, _)| b.to_string()).unwrap_or_else(|| ed.buffer().name.clone()),
+                    ),
+                };
+                ed.set_marker(id as u64, name.as_deref(), pos.unwrap_or(0));
+                Ok(())
+            })
         })?,
     )?;
     native.set(
