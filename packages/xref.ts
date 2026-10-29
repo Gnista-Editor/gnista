@@ -146,7 +146,8 @@ ember.defineCommand({ name: "xref-next-group", doc: "Move to the first place in 
 ember.defineCommand({ name: "xref-prev-group", doc: "Move to the first place in the file before.", run: () => moveGroup(-1) });
 
 /** Visits the place `n` places on in an xref buffer, from the first if `reset`, as next-error does there. */
-function xrefNextError(n: number, reset: boolean, buffer: string): void {
+function xrefNextError(n: number, reset: boolean): void {
+  const buffer = ember.bufferName();
   const s = items(buffer);
   const lines = [...s.byLine.keys()].sort((a, b) => a - b);
   const from = reset || s.current === undefined ? -1 : s.current;

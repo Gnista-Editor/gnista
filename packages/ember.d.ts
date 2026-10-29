@@ -4046,7 +4046,7 @@ declare global {
        */
       "mode-require-final-newline": Value;
       /**
-       * The function, named with ember.defun, that visits the next message's place in this buffer, as next-error calls it: with a count, whether to start over, and the buffer.
+       * The function, named with ember.defun, that visits the next message's place in this buffer, as next-error calls it, in this buffer: with a count, and whether to start over.
        *
        * Defined in packages/compile.ts.
        */

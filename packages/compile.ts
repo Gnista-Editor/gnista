@@ -50,7 +50,7 @@ defvar("compilation-buffer-name-function", null, "A command naming the compilati
 defvar(
   "next-error-function",
   null,
-  "The function, named with ember.defun, that visits the next message's place in this buffer, as next-error calls it: with a count, whether to start over, and the buffer.",
+  "The function, named with ember.defun, that visits the next message's place in this buffer, as next-error calls it, in this buffer: with a count, and whether to start over.",
   true,
 );
 defvar("next-error-last-buffer", null, "The buffer next-error used last, which it uses again.");
@@ -524,15 +524,13 @@ function gotoLocus(compilation: string, m: Message): void {
 }
 
 /** Moves `n` messages in a compilation buffer and visits the place, as compilation-next-error-function. */
-function compilationNextErrorFunction(n: number, reset: boolean, buffer: string): void {
-  const m = ember.withCurrentBuffer(buffer, () => {
-    const s = state();
-    if (reset) s.current = undefined;
-    const from = s.current ?? (n === 0 ? ember.point() : 0);
-    const found = nthMessage(n, from);
-    s.current = found.start;
-    return found;
-  });
+function compilationNextErrorFunction(n: number, reset: boolean): void {
+  const buffer = ember.bufferName();
+  const s = state();
+  if (reset) s.current = undefined;
+  const from = s.current ?? (n === 0 ? ember.point() : 0);
+  const m = nthMessage(n, from);
+  s.current = m.start;
   gotoLocus(buffer, m);
 }
 
@@ -557,9 +555,8 @@ function nextError(n: number, reset: boolean, select = true): void {
   const buffer = findNextErrorBuffer();
   const selected = ember.selectedWindow();
   const fn = ember.withCurrentBuffer(buffer, () => String(ember.variable("next-error-function")));
-  // Called from here, not in that buffer, so the windows it changes stay
-  // changed; it is told which buffer, where Emacs makes it current.
-  ember.funcall(fn, n, reset, buffer);
+  // In that buffer, as Emacs calls it; the windows it changes stay changed.
+  ember.withCurrentBuffer(buffer, () => ember.funcall(fn, n, reset));
   const previous = ember.variable("next-error-last-buffer");
   ember.setVariable("next-error-last-buffer", buffer);
   ember.runHooks("next-error-hook");

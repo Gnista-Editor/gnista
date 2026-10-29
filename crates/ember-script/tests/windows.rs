@@ -226,3 +226,29 @@ fn deleting_the_selected_frame_selects_the_next() {
     let other = ed.frame_list()[0];
     assert_eq!(ed.frame_windows(other)[0].buffer.name, "*scratch*");
 }
+
+#[test]
+fn code_in_another_buffer_can_change_what_windows_show() {
+    let mut ed = ember_core::Editor::new();
+    let scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    scripting
+        .eval_typescript(
+            &mut ed,
+            "test.ts",
+            r#"
+            ember.getBufferCreate("other");
+            ember.getBufferCreate("shown");
+            // As with-current-buffer around switch-to-buffer: the window
+            // keeps what was switched to, and the current buffer comes back.
+            ember.withCurrentBuffer("other", () => ember.call("switch-to-buffer", "shown"));
+            ember.message(`${ember.windowBuffer()} ${ember.bufferName()}`);
+            "#
+            .into(),
+        )
+        .unwrap();
+    assert_eq!(ed.messages().last().map(String::as_str), Some("shown *scratch*"));
+    // The next key acts on the buffer the window shows.
+    ed.type_text("x");
+    let b = ed.window_buffer();
+    assert_eq!((b.name.as_str(), b.slice(0..b.len()).as_str()), ("shown", "x"));
+}

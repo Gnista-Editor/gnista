@@ -613,6 +613,10 @@ impl Editor {
                 None => self.fail(e),
             }
         }
+        // After the command, as before it, the selected window's buffer is current.
+        if self.running == 0 {
+            self.current_from_selected_window();
+        }
     }
 
     /// Shows an error as a failed command's, in the echo area.
@@ -918,6 +922,10 @@ impl Editor {
     /// Handles one key press: runs the command it completes, waits for more
     /// keys after a prefix, or inserts it if it is a plain unbound character.
     pub fn handle_key(&mut self, key: Key) {
+        // Whatever code left current, a key acts on the selected window's buffer.
+        if self.running == 0 {
+            self.current_from_selected_window();
+        }
         // While a keyboard macro is being defined, record the keys typed.
         if self.executing_macro == 0
             && let Some(keys) = &mut self.defining_macro
@@ -1130,13 +1138,30 @@ impl Editor {
         }
     }
 
-    /// The buffer shown in the window, even while the minibuffer is active.
+    /// The buffer the selected window shows, whichever buffer is current,
+    /// as Emacs's (window-buffer): code may make another buffer current
+    /// for a while, as with-current-buffer does, without changing what
+    /// the window shows.
     pub fn window_buffer(&self) -> &Buffer {
-        &self.buffers[self.current]
+        &self.buffers[self.selected_buffer_index()]
     }
 
     pub fn window_buffer_mut(&mut self) -> &mut Buffer {
-        &mut self.buffers[self.current]
+        let i = self.selected_buffer_index();
+        &mut self.buffers[i]
+    }
+
+    /// Where in `buffers` the selected window's buffer is.
+    pub(crate) fn selected_buffer_index(&self) -> usize {
+        self.window(self.selected_window)
+            .and_then(|w| self.buffers.iter().position(|b| b.id == w.buffer))
+            .unwrap_or(self.current)
+    }
+
+    /// Makes the selected window's buffer current, as Emacs's command loop
+    /// does before each command.
+    pub(crate) fn current_from_selected_window(&mut self) {
+        self.current = self.selected_buffer_index();
     }
 
     /// A buffer by name, to change it without making it current.
@@ -1204,12 +1229,15 @@ impl Editor {
         self.buffers.iter().position(|b| b.name == name)
     }
 
+    /// Shows a buffer in the selected window and makes it current, as
+    /// switch-to-buffer does.
     pub(crate) fn select(&mut self, index: usize) {
-        if index != self.current {
-            self.previous_buffer = Some(self.buffers[self.current].name.clone());
-            self.current = index;
+        let shown = self.selected_buffer_index();
+        if index != shown {
+            self.previous_buffer = Some(self.buffers[shown].name.clone());
             self.selected_window_shows(index);
         }
+        self.current = index;
     }
 
     /// The named buffer, made empty if there is none, as Emacs's

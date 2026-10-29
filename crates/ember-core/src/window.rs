@@ -705,9 +705,11 @@ impl Editor {
             self.window_mut(id).expect("checked").used = used;
             return Ok(());
         }
-        // The old window keeps its own point and top line.
+        // The old window keeps its own point and top line, in the buffer it
+        // shows, which need not be the current one.
         let old = self.selected_window;
-        let b = &mut self.buffers[self.current];
+        let shown = self.selected_buffer_index();
+        let b = &mut self.buffers[shown];
         let (point, top) = (b.point(), b.top_line);
         b.set_window_point(old, point);
         if let Some(w) = self.window_mut(old) {
