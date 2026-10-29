@@ -19,6 +19,7 @@ mod fontify;
 mod key;
 mod keymap;
 mod modes;
+mod permissions;
 mod prefix;
 mod properties;
 mod questions;

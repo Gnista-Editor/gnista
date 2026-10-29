@@ -155,6 +155,7 @@ impl Scripting {
                 "Run a TypeScript file, such as init.ts after editing it.\n\nCommands it defines replace existing commands with the same name.",
                 move |ed, args| {
                     let path = expand_file_name(args[0].as_str()?);
+                    ed.check_permission(&format!("run the TypeScript in {}", abbreviate_path(&path)))?;
                     scripting.load_file(ed, &path)?;
                     ed.message(format!("Loaded {}", abbreviate_path(&path)));
                     Ok(())
@@ -168,6 +169,7 @@ impl Scripting {
                 "eval-expression",
                 "Evaluate a TypeScript expression and show its value.\n\nThe `ember` API is available, as in init.ts.",
                 move |ed, args| {
+                    ed.check_permission("run TypeScript")?;
                     let value = scripting.eval_expression(ed, args[0].as_str()?)?;
                     ed.message(value);
                     Ok(())
@@ -904,10 +906,7 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     native.set(
         "killEmacs",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| {
-            with_editor(&ctx, |ed| {
-                ed.kill_emacs();
-                Ok(())
-            })
+            with_editor(&ctx, |ed| ed.kill_emacs())
         })?,
     )?;
     native.set(

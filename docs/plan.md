@@ -82,7 +82,7 @@ Done ([ADR 0012](adr/0012-org-mode.md)). `org.ts` and `org-table.ts` follow Emac
 
 **6. An agent that calls commands.** The command registry becomes the agent's tool schema, with an agent buffer and the safety rules from the brief. This is mostly independent of milestones 3 to 5, so it can move earlier if wanted.
 
-Started: `ember-mcp` serves the command registry over MCP, so an agent such as Claude Code can drive the editor the user has open ([ADR 0015](adr/0015-mcp-server.md)). Commands can now ask questions partway through, which asking before an agent acts will need ([ADR 0018](adr/0018-files-and-saving.md)). Next are an agent buffer inside Ember and the brief's safety rules.
+Started: `ember-mcp` serves the command registry over MCP, so an agent such as Claude Code can drive the editor the user has open ([ADR 0015](adr/0015-mcp-server.md)). Commands can now ask questions partway through, which asking before an agent acts will need ([ADR 0018](adr/0018-files-and-saving.md)). Then the agent buffer ([ADR 0019](adr/0019-agent-buffer.md)): `M-x agent` talks to Claude in an Org buffer, the model calls commands as tools in the user's window, writing files, discarding unsaved work, quitting and running code wait for the user's approval, enforced by the core, and each turn undoes in one step. Sixteen scripted scenarios run headless. Next: token use on the mode line and spending caps, explaining the last action, region commands, and the same permissions for agents over MCP.
 
 **Since then**, outside the milestones:
 - Windows as window.el has them: `display-buffer`, the `C-x 4` commands, resizing and balancing ([ADR 0009](adr/0009-windows.md)), and frames on `C-x 5`, each a native window in the GUI ([ADR 0017](adr/0017-frames.md)).

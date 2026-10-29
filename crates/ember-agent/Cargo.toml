@@ -1,0 +1,24 @@
+[package]
+name = "ember-agent"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+ember-core = { version = "0.1.0", path = "../ember-core" }
+ember-script = { version = "0.1.0", path = "../ember-script" }
+ember-mcp = { version = "0.1.0", path = "../ember-mcp" }
+serde_json = "1"
+ureq = { version = "3", features = ["json"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", features = ["apple-native"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3", features = ["linux-native"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3", features = ["windows-native"] }
+
+[dev-dependencies]
+tempfile = "3.27.0"

@@ -2993,7 +2993,7 @@ const KEYWORD = /^([ \t]*#\+(\w+):)(.*)$/;
 
 /** Fontifies whole lines from start to end, for jit-lock-functions. */
 function fontify(start: number, end: number): void {
-  if (ember.variable("major-mode") !== "org-mode") return;
+  if (!ember.derivedModeP("org-mode")) return;
   const first = ember.lineOf(start);
   const from = ember.lineStart(first);
   ember.removeTextProperty(from, end, "face");
@@ -6163,7 +6163,7 @@ const mouseFollow = ember.defineCommand({
   doc: "Move point where the mouse was clicked, and follow the link there if there is one, as mouse-1 does on Org links.",
   run: () => {
     ember.call("mouse-set-point");
-    if (ember.variable("major-mode") !== "org-mode") return;
+    if (!ember.derivedModeP("org-mode")) return;
     const link = linkHere();
     if (link) openLink(link);
   },

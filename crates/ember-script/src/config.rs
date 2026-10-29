@@ -23,6 +23,16 @@ pub fn config_dir() -> PathBuf {
 /// Starts scripting, loads `init.ts` unless `load_init` is false, and writes
 /// the type files. Problems are shown in the echo area; the editor starts anyway.
 pub fn setup(ed: &mut Editor, load_init: bool) -> Option<Scripting> {
+    setup_with(ed, load_init, |_, _| Ok(()))
+}
+
+/// Like [`setup`], installing extensions such as Ember's agent once the
+/// packages are loaded and before `init.ts`, so it can configure them.
+pub fn setup_with(
+    ed: &mut Editor,
+    load_init: bool,
+    extensions: impl FnOnce(&mut Editor, &Scripting) -> ember_core::Result<()>,
+) -> Option<Scripting> {
     let dir = config_dir();
     let scripting = match Scripting::new(ed) {
         Ok(scripting) => scripting,
@@ -31,6 +41,9 @@ pub fn setup(ed: &mut Editor, load_init: bool) -> Option<Scripting> {
             return None;
         }
     };
+    if let Err(e) = extensions(ed, &scripting) {
+        ed.message(format!("An extension failed to load: {e}"));
+    }
     if load_init {
         self::load_init(ed, &scripting, &dir);
     }

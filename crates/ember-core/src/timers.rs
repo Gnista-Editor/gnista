@@ -14,6 +14,9 @@ use crate::variables::HookFn;
 pub(crate) struct Timer {
     id: u64,
     kind: TimerKind,
+    /// Whether it runs while a prompt is open, as one acting on buffers by
+    /// name rather than the current buffer can.
+    in_prompts: bool,
     f: HookFn,
 }
 
@@ -68,20 +71,29 @@ impl Editor {
     pub fn run_with_timer(&mut self, secs: f64, repeat: Option<f64>, f: HookFn) -> u64 {
         let due = self.now() + Duration::from_secs_f64(secs.max(0.0));
         let repeat = repeat.filter(|r| *r > 0.0).map(Duration::from_secs_f64);
-        self.add_timer(TimerKind::At { due, repeat }, f)
+        self.add_timer(TimerKind::At { due, repeat }, false, f)
+    }
+
+    /// Like [`Editor::run_with_timer`], for a timer that keeps running while
+    /// a prompt is open. It must not act on the current buffer, which is
+    /// then the minibuffer.
+    pub fn run_with_timer_in_prompts(&mut self, secs: f64, repeat: Option<f64>, f: HookFn) -> u64 {
+        let due = self.now() + Duration::from_secs_f64(secs.max(0.0));
+        let repeat = repeat.filter(|r| *r > 0.0).map(Duration::from_secs_f64);
+        self.add_timer(TimerKind::At { due, repeat }, true, f)
     }
 
     /// Runs `f` once the editor has been idle for `secs` seconds, as Emacs's
     /// `run-with-idle-timer`: with `repeat`, in each idle spell that long.
     pub fn run_with_idle_timer(&mut self, secs: f64, repeat: bool, f: HookFn) -> u64 {
         let after = Duration::from_secs_f64(secs.max(0.0));
-        self.add_timer(TimerKind::Idle { after, repeat, fired: false }, f)
+        self.add_timer(TimerKind::Idle { after, repeat, fired: false }, false, f)
     }
 
-    fn add_timer(&mut self, kind: TimerKind, f: HookFn) -> u64 {
+    fn add_timer(&mut self, kind: TimerKind, in_prompts: bool, f: HookFn) -> u64 {
         let id = self.timers.next_id;
         self.timers.next_id += 1;
-        self.timers.list.push(Timer { id, kind, f });
+        self.timers.list.push(Timer { id, kind, in_prompts, f });
         id
     }
 
@@ -120,14 +132,14 @@ impl Editor {
 
     /// Runs the timers that are due, and auto-saves after
     /// `auto-save-timeout` seconds idle. While a prompt is open, timers
-    /// wait, as the buffer they would act on is the minibuffer.
+    /// wait, as the buffer they would act on is the minibuffer, except
+    /// those made to run in prompts.
     pub fn run_timers(&mut self) {
-        if self.prompt.is_some() {
-            return;
-        }
+        let prompting = self.prompt.is_some();
         let now = self.now();
         let idle = now.saturating_duration_since(self.timers.last_input);
-        if !self.timers.idle_auto_saved
+        if !prompting
+            && !self.timers.idle_auto_saved
             && let Some(timeout) = self.auto_save_timeout()
             && idle >= timeout
         {
@@ -137,6 +149,7 @@ impl Editor {
         }
         let mut due = Vec::new();
         self.timers.list.retain_mut(|timer| match &mut timer.kind {
+            _ if prompting && !timer.in_prompts => true,
             TimerKind::At { due: at, repeat } if *at <= now => {
                 due.push(timer.f.clone());
                 match repeat {

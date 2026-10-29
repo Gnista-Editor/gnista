@@ -18,7 +18,7 @@ fn main() -> eframe::Result {
     }
 
     let mut editor = Editor::new();
-    let scripting = config::setup(&mut editor, !no_init);
+    let scripting = config::setup_with(&mut editor, !no_init, ember_agent::install);
     for file in files {
         if let Err(e) = editor.visit_file(&expand_file_name(&file)) {
             editor.message(e.to_string());

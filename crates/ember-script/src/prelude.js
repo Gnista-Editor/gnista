@@ -306,6 +306,15 @@
     faceAttributes: (name, { dark = true } = {}) => native.faceAttributes(String(name), Boolean(dark)),
     faceInfo: (name) => native.faceInfo(String(name)) ?? undefined,
 
+    // As Emacs's derived-mode-p: whether the buffer's major mode is one of
+    // these or built on one.
+    derivedModeP(...modes) {
+      for (let mode = majorModes.get(native.variable("major-mode")); mode; mode = mode.parent === null ? undefined : majorModes.get(mode.parent)) {
+        if (modes.includes(mode.name)) return true;
+      }
+      return false;
+    },
+
     defineMajorMode({ name, modeName, parent = null, doc = "", bindings, setup }) {
       if (parent !== null && !majorModes.has(parent)) {
         throw new TypeError(`Major mode ${name} is built on ${parent}, which is not a major mode`);

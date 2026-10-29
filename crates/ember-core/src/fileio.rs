@@ -172,8 +172,9 @@ impl Editor {
         let by_copying = self.variable("backup-by-copying").is_some_and(|v| v.is_true());
         let precious = self.variable("file-precious-flag").is_some_and(|v| v.is_true());
         let delete_auto_save = self.variable("delete-auto-save-files").is_none_or(|v| v.is_true());
+        let path = self.buffers[self.current].path.clone().ok_or_else(|| Error::new("Buffer is not visiting a file"))?;
+        self.check_permission(&format!("write {}", crate::files::abbreviate_path(&path)))?;
         let b = &mut self.buffers[self.current];
-        let path = b.path.clone().ok_or_else(|| Error::new("Buffer is not visiting a file"))?;
         // Through symbolic links to the file itself, as Emacs's file-chase-links.
         let real = fs::canonicalize(&path).unwrap_or_else(|_| path.clone());
         let (bytes, coding) = b.coding().encode(&b.text().to_string());
@@ -351,8 +352,10 @@ impl Editor {
     }
 
     /// Asks the front end to exit, as Emacs's `kill-emacs`.
-    pub fn kill_emacs(&mut self) {
+    pub fn kill_emacs(&mut self) -> Result<()> {
+        self.check_permission("quit Ember")?;
         self.quit = true;
+        Ok(())
     }
 
     /// Turns auto-saving on or off for the current buffer, as

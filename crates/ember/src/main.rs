@@ -32,7 +32,7 @@ fn main() -> io::Result<()> {
     }
 
     let mut editor = Editor::new();
-    let _scripting = config::setup(&mut editor, !no_init);
+    let _scripting = config::setup_with(&mut editor, !no_init, ember_agent::install);
     if print_types {
         print!("{}", type_definitions(&editor));
         return Ok(());

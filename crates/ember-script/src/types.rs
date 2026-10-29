@@ -273,6 +273,8 @@ const API: &str = r##"
    * first, then after-change-major-mode-hook.
    */
   function defineMajorMode(definition: MajorModeDefinition): DefinedCommand;
+  /** Whether the current buffer's major mode is one of these, or built on one, as Emacs's derived-mode-p. */
+  function derivedModeP(...modes: string[]): boolean;
 
   interface MinorModeDefinition {
     /** The command that turns it on and off, and the variable that says whether it is on. */

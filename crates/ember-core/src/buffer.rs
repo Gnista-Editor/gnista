@@ -199,6 +199,31 @@ impl Buffer {
         self.shift_selected = false;
     }
 
+    /// How many undo steps the buffer has, for [`Buffer::amalgamate_undo`].
+    pub fn undo_steps(&mut self) -> usize {
+        self.undo_boundary();
+        self.undo_groups.len()
+    }
+
+    /// Joins the undo steps made since there were `since` into one, as
+    /// Emacs's `undo-amalgamate-change-group` does, so one undo takes them
+    /// all back.
+    pub fn amalgamate_undo_since(&mut self, since: usize) {
+        self.undo_boundary();
+        if self.undo_groups.len() <= since + 1 {
+            return;
+        }
+        let groups: Vec<Group> = self.undo_groups.drain(since..).collect();
+        let merged = Group {
+            edits: groups.iter().flat_map(|g| g.edits.iter().cloned()).collect(),
+            kind: GroupKind::Change,
+            unmodified_at: groups[0].unmodified_at,
+            point: groups[0].point,
+        };
+        self.undo_groups.push(merged);
+        self.pending_undo = None;
+    }
+
     /// Marks the buffer as just saved: unmodified, with undo able to tell
     /// it returned to this text.
     pub(crate) fn mark_saved(&mut self) {
@@ -1218,6 +1243,19 @@ mod tests {
         assert_eq!((b.mark(), b.mark_ring()), (Some(11), &[5][..]));
         b.pop_mark();
         assert_eq!((b.mark(), b.mark_ring()), (Some(5), &[11][..]));
+    }
+
+    #[test]
+    fn steps_amalgamate_into_one() {
+        let mut b = buffer("x");
+        let since = b.undo_steps();
+        for word in ["one ", "two "] {
+            b.insert_at(0, word).unwrap();
+            b.undo_boundary();
+        }
+        b.amalgamate_undo_since(since);
+        b.undo(false).unwrap();
+        assert_eq!(b.slice(0..b.len()), "x");
     }
 
     #[test]

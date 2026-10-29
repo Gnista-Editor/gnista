@@ -151,6 +151,14 @@ pub fn tools() -> Value {
 fn call_tool(ed: &mut Editor, scripting: Option<&Scripting>, params: &Value) -> Value {
     let name = params.get("name").and_then(Value::as_str).unwrap_or_default();
     let args = params.get("arguments").cloned().unwrap_or_else(|| json!({}));
+    let (text, failed) = run_tool(ed, scripting, name, &args);
+    json!({ "content": [{ "type": "text", "text": text }], "isError": failed })
+}
+
+/// Runs a tool by name with its arguments, returning its text and whether
+/// it failed. Shared by the MCP server and Ember's own agent.
+pub fn run_tool(ed: &mut Editor, scripting: Option<&Scripting>, name: &str, args: &Value) -> (String, bool) {
+    let args = args.clone();
     let text = |key: &str| args.get(key).and_then(Value::as_str).map(str::to_string);
     let outcome = match name {
         "list_commands" => Ok(list_commands(ed, text("query").as_deref())),
@@ -175,8 +183,8 @@ fn call_tool(ed: &mut Editor, scripting: Option<&Scripting>, params: &Value) -> 
         _ => Err(format!("No such tool: {name}")),
     };
     match outcome {
-        Ok(text) => json!({ "content": [{ "type": "text", "text": text }], "isError": false }),
-        Err(text) => json!({ "content": [{ "type": "text", "text": text }], "isError": true }),
+        Ok(text) => (text, false),
+        Err(text) => (text, true),
     }
 }
 
@@ -258,6 +266,11 @@ fn press_keys(ed: &mut Editor, keys: &str) -> Result<String, String> {
         ed.handle_key(key);
         if let Some(e) = ed.take_error() {
             errors.push(e.to_string());
+        }
+        // A key that needs the user's approval stops the rest, so later
+        // keys cannot answer for the user.
+        if ed.permission_requested() {
+            break;
         }
     }
     report(ed, (!errors.is_empty()).then(|| errors.join("; ")))

@@ -175,6 +175,7 @@ pub struct Editor {
     /// A question a command asked, waiting for its answer.
     pub(crate) question: Option<crate::questions::Question>,
     pub(crate) timers: crate::timers::Timers,
+    pub(crate) permissions: crate::permissions::Permissions,
 }
 
 impl Default for Editor {
@@ -253,6 +254,7 @@ impl Editor {
             quit: false,
             question: None,
             timers: Default::default(),
+            permissions: Default::default(),
         };
         editor.windows.push(crate::window::Window {
             id: 1,
@@ -1026,6 +1028,11 @@ impl Editor {
         &mut self.buffers[self.current]
     }
 
+    /// A buffer by name, to change it without making it current.
+    pub fn buffer_named_mut(&mut self, name: &str) -> Option<&mut Buffer> {
+        self.buffers.iter_mut().find(|b| b.name == name)
+    }
+
     pub fn buffers(&self) -> &[Buffer] {
         &self.buffers
     }
@@ -1115,6 +1122,10 @@ impl Editor {
         let index = self
             .find_buffer(name)
             .ok_or_else(|| Error::new(format!("No such buffer: {name}")))?;
+        let b = &self.buffers[index];
+        if b.path.is_some() && b.is_modified() {
+            self.check_permission(&format!("discard the unsaved changes in {name}"))?;
+        }
         let showing = index == self.current;
         let next = self.other_buffer().map(str::to_string);
         let current_name = self.buffers[self.current].name.clone();
