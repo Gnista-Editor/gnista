@@ -2,7 +2,7 @@
 
 use std::ops::Range;
 
-use ember_core::display::{Glyph, completion_list, cursor_index, display_width, position_at_column, row_glyphs};
+use ember_core::display::{Glyph, cursor_index, display_width, position_at_column, row_glyphs};
 use ember_core::{Color as FaceColor, Editor, Row, Style as FaceStyle, WindowId, WindowView, palette};
 use ratatui::Frame;
 use ratatui::layout::{Position, Rect};
@@ -21,7 +21,7 @@ struct WindowArea {
 
 /// Divides the screen above the echo area among the windows.
 fn window_areas(ed: &Editor, width: u16, height: u16) -> Vec<WindowArea> {
-    let height = height.saturating_sub(1).max(2);
+    let height = height.saturating_sub(ed.mini_window_lines() as u16).max(2);
     ed.window_tree()
         .rects(0.0, 0.0, width as f32, height as f32, (1.0, 1.0))
         .into_iter()
@@ -41,7 +41,8 @@ fn window_areas(ed: &Editor, width: u16, height: u16) -> Vec<WindowArea> {
 /// Tells the editor how big each window is on a screen of this size, so
 /// scrolling knows. Call before drawing.
 pub fn layout_windows(ed: &mut Editor, width: u16, height: u16) {
-    ed.set_frame_size(width as usize, height.saturating_sub(1).max(2) as usize);
+    let echo = ed.mini_window_height(height as usize) as u16;
+    ed.set_frame_size(width as usize, height.saturating_sub(echo).max(2) as usize);
     for area in window_areas(ed, width, height) {
         ed.set_window_size(area.id, area.text.width as usize, area.text.height as usize);
     }
@@ -49,7 +50,8 @@ pub fn layout_windows(ed: &mut Editor, width: u16, height: u16) {
 
 pub fn draw(frame: &mut Frame, ed: &Editor) {
     let screen = frame.area();
-    let echo_area = Rect::new(screen.x, screen.bottom().saturating_sub(1), screen.width, 1);
+    let echo = (ed.mini_window_lines() as u16).min(screen.height);
+    let echo_area = Rect::new(screen.x, screen.bottom().saturating_sub(echo), screen.width, echo);
     let areas = window_areas(ed, screen.width, screen.height);
     let mut window_cursor = Position::new(0, 0);
     for view in ed.windows() {
@@ -240,27 +242,38 @@ fn draw_mode_line(frame: &mut Frame, ed: &Editor, view: &WindowView, area: Rect)
 }
 
 /// Draws the minibuffer or the current message. Returns the cursor position
-/// when the minibuffer is active, since the cursor belongs there.
+/// when the minibuffer is active, since the cursor belongs there. What the
+/// minibuffer's overlay adds, such as icomplete's list, follows the input,
+/// and each newline in it starts another line of the echo area.
 fn draw_echo_area(frame: &mut Frame, ed: &Editor, area: Rect) -> Option<Position> {
     let Some(prompt) = ed.prompt() else {
         frame.render_widget(Paragraph::new(ed.echo().unwrap_or("")), area);
         return None;
     };
+    let dark = dark(ed);
     let mb = ed.minibuffer();
     let input = mb.slice(0..mb.len());
-    let used = display_width(prompt, 8) + display_width(&input, 8);
-    let mut spans = vec![Span::raw(prompt), Span::raw(input)];
-    let completions = ed.minibuffer_completions();
-    if !completions.is_empty() {
-        let dim = Style::new().add_modifier(Modifier::DIM);
-        let room = (area.width as usize).saturating_sub(used);
-        spans.push(Span::styled(completion_list(&completions, room), dim));
-    }
+    let overlay = ed.minibuffer_overlay();
+    let before = overlay.map_or("", |o| o.before.as_str());
+    let prompt_style = terminal_style(&ed.style_for(&["minibuffer-prompt".to_string()], dark), dark);
+    let mut lines = vec![vec![Span::raw(before.to_string()), Span::styled(prompt.to_string(), prompt_style), Span::raw(input)]];
     if let Some(message) = ed.echo() {
-        spans.push(Span::raw(format!(" {message}")));
+        lines[0].push(Span::raw(format!(" {message}")));
     }
-    frame.render_widget(Paragraph::new(Line::from(spans)), area);
-    let x = display_width(prompt, 8) + display_width(&mb.slice(0..mb.point()), 8);
+    for (text, faces) in overlay.map_or(&[][..], |o| &o.after[..]) {
+        let style = terminal_style(&ed.style_for(faces, dark), dark);
+        for (k, piece) in text.split('\n').enumerate() {
+            if k > 0 {
+                lines.push(Vec::new());
+            }
+            if !piece.is_empty() {
+                lines.last_mut().expect("a line").push(Span::styled(piece.to_string(), style));
+            }
+        }
+    }
+    let lines: Vec<Line> = lines.into_iter().take(area.height as usize).map(Line::from).collect();
+    frame.render_widget(Paragraph::new(lines), area);
+    let x = display_width(before, 8) + display_width(prompt, 8) + display_width(&mb.slice(0..mb.point()), 8);
     Some(Position::new(area.x + x.min(area.width as usize - 1) as u16, area.y))
 }
 
@@ -297,7 +310,39 @@ mod tests {
         ed.press("M-x").unwrap();
         ed.type_text("find-f");
         let rows = render(&mut ed, 50, 5);
-        assert_eq!(rows[4], "M-x find-f {find-file}");
+        assert_eq!(rows[4], "M-x find-f");
+    }
+
+    #[test]
+    fn icomplete_lists_completions_after_the_input() {
+        let mut ed = Editor::new();
+        let _scripting = ember_script::Scripting::new(&mut ed).unwrap();
+        ed.press("M-x").unwrap();
+        ed.type_text("forward-w");
+        let rows = render(&mut ed, 60, 6);
+        assert_eq!(rows[5], "M-x forward-w(ord) [Matched]");
+    }
+
+    #[test]
+    fn a_vertical_list_grows_the_echo_area() {
+        let mut ed = Editor::new();
+        let _scripting = ember_script::Scripting::new(&mut ed).unwrap();
+        ed.call("fido-vertical-mode", vec![]).unwrap();
+        ed.press("M-x").unwrap();
+        ed.type_text("forw");
+        let rows = render(&mut ed, 60, 20);
+        // A fifth of 20 lines is 5: the input and four completions, best
+        // flex match first, each command with its key.
+        assert!(rows[14].starts_with("U:"), "the mode line is just above: {}", rows[14]);
+        assert_eq!(
+            rows[15..],
+            ["1/14 M-x forw", "forward-char        (C-f)", "forward-word        (M-f)", "search-forward", "isearch-forward     (C-s)"]
+        );
+        ed.press("C-n C-n").unwrap();
+        let rows = render(&mut ed, 60, 20);
+        assert_eq!(rows[15], "3/14 M-x forw");
+        ed.press("RET").unwrap();
+        assert_eq!(ed.prompt(), Some("Search: "), "RET ran the selected command, search-forward");
     }
 
     #[test]

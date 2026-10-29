@@ -1,0 +1,578 @@
+//! Reading from the minibuffer partway through a command, as Emacs's
+//! `read-from-minibuffer`, `completing-read` and `read-file-name` do; the
+//! order completions are offered in, as `completion-all-sorted-completions`
+//! keeps them; and what the minibuffer shows besides its input, which
+//! icomplete fills.
+//!
+//! As with questions, the command does not wait: it opens the prompt and
+//! returns, and the answer runs the function given with it.
+
+use std::fs;
+use std::path::Path;
+
+use crate::command::{Arg, ParamKind};
+use crate::completion;
+use crate::editor::{Editor, Prompt};
+use crate::error::{Error, Result};
+use crate::files::{abbreviate_dir, expand_file_name};
+use crate::variables::{HookFn, Value};
+
+/// What a prompt opened partway through a command reads, and how.
+#[derive(Clone, Debug)]
+pub struct Reading {
+    pub prompt: String,
+    /// What it completes against, when `collection` is `None`.
+    pub kind: ParamKind,
+    /// The names to complete against, as `completing-read`'s collection.
+    pub collection: Option<Vec<String>>,
+    /// The completion category, as Emacs's completion metadata names it.
+    pub category: Option<String>,
+    /// Whether the answer must be one of the completions.
+    pub require_match: bool,
+    /// The input the minibuffer starts with.
+    pub initial: Option<String>,
+    /// What empty input stands for, and for a file name, input left as it
+    /// started.
+    pub default: Option<String>,
+    /// The variable with earlier answers, if not the kind's.
+    pub history: Option<String>,
+    /// For a file name, the directory it starts in, if not the default one.
+    pub dir: Option<String>,
+}
+
+impl Reading {
+    pub fn new(prompt: &str, kind: ParamKind) -> Reading {
+        Reading {
+            prompt: prompt.to_string(),
+            kind,
+            collection: None,
+            category: None,
+            require_match: false,
+            initial: None,
+            default: None,
+            history: None,
+            dir: None,
+        }
+    }
+}
+
+/// What the minibuffer shows around its input besides the prompt, as an
+/// overlay's `before-string` and `after-string` do in Emacs's minibuffer:
+/// icomplete's list of completions.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct MinibufferOverlay {
+    /// Shown before the prompt.
+    pub before: String,
+    /// Shown after the input: pieces of text, each with the faces it is
+    /// drawn in. A newline starts another line of the minibuffer.
+    pub after: Vec<(String, Vec<String>)>,
+}
+
+impl MinibufferOverlay {
+    /// How many lines the overlay adds below the input's. A newline at the
+    /// very end starts no line of its own.
+    pub fn extra_lines(&self) -> usize {
+        let text: String = self.after.iter().map(|(text, _)| text.as_str()).collect();
+        text.trim_end_matches('\n').matches('\n').count()
+    }
+}
+
+/// What the open prompt reads, for code that adapts to it, as icomplete does.
+#[derive(Clone, Debug, PartialEq)]
+pub struct MinibufferInfo {
+    /// The prompt, such as `Find file: `.
+    pub prompt: String,
+    /// Whether it completes at all, as a non-nil `minibuffer-completion-table`.
+    pub completing: bool,
+    /// The completion category: file, buffer, command, variable or face for
+    /// those kinds, or what a `completing-read` named.
+    pub category: Option<String>,
+    pub require_match: bool,
+    pub default: Option<String>,
+    /// The input the prompt started with, icomplete's `icomplete--initial-input`.
+    pub initial: String,
+    /// Whether completion ignores case here, as `completion-ignore-case` is
+    /// bound for the prompt.
+    pub ignore_case: bool,
+    /// How many completions are kept for the input as it is.
+    pub kept: usize,
+}
+
+impl Prompt {
+    pub(crate) fn new(text: &str, kind: ParamKind, history: &str) -> Prompt {
+        Prompt {
+            text: text.to_string(),
+            kind,
+            history: history.to_string(),
+            history_pos: 0,
+            typed: String::new(),
+            collection: None,
+            category: None,
+            require_match: matches!(kind, ParamKind::Command | ParamKind::Variable | ParamKind::Face),
+            default: None,
+            initial: String::new(),
+            then: None,
+            sorted: None,
+        }
+    }
+
+    fn completing(&self) -> bool {
+        self.collection.is_some() || !matches!(self.kind, ParamKind::String | ParamKind::Keys)
+    }
+
+    fn category(&self) -> Option<String> {
+        if self.collection.is_some() {
+            return self.category.clone();
+        }
+        match self.kind {
+            ParamKind::String | ParamKind::Keys => None,
+            kind => Some(kind.name().to_string()),
+        }
+    }
+}
+
+impl Editor {
+    /// Opens a prompt with `input` in the minibuffer, as Emacs's minibuffer
+    /// does on entry: the minibuffer's own variables and keymaps are reset,
+    /// a prompt that must be answered by a match gets
+    /// `minibuffer-local-must-match-map`, and `minibuffer-setup-hook` runs.
+    pub(crate) fn open_prompt(&mut self, mut prompt: Prompt, input: &str) {
+        prompt.initial = input.to_string();
+        let must_match = prompt.require_match;
+        self.prompt = Some(prompt);
+        self.minibuffer_overlay = None;
+        self.mini_window_lines = 1;
+        let b = &mut self.minibuffer;
+        b.locals.clear();
+        b.local_hooks.clear();
+        b.local_map.clear();
+        if must_match {
+            b.local_map.push(MUST_MATCH_MAP.to_string());
+        }
+        b.set_text(input);
+        b.set_point(b.len());
+        if let Err(e) = self.run_hooks("minibuffer-setup-hook") {
+            self.message = Some(format!("Error in minibuffer-setup-hook: {e}"));
+        }
+    }
+
+    /// Closes the open prompt, running `minibuffer-exit-hook` while it is
+    /// still open, and returns it.
+    pub(crate) fn close_prompt(&mut self) -> Option<Prompt> {
+        self.prompt.as_ref()?;
+        if let Err(e) = self.run_hooks("minibuffer-exit-hook") {
+            self.message = Some(format!("Error in minibuffer-exit-hook: {e}"));
+        }
+        let prompt = self.prompt.take();
+        self.minibuffer.set_text("");
+        self.minibuffer_overlay = None;
+        prompt
+    }
+
+    /// Closes the prompt with `value` as its answer: it goes in the
+    /// prompt's history and to the function or command waiting for it.
+    pub(crate) fn finish_prompt(&mut self, value: String) -> Result<()> {
+        let prompt = self.close_prompt().ok_or_else(|| Error::new("Not in the minibuffer"))?;
+        self.add_to_history(&prompt.history, &value);
+        match prompt.then {
+            Some(then) => then(self, &[Value::Str(value)]),
+            None => {
+                self.supply_arg(Arg::Str(value));
+                Ok(())
+            }
+        }
+    }
+
+    /// Reads an answer in the minibuffer and calls `then` with it, as
+    /// Emacs's `read-from-minibuffer`, `completing-read` and
+    /// `read-file-name` return it.
+    pub fn read_from_minibuffer(&mut self, reading: Reading, then: HookFn) -> Result<()> {
+        if self.prompt.is_some() {
+            return Err(Error::new("Command attempted to use minibuffer while in minibuffer"));
+        }
+        let history = reading.history.clone().unwrap_or_else(|| reading.kind.history().to_string());
+        let mut prompt = Prompt::new(&reading.prompt, reading.kind, &history);
+        prompt.require_match |= reading.require_match;
+        prompt.collection = reading.collection;
+        prompt.category = reading.category;
+        prompt.default = reading.default;
+        prompt.then = Some(then);
+        let input = match (reading.initial, reading.kind) {
+            (Some(initial), _) => initial,
+            (None, ParamKind::File) => match &reading.dir {
+                Some(dir) => abbreviate_dir(&expand_file_name(dir)),
+                None => abbreviate_dir(&self.default_directory()),
+            },
+            (None, _) => String::new(),
+        };
+        self.open_prompt(prompt, &input);
+        Ok(())
+    }
+
+    /// What the open prompt reads, or `None` if none is open.
+    pub fn minibuffer_info(&self) -> Option<MinibufferInfo> {
+        let p = self.prompt.as_ref()?;
+        Some(MinibufferInfo {
+            prompt: p.text.clone(),
+            completing: p.completing() && self.question.is_none(),
+            category: p.category(),
+            require_match: p.require_match,
+            default: p.default.clone(),
+            initial: p.initial.clone(),
+            ignore_case: self.completion_ignore_case(),
+            kept: self.kept_completions(),
+        })
+    }
+
+    /// The minibuffer's input.
+    pub fn minibuffer_input(&self) -> String {
+        self.minibuffer.slice(0..self.minibuffer.len())
+    }
+
+    /// What the input completes against, split as Emacs's completion
+    /// boundaries split it: the part completion leaves alone, such as a file
+    /// name's directory; the part that completes, before and after point;
+    /// what follows it, such as the rest of a file name after the next
+    /// slash; and the names the part could complete to.
+    fn completion_table(&self, prompt: &Prompt, input: &str, point: usize) -> Field {
+        let at = input.char_indices().nth(point).map_or(input.len(), |(i, _)| i);
+        let (before, after) = input.split_at(at);
+        let names = match (prompt.collection.as_ref(), prompt.kind) {
+            (Some(collection), _) => collection.clone(),
+            (None, ParamKind::File) => {
+                let (base, before) = before.rfind('/').map_or(("", before), |i| before.split_at(i + 1));
+                let (after, suffix) = after.find('/').map_or((after, ""), |i| after.split_at(i));
+                let dir = if base.is_empty() { self.default_directory() } else { expand_file_name(base) };
+                return Field {
+                    base: base.to_string(),
+                    before: before.to_string(),
+                    after: after.to_string(),
+                    suffix: suffix.to_string(),
+                    names: file_name_all_completions(&dir),
+                };
+            }
+            (None, ParamKind::Command) => self.command_names().map(str::to_string).collect(),
+            // As Emacs's internal-complete-buffer, buffers whose names start
+            // with a space only for input that does.
+            (None, ParamKind::Buffer) => self
+                .buffers
+                .iter()
+                .map(|b| b.name.clone())
+                .filter(|n| !n.starts_with(' ') || input.starts_with(' '))
+                .collect(),
+            (None, ParamKind::Variable) => self.variables.keys().cloned().collect(),
+            (None, ParamKind::Face) => self.faces.keys().cloned().collect(),
+            (None, ParamKind::String | ParamKind::Keys) => Vec::new(),
+        };
+        Field { base: String::new(), before: before.to_string(), after: after.to_string(), suffix: String::new(), names }
+    }
+
+    /// Whether completion ignores case, as Emacs binds `completion-ignore-case`
+    /// for file and buffer names to `read-file-name-completion-ignore-case`
+    /// and `read-buffer-completion-ignore-case`.
+    pub(crate) fn completion_ignore_case(&self) -> bool {
+        let variable = match self.prompt.as_ref().filter(|p| p.collection.is_none()).map(|p| p.kind) {
+            Some(ParamKind::File) => "read-file-name-completion-ignore-case",
+            Some(ParamKind::Buffer) => "read-buffer-completion-ignore-case",
+            _ => "completion-ignore-case",
+        };
+        self.variable(variable).is_some_and(|v| v.is_true()) || self.variable("completion-ignore-case").is_some_and(|v| v.is_true())
+    }
+
+    /// The open prompt's completions for `input` with point at its end,
+    /// whole, in alphabetical order.
+    pub(crate) fn prompt_completions(&self, input: &str) -> Vec<String> {
+        let Some(prompt) = &self.prompt else { return Vec::new() };
+        let field = self.completion_table(prompt, input, input.chars().count());
+        let fold = self.completion_ignore_case();
+        let (_, mut found) = completion::all_completions(&self.completion_styles(), &field.before, &field.after, &field.names, fold);
+        found.sort();
+        found.dedup();
+        found.into_iter().map(|c| format!("{}{c}", field.base)).collect()
+    }
+
+    /// What completing the minibuffer's input as far as it goes gives, as
+    /// Emacs's `completion-try-completion`: the new input and where point
+    /// goes in it.
+    pub(crate) fn completion_try(&self) -> completion::Try {
+        self.completion_try_with(&self.minibuffer_input(), self.minibuffer.point(), None)
+    }
+
+    /// What completing `input` with point at `point` gives, against `names`
+    /// if given, else against what the open prompt completes, as Emacs's
+    /// `completion-try-completion` with a table.
+    pub fn completion_try_with(&self, input: &str, point: usize, names: Option<Vec<String>>) -> completion::Try {
+        let Some(prompt) = &self.prompt else { return completion::Try::None };
+        let mut field = self.completion_table(prompt, input, point);
+        if let Some(names) = names {
+            let at = input.char_indices().nth(point).map_or(input.len(), |(i, _)| i);
+            field = Field { base: String::new(), before: input[..at].into(), after: input[at..].into(), suffix: String::new(), names };
+        }
+        let ignored = (prompt.kind == ParamKind::File && prompt.collection.is_none()).then(|| self.string_list("completion-ignored-extensions"));
+        let result = completion::try_completion(
+            &self.completion_styles(),
+            &field.before,
+            &field.after,
+            &field.suffix,
+            &field.names,
+            self.completion_ignore_case(),
+            ignored.as_deref(),
+        );
+        match result {
+            completion::Try::Completed { text, point } => {
+                completion::Try::Completed { point: field.base.chars().count() + point, text: format!("{}{text}", field.base) }
+            }
+            other => other,
+        }
+    }
+
+    /// Whether `input` is itself a valid answer to the open prompt, as
+    /// Emacs's `test-completion`.
+    pub(crate) fn is_completion_match(&self, input: &str) -> bool {
+        let Some(prompt) = &self.prompt else { return false };
+        if prompt.kind == ParamKind::File && prompt.collection.is_none() {
+            return expand_file_name(input).exists();
+        }
+        let field = self.completion_table(prompt, input, input.chars().count());
+        let fold = self.completion_ignore_case();
+        field.names.iter().any(|n| if fold { n.to_lowercase() == field.before.to_lowercase() } else { *n == field.before })
+    }
+
+    /// The open prompt's completions, in the order Emacs's
+    /// `completion-all-sorted-completions` offers them, and the part of the
+    /// input before them, such as a file name's directory. They are kept
+    /// until the input changes, so commands can rotate them, as icomplete's
+    /// do, with [`Editor::cache_all_sorted_completions`].
+    ///
+    /// Names come shortest first, then alphabetically, and then those in the
+    /// prompt's history first, most recent first, with the default before
+    /// them. Matched by the flex style, they come best match first instead,
+    /// as Emacs's `completion--flex-adjust-metadata` sorts them, and equals
+    /// in the table's order: a collection's, or a directory's as the system
+    /// lists it.
+    pub fn completion_all_sorted_completions(&mut self) -> Option<(String, Vec<String>)> {
+        self.completion_all_sorted_completions_at(self.minibuffer.point()).map(|(base, comps, _)| (base, comps))
+    }
+
+    /// As [`Editor::completion_all_sorted_completions`], as if point were
+    /// at `point`, as icomplete puts it at the end of the input to show them,
+    /// and whether they were sorted now rather than kept.
+    pub fn completion_all_sorted_completions_at(&mut self, point: usize) -> Option<(String, Vec<String>, bool)> {
+        let input = self.minibuffer_input();
+        let prompt = self.prompt.as_ref()?;
+        if !prompt.completing() {
+            return None;
+        }
+        // As in Emacs, where the kept list is a variable, none kept is no list.
+        if let Some((cached, base, comps)) = &prompt.sorted
+            && *cached == input
+            && !comps.is_empty()
+        {
+            return Some((base.clone(), comps.clone(), false));
+        }
+        let field = self.completion_table(prompt, &input, point);
+        let (base, name) = (field.base.clone(), format!("{}{}", field.before, field.after));
+        let fold = self.completion_ignore_case();
+        let (style, found) = completion::all_completions(&self.completion_styles(), &field.before, &field.after, &field.names, fold);
+        // In the table's order, which flex matches keep among equals.
+        let mut comps: Vec<String> = Vec::new();
+        for c in found {
+            if !comps.contains(&c) {
+                comps.push(c);
+            }
+        }
+        let table_order = comps.clone();
+        let history: Vec<String> = prompt
+            .default
+            .iter()
+            .cloned()
+            .chain(self.string_list(&prompt.history))
+            .filter_map(|h| h.strip_prefix(base.as_str()).map(str::to_string))
+            .collect();
+        if style.as_deref() == Some("flex") && !name.is_empty() {
+            let score = |c: &String| completion::flex_score(&name, c, fold);
+            comps = table_order;
+            comps.sort_by(|a, b| score(b).total_cmp(&score(a)));
+        } else {
+            completion::sort_completions(&mut comps, &history);
+        }
+        let prompt = self.prompt.as_mut().expect("checked above");
+        prompt.sorted = Some((input, base.clone(), comps.clone()));
+        Some((base, comps, true))
+    }
+
+    /// Replaces the kept completions, in a new order or with some left out,
+    /// as Emacs's `completion--cache-all-sorted-completions`. They are kept
+    /// until the input changes.
+    pub fn cache_all_sorted_completions(&mut self, comps: Vec<String>) {
+        let input = self.minibuffer_input();
+        let Some(prompt) = self.prompt.as_mut() else { return };
+        let base = prompt.sorted.take().map(|(_, base, _)| base).unwrap_or_default();
+        prompt.sorted = Some((input, base, comps));
+    }
+
+    /// Forgets the kept completions, so they are sorted again, as Emacs's
+    /// `completion--flush-all-sorted-completions`.
+    pub(crate) fn flush_all_sorted_completions(&mut self) {
+        if let Some(prompt) = self.prompt.as_mut() {
+            prompt.sorted = None;
+        }
+    }
+
+    /// How many completions are kept for the input as it is, as Emacs's
+    /// `(safe-length completion-all-sorted-completions)`.
+    pub fn kept_completions(&self) -> usize {
+        let input = self.minibuffer_input();
+        match self.prompt.as_ref().and_then(|p| p.sorted.as_ref()) {
+            Some((cached, _, comps)) if *cached == input => comps.len(),
+            _ => 0,
+        }
+    }
+
+    /// Completes the input to the first of the sorted completions, as
+    /// Emacs's `minibuffer-force-complete` does without cycling. Returns
+    /// false if there are none.
+    pub(crate) fn force_complete(&mut self) -> bool {
+        let Some((base, comps)) = self.completion_all_sorted_completions() else { return false };
+        let Some(first) = comps.first() else { return false };
+        let text = format!("{base}{first}");
+        self.minibuffer.set_text(&text);
+        self.minibuffer.set_point(self.minibuffer.len());
+        true
+    }
+
+    fn string_list(&self, variable: &str) -> Vec<String> {
+        match self.variable(variable) {
+            Some(Value::List(items)) => items.iter().filter_map(|v| v.as_str().map(str::to_string)).collect(),
+            _ => Vec::new(),
+        }
+    }
+
+    /// The first key sequence that runs a command in the window's buffer, as
+    /// Emacs's `where-is-internal` with FIRSTONLY: in its modes' keymaps
+    /// first, then the global map.
+    pub fn where_is(&self, command: &str) -> Option<Vec<crate::key::Key>> {
+        let b = self.window_buffer();
+        let mut maps: Vec<String> = self
+            .minor_modes
+            .iter()
+            .filter(|m| self.variable_in(b, &m.name).is_some_and(|v| v.is_true()))
+            .filter_map(|m| m.keymap.clone())
+            .collect();
+        maps.extend(b.local_map.iter().cloned());
+        let mut found = Vec::new();
+        for name in &maps {
+            let mut next = Some(name.clone());
+            while let Some(name) = next.take() {
+                let Some(k) = self.keymaps.get(&name) else { break };
+                found.extend(k.map.keys_for(command));
+                next = k.parent.clone();
+            }
+        }
+        found.extend(self.global_map.keys_for(command));
+        found.into_iter().find(|keys| self.lookup_keys_in_window_buffer(keys) == command)
+    }
+
+    /// What a key sequence runs in the window's buffer, ignoring any prompt.
+    fn lookup_keys_in_window_buffer(&self, keys: &[crate::key::Key]) -> String {
+        let b = self.window_buffer();
+        let mut maps: Vec<String> = self
+            .minor_modes
+            .iter()
+            .filter(|m| self.variable_in(b, &m.name).is_some_and(|v| v.is_true()))
+            .filter_map(|m| m.keymap.clone())
+            .collect();
+        maps.extend(b.local_map.iter().cloned());
+        for map in maps {
+            if let crate::keymap::Lookup::Command(c) = self.lookup_in(&map, keys) {
+                return c;
+            }
+        }
+        match self.global_map.lookup(keys) {
+            crate::keymap::Lookup::Command(c) => c,
+            _ => String::new(),
+        }
+    }
+
+    /// What the minibuffer shows besides its prompt and input.
+    pub fn minibuffer_overlay(&self) -> Option<&MinibufferOverlay> {
+        self.minibuffer_overlay.as_ref()
+    }
+
+    /// Sets what the minibuffer shows besides its prompt and input, until
+    /// the prompt closes.
+    pub fn set_minibuffer_overlay(&mut self, overlay: Option<MinibufferOverlay>) {
+        if self.prompt.is_some() {
+            self.minibuffer_overlay = overlay;
+        }
+    }
+
+    /// The frame's height in lines with the echo area, as the front end
+    /// last gave it to [`Editor::mini_window_height`].
+    pub fn frame_lines(&self) -> usize {
+        self.frame_lines.unwrap_or_else(|| self.frame_cells().1 + self.mini_window_lines())
+    }
+
+    /// The most lines the minibuffer may take in a frame of `frame_lines`
+    /// lines, as `max-mini-window-height` says: a fraction of the frame, or
+    /// a number of lines.
+    pub fn max_mini_window_lines(&self, frame_lines: usize) -> usize {
+        let max = self.number_in(self.window_buffer(), "max-mini-window-height", 0.25);
+        let lines = if max < 1.0 { (max * frame_lines as f64).floor() } else { max.floor() };
+        (lines as usize).max(1)
+    }
+
+    /// How many lines the echo area takes now, as [`Editor::mini_window_height`]
+    /// last worked out.
+    pub fn mini_window_lines(&self) -> usize {
+        if self.prompt.is_some() { self.mini_window_lines } else { 1 }
+    }
+
+    /// How many lines the echo area takes in a frame of `frame_lines` lines,
+    /// counting it: enough for the minibuffer's overlay, up to
+    /// `max-mini-window-height`, and while a prompt is open never fewer
+    /// than it has taken, as `resize-mini-windows`' grow-only says.
+    pub fn mini_window_height(&mut self, frame_lines: usize) -> usize {
+        self.frame_lines = Some(frame_lines);
+        if self.prompt.is_none() {
+            self.mini_window_lines = 1;
+            return 1;
+        }
+        let wanted = 1 + self.minibuffer_overlay.as_ref().map_or(0, MinibufferOverlay::extra_lines);
+        let wanted = wanted.min(self.max_mini_window_lines(frame_lines)).min(frame_lines.saturating_sub(2).max(1));
+        let grow_only = !matches!(self.variable("resize-mini-windows"), Some(Value::Bool(true)));
+        self.mini_window_lines = if grow_only { self.mini_window_lines.max(wanted) } else { wanted };
+        self.mini_window_lines
+    }
+}
+
+/// The minibuffer's input as completion splits it.
+struct Field {
+    base: String,
+    before: String,
+    after: String,
+    suffix: String,
+    names: Vec<String>,
+}
+
+/// The keymap of prompts that must be answered by one of their completions,
+/// as Emacs's: RET completes before it exits.
+pub(crate) const MUST_MATCH_MAP: &str = "minibuffer-local-must-match-map";
+
+/// The names a directory's entries complete to, as Emacs's
+/// `file-name-all-completions` gives them: every entry, directories with a
+/// slash, and `./` and `../`, in the reverse of the order the system lists
+/// them in, which is how Emacs collects them.
+pub fn file_name_all_completions(dir: &Path) -> Vec<String> {
+    let Ok(entries) = fs::read_dir(dir) else { return Vec::new() };
+    let mut out: Vec<String> = entries
+        .filter_map(|e| e.ok())
+        .map(|e| {
+            let name = e.file_name().to_string_lossy().into_owned();
+            if e.path().is_dir() { format!("{name}/") } else { name }
+        })
+        .collect();
+    out.reverse();
+    out.extend(["../".to_string(), "./".to_string()]);
+    out
+}

@@ -21,7 +21,7 @@ use std::time::{Duration, Instant};
 use std::rc::Rc;
 
 use ember_core::{
-    Arg, Background, Command, Editor, Error, Face, FaceAttrs, HookFn, Key, Keymap, MinorMode, ParamKind,
+    Arg, Background, Command, Editor, Error, Face, FaceAttrs, HookFn, Key, Keymap, MinibufferOverlay, MinorMode, ParamKind, Reading,
     PrefixArg, Result, Value as EditorValue, Variable, abbreviate_path, expand_file_name,
 };
 use rquickjs::context::EvalOptions;
@@ -49,6 +49,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/window.ts", include_str!("../../../packages/window.ts")),
     ("packages/mouse.ts", include_str!("../../../packages/mouse.ts")),
     ("packages/isearch.ts", include_str!("../../../packages/isearch.ts")),
+    ("packages/icomplete.ts", include_str!("../../../packages/icomplete.ts")),
     ("packages/replace.ts", include_str!("../../../packages/replace.ts")),
     ("packages/org-table.ts", include_str!("../../../packages/org-table.ts")),
     ("packages/org.ts", include_str!("../../../packages/org.ts")),
@@ -724,6 +725,12 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
         )?,
     )?;
     native.set(
+        "hookContains",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, hook: String, id: f64, local: bool| {
+            with_editor(&ctx, |ed| Ok(ed.hook_contains(&hook, id as u64, local)))
+        })?,
+    )?;
+    native.set(
         "removeHook",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, hook: String, id: f64, local: bool| {
             with_editor(&ctx, |ed| {
@@ -814,6 +821,121 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
             },
         )?,
     )?;
+    // Reading from the minibuffer partway through a command, as Emacs's
+    // read-from-minibuffer, completing-read and read-file-name.
+    let read_context = context.clone();
+    native.set(
+        "read",
+        Function::new(
+            ctx.clone(),
+            move |ctx: Ctx<'js>, kind: String, prompt: String, options: Object<'js>, run: Function<'js>| {
+                let then = ScriptFunction { run: Persistent::save(&ctx, run), context: read_context.clone() }.into_hook();
+                let Some(kind) = ParamKind::from_name(&kind) else {
+                    return Err(Exception::throw_type(&ctx, &format!("Unknown kind of reading {kind:?}")));
+                };
+                let mut reading = Reading::new(&prompt, kind);
+                reading.collection = options.get("collection")?;
+                reading.category = options.get("category")?;
+                reading.require_match = options.get::<_, Option<bool>>("requireMatch")?.unwrap_or(false);
+                reading.initial = options.get("initial")?;
+                reading.default = options.get("default")?;
+                reading.history = options.get("history")?;
+                reading.dir = options.get("dir")?;
+                with_editor(&ctx, |ed| ed.read_from_minibuffer(reading, then))
+            },
+        )?,
+    )?;
+    native.set(
+        "minibufferInfo",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| -> rquickjs::Result<Option<Object<'js>>> {
+            let info = with_editor(&ctx, |ed| Ok(ed.minibuffer_info()))?;
+            let Some(info) = info else { return Ok(None) };
+            let object = Object::new(ctx.clone())?;
+            object.set("prompt", info.prompt)?;
+            object.set("completing", info.completing)?;
+            object.set("category", info.category)?;
+            object.set("requireMatch", info.require_match)?;
+            object.set("default", info.default)?;
+            object.set("initial", info.initial)?;
+            object.set("ignoreCase", info.ignore_case)?;
+            object.set("kept", info.kept)?;
+            Ok(Some(object))
+        })?,
+    )?;
+    native.set(
+        "completionAllSortedCompletions",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, at_end: Opt<bool>| -> rquickjs::Result<Option<Object<'js>>> {
+            let sorted = with_editor(&ctx, |ed| {
+                let point = if at_end.0 == Some(true) { ed.minibuffer_input().chars().count() } else { ed.minibuffer().point() };
+                Ok(ed.completion_all_sorted_completions_at(point))
+            })?;
+            let Some((base, comps, fresh)) = sorted else { return Ok(None) };
+            let object = Object::new(ctx.clone())?;
+            object.set("base", base)?;
+            object.set("completions", comps)?;
+            object.set("fresh", fresh)?;
+            Ok(Some(object))
+        })?,
+    )?;
+    native.set(
+        "completionTryCompletion",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, input: String, names: Option<Vec<String>>| -> rquickjs::Result<Value<'js>> {
+            let found = with_editor(&ctx, |ed| Ok(ed.completion_try_with(&input, input.chars().count(), names)))?;
+            Ok(match found {
+                ember_core::completion::Try::None => Value::new_null(ctx.clone()),
+                ember_core::completion::Try::Exact => Value::new_bool(ctx.clone(), true),
+                ember_core::completion::Try::Completed { text, point } => {
+                    let object = Object::new(ctx.clone())?;
+                    object.set("text", text)?;
+                    object.set("point", point)?;
+                    object.into_value()
+                }
+            })
+        })?,
+    )?;
+    native.set(
+        "cacheAllSortedCompletions",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, comps: Vec<String>| {
+            with_editor(&ctx, |ed| {
+                ed.cache_all_sorted_completions(comps);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "setMinibufferOverlay",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, before: Option<String>, texts: Vec<String>, faces: Vec<Vec<String>>| {
+            with_editor(&ctx, |ed| {
+                let overlay = before.map(|before| MinibufferOverlay { before, after: texts.into_iter().zip(faces).collect() });
+                ed.set_minibuffer_overlay(overlay);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "whereIs",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, command: String| {
+            with_editor(&ctx, |ed| Ok(ed.where_is(&command).map(|keys| ember_core::format_keys(&keys))))
+        })?,
+    )?;
+    native.set(
+        "composeLocalMap",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
+            with_editor(&ctx, |ed| {
+                ed.compose_local_map(&name);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "frameSize",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            with_editor(&ctx, |ed| {
+                let total = ed.frame_lines();
+                Ok(vec![ed.frame_cells().0 as f64, total as f64, ed.max_mini_window_lines(total) as f64])
+            })
+        })?,
+    )?;
     let timer_context = context.clone();
     native.set(
         "runWithTimer",
@@ -835,6 +957,10 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
                 Ok(())
             })
         })?,
+    )?;
+    native.set(
+        "fileDirectoryP",
+        Function::new(ctx.clone(), |file: String| expand_file_name(&file).is_dir())?,
     )?;
     native.set(
         "bufferList",

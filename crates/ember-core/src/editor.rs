@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 use std::env;
-use std::fs;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
@@ -26,6 +25,20 @@ pub(crate) struct Prompt {
     pub(crate) history_pos: usize,
     /// The input typed, kept while M-p shows history.
     pub(crate) typed: String,
+    /// The names a `completing-read` completes against, instead of the kind's.
+    pub(crate) collection: Option<Vec<String>>,
+    /// The collection's completion category, as Emacs's metadata names it.
+    pub(crate) category: Option<String>,
+    /// Whether the answer must be one of the completions.
+    pub(crate) require_match: bool,
+    /// What empty input stands for.
+    pub(crate) default: Option<String>,
+    /// The input the prompt opened with.
+    pub(crate) initial: String,
+    /// Called with the answer, for a prompt opened partway through a command.
+    pub(crate) then: Option<variables::HookFn>,
+    /// The sorted completions and their base, for the input they were made for.
+    pub(crate) sorted: Option<(String, String, Vec<String>)>,
 }
 
 /// A command as it last ran, so it can be repeated (Emacs's
@@ -76,6 +89,12 @@ pub struct Editor {
     previous_buffer: Option<String>,
     pub(crate) minibuffer: Buffer,
     pub(crate) prompt: Option<Prompt>,
+    /// What the minibuffer shows besides its input, such as icomplete's list.
+    pub(crate) minibuffer_overlay: Option<crate::minibuffer::MinibufferOverlay>,
+    /// How many lines the echo area has grown to while the prompt is open.
+    pub(crate) mini_window_lines: usize,
+    /// The frame's height with the echo area, as the front end last said.
+    pub(crate) frame_lines: Option<usize>,
     pending_call: Option<PendingCall>,
     /// Keys read so far for a command parameter of kind [`ParamKind::Keys`].
     reading_keys: Option<Vec<Key>>,
@@ -194,6 +213,9 @@ impl Editor {
             remapped_from: None,
             previous_buffer: None,
             minibuffer: Buffer::new(" *Minibuf*"),
+            minibuffer_overlay: None,
+            mini_window_lines: 1,
+            frame_lines: None,
             prompt: None,
             pending_call: None,
             reading_keys: None,
@@ -459,15 +481,8 @@ impl Editor {
             } else {
                 let initial = self.initial_input(param.kind);
                 let history = param.history.clone().unwrap_or_else(|| param.kind.history().to_string());
-                self.prompt = Some(Prompt {
-                    text: param.prompt.clone(),
-                    kind: param.kind,
-                    history,
-                    history_pos: 0,
-                    typed: String::new(),
-                });
-                self.minibuffer.set_text(&initial);
-                self.minibuffer.set_point(self.minibuffer.len());
+                let prompt = Prompt::new(&param.prompt, param.kind, &history);
+                self.open_prompt(prompt, &initial);
             }
             return;
         }
@@ -490,7 +505,7 @@ impl Editor {
 
     /// Cancels any prompt and pending command, as `C-g` does.
     pub(crate) fn abort(&mut self) {
-        self.prompt = None;
+        self.close_prompt();
         self.drop_question();
         self.pending_call = None;
         self.reading_keys = None;
@@ -946,6 +961,12 @@ impl Editor {
             }
         }
         if self.prompt.is_some() {
+            for map in &self.minibuffer.local_map {
+                match self.lookup_in(map, keys) {
+                    Lookup::Unbound => {}
+                    found => return found,
+                }
+            }
             match self.minibuffer_map.lookup(keys) {
                 Lookup::Unbound => {}
                 found => return found,
@@ -1213,9 +1234,15 @@ impl Editor {
         }
     }
 
-    /// Where relative file names are looked up: the directory of the current
-    /// file, or the working directory.
+    /// Where relative file names are looked up: the current buffer's own
+    /// `default-directory`, the directory of its file, or the working
+    /// directory.
     pub fn default_directory(&self) -> PathBuf {
+        // A buffer's own default-directory, as Dired's, comes first.
+        let b = if self.prompt.is_some() { self.window_buffer() } else { self.buffer() };
+        if let Some(Value::Str(dir)) = b.locals.get("default-directory") {
+            return expand_file_name(dir);
+        }
         self.window_buffer()
             .path
             .as_deref()
@@ -1294,7 +1321,15 @@ impl Editor {
         let names: Vec<String> = match kind {
             ParamKind::Command => self.command_names().map(str::to_string).collect(),
             ParamKind::Buffer => self.buffers.iter().map(|b| b.name.clone()).collect(),
-            ParamKind::File => return file_completions(input),
+            ParamKind::File => {
+                let (base, name) = input.rfind('/').map_or(("", input), |i| (&input[..=i], &input[i + 1..]));
+                let dir = if base.is_empty() { self.default_directory() } else { expand_file_name(base) };
+                let names = crate::minibuffer::file_name_all_completions(&dir);
+                let mut found = crate::completion::complete(&self.completion_styles(), name, &names);
+                found.retain(|c| c != "./" && c != "../" || name.starts_with('.'));
+                found.sort();
+                return found.into_iter().map(|c| format!("{base}{c}")).collect();
+            }
             ParamKind::Variable => self.variables.keys().cloned().collect(),
             ParamKind::Face => self.faces.keys().cloned().collect(),
             ParamKind::String | ParamKind::Keys => return Vec::new(),
@@ -1303,7 +1338,7 @@ impl Editor {
     }
 
     /// The styles in `completion-styles`, in order.
-    fn completion_styles(&self) -> Vec<String> {
+    pub(crate) fn completion_styles(&self) -> Vec<String> {
         match self.variable("completion-styles") {
             Some(Value::List(items)) => items.iter().filter_map(|v| v.as_str().map(str::to_string)).collect(),
             _ => vec!["basic".to_string()],
@@ -1366,8 +1401,8 @@ impl Editor {
     pub fn minibuffer_completions(&self) -> Vec<String> {
         let Some(prompt) = &self.prompt else { return Vec::new() };
         let input = self.minibuffer.slice(0..self.minibuffer.len());
-        let candidates = self.completions(prompt.kind, &input);
-        if prompt.kind != ParamKind::File {
+        let candidates = self.prompt_completions(&input);
+        if prompt.kind != ParamKind::File || prompt.collection.is_some() {
             return candidates;
         }
         let dir_len = input.rfind('/').map_or(0, |i| i + 1);
@@ -1429,29 +1464,3 @@ impl Editor {
     }
 }
 
-fn file_completions(input: &str) -> Vec<String> {
-    let (dir_part, name_part) = match input.rfind('/') {
-        Some(i) => (&input[..=i], &input[i + 1..]),
-        None => ("", input),
-    };
-    let dir = if dir_part.is_empty() {
-        env::current_dir().unwrap_or_default()
-    } else {
-        expand_file_name(dir_part)
-    };
-    let Ok(entries) = fs::read_dir(dir) else { return Vec::new() };
-    let mut out: Vec<String> = entries
-        .filter_map(|e| e.ok())
-        .filter_map(|e| {
-            let name = e.file_name().to_string_lossy().into_owned();
-            let hidden = name.starts_with('.') && !name_part.starts_with('.');
-            if hidden || !name.starts_with(name_part) {
-                return None;
-            }
-            let slash = if e.path().is_dir() { "/" } else { "" };
-            Some(format!("{dir_part}{name}{slash}"))
-        })
-        .collect();
-    out.sort();
-    out
-}

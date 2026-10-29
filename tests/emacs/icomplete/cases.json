@@ -1,0 +1,18 @@
+[
+  {"name": "icomplete-prefix", "mode": "icomplete", "reader": "collection", "require_match": true,
+   "collection": ["apple", "apricot", "banana", "avocado"], "keys": ["a", "p", "r", "DEL", "DEL", "C-.", "C-.", "C-,", "C-j"]},
+  {"name": "icomplete-optional", "mode": "icomplete", "reader": "collection",
+   "collection": ["apple", "apricot", "banana", "avocado"], "keys": ["b", "x", "DEL", "DEL", "q", "RET"]},
+  {"name": "icomplete-ret-must-match", "mode": "icomplete", "reader": "collection", "require_match": true,
+   "collection": ["apple", "apricot", "banana"], "keys": ["a", "p", "RET", "l", "RET"]},
+  {"name": "icomplete-files", "mode": "icomplete", "reader": "file",
+   "files": ["alpha.txt", "alps.org", "beta/", "notes.org~", ".hidden"], "keys": ["a", "l", "C-.", "C-M-i", "DEL", "DEL", "DEL", "DEL", "DEL", "DEL", "b", "TAB"]},
+  {"name": "fido-files", "mode": "fido", "reader": "file",
+   "files": ["alpha.txt", "notes.org", "notes.org~", "beta/inner.txt"], "keys": ["b", "t", "RET", "DEL", "N", "O", "T", "RET"]},
+  {"name": "fido-collection", "mode": "fido", "reader": "collection", "require_match": true,
+   "collection": ["find-file", "find-file-other-window", "dired", "describe-function", "Find-Me"], "keys": ["f", "f", "C-s", "C-r", "C-r", "M-j"]},
+  {"name": "icomplete-vertical", "mode": "icomplete-vertical", "reader": "collection",
+   "collection": ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"], "keys": ["C-n", "t", "C-n", "C-p", "C-p", "DEL", "C-j"]},
+  {"name": "fido-vertical", "mode": "fido-vertical", "reader": "collection",
+   "collection": ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"], "keys": ["C-n", "C-n", "C-n", "C-n", "C-n", "C-n", "M-<", "M->", "e", "C-p", "RET"]}
+]

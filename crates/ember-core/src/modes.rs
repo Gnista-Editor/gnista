@@ -159,7 +159,15 @@ impl Editor {
     /// Makes a named keymap the current buffer's local map, the major
     /// mode's keymap, as Emacs's `use-local-map` does.
     pub fn use_local_map(&mut self, name: Option<&str>) {
-        self.buffer_mut().local_map = name.map(str::to_string);
+        self.buffer_mut().local_map = name.map(str::to_string).into_iter().collect();
+    }
+
+    /// Puts a named keymap in front of the current buffer's local map, as
+    /// Emacs's `(use-local-map (make-composed-keymap MAP (current-local-map)))`.
+    pub fn compose_local_map(&mut self, name: &str) {
+        let maps = &mut self.buffer_mut().local_map;
+        maps.retain(|m| m != name);
+        maps.insert(0, name.to_string());
     }
 
     /// Registers a minor mode, replacing one with the same name. Modes
@@ -198,7 +206,7 @@ impl Editor {
             .filter(|m| self.minor_mode_on(b, &m.name))
             .filter_map(|m| m.keymap.clone())
             .collect();
-        maps.extend(b.local_map.clone());
+        maps.extend(b.local_map.iter().cloned());
         maps
     }
 

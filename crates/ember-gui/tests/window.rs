@@ -59,9 +59,21 @@ fn buffer_light() {
 #[test]
 fn minibuffer_with_completions() {
     let mut ed = sample();
+    let _scripting = ember_script::Scripting::new(&mut ed).unwrap();
     ed.press("M-x").unwrap();
     ed.type_text("describe-");
     harness(ed, Theme::Dark).snapshot("minibuffer_dark");
+}
+
+#[test]
+fn vertical_completions() {
+    let mut ed = sample();
+    let _scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    ed.call("fido-vertical-mode", vec![]).unwrap();
+    ed.press("M-x").unwrap();
+    ed.type_text("desc");
+    ed.press("C-n").unwrap();
+    harness(ed, Theme::Dark).snapshot("vertical_completions_dark");
 }
 
 #[test]

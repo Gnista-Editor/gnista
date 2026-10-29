@@ -6,6 +6,10 @@
 //
 // C-c followed by a letter is reserved for your own bindings, as in Emacs.
 
+// List completions down the minibuffer, with keys like ido's: RET takes the
+// first or goes into a directory, DEL goes up one, C-n and C-p move.
+ember.call("fido-vertical-mode");
+
 const insertDate = ember.defineCommand({
   name: "insert-date",
   doc: "Insert today's date, such as 2026-10-27.",

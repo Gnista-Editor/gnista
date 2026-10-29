@@ -5,7 +5,7 @@ use crate::command::{Arg, Command, ParamKind};
 use crate::editor::Editor;
 use crate::error::{Error, Result};
 use crate::files::expand_file_name;
-use crate::key::{KeyCode, format_keys};
+use crate::key::{Key, KeyCode, format_keys};
 use crate::keymap::Lookup;
 use crate::prefix::PrefixArg;
 use crate::variables::Value;
@@ -988,6 +988,45 @@ fn kill_range(ed: &mut Editor, range: std::ops::Range<usize>, backward: bool) ->
     Ok(())
 }
 
+/// Completes the minibuffer's input as far as it goes, as Emacs's
+/// `completion--do-completion`, saying so when it cannot. Returns whether
+/// it is now a match.
+fn minibuffer_complete(ed: &mut Editor) -> Result<bool> {
+    let input = ed.minibuffer_input();
+    ed.flush_all_sorted_completions();
+    match ed.completion_try() {
+        crate::completion::Try::None => err("[No match]"),
+        crate::completion::Try::Exact => {
+            ed.message("[Sole completion]");
+            Ok(true)
+        }
+        crate::completion::Try::Completed { text, point } => {
+            if text != input {
+                ed.minibuffer.set_text(&text);
+                ed.minibuffer.set_point(point.min(ed.minibuffer.len()));
+            } else {
+                ed.minibuffer.set_point(point.min(ed.minibuffer.len()));
+                if ed.is_completion_match(&text) {
+                    ed.message("[Complete, but not unique]");
+                }
+            }
+            Ok(ed.is_completion_match(&text))
+        }
+    }
+}
+
+/// The answer the minibuffer's input gives: the default for empty input,
+/// or for a file name left as it started.
+fn minibuffer_value(ed: &Editor) -> Result<String> {
+    let prompt = ed.prompt.as_ref().ok_or_else(|| Error::new("Not in the minibuffer"))?;
+    let input = ed.minibuffer_input();
+    let unchanged = input.is_empty() || (prompt.kind == ParamKind::File && input == prompt.initial);
+    Ok(match &prompt.default {
+        Some(default) if unchanged => default.clone(),
+        _ => input,
+    })
+}
+
 fn region(b: &Buffer) -> Result<std::ops::Range<usize>> {
     b.region()
         .ok_or_else(|| Error::new("The mark is not set now, so there is no region"))
@@ -1061,48 +1100,71 @@ fn files_and_buffers(ed: &mut Editor) {
 }
 
 fn minibuffer(ed: &mut Editor) {
-    def(ed, "exit-minibuffer", "Finish the minibuffer input and pass it to the waiting command.", |ed, _| {
-        let prompt = ed.prompt.as_ref().ok_or_else(|| Error::new("Not in the minibuffer"))?;
-        let input = ed.minibuffer.slice(0..ed.minibuffer.len());
-        let value = if prompt.kind == ParamKind::Command && ed.command(&input).is_none() {
-            match ed.completions(ParamKind::Command, &input).as_slice() {
-                [only] => only.clone(),
-                _ => return err("[No match]"),
-            }
-        } else {
-            input
-        };
-        let history = ed.prompt.take().map(|p| p.history).unwrap_or_default();
-        ed.add_to_history(&history, &value);
-        ed.minibuffer.set_text("");
-        ed.supply_arg(Arg::Str(value));
-        Ok(())
+    def(ed, "exit-minibuffer", "Finish the minibuffer input and pass it to the waiting command.\n\nEmpty input stands for the prompt's default, if it has one.", |ed, _| {
+        let value = minibuffer_value(ed)?;
+        ed.finish_prompt(value)
     });
+    def(
+        ed,
+        "minibuffer-complete-and-exit",
+        "Finish the minibuffer input if it is one of the completions, completing it first if only one matches.\n\nRET runs this in prompts that must be answered by one of their completions, such as M-x's.",
+        |ed, _| {
+            let value = minibuffer_value(ed)?;
+            // Empty input is an answer even where one must match, as Emacs's
+            // completing-read returns "" for it.
+            let must_match = ed.prompt.as_ref().is_some_and(|p| p.require_match);
+            if !must_match || value.is_empty() || ed.is_completion_match(&value) {
+                return ed.finish_prompt(value);
+            }
+            match ed.prompt_completions(&value).as_slice() {
+                [only] => ed.finish_prompt(only.clone()),
+                [] => err("[No match]"),
+                _ => {
+                    // Completing as far as it goes may give a match, as
+                    // find-f gives find-file, which finishes.
+                    if minibuffer_complete(ed)? {
+                        let value = ed.minibuffer_input();
+                        if ed.is_completion_match(&value) {
+                            return ed.finish_prompt(value);
+                        }
+                    }
+                    Ok(())
+                }
+            }
+        },
+    );
+    def(
+        ed,
+        "minibuffer-force-complete",
+        "Complete the minibuffer input to the first of its completions, in the order they are offered in.",
+        |ed, _| {
+            if !ed.force_complete() {
+                return err("[No completions]");
+            }
+            Ok(())
+        },
+    );
+    def(
+        ed,
+        "minibuffer-force-complete-and-exit",
+        "Complete the minibuffer input to the first of its completions and finish it.\n\nWith no completions, the input is finished as it is, unless the prompt must be answered by a completion.",
+        |ed, _| {
+            ed.force_complete();
+            let value = minibuffer_value(ed)?;
+            let must_match = ed.prompt.as_ref().is_some_and(|p| p.require_match);
+            if must_match && !value.is_empty() && !ed.is_completion_match(&value) {
+                return err("[Incomplete]");
+            }
+            ed.finish_prompt(value)
+        },
+    );
     def(
         ed,
         "minibuffer-complete",
         "Complete the minibuffer input as far as it is unambiguous.\n\nWhich names match the input is up to completion-styles.",
         |ed, _| {
-            let kind = ed.prompt.as_ref().ok_or_else(|| Error::new("Not in the minibuffer"))?.kind;
-            let input = ed.minibuffer.slice(0..ed.minibuffer.len());
-            let candidates = ed.completions(kind, &input);
-            if candidates.is_empty() {
-                return err("[No match]");
-            }
-            let common = crate::completion::common_prefix(&candidates);
-            let completed = match candidates.as_slice() {
-                [only] => only.clone(),
-                _ => common,
-            };
-            if completed != input && completed.chars().count() >= input.chars().count() {
-                ed.minibuffer.set_text(&completed);
-                ed.minibuffer.set_point(ed.minibuffer.len());
-            } else if candidates.len() == 1 {
-                ed.message("[Sole completion]");
-            } else if candidates.contains(&input) {
-                ed.message("[Complete, but not unique]");
-            }
-            Ok(())
+            ed.prompt.as_ref().ok_or_else(|| Error::new("Not in the minibuffer"))?;
+            minibuffer_complete(ed).map(|_| ())
         },
     );
     def(
@@ -1267,8 +1329,14 @@ fn bind_defaults(ed: &mut Editor) {
         ed.global_map.bind_str("<home>", "beginning-of-buffer");
         ed.global_map.bind_str("<end>", "end-of-buffer");
     }
+    ed.define_keymap(crate::minibuffer::MUST_MATCH_MAP, None);
+    for keys in ["RET", "C-j", "C-m"] {
+        let keys = Key::parse_seq(keys).expect("valid keys");
+        ed.bind_key_in(crate::minibuffer::MUST_MATCH_MAP, &keys, "minibuffer-complete-and-exit").expect("the keymap exists");
+    }
     for (keys, command) in [
         ("RET", "exit-minibuffer"),
+        ("C-j", "exit-minibuffer"),
         ("TAB", "minibuffer-complete"),
         ("C-g", "keyboard-quit"),
         ("M-p", "previous-history-element"),

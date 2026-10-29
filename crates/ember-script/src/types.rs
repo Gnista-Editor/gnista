@@ -324,6 +324,101 @@ const API: &str = r##"
    * `then` gets the character.
    */
   function readCharChoice(prompt: string, chars: string, then: (char: string) => void): void;
+
+  interface CompletingReadOptions {
+    /** Whether the answer must be one of the completions. */
+    requireMatch?: boolean;
+    /** The input the minibuffer starts with. */
+    initial?: string;
+    /** What empty input stands for. */
+    default?: string;
+    /** The variable with earlier answers, which M-p and M-n go through. */
+    history?: string;
+    /** The completion category, as Emacs's metadata names it, such as "project-file". */
+    category?: string;
+    /** Complete one of the kinds commands' parameters take instead of `collection`, such as "buffer". */
+    kind?: string;
+  }
+  /**
+   * Read one of `collection` in the minibuffer, with completion, as Emacs's
+   * completing-read. The command does not wait: `then` gets the answer once
+   * it is typed, and C-g quits the prompt.
+   */
+  function completingRead(prompt: string, collection: Iterable<string>, then: (answer: string) => void, options?: CompletingReadOptions): void;
+  interface ReadFileNameOptions {
+    /** The directory the minibuffer starts in, if not the default one. */
+    dir?: string;
+    /** The answer if the input is left as it started. */
+    default?: string;
+    /** The input the minibuffer starts with, instead of the directory. */
+    initial?: string;
+    /** Whether the file must exist. */
+    mustMatch?: boolean;
+    history?: string;
+  }
+  /** Read a file name in the minibuffer, with completion, as Emacs's read-file-name; `then` gets it as typed. */
+  function readFileName(prompt: string, then: (file: string) => void, options?: ReadFileNameOptions): void;
+  /** Read text in the minibuffer, as Emacs's read-string; `then` gets it. */
+  function readString(prompt: string, then: (text: string) => void, options?: { initial?: string; default?: string; history?: string }): void;
+  interface MinibufferInfo {
+    /** The prompt, such as "Find file: ". */
+    prompt: string;
+    /** Whether the prompt completes at all. */
+    completing: boolean;
+    /** The completion category: "file", "buffer", "command", "variable", "face", or what a completingRead named. */
+    category: string | null;
+    requireMatch: boolean;
+    default: string | null;
+    /** The input the prompt started with. */
+    initial: string;
+    /** Whether completion ignores case here, as completion-ignore-case is bound for the prompt. */
+    ignoreCase: boolean;
+    /** How many completions are kept for the input as it is. */
+    kept: number;
+  }
+  /** What the open prompt reads, or undefined if none is open. */
+  function minibufferInfo(): MinibufferInfo | undefined;
+  /**
+   * The open prompt's completions, in the order they are offered, as Emacs's
+   * completion-all-sorted-completions, with `base`, the part of the input
+   * before them, such as a file name's directory. They are kept until the
+   * input changes, and `fresh` says they were sorted now rather than kept.
+   * With `atEnd`, they are worked out as if point were at the end of the
+   * input, as icomplete shows them.
+   */
+  function completionAllSortedCompletions(
+    options?: { atEnd?: boolean },
+  ): { base: string; completions: string[]; fresh: boolean } | undefined;
+  /**
+   * What completing `input` as far as it goes gives, with point at its end,
+   * as Emacs's completion-try-completion: true if it is the only match, the
+   * completed text and where point goes in it, or undefined for no match.
+   * It completes against `names` if given, else what the open prompt does.
+   */
+  function completionTryCompletion(input: string, names?: Iterable<string>): true | { text: string; point: number } | undefined;
+  /** Replace the kept completions, to rotate them or leave some out, until the input changes. */
+  function cacheAllSortedCompletions(completions: string[]): void;
+  /** A piece of text and the face or faces it is drawn in, the first winning. */
+  type FacedText = string | { text: string; face?: string | string[] | null };
+  /**
+   * Set what the minibuffer shows besides its input, until the prompt
+   * closes, as an overlay's before-string and after-string: `before` comes
+   * before the prompt and `after` after the input, where a newline starts
+   * another line. Null clears it.
+   */
+  function setMinibufferOverlay(overlay: { before?: string; after?: FacedText[] } | null): void;
+  /** Put a keymap in front of the current buffer's local map, as Emacs's use-local-map of make-composed-keymap. */
+  function composeLocalMap(name: string): void;
+  /**
+   * The first key sequence that runs a command in the selected window's
+   * buffer, as Emacs's where-is-internal with FIRSTONLY, such as "C-x C-f".
+   */
+  function whereIs(command: string): string | undefined;
+  /**
+   * The frame's size: its columns, its lines with the echo area, and the
+   * most lines the minibuffer may take, as max-mini-window-height says.
+   */
+  function frameSize(): { columns: number; lines: number; maxMiniWindowLines: number };
   /**
    * Call `fn` after `secs` seconds, and then every `repeat` seconds if given,
    * as Emacs's run-with-timer. Returns the timer, for cancelTimer.
@@ -354,6 +449,8 @@ const API: &str = r##"
   /** A file name made absolute, with ~ for the home directory, as Emacs's expand-file-name. */
   function expandFileName(file: string): string;
   function fileExists(file: string): boolean;
+  /** Whether a file name names a directory, as Emacs's file-directory-p. */
+  function fileDirectoryP(file: string): boolean;
   /** Where a file is auto-saved: #name# beside it. */
   function autoSaveFileName(file: string): string;
   /** Whether a file's auto-save file is newer than the file. */

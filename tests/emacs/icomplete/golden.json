@@ -1,0 +1,398 @@
+{
+  "cases": [
+    {
+      "name": "icomplete-prefix",
+      "states": [
+        {
+          "input": "",
+          "before": "",
+          "after": ""
+        },
+        {
+          "input": "a",
+          "before": "",
+          "after": "{pple | pricot | vocado}"
+        },
+        {
+          "input": "ap",
+          "before": "",
+          "after": "{ple | ricot}"
+        },
+        {
+          "input": "apr",
+          "before": "",
+          "after": "(icot) [Matched]"
+        },
+        {
+          "input": "ap",
+          "before": "",
+          "after": "{ple | ricot}"
+        },
+        {
+          "input": "a",
+          "before": "",
+          "after": "{pple | pricot | vocado}"
+        },
+        {
+          "input": "a",
+          "before": "",
+          "after": "{pricot | vocado | pple}"
+        },
+        {
+          "input": "a",
+          "before": "",
+          "after": "{vocado | pple | pricot}"
+        },
+        {
+          "input": "a",
+          "before": "",
+          "after": "{pricot | vocado | pple}"
+        },
+        {
+          "exited": true,
+          "answer": "apricot"
+        }
+      ]
+    },
+    {
+      "name": "icomplete-optional",
+      "states": [
+        {
+          "input": "",
+          "before": "",
+          "after": ""
+        },
+        {
+          "input": "b",
+          "before": "",
+          "after": "[anana] [Matched]"
+        },
+        {
+          "input": "bx",
+          "before": "",
+          "after": " [No matches]"
+        },
+        {
+          "input": "b",
+          "before": "",
+          "after": "[anana] [Matched]"
+        },
+        {
+          "input": "",
+          "before": "",
+          "after": "[anana] [Matched]"
+        },
+        {
+          "input": "q",
+          "before": "",
+          "after": " [No matches]"
+        },
+        {
+          "exited": true,
+          "answer": "q"
+        }
+      ]
+    },
+    {
+      "name": "icomplete-ret-must-match",
+      "states": [
+        {
+          "input": "",
+          "before": "",
+          "after": ""
+        },
+        {
+          "input": "a",
+          "before": "",
+          "after": "(p){ple | ricot}"
+        },
+        {
+          "input": "ap",
+          "before": "",
+          "after": "{ple | ricot}"
+        },
+        {
+          "input": "ap",
+          "before": "",
+          "after": "{ple | ricot}"
+        },
+        {
+          "input": "apl",
+          "before": "",
+          "after": " (No matches)"
+        },
+        {
+          "input": "apl",
+          "before": "",
+          "after": " (No matches)"
+        }
+      ]
+    },
+    {
+      "name": "icomplete-files",
+      "states": [
+        {
+          "input": "DIR/",
+          "before": "",
+          "after": ""
+        },
+        {
+          "input": "DIR/a",
+          "before": "",
+          "after": "[lp]{alps.org | alpha.txt}"
+        },
+        {
+          "input": "DIR/al",
+          "before": "",
+          "after": "[p]{alps.org | alpha.txt}"
+        },
+        {
+          "input": "DIR/al",
+          "before": "",
+          "after": "[p]{alpha.txt | alps.org}"
+        },
+        {
+          "input": "DIR/alpha.txt",
+          "before": "",
+          "after": " [Matched]"
+        },
+        {
+          "input": "DIR/alpha.tx",
+          "before": "",
+          "after": "[t] [Matched]"
+        },
+        {
+          "input": "DIR/alpha.t",
+          "before": "",
+          "after": "[xt] [Matched]"
+        },
+        {
+          "input": "DIR/alpha.",
+          "before": "",
+          "after": "[txt] [Matched]"
+        },
+        {
+          "input": "DIR/alpha",
+          "before": "",
+          "after": "[.txt] [Matched]"
+        },
+        {
+          "input": "DIR/alph",
+          "before": "",
+          "after": "[a.txt] [Matched]"
+        },
+        {
+          "input": "DIR/alp",
+          "before": "",
+          "after": "{alps.org | alpha.txt}"
+        },
+        {
+          "input": "DIR/alpb",
+          "before": "",
+          "after": " [No matches]"
+        },
+        {
+          "input": "DIR/alpb",
+          "before": "",
+          "after": " [No matches]"
+        }
+      ]
+    },
+    {
+      "name": "fido-files",
+      "states": [
+        {
+          "input": "DIR/",
+          "before": "",
+          "after": "{./ | beta/ | alpha.txt | notes.org}"
+        },
+        {
+          "input": "DIR/b",
+          "before": "",
+          "after": "[eta/] [Matched]"
+        },
+        {
+          "input": "DIR/bt",
+          "before": "",
+          "after": "[…eta/] [Matched]"
+        },
+        {
+          "input": "DIR/beta/",
+          "before": "",
+          "after": "{./ | inner.txt}"
+        },
+        {
+          "input": "DIR/",
+          "before": "",
+          "after": "{./ | beta/ | alpha.txt | notes.org}"
+        },
+        {
+          "input": "DIR/N",
+          "before": "",
+          "after": "[otes.org] [Matched]"
+        },
+        {
+          "input": "DIR/NO",
+          "before": "",
+          "after": "[tes.org] [Matched]"
+        },
+        {
+          "input": "DIR/NOT",
+          "before": "",
+          "after": "[es.org] [Matched]"
+        },
+        {
+          "exited": true,
+          "answer": "DIR/notes.org"
+        }
+      ]
+    },
+    {
+      "name": "fido-collection",
+      "states": [
+        {
+          "input": "",
+          "before": "",
+          "after": "{dired | Find-Me | find-file | describe-function | find-file-other-window}"
+        },
+        {
+          "input": "f",
+          "before": "",
+          "after": "{Find-Me | find-file | describe-function | find-file-other-window}"
+        },
+        {
+          "input": "ff",
+          "before": "",
+          "after": "{find-file | find-file-other-window}"
+        },
+        {
+          "input": "ff",
+          "before": "",
+          "after": "{find-file-other-window | find-file}"
+        },
+        {
+          "input": "ff",
+          "before": "",
+          "after": "{find-file | find-file-other-window}"
+        },
+        {
+          "input": "ff",
+          "before": "",
+          "after": "{find-file-other-window | find-file}"
+        },
+        {
+          "exited": true,
+          "answer": "find-file"
+        }
+      ]
+    },
+    {
+      "name": "icomplete-vertical",
+      "states": [
+        {
+          "input": "",
+          "before": "",
+          "after": ""
+        },
+        {
+          "input": "",
+          "before": "",
+          "after": ""
+        },
+        {
+          "input": "t",
+          "before": "",
+          "after": " \ntwo  \nthree\n"
+        },
+        {
+          "input": "t",
+          "before": "",
+          "after": " \nthree\ntwo  \n"
+        },
+        {
+          "input": "t",
+          "before": "",
+          "after": " \ntwo  \nthree\n"
+        },
+        {
+          "input": "t",
+          "before": "",
+          "after": " \nthree\ntwo  \n"
+        },
+        {
+          "input": "",
+          "before": "",
+          "after": " \nthree\ntwo  \n"
+        },
+        {
+          "exited": true,
+          "answer": ""
+        }
+      ]
+    },
+    {
+      "name": "fido-vertical",
+      "states": [
+        {
+          "input": "",
+          "before": "1/9 ",
+          "after": " \none \nsix \ntwo \nfive\nfour\n"
+        },
+        {
+          "input": "",
+          "before": "2/9 ",
+          "after": " \none \nsix \ntwo \nfive\nfour\n"
+        },
+        {
+          "input": "",
+          "before": "3/9 ",
+          "after": " \none \nsix \ntwo \nfive\nfour\n"
+        },
+        {
+          "input": "",
+          "before": "4/9 ",
+          "after": " \nsix  \ntwo  \nfive \nfour \nnine \n"
+        },
+        {
+          "input": "",
+          "before": "5/9 ",
+          "after": " \ntwo  \nfive \nfour \nnine \neight\n"
+        },
+        {
+          "input": "",
+          "before": "6/9 ",
+          "after": " \nfive \nfour \nnine \neight\nseven\n"
+        },
+        {
+          "input": "",
+          "before": "7/9 ",
+          "after": " \nfour \nnine \neight\nseven\nthree\n"
+        },
+        {
+          "input": "",
+          "before": "1/9 ",
+          "after": " \none \nsix \ntwo \nfive\nfour\n"
+        },
+        {
+          "input": "",
+          "before": "9/9 ",
+          "after": " \nfour \nnine \neight\nseven\nthree\n"
+        },
+        {
+          "input": "e",
+          "before": "4/6 ",
+          "after": " \nfive \nnine \nthree\nseven\neight\n"
+        },
+        {
+          "input": "e",
+          "before": "3/6 ",
+          "after": " \none  \nfive \nnine \nthree\nseven\n"
+        },
+        {
+          "exited": true,
+          "answer": "nine"
+        }
+      ]
+    }
+  ]
+}

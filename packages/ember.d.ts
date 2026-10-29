@@ -241,8 +241,30 @@ declare global {
       "execute-extended-command": [command: string];
       /**
        * Finish the minibuffer input and pass it to the waiting command.
+       *
+       * Empty input stands for the prompt's default, if it has one.
        */
       "exit-minibuffer": [];
+      /**
+       * Show completions as icomplete-mode does, with keys that work like ido-mode's.
+       *
+       * Completion is flex, ignoring case, and the completions show before anything is typed. RET takes the first, or goes into a directory, DEL after a slash goes up a directory, C-d at the end opens Dired there, M-j finishes the input as typed, and C-s and C-r rotate the completions.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "fido-mode": [];
+      /**
+       * List completions down the minibuffer in fido-mode, turning fido-mode on if it is off.
+       *
+       * The list scrolls as C-n and C-p move through it, and says which completion is selected, of how many.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "fido-vertical-mode": [];
       /**
        * Visit a file in a buffer.
        *
@@ -307,6 +329,96 @@ declare global {
        * Defined in packages/help.ts.
        */
       "help-mode": [];
+      /**
+       * Step back through the completions icomplete shows: the last becomes the first, which C-j takes.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-backward-completions": [];
+      /**
+       * Delete the character before point, or after a directory's slash, go up to the directory above, as ido-mode does.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-fido-backward-updir": [];
+      /**
+       * Delete the character after point, or at the end of a file name, open Dired on its directory, as ido-mode does.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-fido-delete-char": [];
+      /**
+       * Finish the input as it is typed, not as it would complete.
+       *
+       * Where the answer must be a completion, complete it first, unless given a prefix argument.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-fido-exit": [];
+      /**
+       * Kill the rest of the line, as C-k does, if point is not at the end of the input.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-fido-kill": [];
+      /**
+       * Finish the input with the first completion, or for a directory, go into it, as ido-mode does.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-fido-ret": [];
+      /**
+       * Complete the input to the first of the completions icomplete shows.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-force-complete": [];
+      /**
+       * Complete the input to the first of the completions icomplete shows, and finish it.
+       *
+       * With nothing typed, and the completions not listed, finish with the default instead.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-force-complete-and-exit": [];
+      /**
+       * Step forward through the completions icomplete shows: the second becomes the first, which C-j takes.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-forward-completions": [];
+      /**
+       * Show what the minibuffer's input could complete to, as you type.
+       *
+       * The completions follow the input in braces, the first of them in bold, with what the input would complete to in brackets before them: [Matched] for a single match, [No matches] for none, and parentheses rather than brackets where the answer must be a match. C-. and C-, rotate them, C-j takes the first, and C-M-i completes the input to it.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-mode": [];
+      /**
+       * Go to the first of the completions, in a list that scrolls (icomplete-scroll).
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-vertical-goto-first": [];
+      /**
+       * Go to the last of the completions, in a list that scrolls (icomplete-scroll).
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-vertical-goto-last": [];
+      /**
+       * List completions down the minibuffer, in icomplete-mode or fido-mode, turning icomplete-mode on if neither is.
+       *
+       * As many show as max-mini-window-height allows. C-n and C-p, or <down> and <up>, move through them.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-vertical-mode": [];
       /**
        * Do nothing. A pre-command-hook function can make a command this one, to cancel it.
        */
@@ -539,6 +651,22 @@ declare global {
        * Which names match the input is up to completion-styles.
        */
       "minibuffer-complete": [];
+      /**
+       * Finish the minibuffer input if it is one of the completions, completing it first if only one matches.
+       *
+       * RET runs this in prompts that must be answered by one of their completions, such as M-x's.
+       */
+      "minibuffer-complete-and-exit": [];
+      /**
+       * Complete the minibuffer input to the first of its completions, in the order they are offered in.
+       */
+      "minibuffer-force-complete": [];
+      /**
+       * Complete the minibuffer input to the first of its completions and finish it.
+       *
+       * With no completions, the input is finished as it is, unless the prompt must be answered by a completion.
+       */
+      "minibuffer-force-complete-and-exit": [];
       /**
        * Start selecting with the mouse: select the window clicked in and move point there.
        *
@@ -2312,11 +2440,23 @@ declare global {
        */
       "case-replace": Value;
       /**
+       * Whether minibuffer completion ignores the case of letters.
+       */
+      "completion-ignore-case": Value;
+      /**
+       * Endings of file names that completion lists leave out, such as icomplete's: compiled files, backups, and version control directories.
+       */
+      "completion-ignored-extensions": Value;
+      /**
        * How minibuffer input matches what it completes to, as a list of styles tried in order until one matches.
        *
        * basic matches names that start with the input. partial-completion matches each word of the input, up to a -, _, / or ., against the start of a word in turn, so f-f matches find-file. substring matches names containing the input, and flex names containing its characters in order.
        */
       "completion-styles": Value;
+      /**
+       * Where the buffer looks up relative file names, as a directory name ending in /. Nil means the directory of its file, or else the directory Ember started in. Dired sets it to the directory it lists.
+       */
+      "default-directory": Value;
       /**
        * Whether DEL and <delete> delete the active region rather than one character.
        *
@@ -2348,6 +2488,18 @@ declare global {
        */
       "face-name-history": Value;
       /**
+       * Whether Fido mode is on. Use the command fido-mode to change it.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "fido-mode": Value;
+      /**
+       * Whether Fido-Vertical mode is on. Use the command fido-vertical-mode to change it.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "fido-vertical-mode": Value;
+      /**
        * File names answered in the minibuffer, newest first.
        */
       "file-name-history": Value;
@@ -2369,6 +2521,54 @@ declare global {
        * How many earlier answers each minibuffer history keeps.
        */
       "history-length": Value;
+      /**
+       * Whether icomplete leaves out of each completion it lists the part they all share, which it shows after the input instead.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-hide-common-prefix": Value;
+      /**
+       * How a vertical list that scrolls says which completion is selected, of how many: %s for each number, or nil for nothing.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-matches-format": Value;
+      /**
+       * Whether Icomplete mode is on. Use the command icomplete-mode to change it.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-mode": Value;
+      /**
+       * How many lines icomplete's list may take, with the input. Vertical lists take up to 25, as max-mini-window-height allows.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-prospects-height": Value;
+      /**
+       * Whether moving through completions scrolls the list rather than rotating it. fido-vertical-mode turns it on.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-scroll": Value;
+      /**
+       * What icomplete puts between the completions it lists in a line.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-separator": Value;
+      /**
+       * Whether icomplete lists completions before anything is typed. fido-mode turns it on.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-show-matches-on-no-input": Value;
+      /**
+       * Whether Icomplete-Vertical mode is on. Use the command icomplete-vertical-mode to change it.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-vertical-mode": Value;
       /**
        * Whether indenting uses tabs as well as spaces, a tab for every tab-width columns.
        */
@@ -2393,6 +2593,10 @@ declare global {
        * Files in the temporary directory are not backed up.
        */
       "make-backup-files": Value;
+      /**
+       * The most the echo area grows to for a long minibuffer, such as a vertical list of completions: a fraction of the frame's height, or a number of lines.
+       */
+      "max-mini-window-height": Value;
       /**
        * Earlier answers to minibuffer prompts for text, newest first.
        */
@@ -2665,6 +2869,14 @@ declare global {
        */
       "query-replace-history": Value;
       /**
+       * Whether completing buffer names ignores the case of letters.
+       */
+      "read-buffer-completion-ignore-case": Value;
+      /**
+       * Whether completing file names ignores the case of letters: on where the file system does, as on macOS and Windows.
+       */
+      "read-file-name-completion-ignore-case": Value;
+      /**
        * Regular expressions searched for with incremental search, most recent first.
        *
        * Defined in packages/isearch.ts.
@@ -2676,6 +2888,10 @@ declare global {
        * Defined in packages/files.ts.
        */
       "require-final-newline": Value;
+      /**
+       * How the echo area fits what the minibuffer shows: grow-only grows it as needed until the prompt closes, and t also shrinks it.
+       */
+      "resize-mini-windows": Value;
       /**
        * Files revert-buffer reverts without asking, if unmodified: a list of JavaScript regular expressions matched against the file name.
        *
@@ -2740,6 +2956,18 @@ declare global {
        * Bold italic text.
        */
       "bold-italic": FaceAttributes;
+      /**
+       * What a completion list adds after a completion, such as a command's key.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "completions-annotations": FaceAttributes;
+      /**
+       * The part of a completion that matches the input.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "completions-common-part": FaceAttributes;
       /**
        * The text of buffers.
        */
@@ -2836,6 +3064,18 @@ declare global {
        * Highlighting, such as of what the mouse is over.
        */
       "highlight": FaceAttributes;
+      /**
+       * The first of the completions icomplete lists, which C-j takes.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-first-match": FaceAttributes;
+      /**
+       * The completion selected in a vertical list, which C-j takes.
+       *
+       * Defined in packages/icomplete.ts.
+       */
+      "icomplete-selected-match": FaceAttributes;
       /**
        * The match incremental search is at.
        *
@@ -3219,6 +3459,30 @@ declare global {
        */
       "delete-selection-mode-on-hook": Value;
       /**
+       * Run after Fido mode is turned on or off.
+       */
+      "fido-mode-hook": Value;
+      /**
+       * Run after Fido mode is turned off.
+       */
+      "fido-mode-off-hook": Value;
+      /**
+       * Run after Fido mode is turned on.
+       */
+      "fido-mode-on-hook": Value;
+      /**
+       * Run after Fido-Vertical mode is turned on or off.
+       */
+      "fido-vertical-mode-hook": Value;
+      /**
+       * Run after Fido-Vertical mode is turned off.
+       */
+      "fido-vertical-mode-off-hook": Value;
+      /**
+       * Run after Fido-Vertical mode is turned on.
+       */
+      "fido-vertical-mode-on-hook": Value;
+      /**
        * Run after visiting a file, once its major mode is chosen.
        */
       "find-file-hook": Value;
@@ -3243,6 +3507,34 @@ declare global {
        */
       "help-mode-hook": Value;
       /**
+       * Run when icomplete starts on a prompt, in the minibuffer, to set it up for this prompt.
+       */
+      "icomplete-minibuffer-setup-hook": Value;
+      /**
+       * Run after Icomplete mode is turned on or off.
+       */
+      "icomplete-mode-hook": Value;
+      /**
+       * Run after Icomplete mode is turned off.
+       */
+      "icomplete-mode-off-hook": Value;
+      /**
+       * Run after Icomplete mode is turned on.
+       */
+      "icomplete-mode-on-hook": Value;
+      /**
+       * Run after Icomplete-Vertical mode is turned on or off.
+       */
+      "icomplete-vertical-mode-hook": Value;
+      /**
+       * Run after Icomplete-Vertical mode is turned off.
+       */
+      "icomplete-vertical-mode-off-hook": Value;
+      /**
+       * Run after Icomplete-Vertical mode is turned on.
+       */
+      "icomplete-vertical-mode-on-hook": Value;
+      /**
        * Called with a start and an end to fontify that stretch of whole lines, just before it is shown. A major mode adds its function here, buffer-locally, and the function puts face and other properties on the text. Editing a line refontifies it and everything after it.
        */
       "jit-lock-functions": Value;
@@ -3254,6 +3546,14 @@ declare global {
        * Run after entering JSON mode, after the hooks of the modes it is built on.
        */
       "json-ts-mode-hook": Value;
+      /**
+       * Run when a prompt closes, in the minibuffer, before the answer is used.
+       */
+      "minibuffer-exit-hook": Value;
+      /**
+       * Run when a prompt opens, in the minibuffer.
+       */
+      "minibuffer-setup-hook": Value;
       /**
        * Run after entering Org-Agenda mode, after the hooks of the modes it is built on.
        */
@@ -3643,6 +3943,101 @@ declare global {
      * `then` gets the character.
      */
     function readCharChoice(prompt: string, chars: string, then: (char: string) => void): void;
+
+    interface CompletingReadOptions {
+      /** Whether the answer must be one of the completions. */
+      requireMatch?: boolean;
+      /** The input the minibuffer starts with. */
+      initial?: string;
+      /** What empty input stands for. */
+      default?: string;
+      /** The variable with earlier answers, which M-p and M-n go through. */
+      history?: string;
+      /** The completion category, as Emacs's metadata names it, such as "project-file". */
+      category?: string;
+      /** Complete one of the kinds commands' parameters take instead of `collection`, such as "buffer". */
+      kind?: string;
+    }
+    /**
+     * Read one of `collection` in the minibuffer, with completion, as Emacs's
+     * completing-read. The command does not wait: `then` gets the answer once
+     * it is typed, and C-g quits the prompt.
+     */
+    function completingRead(prompt: string, collection: Iterable<string>, then: (answer: string) => void, options?: CompletingReadOptions): void;
+    interface ReadFileNameOptions {
+      /** The directory the minibuffer starts in, if not the default one. */
+      dir?: string;
+      /** The answer if the input is left as it started. */
+      default?: string;
+      /** The input the minibuffer starts with, instead of the directory. */
+      initial?: string;
+      /** Whether the file must exist. */
+      mustMatch?: boolean;
+      history?: string;
+    }
+    /** Read a file name in the minibuffer, with completion, as Emacs's read-file-name; `then` gets it as typed. */
+    function readFileName(prompt: string, then: (file: string) => void, options?: ReadFileNameOptions): void;
+    /** Read text in the minibuffer, as Emacs's read-string; `then` gets it. */
+    function readString(prompt: string, then: (text: string) => void, options?: { initial?: string; default?: string; history?: string }): void;
+    interface MinibufferInfo {
+      /** The prompt, such as "Find file: ". */
+      prompt: string;
+      /** Whether the prompt completes at all. */
+      completing: boolean;
+      /** The completion category: "file", "buffer", "command", "variable", "face", or what a completingRead named. */
+      category: string | null;
+      requireMatch: boolean;
+      default: string | null;
+      /** The input the prompt started with. */
+      initial: string;
+      /** Whether completion ignores case here, as completion-ignore-case is bound for the prompt. */
+      ignoreCase: boolean;
+      /** How many completions are kept for the input as it is. */
+      kept: number;
+    }
+    /** What the open prompt reads, or undefined if none is open. */
+    function minibufferInfo(): MinibufferInfo | undefined;
+    /**
+     * The open prompt's completions, in the order they are offered, as Emacs's
+     * completion-all-sorted-completions, with `base`, the part of the input
+     * before them, such as a file name's directory. They are kept until the
+     * input changes, and `fresh` says they were sorted now rather than kept.
+     * With `atEnd`, they are worked out as if point were at the end of the
+     * input, as icomplete shows them.
+     */
+    function completionAllSortedCompletions(
+      options?: { atEnd?: boolean },
+    ): { base: string; completions: string[]; fresh: boolean } | undefined;
+    /**
+     * What completing `input` as far as it goes gives, with point at its end,
+     * as Emacs's completion-try-completion: true if it is the only match, the
+     * completed text and where point goes in it, or undefined for no match.
+     * It completes against `names` if given, else what the open prompt does.
+     */
+    function completionTryCompletion(input: string, names?: Iterable<string>): true | { text: string; point: number } | undefined;
+    /** Replace the kept completions, to rotate them or leave some out, until the input changes. */
+    function cacheAllSortedCompletions(completions: string[]): void;
+    /** A piece of text and the face or faces it is drawn in, the first winning. */
+    type FacedText = string | { text: string; face?: string | string[] | null };
+    /**
+     * Set what the minibuffer shows besides its input, until the prompt
+     * closes, as an overlay's before-string and after-string: `before` comes
+     * before the prompt and `after` after the input, where a newline starts
+     * another line. Null clears it.
+     */
+    function setMinibufferOverlay(overlay: { before?: string; after?: FacedText[] } | null): void;
+    /** Put a keymap in front of the current buffer's local map, as Emacs's use-local-map of make-composed-keymap. */
+    function composeLocalMap(name: string): void;
+    /**
+     * The first key sequence that runs a command in the selected window's
+     * buffer, as Emacs's where-is-internal with FIRSTONLY, such as "C-x C-f".
+     */
+    function whereIs(command: string): string | undefined;
+    /**
+     * The frame's size: its columns, its lines with the echo area, and the
+     * most lines the minibuffer may take, as max-mini-window-height says.
+     */
+    function frameSize(): { columns: number; lines: number; maxMiniWindowLines: number };
     /**
      * Call `fn` after `secs` seconds, and then every `repeat` seconds if given,
      * as Emacs's run-with-timer. Returns the timer, for cancelTimer.
@@ -3673,6 +4068,8 @@ declare global {
     /** A file name made absolute, with ~ for the home directory, as Emacs's expand-file-name. */
     function expandFileName(file: string): string;
     function fileExists(file: string): boolean;
+    /** Whether a file name names a directory, as Emacs's file-directory-p. */
+    function fileDirectoryP(file: string): boolean;
     /** Where a file is auto-saved: #name# beside it. */
     function autoSaveFileName(file: string): string;
     /** Whether a file's auto-save file is newer than the file. */

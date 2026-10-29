@@ -125,8 +125,9 @@
       if (typeof run !== "function") throw new TypeError("addHook takes a function");
       const key = hookKey(String(hook), local);
       const ids = hookIds.get(run) ?? new Map();
-      // As in Emacs, a function already on the hook is not added again.
-      if (ids.has(key)) return;
+      // As in Emacs, a function already on the hook is not added again. A
+      // buffer's local hooks may have gone since, with its major mode.
+      if (ids.has(key) && native.hookContains(String(hook), ids.get(key), Boolean(local))) return;
       ids.set(key, native.addHook(String(hook), run.name || "anonymous function", run, Boolean(local)));
       hookIds.set(run, ids);
     },
@@ -151,6 +152,50 @@
     yOrNP: (question, then) => native.ask("y-or-n", String(question), [], then),
     readAnswer: (question, answers, then) => native.ask("answer", String(question), answers.map(String), then),
     readCharChoice: (prompt, chars, then) => native.ask("char", String(prompt), [...String(chars)], then),
+    completingRead: (prompt, collection, then, options = {}) =>
+      native.read(options.kind ?? "string", String(prompt), {
+        collection: options.kind ? undefined : [...collection].map(String),
+        category: options.category,
+        requireMatch: Boolean(options.requireMatch),
+        initial: options.initial,
+        default: options.default,
+        history: options.history,
+      }, then),
+    readFileName: (prompt, then, options = {}) =>
+      native.read("file", String(prompt), {
+        dir: options.dir,
+        default: options.default,
+        initial: options.initial,
+        requireMatch: Boolean(options.mustMatch),
+        history: options.history,
+      }, then),
+    readString: (prompt, then, options = {}) =>
+      native.read("string", String(prompt), {
+        initial: options.initial,
+        default: options.default,
+        history: options.history,
+      }, then),
+    minibufferInfo: () => native.minibufferInfo() ?? undefined,
+    completionAllSortedCompletions: (options = {}) => native.completionAllSortedCompletions(Boolean(options.atEnd)) ?? undefined,
+    completionTryCompletion: (input, names) =>
+      native.completionTryCompletion(String(input), names === undefined ? undefined : [...names].map(String)) ?? undefined,
+    cacheAllSortedCompletions: (completions) => native.cacheAllSortedCompletions(completions.map(String)),
+    setMinibufferOverlay: (overlay) => {
+      if (overlay == null) return native.setMinibufferOverlay(undefined, [], []);
+      const pieces = (overlay.after ?? []).map((p) => typeof p === "string" ? { text: p } : p);
+      native.setMinibufferOverlay(
+        String(overlay.before ?? ""),
+        pieces.map((p) => String(p.text)),
+        pieces.map((p) => p.face == null ? [] : [p.face].flat().map(String)),
+      );
+    },
+    composeLocalMap: (name) => native.composeLocalMap(String(name)),
+    fileDirectoryP: (file) => native.fileDirectoryP(String(file)),
+    whereIs: (command) => native.whereIs(String(command)) ?? undefined,
+    frameSize: () => {
+      const [columns, lines, maxMiniWindowLines] = native.frameSize();
+      return { columns, lines, maxMiniWindowLines };
+    },
     runWithTimer: (secs, repeat, fn) => native.runWithTimer(Number(secs), repeat ?? null, false, fn),
     runWithIdleTimer: (secs, repeat, fn) => native.runWithTimer(Number(secs), repeat ? 1 : null, true, fn),
     cancelTimer: (id) => native.cancelTimer(id),

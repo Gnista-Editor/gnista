@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use ember_core::display::{Glyph, completion_list, cursor_index, display_width, row_glyphs};
+use ember_core::display::{Glyph, cursor_index, row_glyphs};
 use ember_core::display::position_at_column;
 use ember_core::{Arg, Editor, FrameId, Key, KeyCode, MouseEvent, MouseKind, Row, Style, WindowId, WindowView};
 use egui::text::{CCursor, LayoutJob, TextFormat};
@@ -440,7 +440,15 @@ impl Layout {
         let em = ui.painter().layout_no_wrap("M".to_string(), font.clone(), Color32::PLACEHOLDER);
         let m = Metrics { line_height: (em.size().y * LINE_SPACING).round(), char_width: em.size().x, font };
         let bar_height = m.line_height + 2.0 * BAR_PAD;
-        let echo_rect = Rect::from_min_max(pos2(rect.left(), rect.bottom() - bar_height), rect.max);
+        // The selected frame's echo area grows for a minibuffer of several
+        // lines, such as a vertical list of completions.
+        let echo_lines = if frame == ed.selected_frame() {
+            ed.mini_window_height(((rect.height() - 2.0 * BAR_PAD) / m.line_height).floor().max(1.0) as usize)
+        } else {
+            1
+        };
+        let echo_height = bar_height + (echo_lines - 1) as f32 * m.line_height;
+        let echo_rect = Rect::from_min_max(pos2(rect.left(), rect.bottom() - echo_height), rect.max);
         let frame_height = echo_rect.top() - rect.top();
         // The frame in cells, which resized windows' sizes count in.
         if frame == ed.selected_frame() {
@@ -832,28 +840,47 @@ fn draw_echo_area(painter: &Painter, ed: &Editor, rect: Rect, m: &Metrics, t: To
     };
     let mb = ed.minibuffer();
     let input = mb.slice(0..mb.len());
-    let mut job = LayoutJob::default();
+    let overlay = ed.minibuffer_overlay();
+    let before = overlay.map_or("", |o| o.before.as_str());
+    // The first line has the prompt and input; each newline in what the
+    // overlay adds after them, such as icomplete's list, starts another.
+    let mut jobs = vec![LayoutJob::default()];
+    let default_style = Style::default();
+    jobs[0].append(before, 0.0, text_format(m, t.muted));
     let prompt_style = ed.style_for(&["minibuffer-prompt".to_string()], t.dark);
-    job.append(prompt, 0.0, face_format(&prompt_style, &Style::default(), m, t));
-    job.append(&input, 0.0, text_format(m, t.ink));
-    // A space before what follows the input is text, not layout spacing, so
-    // the cursor at the end of the input sits right after it.
-    let completions = ed.minibuffer_completions();
-    if !completions.is_empty() {
-        let columns = ((rect.width() - 2.0 * PAD_X) / m.char_width).floor() as usize;
-        let used = display_width(prompt, 8) + display_width(&input, 8);
-        let list = completion_list(&completions, columns.saturating_sub(used));
-        job.append(&list, 0.0, text_format(m, t.faint));
-    }
+    jobs[0].append(prompt, 0.0, face_format(&prompt_style, &default_style, m, t));
+    jobs[0].append(&input, 0.0, text_format(m, t.ink));
     if let Some(message) = ed.echo() {
-        job.append(&format!(" {message}"), 0.0, text_format(m, t.muted));
+        jobs[0].append(&format!(" {message}"), 0.0, text_format(m, t.muted));
     }
-    let galley = painter.layout_job(job);
-    let y = rect.center().y - galley.size().y / 2.0;
-    let index = prompt.chars().count() + mb.point();
+    for (text, faces) in overlay.map_or(&[][..], |o| &o.after[..]) {
+        let format = face_format(&ed.style_for(faces, t.dark), &default_style, m, t);
+        for (k, piece) in text.split('\n').enumerate() {
+            if k > 0 {
+                jobs.push(LayoutJob::default());
+            }
+            jobs.last_mut().expect("a line").append(piece, 0.0, format.clone());
+        }
+    }
+    let top = rect.top() + BAR_PAD;
+    let mut first = None;
+    for (k, job) in jobs.into_iter().enumerate() {
+        let y = top + k as f32 * m.line_height;
+        if y + m.line_height > rect.bottom() - BAR_PAD + 0.5 {
+            break;
+        }
+        let galley = painter.layout_job(job);
+        let y = y + (m.line_height - galley.size().y) / 2.0;
+        painter.galley(pos2(origin_x, y), galley.clone(), t.ink);
+        first.get_or_insert(galley);
+    }
+    let galley = first.expect("the first line");
+    let index = before.chars().count() + prompt.chars().count() + mb.point();
     let cursor_x = galley.pos_from_cursor(CCursor::new(index)).min.x;
-    let under = input.chars().nth(mb.point());
-    painter.galley(pos2(origin_x, y), galley.clone(), t.ink);
-    let cursor_pos = pos2(origin_x + cursor_x, rect.center().y - m.line_height / 2.0);
+    // At the end of the input the cursor sits on what follows, as Emacs
+    // puts it on the first character of icomplete's list.
+    let after = overlay.and_then(|o| o.after.iter().find_map(|(text, _)| text.chars().next()));
+    let under = input.chars().nth(mb.point()).or(after.filter(|c| *c != '\n'));
+    let cursor_pos = pos2(origin_x + cursor_x, top);
     draw_cursor(&painter, &galley, index, under, cursor_pos, m, t, cursor);
 }

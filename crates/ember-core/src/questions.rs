@@ -79,15 +79,9 @@ impl Editor {
 
     fn open_question(&mut self, question: Question, preface: &str) {
         let history = if question.chars.is_some() { "read-char-history" } else { "yes-or-no-p-history" };
-        self.prompt = Some(Prompt {
-            text: format!("{preface}{}{}", question.text, question.choices),
-            kind: ParamKind::String,
-            history: history.into(),
-            history_pos: 0,
-            typed: String::new(),
-        });
-        self.minibuffer.set_text("");
+        let text = format!("{preface}{}{}", question.text, question.choices);
         self.question = Some(question);
+        self.open_prompt(Prompt::new(&text, ParamKind::String, history), "");
     }
 
     /// Answers a question with what was typed. Anything but one of its
@@ -121,8 +115,7 @@ impl Editor {
         let question = self.question.take().expect("checked above");
         match typed.filter(|c| chars.contains(c)) {
             Some(c) => {
-                self.prompt = None;
-                self.minibuffer.set_text("");
+                self.close_prompt();
                 self.run_answer(&question.then, Value::Str(c.to_string()));
             }
             None => {
@@ -130,7 +123,7 @@ impl Editor {
                     ['y', 'n'] => "Please answer y or n.  ",
                     _ => "",
                 };
-                self.prompt = None;
+                self.close_prompt();
                 self.open_question(question, preface);
             }
         }

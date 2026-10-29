@@ -132,7 +132,8 @@ pub struct Buffer {
     pub(crate) locals: BTreeMap<String, Value>,
     pub(crate) local_hooks: BTreeMap<String, Vec<HookEntry>>,
     /// The major mode's keymap.
-    pub(crate) local_map: Option<String>,
+    /// The local keymap and any composed over it, first looked up first.
+    pub(crate) local_map: Vec<String>,
     properties: TextProperties,
     overlays: Vec<Overlay>,
     next_overlay_id: u64,
@@ -180,7 +181,7 @@ impl Buffer {
             undo_in_region: false,
             locals: BTreeMap::new(),
             local_hooks: BTreeMap::new(),
-            local_map: None,
+            local_map: Vec::new(),
             properties: TextProperties::default(),
             overlays: Vec::new(),
             next_overlay_id: 0,

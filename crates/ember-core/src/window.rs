@@ -480,8 +480,9 @@ impl Editor {
             .collect()
     }
 
-    /// The frame in cells: as a front end said, or as the windows add up to.
-    fn frame_cells(&self) -> (usize, usize) {
+    /// The frame in cells, without the echo area: as a front end said, or
+    /// as the windows add up to.
+    pub fn frame_cells(&self) -> (usize, usize) {
         self.frame_size.unwrap_or_else(|| {
             let w = self.window(self.selected_window);
             (w.map_or(80, |w| w.width), w.map_or(24, |w| w.height + 1))

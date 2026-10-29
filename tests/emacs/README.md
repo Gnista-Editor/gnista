@@ -40,7 +40,7 @@ Besides the text, point, mark, kill ring and first error, each case records the 
 Batch Emacs has no window system, so some keys act as they would on a terminal rather than in GUI Emacs:
 
 - `<delete>` is translated to `DEL`, so it deletes backwards. GUI Emacs, and Ember, delete forwards. Don't write cases with `<delete>`.
-- The minibuffer reads from standard input in batch mode, not from the typed keys. record.el answers minibuffer reads and questions from the case's `answers` instead; a case that prompts with no answer left records the error "Minibuffer read in batch". Commands can also be given their arguments with `call`. Ember's own tests cover typing in the minibuffer.
+- The minibuffer reads from standard input in batch mode, not from the typed keys. record.el answers minibuffer reads and questions from the case's `answers` instead; a case that prompts with no answer left records the error "Minibuffer read in batch". Commands can also be given their arguments with `call`. Ember's own tests cover typing in the minibuffer, and `icomplete/` compares completion there (see below).
 - Batch Emacs does not auto-save after visiting a file, and killing a modified buffer does not ask; record.el turns auto-saving on as interactive Emacs does, but cases cannot check kill-buffer's question. Ember's own tests cover it.
 - `C-g` typed as a key makes batch Emacs wait forever too, so cases cannot quit isearch or query-replace with it.
 - `this-single-command-keys` sees only the last key of a sequence in batch mode, so commands that look at it act differently. In particular `C-x e` installs no repeat key, so `C-x e e` cannot be recorded. Ember's own tests cover it.
@@ -75,3 +75,13 @@ Turn the ones worth fixing into cases in a `cases/org-fuzz-*.json` file, so they
 `plain_editing_behaves_like_emacs_on_random_cases` does the same for editing outside any mode: motion, killing, yanking, the mark, undo, transposing and prefix arguments in random text. Its differences go in `cases/editing-fuzz.json`. The two fuzzers work in their own directories under `target/`, so run one at a time with its full name, or both at once.
 
 record.el also makes opening a link in a browser or another program an error, so a case cannot start one.
+
+## Completion in the minibuffer
+
+`icomplete/` holds an oracle of its own for what the minibuffer shows as you type: icomplete's list in its four modes, over a collection or a directory of files. Batch Emacs cannot type into the minibuffer, so `icomplete/record.el` runs an interactive Emacs on a pseudo-terminal, feeds it each case's keys from timers, and records the input and what icomplete shows after each key into `golden.json`:
+
+```bash
+cd tests/emacs/icomplete && script -q /dev/null emacs -Q -nw -l $PWD/record.el
+```
+
+`cargo test -p ember-script --test icomplete` compares Ember with it, and `icomplete_behaves_like_emacs_on_random_cases`, ignored by default, makes random cases with `EMBER_FUZZ_SEED` and `EMBER_FUZZ_CASES`, records them and prints where Ember differs, writing them to `target/tmp/icomplete-fuzz/differences.json`.

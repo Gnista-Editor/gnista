@@ -244,7 +244,7 @@ impl Editor {
         b.locals.retain(|name, _| permanent.contains(name));
         b.forget_shift_selection();
         b.local_hooks.clear();
-        b.local_map = None;
+        b.local_map.clear();
         b.syntax = None;
         b.fontified.clear();
         result
@@ -272,6 +272,14 @@ impl Editor {
         };
         list.insert(0, entry);
         self.next_hook_id
+    }
+
+    /// Whether the function added with `id` is still on a hook: a buffer's
+    /// local hooks go when its major mode changes, and the minibuffer's
+    /// when a prompt opens.
+    pub fn hook_contains(&self, hook: &str, id: u64, local: bool) -> bool {
+        let list = if local { self.buffer().local_hooks.get(hook) } else { self.hooks.get(hook) };
+        list.is_some_and(|list| list.iter().any(|entry| entry.id == id))
     }
 
     pub fn remove_hook(&mut self, hook: &str, id: u64, local: bool) {
@@ -380,6 +388,44 @@ pub(crate) fn install(ed: &mut Editor) {
             Value::List(["basic", "partial-completion", "emacs22"].map(|s| Value::Str(s.into())).to_vec()),
         ),
         Variable::new("history-length", "How many earlier answers each minibuffer history keeps.", 100.0),
+        Variable::new("completion-ignore-case", "Whether minibuffer completion ignores the case of letters.", false),
+        Variable::new(
+            "default-directory",
+            "Where the buffer looks up relative file names, as a directory name ending in /. Nil means the directory of its file, or else the directory Ember started in. Dired sets it to the directory it lists.",
+            Value::Bool(false),
+        ),
+        Variable::new(
+            "read-file-name-completion-ignore-case",
+            "Whether completing file names ignores the case of letters: on where the file system does, as on macOS and Windows.",
+            cfg!(any(target_os = "macos", target_os = "windows")),
+        ),
+        Variable::new("read-buffer-completion-ignore-case", "Whether completing buffer names ignores the case of letters.", false),
+        Variable::new(
+            "completion-ignored-extensions",
+            "Endings of file names that completion lists leave out, such as icomplete's: compiled files, backups, and version control directories.",
+            Value::List(
+                [
+                    ".o", "~", ".bin", ".lbin", ".so", ".a", ".ln", ".blg", ".bbl", ".elc", ".lof", ".glo", ".idx", ".lot",
+                    ".svn/", ".hg/", ".git/", ".bzr/", "CVS/", "_darcs/", "_MTN/", ".fmt", ".tfm", ".class", ".fas", ".lib",
+                    ".mem", ".x86f", ".sparcf", ".dfsl", ".pfsl", ".d64fsl", ".p64fsl", ".lx64fsl", ".lx32fsl", ".dx64fsl",
+                    ".dx32fsl", ".fx64fsl", ".fx32fsl", ".sx64fsl", ".sx32fsl", ".wx64fsl", ".wx32fsl", ".fasl", ".ufsl",
+                    ".fsl", ".dxl", ".lo", ".la", ".gmo", ".mo", ".toc", ".aux", ".cp", ".fn", ".ky", ".pg", ".tp", ".vr",
+                    ".cps", ".fns", ".kys", ".pgs", ".tps", ".vrs", ".pyc", ".pyo",
+                ]
+                .map(|s| Value::Str(s.into()))
+                .to_vec(),
+            ),
+        ),
+        Variable::new(
+            "max-mini-window-height",
+            "The most the echo area grows to for a long minibuffer, such as a vertical list of completions: a fraction of the frame's height, or a number of lines.",
+            0.25,
+        ),
+        Variable::new(
+            "resize-mini-windows",
+            "How the echo area fits what the minibuffer shows: grow-only grows it as needed until the prompt closes, and t also shrinks it.",
+            Value::Str("grow-only".into()),
+        ),
         Variable::new("minibuffer-history", "Earlier answers to minibuffer prompts for text, newest first.", Value::List(Vec::new())),
         Variable::new("extended-command-history", "Commands run with M-x, newest first.", Value::List(Vec::new())),
         Variable::new("file-name-history", "File names answered in the minibuffer, newest first.", Value::List(Vec::new())),
@@ -467,6 +513,8 @@ pub(crate) fn install(ed: &mut Editor) {
     for (name, doc) in [
         ("pre-command-hook", "Run before each command that keys run. A function can change this-command, and that command runs instead."),
         ("post-command-hook", "Run after each command that keys run."),
+        ("minibuffer-setup-hook", "Run when a prompt opens, in the minibuffer."),
+        ("minibuffer-exit-hook", "Run when a prompt closes, in the minibuffer, before the answer is used."),
         (
             "jit-lock-functions",
             "Called with a start and an end to fontify that stretch of whole lines, just before it is shown. A major mode adds its function here, buffer-locally, and the function puts face and other properties on the text. Editing a line refontifies it and everything after it.",
