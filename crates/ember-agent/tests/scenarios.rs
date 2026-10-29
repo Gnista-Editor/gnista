@@ -47,7 +47,7 @@ fn data(v: Value) -> Event {
 
 /// A reply streamed as the API streams it: the blocks, then the stop reason.
 fn reply(blocks: &[Value], stop_reason: &str) -> Vec<Event> {
-    let mut events = vec![data(json!({"type": "message_start", "message": {"model": "claude-opus-5-5", "usage": {"input_tokens": 100}}}))];
+    let mut events = vec![data(json!({"type": "message_start", "message": {"model": "claude-opus-5-5", "usage": {"input_tokens": 100, "cache_creation_input_tokens": 30, "cache_read_input_tokens": 70}}}))];
     for (i, block) in blocks.iter().enumerate() {
         match block["type"].as_str().unwrap() {
             "text" => {
@@ -158,7 +158,8 @@ fn a_reply_streams_into_the_agent_buffer() {
     s.ask("say hello");
     let agent = s.agent_text();
     assert!(agent.starts_with("* You\nsay hello\n* Agent\nHello! Here is a list:\n * not a heading\n"), "{agent}");
-    assert!(agent.ends_with("tokens in, 20 out so far]\n* You\n"), "{agent}");
+    // Cached input counts too.
+    assert!(agent.ends_with("[200 tokens in, 20 out so far]\n* You\n"), "{agent}");
     let request = s.request(0);
     assert_eq!(request["model"], "claude-opus-5-5");
     assert_eq!(request["fallbacks"], "default");

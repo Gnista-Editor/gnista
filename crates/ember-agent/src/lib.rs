@@ -327,9 +327,12 @@ impl Agent {
             let index = data.get("index").and_then(Value::as_u64).unwrap_or(0) as usize;
             match data.get("type").and_then(Value::as_str) {
                 Some("message_start") => {
-                    if let Some(input) = data.pointer("/message/usage/input_tokens").and_then(Value::as_u64) {
-                        session.usage.0 += input;
-                    }
+                    // Cached input is counted apart from the rest.
+                    let usage = data.pointer("/message/usage").cloned().unwrap_or(Value::Null);
+                    session.usage.0 += ["input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"]
+                        .iter()
+                        .filter_map(|k| usage.get(*k).and_then(Value::as_u64))
+                        .sum::<u64>();
                 }
                 Some("content_block_start") => {
                     let block = data.get("content_block").cloned().unwrap_or(Value::Null);
