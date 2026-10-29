@@ -897,6 +897,32 @@ const API: &str = r##"
   function fboundp(name: string): boolean;
   /** Call the function named, or the command, as Emacs's funcall. */
   function funcall(name: string, ...args: any[]): any;
+  /** An error as a handler of conditionCase sees it: its condition, its data, and its message. */
+  interface SignalledError {
+    symbol: string;
+    data: Value[];
+    message: string;
+  }
+  /**
+   * Signal an error of a condition, as Emacs's signal: "user-error",
+   * "search-failed", "file-missing", or one made with defineError. Errors
+   * from the editor carry their condition too, as `.symbol` and `.data`.
+   */
+  function signal(symbol: string, message: string, data?: Value[]): never;
+  /** Signal an error in what the user did, as user-error. */
+  function userError(message: string): never;
+  /** Define an error condition under a parent, "error" by default, as define-error. */
+  function defineError(symbol: string, parent?: string): void;
+  /** The conditions a caught error belongs to, its own first, as its error-conditions list them. */
+  function errorConditions(e: unknown): string[];
+  /**
+   * Run `fn`, handling the errors whose conditions have handlers, as Emacs's
+   * condition-case: { "search-failed": (e) => ..., error: (e) => ... }.
+   * Others go on up.
+   */
+  function conditionCase<T>(fn: () => T, handlers: { [condition: string]: (e: SignalledError) => T }): T;
+  /** Run `fn`, returning undefined if it signals an error, as ignore-errors. */
+  function ignoreErrors<T>(fn: () => T): T | undefined;
   /** The character at a position, point by default, or undefined at the end of the accessible text, as char-after. */
   function charAfter(position?: number): string | undefined;
   /** The character before a position, point by default, or undefined at the start, as char-before. */

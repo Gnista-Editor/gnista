@@ -267,7 +267,21 @@ fn with_editor<T>(ctx: &Ctx<'_>, f: impl FnOnce(&mut Editor) -> Result<T>) -> rq
     // SAFETY: `enter` set this from a live `&mut Editor` that is not used
     // while the script runs, and restores the previous value afterwards.
     let ed = unsafe { &mut *ptr.as_ptr() };
-    f(ed).map_err(|e| Exception::throw_message(ctx, &e.to_string()))
+    f(ed).map_err(|e| throw_error(ctx, &e))
+}
+
+/// Throws a core error to a script as an Error carrying its condition, as
+/// Emacs's signal: `.symbol`, `.data` and `.conditions`, for conditionCase.
+fn throw_error(ctx: &Ctx<'_>, e: &Error) -> rquickjs::Error {
+    let exception = match Exception::from_message(ctx.clone(), e.message()) {
+        Ok(exception) => exception,
+        Err(err) => return err,
+    };
+    let data: Vec<Value> = e.data().iter().filter_map(|v| value_to_js(ctx, v).ok()).collect();
+    let _ = exception.set("symbol", e.symbol());
+    let _ = exception.set("data", data);
+    let _ = exception.set("conditions", ember_core::error_conditions(e.symbol()));
+    ctx.throw(exception.into_value())
 }
 
 /// A command implemented by a script function.
@@ -1249,7 +1263,7 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
         Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| {
             with_editor(&ctx, |ed| {
                 let path = ed.expand_file_name(&file);
-                fs::read_to_string(&path).map_err(|e| Error::new(format!("Opening input file: {e}, {}", path.display())))
+                fs::read_to_string(&path).map_err(|e| ember_core::fileops::file_error("Opening input file", &e, &[&path]))
             })
         })?,
     )?;
@@ -1757,6 +1771,11 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
         })?,
     )?;
     native.set(
+        "defineError",
+        Function::new(ctx.clone(), |symbol: String, parent: String| ember_core::define_error(&symbol, &parent))?,
+    )?;
+    native.set("errorConditions", Function::new(ctx.clone(), |symbol: String| ember_core::error_conditions(&symbol))?)?;
+    native.set(
         "killRegion",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, beg: usize, end: usize| with_editor(&ctx, |ed| ed.kill_region(beg, end)))?,
     )?;
@@ -2221,25 +2240,37 @@ struct Failure {
     message: String,
     is_bug: bool,
     location: Option<String>,
+    /// The condition and data a script's error carries, as ember.signal gives them.
+    symbol: Option<String>,
+    data: Vec<EditorValue>,
 }
 
 fn failure(ctx: &Ctx<'_>, err: rquickjs::Error) -> Failure {
     if !err.is_exception() {
-        return Failure { message: err.to_string(), is_bug: true, location: None };
+        return Failure { message: err.to_string(), is_bug: true, location: None, symbol: None, data: Vec::new() };
     }
     let value = ctx.catch();
     let Some(exception) = value.as_exception() else {
         let message = Coerced::<String>::from_js(ctx, value)
             .map(|s| s.0)
             .unwrap_or_else(|_| "Script threw a value that is not an Error".into());
-        return Failure { message, is_bug: false, location: None };
+        return Failure { message, is_bug: false, location: None, symbol: None, data: Vec::new() };
     };
     let message = exception.message().unwrap_or_default();
     let name: String = exception.get("name").unwrap_or_default();
     let location = exception.stack().and_then(|stack| first_location(&stack));
+    let symbol: Option<String> = exception.get("symbol").ok().flatten();
+    let data: Vec<EditorValue> = exception
+        .get::<_, Option<Vec<Value>>>("data")
+        .ok()
+        .flatten()
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|v| value_from_js(ctx, v).ok())
+        .collect();
     if name == "InternalError" && message == "interrupted" {
         let message = format!("Script stopped after running for {:?}", TIME_LIMIT.get());
-        return Failure { message, is_bug: false, location };
+        return Failure { message, is_bug: false, location, symbol: Some("quit".into()), data };
     }
     // Errors the engine raises point at mistakes in the script; include their type.
     let is_bug = matches!(
@@ -2247,26 +2278,28 @@ fn failure(ctx: &Ctx<'_>, err: rquickjs::Error) -> Failure {
         "TypeError" | "ReferenceError" | "SyntaxError" | "RangeError" | "InternalError"
     );
     let message = if is_bug { format!("{name}: {message}") } else { message };
-    Failure { message, is_bug, location }
+    Failure { message, is_bug, location, symbol, data }
 }
 
 /// An error for a failed command. Deliberate errors show just their message,
 /// as in Emacs; script bugs also say where they happened.
 fn js_error(ctx: &Ctx<'_>, err: rquickjs::Error) -> Error {
     let f = failure(ctx, err);
-    match f.location {
-        Some(location) if f.is_bug => Error::new(format!("{} ({location})", f.message)),
-        _ => Error::new(f.message),
-    }
+    let message = match f.location {
+        Some(location) if f.is_bug => format!("{} ({location})", f.message),
+        _ => f.message,
+    };
+    Error::signal(f.symbol.as_deref().unwrap_or("error"), message, f.data)
 }
 
 /// An error for a failed file load, which always says where it happened.
 fn js_error_with_location(ctx: &Ctx<'_>, err: rquickjs::Error) -> Error {
     let f = failure(ctx, err);
-    match f.location {
-        Some(location) => Error::new(format!("{location}: {}", f.message)),
-        None => Error::new(f.message),
-    }
+    let message = match f.location {
+        Some(location) => format!("{location}: {}", f.message),
+        None => f.message,
+    };
+    Error::signal(f.symbol.as_deref().unwrap_or("error"), message, f.data)
 }
 
 /// The first `file:line:col` in a QuickJS stack trace that is not in the prelude.

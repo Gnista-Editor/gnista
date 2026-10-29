@@ -44,9 +44,10 @@ const pairs = (name: string): [string, string][] => {
   const v = ember.variable(name);
   return Array.isArray(v) ? v.filter((p): p is [string, string] => Array.isArray(p) && p.length === 2).map((p) => [String(p[0]), String(p[1])]) : [];
 };
-const isScanError = (e: unknown): e is Error => e instanceof Error && e.message.startsWith("Scan error: ");
+type ScanError = Error & { symbol: "scan-error"; data: [string, number, number] };
+const isScanError = (e: unknown): e is ScanError => e instanceof Error && (e as { symbol?: string }).symbol === "scan-error";
 /** The second position a scan error names, as (nth 3 err), from 0. */
-const scanEnd = (e: Error): number => Number(/, (\d+)$/.exec(e.message)?.[1] ?? 1) - 1;
+const scanEnd = (e: ScanError): number => e.data[2] - 1;
 
 /** The typed character, as last-command-event. */
 function lastEvent(): string | undefined {
@@ -155,7 +156,7 @@ function balanceInfo(direction: number, stringOrComment: number | true | null): 
         topLevel();
       } catch (e) {
         if (!isScanError(e)) throw e;
-        if (!e.message.includes("ends prematurely") || (stringOrComment !== null && ember.syntaxPpss().start === null)) {
+        if (!e.data[0].includes("ends prematurely") || (stringOrComment !== null && ember.syntaxPpss().start === null)) {
           topLevel();
         } else {
           ember.gotoChar(scanEnd(e));

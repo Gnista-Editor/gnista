@@ -290,7 +290,12 @@ pub struct ParseState {
 /// An error from scanning, as Emacs's `scan-error`, with the positions it
 /// names, shown as Emacs shows one: Scan error: "...", 3, 10.
 fn scan_error(message: &str, from: usize, to: usize) -> Error {
-    Error::new(format!("Scan error: \"{message}\", {}, {}", from + 1, to + 1))
+    use crate::variables::Value;
+    Error::signal(
+        "scan-error",
+        format!("Scan error: \"{message}\", {}, {}", from + 1, to + 1),
+        vec![Value::Str(message.to_string()), Value::Number((from + 1) as f64), Value::Number((to + 1) as f64)],
+    )
 }
 
 /// How many characters a scanner reads from the buffer at a time.

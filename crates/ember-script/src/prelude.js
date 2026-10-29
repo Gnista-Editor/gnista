@@ -387,6 +387,38 @@
       return id;
     },
     killRegion: (beg, end) => native.killRegion(beg, end),
+    signal(symbol, message, data = []) {
+      const e = new Error(String(message));
+      e.symbol = String(symbol);
+      e.data = data;
+      e.conditions = native.errorConditions(String(symbol));
+      throw e;
+    },
+    userError: (message) => ember.signal("user-error", message),
+    defineError: (symbol, parent = "error") => native.defineError(String(symbol), String(parent)),
+    errorConditions: (e) =>
+      e instanceof Error && Array.isArray(e.conditions) ? e.conditions : e instanceof Error && typeof e.symbol === "string" ? native.errorConditions(e.symbol) : ["error"],
+    conditionCase(fn, handlers) {
+      try {
+        return fn();
+      } catch (e) {
+        // Engine errors are bugs to see, not conditions to handle, unless asked for by name.
+        const conditions = ember.errorConditions(e);
+        for (const c of conditions) {
+          if (Object.prototype.hasOwnProperty.call(handlers, c)) {
+            return handlers[c]({
+              symbol: e?.symbol ?? "error",
+              data: e?.data ?? [],
+              message: e instanceof Error ? e.message : String(e),
+            });
+          }
+        }
+        throw e;
+      }
+    },
+    ignoreErrors(fn) {
+      return ember.conditionCase(fn, { error: () => undefined });
+    },
     defun(name, fn) {
       if (typeof fn !== "function") throw new TypeError("defun takes a name and a function");
       functions.set(String(name), fn);

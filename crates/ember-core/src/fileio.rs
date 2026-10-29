@@ -69,7 +69,7 @@ fn backup_enabled(path: &Path) -> bool {
 
 /// Reads a file and decodes it.
 pub(crate) fn read_file(path: &Path) -> Result<(String, Coding)> {
-    let bytes = fs::read(path).map_err(|e| Error::new(format!("Opening input file: {e}, {}", path.display())))?;
+    let bytes = fs::read(path).map_err(|e| crate::fileops::file_error("Opening input file", &e, &[path]))?;
     Ok(Coding::decode(&bytes))
 }
 

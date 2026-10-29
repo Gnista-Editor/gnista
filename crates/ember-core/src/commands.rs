@@ -34,7 +34,14 @@ fn def_motion(
 }
 
 fn err<T>(message: &str) -> Result<T> {
-    Err(Error::new(message))
+    // The conditions Emacs signals for these, so code can catch them.
+    let symbol = match message {
+        "Beginning of buffer" => "beginning-of-buffer",
+        "End of buffer" => "end-of-buffer",
+        "Quit" => "quit",
+        _ => "error",
+    };
+    Err(Error::signal(symbol, message, Vec::new()))
 }
 
 pub(crate) fn install(ed: &mut Editor) {
@@ -86,7 +93,11 @@ fn searching(ed: &mut Editor) {
                 };
                 match ed.search_buffer(&pattern, &options, n.unsigned_abs() as usize)? {
                     Some(_) => Ok(()),
-                    None => Err(Error::new(format!("Search failed: \"{pattern}\""))),
+                    None => Err(Error::signal(
+                        "search-failed",
+                        format!("Search failed: \"{pattern}\""),
+                        vec![crate::Value::Str(pattern.to_string())],
+                    )),
                 }
             })
             .param("string", ParamKind::String, prompt),

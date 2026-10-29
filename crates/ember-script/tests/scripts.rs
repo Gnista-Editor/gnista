@@ -532,3 +532,29 @@ fn a_cancelled_change_group_leaves_no_trace_across_undo_boundaries() {
     ed.press("C-/").unwrap();
     assert_eq!(text(&ed), "", "undo goes to before the typing, without panicking");
 }
+
+#[test]
+fn errors_carry_their_conditions_both_ways() {
+    let (mut ed, scripting) = setup();
+    eval(
+        &mut ed,
+        &scripting,
+        r#"
+        const seen: string[] = [];
+        // From the editor: a search that fails, a file that is not there.
+        seen.push(ember.conditionCase(() => { ember.call("search-forward", "nowhere"); return "found"; }, { "search-failed": (e) => `${e.symbol} ${e.data[0]}` }));
+        seen.push(ember.conditionCase(() => ember.readTextFile("/no/such/file"), { "file-error": (e) => e.symbol }));
+        // From scripts, with conditions of their own.
+        ember.defineError("my-error", "user-error");
+        seen.push(ember.conditionCase(() => ember.signal("my-error", "mine", [1]), { "user-error": (e) => `${e.symbol} ${e.data[0]} ${e.message}` }));
+        seen.push(String(ember.ignoreErrors(() => ember.userError("no"))));
+        ember.message(seen.join("|"));
+        ember.defineCommand({ name: "fail-with-condition", run: () => ember.signal("my-error", "it failed") });
+        "#,
+    );
+    assert_eq!(ed.messages().last().map(String::as_str), Some("search-failed nowhere|file-missing|my-error 1 mine|undefined"));
+    // A script's condition reaches the core.
+    let e = ed.call("fail-with-condition", vec![]).unwrap_err();
+    assert_eq!((e.symbol(), e.message()), ("my-error", "it failed"));
+    assert!(e.is("user-error"));
+}

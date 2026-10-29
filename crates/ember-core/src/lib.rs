@@ -37,7 +37,7 @@ mod variables;
 pub use buffer::Buffer;
 pub use command::{Arg, Command, Param, ParamKind};
 pub use editor::{Editor, LoggedMessage};
-pub use error::{Error, Result};
+pub use error::{Error, Result, define_error, error_conditions};
 pub use faces::{Background, Color, Face, FaceAttrs, Style, face_names, palette, palette_names};
 pub use fileio::{auto_save_file_name, backup_file_name};
 pub use files::{abbreviate_dir, abbreviate_path, expand_file_name, expand_file_name_in};

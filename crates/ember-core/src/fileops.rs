@@ -161,7 +161,7 @@ pub fn directory_files(dir: &Path) -> Result<Vec<String>> {
 /// An error as Emacs reports a failed system call on files: what it was
 /// doing, why it failed, and the files, as "Renaming: No such file or
 /// directory, /a, /b".
-fn file_error(doing: &str, e: &io::Error, files: &[&Path]) -> Error {
+pub fn file_error(doing: &str, e: &io::Error, files: &[&Path]) -> Error {
     let why = match e.kind() {
         io::ErrorKind::NotFound => "No such file or directory".to_string(),
         io::ErrorKind::PermissionDenied => "Permission denied".to_string(),
@@ -173,7 +173,16 @@ fn file_error(doing: &str, e: &io::Error, files: &[&Path]) -> Error {
         }
     };
     let names: Vec<String> = files.iter().map(|f| f.display().to_string()).collect();
-    Error::new(format!("{doing}: {why}, {}", names.join(", ")))
+    // file-error's family, with its data as Emacs's: what, why, the files.
+    let symbol = match e.kind() {
+        io::ErrorKind::NotFound => "file-missing",
+        io::ErrorKind::AlreadyExists => "file-already-exists",
+        io::ErrorKind::PermissionDenied => "permission-denied",
+        _ => "file-error",
+    };
+    let mut data = vec![crate::Value::Str(doing.to_string()), crate::Value::Str(why.clone())];
+    data.extend(names.iter().map(|n| crate::Value::Str(n.clone())));
+    Error::signal(symbol, format!("{doing}: {why}, {}", names.join(", ")), data)
 }
 
 /// Where a copy or rename to `to` goes: into it, if it is a directory name,

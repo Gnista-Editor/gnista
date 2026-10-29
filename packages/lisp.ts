@@ -11,14 +11,12 @@ ember.defineVariable({
   value: true,
 });
 
-const isScanError = (e: unknown): e is Error => e instanceof Error && e.message.startsWith("Scan error: ");
+type ScanError = Error & { symbol: "scan-error"; data: [string, number, number] };
+const isScanError = (e: unknown): e is ScanError => e instanceof Error && (e as { symbol?: string }).symbol === "scan-error";
 /** The message of a scan error, as (cadr err): "Unbalanced parentheses". */
-const scanMessage = (e: Error): string => /^Scan error: "(.*)", \d+, \d+$/.exec(e.message)?.[1] ?? e.message;
+const scanMessage = (e: ScanError): string => e.data[0];
 /** The positions a scan error names, as (nth 2 err) and (nth 3 err), from 0. */
-function scanPositions(e: Error): [number, number] {
-  const m = /, (\d+), (\d+)$/.exec(e.message);
-  return m === null ? [0, 0] : [Number(m[1]) - 1, Number(m[2]) - 1];
-}
+const scanPositions = (e: ScanError): [number, number] => [e.data[1] - 1, e.data[2] - 1];
 const bufferEnd = (arg: number): number => (arg > 0 ? ember.pointMax() : ember.pointMin());
 const count = (): number => ember.prefixNumericValue(ember.prefixArg());
 const userError = (message: string): never => {
