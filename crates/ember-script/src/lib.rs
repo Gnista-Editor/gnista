@@ -127,6 +127,9 @@ thread_local! {
     static TIME_LIMIT: Cell<Duration> = const { Cell::new(DEFAULT_TIME_LIMIT) };
     /// Files being loaded, innermost last, so commands know where they were defined.
     static LOADING: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
+    /// Promises rejected with no handler yet, and why: an async command's
+    /// error, reported once the code that settled it has finished.
+    static UNHANDLED: RefCell<Vec<(Persistent<Value<'static>>, Persistent<Value<'static>>)>> = const { RefCell::new(Vec::new()) };
 }
 
 /// The JavaScript runtime and the `ember` API. Clones share one runtime.
@@ -155,6 +158,15 @@ impl Scripting {
         runtime.set_loader(PackageResolver, PackageLoader);
         runtime.set_interrupt_handler(Some(Box::new(|| {
             DEADLINE.get().is_some_and(|deadline| Instant::now() > deadline)
+        })));
+        runtime.set_host_promise_rejection_tracker(Some(Box::new(|ctx, promise, reason, handled| {
+            UNHANDLED.with_borrow_mut(|unhandled| {
+                if handled {
+                    unhandled.retain(|(p, _)| p.clone().restore(&ctx).map_or(true, |p| p != promise));
+                } else {
+                    unhandled.push((Persistent::save(&ctx, promise), Persistent::save(&ctx, reason)));
+                }
+            })
         })));
         let context = Context::full(&runtime).map_err(|e| Error::new(e.to_string()))?;
         let scripting = Scripting { context };
@@ -292,7 +304,7 @@ impl<T: Copy + 'static> Drop for Restore<T> {
 /// QuickJS's runtime lock is not reentrant. When a script calls a command
 /// that runs another script command, the nested call reuses the context of
 /// the script that is already running instead of locking it again.
-fn enter<R>(context: &Context, ed: &mut Editor, f: impl for<'js> FnOnce(Ctx<'js>) -> R) -> R {
+fn enter<R>(context: &Context, ed: &mut Editor, f: impl for<'js> FnOnce(Ctx<'js>) -> Result<R>) -> Result<R> {
     let _editor = Restore::set(&EDITOR, Some(NonNull::from(ed)));
     match ACTIVE.get() {
         Some(raw) if raw == context.as_raw() => {
@@ -303,7 +315,16 @@ fn enter<R>(context: &Context, ed: &mut Editor, f: impl for<'js> FnOnce(Ctx<'js>
         _ => context.with(|ctx| {
             let _active = Restore::set(&ACTIVE, Some(ctx.as_raw()));
             let _deadline = Restore::set(&DEADLINE, Some(Instant::now() + TIME_LIMIT.get()));
-            f(ctx)
+            let result = f(ctx.clone());
+            // What waits on promises settled meanwhile runs now, before the
+            // editor goes on: an async command awaiting a prompt carries on
+            // as soon as the answer comes.
+            while ctx.execute_pending_job() {}
+            let unhandled = UNHANDLED.take();
+            match (result, unhandled.into_iter().next()) {
+                (Ok(_), Some((_, reason))) => Err(rejection_error(&ctx, reason)),
+                (result, _) => result,
+            }
         }),
     }
 }
@@ -347,7 +368,6 @@ fn throw_error(ctx: &Ctx<'_>, e: &Error) -> rquickjs::Error {
     ctx.throw(exception.into_value())
 }
 
-/// A command implemented by a script function.
 /// A script function the editor holds on to, as a command or a hook function.
 struct ScriptFunction {
     // Declared before `context` so the function is freed before the runtime can be.
@@ -947,13 +967,20 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
         "ask",
         Function::new(
             ctx.clone(),
-            move |ctx: Ctx<'js>, kind: String, question: String, choices: Vec<String>, run: Function<'js>| {
+            move |ctx: Ctx<'js>, kind: String, question: String, choices: Vec<String>, run: Function<'js>, quit: Opt<Option<Function<'js>>>| {
                 let then = ScriptFunction { run: Persistent::save(&ctx, run), context: ask_context.clone() }.into_hook();
-                with_editor(&ctx, |ed| match kind.as_str() {
-                    "yes-or-no" => ed.yes_or_no_p(&question, then),
-                    "y-or-n" => ed.y_or_n_p(&question, then),
-                    "answer" => ed.read_answer(&question, &choices.iter().map(String::as_str).collect::<Vec<_>>(), then),
-                    _ => ed.read_char_choice(&question, &choices.iter().filter_map(|c| c.chars().next()).collect::<Vec<_>>(), then),
+                let quit = quit.0.flatten().map(|f| ScriptFunction { run: Persistent::save(&ctx, f), context: ask_context.clone() }.into_hook());
+                with_editor(&ctx, |ed| {
+                    match kind.as_str() {
+                        "yes-or-no" => ed.yes_or_no_p(&question, then),
+                        "y-or-n" => ed.y_or_n_p(&question, then),
+                        "answer" => ed.read_answer(&question, &choices.iter().map(String::as_str).collect::<Vec<_>>(), then),
+                        _ => ed.read_char_choice(&question, &choices.iter().filter_map(|c| c.chars().next()).collect::<Vec<_>>(), then),
+                    }?;
+                    if let Some(quit) = quit {
+                        ed.on_prompt_quit(quit);
+                    }
+                    Ok(())
                 })
             },
         )?,
@@ -965,8 +992,9 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
         "read",
         Function::new(
             ctx.clone(),
-            move |ctx: Ctx<'js>, kind: String, prompt: String, options: Object<'js>, run: Function<'js>| {
+            move |ctx: Ctx<'js>, kind: String, prompt: String, options: Object<'js>, run: Function<'js>, quit: Opt<Option<Function<'js>>>| {
                 let then = ScriptFunction { run: Persistent::save(&ctx, run), context: read_context.clone() }.into_hook();
+                let quit = quit.0.flatten().map(|f| ScriptFunction { run: Persistent::save(&ctx, f), context: read_context.clone() }.into_hook());
                 let Some(kind) = ParamKind::from_name(&kind) else {
                     return Err(Exception::throw_type(&ctx, &format!("Unknown kind of reading {kind:?}")));
                 };
@@ -978,7 +1006,13 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
                 reading.default = options.get("default")?;
                 reading.history = options.get("history")?;
                 reading.dir = options.get("dir")?;
-                with_editor(&ctx, |ed| ed.read_from_minibuffer(reading, then))
+                with_editor(&ctx, |ed| {
+                    ed.read_from_minibuffer(reading, then)?;
+                    if let Some(quit) = quit {
+                        ed.on_prompt_quit(quit);
+                    }
+                    Ok(())
+                })
             },
         )?,
     )?;
@@ -2367,6 +2401,17 @@ fn js_error(ctx: &Ctx<'_>, err: rquickjs::Error) -> Error {
         _ => f.message,
     };
     Error::signal(f.symbol.as_deref().unwrap_or("error"), message, f.data)
+}
+
+/// The error a promise was rejected with, as the editor shows it.
+fn rejection_error(ctx: &Ctx<'_>, reason: Persistent<Value<'static>>) -> Error {
+    match reason.restore(ctx) {
+        Ok(reason) => {
+            let thrown = ctx.throw(reason);
+            js_error(ctx, thrown)
+        }
+        Err(e) => js_error(ctx, e),
+    }
 }
 
 /// An error for a failed file load, which always says where it happened.

@@ -226,7 +226,7 @@ function exitMessage(event: string, matches: number, grep: boolean): string {
  * compilation-start: the buffer is cleared and headed with the command,
  * shown, and filled as the output comes.
  */
-function compilationStart(command: string, mode: string, directory: string): void {
+async function compilationStart(command: string, mode: string, directory: string): Promise<void> {
   const modeName = mode === "grep-mode" ? "Grep" : "Compilation";
   const bufferName = `*${modeStem(mode)}*`;
   const existing = ember.getBufferProcess(bufferName);
@@ -271,11 +271,9 @@ function compilationStart(command: string, mode: string, directory: string): voi
     ember.call("display-buffer", bufferName);
   };
   if (existing !== undefined && ember.processStatus(existing) === "run" && !truthy(ember.variable("compilation-always-kill"))) {
-    ember.yesOrNoP(`A ${modeStem(mode)} process is running; kill it? `, (yes) => {
-      if (!yes) throw new Error(`Cannot have two processes in ‘${bufferName}’ at once`);
-      start();
-    });
-    return;
+    if (!(await ember.yesOrNoP(`A ${modeStem(mode)} process is running; kill it? `))) {
+      ember.signal("error", `Cannot have two processes in ‘${bufferName}’ at once`);
+    }
   }
   start();
 }
@@ -359,19 +357,15 @@ ember.defineCommand({
   doc:
     "Run a shell command in the background, make -k by default, showing its output in *compilation*, where error messages are found and highlighted. " +
     "M-g n (next-error) then visits each error's place in turn. Asks to save modified buffers first.",
-  run: () => {
+  run: async () => {
     const directory = currentDirectory();
-    const go = (command: string) => {
-      ember.setDefault("compile-command", command);
-      saveThen(() => compilationStart(command, "compilation-mode", directory));
-    };
-    const command = String(ember.variable("compile-command") ?? "");
+    let command = String(ember.variable("compile-command") ?? "");
     // As compilation-read-command says, or always with a prefix argument.
     if (truthy(ember.variable("compilation-read-command")) || ember.prefixArg() !== null) {
-      ember.readString("Compile command: ", go, { initial: command, history: "compile-history" });
-    } else {
-      go(command);
+      command = await ember.readString("Compile command: ", { initial: command, history: "compile-history" });
     }
+    ember.setDefault("compile-command", command);
+    saveThen(() => compilationStart(command, "compilation-mode", directory));
   },
 });
 

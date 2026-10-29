@@ -5681,8 +5681,13 @@ declare global {
       doc?: string;
       /** Read from the minibuffer, in order, when the command runs from a key or M-x. */
       params?: Param[];
-      /** Receives one string per parameter. Throw an Error to fail with its message. */
-      run: (...args: string[]) => void;
+      /**
+       * Receives one string per parameter. Throw an Error to fail with its
+       * message. It may be async, awaiting prompts partway through, as
+       * `await ember.readString(...)`; it then carries on with the buffer,
+       * prefix argument and name it had when it asked.
+       */
+      run: (...args: string[]) => void | Promise<void>;
       /**
        * Whether it is a motion Shift selects with, as Emacs's ^ interactive
        * spec: with Shift it starts or extends the region, without it ends one
@@ -5948,22 +5953,24 @@ declare global {
     function bufferList(): string[];
     /**
      * Ask a question answered by typing "yes" or "no", as Emacs's yes-or-no-p.
-     * Emacs waits for the answer; here the command goes on, and `then` is
-     * called with the answer once it is typed. C-g quits the question.
+     * The answer is a promise to await, in an async command: C-g rejects it
+     * with the "quit" condition, unwinding the command. Every prompt and
+     * question works so; each also takes a `then` function in place of
+     * awaiting, the older form, which C-g leaves uncalled.
      */
+    function yesOrNoP(question: string): Promise<boolean>;
     function yesOrNoP(question: string, then: (yes: boolean) => void): void;
-    /** Ask a question answered by typing y or n, as Emacs's y-or-n-p; `then` gets the answer. */
+    /** Ask a question answered by typing y or n, as Emacs's y-or-n-p. */
+    function yOrNP(question: string): Promise<boolean>;
     function yOrNP(question: string, then: (yes: boolean) => void): void;
-    /**
-     * Ask a question answered by typing one of `answers` and RET, as Emacs's
-     * read-answer; the prompt lists them. `then` gets the answer.
-     */
+    /** Ask a question answered by typing one of `answers` and RET, as Emacs's read-answer; the prompt lists them. */
+    function readAnswer(question: string, answers: string[]): Promise<string>;
     function readAnswer(question: string, answers: string[], then: (answer: string) => void): void;
     /**
      * Ask a question answered by one of the characters in `chars`, typed
      * alone, as Emacs's read-char-choice; the prompt says what they mean.
-     * `then` gets the character.
      */
+    function readCharChoice(prompt: string, chars: string): Promise<string>;
     function readCharChoice(prompt: string, chars: string, then: (char: string) => void): void;
 
     interface CompletingReadOptions {
@@ -5980,11 +5987,8 @@ declare global {
       /** Complete one of the kinds commands' parameters take instead of `collection`, such as "buffer". */
       kind?: string;
     }
-    /**
-     * Read one of `collection` in the minibuffer, with completion, as Emacs's
-     * completing-read. The command does not wait: `then` gets the answer once
-     * it is typed, and C-g quits the prompt.
-     */
+    /** Read one of `collection` in the minibuffer, with completion, as Emacs's completing-read. */
+    function completingRead(prompt: string, collection: Iterable<string>, options?: CompletingReadOptions): Promise<string>;
     function completingRead(prompt: string, collection: Iterable<string>, then: (answer: string) => void, options?: CompletingReadOptions): void;
     interface ReadFileNameOptions {
       /** The directory the minibuffer starts in, if not the default one. */
@@ -5997,10 +6001,17 @@ declare global {
       mustMatch?: boolean;
       history?: string;
     }
-    /** Read a file name in the minibuffer, with completion, as Emacs's read-file-name; `then` gets it as typed. */
+    /** Read a file name in the minibuffer, with completion, as Emacs's read-file-name; the answer is the name as typed. */
+    function readFileName(prompt: string, options?: ReadFileNameOptions): Promise<string>;
     function readFileName(prompt: string, then: (file: string) => void, options?: ReadFileNameOptions): void;
-    /** Read text in the minibuffer, as Emacs's read-string; `then` gets it. */
-    function readString(prompt: string, then: (text: string) => void, options?: { initial?: string; default?: string; history?: string }): void;
+    interface ReadStringOptions {
+      initial?: string;
+      default?: string;
+      history?: string;
+    }
+    /** Read text in the minibuffer, as Emacs's read-string. */
+    function readString(prompt: string, options?: ReadStringOptions): Promise<string>;
+    function readString(prompt: string, then: (text: string) => void, options?: ReadStringOptions): void;
     interface MinibufferInfo {
       /** The prompt, such as "Find file: ". */
       prompt: string;
@@ -6573,6 +6584,14 @@ declare global {
      * Others go on up.
      */
     function conditionCase<T>(fn: () => T, handlers: { [condition: string]: (e: SignalledError) => T }): T;
+    /**
+     * Run `body`, then `cleanup`, even if `body` throws, as Emacs's
+     * unwind-protect. If `body` returns a promise, `cleanup` runs once it
+     * settles, so what it undoes stays in place while an async body waits
+     * on a prompt. withCurrentBuffer, saveExcursion, letBind and
+     * conditionCase wait for an async `fn` in the same way.
+     */
+    function unwindProtect<T>(body: () => T, cleanup: () => void): T;
     /** Run `fn`, returning undefined if it signals an error, as ignore-errors. */
     function ignoreErrors<T>(fn: () => T): T | undefined;
     /** The character at a position, point by default, or undefined at the end of the accessible text, as char-after. */

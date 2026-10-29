@@ -37,7 +37,18 @@ These become the foundations, in this order, each landing whole with its tests b
 
 Alongside: an API naming rule (kebab-case to camelCase, `-p` to `P`; `undefined` for "nil"), a declarative table generating each native function's binding, wrapper and declaration, and an oracle that shares one scripting instance across cases.
 
-Items 1 to 5 landed in this round, with packages loaded as ES modules through a resolver that finds a package by its feature name, a shared `subr` module, and Org's marker layer moved into `org-macs`; the oracle now runs its cases in parallel, 264 s to 34 s. Item 6 is the next round, decided now so no further package is written against the old patterns without knowing it will move. Items 7 to 10 follow, each in its own ADR when it starts.
+Items 1 to 5 landed in this round, with packages loaded as ES modules through a resolver that finds a package by its feature name, a shared `subr` module, and Org's marker layer moved into `org-macs`; the oracle now runs its cases in parallel, 264 s to 34 s. Items 7 to 10 follow, each in its own ADR when it starts.
+
+Item 6 landed next:
+- Every prompt and question returns a promise when given no `then`: `await ember.readString(...)`, `yOrNP`, `completingRead`, `readFileName` and the rest. The callback form stays for code not yet moved.
+- QuickJS's job queue runs as each call from the editor into scripts finishes, so an awaiting command carries on inside the key that answered its prompt. That keeps the editor single-threaded and gives tests, the oracle and the MCP server the synchronous "run until idle" they need without an API of their own.
+- Each prompt keeps the asking command's current buffer, prefix argument and name, and gives them back when the answer comes, as an Emacs command's `current-prefix-arg` and `this-command` stay bound through `read-from-minibuffer`; the command, not `exit-minibuffer`, becomes the last command.
+- `C-g` rejects the promise with `quit`, so `try`/`finally`, `conditionCase` and `unwindProtect` run, as quitting unwinds a Lisp command.
+- `withCurrentBuffer`, `saveExcursion`, `letBind` and `conditionCase` wait for an async body before unwinding: bindings stay in effect while the prompt waits, as a `let` does in a recursive edit.
+- A rejected promise nothing handles is reported as the failing command's error, at the end of the call that rejected it.
+- Prompts do not nest: one opened while the minibuffer is active is refused, as Emacs refuses it with `enable-recursive-minibuffers` off, its default. Recursive minibuffers come when something needs them.
+- A command that runs another with `callInteractively` cannot yet await it; that waits for commands returning values (item 8).
+- project.ts and compile's prompts moved to `await`; files.ts, dired.ts and fill.ts move as they are next touched.
 
 ## Consequences
 

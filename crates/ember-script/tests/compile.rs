@@ -147,3 +147,31 @@ fn messages_keep_their_places_through_edits() {
     ed.press("M-g n").unwrap();
     assert_eq!(ed.buffer().slice(ed.buffer().point()..ed.buffer().point() + 4), "four");
 }
+
+#[test]
+fn compiling_again_asks_about_the_running_one() {
+    let dir = project();
+    let (mut ed, _s) = setup(dir.path());
+    ed.press("M-x").unwrap();
+    ed.type_text("compile\n");
+    ed.set_minibuffer_input("sleep 5");
+    ed.press("RET").unwrap();
+    ed.press("M-x").unwrap();
+    ed.type_text("compile\n");
+    ed.set_minibuffer_input("echo again");
+    ed.press("RET").unwrap();
+    assert_eq!(ed.prompt(), Some("A compilation process is running; kill it? (yes or no) "));
+    ed.type_text("no\n");
+    let err = ed.take_error().expect("compiling again failed");
+    assert_eq!(err.to_string(), "Cannot have two processes in ‘*compilation*’ at once");
+    // Saying yes kills the old one and starts the new one.
+    ed.press("M-x").unwrap();
+    ed.type_text("compile\n");
+    ed.set_minibuffer_input("echo again");
+    ed.press("RET").unwrap();
+    ed.type_text("yes\n");
+    ed.accept_process_output(Duration::from_secs(10));
+    let text = text_of(&ed, "*compilation*");
+    assert!(text.contains("\necho again\nagain\n"), "{text}");
+    assert!(text.contains("Compilation finished at "), "{text}");
+}

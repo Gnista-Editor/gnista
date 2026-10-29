@@ -91,14 +91,18 @@ function current(): string | undefined {
 
 const CHOOSE_DIR = "... (choose a dir)";
 
-/** Calls `then` with the current project, asking for one if the buffer is in none, as (project-current t). */
-function withProject(then: (root: string) => void): void {
+/** The current project, asking for one if the buffer is in none, as (project-current t). */
+async function projectCurrent(): Promise<string> {
   const root = current();
-  if (root !== undefined) return then(root);
-  ember.completingRead("Select project: ", [...knownProjects(), CHOOSE_DIR], (answer) => {
-    if (answer !== CHOOSE_DIR && answer !== "") return then(useProject(answer));
-    ember.readFileName("Select directory: ", (dir) => then(useProject(dir)), { mustMatch: true });
-  }, { requireMatch: true });
+  if (root !== undefined) return root;
+  return useProject(await promptProjectDir());
+}
+
+/** Asks for a known project, or any directory, as project-prompt-project-dir. */
+async function promptProjectDir(): Promise<string> {
+  const answer = await ember.completingRead("Select project: ", [...knownProjects(), CHOOSE_DIR], { requireMatch: true });
+  if (answer !== CHOOSE_DIR && answer !== "") return answer;
+  return ember.readFileName("Select directory: ", { mustMatch: true });
 }
 
 /** A directory taken as a project: the root of the one it is in, or itself. */
@@ -127,15 +131,14 @@ function commonPrefix(names: string[]): string {
  * Asks for one of a project's files, as project--read-file-cpd-relative:
  * relative to the directory they all share, named in the prompt.
  */
-function readFile(root: string, what: string, names: string[], then: (file: string) => void): void {
+async function readFile(root: string, what: string, names: string[]): Promise<string> {
   const common = commonPrefix(names);
   const cpd = common.includes("/") ? common.slice(0, common.lastIndexOf("/") + 1) : "";
   const dir = root + cpd;
   const choices = names.map((n) => n.slice(cpd.length)).map((n) => (n === "" ? "./" : n));
-  ember.completingRead(`${what} in ${dir}: `, choices, (answer) => {
-    if (answer === "") throw new Error("You didn't specify the file");
-    then(ember.expandFileName(dir + answer));
-  }, { category: "project-file", history: "file-name-history" });
+  const answer = await ember.completingRead(`${what} in ${dir}: `, choices, { category: "project-file", history: "file-name-history" });
+  if (answer === "") ember.userError("You didn't specify the file");
+  return ember.expandFileName(dir + answer);
 }
 
 const findFile = ember.defineCommand({
@@ -143,23 +146,26 @@ const findFile = ember.defineCommand({
   doc:
     "Visit one of the current project's files, with completion: those Git tracks and does not ignore.\n\n" +
     "Outside a project, it asks which one first.",
-  run: () => withProject((root) => readFile(root, "Find file", files(root), (file) => ember.call("find-file", file))),
+  run: async () => {
+    const root = await projectCurrent();
+    ember.call("find-file", await readFile(root, "Find file", files(root)));
+  },
 });
 
 ember.defineCommand({
   name: "project-find-dir",
   doc: "List one of the current project's directories in Dired, with completion.",
-  run: () =>
-    withProject((root) => {
-      const dirs = [...new Set(files(root).map((f) => f.slice(0, f.lastIndexOf("/") + 1)))];
-      readFile(root, "Dired", dirs, (dir) => ember.call("dired", ember.fileNameAsDirectory(dir)));
-    }),
+  run: async () => {
+    const root = await projectCurrent();
+    const dirs = [...new Set(files(root).map((f) => f.slice(0, f.lastIndexOf("/") + 1)))];
+    ember.call("dired", ember.fileNameAsDirectory(await readFile(root, "Dired", dirs)));
+  },
 });
 
 ember.defineCommand({
   name: "project-dired",
   doc: "List the current project's root in Dired.",
-  run: () => withProject((root) => ember.call("dired", root)),
+  run: async () => ember.call("dired", await projectCurrent()),
 });
 
 /** The buffers that belong to a project: those whose files or default directories are under its root. */
@@ -178,38 +184,33 @@ function projectBuffers(root: string): string[] {
 ember.defineCommand({
   name: "project-switch-to-buffer",
   doc: "Switch to one of the current project's buffers, with completion.",
-  run: () =>
-    withProject((root) => {
-      const here = ember.bufferName();
-      const buffers = projectBuffers(root);
-      const other = buffers.find((b) => b !== here);
-      ember.completingRead(
-        other === undefined ? "Switch to buffer: " : `Switch to buffer (default ${other}): `,
-        buffers,
-        (b) => ember.call("switch-to-buffer", b === "" ? other ?? here : b),
-        { category: "buffer", default: other },
-      );
-    }),
+  run: async () => {
+    const root = await projectCurrent();
+    const here = ember.bufferName();
+    const buffers = projectBuffers(root);
+    const other = buffers.find((b) => b !== here);
+    const b = await ember.completingRead(
+      other === undefined ? "Switch to buffer: " : `Switch to buffer (default ${other}): `,
+      buffers,
+      { category: "buffer", default: other },
+    );
+    ember.call("switch-to-buffer", b === "" ? other ?? here : b);
+  },
 });
 
 ember.defineCommand({
   name: "project-kill-buffers",
   doc: "Kill the current project's buffers, after asking. With a prefix argument, without asking.",
-  run: () =>
-    withProject((root) => {
-      const buffers = projectBuffers(root);
-      if (buffers.length === 0) {
-        ember.message("No buffers to kill");
-        return;
-      }
-      const kill = () => {
-        for (const b of buffers) ember.call("kill-buffer", b);
-      };
-      if (ember.prefixArg() !== null) return kill();
-      ember.yesOrNoP(`Kill ${buffers.length} buffer${buffers.length === 1 ? "" : "s"} in ${root}? `, (yes) => {
-        if (yes) kill();
-      });
-    }),
+  run: async () => {
+    const root = await projectCurrent();
+    const buffers = projectBuffers(root);
+    if (buffers.length === 0) {
+      ember.message("No buffers to kill");
+      return;
+    }
+    if (ember.prefixArg() === null && !(await ember.yesOrNoP(`Kill ${buffers.length} buffer${buffers.length === 1 ? "" : "s"} in ${root}? `))) return;
+    for (const b of buffers) ember.call("kill-buffer", b);
+  },
 });
 
 ember.defineCommand({
@@ -257,26 +258,21 @@ ember.defineCommand({
     requireMatch: true,
     collection: () => [...knownProjects(), CHOOSE_DIR],
   }],
-  run: (answer: string) => {
-    const go = (root: string) => {
-      const entries = (ember.variable("project-switch-commands") as ember.Value[])
-        .filter((e): e is string[] => Array.isArray(e) && e.length >= 3 && e.every((x) => typeof x === "string"));
-      const prompt = entries.map(([key, , label]) => `[${key}] ${label}`).join("  ");
-      ember.readCharChoice(`${prompt}\n`, entries.map(([key]) => key).join(""), (key) => {
-        const entry = entries.find(([k]) => k === key);
-        if (entry === undefined) return;
-        override = root;
-        try {
-          ember.callInteractively(entry[1] as ember.CommandName);
-        } finally {
-          override = undefined;
-        }
-      });
-    };
-    if (answer === CHOOSE_DIR) {
-      ember.readFileName("Select directory: ", (dir) => go(useProject(dir)), { mustMatch: true });
-    } else {
-      go(useProject(answer));
+  run: async (answer: string) => {
+    const root = useProject(answer === CHOOSE_DIR ? await ember.readFileName("Select directory: ", { mustMatch: true }) : answer);
+    const entries = (ember.variable("project-switch-commands") as ember.Value[])
+      .filter((e): e is string[] => Array.isArray(e) && e.length >= 3 && e.every((x) => typeof x === "string"));
+    const prompt = entries.map(([key, , label]) => `[${key}] ${label}`).join("  ");
+    const key = await ember.readCharChoice(`${prompt}\n`, entries.map(([key]) => key).join(""));
+    const entry = entries.find(([k]) => k === key);
+    if (entry === undefined) return;
+    // As project-current-directory-override, bound while the command
+    // starts; it finds its project before it asks anything.
+    override = root;
+    try {
+      ember.callInteractively(entry[1] as ember.CommandName);
+    } finally {
+      override = undefined;
     }
   },
 });
@@ -325,64 +321,64 @@ ember.defineCommand({
     },
     history: "regexp-history",
   }],
-  run: (input: string) => {
+  run: async (input: string) => {
     // The default is the symbol at point, quoted, as project--read-regexp gives it.
     const sym = symbolAtPoint();
     const regexp = input === "" ? (sym === undefined ? "" : regexpQuote(sym)) : input;
     if (regexp === "") throw new Error("No regexp");
     // Case folds, as grep-expand-template does, when case-fold-search says and the regexp has no capitals.
     const fold = ember.variable("case-fold-search") !== false && ember.variable("case-fold-search") !== null && !/[A-Z]/.test(regexp);
-    withProject((root) => {
-      const names = files(root);
-      const dir = ember.fileNameAsDirectory(ember.expandFileName(root));
-      // As xref-matches-in-files: grep over the files, their names from standard input.
-      const result = ember.callProcess(
-        ["xargs", "-0", "grep", ...(fold ? ["-i"] : []), "--null", "-snHE", "-e", toExtended(regexp)],
-        { directory: dir, input: names.join("\0") },
-      );
-      // grep says 1 for no matches; more is a failure, as of the regexp.
-      if (result.exit > 1 && !/\0\d+:/.test(result.output)) throw new Error(`Search failed with status ${result.exit}: ${result.output.trim()}`);
-      let js: RegExp | undefined;
-      try {
-        js = new RegExp(toExtended(regexp).replace(/\\</g, "\\b").replace(/\\>/g, "\\b"), fold ? "iu" : "u");
-      } catch {
-        js = undefined;
-      }
-      const xrefs = result.output
-        .split("\n")
-        .map((line) => /^([^\0]+)\0(\d+):(.*)$/.exec(line))
-        .filter((m): m is RegExpExecArray => m !== null)
-        .map((m) => {
-          const hit = js?.exec(m[3]);
-          // In characters, as buffer positions count them.
-          const col = hit ? [...m[3].slice(0, hit.index)].length : 0;
-          const length = hit ? [...hit[0]].length : 0;
-          return { file: dir + m[1], line: Number(m[2]), col, length, summary: m[3], group: m[1] };
-        });
-      if (xrefs.length === 0) throw new Error(`No matches for: ${regexp}`);
-      ember.funcall("xref-show-xrefs", xrefs);
-    });
+    const root = await projectCurrent();
+    const names = files(root);
+    const dir = ember.fileNameAsDirectory(ember.expandFileName(root));
+    // As xref-matches-in-files: grep over the files, their names from standard input.
+    const result = ember.callProcess(
+      ["xargs", "-0", "grep", ...(fold ? ["-i"] : []), "--null", "-snHE", "-e", toExtended(regexp)],
+      { directory: dir, input: names.join("\0") },
+    );
+    // grep says 1 for no matches; more is a failure, as of the regexp.
+    if (result.exit > 1 && !/\0\d+:/.test(result.output)) throw new Error(`Search failed with status ${result.exit}: ${result.output.trim()}`);
+    let js: RegExp | undefined;
+    try {
+      js = new RegExp(toExtended(regexp).replace(/\\</g, "\\b").replace(/\\>/g, "\\b"), fold ? "iu" : "u");
+    } catch {
+      js = undefined;
+    }
+    const xrefs = result.output
+      .split("\n")
+      .map((line) => /^([^\0]+)\0(\d+):(.*)$/.exec(line))
+      .filter((m): m is RegExpExecArray => m !== null)
+      .map((m) => {
+        const hit = js?.exec(m[3]);
+        // In characters, as buffer positions count them.
+        const col = hit ? [...m[3].slice(0, hit.index)].length : 0;
+        const length = hit ? [...hit[0]].length : 0;
+        return { file: dir + m[1], line: Number(m[2]), col, length, summary: m[3], group: m[1] };
+      });
+    if (xrefs.length === 0) throw new Error(`No matches for: ${regexp}`);
+    ember.funcall("xref-show-xrefs", xrefs);
   },
 });
 
 ember.defineCommand({
   name: "project-compile",
   doc: "Run a compilation in the current project's root, as M-x compile does there.",
-  run: () =>
-    withProject((root) => {
-      // As (let ((default-directory root)) (call-interactively #'compile)):
-      // compile takes its directory before it asks for the command.
-      const had = ember.isLocalVariable("default-directory");
-      const old = ember.variable("default-directory");
-      ember.makeLocalVariable("default-directory");
-      ember.setVariable("default-directory", ember.fileNameAsDirectory(ember.expandFileName(root)));
-      try {
-        ember.callInteractively("compile");
-      } finally {
-        if (had) ember.setVariable("default-directory", old ?? null);
-        else ember.killLocalVariable("default-directory");
-      }
-    }),
+  run: async () => {
+    const root = await projectCurrent();
+    // As (let ((default-directory root)) (call-interactively #'compile)):
+    // compile takes its directory before it asks for the command. Every
+    // buffer has its own default-directory in Emacs, so the binding is local.
+    const had = ember.isLocalVariable("default-directory");
+    const old = ember.variable("default-directory");
+    ember.makeLocalVariable("default-directory");
+    ember.setVariable("default-directory", ember.fileNameAsDirectory(ember.expandFileName(root)));
+    try {
+      ember.callInteractively("compile");
+    } finally {
+      if (had) ember.setVariable("default-directory", old ?? null);
+      else ember.killLocalVariable("default-directory");
+    }
+  },
 });
 
 for (const [keys, command] of [

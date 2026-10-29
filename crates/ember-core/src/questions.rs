@@ -2,12 +2,14 @@
 //! `y-or-n-p` and `read-char-choice`.
 //!
 //! Emacs's Lisp waits for the answer; Ember's commands return first, and
-//! the answer runs a function given with the question. The question opens
-//! the minibuffer as a prompt does, so front ends show it, `C-g` quits it,
-//! and the agent and tests see an open prompt to answer.
+//! the answer runs a function given with the question, in the context the
+//! command asked in, which is how a script's `await ember.yOrNP(...)`
+//! carries on. The question opens the minibuffer as a prompt does, so
+//! front ends show it, `C-g` quits it, and the agent and tests see an open
+//! prompt to answer.
 
 use crate::command::ParamKind;
-use crate::editor::{Editor, Prompt};
+use crate::editor::{Editor, Prompt, Resume};
 use crate::error::{Error, Result};
 use crate::key::{Key, KeyCode};
 use crate::variables::{HookFn, Value};
@@ -22,6 +24,10 @@ pub(crate) struct Question {
     /// What the full prompt adds after the question, such as `(y or n) `.
     choices: String,
     then: HookFn,
+    /// Called if the question is quit rather than answered.
+    pub(crate) quit: Option<HookFn>,
+    /// The asking command's context, given back for `then`.
+    resume: Option<Resume>,
 }
 
 impl Editor {
@@ -44,7 +50,7 @@ impl Editor {
             _ => format!("({}) ", answers.join(", ")),
         };
         let answers = answers.iter().map(|a| a.to_string()).collect();
-        self.ask(Question { text: question.to_string(), chars: None, answers, choices, then })
+        self.ask(Question { text: question.to_string(), chars: None, answers, choices, then, quit: None, resume: None })
     }
 
     /// Asks a question answered by typing y or n, as Emacs's `y-or-n-p`.
@@ -54,14 +60,14 @@ impl Editor {
             let yes = matches!(args.first(), Some(Value::Str(c)) if c == "y");
             then(ed, &[Value::Bool(yes)])
         });
-        self.ask(Question { text: question.to_string(), chars: Some(vec!['y', 'n']), answers: Vec::new(), choices: "(y or n) ".into(), then: to_bool })
+        self.ask(Question { text: question.to_string(), chars: Some(vec!['y', 'n']), answers: Vec::new(), choices: "(y or n) ".into(), then: to_bool, quit: None, resume: None })
     }
 
     /// Asks a question answered by one of `chars`, as Emacs's
     /// `read-char-choice`; the prompt says what the choices are. `then` is
     /// called with the character typed, as a string.
     pub fn read_char_choice(&mut self, prompt: &str, chars: &[char], then: HookFn) -> Result<()> {
-        self.ask(Question { text: prompt.to_string(), chars: Some(chars.to_vec()), answers: Vec::new(), choices: String::new(), then })
+        self.ask(Question { text: prompt.to_string(), chars: Some(chars.to_vec()), answers: Vec::new(), choices: String::new(), then, quit: None, resume: None })
     }
 
     /// Whether the open prompt is a question answered by a single key.
@@ -69,10 +75,11 @@ impl Editor {
         self.question.as_ref().is_some_and(|q| q.chars.is_some())
     }
 
-    fn ask(&mut self, question: Question) -> Result<()> {
+    fn ask(&mut self, mut question: Question) -> Result<()> {
         if self.prompt.is_some() {
             return Err(Error::new("Command attempted to use minibuffer while in minibuffer"));
         }
+        question.resume = Some(self.resume_point());
         self.open_question(question, "");
         Ok(())
     }
@@ -89,7 +96,7 @@ impl Editor {
     pub(crate) fn answer_typed(&mut self, answer: &str) -> bool {
         let Some(question) = self.question.take() else { return false };
         if question.answers.iter().any(|a| a == answer) {
-            self.run_answer(&question.then, Value::Str(answer.to_string()));
+            self.run_answer(&question, Value::Str(answer.to_string()));
         } else {
             let answers = match question.answers.as_slice() {
                 [rest @ .., last] if !rest.is_empty() => format!("{} or {last}", rest.join(", ")),
@@ -116,7 +123,7 @@ impl Editor {
         match typed.filter(|c| chars.contains(c)) {
             Some(c) => {
                 self.close_prompt();
-                self.run_answer(&question.then, Value::Str(c.to_string()));
+                self.run_answer(&question, Value::Str(c.to_string()));
             }
             None => {
                 let preface = match chars.as_slice() {
@@ -131,8 +138,11 @@ impl Editor {
     }
 
     /// Runs what answers a question, showing its error as a command's.
-    fn run_answer(&mut self, then: &HookFn, answer: Value) {
-        if let Err(e) = then(self, &[answer]) {
+    fn run_answer(&mut self, question: &Question, answer: Value) {
+        if let Some(resume) = &question.resume {
+            self.resume(resume);
+        }
+        if let Err(e) = (question.then)(self, &[answer]) {
             self.prompt_waiters_clear();
             self.fail(e);
             return;
@@ -140,8 +150,8 @@ impl Editor {
         self.run_prompt_waiters();
     }
 
-    /// Forgets any open question, as `C-g` does.
-    pub(crate) fn drop_question(&mut self) {
-        self.question = None;
+    /// Forgets any open question, as `C-g` does, and returns it.
+    pub(crate) fn drop_question(&mut self) -> Option<Question> {
+        self.question.take()
     }
 }

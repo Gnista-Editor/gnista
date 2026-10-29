@@ -38,8 +38,23 @@ pub(crate) struct Prompt {
     pub(crate) initial: String,
     /// Called with the answer, for a prompt opened partway through a command.
     pub(crate) then: Option<variables::HookFn>,
+    /// Called if the prompt is quit rather than answered.
+    pub(crate) quit: Option<variables::HookFn>,
+    /// The asking command's context, given back for `then`.
+    pub(crate) resume: Option<Resume>,
     /// The sorted completions and their base, for the input they were made for.
     pub(crate) sorted: Option<(String, String, Vec<String>)>,
+}
+
+/// What a command had when it asked a question or opened a prompt: the
+/// current buffer, its prefix argument and its name. The answer runs with
+/// them again, as an Emacs command carries on after `read-from-minibuffer`
+/// returns, its `current-prefix-arg` and `this-command` still bound.
+#[derive(Clone)]
+pub(crate) struct Resume {
+    buffer: u64,
+    prefix: Option<PrefixArg>,
+    command: Option<String>,
 }
 
 /// A message as *Messages* logs it.
@@ -566,7 +581,6 @@ impl Editor {
         }
     }
 
-    /// Cancels any prompt and pending command, as `C-g` does.
     /// Runs `f` once no prompt or question is open: now if none is, or
     /// once those a command opened are all answered, as code after
     /// save-some-buffers runs in Emacs. Quitting a prompt drops it.
@@ -593,16 +607,53 @@ impl Editor {
         }
     }
 
+    /// Cancels any prompt and pending command, as `C-g` does. Code waiting
+    /// for the prompt's answer is told it was quit.
     pub(crate) fn abort(&mut self) {
         self.prompt_waiters.clear();
-        self.close_prompt();
-        self.drop_question();
+        let prompt_quit = self.close_prompt().and_then(|p| p.quit);
+        let question_quit = self.drop_question().and_then(|q| q.quit);
         self.pending_call = None;
         self.reading_keys = None;
         self.pending_keys.clear();
         self.minibuffer.set_text("");
         self.transient_map = None;
         self.prefix_arg = None;
+        for quit in question_quit.into_iter().chain(prompt_quit) {
+            match quit(self, &[]) {
+                Err(e) if !e.is("quit") => self.fail(e),
+                _ => {}
+            }
+        }
+    }
+
+    /// Runs `f` if the prompt or question just opened is quit rather than
+    /// answered, so code waiting for the answer can unwind, as `quit`
+    /// signalled from `read-from-minibuffer` unwinds the command in Emacs.
+    pub fn on_prompt_quit(&mut self, f: variables::HookFn) {
+        if let Some(question) = &mut self.question {
+            question.quit = Some(f);
+        } else if let Some(prompt) = &mut self.prompt {
+            prompt.quit = Some(f);
+        }
+    }
+
+    /// The running command's context, for its prompt's answer to run in.
+    pub(crate) fn resume_point(&self) -> Resume {
+        Resume { buffer: self.buffers[self.current].id, prefix: self.current_prefix_arg, command: self.this_command.clone() }
+    }
+
+    /// Gives an answer the context of the command that asked: its buffer,
+    /// if still live, its prefix argument, and its name, which becomes the
+    /// last command once the answer is done.
+    pub(crate) fn resume(&mut self, resume: &Resume) {
+        if let Some(index) = self.buffers.iter().position(|b| b.id == resume.buffer) {
+            self.current = index;
+        }
+        self.current_prefix_arg = resume.prefix;
+        if resume.command.is_some() {
+            self.this_command = resume.command.clone();
+        }
     }
 
     fn execute(&mut self, command: Rc<Command>, args: Vec<Arg>, prefix: Option<PrefixArg>) {

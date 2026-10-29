@@ -45,6 +45,57 @@
     native.runHooks("after-change-major-mode-hook");
   }
 
+  const isPromise = (v) => v !== null && typeof v === "object" && typeof v.then === "function";
+
+  /**
+   * Runs `body`, then `cleanup`, even if `body` throws, as unwind-protect.
+   * If `body` returns a promise, as an async function waiting on a prompt
+   * does, `cleanup` runs once it settles: what `body` bound stays bound
+   * while it waits, as a Lisp let stays bound in a recursive edit.
+   */
+  function unwindProtect(body, cleanup) {
+    let result;
+    try {
+      result = body();
+    } catch (e) {
+      cleanup();
+      throw e;
+    }
+    if (!isPromise(result)) {
+      cleanup();
+      return result;
+    }
+    return result.then(
+      (value) => {
+        cleanup();
+        return value;
+      },
+      (e) => {
+        cleanup();
+        throw e;
+      },
+    );
+  }
+
+  /**
+   * Opens a prompt or question with `open(answer, quit)`. With a `then`
+   * function, it gets the answer, as the callback form; otherwise the
+   * answer comes as a promise, which C-g rejects with `quit`, as quitting
+   * read-from-minibuffer signals it in Emacs.
+   */
+  function answering(then, open) {
+    if (typeof then === "function") return open(then, undefined);
+    return new Promise((resolve, reject) => {
+      open(resolve, () => {
+        const e = new Error("Quit");
+        e.symbol = "quit";
+        e.data = [];
+        e.conditions = ["quit"];
+        reject(e);
+      });
+    });
+  }
+
   /**
    * Moves over the characters in `set`, as skip-chars-forward reads it: a
    * leading ^ for those not in it, a-z for ranges, \\ quoting. Returns how
@@ -270,33 +321,47 @@
     showHelp: (text) => native.showHelp(String(text)),
     bufferFileName: () => native.bufferFileName(),
     bufferList: () => native.bufferList(),
-    yesOrNoP: (question, then) => native.ask("yes-or-no", String(question), [], then),
-    yOrNP: (question, then) => native.ask("y-or-n", String(question), [], then),
-    readAnswer: (question, answers, then) => native.ask("answer", String(question), answers.map(String), then),
-    readCharChoice: (prompt, chars, then) => native.ask("char", String(prompt), [...String(chars)], then),
-    completingRead: (prompt, collection, then, options = {}) =>
-      native.read(options.kind ?? "string", String(prompt), {
-        collection: options.kind ? undefined : [...collection].map(String),
-        category: options.category,
-        requireMatch: Boolean(options.requireMatch),
-        initial: options.initial,
-        default: options.default,
-        history: options.history,
-      }, then),
-    readFileName: (prompt, then, options = {}) =>
-      native.read("file", String(prompt), {
-        dir: options.dir,
-        default: options.default,
-        initial: options.initial,
-        requireMatch: Boolean(options.mustMatch),
-        history: options.history,
-      }, then),
-    readString: (prompt, then, options = {}) =>
-      native.read("string", String(prompt), {
-        initial: options.initial,
-        default: options.default,
-        history: options.history,
-      }, then),
+    yesOrNoP: (question, then) => answering(then, (answer, quit) => native.ask("yes-or-no", String(question), [], answer, quit)),
+    yOrNP: (question, then) => answering(then, (answer, quit) => native.ask("y-or-n", String(question), [], answer, quit)),
+    readAnswer: (question, answers, then) =>
+      answering(then, (answer, quit) => native.ask("answer", String(question), answers.map(String), answer, quit)),
+    readCharChoice: (prompt, chars, then) =>
+      answering(then, (answer, quit) => native.ask("char", String(prompt), [...String(chars)], answer, quit)),
+    completingRead(prompt, collection, then, options) {
+      if (typeof then !== "function") [then, options] = [undefined, then];
+      options ??= {};
+      return answering(then, (answer, quit) =>
+        native.read(options.kind ?? "string", String(prompt), {
+          collection: options.kind ? undefined : [...collection].map(String),
+          category: options.category,
+          requireMatch: Boolean(options.requireMatch),
+          initial: options.initial,
+          default: options.default,
+          history: options.history,
+        }, answer, quit));
+    },
+    readFileName(prompt, then, options) {
+      if (typeof then !== "function") [then, options] = [undefined, then];
+      options ??= {};
+      return answering(then, (answer, quit) =>
+        native.read("file", String(prompt), {
+          dir: options.dir,
+          default: options.default,
+          initial: options.initial,
+          requireMatch: Boolean(options.mustMatch),
+          history: options.history,
+        }, answer, quit));
+    },
+    readString(prompt, then, options) {
+      if (typeof then !== "function") [then, options] = [undefined, then];
+      options ??= {};
+      return answering(then, (answer, quit) =>
+        native.read("string", String(prompt), {
+          initial: options.initial,
+          default: options.default,
+          history: options.history,
+        }, answer, quit));
+    },
     minibufferInfo: () => native.minibufferInfo() ?? undefined,
     completionAllSortedCompletions: (options = {}) => native.completionAllSortedCompletions(Boolean(options.atEnd)) ?? undefined,
     completionTryCompletion: (input, names) =>
@@ -398,11 +463,7 @@
     bufferReadOnly: () => native.bufferReadOnly(),
     withCurrentBuffer: (name, fn) => {
       const old = native.setCurrentBuffer(String(name));
-      try {
-        return fn();
-      } finally {
-        native.setCurrentBuffer(old);
-      }
+      return unwindProtect(fn, () => native.setCurrentBuffer(old));
     },
     findFileNoselect: (file) => native.findFileNoselect(file),
     setWindowBuffer: (window, buffer) => native.setWindowBuffer(window ?? native.selectedWindow(), buffer),
@@ -460,7 +521,10 @@
       // As let: a variable local in the current buffer is bound there, any
       // other in its default value; each is restored where it was bound.
       const restore = [];
-      try {
+      const unbind = () => {
+        for (const undo of restore.reverse()) undo();
+      };
+      return unwindProtect(() => {
         for (const [name, value] of Object.entries(bindings)) {
           if (native.isHook(name)) throw new TypeError(`letBind cannot bind the hook ${name} yet`);
           if (native.isLocalVariable(name)) {
@@ -483,9 +547,7 @@
           }
         }
         return fn();
-      } finally {
-        for (const undo of restore.reverse()) undo();
-      }
+      }, unbind);
     },
     emacsRegexp(regexp, { caseFold = false } = {}) {
       const key = `${caseFold ? "i" : "c"}${regexp}`;
@@ -538,9 +600,7 @@
     errorConditions: (e) =>
       e instanceof Error && Array.isArray(e.conditions) ? e.conditions : e instanceof Error && typeof e.symbol === "string" ? native.errorConditions(e.symbol) : ["error"],
     conditionCase(fn, handlers) {
-      try {
-        return fn();
-      } catch (e) {
+      const handle = (e) => {
         // Engine errors are bugs to see, not conditions to handle, unless asked for by name.
         const conditions = ember.errorConditions(e);
         for (const c of conditions) {
@@ -553,8 +613,16 @@
           }
         }
         throw e;
+      };
+      let result;
+      try {
+        result = fn();
+      } catch (e) {
+        return handle(e);
       }
+      return isPromise(result) ? result.then(undefined, handle) : result;
     },
+    unwindProtect,
     ignoreErrors(fn) {
       return ember.conditionCase(fn, { error: () => undefined });
     },
@@ -639,14 +707,12 @@
     saveExcursion(fn) {
       const buffer = native.bufferName();
       const marker = native.makeMarker(native.point(), undefined, false);
-      try {
-        return fn();
-      } finally {
+      return unwindProtect(fn, () => {
         const p = native.markerPosition(marker);
         native.deleteMarker(marker);
         if (native.bufferName() !== buffer && native.bufferList().includes(buffer)) native.setCurrentBuffer(buffer);
         if (p !== undefined && p !== null) native.gotoChar(p);
-      }
+      });
     },
     afterPrompts: (fn) => native.afterPrompts(fn),
     makeProcess({ name, buffer, command, directory, env, filter, sentinel, stderr = true }) {

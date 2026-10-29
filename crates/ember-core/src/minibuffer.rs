@@ -114,6 +114,8 @@ impl Prompt {
             default: None,
             initial: String::new(),
             then: None,
+            quit: None,
+            resume: None,
             sorted: None,
         }
     }
@@ -177,7 +179,12 @@ impl Editor {
         let prompt = self.close_prompt().ok_or_else(|| Error::new("Not in the minibuffer"))?;
         self.add_to_history(&prompt.history, &value);
         let result = match prompt.then {
-            Some(then) => then(self, &[Value::Str(value)]),
+            Some(then) => {
+                if let Some(resume) = &prompt.resume {
+                    self.resume(resume);
+                }
+                then(self, &[Value::Str(value)])
+            }
             None => {
                 self.supply_arg(Arg::Str(value));
                 Ok(())
@@ -205,6 +212,7 @@ impl Editor {
         prompt.category = reading.category;
         prompt.default = reading.default;
         prompt.then = Some(then);
+        prompt.resume = Some(self.resume_point());
         let input = match (reading.initial, reading.kind) {
             (Some(initial), _) => initial,
             (None, ParamKind::File) => match &reading.dir {
