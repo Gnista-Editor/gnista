@@ -821,6 +821,70 @@ const API: &str = r##"
   function acceptChangeGroup(handle: number): void;
   /** Run `fn`, taking back its changes if it throws, as Emacs's atomic-change-group. */
   function atomicChangeGroup<T>(fn: () => T): T;
+  /**
+   * Call `fn` once no prompt or question is open: now if none is, or once the
+   * ones open are all answered, as code after save-some-buffers runs in
+   * Emacs. Quitting a prompt with C-g drops it.
+   */
+  function afterPrompts(fn: () => void): void;
+  /** What starts a process: its name, program and arguments, and where its output goes. */
+  interface ProcessDefinition {
+    /** Its name, made unique with "<1>" and so on if taken. */
+    name: string;
+    /** The buffer its output goes into, made if there is none. */
+    buffer?: string;
+    /** The program and its arguments, not run through a shell. */
+    command: string[];
+    /** Where it runs: the current buffer's default-directory by default. */
+    directory?: string;
+    /** Environment variables to set, besides TERM=dumb. */
+    env?: { [name: string]: string };
+    /** Called with the process and each piece of output, instead of inserting it in the buffer. */
+    filter?: (process: string, output: string) => void;
+    /** Called with the process and what happened, "finished\n" or "exited abnormally with code 2\n", when it ends. */
+    sentinel?: (process: string, event: string) => void;
+    /** Whether standard error comes in as output too: true by default. */
+    stderr?: boolean;
+  }
+  /**
+   * Start a program running alongside the editor, as Emacs's make-process,
+   * and return its name. Its output goes into its buffer at its mark, or to
+   * its filter; when it ends, its sentinel runs, or a line saying so goes
+   * into its buffer. Starting it asks the agent's permission.
+   */
+  function makeProcess(definition: ProcessDefinition): string;
+  /** "run", "exit" or "signal", or undefined for no such process. */
+  function processStatus(process: string): "run" | "exit" | "signal" | undefined;
+  /** The exit code, or the signal that ended it. */
+  function processExitStatus(process: string): number | undefined;
+  function processBuffer(process: string): string | undefined;
+  /** The marker where its output goes, as process-mark. */
+  function processMark(process: string): number | undefined;
+  function processCommand(process: string): string[] | undefined;
+  function processId(process: string): number | undefined;
+  /** Whether exiting Ember asks before killing it, as process-query-on-exit-flag. */
+  function processQueryOnExitFlag(process: string): boolean;
+  function setProcessQueryOnExitFlag(process: string, query: boolean): void;
+  /** The processes running, as process-list. */
+  function processList(): string[];
+  /** The process writing to a buffer, as get-buffer-process. */
+  function getBufferProcess(buffer: string): string | undefined;
+  /** Write to a process's standard input. */
+  function processSendString(process: string, text: string): void;
+  /** Close a process's standard input. */
+  function processSendEof(process: string): void;
+  /** Interrupt a process and what it started, as C-c does in a terminal. */
+  function interruptProcess(process: string): void;
+  /** Kill a process and what it started. */
+  function killProcess(process: string): void;
+  function signalProcess(process: string, signal: number): void;
+  /** Kill a process and forget it, as delete-process. */
+  function deleteProcess(process: string): void;
+  /**
+   * Run a program and wait for it, as Emacs's call-process: its exit code
+   * and what it wrote. Asks the agent's permission first.
+   */
+  function callProcess(command: string[], options?: { directory?: string; input?: string }): { exit: number; output: string };
   /** Where the selected window's text starts, at the start of its top line, as window-start. */
   function windowStart(): number;
   /**

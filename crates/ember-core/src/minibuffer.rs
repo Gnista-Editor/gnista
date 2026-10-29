@@ -176,13 +176,19 @@ impl Editor {
     pub(crate) fn finish_prompt(&mut self, value: String) -> Result<()> {
         let prompt = self.close_prompt().ok_or_else(|| Error::new("Not in the minibuffer"))?;
         self.add_to_history(&prompt.history, &value);
-        match prompt.then {
+        let result = match prompt.then {
             Some(then) => then(self, &[Value::Str(value)]),
             None => {
                 self.supply_arg(Arg::Str(value));
                 Ok(())
             }
+        };
+        if result.is_ok() {
+            self.run_prompt_waiters();
+        } else {
+            self.prompt_waiters_clear();
         }
+        result
     }
 
     /// Reads an answer in the minibuffer and calls `then` with it, as

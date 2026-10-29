@@ -407,13 +407,23 @@ ember.defineCommand({
     "Offer to save each modified file buffer, then exit.\n\n" +
     "If any are left unsaved, you are asked whether to exit anyway. With a prefix argument, save them all without asking.",
   run: () => {
+    // Then, as save-buffers-kill-emacs does, about processes still running.
+    const killEmacs = () => {
+      const running = ember.processList().filter((p) => ember.processStatus(p) === "run" && ember.processQueryOnExitFlag(p));
+      if (running.length === 0) return ember.killEmacs();
+      ember.yesOrNoP("Active processes exist; kill them and exit anyway? ", (yes) => {
+        if (!yes) return;
+        for (const p of running) ember.deleteProcess(p);
+        ember.killEmacs();
+      });
+    };
     saveSomeBuffers(ember.prefixArg() !== null, false, () => {
       if (buffersNeedingSave().length === 0) {
-        ember.killEmacs();
+        killEmacs();
         return;
       }
       ember.yesOrNoP("Modified buffers exist; exit anyway? ", (yes) => {
-        if (yes) ember.killEmacs();
+        if (yes) killEmacs();
       });
     });
   },

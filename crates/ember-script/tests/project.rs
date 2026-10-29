@@ -103,3 +103,45 @@ fn outside_a_project_it_asks_which() {
     assert_eq!(ed.prompt(), Some("Select project: "));
     ed.press("C-g").unwrap();
 }
+
+#[test]
+fn find_regexp_lists_matches_by_file_in_xref() {
+    let config = tempfile::tempdir().unwrap();
+    let (mut ed, _scripting) = setup(config.path());
+    let repo = repo();
+    fs::write(repo.path().join("src/main.rs"), "fn main() {\n    helper();\n}\nfn helper() {}\n").unwrap();
+    visit(&mut ed, &repo.path().join("src/main.rs"));
+    ed.press("C-n M-f").unwrap();
+    ed.press("C-x p g").unwrap();
+    assert_eq!(ed.prompt(), Some("Find regexp (default helper): "));
+    ed.press("RET").unwrap();
+    assert_eq!(ed.window_buffer().name, "*xref*");
+    let b = ed.window_buffer();
+    assert_eq!(b.slice(0..b.len()), "src/main.rs\n2:    helper();\n4:fn helper() {}\n");
+    // n shows the next in another window; RET visits it.
+    ed.press("n n").unwrap();
+    assert_eq!(ed.window_buffer().name, "*xref*", "the xref window stays selected");
+    ed.press("RET").unwrap();
+    assert_eq!(ed.window_buffer().name, "main.rs");
+    assert_eq!(ed.buffer().point(), 31, "at the match on line 4");
+    // next-error steps through the matches too.
+    ed.press("M-g n").unwrap();
+    assert_eq!(ed.buffer().point(), 16);
+}
+
+#[test]
+fn compile_in_the_project_runs_at_its_root() {
+    let config = tempfile::tempdir().unwrap();
+    let (mut ed, _scripting) = setup(config.path());
+    ed.set_variable("compilation-ask-about-save", Value::Bool(false));
+    let repo = repo();
+    visit(&mut ed, &repo.path().join("src/deep/lib.rs"));
+    ed.press("C-x p c").unwrap();
+    ed.set_minibuffer_input("pwd");
+    ed.press("RET").unwrap();
+    ed.accept_process_output(std::time::Duration::from_secs(10));
+    let b = &ed.buffers()[ed.find_buffer("*compilation*").unwrap()];
+    let text = b.slice(0..b.len());
+    let root = fs::canonicalize(repo.path()).unwrap();
+    assert!(text.contains(&format!("\n{}\n", root.display())), "{text}");
+}

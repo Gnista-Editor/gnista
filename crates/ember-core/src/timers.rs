@@ -135,6 +135,7 @@ impl Editor {
     /// wait, as the buffer they would act on is the minibuffer, except
     /// those made to run in prompts.
     pub fn run_timers(&mut self) {
+        self.poll_processes();
         let prompting = self.prompt.is_some();
         let now = self.now();
         let idle = now.saturating_duration_since(self.timers.last_input);
@@ -196,6 +197,10 @@ impl Editor {
             && self.buffers.iter().any(|b| b.needs_auto_save())
         {
             consider(idle_until(timeout));
+        }
+        // Often while a process runs, to take its output in.
+        if self.processes_running() {
+            consider(Duration::from_millis(30));
         }
         next
     }

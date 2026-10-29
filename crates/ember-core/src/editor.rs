@@ -102,6 +102,10 @@ pub struct Editor {
     pub(crate) current: usize,
     /// The syntax tables, by name, as Emacs's syntax-table objects.
     pub syntax_tables: crate::syntax_table::SyntaxTables,
+    /// Programs running alongside, as Emacs's processes.
+    pub(crate) processes: crate::process::Processes,
+    /// What waits for the prompts and questions now open to be answered.
+    prompt_waiters: Vec<variables::HookFn>,
     /// How many commands are running, one inside another.
     running: usize,
     /// The command keys named, while the command it is remapped to runs.
@@ -232,6 +236,8 @@ impl Editor {
             buffers: vec![Buffer::new("*scratch*")],
             current: 0,
             syntax_tables: Default::default(),
+            processes: Default::default(),
+            prompt_waiters: Vec::new(),
             running: 0,
             remapped_from: None,
             previous_buffer: None,
@@ -557,7 +563,34 @@ impl Editor {
     }
 
     /// Cancels any prompt and pending command, as `C-g` does.
+    /// Runs `f` once no prompt or question is open: now if none is, or
+    /// once those a command opened are all answered, as code after
+    /// save-some-buffers runs in Emacs. Quitting a prompt drops it.
+    pub fn after_prompts(&mut self, f: variables::HookFn) -> Result<()> {
+        if self.prompt.is_none() && self.question.is_none() {
+            return f(self, &[]);
+        }
+        self.prompt_waiters.push(f);
+        Ok(())
+    }
+
+    /// Forgets what waits for the prompts, as an error in answering one ends the command.
+    pub(crate) fn prompt_waiters_clear(&mut self) {
+        self.prompt_waiters.clear();
+    }
+
+    /// Runs what waits for the prompts, once none is open.
+    pub(crate) fn run_prompt_waiters(&mut self) {
+        while self.prompt.is_none() && self.question.is_none() && !self.prompt_waiters.is_empty() {
+            let f = self.prompt_waiters.remove(0);
+            if let Err(e) = f(self, &[]) {
+                self.fail(e);
+            }
+        }
+    }
+
     pub(crate) fn abort(&mut self) {
+        self.prompt_waiters.clear();
         self.close_prompt();
         self.drop_question();
         self.pending_call = None;
@@ -1248,6 +1281,10 @@ impl Editor {
                 }
                 let _ = self.set_current_buffer(&old);
             }
+        }
+        // Its process goes with it, as killing a buffer hangs up on Emacs's.
+        while let Some(process) = self.buffer_process(name) {
+            let _ = self.delete_process(&process);
         }
         let Some(index) = self.find_buffer(name) else { return Ok(()) };
         let showing = index == self.current;

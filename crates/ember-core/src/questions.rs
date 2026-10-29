@@ -133,8 +133,11 @@ impl Editor {
     /// Runs what answers a question, showing its error as a command's.
     fn run_answer(&mut self, then: &HookFn, answer: Value) {
         if let Err(e) = then(self, &[answer]) {
+            self.prompt_waiters_clear();
             self.fail(e);
+            return;
         }
+        self.run_prompt_waiters();
     }
 
     /// Forgets any open question, as `C-g` does.

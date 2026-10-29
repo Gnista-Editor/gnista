@@ -62,6 +62,8 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/saveplace.ts", include_str!("../../../packages/saveplace.ts")),
     ("packages/ffap.ts", include_str!("../../../packages/ffap.ts")),
     ("packages/dired.ts", include_str!("../../../packages/dired.ts")),
+    ("packages/compile.ts", include_str!("../../../packages/compile.ts")),
+    ("packages/xref.ts", include_str!("../../../packages/xref.ts")),
     ("packages/project.ts", include_str!("../../../packages/project.ts")),
     ("packages/replace.ts", include_str!("../../../packages/replace.ts")),
     ("packages/org-table.ts", include_str!("../../../packages/org-table.ts")),
@@ -992,6 +994,118 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
                 let total = ed.frame_lines();
                 Ok(vec![ed.frame_cells().0 as f64, total as f64, ed.max_mini_window_lines(total) as f64])
             })
+        })?,
+    )?;
+    let process_context = context.clone();
+    native.set(
+        "makeProcess",
+        Function::new(
+            ctx.clone(),
+            move |ctx: Ctx<'js>,
+                  name: String,
+                  buffer: Option<String>,
+                  command: Vec<String>,
+                  options: Object<'js>,
+                  filter: Option<Function<'js>>,
+                  sentinel: Option<Function<'js>>| {
+                let hook = |f: Option<Function<'js>>| {
+                    f.map(|f| ScriptFunction { run: Persistent::save(&ctx, f), context: process_context.clone() }.into_hook())
+                };
+                let directory: Option<String> = options.get("directory")?;
+                let env: Option<Vec<Vec<String>>> = options.get("env")?;
+                let merge_stderr: Option<bool> = options.get("stderr")?;
+                let spec = ember_core::ProcessSpec {
+                    name,
+                    buffer,
+                    command,
+                    directory,
+                    env: env.unwrap_or_default().into_iter().filter_map(|kv| Some((kv.first()?.clone(), kv.get(1)?.clone()))).collect(),
+                    merge_stderr: merge_stderr.unwrap_or(true),
+                    filter: hook(filter),
+                    sentinel: hook(sentinel),
+                };
+                with_editor(&ctx, |ed| ed.make_process(spec))
+            },
+        )?,
+    )?;
+    native.set(
+        "processInfo",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| -> rquickjs::Result<Option<Object<'js>>> {
+            let info = with_editor(&ctx, |ed| {
+                Ok(ed.process_status(&name).map(|status| {
+                    (status, ed.process_buffer(&name), ed.process_mark(&name), ed.process_command(&name).unwrap_or_default(), ed.process_id(&name), ed.process_query_on_exit(&name))
+                }))
+            })?;
+            let Some((status, buffer, mark, command, pid, query)) = info else { return Ok(None) };
+            let object = Object::new(ctx.clone())?;
+            let (kind, code) = match status {
+                ember_core::ProcessStatus::Run => ("run", None),
+                ember_core::ProcessStatus::Exit(c) => ("exit", Some(c)),
+                ember_core::ProcessStatus::Signal(s) => ("signal", Some(s)),
+            };
+            object.set("status", kind)?;
+            object.set("exitStatus", code)?;
+            object.set("buffer", buffer)?;
+            object.set("mark", mark.map(|m| m as f64))?;
+            object.set("command", command)?;
+            object.set("pid", pid)?;
+            object.set("queryOnExit", query)?;
+            Ok(Some(object))
+        })?,
+    )?;
+    native.set(
+        "processList",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.process_list())))?,
+    )?;
+    native.set(
+        "getBufferProcess",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, buffer: String| with_editor(&ctx, |ed| Ok(ed.buffer_process(&buffer))))?,
+    )?;
+    native.set(
+        "processSendString",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, text: String| {
+            with_editor(&ctx, |ed| ed.process_send_string(&name, &text))
+        })?,
+    )?;
+    native.set(
+        "processSendEof",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| with_editor(&ctx, |ed| ed.process_send_eof(&name)))?,
+    )?;
+    native.set(
+        "signalProcess",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, signal: i32| {
+            with_editor(&ctx, |ed| ed.signal_process(&name, signal))
+        })?,
+    )?;
+    native.set(
+        "deleteProcess",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| with_editor(&ctx, |ed| ed.delete_process(&name)))?,
+    )?;
+    native.set(
+        "setProcessQueryOnExitFlag",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, query: bool| {
+            with_editor(&ctx, |ed| ed.set_process_query_on_exit(&name, query))
+        })?,
+    )?;
+    native.set(
+        "callProcess",
+        Function::new(
+            ctx.clone(),
+            |ctx: Ctx<'js>, command: Vec<String>, directory: Option<String>, input: Option<String>| -> rquickjs::Result<Object<'js>> {
+                let (code, output) = with_editor(&ctx, |ed| ed.call_process(&command, directory.as_deref(), input.as_deref()))?;
+                let object = Object::new(ctx.clone())?;
+                object.set("exit", code)?;
+                object.set("output", output)?;
+                Ok(object)
+            },
+        )?,
+    )?;
+    let waiter_context = context.clone();
+    native.set(
+        "afterPrompts",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, run: Function<'js>| {
+            let f = ScriptFunction { run: Persistent::save(&ctx, run), context: waiter_context.clone() }.into_hook();
+            with_editor(&ctx, |ed| ed.after_prompts(f))
         })?,
     )?;
     let timer_context = context.clone();

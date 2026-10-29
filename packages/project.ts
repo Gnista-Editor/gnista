@@ -239,6 +239,7 @@ ember.defineVariable({
     ["d", "project-find-dir", "Find directory"],
     ["D", "project-dired", "Dired"],
     ["b", "project-switch-to-buffer", "Buffer"],
+    ["g", "project-find-regexp", "Find regexp"],
     ["k", "project-kill-buffers", "Kill buffers"],
   ],
 });
@@ -296,6 +297,82 @@ ember.defineCommand({
   },
 });
 
+/** The symbol at point, for a default, as (thing-at-point 'symbol). */
+function symbolAtPoint(): string | undefined {
+  const p = ember.point();
+  let a = p;
+  let b = p;
+  const symbolic = (q: number) => q >= 0 && q < ember.bufferSize() && "w_".includes(ember.charSyntax(ember.bufferText(q, q + 1)));
+  while (symbolic(a - 1)) a--;
+  while (symbolic(b)) b++;
+  return b > a ? ember.bufferText(a, b) : undefined;
+}
+
+/** Grep's extended regexps for Emacs's, as xref--regexp-to-extended: groups and alternatives unescaped. */
+const toExtended = (re: string): string => re.replace(/\\([(){}|])|([(){}|])/g, (_, escaped, plain) => (escaped ?? `\\${plain}`));
+
+ember.defineCommand({
+  name: "project-find-regexp",
+  doc: "Find matches for a regexp in the current project's files, showing them in *xref*, grouped by file.",
+  params: [{
+    name: "regexp",
+    prompt: () => {
+      const sym = symbolAtPoint();
+      return sym === undefined ? "Find regexp: " : `Find regexp (default ${sym}): `;
+    },
+    history: "regexp-history",
+  }],
+  run: (input: string) => {
+    const regexp = input === "" ? (symbolAtPoint() ?? "") : input;
+    if (regexp === "") throw new Error("No regexp");
+    withProject((root) => {
+      const names = files(root);
+      const dir = ember.fileNameAsDirectory(ember.expandFileName(root));
+      // As xref-matches-in-files: grep over the files, their names from standard input.
+      const result = ember.callProcess(["xargs", "-0", "grep", "--null", "-snHE", "-e", toExtended(regexp)], {
+        directory: dir,
+        input: names.join("\0"),
+      });
+      const js = new RegExp(toExtended(regexp).replace(/\\</g, "\\b").replace(/\\>/g, "\\b"));
+      const xrefs = result.output
+        .split("\n")
+        .map((line) => /^([^\0]+)\0(\d+):(.*)$/.exec(line))
+        .filter((m): m is RegExpExecArray => m !== null)
+        .map((m) => {
+          const hit = js.exec(m[3]);
+          return { file: dir + m[1], line: Number(m[2]), col: hit?.index ?? 0, length: hit?.[0].length ?? 0, summary: m[3], group: m[1] };
+        });
+      if (xrefs.length === 0) throw new Error(`No matches for: ${regexp}`);
+      ember.call("xref-show-xrefs", JSON.stringify(xrefs));
+    });
+  },
+});
+
+ember.defineCommand({
+  name: "project-compile",
+  doc: "Run a compilation in the current project's root, as M-x compile does there.",
+  params: [{
+    name: "command",
+    prompt: "Compile command: ",
+    initial: () => String(ember.variable("compile-command") ?? ""),
+    history: "compile-history",
+  }],
+  run: (command: string) =>
+    withProject((root) => {
+      // As (let ((default-directory root)) (compile command)).
+      const had = ember.isLocalVariable("default-directory");
+      const old = ember.variable("default-directory");
+      ember.makeLocalVariable("default-directory");
+      ember.setVariable("default-directory", ember.fileNameAsDirectory(ember.expandFileName(root)));
+      try {
+        ember.call("compile", command);
+      } finally {
+        if (had) ember.setVariable("default-directory", old ?? null);
+        else ember.killLocalVariable("default-directory");
+      }
+    }),
+});
+
 for (const [keys, command] of [
   ["C-x p f", findFile],
   ["C-x p d", "project-find-dir"],
@@ -303,6 +380,8 @@ for (const [keys, command] of [
   ["C-x p b", "project-switch-to-buffer"],
   ["C-x p k", "project-kill-buffers"],
   ["C-x p p", "project-switch-project"],
+  ["C-x p g", "project-find-regexp"],
+  ["C-x p c", "project-compile"],
 ] as const) {
   ember.bindKey(keys, command);
 }

@@ -108,6 +108,54 @@ declare global {
        */
       "check-parens": [];
       /**
+       * Show the place of the error message at point in another window, keeping this one selected.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-display-error": [];
+      /**
+       * The mode of *compilation*: the output of a compilation, its error messages highlighted. RET visits the message at point, n and p the next and previous, M-n and M-p move between them, g runs the compilation again, and C-c C-k kills it.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-mode": [];
+      /**
+       * Move to the next error message, or as many as the prefix argument says, without visiting it.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-next-error": [];
+      /**
+       * Visit the place of the message `count` messages on in compilation buffer `buffer`, from the start if `reset` is t. This is next-error-function in compilation buffers; next-error calls it from the buffer it was typed in.
+       *
+       * @param count text
+       * @param reset text
+       * @param buffer text
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-next-error-function": [count: string, reset: string, buffer: string];
+      /**
+       * Move to the error message before, or as many back as the prefix argument says, without visiting it.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-previous-error": [];
+      /**
+       * Run a shell command in the background, make -k by default, showing its output in *compilation*, where error messages are found and highlighted. M-g n (next-error) then visits each error's place in turn. Asks to save modified buffers first.
+       *
+       * @param command text
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compile": [command: string];
+      /**
+       * Visit the place of the error message at point.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compile-goto-error": [];
+      /**
        * Copy a directory and what it holds: into the new name if that is a directory already, else as it.
        *
        * @param directory file name
@@ -779,6 +827,12 @@ declare global {
        */
       "find-file-other-window": [file: string];
       /**
+       * Visit the place of the first error message.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "first-error": [];
+      /**
        * Fontify the whole buffer now, rather than as it comes into view.
        */
       "font-lock-ensure": [];
@@ -838,6 +892,20 @@ declare global {
        * Defined in packages/display-line-numbers.ts.
        */
       "global-display-line-numbers-mode": [];
+      /**
+       * Run grep, with the arguments you give, in the background, showing its hits in *grep*. M-g n (next-error) then visits each in turn.
+       *
+       * @param command text
+       *
+       * Defined in packages/compile.ts.
+       */
+      "grep": [command: string];
+      /**
+       * The mode of *grep*: grep's hits, each a place next-error can visit. RET visits the hit at point, n and p the next and previous, g runs the search again.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "grep-mode": [];
       /**
        * The major mode of the *Help* buffer. q goes back to the buffer before it.
        *
@@ -1077,6 +1145,12 @@ declare global {
        */
       "kill-buffer-and-window": [];
       /**
+       * Kill the compilation this buffer shows, or the last one.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "kill-compilation": [];
+      /**
        * Kill the rest of the line, or the newline if only spaces and tabs are left.
        *
        * With a prefix argument N, kill N whole lines, newlines included; 0 kills back to the start of the line, and a negative N kills lines backward. Consecutive kills join into one kill ring entry.
@@ -1296,6 +1370,18 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "newline": [];
+      /**
+       * Visit the place of the next error message, or grep hit, in the compilation or grep buffer used last: its file, at its line. With a prefix argument, that many on; plain C-u starts again from the first.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "next-error": [];
+      /**
+       * Show the next error message's place, keeping this window selected.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "next-error-no-select": [];
       /**
        * Replace the minibuffer input with the next answer in the prompt's history, or what was typed.
        *
@@ -2451,6 +2537,18 @@ declare global {
        */
       "pop-to-buffer": [buffer: string];
       /**
+       * Visit the place of the error message before, or as many back as the prefix argument says.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "previous-error": [];
+      /**
+       * Show the place of the error message before, keeping this window selected.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "previous-error-no-select": [];
+      /**
        * Replace the minibuffer input with the answer before, from the prompt's history.
        *
        * With a prefix argument, go that many answers back.
@@ -2471,6 +2569,14 @@ declare global {
        */
       "prog-mode": [];
       /**
+       * Run a compilation in the current project's root, as M-x compile does there.
+       *
+       * @param command text
+       *
+       * Defined in packages/project.ts.
+       */
+      "project-compile": [command: string];
+      /**
        * List the current project's root in Dired.
        *
        * Defined in packages/project.ts.
@@ -2490,6 +2596,14 @@ declare global {
        * Defined in packages/project.ts.
        */
       "project-find-file": [];
+      /**
+       * Find matches for a regexp in the current project's files, showing them in *xref*, grouped by file.
+       *
+       * @param regexp text
+       *
+       * Defined in packages/project.ts.
+       */
+      "project-find-regexp": [regexp: string];
       /**
        * Forget a project Ember knows, so C-x p p no longer offers it.
        *
@@ -2702,6 +2816,12 @@ declare global {
        * Defined in packages/recentf.ts.
        */
       "recentf-save-list": [];
+      /**
+       * Run the last compilation again, or this buffer's, in the directory it ran in.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "recompile": [];
       /**
        * Visit a file, taking its text from its auto-save file, #name#, after asking.
        *
@@ -3088,6 +3208,72 @@ declare global {
        */
       "write-file": [file: string];
       /**
+       * Visit the place `count` places on in the xref buffer `buffer`, from the first if `reset` is t, as next-error does in *xref*.
+       *
+       * @param count text
+       * @param reset text
+       * @param buffer text
+       *
+       * Defined in packages/xref.ts.
+       */
+      "xref--next-error-function": [count: string, reset: string, buffer: string];
+      /**
+       * The mode of *xref*: places found, by file. n and p show the next and previous, RET visits one, TAB visits it and quits, q quits.
+       *
+       * Defined in packages/xref.ts.
+       */
+      "xref--xref-buffer-mode": [];
+      /**
+       * Visit the place at point in another window.
+       *
+       * Defined in packages/xref.ts.
+       */
+      "xref-goto-xref": [];
+      /**
+       * Move to the first place in the next file.
+       *
+       * Defined in packages/xref.ts.
+       */
+      "xref-next-group": [];
+      /**
+       * Move to the next place and show it in another window.
+       *
+       * Defined in packages/xref.ts.
+       */
+      "xref-next-line": [];
+      /**
+       * Move to the first place in the file before.
+       *
+       * Defined in packages/xref.ts.
+       */
+      "xref-prev-group": [];
+      /**
+       * Move to the place before and show it in another window.
+       *
+       * Defined in packages/xref.ts.
+       */
+      "xref-prev-line": [];
+      /**
+       * Quit *xref* and visit the place at point.
+       *
+       * Defined in packages/xref.ts.
+       */
+      "xref-quit-and-goto-xref": [];
+      /**
+       * Show the place at point in another window, keeping this one selected.
+       *
+       * Defined in packages/xref.ts.
+       */
+      "xref-show-location-at-point": [];
+      /**
+       * Show places in *xref*, as JSON: a list of { file, line, col, length, summary, group }. For code finding places, as project-find-regexp.
+       *
+       * @param places text
+       *
+       * Defined in packages/xref.ts.
+       */
+      "xref-show-xrefs": [places: string];
+      /**
        * Insert the most recent kill, leaving the mark at its start.
        *
        * With a numeric prefix argument N, insert the Nth most recent kill. With plain C-u, leave point at the start and the mark at the end.
@@ -3213,6 +3399,84 @@ declare global {
        * Defined in packages/fill.ts.
        */
       "colon-double-space": Value;
+      /**
+       * Whether starting a compilation kills one still running without asking.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-always-kill": Value;
+      /**
+       * The command and mode of this compilation buffer's compilation, for recompile.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-arguments": Value;
+      /**
+       * Whether M-x compile asks before saving modified buffers; if nil, it saves them without asking.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-ask-about-save": Value;
+      /**
+       * A command naming the compilation buffer, or nil for *compilation*, *grep* and so on.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-buffer-name-function": Value;
+      /**
+       * The directory the compilation ran in, which its messages' file names are relative to.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-directory": Value;
+      /**
+       * Variables to set in the compilation's environment, as "NAME=value" strings.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-environment": Value;
+      /**
+       * What a message is called, in "Past last error".
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-error": Value;
+      /**
+       * The names of the message formats in compilation-error-regexp-alist-alist that compilation buffers look for.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-error-regexp-alist": Value;
+      /**
+       * The number of a line's first column in messages: 1, or 0 for grep.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-first-column": Value;
+      /**
+       * Whether M-x compile asks for the command, rather than running compile-command.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-read-command": Value;
+      /**
+       * Whether the compilation buffer's window follows the output as it comes; first-error stops at the first error.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-scroll-output": Value;
+      /**
+       * Which messages next-error and M-n go to: 2 errors only, 1 warnings and errors, 0 notes as well.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-skip-threshold": Value;
+      /**
+       * The command M-x compile offers to run.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compile-command": Value;
       /**
        * The completion styles kinds of completion try before completion-styles, as [category, styles] pairs: buffer names match by substring too, and a project's files only by substring.
        */
@@ -3490,6 +3754,12 @@ declare global {
        */
       "global-display-line-numbers-mode": Value;
       /**
+       * The command M-x grep offers to run.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "grep-command": Value;
+      /**
        * How many earlier answers each minibuffer history keeps.
        */
       "history-length": Value;
@@ -3595,6 +3865,30 @@ declare global {
        * Defined in packages/files.ts.
        */
       "mode-require-final-newline": Value;
+      /**
+       * The command that visits the next message's place in this buffer, as next-error uses it: given a count, "t" to start over, and the buffer's name.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "next-error-function": Value;
+      /**
+       * How many seconds next-error highlights the line it goes to, t to keep it until the next command, or nil not to.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "next-error-highlight": Value;
+      /**
+       * The buffer next-error used last, which it uses again.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "next-error-last-buffer": Value;
+      /**
+       * Whether next-error always says which buffer it used.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "next-error-verbose": Value;
       /**
        * The command Auto Fill mode puts in auto-fill-function. Some major modes set it.
        *
@@ -4149,6 +4443,48 @@ declare global {
        */
       "bold-italic": FaceAttributes;
       /**
+       * Column numbers in compilation messages.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-column-number": FaceAttributes;
+      /**
+       * Error messages' file names in compilation buffers.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-error": FaceAttributes;
+      /**
+       * Notes' file names, and grep's hits, in compilation buffers.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-info": FaceAttributes;
+      /**
+       * Line numbers in compilation messages.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-line-number": FaceAttributes;
+      /**
+       * How a compilation that succeeded ended.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-mode-line-exit": FaceAttributes;
+      /**
+       * How a compilation that failed ended.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-mode-line-fail": FaceAttributes;
+      /**
+       * Warnings' file names in compilation buffers.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "compilation-warning": FaceAttributes;
+      /**
        * What a completion list adds after a completion, such as a command's key.
        *
        * Defined in packages/icomplete.ts.
@@ -4295,6 +4631,12 @@ declare global {
        */
       "font-lock-warning-face": FaceAttributes;
       /**
+       * What grep matched.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "grep-match": FaceAttributes;
+      /**
        * Highlighting, such as of what the mouse is over.
        */
       "highlight": FaceAttributes;
@@ -4352,6 +4694,12 @@ declare global {
        * The minibuffer's prompt.
        */
       "minibuffer-prompt": FaceAttributes;
+      /**
+       * The line next-error goes to, for a moment.
+       *
+       * Defined in packages/compile.ts.
+       */
+      "next-error": FaceAttributes;
       /**
        * The text in blocks, such as #+begin_src.
        *
@@ -4666,6 +5014,24 @@ declare global {
        * Warnings.
        */
       "warning": FaceAttributes;
+      /**
+       * The file names heading *xref*'s groups.
+       *
+       * Defined in packages/xref.ts.
+       */
+      "xref-file-header": FaceAttributes;
+      /**
+       * Line numbers in *xref*.
+       *
+       * Defined in packages/xref.ts.
+       */
+      "xref-line-number": FaceAttributes;
+      /**
+       * What matched, in *xref*.
+       *
+       * Defined in packages/xref.ts.
+       */
+      "xref-match": FaceAttributes;
     }
 
     /** Every hook, with its documentation. */
@@ -4722,6 +5088,22 @@ declare global {
        * Run before a major mode clears the buffer's own variables.
        */
       "change-major-mode-hook": Value;
+      /**
+       * Run in the compilation buffer after output is inserted.
+       */
+      "compilation-filter-hook": Value;
+      /**
+       * Called with the compilation buffer and how it ended, as "finished\n", when a compilation ends.
+       */
+      "compilation-finish-functions": Value;
+      /**
+       * Run after entering Compilation mode, after the hooks of the modes it is built on.
+       */
+      "compilation-mode-hook": Value;
+      /**
+       * Run with the process just started, in its compilation buffer.
+       */
+      "compilation-start-hook": Value;
       /**
        * Run after Delete-Selection mode is turned on or off.
        */
@@ -4831,6 +5213,10 @@ declare global {
        */
       "global-display-line-numbers-mode-on-hook": Value;
       /**
+       * Run after entering Grep mode, after the hooks of the modes it is built on.
+       */
+      "grep-mode-hook": Value;
+      /**
        * Run after entering Help mode, after the hooks of the modes it is built on.
        */
       "help-mode-hook": Value;
@@ -4890,6 +5276,10 @@ declare global {
        * Run when a prompt opens, in the minibuffer.
        */
       "minibuffer-setup-hook": Value;
+      /**
+       * Run after next-error visits a message's place.
+       */
+      "next-error-hook": Value;
       /**
        * Run after entering Org-Agenda mode, after the hooks of the modes it is built on.
        */
@@ -5038,6 +5428,10 @@ declare global {
        * Run after Visual-Line mode is turned on.
        */
       "visual-line-mode-on-hook": Value;
+      /**
+       * Run after entering XREF mode, after the hooks of the modes it is built on.
+       */
+      "xref--xref-buffer-mode-hook": Value;
     }
 
     type CommandName = keyof Commands;
@@ -5840,6 +6234,70 @@ declare global {
     function acceptChangeGroup(handle: number): void;
     /** Run `fn`, taking back its changes if it throws, as Emacs's atomic-change-group. */
     function atomicChangeGroup<T>(fn: () => T): T;
+    /**
+     * Call `fn` once no prompt or question is open: now if none is, or once the
+     * ones open are all answered, as code after save-some-buffers runs in
+     * Emacs. Quitting a prompt with C-g drops it.
+     */
+    function afterPrompts(fn: () => void): void;
+    /** What starts a process: its name, program and arguments, and where its output goes. */
+    interface ProcessDefinition {
+      /** Its name, made unique with "<1>" and so on if taken. */
+      name: string;
+      /** The buffer its output goes into, made if there is none. */
+      buffer?: string;
+      /** The program and its arguments, not run through a shell. */
+      command: string[];
+      /** Where it runs: the current buffer's default-directory by default. */
+      directory?: string;
+      /** Environment variables to set, besides TERM=dumb. */
+      env?: { [name: string]: string };
+      /** Called with the process and each piece of output, instead of inserting it in the buffer. */
+      filter?: (process: string, output: string) => void;
+      /** Called with the process and what happened, "finished\n" or "exited abnormally with code 2\n", when it ends. */
+      sentinel?: (process: string, event: string) => void;
+      /** Whether standard error comes in as output too: true by default. */
+      stderr?: boolean;
+    }
+    /**
+     * Start a program running alongside the editor, as Emacs's make-process,
+     * and return its name. Its output goes into its buffer at its mark, or to
+     * its filter; when it ends, its sentinel runs, or a line saying so goes
+     * into its buffer. Starting it asks the agent's permission.
+     */
+    function makeProcess(definition: ProcessDefinition): string;
+    /** "run", "exit" or "signal", or undefined for no such process. */
+    function processStatus(process: string): "run" | "exit" | "signal" | undefined;
+    /** The exit code, or the signal that ended it. */
+    function processExitStatus(process: string): number | undefined;
+    function processBuffer(process: string): string | undefined;
+    /** The marker where its output goes, as process-mark. */
+    function processMark(process: string): number | undefined;
+    function processCommand(process: string): string[] | undefined;
+    function processId(process: string): number | undefined;
+    /** Whether exiting Ember asks before killing it, as process-query-on-exit-flag. */
+    function processQueryOnExitFlag(process: string): boolean;
+    function setProcessQueryOnExitFlag(process: string, query: boolean): void;
+    /** The processes running, as process-list. */
+    function processList(): string[];
+    /** The process writing to a buffer, as get-buffer-process. */
+    function getBufferProcess(buffer: string): string | undefined;
+    /** Write to a process's standard input. */
+    function processSendString(process: string, text: string): void;
+    /** Close a process's standard input. */
+    function processSendEof(process: string): void;
+    /** Interrupt a process and what it started, as C-c does in a terminal. */
+    function interruptProcess(process: string): void;
+    /** Kill a process and what it started. */
+    function killProcess(process: string): void;
+    function signalProcess(process: string, signal: number): void;
+    /** Kill a process and forget it, as delete-process. */
+    function deleteProcess(process: string): void;
+    /**
+     * Run a program and wait for it, as Emacs's call-process: its exit code
+     * and what it wrote. Asks the agent's permission first.
+     */
+    function callProcess(command: string[], options?: { directory?: string; input?: string }): { exit: number; output: string };
     /** Where the selected window's text starts, at the start of its top line, as window-start. */
     function windowStart(): number;
     /**

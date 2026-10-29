@@ -23,6 +23,7 @@ mod minibuffer;
 mod modes;
 mod permissions;
 mod prefix;
+pub mod process;
 mod properties;
 mod questions;
 mod rows;
@@ -46,6 +47,7 @@ pub use minibuffer::{MinibufferInfo, MinibufferOverlay, Reading, file_name_all_c
 pub use modes::MinorMode;
 pub use prefix::{PrefixArg, prefix_numeric_value};
 pub use properties::{Overlay, Props};
+pub use process::{ProcessSpec, Status as ProcessStatus};
 pub use rows::{LineNumbers, Row, Segment};
 pub use search::{Match, SearchOptions, expand_replacement, fold_case_for as search_fold_case, search, string_match, translate_regexp};
 pub use variables::{HookFn, Value, Variable};

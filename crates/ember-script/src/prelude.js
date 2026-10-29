@@ -352,6 +352,37 @@
       return id;
     },
     killRegion: (beg, end) => native.killRegion(beg, end),
+    afterPrompts: (fn) => native.afterPrompts(fn),
+    makeProcess({ name, buffer, command, directory, env, filter, sentinel, stderr = true }) {
+      if (!Array.isArray(command) || command.length === 0) throw new TypeError("makeProcess needs a command: [program, ...args]");
+      const pairs = env === undefined ? undefined : Object.entries(env).map(([k, v]) => [String(k), String(v)]);
+      return native.makeProcess(
+        String(name),
+        buffer ?? undefined,
+        command.map(String),
+        { directory: directory ?? undefined, env: pairs, stderr: stderr !== false },
+        filter ?? undefined,
+        sentinel ?? undefined,
+      );
+    },
+    processStatus: (name) => native.processInfo(String(name))?.status,
+    processExitStatus: (name) => native.processInfo(String(name))?.exitStatus ?? undefined,
+    processBuffer: (name) => native.processInfo(String(name))?.buffer ?? undefined,
+    processMark: (name) => native.processInfo(String(name))?.mark ?? undefined,
+    processCommand: (name) => native.processInfo(String(name))?.command,
+    processId: (name) => native.processInfo(String(name))?.pid ?? undefined,
+    processQueryOnExitFlag: (name) => native.processInfo(String(name))?.queryOnExit ?? false,
+    setProcessQueryOnExitFlag: (name, query) => native.setProcessQueryOnExitFlag(String(name), Boolean(query)),
+    processList: () => native.processList(),
+    getBufferProcess: (buffer) => native.getBufferProcess(String(buffer)) ?? undefined,
+    processSendString: (name, text) => native.processSendString(String(name), String(text)),
+    processSendEof: (name) => native.processSendEof(String(name)),
+    interruptProcess: (name) => native.signalProcess(String(name), 2),
+    killProcess: (name) => native.signalProcess(String(name), 9),
+    signalProcess: (name, signal) => native.signalProcess(String(name), signal),
+    deleteProcess: (name) => native.deleteProcess(String(name)),
+    callProcess: (command, { directory, input } = {}) =>
+      native.callProcess(command.map(String), directory ?? undefined, input === undefined ? undefined : String(input)),
     windowStart: () => native.windowStart(),
     prepareChangeGroup: () => native.prepareChangeGroup(),
     cancelChangeGroup: (handle) => native.cancelChangeGroup(handle),
