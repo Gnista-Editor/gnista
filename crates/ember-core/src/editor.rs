@@ -187,6 +187,10 @@ pub struct Editor {
     this_command_set: bool,
     /// Whether `after-change-functions` are running.
     pub(crate) in_change_hooks: bool,
+    /// Whether the minibuffer is the current buffer: from when a prompt
+    /// opens, and after each command while one is open, unless code makes
+    /// another buffer current, as set-buffer does with a minibuffer open.
+    pub(crate) in_minibuffer: bool,
     /// Functions named for code to call, as Emacs's symbols' function cells.
     pub(crate) functions: HashMap<String, variables::Function>,
     /// Kills, oldest first, with their text properties, as Emacs keeps them.
@@ -294,6 +298,7 @@ impl Editor {
             command_failed: false,
             this_command_set: false,
             in_change_hooks: false,
+            in_minibuffer: false,
             functions: HashMap::new(),
             kill_ring: Vec::new(),
             yank_pointer: 0,
@@ -1269,11 +1274,11 @@ impl Editor {
     /// The buffer commands act on: the minibuffer while a prompt is open,
     /// otherwise the buffer shown in the window.
     pub fn buffer(&self) -> &Buffer {
-        if self.prompt.is_some() { &self.minibuffer } else { &self.buffers[self.current] }
+        if self.prompt.is_some() && self.in_minibuffer { &self.minibuffer } else { &self.buffers[self.current] }
     }
 
     pub fn buffer_mut(&mut self) -> &mut Buffer {
-        if self.prompt.is_some() {
+        if self.prompt.is_some() && self.in_minibuffer {
             &mut self.minibuffer
         } else {
             &mut self.buffers[self.current]
@@ -1304,6 +1309,7 @@ impl Editor {
     /// does before each command.
     pub(crate) fn current_from_selected_window(&mut self) {
         self.current = self.selected_buffer_index();
+        self.in_minibuffer = self.prompt.is_some();
     }
 
     /// A buffer by name, to change it without making it current.
@@ -1400,9 +1406,14 @@ impl Editor {
     /// the selected window keeps showing what it did. Returns the name of
     /// the buffer that was current, to set back.
     pub fn set_current_buffer(&mut self, name: &str) -> Result<String> {
+        let old = self.buffer().name.clone();
+        if self.prompt.is_some() && name == self.minibuffer.name {
+            self.in_minibuffer = true;
+            return Ok(old);
+        }
         let index = self.find_buffer(name).ok_or_else(|| Error::new(format!("No such buffer {name}")))?;
-        let old = self.buffers[self.current].name.clone();
         self.current = index;
+        self.in_minibuffer = false;
         Ok(old)
     }
 

@@ -190,3 +190,18 @@ fn next_error_keeps_to_its_buffer_when_it_is_renamed() {
     assert_eq!(ed.window_buffer().name, "b.rs");
     assert_eq!(ed.messages().last().map(String::as_str), Some("Next locus from *build*"));
 }
+
+#[test]
+fn output_while_a_prompt_is_open_goes_to_its_buffer() {
+    let dir = project();
+    let (mut ed, _s) = setup(dir.path());
+    ed.press("M-x").unwrap();
+    ed.type_text("compile\n");
+    ed.set_minibuffer_input("sleep 0.3; echo late");
+    ed.press("RET").unwrap();
+    ed.press("M-x").unwrap();
+    ed.type_text("fo");
+    ed.accept_process_output(Duration::from_secs(10));
+    assert_eq!(ed.minibuffer_input(), "fo");
+    assert!(text_of(&ed, "*compilation*").contains("\nlate\n"), "{}", text_of(&ed, "*compilation*"));
+}

@@ -141,6 +141,7 @@ impl Editor {
         prompt.initial = input.to_string();
         let must_match = prompt.require_match;
         self.prompt = Some(prompt);
+        self.in_minibuffer = true;
         self.minibuffer_overlay = None;
         self.mini_window_lines = 1;
         let b = &mut self.minibuffer;
