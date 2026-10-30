@@ -94,3 +94,38 @@ fn proportional_text_wraps_where_it_reaches_the_edge() {
     assert_eq!(eval(&mut ed, &s, "Math.round(ember.posnAtPoint(10).x)"), "40");
     assert_eq!(eval(&mut ed, &s, "Math.round(ember.windowTextPixelSize(undefined, 0, 40)[0])"), "160");
 }
+
+#[test]
+fn line_moves_keep_an_x_position_in_proportional_text() {
+    // Eight i's are 32 points; in m's, 8 points each, that is the fifth.
+    let (mut ed, _s) = setup("iiiiiiiiii\nmmmmmmmmmm\niiiiiiiiii\n");
+    ed.call("variable-pitch-mode", vec![]).unwrap();
+    ed.press("C-f C-f C-f C-f C-f C-f C-f C-f C-n").unwrap();
+    assert_eq!(ed.window_buffer().point(), 11 + 4);
+    // The goal stays, so going on lands under the first place again.
+    ed.press("C-n").unwrap();
+    assert_eq!(ed.window_buffer().point(), 22 + 8);
+    ed.press("C-p C-p").unwrap();
+    assert_eq!(ed.window_buffer().point(), 8);
+}
+
+#[test]
+fn scrolling_moves_by_the_height_rows_take() {
+    let (mut ed, _s) = setup(&lines(40));
+    ed.press("C-x C-+ C-x C-+").unwrap();
+    // A screen less two lines of context is 8 lines; rows of 1.44 lines
+    // fill that with 5 of them.
+    ed.press("C-v").unwrap();
+    assert_eq!(ed.window_buffer().top_line, 5);
+    assert_eq!(ed.window_buffer().point(), ed.window_buffer().line_start(5), "point came along to the top");
+    ed.press("C-v").unwrap();
+    assert_eq!(ed.window_buffer().top_line, 10);
+    ed.press("M-v").unwrap();
+    assert_eq!(ed.window_buffer().top_line, 5);
+    // Point, on line 10, still shows whole six rows down, so it stays.
+    assert_eq!(ed.window_buffer().line_of(ed.window_buffer().point()), 10);
+    // Back once more, line 10 is out of sight: point goes to the last line showing whole.
+    ed.press("M-v").unwrap();
+    assert_eq!(ed.window_buffer().top_line, 0);
+    assert_eq!(ed.window_buffer().line_of(ed.window_buffer().point()), 5);
+}

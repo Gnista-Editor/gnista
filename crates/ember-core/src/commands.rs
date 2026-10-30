@@ -261,12 +261,20 @@ fn movement(ed: &mut Editor) {
         }
         let step = scroll_step(ed) as i64;
         let b = ed.window_buffer();
-        let (top, moved) = ed.move_rows_in(b, ed.row_line_in(b, b.top_line), step);
+        let from = ed.row_line_in(b, b.top_line);
+        // Off the grid, rows are as tall as their fonts: the window moves on
+        // by as many lines as fill the step.
+        let (top, short) = if ed.text_metrics().uniform() {
+            let (top, moved) = ed.move_rows_in(b, from, step);
+            (top, moved < step)
+        } else {
+            move_by_height(ed, b, from, step as f32, true)
+        };
         let point_row = ed.row_line_in(b, b.line_of(b.point()));
         let b = ed.window_buffer_mut();
         // As scroll-up with scroll-error-top-bottom off: the end showing
         // already is an error, and point stays.
-        if moved < step {
+        if short {
             return err("End of buffer");
         }
         b.top_line = top;
@@ -403,8 +411,15 @@ fn scroll_screen_down(ed: &mut Editor) -> Result<()> {
     let height = ed.viewport_height() as i64;
     let b = ed.window_buffer();
     let old_top = ed.row_line_in(b, b.top_line);
-    let top = ed.move_rows_in(b, old_top, -step).0;
-    let bottom = ed.move_rows_in(b, top, height - 1).0;
+    let (top, bottom) = if ed.text_metrics().uniform() {
+        let top = ed.move_rows_in(b, old_top, -step).0;
+        (top, ed.move_rows_in(b, top, height - 1).0)
+    } else {
+        // The last line that shows whole below the new top.
+        let top = move_by_height(ed, b, old_top, step as f32, false).0;
+        let next = move_by_height(ed, b, top, height as f32, true).0;
+        (top, if next > top { ed.move_rows_in(b, next, -1).0 } else { top })
+    };
     let point_row = ed.row_line_in(b, b.line_of(b.point()));
     let b = ed.window_buffer_mut();
     if old_top == 0 {
@@ -428,9 +443,10 @@ fn scroll_lines(ed: &mut Editor, lines: isize) -> bool {
     let b = ed.window_buffer();
     let goal = match ed.goal_column {
         Some(goal) if continuing => goal,
-        _ => b.column(b.point()),
+        _ => b.column(b.point()) as f32,
     };
     ed.goal_column = Some(goal);
+    let goal = goal as usize;
     let b = ed.window_buffer();
     let (top, moved) = ed.move_rows_in(b, ed.row_line_in(b, b.top_line), lines as i64);
     if moved == 0 {
@@ -468,7 +484,10 @@ fn line_move(ed: &mut Editor, n: i64) -> Result<()> {
     let line = b.line_of(b.point());
     let goal = match ed.goal_column {
         Some(goal) if continuing => goal,
-        _ => current_column(ed, b, b.point()),
+        _ => match off_grid_row(ed, b, b.point()) {
+            Some(row) => row_column(ed, b, &row, b.point()),
+            None => current_column(ed, b, b.point()) as f32,
+        },
     };
     ed.goal_column = Some(goal);
     // Lines inside hidden text are skipped, as Emacs's line-move-ignore-invisible does.
@@ -485,9 +504,57 @@ fn line_move(ed: &mut Editor, n: i64) -> Result<()> {
     }
     let start = ed.buffer().line_start(target);
     let _ = ed.fontify_region(start..start);
-    let pos = position_at_goal_column(ed, ed.buffer(), target, goal);
+    let b = ed.buffer();
+    let pos = match off_grid_row(ed, b, start) {
+        Some(row) => position_at_x(ed, b, &row, goal),
+        None if goal.fract() != 0.0 => position_at_x(ed, b, &ed.screen_rows_of(b, target, None)[0], goal),
+        None => position_at_goal_column(ed, b, target, goal as usize),
+    };
     ed.buffer_mut().set_point(pos);
     Ok(())
+}
+
+/// The row a position shows in, if it is off the grid: text of another
+/// size or a proportional font, measured as the front end's fonts are,
+/// unwrapped as a truncated line shows.
+fn off_grid_row(ed: &Editor, b: &Buffer, pos: usize) -> Option<crate::rows::Row> {
+    if ed.text_metrics().uniform() {
+        return None;
+    }
+    let rows = ed.screen_rows_of(b, ed.row_line_in(b, b.line_of(pos)), None);
+    let row = rows.iter().find(|r| r.shows_point(pos)).or(rows.first())?;
+    (!ed.row_on_grid(row)).then(|| row.clone())
+}
+
+/// The column, in default columns as the layout measures it, of where a
+/// position shows in its row.
+fn row_column(ed: &Editor, b: &Buffer, row: &crate::rows::Row, pos: usize) -> f32 {
+    let tab = ed.tab_width_in(b);
+    let glyphs = crate::display::row_glyphs(row, tab);
+    let index = crate::display::cursor_index(&glyphs, pos);
+    ed.glyph_columns(row, &glyphs, tab)[..index].iter().sum()
+}
+
+/// Where a goal column lands in a row, as Emacs's vertical-motion does
+/// with a goal in pixels: before the glyph that reaches past it, or the
+/// row's end; on a continued row, its last character rather than its end,
+/// which shows at the start of the next.
+fn position_at_x(ed: &Editor, b: &Buffer, row: &crate::rows::Row, goal: f32) -> usize {
+    let tab = ed.tab_width_in(b);
+    let glyphs = crate::display::row_glyphs(row, tab);
+    let widths = ed.glyph_columns(row, &glyphs, tab);
+    let mut x = 0.0;
+    for (i, glyph) in glyphs.iter().enumerate() {
+        if x + widths[i] > goal {
+            // An ellipsis or a string stands before the text after it.
+            if let Some(p) = glyph.pos.or_else(|| glyphs[i + 1..].iter().find_map(|g| g.pos)) {
+                return p;
+            }
+            break;
+        }
+        x += widths[i];
+    }
+    if row.continued { row.end.saturating_sub(1).max(row.start) } else { row.end }
 }
 
 /// Where move-to-column takes point on a line for a column: past text
@@ -570,7 +637,8 @@ fn line_move_visual(ed: &mut Editor, n: i64, wrap: crate::rows::Wrap) -> Result<
     let (mut rows, mut k, col) = ed.screen_position(b, b.point(), Some(wrap));
     let goal = match ed.goal_column {
         Some(goal) if continuing => goal,
-        _ => col,
+        _ if !ed.row_on_grid(&rows[k]) => row_column(ed, b, &rows[k], b.point()),
+        _ => col as f32,
     };
     let mut line = ed.row_line_in(b, b.line_of(b.point()));
     let mut left = n.abs();
@@ -608,6 +676,13 @@ fn line_move_visual(ed: &mut Editor, n: i64, wrap: crate::rows::Wrap) -> Result<
         k -= 1;
     }
     let row = &rows[k];
+    if !ed.row_on_grid(row) || goal.fract() != 0.0 {
+        let target = position_at_x(ed, b, row, goal);
+        ed.goal_column = Some(goal);
+        ed.buffer_mut().set_point(target);
+        return Ok(());
+    }
+    let goal = goal as usize;
     let glyphs = crate::display::row_glyphs(row, ed.tab_width_in(b));
     // As move-to-column does: where the column is first reached, so past a
     // character that spans it, and before hidden text that starts there.
@@ -628,9 +703,41 @@ fn line_move_visual(ed: &mut Editor, n: i64, wrap: crate::rows::Wrap) -> Result<
     if row.continued && target >= row.end {
         target = row.end.saturating_sub(1).max(row.start);
     }
-    ed.goal_column = Some(goal);
+    ed.goal_column = Some(goal as f32);
     ed.buffer_mut().set_point(target);
     Ok(())
+}
+
+/// How tall the rows of the row of text starting at a line are, in default
+/// lines, as the selected window shows them.
+fn line_rows_height(ed: &Editor, b: &Buffer, line: usize) -> f32 {
+    let wrap = ed.wrap_in(ed.selected_window(), b);
+    ed.screen_rows_of(b, line, wrap).iter().map(|r| ed.row_height(b, r)).sum()
+}
+
+/// The row of text `height` default lines of rows on from the one starting
+/// at `line`, or back with `forward` false, whole rows of text at a time:
+/// as many as fit in the height, at least one if there is one, as Emacs
+/// moves a window's start by pixels when it scrolls. Also whether it ran
+/// out of text before filling the height.
+fn move_by_height(ed: &Editor, b: &Buffer, mut line: usize, height: f32, forward: bool) -> (usize, bool) {
+    let (mut used, mut moved) = (0.0, 0);
+    loop {
+        let (next, step) = ed.move_rows_in(b, line, if forward { 1 } else { -1 });
+        if step == 0 {
+            return (line, used < height);
+        }
+        let h = line_rows_height(ed, b, if forward { line } else { next });
+        if moved > 0 && used + h > height {
+            return (line, false);
+        }
+        used += h;
+        line = next;
+        moved += 1;
+        if used >= height {
+            return (line, false);
+        }
+    }
 }
 
 /// How far a screen scroll moves: the window height less two lines of context.

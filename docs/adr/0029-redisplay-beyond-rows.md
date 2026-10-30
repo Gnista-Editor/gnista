@@ -39,7 +39,9 @@ The steps:
 
 ## Progress
 
-Step 1 is done. With the GUI's metrics, keys in a 50,000-line Org file cost 0.3 to 0.6 ms more than with cells, most of it faces worked out for rows built to move through ([performance.md](../performance.md), [optimisation.md](../optimisation.md)); with cells, as in the terminal, nothing moved. Three things are left for later steps: Emacs's lower limit on `text-scale-adjust`, which depends on the smallest font a frame can show; faces given as attribute lists in a `face` property rather than by name; and a cursor on a proportional space, drawn as wide as the space.
+Step 1 is done. With the GUI's metrics, keys in a 50,000-line Org file cost 0.3 to 0.6 ms more than with cells, most of it faces worked out for rows built to move through ([performance.md](../performance.md), [optimisation.md](../optimisation.md)); with cells, as in the terminal, nothing moved. Two things are left for later steps: Emacs's lower limit on `text-scale-adjust`, which depends on the smallest font a frame can show, and faces given as attribute lists in a `face` property rather than by name. The cursor on a space in proportional text is as wide as the space, as Emacs draws it.
+
+Step 2 is done. Off the grid, `C-n` and `C-p` keep their goal as an x position, a fractional column, and land before the glyph that reaches past it, as `vertical-motion` does with a goal in pixels; `C-v` and `M-v` move the window by as many whole lines as fill the screen less two lines of context, and point that would leave it goes to the last line showing whole. On the grid both work as before, so the terminal still scrolls by lines of text rather than screen rows, which differs from Emacs for continued lines until a window can start partway through a line. `C-v` with the GUI's metrics costs 0.3 ms more for measuring the rows it passes.
 
 ## Consequences
 

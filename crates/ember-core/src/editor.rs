@@ -225,7 +225,10 @@ pub struct Editor {
     pub(crate) last_mouse: Option<crate::window::MouseEvent>,
     /// The last successful search's match, as Emacs's match data.
     pub(crate) match_data: Option<crate::search::Match>,
-    pub(crate) goal_column: Option<usize>,
+    /// Where line moves keep point, in columns of the default font, as
+    /// Emacs's temporary-goal-column: fractional off the grid, where it
+    /// stands for an x position.
+    pub(crate) goal_column: Option<f32>,
     self_insert_run: usize,
     /// The run of amalgamating commands before the one now running, and
     /// whether that one was amalgamating, for undo_auto_amalgamate.

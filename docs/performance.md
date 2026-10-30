@@ -41,9 +41,11 @@ On 2026-10-30, after the core began laying rows out with a front end's metrics (
 | Org, 50,000 lines | `C-v` | `C-n` | typing | RET |
 | --- | ---: | ---: | ---: | ---: |
 | Cells, as the terminal | 2.33 ms | 0.42 ms | 2.10 ms | 61 ms |
-| GUI metrics, fixed-pitch text | 2.67 ms | 0.75 ms | 2.46 ms | 63 ms |
-| GUI metrics, `text-scale-adjust` twice | 2.71 ms | 0.77 ms | 2.38 ms | 63 ms |
-| GUI metrics, `variable-pitch-mode` | 2.92 ms | 0.98 ms | 2.72 ms | 63 ms |
+| GUI metrics, fixed-pitch text | 2.94 ms | 0.79 ms | 2.59 ms | 62 ms |
+| GUI metrics, `text-scale-adjust` twice | 2.23 ms | 0.79 ms | 2.54 ms | 63 ms |
+| GUI metrics, `variable-pitch-mode` | 3.17 ms | 0.99 ms | 2.74 ms | 62 ms |
+
+These are after ADR 0029's second step, where `C-v` measures the rows it scrolls past; after the first, `C-v` took 2.67, 2.71 and 2.92 ms.
 
 ## What changed
 
