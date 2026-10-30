@@ -10,9 +10,9 @@ use crate::commands;
 use crate::error::{Error, Result};
 use crate::files::{abbreviate_dir, expand_file_name};
 use crate::key::{Key, KeyCode, MouseKind, format_keys};
-use crate::keymap::{Keymap, Lookup};
+use crate::keymap::{KeymapId, Keymaps, Lookup};
 use crate::faces::{self, Face};
-use crate::modes::{MinorMode, NamedKeymap};
+use crate::modes::MinorMode;
 use crate::variables::{self, Value, Variable};
 use crate::prefix::{PrefixArg, prefix_numeric_value};
 
@@ -152,17 +152,17 @@ pub struct Editor {
     /// Whether the key that ran the current command had Shift removed to find
     /// its binding. Shift selection uses it.
     shift_translated: bool,
-    pub global_map: Keymap,
-    pub minibuffer_map: Keymap,
+    pub(crate) global_map: KeymapId,
+    pub(crate) minibuffer_map: KeymapId,
     /// Bindings for the next key sequence only, ahead of every other keymap.
-    transient_map: Option<Keymap>,
+    pub(crate) transient_map: Option<KeymapId>,
     /// A named keymap ahead of all but the transient map, while set.
-    pub(crate) overriding_map: Option<String>,
+    pub(crate) overriding_map: Option<KeymapId>,
     /// Keys to read next, after the current one, as Emacs's `unread-command-events`.
     unread_keys: std::collections::VecDeque<Key>,
     reading_unread: bool,
-    /// Keymaps with names, such as a major mode's, that buffers and modes use.
-    pub(crate) keymaps: BTreeMap<String, NamedKeymap>,
+    /// Every keymap; names for them are variables holding them.
+    pub(crate) keymaps: Keymaps,
     /// Most recently registered first, which is the order keys are looked up in.
     pub(crate) minor_modes: Vec<MinorMode>,
     /// Every symbol's value, function, properties and advice.
@@ -278,10 +278,15 @@ impl Editor {
             pending_keys: Vec::new(),
             esc_prefix: false,
             shift_translated: false,
-            global_map: Keymap::default(),
-            minibuffer_map: Keymap::default(),
+            global_map: 0,
+            minibuffer_map: 1,
             transient_map: None,
-            keymaps: BTreeMap::new(),
+            keymaps: {
+                let mut maps = Keymaps::default();
+                maps.make(None);
+                maps.make(None);
+                maps
+            },
             minor_modes: Vec::new(),
             symbols: BTreeMap::new(),
             faces: BTreeMap::new(),
@@ -445,7 +450,7 @@ impl Editor {
     /// Binds keys for the next key sequence only, ahead of every other
     /// keymap, as Emacs's `set-transient-map` does. Prefix commands use it
     /// so that digits continue the argument.
-    pub fn set_transient_map(&mut self, map: Keymap) {
+    pub fn set_transient_map(&mut self, map: KeymapId) {
         self.transient_map = Some(map);
     }
 
@@ -1114,7 +1119,7 @@ impl Editor {
 
         if let Some(keys) = &mut self.reading_keys {
             keys.push(key);
-            if self.global_map.lookup(keys) == Lookup::Prefix {
+            if self.keymaps.lookup(self.global_map, keys) == Lookup::Prefix {
                 self.message = Some(format!("{}-", format_keys(keys)));
                 return;
             }
@@ -1181,37 +1186,13 @@ impl Editor {
     /// minor modes that are on, the major mode's map, and the global map.
     /// The first that binds the keys wins.
     pub fn lookup(&self, keys: &[Key]) -> Lookup {
-        if let Some(map) = &self.transient_map {
-            match map.lookup(keys) {
+        for map in self.current_active_maps() {
+            match self.lookup_in(map, keys) {
                 Lookup::Unbound => {}
                 found => return found,
             }
         }
-        if let Some(name) = &self.overriding_map {
-            match self.lookup_in(name, keys) {
-                Lookup::Unbound => {}
-                found => return found,
-            }
-        }
-        if self.prompt.is_some() {
-            for map in &self.minibuffer.local_map {
-                match self.lookup_in(map, keys) {
-                    Lookup::Unbound => {}
-                    found => return found,
-                }
-            }
-            match self.minibuffer_map.lookup(keys) {
-                Lookup::Unbound => {}
-                found => return found,
-            }
-        }
-        for map in self.mode_keymaps() {
-            match self.lookup_in(&map, keys) {
-                Lookup::Unbound => {}
-                found => return found,
-            }
-        }
-        self.global_map.lookup(keys)
+        Lookup::Unbound
     }
 
     /// Feeds a mouse wheel or trackpad scroll of `lines` whole lines: positive

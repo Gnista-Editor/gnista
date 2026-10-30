@@ -112,9 +112,33 @@ const API: &str = r##"
   function defineCommand(definition: CommandDefinition): DefinedCommand;
   /**
    * Bind a key sequence in Emacs notation, such as "C-c d", to a command, in
-   * the global keymap or a named one such as "text-mode-map".
+   * the global keymap or a named one such as "text-mode-map". Bound to a
+   * keymap, the keys are a prefix and that keymap its prefix map; null
+   * unbinds them, so the parent keymap's binding shows.
    */
-  function bindKey(keys: string, command: CommandName | DefinedCommand, keymap?: string): void;
+  function bindKey(keys: string, command: CommandName | DefinedCommand | Keymap | null, keymap?: string | Keymap): void;
+  /** Bind keys in a keymap, as bindKey, in Emacs's order of arguments (define-key). */
+  function defineKey(keymap: string | Keymap, keys: string, binding: CommandName | DefinedCommand | Keymap | null): void;
+  /** A new keymap with no bindings, inheriting `parent`'s, as make-sparse-keymap and set-keymap-parent. */
+  function makeSparseKeymap(parent?: string | Keymap | null): Keymap;
+  /** Whether a value is a keymap, as keymapp. */
+  function keymapp(value: unknown): value is Keymap;
+  /** The keymap a keymap inherits from, as keymap-parent. */
+  function keymapParent(keymap: string | Keymap): Keymap | undefined;
+  /** Make a keymap inherit another's bindings, or none, as set-keymap-parent. */
+  function setKeymapParent(keymap: string | Keymap, parent: string | Keymap | null): void;
+  /**
+   * What keys are bound to in a keymap and its parents, as lookup-key: a
+   * command's name, a prefix map, or undefined.
+   */
+  function lookupKey(keymap: string | Keymap, keys: string): string | Keymap | undefined;
+  /**
+   * The keymaps active now, in the order keys are looked up, as
+   * current-active-maps: a transient map, an overriding one, the
+   * minibuffer's while a prompt is open, text's at point, the minor modes',
+   * the major mode's, and the global map.
+   */
+  function currentActiveMaps(): Keymap[];
   /**
    * Run a command as keys would (Emacs's call-interactively): prompting in
    * the minibuffer for its arguments, which it gets once they are read.
@@ -214,7 +238,7 @@ const API: &str = r##"
    * (Emacs's set-transient-map). Prefix commands use it so that more digits
    * continue the argument.
    */
-  function setTransientMap(bindings: { [keys: string]: CommandName | DefinedCommand }): void;
+  function setTransientMap(bindings: { [keys: string]: CommandName | DefinedCommand } | Keymap): void;
 
   /**
    * The kill `n` entries back from the one yanked last, moving the yank
@@ -265,7 +289,17 @@ const API: &str = r##"
    * What variables, hooks and text properties hold, as Emacs's values: a
    * function too, as a lambda in a variable, kept as itself.
    */
-  type Value = null | boolean | number | string | symbol | Value[] | ((...args: any[]) => any) | Buffer | PropertizedString;
+  type Value = null | boolean | number | string | symbol | Value[] | ((...args: any[]) => any) | Buffer | PropertizedString | Keymap;
+  /**
+   * A keymap, as Emacs's keymaps are values: bound to a prefix key in
+   * another keymap it is that key's prefix map, shared wherever it is
+   * bound, and a variable or a keymap or local-map text property can hold
+   * one. A keymap's name, such as "org-mode-map", is a variable holding it,
+   * and the functions taking a keymap take either.
+   */
+  interface Keymap {
+    readonly __emberKeymapId: number;
+  }
   /**
    * A symbol, as Emacs's: a name as data, apart from text. It is
    * JavaScript's registered symbol of the name, so intern("space") ===
@@ -373,10 +407,14 @@ const API: &str = r##"
   /** Run a hook's functions, passing them any arguments given (Emacs's run-hook-with-args). */
   function runHooks(hook: HookName | (string & {}), ...args: Value[]): void;
 
-  /** Define a named keymap; keys it does not bind are looked up in the parent. */
-  function defineKeymap(name: string, parent?: string | null): void;
-  /** Make a named keymap the current buffer's local map, the major mode's keymap. */
-  function useLocalMap(name: string | null): void;
+  /**
+   * Define a named keymap, a variable holding a new keymap, and return it;
+   * keys it does not bind are looked up in the parent. Defined again, it
+   * keeps its bindings and takes the parent given.
+   */
+  function defineKeymap(name: string, parent?: string | null): Keymap;
+  /** Make a keymap the current buffer's local map, the major mode's keymap. */
+  function useLocalMap(keymap: string | Keymap | null): void;
 
   interface MajorModeDefinition {
     /** The command that turns the mode on, such as "text-mode". */
@@ -549,7 +587,7 @@ const API: &str = r##"
    */
   function setMinibufferOverlay(overlay: { before?: string; after?: FacedText[] } | null): void;
   /** Put a keymap in front of the current buffer's local map, as Emacs's use-local-map of make-composed-keymap. */
-  function composeLocalMap(name: string): void;
+  function composeLocalMap(keymap: string | Keymap): void;
   /**
    * The first key sequence that runs a command in the selected window's
    * buffer, as Emacs's where-is-internal with FIRSTONLY, such as "C-x C-f".
@@ -856,17 +894,17 @@ const API: &str = r##"
    * called with null (Emacs's overriding-terminal-local-map). Incremental
    * search uses it while it runs.
    */
-  function setOverridingMap(keymap: string | null): void;
-  function overridingMap(): string | undefined;
+  function setOverridingMap(keymap: string | Keymap | null): void;
+  function overridingMap(): Keymap | undefined;
   /** The command a keymap runs for any single key it does not bind, as an Emacs keymap's [t] binding. */
-  function setKeymapDefault(keymap: string, command: CommandName | DefinedCommand | null): void;
+  function setKeymapDefault(keymap: string | Keymap, command: CommandName | DefinedCommand | null): void;
   /**
    * While a keymap is active, run `to` wherever keys would run `from`, or
    * stop that with null, as Emacs's [remap FROM] bindings. Org remaps
    * self-insert-command to keep tables aligned as you type.
    */
   function remapCommand(
-    keymap: string,
+    keymap: string | Keymap,
     from: CommandName | DefinedCommand,
     to: CommandName | DefinedCommand | null,
   ): void;

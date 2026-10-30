@@ -118,7 +118,8 @@ fn mark_whole_buffer_and_exchange_activate() {
 #[test]
 fn shifted_keys_with_their_own_binding_run_it() {
     let mut ed = editor("abc");
-    ed.global_map.bind_str("S-<right>", "end-of-buffer");
+    let map = ed.global_map();
+    ed.keymaps_mut().bind_str(map, "S-<right>", "end-of-buffer");
     press(&mut ed, "S-<right>");
     assert_eq!(ed.window_buffer().point(), 3);
     // Not translated, so no shift selection.

@@ -21,7 +21,7 @@ use std::time::{Duration, Instant};
 use std::rc::Rc;
 
 use ember_core::{
-    Arg, Background, Command, Editor, Error, Face, FaceAttrs, HookFn, Key, Keymap, MinibufferOverlay, MinorMode, ParamKind, Reading,
+    Arg, Background, Command, Editor, Error, Face, FaceAttrs, HookFn, Key, MinibufferOverlay, MinorMode, ParamKind, Reading,
     PrefixArg, Result, Value as EditorValue, Variable, abbreviate_path, expand_file_name,
 };
 use rquickjs::context::EvalOptions;
@@ -274,7 +274,8 @@ impl Scripting {
             )
             .param("expression", ParamKind::String, "Eval: "),
         );
-        ed.global_map.bind_str("M-:", "eval-expression");
+        let map = ed.global_map();
+        ed.keymaps_mut().bind_str(map, "M-:", "eval-expression");
     }
 }
 
@@ -543,11 +544,13 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
     )?;
     native.set(
         "bindKey",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, keys: String, command: String, keymap: Opt<String>| {
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, keys: String, binding: Value<'js>, keymap: Value<'js>| {
+            let binding = value_from_js(&ctx, binding)?;
+            let keymap = if keymap.is_undefined() || keymap.is_null() { EditorValue::Str("global-map".into()) } else { value_from_js(&ctx, keymap)? };
             with_editor(&ctx, |ed| {
                 let parsed = Key::parse_seq(&keys)
                     .ok_or_else(|| Error::new(format!("Invalid key sequence: {keys:?}")))?;
-                ed.bind_key_in(keymap.0.as_deref().unwrap_or("global-map"), &parsed, &command)
+                ed.define_key(&keymap, &parsed, Some(&binding))
             })
         })?,
     )?;
@@ -691,16 +694,10 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
     )?;
     native.set(
         "setTransientMap",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, bindings: Object<'js>| {
-            let mut map = Keymap::default();
-            for entry in bindings.props::<String, String>() {
-                let (keys, command) = entry?;
-                let Some(parsed) = Key::parse_seq(&keys) else {
-                    return Err(Exception::throw_message(&ctx, &format!("Invalid key sequence: {keys:?}")));
-                };
-                map.bind(&parsed, &command);
-            }
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, keymap: Value<'js>| {
+            let keymap = value_from_js(&ctx, keymap)?;
             with_editor(&ctx, |ed| {
+                let map = ed.keymap_of(&keymap)?;
                 ed.set_transient_map(map);
                 Ok(())
             })
@@ -976,20 +973,72 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     )?;
     native.set(
         "defineKeymap",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, parent: Opt<Option<String>>| {
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, parent: Opt<Option<String>>| -> rquickjs::Result<Value<'js>> {
+            let map = with_editor(&ctx, |ed| Ok(ed.define_keymap(&name, parent.0.flatten().as_deref())))?;
+            value_to_js(&ctx, &EditorValue::Keymap(map))
+        })?,
+    )?;
+    native.set(
+        "makeSparseKeymap",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, parent: Value<'js>| -> rquickjs::Result<Value<'js>> {
+            let parent = if parent.is_undefined() || parent.is_null() { None } else { Some(value_from_js(&ctx, parent)?) };
+            let map = with_editor(&ctx, |ed| {
+                let parent = parent.map(|p| ed.keymap_of(&p)).transpose()?;
+                Ok(ed.keymaps_mut().make(parent))
+            })?;
+            value_to_js(&ctx, &EditorValue::Keymap(map))
+        })?,
+    )?;
+    native.set(
+        "keymapParent",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, keymap: Value<'js>| -> rquickjs::Result<Value<'js>> {
+            let keymap = value_from_js(&ctx, keymap)?;
+            match with_editor(&ctx, |ed| Ok(ed.keymaps().parent(ed.keymap_of(&keymap)?)))? {
+                Some(parent) => value_to_js(&ctx, &EditorValue::Keymap(parent)),
+                None => Ok(Value::new_undefined(ctx.clone())),
+            }
+        })?,
+    )?;
+    native.set(
+        "setKeymapParent",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, keymap: Value<'js>, parent: Value<'js>| {
+            let keymap = value_from_js(&ctx, keymap)?;
+            let parent = if parent.is_undefined() || parent.is_null() { None } else { Some(value_from_js(&ctx, parent)?) };
             with_editor(&ctx, |ed| {
-                ed.define_keymap(&name, parent.0.flatten().as_deref());
+                let map = ed.keymap_of(&keymap)?;
+                let parent = parent.map(|p| ed.keymap_of(&p)).transpose()?;
+                ed.keymaps_mut().set_parent(map, parent);
                 Ok(())
             })
         })?,
     )?;
     native.set(
+        "lookupKey",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, keymap: Value<'js>, keys: String| -> rquickjs::Result<Value<'js>> {
+            let keymap = value_from_js(&ctx, keymap)?;
+            let found = with_editor(&ctx, |ed| {
+                let parsed = Key::parse_seq(&keys).ok_or_else(|| Error::new(format!("Invalid key sequence: {keys:?}")))?;
+                Ok(ed.keymaps().binding_of(ed.keymap_of(&keymap)?, &parsed))
+            })?;
+            match found {
+                Some(ember_core::Binding::Command(c)) => value_to_js(&ctx, &EditorValue::Str(c)),
+                Some(ember_core::Binding::Keymap(m)) => value_to_js(&ctx, &EditorValue::Keymap(m)),
+                None => Ok(Value::new_undefined(ctx.clone())),
+            }
+        })?,
+    )?;
+    native.set(
+        "currentActiveMaps",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| -> rquickjs::Result<Value<'js>> {
+            let maps = with_editor(&ctx, |ed| Ok(ed.current_active_maps()))?;
+            value_to_js(&ctx, &EditorValue::List(maps.into_iter().map(EditorValue::Keymap).collect()))
+        })?,
+    )?;
+    native.set(
         "useLocalMap",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: Option<String>| {
-            with_editor(&ctx, |ed| {
-                ed.use_local_map(name.as_deref());
-                Ok(())
-            })
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, keymap: Value<'js>| {
+            let keymap = if keymap.is_undefined() || keymap.is_null() { None } else { Some(value_from_js(&ctx, keymap)?) };
+            with_editor(&ctx, |ed| ed.use_local_map(keymap.as_ref()))
         })?,
     )?;
     native.set(
@@ -1314,11 +1363,9 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     )?;
     native.set(
         "composeLocalMap",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
-            with_editor(&ctx, |ed| {
-                ed.compose_local_map(&name);
-                Ok(())
-            })
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, keymap: Value<'js>| {
+            let keymap = value_from_js(&ctx, keymap)?;
+            with_editor(&ctx, |ed| ed.compose_local_map(&keymap))
         })?,
     )?;
     native.set(
@@ -1757,24 +1804,40 @@ fn install_native_search<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs:
     )?;
     native.set(
         "setOverridingMap",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, keymap: Option<String>| {
-            with_editor(&ctx, |ed| ed.set_overriding_map(keymap.as_deref()))
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, keymap: Value<'js>| {
+            let keymap = if keymap.is_undefined() || keymap.is_null() { None } else { Some(value_from_js(&ctx, keymap)?) };
+            with_editor(&ctx, |ed| ed.set_overriding_map(keymap.as_ref()))
         })?,
     )?;
     native.set(
         "overridingMap",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.overriding_map().map(str::to_string))))?,
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| -> rquickjs::Result<Value<'js>> {
+            match with_editor(&ctx, |ed| Ok(ed.overriding_map()))? {
+                Some(map) => value_to_js(&ctx, &EditorValue::Keymap(map)),
+                None => Ok(Value::new_undefined(ctx.clone())),
+            }
+        })?,
     )?;
     native.set(
         "setKeymapDefault",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, keymap: String, command: Option<String>| {
-            with_editor(&ctx, |ed| ed.set_keymap_default(&keymap, command.as_deref()))
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, keymap: Value<'js>, command: Option<String>| {
+            let keymap = value_from_js(&ctx, keymap)?;
+            with_editor(&ctx, |ed| {
+                let map = ed.keymap_of(&keymap)?;
+                ed.keymaps_mut().set_default(map, command.as_deref());
+                Ok(())
+            })
         })?,
     )?;
     native.set(
         "remapCommand",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, keymap: String, from: String, to: Option<String>| {
-            with_editor(&ctx, |ed| ed.remap_command(&keymap, &from, to.as_deref()))
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, keymap: Value<'js>, from: String, to: Option<String>| {
+            let keymap = value_from_js(&ctx, keymap)?;
+            with_editor(&ctx, |ed| {
+                let map = ed.keymap_of(&keymap)?;
+                ed.keymaps_mut().remap(map, &from, to.as_deref());
+                Ok(())
+            })
         })?,
     )?;
     native.set(
@@ -2517,6 +2580,11 @@ fn value_to_js<'js>(ctx: &Ctx<'js>, value: &EditorValue) -> rquickjs::Result<Val
             let make: Function = ctx.globals().get("__emberBuffer")?;
             make.call((*id as f64,))?
         }
+        // The prelude's object for the keymap, the same one each time.
+        EditorValue::Keymap(id) => {
+            let make: Function = ctx.globals().get("__emberKeymap")?;
+            make.call((*id as f64,))?
+        }
         // A symbol is JavaScript's registered symbol of its name, interned as Emacs's are.
         EditorValue::Symbol(name) => {
             let symbol: Object = ctx.globals().get("Symbol")?;
@@ -2644,6 +2712,11 @@ fn convert_from_js<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> rquickjs::Result<O
         && let Some(id) = object.get::<_, Option<f64>>(BUFFER_ID)?
     {
         return Ok(Some(EditorValue::Buffer(id as u64)));
+    }
+    if let Some(object) = value.as_object()
+        && let Some(id) = object.get::<_, Option<f64>>("__emberKeymapId")?
+    {
+        return Ok(Some(EditorValue::Keymap(id as usize)));
     }
     if let Some(object) = value.as_object()
         && object.get::<_, Option<bool>>("__emberText")? == Some(true)

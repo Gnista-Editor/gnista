@@ -150,13 +150,11 @@ impl Editor {
         self.in_minibuffer = true;
         self.minibuffer_overlay = None;
         self.mini_window_lines = 1;
+        let must_match_map = self.keymap_named(MUST_MATCH_MAP).filter(|_| must_match);
         let b = &mut self.minibuffer;
         b.locals.clear();
         b.local_hooks.clear();
-        b.local_map.clear();
-        if must_match {
-            b.local_map.push(MUST_MATCH_MAP.to_string());
-        }
+        b.local_map = must_match_map.into_iter().collect();
         b.set_text(input);
         b.set_point(b.len());
         if let Err(e) = self.run_hooks("minibuffer-setup-hook") {
@@ -504,45 +502,23 @@ impl Editor {
     /// first, then the global map.
     pub fn where_is(&self, command: &str) -> Option<Vec<crate::key::Key>> {
         let b = self.window_buffer();
-        let mut maps: Vec<String> = self
-            .minor_modes
-            .iter()
-            .filter(|m| self.variable_in(b, &m.name).is_some_and(|v| v.is_true()))
-            .filter_map(|m| m.keymap.clone())
-            .collect();
-        maps.extend(b.local_map.iter().cloned());
-        let mut found = Vec::new();
-        for name in &maps {
-            let mut next = Some(name.clone());
-            while let Some(name) = next.take() {
-                let Some(k) = self.keymaps.get(&name) else { break };
-                found.extend(k.map.keys_for(command));
-                next = k.parent.clone();
-            }
-        }
-        found.extend(self.global_map.keys_for(command));
+        let mut maps = self.mode_keymaps_in(b, false);
+        maps.push(self.global_map());
+        let found = maps.iter().flat_map(|&m| self.keymaps().keys_for(m, command));
         found.into_iter().find(|keys| self.lookup_keys_in_window_buffer(keys) == command)
     }
 
     /// What a key sequence runs in the window's buffer, ignoring any prompt.
     fn lookup_keys_in_window_buffer(&self, keys: &[crate::key::Key]) -> String {
         let b = self.window_buffer();
-        let mut maps: Vec<String> = self
-            .minor_modes
-            .iter()
-            .filter(|m| self.variable_in(b, &m.name).is_some_and(|v| v.is_true()))
-            .filter_map(|m| m.keymap.clone())
-            .collect();
-        maps.extend(b.local_map.iter().cloned());
+        let mut maps = self.mode_keymaps_in(b, false);
+        maps.push(self.global_map());
         for map in maps {
-            if let crate::keymap::Lookup::Command(c) = self.lookup_in(&map, keys) {
+            if let crate::keymap::Lookup::Command(c) = self.lookup_in(map, keys) {
                 return c;
             }
         }
-        match self.global_map.lookup(keys) {
-            crate::keymap::Lookup::Command(c) => c,
-            _ => String::new(),
-        }
+        String::new()
     }
 
     /// What the minibuffer shows besides its prompt and input.

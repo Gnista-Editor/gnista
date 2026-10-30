@@ -27,6 +27,8 @@ pub enum Value {
     /// A symbol, by its name, as Emacs's: a name as data rather than text,
     /// such as `space` or the keyword `:width` in a display spec.
     Symbol(String),
+    /// A keymap, as Emacs's keymaps are values.
+    Keymap(crate::keymap::KeymapId),
 }
 
 impl Value {
@@ -158,6 +160,7 @@ impl fmt::Display for Value {
             Value::Buffer(id) => write!(f, "#<buffer {id}>"),
             Value::Text(t) => write!(f, "{:?}", t.string),
             Value::Symbol(name) => f.write_str(name),
+            Value::Keymap(id) => write!(f, "#<keymap {id}>"),
         }
     }
 }
@@ -794,6 +797,8 @@ pub(crate) fn install(ed: &mut Editor) {
     ] {
         ed.define_variable(var);
     }
+    ed.define_variable(Variable::new(crate::modes::GLOBAL_MAP, "The keymap that applies everywhere, after the minibuffer's and the modes' keymaps.", Value::Keymap(ed.global_map)));
+    ed.define_variable(Variable::new(crate::modes::MINIBUFFER_MAP, "The keymap while a prompt is open, before the modes' and the global keymap.", Value::Keymap(ed.minibuffer_map)));
     for (name, doc) in [
         ("post-self-insert-hook", "Run after typing a character inserts it, as electric-pair-mode and electric-indent-mode use."),
         ("pre-command-hook", "Run before each command that keys run. A function can change this-command, and that command runs instead."),

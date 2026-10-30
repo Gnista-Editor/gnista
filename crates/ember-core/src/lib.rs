@@ -45,7 +45,7 @@ pub use faces::{Background, Color, Face, FaceAttrs, Style, face_names, palette, 
 pub use fileio::{auto_save_file_name, backup_file_name};
 pub use files::{abbreviate_dir, abbreviate_path, expand_file_name, expand_file_name_in};
 pub use key::{Key, KeyCode, MouseKind, format_keys};
-pub use keymap::{Keymap, Lookup};
+pub use keymap::{Binding, KeymapId, Keymaps, Lookup};
 pub use minibuffer::{MinibufferInfo, MinibufferOverlay, Reading, file_name_all_completions};
 pub use modes::MinorMode;
 pub use prefix::{PrefixArg, prefix_numeric_value};

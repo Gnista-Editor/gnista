@@ -170,7 +170,7 @@ pub struct Buffer {
     pub(crate) syntax_propertized: usize,
     /// The major mode's keymap.
     /// The local keymap and any composed over it, first looked up first.
-    pub(crate) local_map: Vec<String>,
+    pub(crate) local_map: Vec<crate::keymap::KeymapId>,
     properties: TextProperties,
     overlays: Vec<Overlay>,
     next_overlay_id: u64,

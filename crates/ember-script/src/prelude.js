@@ -19,7 +19,7 @@
 
   function bindAll(keymap, bindings) {
     for (const [keys, command] of Object.entries(bindings ?? {})) {
-      native.bindKey(String(keys), String(command), keymap);
+      native.bindKey(String(keys), command instanceof Keymap ? command : String(command), keymap);
     }
   }
 
@@ -72,6 +72,32 @@
       return this.live ? `#<buffer ${this.name}>` : "#<killed buffer>";
     }
   }
+  /**
+   * A keymap, as Emacs's keymaps are values: bound in a keymap, it is a
+   * prefix map, and a variable or text property can hold one.
+   */
+  class Keymap {
+    constructor(id) {
+      Object.defineProperty(this, "__emberKeymapId", { value: id });
+      Object.freeze(this);
+    }
+    toJSON() {
+      return "#<keymap>";
+    }
+  }
+  const keymaps = new Map();
+  globalThis.__emberKeymap = (id) => {
+    let k = keymaps.get(id);
+    if (k === undefined) {
+      k = new Keymap(id);
+      keymaps.set(id, k);
+    }
+    return k;
+  };
+  const keymapArg = (k) => (k instanceof Keymap ? k : symbolName(k));
+  const bindingArg = (b) => (b === null || b === undefined ? null : b instanceof Keymap ? b : symbolName(b));
+  // A transient map made from the same bindings is made once.
+  const transientMaps = new Map();
   globalThis.__emberBuffer = (id) => {
     let b = buffers.get(id);
     if (b === undefined) {
@@ -325,7 +351,14 @@
       );
       return name;
     },
-    bindKey: (keys, command, keymap = "global-map") => native.bindKey(String(keys), String(command), String(keymap)),
+    bindKey: (keys, command, keymap = "global-map") => native.bindKey(String(keys), bindingArg(command), keymapArg(keymap)),
+    defineKey: (keymap, keys, binding) => native.bindKey(String(keys), bindingArg(binding), keymapArg(keymap)),
+    makeSparseKeymap: (parent) => native.makeSparseKeymap(parent === undefined || parent === null ? null : keymapArg(parent)),
+    keymapp: (value) => value instanceof Keymap,
+    keymapParent: (keymap) => native.keymapParent(keymapArg(keymap)),
+    setKeymapParent: (keymap, parent) => native.setKeymapParent(keymapArg(keymap), parent === undefined || parent === null ? null : keymapArg(parent)),
+    lookupKey: (keymap, keys) => native.lookupKey(keymapArg(keymap), String(keys)),
+    currentActiveMaps: () => native.currentActiveMaps(),
     call: (name, ...args) => native.call(String(name), ...args),
     callInteractively: (name) => native.callInteractively(String(name)),
     callWithPrefix: (prefix, name, ...args) => native.callWithPrefix(prefix ?? null, String(name), ...args),
@@ -402,8 +435,8 @@
     runHooks: (hook, ...args) => native.runHooks(String(hook), args),
     runHookWithArgsUntilSuccess: (hook, ...args) => native.runHookUntil(String(hook), args, true),
     runHookWithArgsUntilFailure: (hook, ...args) => native.runHookUntil(String(hook), args, false),
-    defineKeymap: (name, parent = null) => native.defineKeymap(String(name), parent === null ? null : String(parent)),
-    useLocalMap: (name) => native.useLocalMap(name ?? undefined),
+    defineKeymap: (name, parent = null) => native.defineKeymap(symbolName(name), parent === null ? null : symbolName(parent)),
+    useLocalMap: (keymap) => native.useLocalMap(keymap === null || keymap === undefined ? null : keymapArg(keymap)),
     enabledMinorModes: () => native.enabledMinorModes(),
     documentation: (name) => native.documentation(String(name)),
     commandSource: (name) => native.commandSource(String(name)),
@@ -467,7 +500,7 @@
         pieces.map((p) => p.face == null ? [] : [p.face].flat().map(String)),
       );
     },
-    composeLocalMap: (name) => native.composeLocalMap(String(name)),
+    composeLocalMap: (keymap) => native.composeLocalMap(keymapArg(keymap)),
     fileDirectoryP: (file) => native.fileDirectoryP(String(file)),
     fileAttributes: (file) => native.fileAttributes(String(file)) ?? undefined,
     directoryFiles: (dir) => native.directoryFiles(String(dir)),
@@ -580,10 +613,10 @@
       return { start, end };
     },
     foldCaseFor: (pattern, interactive = false) => native.foldCaseFor(String(pattern), Boolean(interactive)),
-    setOverridingMap: (keymap) => native.setOverridingMap(keymap ?? null),
+    setOverridingMap: (keymap) => native.setOverridingMap(keymap === null || keymap === undefined ? null : keymapArg(keymap)),
     overridingMap: () => native.overridingMap() ?? undefined,
-    setKeymapDefault: (keymap, command) => native.setKeymapDefault(String(keymap), command ?? null),
-    remapCommand: (keymap, from, to) => native.remapCommand(String(keymap), String(from), to === null ? null : String(to)),
+    setKeymapDefault: (keymap, command) => native.setKeymapDefault(keymapArg(keymap), command ?? null),
+    remapCommand: (keymap, from, to) => native.remapCommand(keymapArg(keymap), String(from), to === null ? null : String(to)),
     stringWidth: (text) => native.stringWidth(String(text)),
     unreadKeys: (keys) => native.unreadKeys(String(keys)),
 
@@ -1054,10 +1087,18 @@
       });
     },
 
-    setTransientMap: (bindings) =>
-      native.setTransientMap(
-        Object.fromEntries(Object.entries(bindings).map(([keys, command]) => [String(keys), String(command)])),
-      ),
+    setTransientMap(bindings) {
+      if (bindings instanceof Keymap) return native.setTransientMap(bindings);
+      const entries = Object.entries(bindings).map(([keys, command]) => [String(keys), String(command)]);
+      const key = JSON.stringify(entries);
+      let map = transientMaps.get(key);
+      if (map === undefined) {
+        map = native.makeSparseKeymap(null);
+        for (const [keys, command] of entries) native.bindKey(keys, command, map);
+        transientMaps.set(key, map);
+      }
+      native.setTransientMap(map);
+    },
   });
 
   ember.addHook("kill-buffer-hook", forgetBuffer);

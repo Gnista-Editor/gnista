@@ -445,7 +445,8 @@ pub fn run(case: &Case) -> State {
             std::fs::File::options().write(true).open(&path).and_then(|f| f.set_modified(later))?;
             Ok(())
         }));
-        ed.global_map.bind(&[Key::parse("<f33>").expect("<f33> parses")], "ember-oracle--change-disk");
+        let map = ed.global_map();
+        ed.keymaps_mut().bind(map, &[Key::parse("<f33>").expect("<f33> parses")], ember_core::Binding::Command("ember-oracle--change-disk".into()));
     }
     for key in keys {
         ed.handle_key(key);

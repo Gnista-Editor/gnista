@@ -381,15 +381,18 @@ ember.defineCommand({
   },
 });
 
+/** The keys after C-x p, as project.el's project-prefix-map. */
+const projectPrefixMap = ember.defineKeymap("project-prefix-map");
 for (const [keys, command] of [
-  ["C-x p f", findFile],
-  ["C-x p d", "project-find-dir"],
-  ["C-x p D", "project-dired"],
-  ["C-x p b", "project-switch-to-buffer"],
-  ["C-x p k", "project-kill-buffers"],
-  ["C-x p p", "project-switch-project"],
-  ["C-x p g", "project-find-regexp"],
-  ["C-x p c", "project-compile"],
+  ["f", findFile],
+  ["d", "project-find-dir"],
+  ["D", "project-dired"],
+  ["b", "project-switch-to-buffer"],
+  ["k", "project-kill-buffers"],
+  ["p", "project-switch-project"],
+  ["g", "project-find-regexp"],
+  ["c", "project-compile"],
 ] as const) {
-  ember.bindKey(keys, command);
+  ember.defineKey(projectPrefixMap, keys, command);
 }
+ember.defineKey("ctl-x-map", "p", projectPrefixMap);

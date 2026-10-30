@@ -8,14 +8,8 @@ use crate::buffer::Buffer;
 use crate::editor::Editor;
 use crate::error::{Error, Result};
 use crate::key::Key;
-use crate::keymap::{Keymap, Lookup};
-
-/// A keymap that other keymaps can be built on: lookups that find nothing
-/// here continue in the parent, as with Emacs's `set-keymap-parent`.
-pub(crate) struct NamedKeymap {
-    pub(crate) map: Keymap,
-    pub(crate) parent: Option<String>,
-}
+use crate::keymap::{Binding, KeymapId, Keymaps, Lookup};
+use crate::variables::{Value, Variable};
 
 /// A minor mode, for key lookup and the mode line.
 #[derive(Clone, Debug)]
@@ -30,144 +24,152 @@ pub struct MinorMode {
 }
 
 /// The keymaps the editor itself has, which scripts can name.
-const GLOBAL_MAP: &str = "global-map";
-const MINIBUFFER_MAP: &str = "minibuffer-local-map";
+pub(crate) const GLOBAL_MAP: &str = "global-map";
+pub(crate) const MINIBUFFER_MAP: &str = "minibuffer-local-map";
 
 impl Editor {
-    /// Defines a named keymap, or changes its parent if it exists.
-    pub fn define_keymap(&mut self, name: &str, parent: Option<&str>) {
-        let parent = parent.map(str::to_string);
-        self.keymaps
-            .entry(name.to_string())
-            .and_modify(|k| k.parent = parent.clone())
-            .or_insert(NamedKeymap { map: Keymap::default(), parent });
+    /// The editor's keymaps, to bind keys in by [`KeymapId`].
+    pub fn keymaps(&self) -> &Keymaps {
+        &self.keymaps
     }
 
-    pub fn keymap_names(&self) -> impl Iterator<Item = &str> {
-        [GLOBAL_MAP, MINIBUFFER_MAP].into_iter().chain(self.keymaps.keys().map(String::as_str))
+    pub fn keymaps_mut(&mut self) -> &mut Keymaps {
+        &mut self.keymaps
     }
 
-    fn keymap_mut(&mut self, name: &str) -> Option<&mut Keymap> {
-        match name {
-            GLOBAL_MAP => Some(&mut self.global_map),
-            MINIBUFFER_MAP => Some(&mut self.minibuffer_map),
-            _ => self.keymaps.get_mut(name).map(|k| &mut k.map),
+    /// The global keymap, which applies everywhere, after all others.
+    pub fn global_map(&self) -> KeymapId {
+        self.global_map
+    }
+
+    /// The keymap a name holds: the global value of the variable of that
+    /// name, as `org-mode-map` holds Org's.
+    pub fn keymap_named(&self, name: &str) -> Option<KeymapId> {
+        match self.default_value(name)? {
+            Value::Keymap(id) => Some(id),
+            _ => None,
         }
+    }
+
+    /// A keymap from a value: a keymap, or the name of a variable holding one.
+    pub fn keymap_of(&self, value: &Value) -> Result<KeymapId> {
+        match value {
+            Value::Keymap(id) => Ok(*id),
+            other => {
+                let name = other.as_str().unwrap_or_default();
+                self.keymap_named(name).ok_or_else(|| Error::new(format!("No such keymap: {other}")))
+            }
+        }
+    }
+
+    /// Defines a named keymap, a variable holding a new keymap, or changes
+    /// the parent of the keymap the name holds, as Emacs's `defvar-keymap`.
+    pub fn define_keymap(&mut self, name: &str, parent: Option<&str>) -> KeymapId {
+        let parent = parent.and_then(|p| self.keymap_named(p));
+        if let Some(id) = self.keymap_named(name) {
+            self.keymaps.set_parent(id, parent);
+            return id;
+        }
+        let id = self.keymaps.make(parent);
+        self.define_variable(Variable::new(name, &format!("Keymap {name}."), Value::Keymap(id)));
+        id
+    }
+
+    /// The names of variables that hold keymaps.
+    pub fn keymap_names(&self) -> Vec<String> {
+        self.variables().filter(|v| matches!(v.default, Value::Keymap(_))).map(|v| v.name.clone()).collect()
+    }
+
+    /// Binds a key sequence in a keymap, by its name or as a value, to a
+    /// command or, as a prefix key, a keymap.
+    pub fn define_key(&mut self, keymap: &Value, keys: &[Key], binding: Option<&Value>) -> Result<()> {
+        let map = self.keymap_of(keymap)?;
+        match binding {
+            None | Some(Value::Null) => self.keymaps.unbind(map, keys),
+            Some(Value::Keymap(prefix)) => self.keymaps.bind(map, keys, Binding::Keymap(*prefix)),
+            Some(command) => {
+                let name = command.as_str().ok_or_else(|| Error::new(format!("Not a command or keymap: {command}")))?;
+                self.keymaps.bind(map, keys, Binding::Command(name.to_string()));
+            }
+        }
+        Ok(())
     }
 
     /// Binds a key sequence in a named keymap.
     pub fn bind_key_in(&mut self, keymap: &str, keys: &[Key], command: &str) -> Result<()> {
-        let map = self
-            .keymap_mut(keymap)
-            .ok_or_else(|| Error::new(format!("No such keymap: {keymap}")))?;
-        map.bind(keys, command);
-        Ok(())
+        self.define_key(&Value::Str(keymap.into()), keys, Some(&Value::Str(command.into())))
     }
 
     /// Makes a named keymap remap a command: wherever keys would run `from`
     /// while the keymap is active, `to` runs instead, as Emacs's
     /// `(define-key map [remap FROM] TO)`.
     pub fn remap_command(&mut self, keymap: &str, from: &str, to: Option<&str>) -> Result<()> {
-        let map = self
-            .keymap_mut(keymap)
-            .ok_or_else(|| Error::new(format!("No such keymap: {keymap}")))?;
-        map.remap(from, to);
+        let map = self.keymap_of(&Value::Str(keymap.into()))?;
+        self.keymaps.remap(map, from, to);
         Ok(())
     }
 
-    /// The command that runs in place of `command` in a named keymap or its parents.
-    fn remapped_in(&self, name: &str, command: &str) -> Option<String> {
-        let mut next = Some(name.to_string());
-        for _ in 0..32 {
-            let name = next?;
-            let (map, parent) = match name.as_str() {
-                GLOBAL_MAP => (&self.global_map, None),
-                MINIBUFFER_MAP => (&self.minibuffer_map, None),
-                _ => {
-                    let k = self.keymaps.get(&name)?;
-                    (&k.map, k.parent.clone())
-                }
-            };
-            if let Some(to) = map.remapped(command) {
-                return Some(to.to_string());
-            }
-            next = parent;
+    /// The keymaps active now, in the order keys are looked up: a transient
+    /// map, an overriding map, the minibuffer's while a prompt is open, the
+    /// buffer's modes', and the global map, as Emacs's `current-active-maps`.
+    pub fn current_active_maps(&self) -> Vec<KeymapId> {
+        let mut maps: Vec<KeymapId> = self.transient_map.into_iter().chain(self.overriding_map).collect();
+        if self.prompt.is_some() {
+            maps.extend(self.minibuffer.local_map.iter().copied());
+            maps.push(self.minibuffer_map);
         }
-        None
+        maps.extend(self.mode_keymaps());
+        maps.push(self.global_map);
+        maps
     }
 
     /// The command that runs when keys run `command`: the first remapping of
     /// it in the active keymaps, in the order keys are looked up, or `None`.
     pub fn command_remapping(&self, command: &str) -> Option<String> {
-        let mut maps: Vec<String> = self.overriding_map.iter().cloned().collect();
-        if self.prompt.is_some() {
-            maps.push(MINIBUFFER_MAP.to_string());
-        }
-        maps.extend(self.mode_keymaps());
-        maps.push(GLOBAL_MAP.to_string());
-        maps.iter().find_map(|m| self.remapped_in(m, command))
+        self.current_active_maps().into_iter().find_map(|m| self.keymaps.remapped(m, command).map(str::to_string))
     }
 
     /// Sets the command a named keymap runs for keys it does not bind.
     pub fn set_keymap_default(&mut self, keymap: &str, command: Option<&str>) -> Result<()> {
-        let map = self
-            .keymap_mut(keymap)
-            .ok_or_else(|| Error::new(format!("No such keymap: {keymap}")))?;
-        map.set_default(command);
+        let map = self.keymap_of(&Value::Str(keymap.into()))?;
+        self.keymaps.set_default(map, command);
         Ok(())
     }
 
-    /// Makes a named keymap take precedence over every other but a transient
+    /// Makes a keymap take precedence over every other but a transient
     /// map, or stops that with `None`, as Emacs's
     /// `overriding-terminal-local-map`. Incremental search uses it.
-    pub fn set_overriding_map(&mut self, keymap: Option<&str>) -> Result<()> {
-        if let Some(name) = keymap
-            && self.keymap_names().all(|n| n != name)
-        {
-            return Err(Error::new(format!("No such keymap: {name}")));
-        }
-        self.overriding_map = keymap.map(str::to_string);
+    pub fn set_overriding_map(&mut self, keymap: Option<&Value>) -> Result<()> {
+        self.overriding_map = keymap.map(|k| self.keymap_of(k)).transpose()?;
         Ok(())
     }
 
-    pub fn overriding_map(&self) -> Option<&str> {
-        self.overriding_map.as_deref()
+    /// The overriding keymap, while there is one.
+    pub fn overriding_map(&self) -> Option<KeymapId> {
+        self.overriding_map
     }
 
-    /// Looks keys up in a named keymap and then its parents.
-    pub(crate) fn lookup_in(&self, name: &str, keys: &[Key]) -> Lookup {
-        let mut next = Some(name.to_string());
-        // A parent loop would otherwise never end.
-        for _ in 0..32 {
-            let Some(name) = next else { break };
-            let (map, parent) = match name.as_str() {
-                GLOBAL_MAP => (&self.global_map, None),
-                MINIBUFFER_MAP => (&self.minibuffer_map, None),
-                _ => match self.keymaps.get(&name) {
-                    Some(k) => (&k.map, k.parent.clone()),
-                    None => return Lookup::Unbound,
-                },
-            };
-            match map.lookup(keys) {
-                Lookup::Unbound => next = parent,
-                found => return found,
-            }
-        }
-        Lookup::Unbound
+    /// Looks keys up in a keymap and its parents.
+    pub(crate) fn lookup_in(&self, map: KeymapId, keys: &[Key]) -> Lookup {
+        self.keymaps.lookup(map, keys)
     }
 
-    /// Makes a named keymap the current buffer's local map, the major
-    /// mode's keymap, as Emacs's `use-local-map` does.
-    pub fn use_local_map(&mut self, name: Option<&str>) {
-        self.buffer_mut().local_map = name.map(str::to_string).into_iter().collect();
+    /// Makes a keymap the current buffer's local map, the major mode's
+    /// keymap, as Emacs's `use-local-map` does.
+    pub fn use_local_map(&mut self, keymap: Option<&Value>) -> Result<()> {
+        let map = keymap.map(|k| self.keymap_of(k)).transpose()?;
+        self.buffer_mut().local_map = map.into_iter().collect();
+        Ok(())
     }
 
-    /// Puts a named keymap in front of the current buffer's local map, as
+    /// Puts a keymap in front of the current buffer's local map, as
     /// Emacs's `(use-local-map (make-composed-keymap MAP (current-local-map)))`.
-    pub fn compose_local_map(&mut self, name: &str) {
+    pub fn compose_local_map(&mut self, keymap: &Value) -> Result<()> {
+        let map = self.keymap_of(keymap)?;
         let maps = &mut self.buffer_mut().local_map;
-        maps.retain(|m| m != name);
-        maps.insert(0, name.to_string());
+        maps.retain(|m| *m != map);
+        maps.insert(0, map);
+        Ok(())
     }
 
     /// Registers a minor mode, replacing one with the same name. Modes
@@ -198,59 +200,66 @@ impl Editor {
     /// The keymaps that apply to the current buffer, in the order keys are
     /// looked up: minor modes that are on, then the major mode's local map.
     /// The transient, minibuffer and global maps come before and after these.
-    pub(crate) fn mode_keymaps(&self) -> Vec<String> {
-        let b = self.buffer();
+    pub(crate) fn mode_keymaps(&self) -> Vec<KeymapId> {
+        self.mode_keymaps_in(self.buffer(), true)
+    }
+
+    /// The keymaps of a buffer's modes, and with `at_point` those that text
+    /// at its point carries.
+    pub(crate) fn mode_keymaps_in(&self, b: &Buffer, at_point: bool) -> Vec<KeymapId> {
         // A keymap property at point comes first, and a local-map property
         // stands in for the buffer's own, as Emacs's current-active-maps has them.
-        let mut maps: Vec<String> = self.keymap_property_at_point("keymap").into_iter().collect();
-        maps.extend(self.minor_modes.iter().filter(|m| self.minor_mode_on(b, &m.name)).filter_map(|m| m.keymap.clone()));
-        match self.keymap_property_at_point("local-map") {
+        let property = |name| if at_point { self.keymap_property_at_point(b, name) } else { None };
+        let mut maps: Vec<KeymapId> = property("keymap").into_iter().collect();
+        maps.extend(
+            self.minor_modes
+                .iter()
+                .filter(|m| self.minor_mode_on(b, &m.name))
+                .filter_map(|m| m.keymap.as_deref().and_then(|k| self.keymap_named(k))),
+        );
+        match property("local-map") {
             Some(map) => maps.push(map),
-            None => maps.extend(b.local_map.iter().cloned()),
+            None => maps.extend(b.local_map.iter().copied()),
         }
         maps
     }
 
-    /// The keymap a `keymap` or `local-map` property names at point, as
+    /// The keymap a `keymap` or `local-map` property holds at point, as
     /// Emacs's get_local_map finds it: on the character after point, at the
     /// end of the buffer the last one, else the one before if the property
-    /// sticks to its end. Keymaps are named, so the property is a name.
-    fn keymap_property_at_point(&self, name: &str) -> Option<String> {
-        let b = self.buffer();
+    /// sticks to its end. The property is a keymap, or a keymap's name.
+    fn keymap_property_at_point(&self, b: &Buffer, name: &str) -> Option<KeymapId> {
         if b.is_empty() {
             return None;
         }
         let point = b.point();
-        let named = |v: &crate::Value| v.as_str().map(str::to_string);
+        let keymap = |v: &Value| self.keymap_of(v).ok();
         // At the end of the buffer only the character before counts, by its stickiness.
         if point < b.len()
-            && let Some(map) = b.char_property(point, name).and_then(named)
+            && let Some(map) = b.char_property(point, name).and_then(keymap)
         {
             return Some(map);
         }
         let before = point.checked_sub(1)?;
         let props = b.text_properties_at(before)?;
         let nonsticky = match props.get("rear-nonsticky") {
-            Some(crate::Value::Bool(true)) => true,
-            Some(crate::Value::List(names)) => names.iter().any(|n| n.as_str() == Some(name)),
+            Some(Value::Bool(true)) => true,
+            Some(Value::List(names)) => names.iter().any(|n| n.as_str() == Some(name)),
             _ => false,
         };
-        if nonsticky { None } else { props.get(name).and_then(named) }
+        if nonsticky { None } else { props.get(name).and_then(keymap) }
     }
 
     /// The keys bound to a command in the keymaps that apply to the current
     /// buffer: the global map, then the major mode's and minor modes' maps.
     pub fn keys_for(&self, command: &str) -> Vec<Vec<Key>> {
-        let mut keys = self.global_map.keys_for(command);
-        for name in self.mode_keymaps() {
-            if let Some(k) = self.keymaps.get(&name) {
-                keys.extend(k.map.keys_for(command));
-            }
+        let mut keys = self.keymaps.keys_for(self.global_map, command);
+        for map in self.mode_keymaps() {
+            keys.extend(self.keymaps.keys_for(map, command));
         }
         keys
     }
 
-    /// The window buffer's `tab-width`, for drawing tabs.
     pub fn tab_width(&self) -> usize {
         self.tab_width_in(self.window_buffer())
     }

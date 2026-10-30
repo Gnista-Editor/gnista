@@ -3491,6 +3491,10 @@ declare global {
        */
       "auto-fill-mode": Value;
       /**
+       * Keymap auto-fill-mode-map.
+       */
+      "auto-fill-mode-map": Value;
+      /**
        * Which major mode files get, by name: a list of [pattern, mode] pairs, tried in order.
        *
        * Each pattern is an Emacs regular expression matched against the whole file name, as \\.txt\\', and mode is the command that turns the mode on. Files that match nothing get Fundamental mode.
@@ -3510,6 +3514,10 @@ declare global {
        * Defined in packages/files.ts.
        */
       "auto-revert-mode": Value;
+      /**
+       * Keymap auto-revert-mode-map.
+       */
+      "auto-revert-mode-map": Value;
       /**
        * Whether reverting a buffer because its file changed says so.
        *
@@ -3673,6 +3681,10 @@ declare global {
        */
       "compilation-first-column": Value;
       /**
+       * Keymap compilation-mode-map.
+       */
+      "compilation-mode-map": Value;
+      /**
        * Whether M-x compile asks for the command, rather than running compile-command.
        *
        * Defined in packages/compile.ts.
@@ -3719,6 +3731,22 @@ declare global {
        */
       "completion-styles": Value;
       /**
+       * Keymap ctl-x-4-map.
+       */
+      "ctl-x-4-map": Value;
+      /**
+       * Keymap ctl-x-5-map.
+       */
+      "ctl-x-5-map": Value;
+      /**
+       * Keymap ctl-x-map.
+       */
+      "ctl-x-map": Value;
+      /**
+       * Keymap ctl-x-x-map.
+       */
+      "ctl-x-x-map": Value;
+      /**
        * Where the buffer looks up relative file names, as a directory name ending in /. Nil means the directory of its file, or else the directory Ember started in. Dired sets it to the directory it lists.
        */
       "default-directory": Value;
@@ -3748,6 +3776,10 @@ declare global {
        * Defined in packages/delsel.ts.
        */
       "delete-selection-mode": Value;
+      /**
+       * Keymap delete-selection-mode-map.
+       */
+      "delete-selection-mode-map": Value;
       /**
        * The switches this Dired buffer lists with, which s changes.
        *
@@ -3785,6 +3817,10 @@ declare global {
        */
       "dired-hide-details-mode": Value;
       /**
+       * Keymap dired-hide-details-mode-map.
+       */
+      "dired-hide-details-mode-map": Value;
+      /**
        * The mark copies get, or true for the mark the file had, or nil for none.
        *
        * Defined in packages/dired.ts.
@@ -3808,6 +3844,10 @@ declare global {
        * Defined in packages/dired.ts.
        */
       "dired-listing-switches": Value;
+      /**
+       * Keymap dired-mode-map.
+       */
+      "dired-mode-map": Value;
       /**
        * Whether copying a directory copies what it holds: top or always do, and nil refuses.
        *
@@ -3844,6 +3884,10 @@ declare global {
        * Defined in packages/display-line-numbers.ts.
        */
       "display-line-numbers-mode": Value;
+      /**
+       * Keymap display-line-numbers-mode-map.
+       */
+      "display-line-numbers-mode-map": Value;
       /**
        * What display-line-numbers-mode sets display-line-numbers to: t, relative or visual.
        *
@@ -3893,6 +3937,10 @@ declare global {
        */
       "electric-pair-mode": Value;
       /**
+       * Keymap electric-pair-mode-map.
+       */
+      "electric-pair-mode-map": Value;
+      /**
        * Whether RET between an open and close pair puts the close on a line of its own too.
        *
        * Defined in packages/elec-pair.ts.
@@ -3937,11 +3985,19 @@ declare global {
        */
       "fido-mode": Value;
       /**
+       * Keymap fido-mode-map.
+       */
+      "fido-mode-map": Value;
+      /**
        * Whether Fido-Vertical mode is on. Use the command fido-vertical-mode to change it.
        *
        * Defined in packages/icomplete.ts.
        */
       "fido-vertical-mode": Value;
+      /**
+       * Keymap fido-vertical-mode-map.
+       */
+      "fido-vertical-mode-map": Value;
       /**
        * File names answered in the minibuffer, newest first.
        */
@@ -3973,11 +4029,19 @@ declare global {
        */
       "frame-background-mode": Value;
       /**
+       * Keymap fundamental-mode-map.
+       */
+      "fundamental-mode-map": Value;
+      /**
        * Whether Global-Auto-Revert mode is on. Use the command global-auto-revert-mode to change it.
        *
        * Defined in packages/files.ts.
        */
       "global-auto-revert-mode": Value;
+      /**
+       * Keymap global-auto-revert-mode-map.
+       */
+      "global-auto-revert-mode-map": Value;
       /**
        * Whether Global-Display-Line-Numbers mode is on. Use the command global-display-line-numbers-mode to change it.
        *
@@ -3985,15 +4049,39 @@ declare global {
        */
       "global-display-line-numbers-mode": Value;
       /**
+       * Keymap global-display-line-numbers-mode-map.
+       */
+      "global-display-line-numbers-mode-map": Value;
+      /**
+       * The keymap that applies everywhere, after the minibuffer's and the modes' keymaps.
+       */
+      "global-map": Value;
+      /**
        * The command M-x grep offers to run.
        *
        * Defined in packages/compile.ts.
        */
       "grep-command": Value;
       /**
+       * Keymap grep-mode-map.
+       */
+      "grep-mode-map": Value;
+      /**
+       * Keymap help-map.
+       */
+      "help-map": Value;
+      /**
+       * Keymap help-mode-map.
+       */
+      "help-mode-map": Value;
+      /**
        * How many earlier answers each minibuffer history keeps.
        */
       "history-length": Value;
+      /**
+       * Keymap icomplete-fido-mode-map.
+       */
+      "icomplete-fido-mode-map": Value;
       /**
        * Whether icomplete leaves out of each completion it lists the part they all share, which it shows after the input instead.
        *
@@ -4007,11 +4095,19 @@ declare global {
        */
       "icomplete-matches-format": Value;
       /**
+       * Keymap icomplete-minibuffer-map.
+       */
+      "icomplete-minibuffer-map": Value;
+      /**
        * Whether Icomplete mode is on. Use the command icomplete-mode to change it.
        *
        * Defined in packages/icomplete.ts.
        */
       "icomplete-mode": Value;
+      /**
+       * Keymap icomplete-mode-map.
+       */
+      "icomplete-mode-map": Value;
       /**
        * How many lines icomplete's list may take, with the input. Vertical lists take up to 25, as max-mini-window-height allows.
        *
@@ -4043,6 +4139,14 @@ declare global {
        */
       "icomplete-vertical-mode": Value;
       /**
+       * Keymap icomplete-vertical-mode-map.
+       */
+      "icomplete-vertical-mode-map": Value;
+      /**
+       * Keymap icomplete-vertical-mode-minibuffer-map.
+       */
+      "icomplete-vertical-mode-minibuffer-map": Value;
+      /**
        * The command that indents the current line, as the major mode says. indent-according-to-mode runs it.
        *
        * Defined in packages/indent.ts.
@@ -4067,17 +4171,29 @@ declare global {
        */
       "inhibit-read-only": Value;
       /**
+       * Keymap isearch-mode-map.
+       */
+      "isearch-mode-map": Value;
+      /**
        * How far JavaScript indents each level.
        *
        * Defined in packages/treesit-modes.ts.
        */
       "js-indent-level": Value;
       /**
+       * Keymap js-ts-mode-map.
+       */
+      "js-ts-mode-map": Value;
+      /**
        * How far JSON indents each level.
        *
        * Defined in packages/treesit-modes.ts.
        */
       "json-ts-mode-indent-offset": Value;
+      /**
+       * Keymap json-ts-mode-map.
+       */
+      "json-ts-mode-map": Value;
       /**
        * Whether killing read-only text only says it was copied to the kill ring, rather than signalling an error.
        */
@@ -4115,6 +4231,14 @@ declare global {
        */
       "minibuffer-history": Value;
       /**
+       * The keymap while a prompt is open, before the modes' and the global keymap.
+       */
+      "minibuffer-local-map": Value;
+      /**
+       * Keymap minibuffer-local-must-match-map.
+       */
+      "minibuffer-local-must-match-map": Value;
+      /**
        * The current buffer's major mode as the mode line shows it.
        */
       "mode-name": Value;
@@ -4124,6 +4248,10 @@ declare global {
        * Defined in packages/files.ts.
        */
       "mode-require-final-newline": Value;
+      /**
+       * Keymap narrow-map.
+       */
+      "narrow-map": Value;
       /**
        * The function, named with ember.defun, that visits the next message's place in this buffer, as next-error calls it, in this buffer: with a count, and whether to start over.
        *
@@ -4173,11 +4301,19 @@ declare global {
        */
       "org-agenda-files": Value;
       /**
+       * Keymap org-agenda-mode-map.
+       */
+      "org-agenda-mode-map": Value;
+      /**
        * Whether Org-Capture mode is on in this buffer. Use the command org-capture-mode to change it.
        *
        * Defined in packages/org-capture.ts.
        */
       "org-capture-mode": Value;
+      /**
+       * Keymap org-capture-mode-map.
+       */
+      "org-capture-mode-map": Value;
       /**
        * The capture templates: lists of a key, a description, the type (entry), a target such as ["file", NAME] or ["file+headline", NAME, HEADING], and the template text.
        *
@@ -4262,6 +4398,10 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-loop-over-headlines-in-active-region": Value;
+      /**
+       * Keymap org-mode-map.
+       */
+      "org-mode-map": Value;
       /**
        * The priority S-<up> and S-<down> start from, and that headings without one count as.
        *
@@ -4394,6 +4534,14 @@ declare global {
        */
       "outline-minor-mode": Value;
       /**
+       * Keymap outline-minor-mode-map.
+       */
+      "outline-minor-mode-map": Value;
+      /**
+       * Keymap outline-mode-map.
+       */
+      "outline-mode-map": Value;
+      /**
        * What starts a heading line: an Emacs regular expression matched at the start of a line. The length of the match is the heading's level.
        *
        * Defined in packages/outline.ts.
@@ -4405,6 +4553,10 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "overwrite-mode": Value;
+      /**
+       * Keymap overwrite-mode-map.
+       */
+      "overwrite-mode-map": Value;
       /**
        * Whether M-( puts a space before and after the parens it inserts, where a word or other parens are next to them.
        *
@@ -4420,11 +4572,19 @@ declare global {
        */
       "parse-sexp-lookup-properties": Value;
       /**
+       * Keymap prog-mode-map.
+       */
+      "prog-mode-map": Value;
+      /**
        * Where the projects Ember knows are saved: projects in user-emacs-directory if nil.
        *
        * Defined in packages/project.ts.
        */
       "project-list-file": Value;
+      /**
+       * Keymap project-prefix-map.
+       */
+      "project-prefix-map": Value;
       /**
        * What C-x p p offers once a project is chosen, as [key, command, label] lists, the key pressed then running the command.
        *
@@ -4450,11 +4610,19 @@ declare global {
        */
       "python-indent-offset": Value;
       /**
+       * Keymap python-ts-mode-map.
+       */
+      "python-ts-mode-map": Value;
+      /**
        * Strings and replacements answered to query-replace and the other replace commands, newest first.
        *
        * Defined in packages/replace.ts.
        */
       "query-replace-history": Value;
+      /**
+       * Keymap query-replace-map.
+       */
+      "query-replace-map": Value;
       /**
        * Whether completing buffer names ignores the case of letters.
        */
@@ -4500,6 +4668,10 @@ declare global {
        */
       "recentf-mode": Value;
       /**
+       * Keymap recentf-mode-map.
+       */
+      "recentf-mode-map": Value;
+      /**
        * Where the list of recent files is saved: recentf in user-emacs-directory if nil.
        *
        * Defined in packages/recentf.ts.
@@ -4540,6 +4712,10 @@ declare global {
        */
       "rust-ts-mode-indent-offset": Value;
       /**
+       * Keymap rust-ts-mode-map.
+       */
+      "rust-ts-mode-map": Value;
+      /**
        * The file places are saved in: places in user-emacs-directory if nil.
        *
        * Defined in packages/saveplace.ts.
@@ -4569,6 +4745,10 @@ declare global {
        * Defined in packages/saveplace.ts.
        */
       "save-place-mode": Value;
+      /**
+       * Keymap save-place-mode-map.
+       */
+      "save-place-mode-map": Value;
       /**
        * More variables to save, such as kill-ring or search-ring.
        *
@@ -4612,6 +4792,10 @@ declare global {
        */
       "savehist-mode": Value;
       /**
+       * Keymap savehist-mode-map.
+       */
+      "savehist-mode-map": Value;
+      /**
        * Whether to save the history of each prompt used, as well as savehist-additional-variables.
        *
        * Defined in packages/savehist.ts.
@@ -4652,6 +4836,10 @@ declare global {
        */
       "show-paren-mode": Value;
       /**
+       * Keymap show-paren-mode-map.
+       */
+      "show-paren-mode-map": Value;
+      /**
        * The priority of Show Paren mode's highlighting, over other overlays.
        *
        * Defined in packages/paren.ts.
@@ -4690,6 +4878,10 @@ declare global {
        */
       "tab-width": Value;
       /**
+       * Keymap text-mode-map.
+       */
+      "text-mode-map": Value;
+      /**
        * Whether long lines are cut off at the window's edge rather than continued on the next screen line.
        *
        * When on, the window scrolls sideways to keep point in view. The command toggle-truncate-lines changes it.
@@ -4716,6 +4908,10 @@ declare global {
        */
       "visual-line-mode": Value;
       /**
+       * Keymap visual-line-mode-map.
+       */
+      "visual-line-mode-map": Value;
+      /**
        * Whether continued lines break at spaces and tabs rather than in the middle of a word.
        *
        * visual-line-mode turns it on.
@@ -4725,6 +4921,10 @@ declare global {
        * A string shown at the start of each row a long line continues on, unless the text has a wrap-prefix property of its own; it takes room from the row.
        */
       "wrap-prefix": Value;
+      /**
+       * Keymap xref--xref-buffer-mode-map.
+       */
+      "xref--xref-buffer-mode-map": Value;
       /**
        * The text properties yanking leaves out of what it inserts, or t for all of them, as Emacs's insert-for-yank removes them.
        */
@@ -5828,9 +6028,33 @@ declare global {
     function defineCommand(definition: CommandDefinition): DefinedCommand;
     /**
      * Bind a key sequence in Emacs notation, such as "C-c d", to a command, in
-     * the global keymap or a named one such as "text-mode-map".
+     * the global keymap or a named one such as "text-mode-map". Bound to a
+     * keymap, the keys are a prefix and that keymap its prefix map; null
+     * unbinds them, so the parent keymap's binding shows.
      */
-    function bindKey(keys: string, command: CommandName | DefinedCommand, keymap?: string): void;
+    function bindKey(keys: string, command: CommandName | DefinedCommand | Keymap | null, keymap?: string | Keymap): void;
+    /** Bind keys in a keymap, as bindKey, in Emacs's order of arguments (define-key). */
+    function defineKey(keymap: string | Keymap, keys: string, binding: CommandName | DefinedCommand | Keymap | null): void;
+    /** A new keymap with no bindings, inheriting `parent`'s, as make-sparse-keymap and set-keymap-parent. */
+    function makeSparseKeymap(parent?: string | Keymap | null): Keymap;
+    /** Whether a value is a keymap, as keymapp. */
+    function keymapp(value: unknown): value is Keymap;
+    /** The keymap a keymap inherits from, as keymap-parent. */
+    function keymapParent(keymap: string | Keymap): Keymap | undefined;
+    /** Make a keymap inherit another's bindings, or none, as set-keymap-parent. */
+    function setKeymapParent(keymap: string | Keymap, parent: string | Keymap | null): void;
+    /**
+     * What keys are bound to in a keymap and its parents, as lookup-key: a
+     * command's name, a prefix map, or undefined.
+     */
+    function lookupKey(keymap: string | Keymap, keys: string): string | Keymap | undefined;
+    /**
+     * The keymaps active now, in the order keys are looked up, as
+     * current-active-maps: a transient map, an overriding one, the
+     * minibuffer's while a prompt is open, text's at point, the minor modes',
+     * the major mode's, and the global map.
+     */
+    function currentActiveMaps(): Keymap[];
     /**
      * Run a command as keys would (Emacs's call-interactively): prompting in
      * the minibuffer for its arguments, which it gets once they are read.
@@ -5930,7 +6154,7 @@ declare global {
      * (Emacs's set-transient-map). Prefix commands use it so that more digits
      * continue the argument.
      */
-    function setTransientMap(bindings: { [keys: string]: CommandName | DefinedCommand }): void;
+    function setTransientMap(bindings: { [keys: string]: CommandName | DefinedCommand } | Keymap): void;
 
     /**
      * The kill `n` entries back from the one yanked last, moving the yank
@@ -5981,7 +6205,17 @@ declare global {
      * What variables, hooks and text properties hold, as Emacs's values: a
      * function too, as a lambda in a variable, kept as itself.
      */
-    type Value = null | boolean | number | string | symbol | Value[] | ((...args: any[]) => any) | Buffer | PropertizedString;
+    type Value = null | boolean | number | string | symbol | Value[] | ((...args: any[]) => any) | Buffer | PropertizedString | Keymap;
+    /**
+     * A keymap, as Emacs's keymaps are values: bound to a prefix key in
+     * another keymap it is that key's prefix map, shared wherever it is
+     * bound, and a variable or a keymap or local-map text property can hold
+     * one. A keymap's name, such as "org-mode-map", is a variable holding it,
+     * and the functions taking a keymap take either.
+     */
+    interface Keymap {
+      readonly __emberKeymapId: number;
+    }
     /**
      * A symbol, as Emacs's: a name as data, apart from text. It is
      * JavaScript's registered symbol of the name, so intern("space") ===
@@ -6089,10 +6323,14 @@ declare global {
     /** Run a hook's functions, passing them any arguments given (Emacs's run-hook-with-args). */
     function runHooks(hook: HookName | (string & {}), ...args: Value[]): void;
 
-    /** Define a named keymap; keys it does not bind are looked up in the parent. */
-    function defineKeymap(name: string, parent?: string | null): void;
-    /** Make a named keymap the current buffer's local map, the major mode's keymap. */
-    function useLocalMap(name: string | null): void;
+    /**
+     * Define a named keymap, a variable holding a new keymap, and return it;
+     * keys it does not bind are looked up in the parent. Defined again, it
+     * keeps its bindings and takes the parent given.
+     */
+    function defineKeymap(name: string, parent?: string | null): Keymap;
+    /** Make a keymap the current buffer's local map, the major mode's keymap. */
+    function useLocalMap(keymap: string | Keymap | null): void;
 
     interface MajorModeDefinition {
       /** The command that turns the mode on, such as "text-mode". */
@@ -6265,7 +6503,7 @@ declare global {
      */
     function setMinibufferOverlay(overlay: { before?: string; after?: FacedText[] } | null): void;
     /** Put a keymap in front of the current buffer's local map, as Emacs's use-local-map of make-composed-keymap. */
-    function composeLocalMap(name: string): void;
+    function composeLocalMap(keymap: string | Keymap): void;
     /**
      * The first key sequence that runs a command in the selected window's
      * buffer, as Emacs's where-is-internal with FIRSTONLY, such as "C-x C-f".
@@ -6572,17 +6810,17 @@ declare global {
      * called with null (Emacs's overriding-terminal-local-map). Incremental
      * search uses it while it runs.
      */
-    function setOverridingMap(keymap: string | null): void;
-    function overridingMap(): string | undefined;
+    function setOverridingMap(keymap: string | Keymap | null): void;
+    function overridingMap(): Keymap | undefined;
     /** The command a keymap runs for any single key it does not bind, as an Emacs keymap's [t] binding. */
-    function setKeymapDefault(keymap: string, command: CommandName | DefinedCommand | null): void;
+    function setKeymapDefault(keymap: string | Keymap, command: CommandName | DefinedCommand | null): void;
     /**
      * While a keymap is active, run `to` wherever keys would run `from`, or
      * stop that with null, as Emacs's [remap FROM] bindings. Org remaps
      * self-insert-command to keep tables aligned as you type.
      */
     function remapCommand(
-      keymap: string,
+      keymap: string | Keymap,
       from: CommandName | DefinedCommand,
       to: CommandName | DefinedCommand | null,
     ): void;

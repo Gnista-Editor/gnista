@@ -1375,7 +1375,7 @@ fn help(ed: &mut Editor) {
     );
     def(ed, "describe-bindings", "List all key bindings.", |ed, _| {
         let mut text = String::from("Key             Command\n---             -------\n");
-        for (keys, command) in ed.global_map.bindings() {
+        for (keys, command) in ed.keymaps().bindings(ed.global_map()) {
             text += &format!("{:<15} {command}\n", format_keys(&keys));
         }
         ed.show_help(&text);
@@ -1414,6 +1414,20 @@ fn describe(ed: &Editor, name: &str) -> Result<String> {
 }
 
 fn bind_defaults(ed: &mut Editor) {
+    // The prefix maps Emacs names, so code binds into them as Emacs's
+    // Lisp does with (define-key ctl-x-4-map ...).
+    for (name, keys) in [
+        ("ctl-x-map", "C-x"),
+        ("ctl-x-4-map", "C-x 4"),
+        ("ctl-x-5-map", "C-x 5"),
+        ("ctl-x-x-map", "C-x x"),
+        ("narrow-map", "C-x n"),
+        ("help-map", "C-h"),
+    ] {
+        let map = ed.define_keymap(name, None);
+        let global = ed.global_map();
+        ed.keymaps_mut().bind(global, &Key::parse_seq(keys).expect("valid keys"), crate::keymap::Binding::Keymap(map));
+    }
     let global = [
         ("C-f", "forward-char"),
         ("<right>", "forward-char"),
@@ -1471,13 +1485,15 @@ fn bind_defaults(ed: &mut Editor) {
         ("C-h b", "describe-bindings"),
     ];
     for (keys, command) in global {
-        ed.global_map.bind_str(keys, command);
+        let map = ed.global_map();
+        ed.keymaps_mut().bind_str(map, keys, command);
     }
     // Emacs on macOS follows the Mac convention that Home and End go to the
     // ends of the document (ns-win.el); elsewhere they go to the ends of the line.
     if cfg!(target_os = "macos") {
-        ed.global_map.bind_str("<home>", "beginning-of-buffer");
-        ed.global_map.bind_str("<end>", "end-of-buffer");
+        let map = ed.global_map();
+        ed.keymaps_mut().bind_str(map, "<home>", "beginning-of-buffer");
+        ed.keymaps_mut().bind_str(map, "<end>", "end-of-buffer");
     }
     ed.define_keymap(crate::minibuffer::MUST_MATCH_MAP, None);
     for keys in ["RET", "C-j", "C-m"] {
@@ -1494,6 +1510,7 @@ fn bind_defaults(ed: &mut Editor) {
         ("<up>", "previous-history-element"),
         ("<down>", "next-history-element"),
     ] {
-        ed.minibuffer_map.bind_str(keys, command);
+        let map = ed.minibuffer_map;
+        ed.keymaps_mut().bind_str(map, keys, command);
     }
 }

@@ -88,7 +88,8 @@ fn the_wheel_is_a_key() {
 
     // Rebinding the wheel changes what it does, as in Emacs.
     let mut ed = editor();
-    ed.global_map.bind_str("<wheel-down>", "next-line");
+    let map = ed.global_map();
+    ed.keymaps_mut().bind_str(map, "<wheel-down>", "next-line");
     ed.wheel(1);
     assert_eq!(top(&ed), 0);
     assert_eq!(point_line_col(&ed), (1, 0));
