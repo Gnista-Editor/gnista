@@ -32,7 +32,7 @@ function modeFromFileName(): string | undefined {
   }
   for (const entry of alist) {
     if (Array.isArray(entry) && typeof entry[0] === "string" && typeof entry[1] === "string") {
-      if (ember.emacsRegexp(entry[0]).test(file)) {
+      if (ember.stringMatch(entry[0], file) !== undefined) {
         return entry[1];
       }
     }
@@ -256,7 +256,7 @@ function revertBuffer(noconfirm: boolean, then: () => void = () => {}): void {
   if (!ember.fileExists(file)) throw new Error(`File ${file} no longer exists!`);
   const modified = ember.bufferModified();
   const patterns = ember.variable("revert-without-query");
-  const unasked = !modified && Array.isArray(patterns) && patterns.some((p) => typeof p === "string" && ember.emacsRegexp(p).test(file));
+  const unasked = !modified && Array.isArray(patterns) && patterns.some((p) => typeof p === "string" && ember.stringMatch(p, file) !== undefined);
   if (noconfirm || unasked) {
     revertNow();
     then();

@@ -36,14 +36,20 @@ interface Heading {
   level: number;
 }
 
+/** How long the heading at the start of `line` is, as outline-regexp matches it there with looking-at, or 0. */
+function headingMatch(line: number): string {
+  const start = ember.lineStart(line);
+  const regexp = `\\(?:${String(ember.variable("outline-regexp"))}\\)`;
+  return ember.lookingAt(regexp, start) ? ember.bufferText(start, ember.matchEnd(0)!) : "";
+}
+
 function headings(): Heading[] {
-  const pattern = ember.emacsRegexp(`^\\(?:${String(ember.variable("outline-regexp"))}\\)`);
   const found: Heading[] = [];
   for (let line = 0; line < ember.lineCount(); line++) {
-    const match = pattern.exec(ember.lineText(line));
-    if (match && match[0].trimEnd().length > 0) {
+    const match = headingMatch(line);
+    if (match.trimEnd().length > 0) {
       // The match's length is the level, not counting a space after the stars, as in org-mode's "\\*+ ".
-      found.push({ line, start: ember.lineStart(line), end: ember.lineEnd(line), level: match[0].trimEnd().length });
+      found.push({ line, start: ember.lineStart(line), end: ember.lineEnd(line), level: match.trimEnd().length });
     }
   }
   return found;
@@ -278,11 +284,10 @@ const withPrefix = (prefix: string) =>
 function fontifyHeadings(start: number, end: number): void {
   if (ember.variable("major-mode") !== "outline-mode") return;
   ember.removeTextProperty(start, end, "face");
-  const pattern = ember.emacsRegexp(`^\\(?:${String(ember.variable("outline-regexp"))}\\)`);
   for (let line = ember.lineOf(start); line < ember.lineCount() && ember.lineStart(line) < end; line++) {
-    const match = pattern.exec(ember.lineText(line));
-    if (match && match[0].length > 0) {
-      ember.putTextProperty(ember.lineStart(line), ember.lineEnd(line), "face", `outline-${((match[0].length - 1) % 8) + 1}`);
+    const match = headingMatch(line);
+    if (match.length > 0) {
+      ember.putTextProperty(ember.lineStart(line), ember.lineEnd(line), "face", `outline-${((match.length - 1) % 8) + 1}`);
     }
   }
 }

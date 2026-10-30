@@ -1131,11 +1131,13 @@ const API: &str = r##"
    */
   function letBind<T>(bindings: { [variable: string]: Value }, fn: () => T): T;
   /**
-   * An Emacs regexp as a JavaScript RegExp, for matching strings quickly:
-   * \\( \\) groups, \\| alternatives, \\` and \\' for the ends of the string,
-   * \\w, \\b and \\< \\>, [[:alpha:]] classes, ^ and $ at line ends. Regexps
-   * that are data, in variables or from users, are Emacs's; use this to
-   * match them. Signals invalid-regexp if it cannot be read.
+   * An Emacs regexp translated to a JavaScript RegExp, approximately: \\(
+   * \\) groups, \\| alternatives, \\` and \\' for the ends of the string,
+   * \\w, \\b and \\< \\>, [[:alpha:]] classes, ^ and $ at line ends, but not
+   * Emacs's syntax table, back-references across numbered groups or `\\=`.
+   * Regexps that are data, in variables or from users, are better matched
+   * with stringMatch, lookingAt and reSearchForward, which are Emacs's
+   * matcher. Signals invalid-regexp if it cannot be read.
    */
   function emacsRegexp(regexp: string, options?: { caseFold?: boolean }): RegExp;
   /**

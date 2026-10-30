@@ -30,7 +30,7 @@ The same review found, and the same round fixed: σ, ς and µ did not fold with
 
 ## Consequences
 
-Ports can use Emacs's regexps as their Lisp does, and font-lock keywords, imenu and outline patterns, `compilation-error-regexp-alist` and Org's regexps match what they match in Emacs. A backtracking matcher can take exponential time on some expressions, as Emacs's can: `\(x+x+\)+y` on a line of x's takes seconds in both, and a limit on the failure stack turns only the deepest into an error. Regexps in packages' own code may still be JavaScript's, and `ember.emacsRegexp`, which translates one for JavaScript to match strings, keeps its approximations until it calls the engine.
+Ports can use Emacs's regexps as their Lisp does, and font-lock keywords, imenu and outline patterns, `compilation-error-regexp-alist` and Org's regexps match what they match in Emacs. A backtracking matcher can take exponential time on some expressions, as Emacs's can: `\(x+x+\)+y` on a line of x's takes seconds in both, and a limit on the failure stack turns only the deepest into an error. Regexps in packages' own code may still be JavaScript's. The packages that matched Emacs regexps from variables with `ember.emacsRegexp`, a translation to JavaScript, use the engine instead: `auto-mode-alist` and `revert-without-query` with `string-match`, Dired's trivial file names, and outline's headings with `looking-at` on the buffer, as outline.el does. The translation stays, documented as approximate, for code that wants a JavaScript regexp.
 
 ## Dependencies introduced
 

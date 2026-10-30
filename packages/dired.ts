@@ -300,12 +300,10 @@ function findLine(name: string): number | undefined {
 /** Puts point on the first file worth visiting, as dired-initial-position. */
 function initialPosition(): void {
   const trivial = ember.variable("dired-trivial-filenames");
-  const re = typeof trivial === "string" ? ember.emacsRegexp(trivial) : undefined;
+  const trivialName = (name: string): boolean => typeof trivial === "string" && ember.stringMatch(trivial, name) !== undefined;
   let line = 1;
   while (line < ember.lineCount() && fileLine(line) === undefined && ember.lineStart(line) < ember.bufferSize()) line++;
-  if (re !== undefined) {
-    while (line < ember.lineCount() && ember.lineStart(line) < ember.bufferSize() && re.test(fileLine(line)?.name ?? "")) line++;
-  }
+  while (line < ember.lineCount() && ember.lineStart(line) < ember.bufferSize() && trivialName(fileLine(line)?.name ?? "")) line++;
   ember.gotoChar(ember.lineStart(Math.min(line, ember.lineCount() - 1)));
   moveToFilename();
 }
