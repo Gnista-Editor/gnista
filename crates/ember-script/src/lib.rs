@@ -110,6 +110,8 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/org-macs.ts", include_str!("../../../packages/org-macs.ts")),
     ("packages/org-table.ts", include_str!("../../../packages/org-table.ts")),
     ("packages/org.ts", include_str!("../../../packages/org.ts")),
+    ("packages/org-agenda.ts", include_str!("../../../packages/org-agenda.ts")),
+    ("packages/org-capture.ts", include_str!("../../../packages/org-capture.ts")),
 ];
 
 /// How long a script may run before it is stopped, unless changed with

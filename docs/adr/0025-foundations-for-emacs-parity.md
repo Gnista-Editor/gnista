@@ -39,6 +39,8 @@ Alongside: an API naming rule (kebab-case to camelCase, `-p` to `P`; `undefined`
 
 Items 1 to 5 landed in this round, with packages loaded as ES modules through a resolver that finds a package by its feature name, a shared `subr` module, and Org's marker layer moved into `org-macs`; the oracle now runs its cases in parallel, 264 s to 34 s. Items 7 to 10 follow, each in its own ADR when it starts.
 
+Org's agenda and capture then moved out of org.ts into `org-agenda.ts` and `org-capture.ts`, importing what they share from `org`, as org-agenda.el and org-capture.el require org; org.ts is 7,100 lines, and its lists and links are next to split, as org-list.el and ol.el.
+
 Item 6 landed next:
 - Every prompt and question returns a promise when given no `then`: `await ember.readString(...)`, `yOrNP`, `completingRead`, `readFileName` and the rest. The callback form stays for code not yet moved.
 - QuickJS's job queue runs as each call from the editor into scripts finishes, so an awaiting command carries on inside the key that answered its prompt. That keeps the editor single-threaded and gives tests, the oracle and the MCP server the synchronous "run until idle" they need without an API of their own.

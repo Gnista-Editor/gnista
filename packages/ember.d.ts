@@ -1529,7 +1529,7 @@ declare global {
        *
        * @param key text
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-capture.ts.
        */
       "org--capture-with": [key: string];
       /**
@@ -1569,79 +1569,79 @@ declare global {
        *
        * @param key text
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-agenda.ts.
        */
       "org-agenda": [key: string];
       /**
        * Show the week before in the agenda.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-agenda.ts.
        */
       "org-agenda-earlier": [];
       /**
        * Show the entry the agenda line at point shows in another window, and go there.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-agenda.ts.
        */
       "org-agenda-goto": [];
       /**
        * Show the week with today in it, and go to today.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-agenda.ts.
        */
       "org-agenda-goto-today": [];
       /**
        * Show the next week in the agenda.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-agenda.ts.
        */
       "org-agenda-later": [];
       /**
        * Show the week's agenda: what is scheduled, due and timestamped each day, from org-agenda-files.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-agenda.ts.
        */
       "org-agenda-list": [];
       /**
        * The mode of the *Org Agenda* buffer. n and p move between lines, RET goes to an entry and TAB shows it in another window, t changes its TODO state, g rebuilds the agenda, f and b move a week, . goes to today, and q leaves.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-agenda.ts.
        */
       "org-agenda-mode": [];
       /**
        * Move to the next line of the agenda.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-agenda.ts.
        */
       "org-agenda-next-line": [];
       /**
        * Move to the previous line of the agenda.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-agenda.ts.
        */
       "org-agenda-previous-line": [];
       /**
        * Leave the agenda: its window goes, or another buffer takes its place.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-agenda.ts.
        */
       "org-agenda-quit": [];
       /**
        * Rebuild the agenda from the files, as they are now.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-agenda.ts.
        */
       "org-agenda-redo": [];
       /**
        * Go to the entry the agenda line at point shows, in this window.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-agenda.ts.
        */
       "org-agenda-switch-to": [];
       /**
        * Change the TODO state of the entry the agenda line at point shows, as C-c C-t does there.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-agenda.ts.
        */
       "org-agenda-todo": [];
       /**
@@ -1661,19 +1661,19 @@ declare global {
       /**
        * Capture a note, asking for the key of one of org-capture-templates: its entry goes into its target file, shown narrowed to it. C-c C-c files it and C-c C-k takes it away.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-capture.ts.
        */
       "org-capture": [];
       /**
        * Finish the capture: the entry stays in its file, which is saved, and the windows go back to how they were.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-capture.ts.
        */
       "org-capture-finalize": [];
       /**
        * Abort the capture: the entry goes again, and the windows go back to how they were.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-capture.ts.
        */
       "org-capture-kill": [];
       /**
@@ -1681,7 +1681,7 @@ declare global {
        *
        * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-capture.ts.
        */
       "org-capture-mode": [];
       /**
@@ -2481,7 +2481,7 @@ declare global {
       /**
        * Show the TODO items that are not done in org-agenda-files, most urgent first.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-agenda.ts.
        */
       "org-todo-list": [];
       /**
@@ -4114,19 +4114,19 @@ declare global {
       /**
        * The files the agenda collects entries from, as a list of file names.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-agenda.ts.
        */
       "org-agenda-files": Value;
       /**
        * Whether Org-Capture mode is on in this buffer. Use the command org-capture-mode to change it.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-capture.ts.
        */
       "org-capture-mode": Value;
       /**
        * The capture templates: lists of a key, a description, the type (entry), a target such as ["file", NAME] or ["file+headline", NAME, HEADING], and the template text.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-capture.ts.
        */
       "org-capture-templates": Value;
       /**
@@ -4150,13 +4150,13 @@ declare global {
       /**
        * How many days ahead today's agenda warns of a deadline.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-agenda.ts.
        */
       "org-deadline-warning-days": Value;
       /**
        * The file capture templates with an empty file name file into.
        *
-       * Defined in packages/org.ts.
+       * Defined in packages/org-capture.ts.
        */
       "org-default-notes-file": Value;
       /**
