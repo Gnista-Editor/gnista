@@ -371,6 +371,21 @@
       const n = [...s].length;
       return new PropertizedString(s, n > 0 && Object.keys(properties).length > 0 ? [[0, n, { ...properties }]] : []);
     },
+    // As Emacs's concat: the strings one after another, keeping their text properties.
+    concat(...parts) {
+      let string = "";
+      let at = 0;
+      const runs = [];
+      for (const part of parts) {
+        const s = String(part ?? "");
+        if (part instanceof PropertizedString) {
+          for (const [start, end, props] of part.properties) runs.push([start + at, end + at, props]);
+        }
+        string += s;
+        at += [...s].length;
+      }
+      return new PropertizedString(string, runs);
+    },
     bufferSubstring: (start, end) => native.bufferSubstring(start, end),
     insertBeforeMarkers: (text) => native.insertBeforeMarkers(text instanceof PropertizedString ? text : String(text)),
     insertAndInherit: (text) => native.insertAndInherit(text instanceof PropertizedString ? text : String(text)),
@@ -492,15 +507,6 @@
     completionTryCompletion: (input, names) =>
       native.completionTryCompletion(String(input), names === undefined ? undefined : [...names].map(String)) ?? undefined,
     cacheAllSortedCompletions: (completions) => native.cacheAllSortedCompletions(completions.map(String)),
-    setMinibufferOverlay: (overlay) => {
-      if (overlay == null) return native.setMinibufferOverlay(undefined, [], []);
-      const pieces = (overlay.after ?? []).map((p) => typeof p === "string" ? { text: p } : p);
-      native.setMinibufferOverlay(
-        String(overlay.before ?? ""),
-        pieces.map((p) => String(p.text)),
-        pieces.map((p) => p.face == null ? [] : [p.face].flat().map(String)),
-      );
-    },
     composeLocalMap: (keymap) => native.composeLocalMap(keymapArg(keymap)),
     fileDirectoryP: (file) => native.fileDirectoryP(String(file)),
     fileAttributes: (file) => native.fileAttributes(String(file)) ?? undefined,

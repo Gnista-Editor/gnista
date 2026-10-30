@@ -61,27 +61,6 @@ impl Reading {
     }
 }
 
-/// What the minibuffer shows around its input besides the prompt, as an
-/// overlay's `before-string` and `after-string` do in Emacs's minibuffer:
-/// icomplete's list of completions.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct MinibufferOverlay {
-    /// Shown before the prompt.
-    pub before: String,
-    /// Shown after the input: pieces of text, each with the faces it is
-    /// drawn in. A newline starts another line of the minibuffer.
-    pub after: Vec<(String, Vec<String>)>,
-}
-
-impl MinibufferOverlay {
-    /// How many lines the overlay adds below the input's. A newline at the
-    /// very end starts no line of its own.
-    pub fn extra_lines(&self) -> usize {
-        let text: String = self.after.iter().map(|(text, _)| text.as_str()).collect();
-        text.trim_end_matches('\n').matches('\n').count()
-    }
-}
-
 /// What the open prompt reads, for code that adapts to it, as icomplete does.
 #[derive(Clone, Debug, PartialEq)]
 pub struct MinibufferInfo {
@@ -148,7 +127,6 @@ impl Editor {
         let must_match = prompt.require_match;
         self.prompt = Some(prompt);
         self.current = self.minibuffer_index();
-        self.minibuffer_overlay = None;
         self.mini_window_lines = 1;
         // Its local map is minibuffer-local-map, and the must-match map
         // before it for a prompt that must be answered by a match.
@@ -189,7 +167,6 @@ impl Editor {
         }
         let prompt = self.prompt.take();
         self.minibuffer_mut().set_text("");
-        self.minibuffer_overlay = None;
         // The selected window's buffer is current again, as leaving the
         // minibuffer window makes it.
         if self.buffers[self.current].id == self.minibuffer_id {
@@ -587,17 +564,42 @@ impl Editor {
         String::new()
     }
 
-    /// What the minibuffer shows besides its prompt and input.
-    pub fn minibuffer_overlay(&self) -> Option<&MinibufferOverlay> {
-        self.minibuffer_overlay.as_ref()
+    /// What overlays show in the minibuffer before its prompt and after its
+    /// input, as text: their before-strings at its start and after-strings
+    /// at its end, as icomplete shows its count and list.
+    pub fn minibuffer_strings(&self) -> (String, String) {
+        let mb = self.minibuffer();
+        let end = mb.len();
+        let mut overlays: Vec<&crate::properties::Overlay> = mb.overlays().iter().collect();
+        overlays.sort_by(|a, b| a.priority().total_cmp(&b.priority()).then(a.id.cmp(&b.id)));
+        let strings = |at: usize, name: &str| -> String {
+            overlays
+                .iter()
+                .filter(|o| if name == "before-string" { o.start == at } else { o.end == at })
+                .filter_map(|o| o.props.get(name).and_then(Value::as_str).map(str::to_string))
+                .collect()
+        };
+        (strings(0, "before-string"), strings(end, "after-string"))
     }
 
-    /// Sets what the minibuffer shows besides its prompt and input, until
-    /// the prompt closes.
-    pub fn set_minibuffer_overlay(&mut self, overlay: Option<MinibufferOverlay>) {
-        if self.prompt.is_some() {
-            self.minibuffer_overlay = overlay;
+    /// The rows the echo area shows while a prompt is open: the
+    /// minibuffer's text, prompt and input, with its faces and its overlays'
+    /// strings, as any window shows its buffer, and a message shown meanwhile
+    /// after the input, before what overlays add at its end, as Emacs's
+    /// minibuffer-message shows it.
+    pub fn minibuffer_rows(&self, dark: bool) -> Vec<crate::Row> {
+        let mb = self.minibuffer();
+        let mut rows = self.rows_in(mb, 0, 1000, dark, None);
+        if let Some(message) = self.echo() {
+            let end = mb.len();
+            let style = self.style_for(&["shadow".to_string()], dark);
+            let segment = crate::rows::Segment { string: true, ..crate::rows::Segment::text(end, format!(" {message}"), style) };
+            if let Some(row) = rows.iter_mut().find(|r| r.shows_point(end)) {
+                let at = row.segments.iter().position(|s| s.string && s.start == end).unwrap_or(row.segments.len());
+                row.segments.insert(at, segment);
+            }
         }
+        rows
     }
 
     /// The frame's height in lines with the echo area, as the front end
@@ -631,7 +633,7 @@ impl Editor {
             self.mini_window_lines = 1;
             return 1;
         }
-        let wanted = 1 + self.minibuffer_overlay.as_ref().map_or(0, MinibufferOverlay::extra_lines);
+        let wanted = self.minibuffer_rows(true).len().max(1);
         let wanted = wanted.min(self.max_mini_window_lines(frame_lines)).min(frame_lines.saturating_sub(2).max(1));
         let grow_only = !matches!(self.variable("resize-mini-windows"), Some(Value::Bool(true)));
         self.mini_window_lines = if grow_only { self.mini_window_lines.max(wanted) } else { wanted };

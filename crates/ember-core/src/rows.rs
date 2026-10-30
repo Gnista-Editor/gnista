@@ -88,6 +88,9 @@ pub struct Row {
     /// Whether the line goes on in the next row because it was too long for
     /// the window, which Emacs marks with a `\` in the last column.
     pub continued: bool,
+    /// Whether it ends where an overlay string has a newline, which is
+    /// drawn with no such mark; `continued` then says whether text follows.
+    pub broken: bool,
 }
 
 impl Row {
@@ -557,7 +560,7 @@ impl Editor {
                 segments.push(Segment::text(pos, b.slice(pos..chunk_end), style));
                 pos = chunk_end;
             };
-            for row in split_at_string_newlines(Row { line, start, end, segments, continued: false }) {
+            for row in split_at_string_newlines(Row { line, start, end, segments, continued: false, broken: false }) {
                 if rows.len() >= count {
                     break;
                 }
@@ -753,9 +756,10 @@ fn split_at_string_newlines(row: Row) -> Vec<Row> {
     for seg in row.segments {
         if seg.breaks && rows.len() < 1000 {
             let at = seg.start;
-            let next = Row { line: current.line, start: at, end: current.end, segments: Vec::new(), continued: false };
+            let next = Row { line: current.line, start: at, end: current.end, segments: Vec::new(), continued: false, broken: false };
             let mut done = std::mem::replace(&mut current, next);
             done.end = at;
+            done.broken = true;
             rows.push(done);
         }
         if !seg.text.is_empty() {
@@ -856,7 +860,7 @@ fn wrap_row(row: Row, wrap: Wrap, tab_width: usize, indent: usize) -> Vec<Row> {
         let last = n + 2 == bounds.len();
         let start = if n == 0 { row.start } else { position_of(from) };
         let end = if last { row.end } else { position_of(to) };
-        out.push(Row { line: row.line, start, end, segments, continued: !last });
+        out.push(Row { line: row.line, start, end, segments, continued: !last || row.continued, broken: last && row.broken });
     }
     out
 }

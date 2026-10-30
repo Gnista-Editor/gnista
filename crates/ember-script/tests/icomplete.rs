@@ -112,11 +112,10 @@ fn run(case: &Case) -> Vec<Step> {
             states.push(Step::Exited { exited: true, answer });
             break;
         };
-        let overlay = ed.minibuffer_overlay();
-        let after: String = overlay.map_or(String::new(), |o| o.after.iter().map(|(text, _)| text.as_str()).collect());
+        let (before, after) = ed.minibuffer_strings();
         states.push(Step::Open {
             input: without_dir(&ed.minibuffer_input()),
-            before: overlay.map_or(String::new(), |o| o.before.clone()),
+            before,
             after: without_dir(&after),
         });
     }

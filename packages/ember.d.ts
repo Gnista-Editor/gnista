@@ -6539,14 +6539,6 @@ declare global {
     /** Replace the kept completions, to rotate them or leave some out, until the input changes. */
     function cacheAllSortedCompletions(completions: string[]): void;
     /** A piece of text and the face or faces it is drawn in, the first winning. */
-    type FacedText = string | { text: string; face?: string | string[] | null };
-    /**
-     * Set what the minibuffer shows besides its input, until the prompt
-     * closes, as an overlay's before-string and after-string: `before` comes
-     * before the prompt and `after` after the input, where a newline starts
-     * another line. Null clears it.
-     */
-    function setMinibufferOverlay(overlay: { before?: string; after?: FacedText[] } | null): void;
     /** Put a keymap in front of the current buffer's local map, as Emacs's use-local-map of make-composed-keymap. */
     function composeLocalMap(keymap: string | Keymap): void;
     /**
@@ -7066,6 +7058,8 @@ declare global {
      * cut to -width. Set `mode-line-format` to one to change the mode line.
      */
     function formatModeLine(format?: Value): string;
+    /** Strings one after another as one, keeping their text properties, as Emacs's concat. */
+    function concat(...strings: (string | PropertizedString)[]): PropertizedString;
     /** Whether a function or command has this name, as fboundp. */
     function fboundp(name: string): boolean;
     /** The function a name holds, as symbol-function; undefined for none, or a command. */

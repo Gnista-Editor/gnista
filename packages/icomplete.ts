@@ -79,6 +79,46 @@ const setLocal = (name: string, value: ember.Value): void => {
   ember.setVariable(name, value);
 };
 
+/** Text in a face, or plain. */
+type FacedText = string | { text: string; face?: string | string[] | null };
+
+/** Pieces of text as one propertized string, the cursor on its first character if `cursor`, as icomplete-exhibit puts it there. */
+function faced(pieces: FacedText[], cursor: boolean): ember.PropertizedString {
+  const parts = pieces.map((p) => (typeof p === "string" ? { text: p, face: null } : p));
+  const strings: (string | ember.PropertizedString)[] = [];
+  let first = cursor;
+  for (const { text, face } of parts) {
+    if (text === "") continue;
+    const props: { [name: string]: ember.Value } = face ? { face } : {};
+    if (first) {
+      const [c, ...rest] = [...text];
+      strings.push(ember.propertize(c, { ...props, cursor: true }), ember.propertize(rest.join(""), props));
+      first = false;
+    } else {
+      strings.push(ember.propertize(text, props));
+    }
+  }
+  return ember.concat(...strings);
+}
+
+/**
+ * The overlays icomplete shows in the minibuffer, as icomplete-overlay: one
+ * at the start, before the prompt, with how far through the completions
+ * the selection is, and one at the end with the list.
+ */
+let overlays: { count: number; list: number } | undefined;
+
+/** Shows `count` before the prompt and `list` after the input. */
+function showOverlays(count: ember.PropertizedString | string, list: ember.PropertizedString): void {
+  if (overlays === undefined || ember.overlayStart(overlays.count) === undefined || ember.overlayStart(overlays.list) === undefined) {
+    overlays = { count: ember.makeOverlay(ember.pointMin(), ember.pointMin()), list: ember.makeOverlay(ember.pointMax(), ember.pointMax()) };
+  }
+  ember.moveOverlay(overlays.count, ember.pointMin(), ember.pointMin());
+  ember.moveOverlay(overlays.list, ember.pointMax(), ember.pointMax());
+  ember.overlayPut(overlays.count, "before-string", count);
+  ember.overlayPut(overlays.list, "after-string", list);
+}
+
 /** The minibuffer's input, after its prompt, icomplete--field-string. */
 const fieldString = (): string => ember.minibufferContents();
 
@@ -138,7 +178,7 @@ function sortedCompletions(): { base: string; completions: string[] } | undefine
 const foldCase = (): boolean => ember.minibufferInfo()?.ignoreCase ?? on("completion-ignore-case");
 
 /** The completion with the characters the input matched in completions-common-part, as completion-lazy-hilit does. */
-function hilit(comp: string, name: string): ember.FacedText[] {
+function hilit(comp: string, name: string): FacedText[] {
   const fold = foldCase();
   const c = fold ? comp.toLowerCase() : comp;
   const n = fold ? name.toLowerCase() : name;
@@ -156,7 +196,7 @@ function hilit(comp: string, name: string): ember.FacedText[] {
       from = found + 1;
     }
   }
-  const pieces: ember.FacedText[] = [];
+  const pieces: FacedText[] = [];
   let i = 0;
   while (i < comp.length) {
     const inside = matched.includes(i);
@@ -169,7 +209,7 @@ function hilit(comp: string, name: string): ember.FacedText[] {
 }
 
 /** Adds a face to pieces of text, after the faces they have. */
-const withFace = (pieces: ember.FacedText[], face: string): ember.FacedText[] =>
+const withFace = (pieces: FacedText[], face: string): FacedText[] =>
   pieces.map((p) =>
     typeof p === "string" ? { text: p, face } : { text: p.text, face: [...[p.face ?? []].flat(), face] }
   );
@@ -200,14 +240,14 @@ function compareStrings(a: string, b: string): number | true {
 }
 
 /** What a completion list adds after a command: its key, as read-extended-command--affixation does. */
-function suffix(comp: string): ember.FacedText[] {
+function suffix(comp: string): FacedText[] {
   if (category() !== "command") return [];
   const keys = ember.whereIs(comp);
   return keys === undefined ? [] : [{ text: ` (${keys})`, face: "completions-annotations" }];
 }
 
 /** The completions down the minibuffer, as icomplete--render-vertical. */
-function renderVertical(comps: string[], name: string): ember.FacedText[] {
+function renderVertical(comps: string[], name: string): FacedText[] {
   const height = Number(ember.variable("icomplete-prospects-height") ?? 25);
   const totalSpace = Math.min(height, Math.trunc(ember.frameSize().maxMiniWindowLines)) - 1;
   const scroll = on("icomplete-scroll");
@@ -242,7 +282,7 @@ function renderVertical(comps: string[], name: string): ember.FacedText[] {
   }
   const chosen = [...above, comps[0], ...below];
   const maxLen = Math.max(...chosen.map(width));
-  const out: ember.FacedText[] = [" \n"];
+  const out: FacedText[] = [" \n"];
   chosen.slice(0, totalSpace).forEach((comp, k) => {
     let line = hilit(comp, name);
     if (k === above.length) line = withFace(line, "icomplete-selected-match");
@@ -258,7 +298,7 @@ function renderVertical(comps: string[], name: string): ember.FacedText[] {
  * brackets before them, a single one as [Matched], or [No matches].
  * Parentheses instead of brackets say the answer must be a match.
  */
-function completionsDisplay(name: string, requireMatch: boolean): ember.FacedText[] {
+function completionsDisplay(name: string, requireMatch: boolean): FacedText[] {
   const sorted = sortedCompletions();
   const [open, close] = requireMatch ? ["(", ")"] : ["[", "]"];
   const comps = sorted?.completions ?? [];
@@ -298,7 +338,7 @@ function completionsDisplay(name: string, requireMatch: boolean): ember.FacedTex
     ? prefix.length
     : undefined;
   if (comps.includes(namePart)) determ = open + close;
-  const prospects: ember.FacedText[][] = [];
+  const prospects: FacedText[][] = [];
   let limit = false;
   for (const cur of comps) {
     const comp = prefixLen !== undefined ? cur.slice(prefixLen) : cur;
@@ -311,7 +351,7 @@ function completionsDisplay(name: string, requireMatch: boolean): ember.FacedTex
     }
   }
   if (prospects.length > 0) prospects[0] = withFace(prospects[0], "icomplete-first-match");
-  const out: ember.FacedText[] = [`${determ ?? ""}{`];
+  const out: FacedText[] = [`${determ ?? ""}{`];
   prospects.forEach((p, k) => {
     if (k > 0) out.push(separator);
     out.push(...p);
@@ -335,7 +375,7 @@ function exhibit(): void {
     const kept = ember.minibufferInfo()?.kept ?? 0;
     before = format.replace("%s", String(past + 1)).replace("%s", String(past + kept));
   }
-  ember.setMinibufferOverlay({ before, after });
+  showOverlays(before === "" ? "" : ember.propertize(before, { face: "shadow" }), faced(after, true));
 }
 
 ember.defineKeymap("icomplete-minibuffer-map");

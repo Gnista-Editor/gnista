@@ -130,6 +130,7 @@ mod tests {
             end: 13,
             segments: vec![crate::Segment::text(10, "a\tb".into(), Default::default())],
             continued: false,
+            broken: false,
         };
         let glyphs = row_glyphs(&row, 8);
         assert_eq!(position_at_column(&row, &glyphs, 0), 10);

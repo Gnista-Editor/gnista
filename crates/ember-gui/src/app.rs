@@ -647,7 +647,7 @@ fn draw_buffer(
         }
         // A continued line ends with a faint mark in the last column, where
         // Emacs puts an arrow in the fringe.
-        if rows[i].continued {
+        if rows[i].continued && !rows[i].broken {
             let mark = painter.layout_no_wrap("\\".to_string(), m.font.clone(), t.faint);
             let cols = (area.width() / m.char_width).floor().max(1.0);
             clipped.galley(pos2(area.left() + (cols - 1.0) * m.char_width, y), mark, t.faint);
@@ -839,56 +839,39 @@ fn draw_mode_line(painter: &Painter, ed: &Editor, window: &WindowView, rect: Rec
 fn draw_echo_area(painter: &Painter, ed: &Editor, rect: Rect, m: &Metrics, t: Tokens, cursor: CursorStyle) {
     let painter = painter.with_clip_rect(rect);
     let origin_x = rect.left() + PAD_X;
-    let Some(prompt) = ed.prompt() else {
+    if ed.prompt().is_none() {
         if let Some(message) = ed.echo() {
             let galley = painter.layout_no_wrap(message.to_string(), m.font.clone(), t.muted);
             painter.galley(pos2(origin_x, rect.center().y - galley.size().y / 2.0), galley, t.muted);
         }
         return;
-    };
-    let input = ed.minibuffer_input();
-    let point = ed.minibuffer_input_point();
-    let overlay = ed.minibuffer_overlay();
-    let before = overlay.map_or("", |o| o.before.as_str());
-    // The first line has the prompt and input; each newline in what the
-    // overlay adds after them, such as icomplete's list, starts another.
-    let mut jobs = vec![LayoutJob::default()];
-    let default_style = Style::default();
-    jobs[0].append(before, 0.0, text_format(m, t.muted));
-    let prompt_style = ed.style_for(&["minibuffer-prompt".to_string()], t.dark);
-    jobs[0].append(prompt, 0.0, face_format(&prompt_style, &default_style, m, t));
-    jobs[0].append(&input, 0.0, text_format(m, t.ink));
-    if let Some(message) = ed.echo() {
-        jobs[0].append(&format!(" {message}"), 0.0, text_format(m, t.muted));
     }
-    for (text, faces) in overlay.map_or(&[][..], |o| &o.after[..]) {
-        let format = face_format(&ed.style_for(faces, t.dark), &default_style, m, t);
-        for (k, piece) in text.split('\n').enumerate() {
-            if k > 0 {
-                jobs.push(LayoutJob::default());
-            }
-            jobs.last_mut().expect("a line").append(piece, 0.0, format.clone());
-        }
-    }
+    // The minibuffer's rows, as a window's: the prompt and input in their
+    // faces, and what overlays add, such as icomplete's list, each newline
+    // in it starting another row.
+    let rows = ed.minibuffer_rows(t.dark);
+    let default_style = ed.style_for(&["default".to_string()], t.dark);
+    let advance = |font: &FontId, c: char| painter.ctx().fonts_mut(|f| f.glyph_width(font, c));
+    let point = ed.minibuffer().point();
     let top = rect.top() + BAR_PAD;
-    let mut first = None;
-    for (k, job) in jobs.into_iter().enumerate() {
+    let mut at_point = None;
+    for (k, row) in rows.iter().enumerate() {
         let y = top + k as f32 * m.line_height;
         if y + m.line_height > rect.bottom() - BAR_PAD + 0.5 {
             break;
         }
-        let galley = painter.layout_job(job);
-        let y = y + (m.line_height - galley.size().y) / 2.0;
-        painter.galley(pos2(origin_x, y), galley.clone(), t.ink);
-        first.get_or_insert(galley);
+        let glyphs = row_glyphs(row, 8);
+        let galley = painter.layout_job(row_job(row, &glyphs, &default_style, m, t, &advance));
+        painter.galley(pos2(origin_x, y + (m.line_height - galley.size().y) / 2.0), galley.clone(), t.ink);
+        if at_point.is_none() && row.shows_point(point) {
+            let index = cursor_index(&glyphs, point);
+            let char_index: usize = glyphs[..index].iter().map(|g| g.text.chars().count()).sum();
+            let under = glyphs.get(index).and_then(|g| g.text.chars().next());
+            at_point = Some((galley, char_index, under, y));
+        }
     }
-    let galley = first.expect("the first line");
-    let index = before.chars().count() + prompt.chars().count() + point;
-    let cursor_x = galley.pos_from_cursor(CCursor::new(index)).min.x;
-    // At the end of the input the cursor sits on what follows, as Emacs
-    // puts it on the first character of icomplete's list.
-    let after = overlay.and_then(|o| o.after.iter().find_map(|(text, _)| text.chars().next()));
-    let under = input.chars().nth(point).or(after.filter(|c| *c != '\n'));
-    let cursor_pos = pos2(origin_x + cursor_x, top);
-    draw_cursor(&painter, &galley, index, under, cursor_pos, m, t, cursor);
+    if let Some((galley, index, under, y)) = at_point {
+        let cursor_x = galley.pos_from_cursor(CCursor::new(index)).min.x;
+        draw_cursor(&painter, &galley, index, under, pos2(origin_x + cursor_x, y), m, t, cursor);
+    }
 }

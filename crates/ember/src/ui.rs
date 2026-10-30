@@ -2,7 +2,7 @@
 
 use std::ops::Range;
 
-use ember_core::display::{Glyph, cursor_index, display_width, position_at_column, row_glyphs};
+use ember_core::display::{Glyph, cursor_index, position_at_column, row_glyphs};
 use ember_core::{Color as FaceColor, Editor, LineNumbers, Row, Style as FaceStyle, WindowId, WindowView, palette};
 use ratatui::Frame;
 use ratatui::layout::{Position, Rect};
@@ -202,7 +202,7 @@ fn row_line(
         push(&mut spans, &" ".repeat(fill), Style::new().add_modifier(Modifier::REVERSED));
     }
     // A continued line ends with a backslash in the last column, as in Emacs.
-    if row.continued {
+    if row.continued && !row.broken {
         let fill = (hscroll + width).saturating_sub(col + 1);
         push(&mut spans, &" ".repeat(fill), Style::new());
         push(&mut spans, "\\", Style::new());
@@ -255,35 +255,28 @@ fn draw_mode_line(frame: &mut Frame, ed: &Editor, view: &WindowView, area: Rect)
 /// minibuffer's overlay adds, such as icomplete's list, follows the input,
 /// and each newline in it starts another line of the echo area.
 fn draw_echo_area(frame: &mut Frame, ed: &Editor, area: Rect) -> Option<Position> {
-    let Some(prompt) = ed.prompt() else {
+    if ed.prompt().is_none() {
         frame.render_widget(Paragraph::new(ed.echo().unwrap_or("")), area);
         return None;
-    };
+    }
+    // The minibuffer's rows, as a window's: the prompt and input in their
+    // faces, and what overlays add, such as icomplete's list.
     let dark = dark(ed);
-    let input = ed.minibuffer_input();
-    let point = ed.minibuffer_input_point();
-    let overlay = ed.minibuffer_overlay();
-    let before = overlay.map_or("", |o| o.before.as_str());
-    let prompt_style = terminal_style(&ed.style_for(&["minibuffer-prompt".to_string()], dark), dark);
-    let mut lines = vec![vec![Span::raw(before.to_string()), Span::styled(prompt.to_string(), prompt_style), Span::raw(input.clone())]];
-    if let Some(message) = ed.echo() {
-        lines[0].push(Span::raw(format!(" {message}")));
-    }
-    for (text, faces) in overlay.map_or(&[][..], |o| &o.after[..]) {
-        let style = terminal_style(&ed.style_for(faces, dark), dark);
-        for (k, piece) in text.split('\n').enumerate() {
-            if k > 0 {
-                lines.push(Vec::new());
-            }
-            if !piece.is_empty() {
-                lines.last_mut().expect("a line").push(Span::styled(piece.to_string(), style));
-            }
+    let rows = ed.minibuffer_rows(dark);
+    let point = ed.minibuffer().point();
+    let width = area.width as usize;
+    let mut cursor = None;
+    let mut lines = Vec::new();
+    for (k, row) in rows.iter().take(area.height as usize).enumerate() {
+        let glyphs = row_glyphs(row, 8);
+        if cursor.is_none() && row.shows_point(point) {
+            let x: usize = glyphs[..cursor_index(&glyphs, point)].iter().map(|g| g.width).sum();
+            cursor = Some(Position::new(area.x + x.min(width.saturating_sub(1)) as u16, area.y + k as u16));
         }
+        lines.push(row_line(row, &glyphs, 0, width, None, dark));
     }
-    let lines: Vec<Line> = lines.into_iter().take(area.height as usize).map(Line::from).collect();
     frame.render_widget(Paragraph::new(lines), area);
-    let x = display_width(before, 8) + display_width(prompt, 8) + display_width(&input.chars().take(point).collect::<String>(), 8);
-    Some(Position::new(area.x + x.min(area.width as usize - 1) as u16, area.y))
+    cursor.or(Some(Position::new(area.x, area.y)))
 }
 
 #[cfg(test)]

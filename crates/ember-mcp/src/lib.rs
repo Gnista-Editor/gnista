@@ -359,13 +359,13 @@ fn screen(ed: &mut Editor) -> String {
             b.column(w.point)
         ));
     }
-    if let Some(prompt) = ed.prompt() {
-        // As the user sees it, with what the minibuffer's overlay adds, such
-        // as icomplete's list of completions.
-        let overlay = ed.minibuffer_overlay();
-        let before = overlay.map_or("", |o| o.before.as_str());
-        let after: String = overlay.map_or(String::new(), |o| o.after.iter().map(|(text, _)| text.as_str()).collect());
-        out.push_str(&format!("{before}{prompt}{}{}\n", ed.minibuffer_input(), after.trim_end_matches('\n')));
+    if ed.prompt().is_some() {
+        // As the user sees it: the prompt, the input, and what overlays add,
+        // such as icomplete's list of completions.
+        for row in ed.minibuffer_rows(true) {
+            let text: String = row.segments.iter().map(|s| s.text.as_str()).collect();
+            out.push_str(&format!("{text}\n"));
+        }
     } else if let Some(message) = ed.echo() {
         out.push_str(&format!("{message}\n"));
     }

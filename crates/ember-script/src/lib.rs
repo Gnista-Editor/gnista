@@ -21,7 +21,7 @@ use std::time::{Duration, Instant};
 use std::rc::Rc;
 
 use ember_core::{
-    Arg, Background, Command, Editor, Error, Face, FaceAttrs, HookFn, Key, MinibufferOverlay, MinorMode, ParamKind, Reading,
+    Arg, Background, Command, Editor, Error, Face, FaceAttrs, HookFn, Key, MinorMode, ParamKind, Reading,
     PrefixArg, Result, Value as EditorValue, Variable, abbreviate_path, expand_file_name,
 };
 use rquickjs::context::EvalOptions;
@@ -1362,16 +1362,6 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
         Function::new(ctx.clone(), |ctx: Ctx<'js>, comps: Vec<String>| {
             with_editor(&ctx, |ed| {
                 ed.cache_all_sorted_completions(comps);
-                Ok(())
-            })
-        })?,
-    )?;
-    native.set(
-        "setMinibufferOverlay",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, before: Option<String>, texts: Vec<String>, faces: Vec<Vec<String>>| {
-            with_editor(&ctx, |ed| {
-                let overlay = before.map(|before| MinibufferOverlay { before, after: texts.into_iter().zip(faces).collect() });
-                ed.set_minibuffer_overlay(overlay);
                 Ok(())
             })
         })?,

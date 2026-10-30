@@ -115,7 +115,7 @@ fn tab_says_when_completion_is_not_unique() {
 
 /// What icomplete shows after the input.
 fn shown(ed: &Editor) -> String {
-    ed.minibuffer_overlay().map_or(String::new(), |o| o.after.iter().map(|(text, _)| text.as_str()).collect())
+    ed.minibuffer_strings().1
 }
 
 /// Defines `pick`, which reads one of some fruit and keeps the answer in `picked`.
@@ -265,7 +265,7 @@ fn fido_vertical_scrolls_through_completions() {
     ed.call("fido-vertical-mode", vec![]).unwrap();
     ed.set_frame_size(80, 39);
     ed.call("pick", vec![]).unwrap();
-    let before = |ed: &Editor| ed.minibuffer_overlay().map(|o| o.before.clone()).unwrap_or_default();
+    let before = |ed: &Editor| ed.minibuffer_strings().0;
     assert_eq!(before(&ed), "1/4 ");
     assert_eq!(shown(&ed), " \napple  \nbanana \napricot\navocado\n");
     ed.press("C-n C-n").unwrap();
@@ -283,7 +283,7 @@ fn icomplete_can_be_turned_off() {
     scripting.eval_typescript(&mut ed, "test.ts", r#"ember.callWithPrefix(0, "icomplete-mode");"#.into()).unwrap();
     ed.call("pick", vec![]).unwrap();
     ed.type_text("a");
-    assert_eq!(ed.minibuffer_overlay(), None);
+    assert_eq!(ed.minibuffer_strings(), (String::new(), String::new()));
 }
 
 #[test]

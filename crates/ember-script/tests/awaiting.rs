@@ -315,7 +315,7 @@ fn a_dynamic_table_keeps_icompletes_rotation() {
     ed.press("M-x").unwrap();
     ed.type_text("pick-fruit");
     ed.press("RET a").unwrap();
-    let shown = |ed: &Editor| ed.minibuffer_overlay().map(|o| o.after.iter().map(|(t, _)| t.as_str()).collect::<String>()).unwrap_or_default();
+    let shown = |ed: &Editor| ed.minibuffer_strings().1;
     let before = shown(&ed);
     ed.press("C-.").unwrap();
     assert_ne!(shown(&ed), before, "C-. rotates the completions");

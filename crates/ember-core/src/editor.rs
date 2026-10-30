@@ -138,8 +138,6 @@ pub struct Editor {
     pub(crate) prompt: Option<Prompt>,
     /// The messages shown, as *Messages* keeps them.
     pub(crate) message_log: Vec<LoggedMessage>,
-    /// What the minibuffer shows besides its input, such as icomplete's list.
-    pub(crate) minibuffer_overlay: Option<crate::minibuffer::MinibufferOverlay>,
     /// How many lines the echo area has grown to while the prompt is open.
     pub(crate) mini_window_lines: usize,
     /// The frame's height with the echo area, as the front end last said.
@@ -270,7 +268,6 @@ impl Editor {
             previous_buffer: None,
             minibuffer_id,
             message_log: Vec::new(),
-            minibuffer_overlay: None,
             mini_window_lines: 1,
             frame_lines: None,
             prompt: None,
