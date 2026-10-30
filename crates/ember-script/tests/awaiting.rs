@@ -234,3 +234,20 @@ fn answering_by_key_leaves_no_command_context_behind() {
     assert_eq!(ed.this_command(), None);
     assert_eq!(ed.last_command(), Some("ask-yn"));
 }
+
+#[test]
+fn timers_run_while_a_prompt_waits() {
+    let (mut ed, _s) = setup(
+        r#"
+        ember.getBufferCreate("log");
+        ember.runWithTimer(1, 1, () => ember.withCurrentBuffer("log", () => ember.insert("tick ")));
+        "#,
+    );
+    ed.press("M-x").unwrap();
+    ed.type_text("fo");
+    ed.advance_clock(std::time::Duration::from_millis(1500));
+    ed.advance_clock(std::time::Duration::from_millis(1000));
+    assert_eq!(ed.minibuffer_input(), "fo");
+    let log = ed.buffers().iter().find(|b| b.name == "log").unwrap();
+    assert_eq!(log.slice(0..log.len()), "tick tick ");
+}

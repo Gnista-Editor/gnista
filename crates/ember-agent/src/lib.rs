@@ -267,7 +267,7 @@ impl Agent {
             agent.pump(ed);
             Ok(())
         });
-        *self.timer.borrow_mut() = Some(ed.run_with_timer_in_prompts(PUMP_INTERVAL, Some(PUMP_INTERVAL), f));
+        *self.timer.borrow_mut() = Some(ed.run_with_timer(PUMP_INTERVAL, Some(PUMP_INTERVAL), f));
     }
 
     /// Brings each session's buffer name up to date, as the buffer may have been renamed.
