@@ -65,6 +65,8 @@ pub struct Glyph {
     pub string: bool,
     /// Which of the row's segments it belongs to, for its style.
     pub segment: usize,
+    /// Whether the cursor goes here when point is where its string shows.
+    pub cursor: bool,
 }
 
 /// A row as glyphs, with tabs expanded from the start of the row.
@@ -80,7 +82,7 @@ pub fn row_glyphs(row: &crate::Row, tab_width: usize) -> Vec<Glyph> {
                 (_, true, Some(_)) => Some(seg.start),
                 _ => Some(seg.start + i),
             };
-            glyphs.push(Glyph { text, width, pos, segment, string: seg.string });
+            glyphs.push(Glyph { text, width, pos, segment, string: seg.string, cursor: seg.cursor && i == 0 });
             col += width;
         }
     }
@@ -93,10 +95,12 @@ pub fn row_glyphs(row: &crate::Row, tab_width: usize) -> Vec<Glyph> {
 /// text after a `before-string`.
 pub fn cursor_index(glyphs: &[Glyph], point: usize) -> usize {
     let mut index = glyphs.iter().rposition(|g| g.pos.is_some_and(|p| p < point)).map_or(0, |i| i + 1);
+    let strings = index;
     while glyphs.get(index).is_some_and(|g| g.string && g.pos.is_none()) {
         index += 1;
     }
-    index
+    // A string there with a cursor property takes it, as icomplete's list does.
+    glyphs[strings..index].iter().position(|g| g.cursor).map_or(index, |i| strings + i)
 }
 
 /// The buffer position under a column of a row, for a mouse click: the

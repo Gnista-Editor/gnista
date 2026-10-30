@@ -163,3 +163,36 @@ fn tabs_after_a_wrap_prefix_count_from_the_rows_start() {
         assert!(width <= 20, "{width} columns: {:?}", row.segments.iter().map(|s| s.text.as_str()).collect::<String>());
     }
 }
+
+#[test]
+fn an_overlay_string_s_newlines_start_rows_of_their_own() {
+    let mut ed = editor("ab cd");
+    let b = ed.window_buffer_mut();
+    let end = b.make_overlay(5..5);
+    b.overlay_put(end, "after-string", Value::Str("\none\ntwo".into())).unwrap();
+    let mid = b.make_overlay(3..3);
+    b.overlay_put(mid, "before-string", Value::Str("[\n]".into())).unwrap();
+    let rows = ed.window_rows(10, true);
+    let texts: Vec<String> = rows.iter().map(|r| r.segments.iter().map(|s| s.text.as_str()).collect()).collect();
+    assert_eq!(texts, ["ab [", "]cd", "one", "two"]);
+    // Point at the string's place shows after it where text follows, and
+    // before an after-string at the end: the first row showing it is that.
+    let row_of = |pos| rows.iter().position(|r| r.shows_point(pos));
+    assert_eq!(row_of(3), Some(1));
+    assert_eq!(row_of(5), Some(1));
+}
+
+#[test]
+fn a_cursor_property_in_a_string_takes_the_cursor() {
+    let mut ed = editor("abc");
+    let b = ed.window_buffer_mut();
+    let o = b.make_overlay(3..3);
+    let mut props = ember_core::Props::new();
+    props.insert("cursor".into(), Value::Bool(true));
+    let mut text = ember_core::Text::propertize(" {x}", ember_core::Props::new());
+    text.props.push((1..2, props));
+    b.overlay_put(o, "after-string", Value::Text(text)).unwrap();
+    assert_eq!(shown(&ed), "abc {x}");
+    assert_eq!(cursor(&ed, 3), 4, "on the brace, not past the string");
+    assert_eq!(cursor(&ed, 2), 2);
+}

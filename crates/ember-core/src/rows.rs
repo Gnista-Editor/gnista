@@ -36,12 +36,18 @@ pub struct Segment {
     pub string: bool,
     /// For a display string, the end of the text it stands for.
     pub covers: Option<usize>,
+    /// Whether it starts a screen row of its own: it follows a newline in a
+    /// string, which ends the row before it.
+    pub breaks: bool,
+    /// Whether the cursor goes on its first character when point is where
+    /// it shows, as a string's `cursor` property says in Emacs.
+    pub cursor: bool,
 }
 
 impl Segment {
     /// A segment of buffer text.
     pub fn text(start: usize, text: String, style: Style) -> Segment {
-        Segment { start, text, style, ellipsis: false, string: false, covers: None }
+        Segment { start, text, style, ellipsis: false, string: false, covers: None, breaks: false, cursor: false }
     }
 
     /// Whether it is drawn whole, never split by wrapping: an ellipsis or a string.
@@ -508,6 +514,11 @@ impl Editor {
             let mut segments: Vec<Segment> = self.prefix_segments(b, start, "line-prefix", dark, &mut styles);
             let end = loop {
                 if pos >= len {
+                    // Strings at the end of the buffer show too, as icomplete's list does.
+                    if strings_at != Some(pos) {
+                        strings_at = Some(pos);
+                        self.push_overlay_strings(b, pos, &mut segments, dark, &mut styles);
+                    }
                     break len;
                 }
                 let (visible, ellipsis) = self.skip_invisible_in(b, pos);
@@ -546,25 +557,29 @@ impl Editor {
                 segments.push(Segment::text(pos, b.slice(pos..chunk_end), style));
                 pos = chunk_end;
             };
-            let row = Row { line, start, end, segments, continued: false };
-            match wrap {
-                Some(wrap) => {
-                    let tab_width = self.tab_width_in(b);
-                    // Continued rows start with the wrap prefix, which takes room from them.
-                    let prefix = self.prefix_segments(b, start, "wrap-prefix", dark, &mut styles);
-                    let indent: usize = prefix.iter().map(|s| crate::display::display_width(&s.text, tab_width)).sum();
-                    let wrapped = wrap_row(row, wrap, tab_width, indent);
-                    let room = count - rows.len();
-                    rows.extend(wrapped.into_iter().take(room).enumerate().map(|(i, mut r)| {
-                        r.line = b.line_of(r.start);
-                        if i > 0 && !prefix.is_empty() {
-                            let shown = prefix.iter().map(|s| Segment { start: r.start, ..s.clone() });
-                            r.segments.splice(0..0, shown);
-                        }
-                        r
-                    }));
+            for row in split_at_string_newlines(Row { line, start, end, segments, continued: false }) {
+                if rows.len() >= count {
+                    break;
                 }
-                None => rows.push(row),
+                match wrap {
+                    Some(wrap) => {
+                        let tab_width = self.tab_width_in(b);
+                        // Continued rows start with the wrap prefix, which takes room from them.
+                        let prefix = self.prefix_segments(b, start, "wrap-prefix", dark, &mut styles);
+                        let indent: usize = prefix.iter().map(|s| crate::display::display_width(&s.text, tab_width)).sum();
+                        let wrapped = wrap_row(row, wrap, tab_width, indent);
+                        let room = count - rows.len();
+                        rows.extend(wrapped.into_iter().take(room).enumerate().map(|(i, mut r)| {
+                            r.line = b.line_of(r.start);
+                            if i > 0 && !prefix.is_empty() {
+                                let shown = prefix.iter().map(|s| Segment { start: r.start, ..s.clone() });
+                                r.segments.splice(0..0, shown);
+                            }
+                            r
+                        }));
+                    }
+                    None => rows.push(row),
+                }
             }
             if end >= len {
                 break;
@@ -624,26 +639,40 @@ impl Editor {
         styles: &mut HashMap<Vec<String>, Style>,
     ) -> Vec<Segment> {
         let Some(string) = value.as_str() else { return Vec::new() };
-        let line = string.split('\n').next().unwrap_or_default();
+        // A display string shows up to its first newline; an overlay's
+        // goes on in rows of its own, as in Emacs.
+        let string = if covers.is_some() { string.split('\n').next().unwrap_or_default() } else { string };
         let mut out: Vec<Segment> = Vec::new();
         let mut last: Option<Vec<String>> = None;
-        for (i, c) in line.chars().enumerate() {
-            let mut faces: Vec<String> = match value {
-                Value::Text(t) => t.properties_at(i).and_then(|p| p.get("face")).map(face_names).unwrap_or_default(),
-                _ => Vec::new(),
+        let mut breaks = false;
+        for (i, c) in string.chars().enumerate() {
+            if c == '\n' {
+                breaks = true;
+                continue;
+            }
+            let props = match value {
+                Value::Text(t) => t.properties_at(i),
+                _ => None,
             };
+            let mut faces: Vec<String> = props.and_then(|p| p.get("face")).map(face_names).unwrap_or_default();
             faces.extend(base.iter().cloned());
+            let cursor = props.and_then(|p| p.get("cursor")).is_some_and(Value::is_true);
             match out.last_mut() {
-                Some(seg) if last.as_ref() == Some(&faces) => seg.text.push(c),
+                Some(seg) if last.as_ref() == Some(&faces) && !breaks && !cursor => seg.text.push(c),
                 _ => {
                     let style = match dark {
                         Some(dark) => styles.entry(faces.clone()).or_insert_with_key(|f| self.style_for(f, dark)).clone(),
                         None => Style::default(),
                     };
-                    out.push(Segment { string: true, covers, ..Segment::text(pos, c.to_string(), style) });
+                    out.push(Segment { string: true, covers, breaks, cursor, ..Segment::text(pos, c.to_string(), style) });
                     last = Some(faces);
+                    breaks = false;
                 }
             }
+        }
+        // A newline at the very end starts a row with nothing in it yet.
+        if breaks {
+            out.push(Segment { string: true, covers, breaks, ..Segment::text(pos, String::new(), Style::default()) });
         }
         out
     }
@@ -713,6 +742,36 @@ impl Editor {
 /// the last space before the edge with word wrap, otherwise at the edge.
 /// Tabs are measured from the start of each screen row. An ellipsis is
 /// never split.
+/// A row split where an overlay string has a newline: the row before
+/// ends where the string shows, continued if buffer text follows after it.
+fn split_at_string_newlines(row: Row) -> Vec<Row> {
+    if !row.segments.iter().any(|s| s.breaks) {
+        return vec![row];
+    }
+    let mut rows = Vec::new();
+    let mut current = Row { segments: Vec::new(), ..row.clone() };
+    for seg in row.segments {
+        if seg.breaks && rows.len() < 1000 {
+            let at = seg.start;
+            let next = Row { line: current.line, start: at, end: current.end, segments: Vec::new(), continued: false };
+            let mut done = std::mem::replace(&mut current, next);
+            done.end = at;
+            rows.push(done);
+        }
+        if !seg.text.is_empty() {
+            current.segments.push(Segment { breaks: false, ..seg });
+        }
+    }
+    rows.push(current);
+    // Point where a string broke shows in the row after it if text follows.
+    let n = rows.len();
+    for i in 0..n - 1 {
+        let follows = rows[i + 1..].iter().any(|r| r.segments.iter().any(|s| !s.string && !s.ellipsis)) || rows[n - 1].end > rows[i].end;
+        rows[i].continued = follows;
+    }
+    rows
+}
+
 fn wrap_row(row: Row, wrap: Wrap, tab_width: usize, indent: usize) -> Vec<Row> {
     // Every character of the row, as (segment, index in the segment).
     let items: Vec<(usize, usize)> = row
