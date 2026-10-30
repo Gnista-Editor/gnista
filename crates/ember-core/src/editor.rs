@@ -1504,16 +1504,25 @@ impl Editor {
         let Some(index) = self.find_buffer(name) else { return Ok(()) };
         let showing = index == self.selected_buffer_index();
         let was_current = index == self.current;
-        let next = self.other_buffer().map(str::to_string);
+        // What shows instead: the buffer shown before, else any other but
+        // internal ones such as the minibuffer, else a new *scratch*.
+        let offered = |i: usize| i != index && !self.buffers[i].name.starts_with(' ');
+        let next = self
+            .previous_buffer
+            .and_then(|id| self.buffer_with_id(id))
+            .filter(|&i| offered(i))
+            .or_else(|| (0..self.buffers.len()).find(|&i| offered(i)))
+            .map(|i| self.buffers[i].name.clone());
         let current_name = self.buffers[self.current].name.clone();
         let shown_name = self.window_buffer().name.clone();
         let mut removed = self.buffers.remove(index);
         // Its markers point nowhere now.
         self.detached_markers.extend(removed.take_markers());
         let gone = removed.id;
-        if self.buffers.is_empty() {
+        let next = next.or_else(|| {
             self.buffers.push(Buffer::new("*scratch*"));
-        }
+            Some("*scratch*".to_string())
+        });
         let target = if showing { next.clone() } else { Some(shown_name) };
         let shown = target.and_then(|n| self.find_buffer(&n)).unwrap_or(0);
         self.selected_window_shows(shown);

@@ -573,13 +573,18 @@ fn line_move_visual(ed: &mut Editor, n: i64, wrap: crate::rows::Wrap) -> Result<
         _ => col,
     };
     let mut line = ed.row_line_in(b, b.line_of(b.point()));
-    for _ in 0..n.abs() {
+    let mut left = n.abs();
+    while left > 0 {
+        // Rows that show only an overlay string's later lines are passed over.
+        let counts = |rows: &[crate::rows::Row], k: usize| !rows[k].in_string;
         if n > 0 && k + 1 < rows.len() {
             k += 1;
+            left -= i64::from(counts(&rows, k));
             continue;
         }
         if n < 0 && k > 0 {
             k -= 1;
+            left -= i64::from(counts(&rows, k));
             continue;
         }
         let (next, moved) = ed.move_rows_in(b, line, n.signum());
@@ -596,6 +601,11 @@ fn line_move_visual(ed: &mut Editor, n: i64, wrap: crate::rows::Wrap) -> Result<
         line = next;
         rows = ed.screen_rows_of(b, line, Some(wrap));
         k = if n > 0 { 0 } else { rows.len() - 1 };
+        left -= i64::from(counts(&rows, k));
+    }
+    // Moving back onto an overlay string's rows ends on the text before them.
+    while rows[k].in_string && k > 0 {
+        k -= 1;
     }
     let row = &rows[k];
     let glyphs = crate::display::row_glyphs(row, ed.tab_width_in(b));

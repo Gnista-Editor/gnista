@@ -75,7 +75,9 @@ A review of steps 2 and 3 so far, which compared Ember with Emacs 30 on a pseudo
 - A field width that cut text did nothing when the text joined the segment before it; an `:eval` that failed lost the rest of the mode line, where Emacs leaves that construct out and logs the error; `(t ...)` was not a conditional; `format-mode-line` formatted the current buffer rather than the selected window's, and `%p` was not two wide.
 - `(define-key map key nil)` unbound the key, so the parent's binding showed, where Emacs's nil hides it; `keymap-unset` with REMOVE takes a binding out. A default in a child's prefix map lost to its parent's binding after the prefix; merging prefix maps went past a command binding; and a keymap bound under itself was listed again under itself.
 
-Still open: binding keys under a key bound to a command replaces that binding, where Emacs signals that the key is not a prefix; `symbolFunction` gives a function without the name's advice.
+A review of the minibuffer's steps found, and the same round fixed: C-n and C-p stopped at the rows an overlay string's newlines add, which they now pass, as point is never in a string; a truncated line counted as one row however many such a string added, so point could go off screen in Org buffers; those rows had line numbers of their own; two newlines running together made one row; killing the buffer a window showed during a prompt could show the minibuffer there, and killing the last buffer no longer made a new `*scratch*`; and `C-t` at the start of the input inserted a character before the prompt refused the deletion, now undone as one change group.
+
+Still open: binding keys under a key bound to a command replaces that binding, where Emacs signals that the key is not a prefix; `symbolFunction` gives a function without the name's advice; the row after an overlay string's newline has no `line-prefix`; `minibufferPromptEnd` and `minibufferContents` read the minibuffer whatever buffer is current.
 
 ## Consequences
 

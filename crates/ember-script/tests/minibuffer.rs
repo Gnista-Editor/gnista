@@ -413,3 +413,14 @@ fn a_recursive_minibuffer_opens_inside_the_open_one() {
     assert_eq!(ed.prompt(), None);
     assert_eq!(ed.minibuffer_depth(), 0);
 }
+
+#[test]
+fn transposing_into_the_prompt_changes_nothing() {
+    let (mut ed, s) = setup();
+    ed.press("M-:").unwrap();
+    ed.type_text("ab cd");
+    ed.press("C-a C-t").unwrap();
+    assert_eq!(input(&ed), "ab cd");
+    assert!(s.eval_expression(&mut ed, "ember.bufferText()").unwrap().ends_with(r#": ab cd""#));
+    ed.press("C-g").unwrap();
+}

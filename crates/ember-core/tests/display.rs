@@ -196,3 +196,36 @@ fn a_cursor_property_in_a_string_takes_the_cursor() {
     assert_eq!(cursor(&ed, 3), 4, "on the brace, not past the string");
     assert_eq!(cursor(&ed, 2), 2);
 }
+
+#[test]
+fn vertical_motion_passes_an_overlay_string_s_rows_and_numbers_skip_them() {
+    let mut ed = editor("ab cd\nxyz\nlast");
+    let b = ed.window_buffer_mut();
+    let o = b.make_overlay(5..5);
+    b.overlay_put(o, "after-string", Value::Str("\none\n\ntwo".into())).unwrap();
+    let texts: Vec<String> = ed.window_rows(10, true).iter().map(|r| r.segments.iter().map(|s| s.text.as_str()).collect()).collect();
+    assert_eq!(texts, ["ab cd", "one", "", "two", "xyz", "last"], "a blank line in the string is a row");
+    ed.press("C-n").unwrap();
+    assert_eq!(ed.window_buffer().point(), 6);
+    ed.press("C-n").unwrap();
+    assert_eq!(ed.window_buffer().point(), 10);
+    ed.press("C-p C-p").unwrap();
+    assert_eq!(ed.window_buffer().point(), 0);
+    // Line numbers show on each line's first row only.
+    ed.set_variable("display-line-numbers", Value::Bool(true));
+    let rows = ed.window_rows(10, true);
+    let labels: Vec<String> = ed.line_numbers(ed.selected_window(), &rows).unwrap().labels.into_iter().map(|(l, _)| l.trim().to_string()).collect();
+    assert_eq!(labels, ["1", "", "", "", "2", "3"]);
+}
+
+#[test]
+fn killing_the_shown_buffer_during_a_prompt_never_shows_the_minibuffer() {
+    let mut ed = Editor::new();
+    ed.get_buffer_create("foo");
+    ed.press("M-x").unwrap();
+    ed.kill_buffer("*scratch*").unwrap();
+    assert_eq!(ed.window_buffer().name, "foo");
+    ed.press("C-g").unwrap();
+    ed.kill_buffer("foo").unwrap();
+    assert_eq!(ed.window_buffer().name, "*scratch*", "a new one, as Emacs makes");
+}

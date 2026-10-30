@@ -298,10 +298,14 @@ function transposeRegions(pos1: [number, number], pos2: [number, number]): void 
   };
   const word = ember.bufferText(b[0], b[1]);
   const len1 = a[1] - a[0];
-  insert(a[1], word, true);
-  const first = remove(a[0], a[0] + len1);
-  insert(boundary.pos, first, false);
-  remove(boundary.pos + len1, boundary.pos + len1 + (b[1] - b[0]));
+  // All or nothing, as read-only text such as a prompt may refuse a deletion
+  // after the insertion was made.
+  ember.atomicChangeGroup(() => {
+    insert(a[1], word, true);
+    const first = remove(a[0], a[0] + len1);
+    insert(boundary.pos, first, false);
+    remove(boundary.pos + len1, boundary.pos + len1 + (b[1] - b[0]));
+  });
   ember.gotoChar(point.pos);
   if (mark !== undefined) ember.setMark(markers[1].pos);
 }

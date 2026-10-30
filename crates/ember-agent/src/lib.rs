@@ -764,7 +764,7 @@ fn in_window(ed: &mut Editor, agent: &str, target: WindowId, f: impl FnOnce(&mut
         Some(w) => w,
         None => match ed.split_window(Some(selected), false) {
             Ok(w) => {
-                let other = ed.buffers().iter().find(|b| b.name != agent).map(|b| b.name.clone());
+                let other = ed.buffers().iter().find(|b| b.name != agent && !b.name.starts_with(' ')).map(|b| b.name.clone());
                 if let Some(other) = other {
                     let _ = ed.set_window_buffer(w, &other);
                 }

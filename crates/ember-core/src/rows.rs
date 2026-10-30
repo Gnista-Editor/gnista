@@ -91,6 +91,9 @@ pub struct Row {
     /// Whether it ends where an overlay string has a newline, which is
     /// drawn with no such mark; `continued` then says whether text follows.
     pub broken: bool,
+    /// Whether it shows only an overlay string's lines after its first,
+    /// no text, so point is never on it and vertical motion passes it.
+    pub in_string: bool,
 }
 
 impl Row {
@@ -259,7 +262,11 @@ impl Editor {
 
     /// How many screen rows the row of text starting at a line takes.
     pub(crate) fn screen_height_in(&self, b: &Buffer, row_line: usize, wrap: Option<Wrap>) -> usize {
-        if wrap.is_none() { 1 } else { self.screen_rows_of(b, row_line, wrap).len().max(1) }
+        // A truncated line takes one row, unless an overlay string adds more.
+        let strings_with_newlines = || {
+            b.overlays().iter().any(|o| ["before-string", "after-string"].iter().any(|n| o.props.get(*n).and_then(Value::as_str).is_some_and(|s| s.contains('\n'))))
+        };
+        if wrap.is_none() && !strings_with_newlines() { 1 } else { self.screen_rows_of(b, row_line, wrap).len().max(1) }
     }
 
     /// The row of text `screen` screen rows on from the one starting at
@@ -460,7 +467,8 @@ impl Editor {
             .enumerate()
             .map(|(i, row)| {
                 let current = row.line == point_line;
-                let first = row.start == b.line_start(row.line).max(b.point_min());
+                // Rows after one an overlay string's newline ended continue its line.
+                let first = row.start == b.line_start(row.line).max(b.point_min()) && !(i > 0 && rows[i - 1].broken);
                 let number = match kind {
                     LineNumberKind::Absolute => row.line - base + 1,
                     LineNumberKind::Relative if current && absolute_current => row.line - base + 1,
@@ -560,7 +568,7 @@ impl Editor {
                 segments.push(Segment::text(pos, b.slice(pos..chunk_end), style));
                 pos = chunk_end;
             };
-            for row in split_at_string_newlines(Row { line, start, end, segments, continued: false, broken: false }) {
+            for row in split_at_string_newlines(Row { line, start, end, segments, continued: false, broken: false, in_string: false }) {
                 if rows.len() >= count {
                     break;
                 }
@@ -650,6 +658,10 @@ impl Editor {
         let mut breaks = false;
         for (i, c) in string.chars().enumerate() {
             if c == '\n' {
+                // A newline right after another leaves an empty row.
+                if breaks {
+                    out.push(Segment { string: true, covers, breaks, ..Segment::text(pos, String::new(), Style::default()) });
+                }
                 breaks = true;
                 continue;
             }
@@ -756,7 +768,7 @@ fn split_at_string_newlines(row: Row) -> Vec<Row> {
     for seg in row.segments {
         if seg.breaks && rows.len() < 1000 {
             let at = seg.start;
-            let next = Row { line: current.line, start: at, end: current.end, segments: Vec::new(), continued: false, broken: false };
+            let next = Row { line: current.line, start: at, end: current.end, segments: Vec::new(), continued: false, broken: false, in_string: false };
             let mut done = std::mem::replace(&mut current, next);
             done.end = at;
             done.broken = true;
@@ -769,6 +781,9 @@ fn split_at_string_newlines(row: Row) -> Vec<Row> {
     rows.push(current);
     // Point where a string broke shows in the row after it if text follows.
     let n = rows.len();
+    for row in &mut rows[1..] {
+        row.in_string = !row.segments.iter().any(|s| !s.string);
+    }
     for i in 0..n - 1 {
         let follows = rows[i + 1..].iter().any(|r| r.segments.iter().any(|s| !s.string && !s.ellipsis)) || rows[n - 1].end > rows[i].end;
         rows[i].continued = follows;
@@ -860,7 +875,7 @@ fn wrap_row(row: Row, wrap: Wrap, tab_width: usize, indent: usize) -> Vec<Row> {
         let last = n + 2 == bounds.len();
         let start = if n == 0 { row.start } else { position_of(from) };
         let end = if last { row.end } else { position_of(to) };
-        out.push(Row { line: row.line, start, end, segments, continued: !last || row.continued, broken: last && row.broken });
+        out.push(Row { line: row.line, start, end, segments, continued: !last || row.continued, broken: last && row.broken, in_string: row.in_string });
     }
     out
 }
