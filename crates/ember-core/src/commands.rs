@@ -966,6 +966,11 @@ fn killing(ed: &mut Editor) {
 /// prefix argument they are killed instead, as Emacs's delete-char does.
 /// Like Emacs, asking for more characters than there are deletes nothing.
 fn delete_chars(ed: &mut Editor, n: i64) -> Result<()> {
+    // As Emacs's delete-char, whoever calls it: a run of commands deleting
+    // a character at a time is one undo step, as typing is.
+    if n.abs() < 2 {
+        ed.undo_auto_amalgamate();
+    }
     let kill = ed.current_prefix_arg().is_some();
     let b = ed.buffer_mut();
     let p = b.point() as i64;

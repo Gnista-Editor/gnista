@@ -344,5 +344,23 @@
   "modes": [
    "electric-pair-mode"
   ]
+ },
+ {
+  "name": "deleting-pairs-is-one-undo-step",
+  "text": "))",
+  "keys": "( ( DEL DEL C-/",
+  "point": 2,
+  "modes": [
+   "electric-pair-mode"
+  ]
+ },
+ {
+  "name": "deleting-a-pair-then-typing-undoes-apart",
+  "text": "",
+  "keys": "( DEL x C-/",
+  "point": 0,
+  "modes": [
+   "electric-pair-mode"
+  ]
  }
 ]

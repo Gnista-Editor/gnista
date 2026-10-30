@@ -803,6 +803,48 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "deleting-pairs-is-one-undo-step",
+      "input": {
+        "text": "))",
+        "point": 2,
+        "keys": "( ( DEL DEL C-/",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "))(())",
+      "visible": "))(())",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "deleting-a-pair-then-typing-undoes-apart",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "( DEL x C-/",
+        "modes": [
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
     }
   ]
 }
