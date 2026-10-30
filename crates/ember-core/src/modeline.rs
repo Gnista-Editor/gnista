@@ -30,6 +30,9 @@ struct Formatting {
     height: usize,
     width: usize,
     out: Vec<ModeLineSegment>,
+    /// Segments before this one are not added to, as a field width's text
+    /// must start a segment of its own to be cut.
+    fence: usize,
 }
 
 impl Formatting {
@@ -41,8 +44,9 @@ impl Formatting {
         if text.is_empty() {
             return;
         }
+        let fenced = self.out.len() <= self.fence;
         match self.out.last_mut() {
-            Some(last) if last.faces == faces => last.text.push_str(text),
+            Some(last) if last.faces == faces && !fenced => last.text.push_str(text),
             _ => self.out.push(ModeLineSegment { text: text.to_string(), faces: faces.to_vec() }),
         }
     }
@@ -61,39 +65,52 @@ impl Editor {
             .into_iter()
             .flat_map(|f| self.frame_windows(f).into_iter().map(|v| (v.id, v.buffer.id(), v.point, v.top_line)).collect::<Vec<_>>())
             .collect();
-        // %- fills the mode line, which takes the divider's column too.
-        let totals = self.window_total_sizes();
         let mut lines = HashMap::new();
         for (id, buffer, point, top_line) in windows {
             let Some(index) = self.buffer_with_id(buffer) else { continue };
             let format = self.variable_in(&self.buffers[index], "mode-line-format").unwrap_or(Value::Null);
-            let (height, width) = self.window(id).map_or((0, 0), |w| (w.height, w.width));
-            let width = totals.iter().find(|t| t.0 == id).map_or(width, |t| t.1);
-            let mut f = Formatting { point, top_line, height, width, out: Vec::new() };
-            if let Err(e) = self.with_current_buffer(index, |ed| ed.mode_line_element(&mut f, &format, &[], 0, false)) {
-                f.push(&format!("Error in mode-line-format: {e}"), &[]);
-            }
+            let mut f = self.formatting(id, point, top_line);
+            self.with_current_buffer(index, |ed| ed.mode_line_element(&mut f, &format, &[], 0, false));
             lines.insert(id, f.out);
         }
         self.mode_lines = lines;
     }
 
-    /// Formats a mode line construct for the current buffer and the
-    /// selected window, as Emacs's `format-mode-line`.
+    /// What formatting a window's mode line starts from. %- fills the
+    /// mode line, which takes the divider's column too.
+    fn formatting(&self, id: WindowId, point: usize, top_line: usize) -> Formatting {
+        let (height, width) = self.window(id).map_or((0, 0), |w| (w.height, w.width));
+        let width = self.window_total_sizes().iter().find(|t| t.0 == id).map_or(width, |t| t.1);
+        Formatting { point, top_line, height, width, out: Vec::new(), fence: 0 }
+    }
+
+    /// Formats a mode line construct for the selected window and its
+    /// buffer, as Emacs's `format-mode-line`.
     pub fn format_mode_line(&mut self, format: &Value) -> Result<Vec<ModeLineSegment>> {
         let id = self.selected_window;
-        let (top_line, height, width) = self.window(id).map_or((0, 0, 0), |w| (w.top_line, w.height, w.width));
-        let point = self.buffer().point();
-        let mut f = Formatting { point, top_line, height, width, out: Vec::new() };
-        self.mode_line_element(&mut f, format, &[], 0, false)?;
+        let index = self.selected_buffer_index();
+        let b = &self.buffers[index];
+        let point = b.window_point(id).unwrap_or(b.point());
+        let top_line = self.window(id).map_or(0, |w| w.top_line);
+        let mut f = self.formatting(id, point, top_line);
+        self.with_current_buffer(index, |ed| ed.mode_line_element(&mut f, format, &[], 0, false));
         Ok(f.out)
+    }
+
+    /// Calls what an :eval or a function in the format gives, as Emacs does
+    /// in redisplay: an error leaves it out, logged.
+    fn mode_line_call(&mut self, f: impl FnOnce(&mut Editor) -> Result<Value>) -> Value {
+        f(self).unwrap_or_else(|e| {
+            self.log_message(&format!("Error during redisplay: {e}"), true);
+            Value::Null
+        })
     }
 
     /// Formats one construct, as Emacs's display_mode_element: `literal`
     /// for a string that is a symbol's value, whose %-specs are not read.
-    fn mode_line_element(&mut self, f: &mut Formatting, elt: &Value, faces: &[String], depth: usize, literal: bool) -> Result<()> {
+    fn mode_line_element(&mut self, f: &mut Formatting, elt: &Value, faces: &[String], depth: usize, literal: bool) {
         if depth > DEPTH {
-            return Ok(());
+            return;
         }
         match elt {
             Value::Str(s) if literal => f.push(s, faces),
@@ -113,20 +130,20 @@ impl Editor {
             Value::Symbol(name) => {
                 let value = self.variable(name).unwrap_or(Value::Null);
                 let literal = matches!(value, Value::Str(_) | Value::Text(_));
-                self.mode_line_element(f, &value, faces, depth + 1, literal)?;
+                self.mode_line_element(f, &value, faces, depth + 1, literal);
             }
             Value::Function(function) => {
-                let value = function.call(self, &[])?;
-                self.mode_line_element(f, &value, faces, depth + 1, false)?;
+                let value = self.mode_line_call(|ed| function.call(ed, &[]));
+                self.mode_line_element(f, &value, faces, depth + 1, false);
             }
             Value::List(items) => match items.first() {
                 None => {}
                 Some(Value::Symbol(k)) if k == ":eval" => {
                     let value = match items.get(1) {
-                        Some(form) => self.funcall(form, &[])?,
+                        Some(form) => self.mode_line_call(|ed| ed.funcall(form, &[])),
                         None => Value::Null,
                     };
-                    self.mode_line_element(f, &value, faces, depth + 1, false)?;
+                    self.mode_line_element(f, &value, faces, depth + 1, false);
                 }
                 Some(Value::Symbol(k)) if k == ":propertize" => {
                     let mut with = faces.to_vec();
@@ -138,15 +155,20 @@ impl Editor {
                         }
                     }
                     if let Some(inner) = items.get(1) {
-                        self.mode_line_element(f, inner, &with, depth + 1, false)?;
+                        self.mode_line_element(f, inner, &with, depth + 1, false);
                     }
                 }
-                // A conditional: THEN if the symbol's value is true, else ELSE.
-                Some(Value::Symbol(name)) => {
-                    let on = self.variable(name).is_some_and(|v| v.is_true());
+                // A conditional: THEN if the symbol's value is true, else
+                // ELSE; t is always true and nil never.
+                Some(first @ (Value::Symbol(_) | Value::Bool(_) | Value::Null)) => {
+                    let on = match first {
+                        Value::Symbol(name) if name == "t" => true,
+                        Value::Symbol(name) => self.variable(name).is_some_and(|v| v.is_true()),
+                        other => other.is_true(),
+                    };
                     let branch = if on { items.get(1) } else { items.get(2) };
                     if let Some(branch) = branch {
-                        self.mode_line_element(f, branch, faces, depth + 1, false)?;
+                        self.mode_line_element(f, branch, faces, depth + 1, false);
                     }
                 }
                 // A field width: pad on the right to at least N columns, or
@@ -154,9 +176,11 @@ impl Editor {
                 Some(Value::Number(n)) => {
                     let start = f.out.len();
                     let before = f.columns();
+                    let fence = std::mem::replace(&mut f.fence, start);
                     for item in &items[1..] {
-                        self.mode_line_element(f, item, faces, depth + 1, false)?;
+                        self.mode_line_element(f, item, faces, depth + 1, false);
                     }
+                    f.fence = fence;
                     let width = f.columns() - before;
                     let n = *n as i64;
                     if n > 0 && width < n as usize {
@@ -171,13 +195,12 @@ impl Editor {
                 }
                 Some(_) => {
                     for item in items {
-                        self.mode_line_element(f, item, faces, depth + 1, false)?;
+                        self.mode_line_element(f, item, faces, depth + 1, false);
                     }
                 }
             },
             Value::Null | Value::Bool(_) | Value::Number(_) | Value::Buffer(_) | Value::Keymap(_) => {}
         }
-        Ok(())
     }
 
     /// A string with its %-specs worked out, as decode_mode_spec does.
@@ -263,7 +286,7 @@ impl Editor {
             (true, true) => "All".into(),
             (true, false) => "Top".into(),
             (false, true) => "Bot".into(),
-            (false, false) => format!("{}%", ((start - min) * 100) / (max - min).max(1)),
+            (false, false) => format!("{:2}%", ((start - min) * 100) / (max - min).max(1)),
         }
     }
 }

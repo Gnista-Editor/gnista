@@ -71,9 +71,9 @@ fn the_newest_advice_is_outermost_within_its_depth() {
         })()"#,
     );
     assert_eq!(eval(&mut ed, &s, "seen.splice(0).join(' ')"), "outer b a inner base");
-    // By name it is replaced where it is, and taken off.
+    // Of the same name it replaces the old, newest at its depth, and is taken off by name.
     eval(&mut ed, &s, r#"ember.adviceAdd("base", "before", () => { seen.push("A"); }, { name: "a" }), ember.funcall("base"), 0"#);
-    assert_eq!(eval(&mut ed, &s, "seen.splice(0).join(' ')"), "outer b A inner base");
+    assert_eq!(eval(&mut ed, &s, "seen.splice(0).join(' ')"), "outer A b inner base");
     assert_eq!(eval(&mut ed, &s, r#"ember.adviceMemberP("a", "base")"#), "true");
     eval(&mut ed, &s, r#"ember.adviceRemove("base", "a"), ember.funcall("base"), 0"#);
     assert_eq!(eval(&mut ed, &s, "seen.splice(0).join(' ')"), "outer b inner base");
@@ -196,4 +196,52 @@ fn a_script_sets_the_mode_line_with_symbols_and_functions() {
     ed.call("text-mode", vec![]).unwrap();
     assert_eq!(eval(&mut ed, &s, "ember.formatModeLine()"), "Text 3 chars");
     assert_eq!(eval(&mut ed, &s, r#"ember.formatModeLine("%b %l:%c")"#), "*scratch* 1:3");
+}
+
+#[test]
+fn advice_on_an_alias_runs_through_it_and_the_original_fills_its_count() {
+    let (mut ed, s) = setup();
+    ed.type_text("abcdef");
+    ed.press("C-a").unwrap();
+    eval(
+        &mut ed,
+        &s,
+        r#"(ember.defineCommand({ name: "zz-target", run: () => { seen.push(["target", ember.thisCommand()]); } }),
+            ember.defalias("zz-alias", "zz-target"),
+            ember.adviceAdd("zz-alias", "before", () => { seen.push("alias advice"); }),
+            ember.bindKey("C-c z", "zz-alias"), 0)"#,
+    );
+    ed.press("C-c z").unwrap();
+    eval(&mut ed, &s, r#"(ember.funcall("zz-alias"), ember.funcall("zz-target"), 0)"#);
+    assert_eq!(
+        eval(&mut ed, &s, "JSON.stringify(seen.splice(0))"),
+        r#"["alias advice",["target","zz-alias"],"alias advice",["target",null],["target",null]]"#
+    );
+    // The original called with its count left out counts the prefix argument.
+    eval(&mut ed, &s, r#"(ember.adviceAdd("forward-char", "around", (orig) => orig()), 0)"#);
+    ed.press("C-u 2 C-f").unwrap();
+    assert_eq!(ed.window_buffer().point(), 2);
+    // A buffer is passed to a command by its name.
+    eval(&mut ed, &s, r#"(ember.getBufferCreate("other"), ember.funcall("switch-to-buffer", ember.getBuffer("other")), 0)"#);
+    assert_eq!(ed.window_buffer().name, "other");
+}
+
+#[test]
+fn advice_added_again_moves_to_its_new_depth() {
+    let (mut ed, s) = setup();
+    eval(
+        &mut ed,
+        &s,
+        r#"(() => {
+          ember.defun("body", () => { seen.push("body"); });
+          globalThis.f = () => { seen.push("f"); };
+          ember.adviceAdd("body", "before", f);
+          ember.adviceAdd("body", "before", () => { seen.push("g"); });
+          ember.adviceAdd("body", "before", f, { depth: -100 });
+          ember.adviceAdd("body", "before", () => { seen.push("h"); }, { depth: -50 });
+          ember.funcall("body");
+          return 0;
+        })()"#,
+    );
+    assert_eq!(eval(&mut ed, &s, "seen.splice(0).join(' ')"), "f h g body");
 }

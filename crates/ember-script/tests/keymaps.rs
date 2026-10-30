@@ -57,7 +57,7 @@ fn a_prefix_map_is_shared_wherever_it_is_bound() {
 }
 
 #[test]
-fn a_child_merges_its_parent_s_prefix_maps_and_unbinding_shows_the_parent_s() {
+fn a_child_merges_its_parent_s_prefix_maps_and_nil_hides_the_parent_s() {
     let (mut ed, s) = setup();
     eval(
         &mut ed,
@@ -71,7 +71,12 @@ fn a_child_merges_its_parent_s_prefix_maps_and_unbinding_shows_the_parent_s() {
     );
     ed.press("C-c 1 C-c 2").unwrap();
     assert_eq!(seen(&mut ed, &s), "one two");
+    // Nil hides the parent's binding, as (define-key map key nil); taken
+    // out, the parent's shows.
     eval(&mut ed, &s, r#"(ember.defineKey(child, "C-c 1", null), 0)"#);
+    ed.press("C-c 1").unwrap();
+    assert_eq!(seen(&mut ed, &s), "");
+    eval(&mut ed, &s, r#"(ember.keymapUnset(child, "C-c 1", true), 0)"#);
     ed.press("C-c 1").unwrap();
     assert_eq!(seen(&mut ed, &s), "three");
     assert_eq!(eval(&mut ed, &s, "ember.keymapParent(child) === parent"), "true");

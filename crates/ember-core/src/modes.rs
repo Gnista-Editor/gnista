@@ -81,11 +81,13 @@ impl Editor {
     }
 
     /// Binds a key sequence in a keymap, by its name or as a value, to a
-    /// command or, as a prefix key, a keymap.
+    /// command, or as a prefix key to a keymap, or to nil, which hides a
+    /// parent's binding. `None` takes the binding out, as keymap-unset's REMOVE.
     pub fn define_key(&mut self, keymap: &Value, keys: &[Key], binding: Option<&Value>) -> Result<()> {
         let map = self.keymap_of(keymap)?;
         match binding {
-            None | Some(Value::Null) => self.keymaps.unbind(map, keys),
+            None => self.keymaps.unbind(map, keys),
+            Some(Value::Null) => self.keymaps.bind(map, keys, Binding::Nil),
             Some(Value::Keymap(prefix)) => self.keymaps.bind(map, keys, Binding::Keymap(*prefix)),
             Some(command) => {
                 let name = command.as_str().ok_or_else(|| Error::new(format!("Not a command or keymap: {command}")))?;

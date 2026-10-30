@@ -67,6 +67,16 @@ A fuzzer also found `DEL` deleting electric pairs twice undoing in two steps; `d
 
 Still open: setting a hook's variable drops its depths, and its named entries cannot be removed with `removeHook`; a propertize function that throws leaves its stretch undone, as in Emacs.
 
+A review of steps 2 and 3 so far, which compared Ember with Emacs 30 on a pseudo-terminal, found, and the same round fixed:
+- Advice on an alias of a command never ran, and the alias did not become this-command; an alias now runs as itself, its advice and then its target's.
+- Advice calling the original command with its count left out failed; the count is filled from the prefix argument, as an &optional argument is nil.
+- `funcall` passed a buffer object to a command as `#<buffer ...>` text; it passes the buffer's name.
+- Advice added again stayed where it was; it moves to where its depth puts it, as nadvice removes and adds it, and matches by name when it has one.
+- A field width that cut text did nothing when the text joined the segment before it; an `:eval` that failed lost the rest of the mode line, where Emacs leaves that construct out and logs the error; `(t ...)` was not a conditional; `format-mode-line` formatted the current buffer rather than the selected window's, and `%p` was not two wide.
+- `(define-key map key nil)` unbound the key, so the parent's binding showed, where Emacs's nil hides it; `keymap-unset` with REMOVE takes a binding out. A default in a child's prefix map lost to its parent's binding after the prefix; merging prefix maps went past a command binding; and a keymap bound under itself was listed again under itself.
+
+Still open: binding keys under a key bound to a command replaces that binding, where Emacs signals that the key is not a prefix; `symbolFunction` gives a function without the name's advice.
+
 ## Consequences
 
 Ports can keep following their Lisp closely: dispatch hooks, symbol properties, keymaps in text and recursive minibuffers are what the next large ports (completion-at-point, eglot-style backends, Org's links and agenda keys, isearch's minibuffer) are written against. The cost is a second migration of the packages that use hooks, and of the mode line in both front ends; the mode line keeps each front end's look, which its snapshots check.

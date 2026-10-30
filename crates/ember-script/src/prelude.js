@@ -353,6 +353,7 @@
     },
     bindKey: (keys, command, keymap = "global-map") => native.bindKey(String(keys), bindingArg(command), keymapArg(keymap)),
     defineKey: (keymap, keys, binding) => native.bindKey(String(keys), bindingArg(binding), keymapArg(keymap)),
+    keymapUnset: (keymap, keys, remove = false) => native.keymapUnset(keymapArg(keymap), String(keys), Boolean(remove)),
     makeSparseKeymap: (parent) => native.makeSparseKeymap(parent === undefined || parent === null ? null : keymapArg(parent)),
     keymapp: (value) => value instanceof Keymap,
     keymapParent: (keymap) => native.keymapParent(keymapArg(keymap)),

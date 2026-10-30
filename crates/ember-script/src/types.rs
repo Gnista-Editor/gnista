@@ -113,12 +113,17 @@ const API: &str = r##"
   /**
    * Bind a key sequence in Emacs notation, such as "C-c d", to a command, in
    * the global keymap or a named one such as "text-mode-map". Bound to a
-   * keymap, the keys are a prefix and that keymap its prefix map; null
-   * unbinds them, so the parent keymap's binding shows.
+   * keymap, the keys are a prefix and that keymap its prefix map; to null,
+   * they run nothing, hiding the parent keymap's binding.
    */
   function bindKey(keys: string, command: CommandName | DefinedCommand | Keymap | null, keymap?: string | Keymap): void;
   /** Bind keys in a keymap, as bindKey, in Emacs's order of arguments (define-key). */
   function defineKey(keymap: string | Keymap, keys: string, binding: CommandName | DefinedCommand | Keymap | null): void;
+  /**
+   * Unbind keys in a keymap, as keymap-unset: bound to nothing, which hides
+   * the parent keymap's binding, or with `remove` taken out, so it shows.
+   */
+  function keymapUnset(keymap: string | Keymap, keys: string, remove?: boolean): void;
   /** A new keymap with no bindings, inheriting `parent`'s, as make-sparse-keymap and set-keymap-parent. */
   function makeSparseKeymap(parent?: string | Keymap | null): Keymap;
   /** Whether a value is a keymap, as keymapp. */

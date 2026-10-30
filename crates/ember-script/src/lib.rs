@@ -979,6 +979,17 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
         })?,
     )?;
     native.set(
+        "keymapUnset",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, keymap: Value<'js>, keys: String, remove: Opt<bool>| {
+            let keymap = value_from_js(&ctx, keymap)?;
+            with_editor(&ctx, |ed| {
+                let parsed = Key::parse_seq(&keys).ok_or_else(|| Error::new(format!("Invalid key sequence: {keys:?}")))?;
+                let nil = EditorValue::Null;
+                ed.define_key(&keymap, &parsed, if remove.0 == Some(true) { None } else { Some(&nil) })
+            })
+        })?,
+    )?;
+    native.set(
         "makeSparseKeymap",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, parent: Value<'js>| -> rquickjs::Result<Value<'js>> {
             let parent = if parent.is_undefined() || parent.is_null() { None } else { Some(value_from_js(&ctx, parent)?) };
@@ -1023,7 +1034,7 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
             match found {
                 Some(ember_core::Binding::Command(c)) => value_to_js(&ctx, &EditorValue::Str(c)),
                 Some(ember_core::Binding::Keymap(m)) => value_to_js(&ctx, &EditorValue::Keymap(m)),
-                None => Ok(Value::new_undefined(ctx.clone())),
+                Some(ember_core::Binding::Nil) | None => Ok(Value::new_undefined(ctx.clone())),
             }
         })?,
     )?;

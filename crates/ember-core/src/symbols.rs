@@ -188,8 +188,8 @@ impl Editor {
                         self.call_advised(&advice, &f, args)
                     }
                     Definition::Command(command) => {
-                        let args = command.params.iter().zip(args).map(|(p, v)| Arg::from_value(p.kind, v)).collect::<Result<Vec<_>>>()?;
-                        let name = target.to_string();
+                        let args = self.args_from_values(&command, args)?;
+                        let name = name.clone();
                         self.call(&name, args)?;
                         Ok(Value::Null)
                     }
@@ -211,9 +211,26 @@ impl Editor {
     /// The command a name holds, following aliases.
     pub fn command(&self, name: &str) -> Option<Rc<Command>> {
         match self.indirect_definition(name)? {
+            // An alias runs as itself, so it is this-command and its advice applies.
+            (target, Definition::Command(command)) if target != name => Some(Rc::new(command.aliased(name))),
             (_, Definition::Command(command)) => Some(command.clone()),
             _ => None,
         }
+    }
+
+    /// A command's arguments from values, as funcall and advice pass them:
+    /// a buffer by its name, and counts and prefix arguments left out
+    /// taken from the prefix argument, as an &optional one is nil.
+    fn args_from_values(&self, command: &Command, values: &[Value]) -> Result<Vec<Arg>> {
+        let mut args = Vec::new();
+        for (p, v) in command.params.iter().zip(values) {
+            let v = match v {
+                Value::Buffer(id) => self.buffer_with_id(*id).map_or(Value::Null, |i| Value::Str(self.buffers[i].name.clone())),
+                v => v.clone(),
+            };
+            args.push(Arg::from_value(p.kind, &v)?);
+        }
+        Ok(args)
     }
 
     /// All commands, sorted by name; aliases are left out.
@@ -231,13 +248,19 @@ impl Editor {
 
     /// Runs a command's body with its arguments, through any advice on it.
     pub(crate) fn run_command_body(&mut self, command: &Rc<Command>, args: &[Arg]) -> Result<()> {
-        let advice = self.advice_on(&command.name, &command.name);
+        let advice = self.advice_on(&command.name, command.alias_of.as_deref().unwrap_or(&command.name));
         if advice.is_empty() {
             return (command.run)(self, args);
         }
         let body = command.clone();
         let base = Function::new(Some(&command.name), move |ed, values| {
-            let args = body.params.iter().zip(values).map(|(p, v)| Arg::from_value(p.kind, v)).collect::<Result<Vec<_>>>()?;
+            let mut args = ed.args_from_values(&body, values)?;
+            if args.len() < body.params.len() && body.params[args.len()..].iter().all(|p| p.kind.optional()) {
+                let prefix = ed.current_prefix_arg();
+                for p in &body.params[args.len()..] {
+                    args.push(ed.state_arg(p.kind, prefix)?);
+                }
+            }
             if args.len() != body.params.len() {
                 return Err(Error::signal("wrong-number-of-arguments", format!("{} takes {} arguments, got {}", body.name, body.params.len(), args.len()), Vec::new()));
             }
@@ -264,15 +287,17 @@ impl Editor {
     /// Advises a name's function, as Emacs's `advice-add`: calls to it by
     /// name, from keys, M-x, `funcall` or hooks, go through the advice,
     /// which stays when the function is defined again. The newest is
-    /// outermost among those of its depth. A function already there, or
-    /// advice of the same `name`, is replaced where it is.
+    /// outermost among those of its depth. Advice of the same `name`, or
+    /// without one the same function, is moved to where the new one goes.
     pub fn advice_add(&mut self, symbol: &str, how: AdviceHow, function: Function, name: Option<&str>, depth: f64) {
         let advice = Advice { how, function, name: name.map(str::to_string), depth: depth.clamp(-100.0, 100.0) };
         let list = &mut self.symbol_mut(symbol).advice;
-        if let Some(existing) = list.iter_mut().find(|a| a.function == advice.function || (a.name.is_some() && a.name == advice.name)) {
-            *existing = advice;
-            return;
-        }
+        // Advice already there goes, to be added again where its depth puts
+        // it: by its name if it has one, else by the function.
+        list.retain(|a| match &advice.name {
+            Some(name) => a.name.as_ref() != Some(name),
+            None => a.function != advice.function,
+        });
         let at = list.iter().position(|a| a.depth >= advice.depth).unwrap_or(list.len());
         list.insert(at, advice);
     }

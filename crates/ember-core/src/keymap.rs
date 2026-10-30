@@ -18,6 +18,8 @@ pub enum Binding {
     Command(String),
     /// A prefix key: the keys after it are looked up in that keymap.
     Keymap(KeymapId),
+    /// Nothing, hiding the parents' binding, as `(define-key map key nil)`.
+    Nil,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -71,10 +73,41 @@ impl Keymaps {
         std::iter::successors(Some(map), |&m| self.maps[m].parent).take(DEPTH).map(|m| &self.maps[m])
     }
 
-    /// What one key is bound to in some maps and their parents, in order:
-    /// each binding found, so a prefix key's maps can be merged.
-    fn bindings_of_key<'a>(&'a self, maps: &[KeymapId], key: &Key) -> Vec<&'a Binding> {
-        maps.iter().flat_map(|&m| self.chain(m)).filter_map(|m| m.bindings.get(key)).collect()
+    /// What one key is bound to in each of some maps, in order, through
+    /// each map's parents: the prefix maps found until a command or nil;
+    /// or the command or nil it is bound to, which hides the bindings after
+    /// it, as a child's prefix map inherits its parent's in Emacs; or, with
+    /// no binding at all, the map's default.
+    fn bindings_of_key(&self, maps: &[KeymapId], key: &Key) -> Vec<Binding> {
+        let mut out = Vec::new();
+        for &m in maps {
+            let mut bound = false;
+            for x in self.chain(m) {
+                match x.bindings.get(key) {
+                    Some(Binding::Keymap(k)) => out.push(Binding::Keymap(*k)),
+                    Some(Binding::Command(c)) => {
+                        if !bound {
+                            out.push(Binding::Command(c.clone()));
+                        }
+                        bound = true;
+                        break;
+                    }
+                    Some(Binding::Nil) => {
+                        if !bound {
+                            out.push(Binding::Nil);
+                        }
+                        bound = true;
+                        break;
+                    }
+                    None => continue,
+                }
+                bound = true;
+            }
+            if !bound && let Some(default) = self.chain(m).find_map(|x| x.default.clone()) {
+                out.push(Binding::Command(default));
+            }
+        }
+        out
     }
 
     /// Binds a key sequence in a keymap, as Emacs's `define-key`, replacing
@@ -128,23 +161,19 @@ impl Keymaps {
             let found = self.bindings_of_key(&maps, key);
             match found.first() {
                 Some(Binding::Keymap(m)) if last => return Some(Binding::Keymap(*m)),
+                // The prefix maps up to the first binding that is not one are
+                // merged, the first map's first.
                 Some(Binding::Keymap(_)) => {
                     maps.clear();
-                    for b in found {
-                        if let Binding::Keymap(m) = b
-                            && !maps.contains(m)
-                            && maps.len() < DEPTH
-                        {
+                    for b in &found {
+                        let Binding::Keymap(m) = b else { break };
+                        if !maps.contains(m) && maps.len() < DEPTH {
                             maps.push(*m);
                         }
                     }
                 }
                 Some(Binding::Command(c)) if last => return Some(Binding::Command(c.clone())),
-                Some(Binding::Command(_)) => return None,
-                None => {
-                    let default = maps.iter().flat_map(|&m| self.chain(m)).find_map(|m| m.default.clone());
-                    return default.filter(|_| last).map(Binding::Command);
-                }
+                _ => return None,
             }
         }
         None
@@ -154,7 +183,7 @@ impl Keymaps {
         match self.binding_of(map, keys) {
             Some(Binding::Command(c)) => Lookup::Command(c),
             Some(Binding::Keymap(_)) => Lookup::Prefix,
-            None => Lookup::Unbound,
+            Some(Binding::Nil) | None => Lookup::Unbound,
         }
     }
 
@@ -182,19 +211,23 @@ impl Keymaps {
     /// order, through its prefix maps; not its parents'.
     pub fn bindings(&self, map: KeymapId) -> Vec<(Vec<Key>, String)> {
         let mut out = Vec::new();
-        self.collect(map, &mut Vec::new(), &mut out);
+        self.collect(map, &mut Vec::new(), &mut vec![map], &mut out);
         out
     }
 
-    fn collect(&self, map: KeymapId, prefix: &mut Vec<Key>, out: &mut Vec<(Vec<Key>, String)>) {
-        if prefix.len() >= DEPTH {
-            return;
-        }
+    /// `path` is the maps the prefix went through, so a map that is its
+    /// own prefix map, or one above it, is not listed again under itself.
+    fn collect(&self, map: KeymapId, prefix: &mut Vec<Key>, path: &mut Vec<KeymapId>, out: &mut Vec<(Vec<Key>, String)>) {
         for (key, binding) in &self.maps[map].bindings {
             prefix.push(*key);
             match binding {
                 Binding::Command(c) => out.push((prefix.clone(), c.clone())),
-                Binding::Keymap(m) => self.collect(*m, prefix, out),
+                Binding::Keymap(m) if !path.contains(m) && path.len() < DEPTH => {
+                    path.push(*m);
+                    self.collect(*m, prefix, path, out);
+                    path.pop();
+                }
+                Binding::Keymap(_) | Binding::Nil => {}
             }
             prefix.pop();
         }
@@ -253,8 +286,19 @@ mod tests {
         assert_eq!(maps.lookup(child, &keys("C-x C-s")), Lookup::Command("save-buffer".into()));
         assert_eq!(maps.lookup(child, &keys("C-x 4 f")), Lookup::Command("find-file-other-window".into()));
         assert_eq!(maps.lookup(global, &keys("C-x C-q")), Lookup::Unbound);
-        // A map that is its own prefix map does not loop.
+        // A map that is its own prefix map is listed once.
         maps.bind(ctl_x_4, &keys("4"), Binding::Keymap(ctl_x_4));
-        assert!(!maps.bindings(ctl_x_4).is_empty());
+        maps.bind(ctl_x_4, &keys("5"), Binding::Keymap(ctl_x_4));
+        assert_eq!(maps.bindings(ctl_x_4).len(), 1);
+        // Nil hides the parent's binding; a child's prefix map's default
+        // comes before the parent's binding after the prefix.
+        maps.bind(child, &keys("C-x C-s"), Binding::Nil);
+        assert_eq!(maps.lookup(child, &keys("C-x C-s")), Lookup::Unbound);
+        let child_cx = match maps.binding_of(child, &keys("C-x")) {
+            Some(Binding::Keymap(m)) => m,
+            other => panic!("{other:?}"),
+        };
+        maps.set_default(child_cx, Some("child-default"));
+        assert_eq!(maps.lookup(child, &keys("C-x 4")), Lookup::Command("child-default".into()));
     }
 }

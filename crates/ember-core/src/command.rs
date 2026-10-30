@@ -237,6 +237,7 @@ impl Arg {
         use crate::prefix::PrefixArg;
         Ok(match (kind, value) {
             (ParamKind::Prefix, Value::Null | Value::Bool(false)) => Arg::Prefix(None),
+            (ParamKind::Prefix, Value::Bool(true)) => Arg::Prefix(Some(PrefixArg::Universal(4))),
             (ParamKind::Prefix, Value::Number(n)) => Arg::Prefix(Some(PrefixArg::Number(*n as i64))),
             (ParamKind::Prefix, Value::List(items)) => match items.first().and_then(Value::as_number) {
                 Some(n) => Arg::Prefix(Some(PrefixArg::Universal(n as i64))),
@@ -309,9 +310,25 @@ pub struct Command {
     /// `^` interactive spec in Emacs. With Shift it starts or extends the
     /// region; without, it ends a region Shift started.
     pub shift_select: bool,
+    /// The command this one is an alias of, found by a name `defalias` made,
+    /// whose advice applies after the alias's own.
+    pub alias_of: Option<String>,
 }
 
 impl Command {
+    /// The command under another name, as an alias runs it.
+    pub(crate) fn aliased(&self, name: &str) -> Command {
+        Command {
+            name: name.to_string(),
+            doc: self.doc.clone(),
+            params: self.params.clone(),
+            run: self.run.clone(),
+            source: self.source.clone(),
+            shift_select: self.shift_select,
+            alias_of: Some(self.alias_of.clone().unwrap_or_else(|| self.name.clone())),
+        }
+    }
+
     pub fn new(
         name: &str,
         doc: &str,
@@ -324,6 +341,7 @@ impl Command {
             run: Rc::new(run),
             source: None,
             shift_select: false,
+            alias_of: None,
         }
     }
 

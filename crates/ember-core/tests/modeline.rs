@@ -77,3 +77,16 @@ fn each_buffer_can_have_its_own_and_minor_modes_show_their_lighters() {
     ed.set_variable("test-mode", Value::Bool(false));
     assert!(line(&mut ed).contains("(Fundamental)"), "{}", line(&mut ed));
 }
+
+#[test]
+fn a_field_width_cuts_text_after_other_text_and_errors_leave_one_construct_out() {
+    let mut ed = Editor::new();
+    let format = |ed: &mut Editor, v: Value| ed.format_mode_line(&v).unwrap().into_iter().map(|s| s.text).collect::<String>();
+    assert_eq!(format(&mut ed, list(vec![s("ab"), list(vec![Value::Number(-1.0), s("cd")])])), "abc");
+    assert_eq!(format(&mut ed, list(vec![s(" "), list(vec![Value::Number(-3.0), s("%b")])])), " *sc");
+    assert_eq!(format(&mut ed, list(vec![Value::Bool(true), s("yes"), s("no")])), "yes");
+    assert_eq!(format(&mut ed, list(vec![sym("t"), s("yes"), s("no")])), "yes");
+    let boom = Function::new(None, |_, _| Err(ember_core::Error::new("boom")));
+    assert_eq!(format(&mut ed, list(vec![s("a"), list(vec![sym(":eval"), Value::Function(boom)]), s("b")])), "ab");
+    assert!(ed.messages().iter().any(|m| m.contains("Error during redisplay: boom")));
+}

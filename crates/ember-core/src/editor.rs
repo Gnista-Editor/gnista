@@ -1860,7 +1860,7 @@ impl Editor {
         self.message = Some(text);
     }
 
-    fn log_message(&mut self, text: &str, error: bool) {
+    pub(crate) fn log_message(&mut self, text: &str, error: bool) {
         match self.message_log.last_mut() {
             Some(last) if last.text == text && last.error == error => last.count += 1,
             _ => {
