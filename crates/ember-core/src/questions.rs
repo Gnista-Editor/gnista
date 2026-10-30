@@ -139,10 +139,12 @@ impl Editor {
 
     /// Runs what answers a question, showing its error as a command's.
     fn run_answer(&mut self, question: &Question, answer: Value) {
-        if let Some(resume) = &question.resume {
-            self.resume(resume);
-        }
-        if let Err(e) = (question.then)(self, &[answer]) {
+        let then = question.then.clone();
+        let result = match &question.resume {
+            Some(resume) => self.run_resumed(resume, |ed| then(ed, &[answer])),
+            None => then(self, &[answer]),
+        };
+        if let Err(e) = result {
             self.prompt_waiters_clear();
             self.fail(e);
             return;

@@ -109,3 +109,13 @@ fn a_number_is_asked_for_until_it_is_one() {
     s.eval_expression(&mut ed, r#"ember.call("test-number", "4")"#).unwrap();
     assert_eq!(seen(&mut ed, &s), "[42,8]");
 }
+
+#[test]
+fn repeating_takes_the_count_afresh() {
+    let (mut ed, s) = setup();
+    mx(&mut ed, "test-count");
+    ed.press("C-x z").unwrap();
+    ed.press("C-u 3 C-x z").unwrap();
+    s.eval_expression(&mut ed, r#"ember.call("test-count", undefined)"#).unwrap();
+    assert_eq!(seen(&mut ed, &s), "[1,1,3,1]");
+}

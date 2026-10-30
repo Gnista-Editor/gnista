@@ -98,3 +98,13 @@ fn strings_are_not_split_by_wrapping() {
     // Rows wrap at five columns; the string moves to the next row whole.
     assert_eq!(texts, ["abc", "XYZde", "fgh"]);
 }
+
+#[test]
+fn an_empty_overlays_before_string_comes_before_its_after_string() {
+    let mut ed = editor("abcd");
+    let b = ed.window_buffer_mut();
+    let o = b.make_overlay(2..2);
+    b.overlay_put(o, "before-string", Value::Str("[".into())).unwrap();
+    b.overlay_put(o, "after-string", Value::Str("]".into())).unwrap();
+    assert_eq!(shown(&ed), "ab[]cd");
+}

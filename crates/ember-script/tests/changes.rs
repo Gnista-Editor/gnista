@@ -320,3 +320,70 @@ fn with_current_buffer_comes_back_to_a_buffer_renamed_meanwhile() {
     );
     assert_eq!(result, r#""renamed""#);
 }
+
+#[test]
+fn an_overlay_hook_that_edits_runs_no_hooks_again() {
+    let (mut ed, s) = setup();
+    let result = eval(
+        &mut ed,
+        &s,
+        r#"(() => {
+          const log: unknown[] = [];
+          ember.insert("abcdef");
+          const o = ember.makeOverlay(1, 4);
+          ember.overlayPut(o, "modification-hooks", [(ov: number, after: boolean) => {
+            log.push(after ? "after" : "before");
+            if (after) ember.saveExcursion(() => { ember.gotoChar(2); ember.insert("x"); });
+          }]);
+          ember.addHook("after-change-functions", (b: number, e: number, l: number) => log.push(["acf", b, e, l]), { local: true });
+          ember.gotoChar(2);
+          ember.insert("Z");
+          return [log, ember.bufferText()];
+        })()"#,
+    );
+    // As Emacs binds inhibit-modification-hooks around overlay hooks.
+    assert_eq!(result, r#"[["before",["acf",2,3,0],"after"],"abxZcdef"]"#);
+}
+
+#[test]
+fn overlay_hooks_after_see_the_change_not_what_followed_it() {
+    let (mut ed, s) = setup();
+    let result = eval(
+        &mut ed,
+        &s,
+        r#"(() => {
+          const log: unknown[] = [];
+          ember.insert("abcdef");
+          const o = ember.makeOverlay(1, 4);
+          ember.overlayPut(o, "modification-hooks", [(ov: number, after: boolean, b: number, e: number) => { if (after) log.push([b, e]); }]);
+          ember.addHook("after-change-functions", () => ember.letBind({ "inhibit-modification-hooks": true }, () => ember.saveExcursion(() => { ember.gotoChar(ember.bufferSize()); ember.insert("!!!"); })), { local: true });
+          ember.gotoChar(2);
+          ember.insert("Z");
+          return log;
+        })()"#,
+    );
+    assert_eq!(result, "[[2,3]]");
+}
+
+#[test]
+fn a_change_moved_by_its_before_change_functions_happens_where_it_went() {
+    let (mut ed, s) = setup();
+    let result = eval(
+        &mut ed,
+        &s,
+        r#"(() => {
+          ember.insert("abcdef");
+          let once = true;
+          ember.addHook("before-change-functions", () => {
+            if (once) {
+              once = false;
+              ember.letBind({ "inhibit-modification-hooks": true }, () => ember.saveExcursion(() => { ember.gotoChar(0); ember.insert(">>"); }));
+            }
+          }, { local: true });
+          ember.deleteRegion(2, 3);
+          return ember.bufferText();
+        })()"#,
+    );
+    // The c is deleted, as Emacs's del_range_1 keeps the start through the hooks.
+    assert_eq!(result, r#"">>abdef""#);
+}

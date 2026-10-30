@@ -81,6 +81,19 @@ Item 10 began with what rows show besides the text:
 - Segments and glyphs say they are strings. The cursor goes on the text after an overlay string and on a display string when point is at the text it stands for, and wrapping moves a string to the next row whole.
 - Still to come: strings with faces of their own, which wait for propertized strings (item 7); strings with newlines, which end at the first; `line-prefix` and `wrap-prefix`; margins and images; and the mode line formatted by the core from `mode-line-format`.
 
+## Review
+
+A review of items 6 to 10 found, and the same round fixed:
+- An overlay hook that changed the text ran every change hook again, its own included, without end; overlay hooks now run with change hooks off, as Emacs binds `inhibit-modification-hooks` around them.
+- Overlay hooks after a change were told where it ended after `after-change-functions` had changed the text again.
+- A change whose `before-change-functions` edited before it went to its old positions; it now goes where its start moved, as prepare_to_modify_buffer preserves it.
+- A command awaiting a prompt answered from code already running, as a keyboard macro replays keys, carried on only once all the code had finished, out of order and without its prefix argument; promise continuations now run as each call into scripts ends.
+- `C-x z` reused the count, point and region the editor had supplied the first time; repeating takes them afresh.
+- A question answered by a key left the asking command's prefix argument and name in place after it.
+- An empty overlay showed its after-string before its before-string; a count passed as nil failed instead of counting 1.
+
+Still open from the review: a `display` property over a newline shows its string on each line, where Emacs hides the whole stretch.
+
 ## Consequences
 
 Ports can follow their Lisp closely: reading input where the Lisp does, catching the conditions it catches, binding what it binds, requiring what it requires. The cost is migrating existing packages, done as each is next touched, and a larger core.

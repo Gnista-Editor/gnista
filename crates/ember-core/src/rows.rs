@@ -580,17 +580,17 @@ impl Editor {
             .filter(|o| (o.start == pos || o.end == pos) && !o.props.get("invisible").is_some_and(|v| invisibility(v, &spec).is_some()))
             .collect();
         overlays.sort_by(|a, b| a.priority().total_cmp(&b.priority()).then(a.id.cmp(&b.id)));
-        for (edge, name) in [(true, "after-string"), (false, "before-string")] {
-            for o in &overlays {
-                let at = if edge { o.end } else { o.start };
-                if at != pos {
-                    continue;
-                }
-                if let Some(Value::Str(text)) = o.props.get(name) {
-                    let text: String = text.split('\n').next().unwrap_or_default().to_string();
-                    if !text.is_empty() {
-                        segments.push(Segment { string: true, ..Segment::text(pos, text, Style::default()) });
-                    }
+        // An empty overlay's before-string comes before its own after-string.
+        let ending = overlays.iter().filter(|o| o.end == pos && o.start != pos).map(|o| (*o, "after-string"));
+        let starting = overlays
+            .iter()
+            .filter(|o| o.start == pos)
+            .flat_map(|o| std::iter::once((*o, "before-string")).chain((o.end == pos).then_some((*o, "after-string"))));
+        for (o, name) in ending.chain(starting) {
+            if let Some(Value::Str(text)) = o.props.get(name) {
+                let text: String = text.split('\n').next().unwrap_or_default().to_string();
+                if !text.is_empty() {
+                    segments.push(Segment { string: true, ..Segment::text(pos, text, Style::default()) });
                 }
             }
         }

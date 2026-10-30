@@ -191,3 +191,46 @@ fn a_prompt_inside_the_minibuffer_is_refused_as_emacs_refuses_it() {
     assert_eq!(s.eval_expression(&mut ed, "refused").unwrap(), "\"Command attempted to use minibuffer while in minibuffer\"");
     assert_eq!(ed.prompt(), Some("Outer: "));
 }
+
+#[test]
+fn a_macro_replays_an_awaiting_command_in_order_with_its_prefix() {
+    let (mut ed, _s) = setup(
+        r#"
+        ember.defineCommand({
+          name: "ask-insert",
+          run: async () => {
+            const s = await ember.readString("Say: ");
+            ember.insert(`[${s}:${ember.prefixNumericValue()}]`);
+          },
+        });
+        "#,
+    );
+    ed.press("<f3> C-u").unwrap();
+    mx(&mut ed, "ask-insert");
+    ed.type_text("foo");
+    ed.press("RET z <f4>").unwrap();
+    assert_eq!(text(&ed), "[foo:4]z");
+    ed.press("C-x e").unwrap();
+    assert_eq!(text(&ed), "[foo:4]z[foo:4]z");
+}
+
+#[test]
+fn answering_by_key_leaves_no_command_context_behind() {
+    let (mut ed, _s) = setup(
+        r#"
+        ember.defineCommand({
+          name: "ask-yn",
+          run: async () => {
+            if (await ember.yOrNP("Sure? ")) ember.insert(`yes ${ember.prefixNumericValue()}`);
+          },
+        });
+        "#,
+    );
+    ed.press("C-u 7").unwrap();
+    mx(&mut ed, "ask-yn");
+    ed.press("y").unwrap();
+    assert_eq!(text(&ed), "yes 7");
+    assert_eq!(ed.current_prefix_arg(), None);
+    assert_eq!(ed.this_command(), None);
+    assert_eq!(ed.last_command(), Some("ask-yn"));
+}

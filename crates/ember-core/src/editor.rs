@@ -698,6 +698,30 @@ impl Editor {
         Resume { buffer: self.buffers[self.current].id, prefix: self.current_prefix_arg, command: self.this_command.clone() }
     }
 
+    /// Runs what answers a prompt in the context of the command that asked.
+    /// Inside a command, such as exit-minibuffer, that command's end puts
+    /// things back; answered by a key outside any, as y-or-n-p is, they are
+    /// put back here, and the asking command becomes the last command, as
+    /// it would have been had it waited for the answer.
+    pub(crate) fn run_resumed<T>(&mut self, resume: &Resume, f: impl FnOnce(&mut Editor) -> T) -> T {
+        if self.running > 0 {
+            self.resume(resume);
+            return f(self);
+        }
+        let saved = (self.buffers[self.current].id, self.current_prefix_arg, self.this_command.clone());
+        self.resume(resume);
+        let value = f(self);
+        if let Some(index) = self.buffers.iter().position(|b| b.id == saved.0) {
+            self.current = index;
+        }
+        self.current_prefix_arg = saved.1;
+        if let Some(command) = &resume.command {
+            self.last_command = Some(command.clone());
+        }
+        self.this_command = saved.2;
+        value
+    }
+
     /// Gives an answer the context of the command that asked: its buffer,
     /// if still live, its prefix argument, and its name, which becomes the
     /// last command once the answer is done.
@@ -822,7 +846,17 @@ impl Editor {
             .ok_or_else(|| Error::new("There is nothing to repeat"))?;
         self.last_key = last.key;
         self.buffer_mut().undo_boundary();
-        self.run_command(last.command, last.args, prefix.or(last.prefix))
+        let prefix = prefix.or(last.prefix);
+        // What the editor supplied, the count, point or the region, is
+        // taken afresh, as repeat calls the command interactively again;
+        // what was typed is used again.
+        let mut args = last.args;
+        for (arg, param) in args.iter_mut().zip(&last.command.params) {
+            if param.kind.from_state() {
+                *arg = self.state_arg(param.kind, prefix)?;
+            }
+        }
+        self.run_command(last.command, args, prefix)
     }
 
     // Keyboard macros

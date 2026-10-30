@@ -213,6 +213,8 @@ impl Arg {
         let number = |text: &str| text.trim().parse::<i64>().map_err(|_| Error::signal("wrong-type-argument", format!("Not a number: {text:?}"), Vec::new()));
         Ok(match kind {
             ParamKind::Keys => Arg::Keys(Key::parse_seq(text).ok_or_else(|| Error::new(format!("Invalid key sequence: {text:?}")))?),
+            // A count given as nil counts 1, as prefix-numeric-value says.
+            ParamKind::Count if matches!(text.trim(), "" | "nil") => Arg::Int(1),
             ParamKind::Number | ParamKind::Count | ParamKind::Point | ParamKind::Mark | ParamKind::RegionBeginning | ParamKind::RegionEnd => {
                 Arg::Int(number(text)?)
             }

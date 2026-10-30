@@ -324,7 +324,14 @@ fn enter<R>(context: &Context, ed: &mut Editor, f: impl for<'js> FnOnce(Ctx<'js>
         Some(raw) if raw == context.as_raw() => {
             // SAFETY: ACTIVE is only set inside `Context::with` below, so the
             // runtime lock is held, and it is this context's runtime.
-            f(unsafe { Ctx::from_raw(raw) })
+            let ctx = unsafe { Ctx::from_raw(raw) };
+            let result = f(ctx.clone());
+            // A prompt answered from code already running, as keys a macro
+            // replays, lets its command carry on here, where Emacs's would,
+            // rather than once all the code has finished. Rejections nothing
+            // handles are reported by the outermost call.
+            while ctx.execute_pending_job() {}
+            result
         }
         _ => context.with(|ctx| {
             CONTEXTS.with_borrow_mut(|c| c.push(context.clone()));

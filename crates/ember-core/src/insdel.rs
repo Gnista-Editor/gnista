@@ -35,31 +35,31 @@ impl Editor {
     /// Inserts text at point, as Emacs's `insert`.
     pub fn insert(&mut self, text: &str) -> Result<()> {
         let at = self.buffer().point();
-        self.insert_with(at, text, |b| b.insert(text))
+        self.insert_with(at, text, |b, _| b.insert(text))
     }
 
     /// Inserts text at a position, leaving point where it was unless it was
     /// after it, as `(save-excursion (goto-char pos) (insert text))`.
     pub fn insert_at(&mut self, pos: usize, text: &str) -> Result<()> {
-        self.insert_with(pos, text, |b| b.insert_at(pos, text))
+        self.insert_with(pos, text, |b, at| b.insert_at(at, text))
     }
 
     /// Inserts text at point, moving markers there along, as Emacs's `insert-before-markers`.
     pub fn insert_before_markers(&mut self, text: &str) -> Result<()> {
         let at = self.buffer().point();
-        self.insert_with(at, text, |b| b.insert_before_markers(text))
+        self.insert_with(at, text, |b, _| b.insert_before_markers(text))
     }
 
     /// Inserts text at a position, moving markers there along.
     pub fn insert_before_markers_at(&mut self, pos: usize, text: &str) -> Result<()> {
-        self.insert_with(pos, text, |b| b.insert_before_markers_at(pos, text))
+        self.insert_with(pos, text, |b, at| b.insert_before_markers_at(at, text))
     }
 
     /// Inserts text at point that takes on the properties around it, as
     /// Emacs's `insert-and-inherit` does for typing.
     pub fn insert_and_inherit(&mut self, text: &str) -> Result<()> {
         let at = self.buffer().point();
-        self.insert_with(at, text, |b| b.insert_and_inherit(text))
+        self.insert_with(at, text, |b, _| b.insert_and_inherit(text))
     }
 
     /// Deletes the text between two positions, in either order, and returns
@@ -70,7 +70,7 @@ impl Editor {
         if start == end {
             return Ok(String::new());
         }
-        self.modify(start, end, |b| b.delete(start..end))
+        self.modify(start, end, |b, start, end| b.delete(start..end))
     }
 
     /// Replaces each `from` between `start` and `end` with `to`, as Emacs's
@@ -82,7 +82,7 @@ impl Editor {
         let first = (start..end).find(|&p| b.char_at(p) == Some(from));
         let Some(first) = first else { return Ok(()) };
         let last = (first..end).rev().find(|&p| b.char_at(p) == Some(from)).unwrap_or(first);
-        self.modify(first, last + 1, |b| b.subst_char(first, last + 1, from, to))
+        self.modify(first, last + 1, |b, start, end| b.subst_char(start, end, from, to))
     }
 
     /// Replaces the text between `start` and `end` with `text`, as one
@@ -93,7 +93,7 @@ impl Editor {
         if start == end && text.is_empty() {
             return Ok(());
         }
-        self.modify(start, end, |b| {
+        self.modify(start, end, |b, start, end| {
             let pending = b.pending_changes.len();
             b.delete(start..end)?;
             b.insert_at(start, text)?;
@@ -103,30 +103,38 @@ impl Editor {
         })
     }
 
-    fn insert_with(&mut self, pos: usize, text: &str, edit: impl FnOnce(&mut Buffer) -> Result<()>) -> Result<()> {
+    fn insert_with(&mut self, pos: usize, text: &str, edit: impl FnOnce(&mut Buffer, usize) -> Result<()>) -> Result<()> {
         // Inserting nothing changes nothing, and runs no hooks, as in Emacs.
         if text.is_empty() {
             return Ok(());
         }
-        self.modify(pos, pos, edit)
+        self.modify(pos, pos, |b, at, _| edit(b, at))
     }
 
     /// Makes a change to the current buffer between `start` and `end` (equal
-    /// for an insertion) through the checks and hooks.
-    fn modify<T>(&mut self, start: usize, end: usize, edit: impl FnOnce(&mut Buffer) -> Result<T>) -> Result<T> {
-        let pending = self.prepare_to_modify(start, end)?;
+    /// for an insertion) through the checks and hooks. `edit` gets where the
+    /// stretch is once the hooks before have run, which may have moved it
+    /// by editing before it, as Emacs's prepare_to_modify_buffer preserves
+    /// the position it is given.
+    fn modify<T>(&mut self, start: usize, end: usize, edit: impl FnOnce(&mut Buffer, usize, usize) -> Result<T>) -> Result<T> {
+        let mark = self.buffer_mut().make_marker(start, false);
+        let prepared = self.prepare_to_modify(start, end);
+        let moved = self.buffer_mut().remove_marker(mark).map_or(start, |m| m.pos);
+        let pending = prepared?;
+        let (start, end) = (moved, (moved + (end - start)).min(self.buffer().len()));
         let inhibit = self.variable("inhibit-read-only").is_some_and(|v| v.is_true());
         let len = self.buffer().len();
         let b = self.buffer_mut();
         // The buffer's own read-only check gives way as the editor's did.
         let read_only = b.read_only;
         b.read_only &= !inhibit;
-        let result = edit(b);
+        let result = edit(b, start, end);
         self.buffer_mut().read_only = read_only;
         let value = result?;
-        self.run_after_change_functions()?;
-        // What the text became, and how long it was, for the hooks after.
+        // What the text became, and how long it was, for the hooks after,
+        // before after-change-functions can change it again.
         let new_end = (end + self.buffer().len()).saturating_sub(len);
+        self.run_after_change_functions()?;
         self.report_modification(pending, start, new_end, end - start)?;
         Ok(value)
     }
@@ -203,7 +211,7 @@ impl Editor {
         for (id, f) in pending.overlay_hooks.clone() {
             let mut with_overlay = vec![Value::Number(id as f64)];
             with_overlay.extend(args.iter().cloned());
-            self.funcall(&f, &with_overlay)?;
+            self.call_overlay_hook(&f, &with_overlay)?;
         }
         Ok(pending)
     }
@@ -214,7 +222,7 @@ impl Editor {
     fn report_modification(&mut self, pending: Pending, start: usize, end: usize, old_len: usize) -> Result<()> {
         for (id, f) in pending.overlay_hooks {
             let args = [Value::Number(id as f64), Value::Bool(true), Value::Number(start as f64), Value::Number(end as f64), Value::Number(old_len as f64)];
-            self.funcall(&f, &args)?;
+            self.call_overlay_hook(&f, &args)?;
         }
         let args = [Value::Number(start as f64), Value::Number(end as f64)];
         for f in pending.insert_hooks {
@@ -281,6 +289,20 @@ impl Editor {
             self.buffer_mut().local_hooks.remove("before-change-functions");
         }
         result
+    }
+
+    /// Calls an overlay's hook function with change hooks off, as Emacs
+    /// binds `inhibit-modification-hooks` around them, so what it changes
+    /// runs no hooks again. The text's own hooks run without, as in Emacs.
+    fn call_overlay_hook(&mut self, f: &Value, args: &[Value]) -> Result<()> {
+        let was = std::mem::replace(&mut self.in_change_hooks, true);
+        let pending = self.buffer().pending_changes.len();
+        let result = self.funcall(f, args);
+        self.in_change_hooks = was;
+        if !was {
+            self.buffer_mut().pending_changes.truncate(pending);
+        }
+        result.map(drop)
     }
 
     /// Whether `inhibit-modification-hooks` is set, so no change hooks run.

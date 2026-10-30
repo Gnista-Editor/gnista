@@ -176,12 +176,10 @@ impl Editor {
         let prompt = self.close_prompt().ok_or_else(|| Error::new("Not in the minibuffer"))?;
         self.add_to_history(&prompt.history, &value);
         let result = match prompt.then {
-            Some(then) => {
-                if let Some(resume) = &prompt.resume {
-                    self.resume(resume);
-                }
-                then(self, &[Value::Str(value)])
-            }
+            Some(then) => match &prompt.resume {
+                Some(resume) => self.run_resumed(resume, |ed| then(ed, &[Value::Str(value)])),
+                None => then(self, &[Value::Str(value)]),
+            },
             None => {
                 self.supply_arg(Arg::Str(value));
                 Ok(())
