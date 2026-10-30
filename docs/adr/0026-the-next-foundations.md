@@ -43,6 +43,8 @@ Of step 4, scanners read `syntax-table` properties where `parse-sexp-lookup-prop
 
 Ahead of keymaps as values, text and overlays can carry keys: a `keymap` property at point comes before the minor modes' maps and a `local-map` property stands in for the buffer's own, read where Emacs's get_local_map reads them, so links and buttons can bind RET and the mouse. The property names a keymap until keymaps are values.
 
+A completion table can be a function of the input that gives the names, as Emacs's `completion-table-dynamic` makes one: the editor calls it as the prompt opens and after each command, and the completion styles apply to what it gives. Tables with Emacs's whole protocol (the action argument, boundaries and metadata) and `completion-at-point` remain.
+
 ## Consequences
 
 Ports can keep following their Lisp closely: dispatch hooks, symbol properties, keymaps in text and recursive minibuffers are what the next large ports (completion-at-point, eglot-style backends, Org's links and agenda keys, isearch's minibuffer) are written against. The cost is a second migration of the packages that use hooks, and of the mode line in both front ends; the mode line keeps each front end's look, which its snapshots check.

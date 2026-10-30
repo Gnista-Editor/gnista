@@ -469,8 +469,14 @@ const API: &str = r##"
     kind?: string;
   }
   /** Read one of `collection` in the minibuffer, with completion, as Emacs's completing-read. */
-  function completingRead(prompt: string, collection: Iterable<string>, options?: CompletingReadOptions): Promise<string>;
-  function completingRead(prompt: string, collection: Iterable<string>, then: (answer: string) => void, options?: CompletingReadOptions): void;
+  function completingRead(prompt: string, collection: CompletionTable, options?: CompletingReadOptions): Promise<string>;
+  function completingRead(prompt: string, collection: CompletionTable, then: (answer: string) => void, options?: CompletingReadOptions): void;
+  /**
+   * What completingRead completes against: names, or a function of the
+   * input so far that gives them, called as the prompt opens and after
+   * each command, as Emacs's completion-table-dynamic makes a table.
+   */
+  type CompletionTable = Iterable<string> | ((input: string) => Iterable<string>);
   interface ReadFileNameOptions {
     /** The directory the minibuffer starts in, if not the default one. */
     dir?: string;

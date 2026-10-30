@@ -269,3 +269,35 @@ fn the_sample_config_loads_and_its_awaiting_command_works() {
     assert!(notes.ends_with(" one\n") || notes.contains(" one\n"), "{notes}");
     assert!(notes.ends_with(" two\n"), "{notes}");
 }
+
+#[test]
+fn a_completion_table_can_be_a_function_of_the_input() {
+    let (mut ed, s) = setup(
+        r#"
+        globalThis.asked = [];
+        ember.defineCommand({
+          name: "pick-path",
+          run: async () => {
+            // Names under the directory typed so far, as a completion-table-dynamic's function gives them.
+            const p = await ember.completingRead("Path: ", (input: string) => {
+              asked.push(input);
+              const dir = input.slice(0, input.lastIndexOf("/") + 1);
+              return [`${dir}apple`, `${dir}banana`, `${dir}cherry/`];
+            }, { requireMatch: true });
+            ember.insert(p);
+          },
+        });
+        "#,
+    );
+    ed.press("M-x").unwrap();
+    ed.type_text("pick-path");
+    ed.press("RET").unwrap();
+    ed.type_text("c");
+    ed.press("TAB").unwrap();
+    assert_eq!(ed.minibuffer_input(), "cherry/");
+    ed.type_text("b");
+    ed.press("TAB RET").unwrap();
+    assert_eq!(text(&ed), "cherry/banana");
+    let asked = s.eval_expression(&mut ed, "asked").unwrap();
+    assert!(asked.contains(r#""cherry/b""#), "{asked}");
+}

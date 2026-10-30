@@ -1166,6 +1166,10 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
                 };
                 let mut reading = Reading::new(&prompt, kind);
                 reading.collection = options.get("collection")?;
+                if let Some(f) = options.get::<_, Option<Function>>("collectionFunction")? {
+                    let EditorValue::Function(f) = function_from_js(&ctx, f)? else { unreachable!("a function converts to one") };
+                    reading.collection_fn = Some(f);
+                }
                 reading.category = options.get("category")?;
                 reading.require_match = options.get::<_, Option<bool>>("requireMatch")?.unwrap_or(false);
                 reading.initial = options.get("initial")?;

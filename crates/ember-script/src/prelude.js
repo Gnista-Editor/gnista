@@ -417,7 +417,9 @@
       options ??= {};
       return answering(then, (answer, quit) =>
         native.read(options.kind ?? "string", String(prompt), {
-          collection: options.kind ? undefined : [...collection].map(String),
+          collection: options.kind || typeof collection === "function" ? undefined : [...collection].map(String),
+          // A function of the input, as completion-table-dynamic makes a table.
+          collectionFunction: typeof collection === "function" ? (input) => [...collection(input)].map(String) : undefined,
           category: options.category,
           requireMatch: Boolean(options.requireMatch),
           initial: options.initial,

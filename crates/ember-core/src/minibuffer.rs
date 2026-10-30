@@ -38,6 +38,10 @@ pub struct Reading {
     pub history: Option<String>,
     /// For a file name, the directory it starts in, if not the default one.
     pub dir: Option<String>,
+    /// A function of the input that gives the names to complete against,
+    /// called as the prompt opens and after each command, as Emacs's
+    /// completion-table-dynamic makes a table from one.
+    pub collection_fn: Option<crate::variables::Function>,
 }
 
 impl Reading {
@@ -46,6 +50,7 @@ impl Reading {
             prompt: prompt.to_string(),
             kind,
             collection: None,
+            collection_fn: None,
             category: None,
             require_match: false,
             initial: None,
@@ -113,6 +118,7 @@ impl Prompt {
             require_match: matches!(kind, ParamKind::Command | ParamKind::Variable | ParamKind::Face),
             default: None,
             initial: String::new(),
+            collection_fn: None,
             then: None,
             quit: None,
             resume: None,
@@ -194,6 +200,23 @@ impl Editor {
         result
     }
 
+    /// Asks the open prompt's completion function for the names its input
+    /// completes against now, if it has one.
+    pub(crate) fn refresh_dynamic_collection(&mut self) {
+        let Some(f) = self.prompt.as_ref().and_then(|p| p.collection_fn.clone()) else { return };
+        let input = self.minibuffer_input();
+        match f.call(self, &[Value::Str(input)]) {
+            Ok(Value::List(items)) => {
+                if let Some(prompt) = &mut self.prompt {
+                    prompt.collection = Some(items.iter().filter_map(|v| v.as_str().map(str::to_string)).collect());
+                    prompt.sorted = None;
+                }
+            }
+            Ok(_) => {}
+            Err(e) => self.message(format!("Error in completion function: {e}")),
+        }
+    }
+
     /// Reads an answer in the minibuffer and calls `then` with it, as
     /// Emacs's `read-from-minibuffer`, `completing-read` and
     /// `read-file-name` return it.
@@ -204,7 +227,8 @@ impl Editor {
         let history = reading.history.clone().unwrap_or_else(|| reading.kind.history().to_string());
         let mut prompt = Prompt::new(&reading.prompt, reading.kind, &history);
         prompt.require_match |= reading.require_match;
-        prompt.collection = reading.collection;
+        prompt.collection = reading.collection.or_else(|| reading.collection_fn.as_ref().map(|_| Vec::new()));
+        prompt.collection_fn = reading.collection_fn;
         prompt.category = reading.category;
         prompt.default = reading.default;
         prompt.then = Some(then);
@@ -218,6 +242,7 @@ impl Editor {
             (None, _) => String::new(),
         };
         self.open_prompt(prompt, &input);
+        self.refresh_dynamic_collection();
         Ok(())
     }
 

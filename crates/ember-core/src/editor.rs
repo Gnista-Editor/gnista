@@ -28,6 +28,9 @@ pub(crate) struct Prompt {
     pub(crate) typed: String,
     /// The names a `completing-read` completes against, instead of the kind's.
     pub(crate) collection: Option<Vec<String>>,
+    /// A function of the input that gives `collection` afresh after each
+    /// command, as Emacs's completion-table-dynamic makes a table.
+    pub(crate) collection_fn: Option<variables::Function>,
     /// The collection's completion category, as Emacs's metadata names it.
     pub(crate) category: Option<String>,
     /// Whether the answer must be one of the completions.
@@ -1055,6 +1058,7 @@ impl Editor {
         self.run_interactive(&name);
         self.previous_amalgamating = self.amalgamating_now;
         self.this_command = self.last_command.clone();
+        self.refresh_dynamic_collection();
         if let Err(e) = self.run_hooks("post-command-hook") {
             self.message(format!("Error in post-command-hook: {e}"));
         }
