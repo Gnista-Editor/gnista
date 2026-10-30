@@ -563,3 +563,43 @@ fn until_success_and_until_failure_stop_where_emacs_stops() {
     );
     assert_eq!(result, "[40,false,[1,2,1]]");
 }
+
+#[test]
+fn symbols_are_names_as_data_with_properties() {
+    let (mut ed, s) = setup();
+    let result = eval(
+        &mut ed,
+        &s,
+        r#"(() => {
+          ember.defineVariable({ name: "test-symbol", doc: "", value: ember.intern("fill") });
+          const back = ember.variable("test-symbol");
+          ember.put("forward-word", "test-kind", ember.intern("motion"));
+          ember.insert("a|b");
+          // A display spec written with symbols, as Emacs writes (space :width 3).
+          ember.putTextProperty(1, 2, "display", [ember.intern("space"), ember.intern(":width"), 3]);
+          return [
+            back === Symbol.for("fill"),
+            ember.symbolName(back as symbol),
+            ember.get(ember.intern("forward-word"), "test-kind") === ember.intern("motion"),
+            ember.get("forward-word", "no-such") ?? null,
+          ];
+        })()"#,
+    );
+    assert_eq!(result, r#"[true,"fill",true,null]"#);
+    let row: String = ed.window_rows(1, true)[0].segments.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(row, "a   b");
+}
+
+#[test]
+fn delete_selection_reads_the_commands_property() {
+    let (mut ed, s) = setup();
+    eval(&mut ed, &s, r#"(ember.call("delete-selection-mode"), ember.insert("hello world"), 0)"#);
+    ed.press("C-a C-SPC M-f").unwrap();
+    ed.type_text("X");
+    assert_eq!(eval(&mut ed, &s, "ember.bufferText()"), r#""X world""#);
+    // A command without the property adds to the text rather than replacing it.
+    eval(&mut ed, &s, r#"ember.put("self-insert-command", "delete-selection", null)"#);
+    ed.press("C-SPC M-f").unwrap();
+    ed.type_text("Y");
+    assert_eq!(eval(&mut ed, &s, "ember.bufferText()"), r#""X worldY""#);
+}

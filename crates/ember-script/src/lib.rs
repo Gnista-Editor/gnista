@@ -1060,6 +1060,25 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
         })?,
     )?;
     native.set(
+        "put",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, symbol: String, property: String, value: Value<'js>| {
+            let value = value_from_js(&ctx, value)?;
+            with_editor(&ctx, |ed| {
+                ed.put(&symbol, &property, value);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "get",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, symbol: String, property: String| -> rquickjs::Result<Value<'js>> {
+            match with_editor(&ctx, |ed| Ok(ed.get(&symbol, &property).cloned()))? {
+                Some(value) => value_to_js(&ctx, &value),
+                None => Ok(Value::new_undefined(ctx.clone())),
+            }
+        })?,
+    )?;
+    native.set(
         "fboundp",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| with_editor(&ctx, |ed| Ok(ed.fboundp(&name))))?,
     )?;
@@ -2434,6 +2453,12 @@ fn value_to_js<'js>(ctx: &Ctx<'js>, value: &EditorValue) -> rquickjs::Result<Val
             let make: Function = ctx.globals().get("__emberBuffer")?;
             make.call((*id as f64,))?
         }
+        // A symbol is JavaScript's registered symbol of its name, interned as Emacs's are.
+        EditorValue::Symbol(name) => {
+            let symbol: Object = ctx.globals().get("Symbol")?;
+            let make: Function = symbol.get("for")?;
+            make.call((name.as_str(),))?
+        }
         // The prelude's PropertizedString, with its runs as [start, end, properties].
         EditorValue::Text(text) => {
             let runs = rquickjs::Array::new(ctx.clone())?;
@@ -2546,6 +2571,10 @@ fn convert_from_js<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> rquickjs::Result<O
     }
     if let Some(f) = value.as_function() {
         return function_from_js(ctx, f.clone()).map(Some);
+    }
+    if let Some(symbol) = value.as_symbol() {
+        let name: Option<String> = symbol.description()?.as_string().map(|s| s.to_string()).transpose()?;
+        return Ok(name.map(EditorValue::Symbol));
     }
     if let Some(object) = value.as_object()
         && let Some(id) = object.get::<_, Option<f64>>(BUFFER_ID)?

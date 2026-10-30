@@ -24,6 +24,9 @@ pub enum Value {
     Buffer(u64),
     /// A string with text properties, as Emacs's propertized strings.
     Text(crate::properties::Text),
+    /// A symbol, by its name, as Emacs's: a name as data rather than text,
+    /// such as `space` or the keyword `:width` in a display spec.
+    Symbol(String),
 }
 
 impl Value {
@@ -45,6 +48,7 @@ impl Value {
         match self {
             Value::Str(s) => Some(s),
             Value::Text(t) => Some(&t.string),
+            Value::Symbol(name) => Some(name),
             _ => None,
         }
     }
@@ -153,6 +157,7 @@ impl fmt::Display for Value {
             Value::Function(function) => write!(f, "{function:?}"),
             Value::Buffer(id) => write!(f, "#<buffer {id}>"),
             Value::Text(t) => write!(f, "{:?}", t.string),
+            Value::Symbol(name) => f.write_str(name),
         }
     }
 }
@@ -763,6 +768,16 @@ impl Editor {
         self.functions.contains_key(name) || self.command(name).is_some()
     }
 
+    /// Gives a symbol a property, as Emacs's `put`.
+    pub fn put(&mut self, symbol: &str, property: &str, value: Value) {
+        self.symbol_plists.entry(symbol.to_string()).or_default().insert(property.to_string(), value);
+    }
+
+    /// A symbol's property, as Emacs's `get`.
+    pub fn get(&self, symbol: &str, property: &str) -> Option<&Value> {
+        self.symbol_plists.get(symbol)?.get(property)
+    }
+
     /// The function a name holds, as Emacs's `symbol-function`.
     pub fn symbol_function(&self, name: &str) -> Option<Function> {
         self.functions.get(name).cloned()
@@ -773,7 +788,7 @@ impl Editor {
     pub fn funcall(&mut self, function: &Value, args: &[Value]) -> Result<Value> {
         match function {
             Value::Function(f) => f.call(self, args),
-            Value::Str(name) => {
+            Value::Str(name) | Value::Symbol(name) => {
                 if let Some(f) = self.symbol_function(name) {
                     return f.call(self, args);
                 }

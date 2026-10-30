@@ -37,6 +37,8 @@ Proposed: option 2.
 
 Step 1 landed with this ADR: a hook's entries are function values with a depth, a buffer's local value holds `t` where the global functions run, `add-hook`'s ordering and its refusal to add a function twice are Emacs's, and the hook's variable shows its functions, with true for `t`. Hooks run in Rust, `run-hook-with-args-until-success` and `-until-failure` included, so functions added from Rust run there too, and scripts add and remove a function by itself rather than by an id kept under the buffer's name, which renaming the buffer broke. Setting a hook's variable to a list does not change the hook yet.
 
+Step 2 began: `Value::Symbol` is a symbol, keywords included, which scripts see as JavaScript's registered symbol of its name, so `ember.intern("space") === ember.intern("space")`, as `eq` is. Symbols have property lists, `ember.put` and `ember.get`, and a command's name is its symbol, so delsel reads each command's `delete-selection` property, as Emacs's does, rather than keeping a list. Display specs take symbols. Still to come in step 2: the symbol's value and function in the same table, advice, and `mode-line-format` and keymaps as values built on them.
+
 ## Consequences
 
 Ports can keep following their Lisp closely: dispatch hooks, symbol properties, keymaps in text and recursive minibuffers are what the next large ports (completion-at-point, eglot-style backends, Org's links and agenda keys, isearch's minibuffer) are written against. The cost is a second migration of the packages that use hooks, and of the mode line in both front ends; the mode line keeps each front end's look, which its snapshots check.

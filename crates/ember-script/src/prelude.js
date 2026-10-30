@@ -126,6 +126,9 @@
   /** A marker's id, from a marker or the number a process mark is. */
   const markerId = (m) => (m instanceof Marker ? m.id : m);
 
+  /** A symbol's name, or a string as the name it is, as functions that take a symbol accept either. */
+  const symbolName = (s) => (typeof s === "symbol" ? s.description : String(s));
+
   /** Makes the buffer with an id current again, if it is still live, as save-current-buffer does. */
   const backTo = (id) => {
     const name = native.bufferNameOf(id);
@@ -717,7 +720,11 @@
       native.defun(String(name), fn);
       return String(name);
     },
-    fboundp: (name) => native.fboundp(String(name)),
+    fboundp: (name) => native.fboundp(symbolName(name)),
+    intern: (name) => Symbol.for(String(name)),
+    symbolName,
+    put: (symbol, property, value) => native.put(symbolName(symbol), symbolName(property), value ?? null),
+    get: (symbol, property) => native.get(symbolName(symbol), symbolName(property)),
     symbolFunction: (name) => functions.get(String(name)) ?? native.symbolFunction(String(name)),
     funcall(f, ...args) {
       if (typeof f === "function") return f(...args);

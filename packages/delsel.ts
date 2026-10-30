@@ -1,11 +1,9 @@
 // Delete Selection mode, after Emacs's delsel.el: typing replaces the
 // selection. Emacs leaves it off by default, and so does Ember.
 
-/**
- * Commands that replace the active region rather than adding to it, as
- * Emacs marks them with the delete-selection property.
- */
-const replacingCommands: ReadonlySet<string> = new Set(["self-insert-command", "newline", "yank"]);
+// Commands that replace the active region rather than adding to it say so
+// with their delete-selection property, as in Emacs; other packages' can too.
+for (const command of ["self-insert-command", "newline", "yank"]) ember.put(command, "delete-selection", true);
 
 ember.defineHook(
   "self-insert-uses-region-functions",
@@ -15,7 +13,7 @@ ember.defineHook(
 function deleteSelectionBeforeCommand(): void {
   const command = ember.thisCommand();
   const mark = ember.mark();
-  if (command === undefined || !replacingCommands.has(command) || !ember.regionActive() || mark === undefined) {
+  if (command === undefined || !ember.get(command, "delete-selection") || !ember.regionActive() || mark === undefined) {
     return;
   }
   if (command === "self-insert-command" && ember.runHookWithArgsUntilSuccess("self-insert-uses-region-functions") !== null) {

@@ -14,8 +14,10 @@ ember.defineMajorMode({
 
 /** A value as a script would write it. */
 function showValue(value: ember.Value | undefined): string {
-  // Functions show by name, as Emacs shows a hook's symbols.
-  return value === undefined ? "void" : JSON.stringify(value, (_, v) => (typeof v === "function" ? v.name || "anonymous function" : v));
+  // Functions and symbols show by name, as Emacs shows a hook's symbols.
+  const shown = (_: string, v: unknown) =>
+    typeof v === "function" ? v.name || "anonymous function" : typeof v === "symbol" ? v.description : v;
+  return value === undefined ? "void" : JSON.stringify(value, shown);
 }
 
 const describeVariable = ember.defineCommand({
@@ -59,7 +61,7 @@ const describeMode = ember.defineCommand({
   doc: "Show the documentation of the current buffer's major mode and of the minor modes that are on.",
   run: () => {
     const major = String(ember.variable("major-mode"));
-    let text = describeOne(`The major mode is ${ember.variable("mode-name")} mode`, major);
+    let text = describeOne(`The major mode is ${String(ember.variable("mode-name"))} mode`, major);
     const minors = ember.enabledMinorModes();
     if (minors.length > 0) {
       text += `\nMinor modes that are on: ${minors.map(prettyModeName).join(", ")}.\n`;

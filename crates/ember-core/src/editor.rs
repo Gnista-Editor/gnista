@@ -193,6 +193,8 @@ pub struct Editor {
     pub(crate) in_minibuffer: bool,
     /// Functions named for code to call, as Emacs's symbols' function cells.
     pub(crate) functions: HashMap<String, variables::Function>,
+    /// Symbols' property lists, as Emacs's `put` and `get` keep them.
+    pub(crate) symbol_plists: HashMap<String, crate::properties::Props>,
     /// Kills, oldest first, with their text properties, as Emacs keeps them.
     pub(crate) kill_ring: Vec<crate::properties::Text>,
     /// Which kill yanking takes next, counting back from the newest (Emacs's
@@ -300,6 +302,7 @@ impl Editor {
             in_change_hooks: false,
             in_minibuffer: false,
             functions: HashMap::new(),
+            symbol_plists: HashMap::new(),
             kill_ring: Vec::new(),
             yank_pointer: 0,
             last_repeatable: None,

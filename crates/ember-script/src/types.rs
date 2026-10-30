@@ -265,7 +265,19 @@ const API: &str = r##"
    * What variables, hooks and text properties hold, as Emacs's values: a
    * function too, as a lambda in a variable, kept as itself.
    */
-  type Value = null | boolean | number | string | Value[] | ((...args: any[]) => any) | Buffer | PropertizedString;
+  type Value = null | boolean | number | string | symbol | Value[] | ((...args: any[]) => any) | Buffer | PropertizedString;
+  /**
+   * A symbol, as Emacs's: a name as data, apart from text. It is
+   * JavaScript's registered symbol of the name, so intern("space") ===
+   * intern("space"); keywords are symbols too, as intern(":width").
+   */
+  function intern(name: string): symbol;
+  /** A symbol's name, or a string as it is. */
+  function symbolName(symbol: symbol | string): string;
+  /** Give a symbol a property, as Emacs's put; a command's name is its symbol. */
+  function put(symbol: symbol | string, property: symbol | string, value: Value): void;
+  /** A symbol's property, as Emacs's get; undefined if it has none. */
+  function get(symbol: symbol | string, property: symbol | string): Value | undefined;
   /**
    * A string with text properties, as Emacs's propertized strings: what
    * bufferSubstring and propertize give, and what insert puts in with its

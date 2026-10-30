@@ -665,8 +665,8 @@ impl Editor {
         let value = b.char_property(pos, "display")?.clone();
         let text = match &value {
             Value::Str(_) | Value::Text(_) => String::new(),
-            Value::List(items) if items.first() == Some(&Value::Str("space".into())) => {
-                let get = |key: &str| items.iter().position(|v| v == &Value::Str(key.into())).and_then(|i| items.get(i + 1)?.as_number());
+            Value::List(items) if items.first().and_then(Value::as_str) == Some("space") => {
+                let get = |key: &str| items.iter().position(|v| v.as_str() == Some(key)).and_then(|i| items.get(i + 1)?.as_number());
                 let width = match (get(":width"), get(":align-to")) {
                     (Some(w), _) => w.max(0.0) as usize,
                     (None, Some(column)) => {
