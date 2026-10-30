@@ -27,13 +27,12 @@ pub enum Case {
 const CAPITAL_SIGMA: char = '\u{3a3}';
 const FINAL_SIGMA: char = '\u{3c2}';
 
-/// A character's title case, as Unicode's `titlecase` property gives it:
-/// its upper case but for the few with a title form of their own, such as ǅ.
-fn titlecase(c: char) -> char {
-    match TITLECASE.binary_search_by_key(&(c as u32), |&(from, _)| from) {
-        Ok(i) => char::from_u32(TITLECASE[i].1).unwrap_or(c),
-        Err(_) => crate::regexp::upcase(c),
-    }
+/// A character's title case, as Unicode's `titlecase` property gives it,
+/// for the few with a title form of their own, such as ǅ; the rest take
+/// their upper case.
+fn titlecase(c: char) -> Option<char> {
+    let i = TITLECASE.binary_search_by_key(&(c as u32), |&(from, _)| from).ok()?;
+    char::from_u32(TITLECASE[i].1)
 }
 
 /// What a character turns into when it changes into several, as the
@@ -57,6 +56,8 @@ struct Casing<'a> {
     in_word: bool,
     is_word: &'a dyn Fn(char) -> bool,
     is_prefix: &'a dyn Fn(char) -> bool,
+    /// The buffer's own case table, if it has one rather than the standard.
+    table: Option<std::rc::Rc<crate::casetab::CaseMaps>>,
 }
 
 impl Casing<'_> {
@@ -75,10 +76,12 @@ impl Casing<'_> {
         if whole && let Some(s) = special(c, case) {
             return s.to_string();
         }
+        let down = |c| self.table.as_ref().map_or_else(|| crate::regexp::downcase(c), |t| t.downcase(c));
+        let up = |c| self.table.as_ref().map_or_else(|| crate::regexp::upcase(c), |t| t.upcase(c));
         let cased = match case {
-            Case::Down => crate::regexp::downcase(c),
-            Case::Capitalize => titlecase(c),
-            _ => crate::regexp::upcase(c),
+            Case::Down => down(c),
+            Case::Capitalize => titlecase(c).unwrap_or_else(|| up(c)),
+            _ => up(c),
         };
         // A capital sigma that ends a word becomes final sigma.
         if whole && was_in_word && c == CAPITAL_SIGMA && cased != c && !next.is_some_and(self.is_word) {
@@ -96,7 +99,7 @@ impl Editor {
             class == Class::Word || (symbols && class == Class::Symbol)
         };
         let is_prefix = |c: char| self.char_syntax(c).flags & flags::PREFIX != 0;
-        let mut casing = Casing { case, in_buffer, in_word: false, is_word: &is_word, is_prefix: &is_prefix };
+        let mut casing = Casing { case, in_buffer, in_word: false, is_word: &is_word, is_prefix: &is_prefix, table: self.case_maps() };
         run(&mut casing)
     }
 

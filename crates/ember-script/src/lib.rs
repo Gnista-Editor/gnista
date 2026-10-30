@@ -87,6 +87,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/files.ts", include_str!("../../../packages/files.ts")),
     ("packages/text-mode.ts", include_str!("../../../packages/text-mode.ts")),
     ("packages/face-remap.ts", include_str!("../../../packages/face-remap.ts")),
+    ("packages/case-table.ts", include_str!("../../../packages/case-table.ts")),
     ("packages/outline.ts", include_str!("../../../packages/outline.ts")),
     ("packages/prog-mode.ts", include_str!("../../../packages/prog-mode.ts")),
     ("packages/treesit-modes.ts", include_str!("../../../packages/treesit-modes.ts")),
@@ -2284,6 +2285,7 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
         "setWindowStart",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64, pos: usize| with_editor(&ctx, |ed| ed.set_window_start(window, pos)))?,
     )?;
+    char_table_functions(ctx, native)?;
     for (name, case) in [
         ("upcase", ember_core::casefiddle::Case::Up),
         ("downcase", ember_core::casefiddle::Case::Down),
@@ -2471,10 +2473,9 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
         Function::new(ctx.clone(), |ctx: Ctx<'js>, chars: String, descriptor: String, table: Option<String>| {
             with_editor(&ctx, |ed| {
                 let entry = ember_core::syntax_table::Entry::parse(&descriptor)?;
+                // The standard table can change too, as in Emacs, for every
+                // table that inherits from it.
                 let table = table.unwrap_or_else(|| ed.buffer().syntax_table.clone());
-                if table == ember_core::syntax_table::STANDARD {
-                    return Err(Error::new("The standard syntax table cannot be changed; make a table of your own"));
-                }
                 for c in chars.chars() {
                     ed.syntax_tables.modify(&table, c, entry);
                 }
@@ -2824,6 +2825,244 @@ fn face_attrs_from_js<'js>(object: &Object<'js>) -> rquickjs::Result<FaceAttrs> 
     })
 }
 
+/// A character as scripts give one: a code point, or a string of one character.
+fn char_code(value: &Value) -> Option<u32> {
+    if let Some(n) = value.as_number() {
+        return Some(n as u32);
+    }
+    value.as_string().and_then(|s| s.to_string().ok()).and_then(|s| s.chars().next()).map(|c| c as u32)
+}
+
+/// A range as scripts give one: null for the default, a character, or [from, to].
+fn char_range(value: &Value) -> Option<ember_core::chartab::CharRange> {
+    use ember_core::chartab::CharRange;
+    if value.is_null() || value.is_undefined() {
+        return Some(CharRange::Default);
+    }
+    if let Some(pair) = value.as_array() {
+        let (from, to): (Value, Value) = (pair.get(0).ok()?, pair.get(1).ok()?);
+        return Some(CharRange::Range(char_code(&from)?, char_code(&to)?));
+    }
+    char_code(value).map(CharRange::Char)
+}
+
+/// The editor's current or standard table of a kind.
+type TableGetter = fn(&mut Editor) -> u64;
+/// Making a table the current or standard one of its kind.
+type TableSetter = fn(&mut Editor, u64) -> Result<()>;
+/// Whether a char-table is one of a kind.
+type TableTest = fn(&Editor, u64) -> bool;
+
+/// Char-tables, case tables and category tables, as chartab.c, casetab.c
+/// and category.c give them to Lisp.
+fn char_table_functions<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::Result<()> {
+    let table = |v: EditorValue| -> Result<u64> {
+        match v {
+            EditorValue::CharTable(id) => Ok(id),
+            _ => Err(Error::signal("wrong-type-argument", "Wrong type argument: char-table-p", Vec::new())),
+        }
+    };
+    let optional = move |v: Opt<Value<'js>>, ctx: &Ctx<'js>| -> rquickjs::Result<Option<u64>> {
+        match v.0 {
+            Some(v) if !v.is_null() && !v.is_undefined() => match value_from_js(ctx, v)? {
+                EditorValue::CharTable(id) => Ok(Some(id)),
+                _ => Err(Exception::throw_type(ctx, "Expected a char-table")),
+            },
+            _ => Ok(None),
+        }
+    };
+    let ct = |id: u64| EditorValue::CharTable(id);
+    native.set(
+        "makeCharTable",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, subtype: String, init: Value<'js>| -> rquickjs::Result<Value<'js>> {
+            let init = value_from_js(&ctx, init)?;
+            let id = with_editor(&ctx, |ed| ed.make_char_table(&subtype, init))?;
+            value_to_js(&ctx, &ct(id))
+        })?,
+    )?;
+    native.set(
+        "charTableP",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, v: Value<'js>| {
+            let v = value_from_js(&ctx, v).unwrap_or(EditorValue::Null);
+            with_editor(&ctx, |ed| Ok(matches!(v, EditorValue::CharTable(id) if ed.char_table_p(id))))
+        })?,
+    )?;
+    native.set(
+        "charTableSubtype",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, t: Value<'js>| {
+            let t = table(value_from_js(&ctx, t)?);
+            with_editor(&ctx, |ed| ed.char_table_subtype(t?))
+        })?,
+    )?;
+    native.set(
+        "charTableParent",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, t: Value<'js>| -> rquickjs::Result<Value<'js>> {
+            let t = table(value_from_js(&ctx, t)?);
+            let parent = with_editor(&ctx, |ed| ed.char_table_parent(t?))?;
+            value_to_js(&ctx, &parent.map_or(EditorValue::Null, ct))
+        })?,
+    )?;
+    native.set(
+        "setCharTableParent",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, t: Value<'js>, parent: Opt<Value<'js>>| {
+            let t = table(value_from_js(&ctx, t)?);
+            let parent = optional(parent, &ctx)?;
+            with_editor(&ctx, |ed| ed.set_char_table_parent(t?, parent))
+        })?,
+    )?;
+    native.set(
+        "charTableExtraSlot",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, t: Value<'js>, n: usize| -> rquickjs::Result<Value<'js>> {
+            let t = table(value_from_js(&ctx, t)?);
+            let v = with_editor(&ctx, |ed| ed.char_table_extra_slot(t?, n))?;
+            value_to_js(&ctx, &v)
+        })?,
+    )?;
+    native.set(
+        "setCharTableExtraSlot",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, t: Value<'js>, n: usize, v: Value<'js>| {
+            let t = table(value_from_js(&ctx, t)?);
+            let v = value_from_js(&ctx, v)?;
+            with_editor(&ctx, |ed| ed.set_char_table_extra_slot(t?, n, v))
+        })?,
+    )?;
+    native.set(
+        "charTableRange",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, t: Value<'js>, range: Value<'js>| -> rquickjs::Result<Value<'js>> {
+            let t = table(value_from_js(&ctx, t)?);
+            let range = char_range(&range).ok_or_else(|| Exception::throw_type(&ctx, "A range is null, a character or [from, to]"))?;
+            let v = with_editor(&ctx, |ed| ed.char_table_range(t?, range))?;
+            value_to_js(&ctx, &v)
+        })?,
+    )?;
+    native.set(
+        "setCharTableRange",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, t: Value<'js>, range: Value<'js>, v: Value<'js>| {
+            let t = table(value_from_js(&ctx, t)?);
+            let range = char_range(&range).ok_or_else(|| Exception::throw_type(&ctx, "A range is null, a character or [from, to]"))?;
+            let v = value_from_js(&ctx, v)?;
+            with_editor(&ctx, |ed| ed.set_char_table_range(t?, range, v))
+        })?,
+    )?;
+    native.set(
+        "mapCharTable",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, t: Value<'js>| -> rquickjs::Result<Value<'js>> {
+            let t = table(value_from_js(&ctx, t)?);
+            let runs = with_editor(&ctx, |ed| ed.map_char_table(t?))?;
+            let list = runs
+                .into_iter()
+                .map(|(first, last, v)| {
+                    let key = if first == last { EditorValue::Number(first as f64) } else { EditorValue::List(vec![EditorValue::Number(first as f64), EditorValue::Number(last as f64)]) };
+                    EditorValue::List(vec![key, v])
+                })
+                .collect();
+            value_to_js(&ctx, &EditorValue::List(list))
+        })?,
+    )?;
+    native.set(
+        "copyCharTable",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, t: Value<'js>| -> rquickjs::Result<Value<'js>> {
+            let t = table(value_from_js(&ctx, t)?);
+            let id = with_editor(&ctx, |ed| ed.copy_char_table(t?))?;
+            value_to_js(&ctx, &ct(id))
+        })?,
+    )?;
+    let tables: [(&str, TableGetter); 4] = [
+        ("standardCaseTable", |ed| ed.standard_case_table()),
+        ("currentCaseTable", |ed| ed.current_case_table()),
+        ("standardCategoryTable", |ed| ed.standard_category_table()),
+        ("categoryTable", |ed| ed.category_table()),
+    ];
+    for (name, get) in tables {
+        native.set(
+            name,
+            Function::new(ctx.clone(), move |ctx: Ctx<'js>| -> rquickjs::Result<Value<'js>> {
+                let id = with_editor(&ctx, |ed| Ok(get(ed)))?;
+                value_to_js(&ctx, &ct(id))
+            })?,
+        )?;
+    }
+    native.set(
+        "makeCategoryTable",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>| -> rquickjs::Result<Value<'js>> {
+            let id = with_editor(&ctx, |ed| Ok(ed.make_category_table()))?;
+            value_to_js(&ctx, &ct(id))
+        })?,
+    )?;
+    native.set(
+        "copyCategoryTable",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, t: Opt<Value<'js>>| -> rquickjs::Result<Value<'js>> {
+            let t = optional(t, &ctx)?;
+            let id = with_editor(&ctx, |ed| ed.copy_category_table(t))?;
+            value_to_js(&ctx, &ct(id))
+        })?,
+    )?;
+    let setters: [(&str, TableSetter); 3] = [
+        ("setCaseTable", |ed, id| ed.set_case_table(id)),
+        ("setStandardCaseTable", |ed, id| ed.set_standard_case_table(id)),
+        ("setCategoryTable", |ed, id| ed.set_category_table(id)),
+    ];
+    for (name, set) in setters {
+        native.set(
+            name,
+            Function::new(ctx.clone(), move |ctx: Ctx<'js>, t: Value<'js>| {
+                let t = table(value_from_js(&ctx, t)?);
+                with_editor(&ctx, |ed| set(ed, t?))
+            })?,
+        )?;
+    }
+    let predicates: [(&str, TableTest); 2] = [("caseTableP", |ed, id| ed.case_table_p(id)), ("categoryTableP", |ed, id| ed.category_table_p(id))];
+    for (name, test) in predicates {
+        native.set(
+            name,
+            Function::new(ctx.clone(), move |ctx: Ctx<'js>, v: Value<'js>| {
+                let v = value_from_js(&ctx, v).unwrap_or(EditorValue::Null);
+                with_editor(&ctx, |ed| Ok(matches!(v, EditorValue::CharTable(id) if test(ed, id))))
+            })?,
+        )?;
+    }
+    native.set(
+        "defineCategory",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, d: String, doc: String, t: Opt<Value<'js>>| {
+            let t = optional(t, &ctx)?;
+            let d = d.chars().next().unwrap_or(' ');
+            with_editor(&ctx, |ed| ed.define_category(d, &doc, t))
+        })?,
+    )?;
+    native.set(
+        "categoryDocstring",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, d: String, t: Opt<Value<'js>>| {
+            let t = optional(t, &ctx)?;
+            let d = d.chars().next().unwrap_or(' ');
+            with_editor(&ctx, |ed| ed.category_docstring(d, t))
+        })?,
+    )?;
+    native.set(
+        "getUnusedCategory",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, t: Opt<Value<'js>>| {
+            let t = optional(t, &ctx)?;
+            with_editor(&ctx, |ed| Ok(ed.get_unused_category(t)?.map(|c| c.to_string())))
+        })?,
+    )?;
+    native.set(
+        "charCategorySet",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, c: Value<'js>| {
+            let c = char_code(&c).and_then(char::from_u32).ok_or_else(|| Exception::throw_type(&ctx, "Expected a character"))?;
+            with_editor(&ctx, |ed| Ok(ed.char_category_set(c)))
+        })?,
+    )?;
+    native.set(
+        "modifyCategoryEntry",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, range: Value<'js>, d: String, t: Opt<Value<'js>>, reset: Opt<bool>| {
+            let range = char_range(&range).ok_or_else(|| Exception::throw_type(&ctx, "A range is a character or [from, to]"))?;
+            let t = optional(t, &ctx)?;
+            let d = d.chars().next().unwrap_or(' ');
+            with_editor(&ctx, |ed| ed.modify_category_entry(range, d, t, reset.0.unwrap_or(false)))
+        })?,
+    )?;
+    Ok(())
+}
+
 /// A place in a window as scripts see it, as Emacs's posn: the window,
 /// the buffer position, x and y from the top left of the text area, and
 /// the column and row in default characters; undefined for none.
@@ -2880,6 +3119,11 @@ fn value_to_js<'js>(ctx: &Ctx<'js>, value: &EditorValue) -> rquickjs::Result<Val
         // The prelude's object for the keymap, the same one each time.
         EditorValue::Keymap(id) => {
             let make: Function = ctx.globals().get("__emberKeymap")?;
+            make.call((*id as f64,))?
+        }
+        // And for the char-table.
+        EditorValue::CharTable(id) => {
+            let make: Function = ctx.globals().get("__emberCharTable")?;
             make.call((*id as f64,))?
         }
         // A symbol is JavaScript's registered symbol of its name, interned as Emacs's are.
@@ -3014,6 +3258,11 @@ fn convert_from_js<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> rquickjs::Result<O
         && let Some(id) = object.get::<_, Option<f64>>("__emberKeymapId")?
     {
         return Ok(Some(EditorValue::Keymap(id as usize)));
+    }
+    if let Some(object) = value.as_object()
+        && let Some(id) = object.get::<_, Option<f64>>("__emberCharTableId")?
+    {
+        return Ok(Some(EditorValue::CharTable(id as u64)));
     }
     if let Some(object) = value.as_object()
         && object.get::<_, Option<bool>>("__emberText")? == Some(true)

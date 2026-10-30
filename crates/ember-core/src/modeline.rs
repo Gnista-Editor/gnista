@@ -199,7 +199,7 @@ impl Editor {
                     }
                 }
             },
-            Value::Null | Value::Bool(_) | Value::Number(_) | Value::Buffer(_) | Value::Keymap(_) => {}
+            Value::Null | Value::Bool(_) | Value::Number(_) | Value::Buffer(_) | Value::Keymap(_) | Value::CharTable(_) => {}
         }
     }
 

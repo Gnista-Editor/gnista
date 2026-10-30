@@ -262,22 +262,65 @@ impl Set {
     }
 }
 
+/// The case and category tables of a buffer that has its own, in effect
+/// while a search runs in it; without, the standard ones as generated.
+pub(crate) struct SearchTables {
+    pub(crate) case: Option<Rc<crate::casetab::CaseMaps>>,
+    pub(crate) categories: Option<Rc<crate::category::CategoryMaps>>,
+    /// What identifies them, for the compiled patterns kept for them.
+    pub(crate) key: u64,
+}
+
+thread_local! {
+    static TABLES: RefCell<Option<Rc<SearchTables>>> = const { RefCell::new(None) };
+}
+
+/// How many searches have tables of their own in effect, on any thread,
+/// so the rest look no further than the generated tables.
+static OVERRIDDEN: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+/// Runs `f` with a buffer's own tables in effect, if it has any.
+pub(crate) fn with_tables<T>(tables: Option<SearchTables>, f: impl FnOnce() -> T) -> T {
+    let Some(tables) = tables else { return f() };
+    use std::sync::atomic::Ordering;
+    let previous = TABLES.with_borrow_mut(|t| t.replace(Rc::new(tables)));
+    OVERRIDDEN.fetch_add(1, Ordering::Relaxed);
+    let result = f();
+    OVERRIDDEN.fetch_sub(1, Ordering::Relaxed);
+    TABLES.with_borrow_mut(|t| *t = previous);
+    result
+}
+
+fn tables() -> Option<Rc<SearchTables>> {
+    if OVERRIDDEN.load(std::sync::atomic::Ordering::Relaxed) == 0 {
+        return None;
+    }
+    TABLES.with_borrow(|t| t.clone())
+}
+
 /// A character's case-folded form, as Emacs's case canon table gives it:
 /// the lower case of its upper case, so σ, ς and Σ fold together.
 fn canon(c: char) -> char {
     downcase(upcase(c))
 }
 
-/// A character's lower case in Emacs's standard case table.
+/// A character's lower case in the case table in effect, the standard
+/// one as Emacs's unless a buffer has its own.
 pub(crate) fn downcase(c: char) -> char {
+    if let Some(case) = tables().and_then(|t| t.case.clone()) {
+        return case.downcase(c);
+    }
     if c.is_ascii() {
         return c.to_ascii_lowercase();
     }
     case_in(crate::chartab_data::DOWNCASE, c)
 }
 
-/// A character's upper case in Emacs's standard case table.
+/// A character's upper case in the case table in effect.
 pub(crate) fn upcase(c: char) -> char {
+    if let Some(case) = tables().and_then(|t| t.case.clone()) {
+        return case.upcase(c);
+    }
     if c.is_ascii() {
         return c.to_ascii_uppercase();
     }
@@ -602,10 +645,10 @@ impl Parser<'_> {
 /// categories, as Emacs's tables have them, or `None` for a designator
 /// the table does not define.
 fn category(designator: char, c: char) -> Option<bool> {
-    let (_, runs) = crate::chartab_data::CATEGORIES.iter().find(|(d, _)| *d == designator)?;
-    let u = c as u32;
-    let i = runs.partition_point(|&(_, last)| last < u);
-    Some(runs.get(i).is_some_and(|&(first, _)| first <= u))
+    if let Some(categories) = tables().and_then(|t| t.categories.clone()) {
+        return categories.has(designator, c);
+    }
+    crate::category::standard_category(designator, c)
 }
 
 #[derive(Clone, Debug)]
@@ -872,9 +915,10 @@ impl Regexp {
     /// its compiled patterns.
     pub fn cached(pattern: &str, fold: bool) -> Result<Rc<Regexp>> {
         thread_local! {
-            static CACHE: RefCell<HashMap<(String, bool), Rc<Regexp>>> = RefCell::new(HashMap::new());
+            static CACHE: RefCell<HashMap<(String, bool, u64), Rc<Regexp>>> = RefCell::new(HashMap::new());
         }
-        let key = (pattern.to_string(), fold);
+        // Folding and categories follow the tables in effect when it compiles.
+        let key = (pattern.to_string(), fold, tables().map_or(0, |t| t.key));
         if let Some(re) = CACHE.with_borrow(|c| c.get(&key).cloned()) {
             return Ok(re);
         }

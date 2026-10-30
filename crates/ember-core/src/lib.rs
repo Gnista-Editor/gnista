@@ -6,6 +6,9 @@
 
 mod buffer;
 pub mod casefiddle;
+pub mod chartab;
+mod casetab;
+mod category;
 // Written by tests/emacs/unicode.el; not every table is read yet.
 #[allow(dead_code)]
 mod chartab_data;

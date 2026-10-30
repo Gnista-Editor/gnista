@@ -283,55 +283,76 @@ impl Editor {
         (class, !properties)
     }
 
+    /// The current buffer's own case and category tables, for regexps to
+    /// follow while it has them.
+    fn search_tables(&self) -> Option<crate::regexp::SearchTables> {
+        use std::hash::{Hash, Hasher};
+        let (case, categories) = (self.case_maps(), self.category_maps());
+        if case.is_none() && categories.is_none() {
+            return None;
+        }
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        self.buffer().case_table.or(self.standard_case_table).map(|id| self.case_table_key(id)).hash(&mut hasher);
+        let category = self.buffer().category_table.or(self.standard_category_table);
+        category.map(|id| (id, self.char_tables.get(&id).map_or(0, |t| t.tick))).hash(&mut hasher);
+        Some(crate::regexp::SearchTables { case, categories, key: hasher.finish() | 1 })
+    }
+
     /// Searches the current buffer from `from`, as Emacs's search.c does:
     /// a regexp is Emacs's, and a match searching forward reads nothing
     /// past the bound, and searching backward nothing past `from`.
     pub fn search(&self, pattern: &str, from: usize, options: &SearchOptions) -> Result<Option<Match>> {
-        let b = self.buffer();
-        if !options.regexp {
-            return search_literal(b, pattern, from, options);
-        }
-        let re = Regexp::cached(pattern, options.case_fold)?;
-        let (class, fixed) = self.syntax_classes(b);
-        let h = BufferHaystack::new(b, &class, fixed);
-        let (min, max) = (b.point_min(), b.point_max());
-        let from = from.clamp(min, max);
-        let found = if options.backward {
-            if options.bound.is_some_and(|bound| from < bound) {
-                return Ok(None);
+        crate::regexp::with_tables(self.search_tables(), || {
+            let b = self.buffer();
+            if !options.regexp {
+                return search_literal(b, pattern, from, options);
             }
-            re.search_backward(&h, from, options.bound.map_or(min, |bound| bound.clamp(min, max)))?
-        } else {
-            re.search_forward(&h, from, options.bound.map_or(max, |bound| bound.clamp(min, max)))?
-        };
-        Ok(found.map(to_match))
+            let re = Regexp::cached(pattern, options.case_fold)?;
+            let (class, fixed) = self.syntax_classes(b);
+            let h = BufferHaystack::new(b, &class, fixed);
+            let (min, max) = (b.point_min(), b.point_max());
+            let from = from.clamp(min, max);
+            let found = if options.backward {
+                if options.bound.is_some_and(|bound| from < bound) {
+                    return Ok(None);
+                }
+                re.search_backward(&h, from, options.bound.map_or(min, |bound| bound.clamp(min, max)))?
+            } else {
+                re.search_forward(&h, from, options.bound.map_or(max, |bound| bound.clamp(min, max)))?
+            };
+            Ok(found.map(to_match))
+        })
     }
 
     /// The match of an Emacs regexp starting exactly at `pos` in the
     /// current buffer, as Emacs's `looking-at` finds it.
     pub fn looking_at(&self, pattern: &str, pos: usize, case_fold: bool) -> Result<Option<Match>> {
-        let b = self.buffer();
-        let re = Regexp::cached(pattern, case_fold)?;
-        let (class, fixed) = self.syntax_classes(b);
-        let h = BufferHaystack::new(b, &class, fixed);
-        let pos = pos.clamp(b.point_min(), b.point_max());
-        Ok(re.match_at(&h, pos, b.point_max())?.map(to_match))
+        crate::regexp::with_tables(self.search_tables(), || {
+            let b = self.buffer();
+            let re = Regexp::cached(pattern, case_fold)?;
+            let (class, fixed) = self.syntax_classes(b);
+            let h = BufferHaystack::new(b, &class, fixed);
+            let pos = pos.clamp(b.point_min(), b.point_max());
+            Ok(re.match_at(&h, pos, b.point_max())?.map(to_match))
+        })
     }
 
     /// Where an Emacs regexp first matches in a string, from `start`, with
     /// its groups, in characters, as Emacs's `string-match`, the current
     /// buffer's syntax table giving the classes.
     pub fn string_match(&self, pattern: &str, text: &str, start: usize, case_fold: bool) -> Result<Option<Match>> {
-        let re = Regexp::cached(pattern, case_fold)?;
-        let b = self.buffer();
-        let ascii: Vec<Class> = (0..128u8).map(|c| self.syntax_tables.entry(&b.syntax_table, c as char).class).collect();
-        let class = |c: char| if c.is_ascii() { ascii[c as usize] } else { self.syntax_tables.entry(&b.syntax_table, c).class };
-        let h = crate::regexp::StrHaystack { chars: text.chars().collect(), class: &class };
-        let len = h.chars.len();
-        if start > len {
-            return Err(Error::signal("args-out-of-range", format!("Args out of range: {text:?}, {start}"), Vec::new()));
-        }
-        Ok(re.search_forward(&h, start, len)?.map(to_match))
+        crate::regexp::with_tables(self.search_tables(), || {
+            let re = Regexp::cached(pattern, case_fold)?;
+            let b = self.buffer();
+            let ascii: Vec<Class> = (0..128u8).map(|c| self.syntax_tables.entry(&b.syntax_table, c as char).class).collect();
+            let class = |c: char| if c.is_ascii() { ascii[c as usize] } else { self.syntax_tables.entry(&b.syntax_table, c).class };
+            let h = crate::regexp::StrHaystack { chars: text.chars().collect(), class: &class };
+            let len = h.chars.len();
+            if start > len {
+                return Err(Error::signal("args-out-of-range", format!("Args out of range: {text:?}, {start}"), Vec::new()));
+            }
+            Ok(re.search_forward(&h, start, len)?.map(to_match))
+        })
     }
 
     /// Searches the current buffer from point, as Emacs's `search-forward`

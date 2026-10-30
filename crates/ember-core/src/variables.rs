@@ -29,6 +29,8 @@ pub enum Value {
     Symbol(String),
     /// A keymap, as Emacs's keymaps are values.
     Keymap(crate::keymap::KeymapId),
+    /// A char-table, by its id, as Emacs's char-tables are values.
+    CharTable(crate::chartab::CharTableId),
 }
 
 impl Value {
@@ -161,6 +163,7 @@ impl fmt::Display for Value {
             Value::Text(t) => write!(f, "{:?}", t.string),
             Value::Symbol(name) => f.write_str(name),
             Value::Keymap(id) => write!(f, "#<keymap {id}>"),
+            Value::CharTable(id) => write!(f, "#<char-table {id}>"),
         }
     }
 }

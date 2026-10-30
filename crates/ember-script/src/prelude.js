@@ -94,6 +94,28 @@
     }
     return k;
   };
+  /**
+   * A char-table, as Emacs's char-tables are values: a value for each
+   * character, such as a case table's lower cases.
+   */
+  class CharTable {
+    constructor(id) {
+      Object.defineProperty(this, "__emberCharTableId", { value: id });
+      Object.freeze(this);
+    }
+    toJSON() {
+      return "#<char-table>";
+    }
+  }
+  const charTables = new Map();
+  globalThis.__emberCharTable = (id) => {
+    let t = charTables.get(id);
+    if (t === undefined) {
+      t = new CharTable(id);
+      charTables.set(id, t);
+    }
+    return t;
+  };
   const keymapArg = (k) => (k instanceof Keymap ? k : symbolName(k));
   const bindingArg = (b) => (b === null || b === undefined ? null : b instanceof Keymap ? b : symbolName(b));
   // A transient map made from the same bindings is made once.
@@ -1001,6 +1023,44 @@
       }
     },
     makeSyntaxTable: (name, parent) => native.makeSyntaxTable(String(name), parent === undefined ? undefined : String(parent)),
+    makeCharTable: (subtype, init) => native.makeCharTable(symbolName(subtype), init ?? null),
+    charTableP: (value) => value instanceof CharTable && native.charTableP(value),
+    charTableSubtype: (table) => native.charTableSubtype(table),
+    charTableParent: (table) => native.charTableParent(table) ?? undefined,
+    setCharTableParent: (table, parent) => native.setCharTableParent(table, parent ?? null),
+    charTableExtraSlot: (table, n) => native.charTableExtraSlot(table, n) ?? undefined,
+    setCharTableExtraSlot: (table, n, value) => native.setCharTableExtraSlot(table, n, value ?? null),
+    charTableRange: (table, range) => native.charTableRange(table, range ?? null) ?? undefined,
+    setCharTableRange: (table, range, value) => native.setCharTableRange(table, range ?? null, value ?? null),
+    aref: (table, c) => native.charTableRange(table, c) ?? undefined,
+    aset: (table, c, value) => native.setCharTableRange(table, c, value ?? null),
+    mapCharTable: (fn, table) => {
+      for (const [key, value] of native.mapCharTable(table)) fn(key, value);
+    },
+    copySequence: (value) => (value instanceof CharTable ? native.copyCharTable(value) : [...value]),
+    standardCaseTable: () => native.standardCaseTable(),
+    currentCaseTable: () => native.currentCaseTable(),
+    setCaseTable: (table) => native.setCaseTable(table),
+    setStandardCaseTable: (table) => native.setStandardCaseTable(table),
+    caseTableP: (value) => value instanceof CharTable && native.caseTableP(value),
+    // As subr.el's with-case-table: the case table back as it was however fn ends.
+    withCaseTable(table, fn) {
+      const old = native.currentCaseTable();
+      const buffer = ember.currentBuffer();
+      native.setCaseTable(table);
+      return unwindProtect(fn, () => ember.withCurrentBuffer(buffer, () => native.setCaseTable(old)));
+    },
+    standardCategoryTable: () => native.standardCategoryTable(),
+    categoryTable: () => native.categoryTable(),
+    categoryTableP: (value) => value instanceof CharTable && native.categoryTableP(value),
+    makeCategoryTable: () => native.makeCategoryTable(),
+    copyCategoryTable: (table) => native.copyCategoryTable(table ?? null),
+    setCategoryTable: (table) => native.setCategoryTable(table),
+    defineCategory: (category, doc, table) => native.defineCategory(String(category), String(doc), table ?? null),
+    categoryDocstring: (category, table) => native.categoryDocstring(String(category), table ?? null) ?? undefined,
+    getUnusedCategory: (table) => native.getUnusedCategory(table ?? null) ?? undefined,
+    charCategorySet: (c) => native.charCategorySet(c),
+    modifyCategoryEntry: (range, category, table, reset) => native.modifyCategoryEntry(range, String(category), table ?? null, Boolean(reset)),
     modifySyntaxEntry: (chars, descriptor, table) =>
       native.modifySyntaxEntry(String(chars), String(descriptor), table === undefined ? undefined : String(table)),
     syntaxTable: () => native.syntaxTable(),

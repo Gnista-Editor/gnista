@@ -194,6 +194,10 @@ pub struct Buffer {
     markers: Vec<Marker>,
     /// The name of the syntax table the buffer uses, as its major mode sets it.
     pub syntax_table: String,
+    /// Its case table and category table, if it has its own rather than
+    /// the standard ones, as Emacs's buffers each have theirs.
+    pub(crate) case_table: Option<crate::chartab::CharTableId>,
+    pub(crate) category_table: Option<crate::chartab::CharTableId>,
     /// Parse states from the start of the buffer at points along it, as
     /// syntax-ppss keeps them, for the syntax table named first. Changes
     /// drop those after them.
@@ -254,6 +258,8 @@ impl Buffer {
             next_overlay_id: 0,
             markers: Vec::new(),
             syntax_table: crate::syntax_table::STANDARD.to_string(),
+            case_table: None,
+            category_table: None,
             ppss_cache: Default::default(),
             ppss_table: Default::default(),
             syntax: None,

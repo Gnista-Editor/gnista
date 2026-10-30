@@ -294,7 +294,7 @@ const API: &str = r##"
    * What variables, hooks and text properties hold, as Emacs's values: a
    * function too, as a lambda in a variable, kept as itself.
    */
-  type Value = null | boolean | number | string | symbol | Value[] | ((...args: any[]) => any) | Buffer | PropertizedString | Keymap;
+  type Value = null | boolean | number | string | symbol | Value[] | ((...args: any[]) => any) | Buffer | PropertizedString | Keymap | CharTable;
   /**
    * A keymap, as Emacs's keymaps are values: bound to a prefix key in
    * another keymap it is that key's prefix map, shared wherever it is
@@ -305,6 +305,14 @@ const API: &str = r##"
   interface Keymap {
     readonly __emberKeymapId: number;
   }
+  /** A char-table, as Emacs's char-tables: a value for each character. Case tables and category tables are char-tables. */
+  interface CharTable {
+    readonly __emberCharTableId: number;
+  }
+  /** A character as char-tables take one: its code point, or a string of it. */
+  type CharCode = number | string;
+  /** A range of characters: null for the default value, a character, or [from, to]. */
+  type CharRange = null | CharCode | [CharCode, CharCode];
   /**
    * A symbol, as Emacs's: a name as data, apart from text. It is
    * JavaScript's registered symbol of the name, so intern("space") ===
@@ -1099,6 +1107,68 @@ const API: &str = r##"
   function windowStart(window?: number): number;
   /** Make a window start at the line holding `pos`, as set-window-start; a window always starts at a line's start. */
   function setWindowStart(window: number | undefined, pos: number): void;
+  /**
+   * Make a char-table, as Emacs's make-char-table: every character's value
+   * `init`, with as many extra slots as the subtype's
+   * char-table-extra-slots property says.
+   */
+  function makeCharTable(subtype: string | symbol, init?: Value): CharTable;
+  function charTableP(value: unknown): value is CharTable;
+  /** What a char-table is for, as char-table-subtype: "case-table", "category-table" or what make-char-table was given. */
+  function charTableSubtype(table: CharTable): string;
+  /** The table a char-table takes values from where its own are nil, as char-table-parent. */
+  function charTableParent(table: CharTable): CharTable | undefined;
+  function setCharTableParent(table: CharTable, parent: CharTable | null): void;
+  /** A char-table's extra slot, as char-table-extra-slot: a case table keeps its upper cases in 0. */
+  function charTableExtraSlot(table: CharTable, n: number): Value | undefined;
+  function setCharTableExtraSlot(table: CharTable, n: number, value: Value): void;
+  /** The value for a range, as char-table-range: the default for null, else its first character's. */
+  function charTableRange(table: CharTable, range: CharRange): Value | undefined;
+  /** Set the value for a range, as set-char-table-range: the default for null, else every character in it. */
+  function setCharTableRange(table: CharTable, range: CharRange, value: Value): void;
+  /** A character's value in a char-table, its default and parent's counted, as aref. */
+  function aref(table: CharTable, c: CharCode): Value | undefined;
+  /** Set a character's value in a char-table, as aset. */
+  function aset(table: CharTable, c: CharCode, value: Value): void;
+  /**
+   * Call `fn` on each run of characters with one value that is not nil, as
+   * map-char-table: with the character's code, or [from, to] for a run.
+   */
+  function mapCharTable(fn: (key: number | [number, number], value: Value) => void, table: CharTable): void;
+  /** A copy of a char-table, its extra slots shared, as copy-sequence; or of an array. */
+  function copySequence<T extends CharTable | unknown[]>(value: T): T;
+  /** The standard case table, which buffers without their own use, as standard-case-table. */
+  function standardCaseTable(): CharTable;
+  /** The current buffer's case table, as current-case-table. */
+  function currentCaseTable(): CharTable;
+  /**
+   * Make a case table the current buffer's, as set-case-table: changing
+   * case and folding case in searches follow it.
+   */
+  function setCaseTable(table: CharTable): void;
+  function setStandardCaseTable(table: CharTable): void;
+  function caseTableP(value: unknown): value is CharTable;
+  /** Run `fn` with a case table current, then the buffer's back, however it ends, as with-case-table. */
+  function withCaseTable<T>(table: CharTable, fn: () => T): T;
+  /** The standard category table, as standard-category-table. */
+  function standardCategoryTable(): CharTable;
+  /** The current buffer's category table, as category-table, which \cX in regexps follows. */
+  function categoryTable(): CharTable;
+  function categoryTableP(value: unknown): value is CharTable;
+  /** A category table with no categories, as make-category-table. */
+  function makeCategoryTable(): CharTable;
+  /** A copy of a category table, the current buffer's by default, as copy-category-table. */
+  function copyCategoryTable(table?: CharTable): CharTable;
+  function setCategoryTable(table: CharTable): void;
+  /** Define a category, named by a printing ASCII character, as define-category. */
+  function defineCategory(category: string, doc: string, table?: CharTable): void;
+  function categoryDocstring(category: string, table?: CharTable): string | undefined;
+  /** The first category no category is defined as, as get-unused-category. */
+  function getUnusedCategory(table?: CharTable): string | undefined;
+  /** A character's categories in the current buffer, as char-category-set and category-set-mnemonics give them: ".Lalr" for a. */
+  function charCategorySet(c: CharCode): string;
+  /** Put characters in a category, or with `reset` take them out of it, as modify-category-entry. */
+  function modifyCategoryEntry(range: CharCode | [CharCode, CharCode], category: string, table?: CharTable, reset?: boolean): void;
   /**
    * A place in a window, as Emacs's posn objects describe it: the window,
    * the buffer position, x and y from the top left of the window's text

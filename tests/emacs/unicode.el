@@ -108,6 +108,10 @@
     (dolist (r (nreverse specials))
       (insert (format "    (%d, %s),\n" (car r)
                       (mapconcat (lambda (s) (if (stringp s) (format "Some(%s)" (ember--rust-string s)) "None")) (cdr r) ", "))))
+    (insert "];\n\n/// Each standard category's designator and its docstring, as category-docstring gives it.\n"
+            "pub(crate) const CATEGORY_DOCS: &[(char, &str)] = &[\n")
+    (dolist (c categories)
+      (insert (format "    ('%c', %s),\n" c (ember--rust-string (category-docstring c)))))
     (insert "];\n\n/// Each category's designator and its runs of characters.\n"
             "pub(crate) const CATEGORIES: &[(char, &[(u32, u32)])] = &[\n")
     (dolist (c categories)

@@ -134,6 +134,16 @@ pub struct Editor {
     /// Buffers by id, the most recently selected first, as Emacs's buffer
     /// list orders them; see [`Editor::buffer_list`].
     buffer_order: Vec<u64>,
+    /// Char-tables, by id, as scripts hold them.
+    pub(crate) char_tables: std::collections::HashMap<crate::chartab::CharTableId, crate::chartab::CharTable>,
+    pub(crate) next_char_table: crate::chartab::CharTableId,
+    /// The standard case and category tables, made when code first asks
+    /// for them; till then, and while unchanged, the generated tables stand in.
+    pub(crate) standard_case_table: Option<crate::chartab::CharTableId>,
+    pub(crate) standard_category_table: Option<crate::chartab::CharTableId>,
+    /// The last case and category tables worked out for lookups, with what identified them.
+    pub(crate) case_maps_cache: std::cell::RefCell<Option<crate::casetab::CaseMapsCache>>,
+    pub(crate) category_maps_cache: std::cell::RefCell<Option<crate::category::CategoryMapsCache>>,
     /// What the command loop keeps of the keyboard: keys being read, recursive edits, recent keys.
     pub(crate) keyboard: crate::keyboard::Keyboard,
     /// How big characters and lines are in the front end's fonts.
@@ -290,6 +300,12 @@ impl Editor {
             remapped_from: None,
             buffer_order: Vec::new(),
             keyboard: Default::default(),
+            char_tables: Default::default(),
+            next_char_table: 0,
+            standard_case_table: None,
+            standard_category_table: None,
+            case_maps_cache: Default::default(),
+            category_maps_cache: Default::default(),
             metrics: std::sync::Arc::new(crate::layout::CellMetrics),
             buried: Vec::new(),
             minibuffer_id,
