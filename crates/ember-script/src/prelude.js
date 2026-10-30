@@ -307,6 +307,7 @@
       if (typeof run !== "function") {
         throw new TypeError(`Command ${name} needs a run function`);
       }
+      functions.delete(name);
       native.defineCommand(
         name,
         String(doc),
@@ -720,23 +721,43 @@
     },
     defun(name, fn) {
       if (typeof fn !== "function") throw new TypeError("defun takes a name and a function");
-      functions.set(String(name), fn);
-      native.defun(String(name), fn);
-      return String(name);
+      name = symbolName(name);
+      functions.set(name, fn);
+      native.defun(name, fn);
+      return name;
     },
+    defalias(name, definition) {
+      name = symbolName(name);
+      if (typeof definition === "function") functions.set(name, definition);
+      else functions.delete(name);
+      native.defalias(name, typeof definition === "symbol" ? symbolName(definition) : definition);
+      return name;
+    },
+    fmakunbound(name) {
+      functions.delete(symbolName(name));
+      native.fmakunbound(symbolName(name));
+    },
+    adviceAdd(symbol, how, fn, props) {
+      if (typeof fn !== "function") throw new TypeError("adviceAdd takes a name, how, and a function");
+      native.adviceAdd(symbolName(symbol), symbolName(how), fn, props?.name === undefined ? null : symbolName(props.name), props?.depth ?? null);
+    },
+    adviceRemove: (symbol, fn) => native.adviceRemove(symbolName(symbol), typeof fn === "function" ? fn : symbolName(fn)),
+    adviceMemberP: (fn, symbol) => native.adviceMemberP(typeof fn === "function" ? fn : symbolName(fn), symbolName(symbol)),
     fboundp: (name) => native.fboundp(symbolName(name)),
     intern: (name) => Symbol.for(String(name)),
     symbolName,
     put: (symbol, property, value) => native.put(symbolName(symbol), symbolName(property), value ?? null),
     get: (symbol, property) => native.get(symbolName(symbol), symbolName(property)),
-    symbolFunction: (name) => functions.get(String(name)) ?? native.symbolFunction(String(name)),
+    symbolFunction: (name) => functions.get(symbolName(name)) ?? native.symbolFunction(symbolName(name)),
     funcall(f, ...args) {
       if (typeof f === "function") return f(...args);
       // A script's own function is called directly, so it can take objects;
       // others, and commands, through the editor.
-      const fn = functions.get(String(f));
-      if (fn !== undefined) return fn(...args);
-      return native.funcall(String(f), args);
+      // Advice runs in the editor, so a call through it takes editor values only.
+      const name = symbolName(f);
+      const fn = functions.get(name);
+      if (fn !== undefined && !native.advised(name)) return fn(...args);
+      return native.funcall(name, args);
     },
     charAfter: (pos) => {
       const p = pos ?? native.point();

@@ -243,7 +243,7 @@ impl Editor {
     /// Defines a variable, as Emacs's `defvar` does: if it already has a
     /// value, that value is kept, and only the documentation changes.
     pub fn define_variable(&mut self, var: Variable) {
-        match self.variables.get_mut(&var.name) {
+        match self.symbol_mut(&var.name).variable.as_mut() {
             Some(existing) => {
                 existing.doc = var.doc;
                 existing.local = var.local;
@@ -253,18 +253,19 @@ impl Editor {
                 }
             }
             None => {
-                self.variables.insert(var.name.clone(), var);
+                let name = var.name.clone();
+                self.symbol_mut(&name).variable = Some(var);
             }
         }
     }
 
     pub fn variable_definition(&self, name: &str) -> Option<&Variable> {
-        self.variables.get(name)
+        self.var(name)
     }
 
     /// All variables, hooks included, sorted by name.
     pub fn variables(&self) -> impl Iterator<Item = &Variable> {
-        self.variables.values()
+        self.symbols.values().filter_map(|s| s.variable.as_ref())
     }
 
     /// A variable's value in the current buffer: the buffer's own value if
@@ -279,7 +280,7 @@ impl Editor {
         if let Some(value) = b.locals.get(name) {
             return Some(value.clone());
         }
-        let var = self.variables.get(name)?;
+        let var = self.var(name)?;
         if var.hook {
             return Some(Value::List(self.hook_value_in(b, name)));
         }
@@ -295,19 +296,17 @@ impl Editor {
     /// if it has one or the variable is automatically buffer-local,
     /// otherwise the global value. Setting an unknown variable defines it.
     pub fn set_variable(&mut self, name: &str, value: Value) {
-        if self.variables.get(name).is_some_and(|v| v.hook) {
+        if self.var(name).is_some_and(|v| v.hook) {
             // A hook's value is its functions: setting it replaces them, the
             // buffer's own if it has them.
             let entries = self.hook_entries(&value);
             match self.buffer_mut().local_hooks.get_mut(name) {
                 Some(list) => *list = entries,
-                None => {
-                    self.hooks.insert(name.to_string(), entries.into_iter().filter(|e| e.run.is_some()).collect());
-                }
+                None => self.symbol_mut(name).hook = entries.into_iter().filter(|e| e.run.is_some()).collect(),
             }
             return;
         }
-        let local = self.variables.get(name).is_some_and(|v| v.local);
+        let local = self.var(name).is_some_and(|v| v.local);
         let b = self.buffer_mut();
         if local || b.locals.contains_key(name) {
             b.locals.insert(name.to_string(), value);
@@ -318,24 +317,23 @@ impl Editor {
 
     /// Sets the global value, which buffers without their own value see.
     pub fn set_default(&mut self, name: &str, value: Value) {
-        if self.variables.get(name).is_some_and(|v| v.hook) {
+        if self.var(name).is_some_and(|v| v.hook) {
             let entries = self.hook_entries(&value).into_iter().filter(|e| e.run.is_some()).collect();
-            self.hooks.insert(name.to_string(), entries);
+            self.symbol_mut(name).hook = entries;
             return;
         }
-        match self.variables.get_mut(name) {
+        let symbol = self.symbol_mut(name);
+        match symbol.variable.as_mut() {
             Some(var) => var.default = value,
-            None => {
-                self.variables.insert(name.to_string(), Variable::new(name, "", value));
-            }
+            None => symbol.variable = Some(Variable::new(name, "", value)),
         }
     }
 
     pub fn default_value(&self, name: &str) -> Option<Value> {
-        let var = self.variables.get(name)?;
+        let var = self.var(name)?;
         if var.hook {
             // A hook's global functions.
-            let list = self.hooks.get(name).into_iter().flatten();
+            let list = self.global_hook(name).iter();
             return Some(Value::List(list.filter_map(|e| e.run.clone().map(Value::Function)).collect()));
         }
         Some(var.default.clone())
@@ -363,7 +361,7 @@ impl Editor {
     /// `change-major-mode-hook` beforehand, as Emacs does.
     pub fn kill_all_local_variables(&mut self) -> Result<()> {
         let result = self.run_hooks("change-major-mode-hook");
-        let permanent: Vec<String> = self.variables.values().filter(|v| v.permanent).map(|v| v.name.clone()).collect();
+        let permanent: Vec<String> = self.variables().filter(|v| v.permanent).map(|v| v.name.clone()).collect();
         let b = self.buffer_mut();
         b.locals.retain(|name, _| permanent.contains(name));
         b.forget_shift_selection();
@@ -409,7 +407,7 @@ impl Editor {
             }
             list
         } else {
-            self.hooks.entry(hook.to_string()).or_default()
+            &mut self.symbol_mut(hook).hook
         };
         if let Some(existing) = list.iter().find(|e| e.run.as_ref() == Some(&function)) {
             return existing.id;
@@ -449,7 +447,7 @@ impl Editor {
 
     /// Takes a function off a hook, as Emacs's `remove-hook`.
     pub fn remove_hook_function(&mut self, hook: &str, function: &Function, local: bool) {
-        let list = if local { self.buffer_mut().local_hooks.get_mut(hook) } else { self.hooks.get_mut(hook) };
+        let list = if local { self.buffer_mut().local_hooks.get_mut(hook) } else { self.symbols.get_mut(hook).map(|s| &mut s.hook) };
         if let Some(list) = list {
             list.retain(|e| e.run.as_ref() != Some(function));
         }
@@ -463,7 +461,7 @@ impl Editor {
     /// local hooks go when its major mode changes, and the minibuffer's
     /// when a prompt opens.
     pub fn hook_contains(&self, hook: &str, id: u64, local: bool) -> bool {
-        let list = if local { self.buffer().local_hooks.get(hook) } else { self.hooks.get(hook) };
+        let list = if local { self.buffer().local_hooks.get(hook).map(Vec::as_slice) } else { Some(self.global_hook(hook)) };
         list.is_some_and(|list| list.iter().any(|entry| entry.id == id))
     }
 
@@ -471,7 +469,7 @@ impl Editor {
         let list = if local {
             self.buffer_mut().local_hooks.get_mut(hook)
         } else {
-            self.hooks.get_mut(hook)
+            self.symbols.get_mut(hook).map(|s| &mut s.hook)
         };
         if let Some(list) = list {
             list.retain(|entry| entry.id != id || entry.run.is_none());
@@ -481,7 +479,7 @@ impl Editor {
     /// The functions a hook runs for a buffer, in order: its local value's,
     /// with the global ones where its `t` is, or else the global ones.
     pub(crate) fn hook_functions_in(&self, b: &Buffer, hook: &str) -> Vec<Function> {
-        let global = || self.hooks.get(hook).into_iter().flatten().filter_map(|e| e.run.clone());
+        let global = || self.global_hook(hook).iter().filter_map(|e| e.run.clone());
         match b.local_hooks.get(hook) {
             Some(local) => local
                 .iter()
@@ -502,8 +500,8 @@ impl Editor {
 
     /// Whether a hook has any functions for the current buffer.
     pub(crate) fn hook_has_functions(&self, hook: &str) -> bool {
-        let any = |l: &Vec<HookEntry>| l.iter().any(|e| e.run.is_some());
-        self.buffer().local_hooks.get(hook).is_some_and(any) || self.hooks.get(hook).is_some_and(any)
+        let any = |l: &[HookEntry]| l.iter().any(|e| e.run.is_some());
+        self.buffer().local_hooks.get(hook).is_some_and(|l| any(l)) || any(self.global_hook(hook))
     }
 
     /// Runs a hook's functions with arguments, as Emacs's `run-hook-with-args`.
@@ -540,8 +538,8 @@ impl Editor {
     /// A hook's value for a buffer, as Emacs shows it: its local value's
     /// functions with `t`, here true, for the global ones, or the global value.
     fn hook_value_in(&self, b: &Buffer, hook: &str) -> Vec<Value> {
-        let list = b.local_hooks.get(hook).or_else(|| self.hooks.get(hook));
-        list.into_iter().flatten().map(|e| e.run.clone().map_or(Value::Bool(true), Value::Function)).collect()
+        let list = b.local_hooks.get(hook).map_or(self.global_hook(hook), Vec::as_slice);
+        list.iter().map(|e| e.run.clone().map_or(Value::Bool(true), Value::Function)).collect()
     }
 }
 
@@ -823,58 +821,5 @@ pub(crate) fn install(ed: &mut Editor) {
         ("after-change-major-mode-hook", "Run after a major mode and its hooks have run."),
     ] {
         ed.define_hook(name, doc);
-    }
-}
-
-impl Editor {
-    /// Names a function for code to call by name, as Emacs's `defun`.
-    pub fn defun(&mut self, name: &str, function: Function) {
-        self.functions.insert(name.to_string(), function);
-    }
-
-    /// Whether a name is a function or a command, as Emacs's `fboundp`.
-    pub fn fboundp(&self, name: &str) -> bool {
-        self.functions.contains_key(name) || self.command(name).is_some()
-    }
-
-    /// Gives a symbol a property, as Emacs's `put`.
-    pub fn put(&mut self, symbol: &str, property: &str, value: Value) {
-        self.symbol_plists.entry(symbol.to_string()).or_default().insert(property.to_string(), value);
-    }
-
-    /// A symbol's property, as Emacs's `get`.
-    pub fn get(&self, symbol: &str, property: &str) -> Option<&Value> {
-        self.symbol_plists.get(symbol)?.get(property)
-    }
-
-    /// The function a name holds, as Emacs's `symbol-function`.
-    pub fn symbol_function(&self, name: &str) -> Option<Function> {
-        self.functions.get(name).cloned()
-    }
-
-    /// Calls a function, or the function or command a name holds, as
-    /// Emacs's `funcall`. A command gets the arguments as text and returns null.
-    pub fn funcall(&mut self, function: &Value, args: &[Value]) -> Result<Value> {
-        match function {
-            Value::Function(f) => f.call(self, args),
-            Value::Str(name) | Value::Symbol(name) => {
-                if let Some(f) = self.symbol_function(name) {
-                    return f.call(self, args);
-                }
-                if self.command(name).is_some() {
-                    let args = args
-                        .iter()
-                        .map(|a| crate::Arg::Str(match a {
-                            Value::Str(s) => s.clone(),
-                            other => other.to_string(),
-                        }))
-                        .collect();
-                    self.call(name, args)?;
-                    return Ok(Value::Null);
-                }
-                Err(crate::Error::signal("void-function", format!("Symbol\u{2019}s function definition is void: {name}"), vec![function.clone()]))
-            }
-            other => Err(crate::Error::signal("invalid-function", format!("Invalid function: {other}"), vec![other.clone()])),
-        }
     }
 }

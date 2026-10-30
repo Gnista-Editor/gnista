@@ -217,3 +217,22 @@ fn rename_buffer_asks_for_a_name_and_makes_it_unique_with_a_prefix() {
     press(&mut ed, "RET");
     assert_eq!(ed.window_buffer().name, "notes<2>");
 }
+
+#[test]
+fn a_count_is_a_parameter_code_can_pass_or_leave_out() {
+    let mut ed = Editor::new();
+    ed.type_text("abcdefgh");
+    press(&mut ed, "C-a");
+    ed.call("forward-char", vec![Arg::Int(3)]).unwrap();
+    assert_eq!(ed.window_buffer().point(), 3);
+    // Left out, it is the call's prefix argument, 1 without one.
+    ed.call("forward-char", vec![]).unwrap();
+    ed.call_with_prefix("forward-char", vec![], Some(ember_core::PrefixArg::Number(2))).unwrap();
+    assert_eq!(ed.window_buffer().point(), 6);
+    ed.call("delete-backward-char", vec![Arg::Int(2)]).unwrap();
+    assert_eq!(text(&ed), "abcdgh");
+    // A search's count is its second.
+    press(&mut ed, "C-a");
+    ed.call("search-forward", vec![Arg::Str("g".into()), Arg::Int(1)]).unwrap();
+    assert_eq!(ed.window_buffer().point(), 5);
+}

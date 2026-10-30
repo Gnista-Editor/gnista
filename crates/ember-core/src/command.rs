@@ -229,6 +229,46 @@ impl Arg {
         })
     }
 
+    /// An argument of a kind from a value, as `funcall` and advice pass
+    /// them: numbers for counts and positions, nil, a list of a number for
+    /// C-u, - or a number for a prefix argument, and text for the rest.
+    pub fn from_value(kind: ParamKind, value: &crate::Value) -> Result<Arg> {
+        use crate::Value;
+        use crate::prefix::PrefixArg;
+        Ok(match (kind, value) {
+            (ParamKind::Prefix, Value::Null | Value::Bool(false)) => Arg::Prefix(None),
+            (ParamKind::Prefix, Value::Number(n)) => Arg::Prefix(Some(PrefixArg::Number(*n as i64))),
+            (ParamKind::Prefix, Value::List(items)) => match items.first().and_then(Value::as_number) {
+                Some(n) => Arg::Prefix(Some(PrefixArg::Universal(n as i64))),
+                None => Arg::Prefix(Some(PrefixArg::Universal(4))),
+            },
+            (ParamKind::Count, Value::Null | Value::Bool(false)) => Arg::Int(1),
+            (_, Value::Number(n)) if !matches!(kind, ParamKind::Keys) => match kind {
+                ParamKind::Number | ParamKind::Count | ParamKind::Point | ParamKind::Mark | ParamKind::RegionBeginning | ParamKind::RegionEnd => Arg::Int(*n as i64),
+                _ => Arg::Str(value.to_string()),
+            },
+            (_, Value::Str(_) | Value::Symbol(_) | Value::Text(_)) => Arg::from_text(kind, value.as_str().expect("text"))?,
+            (_, other) => Arg::from_text(kind, &other.to_string())?,
+        })
+    }
+
+    /// The argument as a value, as advice and `funcall` see it: text,
+    /// keys in Emacs notation, numbers, and a prefix argument as nil, a
+    /// list of a number for C-u, the symbol - or a number.
+    pub fn to_value(&self) -> crate::Value {
+        use crate::Value;
+        use crate::prefix::PrefixArg;
+        match self {
+            Arg::Str(s) => Value::Str(s.clone()),
+            Arg::Keys(k) => Value::Str(crate::key::format_keys(k)),
+            Arg::Int(n) => Value::Number(*n as f64),
+            Arg::Prefix(None) => Value::Null,
+            Arg::Prefix(Some(PrefixArg::Universal(n))) => Value::List(vec![Value::Number(*n as f64)]),
+            Arg::Prefix(Some(PrefixArg::Minus)) => Value::Symbol("-".into()),
+            Arg::Prefix(Some(PrefixArg::Number(n))) => Value::Number(*n as f64),
+        }
+    }
+
     /// The argument as a number, as a count or position parameter takes it.
     pub fn as_int(&self) -> Result<i64> {
         match self {

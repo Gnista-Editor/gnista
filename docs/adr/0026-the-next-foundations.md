@@ -1,6 +1,6 @@
 # 0026. The next foundations
 
-Status: proposed · 2026-10-30
+Status: accepted · 2026-10-30
 
 ## Context
 
@@ -26,7 +26,7 @@ Smaller: undo has no `buffer-undo-list` to inspect or turn off, and file operati
 
 ## Decision
 
-Proposed: option 2.
+Option 2.
 
 1. Hooks are their variables' values: lists of functions, with `t` for the global ones in a local value, depth ordering as `add-hook`'s DEPTH, and run from that list in Rust.
 2. `Value::Symbol`, keywords included, and one table per symbol in the core: its value, its function (a command being a function with an interactive spec) and its property list, with advice as a wrapper on the function. `mode-line-format`, formatted by the core for both front ends, and keymaps as values follow from it.
@@ -44,6 +44,8 @@ Of step 4, scanners read `syntax-table` properties where `parse-sexp-lookup-prop
 Ahead of keymaps as values, text and overlays can carry keys: a `keymap` property at point comes before the minor modes' maps and a `local-map` property stands in for the buffer's own, read where Emacs's get_local_map reads them, so links and buttons can bind RET and the mouse. The property names a keymap until keymaps are values.
 
 A completion table can be a function of the input that gives the names, as Emacs's `completion-table-dynamic` makes one: the editor calls it as the prompt opens and after each command, and the completion styles apply to what it gives. Tables with Emacs's whole protocol (the action argument, boundaries and metadata) and `completion-at-point` remain.
+
+Step 2 went on with one table: `symbols.rs` holds each name's variable, a hook's global functions, its function cell and its property list, where five tables kept them before. A function cell holds a function, a command (a function with an interactive spec, its parameters), or another name, as `defalias` makes; defining a function of a command's name replaces the command, as `defun` without `interactive` does, and the variable and properties of the name stay. `funcall` on a command makes its parameters from the values, numbers for counts and positions and Emacs's forms for a raw prefix argument. Advice is nadvice.el's: `advice-add` with each HOW, depths, and replacing by function or name, kept beside the function cell so it stays when the function is defined again, and applied wherever a call goes by name: keys, M-x, `ember.call`, `funcall` and hooks that hold names. An alias's own advice applies to calls through it. The built-in commands that counted with the prefix argument (`forward-char`, `delete-char`, `kill-word` and the rest, and the search commands) take the count as a parameter instead, as Emacs's `(forward-char N)`, so code passes it and advice sees it. Calling a function held as a value, as `symbolFunction` gives it, does not go through the name's advice, unlike Emacs, where the advice is in the function cell; and a script function advised is called with editor values only.
 
 ## Review
 

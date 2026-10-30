@@ -1079,6 +1079,57 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
             }
         })?,
     )?;
+    // Advice, as nadvice.el's advice-add: calls by name go through it.
+    native.set(
+        "adviceAdd",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, symbol: String, how: String, f: Function<'js>, name: Option<String>, depth: Option<f64>| {
+            let Some(how) = ember_core::AdviceHow::from_name(&how) else {
+                return Err(Exception::throw_type(&ctx, &format!("Unknown advice kind {how:?}")));
+            };
+            let EditorValue::Function(function) = function_from_js(&ctx, f)? else { unreachable!("a function converts to one") };
+            with_editor(&ctx, |ed| {
+                ed.advice_add(&symbol, how, function, name.as_deref(), depth.unwrap_or(0.0));
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "adviceRemove",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, symbol: String, f: Value<'js>| {
+            let f = value_from_js(&ctx, f)?;
+            with_editor(&ctx, |ed| {
+                ed.advice_remove(&symbol, &f);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "adviceMemberP",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, f: Value<'js>, symbol: String| {
+            let f = value_from_js(&ctx, f)?;
+            with_editor(&ctx, |ed| Ok(ed.advice_member_p(&f, &symbol)))
+        })?,
+    )?;
+    native.set(
+        "advised",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, symbol: String| with_editor(&ctx, |ed| Ok(ed.advised(&symbol))))?,
+    )?;
+    native.set(
+        "defalias",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, definition: Value<'js>| {
+            let definition = value_from_js(&ctx, definition)?;
+            with_editor(&ctx, |ed| ed.defalias(&name, &definition))
+        })?,
+    )?;
+    native.set(
+        "fmakunbound",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
+            with_editor(&ctx, |ed| {
+                ed.fmakunbound(&name);
+                Ok(())
+            })
+        })?,
+    )?;
     native.set(
         "fboundp",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| with_editor(&ctx, |ed| Ok(ed.fboundp(&name))))?,

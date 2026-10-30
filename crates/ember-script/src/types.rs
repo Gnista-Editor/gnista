@@ -1010,6 +1010,40 @@ const API: &str = r##"
    * command it takes and returns any values, and is not in M-x. Returns the name.
    */
   function defun<F extends (...args: any[]) => unknown>(name: string, fn: F): string;
+  /**
+   * Make a name call another name's function, or a function, as Emacs's
+   * defalias: an alias of a command is a command too. Returns the name.
+   */
+  function defalias(name: string | symbol, definition: string | symbol | ((...args: any[]) => any)): string;
+  /** Empty a name's function, so it is neither a function nor a command, as fmakunbound. */
+  function fmakunbound(name: string | symbol): void;
+  /**
+   * Advise the function or command a name holds, as Emacs's advice-add:
+   * every call by name, from keys, M-x, funcall or hooks, goes through the
+   * advice, which stays when the function is defined again. `how` is
+   * advice-add's: "around" calls `fn` with the original function first and
+   * the arguments after it; "before" and "after" call it before or after
+   * with the same arguments; "override" calls it instead; "before-while",
+   * "before-until", "after-while" and "after-until" run the original or the
+   * advice depending on what the other returned; "filter-args" gets the
+   * arguments as one array and returns the array to call with;
+   * "filter-return" gets what the call returned and returns what it
+   * returns. A command's arguments are values: text, numbers, and its
+   * prefix argument as null, [4] for C-u, the symbol - or a number. The
+   * newest advice is outermost among those of the same `depth`, from -100
+   * outermost to 100 innermost; adding a function again, or advice of the
+   * same `name`, replaces it where it is.
+   */
+  function adviceAdd(
+    symbol: string | symbol,
+    how: "around" | "before" | "after" | "override" | "before-while" | "before-until" | "after-while" | "after-until" | "filter-args" | "filter-return" | symbol,
+    fn: (...args: any[]) => any,
+    props?: { name?: string | symbol; depth?: number },
+  ): void;
+  /** Take advice off a name's function, by the function or the name it was given, as advice-remove. */
+  function adviceRemove(symbol: string | symbol, fn: ((...args: any[]) => any) | string | symbol): void;
+  /** Whether a function, or advice of that name, advises a name's function, as advice-member-p. */
+  function adviceMemberP(fn: ((...args: any[]) => any) | string | symbol, symbol: string | symbol): boolean;
   /** Whether a function or command has this name, as fboundp. */
   function fboundp(name: string): boolean;
   /** The function a name holds, as symbol-function; undefined for none, or a command. */
@@ -1440,7 +1474,7 @@ mod tests {
         let ed = Editor::new();
         let dts = type_definitions(&ed);
         assert!(dts.contains("    \"find-file\": [file: string];\n"), "{dts}");
-        assert!(dts.contains("    \"forward-char\": [];\n"));
+        assert!(dts.contains("    \"forward-char\": [n?: number];\n"), "a count can be left out");
         assert!(dts.contains(" * Visit a file in a buffer.\n"));
         assert!(dts.contains(" * @param file file name\n"));
     }

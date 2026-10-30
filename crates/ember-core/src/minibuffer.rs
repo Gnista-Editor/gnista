@@ -311,7 +311,7 @@ impl Editor {
                 .map(|b| b.name.clone())
                 .filter(|n| !n.starts_with(' ') || input.starts_with(' '))
                 .collect(),
-            (None, ParamKind::Variable) => self.variables.keys().cloned().collect(),
+            (None, ParamKind::Variable) => self.variables().map(|v| v.name.clone()).collect(),
             (None, ParamKind::Face) => self.faces.keys().cloned().collect(),
             (None, _) => Vec::new(),
         };

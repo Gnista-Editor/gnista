@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -13,7 +13,7 @@ use crate::key::{Key, KeyCode, MouseKind, format_keys};
 use crate::keymap::{Keymap, Lookup};
 use crate::faces::{self, Face};
 use crate::modes::{MinorMode, NamedKeymap};
-use crate::variables::{self, HookEntry, Value, Variable};
+use crate::variables::{self, Value, Variable};
 use crate::prefix::{PrefixArg, prefix_numeric_value};
 
 /// A minibuffer prompt waiting for the user to type an argument.
@@ -152,7 +152,6 @@ pub struct Editor {
     /// Whether the key that ran the current command had Shift removed to find
     /// its binding. Shift selection uses it.
     shift_translated: bool,
-    commands: BTreeMap<String, Rc<Command>>,
     pub global_map: Keymap,
     pub minibuffer_map: Keymap,
     /// Bindings for the next key sequence only, ahead of every other keymap.
@@ -166,11 +165,10 @@ pub struct Editor {
     pub(crate) keymaps: BTreeMap<String, NamedKeymap>,
     /// Most recently registered first, which is the order keys are looked up in.
     pub(crate) minor_modes: Vec<MinorMode>,
-    pub(crate) variables: BTreeMap<String, Variable>,
+    /// Every symbol's value, function, properties and advice.
+    pub(crate) symbols: BTreeMap<String, crate::symbols::Symbol>,
     pub(crate) faces: BTreeMap<String, Face>,
     pub(crate) grammars: BTreeMap<&'static str, crate::syntax::Grammar>,
-    /// Global hook functions by hook name.
-    pub(crate) hooks: BTreeMap<String, Vec<HookEntry>>,
     pub(crate) next_hook_id: u64,
     /// Whether the running command was started by keys or M-x rather than
     /// called from code (Emacs's `called-interactively-p`).
@@ -194,10 +192,6 @@ pub struct Editor {
     /// opens, and after each command while one is open, unless code makes
     /// another buffer current, as set-buffer does with a minibuffer open.
     pub(crate) in_minibuffer: bool,
-    /// Functions named for code to call, as Emacs's symbols' function cells.
-    pub(crate) functions: HashMap<String, variables::Function>,
-    /// Symbols' property lists, as Emacs's `put` and `get` keep them.
-    pub(crate) symbol_plists: HashMap<String, crate::properties::Props>,
     /// Kills, oldest first, with their text properties, as Emacs keeps them.
     pub(crate) kill_ring: Vec<crate::properties::Text>,
     /// Which kill yanking takes next, counting back from the newest (Emacs's
@@ -284,16 +278,14 @@ impl Editor {
             pending_keys: Vec::new(),
             esc_prefix: false,
             shift_translated: false,
-            commands: BTreeMap::new(),
             global_map: Keymap::default(),
             minibuffer_map: Keymap::default(),
             transient_map: None,
             keymaps: BTreeMap::new(),
             minor_modes: Vec::new(),
-            variables: BTreeMap::new(),
+            symbols: BTreeMap::new(),
             faces: BTreeMap::new(),
             grammars: crate::syntax::builtin_grammars().into_iter().collect(),
-            hooks: BTreeMap::new(),
             next_hook_id: 0,
             interactive: false,
             prefix_arg: None,
@@ -304,8 +296,6 @@ impl Editor {
             this_command_set: false,
             in_change_hooks: false,
             in_minibuffer: false,
-            functions: HashMap::new(),
-            symbol_plists: HashMap::new(),
             kill_ring: Vec::new(),
             yank_pointer: 0,
             last_repeatable: None,
@@ -359,24 +349,6 @@ impl Editor {
 
     // Commands
 
-    /// Adds a command, replacing any existing command with the same name.
-    pub fn define_command(&mut self, command: Command) {
-        self.commands.insert(command.name.clone(), Rc::new(command));
-    }
-
-    pub fn command(&self, name: &str) -> Option<Rc<Command>> {
-        self.commands.get(name).cloned()
-    }
-
-    /// All commands, sorted by name.
-    pub fn commands(&self) -> impl Iterator<Item = &Command> {
-        self.commands.values().map(|c| c.as_ref())
-    }
-
-    pub fn command_names(&self) -> impl Iterator<Item = &str> {
-        self.commands.keys().map(String::as_str)
-    }
-
     /// The command that ran before the one running now.
     pub fn last_command(&self) -> Option<&str> {
         self.last_command.as_deref()
@@ -422,7 +394,7 @@ impl Editor {
         let this = self.this_command.clone();
         let set = std::mem::replace(&mut self.this_command_set, false);
         self.running += 1;
-        let result = (command.run)(self, &args);
+        let result = self.run_command_body(&command, &args);
         self.running -= 1;
         let result = result.and(self.run_after_change_functions());
         self.deactivate_changed_regions(result.is_ok());
@@ -528,8 +500,14 @@ impl Editor {
         if command.shift_select {
             self.shift_select(shifted);
         }
-        if command.params.is_empty() {
-            self.execute(command, Vec::new(), prefix);
+        if !prompts {
+            // All its arguments come from the editor, so it runs now, and
+            // a prompt open meanwhile keeps the command waiting for it.
+            let args = command.params.iter().map(|p| self.state_arg(p.kind, prefix)).collect::<Result<Vec<_>>>();
+            match args {
+                Ok(args) => self.execute(command, args, prefix),
+                Err(e) => self.fail(e),
+            }
         } else {
             self.pending_call = Some(PendingCall { command, args: Vec::new(), prefix });
             self.read_next_arg();
@@ -1018,7 +996,7 @@ impl Editor {
         self.this_command = Some(command.name.clone());
         self.this_command_set = false;
         self.running += 1;
-        let result = (command.run)(self, &args);
+        let result = self.run_command_body(&command, &args);
         self.running -= 1;
         let result = result.and(self.run_after_change_functions());
         // A command that ran another command (as M-x does) leaves that one as the last command.
@@ -1758,7 +1736,7 @@ impl Editor {
                 found.sort();
                 return found.into_iter().map(|c| format!("{base}{c}")).collect();
             }
-            ParamKind::Variable => self.variables.keys().cloned().collect(),
+            ParamKind::Variable => self.variables().map(|v| v.name.clone()).collect(),
             ParamKind::Face => self.faces.keys().cloned().collect(),
             _ => return Vec::new(),
         };
@@ -1815,7 +1793,7 @@ impl Editor {
         items.insert(0, Value::Str(answer.to_string()));
         let max = self.number_in(self.window_buffer(), "history-length", 100.0).max(1.0) as usize;
         items.truncate(max);
-        if self.variables.contains_key(history) {
+        if self.var(history).is_some() {
             self.set_variable(history, Value::List(items));
         } else {
             self.define_variable(Variable::new(history, "Earlier answers to minibuffer prompts, newest first.", Value::List(items)));

@@ -39,8 +39,10 @@ declare global {
        * Move point backward a character, or as many as the prefix argument says.
        *
        * A negative argument moves forward.
+       *
+       * @param n prefix count
        */
-      "backward-char": [];
+      "backward-char": [n?: number];
       /**
        * Kill the balanced expression before point. With a prefix argument, that many.
        *
@@ -51,8 +53,10 @@ declare global {
        * Kill back to the start of a word, or as many words as the prefix argument says.
        *
        * A negative argument kills forward.
+       *
+       * @param n prefix count
        */
-      "backward-kill-word": [];
+      "backward-kill-word": [n?: number];
       /**
        * Move back over a list in parens. With a prefix argument, that many.
        *
@@ -83,8 +87,10 @@ declare global {
        * Move point back to the start of a word, or as many words as the prefix argument says.
        *
        * A negative argument moves forward.
+       *
+       * @param n prefix count
        */
-      "backward-word": [];
+      "backward-word": [n?: number];
       /**
        * Make windows side by side the same width and windows one above another the same height.
        *
@@ -229,14 +235,18 @@ declare global {
        * Delete the character before point, or as many as the prefix argument says.
        *
        * With a prefix argument, the characters are killed rather than deleted, so they can be yanked back. If the region is active, delete it instead, as the variable delete-active-region says.
+       *
+       * @param n prefix count
        */
-      "delete-backward-char": [];
+      "delete-backward-char": [n?: number];
       /**
        * Delete the character after point, or as many as the prefix argument says.
        *
        * With a prefix argument, the characters are killed rather than deleted, so they can be yanked back.
+       *
+       * @param n prefix count
        */
-      "delete-char": [];
+      "delete-char": [n?: number];
       /**
        * Delete a directory, asking first if it has files in it. With delete-by-moving-to-trash, on in Ember, it goes to the trash.
        *
@@ -261,8 +271,10 @@ declare global {
        * Delete the character after point, or as many as the prefix argument says.
        *
        * With a prefix argument, the characters are killed rather than deleted. If the region is active, delete it instead, as the variable delete-active-region says.
+       *
+       * @param n prefix count
        */
-      "delete-forward-char": [];
+      "delete-forward-char": [n?: number];
       /**
        * Delete the selected frame and its windows. The only frame cannot be deleted.
        *
@@ -894,8 +906,10 @@ declare global {
        * Move point forward a character, or as many as the prefix argument says.
        *
        * A negative argument moves backward.
+       *
+       * @param n prefix count
        */
-      "forward-char": [];
+      "forward-char": [n?: number];
       /**
        * Move forward over a list in parens, skipping words and strings. With a prefix argument, that many.
        *
@@ -920,8 +934,10 @@ declare global {
        * Move point forward to the end of a word, or as many words as the prefix argument says.
        *
        * A negative argument moves backward.
+       *
+       * @param n prefix count
        */
-      "forward-word": [];
+      "forward-word": [n?: number];
       /**
        * The major mode with no specialisations. Other major modes are defined by how they differ from it.
        *
@@ -1290,8 +1306,10 @@ declare global {
        * Kill forward to the end of a word, or as many words as the prefix argument says.
        *
        * A negative argument kills backward.
+       *
+       * @param n prefix count
        */
-      "kill-word": [];
+      "kill-word": [n?: number];
       /**
        * Run the last keyboard macro, as many times as the prefix argument says.
        *
@@ -1446,14 +1464,18 @@ declare global {
        * Move point to the beginning of the line.
        *
        * With a prefix argument N, move forward N - 1 lines first. Where text is hidden, this is the start of the row on screen, as in Emacs.
+       *
+       * @param n prefix count
        */
-      "move-beginning-of-line": [];
+      "move-beginning-of-line": [n?: number];
       /**
        * Move point to the end of the line.
        *
        * With a prefix argument N, move forward N - 1 lines first. Where text is hidden, this is the end of the row on screen, after the hidden text, as in Emacs.
+       *
+       * @param n prefix count
        */
-      "move-end-of-line": [];
+      "move-end-of-line": [n?: number];
       /**
        * Scroll the window for the mouse wheel or a trackpad.
        *
@@ -1494,14 +1516,18 @@ declare global {
        * Replace the minibuffer input with the next answer in the prompt's history, or what was typed.
        *
        * With a prefix argument, go that many answers on.
+       *
+       * @param n prefix count
        */
-      "next-history-element": [];
+      "next-history-element": [n?: number];
       /**
        * Move point down a line, or as many as the prefix argument says.
        *
        * Repeated line moves keep to the column where they started.
+       *
+       * @param n prefix count
        */
-      "next-line": [];
+      "next-line": [n?: number];
       /**
        * Choose the current buffer's major mode, as when its file is visited.
        *
@@ -2668,14 +2694,18 @@ declare global {
        * Replace the minibuffer input with the answer before, from the prompt's history.
        *
        * With a prefix argument, go that many answers back.
+       *
+       * @param n prefix count
        */
-      "previous-history-element": [];
+      "previous-history-element": [n?: number];
       /**
        * Move point up a line, or as many as the prefix argument says.
        *
        * Repeated line moves keep to the column where they started.
+       *
+       * @param n prefix count
        */
-      "previous-line": [];
+      "previous-line": [n?: number];
       /**
        * The major mode programming language modes are built on.
        *
@@ -2876,16 +2906,18 @@ declare global {
        * A prefix argument finds that many matches, and a negative one searches the other way. Case is ignored if case-fold-search is on. Regular expressions use Emacs's syntax.
        *
        * @param string text
+       * @param count prefix count
        */
-      "re-search-backward": [string: string];
+      "re-search-backward": [string: string, count?: number];
       /**
        * Search forward from point for a regular expression, leaving point after the match.
        *
        * A prefix argument finds that many matches, and a negative one searches the other way. Case is ignored if case-fold-search is on. Regular expressions use Emacs's syntax.
        *
        * @param string text
+       * @param count prefix count
        */
-      "re-search-forward": [string: string];
+      "re-search-forward": [string: string, count?: number];
       /**
        * Make the buffer read-only, or editable again.
        *
@@ -3098,8 +3130,10 @@ declare global {
       "scroll-down-command": [];
       /**
        * Scroll the text down a line, or as many as the prefix argument says.
+       *
+       * @param n prefix count
        */
-      "scroll-down-line": [];
+      "scroll-down-line": [n?: number];
       /**
        * Scroll the next window up a screen, as C-v does in the selected one. A prefix argument says how many lines.
        *
@@ -3120,28 +3154,34 @@ declare global {
       "scroll-up-command": [];
       /**
        * Scroll the text up a line, or as many as the prefix argument says.
+       *
+       * @param n prefix count
        */
-      "scroll-up-line": [];
+      "scroll-up-line": [n?: number];
       /**
        * Search backward from point for a string, leaving point at the start of the match.
        *
        * A prefix argument finds that many matches, and a negative one searches the other way. Case is ignored if case-fold-search is on. Regular expressions use Emacs's syntax.
        *
        * @param string text
+       * @param count prefix count
        */
-      "search-backward": [string: string];
+      "search-backward": [string: string, count?: number];
       /**
        * Search forward from point for a string, leaving point after the match.
        *
        * A prefix argument finds that many matches, and a negative one searches the other way. Case is ignored if case-fold-search is on. Regular expressions use Emacs's syntax.
        *
        * @param string text
+       * @param count prefix count
        */
-      "search-forward": [string: string];
+      "search-forward": [string: string, count?: number];
       /**
        * Insert the character you typed, as many times as the prefix argument says.
+       *
+       * @param n prefix count
        */
-      "self-insert-command": [];
+      "self-insert-command": [n?: number];
       /**
        * Set how the buffer is written to its file: a coding system such as utf-8, iso-latin-1 or utf-8-with-signature, with -unix, -dos or -mac for its line ends. Without them, the line ends stay as they are.
        *
@@ -3300,8 +3340,10 @@ declare global {
        * Undo the last undo, or as many as the prefix argument says: redo.
        *
        * Unlike undoing an undo with undo, this leaves no trace in the undo history.
+       *
+       * @param n prefix count
        */
-      "undo-redo": [];
+      "undo-redo": [n?: number];
       /**
        * Begin a prefix argument for the next command.
        *
@@ -6684,6 +6726,40 @@ declare global {
      * command it takes and returns any values, and is not in M-x. Returns the name.
      */
     function defun<F extends (...args: any[]) => unknown>(name: string, fn: F): string;
+    /**
+     * Make a name call another name's function, or a function, as Emacs's
+     * defalias: an alias of a command is a command too. Returns the name.
+     */
+    function defalias(name: string | symbol, definition: string | symbol | ((...args: any[]) => any)): string;
+    /** Empty a name's function, so it is neither a function nor a command, as fmakunbound. */
+    function fmakunbound(name: string | symbol): void;
+    /**
+     * Advise the function or command a name holds, as Emacs's advice-add:
+     * every call by name, from keys, M-x, funcall or hooks, goes through the
+     * advice, which stays when the function is defined again. `how` is
+     * advice-add's: "around" calls `fn` with the original function first and
+     * the arguments after it; "before" and "after" call it before or after
+     * with the same arguments; "override" calls it instead; "before-while",
+     * "before-until", "after-while" and "after-until" run the original or the
+     * advice depending on what the other returned; "filter-args" gets the
+     * arguments as one array and returns the array to call with;
+     * "filter-return" gets what the call returned and returns what it
+     * returns. A command's arguments are values: text, numbers, and its
+     * prefix argument as null, [4] for C-u, the symbol - or a number. The
+     * newest advice is outermost among those of the same `depth`, from -100
+     * outermost to 100 innermost; adding a function again, or advice of the
+     * same `name`, replaces it where it is.
+     */
+    function adviceAdd(
+      symbol: string | symbol,
+      how: "around" | "before" | "after" | "override" | "before-while" | "before-until" | "after-while" | "after-until" | "filter-args" | "filter-return" | symbol,
+      fn: (...args: any[]) => any,
+      props?: { name?: string | symbol; depth?: number },
+    ): void;
+    /** Take advice off a name's function, by the function or the name it was given, as advice-remove. */
+    function adviceRemove(symbol: string | symbol, fn: ((...args: any[]) => any) | string | symbol): void;
+    /** Whether a function, or advice of that name, advises a name's function, as advice-member-p. */
+    function adviceMemberP(fn: ((...args: any[]) => any) | string | symbol, symbol: string | symbol): boolean;
     /** Whether a function or command has this name, as fboundp. */
     function fboundp(name: string): boolean;
     /** The function a name holds, as symbol-function; undefined for none, or a command. */

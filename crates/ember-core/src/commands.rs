@@ -33,6 +33,17 @@ fn def_motion(
     ed.define_command(Command::new(name, doc, run).shift_select());
 }
 
+/// Defines a command that takes the prefix argument as a count, its
+/// first parameter, as interactive "p" gives it: code can pass a number.
+fn def_counted(ed: &mut Editor, name: &str, doc: &str, run: impl Fn(&mut Editor, &[Arg]) -> Result<()> + 'static) {
+    ed.define_command(Command::new(name, doc, run).param("n", ParamKind::Count, ""));
+}
+
+/// Defines a movement command that takes a count and that Shift selection applies to.
+fn def_motion_counted(ed: &mut Editor, name: &str, doc: &str, run: impl Fn(&mut Editor, &[Arg]) -> Result<()> + 'static) {
+    ed.define_command(Command::new(name, doc, run).param("n", ParamKind::Count, "").shift_select());
+}
+
 fn err<T>(message: &str) -> Result<T> {
     // The conditions Emacs signals for these, so code can catch them.
     let symbol = match message {
@@ -84,7 +95,7 @@ fn searching(ed: &mut Editor) {
         ed.define_command(
             Command::new(name, &doc, move |ed, args| {
                 let pattern = args[0].as_str()?.to_string();
-                let n = ed.prefix_numeric();
+                let n = args[1].as_int()?;
                 let options = crate::search::SearchOptions {
                     regexp,
                     backward: backward != (n < 0),
@@ -100,42 +111,43 @@ fn searching(ed: &mut Editor) {
                     )),
                 }
             })
-            .param("string", ParamKind::String, prompt),
+            .param("string", ParamKind::String, prompt)
+            .param("count", ParamKind::Count, ""),
         );
     }
 }
 
 fn movement(ed: &mut Editor) {
-    def_motion(
+    def_motion_counted(
         ed,
         "forward-char",
         "Move point forward a character, or as many as the prefix argument says.\n\nA negative argument moves backward.",
-        |ed, _| move_chars(ed, ed.prefix_numeric()),
+        |ed, args| move_chars(ed, args[0].as_int()?),
     );
-    def_motion(
+    def_motion_counted(
         ed,
         "backward-char",
         "Move point backward a character, or as many as the prefix argument says.\n\nA negative argument moves forward.",
-        |ed, _| move_chars(ed, -ed.prefix_numeric()),
+        |ed, args| move_chars(ed, -args[0].as_int()?),
     );
-    def_motion(
+    def_motion_counted(
         ed,
         "next-line",
         "Move point down a line, or as many as the prefix argument says.\n\nRepeated line moves keep to the column where they started.",
-        |ed, _| line_move(ed, ed.prefix_numeric()),
+        |ed, args| line_move(ed, args[0].as_int()?),
     );
-    def_motion(
+    def_motion_counted(
         ed,
         "previous-line",
         "Move point up a line, or as many as the prefix argument says.\n\nRepeated line moves keep to the column where they started.",
-        |ed, _| line_move(ed, -ed.prefix_numeric()),
+        |ed, args| line_move(ed, -args[0].as_int()?),
     );
-    def_motion(
+    def_motion_counted(
         ed,
         "move-beginning-of-line",
         "Move point to the beginning of the line.\n\nWith a prefix argument N, move forward N - 1 lines first. Where text is hidden, this is the start of the row on screen, as in Emacs.",
-        |ed, _| {
-            let n = ed.prefix_numeric();
+        |ed, args| {
+            let n = args[0].as_int()?;
             let b = ed.buffer();
             let pos = if n == 1 { b.point() } else { forward_line(b, b.point(), n - 1) };
             let row = ed.row_line_in(b, b.line_of(pos));
@@ -144,12 +156,12 @@ fn movement(ed: &mut Editor) {
             Ok(())
         },
     );
-    def_motion(
+    def_motion_counted(
         ed,
         "move-end-of-line",
         "Move point to the end of the line.\n\nWith a prefix argument N, move forward N - 1 lines first. Where text is hidden, this is the end of the row on screen, after the hidden text, as in Emacs.",
-        |ed, _| {
-            let n = ed.prefix_numeric();
+        |ed, args| {
+            let n = args[0].as_int()?;
             let b = ed.buffer();
             // Emacs moves N lines to the start of one and then back over its
             // newline, so going back to the first line or past it stops at the
@@ -168,23 +180,23 @@ fn movement(ed: &mut Editor) {
             Ok(())
         },
     );
-    def_motion(
+    def_motion_counted(
         ed,
         "forward-word",
         "Move point forward to the end of a word, or as many words as the prefix argument says.\n\nA negative argument moves backward.",
-        |ed, _| {
-            let n = ed.prefix_numeric();
+        |ed, args| {
+            let n = args[0].as_int()?;
             let to = move_words(ed, ed.buffer().point(), n);
             ed.buffer_mut().set_point(to);
             Ok(())
         },
     );
-    def_motion(
+    def_motion_counted(
         ed,
         "backward-word",
         "Move point back to the start of a word, or as many words as the prefix argument says.\n\nA negative argument moves forward.",
-        |ed, _| {
-            let n = ed.prefix_numeric();
+        |ed, args| {
+            let n = args[0].as_int()?;
             let to = move_words(ed, ed.buffer().point(), -n);
             ed.buffer_mut().set_point(to);
             Ok(())
@@ -289,11 +301,11 @@ fn movement(ed: &mut Editor) {
             Ok(())
         },
     );
-    def(ed, "scroll-up-line", "Scroll the text up a line, or as many as the prefix argument says.", |ed, _| {
-        scroll_lines_or_error(ed, ed.prefix_numeric())
+    def_counted(ed, "scroll-up-line", "Scroll the text up a line, or as many as the prefix argument says.", |ed, args| {
+        scroll_lines_or_error(ed, args[0].as_int()?)
     });
-    def(ed, "scroll-down-line", "Scroll the text down a line, or as many as the prefix argument says.", |ed, _| {
-        scroll_lines_or_error(ed, -ed.prefix_numeric())
+    def_counted(ed, "scroll-down-line", "Scroll the text down a line, or as many as the prefix argument says.", |ed, args| {
+        scroll_lines_or_error(ed, -args[0].as_int()?)
     });
     def(
         ed,
@@ -651,12 +663,12 @@ fn after_self_insert(ed: &mut Editor, c: char, fill: bool) -> Result<()> {
 }
 
 fn editing(ed: &mut Editor) {
-    def(ed, "self-insert-command", "Insert the character you typed, as many times as the prefix argument says.", |ed, _| {
+    def_counted(ed, "self-insert-command", "Insert the character you typed, as many times as the prefix argument says.", |ed, args| {
         let c = ed
             .last_key
             .and_then(|k| k.printable())
             .ok_or_else(|| Error::new("self-insert-command must be run from a key"))?;
-        let n = ed.prefix_numeric();
+        let n = args[0].as_int()?;
         if n < 0 {
             return Err(Error::new(format!("Negative repetition argument {n}")));
         }
@@ -679,8 +691,8 @@ fn editing(ed: &mut Editor) {
         })
         .param("text", ParamKind::String, "Insert: "),
     );
-    def(ed, "newline", "Insert a newline, or as many as the prefix argument says.", |ed, _| {
-        let n = ed.prefix_numeric().max(0) as usize;
+    def_counted(ed, "newline", "Insert a newline, or as many as the prefix argument says.", |ed, args| {
+        let n = args[0].as_int()?.max(0) as usize;
         // newline self-inserts, so the newlines take on the properties around them.
         ed.insert_and_inherit(&"\n".repeat(n))?;
         // With a prefix argument it does not auto-fill.
@@ -692,34 +704,34 @@ fn editing(ed: &mut Editor) {
     def(ed, "indent-for-tab-command", "Insert a tab. The indent.ts package replaces this with one that indents the line as the mode says.", |ed, _| {
         ed.insert("\t")
     });
-    def(
+    def_counted(
         ed,
         "delete-backward-char",
         "Delete the character before point, or as many as the prefix argument says.\n\nWith a prefix argument, the characters are killed rather than deleted, so they can be yanked back. If the region is active, delete it instead, as the variable delete-active-region says.",
-        |ed, _| {
-            if delete_active_region(ed)? {
+        |ed, args| {
+            if delete_active_region(ed, args[0].as_int()?)? {
                 return Ok(());
             }
-            delete_chars(ed, -ed.prefix_numeric())
+            delete_chars(ed, -args[0].as_int()?)
         },
     );
-    def(
+    def_counted(
         ed,
         "delete-forward-char",
         "Delete the character after point, or as many as the prefix argument says.\n\nWith a prefix argument, the characters are killed rather than deleted. If the region is active, delete it instead, as the variable delete-active-region says.",
-        |ed, _| {
-            if delete_active_region(ed)? {
+        |ed, args| {
+            if delete_active_region(ed, args[0].as_int()?)? {
                 return Ok(());
             }
-            delete_chars(ed, ed.prefix_numeric())
+            delete_chars(ed, args[0].as_int()?)
         },
     );
     def(ed, "ignore", "Do nothing. A pre-command-hook function can make a command this one, to cancel it.", |_, _| Ok(()));
-    def(
+    def_counted(
         ed,
         "delete-char",
         "Delete the character after point, or as many as the prefix argument says.\n\nWith a prefix argument, the characters are killed rather than deleted, so they can be yanked back.",
-        |ed, _| delete_chars(ed, ed.prefix_numeric()),
+        |ed, args| delete_chars(ed, args[0].as_int()?),
     );
     def(
         ed,
@@ -779,12 +791,12 @@ fn editing(ed: &mut Editor) {
             Ok(())
         },
     );
-    def(
+    def_counted(
         ed,
         "undo-redo",
         "Undo the last undo, or as many as the prefix argument says: redo.\n\nUnlike undoing an undo with undo, this leaves no trace in the undo history.",
-        |ed, _| {
-            for _ in 0..ed.prefix_numeric().max(1) {
+        |ed, args| {
+            for _ in 0..args[0].as_int()?.max(1) {
                 ed.before_undo(false, true)?;
                 ed.buffer_mut().undo_redo()?;
             }
@@ -903,17 +915,17 @@ fn killing(ed: &mut Editor) {
             kill_to(ed, p, to)
         },
     );
-    def(
+    def_counted(
         ed,
         "kill-word",
         "Kill forward to the end of a word, or as many words as the prefix argument says.\n\nA negative argument kills backward.",
-        |ed, _| kill_words(ed, ed.prefix_numeric()),
+        |ed, args| kill_words(ed, args[0].as_int()?),
     );
-    def(
+    def_counted(
         ed,
         "backward-kill-word",
         "Kill back to the start of a word, or as many words as the prefix argument says.\n\nA negative argument kills forward.",
-        |ed, _| kill_words(ed, -ed.prefix_numeric()),
+        |ed, args| kill_words(ed, -args[0].as_int()?),
     );
     def(ed, "kill-region", "Kill the text between point and the mark.", |ed, _| {
         let region = region(ed.buffer())?;
@@ -991,10 +1003,10 @@ fn delete_chars(ed: &mut Editor, n: i64) -> Result<()> {
 /// Deletes the active region for DEL and <delete>, as Emacs does when
 /// `delete-active-region` is on and there is no count other than 1. Kills it
 /// instead if the variable is "kill". Returns whether it did.
-fn delete_active_region(ed: &mut Editor) -> Result<bool> {
+fn delete_active_region(ed: &mut Editor, n: i64) -> Result<bool> {
     let setting = ed.variable("delete-active-region").unwrap_or(Value::Null);
     let region = ed.buffer().active_region().filter(|r| !r.is_empty());
-    let (Some(region), true) = (region, setting.is_true() && ed.prefix_numeric() == 1) else {
+    let (Some(region), true) = (region, setting.is_true() && n == 1) else {
         return Ok(false);
     };
     let deleted = ed.buffer().substring(region.clone());
@@ -1304,17 +1316,17 @@ fn minibuffer(ed: &mut Editor) {
             minibuffer_complete(ed).map(|_| ())
         },
     );
-    def(
+    def_counted(
         ed,
         "previous-history-element",
         "Replace the minibuffer input with the answer before, from the prompt's history.\n\nWith a prefix argument, go that many answers back.",
-        |ed, _| ed.minibuffer_history(ed.prefix_numeric()),
+        |ed, args| ed.minibuffer_history(args[0].as_int()?),
     );
-    def(
+    def_counted(
         ed,
         "next-history-element",
         "Replace the minibuffer input with the next answer in the prompt's history, or what was typed.\n\nWith a prefix argument, go that many answers on.",
-        |ed, _| ed.minibuffer_history(-ed.prefix_numeric()),
+        |ed, args| ed.minibuffer_history(-args[0].as_int()?),
     );
     ed.define_command(
         Command::new(
