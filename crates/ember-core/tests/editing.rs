@@ -192,3 +192,23 @@ fn commands_can_be_called_from_code() {
     press(&mut ed, "C-/");
     assert_eq!(text(&ed), "");
 }
+
+#[test]
+fn rename_buffer_asks_for_a_name_and_makes_it_unique_with_a_prefix() {
+    let mut ed = Editor::new();
+    ed.get_buffer_create("notes");
+    press(&mut ed, "C-x x r");
+    assert_eq!(ed.prompt(), Some("Rename buffer (to new name) (default *scratch*): "));
+    ed.type_text("notes");
+    press(&mut ed, "RET");
+    assert_eq!(ed.take_error().map(|e| e.to_string()), Some("Buffer name \u{2018}notes\u{2019} is in use".into()));
+    // As C-u, which simple.ts defines, does.
+    ed.set_prefix_arg(Some(ember_core::PrefixArg::Universal(4)));
+    press(&mut ed, "C-x x r");
+    ed.type_text("notes");
+    press(&mut ed, "RET");
+    assert_eq!(ed.window_buffer().name, "notes<2>");
+    // Empty input keeps the name.
+    press(&mut ed, "C-x x r RET");
+    assert_eq!(ed.window_buffer().name, "notes<2>");
+}

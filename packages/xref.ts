@@ -49,7 +49,7 @@ function showXrefs(xrefs: Xref[]): void {
     ember.gotoChar(0);
   });
   shown.set(name, { byLine });
-  ember.setVariable("next-error-last-buffer", name);
+  ember.setVariable("next-error-last-buffer", ember.getBuffer(name) ?? null);
   ember.call("pop-to-buffer", name);
 }
 

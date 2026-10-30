@@ -45,6 +45,47 @@
     native.runHooks("after-change-major-mode-hook");
   }
 
+  /**
+   * A buffer as an object, as Emacs's buffer objects: it keeps referring to
+   * the buffer when it is renamed, and is the same object each time. Where
+   * a buffer's name is taken, its current name is used.
+   */
+  const buffers = new Map();
+  class Buffer {
+    constructor(id) {
+      Object.defineProperty(this, "__emberBufferId", { value: id });
+      Object.freeze(this);
+    }
+    get id() {
+      return this.__emberBufferId;
+    }
+    /** Its name now, or undefined once it is killed. */
+    get name() {
+      return native.bufferNameOf(this.__emberBufferId) ?? undefined;
+    }
+    get live() {
+      return this.name !== undefined;
+    }
+    toString() {
+      return this.name ?? "#<killed buffer>";
+    }
+  }
+  globalThis.__emberBuffer = (id) => {
+    let b = buffers.get(id);
+    if (b === undefined) {
+      b = new Buffer(id);
+      buffers.set(id, b);
+    }
+    return b;
+  };
+  /** Makes the buffer with an id current again, if it is still live, as save-current-buffer does. */
+  const backTo = (id) => {
+    const name = native.bufferNameOf(id);
+    if (name !== null && name !== undefined) native.setCurrentBuffer(name);
+  };
+  /** A buffer's name from a name or a buffer object, as functions that take a buffer accept either. */
+  const nameOf = (b) => (b instanceof Buffer ? (b.live ? b.name : ember.signal("error", "Selecting deleted buffer")) : String(b));
+
   const isPromise = (v) => v !== null && typeof v === "object" && typeof v.then === "function";
 
   /**
@@ -248,7 +289,14 @@
         ? start === undefined ? native.bufferText() : native.bufferText(start)
         : native.bufferText(start ?? 0, end),
     deleteRegion: (start, end) => native.deleteRegion(start, end),
-    bufferName: () => native.bufferName(),
+    bufferName: (buffer) => (buffer === undefined ? native.bufferName() : buffer instanceof Buffer ? buffer.name : String(buffer)),
+    currentBuffer: () => globalThis.__emberBuffer(native.bufferIdOf()),
+    getBuffer(buffer) {
+      if (buffer instanceof Buffer) return buffer.live ? buffer : undefined;
+      const id = native.bufferIdOf(String(buffer));
+      return id === null || id === undefined ? undefined : globalThis.__emberBuffer(id);
+    },
+    bufferLiveP: (buffer) => buffer instanceof Buffer && buffer.live,
     mark: () => native.mark(),
     prefixArg: () => native.prefixArg(),
     prefixNumericValue: (arg = native.prefixArg()) =>
@@ -453,20 +501,21 @@
     },
     screenLine: (position) => native.screenLine(position),
     windowBuffer: (window) => native.windowBuffer(window ?? native.selectedWindow()) ?? undefined,
-    makeFrame: (buffer) => native.makeFrame(buffer ?? null),
+    makeFrame: (buffer) => native.makeFrame(buffer === undefined || buffer === null ? null : nameOf(buffer)),
     deleteFrame: (frame) => native.deleteFrame(frame ?? null),
     selectFrame: (frame) => native.selectFrame(frame),
     selectedFrame: () => native.selectedFrame(),
     frameList: () => native.frameList(),
-    getBufferCreate: (name) => native.getBufferCreate(name),
+    getBufferCreate: (name) => native.getBufferCreate(nameOf(name)),
     setReadOnly: (on) => native.setReadOnly(Boolean(on)),
     bufferReadOnly: () => native.bufferReadOnly(),
     withCurrentBuffer: (name, fn) => {
-      const old = native.setCurrentBuffer(String(name));
-      return unwindProtect(fn, () => native.setCurrentBuffer(old));
+      const old = native.bufferIdOf();
+      native.setCurrentBuffer(nameOf(name));
+      return unwindProtect(fn, () => backTo(old));
     },
     findFileNoselect: (file) => native.findFileNoselect(file),
-    setWindowBuffer: (window, buffer) => native.setWindowBuffer(window ?? native.selectedWindow(), buffer),
+    setWindowBuffer: (window, buffer) => native.setWindowBuffer(window ?? native.selectedWindow(), nameOf(buffer)),
     windowSize: (window) => {
       const size = native.windowSize(window ?? native.selectedWindow());
       return size
@@ -528,15 +577,17 @@
         for (const [name, value] of Object.entries(bindings)) {
           if (native.isHook(name)) throw new TypeError(`letBind cannot bind the hook ${name} yet`);
           if (native.isLocalVariable(name)) {
-            const buffer = native.bufferName();
+            const buffer = native.bufferIdOf();
             const old = native.variable(name);
             restore.push(() => {
-              if (!native.bufferList().includes(buffer)) return;
-              const back = native.setCurrentBuffer(buffer);
+              const there = native.bufferNameOf(buffer);
+              if (there === null || there === undefined) return;
+              const back = native.bufferIdOf();
+              native.setCurrentBuffer(there);
               try {
                 native.setVariable(name, old ?? null);
               } finally {
-                native.setCurrentBuffer(back);
+                backTo(back);
               }
             });
             native.setVariable(name, value ?? null);
@@ -708,13 +759,13 @@
     skipCharsForward: (chars, limit) => skipChars(String(chars), limit ?? native.pointMax(), 1),
     skipCharsBackward: (chars, limit) => skipChars(String(chars), limit ?? native.pointMin(), -1),
     saveExcursion(fn) {
-      const buffer = native.bufferName();
+      const buffer = native.bufferIdOf();
       const marker = native.makeMarker(native.point(), undefined, false);
       return unwindProtect(fn, () => {
         const p = native.markerPosition(marker);
         native.deleteMarker(marker);
-        if (native.bufferName() !== buffer && native.bufferList().includes(buffer)) native.setCurrentBuffer(buffer);
-        if (p !== undefined && p !== null) native.gotoChar(p);
+        backTo(buffer);
+        if (native.bufferIdOf() === buffer && p !== undefined && p !== null) native.gotoChar(p);
       });
     },
     afterPrompts: (fn) => native.afterPrompts(fn),
@@ -723,7 +774,7 @@
       const pairs = env === undefined ? undefined : Object.entries(env).map(([k, v]) => [String(k), String(v)]);
       return native.makeProcess(
         String(name),
-        buffer ?? undefined,
+        buffer === undefined || buffer === null ? undefined : nameOf(buffer),
         command.map(String),
         { directory: directory ?? undefined, env: pairs, stderr: stderr !== false },
         filter ?? undefined,
@@ -739,7 +790,7 @@
     processQueryOnExitFlag: (name) => native.processInfo(String(name))?.queryOnExit ?? false,
     setProcessQueryOnExitFlag: (name, query) => native.setProcessQueryOnExitFlag(String(name), Boolean(query)),
     processList: () => native.processList(),
-    getBufferProcess: (buffer) => native.getBufferProcess(String(buffer)) ?? undefined,
+    getBufferProcess: (buffer) => native.getBufferProcess(nameOf(buffer)) ?? undefined,
     processSendString: (name, text) => native.processSendString(String(name), String(text)),
     processSendEof: (name) => native.processSendEof(String(name)),
     interruptProcess: (name) => native.signalProcess(String(name), 2),

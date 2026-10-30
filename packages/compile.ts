@@ -116,14 +116,19 @@ type Message = {
   marker?: number;
 };
 
-/** Each compilation buffer's messages, in order, and how far it has been read. */
-const buffers = new Map<string, { messages: Message[]; parsed: number; current?: number; started: number; matches: number }>();
+/**
+ * Each compilation buffer's messages, in order, and how far it has been
+ * read, kept by buffer rather than name, as a buffer-local variable would
+ * be, so renaming the buffer keeps them.
+ */
+const buffers = new Map<ember.Buffer, { messages: Message[]; parsed: number; current?: number; started: number; matches: number }>();
 
-function state(buffer = ember.bufferName()) {
-  let s = buffers.get(buffer);
+function state(buffer: ember.BufferLike = ember.currentBuffer()) {
+  const key = ember.getBuffer(buffer) ?? ember.signal("error", `No such buffer ${buffer}`);
+  let s = buffers.get(key);
   if (s === undefined) {
     s = { messages: [], parsed: 0, started: Date.now(), matches: 0 };
-    buffers.set(buffer, s);
+    buffers.set(key, s);
   }
   return s;
 }
@@ -235,8 +240,9 @@ async function compilationStart(command: string, mode: string, directory: string
       // And for recompile from anywhere, as compile sets its default.
       ember.setDefault("compilation-directory", directory);
       ember.setVariable("compilation-arguments", [command, mode]);
-      for (const m of buffers.get(bufferName)?.messages ?? []) if (m.marker !== undefined) ember.deleteMarker(m.marker);
-      buffers.set(bufferName, { messages: [], parsed: 0, started: Date.now(), matches: 0 });
+      const key = ember.currentBuffer();
+      for (const m of buffers.get(key)?.messages ?? []) if (m.marker !== undefined) ember.deleteMarker(m.marker);
+      buffers.set(key, { messages: [], parsed: 0, started: Date.now(), matches: 0 });
       writable(() => {
         ember.insert(
           `-*- mode: ${modeStem(mode)}; default-directory: ${JSON.stringify(ember.abbreviateFileName(directory))} -*-\n` +
@@ -247,7 +253,7 @@ async function compilationStart(command: string, mode: string, directory: string
       ember.setBufferModified(false);
       ember.gotoChar(truthy(ember.variable("compilation-scroll-output")) ? ember.bufferSize() : 0);
     });
-    ember.setVariable("next-error-last-buffer", bufferName);
+    ember.setVariable("next-error-last-buffer", ember.getBuffer(bufferName) ?? null);
     const env: { [k: string]: string } = { INSIDE_EMACS: "ember,compile" };
     for (const e of (ember.variable("compilation-environment") as ember.Value[] | null) ?? []) {
       if (typeof e === "string" && e.includes("=")) env[e.slice(0, e.indexOf("="))] = e.slice(e.indexOf("=") + 1);
@@ -522,16 +528,19 @@ function compilationNextErrorFunction(n: number, reset: boolean): void {
 ember.defun("compilation-next-error-function", compilationNextErrorFunction);
 
 /** Whether a buffer has messages next-error can go to, as next-error-buffer-p. */
-const nextErrorBuffer = (b: string): boolean =>
-  ember.bufferList().includes(b) && ember.withCurrentBuffer(b, () => typeof ember.variable("next-error-function") === "string");
+function nextErrorBuffer(b: ember.BufferLike): boolean {
+  const buffer = ember.getBuffer(b);
+  return buffer !== undefined && ember.withCurrentBuffer(buffer, () => typeof ember.variable("next-error-function") === "string");
+}
 
 /** The buffer next-error uses, as next-error-find-buffer. */
-function findNextErrorBuffer(): string {
+function findNextErrorBuffer(): ember.Buffer {
+  // The buffer it used last, kept as a buffer, so renaming it does not lose it.
   const last = ember.variable("next-error-last-buffer");
-  if (typeof last === "string" && nextErrorBuffer(last)) return last;
-  if (nextErrorBuffer(ember.bufferName())) return ember.bufferName();
+  if ((typeof last === "string" || ember.bufferLiveP(last)) && nextErrorBuffer(last as ember.BufferLike)) return ember.getBuffer(last as ember.BufferLike)!;
+  if (nextErrorBuffer(ember.currentBuffer())) return ember.currentBuffer();
   const any = ember.bufferList().find(nextErrorBuffer);
-  if (any !== undefined) return any;
+  if (any !== undefined) return ember.getBuffer(any)!;
   throw new Error("No buffers contain error message locations");
 }
 
@@ -547,7 +556,7 @@ function nextError(n: number, reset: boolean, select = true): void {
   ember.runHooks("next-error-hook");
   if (truthy(ember.variable("next-error-verbose")) || previous !== buffer) {
     const which = reset ? "First" : n === 0 ? "Current" : n < 0 ? "Previous" : "Next";
-    ember.message(`${which} locus from ${buffer}`);
+    ember.message(`${which} locus from ${buffer.name}`);
   }
   if (!select) ember.selectWindow(selected);
 }
@@ -595,7 +604,7 @@ ember.defineCommand({
     if (!ember.derivedModeP("compilation-mode")) throw new Error("Not in a compilation buffer");
     const m = nthMessage(0, ember.point());
     state().current = m.start;
-    ember.setVariable("next-error-last-buffer", ember.bufferName());
+    ember.setVariable("next-error-last-buffer", ember.currentBuffer());
     gotoLocus(ember.bufferName(), m);
   },
 });

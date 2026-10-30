@@ -1174,6 +1174,34 @@ fn files_and_buffers(ed: &mut Editor) {
         )
         .param("buffer", ParamKind::Buffer, "Kill buffer: "),
     );
+    ed.define_command(
+        Command::new(
+            "rename-buffer",
+            "Give the current buffer a new name. Empty input keeps the name it has.\n\nIf another buffer has the name, it is an error, unless there is a prefix argument: then the name gets a <2> or the like to make it unique, as Emacs's UNIQUE argument says.",
+            |ed, args| {
+                let current = ed.buffer().name.clone();
+                // Empty input is the default, the name it has; from code, an error.
+                let name = match args[0].as_str()? {
+                    "" if ed.called_interactively() => current.clone(),
+                    "" => return Err(Error::new("Empty string is invalid as a buffer name")),
+                    name => name.to_string(),
+                };
+                let unique = !matches!(args[1], Arg::Prefix(None));
+                let name = match ed.find_buffer(&name) {
+                    Some(i) if ed.buffers()[i].name == current => name,
+                    Some(_) if unique => ed.unique_buffer_name(&name),
+                    Some(_) => return Err(Error::new(format!("Buffer name \u{2018}{name}\u{2019} is in use"))),
+                    None => name,
+                };
+                ed.buffer_mut().name = name;
+                Ok(())
+            },
+        )
+        .param("newname", ParamKind::String, "")
+        .prompt_with(|ed, _| Ok(format!("Rename buffer (to new name) (default {}): ", ed.buffer().name)))
+        .history("buffer-name-history")
+        .param("unique", ParamKind::Prefix, ""),
+    );
 }
 
 /// Kills a buffer, asking first if a process still runs in it, as
@@ -1408,6 +1436,7 @@ fn bind_defaults(ed: &mut Editor) {
         ("C-x C-f", "find-file"),
         ("C-x b", "switch-to-buffer"),
         ("C-x k", "kill-buffer"),
+        ("C-x x r", "rename-buffer"),
         ("C-x n n", "narrow-to-region"),
         ("C-x n w", "widen"),
         ("C-h f", "describe-command"),

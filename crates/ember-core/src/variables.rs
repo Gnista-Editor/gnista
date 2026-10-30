@@ -20,6 +20,8 @@ pub enum Value {
     /// A function, as Emacs's variables, hooks and text properties can hold
     /// one: a lambda as well as a symbol naming one.
     Function(Function),
+    /// A buffer, by the id it keeps when renamed, as Emacs's buffer objects.
+    Buffer(u64),
 }
 
 impl Value {
@@ -145,6 +147,7 @@ impl fmt::Display for Value {
                 f.write_str("]")
             }
             Value::Function(function) => write!(f, "{function:?}"),
+            Value::Buffer(id) => write!(f, "#<buffer {id}>"),
         }
     }
 }

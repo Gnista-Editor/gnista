@@ -175,3 +175,18 @@ fn compiling_again_asks_about_the_running_one() {
     assert!(text.contains("\necho again\nagain\n"), "{text}");
     assert!(text.contains("Compilation finished at "), "{text}");
 }
+
+#[test]
+fn next_error_keeps_to_its_buffer_when_it_is_renamed() {
+    let dir = project();
+    let (mut ed, _s) = setup(dir.path());
+    compile(&mut ed, "printf 'src/a.rs:2:9: error: unused\\nsrc/b.rs:3: warning: odd\\n'");
+    ed.press("M-g n").unwrap();
+    let i = ed.find_buffer("*compilation*").unwrap();
+    ed.with_current_buffer(i, |ed| ed.call("rename-buffer", vec![Arg::Str("*build*".into())])).unwrap();
+    // A *compilation* buffer of another run, which next-error must not take.
+    ed.get_buffer_create("*compilation*");
+    ed.press("M-g n").unwrap();
+    assert_eq!(ed.window_buffer().name, "b.rs");
+    assert_eq!(ed.messages().last().map(String::as_str), Some("Next locus from *build*"));
+}

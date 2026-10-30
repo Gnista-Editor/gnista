@@ -2965,6 +2965,15 @@ declare global {
        */
       "recover-this-file": [];
       /**
+       * Give the current buffer a new name. Empty input keeps the name it has.
+       *
+       * If another buffer has the name, it is an error, unless there is a prefix argument: then the name gets a <2> or the like to make it unique, as Emacs's UNIQUE argument says.
+       *
+       * @param newname text
+       * @param unique raw prefix argument
+       */
+      "rename-buffer": [newname: string, unique?: PrefixArg];
+      /**
        * Rename a file or directory. A name ending in a slash moves it into that directory.
        *
        * Typed, it asks before replacing a file; from code, a file already there is an error.
@@ -5822,6 +5831,14 @@ declare global {
     function deleteRegion(start: number, end: number): string;
     /** The name of the current buffer. */
     function bufferName(): string;
+    /** A buffer's name now, or undefined if it is killed, as buffer-name. */
+    function bufferName(buffer: BufferLike): string | undefined;
+    /** The current buffer as an object, as current-buffer. */
+    function currentBuffer(): Buffer;
+    /** The buffer with a name, or the buffer given if it is live, as an object; undefined if there is none, as get-buffer. */
+    function getBuffer(buffer: BufferLike): Buffer | undefined;
+    /** Whether a value is a buffer object of a live buffer, as buffer-live-p. */
+    function bufferLiveP(value: unknown): boolean;
     /** The mark, or undefined if it is not set. */
     function mark(): number | undefined;
 
@@ -5894,7 +5911,20 @@ declare global {
      * What variables, hooks and text properties hold, as Emacs's values: a
      * function too, as a lambda in a variable, kept as itself.
      */
-    type Value = null | boolean | number | string | Value[] | ((...args: any[]) => any);
+    type Value = null | boolean | number | string | Value[] | ((...args: any[]) => any) | Buffer;
+    /**
+     * A buffer as an object, as Emacs's buffer objects: it refers to the
+     * buffer however it is renamed, and is the same object each time.
+     * Anything that takes a buffer's name takes one, as its current name.
+     */
+    interface Buffer {
+      /** Its name now, or undefined once it is killed. */
+      readonly name: string | undefined;
+      /** Whether it is still live, as buffer-live-p. */
+      readonly live: boolean;
+    }
+    /** A buffer by name or as an object. */
+    type BufferLike = string | Buffer;
     type VariableName = keyof Variables;
     type HookName = keyof Hooks;
 
@@ -6342,13 +6372,13 @@ declare global {
      * point, text and the other buffer functions act on it, and windows keep
      * showing what they did. The buffer that was current is current again after.
      */
-    function withCurrentBuffer<T>(buffer: string, fn: () => T): T;
+    function withCurrentBuffer<T>(buffer: BufferLike, fn: () => T): T;
     /**
      * Make a frame showing a buffer, the current one by default, and select
      * it, as make-frame does. Returns the new frame. A graphical Ember shows
      * each frame in a window of its own; a terminal shows the selected one.
      */
-    function makeFrame(buffer?: string): number;
+    function makeFrame(buffer?: BufferLike): number;
     /** Delete a frame, the selected one by default, and its windows, as delete-frame does. */
     function deleteFrame(frame?: number): void;
     /** Make a frame the selected one, as select-frame does. */
@@ -6361,14 +6391,14 @@ declare global {
     /** Whether the current buffer is read-only, as Emacs's buffer-read-only. */
     function bufferReadOnly(): boolean;
     /** Make a buffer of this name if there is none, without showing it, as get-buffer-create. */
-    function getBufferCreate(name: string): void;
+    function getBufferCreate(name: BufferLike): void;
     /** Visit a file without showing it, as find-file-noselect, and return its buffer's name. */
     function findFileNoselect(file: string): string;
     /**
      * Show a buffer in a window, as Emacs's set-window-buffer: in the selected
      * window it becomes the current buffer; another shows it from its top.
      */
-    function setWindowBuffer(window: number | undefined, buffer: string): void;
+    function setWindowBuffer(window: number | undefined, buffer: BufferLike): void;
     /**
      * A window's size: columns and lines of text, its total size with its
      * divider and mode line, as window-total-width and -height count them,
@@ -6518,7 +6548,7 @@ declare global {
       /** Its name, made unique with "<1>" and so on if taken. */
       name: string;
       /** The buffer its output goes into, made if there is none. */
-      buffer?: string;
+      buffer?: BufferLike;
       /** The program and its arguments, not run through a shell. */
       command: string[];
       /** Where it runs: the current buffer's default-directory by default. */
@@ -6554,7 +6584,7 @@ declare global {
     /** The processes running, as process-list. */
     function processList(): string[];
     /** The process writing to a buffer, as get-buffer-process. */
-    function getBufferProcess(buffer: string): string | undefined;
+    function getBufferProcess(buffer: BufferLike): string | undefined;
     /** Write to a process's standard input. */
     function processSendString(process: string, text: string): void;
     /** Close a process's standard input. */

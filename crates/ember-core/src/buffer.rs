@@ -773,6 +773,12 @@ impl Buffer {
     }
 
     /// The properties of the character at `pos`.
+    /// The id the buffer keeps for its life, renamed or not, as a buffer
+    /// object refers to it.
+    pub fn id(&self) -> u64 {
+        self.id
+    }
+
     pub fn text_properties_at(&self, pos: usize) -> Option<&Props> {
         self.properties.at(pos)
     }

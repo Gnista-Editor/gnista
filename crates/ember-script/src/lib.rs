@@ -983,6 +983,24 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
             })
         })?,
     )?;
+    // Buffers as objects, by the ids they keep when renamed.
+    native.set(
+        "bufferIdOf",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: Opt<String>| {
+            with_editor(&ctx, |ed| {
+                Ok(match name.0 {
+                    Some(name) => ed.find_buffer(&name).map(|i| ed.buffers()[i].id() as f64),
+                    None => Some(ed.buffer().id() as f64),
+                })
+            })
+        })?,
+    )?;
+    native.set(
+        "bufferNameOf",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, id: f64| {
+            with_editor(&ctx, |ed| Ok(ed.buffer_with_id(id as u64).map(|i| ed.buffers()[i].name.clone())))
+        })?,
+    )?;
     native.set(
         "fboundp",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| with_editor(&ctx, |ed| Ok(ed.fboundp(&name))))?,
@@ -2353,8 +2371,16 @@ fn value_to_js<'js>(ctx: &Ctx<'js>, value: &EditorValue) -> rquickjs::Result<Val
             list.into_value()
         }
         EditorValue::Function(function) => function_to_js(ctx, function)?,
+        // The prelude's object for the buffer, the same one each time.
+        EditorValue::Buffer(id) => {
+            let make: Function = ctx.globals().get("__emberBuffer")?;
+            make.call((*id as f64,))?
+        }
     })
 }
+
+/// The property a buffer object keeps its buffer's id in.
+const BUFFER_ID: &str = "__emberBufferId";
 
 /// The property a script function keeps its editor identity in, so the
 /// same function passed twice is one value, as one lambda is `eq` to itself.
@@ -2437,6 +2463,11 @@ fn convert_from_js<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> rquickjs::Result<O
     }
     if let Some(f) = value.as_function() {
         return function_from_js(ctx, f.clone()).map(Some);
+    }
+    if let Some(object) = value.as_object()
+        && let Some(id) = object.get::<_, Option<f64>>(BUFFER_ID)?
+    {
+        return Ok(Some(EditorValue::Buffer(id as u64)));
     }
     Ok(None)
 }

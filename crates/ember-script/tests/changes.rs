@@ -277,3 +277,46 @@ fn overlay_hooks_run_on_either_side_of_a_change() {
         )
     );
 }
+
+#[test]
+fn buffer_objects_follow_their_buffers() {
+    let (mut ed, s) = setup();
+    let result = eval(
+        &mut ed,
+        &s,
+        r#"(() => {
+          ember.getBufferCreate("notes");
+          const notes = ember.getBuffer("notes")!;
+          ember.defineVariable({ name: "test-buffer", doc: "", value: notes });
+          ember.withCurrentBuffer(notes, () => ember.call("rename-buffer", "jottings"));
+          const kept = ember.variable("test-buffer") as ember.Buffer;
+          const inside = ember.withCurrentBuffer(notes, () => ember.bufferName());
+          ember.call("kill-buffer", "jottings");
+          return [
+            kept === notes,
+            notes.name ?? null,
+            inside,
+            ember.bufferName(),
+            notes.live,
+            ember.bufferLiveP(ember.currentBuffer()),
+            ember.conditionCase(() => ember.withCurrentBuffer(notes, () => 1), { error: (e) => e.message }),
+          ];
+        })()"#,
+    );
+    assert_eq!(result, r#"[true,null,"jottings","*scratch*",false,true,"Selecting deleted buffer"]"#);
+}
+
+#[test]
+fn with_current_buffer_comes_back_to_a_buffer_renamed_meanwhile() {
+    let (mut ed, s) = setup();
+    let result = eval(
+        &mut ed,
+        &s,
+        r#"(() => {
+          ember.getBufferCreate("other");
+          ember.withCurrentBuffer("other", () => ember.withCurrentBuffer("*scratch*", () => ember.call("rename-buffer", "renamed")));
+          return ember.bufferName();
+        })()"#,
+    );
+    assert_eq!(result, r#""renamed""#);
+}

@@ -1355,6 +1355,11 @@ impl Editor {
         })
     }
 
+    /// The index of the live buffer with an id, as a buffer object refers to it.
+    pub fn buffer_with_id(&self, id: u64) -> Option<usize> {
+        self.buffers.iter().position(|b| b.id == id)
+    }
+
     /// Makes a buffer current without showing it, as Emacs's `set-buffer`:
     /// the selected window keeps showing what it did. Returns the name of
     /// the buffer that was current, to set back.
