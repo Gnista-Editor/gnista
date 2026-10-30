@@ -152,6 +152,8 @@ pub struct Buffer {
     undo_groups: Vec<Group>,
     open_group: Vec<Edit>,
     open_unmodified_at: Option<u64>,
+    /// Whether edits go unrecorded, as when Emacs's `buffer-undo-list` is t.
+    undo_disabled: bool,
     /// Change groups being made, innermost last, as Emacs's
     /// prepare-change-group: the undo state when each began, and where
     /// its changes start in `change_log`.
@@ -238,6 +240,7 @@ impl Buffer {
             save_generation: 0,
             undo_groups: Vec::new(),
             open_group: Vec::new(),
+            undo_disabled: false,
             open_unmodified_at: None,
             change_groups: Vec::new(),
             change_log: Vec::new(),
@@ -302,14 +305,68 @@ impl Buffer {
         self.pending_undo = None;
     }
 
-    /// Marks the buffer as just saved: unmodified, with undo able to tell
-    /// it returned to this text.
     /// Forgets the buffer's undo history, as visiting a file starts it afresh.
     pub(crate) fn clear_undo(&mut self) {
         self.undo_groups.clear();
         self.open_group.clear();
         self.pending_undo = None;
         self.selective_undo = None;
+    }
+
+    /// Whether edits are recorded for undo, as they are unless Emacs's
+    /// `buffer-undo-list` is t.
+    pub fn undo_enabled(&self) -> bool {
+        !self.undo_disabled
+    }
+
+    /// Starts or stops recording edits for undo, as `buffer-enable-undo`
+    /// and `buffer-disable-undo`: either forgets what was recorded.
+    pub fn set_undo_enabled(&mut self, on: bool) {
+        self.clear_undo();
+        self.undo_disabled = !on;
+    }
+
+    /// The undo history as Emacs's `buffer-undo-list` holds it, newest
+    /// first: null for a boundary between commands, a number for where
+    /// point was before a command, `[beg, end]` for text inserted there,
+    /// `[text, pos]` for text deleted at `pos`, its position negated when
+    /// point was after it, and `[true]` where the buffer was unmodified.
+    /// Positions count from 0, as everywhere in scripts, so a deletion at
+    /// the start with point after it gives -0. `None` if undo is off.
+    pub fn undo_list(&self) -> Option<Value> {
+        if self.undo_disabled {
+            return None;
+        }
+        let mut list = Vec::new();
+        // The changes of the command still going, then each earlier
+        // command's after the boundary that ended it.
+        let open = (!self.open_group.is_empty()).then_some((&self.open_group, self.open_unmodified_at, self.open_point, false));
+        let closed = self.undo_groups.iter().rev().map(|g| (&g.edits, g.unmodified_at, g.point, true));
+        for (edits, unmodified_at, point, ended) in open.into_iter().chain(closed) {
+            if ended {
+                list.push(Value::Null);
+            }
+            for e in edits.iter().rev() {
+                if !e.inserted.is_empty() {
+                    let end = e.pos + e.inserted.chars().count();
+                    list.push(Value::List(vec![Value::Number(e.pos as f64), Value::Number(end as f64)]));
+                }
+                if !e.deleted.is_empty() {
+                    let at_end = e.point_before == e.pos + e.deleted.chars().count();
+                    let pos = if at_end { -(e.pos as f64) } else { e.pos as f64 };
+                    let text = crate::properties::Text { string: e.deleted.clone(), props: e.deleted_props.clone() };
+                    list.push(Value::List(vec![Value::Text(text), Value::Number(pos)]));
+                }
+            }
+            // Recorded before the command's first change, so after it here.
+            if let Some(p) = point {
+                list.push(Value::Number(p as f64));
+            }
+            if unmodified_at.is_some() {
+                list.push(Value::List(vec![Value::Bool(true)]));
+            }
+        }
+        Some(Value::List(list))
     }
 
     pub(crate) fn mark_saved(&mut self) {
@@ -619,7 +676,9 @@ impl Buffer {
             if !self.change_groups.is_empty() {
                 self.change_log.push(edit.clone());
             }
-            self.open_group.push(edit);
+            if !self.undo_disabled {
+                self.open_group.push(edit);
+            }
         }
         Ok(())
     }
@@ -1261,14 +1320,12 @@ impl Buffer {
     /// such as a failed C-d after it, leaves no change to divide off.
     pub fn command_boundary(&mut self, amalgamate: bool) {
         let edited = std::mem::take(&mut self.edited_since_command);
-        if amalgamate {
-            return;
-        }
-        if edited {
+        if edited && !amalgamate {
             self.undo_boundary();
-        } else {
-            self.boundary_point = self.point;
         }
+        // Where point was before the command, as Emacs's
+        // point_before_last_command_or_undo, amalgamating or not.
+        self.boundary_point = self.point;
     }
 
     /// Ends the current undo group, so the next edit starts a new one.
@@ -1588,15 +1645,16 @@ impl Buffer {
         }
         if self.open_group.is_empty() {
             self.open_unmodified_at = (!self.modified).then_some(self.save_generation);
-            // As Emacs's record_point: a deletion before point compares point,
-            // anything else where the change starts.
-            let deleted_end = edit.pos + edit.deleted.chars().count();
-            let at = if edit.inserted.is_empty() && edit.point_before == deleted_end { edit.point_before } else { edit.pos };
-            self.open_point = (self.boundary_point != at).then_some(self.boundary_point);
+            // As Emacs's record_point: where point was before the command,
+            // if the change starts elsewhere.
+            self.open_point = (self.boundary_point != edit.pos).then_some(self.boundary_point);
         }
         self.changed = true;
         self.edited_since_command = true;
         self.modified = true;
+        if self.undo_disabled {
+            return;
+        }
         // Typing joins onto the insertion before it, as Emacs records it: one
         // insertion for a run of characters, not one per character.
         if let Some(last) = self.open_group.last_mut()

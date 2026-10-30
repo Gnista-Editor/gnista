@@ -2474,15 +2474,12 @@ const insertDrawer = ember.defineCommand({
  * them, the buffer's top-level headings that have a title, by their titles.
  */
 function refileTargets(): { name: string; heading: Heading }[] {
-  const [min, max] = [ember.pointMin(), ember.pointMax()];
-  ember.widen();
-  try {
+  return ember.saveRestriction(() => {
+    ember.widen();
     return headings()
       .filter((h) => h.level === 1 && h.title !== "")
       .map((h) => ({ name: h.title, heading: h }));
-  } finally {
-    if (min !== 0 || max !== ember.bufferSize()) ember.narrowToRegion(min, max);
-  }
+  });
 }
 
 /**
@@ -2589,7 +2586,7 @@ ember.defineCommand({
   name: "org-toggle-narrow-to-subtree",
   doc: "Narrow to the current subtree, or widen if the buffer is narrowed.",
   run: () => {
-    if (ember.pointMin() !== 0 || ember.pointMax() !== ember.bufferSize()) {
+    if (ember.bufferNarrowedP()) {
       ember.widen();
       ember.message("Buffer widen");
     } else {

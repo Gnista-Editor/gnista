@@ -770,6 +770,22 @@ pub(crate) fn install(ed: &mut Editor) {
         Variable::new("variable-name-history", "Variable names answered in the minibuffer, newest first.", Value::List(Vec::new())),
         Variable::new("face-name-history", "Face names answered in the minibuffer, newest first.", Value::List(Vec::new())),
         Variable::new(
+            "inhibit-field-text-motion",
+            "Whether motion commands and constrain-to-field ignore fields, the stretches of text with one `field` property.",
+            false,
+        ),
+        Variable::new(
+            "text-property-default-nonsticky",
+            "Text properties that characters inserted after them do not take on, unless `rear-nonsticky` says otherwise: an alist of the property and t.",
+            Value::List(
+                ["syntax-table", "display", "composition", "cursor"]
+                    .into_iter()
+                    .map(|p| Value::List(vec![Value::Symbol(p.into()), Value::Bool(true)]))
+                    .collect(),
+            ),
+        )
+        .local(),
+        Variable::new(
             "case-fold-search",
             "Whether searches match upper and lower case letters to each other.",
             true,

@@ -100,18 +100,10 @@ ember.defineCommand({
 
 /** Runs `fn` narrowed to a range, then puts the restriction back, as save-restriction. */
 function narrowed<T>(start: number, end: number, fn: () => T): T {
-  const [min, max] = [ember.pointMin(), ember.pointMax()];
-  const whole = min === 0 && max === ember.bufferSize();
-  ember.narrowToRegion(start, end);
-  try {
+  return ember.saveRestriction(() => {
+    ember.narrowToRegion(start, end);
     return fn();
-  } finally {
-    if (whole) ember.widen();
-    else {
-      ember.widen();
-      ember.narrowToRegion(min, max);
-    }
-  }
+  });
 }
 
 /**

@@ -47,6 +47,7 @@ mod search;
 pub mod select;
 mod symbols;
 mod syntax;
+mod textprop;
 pub mod syntax_table;
 mod timers;
 mod window;

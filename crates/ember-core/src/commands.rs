@@ -204,10 +204,12 @@ fn movement(ed: &mut Editor) {
         |ed, args| {
             let n = args[0].as_int()?;
             let b = ed.buffer();
-            let pos = if n == 1 { b.point() } else { forward_line(b, b.point(), n - 1) };
+            let orig = b.point();
+            let pos = if n == 1 { orig } else { forward_line(b, orig, n - 1) };
             let row = ed.row_line_in(b, b.line_of(pos));
-            let b = ed.buffer_mut();
-            b.set_point(b.line_start(row));
+            // Fields, such as the minibuffer's prompt, stop it.
+            let start = ed.constrain_to_field(b.line_start(row), orig, n != 1, true, None);
+            ed.buffer_mut().set_point(start);
             Ok(())
         },
     );
@@ -438,15 +440,9 @@ pub(crate) fn move_words(ed: &Editor, mut pos: usize, n: i64) -> usize {
     for _ in 0..n.unsigned_abs() {
         pos = if n > 0 { word_end(b, pos, word) } else { word_start(b, pos, word) };
     }
-    // Moving from the input stops at the prompt, as Emacs's word motion is
-    // constrained to the field it started in.
-    if ed.in_minibuffer() {
-        let end = ed.minibuffer_prompt_end();
-        if start >= end {
-            pos = pos.max(end);
-        }
-    }
-    pos
+    // Word motion keeps to the field it started in, such as the
+    // minibuffer's input, as Emacs's does.
+    ed.constrain_to_field(pos, start, false, false, None)
 }
 
 /// Scrolls `lines` lines, signalling an error if the window cannot scroll at all.

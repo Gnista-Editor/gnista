@@ -2218,16 +2218,61 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
             value.map(|v| value_to_js(&ctx, &v)).transpose()
         })?,
     )?;
+    // Where a property changes, as textprop.c's searches: KIND names
+    // which, PROP the property for the -single- ones.
     native.set(
-        "nextPropertyChange",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, pos: usize| {
-            with_editor(&ctx, |ed| Ok(ed.buffer().next_property_change(pos)))
+        "propertyChange",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, kind: String, pos: usize, prop: Option<String>, limit: Option<usize>| {
+            with_editor(&ctx, |ed| {
+                let b = ed.buffer();
+                let prop = prop.as_deref().unwrap_or("");
+                Ok(match kind.as_str() {
+                    "next" => b.next_property_change(pos).filter(|&p| p < b.len()).map(|p| limit.map_or(p, |l| p.min(l))).or(limit),
+                    "previous" => b.previous_property_change(pos).filter(|&p| p > 0 && p < pos).map(|p| limit.map_or(p, |l| p.max(l))).or(limit),
+                    "next-single" => b.next_single_property_change(pos, prop, limit),
+                    "previous-single" => b.previous_single_property_change(pos, prop, limit),
+                    "next-single-char" => Some(b.next_single_char_property_change(pos, prop, limit)),
+                    "previous-single-char" => Some(b.previous_single_char_property_change(pos, prop, limit)),
+                    "next-char" => Some(b.next_char_property_change(pos).min(limit.unwrap_or(b.point_max()))),
+                    "previous-char" => Some(b.previous_char_property_change(pos, limit)),
+                    "next-overlay" => Some(b.next_overlay_change(pos)),
+                    "previous-overlay" => Some(b.previous_overlay_change(pos)),
+                    _ => None,
+                })
+            })
         })?,
     )?;
     native.set(
-        "nextCharPropertyChange",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, pos: usize| {
-            with_editor(&ctx, |ed| Ok(ed.buffer().next_char_property_change(pos)))
+        "textPropertySearch",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, matching: bool, start: usize, end: usize, prop: String, value: Value<'js>| {
+            let value = value_from_js(&ctx, value)?;
+            with_editor(&ctx, |ed| {
+                let b = ed.buffer();
+                Ok(if matching { b.text_property_any(start, end, &prop, &value) } else { b.text_property_not_all(start, end, &prop, &value) })
+            })
+        })?,
+    )?;
+    native.set(
+        "getPosProperty",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pos: usize, prop: String| {
+            let value = with_editor(&ctx, |ed| Ok(ed.get_pos_property(pos, &prop)))?;
+            value.map(|v| value_to_js(&ctx, &v)).transpose()
+        })?,
+    )?;
+    // Fields, as editfns.c's: the bounds of the one around POS.
+    native.set(
+        "findField",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pos: usize, merge: bool, beg_limit: Option<usize>, end_limit: Option<usize>| {
+            with_editor(&ctx, |ed| {
+                let (beg, end) = ed.find_field(pos, merge, beg_limit, end_limit);
+                Ok(vec![beg, end])
+            })
+        })?,
+    )?;
+    native.set(
+        "constrainToField",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, new: usize, old: usize, escape: bool, only_in_line: bool, capture: Option<String>| {
+            with_editor(&ctx, |ed| Ok(ed.constrain_to_field(new, old, escape, only_in_line, capture.as_deref())))
         })?,
     )?;
     native.set(
@@ -2732,6 +2777,23 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
         Function::new(ctx.clone(), |ctx: Ctx<'js>, modified: bool| {
             with_editor(&ctx, |ed| {
                 ed.buffer_mut().set_modified(modified);
+                Ok(())
+            })
+        })?,
+    )?;
+    // The undo history as data, as buffer-undo-list: true when undo is off.
+    native.set(
+        "bufferUndoList",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            let list = with_editor(&ctx, |ed| Ok(ed.buffer().undo_list()))?;
+            value_to_js(&ctx, &list.unwrap_or(EditorValue::Bool(true)))
+        })?,
+    )?;
+    native.set(
+        "setUndoEnabled",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, on: bool| {
+            with_editor(&ctx, |ed| {
+                ed.buffer_mut().set_undo_enabled(on);
                 Ok(())
             })
         })?,

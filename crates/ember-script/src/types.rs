@@ -342,6 +342,28 @@ const API: &str = r##"
   function propertize(string: string, properties?: { [name: string]: Value }): PropertizedString;
   /** The text from start to end with its properties, as Emacs's buffer-substring. */
   function bufferSubstring(start: number, end: number): PropertizedString;
+  /** The text from start to end, as buffer-substring-no-properties. */
+  function bufferSubstringNoProperties(start: number, end: number): string;
+  /** Deletes the text from start to end and gives it back with its properties, as delete-and-extract-region. */
+  function deleteAndExtractRegion(start: number, end: number): PropertizedString;
+  /** Inserts text of another buffer, from start to end of what is accessible there by default, with its properties, as insert-buffer-substring. */
+  function insertBufferSubstring(buffer: string | Buffer, start?: number, end?: number): void;
+  /** Inserts text of another buffer without its properties, as insert-buffer-substring-no-properties. */
+  function insertBufferSubstringNoProperties(buffer: string | Buffer, start?: number, end?: number): void;
+  /**
+   * Compares two stretches of text, as compare-buffer-substrings: -N if
+   * the first is less after N - 1 characters, N if greater, 0 if they
+   * match. A null buffer is the current one; case folds as its
+   * case-fold-search says.
+   */
+  function compareBufferSubstrings(
+    buffer1: string | Buffer | null,
+    start1: number | undefined,
+    end1: number | undefined,
+    buffer2: string | Buffer | null,
+    start2?: number,
+    end2?: number,
+  ): number;
   /**
    * A buffer as an object, as Emacs's buffer objects: it refers to the
    * buffer however it is renamed, and is the same object each time.
@@ -946,8 +968,8 @@ const API: &str = r##"
   function setReadOnly(on: boolean): void;
   /** Whether the current buffer is read-only, as Emacs's buffer-read-only. */
   function bufferReadOnly(): boolean;
-  /** Make a buffer of this name if there is none, without showing it, as get-buffer-create. */
-  function getBufferCreate(name: BufferLike): void;
+  /** The buffer of this name, made if there is none, without showing it, as get-buffer-create. */
+  function getBufferCreate(name: BufferLike): Buffer;
   /** Visit a file without showing it, as find-file-noselect, and return its buffer's name. */
   function findFileNoselect(file: string): string;
   /**
@@ -1070,10 +1092,65 @@ const API: &str = r##"
   function getTextProperty(position: number, name: string): Value | undefined;
   /** A property from the highest priority overlay that has it, otherwise from the text (Emacs's get-char-property). */
   function charProperty(position: number, name: string): Value | undefined;
-  /** The next position where text properties change, if any. */
-  function nextPropertyChange(position: number): number | undefined;
-  /** The next position where text properties or overlays change. */
-  function nextCharPropertyChange(position: number): number;
+  /** The next position after position where text properties change, as next-property-change: limit, or undefined, if none does before it or the end. */
+  function nextPropertyChange(position: number, limit?: number): number | undefined;
+  /** The last position before position where text properties change, as previous-property-change. */
+  function previousPropertyChange(position: number, limit?: number): number | undefined;
+  /** Where the text property name next changes after position, as next-single-property-change: limit, or undefined, if it does not. */
+  function nextSinglePropertyChange(position: number, name: string, limit?: number): number | undefined;
+  /** Where the text property name last changes before position, as previous-single-property-change. */
+  function previousSinglePropertyChange(position: number, name: string, limit?: number): number | undefined;
+  /** The next position where text properties or overlays change, as next-char-property-change: limit or the end of the accessible text if none does. */
+  function nextCharPropertyChange(position: number, limit?: number): number;
+  /** The last position before position where text properties or overlays change, as previous-char-property-change. */
+  function previousCharPropertyChange(position: number, limit?: number): number;
+  /** Where name, from overlays or text, next changes after position, as next-single-char-property-change: limit or the end if it does not. */
+  function nextSingleCharPropertyChange(position: number, name: string, limit?: number): number;
+  /** Where name, from overlays or text, last changes before position, as previous-single-char-property-change. */
+  function previousSingleCharPropertyChange(position: number, name: string, limit?: number): number;
+  /** The next position after position where an overlay starts or ends, as next-overlay-change, or the end of the accessible text. */
+  function nextOverlayChange(position: number): number;
+  /** The last position before position where an overlay starts or ends, as previous-overlay-change. */
+  function previousOverlayChange(position: number): number;
+  /** The first position from start to end whose text property name is value, as text-property-any. */
+  function textPropertyAny(start: number, end: number, name: string, value: Value): number | undefined;
+  /** The first position from start to end whose text property name is not value, as text-property-not-all. */
+  function textPropertyNotAll(start: number, end: number, name: string, value: Value): number | undefined;
+  /**
+   * The property a character inserted at position would get, as
+   * get-pos-property: from an overlay that would take it in, else from
+   * the text on the side it would stick to.
+   */
+  function getPosProperty(position: number, name: string): Value | undefined;
+  /**
+   * Where the field around position (point by default) begins, as
+   * field-beginning: a field is a stretch of text with one field
+   * property. With escapeFromEdge, a position at its start counts as in
+   * the field before too.
+   */
+  function fieldBeginning(position?: number, escapeFromEdge?: boolean, limit?: number): number;
+  /** Where the field around position ends, as field-end. */
+  function fieldEnd(position?: number, escapeFromEdge?: boolean, limit?: number): number;
+  /** The text of the field around position, with its properties, as field-string. */
+  function fieldString(position?: number): PropertizedString;
+  /** The text of the field around position, as field-string-no-properties. */
+  function fieldStringNoProperties(position?: number): string;
+  /** Deletes the field around position, as delete-field. */
+  function deleteField(position?: number): void;
+  /**
+   * The position nearest newPos in the field oldPos is in, as
+   * constrain-to-field; with newPos null or undefined, point, which is
+   * then moved there. onlyInLine leaves newPos alone if the field's edge
+   * is on another line, and inhibitCaptureProperty if oldPos has that
+   * property. inhibit-field-text-motion turns fields off.
+   */
+  function constrainToField(
+    newPos: number | null | undefined,
+    oldPos: number,
+    escapeFromEdge?: boolean,
+    onlyInLine?: boolean,
+    inhibitCaptureProperty?: string,
+  ): number;
 
   /**
    * Call the functions on a hook in turn until one returns something
@@ -1679,6 +1756,28 @@ const API: &str = r##"
   function narrowToRegion(start: number, end: number): void;
   /** Make the whole buffer accessible again, as widen. */
   function widen(): void;
+  /** Whether the current buffer is narrowed, as buffer-narrowed-p. */
+  function bufferNarrowedP(): boolean;
+  /**
+   * Runs fn, then puts back the current buffer's narrowing as it was, its
+   * edges moved by edits as markers are, or widens it if it was not
+   * narrowed, as save-restriction.
+   */
+  function saveRestriction<T>(fn: () => T): T;
+  /** A variable's value in another buffer, as buffer-local-value. */
+  function bufferLocalValue(name: string, buffer: string | Buffer): Value | undefined;
+  /**
+   * The undo history, as buffer-undo-list, newest first: null for a
+   * boundary between commands, a number for point before a command,
+   * [beg, end] for inserted text, [text, pos] for deleted text, pos
+   * negated if point was after it, and [true] where the buffer was
+   * unmodified; true if undo is off.
+   */
+  function bufferUndoList(buffer?: string | Buffer): Value[] | true;
+  /** Starts recording changes for undo, afresh, as buffer-enable-undo. */
+  function bufferEnableUndo(buffer?: string | Buffer): void;
+  /** Stops recording changes for undo and forgets them, as buffer-disable-undo. */
+  function bufferDisableUndo(buffer?: string | Buffer): void;
   /**
    * A count of the changes to the current buffer's text, as Emacs's
    * buffer-modified-tick: it is larger after any edit.

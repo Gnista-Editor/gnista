@@ -421,6 +421,73 @@
       return new PropertizedString(string, runs);
     },
     bufferSubstring: (start, end) => native.bufferSubstring(start, end),
+    bufferSubstringNoProperties: (start, end) => native.bufferText(start, end),
+    deleteAndExtractRegion(start, end) {
+      const text = native.bufferSubstring(start, end);
+      native.deleteRegion(start, end);
+      return text;
+    },
+    insertBufferSubstring(buffer, start, end) {
+      const text = ember.withCurrentBuffer(buffer, () => native.bufferSubstring(start ?? native.pointMin(), end ?? native.pointMax()));
+      native.insertText(text);
+    },
+    insertBufferSubstringNoProperties(buffer, start, end) {
+      native.insert(ember.withCurrentBuffer(buffer, () => native.bufferText(start ?? native.pointMin(), end ?? native.pointMax())));
+    },
+    // As compare-buffer-substrings: -N or N if the first is less or greater
+    // after N - 1 characters, 0 if they match; case is folded as the
+    // current buffer's case-fold-search says.
+    compareBufferSubstrings(buffer1, start1, end1, buffer2, start2, end2) {
+      const chars = (buffer, start, end) => {
+        const get = () => [...native.bufferText(start ?? native.pointMin(), end ?? native.pointMax())];
+        return buffer === null || buffer === undefined ? get() : ember.withCurrentBuffer(buffer, get);
+      };
+      const [a, b] = [chars(buffer1, start1, end1), chars(buffer2, start2, end2)];
+      const fold = native.variable("case-fold-search");
+      const canon = fold !== false && fold !== null && fold !== undefined ? (c) => native.downcase(c) : (c) => c;
+      const n = Math.min(a.length, b.length);
+      for (let i = 0; i < n; i++) {
+        const [c1, c2] = [canon(a[i]).codePointAt(0), canon(b[i]).codePointAt(0)];
+        if (c1 !== c2) return c1 < c2 ? -(i + 1) : i + 1;
+      }
+      return a.length < b.length ? -(n + 1) : a.length > b.length ? n + 1 : 0;
+    },
+    bufferNarrowedP: () => native.pointMin() > 0 || native.pointMax() < native.bufferSize(),
+    // As save-restriction: the buffer's narrowing put back after `fn`,
+    // following edits to its edges, or the buffer widened if it was not narrowed.
+    saveRestriction(fn) {
+      const buffer = native.bufferIdOf();
+      const narrowed = ember.bufferNarrowedP();
+      const beg = narrowed ? native.makeMarker(native.pointMin(), undefined, false) : null;
+      const end = narrowed ? native.makeMarker(native.pointMax(), undefined, true) : null;
+      return unwindProtect(fn, () => {
+        const name = native.bufferNameOf(buffer);
+        if (name !== null && name !== undefined) {
+          const old = native.bufferIdOf();
+          native.setCurrentBuffer(name);
+          try {
+            native.widen();
+            if (narrowed) {
+              const start = native.markerPosition(beg);
+              native.narrowToRegion(start, Math.max(start, native.markerPosition(end)));
+            }
+          } finally {
+            backTo(old);
+          }
+        }
+        if (narrowed) {
+          native.deleteMarker(beg);
+          native.deleteMarker(end);
+        }
+      });
+    },
+    bufferLocalValue: (name, buffer) => ember.withCurrentBuffer(buffer, () => native.variable(String(name)) ?? undefined),
+    bufferUndoList: (buffer) =>
+      buffer === undefined ? native.bufferUndoList() : ember.withCurrentBuffer(buffer, () => native.bufferUndoList()),
+    bufferEnableUndo: (buffer) =>
+      buffer === undefined ? native.setUndoEnabled(true) : ember.withCurrentBuffer(buffer, () => native.setUndoEnabled(true)),
+    bufferDisableUndo: (buffer) =>
+      buffer === undefined ? native.setUndoEnabled(false) : ember.withCurrentBuffer(buffer, () => native.setUndoEnabled(false)),
     insertBeforeMarkers: (text) => native.insertBeforeMarkers(text instanceof PropertizedString ? text : String(text)),
     insertAndInherit: (text) => native.insertAndInherit(text instanceof PropertizedString ? text : String(text)),
     currentColumn: () => native.currentColumn(),
@@ -663,7 +730,10 @@
     selectFrame: (frame) => native.selectFrame(frame),
     selectedFrame: () => native.selectedFrame(),
     frameList: () => native.frameList(),
-    getBufferCreate: (name) => native.getBufferCreate(nameOf(name)),
+    getBufferCreate(name) {
+      native.getBufferCreate(nameOf(name));
+      return ember.getBuffer(nameOf(name));
+    },
     setReadOnly: (on) => native.setReadOnly(Boolean(on)),
     bufferReadOnly: () => native.bufferReadOnly(),
     withCurrentBuffer: (name, fn) => {
@@ -715,8 +785,48 @@
     textPropertiesAt: (pos) => native.textPropertiesAt(pos),
     getTextProperty: (pos, name) => native.textPropertiesAt(pos)[String(name)],
     charProperty: (pos, name) => native.charProperty(pos, String(name)),
-    nextPropertyChange: (pos) => native.nextPropertyChange(pos),
-    nextCharPropertyChange: (pos) => native.nextCharPropertyChange(pos),
+    nextPropertyChange: (pos, limit) => native.propertyChange("next", pos, null, limit ?? null) ?? undefined,
+    previousPropertyChange: (pos, limit) => native.propertyChange("previous", pos, null, limit ?? null) ?? undefined,
+    nextSinglePropertyChange: (pos, prop, limit) =>
+      native.propertyChange("next-single", pos, String(prop), limit ?? null) ?? undefined,
+    previousSinglePropertyChange: (pos, prop, limit) =>
+      native.propertyChange("previous-single", pos, String(prop), limit ?? null) ?? undefined,
+    nextCharPropertyChange: (pos, limit) => native.propertyChange("next-char", pos, null, limit ?? null),
+    previousCharPropertyChange: (pos, limit) => native.propertyChange("previous-char", pos, null, limit ?? null),
+    nextSingleCharPropertyChange: (pos, prop, limit) =>
+      native.propertyChange("next-single-char", pos, String(prop), limit ?? null),
+    previousSingleCharPropertyChange: (pos, prop, limit) =>
+      native.propertyChange("previous-single-char", pos, String(prop), limit ?? null),
+    nextOverlayChange: (pos) => native.propertyChange("next-overlay", pos, null, null),
+    previousOverlayChange: (pos) => native.propertyChange("previous-overlay", pos, null, null),
+    textPropertyAny: (start, end, prop, value) =>
+      native.textPropertySearch(true, start, end, String(prop), value ?? null) ?? undefined,
+    textPropertyNotAll: (start, end, prop, value) =>
+      native.textPropertySearch(false, start, end, String(prop), value ?? null) ?? undefined,
+    getPosProperty: (pos, prop) => native.getPosProperty(pos, String(prop)) ?? undefined,
+    fieldBeginning: (pos, escapeFromEdge = false, limit) =>
+      native.findField(pos ?? native.point(), Boolean(escapeFromEdge), limit ?? null, null)[0],
+    fieldEnd: (pos, escapeFromEdge = false, limit) =>
+      native.findField(pos ?? native.point(), Boolean(escapeFromEdge), null, limit ?? null)[1],
+    fieldString(pos) {
+      const [beg, end] = native.findField(pos ?? native.point(), false, null, null);
+      return native.bufferSubstring(beg, end);
+    },
+    fieldStringNoProperties(pos) {
+      const [beg, end] = native.findField(pos ?? native.point(), false, null, null);
+      return native.bufferText(beg, end);
+    },
+    deleteField(pos) {
+      const [beg, end] = native.findField(pos ?? native.point(), false, null, null);
+      if (beg < end) native.deleteRegion(beg, end);
+    },
+    constrainToField(newPos, oldPos, escapeFromEdge = false, onlyInLine = false, inhibitCaptureProperty) {
+      const moves = newPos === null || newPos === undefined;
+      const capture = inhibitCaptureProperty === null || inhibitCaptureProperty === undefined ? null : String(inhibitCaptureProperty);
+      const pos = native.constrainToField(moves ? native.point() : newPos, oldPos, Boolean(escapeFromEdge), Boolean(onlyInLine), capture);
+      if (moves) native.gotoChar(pos);
+      return pos;
+    },
     makeOverlay(start, end, properties = {}, options = {}) {
       const id = native.makeOverlay(start, end, options.frontAdvance === true, options.rearAdvance === true);
       for (const [name, value] of Object.entries(properties)) native.overlayPut(id, name, value ?? null);
