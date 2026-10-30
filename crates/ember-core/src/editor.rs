@@ -134,6 +134,8 @@ pub struct Editor {
     /// Buffers by id, the most recently selected first, as Emacs's buffer
     /// list orders them; see [`Editor::buffer_list`].
     buffer_order: Vec<u64>,
+    /// What the command loop keeps of the keyboard: keys being read, recursive edits, recent keys.
+    pub(crate) keyboard: crate::keyboard::Keyboard,
     /// How big characters and lines are in the front end's fonts.
     pub(crate) metrics: std::sync::Arc<dyn crate::layout::TextMetrics>,
     /// Buffers put at the end of the buffer list, the last buried last.
@@ -169,7 +171,7 @@ pub struct Editor {
     /// A named keymap ahead of all but the transient map, while set.
     pub(crate) overriding_map: Option<KeymapId>,
     /// Keys to read next, after the current one, as Emacs's `unread-command-events`.
-    unread_keys: std::collections::VecDeque<Key>,
+    pub(crate) unread_keys: std::collections::VecDeque<Key>,
     reading_unread: bool,
     /// Every keymap; names for them are variables holding them.
     pub(crate) keymaps: Keymaps,
@@ -185,7 +187,7 @@ pub struct Editor {
     interactive: bool,
     /// The prefix argument for the next command, as prefix commands leave it
     /// (Emacs's `prefix-arg`).
-    prefix_arg: Option<PrefixArg>,
+    pub(crate) prefix_arg: Option<PrefixArg>,
     /// The prefix argument of the command that is running (Emacs's
     /// `current-prefix-arg`).
     current_prefix_arg: Option<PrefixArg>,
@@ -214,7 +216,7 @@ pub struct Editor {
     macro_sequence_start: usize,
     last_macro: Option<Vec<Key>>,
     /// How many keyboard macros are running, one inside another.
-    executing_macro: usize,
+    pub(crate) executing_macro: usize,
     last_command: Option<String>,
     this_command: Option<String>,
     pub(crate) last_key: Option<Key>,
@@ -283,6 +285,7 @@ impl Editor {
             running: 0,
             remapped_from: None,
             buffer_order: Vec::new(),
+            keyboard: Default::default(),
             metrics: std::sync::Arc::new(crate::layout::CellMetrics),
             buried: Vec::new(),
             minibuffer_id,
@@ -1049,6 +1052,7 @@ impl Editor {
     /// `pre-command-hook`, which can change this-command, and that command
     /// runs instead; then `post-command-hook`.
     fn command_loop_run(&mut self, name: &str) {
+        self.record_lossage_command(name);
         self.this_command = Some(name.to_string());
         if let Err(e) = self.run_hooks("pre-command-hook") {
             self.message(format!("Error in pre-command-hook: {e}"));
@@ -1099,6 +1103,7 @@ impl Editor {
         let typed = self.executing_macro == 0;
         if typed {
             self.note_input();
+            self.record_lossage_key(key);
         }
         self.dispatch_key(key);
         if typed {
@@ -1124,6 +1129,9 @@ impl Editor {
     }
 
     fn dispatch_key(&mut self, mut key: Key) {
+        if self.reading_single_key() && !self.esc_prefix && self.key_read(key) {
+            return;
+        }
         if self.esc_prefix {
             self.esc_prefix = false;
             key.meta = true;
@@ -1133,6 +1141,9 @@ impl Editor {
             return;
         }
 
+        if self.key_read(key) {
+            return;
+        }
         if self.answer_key(key) {
             return;
         }
@@ -1157,9 +1168,10 @@ impl Editor {
                 self.message = Some(format!("{}-", format_keys(&self.pending_keys)));
             }
             Lookup::Command(name) => {
-                self.pending_keys.clear();
+                let keys = std::mem::take(&mut self.pending_keys);
                 self.transient_map = None;
                 self.last_key = Some(key);
+                self.note_command_keys(&keys);
                 self.command_loop_run(&name);
             }
             // Shift translation, as in Emacs: a shifted key with no binding of
@@ -1188,6 +1200,7 @@ impl Editor {
                 self.shift_translated = false;
                 self.transient_map = None;
                 let keys = std::mem::take(&mut self.pending_keys);
+                self.note_command_keys(&keys);
                 if keys.len() == 1 && key.printable().is_some() {
                     self.last_key = Some(key);
                     self.command_loop_run("self-insert-command");
@@ -1196,6 +1209,7 @@ impl Editor {
                     // Emacs runs the command `undefined` for the keys, so the
                     // next command does not follow the one before them.
                     self.last_command = Some("undefined".into());
+                    self.record_lossage_command("undefined");
                 }
             }
         }

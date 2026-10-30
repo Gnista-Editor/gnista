@@ -496,6 +496,50 @@ const API: &str = r##"
    */
   function readCharChoice(prompt: string, chars: string): Promise<string>;
   function readCharChoice(prompt: string, chars: string, then: (char: string) => void): void;
+  /**
+   * Read a key, showing `prompt` in the echo area, as Emacs's read-key:
+   * its description, such as "x", "C-x" or "<f1>". C-g quits.
+   */
+  function readKey(prompt?: string): Promise<string>;
+  function readKey(prompt: string | undefined, then: (key: string) => void): void;
+  /** Read an event, a key or a mouse event, as Emacs's read-event; the last mouse event's place is lastMouseEvent(). */
+  function readEvent(prompt?: string): Promise<string>;
+  function readEvent(prompt: string | undefined, then: (key: string) => void): void;
+  /** Read a character, as Emacs's read-char: anything else, such as <f1>, is an error. */
+  function readChar(prompt?: string): Promise<string>;
+  function readChar(prompt: string | undefined, then: (char: string) => void): void;
+  /**
+   * Read a whole key sequence, as the command loop reads one, by the keymaps
+   * active now, as Emacs's read-key-sequence: "C-x C-f". C-g is a key in it.
+   */
+  function readKeySequence(prompt?: string): Promise<string>;
+  function readKeySequence(prompt: string | undefined, then: (keys: string) => void): void;
+  /**
+   * Edit recursively, as Emacs's recursive-edit: the editor goes on taking
+   * commands, with [ ] around the modes in the mode line, until C-M-c
+   * (exit-recursive-edit) resolves this, or C-] (abort-recursive-edit)
+   * quits it.
+   */
+  function recursiveEdit(): Promise<void>;
+  function recursiveEdit(then: () => void): void;
+  /** How deep in recursive edits and minibuffers the editor is, as recursion-depth. */
+  function recursionDepth(): number;
+  /** The keys that ran the command running, its prefix argument's included, as this-command-keys: "C-u C-n". */
+  function thisCommandKeys(): string;
+  /** The same keys one by one, as this-command-keys-vector. */
+  function thisCommandKeysVector(): string[];
+  /**
+   * The keys typed lately, oldest first, as recent-keys; with
+   * `includeCmds`, each command after the keys that ran it. Keys a
+   * keyboard macro replays are not among them.
+   */
+  function recentKeys(includeCmds?: boolean): (string | { command: string })[];
+  /** How many keys recentKeys keeps, 300 to begin with, setting it to `size` if given, as lossage-size. */
+  function lossageSize(size?: number): number;
+  /** Whether keys are waiting to be read, as input-pending-p: keys given back with unreadKeys. */
+  function inputPendingP(): true | undefined;
+  /** Forget keys waiting to be read, as discard-input. */
+  function discardInput(): void;
 
   interface CompletingReadOptions {
     /** Whether the answer must be one of the completions. */

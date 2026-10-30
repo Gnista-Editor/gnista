@@ -1266,6 +1266,81 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
             },
         )?,
     )?;
+    // Reading a key partway through a command, as Emacs's read-key,
+    // read-event, read-char and read-key-sequence, and recursive edits.
+    let key_context = context.clone();
+    native.set(
+        "readKeyEvent",
+        Function::new(
+            ctx.clone(),
+            move |ctx: Ctx<'js>, kind: String, prompt: String, run: Function<'js>, quit: Opt<Option<Function<'js>>>| {
+                let then = ScriptFunction { run: Persistent::save(&ctx, run), context: key_context.clone() }.into_hook();
+                let quit = quit.0.flatten().map(|f| ScriptFunction { run: Persistent::save(&ctx, f), context: key_context.clone() }.into_hook());
+                let kind = match kind.as_str() {
+                    "key" => ember_core::keyboard::ReadKind::Key,
+                    "event" => ember_core::keyboard::ReadKind::Event,
+                    "char" => ember_core::keyboard::ReadKind::Char,
+                    _ => ember_core::keyboard::ReadKind::KeySequence,
+                };
+                with_editor(&ctx, |ed| ed.read_key_event(kind, &prompt, then, quit))
+            },
+        )?,
+    )?;
+    let edit_context = context.clone();
+    native.set(
+        "recursiveEdit",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, run: Function<'js>, quit: Opt<Option<Function<'js>>>| {
+            let then = ScriptFunction { run: Persistent::save(&ctx, run), context: edit_context.clone() }.into_hook();
+            let quit = quit.0.flatten().map(|f| ScriptFunction { run: Persistent::save(&ctx, f), context: edit_context.clone() }.into_hook());
+            with_editor(&ctx, |ed| {
+                ed.recursive_edit(std::rc::Rc::new(move |ed, _| then(ed, &[]).map(|_| ())), quit);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set("recursionDepth", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.recursion_depth())))?)?;
+    native.set(
+        "thisCommandKeys",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.this_command_keys().iter().map(|k| k.to_string()).collect::<Vec<_>>())))?,
+    )?;
+    native.set(
+        "recentKeys",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, include_cmds: bool| -> rquickjs::Result<Vec<Value<'js>>> {
+            let entries = with_editor(&ctx, |ed| Ok(ed.recent_keys(include_cmds)))?;
+            entries
+                .into_iter()
+                .map(|e| match e {
+                    ember_core::keyboard::Lossage::Key(k) => Ok(rquickjs::String::from_str(ctx.clone(), &k.to_string())?.into_value()),
+                    ember_core::keyboard::Lossage::Command(c) => {
+                        let object = Object::new(ctx.clone())?;
+                        object.set("command", c)?;
+                        Ok(object.into_value())
+                    }
+                })
+                .collect()
+        })?,
+    )?;
+    native.set(
+        "lossageSize",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, size: Opt<usize>| {
+            with_editor(&ctx, |ed| {
+                if let Some(size) = size.0 {
+                    ed.set_lossage_size(size)?;
+                }
+                Ok(ed.lossage_size())
+            })
+        })?,
+    )?;
+    native.set("inputPendingP", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.input_pending_p())))?)?;
+    native.set(
+        "discardInput",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            with_editor(&ctx, |ed| {
+                ed.discard_input();
+                Ok(())
+            })
+        })?,
+    )?;
     // Reading from the minibuffer partway through a command, as Emacs's
     // read-from-minibuffer, completing-read and read-file-name.
     let read_context = context.clone();

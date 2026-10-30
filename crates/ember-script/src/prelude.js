@@ -475,6 +475,18 @@
     yOrNP: (question, then) => answering(then, (answer, quit) => native.ask("y-or-n", String(question), [], answer, quit)),
     readAnswer: (question, answers, then) =>
       answering(then, (answer, quit) => native.ask("answer", String(question), answers.map(String), answer, quit)),
+    readKey: (prompt, then) => answering(then, (answer, quit) => native.readKeyEvent("key", String(prompt ?? ""), answer, quit)),
+    readEvent: (prompt, then) => answering(then, (answer, quit) => native.readKeyEvent("event", String(prompt ?? ""), answer, quit)),
+    readChar: (prompt, then) => answering(then, (answer, quit) => native.readKeyEvent("char", String(prompt ?? ""), answer, quit)),
+    readKeySequence: (prompt, then) => answering(then, (answer, quit) => native.readKeyEvent("sequence", String(prompt ?? ""), answer, quit)),
+    recursiveEdit: (then) => answering(then, (done, quit) => native.recursiveEdit(() => done(undefined), quit)),
+    recursionDepth: () => native.recursionDepth(),
+    thisCommandKeys: () => native.thisCommandKeys().join(" "),
+    thisCommandKeysVector: () => native.thisCommandKeys(),
+    recentKeys: (includeCmds) => native.recentKeys(Boolean(includeCmds)),
+    lossageSize: (size) => (size === undefined ? native.lossageSize() : native.lossageSize(size)),
+    inputPendingP: () => native.inputPendingP() || undefined,
+    discardInput: () => native.discardInput(),
     readCharChoice: (prompt, chars, then) =>
       answering(then, (answer, quit) => native.ask("char", String(prompt), [...String(chars)], answer, quit)),
     completingRead(prompt, collection, then, options) {

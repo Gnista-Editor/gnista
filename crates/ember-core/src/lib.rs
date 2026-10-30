@@ -23,6 +23,7 @@ mod fontify;
 mod insdel;
 pub use insdel::Insertion;
 mod key;
+pub mod keyboard;
 mod keymap;
 pub mod layout;
 mod minibuffer;

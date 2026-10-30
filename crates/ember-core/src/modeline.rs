@@ -267,8 +267,17 @@ impl Editor {
             'p' => self.window_position(f, b),
             '@' => "-".into(),
             '%' => "%".into(),
-            // Recursive edits and the memory-full flag, which Ember has not.
-            '[' | ']' | 'e' => String::new(),
+            // A bracket for each recursive edit, as Emacs's command_loop_level.
+            '[' => match self.recursive_edit_depth() {
+                n if n > 5 => "[[[... ".into(),
+                n => "[".repeat(n),
+            },
+            ']' => match self.recursive_edit_depth() {
+                n if n > 5 => " ...]]]".into(),
+                n => "]".repeat(n),
+            },
+            // The memory-full flag, which Ember has not.
+            'e' => String::new(),
             _ => String::new(),
         }
     }
@@ -376,14 +385,14 @@ pub(crate) fn install(ed: &mut Editor) {
         ),
         (
             "mode-line-modes",
-            "The major mode and the minor modes that are on, in the mode line, in parentheses.",
+            "The major mode and the minor modes that are on, in the mode line, in parentheses, inside a bracket for each recursive edit.",
             Value::List(vec![
-                s("("),
+                s("%[("),
                 sym("mode-name"),
                 sym("minor-mode-alist"),
                 s("%n"),
                 Value::List(vec![sym("defining-kbd-macro"), s(" Def")]),
-                s(") "),
+                s(")%] "),
             ]),
         ),
     ];

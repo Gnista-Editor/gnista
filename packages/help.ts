@@ -114,3 +114,31 @@ ember.defineCommand({
   },
 });
 ember.bindKey("C-h e", "view-echo-area-messages");
+
+// The keys typed lately, after help.el's view-lossage.
+
+const viewLossage = ember.defineCommand({
+  name: "view-lossage",
+  doc:
+    "Show the keys typed lately and the commands they ran, oldest first.\n\n" +
+    "Each line is the keys of one command, with the command as a comment. lossage-size says how many keys are kept.",
+  run: () => {
+    // As view-lossage writes them: the keys separated by spaces, a line a
+    // command, its name a comment indented to column 24 with tabs, as
+    // comment-indent leaves it, or a space after keys that reach past it.
+    let text = "";
+    let line = "";
+    for (const entry of ember.recentKeys(true)) {
+      if (typeof entry === "string") {
+        line += ` ${entry}`;
+        continue;
+      }
+      const column = line.length;
+      const indent = column >= 24 ? " " : "\t".repeat(3 - Math.floor(column / 8));
+      text += `${line}${indent};; ${entry.command}\n`;
+      line = "";
+    }
+    ember.showHelp(text + line);
+  },
+});
+ember.bindKey("C-h l", viewLossage);

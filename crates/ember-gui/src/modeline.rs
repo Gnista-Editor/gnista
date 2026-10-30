@@ -34,7 +34,7 @@ pub fn install(ed: &mut Editor) {
         s("   "),
         propertize(s("%b"), "mode-line-buffer-id"),
         s("   L%l C%c   "),
-        propertize(Value::List(vec![s(""), sym("mode-name"), sym("minor-mode-alist"), s("%n")]), "shadow"),
+        propertize(Value::List(vec![s("%["), sym("mode-name"), sym("minor-mode-alist"), s("%n"), s("%]")]), "shadow"),
         Value::List(vec![sym("defining-kbd-macro"), propertize(s(" Def"), "mode-line-emphasis")]),
     ]);
     ed.set_default("mode-line-format", format);

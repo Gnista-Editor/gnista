@@ -64,7 +64,31 @@ pub(crate) fn install(ed: &mut Editor) {
     help(ed);
     searching(ed);
     fontifying(ed);
+    recursive_editing(ed);
     bind_defaults(ed);
+}
+
+/// Recursive edits, as Emacs's keyboard.c has the commands for them.
+fn recursive_editing(ed: &mut Editor) {
+    def(
+        ed,
+        "recursive-edit",
+        "Edit recursively: go on with commands, with [ ] around the modes in the mode line, until C-M-c goes back to what entered the edit or C-] quits it.",
+        |ed, _| {
+            ed.recursive_edit(std::rc::Rc::new(|_, _| Ok(())), None);
+            Ok(())
+        },
+    );
+    def(ed, "exit-recursive-edit", "Leave the innermost recursive edit or minibuffer, going on with what entered it.", |ed, _| {
+        ed.exit_recursive_edit()
+    });
+    def(ed, "abort-recursive-edit", "Quit the innermost recursive edit or minibuffer, and what entered it.", |ed, _| {
+        ed.abort_recursive_edit()
+    });
+    def(ed, "top-level", "Leave every recursive edit and minibuffer, back to the top level.", |ed, _| {
+        ed.top_level();
+        Ok(())
+    });
 }
 
 /// Fontifying by hand, which redisplay otherwise does as text comes into view.
@@ -1607,6 +1631,8 @@ fn bind_defaults(ed: &mut Editor) {
         ("C-?", "undo-redo"),
         ("C-M-_", "undo-redo"),
         ("C-g", "keyboard-quit"),
+        ("C-]", "abort-recursive-edit"),
+        ("C-M-c", "exit-recursive-edit"),
         ("M-x", "execute-extended-command"),
         ("C-x C-f", "find-file"),
         ("C-x b", "switch-to-buffer"),

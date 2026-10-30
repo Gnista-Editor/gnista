@@ -12,6 +12,10 @@ declare global {
     /** Every command, with the arguments it takes in order. */
     interface Commands {
       /**
+       * Quit the innermost recursive edit or minibuffer, and what entered it.
+       */
+      "abort-recursive-edit": [];
+      /**
        * Break lines as you type a space or newline past fill-column, as auto-fill-function says.
        *
        * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
@@ -814,6 +818,10 @@ declare global {
        * Empty input stands for the prompt's default, if it has one.
        */
       "exit-minibuffer": [];
+      /**
+       * Leave the innermost recursive edit or minibuffer, going on with what entered it.
+       */
+      "exit-recursive-edit": [];
       /**
        * Visit a file, starting from the name of the file at point, as find-file-at-point does.
        *
@@ -3033,6 +3041,10 @@ declare global {
        */
       "recover-this-file": [];
       /**
+       * Edit recursively: go on with commands, with [ ] around the modes in the mode line, until C-M-c goes back to what entered the edit or C-] quits it.
+       */
+      "recursive-edit": [];
+      /**
        * Give the current buffer a new name. Empty input keeps the name it has.
        *
        * If another buffer has the name, it is an error, unless there is a prefix argument: then the name gets a <2> or the like to make it unique, as Emacs's UNIQUE argument says.
@@ -3381,6 +3393,10 @@ declare global {
        */
       "toggle-truncate-lines": [];
       /**
+       * Leave every recursive edit and minibuffer, back to the top level.
+       */
+      "top-level": [];
+      /**
        * Exchange the characters around point, moving forward one character.
        *
        * At the end of a line, exchange the two characters before point. With a prefix argument, move the character before point that many characters forward, or back if negative; with 0, exchange the characters at point and the mark.
@@ -3460,6 +3476,14 @@ declare global {
        * Defined in packages/help.ts.
        */
       "view-echo-area-messages": [];
+      /**
+       * Show the keys typed lately and the commands they ran, oldest first.
+       *
+       * Each line is the keys of one command, with the command as a comment. lossage-size says how many keys are kept.
+       *
+       * Defined in packages/help.ts.
+       */
+      "view-lossage": [];
       /**
        * Continue long lines at word boundaries, and make C-a, C-e and C-k work on screen lines.
        *
@@ -4375,7 +4399,7 @@ declare global {
        */
       "mode-line-format": Value;
       /**
-       * The major mode and the minor modes that are on, in the mode line, in parentheses.
+       * The major mode and the minor modes that are on, in the mode line, in parentheses, inside a bracket for each recursive edit.
        */
       "mode-line-modes": Value;
       /**
@@ -6644,6 +6668,50 @@ declare global {
      */
     function readCharChoice(prompt: string, chars: string): Promise<string>;
     function readCharChoice(prompt: string, chars: string, then: (char: string) => void): void;
+    /**
+     * Read a key, showing `prompt` in the echo area, as Emacs's read-key:
+     * its description, such as "x", "C-x" or "<f1>". C-g quits.
+     */
+    function readKey(prompt?: string): Promise<string>;
+    function readKey(prompt: string | undefined, then: (key: string) => void): void;
+    /** Read an event, a key or a mouse event, as Emacs's read-event; the last mouse event's place is lastMouseEvent(). */
+    function readEvent(prompt?: string): Promise<string>;
+    function readEvent(prompt: string | undefined, then: (key: string) => void): void;
+    /** Read a character, as Emacs's read-char: anything else, such as <f1>, is an error. */
+    function readChar(prompt?: string): Promise<string>;
+    function readChar(prompt: string | undefined, then: (char: string) => void): void;
+    /**
+     * Read a whole key sequence, as the command loop reads one, by the keymaps
+     * active now, as Emacs's read-key-sequence: "C-x C-f". C-g is a key in it.
+     */
+    function readKeySequence(prompt?: string): Promise<string>;
+    function readKeySequence(prompt: string | undefined, then: (keys: string) => void): void;
+    /**
+     * Edit recursively, as Emacs's recursive-edit: the editor goes on taking
+     * commands, with [ ] around the modes in the mode line, until C-M-c
+     * (exit-recursive-edit) resolves this, or C-] (abort-recursive-edit)
+     * quits it.
+     */
+    function recursiveEdit(): Promise<void>;
+    function recursiveEdit(then: () => void): void;
+    /** How deep in recursive edits and minibuffers the editor is, as recursion-depth. */
+    function recursionDepth(): number;
+    /** The keys that ran the command running, its prefix argument's included, as this-command-keys: "C-u C-n". */
+    function thisCommandKeys(): string;
+    /** The same keys one by one, as this-command-keys-vector. */
+    function thisCommandKeysVector(): string[];
+    /**
+     * The keys typed lately, oldest first, as recent-keys; with
+     * `includeCmds`, each command after the keys that ran it. Keys a
+     * keyboard macro replays are not among them.
+     */
+    function recentKeys(includeCmds?: boolean): (string | { command: string })[];
+    /** How many keys recentKeys keeps, 300 to begin with, setting it to `size` if given, as lossage-size. */
+    function lossageSize(size?: number): number;
+    /** Whether keys are waiting to be read, as input-pending-p: keys given back with unreadKeys. */
+    function inputPendingP(): true | undefined;
+    /** Forget keys waiting to be read, as discard-input. */
+    function discardInput(): void;
 
     interface CompletingReadOptions {
       /** Whether the answer must be one of the completions. */
