@@ -1,0 +1,431 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "insert-file",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-e C-x i",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "b.txt"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "inserted\ntext\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "oneinserted\ntext\n\n",
+      "visible": "oneinserted\ntext\n\n",
+      "point": 3,
+      "mark": 17,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "inserted\ntext\n"
+      }
+    },
+    {
+      "name": "insert-file-sets-the-mark-after",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-f C-x i C-x C-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "b.txt"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "inserted\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "oinserted\nne\n",
+      "visible": "oinserted\nne\n",
+      "point": 10,
+      "mark": 1,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "inserted\n"
+      }
+    },
+    {
+      "name": "insert-file-missing",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x i",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "nope.txt"
+        ],
+        "files": {
+          "a.txt": "one\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Opening input file: No such file or directory, DIR/nope.txt",
+      "files": {
+        "a.txt": "one\n"
+      }
+    },
+    {
+      "name": "write-region-new-file",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-n C-SPC M-> M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "write-region",
+          "c.txt"
+        ],
+        "files": {
+          "a.txt": "one\ntwo\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "one\ntwo\n",
+      "visible": "one\ntwo\n",
+      "point": 8,
+      "mark": 4,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\ntwo\n",
+        "c.txt": "two\n"
+      }
+    },
+    {
+      "name": "write-region-over-a-file-confirmed",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x h M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "write-region",
+          "b.txt",
+          "yes"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": 4,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "one\n"
+      }
+    },
+    {
+      "name": "write-region-over-a-file-refused",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x h M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "write-region",
+          "b.txt",
+          "no"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": 4,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": "File already exists: DIR/b.txt",
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n"
+      }
+    },
+    {
+      "name": "append-to-file",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x h M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "append-to-file",
+          "b.txt"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": 4,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\none\n"
+      }
+    },
+    {
+      "name": "append-to-a-new-file",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x h M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "append-to-file",
+          "new.txt"
+        ],
+        "files": {
+          "a.txt": "one\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": 4,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "new.txt": "one\n"
+      }
+    },
+    {
+      "name": "lock-made-on-the-first-change",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n"
+        },
+        "find": "a.txt",
+        "lockfiles": true
+      },
+      "text": "xone\n",
+      "visible": "xone\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        ".#a.txt": "lock",
+        "a.txt": "one\n"
+      }
+    },
+    {
+      "name": "no-lock-before-a-change",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-f C-f",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n"
+        },
+        "find": "a.txt",
+        "lockfiles": true
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n"
+      }
+    },
+    {
+      "name": "lock-gone-after-saving",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "x C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n"
+        },
+        "find": "a.txt",
+        "lockfiles": true
+      },
+      "text": "xone\n",
+      "visible": "xone\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "xone\n",
+        "a.txt~": "one\n"
+      }
+    },
+    {
+      "name": "lock-gone-after-undoing-to-the-file",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "x C-/",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n"
+        },
+        "find": "a.txt",
+        "lockfiles": true
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n"
+      }
+    },
+    {
+      "name": "lock-gone-after-killing-the-buffer",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x b C-x b x C-x k",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "*scratch*",
+          "a.txt",
+          "",
+          "yes"
+        ],
+        "files": {
+          "a.txt": "one\n"
+        },
+        "find": "a.txt",
+        "lockfiles": true
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n"
+      }
+    },
+    {
+      "name": "lock-gone-after-reverting",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "x M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "revert-buffer",
+          "yes"
+        ],
+        "files": {
+          "a.txt": "one\n"
+        },
+        "find": "a.txt",
+        "lockfiles": true
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n"
+      }
+    }
+  ]
+}

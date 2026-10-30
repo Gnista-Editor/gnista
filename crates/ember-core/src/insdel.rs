@@ -199,6 +199,7 @@ impl Editor {
             ));
         }
         self.verify_interval_modification(start, end, &inhibit)?;
+        self.lock_on_first_change()?;
         if self.in_change_hooks || self.modification_hooks_inhibited() {
             return Ok(Pending::default());
         }

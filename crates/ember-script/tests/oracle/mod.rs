@@ -64,6 +64,9 @@ pub struct Case {
     /// numbers, strings, and true or false for t and nil.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub vars: BTreeMap<String, serde_json::Value>,
+    /// Whether editing makes lock files, `create-lockfiles`, off otherwise.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub lockfiles: bool,
 }
 
 #[derive(Deserialize)]
@@ -114,6 +117,8 @@ pub struct Input {
     pub message: bool,
     #[serde(default)]
     pub vars: BTreeMap<String, serde_json::Value>,
+    #[serde(default)]
+    pub lockfiles: bool,
 }
 
 impl Input {
@@ -137,6 +142,7 @@ impl Input {
             disk: case.disk.clone(),
             message: case.message,
             vars: case.vars.clone(),
+            lockfiles: case.lockfiles,
         }
     }
 }
@@ -193,11 +199,16 @@ fn listing(dir: &Path) -> BTreeMap<String, String> {
         for entry in std::fs::read_dir(dir).expect("the case's directory can be read") {
             let entry = entry.expect("a directory entry");
             let name = entry.file_name().to_string_lossy().into_owned();
+            let path = entry.path();
+            let relative = path.strip_prefix(root).expect("inside the case's directory").display().to_string();
+            // A lock file names the process that made it, so only that it is there compares.
+            if name.starts_with(".#") {
+                files.insert(relative, "lock".into());
+                continue;
+            }
             if name.starts_with('.') {
                 continue;
             }
-            let path = entry.path();
-            let relative = path.strip_prefix(root).expect("inside the case's directory").display().to_string();
             if path.is_dir() {
                 files.insert(format!("{relative}/"), String::new());
                 walk(root, &path, files);
@@ -294,6 +305,8 @@ pub fn run(case: &Case) -> State {
     let _scripting = Scripting::new(&mut ed).expect("scripting starts");
     // As in Emacs, deleting deletes, which also keeps cases out of the trash.
     ed.set_variable("delete-by-moving-to-trash", ember_core::Value::Bool(false));
+    // Lock files only where a case asks for them, as record.el has it.
+    ed.set_variable("create-lockfiles", ember_core::Value::Bool(case.lockfiles));
     // Batch Emacs's frame: 80 columns, and 24 lines above the echo area.
     ed.set_frame_size(80, 24);
     // A directory of the case's own, outside the temporary one, where
@@ -345,6 +358,9 @@ pub fn run(case: &Case) -> State {
     // after the case's: the message log, then *scratch*.
     ed.get_buffer_create("*Messages*");
     ed.get_buffer_create("*scratch*");
+    // Last in the buffer list, in this order, as record.el buries them.
+    let _ = ed.bury_buffer_internal("*Messages*");
+    let _ = ed.bury_buffer_internal("*scratch*");
     if case.agenda_files {
         let file = file.as_ref().expect("agenda_files needs visit");
         ed.set_variable("org-agenda-files", ember_core::Value::List(vec![ember_core::Value::Str(file.display().to_string())]));

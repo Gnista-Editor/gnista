@@ -574,6 +574,28 @@ pub(crate) fn install(ed: &mut Editor) {
             true,
         ),
         Variable::new(
+            "file-name-handler-alist",
+            "Functions that handle file names of their own, as [regexp, handler] pairs: a file primitive on a name the regexp matches calls the handler with the operation's name and its arguments instead, as TRAMP's remote names are handled.\n\n\
+             Of several that match, the one matching furthest along the name is called.",
+            Value::Null,
+        ),
+        Variable::new(
+            "inhibit-file-name-handlers",
+            "Handlers not to call for inhibit-file-name-operation, as a handler binds them to do the real operation in turn.",
+            Value::Null,
+        ),
+        Variable::new("inhibit-file-name-operation", "The operation inhibit-file-name-handlers applies to.", Value::Null),
+        Variable::new(
+            "create-lockfiles",
+            "Whether editing a file makes a lock file beside it, .#name, so another Emacs or Ember editing it is warned.",
+            true,
+        ),
+        Variable::new(
+            "temporary-file-directory",
+            "Where temporary files are made.",
+            Value::Str(format!("{}/", std::env::temp_dir().display().to_string().trim_end_matches('/'))),
+        ),
+        Variable::new(
             "case-symbols-as-words",
             "Whether the case commands take symbol constituents as part of words, as well as word constituents, so capitalizing foo_bar gives Foo_bar.",
             false,

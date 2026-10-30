@@ -37,6 +37,13 @@ pub struct FileState {
     /// Set when an edit was refused because the file changed on disk, for
     /// the editor to ask what to do.
     pub(crate) threatened: bool,
+    /// Whether this buffer holds its file's lock, `.#name`.
+    pub(crate) locked: bool,
+    /// Whether the user chose to edit without the lock another holds.
+    pub(crate) lock_ignored: bool,
+    /// Who holds the lock, when an edit was refused because another does,
+    /// for the editor to ask what to do.
+    pub(crate) lock_threat: Option<String>,
 }
 
 /// The modification time of a file, if it exists.
@@ -75,7 +82,7 @@ pub(crate) fn read_file(path: &Path) -> Result<(String, Coding)> {
 
 impl Buffer {
     /// The buffer's coding system, from `buffer-file-coding-system`.
-    fn coding(&self) -> Coding {
+    pub(crate) fn coding(&self) -> Coding {
         match self.locals.get("buffer-file-coding-system") {
             Some(Value::Str(name)) => Coding::parse(name, Eol::Unix).unwrap_or_default(),
             // Not visited from a file: the variable's default.
@@ -173,6 +180,12 @@ impl Editor {
         let precious = self.variable("file-precious-flag").is_some_and(|v| v.is_true());
         let delete_auto_save = self.variable("delete-auto-save-files").is_none_or(|v| v.is_true());
         let path = self.buffers[self.current].path.clone().ok_or_else(|| Error::new("Buffer is not visiting a file"))?;
+        // A file a handler serves is written through it, as basic-save-buffer
+        // writes with write-region.
+        let name = path.display().to_string();
+        if self.find_file_name_handler(&name, "write-region").is_some() {
+            return self.write_region(crate::filefns::WriteSource::Buffer, &name, false, crate::filefns::Visit::Yes, false);
+        }
         self.check_permission(&format!("write {}", crate::files::abbreviate_path(&path)))?;
         let b = &mut self.buffers[self.current];
         // Through symbolic links to the file itself, as Emacs's file-chase-links.
@@ -373,6 +386,8 @@ impl Editor {
             self.message(format!("Error in kill-emacs-hook: {e}"));
         }
         self.hang_up_processes();
+        // As Emacs's unlock_all_files on the way out.
+        self.release_all_locks();
         self.quit = true;
         Ok(())
     }

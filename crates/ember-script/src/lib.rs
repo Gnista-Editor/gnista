@@ -1601,8 +1601,9 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     )?;
     native.set(
         "fileDirectoryP",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| with_editor(&ctx, |ed| Ok(ed.expand_file_name(&file).is_dir())))?,
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| with_editor(&ctx, |ed| ed.file_directory_p(&file)))?,
     )?;
+    file_functions(ctx, native)?;
     native.set(
         "bufferList",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| {
@@ -1666,8 +1667,8 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     )?;
     native.set(
         "directoryFiles",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, dir: String| {
-            with_editor(&ctx, |ed| ember_core::fileops::directory_files(&ed.expand_file_name(&dir)))
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, dir: String, full: Opt<bool>, pattern: Opt<Option<String>>, nosort: Opt<bool>, count: Opt<Option<usize>>| {
+            with_editor(&ctx, |ed| ed.directory_files(&dir, full.0.unwrap_or(false), pattern.0.flatten().as_deref(), nosort.0.unwrap_or(false), count.0.flatten()))
         })?,
     )?;
     native.set(
@@ -1773,7 +1774,7 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     )?;
     native.set(
         "fileExists",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| with_editor(&ctx, |ed| Ok(ed.expand_file_name(&file).exists())))?,
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| with_editor(&ctx, |ed| ed.file_exists_p(&file)))?,
     )?;
     native.set(
         "autoSaveFileName",
@@ -2845,6 +2846,111 @@ fn char_range(value: &Value) -> Option<ember_core::chartab::CharRange> {
     }
     char_code(value).map(CharRange::Char)
 }
+
+/// The file primitives as fileio.c, dired.c and filelock.c give them to
+/// Lisp, each offered first to a handler in file-name-handler-alist.
+fn file_functions<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::Result<()> {
+    let predicates: [(&str, FilePredicate); 7] = [
+        ("fileExistsP", |ed, f| ed.file_exists_p(f)),
+        ("fileReadableP", |ed, f| ed.file_readable_p(f)),
+        ("fileWritableP", |ed, f| ed.file_writable_p(f)),
+        ("fileExecutableP", |ed, f| ed.file_executable_p(f)),
+        ("fileRegularP", |ed, f| ed.file_regular_p(f)),
+        ("fileAccessibleDirectoryP", |ed, f| ed.file_accessible_directory_p(f)),
+        ("fileNameAbsoluteP", |_, f| Ok(ember_core::file_name_absolute_p(f))),
+    ];
+    for (name, test) in predicates {
+        native.set(name, Function::new(ctx.clone(), move |ctx: Ctx<'js>, file: String| with_editor(&ctx, |ed| test(ed, &file)))?)?;
+    }
+    native.set("fileSymlinkP", Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| with_editor(&ctx, |ed| ed.file_symlink_p(&file)))?)?;
+    native.set(
+        "fileNewerThanFileP",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, a: String, b: String| with_editor(&ctx, |ed| ed.file_newer_than_file_p(&a, &b)))?,
+    )?;
+    native.set(
+        "fileModes",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String, nofollow: Opt<bool>| with_editor(&ctx, |ed| ed.file_modes(&file, nofollow.0.unwrap_or(false))))?,
+    )?;
+    native.set("setFileModes", Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String, mode: u32| with_editor(&ctx, |ed| ed.set_file_modes(&file, mode)))?)?;
+    native.set(
+        "setFileTimes",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String, time: Opt<Option<f64>>| with_editor(&ctx, |ed| ed.set_file_times(&file, time.0.flatten())))?,
+    )?;
+    native.set("fileTruename", Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| with_editor(&ctx, |ed| ed.file_truename(&file)))?)?;
+    native.set(
+        "substituteInFileName",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| with_editor(&ctx, |_| ember_core::substitute_in_file_name(&file)))?,
+    )?;
+    native.set(
+        "fileNameConcat",
+        Function::new(ctx.clone(), |parts: Vec<String>| ember_core::file_name_concat(&parts.iter().map(String::as_str).collect::<Vec<_>>()))?,
+    )?;
+    native.set(
+        "makeTempFile",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, prefix: String, dir: bool, suffix: String, text: Opt<Option<String>>| {
+            with_editor(&ctx, |ed| ed.make_temp_file(&prefix, dir, &suffix, text.0.flatten().as_deref()))
+        })?,
+    )?;
+    native.set(
+        "findFileNameHandler",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String, operation: String| -> rquickjs::Result<Value<'js>> {
+            let handler = with_editor(&ctx, |ed| Ok(ed.find_file_name_handler(&file, &operation)))?;
+            value_to_js(&ctx, &handler.unwrap_or(EditorValue::Null))
+        })?,
+    )?;
+    native.set(
+        "insertFileContents",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String, options: Object<'js>| -> rquickjs::Result<Value<'js>> {
+            let visit = options.get::<_, Option<bool>>("visit")?.unwrap_or(false);
+            let replace = options.get::<_, Option<bool>>("replace")?.unwrap_or(false);
+            let (beg, end) = (options.get::<_, Option<usize>>("beg")?, options.get::<_, Option<usize>>("end")?);
+            let (name, n) = with_editor(&ctx, |ed| ed.insert_file_contents(&file, visit, beg, end, replace))?;
+            value_to_js(&ctx, &EditorValue::List(vec![EditorValue::Str(name), EditorValue::Number(n as f64)]))
+        })?,
+    )?;
+    native.set(
+        "writeRegion",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, start: Value<'js>, end: Option<usize>, file: String, options: Object<'js>| {
+            let append = options.get::<_, Option<bool>>("append")?.unwrap_or(false);
+            let quiet = options.get::<_, Option<bool>>("quiet")?.unwrap_or(false);
+            let mustbenew = options.get::<_, Option<bool>>("mustbenew")?.unwrap_or(false);
+            let visit: Value<'js> = options.get("visit")?;
+            let source = if start.is_null() || start.is_undefined() {
+                ember_core::WriteSource::Buffer
+            } else if let Some(text) = start.as_string() {
+                ember_core::WriteSource::Text(text.to_string()?)
+            } else {
+                let a = start.as_number().unwrap_or(0.0) as usize;
+                ember_core::WriteSource::Region(a, end.unwrap_or(a))
+            };
+            let visit = if let Some(name) = visit.as_string() {
+                ember_core::Visit::Name(name.to_string()?)
+            } else if visit.as_bool() == Some(true) {
+                ember_core::Visit::Yes
+            } else if quiet {
+                ember_core::Visit::Quiet
+            } else {
+                ember_core::Visit::No
+            };
+            with_editor(&ctx, |ed| ed.write_region(source, &file, append, visit, mustbenew))
+        })?,
+    )?;
+    native.set(
+        "fileLockedP",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| -> rquickjs::Result<Value<'js>> {
+            let owner = with_editor(&ctx, |ed| ed.file_locked_p(&file))?;
+            Ok(match owner {
+                ember_core::filelock::LockOwner::None => Value::new_undefined(ctx.clone()),
+                ember_core::filelock::LockOwner::Me => Value::new_bool(ctx.clone(), true),
+                ember_core::filelock::LockOwner::Other(owner) => rquickjs::String::from_str(ctx.clone(), &owner)?.into_value(),
+            })
+        })?,
+    )?;
+    Ok(())
+}
+
+/// A file predicate, as fileio.c's `file-*-p`.
+type FilePredicate = fn(&mut Editor, &str) -> Result<bool>;
 
 /// The editor's current or standard table of a kind.
 type TableGetter = fn(&mut Editor) -> u64;

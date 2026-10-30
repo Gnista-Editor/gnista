@@ -40,6 +40,9 @@ Each entry says whether the difference is **deliberate**, which keeps it, or **n
 - **Auto-revert** (not yet) polls every `auto-revert-interval` seconds rather than being told by the system ([ADR 0018](adr/0018-files-and-saving.md)).
 - **The clipboard** (not yet): X11's primary selection is not used, and the terminal does not write the clipboard ([ADR 0031](adr/0031-the-system-clipboard.md)).
 - **Dired** (not yet): `M-DEL` and `* c` read their mark as text and RET, where Emacs reads a key ([ADR 0022](adr/0022-dired-and-projects.md)).
+- **`directory-files`** (not yet) sorts the names even with NOSORT, where Emacs gives the directory's own order ([ADR 0033](adr/0033-file-primitives.md)).
+- **File name handlers** (not yet) are asked by the primitives in ADR 0033 and by visiting and saving, but not yet by `expand-file-name`, `file-attributes` or the copying and renaming commands.
+- **Changing a file's modes or times** (deliberate) asks the agent's permission while it acts, as writing files does; Emacs has no agent to ask.
 
 ## Invisible differences
 

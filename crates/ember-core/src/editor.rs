@@ -778,9 +778,12 @@ impl Editor {
     fn execute(&mut self, command: Rc<Command>, args: Vec<Arg>, prefix: Option<PrefixArg>) {
         let start = (self.buffers[self.current].id, self.buffers[self.current].point());
         if let Err(e) = self.run_command(command.clone(), args.clone(), prefix) {
-            match self.take_supersession() {
-                Some((buffer, path)) => self.ask_about_supersession(buffer, path, command, args, prefix, start),
-                None => self.fail(e),
+            if let Some((buffer, path)) = self.take_supersession() {
+                self.ask_about_supersession(buffer, path, command, args, prefix, start);
+            } else if let Some((buffer, path, owner)) = self.take_lock_threat() {
+                self.ask_about_lock(buffer, path, owner, command, args, prefix, start);
+            } else {
+                self.fail(e);
             }
         }
         // After the command, as before it, the selected window's buffer is current.
@@ -794,6 +797,60 @@ impl Editor {
         self.show_error(e.to_string());
         self.last_error = Some(e);
         self.command_failed = true;
+    }
+
+    /// The buffer whose edit was refused because another process holds its
+    /// file's lock, if any, its file and who holds it.
+    fn take_lock_threat(&mut self) -> Option<(u64, std::path::PathBuf, String)> {
+        let b = self.buffers.iter_mut().find(|b| b.file.lock_threat.is_some())?;
+        let owner = b.file.lock_threat.take()?;
+        Some((b.id, b.path.clone()?, owner))
+    }
+
+    /// Asks what to do about editing a file another process has locked, as
+    /// Emacs's `ask-user-about-lock`: s takes the lock and p goes ahead
+    /// without it, each running the command again from where it started, as
+    /// Emacs carries on with it; q leaves the file alone.
+    #[allow(clippy::too_many_arguments)]
+    fn ask_about_lock(
+        &mut self,
+        buffer: u64,
+        path: std::path::PathBuf,
+        owner: String,
+        command: Rc<Command>,
+        args: Vec<Arg>,
+        prefix: Option<PrefixArg>,
+        start: (u64, usize),
+    ) {
+        let file = path.display().to_string();
+        let short = |s: &str, max: usize| if s.chars().count() > max { format!("...{}", s.chars().skip(s.chars().count() - max).collect::<String>()) } else { s.to_string() };
+        let short_owner = if owner.chars().count() > 25 {
+            let pid = owner.find(" (pid ").map_or("", |i| &owner[i..]);
+            format!("{}...{pid}", owner.chars().take(13).collect::<String>())
+        } else {
+            owner.clone()
+        };
+        let prompt = format!("{} locked by {short_owner}: (s, q, p, ?)? ", short(&file, 22));
+        let then: crate::variables::HookFn = Rc::new(move |ed, answer| {
+            let Some(index) = ed.buffers.iter().position(|b| b.id == buffer) else { return Ok(()) };
+            match answer.first() {
+                Some(Value::Str(a)) if a == "s" || a == "p" => {
+                    if a == "s" {
+                        ed.steal_lock(buffer);
+                    } else {
+                        ed.buffers[index].file.lock_ignored = true;
+                    }
+                    if let Some(b) = ed.buffers.iter_mut().find(|b| b.id == start.0) {
+                        b.set_point(start.1);
+                    }
+                    ed.run_command(command.clone(), args.clone(), prefix)
+                }
+                _ => Err(Error::signal("file-locked", format!("File is locked: {file}, {owner}"), vec![Value::Str(file.clone()), Value::Str(owner.clone())])),
+            }
+        });
+        if let Err(e) = self.read_char_choice(&prompt, &['s', 'q', 'p'], then) {
+            self.fail(e);
+        }
     }
 
     /// The buffer whose edit was refused because its file changed on disk,
@@ -1112,6 +1169,8 @@ impl Editor {
             self.adjust_point_for_invisible(old_point, modified);
         }
         self.keep_point_out_of_prompt();
+        // Buffers saved, reverted or undone back to their file give up its lock.
+        self.release_locks();
     }
 
     // Keys
@@ -1605,6 +1664,7 @@ impl Editor {
             self.buffers[self.buffers.len() - 1].id
         });
         let current = if self.current == index { other } else { self.buffers[self.current].id };
+        self.release_lock_of(index);
         let mut removed = self.buffers.remove(index);
         // Its markers point nowhere now.
         self.detached_markers.extend(removed.take_markers());
@@ -1662,20 +1722,40 @@ impl Editor {
 
     /// Visits a file in a buffer, reusing the buffer if the file is already open.
     pub fn visit_file(&mut self, path: &Path) -> Result<()> {
-        if path.is_dir() {
-            return Err(Error::new(format!("{} is a directory", path.display())));
-        }
         if let Some(index) = self.buffers.iter().position(|b| b.path.as_deref() == Some(path)) {
             self.select(index);
             return Ok(());
         }
-        let is_new = !path.exists();
-        let mut buffer = Self::read_visited_file(path)?;
-        buffer.name = self.unique_buffer_name(&buffer.name);
-        // As Emacs's after-find-file, a file that cannot be written is read-only.
-        buffer.read_only = fs::metadata(path).is_ok_and(|m| m.permissions().readonly());
-        self.buffers.push(buffer);
-        self.select(self.buffers.len() - 1);
+        let name = path.display().to_string();
+        let handled = self.find_file_name_handler(&name, "insert-file-contents").is_some();
+        let is_new = if handled { !self.file_exists_p(&name)? } else { !path.exists() };
+        if handled {
+            // A file a handler serves is read through it, as find-file reads
+            // with insert-file-contents.
+            let base = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| name.clone());
+            let mut buffer = Buffer::new(self.unique_buffer_name(&base));
+            buffer.path = Some(path.to_path_buf());
+            self.buffers.push(buffer);
+            self.select(self.buffers.len() - 1);
+            if !is_new {
+                let read = self.insert_file_contents(&name, true, None, None, false);
+                let b = self.buffer_mut();
+                b.set_point(0);
+                b.mark_saved();
+                b.clear_undo();
+                read?;
+            }
+        } else {
+            if path.is_dir() {
+                return Err(Error::new(format!("{} is a directory", path.display())));
+            }
+            let mut buffer = Self::read_visited_file(path)?;
+            buffer.name = self.unique_buffer_name(&buffer.name);
+            // As Emacs's after-find-file, a file that cannot be written is read-only.
+            buffer.read_only = fs::metadata(path).is_ok_and(|m| m.permissions().readonly());
+            self.buffers.push(buffer);
+            self.select(self.buffers.len() - 1);
+        }
         // As Emacs's after-find-file: auto-saving starts, and a newer
         // auto-save file is pointed out.
         if self.variable("auto-save-default").is_none_or(|v| v.is_true()) {

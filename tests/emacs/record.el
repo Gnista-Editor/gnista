@@ -75,9 +75,13 @@ slash, then what it holds."
     (mapcan (lambda (name)
               (let* ((path (expand-file-name name dir))
                      (relative (file-relative-name path ember-oracle--files)))
-                (if (file-directory-p path)
+                (cond
+                 ;; A lock file names the process that made it, so only that it is there compares.
+                 ((string-prefix-p ".#" name) (list (cons relative "lock")))
+                 ((file-directory-p path)
                     (cons (cons (concat relative "/") "")
-                          (ember-oracle--listing (file-name-as-directory path)))
+                          (ember-oracle--listing (file-name-as-directory path))))
+                 (t
                   (let* ((raw (with-temp-buffer
                                 (set-buffer-multibyte nil)
                                 (insert-file-contents-literally path)
@@ -87,8 +91,8 @@ slash, then what it holds."
                     (list (cons relative
                                 (if (seq-some (lambda (c) (>= c #x3FFF80)) text)
                                     (concat "latin-1:" (decode-coding-string raw 'latin-1))
-                                  text)))))))
-            (directory-files dir nil "\\`[^.]"))))
+                                  text))))))))
+            (directory-files dir nil "\\`\\(?:[^.]\\|\\.#\\)"))))
 
 (defvar ember-oracle--disk nil
   "The text <f33> gives the visited file.")
@@ -277,6 +281,8 @@ answers come, and then from its answers, as save-some-buffers' do."
     ;; the case's buffer, then *Messages*, then *scratch*.
     (bury-buffer "*Messages*")
     (bury-buffer "*scratch*")
+    ;; Lock files only where a case asks for them.
+    (setq create-lockfiles (eq (alist-get 'lockfiles case) t))
     (with-current-buffer (ember-oracle--case-buffer case text)
       ;; The window as new, as Ember's is, with no buffers shown before.
       (set-window-prev-buffers nil nil)
@@ -459,7 +465,8 @@ The whole buffer, even if the case left it narrowed."
                   ,@(and (alist-get 'find case) `((find . ,(alist-get 'find case))))
                   ,@(and (alist-get 'disk case) `((disk . ,(alist-get 'disk case))))
                   ,@(and (alist-get 'message case) '((message . t)))
-                  ,@(and (alist-get 'vars case) `((vars . ,(alist-get 'vars case))))))
+                  ,@(and (alist-get 'vars case) `((vars . ,(alist-get 'vars case))))
+                  ,@(and (alist-get 'lockfiles case) '((lockfiles . t)))))
         ,@(if (derived-mode-p 'dired-mode)
               ;; Sizes and dates differ between runs: compare marks and names.
               (let ((dired (ember-oracle--dired-normalize)))

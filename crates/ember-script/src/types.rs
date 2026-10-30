@@ -703,8 +703,68 @@ const API: &str = r##"
   }
   /** A file's attributes, or undefined if there is no such file. */
   function fileAttributes(file: string): FileAttributes | undefined;
-  /** The names in a directory, with "." and "..", sorted, as Emacs's directory-files. */
-  function directoryFiles(dir: string): string[];
+  /**
+   * The names in a directory, with "." and "..", sorted, as Emacs's
+   * directory-files: with `full`, absolute; only those the Emacs regexp
+   * `match` matches; at most `count`.
+   */
+  function directoryFiles(dir: string, options?: { full?: boolean; match?: string; nosort?: boolean; count?: number }): string[];
+  /** Whether a file exists, through symbolic links, as file-exists-p. A file name handler may answer. */
+  function fileExistsP(file: string): boolean;
+  /** Whether Ember can read a file, as file-readable-p. */
+  function fileReadableP(file: string): boolean;
+  /** Whether Ember could write a file: the file if it exists, else its directory, as file-writable-p. */
+  function fileWritableP(file: string): boolean;
+  /** Whether a file can be run, or a directory entered, as file-executable-p. */
+  function fileExecutableP(file: string): boolean;
+  /** Whether a file is a regular file, through symbolic links, as file-regular-p. */
+  function fileRegularP(file: string): boolean;
+  /** Whether a directory can be listed and entered, as file-accessible-directory-p. */
+  function fileAccessibleDirectoryP(file: string): boolean;
+  /** What a symbolic link points to, as file-symlink-p, or undefined if the file is not one. */
+  function fileSymlinkP(file: string): string | undefined;
+  /** Whether `a` was modified after `b`, or exists where `b` does not, as file-newer-than-file-p. */
+  function fileNewerThanFileP(a: string, b: string): boolean;
+  /** Whether a file name is absolute, starting with / or ~, as file-name-absolute-p. */
+  function fileNameAbsoluteP(file: string): boolean;
+  /** A file's mode bits, 0o644 as 420, as file-modes; with `nofollow`, a symbolic link's own. */
+  function fileModes(file: string, options?: { nofollow?: boolean }): number | undefined;
+  /** Set a file's mode bits, as set-file-modes. */
+  function setFileModes(file: string, mode: number): void;
+  /** Set when a file was last modified and read, in milliseconds since 1970, or to now, as set-file-times. */
+  function setFileTimes(file: string, time?: number): void;
+  /** A file's name with the symbolic links in it followed, as file-truename. */
+  function fileTruename(file: string): string;
+  /** A file name with $VAR and ${VAR} from the environment, and starting again after // or /~, as substitute-in-file-name. */
+  function substituteInFileName(file: string): string;
+  /** A directory and file names joined with one slash between each, as file-name-concat. */
+  function fileNameConcat(...parts: (string | undefined | null)[]): string;
+  /**
+   * Make a file, or with `dir` a directory, of a new name starting with
+   * `prefix` in temporary-file-directory, holding `text`, as make-temp-file.
+   * Returns its name.
+   */
+  function makeTempFile(prefix: string, options?: { dir?: boolean; suffix?: string; text?: string }): string;
+  /** The handler file-name-handler-alist has for an operation on a file name, as find-file-name-handler. */
+  function findFileNameHandler(file: string, operation: string | symbol): Value | undefined;
+  /**
+   * Insert a file's text after point, as Emacs's insert-file-contents, and
+   * return its absolute name and how many characters went in. `beg` and
+   * `end` take only those bytes. With `visit`, the buffer visits the file
+   * and is unmodified; with `replace`, the file's text replaces the
+   * buffer's, what is the same at either end staying.
+   */
+  function insertFileContents(file: string, options?: { visit?: boolean; beg?: number; end?: number; replace?: boolean }): [string, number];
+  /**
+   * Write text to a file, as Emacs's write-region: the whole buffer when
+   * `start` is null, the text from `start` to `end`, or a string. `append`
+   * adds to the file's end, `mustbenew` refuses a file that exists, and
+   * `visit` makes the buffer visit the file, or another name. Says "Wrote"
+   * unless `quiet`.
+   */
+  function writeRegion(start: number | string | null, end: number | null, file: string, options?: { append?: boolean; visit?: true | string; quiet?: boolean; mustbenew?: boolean }): void;
+  /** Whose lock a file has, as file-locked-p: true for Ember's own, the other process's user@host (pid N), or undefined. */
+  function fileLockedP(file: string): true | string | undefined;
   /**
    * Copy a file, as Emacs's copy-file: into `to` if it ends in a slash. A
    * file already there is replaced only with `okIfExists`. Returns the copy's name.

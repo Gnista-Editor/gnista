@@ -704,3 +704,55 @@ ember.bindKey("C-x C-c", "save-buffers-kill-terminal");
 ember.bindKey("C-x x g", "revert-buffer-quick");
 ember.bindKey("M-~", "not-modified");
 ember.bindKey("C-x RET f", "set-buffer-file-coding-system");
+
+// Inserting and writing parts of files, after files.el's insert-file and
+// append-to-file and fileio.c's write-region command.
+
+const insertFile = ember.defineCommand({
+  name: "insert-file",
+  doc: "Insert a file's text after point, leaving point before it and the mark after it.",
+  params: [{ name: "file", kind: "file", prompt: "Insert file: " }],
+  run: (file) => {
+    // The name as it was given, as insert-file-1 signals it.
+    if (ember.fileDirectoryP(file)) {
+      ember.signal("file-error", `Opening input file: Is a directory, ${file}`, ["Opening input file", "Is a directory", file]);
+    }
+    const [, inserted] = ember.insertFileContents(file);
+    ember.pushMark(ember.point() + inserted);
+    ember.message("Mark set");
+  },
+});
+ember.bindKey("C-x i", insertFile);
+
+ember.defineCommand({
+  name: "write-region",
+  doc:
+    "Write the region to a file, as it is, the buffer still visiting its own.\n\n" +
+    "A file that exists is overwritten only if you say so.",
+  params: [
+    { name: "start", kind: "region-beginning" },
+    { name: "end", kind: "region-end" },
+    { name: "file", kind: "file", prompt: "Write region to file: " },
+  ],
+  run: async (start, end, file) => {
+    const name = ember.expandFileName(file);
+    // As write-region's interactive MUSTBENEW, as barf_or_query_if_file_exists asks.
+    if (ember.calledInteractively() && ember.fileExistsP(name)) {
+      if (!(await ember.yesOrNoP(`File ${name} already exists; overwrite anyway? `))) {
+        ember.signal("file-already-exists", `File already exists: ${name}`, ["File already exists", name]);
+      }
+    }
+    ember.writeRegion(start, end, name);
+  },
+});
+
+ember.defineCommand({
+  name: "append-to-file",
+  doc: "Add the region to the end of a file.",
+  params: [
+    { name: "start", kind: "region-beginning" },
+    { name: "end", kind: "region-end" },
+    { name: "file", kind: "file", prompt: "Append to file: " },
+  ],
+  run: (start, end, file) => ember.writeRegion(start, end, file, { append: true }),
+});

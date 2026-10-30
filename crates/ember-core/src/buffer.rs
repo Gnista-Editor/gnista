@@ -304,10 +304,24 @@ impl Buffer {
 
     /// Marks the buffer as just saved: unmodified, with undo able to tell
     /// it returned to this text.
+    /// Forgets the buffer's undo history, as visiting a file starts it afresh.
+    pub(crate) fn clear_undo(&mut self) {
+        self.undo_groups.clear();
+        self.open_group.clear();
+        self.pending_undo = None;
+        self.selective_undo = None;
+    }
+
     pub(crate) fn mark_saved(&mut self) {
         self.undo_boundary();
         self.save_generation += 1;
         self.modified = false;
+        // Saved or reverted, the buffer gives up its file's lock, as unlock_file.
+        if std::mem::take(&mut self.file.locked)
+            && let Some(path) = &self.path
+        {
+            crate::filelock::unlock(path);
+        }
     }
 
     pub fn text(&self) -> &Rope {

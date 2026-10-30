@@ -16,6 +16,16 @@ declare global {
        */
       "abort-recursive-edit": [];
       /**
+       * Add the region to the end of a file.
+       *
+       * @param start region start
+       * @param end region end
+       * @param file file name
+       *
+       * Defined in packages/files.ts.
+       */
+      "append-to-file": [start: number, end: number, file: string];
+      /**
        * Break lines as you type a space or newline past fill-column, as auto-fill-function says.
        *
        * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
@@ -1188,6 +1198,14 @@ declare global {
        * @param text text
        */
       "insert": [text: string];
+      /**
+       * Insert a file's text after point, leaving point before it and the mark after it.
+       *
+       * @param file file name
+       *
+       * Defined in packages/files.ts.
+       */
+      "insert-file": [file: string];
       /**
        * Put parens around the next sexp, or as many as the prefix argument says, leaving point after the open paren. With no argument, insert () and leave point between them; with the region active, put them around it.
        *
@@ -3561,6 +3579,18 @@ declare global {
        */
       "write-file": [file: string];
       /**
+       * Write the region to a file, as it is, the buffer still visiting its own.
+       *
+       * A file that exists is overwritten only if you say so.
+       *
+       * @param start region start
+       * @param end region end
+       * @param file file name
+       *
+       * Defined in packages/files.ts.
+       */
+      "write-region": [start: number, end: number, file: string];
+      /**
        * The mode of *xref*: places found, by file. n and p show the next and previous, RET visits one, TAB visits it and quits, q quits.
        *
        * Defined in packages/xref.ts.
@@ -3921,6 +3951,10 @@ declare global {
        */
       "completion-styles": Value;
       /**
+       * Whether editing a file makes a lock file beside it, .#name, so another Emacs or Ember editing it is warned.
+       */
+      "create-lockfiles": Value;
+      /**
        * Keymap ctl-x-4-map.
        */
       "ctl-x-4-map": Value;
@@ -4203,6 +4237,12 @@ declare global {
        */
       "fido-vertical-mode-map": Value;
       /**
+       * Functions that handle file names of their own, as [regexp, handler] pairs: a file primitive on a name the regexp matches calls the handler with the operation's name and its arguments instead, as TRAMP's remote names are handled.
+       *
+       * Of several that match, the one matching furthest along the name is called.
+       */
+      "file-name-handler-alist": Value;
+      /**
        * File names answered in the minibuffer, newest first.
        */
       "file-name-history": Value;
@@ -4366,6 +4406,14 @@ declare global {
        * Whether indenting uses tabs as well as spaces, a tab for every tab-width columns.
        */
       "indent-tabs-mode": Value;
+      /**
+       * Handlers not to call for inhibit-file-name-operation, as a handler binds them to do the real operation in turn.
+       */
+      "inhibit-file-name-handlers": Value;
+      /**
+       * The operation inhibit-file-name-handlers applies to.
+       */
+      "inhibit-file-name-operation": Value;
       /**
        * Whether changes to the text run no before-change-functions or after-change-functions. Those functions run with it on.
        */
@@ -5119,6 +5167,10 @@ declare global {
        * How many columns apart tab stops are, for showing tab characters.
        */
       "tab-width": Value;
+      /**
+       * Where temporary files are made.
+       */
+      "temporary-file-directory": Value;
       /**
        * Keymap text-mode-map.
        */
@@ -6935,8 +6987,68 @@ declare global {
     }
     /** A file's attributes, or undefined if there is no such file. */
     function fileAttributes(file: string): FileAttributes | undefined;
-    /** The names in a directory, with "." and "..", sorted, as Emacs's directory-files. */
-    function directoryFiles(dir: string): string[];
+    /**
+     * The names in a directory, with "." and "..", sorted, as Emacs's
+     * directory-files: with `full`, absolute; only those the Emacs regexp
+     * `match` matches; at most `count`.
+     */
+    function directoryFiles(dir: string, options?: { full?: boolean; match?: string; nosort?: boolean; count?: number }): string[];
+    /** Whether a file exists, through symbolic links, as file-exists-p. A file name handler may answer. */
+    function fileExistsP(file: string): boolean;
+    /** Whether Ember can read a file, as file-readable-p. */
+    function fileReadableP(file: string): boolean;
+    /** Whether Ember could write a file: the file if it exists, else its directory, as file-writable-p. */
+    function fileWritableP(file: string): boolean;
+    /** Whether a file can be run, or a directory entered, as file-executable-p. */
+    function fileExecutableP(file: string): boolean;
+    /** Whether a file is a regular file, through symbolic links, as file-regular-p. */
+    function fileRegularP(file: string): boolean;
+    /** Whether a directory can be listed and entered, as file-accessible-directory-p. */
+    function fileAccessibleDirectoryP(file: string): boolean;
+    /** What a symbolic link points to, as file-symlink-p, or undefined if the file is not one. */
+    function fileSymlinkP(file: string): string | undefined;
+    /** Whether `a` was modified after `b`, or exists where `b` does not, as file-newer-than-file-p. */
+    function fileNewerThanFileP(a: string, b: string): boolean;
+    /** Whether a file name is absolute, starting with / or ~, as file-name-absolute-p. */
+    function fileNameAbsoluteP(file: string): boolean;
+    /** A file's mode bits, 0o644 as 420, as file-modes; with `nofollow`, a symbolic link's own. */
+    function fileModes(file: string, options?: { nofollow?: boolean }): number | undefined;
+    /** Set a file's mode bits, as set-file-modes. */
+    function setFileModes(file: string, mode: number): void;
+    /** Set when a file was last modified and read, in milliseconds since 1970, or to now, as set-file-times. */
+    function setFileTimes(file: string, time?: number): void;
+    /** A file's name with the symbolic links in it followed, as file-truename. */
+    function fileTruename(file: string): string;
+    /** A file name with $VAR and ${VAR} from the environment, and starting again after // or /~, as substitute-in-file-name. */
+    function substituteInFileName(file: string): string;
+    /** A directory and file names joined with one slash between each, as file-name-concat. */
+    function fileNameConcat(...parts: (string | undefined | null)[]): string;
+    /**
+     * Make a file, or with `dir` a directory, of a new name starting with
+     * `prefix` in temporary-file-directory, holding `text`, as make-temp-file.
+     * Returns its name.
+     */
+    function makeTempFile(prefix: string, options?: { dir?: boolean; suffix?: string; text?: string }): string;
+    /** The handler file-name-handler-alist has for an operation on a file name, as find-file-name-handler. */
+    function findFileNameHandler(file: string, operation: string | symbol): Value | undefined;
+    /**
+     * Insert a file's text after point, as Emacs's insert-file-contents, and
+     * return its absolute name and how many characters went in. `beg` and
+     * `end` take only those bytes. With `visit`, the buffer visits the file
+     * and is unmodified; with `replace`, the file's text replaces the
+     * buffer's, what is the same at either end staying.
+     */
+    function insertFileContents(file: string, options?: { visit?: boolean; beg?: number; end?: number; replace?: boolean }): [string, number];
+    /**
+     * Write text to a file, as Emacs's write-region: the whole buffer when
+     * `start` is null, the text from `start` to `end`, or a string. `append`
+     * adds to the file's end, `mustbenew` refuses a file that exists, and
+     * `visit` makes the buffer visit the file, or another name. Says "Wrote"
+     * unless `quiet`.
+     */
+    function writeRegion(start: number | string | null, end: number | null, file: string, options?: { append?: boolean; visit?: true | string; quiet?: boolean; mustbenew?: boolean }): void;
+    /** Whose lock a file has, as file-locked-p: true for Ember's own, the other process's user@host (pid N), or undefined. */
+    function fileLockedP(file: string): true | string | undefined;
     /**
      * Copy a file, as Emacs's copy-file: into `to` if it ends in a slash. A
      * file already there is replaced only with `okIfExists`. Returns the copy's name.

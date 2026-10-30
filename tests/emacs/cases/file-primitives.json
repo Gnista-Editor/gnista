@@ -1,0 +1,180 @@
+[
+  {
+    "name": "insert-file",
+    "files": {
+      "a.txt": "one\n",
+      "b.txt": "inserted\ntext\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-e C-x i",
+    "answers": [
+      "b.txt"
+    ]
+  },
+  {
+    "name": "insert-file-sets-the-mark-after",
+    "files": {
+      "a.txt": "one\n",
+      "b.txt": "inserted\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-f C-x i C-x C-x",
+    "answers": [
+      "b.txt"
+    ]
+  },
+  {
+    "name": "insert-file-missing",
+    "files": {
+      "a.txt": "one\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-x i",
+    "answers": [
+      "nope.txt"
+    ]
+  },
+  {
+    "name": "write-region-new-file",
+    "files": {
+      "a.txt": "one\ntwo\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-n C-SPC M-> M-x",
+    "answers": [
+      "write-region",
+      "c.txt"
+    ]
+  },
+  {
+    "name": "write-region-over-a-file-confirmed",
+    "files": {
+      "a.txt": "one\n",
+      "b.txt": "two\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-x h M-x",
+    "answers": [
+      "write-region",
+      "b.txt",
+      "yes"
+    ]
+  },
+  {
+    "name": "write-region-over-a-file-refused",
+    "files": {
+      "a.txt": "one\n",
+      "b.txt": "two\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-x h M-x",
+    "answers": [
+      "write-region",
+      "b.txt",
+      "no"
+    ]
+  },
+  {
+    "name": "append-to-file",
+    "files": {
+      "a.txt": "one\n",
+      "b.txt": "two\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-x h M-x",
+    "answers": [
+      "append-to-file",
+      "b.txt"
+    ]
+  },
+  {
+    "name": "append-to-a-new-file",
+    "files": {
+      "a.txt": "one\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-x h M-x",
+    "answers": [
+      "append-to-file",
+      "new.txt"
+    ]
+  },
+  {
+    "name": "lock-made-on-the-first-change",
+    "files": {
+      "a.txt": "one\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "x",
+    "lockfiles": true
+  },
+  {
+    "name": "no-lock-before-a-change",
+    "files": {
+      "a.txt": "one\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-f C-f",
+    "lockfiles": true
+  },
+  {
+    "name": "lock-gone-after-saving",
+    "files": {
+      "a.txt": "one\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "x C-x C-s",
+    "lockfiles": true
+  },
+  {
+    "name": "lock-gone-after-undoing-to-the-file",
+    "files": {
+      "a.txt": "one\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "x C-/",
+    "lockfiles": true
+  },
+  {
+    "name": "lock-gone-after-killing-the-buffer",
+    "files": {
+      "a.txt": "one\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-x b C-x b x C-x k",
+    "answers": [
+      "*scratch*",
+      "a.txt",
+      "",
+      "yes"
+    ],
+    "lockfiles": true
+  },
+  {
+    "name": "lock-gone-after-reverting",
+    "files": {
+      "a.txt": "one\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "x M-x",
+    "answers": [
+      "revert-buffer",
+      "yes"
+    ],
+    "lockfiles": true
+  }
+]

@@ -121,7 +121,7 @@ fn mode_string(mode: u32, kind: &FileKind) -> String {
 }
 
 #[cfg(unix)]
-fn user_name(uid: u32) -> String {
+pub(crate) fn user_name(uid: u32) -> String {
     let mut buf = vec![0u8; 4096];
     let mut pwd: libc::passwd = unsafe { std::mem::zeroed() };
     let mut result = std::ptr::null_mut();

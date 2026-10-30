@@ -216,6 +216,7 @@ fn random_case(rng: &mut Rng, name: String) -> Case {
         disk: None,
         message: false,
         vars: Default::default(),
+        lockfiles: false,
     }
 }
 
@@ -452,6 +453,7 @@ fn random_text_case(rng: &mut Rng, name: String) -> Case {
         disk: None,
         message: false,
         vars: Default::default(),
+        lockfiles: false,
     }
 }
 
@@ -534,6 +536,7 @@ fn random_fill_case(rng: &mut Rng, name: String) -> Case {
         find: None,
         disk: None,
         message: false,
+        lockfiles: false,
     }
 }
 
@@ -624,6 +627,7 @@ fn random_file_case(rng: &mut Rng, name: String) -> Case {
         disk: Some(disk),
         message: false,
         vars: Default::default(),
+        lockfiles: false,
     }
 }
 
@@ -677,6 +681,7 @@ fn random_dired_case(rng: &mut Rng, name: String) -> Case {
         disk: None,
         message: true,
         vars: Default::default(),
+        lockfiles: false,
     }
 }
 
