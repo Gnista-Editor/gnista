@@ -371,8 +371,17 @@ fn tenths(size: usize, n: i64) -> i64 {
 fn move_words(ed: &Editor, mut pos: usize, n: i64) -> usize {
     let word = |c: char| ed.char_syntax(c).class == crate::syntax_table::Class::Word;
     let b = ed.buffer();
+    let start = pos;
     for _ in 0..n.unsigned_abs() {
         pos = if n > 0 { word_end(b, pos, word) } else { word_start(b, pos, word) };
+    }
+    // Moving from the input stops at the prompt, as Emacs's word motion is
+    // constrained to the field it started in.
+    if ed.in_minibuffer() {
+        let end = ed.minibuffer_prompt_end();
+        if start >= end {
+            pos = pos.max(end);
+        }
     }
     pos
 }
@@ -1096,15 +1105,9 @@ fn minibuffer_complete(ed: &mut Editor) -> Result<bool> {
             Ok(true)
         }
         crate::completion::Try::Completed { text, point } => {
-            let mb = ed.minibuffer_mut();
-            if text != input {
-                mb.set_text(&text);
-                mb.set_point(point.min(mb.len()));
-            } else {
-                mb.set_point(point.min(mb.len()));
-                if ed.is_completion_match(&text) {
-                    ed.message("[Complete, but not unique]");
-                }
+            ed.replace_minibuffer_input(&text, point);
+            if text == input && ed.is_completion_match(&text) {
+                ed.message("[Complete, but not unique]");
             }
             Ok(ed.is_completion_match(&text))
         }

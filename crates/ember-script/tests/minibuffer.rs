@@ -10,8 +10,7 @@ fn setup() -> (Editor, Scripting) {
 }
 
 fn input(ed: &Editor) -> String {
-    let mb = ed.minibuffer();
-    mb.slice(0..mb.len())
+    ed.minibuffer_input()
 }
 
 fn strings(ed: &Editor, variable: &str) -> Vec<String> {
@@ -312,7 +311,7 @@ fn the_minibuffer_is_a_buffer_like_any_other() {
     assert_eq!(ed.buffer().name, " *Minibuf-1*");
     assert_eq!(ed.window_buffer().name, "*scratch*");
     ed.type_text("abc");
-    assert_eq!(s.eval_expression(&mut ed, r#"ember.withCurrentBuffer(" *Minibuf-1*", () => ember.bufferText(ember.pointMin(), ember.pointMax()))"#).unwrap(), r#""abc""#);
+    assert_eq!(s.eval_expression(&mut ed, r#"ember.withCurrentBuffer(" *Minibuf-1*", () => ember.minibufferContents())"#).unwrap(), r#""abc""#);
     // It is not offered as a buffer to switch to, nor killed.
     assert!(!ed.minibuffer_completions().iter().any(|n| n.starts_with(' ')));
     ed.press("C-g").unwrap();
@@ -325,4 +324,31 @@ fn the_minibuffer_is_a_buffer_like_any_other() {
     ed.press("C-x b").unwrap();
     assert_eq!(ed.variable("fill-column"), Some(Value::Number(4.0)));
     ed.press("C-g").unwrap();
+}
+
+#[test]
+fn the_prompt_is_read_only_text_before_the_input() {
+    let (mut ed, s) = setup();
+    ed.press("M-x").unwrap();
+    ed.type_text("forward word");
+    let text = |ed: &mut Editor| s.eval_expression(ed, "ember.bufferText()").unwrap();
+    assert_eq!(text(&mut ed), r#""M-x forward word""#);
+    assert_eq!(s.eval_expression(&mut ed, "ember.minibufferPromptEnd()").unwrap(), "4");
+    assert_eq!(s.eval_expression(&mut ed, r#"ember.getTextProperty(0, "face")"#).unwrap(), r#""minibuffer-prompt""#);
+    // Point stays in the input: C-a and M-< go to its start, and words stop there.
+    ed.press("C-a").unwrap();
+    assert_eq!(ed.minibuffer().point(), 4);
+    ed.press("C-e M-< ").unwrap();
+    assert_eq!(ed.minibuffer().point(), 4);
+    ed.press("C-e M-b M-b M-b M-b").unwrap();
+    assert_eq!(ed.minibuffer().point(), 4);
+    // The prompt cannot be deleted; the input can.
+    ed.press("DEL").unwrap();
+    assert_eq!(text(&mut ed), r#""M-x forward word""#);
+    ed.press("C-e M-DEL M-DEL M-DEL").unwrap();
+    assert_eq!(text(&mut ed), r#""M-x ""#);
+    ed.type_text("end-of-buffer");
+    assert_eq!(input(&ed), "end-of-buffer");
+    ed.press("RET").unwrap();
+    assert_eq!(ed.prompt(), None);
 }

@@ -1319,10 +1319,18 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
         })?,
     )?;
     native.set(
+        "minibufferPromptEnd",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.minibuffer_prompt_end())))?,
+    )?;
+    native.set(
+        "minibufferContents",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.minibuffer_input())))?,
+    )?;
+    native.set(
         "completionAllSortedCompletions",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, at_end: Opt<bool>| -> rquickjs::Result<Option<Object<'js>>> {
             let sorted = with_editor(&ctx, |ed| {
-                let point = if at_end.0 == Some(true) { ed.minibuffer_input().chars().count() } else { ed.minibuffer().point() };
+                let point = if at_end.0 == Some(true) { ed.minibuffer_input().chars().count() } else { ed.minibuffer_input_point() };
                 Ok(ed.completion_all_sorted_completions_at(point))
             })?;
             let Some((base, comps, fresh)) = sorted else { return Ok(None) };

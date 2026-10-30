@@ -85,7 +85,7 @@ fn m_x_completes_command_names() {
     assert_eq!(ed.prompt(), Some("M-x "));
     ed.type_text("end-of-b");
     press(&mut ed, "TAB");
-    assert_eq!(ed.minibuffer().slice(0..ed.minibuffer().len()), "end-of-buffer");
+    assert_eq!(ed.minibuffer_input(), "end-of-buffer");
     press(&mut ed, "RET");
     assert_eq!(ed.prompt(), None);
     assert_eq!(ed.window_buffer().point(), 3);
@@ -128,7 +128,7 @@ fn file_name_completion() {
     assert_eq!(ed.minibuffer_completions(), ["albums/", "alpha.txt"]);
     ed.type_text("p");
     press(&mut ed, "TAB");
-    assert!(ed.minibuffer().slice(0..ed.minibuffer().len()).ends_with("/alpha.txt"));
+    assert!(ed.minibuffer_input().ends_with("/alpha.txt"));
 }
 
 #[test]

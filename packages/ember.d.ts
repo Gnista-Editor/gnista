@@ -7044,6 +7044,14 @@ declare global {
     /** Whether a function, or advice of that name, advises a name's function, as advice-member-p. */
     function adviceMemberP(fn: ((...args: any[]) => any) | string | symbol, symbol: string | symbol): boolean;
     /**
+     * Where the minibuffer's prompt ends and its input starts, as
+     * minibuffer-prompt-end: the prompt is read-only text at the start of
+     * the minibuffer, and point is kept after it.
+     */
+    function minibufferPromptEnd(): number;
+    /** The minibuffer's input, after its prompt, as minibuffer-contents. */
+    function minibufferContents(): string;
+    /**
      * The text a mode line construct shows for the current buffer and the
      * selected window, as format-mode-line; `mode-line-format`'s by default.
      * A construct is a string, whose %-specs show the buffer's state (%b its

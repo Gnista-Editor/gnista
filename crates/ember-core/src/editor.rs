@@ -1055,6 +1055,7 @@ impl Editor {
         if !self.command_failed {
             self.adjust_point_for_invisible(old_point, modified);
         }
+        self.keep_point_out_of_prompt();
     }
 
     // Keys
@@ -1812,10 +1813,7 @@ impl Editor {
         }
         prompt.history_pos = pos as usize;
         let text = if pos == 0 { prompt.typed.clone() } else { items[pos as usize - 1].clone() };
-        let mb = self.minibuffer_mut();
-        mb.set_text(&text);
-        let end = mb.len();
-        mb.set_point(end);
+        self.replace_minibuffer_input(&text, text.chars().count());
         Ok(())
     }
 

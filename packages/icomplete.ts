@@ -79,8 +79,8 @@ const setLocal = (name: string, value: ember.Value): void => {
   ember.setVariable(name, value);
 };
 
-/** The minibuffer's input, icomplete--field-string. */
-const fieldString = (): string => ember.bufferText();
+/** The minibuffer's input, after its prompt, icomplete--field-string. */
+const fieldString = (): string => ember.minibufferContents();
 
 /** The input the prompt opened with, icomplete--initial-input. */
 let initialInput = "";
@@ -493,16 +493,16 @@ ember.defineCommand({
   name: "icomplete-fido-backward-updir",
   doc: "Delete the character before point, or after a directory's slash, go up to the directory above, as ido-mode does.",
   run: () => {
+    const start = ember.minibufferPromptEnd();
     const point = ember.point();
-    if (point > 0 && ember.bufferText(point - 1, point) === "/" && category() === "file") {
+    if (point > start && ember.bufferText(point - 1, point) === "/" && category() === "file") {
       if (fieldString() === "~/") {
-        ember.deleteRegion(0, ember.bufferText().length);
+        ember.deleteRegion(start, ember.pointMax());
         ember.insert(ember.expandFileName("~/").replace(/\/?$/, "/"));
       }
-      const text = ember.bufferText();
-      const end = ember.point();
-      const slash = text.lastIndexOf("/", end - 2);
-      if (slash >= 0) ember.deleteRegion(slash + 1, text.length);
+      const field = fieldString();
+      const slash = field.lastIndexOf("/", ember.point() - start - 2);
+      if (slash >= 0) ember.deleteRegion(start + slash + 1, ember.pointMax());
     } else {
       ember.callInteractively("delete-backward-char");
     }
@@ -513,7 +513,7 @@ ember.defineCommand({
   doc: "Delete the character after point, or at the end of a file name, open Dired on its directory, as ido-mode does.",
   run: () => {
     const field = fieldString();
-    if (ember.point() < field.length || category() !== "file") {
+    if (ember.point() - ember.minibufferPromptEnd() < field.length || category() !== "file") {
       ember.callInteractively("delete-char");
       return;
     }
@@ -525,7 +525,7 @@ ember.defineCommand({
   name: "icomplete-fido-kill",
   doc: "Kill the rest of the line, as C-k does, if point is not at the end of the input.",
   run: () => {
-    if (ember.point() < fieldString().length) {
+    if (ember.point() - ember.minibufferPromptEnd() < fieldString().length) {
       ember.callInteractively("kill-line");
       return;
     }

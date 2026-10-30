@@ -260,12 +260,12 @@ fn draw_echo_area(frame: &mut Frame, ed: &Editor, area: Rect) -> Option<Position
         return None;
     };
     let dark = dark(ed);
-    let mb = ed.minibuffer();
-    let input = mb.slice(0..mb.len());
+    let input = ed.minibuffer_input();
+    let point = ed.minibuffer_input_point();
     let overlay = ed.minibuffer_overlay();
     let before = overlay.map_or("", |o| o.before.as_str());
     let prompt_style = terminal_style(&ed.style_for(&["minibuffer-prompt".to_string()], dark), dark);
-    let mut lines = vec![vec![Span::raw(before.to_string()), Span::styled(prompt.to_string(), prompt_style), Span::raw(input)]];
+    let mut lines = vec![vec![Span::raw(before.to_string()), Span::styled(prompt.to_string(), prompt_style), Span::raw(input.clone())]];
     if let Some(message) = ed.echo() {
         lines[0].push(Span::raw(format!(" {message}")));
     }
@@ -282,7 +282,7 @@ fn draw_echo_area(frame: &mut Frame, ed: &Editor, area: Rect) -> Option<Position
     }
     let lines: Vec<Line> = lines.into_iter().take(area.height as usize).map(Line::from).collect();
     frame.render_widget(Paragraph::new(lines), area);
-    let x = display_width(before, 8) + display_width(prompt, 8) + display_width(&mb.slice(0..mb.point()), 8);
+    let x = display_width(before, 8) + display_width(prompt, 8) + display_width(&input.chars().take(point).collect::<String>(), 8);
     Some(Position::new(area.x + x.min(area.width as usize - 1) as u16, area.y))
 }
 

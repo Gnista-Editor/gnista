@@ -50,7 +50,7 @@ fn find_file_edit_and_save() {
     ed.press("C-x C-f").unwrap();
     // The prompt starts in the default directory; typing an absolute path
     // after it starts over from the root, as in Emacs.
-    assert!(ed.minibuffer().slice(0..ed.minibuffer().len()).ends_with('/'));
+    assert!(ed.minibuffer_input().ends_with('/'));
     ed.type_text(&format!("/{}", path.display()));
     ed.press("RET").unwrap();
     assert_eq!(ed.window_buffer().name, "notes.txt");

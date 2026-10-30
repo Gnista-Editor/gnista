@@ -846,8 +846,8 @@ fn draw_echo_area(painter: &Painter, ed: &Editor, rect: Rect, m: &Metrics, t: To
         }
         return;
     };
-    let mb = ed.minibuffer();
-    let input = mb.slice(0..mb.len());
+    let input = ed.minibuffer_input();
+    let point = ed.minibuffer_input_point();
     let overlay = ed.minibuffer_overlay();
     let before = overlay.map_or("", |o| o.before.as_str());
     // The first line has the prompt and input; each newline in what the
@@ -883,12 +883,12 @@ fn draw_echo_area(painter: &Painter, ed: &Editor, rect: Rect, m: &Metrics, t: To
         first.get_or_insert(galley);
     }
     let galley = first.expect("the first line");
-    let index = before.chars().count() + prompt.chars().count() + mb.point();
+    let index = before.chars().count() + prompt.chars().count() + point;
     let cursor_x = galley.pos_from_cursor(CCursor::new(index)).min.x;
     // At the end of the input the cursor sits on what follows, as Emacs
     // puts it on the first character of icomplete's list.
     let after = overlay.and_then(|o| o.after.iter().find_map(|(text, _)| text.chars().next()));
-    let under = input.chars().nth(mb.point()).or(after.filter(|c| *c != '\n'));
+    let under = input.chars().nth(point).or(after.filter(|c| *c != '\n'));
     let cursor_pos = pos2(origin_x + cursor_x, top);
     draw_cursor(&painter, &galley, index, under, cursor_pos, m, t, cursor);
 }
