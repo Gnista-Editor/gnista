@@ -72,6 +72,12 @@ Item 8 then gave commands Emacs's interactive codes:
 - The generated declarations type each command's arguments: numbers for counts and positions, optional counts.
 - Commands still return nothing: functions (`defun`) are the way to return values, as most Emacs commands are called for their effect. Moving packages that read `prefixNumericValue()` themselves to `count` parameters happens as they are touched; paragraphs.ts and Org's heading motions moved.
 
+Item 10 began with what rows show besides the text:
+- An overlay's `before-string` and `after-string` show at its ends, after-strings of overlays ending at a position before before-strings of those starting there, none for an overlay its own `invisible` hides.
+- A string `display` property shows in place of the text it is on, in that text's face, and an empty one hides it; `(space :width N)` and `(space :align-to COLUMN)` give space.
+- Segments and glyphs say they are strings. The cursor goes on the text after an overlay string and on a display string when point is at the text it stands for, and wrapping moves a string to the next row whole.
+- Still to come: strings with faces of their own, which wait for propertized strings (item 7); strings with newlines, which end at the first; `line-prefix` and `wrap-prefix`; margins and images; and the mode line formatted by the core from `mode-line-format`.
+
 ## Consequences
 
 Ports can follow their Lisp closely: reading input where the Lisp does, catching the conditions it catches, binding what it binds, requiring what it requires. The cost is migrating existing packages, done as each is next touched, and a larger core.

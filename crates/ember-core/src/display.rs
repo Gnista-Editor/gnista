@@ -57,8 +57,12 @@ pub struct Glyph {
     pub text: String,
     /// Columns taken.
     pub width: usize,
-    /// The buffer position it shows, or `None` for an ellipsis.
+    /// The buffer position it shows, or `None` for an ellipsis or an
+    /// overlay string. A display string's glyphs have the position of the
+    /// text it stands for.
     pub pos: Option<usize>,
+    /// Whether it is part of a string rather than buffer text.
+    pub string: bool,
     /// Which of the row's segments it belongs to, for its style.
     pub segment: usize,
 }
@@ -71,8 +75,12 @@ pub fn row_glyphs(row: &crate::Row, tab_width: usize) -> Vec<Glyph> {
         for (i, c) in seg.text.chars().enumerate() {
             let mut text = String::new();
             let width = render_char(c, col, tab_width, &mut text);
-            let pos = (!seg.ellipsis).then_some(seg.start + i);
-            glyphs.push(Glyph { text, width, pos, segment });
+            let pos = match (seg.ellipsis, seg.string, seg.covers) {
+                (true, ..) | (_, true, None) => None,
+                (_, true, Some(_)) => Some(seg.start),
+                _ => Some(seg.start + i),
+            };
+            glyphs.push(Glyph { text, width, pos, segment, string: seg.string });
             col += width;
         }
     }
@@ -81,11 +89,14 @@ pub fn row_glyphs(row: &crate::Row, tab_width: usize) -> Vec<Glyph> {
 
 /// Where point goes among a row's glyphs: before the first glyph at or after
 /// it, or after the visible text if point is at hidden text or the row's end.
+/// Overlay strings there come before it, as Emacs puts the cursor on the
+/// text after a `before-string`.
 pub fn cursor_index(glyphs: &[Glyph], point: usize) -> usize {
-    glyphs
-        .iter()
-        .rposition(|g| g.pos.is_some_and(|p| p < point))
-        .map_or(0, |i| i + 1)
+    let mut index = glyphs.iter().rposition(|g| g.pos.is_some_and(|p| p < point)).map_or(0, |i| i + 1);
+    while glyphs.get(index).is_some_and(|g| g.string && g.pos.is_none()) {
+        index += 1;
+    }
+    index
 }
 
 /// The buffer position under a column of a row, for a mouse click: the
@@ -113,7 +124,7 @@ mod tests {
             line: 0,
             start: 10,
             end: 13,
-            segments: vec![crate::Segment { start: 10, text: "a\tb".into(), style: Default::default(), ellipsis: false }],
+            segments: vec![crate::Segment::text(10, "a\tb".into(), Default::default())],
             continued: false,
         };
         let glyphs = row_glyphs(&row, 8);

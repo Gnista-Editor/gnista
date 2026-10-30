@@ -5,6 +5,11 @@
 //! A row ends at a visible newline, so lines whose newline before them is
 //! invisible are part of the row above: that is how a folded heading shows
 //! as one row ending in "...". Line moves and scrolling count rows.
+//!
+//! Rows show more than the buffer's text, as Emacs's redisplay does: an
+//! overlay's `before-string` and `after-string` at its ends, and text with
+//! a string `display` property shows the string instead, or space for a
+//! `(space :width N)` or `(space :align-to COLUMN)` spec.
 
 use std::collections::HashMap;
 
@@ -24,6 +29,25 @@ pub struct Segment {
     pub style: Style,
     /// Whether this is the "..." shown for hidden text rather than buffer text.
     pub ellipsis: bool,
+    /// Whether this is a string shown in place of text or beside it, from
+    /// a `display` property or an overlay's `before-string` or
+    /// `after-string`, rather than buffer text. A display string's `start`
+    /// is the text it stands for; an overlay string's is where it shows.
+    pub string: bool,
+    /// For a display string, the end of the text it stands for.
+    pub covers: Option<usize>,
+}
+
+impl Segment {
+    /// A segment of buffer text.
+    pub fn text(start: usize, text: String, style: Style) -> Segment {
+        Segment { start, text, style, ellipsis: false, string: false, covers: None }
+    }
+
+    /// Whether it is drawn whole, never split by wrapping: an ellipsis or a string.
+    fn atomic(&self) -> bool {
+        self.ellipsis || self.string
+    }
 }
 
 /// How lines are numbered, as `display-line-numbers` says.
@@ -474,6 +498,8 @@ impl Editor {
         let mut styles: HashMap<Vec<String>, Style> = HashMap::new();
         let mut rows = Vec::new();
         let mut pos = b.line_start(self.row_line_in(b, top_line.min(b.line_count() - 1))).max(b.point_min());
+        // Where overlay strings were last shown, so each shows once.
+        let mut strings_at = None;
         // Syntax faces, worked out for a window's worth of lines at a time.
         let mut syntax = SyntaxFaces::default();
         while rows.len() < count && logical < lines {
@@ -487,20 +513,24 @@ impl Editor {
                 let (visible, ellipsis) = self.skip_invisible_in(b, pos);
                 if visible > pos {
                     if ellipsis && !segments.last().is_some_and(|s| s.ellipsis) {
-                        segments.push(Segment {
-                            start: pos,
-                            text: ELLIPSIS.to_string(),
-                            style: Style::default(),
-                            ellipsis: true,
-                        });
+                        segments.push(Segment { ellipsis: true, ..Segment::text(pos, ELLIPSIS.to_string(), Style::default()) });
                     }
                     pos = visible;
                     continue;
+                }
+                if strings_at != Some(pos) {
+                    strings_at = Some(pos);
+                    self.push_overlay_strings(b, pos, &mut segments);
                 }
                 let line_end = b.line_end(b.line_of(pos)).min(len);
                 if pos == line_end {
                     // A visible newline ends the row.
                     break pos;
+                }
+                if let Some((end, segment)) = self.display_at(b, pos, line_end, &segments, dark, &mut styles) {
+                    segments.extend(segment);
+                    pos = end;
+                    continue;
                 }
                 let mut chunk_end = b.next_char_property_change(pos).min(line_end);
                 let style = match dark {
@@ -513,7 +543,7 @@ impl Editor {
                     }
                     None => Style::default(),
                 };
-                segments.push(Segment { start: pos, text: b.slice(pos..chunk_end), style, ellipsis: false });
+                segments.push(Segment::text(pos, b.slice(pos..chunk_end), style));
                 pos = chunk_end;
             };
             let row = Row { line, start, end, segments, continued: false };
@@ -535,6 +565,85 @@ impl Editor {
             pos = end + 1;
         }
         rows
+    }
+
+    /// The overlay strings that show at a position, as Emacs orders them:
+    /// the `after-string`s of overlays ending there, then the
+    /// `before-string`s of those starting there. An overlay hidden by its
+    /// own `invisible` property shows none. They show in the default face,
+    /// as strings without faces of their own; a newline ends one.
+    fn push_overlay_strings(&self, b: &Buffer, pos: usize, segments: &mut Vec<Segment>) {
+        let spec = self.variable_in(b, "buffer-invisibility-spec").unwrap_or(Value::Bool(true));
+        let mut overlays: Vec<&crate::properties::Overlay> = b
+            .overlays()
+            .iter()
+            .filter(|o| (o.start == pos || o.end == pos) && !o.props.get("invisible").is_some_and(|v| invisibility(v, &spec).is_some()))
+            .collect();
+        overlays.sort_by(|a, b| a.priority().total_cmp(&b.priority()).then(a.id.cmp(&b.id)));
+        for (edge, name) in [(true, "after-string"), (false, "before-string")] {
+            for o in &overlays {
+                let at = if edge { o.end } else { o.start };
+                if at != pos {
+                    continue;
+                }
+                if let Some(Value::Str(text)) = o.props.get(name) {
+                    let text: String = text.split('\n').next().unwrap_or_default().to_string();
+                    if !text.is_empty() {
+                        segments.push(Segment { string: true, ..Segment::text(pos, text, Style::default()) });
+                    }
+                }
+            }
+        }
+    }
+
+    /// What a `display` property at `pos` shows instead of the text it is
+    /// on, up to where the property changes or the line ends, and where
+    /// that is: a string, in the face of the text it stands for, or space
+    /// for a `(space :width N)` or `(space :align-to COLUMN)` spec. `None`
+    /// if the property is not one of these.
+    fn display_at(
+        &self,
+        b: &Buffer,
+        pos: usize,
+        line_end: usize,
+        segments: &[Segment],
+        dark: Option<bool>,
+        styles: &mut HashMap<Vec<String>, Style>,
+    ) -> Option<(usize, Option<Segment>)> {
+        let value = b.char_property(pos, "display")?.clone();
+        let text = match &value {
+            Value::Str(s) => s.split('\n').next().unwrap_or_default().to_string(),
+            Value::List(items) if items.first() == Some(&Value::Str("space".into())) => {
+                let get = |key: &str| items.iter().position(|v| v == &Value::Str(key.into())).and_then(|i| items.get(i + 1)?.as_number());
+                let width = match (get(":width"), get(":align-to")) {
+                    (Some(w), _) => w.max(0.0) as usize,
+                    (None, Some(column)) => {
+                        let tab_width = self.tab_width_in(b);
+                        let col: usize = segments.iter().map(|s| crate::display::display_width(&s.text, tab_width)).sum();
+                        (column.max(0.0) as usize).saturating_sub(col)
+                    }
+                    (None, None) => 1,
+                };
+                " ".repeat(width)
+            }
+            _ => return None,
+        };
+        // The text the property covers, as far as it is the same value.
+        let mut end = pos;
+        while end < line_end && b.char_property(end, "display") == Some(&value) {
+            end = b.next_char_property_change(end).min(line_end).max(end + 1);
+        }
+        if text.is_empty() {
+            return Some((end, None));
+        }
+        let style = match dark {
+            Some(dark) => {
+                let faces = self.faces_at(b, pos);
+                styles.entry(faces).or_insert_with_key(|f| self.style_for(f, dark)).clone()
+            }
+            None => Style::default(),
+        };
+        Some((end, Some(Segment { string: true, covers: Some(end), ..Segment::text(pos, text, style) })))
     }
 
     /// The faces at a position, apart from syntax: overlays' first, highest priority first,
@@ -567,7 +676,7 @@ fn wrap_row(row: Row, wrap: Wrap, tab_width: usize) -> Vec<Row> {
         .collect();
     let chars: Vec<Vec<char>> = row.segments.iter().map(|s| s.text.chars().collect()).collect();
     let char_of = |k: usize| chars[items[k].0][items[k].1];
-    let in_ellipsis = |k: usize| row.segments[items[k].0].ellipsis;
+    let in_ellipsis = |k: usize| row.segments[items[k].0].atomic();
     let mut scratch = String::new();
     let mut width_of = |c: char, col: usize| {
         scratch.clear();
@@ -615,7 +724,7 @@ fn wrap_row(row: Row, wrap: Wrap, tab_width: usize) -> Vec<Row> {
     let position_of = |k: usize| {
         let (s, i) = items[k];
         let seg = &row.segments[s];
-        if seg.ellipsis { seg.start } else { seg.start + i }
+        if seg.atomic() { seg.start } else { seg.start + i }
     };
     let mut bounds = vec![0];
     bounds.extend(&breaks);
@@ -630,10 +739,9 @@ fn wrap_row(row: Row, wrap: Wrap, tab_width: usize) -> Vec<Row> {
             match segments.last_mut() {
                 Some(last) if k > from && items[k - 1].0 == s => last.text.push(chars[s][i]),
                 _ => segments.push(Segment {
-                    start: if seg.ellipsis { seg.start } else { seg.start + i },
+                    start: if seg.atomic() { seg.start } else { seg.start + i },
                     text: chars[s][i].to_string(),
-                    style: seg.style.clone(),
-                    ellipsis: seg.ellipsis,
+                    ..seg.clone()
                 }),
             }
         }

@@ -77,6 +77,22 @@ fn vertical_completions() {
 }
 
 #[test]
+fn display_strings_and_overlay_strings() {
+    // An Org link shown as its description, as org-descriptive-links does
+    // with invisible text, here with a display string, and an inlay hint
+    // after a name, as eglot shows types.
+    let mut ed = Editor::new();
+    ed.type_text("See [[https://example.com][the site]] now.\nlet count = 3;\n");
+    let b = ed.window_buffer_mut();
+    b.put_text_property(4..37, "display", ember_core::Value::Str("the site".into()));
+    b.put_text_property(4..37, "face", ember_core::Value::Str("link".into()));
+    let hint = b.make_overlay(52..52);
+    b.overlay_put(hint, "before-string", ember_core::Value::Str(": i32".into())).unwrap();
+    b.set_point(4);
+    harness(ed, Theme::Dark).snapshot("display_strings_dark");
+}
+
+#[test]
 fn line_numbers() {
     let mut ed = sample();
     let _scripting = ember_script::Scripting::new(&mut ed).unwrap();
