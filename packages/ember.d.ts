@@ -26,6 +26,16 @@ declare global {
        */
       "append-to-file": [start: number, end: number, file: string];
       /**
+       * Run a shell command in the background, its output going into *Async Shell Command* as it comes.
+       *
+       * When it ends, a message says how.
+       *
+       * @param command text
+       *
+       * Defined in packages/shell.ts.
+       */
+      "async-shell-command": [command: string];
+      /**
        * Break lines as you type a space or newline past fill-column, as auto-fill-function says.
        *
        * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
@@ -190,6 +200,134 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "clone-indirect-buffer-other-window": [arg?: PrefixArg];
+      /**
+       * Go to the start of the line, after the prompt if there is one.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-bol": [];
+      /**
+       * Go to the start of the input on this line; again, to the process mark.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-bol-or-process-mark": [];
+      /**
+       * Delete everything before the last prompt.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-clear-buffer": [];
+      /**
+       * Copy the input at point to after the prompt, to send again.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-copy-old-input": [];
+      /**
+       * Delete the next character, or send end of file at the end of the buffer with nothing typed.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-delchar-or-maybe-eof": [arg?: number];
+      /**
+       * Delete the output of the last input, leaving the prompt; with a prefix argument, kill it.
+       *
+       * @param kill raw prefix argument
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-delete-output": [kill?: PrefixArg];
+      /**
+       * Interrupt the job running in the program, as C-c does at a terminal.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-interrupt-subjob": [];
+      /**
+       * Kill what is typed after the prompt, up to point.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-kill-input": [];
+      /**
+       * The major mode for interacting with a program on a terminal: what you type after its prompt goes to it with RET.
+       *
+       * M-p and M-n go through the inputs sent before, C-c C-c interrupts the job running, C-c C-d sends end of file, and C-c C-o deletes the last output.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-mode": [];
+      /**
+       * Put the input sent after this one after the prompt, or as many on as the prefix argument says.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-next-input": [arg?: number];
+      /**
+       * Go to the input after the next prompt, or as many on as the prefix argument says.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-next-prompt": [n?: number];
+      /**
+       * Put the input sent before this one after the prompt, or as many back as the prefix argument says.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-previous-input": [arg?: number];
+      /**
+       * Go to the input after the previous prompt, or as many back as the prefix argument says.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-previous-prompt": [n?: number];
+      /**
+       * Send a quit signal to the job running in the program, as C-\ does at a terminal.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-quit-subjob": [];
+      /**
+       * Send what is typed, without a newline, then end of file, as C-d does at a terminal.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-send-eof": [];
+      /**
+       * Send the input after the prompt to the program, with a newline; before the prompt, send the old input at point again.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-send-input": [];
+      /**
+       * Go to the end of the buffer, showing as much output as fits.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-show-maximum-output": [];
+      /**
+       * Put the start of the last output at the top of the window, with point at the input before it.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-show-output": [];
+      /**
+       * Stop the job running in the program, as C-z does at a terminal.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-stop-subjob": [];
       /**
        * Comment or uncomment the region if it is active. Otherwise put a comment at the end of the line, or indent the one there, or start one on a blank line. With a prefix argument and no region, kill the line's comment.
        *
@@ -3365,6 +3503,48 @@ declare global {
        */
       "set-mark-command": [];
       /**
+       * Run your shell in the buffer *shell*, or go to it if it runs there already.
+       *
+       * The shell is explicit-shell-file-name, else $ESHELL, else shell-file-name; bash runs with explicit-bash-args, and other shells with -i, or the variable explicit-NAME-args. With a prefix argument, ask for the buffer.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/shell.ts.
+       */
+      "shell": [arg?: PrefixArg];
+      /**
+       * Run a shell command and show its output: in the echo area if it is one line, else in *Shell Command Output*.
+       *
+       * A command ending in & runs in the background, as M-& does. With a prefix argument, the output goes into the buffer at point, with the mark after it.
+       *
+       * @param command text
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/simple.ts.
+       */
+      "shell-command": [command: string, arg?: PrefixArg];
+      /**
+       * Run a shell command with the region as its input, showing its output.
+       *
+       * With a prefix argument, the output replaces the region instead.
+       *
+       * @param start region start
+       * @param end region end
+       * @param command text
+       * @param replace raw prefix argument
+       *
+       * Defined in packages/simple.ts.
+       */
+      "shell-command-on-region": [start: number, end: number, command: string, replace?: PrefixArg];
+      /**
+       * The major mode for a shell in a buffer: type commands after its prompt and send them with RET.
+       *
+       * It is comint-mode, so M-p and M-n go through earlier commands and C-c C-c interrupts the job running, and default-directory follows the shell's cd, pushd and popd.
+       *
+       * Defined in packages/shell.ts.
+       */
+      "shell-mode": [];
+      /**
        * Highlight the paren matching the one next to point, after show-paren-delay seconds idle: a close paren before point, or an open paren after it.
        *
        * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
@@ -3901,6 +4081,58 @@ declare global {
        */
       "colon-double-space": Value;
       /**
+       * Input the program will echo, to take out of its output.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint--echo-pending": Value;
+      /**
+       * Whether RET moves to the end of the input before sending it.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-eol-on-send": Value;
+      /**
+       * Whether an input the same as the last one is left out of the history.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-input-ignoredups": Value;
+      /**
+       * How many inputs a comint buffer keeps for M-p and M-n.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-input-ring-size": Value;
+      /**
+       * Keymap comint-mode-map.
+       */
+      "comint-mode-map": Value;
+      /**
+       * Functions each piece of output goes through before it is inserted; each returns the text to insert.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-preoutput-filter-functions": Value;
+      /**
+       * Whether the program echoes its input, which RET then takes out of its output.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-process-echoes": Value;
+      /**
+       * Whether the prompt is read-only, so it cannot be deleted by accident.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-prompt-read-only": Value;
+      /**
+       * The terminal comint programs are told they run on, as TERM.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-terminfo-terminal": Value;
+      /**
        * How many more comment starts comment-region and M-; on a blank line add, as Lisp's ;; for comments of their own.
        *
        * Defined in packages/newcomment.ts.
@@ -4326,6 +4558,18 @@ declare global {
        * Defined in packages/lisp.ts.
        */
       "end-of-defun-moves-to-eol": Value;
+      /**
+       * What M-x shell gives bash: no line editing, and interactive.
+       *
+       * Defined in packages/shell.ts.
+       */
+      "explicit-bash-args": Value;
+      /**
+       * The shell M-x shell runs, if not $ESHELL or shell-file-name.
+       *
+       * Defined in packages/shell.ts.
+       */
+      "explicit-shell-file-name": Value;
       /**
        * Commands run with M-x, newest first.
        */
@@ -5250,6 +5494,46 @@ declare global {
        */
       "sentence-end-double-space": Value;
       /**
+       * The buffer shell commands' output goes into when it does not fit in the echo area.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "shell-command-buffer-name": Value;
+      /**
+       * The buffer the output of a command run with M-& goes into.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "shell-command-buffer-name-async": Value;
+      /**
+       * What tells the shell that the next argument is a command to run.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "shell-command-switch": Value;
+      /**
+       * Whether shell-mode follows cd, pushd and popd to keep default-directory where the shell is.
+       *
+       * Defined in packages/shell.ts.
+       */
+      "shell-dirtrack-mode": Value;
+      /**
+       * The shell programs and shell commands are run with, from $SHELL.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "shell-file-name": Value;
+      /**
+       * Keymap shell-mode-map.
+       */
+      "shell-mode-map": Value;
+      /**
+       * An Emacs regexp for a shell's prompt, which comint-prompt-regexp starts as in shell-mode.
+       *
+       * Defined in packages/shell.ts.
+       */
+      "shell-prompt-pattern": Value;
+      /**
        * How many seconds idle before Show Paren mode highlights. Changing it takes effect when the mode is turned on again.
        *
        * Defined in packages/paren.ts.
@@ -5463,6 +5747,18 @@ declare global {
        * Bold italic text.
        */
       "bold-italic": FaceAttributes;
+      /**
+       * Input sent in a comint buffer.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-highlight-input": FaceAttributes;
+      /**
+       * The prompt in a comint buffer.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-highlight-prompt": FaceAttributes;
       /**
        * Column numbers in compilation messages.
        *
@@ -6142,6 +6438,10 @@ declare global {
        */
       "change-major-mode-hook": Value;
       /**
+       * Run after entering Comint mode, after the hooks of the modes it is built on.
+       */
+      "comint-mode-hook": Value;
+      /**
        * Run in the compilation buffer after output is inserted.
        */
       "compilation-filter-hook": Value;
@@ -6453,6 +6753,10 @@ declare global {
        * Functions that say whether typing this character uses the active region, as electric-pair-mode wraps it in a pair, so Delete Selection mode leaves it.
        */
       "self-insert-uses-region-functions": Value;
+      /**
+       * Run after entering Shell mode, after the hooks of the modes it is built on.
+       */
+      "shell-mode-hook": Value;
       /**
        * Run after Show-Paren mode is turned on or off.
        */

@@ -1,0 +1,73 @@
+[
+  {
+    "name": "shell-command-output-into-the-buffer",
+    "text": "one\n",
+    "point": 0,
+    "keys": "C-u M-!",
+    "answers": [
+      "echo hello"
+    ]
+  },
+  {
+    "name": "shell-command-one-line-in-the-echo-area",
+    "text": "one\n",
+    "keys": "M-!",
+    "answers": [
+      "echo hi there"
+    ],
+    "message": true
+  },
+  {
+    "name": "shell-command-no-output",
+    "text": "one\n",
+    "keys": "M-!",
+    "answers": [
+      "true"
+    ],
+    "message": true
+  },
+  {
+    "name": "shell-command-failing-with-no-output",
+    "text": "one\n",
+    "keys": "M-!",
+    "answers": [
+      "exit 3"
+    ],
+    "message": true
+  },
+  {
+    "name": "shell-command-several-lines-in-a-buffer",
+    "text": "one\n",
+    "keys": "M-!",
+    "answers": [
+      "printf 'a\\nb\\n'"
+    ],
+    "windows": true
+  },
+  {
+    "name": "shell-command-on-region-replaces-it",
+    "text": "alpha\nbeta\ngamma\n",
+    "keys": "M-> C-SPC M-< C-u M-|",
+    "answers": [
+      "sort -r"
+    ]
+  },
+  {
+    "name": "shell-command-on-region-shows-it",
+    "text": "alpha\nbeta\n",
+    "keys": "C-x h M-|",
+    "answers": [
+      "wc -l | tr -d ' '"
+    ],
+    "message": true
+  },
+  {
+    "name": "shell-command-on-region-upcases-part",
+    "text": "abc def ghi\n",
+    "point": 4,
+    "keys": "C-SPC M-f C-u M-|",
+    "answers": [
+      "tr a-z A-Z"
+    ]
+  }
+]

@@ -875,6 +875,21 @@ impl Editor {
         }
         #[cfg(unix)]
         {
+            // To the job in the foreground on a terminal, the signal's own
+            // character, so the terminal signals it and the shell sees the
+            // interrupt too, as Emacs does where signals go via characters.
+            if current_group && matches!(p.kind, Kind::Pty { .. }) {
+                let c = match signal {
+                    libc::SIGINT => Some(3u8),
+                    libc::SIGQUIT => Some(0x1c),
+                    libc::SIGTSTP => Some(0x1a),
+                    _ => None,
+                };
+                if let (Some(c), Some(stdin)) = (c, &p.stdin) {
+                    let _ = stdin.send(Some(vec![c]));
+                    return Ok(());
+                }
+            }
             // The whole group, as the process leads it, or the terminal's foreground one.
             let mut pid = p.pid as i32;
             if current_group && let Kind::Pty { master, .. } = &p.kind {

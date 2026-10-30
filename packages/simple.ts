@@ -584,3 +584,119 @@ for (const name of ["clone-indirect-buffer", "clone-indirect-buffer-other-window
   });
   if (name === "clone-indirect-buffer-other-window") ember.bindKey("C-x 4 c", command);
 }
+
+// Shell commands, as simple.el's shell-command and shell-command-on-region:
+// a command run by shell-file-name with -c, its output in the echo area if
+// it fits on a line, else in *Shell Command Output*.
+
+for (const [name, doc, value] of [
+  ["shell-file-name", "The shell programs and shell commands are run with, from $SHELL.", ember.getenv("SHELL") ?? "/bin/sh"],
+  ["shell-command-switch", "What tells the shell that the next argument is a command to run.", "-c"],
+  ["shell-command-buffer-name", "The buffer shell commands' output goes into when it does not fit in the echo area.", "*Shell Command Output*"],
+  ["shell-command-buffer-name-async", "The buffer the output of a command run with M-& goes into.", "*Async Shell Command*"],
+] as const) {
+  ember.defineVariable({ name, doc, value });
+}
+
+/** Runs a shell command with `input`, as call-shell-region: its exit code and output. */
+function callShell(command: string, input?: string): { exit: number; output: string } {
+  const shell = String(ember.variable("shell-file-name"));
+  return ember.callProcess([shell, String(ember.variable("shell-command-switch")), command], { input, directory: ember.expandFileName(".") });
+}
+
+/**
+ * Shows a command's output as display-message-or-buffer does: one line
+ * in the echo area, more in the output buffer, shown.
+ */
+function showOutput(output: string, exit: number): void {
+  const name = String(ember.variable("shell-command-buffer-name"));
+  ember.getBufferCreate(name);
+  ember.withCurrentBuffer(name, () => {
+    ember.letBind({ "inhibit-read-only": true }, () => {
+      ember.deleteRegion(0, ember.bufferSize());
+      ember.insert(output);
+    });
+    ember.gotoChar(0);
+    ember.setBufferModified(false);
+  });
+  if (output === "") {
+    ember.message(exit === 0 ? "(Shell command succeeded with no output)" : `(Shell command failed with code ${exit} and no output)`);
+    return;
+  }
+  const body = output.endsWith("\n") ? output.slice(0, -1) : output;
+  const shown = ember.windowList().some((w) => ember.windowBuffer(w) === name);
+  // As many lines as the echo area may grow to, max-mini-window-height of the frame's.
+  const max = Number(ember.variable("max-mini-window-height") ?? 0.25);
+  const frameLines = ember.windowSize()?.totalHeight ?? 24;
+  const fits = Number.isInteger(max) ? max : Math.max(1, Math.floor(frameLines * max));
+  if (body.split("\n").length <= fits && !shown) ember.message(body);
+  else ember.call("display-buffer", name);
+}
+
+/**
+ * Runs a shell command with the region as its input, as
+ * shell-command-on-region: the output replaces the region with
+ * `replace`, point before it and the mark after, or else is shown.
+ */
+function shellCommandOnRegion(start: number, end: number, command: string, replace: boolean): number {
+  const [from, to] = [Math.min(start, end), Math.max(start, end)];
+  const { exit, output } = callShell(command, ember.bufferSubstringNoProperties(from, to));
+  if (replace) {
+    ember.deleteRegion(from, to);
+    ember.gotoChar(from);
+    ember.insert(output);
+    ember.setMark(from + [...output].length);
+    ember.gotoChar(from);
+  } else {
+    showOutput(output, exit);
+  }
+  return exit;
+}
+
+ember.defineCommand({
+  name: "shell-command-on-region",
+  doc:
+    "Run a shell command with the region as its input, showing its output.\n\n" +
+    "With a prefix argument, the output replaces the region instead.",
+  params: [
+    { name: "start", kind: "region-beginning" },
+    { name: "end", kind: "region-end" },
+    { name: "command", kind: "string", prompt: "Shell command on region: " },
+    { name: "replace", kind: "prefix" },
+  ],
+  run: (start: number, end: number, command: string, replace: ember.PrefixArg) => {
+    shellCommandOnRegion(start, end, command, replace !== null);
+  },
+});
+
+ember.defineCommand({
+  name: "shell-command",
+  doc:
+    "Run a shell command and show its output: in the echo area if it is one line, else in *Shell Command Output*.\n\n" +
+    "A command ending in & runs in the background, as M-& does. With a prefix argument, the output goes into the " +
+    "buffer at point, with the mark after it.",
+  params: [
+    { name: "command", kind: "string", prompt: "Shell command: " },
+    { name: "arg", kind: "prefix" },
+  ],
+  run: (command: string, arg: ember.PrefixArg) => {
+    if (/[ \t]*&[ \t]*$/.test(command)) {
+      ember.call("async-shell-command", command.replace(/[ \t]*&[ \t]*$/, ""));
+      return;
+    }
+    if (arg !== null) {
+      if (ember.bufferReadOnly()) ember.signal("buffer-read-only", `Buffer is read-only: ${ember.bufferName()}`);
+      const at = ember.point();
+      const { output } = callShell(command);
+      ember.insert(output);
+      // Point before the output and the mark after it, as exchange-point-and-mark leaves them.
+      ember.setMark(ember.point());
+      ember.gotoChar(at);
+      return;
+    }
+    shellCommandOnRegion(ember.point(), ember.point(), command, false);
+  },
+});
+
+ember.bindKey("M-!", "shell-command");
+ember.bindKey("M-|", "shell-command-on-region");

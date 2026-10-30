@@ -108,6 +108,8 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/ffap.ts", include_str!("../../../packages/ffap.ts")),
     ("packages/dired.ts", include_str!("../../../packages/dired.ts")),
     ("packages/compile.ts", include_str!("../../../packages/compile.ts")),
+    ("packages/comint.ts", include_str!("../../../packages/comint.ts")),
+    ("packages/shell.ts", include_str!("../../../packages/shell.ts")),
     ("packages/xref.ts", include_str!("../../../packages/xref.ts")),
     ("packages/project.ts", include_str!("../../../packages/project.ts")),
     ("packages/replace.ts", include_str!("../../../packages/replace.ts")),
