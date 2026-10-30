@@ -345,7 +345,17 @@ const API: &str = r##"
    * function gets the hook's arguments, such as the start and end of the
    * text to fontify for jit-lock-functions.
    */
-  function addHook(hook: HookName | (string & {}), run: (...args: any[]) => void, options?: { local?: boolean }): void;
+  function addHook(
+    hook: HookName | (string & {}),
+    run: (...args: any[]) => unknown,
+    options?: {
+      local?: boolean;
+      /** Where it runs among the others, as add-hook's DEPTH, from -100 to 100: lower first, 0 by default. */
+      depth?: number;
+      /** Run it last, as depth 90. */
+      append?: boolean;
+    },
+  ): void;
   /** Remove a function from a hook, passing the same function. */
   function removeHook(hook: HookName | (string & {}), run: (...args: any[]) => void, options?: { local?: boolean }): void;
   /** Run a hook's functions, passing them any arguments given (Emacs's run-hook-with-args). */
@@ -891,11 +901,13 @@ const API: &str = r##"
   function nextCharPropertyChange(position: number): number;
 
   /**
-   * Call the script functions on a hook in turn until one returns something
+   * Call the functions on a hook in turn until one returns something
    * other than null, undefined or false, and return that, as Emacs's
    * run-hook-with-args-until-success; null if none does.
    */
   function runHookWithArgsUntilSuccess(hook: string, ...args: Value[]): Value;
+  /** Call the functions on a hook in turn until one returns null or false, as run-hook-with-args-until-failure; true if none did. */
+  function runHookWithArgsUntilFailure(hook: string, ...args: Value[]): boolean;
   /**
    * Start a group of changes to the current buffer that can be taken back as
    * if never made, leaving no trace in the undo history, as Emacs's

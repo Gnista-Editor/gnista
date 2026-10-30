@@ -223,12 +223,15 @@ impl Variable {
 /// A hook function, called with the hook's arguments, if it has any.
 pub type HookFn = Rc<dyn Fn(&mut Editor, &[Value]) -> Result<()>>;
 
+/// One element of a hook's value: a function, at a depth, or in a
+/// buffer's local value, `t`, where the global functions run.
 #[derive(Clone)]
 pub(crate) struct HookEntry {
     id: u64,
-    /// What `describe-variable` shows for the function.
-    name: String,
-    run: HookFn,
+    /// The function, or `None` for `t`.
+    run: Option<Function>,
+    /// Where it runs among the others, as add-hook's DEPTH: lower first.
+    depth: f64,
 }
 
 impl Editor {
@@ -273,8 +276,7 @@ impl Editor {
         }
         let var = self.variables.get(name)?;
         if var.hook {
-            let names = self.hook_function_names_in(b, name);
-            return Some(Value::List(names.into_iter().map(Value::Str).collect()));
+            return Some(Value::List(self.hook_value_in(b, name)));
         }
         Some(var.default.clone())
     }
@@ -357,15 +359,42 @@ impl Editor {
     /// With `local`, only for the current buffer. Returns an id for
     /// [`Editor::remove_hook`].
     pub fn add_hook(&mut self, hook: &str, name: &str, run: HookFn, local: bool) -> u64 {
+        let function = Function::new(Some(name), move |ed, args| run(ed, args).map(|()| Value::Null));
+        self.add_hook_function(hook, function, 0.0, local)
+    }
+
+    /// Adds a function to a hook at a depth, as Emacs's `add-hook` with
+    /// DEPTH: lower depths run first, a new function goes before those of
+    /// its depth if that is 0 or less and after them otherwise, and
+    /// `append` is depth 90. A function already there stays where it is.
+    /// A buffer's local value starts as `t`, where the global functions
+    /// run. Returns an id for [`Editor::remove_hook`].
+    pub fn add_hook_function(&mut self, hook: &str, function: Function, depth: f64, local: bool) -> u64 {
         self.next_hook_id += 1;
-        let entry = HookEntry { id: self.next_hook_id, name: name.to_string(), run };
+        let id = self.next_hook_id;
         let list = if local {
-            self.buffer_mut().local_hooks.entry(hook.to_string()).or_default()
+            let list = self.buffer_mut().local_hooks.entry(hook.to_string()).or_default();
+            if list.is_empty() {
+                list.push(HookEntry { id: 0, run: None, depth: 0.0 });
+            }
+            list
         } else {
             self.hooks.entry(hook.to_string()).or_default()
         };
-        list.insert(0, entry);
-        self.next_hook_id
+        if let Some(existing) = list.iter().find(|e| e.run.as_ref() == Some(&function)) {
+            return existing.id;
+        }
+        let at = if depth <= 0.0 { list.iter().position(|e| e.depth >= depth) } else { list.iter().position(|e| e.depth > depth) };
+        list.insert(at.unwrap_or(list.len()), HookEntry { id, run: Some(function), depth });
+        id
+    }
+
+    /// Takes a function off a hook, as Emacs's `remove-hook`.
+    pub fn remove_hook_function(&mut self, hook: &str, function: &Function, local: bool) {
+        let list = if local { self.buffer_mut().local_hooks.get_mut(hook) } else { self.hooks.get_mut(hook) };
+        if let Some(list) = list {
+            list.retain(|e| e.run.as_ref() != Some(function));
+        }
     }
 
     /// Whether the function added with `id` is still on a hook: a buffer's
@@ -383,7 +412,23 @@ impl Editor {
             self.hooks.get_mut(hook)
         };
         if let Some(list) = list {
-            list.retain(|entry| entry.id != id);
+            list.retain(|entry| entry.id != id || entry.run.is_none());
+        }
+    }
+
+    /// The functions a hook runs for a buffer, in order: its local value's,
+    /// with the global ones where its `t` is, or else the global ones.
+    pub(crate) fn hook_functions_in(&self, b: &Buffer, hook: &str) -> Vec<Function> {
+        let global = || self.hooks.get(hook).into_iter().flatten().filter_map(|e| e.run.clone());
+        match b.local_hooks.get(hook) {
+            Some(local) => local
+                .iter()
+                .flat_map(|e| match &e.run {
+                    Some(f) => vec![f.clone()],
+                    None => global().collect(),
+                })
+                .collect(),
+            None => global().collect(),
         }
     }
 
@@ -395,34 +440,46 @@ impl Editor {
 
     /// Whether a hook has any functions for the current buffer.
     pub(crate) fn hook_has_functions(&self, hook: &str) -> bool {
-        self.buffer().local_hooks.get(hook).is_some_and(|l| !l.is_empty()) || self.hooks.get(hook).is_some_and(|l| !l.is_empty())
+        let any = |l: &Vec<HookEntry>| l.iter().any(|e| e.run.is_some());
+        self.buffer().local_hooks.get(hook).is_some_and(any) || self.hooks.get(hook).is_some_and(any)
     }
 
     /// Runs a hook's functions with arguments, as Emacs's `run-hook-with-args`.
     pub fn run_hook_with_args(&mut self, hook: &str, args: &[Value]) -> Result<()> {
-        let b = self.buffer();
-        let functions: Vec<HookFn> = b
-            .local_hooks
-            .get(hook)
-            .into_iter()
-            .chain(self.hooks.get(hook))
-            .flatten()
-            .map(|entry| entry.run.clone())
-            .collect();
-        for run in functions {
-            run(self, args)?;
+        for f in self.hook_functions_in(self.buffer(), hook) {
+            f.call(self, args)?;
         }
         Ok(())
     }
 
-    fn hook_function_names_in(&self, b: &Buffer, hook: &str) -> Vec<String> {
-        b.local_hooks
-            .get(hook)
-            .into_iter()
-            .chain(self.hooks.get(hook))
-            .flatten()
-            .map(|entry| entry.name.clone())
-            .collect()
+    /// Runs a hook's functions until one returns something other than null
+    /// or false, and returns that, as Emacs's `run-hook-with-args-until-success`.
+    pub fn run_hook_with_args_until_success(&mut self, hook: &str, args: &[Value]) -> Result<Value> {
+        for f in self.hook_functions_in(self.buffer(), hook) {
+            let value = f.call(self, args)?;
+            if value.is_true() {
+                return Ok(value);
+            }
+        }
+        Ok(Value::Null)
+    }
+
+    /// Runs a hook's functions until one returns null or false, as Emacs's
+    /// `run-hook-with-args-until-failure`; true if none did.
+    pub fn run_hook_with_args_until_failure(&mut self, hook: &str, args: &[Value]) -> Result<bool> {
+        for f in self.hook_functions_in(self.buffer(), hook) {
+            if !f.call(self, args)?.is_true() {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    }
+
+    /// A hook's value for a buffer, as Emacs shows it: its local value's
+    /// functions with `t`, here true, for the global ones, or the global value.
+    fn hook_value_in(&self, b: &Buffer, hook: &str) -> Vec<Value> {
+        let list = b.local_hooks.get(hook).or_else(|| self.hooks.get(hook));
+        list.into_iter().flatten().map(|e| e.run.clone().map_or(Value::Bool(true), Value::Function)).collect()
     }
 }
 

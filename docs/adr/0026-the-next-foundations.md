@@ -33,6 +33,10 @@ Proposed: option 2.
 3. The minibuffer as buffers in a minibuffer window, one per depth, with recursive minibuffers, timers running during prompts, and icomplete drawing with ordinary overlays.
 4. Then window objects with start markers and configurations, completion tables as functions, `syntax-table` properties, and autoloads, each when it starts, in an ADR of its own.
 
+## Progress
+
+Step 1 landed with this ADR: a hook's entries are function values with a depth, a buffer's local value holds `t` where the global functions run, `add-hook`'s ordering and its refusal to add a function twice are Emacs's, and the hook's variable shows its functions, with true for `t`. Hooks run in Rust, `run-hook-with-args-until-success` and `-until-failure` included, so functions added from Rust run there too, and scripts add and remove a function by itself rather than by an id kept under the buffer's name, which renaming the buffer broke. Setting a hook's variable to a list does not change the hook yet.
+
 ## Consequences
 
 Ports can keep following their Lisp closely: dispatch hooks, symbol properties, keymaps in text and recursive minibuffers are what the next large ports (completion-at-point, eglot-style backends, Org's links and agenda keys, isearch's minibuffer) are written against. The cost is a second migration of the packages that use hooks, and of the mode line in both front ends; the mode line keeps each front end's look, which its snapshots check.

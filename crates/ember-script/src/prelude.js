@@ -5,8 +5,6 @@
   delete globalThis.__ember;
 
   // Hook ids by function, so a function can be removed by passing it again.
-  const hookIds = new Map();
-  const hookKey = (hook, local) => (local ? `${hook} in ${native.bufferName()}` : hook);
 
   // Major modes by name, for building a mode on its parent.
   const majorModes = new Map();
@@ -387,38 +385,16 @@
     isHook: (name) => native.isHook(String(name)),
     killAllLocalVariables: () => native.killAllLocalVariables(),
     defineHook: (name, doc = "") => native.defineHook(String(name), String(doc)),
-    addHook(hook, run, { local = false } = {}) {
+    addHook(hook, run, { local = false, depth, append = false } = {}) {
       if (typeof run !== "function") throw new TypeError("addHook takes a function");
-      const key = hookKey(String(hook), local);
-      const ids = hookIds.get(run) ?? new Map();
-      // As in Emacs, a function already on the hook is not added again. A
-      // buffer's local hooks may have gone since, with its major mode.
-      if (ids.has(key) && native.hookContains(String(hook), ids.get(key), Boolean(local))) return;
-      ids.set(key, native.addHook(String(hook), run.name || "anonymous function", run, Boolean(local)));
-      hookIds.set(run, ids);
+      native.addHook(String(hook), run, Number(depth ?? (append ? 90 : 0)), Boolean(local));
     },
     removeHook(hook, run, { local = false } = {}) {
-      const ids = hookIds.get(run);
-      const key = hookKey(String(hook), local);
-      if (ids?.has(key)) {
-        native.removeHook(String(hook), ids.get(key), Boolean(local));
-        ids.delete(key);
-      }
+      if (typeof run === "function") native.removeHook(String(hook), run, Boolean(local));
     },
     runHooks: (hook, ...args) => native.runHooks(String(hook), args),
-    runHookWithArgsUntilSuccess(hook, ...args) {
-      // The script functions on the hook, the buffer's own first.
-      for (const local of [true, false]) {
-        const key = hookKey(String(hook), local);
-        for (const [run, ids] of hookIds) {
-          if (ids.has(key) && native.hookContains(String(hook), ids.get(key), local)) {
-            const result = run(...args);
-            if (result !== undefined && result !== null && result !== false) return result;
-          }
-        }
-      }
-      return null;
-    },
+    runHookWithArgsUntilSuccess: (hook, ...args) => native.runHookUntil(String(hook), args, true),
+    runHookWithArgsUntilFailure: (hook, ...args) => native.runHookUntil(String(hook), args, false),
     defineKeymap: (name, parent = null) => native.defineKeymap(String(name), parent === null ? null : String(parent)),
     useLocalMap: (name) => native.useLocalMap(name ?? undefined),
     enabledMinorModes: () => native.enabledMinorModes(),

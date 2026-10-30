@@ -99,7 +99,7 @@ impl Editor {
     }
 
     fn has_fontifiers(&self, b: &Buffer) -> bool {
-        matches!(self.variable_in(b, "jit-lock-functions"), Some(Value::List(fs)) if !fs.is_empty())
+        !self.hook_functions_in(b, "jit-lock-functions").is_empty()
     }
 
     /// Fontifies whatever is not fontified yet in a range of the current

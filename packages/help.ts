@@ -14,7 +14,8 @@ ember.defineMajorMode({
 
 /** A value as a script would write it. */
 function showValue(value: ember.Value | undefined): string {
-  return value === undefined ? "void" : JSON.stringify(value);
+  // Functions show by name, as Emacs shows a hook's symbols.
+  return value === undefined ? "void" : JSON.stringify(value, (_, v) => (typeof v === "function" ? v.name || "anonymous function" : v));
 }
 
 const describeVariable = ember.defineCommand({

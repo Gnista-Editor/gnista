@@ -508,3 +508,58 @@ fn the_other_insertions_take_propertized_strings_too() {
     // The marker moved past the text before markers; X took on the sticky kind but kept its own face.
     assert_eq!(result, r#"["abXcd",5,"bold","italic","old"]"#);
 }
+
+#[test]
+fn hooks_run_by_depth_with_the_global_functions_where_t_is() {
+    let (mut ed, s) = setup();
+    let result = eval(
+        &mut ed,
+        &s,
+        r#"(() => {
+          ember.defineHook("test-hook");
+          const log: string[] = [];
+          const f = (name: string) => { const g = () => { log.push(name); }; Object.defineProperty(g, "name", { value: name }); return g; };
+          const global = f("global"), late = f("late"), first = f("first"), local = f("local"), localLate = f("local-late");
+          ember.addHook("test-hook", global);
+          ember.addHook("test-hook", late, { append: true });
+          ember.addHook("test-hook", first, { depth: -50 });
+          ember.addHook("test-hook", global);
+          ember.addHook("test-hook", local, { local: true });
+          ember.addHook("test-hook", localLate, { local: true, depth: 90 });
+          ember.runHooks("test-hook");
+          const value = ember.variable("test-hook") as ember.Value[];
+          // As Emacs's (local t local-late): the global ones run where t is.
+          const shown = value.map((v) => (typeof v === "function" ? v.name : v));
+          ember.getBufferCreate("other");
+          ember.call("rename-buffer", "renamed");
+          ember.removeHook("test-hook", local, { local: true });
+          log.push("|");
+          ember.runHooks("test-hook");
+          return [log, shown];
+        })()"#,
+    );
+    assert_eq!(
+        result,
+        r#"[["local","first","global","late","local-late","|","first","global","late","local-late"],["local",true,"local-late"]]"#
+    );
+}
+
+#[test]
+fn until_success_and_until_failure_stop_where_emacs_stops() {
+    let (mut ed, s) = setup();
+    let result = eval(
+        &mut ed,
+        &s,
+        r#"(() => {
+          ember.defineHook("test-functions");
+          const seen: number[] = [];
+          ember.addHook("test-functions", (n: number) => { seen.push(1); return null; }, { append: true });
+          ember.addHook("test-functions", (n: number) => { seen.push(2); return n * 10; }, { append: true });
+          ember.addHook("test-functions", (n: number) => { seen.push(3); return "never"; }, { append: true });
+          const found = ember.runHookWithArgsUntilSuccess("test-functions", 4);
+          const all = ember.runHookWithArgsUntilFailure("test-functions", 4);
+          return [found, all, seen];
+        })()"#,
+    );
+    assert_eq!(result, "[40,false,[1,2,1]]");
+}

@@ -932,30 +932,38 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
             })
         })?,
     )?;
-    let hook_context = context.clone();
     native.set(
         "addHook",
         Function::new(
             ctx.clone(),
-            move |ctx: Ctx<'js>, hook: String, name: String, run: Function<'js>, local: bool| {
-                let script = ScriptFunction { run: Persistent::save(&ctx, run), context: hook_context.clone() };
-                with_editor(&ctx, |ed| Ok(ed.add_hook(&hook, &name, script.into_hook(), local) as f64))
+            move |ctx: Ctx<'js>, hook: String, run: Function<'js>, depth: f64, local: bool| {
+                let EditorValue::Function(function) = function_from_js(&ctx, run)? else { unreachable!("a function converts to one") };
+                with_editor(&ctx, |ed| Ok(ed.add_hook_function(&hook, function, depth, local) as f64))
             },
         )?,
     )?;
+
     native.set(
-        "hookContains",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, hook: String, id: f64, local: bool| {
-            with_editor(&ctx, |ed| Ok(ed.hook_contains(&hook, id as u64, local)))
+        "removeHook",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, hook: String, run: Function<'js>, local: bool| {
+            let EditorValue::Function(function) = function_from_js(&ctx, run)? else { unreachable!("a function converts to one") };
+            with_editor(&ctx, |ed| {
+                ed.remove_hook_function(&hook, &function, local);
+                Ok(())
+            })
         })?,
     )?;
     native.set(
-        "removeHook",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, hook: String, id: f64, local: bool| {
-            with_editor(&ctx, |ed| {
-                ed.remove_hook(&hook, id as u64, local);
-                Ok(())
-            })
+        "runHookUntil",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, hook: String, args: Vec<Value<'js>>, success: bool| -> rquickjs::Result<Value<'js>> {
+            let args = args.into_iter().map(|v| value_from_js(&ctx, v)).collect::<rquickjs::Result<Vec<_>>>()?;
+            if success {
+                let value = with_editor(&ctx, |ed| ed.run_hook_with_args_until_success(&hook, &args))?;
+                value_to_js(&ctx, &value)
+            } else {
+                let all = with_editor(&ctx, |ed| ed.run_hook_with_args_until_failure(&hook, &args))?;
+                Ok(Value::new_bool(ctx.clone(), all))
+            }
         })?,
     )?;
     native.set(
