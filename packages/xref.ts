@@ -12,7 +12,8 @@ ember.defineFace({ name: "xref-match", doc: "What matched, in *xref*.", attribut
 type Xref = { file: string; line: number; col: number; length: number; summary: string; group: string };
 
 /** Each *xref* buffer's places, by the buffer line each is on. */
-const shown = new Map<string, { byLine: Map<number, Xref>; current?: number }>();
+/** What each *xref* buffer shows, kept by buffer so renaming it keeps it. */
+const shown = new Map<ember.Buffer, { byLine: Map<number, Xref>; current?: number }>();
 
 /** Shows places in *xref*, grouped by file as xref--insert-xrefs does, and selects it. */
 function showXrefs(xrefs: Xref[]): void {
@@ -48,7 +49,7 @@ function showXrefs(xrefs: Xref[]): void {
     ember.setBufferModified(false);
     ember.gotoChar(0);
   });
-  shown.set(name, { byLine });
+  shown.set(ember.getBuffer(name)!, { byLine });
   ember.setVariable("next-error-last-buffer", ember.getBuffer(name) ?? null);
   ember.call("pop-to-buffer", name);
 }
@@ -56,8 +57,9 @@ function showXrefs(xrefs: Xref[]): void {
 // For code that finds places, as project-find-regexp: a list of { file, line, col, length, summary, group }.
 ember.defun("xref-show-xrefs", showXrefs);
 
-function items(buffer = ember.bufferName()) {
-  const s = shown.get(buffer);
+function items(buffer: ember.BufferLike = ember.currentBuffer()) {
+  const b = ember.getBuffer(buffer);
+  const s = b === undefined ? undefined : shown.get(b);
   if (s === undefined) throw new Error("Not in an xref buffer");
   return s;
 }

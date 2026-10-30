@@ -108,7 +108,7 @@ A second review, of buffer objects, propertized strings and the line prefixes, f
 - `C-u C-x x r` renamed a buffer away from a name it already had, and its prompt named a default Emacs 30's does not.
 - Renaming the agent's buffer lost its replies; sessions keep the buffer's id.
 
-Still open: the wrap prefix comes from a line's first character, where Emacs takes it from each continued row's; `insertBeforeMarkers` and `insertAndInherit` take plain strings only; the core's `previous_buffer` and xref's buffers are kept by name.
+Since then `insertBeforeMarkers` and `insertAndInherit` take propertized strings too, and the core's previous buffer and xref's results are kept by buffer. Still open: the wrap prefix comes from a line's first character, where Emacs takes it from each continued row's.
 
 ## Consequences
 

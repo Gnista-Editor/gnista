@@ -487,3 +487,24 @@ fn a_propertized_strings_runs_stay_within_it() {
     // The hook moved point to the start, where the string goes, with its face.
     assert_eq!(result, r#"["cdabxyz","bold","italic",null]"#);
 }
+
+#[test]
+fn the_other_insertions_take_propertized_strings_too() {
+    let (mut ed, s) = setup();
+    let result = eval(
+        &mut ed,
+        &s,
+        r#"(() => {
+          ember.insert("ab");
+          const m = ember.makeMarker(2);
+          ember.gotoChar(2);
+          ember.insertBeforeMarkers(ember.propertize("cd", { face: "bold" }));
+          ember.putTextProperty(0, 2, "kind", "old");
+          ember.gotoChar(2);
+          ember.insertAndInherit(ember.propertize("X", { face: "italic" }));
+          return [ember.bufferText(), m.position, ember.getTextProperty(3, "face"), ember.getTextProperty(2, "face"), ember.getTextProperty(2, "kind")];
+        })()"#,
+    );
+    // The marker moved past the text before markers; X took on the sticky kind but kept its own face.
+    assert_eq!(result, r#"["abXcd",5,"bold","italic","old"]"#);
+}

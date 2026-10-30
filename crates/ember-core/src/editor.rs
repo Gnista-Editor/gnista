@@ -128,7 +128,8 @@ pub struct Editor {
     running: usize,
     /// The command keys named, while the command it is remapped to runs.
     remapped_from: Option<String>,
-    previous_buffer: Option<String>,
+    /// The buffer shown before the current one, by id, so renaming it keeps it.
+    previous_buffer: Option<u64>,
     pub(crate) minibuffer: Buffer,
     pub(crate) prompt: Option<Prompt>,
     /// The messages shown, as *Messages* keeps them.
@@ -1375,7 +1376,7 @@ impl Editor {
     pub(crate) fn select(&mut self, index: usize) {
         let shown = self.selected_buffer_index();
         if index != shown {
-            self.previous_buffer = Some(self.buffers[shown].name.clone());
+            self.previous_buffer = Some(self.buffers[shown].id);
             self.selected_window_shows(index);
         }
         self.current = index;
@@ -1408,7 +1409,7 @@ impl Editor {
     /// Visits a file in a buffer without showing it, as Emacs's
     /// `find-file-noselect`, and returns the buffer's name.
     pub fn find_file_noselect(&mut self, path: &Path) -> Result<String> {
-        let (current, previous) = (self.buffers[self.current].id, self.previous_buffer.clone());
+        let (current, previous) = (self.buffers[self.current].id, self.previous_buffer);
         let visited = self.visit_file(path);
         let name = self.buffers[self.current].name.clone();
         if let Some(back) = self.buffers.iter().position(|b| b.id == current) {
@@ -1432,8 +1433,9 @@ impl Editor {
     pub fn other_buffer(&self) -> Option<&str> {
         let current = &self.buffers[self.current].name;
         self.previous_buffer
-            .as_deref()
-            .filter(|name| self.find_buffer(name).is_some() && *name != current)
+            .and_then(|id| self.buffer_with_id(id))
+            .map(|i| self.buffers[i].name.as_str())
+            .filter(|name| *name != current)
             .or_else(|| {
                 self.buffers
                     .iter()

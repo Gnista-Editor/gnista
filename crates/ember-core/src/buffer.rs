@@ -699,11 +699,16 @@ impl Buffer {
         } else {
             self.insert_at(pos, &text.string)?;
         }
-        // Runs past the string's end are cut there.
+        self.restore_properties(pos, text);
+        Ok(())
+    }
+
+    /// Puts a propertized string's properties on text inserted at `pos`,
+    /// leaving out runs past the string's end.
+    pub(crate) fn restore_properties(&mut self, pos: usize, text: &crate::properties::Text) {
         let n = text.string.chars().count();
         let props: Vec<_> = text.props.iter().filter(|(r, _)| r.start < n).map(|(r, p)| (r.start..r.end.min(n), p.clone())).collect();
         self.properties.restore(pos, &props);
-        Ok(())
     }
 
     /// The text of a stretch with its properties, as Emacs's `buffer-substring`.

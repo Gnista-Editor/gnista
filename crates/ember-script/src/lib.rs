@@ -598,8 +598,9 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
     )?;
     native.set(
         "insertBeforeMarkers",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, text: String| {
-            with_editor(&ctx, |ed| ed.insert_before_markers(&text))
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, text: Value<'js>| {
+            let text = text_from_js(&ctx, text)?;
+            with_editor(&ctx, |ed| ed.insert_text_with(&text, ember_core::Insertion::BeforeMarkers))
         })?,
     )?;
     native.set(
@@ -621,8 +622,9 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
     )?;
     native.set(
         "insertAndInherit",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, text: String| {
-            with_editor(&ctx, |ed| ed.insert_and_inherit(&text))
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, text: Value<'js>| {
+            let text = text_from_js(&ctx, text)?;
+            with_editor(&ctx, |ed| ed.insert_text_with(&text, ember_core::Insertion::Inherit))
         })?,
     )?;
     native.set(
@@ -2439,6 +2441,14 @@ fn value_to_js<'js>(ctx: &Ctx<'js>, value: &EditorValue) -> rquickjs::Result<Val
 
 /// The property a buffer object keeps its buffer's id in.
 const BUFFER_ID: &str = "__emberBufferId";
+
+/// A string or propertized string from a script, as text to insert.
+fn text_from_js<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> rquickjs::Result<ember_core::Text> {
+    Ok(match value_from_js(ctx, value)? {
+        EditorValue::Text(text) => text,
+        other => ember_core::Text { string: other.as_str().map(str::to_string).unwrap_or_else(|| other.to_string()), props: Vec::new() },
+    })
+}
 
 /// The property a script function keeps its editor identity in, so the
 /// same function passed twice is one value, as one lambda is `eq` to itself.

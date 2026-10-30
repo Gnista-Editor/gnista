@@ -51,6 +51,22 @@ impl Editor {
         self.insert_with(at, &text.string, |b, at| b.insert_text_at(at, text, true))
     }
 
+    /// Inserts a propertized string at point as `insert-before-markers` or
+    /// `insert-and-inherit` would, its own properties with it; inherited
+    /// ones give way to the string's.
+    pub fn insert_text_with(&mut self, text: &crate::properties::Text, how: Insertion) -> Result<()> {
+        let at = self.buffer().point();
+        self.insert_with(at, &text.string, |b, _| {
+            let at = b.point();
+            match how {
+                Insertion::BeforeMarkers => b.insert_before_markers(&text.string)?,
+                Insertion::Inherit => b.insert_and_inherit(&text.string)?,
+            }
+            b.restore_properties(at, text);
+            Ok(())
+        })
+    }
+
     /// Inserts a propertized string at a position, its properties with it.
     pub fn insert_text_at(&mut self, pos: usize, text: &crate::properties::Text) -> Result<()> {
         self.insert_with(pos, &text.string, |b, at| b.insert_text_at(at, text, false))
@@ -340,6 +356,15 @@ impl Editor {
     pub(crate) fn modification_hooks_inhibited(&self) -> bool {
         self.variable("inhibit-modification-hooks").is_some_and(|v| v.is_true())
     }
+}
+
+/// How [`Editor::insert_text_with`] inserts.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Insertion {
+    /// As `insert-before-markers`: markers at point move after the text.
+    BeforeMarkers,
+    /// As `insert-and-inherit`: the text takes on the sticky properties around it.
+    Inherit,
 }
 
 /// The hooks a change calls once it is made.

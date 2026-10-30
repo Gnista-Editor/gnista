@@ -18,6 +18,7 @@ pub mod fileops;
 mod files;
 mod fontify;
 mod insdel;
+pub use insdel::Insertion;
 mod key;
 mod keymap;
 mod minibuffer;

@@ -145,14 +145,14 @@ const API: &str = r##"
    * Insert text at point as Emacs's insert-before-markers does: the mark and
    * any overlay start or end at point move past it too.
    */
-  function insertBeforeMarkers(text: string): void;
+  function insertBeforeMarkers(text: string | PropertizedString): void;
   /**
    * Insert text at point that takes on the text properties around it, as
    * Emacs's insert-and-inherit does for typing: those of the character
    * before, unless its rear-nonsticky names them, and those of the
    * character after that its front-sticky names.
    */
-  function insertAndInherit(text: string): void;
+  function insertAndInherit(text: string | PropertizedString): void;
   /**
    * Point's column as Emacs's current-column counts it: tabs to tab stops,
    * wide characters as two, and text hidden without an ellipsis as none.

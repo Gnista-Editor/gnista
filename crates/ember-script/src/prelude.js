@@ -333,8 +333,8 @@
       return new PropertizedString(s, n > 0 && Object.keys(properties).length > 0 ? [[0, n, { ...properties }]] : []);
     },
     bufferSubstring: (start, end) => native.bufferSubstring(start, end),
-    insertBeforeMarkers: (text) => native.insertBeforeMarkers(String(text)),
-    insertAndInherit: (text) => native.insertAndInherit(String(text)),
+    insertBeforeMarkers: (text) => native.insertBeforeMarkers(text instanceof PropertizedString ? text : String(text)),
+    insertAndInherit: (text) => native.insertAndInherit(text instanceof PropertizedString ? text : String(text)),
     currentColumn: () => native.currentColumn(),
     undoAutoAmalgamate: () => native.undoAutoAmalgamate(),
     moveToColumn: (column) => native.moveToColumn(Math.max(0, Math.floor(Number(column)))),
