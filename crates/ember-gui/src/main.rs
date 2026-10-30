@@ -18,6 +18,8 @@ fn main() -> eframe::Result {
     }
 
     let mut editor = Editor::new();
+    // Before init.ts, which may change it.
+    ember_gui::modeline::install(&mut editor);
     let scripting = config::setup_with(&mut editor, !no_init, ember_agent::install);
     for file in files {
         if let Err(e) = editor.call("find-file", vec![Arg::Str(expand_file_name(&file).display().to_string())]) {

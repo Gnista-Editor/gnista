@@ -1,0 +1,396 @@
+//! The mode line, as Emacs's xdisp.c formats it: `mode-line-format` is a
+//! construct of strings with %-specs, symbols whose values are shown,
+//! `(:eval FUNCTION)`, `(:propertize ELT PROPS...)`, conditionals on a
+//! symbol and lists with a field width. [`Editor::redisplay`] formats each
+//! window's, and front ends draw the segments, each in its faces.
+
+use std::collections::HashMap;
+
+use crate::buffer::Buffer;
+use crate::editor::Editor;
+use crate::error::Result;
+use crate::variables::{Value, Variable};
+use crate::window::WindowId;
+
+/// A stretch of the mode line in its faces, innermost last.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ModeLineSegment {
+    pub text: String,
+    pub faces: Vec<String>,
+}
+
+/// How deep constructs nest before formatting stops, as a loop would otherwise not end.
+const DEPTH: usize = 50;
+
+/// What formatting one window's mode line works on.
+struct Formatting {
+    /// Where point is in the window, which can differ from the buffer's point.
+    point: usize,
+    top_line: usize,
+    height: usize,
+    width: usize,
+    out: Vec<ModeLineSegment>,
+}
+
+impl Formatting {
+    fn columns(&self) -> usize {
+        self.out.iter().map(|s| crate::display::display_width(&s.text, 8)).sum()
+    }
+
+    fn push(&mut self, text: &str, faces: &[String]) {
+        if text.is_empty() {
+            return;
+        }
+        match self.out.last_mut() {
+            Some(last) if last.faces == faces => last.text.push_str(text),
+            _ => self.out.push(ModeLineSegment { text: text.to_string(), faces: faces.to_vec() }),
+        }
+    }
+}
+
+impl Editor {
+    /// The mode line of a window as the last redisplay formatted it.
+    pub fn mode_line(&self, window: WindowId) -> &[ModeLineSegment] {
+        self.mode_lines.get(&window).map_or(&[], Vec::as_slice)
+    }
+
+    /// Formats every window's mode line from its buffer's `mode-line-format`.
+    pub(crate) fn update_mode_lines(&mut self) {
+        let windows: Vec<(WindowId, u64, usize, usize)> = self
+            .frame_list()
+            .into_iter()
+            .flat_map(|f| self.frame_windows(f).into_iter().map(|v| (v.id, v.buffer.id(), v.point, v.top_line)).collect::<Vec<_>>())
+            .collect();
+        // %- fills the mode line, which takes the divider's column too.
+        let totals = self.window_total_sizes();
+        let mut lines = HashMap::new();
+        for (id, buffer, point, top_line) in windows {
+            let Some(index) = self.buffer_with_id(buffer) else { continue };
+            let format = self.variable_in(&self.buffers[index], "mode-line-format").unwrap_or(Value::Null);
+            let (height, width) = self.window(id).map_or((0, 0), |w| (w.height, w.width));
+            let width = totals.iter().find(|t| t.0 == id).map_or(width, |t| t.1);
+            let mut f = Formatting { point, top_line, height, width, out: Vec::new() };
+            if let Err(e) = self.with_current_buffer(index, |ed| ed.mode_line_element(&mut f, &format, &[], 0, false)) {
+                f.push(&format!("Error in mode-line-format: {e}"), &[]);
+            }
+            lines.insert(id, f.out);
+        }
+        self.mode_lines = lines;
+    }
+
+    /// Formats a mode line construct for the current buffer and the
+    /// selected window, as Emacs's `format-mode-line`.
+    pub fn format_mode_line(&mut self, format: &Value) -> Result<Vec<ModeLineSegment>> {
+        let id = self.selected_window;
+        let (top_line, height, width) = self.window(id).map_or((0, 0, 0), |w| (w.top_line, w.height, w.width));
+        let point = self.buffer().point();
+        let mut f = Formatting { point, top_line, height, width, out: Vec::new() };
+        self.mode_line_element(&mut f, format, &[], 0, false)?;
+        Ok(f.out)
+    }
+
+    /// Formats one construct, as Emacs's display_mode_element: `literal`
+    /// for a string that is a symbol's value, whose %-specs are not read.
+    fn mode_line_element(&mut self, f: &mut Formatting, elt: &Value, faces: &[String], depth: usize, literal: bool) -> Result<()> {
+        if depth > DEPTH {
+            return Ok(());
+        }
+        match elt {
+            Value::Str(s) if literal => f.push(s, faces),
+            Value::Str(s) => self.mode_line_string(f, s, faces),
+            Value::Text(t) => {
+                for (range, text) in text_runs(t) {
+                    let mut with = faces.to_vec();
+                    with.extend(t.properties_at(range.start).and_then(|p| p.get("face")).map(face_names).unwrap_or_default());
+                    if literal {
+                        f.push(&text, &with);
+                    } else {
+                        self.mode_line_string(f, &text, &with);
+                    }
+                }
+            }
+            Value::Symbol(name) if name == "t" => {}
+            Value::Symbol(name) => {
+                let value = self.variable(name).unwrap_or(Value::Null);
+                let literal = matches!(value, Value::Str(_) | Value::Text(_));
+                self.mode_line_element(f, &value, faces, depth + 1, literal)?;
+            }
+            Value::Function(function) => {
+                let value = function.call(self, &[])?;
+                self.mode_line_element(f, &value, faces, depth + 1, false)?;
+            }
+            Value::List(items) => match items.first() {
+                None => {}
+                Some(Value::Symbol(k)) if k == ":eval" => {
+                    let value = match items.get(1) {
+                        Some(form) => self.funcall(form, &[])?,
+                        None => Value::Null,
+                    };
+                    self.mode_line_element(f, &value, faces, depth + 1, false)?;
+                }
+                Some(Value::Symbol(k)) if k == ":propertize" => {
+                    let mut with = faces.to_vec();
+                    for pair in items.get(2..).unwrap_or_default().chunks(2) {
+                        if let [name, value] = pair
+                            && name.as_str() == Some("face")
+                        {
+                            with.extend(face_names(value));
+                        }
+                    }
+                    if let Some(inner) = items.get(1) {
+                        self.mode_line_element(f, inner, &with, depth + 1, false)?;
+                    }
+                }
+                // A conditional: THEN if the symbol's value is true, else ELSE.
+                Some(Value::Symbol(name)) => {
+                    let on = self.variable(name).is_some_and(|v| v.is_true());
+                    let branch = if on { items.get(1) } else { items.get(2) };
+                    if let Some(branch) = branch {
+                        self.mode_line_element(f, branch, faces, depth + 1, false)?;
+                    }
+                }
+                // A field width: pad on the right to at least N columns, or
+                // with -N cut to at most N.
+                Some(Value::Number(n)) => {
+                    let start = f.out.len();
+                    let before = f.columns();
+                    for item in &items[1..] {
+                        self.mode_line_element(f, item, faces, depth + 1, false)?;
+                    }
+                    let width = f.columns() - before;
+                    let n = *n as i64;
+                    if n > 0 && width < n as usize {
+                        let pad = " ".repeat(n as usize - width);
+                        match f.out.get_mut(start..).and_then(|s| s.last_mut()) {
+                            Some(last) => last.text.push_str(&pad),
+                            None => f.push(&pad, faces),
+                        }
+                    } else if n < 0 {
+                        truncate_segments(&mut f.out, start, (-n) as usize);
+                    }
+                }
+                Some(_) => {
+                    for item in items {
+                        self.mode_line_element(f, item, faces, depth + 1, false)?;
+                    }
+                }
+            },
+            Value::Null | Value::Bool(_) | Value::Number(_) | Value::Buffer(_) | Value::Keymap(_) => {}
+        }
+        Ok(())
+    }
+
+    /// A string with its %-specs worked out, as decode_mode_spec does.
+    fn mode_line_string(&self, f: &mut Formatting, s: &str, faces: &[String]) {
+        let mut chars = s.chars().peekable();
+        let mut plain = String::new();
+        while let Some(c) = chars.next() {
+            if c != '%' {
+                plain.push(c);
+                continue;
+            }
+            let mut width = String::new();
+            while let Some(d) = chars.peek().filter(|d| d.is_ascii_digit()) {
+                width.push(*d);
+                chars.next();
+            }
+            let Some(spec) = chars.next() else { break };
+            f.push(&std::mem::take(&mut plain), faces);
+            let width: usize = width.parse().unwrap_or(0);
+            let text = match spec {
+                '-' => {
+                    let left = f.width.saturating_sub(f.columns());
+                    "-".repeat(left)
+                }
+                _ => self.mode_line_spec(f, spec),
+            };
+            let numeric = matches!(spec, 'l' | 'c' | 'C' | 'i');
+            let shown = crate::display::display_width(&text, 8);
+            let text = if shown >= width {
+                text
+            } else if numeric {
+                format!("{}{text}", " ".repeat(width - shown))
+            } else {
+                format!("{text}{}", " ".repeat(width - shown))
+            };
+            f.push(&text, faces);
+        }
+        f.push(&plain, faces);
+    }
+
+    /// What a %-spec shows for the current buffer in the window being formatted.
+    fn mode_line_spec(&self, f: &Formatting, spec: char) -> String {
+        let b: &Buffer = self.buffer();
+        match spec {
+            'b' => b.name.clone(),
+            'f' => b.path.as_ref().map_or_else(|| b.name.clone(), |p| p.display().to_string()),
+            '*' => if b.read_only { "%" } else if b.is_modified() { "*" } else { "-" }.into(),
+            '+' => if b.is_modified() { "*" } else if b.read_only { "%" } else { "-" }.into(),
+            '&' => if b.is_modified() { "*" } else { "-" }.into(),
+            // Lines count from the start of the accessible portion.
+            'l' => (b.line_of(f.point.min(b.len())) - b.line_of(b.point_min()) + 1).to_string(),
+            'c' => b.column(f.point.min(b.len())).to_string(),
+            'C' => (b.column(f.point.min(b.len())) + 1).to_string(),
+            'n' => if b.is_narrowed() { " Narrow" } else { "" }.into(),
+            'm' => self.variable("mode-name").and_then(|v| v.as_str().map(str::to_string)).unwrap_or_default(),
+            'Z' => b.coding_mnemonic(),
+            'z' => {
+                let mut m = b.coding_mnemonic();
+                m.pop();
+                m
+            }
+            'i' => b.len().to_string(),
+            'I' => human_size(b.len()),
+            'p' => self.window_position(f, b),
+            '@' => "-".into(),
+            '%' => "%".into(),
+            // Recursive edits and the memory-full flag, which Ember has not.
+            '[' | ']' | 'e' => String::new(),
+            _ => String::new(),
+        }
+    }
+
+    /// How far through the buffer the window is, as Emacs's %p: All, Top,
+    /// Bot, or the percentage above the window's top.
+    fn window_position(&self, f: &Formatting, b: &Buffer) -> String {
+        let (min, max) = (b.point_min(), b.point_max());
+        let first = b.line_of(min);
+        let top = f.top_line.max(first);
+        let start = b.line_start(top).max(min);
+        let last = top + f.height.max(1);
+        let end_visible = last > b.line_of(max);
+        match (start <= min, end_visible) {
+            (true, true) => "All".into(),
+            (true, false) => "Top".into(),
+            (false, true) => "Bot".into(),
+            (false, false) => format!("{}%", ((start - min) * 100) / (max - min).max(1)),
+        }
+    }
+}
+
+/// A face property's faces: one name, or a list of them.
+fn face_names(value: &Value) -> Vec<String> {
+    match value {
+        Value::List(items) => items.iter().filter_map(|v| v.as_str().map(str::to_string)).collect(),
+        other => other.as_str().map(str::to_string).into_iter().collect(),
+    }
+}
+
+/// A propertized string's stretches of the same properties, by character.
+fn text_runs(t: &crate::properties::Text) -> Vec<(std::ops::Range<usize>, String)> {
+    let chars: Vec<char> = t.string.chars().collect();
+    let mut cuts: Vec<usize> = vec![0, chars.len()];
+    for (range, _) in &t.props {
+        cuts.push(range.start.min(chars.len()));
+        cuts.push(range.end.min(chars.len()));
+    }
+    cuts.sort_unstable();
+    cuts.dedup();
+    cuts.windows(2).filter(|w| w[0] < w[1]).map(|w| (w[0]..w[1], chars[w[0]..w[1]].iter().collect())).collect()
+}
+
+/// Cuts the segments from `start` on to `columns` wide.
+fn truncate_segments(out: &mut Vec<ModeLineSegment>, start: usize, columns: usize) {
+    let mut left = columns;
+    let mut keep = start;
+    for segment in out.iter_mut().skip(start) {
+        let mut text = String::new();
+        for c in segment.text.chars() {
+            let w = crate::display::display_width(&c.to_string(), 8);
+            if w > left {
+                left = 0;
+                break;
+            }
+            left -= w;
+            text.push(c);
+        }
+        segment.text = text;
+        keep += 1;
+        if left == 0 {
+            break;
+        }
+    }
+    out.truncate(keep);
+    out.retain(|s| !s.text.is_empty());
+}
+
+fn human_size(n: usize) -> String {
+    match n {
+        0..1000 => n.to_string(),
+        1000..1_000_000 => format!("{:.1}k", n as f64 / 1000.0),
+        _ => format!("{:.1}M", n as f64 / 1_000_000.0),
+    }
+}
+
+fn sym(name: &str) -> Value {
+    Value::Symbol(name.to_string())
+}
+
+fn s(text: &str) -> Value {
+    Value::Str(text.to_string())
+}
+
+fn propertize(elt: Value, face: &str) -> Value {
+    Value::List(vec![sym(":propertize"), elt, s("face"), s(face)])
+}
+
+/// The mode line constructs Emacs's default format is made of, as
+/// bindings.el defines them, and the format itself: the one the terminal
+/// shows, `U:--  name   L1    C0    (Text) ----`.
+pub(crate) fn install(ed: &mut Editor) {
+    let vars = [
+        ("mode-line-mule-info", "The coding of the buffer's file in the mode line: U for UTF-8 and so on, then its line ends.", Value::List(vec![s("%Z")])),
+        ("mode-line-modified", "Whether the buffer is read-only and whether it is modified, in the mode line: %%, ** or --.", Value::List(vec![s("%*%+")])),
+        (
+            "mode-line-buffer-identification",
+            "The buffer's name in the mode line, at least 18 columns wide.",
+            Value::List(vec![propertize(s("%18b"), "mode-line-buffer-id")]),
+        ),
+        (
+            "mode-line-position",
+            "Where point is, in the mode line: its line and column.",
+            Value::List(vec![Value::List(vec![Value::Number(6.0), s("L%l")]), s(" "), Value::List(vec![Value::Number(5.0), s("C%c")])]),
+        ),
+        (
+            "mode-line-modes",
+            "The major mode and the minor modes that are on, in the mode line, in parentheses.",
+            Value::List(vec![
+                s("("),
+                sym("mode-name"),
+                sym("minor-mode-alist"),
+                s("%n"),
+                Value::List(vec![sym("defining-kbd-macro"), s(" Def")]),
+                s(") "),
+            ]),
+        ),
+    ];
+    for (name, doc, value) in vars {
+        ed.define_variable(Variable::new(name, doc, value));
+    }
+    ed.define_variable(
+        Variable::new(
+            "mode-line-format",
+            "What each window's mode line shows, as a mode line construct: a string, whose %-specs show the buffer's state (%b its name, %* and %+ whether it is read-only or modified, %l and %c point's line and column, %n Narrow when narrowed, %Z the coding, %p how far through the buffer the window is, %- dashes to the end); a symbol, whose value is shown, a string as it is; a list of constructs; [\":eval\", function], whose result is shown; [\":propertize\", construct, \"face\", face]; [symbol, then, else], which shows then when the symbol's value is true; or [width, ...constructs], padded to at least width columns, or cut to -width.",
+            // It starts with a string, as Emacs's does with "%e", since a
+            // list that starts with a symbol is a conditional.
+            Value::List(vec![s("%e"), sym("mode-line-mule-info"), sym("mode-line-modified"), s("-  "), sym("mode-line-buffer-identification"), s(" "), sym("mode-line-position"), s(" "), sym("mode-line-modes"), s("%-")]),
+        )
+        .local(),
+    );
+    ed.define_variable(Variable::new("minor-mode-alist", "The minor modes' lighters in the mode line, as [mode, lighter] pairs: each lighter shows while its mode's variable is true.", Value::List(Vec::new())));
+    ed.define_variable(Variable::new("defining-kbd-macro", "Whether a keyboard macro is being defined, which the mode line shows as Def.", false));
+}
+
+impl Editor {
+    /// Keeps `minor-mode-alist` to the registered minor modes' lighters.
+    pub(crate) fn update_minor_mode_alist(&mut self) {
+        let pairs = self
+            .minor_modes
+            .iter()
+            .rev()
+            .filter(|m| !m.lighter.is_empty())
+            .map(|m| Value::List(vec![sym(&m.name), s(&m.lighter)]))
+            .collect();
+        self.set_default("minor-mode-alist", Value::List(pairs));
+    }
+}

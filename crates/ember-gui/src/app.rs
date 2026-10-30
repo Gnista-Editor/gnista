@@ -72,7 +72,8 @@ impl eframe::App for EmberApp {
 }
 
 impl EmberApp {
-    pub fn new(editor: Editor) -> EmberApp {
+    pub fn new(mut editor: Editor) -> EmberApp {
+        crate::modeline::install(&mut editor);
         EmberApp {
             editor,
             title: String::new(),
@@ -811,35 +812,24 @@ fn text_format(m: &Metrics, color: Color32) -> TextFormat {
 }
 
 fn draw_mode_line(painter: &Painter, ed: &Editor, window: &WindowView, rect: Rect, m: &Metrics, t: Tokens) {
-    let b = window.buffer;
     // The selected window's mode line is a well; the others' sit on the page,
     // as Emacs's mode-line-inactive face is plainer.
     painter.rect_filled(rect, 0.0, if window.selected { t.sunken } else { t.bg });
     painter.hline(rect.x_range(), rect.top() + 0.5, Stroke::new(1.0, t.line));
-    let (flag, flag_color) = if b.read_only {
-        ("%%", t.faint)
-    } else if b.is_modified() {
-        ("**", t.accent_ink)
-    } else {
-        ("--", t.faint)
-    };
-    let gap = m.char_width * 3.0;
+    // What mode-line-format shows, which the core formatted at redisplay,
+    // in the mode line's own inks: muted text, the buffer's name strong
+    // in the selected window, shadow faint, and what stands out in the accent.
+    let default_style = Style::default();
     let mut job = LayoutJob::default();
-    // The coding first, as Emacs's mode-line-mule-info: U: or -\ and so on.
-    job.append(&b.coding_mnemonic(), 0.0, text_format(m, t.faint));
-    job.append(flag, 0.0, text_format(m, flag_color));
-    let name_color = if window.selected { t.ink_strong } else { t.muted };
-    job.append(&b.name, gap, text_format(m, name_color));
-    // Lines count from the start of the accessible portion, as Emacs's %l.
-    let line = b.line_of(window.point) - b.line_of(b.point_min()) + 1;
-    let position = format!("L{line} C{}", b.column(window.point));
-    job.append(&position, gap, text_format(m, t.muted));
-    let narrow = if b.is_narrowed() { " Narrow" } else { "" };
-    let modes = format!("{}{}{narrow}", ed.mode_name_in(b), ed.mode_lighters_in(b).concat());
-    job.append(&modes, gap, text_format(m, t.faint));
-    // Emacs shows "Def" in the mode line while a keyboard macro is being defined.
-    if ed.defining_kbd_macro() {
-        job.append("Def", m.char_width, text_format(m, t.accent_ink));
+    for segment in ed.mode_line(window.id) {
+        let format = match segment.faces.last().map(String::as_str) {
+            None => text_format(m, t.muted),
+            Some("mode-line-buffer-id") => text_format(m, if window.selected { t.ink_strong } else { t.muted }),
+            Some("mode-line-emphasis") => text_format(m, t.accent_ink),
+            Some("shadow") => text_format(m, t.faint),
+            Some(_) => face_format(&ed.style_for(&segment.faces, t.dark), &default_style, m, t),
+        };
+        job.append(&segment.text, 0.0, format);
     }
     let galley = painter.layout_job(job);
     let y = rect.center().y - galley.size().y / 2.0;

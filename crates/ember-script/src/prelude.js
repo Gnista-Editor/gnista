@@ -776,6 +776,7 @@
     },
     adviceRemove: (symbol, fn) => native.adviceRemove(symbolName(symbol), typeof fn === "function" ? fn : symbolName(fn)),
     adviceMemberP: (fn, symbol) => native.adviceMemberP(typeof fn === "function" ? fn : symbolName(fn), symbolName(symbol)),
+    formatModeLine: (format) => native.formatModeLine(format === undefined ? Symbol.for("mode-line-format") : format),
     fboundp: (name) => native.fboundp(symbolName(name)),
     intern: (name) => Symbol.for(String(name)),
     symbolName,

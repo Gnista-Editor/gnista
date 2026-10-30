@@ -264,6 +264,8 @@ pub(crate) fn install(ed: &mut Editor) {
         ("warning", "Warnings.", FaceAttrs { foreground: Some("warn".into()), bold: Some(true), ..Default::default() }),
         ("success", "Success.", FaceAttrs { foreground: Some("good".into()), bold: Some(true), ..Default::default() }),
         ("minibuffer-prompt", "The minibuffer's prompt.", fg("accent-ink")),
+        ("mode-line-buffer-id", "The buffer's name in the mode line.", fg("ink-strong")),
+        ("mode-line-emphasis", "What stands out in the mode line, such as Def while a keyboard macro is defined.", fg("accent-ink")),
         ("font-lock-comment-face", "Comments.", FaceAttrs { foreground: Some("faint".into()), italic: Some(true), ..Default::default() }),
         ("font-lock-comment-delimiter-face", "The characters that start and end comments.", inherit("font-lock-comment-face")),
         ("font-lock-string-face", "Strings.", fg("good")),

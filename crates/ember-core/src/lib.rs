@@ -22,6 +22,8 @@ pub use insdel::Insertion;
 mod key;
 mod keymap;
 mod minibuffer;
+mod modeline;
+pub use modeline::ModeLineSegment;
 mod modes;
 mod permissions;
 mod prefix;

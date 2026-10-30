@@ -177,3 +177,23 @@ fn a_name_is_a_variable_and_a_function_at_once_and_defun_replaces_a_command() {
     eval(&mut ed, &s, r#"ember.defineCommand({ name: "test-mode", run: () => { seen.push("command"); } }), ember.funcall("test-mode"), 0"#);
     assert_eq!(eval(&mut ed, &s, "JSON.stringify(seen.splice(0))"), r#"["command"]"#);
 }
+
+#[test]
+fn a_script_sets_the_mode_line_with_symbols_and_functions() {
+    let (mut ed, s) = setup();
+    ed.set_frame_size(60, 10);
+    ed.type_text("abc");
+    eval(
+        &mut ed,
+        &s,
+        r#"(ember.setDefault("mode-line-format", ["", ember.intern("mode-name"), " ", [ember.intern(":eval"), () => `${ember.pointMax()} chars`], [ember.intern("buffer-read-only"), " RO"]]), 0)"#,
+    );
+    assert_eq!(eval(&mut ed, &s, "ember.formatModeLine()"), "Fundamental 3 chars");
+    ed.redisplay();
+    let shown: String = ed.mode_line(ed.selected_window()).iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(shown, "Fundamental 3 chars");
+    // The text mode's name, when the mode changes.
+    ed.call("text-mode", vec![]).unwrap();
+    assert_eq!(eval(&mut ed, &s, "ember.formatModeLine()"), "Text 3 chars");
+    assert_eq!(eval(&mut ed, &s, r#"ember.formatModeLine("%b %l:%c")"#), "*scratch* 1:3");
+}

@@ -2,6 +2,7 @@
 
 mod app;
 pub mod keys;
+pub mod modeline;
 pub mod theme;
 
 pub use app::EmberApp;

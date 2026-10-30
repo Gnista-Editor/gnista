@@ -149,6 +149,7 @@ impl Editor {
         self.fontify_windows();
         self.ensure_point_visible();
         self.fontify_windows();
+        self.update_mode_lines();
     }
 
     /// Fontifies what every frame's windows show.

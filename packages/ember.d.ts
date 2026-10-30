@@ -3757,6 +3757,10 @@ declare global {
        */
       "default-justification": Value;
       /**
+       * Whether a keyboard macro is being defined, which the mode line shows as Def.
+       */
+      "defining-kbd-macro": Value;
+      /**
        * Whether DEL and <delete> delete the active region rather than one character.
        *
        * If the value is "kill", they kill the region instead, so it can be yanked back.
@@ -4238,6 +4242,34 @@ declare global {
        * Keymap minibuffer-local-must-match-map.
        */
       "minibuffer-local-must-match-map": Value;
+      /**
+       * The minor modes' lighters in the mode line, as [mode, lighter] pairs: each lighter shows while its mode's variable is true.
+       */
+      "minor-mode-alist": Value;
+      /**
+       * The buffer's name in the mode line, at least 18 columns wide.
+       */
+      "mode-line-buffer-identification": Value;
+      /**
+       * What each window's mode line shows, as a mode line construct: a string, whose %-specs show the buffer's state (%b its name, %* and %+ whether it is read-only or modified, %l and %c point's line and column, %n Narrow when narrowed, %Z the coding, %p how far through the buffer the window is, %- dashes to the end); a symbol, whose value is shown, a string as it is; a list of constructs; [":eval", function], whose result is shown; [":propertize", construct, "face", face]; [symbol, then, else], which shows then when the symbol's value is true; or [width, ...constructs], padded to at least width columns, or cut to -width.
+       */
+      "mode-line-format": Value;
+      /**
+       * The major mode and the minor modes that are on, in the mode line, in parentheses.
+       */
+      "mode-line-modes": Value;
+      /**
+       * Whether the buffer is read-only and whether it is modified, in the mode line: %%, ** or --.
+       */
+      "mode-line-modified": Value;
+      /**
+       * The coding of the buffer's file in the mode line: U for UTF-8 and so on, then its line ends.
+       */
+      "mode-line-mule-info": Value;
+      /**
+       * Where point is, in the mode line: its line and column.
+       */
+      "mode-line-position": Value;
       /**
        * The current buffer's major mode as the mode line shows it.
        */
@@ -5193,6 +5225,14 @@ declare global {
        * The minibuffer's prompt.
        */
       "minibuffer-prompt": FaceAttributes;
+      /**
+       * The buffer's name in the mode line.
+       */
+      "mode-line-buffer-id": FaceAttributes;
+      /**
+       * What stands out in the mode line, such as Def while a keyboard macro is defined.
+       */
+      "mode-line-emphasis": FaceAttributes;
       /**
        * The line next-error goes to, for a moment.
        *
@@ -6998,6 +7038,21 @@ declare global {
     function adviceRemove(symbol: string | symbol, fn: ((...args: any[]) => any) | string | symbol): void;
     /** Whether a function, or advice of that name, advises a name's function, as advice-member-p. */
     function adviceMemberP(fn: ((...args: any[]) => any) | string | symbol, symbol: string | symbol): boolean;
+    /**
+     * The text a mode line construct shows for the current buffer and the
+     * selected window, as format-mode-line; `mode-line-format`'s by default.
+     * A construct is a string, whose %-specs show the buffer's state (%b its
+     * name, %* and %+ whether it is read-only or modified, %l and %c point's
+     * line and column, %n Narrow when narrowed, %Z the coding, %p how far
+     * through the buffer the window is, %- dashes to the end); a symbol, whose
+     * value is shown, a string as it is; an array of constructs, which must
+     * not start with a symbol; [ember.intern(":eval"), function], whose result
+     * is shown; [ember.intern(":propertize"), construct, "face", face];
+     * [symbol, then, else], which shows `then` when the symbol's value is
+     * true; or [width, ...constructs], padded to at least width columns, or
+     * cut to -width. Set `mode-line-format` to one to change the mode line.
+     */
+    function formatModeLine(format?: Value): string;
     /** Whether a function or command has this name, as fboundp. */
     function fboundp(name: string): boolean;
     /** The function a name holds, as symbol-function; undefined for none, or a command. */

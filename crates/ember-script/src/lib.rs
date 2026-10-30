@@ -1164,6 +1164,13 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
         Function::new(ctx.clone(), |ctx: Ctx<'js>, symbol: String| with_editor(&ctx, |ed| Ok(ed.advised(&symbol))))?,
     )?;
     native.set(
+        "formatModeLine",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, format: Value<'js>| {
+            let format = value_from_js(&ctx, format)?;
+            with_editor(&ctx, |ed| Ok(ed.format_mode_line(&format)?.into_iter().map(|s| s.text).collect::<String>()))
+        })?,
+    )?;
+    native.set(
         "defalias",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, definition: Value<'js>| {
             let definition = value_from_js(&ctx, definition)?;

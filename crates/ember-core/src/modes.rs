@@ -177,6 +177,7 @@ impl Editor {
     pub fn register_minor_mode(&mut self, mode: MinorMode) {
         self.minor_modes.retain(|m| m.name != mode.name);
         self.minor_modes.insert(0, mode);
+        self.update_minor_mode_alist();
     }
 
     pub fn minor_modes(&self) -> &[MinorMode] {

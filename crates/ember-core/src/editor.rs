@@ -246,6 +246,8 @@ pub struct Editor {
     pub(crate) question: Option<crate::questions::Question>,
     pub(crate) timers: crate::timers::Timers,
     pub(crate) permissions: crate::permissions::Permissions,
+    /// Each window's mode line, as the last redisplay formatted it.
+    pub(crate) mode_lines: std::collections::HashMap<crate::window::WindowId, Vec<crate::modeline::ModeLineSegment>>,
 }
 
 impl Default for Editor {
@@ -337,6 +339,7 @@ impl Editor {
             question: None,
             timers: Default::default(),
             permissions: Default::default(),
+            mode_lines: Default::default(),
         };
         editor.windows.push(crate::window::Window {
             id: 1,
@@ -347,6 +350,7 @@ impl Editor {
             used: 0,
         });
         variables::install(&mut editor);
+        crate::modeline::install(&mut editor);
         faces::install(&mut editor);
         commands::install(&mut editor);
         editor
@@ -867,6 +871,7 @@ impl Editor {
         }
         self.defining_macro = Some(Vec::new());
         self.macro_sequence_start = 0;
+        self.set_default("defining-kbd-macro", Value::Bool(true));
         Ok(())
     }
 
@@ -879,6 +884,7 @@ impl Editor {
             .ok_or_else(|| Error::new("Not defining kbd macro"))?;
         keys.truncate(self.macro_sequence_start);
         self.last_macro = Some(keys);
+        self.set_default("defining-kbd-macro", Value::Bool(false));
         Ok(())
     }
 

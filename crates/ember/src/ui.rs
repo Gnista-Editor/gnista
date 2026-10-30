@@ -239,24 +239,8 @@ fn terminal_style(style: &FaceStyle, dark: bool) -> Style {
 }
 
 fn draw_mode_line(frame: &mut Frame, ed: &Editor, view: &WindowView, area: Rect) {
-    let b = view.buffer;
-    let flag = if b.read_only {
-        "%%"
-    } else if b.is_modified() {
-        "**"
-    } else {
-        "--"
-    };
-    // Lines count from the start of the accessible portion, as Emacs's %l.
-    let line = b.line_of(view.point) - b.line_of(b.point_min()) + 1;
-    let col = b.column(view.point);
-    let def = if ed.defining_kbd_macro() { " Def" } else { "" };
-    let narrow = if b.is_narrowed() { " Narrow" } else { "" };
-    let modes = format!("{}{}{narrow}{def}", ed.mode_name_in(b), ed.mode_lighters_in(b).concat());
-    // The coding first, as Emacs's mode-line-mule-info: U: or -\ and so on.
-    let mut text = format!("{}{flag}-  {:<18} L{line:<5} C{col:<4} ({modes}) ", b.coding_mnemonic(), b.name);
-    let fill = (area.width as usize).saturating_sub(display_width(&text, 8));
-    text.push_str(&"-".repeat(fill));
+    // What mode-line-format shows, which the core formatted at redisplay.
+    let text: String = ed.mode_line(view.id).iter().map(|s| s.text.as_str()).collect();
     // The selected window's mode line stands out; the others are dimmed,
     // as Emacs's mode-line-inactive face is.
     let mut style = Style::new().add_modifier(Modifier::REVERSED);

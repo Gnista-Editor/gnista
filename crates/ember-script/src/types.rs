@@ -1082,6 +1082,21 @@ const API: &str = r##"
   function adviceRemove(symbol: string | symbol, fn: ((...args: any[]) => any) | string | symbol): void;
   /** Whether a function, or advice of that name, advises a name's function, as advice-member-p. */
   function adviceMemberP(fn: ((...args: any[]) => any) | string | symbol, symbol: string | symbol): boolean;
+  /**
+   * The text a mode line construct shows for the current buffer and the
+   * selected window, as format-mode-line; `mode-line-format`'s by default.
+   * A construct is a string, whose %-specs show the buffer's state (%b its
+   * name, %* and %+ whether it is read-only or modified, %l and %c point's
+   * line and column, %n Narrow when narrowed, %Z the coding, %p how far
+   * through the buffer the window is, %- dashes to the end); a symbol, whose
+   * value is shown, a string as it is; an array of constructs, which must
+   * not start with a symbol; [ember.intern(":eval"), function], whose result
+   * is shown; [ember.intern(":propertize"), construct, "face", face];
+   * [symbol, then, else], which shows `then` when the symbol's value is
+   * true; or [width, ...constructs], padded to at least width columns, or
+   * cut to -width. Set `mode-line-format` to one to change the mode line.
+   */
+  function formatModeLine(format?: Value): string;
   /** Whether a function or command has this name, as fboundp. */
   function fboundp(name: string): boolean;
   /** The function a name holds, as symbol-function; undefined for none, or a command. */
