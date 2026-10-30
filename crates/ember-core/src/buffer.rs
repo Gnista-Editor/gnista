@@ -166,6 +166,8 @@ pub struct Buffer {
     /// The buffer's own values of variables, as Emacs's buffer-local variables.
     pub(crate) locals: BTreeMap<String, Value>,
     pub(crate) local_hooks: BTreeMap<String, Vec<HookEntry>>,
+    /// How far `syntax-propertize-function` has run, as syntax-propertize--done.
+    pub(crate) syntax_propertized: usize,
     /// The major mode's keymap.
     /// The local keymap and any composed over it, first looked up first.
     pub(crate) local_map: Vec<String>,
@@ -227,6 +229,7 @@ impl Buffer {
             undo_in_region: false,
             locals: BTreeMap::new(),
             local_hooks: BTreeMap::new(),
+            syntax_propertized: 0,
             local_map: Vec::new(),
             properties: TextProperties::default(),
             overlays: Vec::new(),
@@ -766,6 +769,10 @@ impl Buffer {
     /// Like Emacs's font-lock, property changes do not mark the buffer modified.
     pub fn put_text_property(&mut self, range: Range<usize>, name: &str, value: Value) {
         let end = range.end.min(self.len());
+        if name == "syntax-table" {
+            // Parse states after it are wrong now, as after an edit.
+            self.ppss_cache.get_mut().retain(|(p, _)| *p <= range.start);
+        }
         self.properties.modify(range.start, end, |p| {
             p.insert(name.to_string(), value.clone());
         });
@@ -795,6 +802,9 @@ impl Buffer {
     }
 
     pub fn remove_text_property(&mut self, range: Range<usize>, name: &str) {
+        if name == "syntax-table" {
+            self.ppss_cache.get_mut().retain(|(p, _)| *p <= range.start);
+        }
         let end = range.end.min(self.len());
         self.properties.modify(range.start, end, |p| {
             p.remove(name);

@@ -318,12 +318,15 @@ pub struct Scanner<'a> {
     chunk: std::cell::RefCell<(usize, Vec<char>)>,
     /// The table's entries for ASCII, looked up once.
     ascii: [Entry; 128],
+    /// Whether a character's `syntax-table` property, a descriptor such as
+    /// ".", overrides the table, as `parse-sexp-lookup-properties` says.
+    pub lookup_properties: bool,
 }
 
 impl<'a> Scanner<'a> {
     pub fn new(buffer: &'a Buffer, tables: &'a SyntaxTables, table: &'a str, ignore_comments: bool, min: usize, max: usize) -> Scanner<'a> {
         let ascii = std::array::from_fn(|i| tables.entry(table, i as u8 as char));
-        Scanner { buffer, tables, table, ignore_comments, min, max, chunk: Default::default(), ascii }
+        Scanner { buffer, tables, table, ignore_comments, min, max, chunk: Default::default(), ascii, lookup_properties: false }
     }
 
     pub fn char_at(&self, pos: usize) -> Option<char> {
@@ -346,14 +349,27 @@ impl<'a> Scanner<'a> {
     }
 
     pub fn entry_at(&self, pos: usize) -> Option<Entry> {
-        self.char_at(pos).map(|c| self.entry(c))
+        self.char_at(pos).map(|c| self.entry_for(pos, c))
+    }
+
+    /// The entry of the character `c` at `pos`: its `syntax-table`
+    /// property's, if properties are looked up and it has one, else the table's.
+    fn entry_for(&self, pos: usize, c: char) -> Entry {
+        if self.lookup_properties
+            && let Some(crate::Value::Str(descriptor)) = self.buffer.text_property(pos, "syntax-table")
+            && let Ok(entry) = Entry::parse(descriptor)
+        {
+            return entry;
+        }
+        self.entry(c)
     }
 
     /// The parse state at `pos` from the start of the buffer, as syntax-ppss,
     /// from the nearest state the buffer keeps, keeping more along the way.
     pub fn ppss(&self, pos: usize) -> ParseState {
         let pos = pos.min(self.buffer.len());
-        let full = Scanner::new(self.buffer, self.tables, self.table, self.ignore_comments, 0, self.buffer.len());
+        let mut full = Scanner::new(self.buffer, self.tables, self.table, self.ignore_comments, 0, self.buffer.len());
+        full.lookup_properties = self.lookup_properties;
         let mut cache = self.buffer.ppss_cache.borrow_mut();
         let mut table = self.buffer.ppss_table.borrow_mut();
         if *table != self.table {
@@ -429,7 +445,7 @@ impl<'a> Scanner<'a> {
     fn forward_comment_body(&self, mut pos: usize, style: u8, nested: bool, mut depth: i64) -> std::result::Result<usize, usize> {
         loop {
             let Some(c) = self.char_at(pos) else { return Err(pos) };
-            let e = self.entry(c);
+            let e = self.entry_for(pos, c);
             if style == 3 {
                 // A comment fence ends at the next fence.
                 if e.class == Class::CommentFence {
@@ -597,7 +613,7 @@ impl<'a> Scanner<'a> {
     fn skip_string_body(&self, mut pos: usize, to: usize, term: char) -> Option<usize> {
         while pos < to {
             let c = self.char_at(pos)?;
-            let class = self.entry(c).class;
+            let class = self.entry_for(pos, c).class;
             if term == '|' && class == Class::StringFence {
                 return Some(pos + 1);
             }

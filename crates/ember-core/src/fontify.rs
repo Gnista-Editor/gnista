@@ -25,8 +25,10 @@ impl Buffer {
     /// Marks everything from the start of the line `pos` is on as needing
     /// fontifying again.
     pub(crate) fn unfontify_from(&mut self, pos: usize) {
-        // Parse states after a change are wrong now, as syntax-ppss-flush-cache drops them.
+        // Parse states after a change are wrong now, as syntax-ppss-flush-cache
+        // drops them, and so are the syntax properties after it.
         self.ppss_cache.get_mut().retain(|(p, _)| *p <= pos);
+        self.syntax_propertized = self.syntax_propertized.min(pos);
         if self.fontified.is_empty() {
             return;
         }

@@ -2,6 +2,8 @@
 // rust-ts-mode.el, js.el, json-ts-mode.el and python.el. Each is built on
 // prog-mode and asks for its grammar with treesit-parser-create.
 
+import { charCount } from "subr";
+
 /** C's comments and operators, as c-mode's and js-mode's syntax tables have them. */
 const C_SYNTAX: { [chars: string]: string } = {
   "/": ". 124b",
@@ -204,6 +206,23 @@ ember.defineCommand({
 const alist = ember.defaultValue("auto-mode-alist");
 const entries = Array.isArray(alist) ? [...alist] : [];
 
+/** A char literal, such as 'a', '"' or '\u{1F600}', rather than a lifetime. */
+const RUST_CHAR = /'(?:\\(?:u\{[0-9a-fA-F]{1,6}\}|x[0-9a-fA-F]{2}|.)|[^\\'\n])'/gu;
+
+/**
+ * Makes a char literal's quotes delimit a string, as rust-ts-mode's
+ * syntax-propertize does, so a quote inside one, as in '"', opens nothing.
+ */
+function rustSyntaxPropertize(start: number, end: number): void {
+  const text = ember.bufferText(start, end);
+  for (const m of text.matchAll(RUST_CHAR)) {
+    const at = start + charCount(text.slice(0, m.index));
+    const close = at + charCount(m[0]) - 1;
+    ember.putTextProperty(at, at + 1, "syntax-table", '"');
+    ember.putTextProperty(close, close + 1, "syntax-table", '"');
+  }
+}
+
 for (const mode of modes) {
   ember.defineMajorMode({
     name: mode.name,
@@ -227,6 +246,10 @@ for (const mode of modes) {
       // Python reindents the line it leaves only by hand, as electric-indent-inhibit says.
       ember.setVariable("electric-indent-chars", mode.language === "python" ? ["\n"] : ["\n", "}", ")", "]"]);
       ember.setVariable("electric-indent-inhibit", mode.language === "python");
+      if (mode.language === "rust") {
+        ember.setVariable("syntax-propertize-function", rustSyntaxPropertize);
+        ember.setVariable("parse-sexp-lookup-properties", true);
+      }
     },
   });
   if (mode.alias !== undefined) {

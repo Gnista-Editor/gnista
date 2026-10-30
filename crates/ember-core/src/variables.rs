@@ -625,6 +625,18 @@ pub(crate) fn install(ed: &mut Editor) {
             Value::Bool(false),
         ),
         Variable::new(
+            "parse-sexp-lookup-properties",
+            "Whether scanning sexps and comments reads a character's syntax-table property, a descriptor such as \".\", before the syntax table.",
+            Value::Bool(false),
+        )
+        .local(),
+        Variable::new(
+            "syntax-propertize-function",
+            "A function the mode gives, called with a start and an end to put syntax-table properties on the text there, before it is scanned, as Emacs's syntax-propertize calls it.",
+            Value::Null,
+        )
+        .local(),
+        Variable::new(
             "line-prefix",
             "A string shown at the start of each line, before its text, unless the text there has a line-prefix property of its own. Org's indent mode uses it.",
             Value::Null,

@@ -4374,6 +4374,10 @@ declare global {
        */
       "parse-sexp-ignore-comments": Value;
       /**
+       * Whether scanning sexps and comments reads a character's syntax-table property, a descriptor such as ".", before the syntax table.
+       */
+      "parse-sexp-lookup-properties": Value;
+      /**
        * Where the projects Ember knows are saved: projects in user-emacs-directory if nil.
        *
        * Defined in packages/project.ts.
@@ -4629,6 +4633,10 @@ declare global {
        * Defined in packages/paren.ts.
        */
       "show-paren-when-point-inside-paren": Value;
+      /**
+       * A function the mode gives, called with a start and an end to put syntax-table properties on the text there, before it is scanned, as Emacs's syntax-propertize calls it.
+       */
+      "syntax-propertize-function": Value;
       /**
        * Whether TAB always indents the line, as t; nil indents only in the indentation and inserts a tab elsewhere.
        *

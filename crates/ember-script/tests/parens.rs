@@ -80,3 +80,18 @@ fn it_can_be_turned_off() {
     assert!(highlighted(&mut ed).is_empty());
     assert_eq!(ed.variable("show-paren-mode"), Some(Value::Bool(false)));
 }
+
+#[test]
+fn a_rust_char_literal_quote_opens_no_string() {
+    let mut ed = ember_core::Editor::new();
+    let s = ember_script::Scripting::new(&mut ed).unwrap();
+    ed.call("rust-ts-mode", vec![]).unwrap();
+    ed.type_text("f('\"', x);\nfn g<'a>(s: &'a str) {}\n");
+    // The list holds the char literal '"', whose quote opens no string, as
+    // rust-ts-mode's syntax-propertize has it, either way it is scanned.
+    let result = s.eval_expression(&mut ed, "[ember.scanLists(1, 1, 0), ember.scanLists(9, -1, 0), ember.scanLists(19, 1, 0)]").unwrap();
+    assert_eq!(result, "[9,1,31]");
+    // Without the properties, the quote would open a string.
+    ed.set_variable("parse-sexp-lookup-properties", ember_core::Value::Bool(false));
+    assert!(s.eval_expression(&mut ed, "ember.scanLists(1, 1, 0)").is_err());
+}

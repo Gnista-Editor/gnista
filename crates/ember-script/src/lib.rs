@@ -2111,13 +2111,19 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
     native.set(
         "scanLists",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, from: usize, count: f64, depth: f64, sexp: bool| {
-            with_editor(&ctx, |ed| ed.scanner().scan_lists(from, count as i64, depth as i64, sexp))
+            with_editor(&ctx, |ed| {
+                let to = if count > 0.0 { ed.buffer().point_max() } else { from };
+                ed.syntax_propertize(to)?;
+                ed.scanner().scan_lists(from, count as i64, depth as i64, sexp)
+            })
         })?,
     )?;
     native.set(
         "forwardComment",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, count: f64| {
             with_editor(&ctx, |ed| {
+                let to = if count > 0.0 { ed.buffer().point_max() } else { ed.buffer().point() };
+                ed.syntax_propertize(to)?;
                 let (pos, all) = ed.scanner().forward_comment(ed.buffer().point(), count as i64);
                 ed.buffer_mut().set_point(pos);
                 Ok(all)
@@ -2128,6 +2134,7 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
         "backwardPrefixChars",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| {
             with_editor(&ctx, |ed| {
+                ed.syntax_propertize(ed.buffer().point())?;
                 let pos = ed.scanner().backward_prefix_chars(ed.buffer().point());
                 ed.buffer_mut().set_point(pos);
                 Ok(())
@@ -2138,6 +2145,7 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
         "parsePartialSexp",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, from: Option<usize>, to: usize| -> rquickjs::Result<Object<'js>> {
             let st = with_editor(&ctx, |ed| {
+                ed.syntax_propertize(to)?;
                 let scanner = ed.scanner();
                 // With no start, from the start of the buffer through its kept states, as syntax-ppss.
                 Ok(match from {

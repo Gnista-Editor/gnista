@@ -1334,11 +1334,34 @@ impl Editor {
         self.syntax_tables.entry(&self.buffer().syntax_table, c)
     }
 
+    /// Runs the buffer's `syntax-propertize-function` over the text before
+    /// `pos` it has not run over, as Emacs's syntax-propertize, so scans see
+    /// the `syntax-table` properties it puts: in stretches of whole lines,
+    /// 500 characters at least, the old properties there taken off first.
+    /// Scans from scripts call it first.
+    pub fn syntax_propertize(&mut self, pos: usize) -> Result<()> {
+        let Some(function) = self.variable("syntax-propertize-function").filter(Value::is_true) else { return Ok(()) };
+        let b = self.buffer();
+        let (done, pos) = (b.syntax_propertized, pos.min(b.len()));
+        if done >= pos {
+            return Ok(());
+        }
+        let line = b.line_of(pos.max(done + 500).min(b.len()));
+        let end = if line + 1 < b.line_count() { b.line_start(line + 1) } else { b.len() };
+        let b = self.buffer_mut();
+        b.syntax_propertized = end;
+        b.remove_text_property(done..end, "syntax-table");
+        self.funcall(&function, &[Value::Number(done as f64), Value::Number(end as f64)])?;
+        Ok(())
+    }
+
     /// Reads the current buffer's accessible text through its syntax table.
     pub fn scanner(&self) -> crate::syntax_table::Scanner<'_> {
         let b = self.buffer();
         let ignore_comments = self.variable("parse-sexp-ignore-comments").is_some_and(|v| v.is_true());
-        crate::syntax_table::Scanner::new(b, &self.syntax_tables, &b.syntax_table, ignore_comments, b.point_min(), b.point_max())
+        let mut scanner = crate::syntax_table::Scanner::new(b, &self.syntax_tables, &b.syntax_table, ignore_comments, b.point_min(), b.point_max());
+        scanner.lookup_properties = self.variable("parse-sexp-lookup-properties").is_some_and(|v| v.is_true());
+        scanner
     }
 
     /// A marker's buffer and position, wherever it is; none once it points

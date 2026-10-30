@@ -92,7 +92,7 @@ A review of this work and ADR 0023's found, and the same round fixed:
 Compilation messages now keep markers, as compile.el's do, and Org uses real markers in place of its own.
 
 Still open from the review:
-- Rust's char literals, such as `'"'`, confuse the syntax table, which needs `syntax-propertize`.
+- Rust's char literals, such as `'"'`, confused the syntax table; since [ADR 0026](0026-the-next-foundations.md), rust-ts-mode's `syntax-propertize-function` marks them.
 - Python's `:` does not reindent `else:`.
 - js-mode's continued expressions.
 - Scanning backward past a comment parses from the nearest kept parse state.
