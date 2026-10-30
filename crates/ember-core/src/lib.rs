@@ -47,7 +47,7 @@ pub use keymap::{Keymap, Lookup};
 pub use minibuffer::{MinibufferInfo, MinibufferOverlay, Reading, file_name_all_completions};
 pub use modes::MinorMode;
 pub use prefix::{PrefixArg, prefix_numeric_value};
-pub use properties::{Overlay, Props};
+pub use properties::{Overlay, Props, Text};
 pub use process::{ProcessSpec, Status as ProcessStatus};
 pub use rows::{LineNumbers, Row, Segment};
 pub use search::{Match, SearchOptions, expand_replacement, fold_case_for as search_fold_case, looking_at, search, string_match, translate_regexp};

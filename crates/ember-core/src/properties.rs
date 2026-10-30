@@ -26,6 +26,37 @@ struct Run {
 /// undo can put them back.
 pub(crate) type SavedProps = Vec<(Range<usize>, Props)>;
 
+/// A string with text properties, as Emacs's propertized strings: what
+/// `buffer-substring` and `propertize` give, and what inserting puts back
+/// with its properties. Runs are in characters from the string's start.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Text {
+    pub string: String,
+    pub props: Vec<(Range<usize>, Props)>,
+}
+
+impl Text {
+    /// The string with `props` on all of it, as `propertize`.
+    pub fn propertize(string: &str, props: Props) -> Text {
+        let n = string.chars().count();
+        let props = if props.is_empty() || n == 0 { Vec::new() } else { vec![(0..n, props)] };
+        Text { string: string.to_string(), props }
+    }
+
+    /// This string followed by another, each keeping its properties.
+    pub fn concat(mut self, other: Text) -> Text {
+        let n = self.string.chars().count();
+        self.string.push_str(&other.string);
+        self.props.extend(other.props.into_iter().map(|(r, p)| (r.start + n..r.end + n, p)));
+        self
+    }
+
+    /// The properties of the character at `i`, if it has any.
+    pub fn properties_at(&self, i: usize) -> Option<&Props> {
+        self.props.iter().find(|(r, _)| r.contains(&i)).map(|(_, p)| p)
+    }
+}
+
 #[derive(Clone, Debug, Default)]
 pub(crate) struct TextProperties {
     runs: Vec<Run>,
@@ -77,8 +108,6 @@ impl TextProperties {
         saved
     }
 
-    /// Puts back properties saved by [`TextProperties::delete`], for text
-    /// re-inserted at `pos`.
     /// The properties of a stretch of text, as [`TextProperties::delete`]
     /// saves them, leaving them in place.
     pub(crate) fn save(&self, start: usize, end: usize) -> SavedProps {
@@ -91,6 +120,8 @@ impl TextProperties {
             .collect()
     }
 
+    /// Puts back properties saved by [`TextProperties::delete`], for text
+    /// re-inserted at `pos`.
     pub(crate) fn restore(&mut self, pos: usize, saved: &SavedProps) {
         for (range, props) in saved {
             let (start, end) = (pos + range.start, pos + range.end);

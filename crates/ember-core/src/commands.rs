@@ -920,7 +920,7 @@ fn killing(ed: &mut Editor) {
     def(ed, "kill-ring-save", "Copy the text between point and the mark to the kill ring.", |ed, _| {
         let region = region(ed.buffer())?;
         let backward = ed.buffer().mark().is_some_and(|m| ed.buffer().point() < m);
-        let text = ed.buffer().slice(region);
+        let text = ed.buffer().substring(region);
         // As copy-region-as-kill does, a copy right after a kill joins it.
         ed.kill(text, backward);
         ed.buffer_mut().deactivate_mark();
@@ -944,8 +944,8 @@ fn killing(ed: &mut Editor) {
             if !ed.executing_kbd_macro() && ed.prompt().is_none() {
                 ed.message("Mark set");
             }
-            let text = ed.current_kill(back)?;
-            ed.insert(&text)?;
+            let text = ed.current_kill_text(back)?;
+            ed.insert_for_yank(text)?;
             let b = ed.buffer_mut();
             if let Some(PrefixArg::Universal(_)) = arg {
                 let mark = b.mark().expect("set above");
@@ -987,7 +987,8 @@ fn delete_active_region(ed: &mut Editor) -> Result<bool> {
     let (Some(region), true) = (region, setting.is_true() && ed.prefix_numeric() == 1) else {
         return Ok(false);
     };
-    let deleted = ed.delete_region(region.start, region.end)?;
+    let deleted = ed.buffer().substring(region.clone());
+    ed.delete_region(region.start, region.end)?;
     if setting.as_str() == Some("kill") {
         ed.kill(deleted, false);
         ed.set_this_command("kill-region");
@@ -1030,10 +1031,12 @@ fn kill_to(ed: &mut Editor, p: usize, to: usize) -> Result<()> {
 /// copied to the kill ring instead, and the error signalled, unless
 /// `kill-read-only-ok` says only to say so.
 fn kill_range(ed: &mut Editor, range: std::ops::Range<usize>, backward: bool) -> Result<()> {
-    let killed = match ed.delete_region(range.start, range.end) {
-        Ok(killed) => killed,
+    // The text with its properties, as filter-buffer-substring gives it.
+    let killed = ed.buffer().substring(range.clone());
+    match ed.delete_region(range.start, range.end) {
+        Ok(_) => {}
         Err(e) if e.is("buffer-read-only") || e.is("text-read-only") => {
-            let text = ed.buffer().slice(range);
+            let text = killed;
             ed.kill(text, backward);
             ed.set_this_command("kill-region");
             if ed.variable("kill-read-only-ok").is_some_and(|v| v.is_true()) {
@@ -1048,7 +1051,7 @@ fn kill_range(ed: &mut Editor, range: std::ops::Range<usize>, backward: bool) ->
             return Err(Error::signal("text-read-only", format!("Text is read-only: #<buffer {name}>"), vec![Value::Str(name)]));
         }
         Err(e) => return Err(e),
-    };
+    }
     ed.kill(killed, backward);
     // As kill-region sets deactivate-mark, even when nothing was killed.
     ed.buffer_mut().deactivate_mark();

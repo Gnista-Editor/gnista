@@ -689,6 +689,25 @@ impl Buffer {
         deleted
     }
 
+    /// Inserts a propertized string at a position, its properties with it,
+    /// moving point past it if point was there, as `insert` does at point.
+    pub(crate) fn insert_text_at(&mut self, pos: usize, text: &crate::properties::Text, move_point: bool) -> Result<()> {
+        if move_point {
+            self.insert(&text.string)?;
+        } else {
+            self.insert_at(pos, &text.string)?;
+        }
+        self.properties.restore(pos, &text.props);
+        Ok(())
+    }
+
+    /// The text of a stretch with its properties, as Emacs's `buffer-substring`.
+    pub fn substring(&self, range: Range<usize>) -> crate::properties::Text {
+        let (start, end) = (range.start.min(self.len()), range.end.min(self.len()));
+        let (start, end) = (start.min(end), end);
+        crate::properties::Text { string: self.slice(start..end), props: self.properties.save(start, end) }
+    }
+
     /// Inserts text at point that takes on the text properties around it,
     /// as Emacs's `insert-and-inherit` does for typing: those of the
     /// character before, which stick to its end unless its `rear-nonsticky`

@@ -990,6 +990,23 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
             })
         })?,
     )?;
+    // Propertized strings, as buffer-substring gives them and insert takes them.
+    native.set(
+        "bufferSubstring",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, start: usize, end: usize| -> rquickjs::Result<Value<'js>> {
+            let text = with_editor(&ctx, |ed| Ok(ed.buffer().substring(start.min(end)..start.max(end))))?;
+            value_to_js(&ctx, &EditorValue::Text(text))
+        })?,
+    )?;
+    native.set(
+        "insertText",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, text: Value<'js>| {
+            let EditorValue::Text(text) = value_from_js(&ctx, text)? else {
+                return Err(Exception::throw_type(&ctx, "insertText takes a propertized string"));
+            };
+            with_editor(&ctx, |ed| ed.insert_text(&text))
+        })?,
+    )?;
     // Buffers as objects, by the ids they keep when renamed.
     native.set(
         "bufferIdOf",
@@ -2383,6 +2400,23 @@ fn value_to_js<'js>(ctx: &Ctx<'js>, value: &EditorValue) -> rquickjs::Result<Val
             let make: Function = ctx.globals().get("__emberBuffer")?;
             make.call((*id as f64,))?
         }
+        // The prelude's PropertizedString, with its runs as [start, end, properties].
+        EditorValue::Text(text) => {
+            let runs = rquickjs::Array::new(ctx.clone())?;
+            for (i, (range, props)) in text.props.iter().enumerate() {
+                let object = Object::new(ctx.clone())?;
+                for (name, value) in props {
+                    object.set(name.as_str(), value_to_js(ctx, value)?)?;
+                }
+                let run = rquickjs::Array::new(ctx.clone())?;
+                run.set(0, range.start as f64)?;
+                run.set(1, range.end as f64)?;
+                run.set(2, object)?;
+                runs.set(i, run)?;
+            }
+            let make: Function = ctx.globals().get("__emberText")?;
+            make.call((text.string.as_str(), runs))?
+        }
     })
 }
 
@@ -2475,6 +2509,31 @@ fn convert_from_js<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> rquickjs::Result<O
         && let Some(id) = object.get::<_, Option<f64>>(BUFFER_ID)?
     {
         return Ok(Some(EditorValue::Buffer(id as u64)));
+    }
+    if let Some(object) = value.as_object()
+        && object.get::<_, Option<bool>>("__emberText")? == Some(true)
+    {
+        let string: String = object.get("string")?;
+        let runs: Vec<rquickjs::Array> = object.get("properties")?;
+        let mut props = Vec::new();
+        for run in runs {
+            let (start, end): (f64, f64) = (run.get(0)?, run.get(1)?);
+            let names: Object = run.get(2)?;
+            let mut map = ember_core::Props::new();
+            for key in names.keys::<String>() {
+                let key = key?;
+                match convert_from_js(ctx, names.get(key.as_str())?)? {
+                    Some(v) => {
+                        map.insert(key, v);
+                    }
+                    None => return Ok(None),
+                }
+            }
+            if end > start && !map.is_empty() {
+                props.push((start as usize..end as usize, map));
+            }
+        }
+        return Ok(Some(EditorValue::Text(ember_core::Text { string, props })));
     }
     Ok(None)
 }

@@ -78,6 +78,24 @@
     }
     return b;
   };
+  /**
+   * A string with text properties, as Emacs's propertized strings: its
+   * `string`, and `properties` as [start, end, {name: value}] runs counted
+   * in characters. It reads as its string wherever a string is wanted.
+   */
+  class PropertizedString {
+    constructor(string, properties = []) {
+      Object.defineProperty(this, "__emberText", { value: true, enumerable: false });
+      this.string = String(string);
+      this.properties = properties;
+      Object.freeze(this);
+    }
+    toString() {
+      return this.string;
+    }
+  }
+  globalThis.__emberText = (string, runs) => new PropertizedString(string, runs);
+
   /** Makes the buffer with an id current again, if it is still live, as save-current-buffer does. */
   const backTo = (id) => {
     const name = native.bufferNameOf(id);
@@ -275,7 +293,14 @@
     callInteractively: (name) => native.callInteractively(String(name)),
     callWithPrefix: (prefix, name, ...args) => native.callWithPrefix(prefix ?? null, String(name), ...args),
     message: (text, { log = true } = {}) => native.message(String(text), Boolean(log)),
-    insert: (text) => native.insert(String(text)),
+    insert: (text) => (text instanceof PropertizedString ? native.insertText(text) : native.insert(String(text))),
+    PropertizedString,
+    propertize(string, properties = {}) {
+      const s = String(string);
+      const n = [...s].length;
+      return new PropertizedString(s, n > 0 && Object.keys(properties).length > 0 ? [[0, n, { ...properties }]] : []);
+    },
+    bufferSubstring: (start, end) => native.bufferSubstring(start, end),
     insertBeforeMarkers: (text) => native.insertBeforeMarkers(String(text)),
     insertAndInherit: (text) => native.insertAndInherit(String(text)),
     currentColumn: () => native.currentColumn(),

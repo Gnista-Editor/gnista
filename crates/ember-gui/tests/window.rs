@@ -87,7 +87,10 @@ fn display_strings_and_overlay_strings() {
     b.put_text_property(4..37, "display", ember_core::Value::Str("the site".into()));
     b.put_text_property(4..37, "face", ember_core::Value::Str("link".into()));
     let hint = b.make_overlay(52..52);
-    b.overlay_put(hint, "before-string", ember_core::Value::Str(": i32".into())).unwrap();
+    let mut shadow = ember_core::Props::new();
+    shadow.insert("face".into(), ember_core::Value::Str("shadow".into()));
+    let text = ember_core::Text { string: ": i32".into(), props: vec![(0..5, shadow)] };
+    b.overlay_put(hint, "before-string", ember_core::Value::Text(text)).unwrap();
     b.set_point(4);
     harness(ed, Theme::Dark).snapshot("display_strings_dark");
 }

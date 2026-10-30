@@ -188,7 +188,8 @@ pub struct Editor {
     pub(crate) in_change_hooks: bool,
     /// Functions named for code to call, as Emacs's symbols' function cells.
     pub(crate) functions: HashMap<String, variables::Function>,
-    pub(crate) kill_ring: Vec<String>,
+    /// Kills, oldest first, with their text properties, as Emacs keeps them.
+    pub(crate) kill_ring: Vec<crate::properties::Text>,
     /// Which kill yanking takes next, counting back from the newest (Emacs's
     /// `kill-ring-yank-pointer`).
     yank_pointer: usize,
@@ -1597,18 +1598,15 @@ impl Editor {
 
     /// Adds killed text to the kill ring. Kills made by consecutive kill
     /// commands join into one entry, as in Emacs.
-    pub(crate) fn kill(&mut self, text: String, prepend: bool) {
+    pub(crate) fn kill(&mut self, text: crate::properties::Text, prepend: bool) {
         let continuing = self
             .last_command()
             .is_some_and(|c| commands::KILL_COMMANDS.contains(&c));
         self.yank_pointer = 0;
         match self.kill_ring.last_mut() {
             Some(last) if continuing => {
-                if prepend {
-                    last.insert_str(0, &text);
-                } else {
-                    last.push_str(&text);
-                }
+                let (front, back) = if prepend { (text, std::mem::take(last)) } else { (std::mem::take(last), text) };
+                *last = front.concat(back);
             }
             _ => self.kill_ring.push(text),
         }
@@ -1617,13 +1615,18 @@ impl Editor {
     /// Puts text in the kill ring as a kill of its own, as Emacs's `kill-new`.
     pub fn kill_new(&mut self, text: &str) {
         self.yank_pointer = 0;
-        self.kill_ring.push(text.to_string());
+        self.kill_ring.push(crate::properties::Text { string: text.to_string(), props: Vec::new() });
     }
 
     /// The kill `n` entries back from the one yanked last, moving the yank
     /// pointer there, as Emacs's `current-kill` does. 0 is the kill yanking
     /// would insert now; M-y asks for 1, the one before it.
     pub fn current_kill(&mut self, n: i64) -> Result<String> {
+        self.current_kill_text(n).map(|t| t.string)
+    }
+
+    /// As [`Editor::current_kill`], with the kill's text properties.
+    pub fn current_kill_text(&mut self, n: i64) -> Result<crate::properties::Text> {
         if self.kill_ring.is_empty() {
             return Err(Error::new("Kill ring is empty"));
         }
@@ -1632,8 +1635,9 @@ impl Editor {
         Ok(self.kill_ring[(len - 1) as usize - self.yank_pointer].clone())
     }
 
-    pub fn kill_ring(&self) -> &[String] {
-        &self.kill_ring
+    /// The kills' text, oldest first.
+    pub fn kill_ring(&self) -> Vec<String> {
+        self.kill_ring.iter().map(|t| t.string.clone()).collect()
     }
 
     /// Takes the newest kill off the kill ring, as `(pop kill-ring)` does in
@@ -1641,7 +1645,23 @@ impl Editor {
     pub fn pop_kill(&mut self) -> Option<String> {
         let kill = self.kill_ring.pop();
         self.yank_pointer = self.yank_pointer.min(self.kill_ring.len().saturating_sub(1));
-        kill
+        kill.map(|t| t.string)
+    }
+
+    /// Inserts a kill at point as Emacs's `insert-for-yank` does: without
+    /// the properties `yank-excluded-properties` names, all of them if it is t.
+    pub(crate) fn insert_for_yank(&mut self, mut text: crate::properties::Text) -> Result<()> {
+        match self.variable("yank-excluded-properties") {
+            Some(Value::List(names)) => {
+                for (_, props) in &mut text.props {
+                    props.retain(|name, _| !names.iter().any(|n| n.as_str() == Some(name)));
+                }
+                text.props.retain(|(_, props)| !props.is_empty());
+            }
+            Some(v) if v.is_true() => text.props.clear(),
+            _ => {}
+        }
+        self.insert_text(&text)
     }
 
     // Minibuffer

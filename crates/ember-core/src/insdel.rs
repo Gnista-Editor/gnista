@@ -44,6 +44,18 @@ impl Editor {
         self.insert_with(pos, text, |b, at| b.insert_at(at, text))
     }
 
+    /// Inserts a propertized string at point, its properties with it, as
+    /// Emacs's `insert` does with one.
+    pub fn insert_text(&mut self, text: &crate::properties::Text) -> Result<()> {
+        let at = self.buffer().point();
+        self.insert_with(at, &text.string, |b, at| b.insert_text_at(at, text, true))
+    }
+
+    /// Inserts a propertized string at a position, its properties with it.
+    pub fn insert_text_at(&mut self, pos: usize, text: &crate::properties::Text) -> Result<()> {
+        self.insert_with(pos, &text.string, |b, at| b.insert_text_at(at, text, false))
+    }
+
     /// Inserts text at point, moving markers there along, as Emacs's `insert-before-markers`.
     pub fn insert_before_markers(&mut self, text: &str) -> Result<()> {
         let at = self.buffer().point();

@@ -4667,6 +4667,10 @@ declare global {
        * visual-line-mode turns it on.
        */
       "word-wrap": Value;
+      /**
+       * The text properties yanking leaves out of what it inserts, or t for all of them, as Emacs's insert-for-yank removes them.
+       */
+      "yank-excluded-properties": Value;
     }
 
     /** Every face, with its documentation. */
@@ -5794,7 +5798,7 @@ declare global {
      */
     function message(text: string, options?: { log?: boolean }): void;
     /** Insert text at point in the current buffer, leaving point after it. */
-    function insert(text: string): void;
+    function insert(text: string | PropertizedString): void;
     /**
      * Insert text at point as Emacs's insert-before-markers does: the mark and
      * any overlay start or end at point move past it too.
@@ -5911,7 +5915,24 @@ declare global {
      * What variables, hooks and text properties hold, as Emacs's values: a
      * function too, as a lambda in a variable, kept as itself.
      */
-    type Value = null | boolean | number | string | Value[] | ((...args: any[]) => any) | Buffer;
+    type Value = null | boolean | number | string | Value[] | ((...args: any[]) => any) | Buffer | PropertizedString;
+    /**
+     * A string with text properties, as Emacs's propertized strings: what
+     * bufferSubstring and propertize give, and what insert puts in with its
+     * properties. Overlay strings and display strings show in its faces. It
+     * reads as its string wherever a string is wanted.
+     */
+    class PropertizedString {
+      constructor(string: string, properties?: [number, number, { [name: string]: Value }][]);
+      readonly string: string;
+      /** Its properties, as [start, end, properties] runs counted in characters. */
+      readonly properties: [number, number, { [name: string]: Value }][];
+      toString(): string;
+    }
+    /** A string with properties on all of it, as Emacs's propertize: propertize("TODO", { face: "org-todo" }). */
+    function propertize(string: string, properties?: { [name: string]: Value }): PropertizedString;
+    /** The text from start to end with its properties, as Emacs's buffer-substring. */
+    function bufferSubstring(start: number, end: number): PropertizedString;
     /**
      * A buffer as an object, as Emacs's buffer objects: it refers to the
      * buffer however it is renamed, and is the same object each time.

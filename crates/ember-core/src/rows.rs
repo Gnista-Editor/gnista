@@ -520,7 +520,7 @@ impl Editor {
                 }
                 if strings_at != Some(pos) {
                     strings_at = Some(pos);
-                    self.push_overlay_strings(b, pos, &mut segments);
+                    self.push_overlay_strings(b, pos, &mut segments, dark, &mut styles);
                 }
                 let line_end = b.line_end(b.line_of(pos)).min(len);
                 if pos == line_end {
@@ -570,9 +570,9 @@ impl Editor {
     /// The overlay strings that show at a position, as Emacs orders them:
     /// the `after-string`s of overlays ending there, then the
     /// `before-string`s of those starting there. An overlay hidden by its
-    /// own `invisible` property shows none. They show in the default face,
-    /// as strings without faces of their own; a newline ends one.
-    fn push_overlay_strings(&self, b: &Buffer, pos: usize, segments: &mut Vec<Segment>) {
+    /// own `invisible` property shows none. A propertized string shows in
+    /// its own faces; a newline ends one.
+    fn push_overlay_strings(&self, b: &Buffer, pos: usize, segments: &mut Vec<Segment>, dark: Option<bool>, styles: &mut HashMap<Vec<String>, Style>) {
         let spec = self.variable_in(b, "buffer-invisibility-spec").unwrap_or(Value::Bool(true));
         let mut overlays: Vec<&crate::properties::Overlay> = b
             .overlays()
@@ -587,13 +587,47 @@ impl Editor {
             .filter(|o| o.start == pos)
             .flat_map(|o| std::iter::once((*o, "before-string")).chain((o.end == pos).then_some((*o, "after-string"))));
         for (o, name) in ending.chain(starting) {
-            if let Some(Value::Str(text)) = o.props.get(name) {
-                let text: String = text.split('\n').next().unwrap_or_default().to_string();
-                if !text.is_empty() {
-                    segments.push(Segment { string: true, ..Segment::text(pos, text, Style::default()) });
+            if let Some(value) = o.props.get(name) {
+                segments.extend(self.string_segments(pos, value, None, &[], dark, styles));
+            }
+        }
+    }
+
+    /// The segments a string shows as, at `pos`: a propertized string's
+    /// stretches in their faces, over `base`, the faces of the text a
+    /// display string stands for, up to the first newline.
+    fn string_segments(
+        &self,
+        pos: usize,
+        value: &Value,
+        covers: Option<usize>,
+        base: &[String],
+        dark: Option<bool>,
+        styles: &mut HashMap<Vec<String>, Style>,
+    ) -> Vec<Segment> {
+        let Some(string) = value.as_str() else { return Vec::new() };
+        let line = string.split('\n').next().unwrap_or_default();
+        let mut out: Vec<Segment> = Vec::new();
+        let mut last: Option<Vec<String>> = None;
+        for (i, c) in line.chars().enumerate() {
+            let mut faces: Vec<String> = match value {
+                Value::Text(t) => t.properties_at(i).and_then(|p| p.get("face")).map(face_names).unwrap_or_default(),
+                _ => Vec::new(),
+            };
+            faces.extend(base.iter().cloned());
+            match out.last_mut() {
+                Some(seg) if last.as_ref() == Some(&faces) => seg.text.push(c),
+                _ => {
+                    let style = match dark {
+                        Some(dark) => styles.entry(faces.clone()).or_insert_with_key(|f| self.style_for(f, dark)).clone(),
+                        None => Style::default(),
+                    };
+                    out.push(Segment { string: true, covers, ..Segment::text(pos, c.to_string(), style) });
+                    last = Some(faces);
                 }
             }
         }
+        out
     }
 
     /// What a `display` property at `pos` shows instead of the text it is
@@ -609,10 +643,10 @@ impl Editor {
         segments: &[Segment],
         dark: Option<bool>,
         styles: &mut HashMap<Vec<String>, Style>,
-    ) -> Option<(usize, Option<Segment>)> {
+    ) -> Option<(usize, Vec<Segment>)> {
         let value = b.char_property(pos, "display")?.clone();
         let text = match &value {
-            Value::Str(s) => s.split('\n').next().unwrap_or_default().to_string(),
+            Value::Str(_) | Value::Text(_) => String::new(),
             Value::List(items) if items.first() == Some(&Value::Str("space".into())) => {
                 let get = |key: &str| items.iter().position(|v| v == &Value::Str(key.into())).and_then(|i| items.get(i + 1)?.as_number());
                 let width = match (get(":width"), get(":align-to")) {
@@ -633,17 +667,12 @@ impl Editor {
         while end < line_end && b.char_property(end, "display") == Some(&value) {
             end = b.next_char_property_change(end).min(line_end).max(end + 1);
         }
-        if text.is_empty() {
-            return Some((end, None));
-        }
-        let style = match dark {
-            Some(dark) => {
-                let faces = self.faces_at(b, pos);
-                styles.entry(faces).or_insert_with_key(|f| self.style_for(f, dark)).clone()
-            }
-            None => Style::default(),
+        let base = self.faces_at(b, pos);
+        let shown = match &value {
+            Value::Str(_) | Value::Text(_) => value.clone(),
+            _ => Value::Str(text),
         };
-        Some((end, Some(Segment { string: true, covers: Some(end), ..Segment::text(pos, text, style) })))
+        Some((end, self.string_segments(pos, &shown, Some(end), &base, dark, styles)))
     }
 
     /// The faces at a position, apart from syntax: overlays' first, highest priority first,

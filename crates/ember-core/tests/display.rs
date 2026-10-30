@@ -108,3 +108,18 @@ fn an_empty_overlays_before_string_comes_before_its_after_string() {
     b.overlay_put(o, "after-string", Value::Str("]".into())).unwrap();
     assert_eq!(shown(&ed), "ab[]cd");
 }
+
+#[test]
+fn a_propertized_overlay_string_shows_in_its_faces() {
+    let mut ed = editor("let n = 3;");
+    let b = ed.window_buffer_mut();
+    let o = b.make_overlay(5..5);
+    let mut props = ember_core::Props::new();
+    props.insert("face".into(), Value::Str("bold".into()));
+    let hint = ember_core::Text { string: ": i32".into(), props: vec![(2..5, props)] };
+    b.overlay_put(o, "before-string", Value::Text(hint)).unwrap();
+    let row = &ed.window_rows(1, true)[0];
+    let pieces: Vec<(&str, bool)> = row.segments.iter().map(|s| (s.text.as_str(), s.style == Default::default())).collect();
+    assert_eq!(pieces[1..3], [(": ", true), ("i32", false)]);
+    assert_eq!(shown(&ed), "let n: i32 = 3;");
+}

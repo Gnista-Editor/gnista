@@ -66,7 +66,8 @@ Item 7 began with functions:
 - With them, changes call the `modification-hooks`, `insert-in-front-hooks` and `insert-behind-hooks` of text and overlays, in Emacs's order and with its arguments.
 - Processes write their output and errors to one pipe, as Emacs's do, so they arrive in order; two pipes interleaved them by chance.
 - Buffers are objects too: `Value::Buffer` holds a buffer by the id it keeps when renamed, and scripts get one object per buffer (`ember.currentBuffer()`, `getBuffer`), whose `name` follows renames and which every function taking a buffer accepts as its current name. Functions still return names, so code moves over as it is touched; compile.ts keeps `next-error-last-buffer` and its parse state by buffer, so renaming `*compilation*` keeps `M-g n` working. `rename-buffer` (`C-x x r`) came with it.
-- Markers, windows and processes as objects, markers freed when nothing refers to them, and propertized strings, are the rest of item 7.
+- Strings can carry text properties: `Value::Text`, as Emacs's propertized strings. `ember.propertize` makes one and `ember.bufferSubstring` gives one, `insert` puts its properties in with it, and overlay and display strings show in its faces. Kills keep their properties, and yanking leaves out those `yank-excluded-properties` names, as insert-for-yank does.
+- Markers, windows and processes as objects, and markers freed when nothing refers to them, are the rest of item 7.
 
 Item 8 then gave commands Emacs's interactive codes:
 - Parameter kinds the editor fills without asking: `count` ("p", the prefix argument as a number), `prefix` ("P", as it is), `point` ("d"), `mark` ("m"), and `region-beginning` and `region-end` ("r"); and `number` ("n"), read until it is one.
@@ -79,7 +80,7 @@ Item 10 began with what rows show besides the text:
 - An overlay's `before-string` and `after-string` show at its ends, after-strings of overlays ending at a position before before-strings of those starting there, none for an overlay its own `invisible` hides.
 - A string `display` property shows in place of the text it is on, in that text's face, and an empty one hides it; `(space :width N)` and `(space :align-to COLUMN)` give space.
 - Segments and glyphs say they are strings. The cursor goes on the text after an overlay string and on a display string when point is at the text it stands for, and wrapping moves a string to the next row whole.
-- Still to come: strings with faces of their own, which wait for propertized strings (item 7); strings with newlines, which end at the first; `line-prefix` and `wrap-prefix`; margins and images; and the mode line formatted by the core from `mode-line-format`.
+- Still to come: strings with newlines, which end at the first; `line-prefix` and `wrap-prefix`; margins and images; and the mode line formatted by the core from `mode-line-format`.
 
 ## Review
 

@@ -22,6 +22,8 @@ pub enum Value {
     Function(Function),
     /// A buffer, by the id it keeps when renamed, as Emacs's buffer objects.
     Buffer(u64),
+    /// A string with text properties, as Emacs's propertized strings.
+    Text(crate::properties::Text),
 }
 
 impl Value {
@@ -38,9 +40,11 @@ impl Value {
         }
     }
 
+    /// The value's text: a string's, or a propertized string's without its properties.
     pub fn as_str(&self) -> Option<&str> {
         match self {
             Value::Str(s) => Some(s),
+            Value::Text(t) => Some(&t.string),
             _ => None,
         }
     }
@@ -148,6 +152,7 @@ impl fmt::Display for Value {
             }
             Value::Function(function) => write!(f, "{function:?}"),
             Value::Buffer(id) => write!(f, "#<buffer {id}>"),
+            Value::Text(t) => write!(f, "{:?}", t.string),
         }
     }
 }
@@ -505,6 +510,11 @@ pub(crate) fn install(ed: &mut Editor) {
             "inhibit-read-only",
             "Whether to ignore read-only buffers and text: t ignores both, and a list lets through text whose read-only property is one of its values. Bind it with letBind around code that writes into a read-only buffer.",
             Value::Bool(false),
+        ),
+        Variable::new(
+            "yank-excluded-properties",
+            "The text properties yanking leaves out of what it inserts, or t for all of them, as Emacs's insert-for-yank removes them.",
+            Value::List(["category", "field", "follow-link", "fontified", "font-lock-face", "help-echo", "intangible", "invisible", "keymap", "local-map", "mouse-face", "read-only", "yank-handler"].into_iter().map(Value::from).collect()),
         ),
         Variable::new(
             "kill-read-only-ok",

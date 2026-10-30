@@ -387,3 +387,38 @@ fn a_change_moved_by_its_before_change_functions_happens_where_it_went() {
     // The c is deleted, as Emacs's del_range_1 keeps the start through the hooks.
     assert_eq!(result, r#"">>abdef""#);
 }
+
+#[test]
+fn propertized_strings_carry_their_properties_in_and_out() {
+    let (mut ed, s) = setup();
+    let result = eval(
+        &mut ed,
+        &s,
+        r#"(() => {
+          ember.insert("ab");
+          ember.insert(ember.propertize("TODO", { face: "org-todo", "org-x": [1, 2] }));
+          ember.insert("cd");
+          const copy = ember.bufferSubstring(1, 7);
+          ember.gotoChar(ember.bufferSize());
+          ember.insert(copy);
+          return [
+            ember.bufferText(),
+            `${copy}`,
+            copy.properties,
+            ember.getTextProperty(9, "face"),
+            ember.getTextProperty(8, "face") ?? null,
+            ember.getTextProperty(10, "org-x"),
+          ];
+        })()"#,
+    );
+    assert_eq!(result, r#"["abTODOcdbTODOc","bTODOc",[[1,5,{"face":"org-todo","org-x":[1,2]}]],"org-todo",null,[1,2]]"#);
+}
+
+#[test]
+fn yanking_keeps_properties_but_those_yank_excludes() {
+    let (mut ed, s) = setup();
+    eval(&mut ed, &s, r#"(ember.insert(ember.propertize("word", { face: "bold", invisible: true })), ember.insert(" rest"), ember.gotoChar(0))"#);
+    ed.press("M-d C-e C-y").unwrap();
+    let result = eval(&mut ed, &s, r#"[ember.bufferText(), ember.getTextProperty(5, "face"), ember.getTextProperty(5, "invisible") ?? null]"#);
+    assert_eq!(result, r#"[" restword","bold",null]"#);
+}
