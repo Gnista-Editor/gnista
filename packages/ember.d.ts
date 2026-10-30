@@ -4988,6 +4988,10 @@ declare global {
        */
       "search-upper-case": Value;
       /**
+       * Whether killing and copying put the text on the system clipboard, and yanking takes in what other programs put there.
+       */
+      "select-enable-clipboard": Value;
+      /**
        * Whether a sentence ends with two spaces after its period, so a period followed by one space is no end of sentence, and filling keeps two.
        *
        * Defined in packages/fill.ts.

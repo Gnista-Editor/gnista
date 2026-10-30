@@ -18,6 +18,10 @@ fn main() -> eframe::Result {
     }
 
     let mut editor = Editor::new();
+    // Kills and yanks share the system clipboard, as in Emacs.
+    if let Some(clipboard) = ember_gui::clipboard::SystemClipboard::new() {
+        editor.set_clipboard(Box::new(clipboard));
+    }
     // Before init.ts, which may change it.
     ember_gui::modeline::install(&mut editor);
     let scripting = config::setup_with(&mut editor, !no_init, ember_agent::install);

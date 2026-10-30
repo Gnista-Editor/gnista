@@ -571,6 +571,11 @@ pub(crate) fn install(ed: &mut Editor) {
             true,
         ),
         Variable::new(
+            "select-enable-clipboard",
+            "Whether killing and copying put the text on the system clipboard, and yanking takes in what other programs put there.",
+            true,
+        ),
+        Variable::new(
             "face-remapping-alist",
             "How faces are remapped in the buffer, as [face, ...remapping] entries.\n\n\
              The remapping is a face name, an attribute list such as [\":height\", 1.2], or several of these, \

@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use ember_core::display::{Glyph, cursor_index, row_glyphs};
 use ember_core::layout::FontSpec;
-use ember_core::{Arg, Editor, FrameId, Key, KeyCode, MouseEvent, MouseKind, Row, Style, WindowId, WindowView};
+use ember_core::{Editor, FrameId, Key, KeyCode, MouseEvent, MouseKind, Row, Style, WindowId, WindowView};
 use egui::text::{CCursor, LayoutJob, TextFormat};
 use egui::{
     Color32, FontFamily, FontId, Galley, Painter, PointerButton, Pos2, Rect, Stroke, StrokeKind, Ui,
@@ -192,11 +192,7 @@ impl EmberApp {
             for input in translate(&events, self.mac) {
                 match input {
                     Input::Key(key) => self.editor.handle_key(key),
-                    Input::Paste(text) => {
-                        if let Err(e) = self.editor.call("insert", vec![Arg::Str(text)]) {
-                            self.editor.message(e.to_string());
-                        }
-                    }
+                    Input::Command(name) => self.editor.command_execute(name),
                 }
             }
         }

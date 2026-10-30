@@ -1426,6 +1426,7 @@ dependencies = [
 name = "ember-gui"
 version = "0.1.0"
 dependencies = [
+ "arboard",
  "eframe",
  "egui",
  "egui_kittest",

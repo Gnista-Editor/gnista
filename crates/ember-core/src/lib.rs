@@ -38,6 +38,7 @@ mod questions;
 pub mod regexp;
 mod rows;
 mod search;
+pub mod select;
 mod symbols;
 mod syntax;
 pub mod syntax_table;

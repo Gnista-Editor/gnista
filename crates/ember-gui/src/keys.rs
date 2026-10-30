@@ -15,8 +15,9 @@ use egui::{Event, Key as EguiKey, Modifiers};
 #[derive(Clone, Debug, PartialEq)]
 pub enum Input {
     Key(Key),
-    /// Text pasted from the system clipboard.
-    Paste(String),
+    /// A command the system's own keys stand for, as the Mac's ⌘C, ⌘X and
+    /// ⌘V copy, cut and paste through the kill ring in Emacs.
+    Command(&'static str),
 }
 
 /// Translates one frame's events. `mac` selects the macOS conventions above.
@@ -41,7 +42,12 @@ pub fn translate(events: &[Event], mac: bool) -> Vec<Input> {
             Event::Cut if !mac => out.push(Input::Key(Key::char('x').ctrl())),
             Event::Copy if !mac => out.push(Input::Key(Key::char('c').ctrl())),
             Event::Paste(_) if !mac => out.push(Input::Key(Key::char('v').ctrl())),
-            Event::Paste(text) => out.push(Input::Paste(text.clone())),
+            // As Emacs's ns-win.el binds s-c, s-x and s-v: the kill ring and
+            // the system clipboard are one, so yanking pastes what another
+            // program copied.
+            Event::Copy => out.push(Input::Command("kill-ring-save")),
+            Event::Cut => out.push(Input::Command("kill-region")),
+            Event::Paste(_) => out.push(Input::Command("yank")),
             _ => {}
         }
     }
@@ -155,7 +161,7 @@ mod tests {
             .iter()
             .map(|i| match i {
                 Input::Key(k) => k.to_string(),
-                Input::Paste(text) => format!("paste:{text}"),
+                Input::Command(name) => format!("command:{name}"),
             })
             .collect::<Vec<_>>()
             .join(" ")
@@ -198,10 +204,10 @@ mod tests {
     }
 
     #[test]
-    fn cut_copy_paste_events_are_emacs_keys_off_macos() {
+    fn cut_copy_paste_events_are_emacs_keys_off_macos_and_commands_on_it() {
         let events = [Event::Cut, Event::Copy, Event::Paste("clip".into())];
         assert_eq!(keys(&events, false), "C-x C-c C-v");
-        assert_eq!(keys(&events, true), "paste:clip");
+        assert_eq!(keys(&events, true), "command:kill-region command:kill-ring-save command:yank");
     }
 
     #[test]

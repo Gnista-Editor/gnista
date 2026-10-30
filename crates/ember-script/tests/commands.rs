@@ -119,3 +119,23 @@ fn repeating_takes_the_count_afresh() {
     s.eval_expression(&mut ed, r#"ember.call("test-count", undefined)"#).unwrap();
     assert_eq!(seen(&mut ed, &s), "[1,1,3,1]");
 }
+
+#[test]
+fn yank_pop_follows_a_yank_from_the_clipboard() {
+    struct Outside;
+    impl ember_core::select::Clipboard for Outside {
+        fn get_text(&mut self) -> Option<String> {
+            Some("pasted".into())
+        }
+        fn set_text(&mut self, _: &str) {}
+    }
+    let mut ed = ember_core::Editor::new();
+    let _scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    ed.kill_new("older");
+    ed.set_clipboard(Box::new(Outside));
+    // As ⌘V runs it on the Mac.
+    ed.command_execute("yank");
+    ed.press("M-y").unwrap();
+    let b = ed.window_buffer();
+    assert_eq!(b.slice(0..b.len()), "older");
+}

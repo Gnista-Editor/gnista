@@ -202,6 +202,10 @@ pub struct Editor {
     pub(crate) in_change_hooks: bool,
     /// Kills, oldest first, with their text properties, as Emacs keeps them.
     pub(crate) kill_ring: Vec<crate::properties::Text>,
+    /// The system clipboard, if the front end has one, and the text the
+    /// editor last put there or took in from it.
+    pub(crate) clipboard: Option<Box<dyn crate::select::Clipboard>>,
+    pub(crate) last_selected_text: Option<String>,
     /// Which kill yanking takes next, counting back from the newest (Emacs's
     /// `kill-ring-yank-pointer`).
     yank_pointer: usize,
@@ -323,6 +327,8 @@ impl Editor {
             this_command_set: false,
             in_change_hooks: false,
             kill_ring: Vec::new(),
+            clipboard: None,
+            last_selected_text: None,
             yank_pointer: 0,
             last_repeatable: None,
             repeatable_count: 0,
@@ -1051,6 +1057,18 @@ impl Editor {
     /// Runs a command for a key, as Emacs's command loop does: first
     /// `pre-command-hook`, which can change this-command, and that command
     /// runs instead; then `post-command-hook`.
+    /// Runs a command as the command loop runs one bound to a key, as
+    /// Emacs's `command-execute` does: for what a front end gives as a
+    /// command rather than a key, such as the Mac's ⌘C, ⌘X and ⌘V.
+    pub fn command_execute(&mut self, name: &str) {
+        if self.running == 0 {
+            self.current_from_selected_window();
+        }
+        self.note_command_keys(&[]);
+        self.command_loop_run(name);
+        self.resume_outer_minibuffer();
+    }
+
     fn command_loop_run(&mut self, name: &str) {
         self.record_lossage_command(name);
         self.this_command = Some(name.to_string());
@@ -1738,12 +1756,17 @@ impl Editor {
             }
             _ => self.kill_ring.push(text),
         }
+        // The whole kill goes to the clipboard, as kill-append gives it there.
+        let newest = self.kill_ring.last().map(|t| t.string.clone()).unwrap_or_default();
+        self.interprogram_cut(&newest);
     }
 
-    /// Puts text in the kill ring as a kill of its own, as Emacs's `kill-new`.
+    /// Puts text in the kill ring as a kill of its own, as Emacs's
+    /// `kill-new`, and on the system clipboard.
     pub fn kill_new(&mut self, text: &str) {
         self.yank_pointer = 0;
         self.kill_ring.push(crate::properties::Text { string: text.to_string(), props: Vec::new() });
+        self.interprogram_cut(text);
     }
 
     /// The kill `n` entries back from the one yanked last, moving the yank
@@ -1755,6 +1778,14 @@ impl Editor {
 
     /// As [`Editor::current_kill`], with the kill's text properties.
     pub fn current_kill_text(&mut self, n: i64) -> Result<crate::properties::Text> {
+        // Text another program put on the clipboard since is the newest
+        // kill, as current-kill takes it in through interprogram-paste-function.
+        if n == 0
+            && let Some(text) = self.interprogram_paste()
+        {
+            self.yank_pointer = 0;
+            self.kill_ring.push(crate::properties::Text { string: text, props: Vec::new() });
+        }
         if self.kill_ring.is_empty() {
             return Err(Error::new("Kill ring is empty"));
         }
