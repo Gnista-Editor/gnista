@@ -483,3 +483,28 @@ fn the_selected_frame_shows_where_windows_cannot_open() {
     assert_eq!(h.state().editor.selected_frame(), 1);
     assert_eq!(h.state().editor.window_list().len(), 1, "the first frame has one window");
 }
+
+#[test]
+fn scaled_and_proportional_text() {
+    let mut ed = Editor::new();
+    let scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    let text = "* A heading half again as big\n\nProse in a proportional font, which wraps where its words reach the edge of the window rather than at a column, as Emacs's variable-pitch-mode shows it.\nmonospace\tafter a tab\n";
+    ed.window_buffer_mut().set_text(text);
+    let (heading, prose) = (text.find('\n').unwrap(), (text.find("Prose").unwrap(), text.find("\nmono").unwrap()));
+    let faces = format!(
+        r#"
+        ember.defineFace({{ name: "big-heading", attributes: {{ height: 1.5, bold: true }} }});
+        ember.putTextProperty(0, {heading}, "face", "big-heading");
+        ember.putTextProperty({}, {}, "face", "variable-pitch");
+        "#,
+        prose.0, prose.1
+    );
+    scripting.eval_typescript(&mut ed, "test.ts", faces).unwrap();
+    ed.press("M-> C-p C-p").unwrap();
+    let mut h = harness(ed, Theme::Dark);
+    h.snapshot("scaled_dark");
+    // A click on the proportional text lands on the character drawn there.
+    let ed = &h.state().editor;
+    let posn = ed.posn_at_point(prose.0 + 5, ed.selected_window()).unwrap();
+    assert!(posn.y > ember_gui::theme::TEXT_SIZE * 1.5, "below the taller heading row: {posn:?}");
+}

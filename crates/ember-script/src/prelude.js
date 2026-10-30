@@ -927,6 +927,18 @@
       native.callProcess(command.map(String), directory ?? undefined, input === undefined ? undefined : String(input)),
     windowStart: (window) => native.windowStart(window ?? native.selectedWindow()),
     setWindowStart: (window, pos) => native.setWindowStart(window ?? native.selectedWindow(), pos),
+    windowEnd: (window) => native.windowEnd(window ?? native.selectedWindow()),
+    posVisibleInWindowP: (pos, window, partially) =>
+      native.posVisibleInWindowP(pos ?? native.point(), window ?? native.selectedWindow(), Boolean(partially)) || undefined,
+    posnAtPoint: (pos, window) => native.posnAtPoint(pos ?? native.point(), window ?? native.selectedWindow()),
+    posnAtXY: (x, y, window) => native.posnAtXY(x, y, window ?? native.selectedWindow()),
+    windowTextPixelSize: (window, from, to) => {
+      const w = window ?? native.selectedWindow();
+      return native.windowTextPixelSize(w, from ?? native.windowStart(w), to ?? native.windowEnd(w));
+    },
+    linePixelHeight: () => native.linePixelHeight(),
+    defaultFontWidth: () => native.defaultFontWidth(),
+    defaultFontHeight: () => native.defaultFontHeight(),
     windowPoint: (window) => native.windowPoint(window ?? native.selectedWindow()),
     setWindowPoint: (window, pos) => native.setWindowPoint(window ?? native.selectedWindow(), pos),
     switchToPrevBuffer: (window, buryOrKill) => {

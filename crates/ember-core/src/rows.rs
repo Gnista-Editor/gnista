@@ -507,6 +507,9 @@ impl Editor {
         dark: Option<bool>,
         wrap: Option<Wrap>,
     ) -> Vec<Row> {
+        // Measured off the grid, rows wrap by their fonts, so even rows for
+        // moving by need their styles.
+        let dark = dark.or((!self.metrics.uniform()).then_some(true));
         // Only the accessible portion shows, as in a narrowed Emacs buffer.
         let len = b.point_max();
         let mut logical = 0;
@@ -561,7 +564,7 @@ impl Editor {
                         chunk_end = syntax.next_change(b, pos, chunk_end, hint);
                         let mut faces = self.faces_at(b, pos);
                         faces.extend(syntax_face.map(String::from));
-                        styles.entry(faces).or_insert_with_key(|f| self.style_for(f, dark)).clone()
+                        styles.entry(faces).or_insert_with_key(|f| self.style_for_in(b, f, dark)).clone()
                     }
                     None => Style::default(),
                 };
@@ -578,7 +581,7 @@ impl Editor {
                         // Continued rows start with the wrap prefix, which takes room from them.
                         let prefix = self.prefix_segments(b, start, "wrap-prefix", dark, &mut styles);
                         let indent: usize = prefix.iter().map(|s| crate::display::display_width(&s.text, tab_width)).sum();
-                        let wrapped = wrap_row(row, wrap, tab_width, indent);
+                        let wrapped = wrap_row(self, row, wrap, tab_width, indent);
                         let room = count - rows.len();
                         rows.extend(wrapped.into_iter().take(room).enumerate().map(|(i, mut r)| {
                             r.line = b.line_of(r.start);
@@ -606,7 +609,7 @@ impl Editor {
     fn prefix_segments(&self, b: &Buffer, pos: usize, name: &str, dark: Option<bool>, styles: &mut HashMap<Vec<String>, Style>) -> Vec<Segment> {
         let at = if pos < b.len() { b.char_property(pos, name).cloned() } else { None };
         match at.or_else(|| self.variable_in(b, name)) {
-            Some(value @ (Value::Str(_) | Value::Text(_))) => self.string_segments(pos, &value, None, &[], dark, styles),
+            Some(value @ (Value::Str(_) | Value::Text(_))) => self.string_segments(b, pos, &value, None, &[], dark, styles),
             _ => Vec::new(),
         }
     }
@@ -632,7 +635,7 @@ impl Editor {
             .flat_map(|o| std::iter::once((*o, "before-string")).chain((o.end == pos).then_some((*o, "after-string"))));
         for (o, name) in ending.chain(starting) {
             if let Some(value) = o.props.get(name) {
-                segments.extend(self.string_segments(pos, value, None, &[], dark, styles));
+                segments.extend(self.string_segments(b, pos, value, None, &[], dark, styles));
             }
         }
     }
@@ -640,8 +643,10 @@ impl Editor {
     /// The segments a string shows as, at `pos`: a propertized string's
     /// stretches in their faces, over `base`, the faces of the text a
     /// display string stands for, up to the first newline.
+    #[allow(clippy::too_many_arguments)]
     fn string_segments(
         &self,
+        b: &Buffer,
         pos: usize,
         value: &Value,
         covers: Option<usize>,
@@ -676,7 +681,7 @@ impl Editor {
                 Some(seg) if last.as_ref() == Some(&faces) && !breaks && !cursor => seg.text.push(c),
                 _ => {
                     let style = match dark {
-                        Some(dark) => styles.entry(faces.clone()).or_insert_with_key(|f| self.style_for(f, dark)).clone(),
+                        Some(dark) => styles.entry(faces.clone()).or_insert_with_key(|f| self.style_for_in(b, f, dark)).clone(),
                         None => Style::default(),
                     };
                     out.push(Segment { string: true, covers, breaks, cursor, ..Segment::text(pos, c.to_string(), style) });
@@ -734,7 +739,7 @@ impl Editor {
             Value::Str(_) | Value::Text(_) => value.clone(),
             _ => Value::Str(text),
         };
-        Some((end, self.string_segments(pos, &shown, Some(end), &base, dark, styles)))
+        Some((end, self.string_segments(b, pos, &shown, Some(end), &base, dark, styles)))
     }
 
     /// The faces at a position, apart from syntax: overlays' first, highest priority first,
@@ -791,7 +796,11 @@ fn split_at_string_newlines(row: Row) -> Vec<Row> {
     rows
 }
 
-fn wrap_row(row: Row, wrap: Wrap, tab_width: usize, indent: usize) -> Vec<Row> {
+/// Breaks a row into screen rows `wrap.width` default columns wide. A row
+/// on the grid is measured in cells; another, glyph by glyph as the
+/// metrics measure its fonts, so text of other sizes and proportional
+/// text wrap where they would pass the window's edge.
+fn wrap_row(ed: &Editor, row: Row, wrap: Wrap, tab_width: usize, indent: usize) -> Vec<Row> {
     // Every character of the row, as (segment, index in the segment).
     let items: Vec<(usize, usize)> = row
         .segments
@@ -802,17 +811,23 @@ fn wrap_row(row: Row, wrap: Wrap, tab_width: usize, indent: usize) -> Vec<Row> {
     let chars: Vec<Vec<char>> = row.segments.iter().map(|s| s.text.chars().collect()).collect();
     let char_of = |k: usize| chars[items[k].0][items[k].1];
     let in_ellipsis = |k: usize| row.segments[items[k].0].atomic();
+    let on_grid = ed.row_on_grid(&row);
     let mut scratch = String::new();
-    let mut width_of = |c: char, col: usize| {
-        scratch.clear();
-        crate::display::render_char(c, col, tab_width, &mut scratch)
+    let mut width_of = |k: usize, col: f32| {
+        if on_grid {
+            scratch.clear();
+            crate::display::render_char(char_of(k), col as usize, tab_width, &mut scratch) as f32
+        } else {
+            ed.char_columns(&row.segments[items[k].0], char_of(k), col, tab_width)
+        }
     };
+    let width = wrap.width as f32;
     let mut breaks = Vec::new();
-    let (mut row_start, mut col, mut last_space) = (0, 0, None);
+    let (mut row_start, mut col, mut last_space) = (0, 0.0f32, None);
     let mut k = 0;
     while k < items.len() {
-        let w = width_of(char_of(k), col);
-        if col + w > wrap.width && k > row_start {
+        let w = width_of(k, col);
+        if col + w > width && k > row_start {
             let mut at = match last_space {
                 Some(space) if wrap.words && space > row_start => space,
                 _ => k,
@@ -835,7 +850,7 @@ fn wrap_row(row: Row, wrap: Wrap, tab_width: usize, indent: usize) -> Vec<Row> {
             last_space = None;
             // A continued row starts after the wrap prefix, and its tabs are
             // measured from the row's start, as they are drawn.
-            col = indent.min(wrap.width.saturating_sub(1));
+            col = indent.min(wrap.width.saturating_sub(1)) as f32;
             k = at;
             continue;
         }

@@ -37,3 +37,7 @@ Org commands that change the text read every heading again once per change: abou
 ## Character tables
 
 Classes, categories, scripts and case past ASCII are binary searches in sorted runs (`chartab_data.rs`). Two-level tables indexed by code point, as Emacs's char-tables are, would make each lookup a pair of array reads. Worth doing when a profile shows the searches; none has yet.
+
+## Moving through rows in the GUI
+
+With the GUI's metrics, rows built for moving point (`C-n` over continued lines, keeping point in sight) work out their faces, as their wrapping depends on the fonts, where with cells they need none. That is most of what `C-n` costs over the terminal: 0.75 ms a key against 0.42 in a 50,000-line Org file, and 0.98 ms in `variable-pitch-mode` (`gui_layout` in the bench, [performance.md](performance.md)). A buffer whose rows have all been on the grid could skip the faces until a face with another height or a proportional family is in effect, or rows' measured widths could be kept per line between keys until the text or faces there change, as Emacs's glyph matrices are.

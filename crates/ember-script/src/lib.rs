@@ -86,6 +86,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/display-line-numbers.ts", include_str!("../../../packages/display-line-numbers.ts")),
     ("packages/files.ts", include_str!("../../../packages/files.ts")),
     ("packages/text-mode.ts", include_str!("../../../packages/text-mode.ts")),
+    ("packages/face-remap.ts", include_str!("../../../packages/face-remap.ts")),
     ("packages/outline.ts", include_str!("../../../packages/outline.ts")),
     ("packages/prog-mode.ts", include_str!("../../../packages/prog-mode.ts")),
     ("packages/treesit-modes.ts", include_str!("../../../packages/treesit-modes.ts")),
@@ -2209,6 +2210,40 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
         Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64, pos: usize| with_editor(&ctx, |ed| ed.set_window_start(window, pos)))?,
     )?;
     native.set(
+        "windowEnd",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64| with_editor(&ctx, |ed| ed.window_end(window).ok_or_else(|| Error::new("No such window"))))?,
+    )?;
+    native.set(
+        "posVisibleInWindowP",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pos: usize, window: u64, partially: bool| with_editor(&ctx, |ed| Ok(ed.pos_visible_in_window_p(pos, window, partially))))?,
+    )?;
+    native.set(
+        "posnAtPoint",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pos: usize, window: u64| -> rquickjs::Result<Value<'js>> {
+            let posn = with_editor(&ctx, |ed| Ok(ed.posn_at_point(pos, window)))?;
+            posn_to_js(&ctx, posn)
+        })?,
+    )?;
+    native.set(
+        "posnAtXY",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, x: f64, y: f64, window: u64| -> rquickjs::Result<Value<'js>> {
+            let posn = with_editor(&ctx, |ed| Ok(ed.posn_at_x_y(x as f32, y as f32, window)))?;
+            posn_to_js(&ctx, posn)
+        })?,
+    )?;
+    native.set(
+        "windowTextPixelSize",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64, from: usize, to: usize| {
+            with_editor(&ctx, |ed| {
+                let (w, h) = ed.window_text_pixel_size(window, from, to).ok_or_else(|| Error::new("No such window"))?;
+                Ok(vec![w as f64, h as f64])
+            })
+        })?,
+    )?;
+    native.set("linePixelHeight", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.line_pixel_height() as f64)))?)?;
+    native.set("defaultFontWidth", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.default_font_width() as f64)))?)?;
+    native.set("defaultFontHeight", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.default_font_height() as f64)))?)?;
+    native.set(
         "windowPoint",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64| with_editor(&ctx, |ed| ed.window_point(window).ok_or_else(|| Error::new("No such window"))))?,
     )?;
@@ -2700,13 +2735,33 @@ fn face_attrs_from_js<'js>(object: &Object<'js>) -> rquickjs::Result<FaceAttrs> 
         italic: flag("italic")?,
         underline: flag("underline")?,
         strike: flag("strike")?,
+        height: object.get::<_, Option<f64>>("height")?.map(ember_core::FaceHeight::from_number),
+        family: text("family")?,
         inherit: text("inherit")?,
     })
 }
 
+/// A place in a window as scripts see it, as Emacs's posn: the window,
+/// the buffer position, x and y from the top left of the text area, and
+/// the column and row in default characters; undefined for none.
+fn posn_to_js<'js>(ctx: &Ctx<'js>, posn: Option<ember_core::layout::Posn>) -> rquickjs::Result<Value<'js>> {
+    let Some(posn) = posn else { return Ok(Value::new_undefined(ctx.clone())) };
+    let object = Object::new(ctx.clone())?;
+    object.set("window", posn.window)?;
+    object.set("point", posn.point)?;
+    object.set("x", posn.x as f64)?;
+    object.set("y", posn.y as f64)?;
+    object.set("col", posn.col as f64)?;
+    object.set("row", posn.row)?;
+    Ok(object.into_value())
+}
+
 fn face_attrs_to_js<'js>(ctx: &Ctx<'js>, attrs: &FaceAttrs) -> rquickjs::Result<Object<'js>> {
     let object = Object::new(ctx.clone())?;
-    for (key, value) in [("foreground", &attrs.foreground), ("background", &attrs.background), ("inherit", &attrs.inherit)] {
+    if let Some(height) = attrs.height {
+        object.set("height", height.as_number())?;
+    }
+    for (key, value) in [("foreground", &attrs.foreground), ("background", &attrs.background), ("family", &attrs.family), ("inherit", &attrs.inherit)] {
         if let Some(v) = value {
             object.set(key, v.as_str())?;
         }

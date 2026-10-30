@@ -211,3 +211,95 @@ fn large_text_file() {
     });
     b.report(&format!("Text file of {mb} MB, {} lines", b.ed.window_buffer().line_count()));
 }
+
+/// Metrics as the GUI's fonts give them: a monospace default font 8.4
+/// points wide with 18-point lines, and proportional letters of a few
+/// widths, each scaled with the face's height.
+struct GuiLike;
+
+impl ember_core::layout::TextMetrics for GuiLike {
+    fn advance(&self, font: &ember_core::layout::FontSpec, c: char) -> f32 {
+        let base = if !font.proportional() {
+            8.4
+        } else {
+            match c {
+                'i' | 'l' | 'j' | '.' | ',' | ' ' => 3.5,
+                'm' | 'w' | 'M' | 'W' => 11.0,
+                _ => 7.5,
+            }
+        };
+        base * font.scale
+    }
+
+    fn line_height(&self, font: &ember_core::layout::FontSpec) -> f32 {
+        18.0 * font.scale
+    }
+
+    fn char_width(&self) -> f32 {
+        8.4
+    }
+
+    fn char_height(&self) -> f32 {
+        18.0
+    }
+}
+
+/// A screenful drawn as the GUI draws it: the rows it draws, each glyph
+/// measured and each row's height.
+fn gui_frame(ed: &mut Editor) {
+    ed.advance_clock(std::time::Duration::from_millis(200));
+    ed.redisplay();
+    let w = ed.selected_window();
+    let b = ed.window_buffer();
+    let tab_width = ed.tab_width_in(b);
+    for row in ed.rows_to_draw(w, true) {
+        let glyphs = ember_core::display::row_glyphs(&row, tab_width);
+        std::hint::black_box(ed.glyph_columns(&row, &glyphs, tab_width));
+        std::hint::black_box(ed.row_height(b, &row));
+    }
+}
+
+#[test]
+#[ignore]
+fn gui_layout() {
+    let lines = env_usize("EMBER_BENCH_ORG_LINES", 50_000);
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("big.org");
+    std::fs::write(&path, org_text(lines)).unwrap();
+    for (title, gui, setup) in [
+        ("cells, as a terminal", false, ""),
+        ("plain", true, ""),
+        ("text-scale +2", true, "text-scale-adjust"),
+        ("variable-pitch-mode", true, "variable-pitch-mode"),
+        ("cells, as a terminal, again", false, ""),
+    ] {
+        let mut ed = Editor::new();
+        let _scripting = Scripting::new(&mut ed).unwrap();
+        if gui {
+            ed.set_text_metrics(std::sync::Arc::new(GuiLike));
+        }
+        let w = ed.selected_window();
+        ed.set_window_size(w, COLS, ROWS);
+        ed.call("find-file", vec![ember_core::Arg::Str(path.to_string_lossy().to_string())]).unwrap();
+        if setup == "text-scale-adjust" {
+            ed.press("C-x C-+ C-x C-+").unwrap();
+        } else if !setup.is_empty() {
+            ed.call(setup, vec![]).unwrap();
+        }
+        let middle = ed.window_buffer().line_count() / 2;
+        let pos = ed.window_buffer().line_start(middle);
+        ed.window_buffer_mut().set_point(pos);
+        gui_frame(&mut ed);
+        let mut results = Vec::new();
+        for (name, n, keys) in [("C-v", 20, "C-v"), ("C-n", 20, "C-n"), ("typing", 20, "x"), ("RET", 5, "RET")] {
+            let start = Instant::now();
+            for _ in 0..n {
+                ed.press(keys).ok();
+                gui_frame(&mut ed);
+            }
+            results.push((name, start.elapsed().as_secs_f64() * 1000.0 / n as f64));
+        }
+        let line: Vec<String> = results.iter().map(|(n, ms)| format!("{n} {ms:.2} ms")).collect();
+        println!("GUI layout, Org file of {lines} lines, {title}: {}", line.join(", "));
+    }
+}

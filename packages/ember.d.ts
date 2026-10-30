@@ -110,6 +110,14 @@ declare global {
        */
       "beginning-of-visual-line": [];
       /**
+       * Show the buffer's text in the face buffer-face-mode-face says, variable-pitch to begin with.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/face-remap.ts.
+       */
+      "buffer-face-mode": [];
+      /**
        * Put a buffer last in the buffer list, the current one by default.
        *
        * Burying the current buffer shown in the selected window also takes it out of the window: a window dedicated to it is deleted, and any other shows the buffer it showed before.
@@ -3321,6 +3329,50 @@ declare global {
        */
       "text-mode": [];
       /**
+       * Make the buffer's text bigger or smaller, as the last key says: + or = a step bigger, - a step smaller, 0 its usual size.
+       *
+       * A prefix argument gives how many steps. The same keys then go on adjusting, without C-x.
+       *
+       * @param inc prefix count
+       *
+       * Defined in packages/face-remap.ts.
+       */
+      "text-scale-adjust": [inc?: number];
+      /**
+       * Make the buffer's text a step smaller, or with a prefix argument that many.
+       *
+       * @param dec prefix count
+       *
+       * Defined in packages/face-remap.ts.
+       */
+      "text-scale-decrease": [dec?: number];
+      /**
+       * Make the buffer's text a step bigger, or with a prefix argument that many; 0 goes back to its usual size.
+       *
+       * @param inc prefix count
+       *
+       * Defined in packages/face-remap.ts.
+       */
+      "text-scale-increase": [inc?: number];
+      /**
+       * Show the buffer's text bigger or smaller, by text-scale-mode-amount steps of text-scale-mode-step.
+       *
+       * Faces with a height of their own keep it; text-scale-adjust turns it on and off.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/face-remap.ts.
+       */
+      "text-scale-mode": [];
+      /**
+       * Scale the buffer's text by a number of steps of text-scale-mode-step; 0 is its usual size.
+       *
+       * @param level prefix count
+       *
+       * Defined in packages/face-remap.ts.
+       */
+      "text-scale-set": [level?: number];
+      /**
        * Turn truncate-lines on in this buffer if it is off, and off if it is on.
        *
        * With truncation, long lines are cut off at the window's edge and the window scrolls sideways; without it, they continue on the next screen line. A positive prefix argument turns truncation on, and zero or a negative one turns it off.
@@ -3394,6 +3446,14 @@ declare global {
        * Defined in packages/lisp.ts.
        */
       "up-list": [];
+      /**
+       * Show the buffer's text in a proportional font, the variable-pitch face, as buffer-face-mode does with it. A prefix argument turns it on if positive, off if not.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/face-remap.ts.
+       */
+      "variable-pitch-mode": [arg?: PrefixArg];
       /**
        * Show the *Messages* buffer: the messages shown in the echo area, newest last.
        *
@@ -3574,6 +3634,28 @@ declare global {
        * Defined in packages/paren.ts.
        */
       "blink-matching-paren-distance": Value;
+      /**
+       * Whether Buffer-Face mode is on in this buffer. Use the command buffer-face-mode to change it.
+       *
+       * Defined in packages/face-remap.ts.
+       */
+      "buffer-face-mode": Value;
+      /**
+       * The face buffer-face-mode shows the buffer's text in.
+       *
+       * Defined in packages/face-remap.ts.
+       */
+      "buffer-face-mode-face": Value;
+      /**
+       * Keymap buffer-face-mode-map.
+       */
+      "buffer-face-mode-map": Value;
+      /**
+       * The remapping buffer-face-mode made, to take away when it is turned off.
+       *
+       * Defined in packages/face-remap.ts.
+       */
+      "buffer-face-mode-remapping": Value;
       /**
        * How the visited file's text is written as bytes: its charset and line ends, such as utf-8-unix or undecided-dos.
        *
@@ -4014,6 +4096,12 @@ declare global {
        * Face names answered in the minibuffer, newest first.
        */
       "face-name-history": Value;
+      /**
+       * How faces are remapped in the buffer, as [face, ...remapping] entries.
+       *
+       * The remapping is a face name, an attribute list such as [":height", 1.2], or several of these, the first winning, where the face's own name means the face itself: ["default", [":height", 1.2], "default"] shows the buffer's text a fifth larger, as text-scale-adjust does. A remapped default face lies under all the buffer's text.
+       */
+      "face-remapping-alist": Value;
       /**
        * Whether Fido mode is on. Use the command fido-mode to change it.
        *
@@ -4952,6 +5040,40 @@ declare global {
        */
       "text-mode-map": Value;
       /**
+       * Whether Text-Scale mode is on in this buffer. Use the command text-scale-mode to change it.
+       *
+       * Defined in packages/face-remap.ts.
+       */
+      "text-scale-mode": Value;
+      /**
+       * How many steps the buffer's text is scaled by, negative for smaller.
+       *
+       * Defined in packages/face-remap.ts.
+       */
+      "text-scale-mode-amount": Value;
+      /**
+       * What text-scale-mode shows in the mode line: the steps, as +1 or -2.
+       *
+       * Defined in packages/face-remap.ts.
+       */
+      "text-scale-mode-lighter": Value;
+      /**
+       * Keymap text-scale-mode-map.
+       */
+      "text-scale-mode-map": Value;
+      /**
+       * The remapping text-scale-mode made, to take away when it changes.
+       *
+       * Defined in packages/face-remap.ts.
+       */
+      "text-scale-mode-remapping": Value;
+      /**
+       * How much each step of text-scale-adjust scales the buffer's text by.
+       *
+       * Defined in packages/face-remap.ts.
+       */
+      "text-scale-mode-step": Value;
+      /**
        * Whether long lines are cut off at the window's edge rather than continued on the next screen line.
        *
        * When on, the window scrolls sideways to keep point in view. The command toggle-truncate-lines changes it.
@@ -5115,6 +5237,10 @@ declare global {
        * Errors.
        */
       "error": FaceAttributes;
+      /**
+       * Text in a fixed-width font.
+       */
+      "fixed-pitch": FaceAttributes;
       /**
        * Brackets.
        */
@@ -5588,6 +5714,10 @@ declare global {
        */
       "underline": FaceAttributes;
       /**
+       * Text in a proportional font, as variable-pitch-mode shows a buffer.
+       */
+      "variable-pitch": FaceAttributes;
+      /**
        * Warnings.
        */
       "warning": FaceAttributes;
@@ -5665,6 +5795,18 @@ declare global {
        * Run before saving a buffer to its file.
        */
       "before-save-hook": Value;
+      /**
+       * Run after Buffer-Face mode is turned on or off.
+       */
+      "buffer-face-mode-hook": Value;
+      /**
+       * Run after Buffer-Face mode is turned off.
+       */
+      "buffer-face-mode-off-hook": Value;
+      /**
+       * Run after Buffer-Face mode is turned on.
+       */
+      "buffer-face-mode-on-hook": Value;
       /**
        * Run before a major mode clears the buffer's own variables.
        */
@@ -5997,6 +6139,18 @@ declare global {
        * Run after entering Text mode, after the hooks of the modes it is built on.
        */
       "text-mode-hook": Value;
+      /**
+       * Run after Text-Scale mode is turned on or off.
+       */
+      "text-scale-mode-hook": Value;
+      /**
+       * Run after Text-Scale mode is turned off.
+       */
+      "text-scale-mode-off-hook": Value;
+      /**
+       * Run after Text-Scale mode is turned on.
+       */
+      "text-scale-mode-on-hook": Value;
       /**
        * Run after Visual-Line mode is turned on or off.
        */
@@ -6735,6 +6889,14 @@ declare global {
       italic?: boolean;
       underline?: boolean;
       strike?: boolean;
+      /**
+       * Its size, as Emacs's :height: a whole number is absolute, in tenths
+       * of a point (120 is 12 points), and one with a fraction a factor of
+       * the size below (1.2 is a fifth larger).
+       */
+      height?: number;
+      /** Its font family, as Emacs's :family: "Monospace", "Sans Serif" for a proportional font, or a font's name. */
+      family?: string;
       /** A face to take the attributes this one does not set from. */
       inherit?: FaceName | (string & {});
     }
@@ -7041,6 +7203,36 @@ declare global {
     function windowStart(window?: number): number;
     /** Make a window start at the line holding `pos`, as set-window-start; a window always starts at a line's start. */
     function setWindowStart(window: number | undefined, pos: number): void;
+    /**
+     * A place in a window, as Emacs's posn objects describe it: the window,
+     * the buffer position, x and y from the top left of the window's text
+     * area in the front end's units (points in the GUI, cells in a
+     * terminal), and the column and row in characters of the default font.
+     */
+    interface Posn {
+      window: number;
+      point: number;
+      x: number;
+      y: number;
+      col: number;
+      row: number;
+    }
+    /** Where a window's text ends, as window-end: the position after the last character it shows, its last row counted even if partly in sight. */
+    function windowEnd(window?: number): number;
+    /** Whether a position, point by default, shows in a window, as pos-visible-in-window-p; with `partially`, a row partly in sight counts. */
+    function posVisibleInWindowP(pos?: number, window?: number, partially?: boolean): true | undefined;
+    /** Where a position, point by default, shows in a window, as posn-at-point, or undefined if it is not in sight. */
+    function posnAtPoint(pos?: number, window?: number): Posn | undefined;
+    /** What is at a place in a window's text area, as posn-at-x-y: the position of the character drawn there, or the end of the row or text. */
+    function posnAtXY(x: number, y: number, window?: number): Posn | undefined;
+    /** The width and height of text as a window shows it, as window-text-pixel-size: what it shows, by default. */
+    function windowTextPixelSize(window?: number, from?: number, to?: number): [number, number];
+    /** How tall the row point is on shows in the selected window, as line-pixel-height. */
+    function linePixelHeight(): number;
+    /** The width of a character of the current buffer's default font, its remapping counted, as default-font-width. */
+    function defaultFontWidth(): number;
+    /** The height of a line of the current buffer's default font, as default-font-height. */
+    function defaultFontHeight(): number;
     /** A window's point, the selected window's by default, as window-point: in the selected window, its buffer's point. */
     function windowPoint(window?: number): number;
     /** Move a window's point, as set-window-point. */

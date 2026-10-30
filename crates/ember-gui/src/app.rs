@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use ember_core::display::{Glyph, cursor_index, row_glyphs};
-use ember_core::display::position_at_column;
+use ember_core::layout::FontSpec;
 use ember_core::{Arg, Editor, FrameId, Key, KeyCode, MouseEvent, MouseKind, Row, Style, WindowId, WindowView};
 use egui::text::{CCursor, LayoutJob, TextFormat};
 use egui::{
@@ -13,7 +13,8 @@ use egui::{
 };
 
 use crate::keys::{Input, translate};
-use crate::theme::{self, LINE_SPACING, TEXT_SIZE, Tokens, bold_mono, color32};
+use crate::metrics::{EguiMetrics, font_id};
+use crate::theme::{self, LINE_SPACING, TEXT_SIZE, Tokens, color32};
 
 /// Space around the buffer text.
 const PAD_X: f32 = 16.0;
@@ -440,6 +441,11 @@ impl Layout {
         let font = FontId::new(TEXT_SIZE, FontFamily::Monospace);
         let em = ui.painter().layout_no_wrap("M".to_string(), font.clone(), Color32::PLACEHOLDER);
         let m = Metrics { line_height: (em.size().y * LINE_SPACING).round(), char_width: em.size().x, font };
+        // The core lays text out with these fonts' measures.
+        let known = ed.text_metrics();
+        if known.uniform() || known.char_width() != m.char_width || known.char_height() != m.line_height {
+            ed.set_text_metrics(Arc::new(EguiMetrics::new(ui.ctx().clone(), m.char_width, m.line_height)));
+        }
         let bar_height = m.line_height + 2.0 * BAR_PAD;
         // The selected frame's echo area grows for a minibuffer of several
         // lines, such as a vertical list of completions.
@@ -493,8 +499,8 @@ fn draw(ui: &Ui, ed: &Editor, frame: FrameId, layout: &Layout, t: Tokens, focuse
         // A line scrolled partly out of view slides under the top edge of the window.
         let clip = Rect::from_min_max(w.rect.min, pos2(w.rect.right(), w.mode_rect.top()));
         let offset = if window.id == scroll.0 { scroll.1 } else { 0.0 };
-        let view = View { area: w.text_rect, clip, rows: w.rows(m), scroll_offset: offset };
-        draw_buffer(&painter, ed, frame, &window, &view, m, t, cursor);
+        let view = View { area: w.text_rect, clip, scroll_offset: offset };
+        draw_buffer(&painter, ed, &window, &view, m, t, cursor);
         draw_mode_line(&painter, ed, &window, w.mode_rect, m, t);
         if w.divider {
             painter.vline(w.rect.right() - 0.5, w.rect.y_range(), Stroke::new(1.0, t.line));
@@ -518,30 +524,15 @@ fn hit(ed: &Editor, layout: &Layout, pos: Pos2, scroll: (WindowId, f32)) -> Opti
     }
     let view = ed.windows().into_iter().find(|v| v.id == w.id)?;
     let offset = if scroll.0 == w.id { scroll.1 } else { 0.0 };
-    let rows = ed.rows_of_window(w.id, w.rows(m) + 1, true);
+    let rows = ed.rows_to_draw(w.id, true);
     // Text starts right of the line numbers.
     let gutter = ed.line_numbers(w.id, &rows).map_or(0.0, |n| n.width as f32 * m.char_width);
-    let row = ((pos.y - w.text_rect.top() + offset) / m.line_height).floor().max(0.0) as usize;
-    let tab_width = ed.tab_width_in(view.buffer);
-    let glyphs_of = |row: &Row| row_glyphs(row, tab_width);
-    // The same horizontal scroll as drawing uses, in whole columns.
-    let point_col = rows
-        .iter()
-        .find(|r| r.shows_point(view.point))
-        .map_or(0, |r| {
-            let glyphs = glyphs_of(r);
-            glyphs[..cursor_index(&glyphs, view.point)].iter().map(|g| g.width).sum::<usize>()
-        });
-    let cursor_x = point_col as f32 * m.char_width;
+    // The same horizontal scroll as drawing uses.
+    let cursor_x = ed.posn_at_point(view.point, w.id).map_or(0.0, |p| p.x);
     let width = w.text_rect.width() - gutter;
     let hscroll = if cursor_x + m.char_width <= width { 0.0 } else { (cursor_x - width / 2.0).max(0.0) };
-    let position = match rows.get(row) {
-        Some(r) => {
-            let col = ((pos.x - w.text_rect.left() - gutter + hscroll) / m.char_width).floor().max(0.0) as usize;
-            position_at_column(r, &glyphs_of(r), col)
-        }
-        None => view.buffer.len(),
-    };
+    let (x, y) = (pos.x - w.text_rect.left() - gutter + hscroll, pos.y - w.text_rect.top() + offset);
+    let position = ed.posn_at_x_y(x.max(0.0), y.max(0.0), w.id).map_or(view.buffer.len(), |p| p.point);
     Some((w.id, Some(position)))
 }
 
@@ -549,7 +540,6 @@ fn hit(ed: &Editor, layout: &Layout, pos: Pos2, scroll: (WindowId, f32)) -> Opti
 struct View {
     area: Rect,
     clip: Rect,
-    rows: usize,
     scroll_offset: f32,
 }
 
@@ -557,7 +547,6 @@ struct View {
 fn draw_buffer(
     painter: &Painter,
     ed: &Editor,
-    frame: FrameId,
     window: &WindowView,
     view: &View,
     m: &Metrics,
@@ -566,8 +555,14 @@ fn draw_buffer(
 ) {
     let b = window.buffer;
     let tab_width = ed.tab_width_in(b);
-    // One extra row, partly shown, when scrolled between lines.
-    let rows = ed.rows_of_frame_window(frame, window.id, view.rows + 1, t.dark);
+    // As many rows as fill the window, one partly shown when scrolled between lines.
+    let rows = ed.rows_to_draw(window.id, t.dark);
+    let heights: Vec<f32> = rows.iter().map(|r| ed.row_height(b, r) * m.line_height).collect();
+    let tops: Vec<f32> = heights.iter().scan(0.0, |y, h| {
+        let top = *y;
+        *y += h;
+        Some(top)
+    }).collect();
     let default_style = ed.style_for(&["default".to_string()], t.dark);
     // Line numbers, in their faces, left of the text, which starts after them.
     let numbers = ed.line_numbers(window.id, &rows);
@@ -580,8 +575,9 @@ fn draw_buffer(
             let mut job = LayoutJob::default();
             job.append(label, 0.0, face_format(&style, &default_style, m, t));
             let galley = painter.layout_job(job);
-            let top = view.area.top() + i as f32 * m.line_height - view.scroll_offset;
-            clipped.galley(pos2(view.area.left(), top + (m.line_height - galley.size().y) / 2.0), galley, t.ink);
+            let (Some(top), Some(height)) = (tops.get(i), heights.get(i)) else { break };
+            let top = view.area.top() + top - view.scroll_offset;
+            clipped.galley(pos2(view.area.left(), top + (height - galley.size().y) / 2.0), galley, t.ink);
         }
     }
     let area = Rect::from_min_max(pos2(view.area.left() + gutter, view.area.top()), view.area.max);
@@ -597,7 +593,8 @@ fn draw_buffer(
         .map(|row| {
             let glyphs = row_glyphs(row, tab_width);
             let advance = |font: &FontId, c: char| painter.ctx().fonts_mut(|f| f.glyph_width(font, c));
-            let job = row_job(row, &glyphs, &default_style, m, t, &advance);
+            let columns = (!ed.row_on_grid(row)).then(|| ed.glyph_columns(row, &glyphs, tab_width));
+            let job = row_job(row, &glyphs, columns.as_deref(), ed.row_height(b, row) * m.line_height, &default_style, m, t, &advance);
             (painter.layout_job(job), glyphs)
         })
         .collect();
@@ -607,7 +604,7 @@ fn draw_buffer(
         .zip(&laid_out)
         .map(|(row, (_, glyphs))| {
             let bold = theme::faux_bold() && row.segments.iter().any(|s| s.style.bold);
-            bold.then(|| painter.layout_job(bold_only_job(row, glyphs, &default_style, m, t)))
+            bold.then(|| painter.layout_job(bold_only_job(row, glyphs, ed.row_height(b, row) * m.line_height, &default_style, m, t)))
         })
         .collect();
 
@@ -630,7 +627,7 @@ fn draw_buffer(
 
     // Text scrolled sideways stays out of the line numbers.
     let clipped = painter.with_clip_rect(Rect::from_min_max(pos2(view.clip.left().max(area.left()), view.clip.top()), view.clip.max));
-    let row_top = |row: usize| area.top() + row as f32 * m.line_height - view.scroll_offset;
+    let row_top = |row: usize| area.top() + tops[row] - view.scroll_offset;
     for (i, (galley, _)) in laid_out.iter().enumerate() {
         if let Some(r) = &region
             && let Some((from, to)) = region_span(&rows[i], &laid_out[i].1, galley, r)
@@ -638,9 +635,9 @@ fn draw_buffer(
             let left = area.left() - hscroll;
             let right = to.map_or(area.right(), |x| left + x);
             let top = row_top(i);
-            clipped.rect_filled(Rect::from_min_max(pos2(left + from, top), pos2(right, top + m.line_height)), 0.0, selection);
+            clipped.rect_filled(Rect::from_min_max(pos2(left + from, top), pos2(right, top + heights[i])), 0.0, selection);
         }
-        let y = row_top(i) + (m.line_height - galley.size().y) / 2.0;
+        let y = row_top(i) + (heights[i] - galley.size().y) / 2.0;
         clipped.galley(pos2(area.left() - hscroll, y), galley.clone(), t.ink);
         if let Some(bold) = &emboldened[i] {
             clipped.galley(pos2(area.left() - hscroll + FAUX_BOLD_OFFSET, y), bold.clone(), t.ink);
@@ -655,7 +652,8 @@ fn draw_buffer(
     }
     if let Some((i, galley, index, under)) = cursor {
         let pos = pos2(area.left() - hscroll + cursor_x, row_top(i));
-        draw_cursor(&clipped, &galley, index, under, pos, m, t, style);
+        let font = rows[i].segments.iter().find(|s| s.start <= point).map(|s| FontSpec::of(&s.style)).unwrap_or_else(FontSpec::default_font);
+        draw_cursor(&clipped, &galley, index, under, pos, heights[i], &font, m, t, style);
     }
 }
 
@@ -687,25 +685,35 @@ fn is_wide(glyph: &Glyph) -> bool {
 /// face. A wide character is spaced to take exactly its columns, as a
 /// fallback font draws it at its own width. The region is painted under it
 /// by `draw_buffer`.
+/// A row as one layout job: a section for each run of glyphs with the same
+/// face. On the grid, a wide character is spaced to take exactly its
+/// columns, as a fallback font draws it at its own width; off it, `columns`
+/// are each glyph's width as the core measured it, and a tab is spaced to
+/// reach its tab stop. The region is painted under it by `draw_buffer`.
+#[allow(clippy::too_many_arguments)]
 fn row_job(
     row: &Row,
     glyphs: &[Glyph],
+    columns: Option<&[f32]>,
+    height: f32,
     default_style: &Style,
     m: &Metrics,
     t: Tokens,
     advance: &dyn Fn(&FontId, char) -> f32,
 ) -> LayoutJob {
     let mut job = LayoutJob::default();
+    // Glyphs spaced to a width of their own rather than the font's.
+    let spaced = |g: &Glyph| if columns.is_some() { g.c == '\t' } else { is_wide(g) };
     let mut i = 0;
     while i < glyphs.len() {
         let segment = glyphs[i].segment;
-        let wide = is_wide(&glyphs[i]);
+        let alone = spaced(&glyphs[i]);
         let mut text = String::new();
-        while i < glyphs.len() && glyphs[i].segment == segment && !is_wide(&glyphs[i]) {
+        while i < glyphs.len() && glyphs[i].segment == segment && !spaced(&glyphs[i]) {
             text.push_str(&glyphs[i].text);
             i += 1;
         }
-        if wide {
+        if alone {
             text.push_str(&glyphs[i].text);
             i += 1;
         }
@@ -714,13 +722,16 @@ fn row_job(
         if seg.ellipsis {
             format.color = t.faint;
         }
-        if wide {
-            let c = text.chars().next().expect("a wide glyph is one character");
-            format.extra_letter_spacing = glyphs[i - 1].width as f32 * m.char_width - advance(&format.font_id, c);
+        if alone {
+            let g = &glyphs[i - 1];
+            let n = g.text.chars().count().max(1) as f32;
+            let want = columns.map_or(g.width as f32, |c| c[i - 1]) * m.char_width;
+            let natural: f32 = g.text.chars().map(|c| advance(&format.font_id, c)).sum();
+            format.extra_letter_spacing = (want - natural) / n;
         }
-        // The full line height, so backgrounds such as the region's meet
+        // The row's full height, so backgrounds such as the region's meet
         // the rows above and below.
-        format.line_height = Some(m.line_height);
+        format.line_height = Some(height);
         job.append(&text, 0.0, format);
     }
     job
@@ -731,7 +742,7 @@ const FAUX_BOLD_OFFSET: f32 = 0.6;
 
 /// A row's bold text alone, everything else transparent and without
 /// backgrounds, laid out exactly as the row is so it can be drawn over it.
-fn bold_only_job(row: &Row, glyphs: &[Glyph], default_style: &Style, m: &Metrics, t: Tokens) -> LayoutJob {
+fn bold_only_job(row: &Row, glyphs: &[Glyph], height: f32, default_style: &Style, m: &Metrics, t: Tokens) -> LayoutJob {
     let mut job = LayoutJob::default();
     for glyph in glyphs {
         let style = &row.segments[glyph.segment].style;
@@ -742,7 +753,7 @@ fn bold_only_job(row: &Row, glyphs: &[Glyph], default_style: &Style, m: &Metrics
         if !style.bold {
             format.color = Color32::TRANSPARENT;
         }
-        format.line_height = Some(m.line_height);
+        format.line_height = Some(height);
         job.append(&glyph.text, 0.0, format);
     }
     job
@@ -753,8 +764,8 @@ fn bold_only_job(row: &Row, glyphs: &[Glyph], default_style: &Style, m: &Metrics
 fn face_format(style: &Style, default_style: &Style, m: &Metrics, t: Tokens) -> TextFormat {
     let color = style.foreground.or(default_style.foreground).map(color32).unwrap_or(t.ink);
     let mut format = text_format(m, color);
-    if style.bold {
-        format.font_id = FontId::new(m.font.size, bold_mono());
+    if style.bold || style.scale != 1.0 || style.proportional() {
+        format.font_id = font_id(&FontSpec::of(style));
     }
     if let Some(bg) = style.background {
         format.background = color32(bg);
@@ -777,6 +788,8 @@ fn draw_cursor(
     index: usize,
     under: Option<char>,
     pos: egui::Pos2,
+    height: f32,
+    font: &FontSpec,
     m: &Metrics,
     t: Tokens,
     style: CursorStyle,
@@ -789,13 +802,14 @@ fn draw_cursor(
         }
         None => m.char_width,
     };
-    let rect = Rect::from_min_size(pos, vec2(width, m.line_height));
+    let rect = Rect::from_min_size(pos, vec2(width, height));
     match style {
         CursorStyle::Filled => {
             painter.rect_filled(rect, 0.0, t.ink);
             if let Some(c) = under {
-                let glyph = painter.layout_no_wrap(c.to_string(), m.font.clone(), t.bg);
-                let y = pos.y + (m.line_height - glyph.size().y) / 2.0;
+                let id = if font.scale == 1.0 && !font.proportional() { m.font.clone() } else { font_id(font) };
+                let glyph = painter.layout_no_wrap(c.to_string(), id, t.bg);
+                let y = pos.y + (height - glyph.size().y) / 2.0;
                 painter.galley(pos2(pos.x, y), glyph, t.bg);
             }
         }
@@ -861,7 +875,7 @@ fn draw_echo_area(painter: &Painter, ed: &Editor, rect: Rect, m: &Metrics, t: To
             break;
         }
         let glyphs = row_glyphs(row, 8);
-        let galley = painter.layout_job(row_job(row, &glyphs, &default_style, m, t, &advance));
+        let galley = painter.layout_job(row_job(row, &glyphs, None, m.line_height, &default_style, m, t, &advance));
         painter.galley(pos2(origin_x, y + (m.line_height - galley.size().y) / 2.0), galley.clone(), t.ink);
         if at_point.is_none() && row.shows_point(point) {
             let index = cursor_index(&glyphs, point);
@@ -872,6 +886,6 @@ fn draw_echo_area(painter: &Painter, ed: &Editor, rect: Rect, m: &Metrics, t: To
     }
     if let Some((galley, index, under, y)) = at_point {
         let cursor_x = galley.pos_from_cursor(CCursor::new(index)).min.x;
-        draw_cursor(&painter, &galley, index, under, pos2(origin_x + cursor_x, y), m, t, cursor);
+        draw_cursor(&painter, &galley, index, under, pos2(origin_x + cursor_x, y), m.line_height, &FontSpec::default_font(), m, t, cursor);
     }
 }

@@ -741,6 +741,14 @@ const API: &str = r##"
     italic?: boolean;
     underline?: boolean;
     strike?: boolean;
+    /**
+     * Its size, as Emacs's :height: a whole number is absolute, in tenths
+     * of a point (120 is 12 points), and one with a fraction a factor of
+     * the size below (1.2 is a fifth larger).
+     */
+    height?: number;
+    /** Its font family, as Emacs's :family: "Monospace", "Sans Serif" for a proportional font, or a font's name. */
+    family?: string;
     /** A face to take the attributes this one does not set from. */
     inherit?: FaceName | (string & {});
   }
@@ -1047,6 +1055,36 @@ const API: &str = r##"
   function windowStart(window?: number): number;
   /** Make a window start at the line holding `pos`, as set-window-start; a window always starts at a line's start. */
   function setWindowStart(window: number | undefined, pos: number): void;
+  /**
+   * A place in a window, as Emacs's posn objects describe it: the window,
+   * the buffer position, x and y from the top left of the window's text
+   * area in the front end's units (points in the GUI, cells in a
+   * terminal), and the column and row in characters of the default font.
+   */
+  interface Posn {
+    window: number;
+    point: number;
+    x: number;
+    y: number;
+    col: number;
+    row: number;
+  }
+  /** Where a window's text ends, as window-end: the position after the last character it shows, its last row counted even if partly in sight. */
+  function windowEnd(window?: number): number;
+  /** Whether a position, point by default, shows in a window, as pos-visible-in-window-p; with `partially`, a row partly in sight counts. */
+  function posVisibleInWindowP(pos?: number, window?: number, partially?: boolean): true | undefined;
+  /** Where a position, point by default, shows in a window, as posn-at-point, or undefined if it is not in sight. */
+  function posnAtPoint(pos?: number, window?: number): Posn | undefined;
+  /** What is at a place in a window's text area, as posn-at-x-y: the position of the character drawn there, or the end of the row or text. */
+  function posnAtXY(x: number, y: number, window?: number): Posn | undefined;
+  /** The width and height of text as a window shows it, as window-text-pixel-size: what it shows, by default. */
+  function windowTextPixelSize(window?: number, from?: number, to?: number): [number, number];
+  /** How tall the row point is on shows in the selected window, as line-pixel-height. */
+  function linePixelHeight(): number;
+  /** The width of a character of the current buffer's default font, its remapping counted, as default-font-width. */
+  function defaultFontWidth(): number;
+  /** The height of a line of the current buffer's default font, as default-font-height. */
+  function defaultFontHeight(): number;
   /** A window's point, the selected window's by default, as window-point: in the selected window, its buffer's point. */
   function windowPoint(window?: number): number;
   /** Move a window's point, as set-window-point. */

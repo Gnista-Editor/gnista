@@ -1,0 +1,50 @@
+# 0029. Redisplay beyond rows of characters
+
+Status: accepted · 2026-10-30
+
+## Context
+
+The core lays every window out as a grid of character cells: each character is one or two columns wide, each row one line high, and the GUI draws that grid in a monospace font. Emacs's redisplay works in pixels. A face can make text taller (`:height`) or proportional (`:family`, the `variable-pitch` face); `C-x C-+` scales a buffer's text; a window shows as many rows as fit its height in pixels; and Lisp asks redisplay where things are, with `pos-visible-in-window-p`, `window-end`, `posn-at-point` and `window-text-pixel-size`, which completion popups, scrolling commands, Org's tables and the mouse code use. Images, margins, fringes, the header line and bidirectional text are built on the same layout. [docs/plan.md](../plan.md) lists this third among the gaps in the core, and the largest.
+
+Speed matters as much as fidelity here. Redisplay runs after every key, and Ember means to be faster than Emacs everywhere ([docs/optimisation.md](../optimisation.md)). Today the core's part of a key, the rows of a 120 × 50 window included, takes 0.1 to 2.4 ms in a 50,000-line Org file and a 100 MB text file ([docs/performance.md](../performance.md)).
+
+## Options considered
+
+1. **The front end lays out, the core asks it.** The GUI measures and wraps text with egui and tells the core what it showed. Commands such as `C-v`, `C-n` over wrapped lines and `pos-visible-in-window-p` need answers in the middle of a command, before anything is drawn, so the core would have to call into the front end's layout anyway, and the terminal and the headless editor would need their own.
+2. **The core lays out in pixels, with metrics the front end supplies**, as Emacs's redisplay asks its font backend for glyph metrics. The core decides where every glyph goes and how tall every row is; front ends draw what it decided. The terminal's metrics are cells, so it behaves as Emacs's terminal frames do, where heights and families have no effect.
+3. **Keep cells, and approximate heights with whole rows.** Cheap, but proportional text and scaled text cannot be placed, and positions in pixels cannot be answered.
+
+## Decision
+
+Option 2, in steps, each with the oracle and the benchmark run before and after.
+
+**Metrics.** A front end gives the editor a `TextMetrics`: the advance of a character and the height and ascent of a line in a font, where a font is a family (fixed or proportional, or a family name), a size relative to the default face's, and bold and italic. Units are the front end's own: points in the GUI, cells in the terminal. The terminal's `CellMetrics`, which headless editors and tests use too, makes every character one cell, or two for wide ones, and every line one cell high, whatever the face. Advances are cached in the core per font, with an array for ASCII.
+
+**Faces** gain Emacs's `:height`, an absolute size in tenths of a point or a factor of the face below, which multiplies through inheritance and face lists as Emacs merges it, and `:family`, with Emacs's `fixed-pitch` and `variable-pitch` faces. `face-remapping-alist` remaps a face in a buffer, as Emacs's face-remap.c, which `text-scale-adjust` on `C-x C-+`, `C-x C--` and `C-x C-0` and `variable-pitch-mode` use, ported from face-remap.el.
+
+**Geometry.** Rows keep their segments and gain a layout: each glyph's x and width, the row's height and ascent, all in the metrics' units, worked out in the core by the same code for every front end. Long lines wrap where the next glyph would pass the window's width in those units; a window shows the rows that fit its body height; `ensure_point_visible`, scrolling and the line motion commands count rows by height. Front ends tell the core each window's body size in their units as well as in columns and lines, and draw each row's segments at the x and y the core gives.
+
+**Positions.** The functions Lisp asks redisplay with are the core's: `pos-visible-in-window-p`, `window-end`, `posn-at-point`, `posn-at-x-y`, `window-text-pixel-size`, `line-pixel-height`, `window-body-width` and `window-body-height` in pixels, `default-font-width` and `default-font-height`. Mouse clicks are hit-tested through `posn-at-x-y`, so the GUI no longer works out positions of its own.
+
+**Speed.** Most buffers show only fixed-pitch text at the default height. For them, the layout in units is the grid scaled by one character's width and one line's height, so the core takes the grid's code path, today's, and the uniform case costs nothing new; a buffer leaves it when a face in effect on the text it shows has a `:height` other than the default's or a proportional family, or its remapping changes the default face. A row is laid out only when it is about to show or a command asks about it, as Emacs's redisplay looks only at what a window can show, and motion over many lines counts row heights without building segments where it can. The benchmark gains a variable-pitch buffer and a scaled one, and each step records the uniform numbers to show they did not move.
+
+The steps:
+
+1. Metrics, `:height` and `:family`, face remapping, `text-scale-adjust` and `variable-pitch-mode`, row geometry with wrapping and window filling by size, and the position functions. The GUI draws proportional and scaled text.
+2. Line motion by pixels: `line-move-visual`'s goal column as an x position, as Emacs keeps it, and `C-v` and `M-v` by height in mixed rows.
+3. The header line (`header-line-format`), margins (`left-margin-width`, `(margin left-margin)` display specs) and fringes with their bitmaps, which `display-line-numbers`, the continuation mark and `next-error` would use.
+4. Images: `create-image`, `(image ...)` display specs and `insert-image`, PNG, JPEG and SVG, drawn by the GUI and shown as text in the terminal.
+5. Bidirectional text, as Emacs's bidi.c reorders it for display.
+6. The minibuffer's rows wrapped as a window's are, with `resize-mini-windows`.
+
+## Progress
+
+Step 1 is done. With the GUI's metrics, keys in a 50,000-line Org file cost 0.3 to 0.6 ms more than with cells, most of it faces worked out for rows built to move through ([performance.md](../performance.md), [optimisation.md](../optimisation.md)); with cells, as in the terminal, nothing moved. Three things are left for later steps: Emacs's lower limit on `text-scale-adjust`, which depends on the smallest font a frame can show; faces given as attribute lists in a `face` property rather than by name; and a cursor on a proportional space, drawn as wide as the space.
+
+## Consequences
+
+Packages can style text as Emacs's do and ask where it shows. Every step after the first builds on the core knowing where each glyph is. Front ends get simpler: the GUI stops measuring rows itself, and hit-testing, the cursor and the region come from the core's layout. Rows depend on the metrics, so headless tests see cells, as a terminal frame in Emacs does; the GUI's own tests check its layout with its fonts. A buffer with mixed sizes or a proportional font costs more per key than a uniform one, as it does in Emacs, and the benchmark keeps the price in view.
+
+## Dependencies introduced
+
+None.

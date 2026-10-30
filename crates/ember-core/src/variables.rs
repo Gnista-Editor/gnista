@@ -571,6 +571,15 @@ pub(crate) fn install(ed: &mut Editor) {
             true,
         ),
         Variable::new(
+            "face-remapping-alist",
+            "How faces are remapped in the buffer, as [face, ...remapping] entries.\n\n\
+             The remapping is a face name, an attribute list such as [\":height\", 1.2], or several of these, \
+             the first winning, where the face's own name means the face itself: [\"default\", [\":height\", 1.2], \"default\"] \
+             shows the buffer's text a fifth larger, as text-scale-adjust does. A remapped default face lies under all the buffer's text.",
+            Value::Null,
+        )
+        .local(),
+        Variable::new(
             "buffer-invisibility-spec",
             "Which text the invisible property hides.\n\nIf true, any text whose invisible property is true is hidden. If a list, text is hidden when its invisible property names an entry: \"name\", or [\"name\", true] to show \"...\" in its place.",
             true,

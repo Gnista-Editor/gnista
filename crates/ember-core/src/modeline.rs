@@ -406,14 +406,28 @@ pub(crate) fn install(ed: &mut Editor) {
 
 impl Editor {
     /// Keeps `minor-mode-alist` to the registered minor modes' lighters.
+    /// Entries code added for a mode registered with no lighter of its own,
+    /// as text-scale-mode's `(" " text-scale-mode-lighter)`, stay.
     pub(crate) fn update_minor_mode_alist(&mut self) {
-        let pairs = self
+        let named: Vec<&str> = self.minor_modes.iter().filter(|m| !m.lighter.is_empty()).map(|m| m.name.as_str()).collect();
+        let kept: Vec<Value> = match self.default_value("minor-mode-alist") {
+            Some(Value::List(entries)) => entries
+                .into_iter()
+                .filter(|e| match e {
+                    Value::List(items) => items.first().and_then(|m| m.as_str()).is_some_and(|m| !named.contains(&m)),
+                    _ => false,
+                })
+                .collect(),
+            _ => Vec::new(),
+        };
+        let mut pairs: Vec<Value> = self
             .minor_modes
             .iter()
             .rev()
             .filter(|m| !m.lighter.is_empty())
             .map(|m| Value::List(vec![sym(&m.name), s(&m.lighter)]))
             .collect();
+        pairs.extend(kept);
         self.set_default("minor-mode-alist", Value::List(pairs));
     }
 }

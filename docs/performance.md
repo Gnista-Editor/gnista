@@ -36,6 +36,15 @@ Each key is now followed by a pause of 0.2 s, as typing has, so idle timers such
 
 **syntax-ppss keeps parse states**, as Emacs's does, every 20,000 characters at the start of a line, dropping those after each change, where it parsed from the start of the buffer on each call. Scanners read the text in chunks and look ASCII up in an array instead of the rope and a hash map one character at a time. What is left in the 10 MB case is Electric Pair mode checking balance by scanning to the end of the buffer, as elec-pair.el does too.
 
+On 2026-10-30, after the core began laying rows out with a front end's metrics ([ADR 0029](adr/0029-redisplay-beyond-rows.md)), the numbers above did not move (`C-v` 2.22 ms in the Org file, 0.12 ms in the text file, against 2.24 and 0.12 before). `gui_layout` in the bench times keys in the Org file as the GUI's core work is, with metrics like the GUI's fonts' and every glyph of the rows it draws measured:
+
+| Org, 50,000 lines | `C-v` | `C-n` | typing | RET |
+| --- | ---: | ---: | ---: | ---: |
+| Cells, as the terminal | 2.33 ms | 0.42 ms | 2.10 ms | 61 ms |
+| GUI metrics, fixed-pitch text | 2.67 ms | 0.75 ms | 2.46 ms | 63 ms |
+| GUI metrics, `text-scale-adjust` twice | 2.71 ms | 0.77 ms | 2.38 ms | 63 ms |
+| GUI metrics, `variable-pitch-mode` | 2.92 ms | 0.98 ms | 2.72 ms | 63 ms |
+
 ## What changed
 
 - **Org's headings and element tree are kept between keys.** The element parser asked for the buffer's headings hundreds of times per key, and each time every line was read again. `headings()` and the parse are now kept until the text (the buffer's modified tick) or the TODO keywords change.

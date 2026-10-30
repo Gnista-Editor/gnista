@@ -55,6 +55,8 @@ pub fn expanded_len(text: &str, chars: usize, tab_width: usize) -> usize {
 pub struct Glyph {
     /// What is drawn: a character, a tab's spaces, or `^X`.
     pub text: String,
+    /// The character it shows.
+    pub c: char,
     /// Columns taken.
     pub width: usize,
     /// The buffer position it shows, or `None` for an ellipsis or an
@@ -82,7 +84,7 @@ pub fn row_glyphs(row: &crate::Row, tab_width: usize) -> Vec<Glyph> {
                 (_, true, Some(_)) => Some(seg.start),
                 _ => Some(seg.start + i),
             };
-            glyphs.push(Glyph { text, width, pos, segment, string: seg.string, cursor: seg.cursor && i == 0 });
+            glyphs.push(Glyph { text, c, width, pos, segment, string: seg.string, cursor: seg.cursor && i == 0 });
             col += width;
         }
     }

@@ -134,6 +134,8 @@ pub struct Editor {
     /// Buffers by id, the most recently selected first, as Emacs's buffer
     /// list orders them; see [`Editor::buffer_list`].
     buffer_order: Vec<u64>,
+    /// How big characters and lines are in the front end's fonts.
+    pub(crate) metrics: std::sync::Arc<dyn crate::layout::TextMetrics>,
     /// Buffers put at the end of the buffer list, the last buried last.
     buried: Vec<u64>,
     /// The minibuffer, as ` *Minibuf-1*` in the buffer list, by its id;
@@ -278,6 +280,7 @@ impl Editor {
             running: 0,
             remapped_from: None,
             buffer_order: Vec::new(),
+            metrics: std::sync::Arc::new(crate::layout::CellMetrics),
             buried: Vec::new(),
             minibuffer_id,
             minibuffer_window_selected: false,
@@ -1992,6 +1995,9 @@ impl Editor {
     /// Scrolls the selected window so point is visible, recentring when it
     /// has moved off screen.
     pub fn ensure_point_visible(&mut self) {
+        if !self.metrics.uniform() {
+            return self.ensure_point_visible_by_height();
+        }
         let height = self.viewport_height();
         let b = self.window_buffer();
         let wrap = self.wrap_in(self.selected_window, b);
@@ -2015,6 +2021,52 @@ impl Editor {
             top = if back == 0 { point_row } else { self.move_screen_rows_in(b, point_row, -back, wrap).0 };
         }
         self.window_buffer_mut().top_line = top;
+    }
+
+    /// As [`Editor::ensure_point_visible`], counting rows by their heights:
+    /// point's row must show whole, and recentring puts half the window's
+    /// height above it.
+    fn ensure_point_visible_by_height(&mut self) {
+        let height = self.viewport_height() as f32;
+        let b = self.window_buffer();
+        let wrap = self.wrap_in(self.selected_window, b);
+        let point = b.point();
+        let point_row = self.row_line_in(b, b.line_of(point));
+        let top = self.row_line_in(b, b.top_line.min(b.line_count() - 1));
+        if point_row >= top {
+            let mut y = 0.0;
+            for row in self.rows_in(b, top, self.viewport_height() * 2 + 1, true, wrap) {
+                let h = self.row_height(b, &row);
+                if row.shows_point(point) && !row.in_string {
+                    if y + h <= height || y == 0.0 {
+                        return;
+                    }
+                    break;
+                }
+                y += h;
+                if y >= height {
+                    break;
+                }
+            }
+        }
+        // Rows above point's, back up the window, until they fill half of it.
+        let (rows, k, _) = self.screen_position(b, point, wrap);
+        let mut above: f32 = rows[..k].iter().map(|r| self.row_height(b, r)).sum();
+        let mut new_top = point_row;
+        while above < height / 2.0 {
+            let (line, moved) = self.move_rows_in(b, new_top, -1);
+            if moved == 0 {
+                break;
+            }
+            let rows = self.screen_rows_of(b, line, wrap);
+            let h: f32 = rows.iter().map(|r| self.row_height(b, r)).sum();
+            if above + h > height / 2.0 && above > 0.0 {
+                break;
+            }
+            above += h;
+            new_top = line;
+        }
+        self.window_buffer_mut().top_line = new_top;
     }
 
     pub fn should_quit(&self) -> bool {

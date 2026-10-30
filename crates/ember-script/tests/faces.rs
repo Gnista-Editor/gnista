@@ -144,3 +144,61 @@ fn describe_face_shows_attributes() {
     assert!(help.contains(r#"{"inherit":"font-lock-function-name-face"}"#), "{help}");
     assert!(help.contains(r#""bold":true"#), "{help}");
 }
+
+fn expr(ed: &mut Editor, scripting: &Scripting, code: &str) -> String {
+    scripting.eval_expression(ed, code).unwrap_or_else(|e| panic!("{code}: {e}"))
+}
+
+#[test]
+fn text_scale_adjust_remaps_the_default_face() {
+    // As Emacs 30.2's face-remap.el leaves face-remapping-alist.
+    let (mut ed, s) = setup("some text");
+    let remapping = |ed: &mut Editor| expr(ed, &s, r#"JSON.stringify(ember.variable("face-remapping-alist"), (k, v) => typeof v === "symbol" ? v.description : v)"#);
+    ed.press("C-x C-+").unwrap();
+    assert_eq!(remapping(&mut ed), r#""[[\"default\",[\":height\",1.2],\"default\"]]""#);
+    assert_eq!(expr(&mut ed, &s, r#"ember.variable("text-scale-mode-lighter")"#), "\"+1\"");
+    assert_eq!(ed.window_rows(1, true)[0].segments[0].style.scale, 1.2);
+    // The same key goes on without C-x.
+    ed.press("+").unwrap();
+    assert_eq!(remapping(&mut ed), r#""[[\"default\",[\":height\",1.44],\"default\"]]""#);
+    assert_eq!(ed.window_buffer().slice(0..9), "some text", "+ adjusted rather than typed");
+    ed.press("- - -").unwrap();
+    assert_eq!(expr(&mut ed, &s, r#"ember.variable("text-scale-mode-lighter")"#), "\"-1\"");
+    ed.press("C-x C-0").unwrap();
+    assert_eq!(remapping(&mut ed), "\"null\"");
+    assert_eq!(expr(&mut ed, &s, r#"ember.variable("text-scale-mode")"#), "false");
+    assert_eq!(ed.window_rows(1, true)[0].segments[0].style.scale, 1.0);
+}
+
+#[test]
+fn heights_multiply_or_stay_absolute_as_in_emacs() {
+    let (mut ed, s) = setup("abcdef");
+    eval(
+        &mut ed,
+        &s,
+        r#"
+        ember.defineFace({ name: "half-again", attributes: { height: 1.5 } });
+        ember.defineFace({ name: "twice-size", attributes: { height: 240 } });
+        ember.putTextProperty(0, 2, "face", "half-again");
+        ember.putTextProperty(2, 4, "face", "twice-size");
+        "#,
+    );
+    let scales = |ed: &Editor| ed.window_rows(1, true)[0].segments.iter().map(|s| s.style.scale).collect::<Vec<_>>();
+    assert_eq!(scales(&ed), [1.5, 2.0, 1.0]);
+    // Scaling the buffer multiplies relative heights; an absolute one stays.
+    ed.press("C-x C-+").unwrap();
+    let got = scales(&ed);
+    assert!((got[0] - 1.8).abs() < 1e-6 && got[1] == 2.0 && got[2] == 1.2, "{got:?}");
+}
+
+#[test]
+fn variable_pitch_mode_shows_a_proportional_font() {
+    let (mut ed, s) = setup("prose");
+    ed.call("variable-pitch-mode", vec![]).unwrap();
+    let style = ed.window_rows(1, true)[0].segments[0].style.clone();
+    assert_eq!(style.family.as_deref(), Some("Sans Serif"));
+    assert!(style.proportional());
+    assert_eq!(expr(&mut ed, &s, r#"ember.variable("buffer-face-mode")"#), "true");
+    ed.call("variable-pitch-mode", vec![]).unwrap();
+    assert!(!ed.window_rows(1, true)[0].segments[0].style.proportional());
+}
