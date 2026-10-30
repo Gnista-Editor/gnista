@@ -131,6 +131,23 @@ impl Editor {
         })
     }
 
+    /// Changes characters into others, as casing a region does: each
+    /// `(position, text)` replaces the character there, keeping its text
+    /// properties; the hooks see the stretch from `start` to `end` once.
+    pub(crate) fn case_chars(&mut self, start: usize, end: usize, changes: Vec<(usize, String)>) -> Result<()> {
+        let added: isize = changes.iter().map(|(_, s)| s.chars().count() as isize - 1).sum();
+        self.modify(start, end, |b, s, e| {
+            // Where the hooks before moved the stretch to.
+            let shift = s as isize - start as isize;
+            let pending = b.pending_changes.len();
+            let moved: Vec<(usize, String)> = changes.iter().map(|(p, t)| ((*p as isize + shift) as usize, t.clone())).collect();
+            b.case_region(s, e, &moved)?;
+            b.pending_changes.truncate(pending);
+            b.pending_changes.push((s, (e as isize + added) as usize, e - s));
+            Ok(())
+        })
+    }
+
     fn insert_with(&mut self, pos: usize, text: &str, edit: impl FnOnce(&mut Buffer, usize) -> Result<()>) -> Result<()> {
         // Inserting nothing changes nothing, and runs no hooks, as in Emacs.
         if text.is_empty() {

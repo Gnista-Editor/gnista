@@ -604,6 +604,67 @@ impl Buffer {
         Ok(())
     }
 
+    /// Changes the character at `pos` into `text`, as casing does: one
+    /// character in place, as `subst_char`; several in its place, each with
+    /// its text properties, point and markers after it moving past them.
+    pub(crate) fn replace_char(&mut self, pos: usize, text: &str) -> Result<()> {
+        let Some(old) = self.char_at(pos) else { return Ok(()) };
+        let mut chars = text.chars();
+        if let (Some(c), None) = (chars.next(), chars.next()) {
+            return self.subst_char(pos, pos + 1, old, c);
+        }
+        self.check_writable()?;
+        let props = self.properties.save(pos, pos + 1);
+        let point = self.point;
+        let n = text.chars().count();
+        self.apply_insert(pos, text, false);
+        self.apply_delete(pos + n, pos + n + 1);
+        for (_, props) in props {
+            self.properties.modify(pos, pos + n, |p| p.extend(props.clone()));
+        }
+        self.point = if point <= pos { point } else { point + n - 1 };
+        Ok(())
+    }
+
+    /// Cases the text from `start` to `end`, each `(position, text)`
+    /// replacing the character there, as Emacs's casify_region does: undo
+    /// sees one replacement of the whole stretch, and markers keep their
+    /// positions, as replace_range_2 leaves them, though point stays with
+    /// the text.
+    pub(crate) fn case_region(&mut self, start: usize, end: usize, changes: &[(usize, String)]) -> Result<()> {
+        self.check_writable()?;
+        let (old, old_props, point) = (self.slice(start..end), self.properties.save(start, end), self.point);
+        let (open, log) = (self.open_group.len(), self.change_log.len());
+        let unmodified = (!self.modified).then_some(self.save_generation);
+        let (mark, ring, window_points) = (self.mark, self.mark_ring.clone(), self.window_points.clone());
+        let markers: Vec<usize> = self.markers.iter().map(|m| m.pos).collect();
+        let mut added = 0isize;
+        for (p, text) in changes.iter().rev() {
+            self.replace_char(*p, text)?;
+            added += text.chars().count() as isize - 1;
+        }
+        if added != 0 {
+            let len = self.len();
+            (self.mark, self.mark_ring, self.window_points) = (mark.map(|m| m.min(len)), ring, window_points);
+            for (_, p) in &mut self.window_points {
+                *p = (*p).min(len);
+            }
+            for (m, pos) in self.markers.iter_mut().zip(markers) {
+                m.pos = pos.min(len);
+            }
+        }
+        self.open_group.truncate(open);
+        self.change_log.truncate(log);
+        let new_end = (end as isize + added) as usize;
+        let inserted = self.slice(start..new_end);
+        self.record(Edit { pos: start, deleted: old, deleted_props: old_props, inserted, point_before: point, marks: Vec::new() });
+        // Undoing it all leaves the buffer unmodified if it was before.
+        if open == 0 {
+            self.open_unmodified_at = unmodified;
+        }
+        Ok(())
+    }
+
     /// Inserts text, moving point, the mark and the mark ring as Emacs moves
     /// its markers: point and positions after `pos` move with the text.
     fn apply_insert(&mut self, pos: usize, s: &str, before_markers: bool) {

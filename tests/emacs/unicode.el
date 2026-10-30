@@ -3,9 +3,11 @@
 ;; Writes crates/ember-core/src/chartab_data.rs: each character's Unicode
 ;; general category, its script in `char-script-table', its entry in the
 ;; standard syntax table, its lower and upper case in the standard case
-;; table where they differ from it, and the characters in each of the standard
+;; table where they differ from it, its title case where that differs from
+;; its upper case, the special casings of characters that change into
+;; several, such as ß into SS, and the characters in each of the standard
 ;; category table's categories, as runs of code points, so `[:alpha:]',
-;; `\cC', `\w' and word boundaries are what they are in Emacs:
+;; `\cC', `\w', word boundaries and case conversion are what they are in Emacs:
 ;;
 ;;   emacs -Q --batch -l tests/emacs/unicode.el
 
@@ -29,13 +31,18 @@
        (names '(Lu Ll Lt Lm Lo Mn Mc Me Nd Nl No Pc Pd Ps Pe Pi Pf Po Sm Sc Sk So Zs Zl Zp Cc Cf Cs Co Cn))
        (runs (make-vector 128 nil))
        (scripts nil)
-       gc-runs script-runs syntax-runs downs ups)
+       gc-runs script-runs syntax-runs downs ups titles specials)
   (let ((last-gc nil) (gc-start 0) (open (make-vector 128 nil))
         (last-script 'none) (script-start 0) (last-syntax 'none) (syntax-start 0))
     (dotimes (ch #x110000)
-      (let ((down (downcase ch)) (up (upcase ch)))
+      (let ((down (downcase ch)) (up (upcase ch))
+            (title (get-char-code-property ch 'titlecase))
+            (special (mapcar (lambda (p) (get-char-code-property ch p))
+                             '(special-uppercase special-lowercase special-titlecase))))
         (unless (eq down ch) (push (cons ch down) downs))
-        (unless (eq up ch) (push (cons ch up) ups)))
+        (unless (eq up ch) (push (cons ch up) ups))
+        (when (and (characterp title) (not (eq title up))) (push (cons ch title) titles))
+        (when (seq-some #'stringp special) (push (cons ch special) specials)))
       (let ((script (aref char-script-table ch)))
         (unless (eq script last-script)
           (unless (eq last-script 'none)
@@ -91,6 +98,16 @@
     (insert "];\n\n/// Characters whose upper case, in the standard case table, is another.\n"
             "pub(crate) const UPCASE: &[(u32, u32)] = &[\n")
     (dolist (r (nreverse ups)) (insert (format "    (%d, %d),\n" (car r) (cdr r))))
+    (insert "];\n\n/// Characters whose title case, the `titlecase' property, is not their upper case.\n"
+            "pub(crate) const TITLECASE: &[(u32, u32)] = &[\n")
+    (dolist (r (nreverse titles)) (insert (format "    (%d, %d),\n" (car r) (cdr r))))
+    (insert "];\n\n/// Characters that change into several in a string or buffer: their\n"
+            "/// `special-uppercase', `special-lowercase' and `special-titlecase'.\n"
+            "pub(crate) type SpecialCasing = (u32, Option<&'static str>, Option<&'static str>, Option<&'static str>);\n\n"
+            "pub(crate) const SPECIAL_CASING: &[SpecialCasing] = &[\n")
+    (dolist (r (nreverse specials))
+      (insert (format "    (%d, %s),\n" (car r)
+                      (mapconcat (lambda (s) (if (stringp s) (format "Some(%s)" (ember--rust-string s)) "None")) (cdr r) ", "))))
     (insert "];\n\n/// Each category's designator and its runs of characters.\n"
             "pub(crate) const CATEGORIES: &[(char, &[(u32, u32)])] = &[\n")
     (dolist (c categories)

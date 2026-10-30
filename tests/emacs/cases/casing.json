@@ -1,0 +1,98 @@
+[
+  {
+    "name": "upcase-word",
+    "text": "hello world foo",
+    "keys": "M-u"
+  },
+  {
+    "name": "upcase-two-words",
+    "text": "hello world foo",
+    "keys": "M-2 M-u"
+  },
+  {
+    "name": "upcase-word-from-the-middle",
+    "text": "hello world",
+    "keys": "C-f C-f M-u"
+  },
+  {
+    "name": "downcase-word",
+    "text": "HELLO WORLD",
+    "keys": "M-l M-l"
+  },
+  {
+    "name": "capitalize-words",
+    "text": "hELLO wORLD it's foo_bar 1st x2y",
+    "keys": "M-c M-c M-c M-c M-c M-c M-c"
+  },
+  {
+    "name": "capitalize-backward-leaves-point",
+    "text": "one two three",
+    "keys": "M-> M-- M-2 M-c"
+  },
+  {
+    "name": "upcase-backward-leaves-point",
+    "text": "one two three",
+    "keys": "M-> M-- M-u"
+  },
+  {
+    "name": "upcase-word-at-the-end",
+    "text": "word",
+    "keys": "M-> M-u"
+  },
+  {
+    "name": "upcase-region",
+    "text": "hello wide world",
+    "keys": "C-x h C-x C-u"
+  },
+  {
+    "name": "downcase-region",
+    "text": "HELLO Wide WORLD",
+    "keys": "M-f C-SPC M-> C-x C-l"
+  },
+  {
+    "name": "upcase-region-sharp-s",
+    "text": "straße ﬁne ŉ",
+    "keys": "C-x h C-x C-u"
+  },
+  {
+    "name": "upcase-region-point-after",
+    "text": "aßb",
+    "keys": "C-f C-f C-f C-SPC C-a C-x C-u"
+  },
+  {
+    "name": "capitalize-region",
+    "text": "hELLO wORLD ßa ǆemal",
+    "keys": "C-x h M-x",
+    "answers": [
+      "capitalize-region"
+    ]
+  },
+  {
+    "name": "upcase-initials-region",
+    "text": "hello WORLD foo-bar",
+    "keys": "C-x h M-x",
+    "answers": [
+      "upcase-initials-region"
+    ]
+  },
+  {
+    "name": "downcase-region-final-sigma",
+    "text": "ΟΔΟΣ ΟΔΟΣ ΣΑΣ Σ",
+    "keys": "C-x h C-x C-l"
+  },
+  {
+    "name": "capitalize-greek",
+    "text": "ΟΔΟΣ ΚΑΙ ΣΑΣ",
+    "keys": "M-c M-c M-c"
+  },
+  {
+    "name": "downcase-word-dotted-capital-i",
+    "text": "İSTANBUL",
+    "keys": "M-l"
+  },
+  {
+    "name": "upcase-word-is-undone-at-once",
+    "text": "one two",
+    "keys": "M-2 M-u C-/"
+  }
+]

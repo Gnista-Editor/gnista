@@ -939,6 +939,10 @@
       native.callProcess(command.map(String), directory ?? undefined, input === undefined ? undefined : String(input)),
     windowStart: (window) => native.windowStart(window ?? native.selectedWindow()),
     setWindowStart: (window, pos) => native.setWindowStart(window ?? native.selectedWindow(), pos),
+    upcase: (s) => native.upcase(String(s)),
+    downcase: (s) => native.downcase(String(s)),
+    capitalize: (s) => native.capitalize(String(s)),
+    upcaseInitials: (s) => native.upcaseInitials(String(s)),
     windowEnd: (window) => native.windowEnd(window ?? native.selectedWindow()),
     posVisibleInWindowP: (pos, window, partially) =>
       native.posVisibleInWindowP(pos ?? native.point(), window ?? native.selectedWindow(), Boolean(partially)) || undefined,

@@ -269,7 +269,7 @@ fn canon(c: char) -> char {
 }
 
 /// A character's lower case in Emacs's standard case table.
-fn downcase(c: char) -> char {
+pub(crate) fn downcase(c: char) -> char {
     if c.is_ascii() {
         return c.to_ascii_lowercase();
     }
@@ -277,7 +277,7 @@ fn downcase(c: char) -> char {
 }
 
 /// A character's upper case in Emacs's standard case table.
-fn upcase(c: char) -> char {
+pub(crate) fn upcase(c: char) -> char {
     if c.is_ascii() {
         return c.to_ascii_uppercase();
     }

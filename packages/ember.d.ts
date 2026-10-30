@@ -130,6 +130,21 @@ declare global {
        */
       "bury-buffer": [];
       /**
+       * Capitalize the region: each word's first character in title case or upper case, and the rest in lower case.
+       *
+       * @param beg region start
+       * @param end region end
+       */
+      "capitalize-region": [beg: number, end: number];
+      /**
+       * Capitalize from point to the end of the word, moving over it: its first character in upper case and the rest in lower case.
+       *
+       * A prefix argument does that many words; a negative one does the words before point, which stays where it is. Point in the middle of a word cases only the part after it.
+       *
+       * @param n prefix count
+       */
+      "capitalize-word": [n?: number];
+      /**
        * Check the buffer for unbalanced parens and quotes, leaving point at the first one unbalanced.
        *
        * Defined in packages/lisp.ts.
@@ -744,6 +759,21 @@ declare global {
        * Defined in packages/lisp.ts.
        */
       "down-list": [];
+      /**
+       * Convert the region to lower case.
+       *
+       * @param beg region start
+       * @param end region end
+       */
+      "downcase-region": [beg: number, end: number];
+      /**
+       * Convert to lower case from point to the end of the word, moving over it.
+       *
+       * A prefix argument does that many words; a negative one does the words before point, which stays where it is. Point in the middle of a word cases only the part after it.
+       *
+       * @param n prefix count
+       */
+      "downcase-word": [n?: number];
       /**
        * Insert a newline. With electric-indent-mode on, as it is by default, that is all; RET is the key that indents.
        *
@@ -3463,6 +3493,28 @@ declare global {
        */
       "up-list": [];
       /**
+       * Upcase the initial of each word in the region, leaving the rest as it is.
+       *
+       * @param beg region start
+       * @param end region end
+       */
+      "upcase-initials-region": [beg: number, end: number];
+      /**
+       * Convert the region to upper case.
+       *
+       * @param beg region start
+       * @param end region end
+       */
+      "upcase-region": [beg: number, end: number];
+      /**
+       * Convert to upper case from point to the end of the word, moving over it.
+       *
+       * A prefix argument does that many words; a negative one does the words before point, which stays where it is. Point in the middle of a word cases only the part after it.
+       *
+       * @param n prefix count
+       */
+      "upcase-word": [n?: number];
+      /**
        * Show the buffer's text in a proportional font, the variable-pitch face, as buffer-face-mode does with it. A prefix argument turns it on if positive, off if not.
        *
        * @param arg raw prefix argument
@@ -3706,6 +3758,10 @@ declare global {
        * Defined in packages/replace.ts.
        */
       "case-replace": Value;
+      /**
+       * Whether the case commands take symbol constituents as part of words, as well as word constituents, so capitalizing foo_bar gives Foo_bar.
+       */
+      "case-symbols-as-words": Value;
       /**
        * Whether filling leaves two spaces after a colon.
        *
@@ -7289,6 +7345,22 @@ declare global {
       col: number;
       row: number;
     }
+    /**
+     * A string in upper case, as Emacs's upcase: the case table's upper case
+     * of each character, ß becoming SS and the other characters Unicode
+     * cases into several doing so.
+     */
+    function upcase(s: string): string;
+    /** A string in lower case, as downcase: a capital sigma ending a word becomes final sigma. */
+    function downcase(s: string): string;
+    /**
+     * A string capitalized, as capitalize: each word's first character in
+     * title case and the rest in lower case, words being runs of word
+     * constituents in the current buffer's syntax table.
+     */
+    function capitalize(s: string): string;
+    /** A string with each word's first character in title case and the rest as it is, as upcase-initials. */
+    function upcaseInitials(s: string): string;
     /** Where a window's text ends, as window-end: the position after the last character it shows, its last row counted even if partly in sight. */
     function windowEnd(window?: number): number;
     /** Whether a position, point by default, shows in a window, as pos-visible-in-window-p; with `partially`, a row partly in sight counts. */

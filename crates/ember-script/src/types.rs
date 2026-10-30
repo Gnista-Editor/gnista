@@ -1113,6 +1113,22 @@ const API: &str = r##"
     col: number;
     row: number;
   }
+  /**
+   * A string in upper case, as Emacs's upcase: the case table's upper case
+   * of each character, ß becoming SS and the other characters Unicode
+   * cases into several doing so.
+   */
+  function upcase(s: string): string;
+  /** A string in lower case, as downcase: a capital sigma ending a word becomes final sigma. */
+  function downcase(s: string): string;
+  /**
+   * A string capitalized, as capitalize: each word's first character in
+   * title case and the rest in lower case, words being runs of word
+   * constituents in the current buffer's syntax table.
+   */
+  function capitalize(s: string): string;
+  /** A string with each word's first character in title case and the rest as it is, as upcase-initials. */
+  function upcaseInitials(s: string): string;
   /** Where a window's text ends, as window-end: the position after the last character it shows, its last row counted even if partly in sight. */
   function windowEnd(window?: number): number;
   /** Whether a position, point by default, shows in a window, as pos-visible-in-window-p; with `partially`, a row partly in sight counts. */

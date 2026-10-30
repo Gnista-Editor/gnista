@@ -2284,6 +2284,14 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
         "setWindowStart",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64, pos: usize| with_editor(&ctx, |ed| ed.set_window_start(window, pos)))?,
     )?;
+    for (name, case) in [
+        ("upcase", ember_core::casefiddle::Case::Up),
+        ("downcase", ember_core::casefiddle::Case::Down),
+        ("capitalize", ember_core::casefiddle::Case::Capitalize),
+        ("upcaseInitials", ember_core::casefiddle::Case::UpcaseInitials),
+    ] {
+        native.set(name, Function::new(ctx.clone(), move |ctx: Ctx<'js>, s: String| with_editor(&ctx, |ed| Ok(ed.casify_string(case, &s))))?)?;
+    }
     native.set(
         "windowEnd",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64| with_editor(&ctx, |ed| ed.window_end(window).ok_or_else(|| Error::new("No such window"))))?,

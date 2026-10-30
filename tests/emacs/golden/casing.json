@@ -1,0 +1,354 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "upcase-word",
+      "input": {
+        "text": "hello world foo",
+        "point": 0,
+        "keys": "M-u",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "HELLO world foo",
+      "visible": "HELLO world foo",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "upcase-two-words",
+      "input": {
+        "text": "hello world foo",
+        "point": 0,
+        "keys": "M-2 M-u",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "HELLO WORLD foo",
+      "visible": "HELLO WORLD foo",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "upcase-word-from-the-middle",
+      "input": {
+        "text": "hello world",
+        "point": 0,
+        "keys": "C-f C-f M-u",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "heLLO world",
+      "visible": "heLLO world",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "downcase-word",
+      "input": {
+        "text": "HELLO WORLD",
+        "point": 0,
+        "keys": "M-l M-l",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "hello world",
+      "visible": "hello world",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "capitalize-words",
+      "input": {
+        "text": "hELLO wORLD it's foo_bar 1st x2y",
+        "point": 0,
+        "keys": "M-c M-c M-c M-c M-c M-c M-c",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "Hello World It'S Foo_Bar 1st x2y",
+      "visible": "Hello World It'S Foo_Bar 1st x2y",
+      "point": 28,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "capitalize-backward-leaves-point",
+      "input": {
+        "text": "one two three",
+        "point": 0,
+        "keys": "M-> M-- M-2 M-c",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one Two Three",
+      "visible": "one Two Three",
+      "point": 13,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "upcase-backward-leaves-point",
+      "input": {
+        "text": "one two three",
+        "point": 0,
+        "keys": "M-> M-- M-u",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one two THREE",
+      "visible": "one two THREE",
+      "point": 13,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "upcase-word-at-the-end",
+      "input": {
+        "text": "word",
+        "point": 0,
+        "keys": "M-> M-u",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "word",
+      "visible": "word",
+      "point": 4,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "upcase-region",
+      "input": {
+        "text": "hello wide world",
+        "point": 0,
+        "keys": "C-x h C-x C-u",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "HELLO WIDE WORLD",
+      "visible": "HELLO WIDE WORLD",
+      "point": 0,
+      "mark": 16,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "downcase-region",
+      "input": {
+        "text": "HELLO Wide WORLD",
+        "point": 0,
+        "keys": "M-f C-SPC M-> C-x C-l",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "HELLO wide world",
+      "visible": "HELLO wide world",
+      "point": 16,
+      "mark": 5,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "upcase-region-sharp-s",
+      "input": {
+        "text": "straße ﬁne ŉ",
+        "point": 0,
+        "keys": "C-x h C-x C-u",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "STRASSE FINE ʼN",
+      "visible": "STRASSE FINE ʼN",
+      "point": 0,
+      "mark": 12,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "upcase-region-point-after",
+      "input": {
+        "text": "aßb",
+        "point": 0,
+        "keys": "C-f C-f C-f C-SPC C-a C-x C-u",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "ASSB",
+      "visible": "ASSB",
+      "point": 0,
+      "mark": 3,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "capitalize-region",
+      "input": {
+        "text": "hELLO wORLD ßa ǆemal",
+        "point": 0,
+        "keys": "C-x h M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "capitalize-region"
+        ]
+      },
+      "text": "Hello World Ssa ǅemal",
+      "visible": "Hello World Ssa ǅemal",
+      "point": 0,
+      "mark": 20,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "upcase-initials-region",
+      "input": {
+        "text": "hello WORLD foo-bar",
+        "point": 0,
+        "keys": "C-x h M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "upcase-initials-region"
+        ]
+      },
+      "text": "Hello WORLD Foo-Bar",
+      "visible": "Hello WORLD Foo-Bar",
+      "point": 0,
+      "mark": 19,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "downcase-region-final-sigma",
+      "input": {
+        "text": "ΟΔΟΣ ΟΔΟΣ ΣΑΣ Σ",
+        "point": 0,
+        "keys": "C-x h C-x C-l",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "οδος οδος σας σ",
+      "visible": "οδος οδος σας σ",
+      "point": 0,
+      "mark": 15,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "capitalize-greek",
+      "input": {
+        "text": "ΟΔΟΣ ΚΑΙ ΣΑΣ",
+        "point": 0,
+        "keys": "M-c M-c M-c",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "Οδος Και Σας",
+      "visible": "Οδος Και Σας",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "downcase-word-dotted-capital-i",
+      "input": {
+        "text": "İSTANBUL",
+        "point": 0,
+        "keys": "M-l",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "i̇stanbul",
+      "visible": "i̇stanbul",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "upcase-word-is-undone-at-once",
+      "input": {
+        "text": "one two",
+        "point": 0,
+        "keys": "M-2 M-u C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one two",
+      "visible": "one two",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    }
+  ]
+}

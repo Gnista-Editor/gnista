@@ -243,6 +243,11 @@ answers come, and then from its answers, as save-some-buffers' do."
               browse-url-xdg-open org-open-file org-link-open-as-file))
   (advice-add fn :override #'ember-oracle--no-external))
 
+;; Ember does not disable commands yet, as novice.el does for new users,
+;; so cases compare what the commands do rather than the question first.
+(dolist (command '(upcase-region downcase-region))
+  (put command 'disabled nil))
+
 (setq command-error-function
       (lambda (data _context _caller)
         (unless ember-oracle--error

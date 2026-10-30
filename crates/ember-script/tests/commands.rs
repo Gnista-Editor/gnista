@@ -139,3 +139,28 @@ fn yank_pop_follows_a_yank_from_the_clipboard() {
     let b = ed.window_buffer();
     assert_eq!(b.slice(0..b.len()), "older");
 }
+
+#[test]
+fn case_functions_give_emacs_results() {
+    // What Emacs 30.2 gives for the same strings.
+    let mut ed = ember_core::Editor::new();
+    let s = ember_script::Scripting::new(&mut ed).unwrap();
+    let mut eval = |code: &str| s.eval_expression(&mut ed, code).unwrap();
+    assert_eq!(eval(r#"ember.upcase("ßa ﬁne ŉ")"#), r#""SSA FINE ʼN""#);
+    assert_eq!(eval(r#"ember.downcase("ΑΣ ΑΣΑ σ İ")"#), r#""ας ασα σ i̇""#);
+    assert_eq!(eval(r#"ember.capitalize("hello WORLD it's foo_bar 1st x2y ǆemal")"#), r#""Hello World It'S Foo_Bar 1st X2y ǅemal""#);
+    assert_eq!(eval(r#"ember.upcaseInitials("hello WORLD it's")"#), r#""Hello WORLD It'S""#);
+}
+
+#[test]
+fn casing_keeps_text_properties() {
+    let mut ed = ember_core::Editor::new();
+    let s = ember_script::Scripting::new(&mut ed).unwrap();
+    ed.window_buffer_mut().set_text("aßb");
+    s.eval_expression(&mut ed, r#"(ember.putTextProperty(1, 2, "face", "bold"), 0)"#).unwrap();
+    ed.press("C-x h C-x C-u").unwrap();
+    let b = ed.window_buffer();
+    assert_eq!(b.slice(0..b.len()), "ASSB");
+    let faces = s.eval_expression(&mut ed, r#"JSON.stringify([0, 1, 2, 3].map((p) => ember.getTextProperty(p, "face") ?? null))"#).unwrap();
+    assert_eq!(faces, r#""[null,\"bold\",\"bold\",null]""#);
+}

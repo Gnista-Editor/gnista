@@ -571,6 +571,12 @@ pub(crate) fn install(ed: &mut Editor) {
             true,
         ),
         Variable::new(
+            "case-symbols-as-words",
+            "Whether the case commands take symbol constituents as part of words, as well as word constituents, so capitalizing foo_bar gives Foo_bar.",
+            false,
+        )
+        .local(),
+        Variable::new(
             "select-enable-clipboard",
             "Whether killing and copying put the text on the system clipboard, and yanking takes in what other programs put there.",
             true,

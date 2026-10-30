@@ -65,7 +65,38 @@ pub(crate) fn install(ed: &mut Editor) {
     searching(ed);
     fontifying(ed);
     recursive_editing(ed);
+    casing(ed);
     bind_defaults(ed);
+}
+
+/// Changing case, as Emacs's casefiddle.c has the commands.
+fn casing(ed: &mut Editor) {
+    use crate::casefiddle::Case;
+    let regions = [
+        ("upcase-region", Case::Up, "Convert the region to upper case."),
+        ("downcase-region", Case::Down, "Convert the region to lower case."),
+        ("capitalize-region", Case::Capitalize, "Capitalize the region: each word's first character in title case or upper case, and the rest in lower case."),
+        ("upcase-initials-region", Case::UpcaseInitials, "Upcase the initial of each word in the region, leaving the rest as it is."),
+    ];
+    for (name, case, doc) in regions {
+        ed.define_command(
+            Command::new(name, doc, move |ed, args| {
+                ed.casify_region(case, args[0].as_int()? as usize, args[1].as_int()? as usize)?;
+                Ok(())
+            })
+            .param("beg", ParamKind::RegionBeginning, "")
+            .param("end", ParamKind::RegionEnd, ""),
+        );
+    }
+    let words = [
+        ("upcase-word", Case::Up, "Convert to upper case from point to the end of the word, moving over it."),
+        ("downcase-word", Case::Down, "Convert to lower case from point to the end of the word, moving over it."),
+        ("capitalize-word", Case::Capitalize, "Capitalize from point to the end of the word, moving over it: its first character in upper case and the rest in lower case."),
+    ];
+    for (name, case, doc) in words {
+        let doc = format!("{doc}\n\nA prefix argument does that many words; a negative one does the words before point, which stays where it is. Point in the middle of a word cases only the part after it.");
+        def_counted(ed, name, &doc, move |ed, args| ed.casify_word(case, args[0].as_int()?));
+    }
 }
 
 /// Recursive edits, as Emacs's keyboard.c has the commands for them.
@@ -400,7 +431,7 @@ fn tenths(size: usize, n: i64) -> i64 {
 }
 
 /// The position after moving `n` words from `pos`, backward if negative.
-fn move_words(ed: &Editor, mut pos: usize, n: i64) -> usize {
+pub(crate) fn move_words(ed: &Editor, mut pos: usize, n: i64) -> usize {
     let word = |c: char| ed.char_syntax(c).class == crate::syntax_table::Class::Word;
     let b = ed.buffer();
     let start = pos;
@@ -1600,6 +1631,11 @@ fn bind_defaults(ed: &mut Editor) {
         ("C-e", "move-end-of-line"),
         ("<end>", "move-end-of-line"),
         ("M-f", "forward-word"),
+        ("M-u", "upcase-word"),
+        ("M-l", "downcase-word"),
+        ("M-c", "capitalize-word"),
+        ("C-x C-u", "upcase-region"),
+        ("C-x C-l", "downcase-region"),
         ("M-b", "backward-word"),
         ("M-<", "beginning-of-buffer"),
         ("M->", "end-of-buffer"),
