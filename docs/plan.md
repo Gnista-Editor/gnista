@@ -104,6 +104,9 @@ Started: `ember-mcp` serves the command registry over MCP, so an agent such as C
 
 ## How far the core is from Emacs's C
 
+What Ember has but does differently from Emacs is listed in [differences.md](differences.md); this section is about what it lacks.
+
+
 Measured on 2026-10-30, after ADR 0026's steps 2 and 3, against the 1,473 primitives written in C in Emacs 30.2 on macOS (`subr-primitive-p`, grouped by `help-C-file-name`). About 650 need no counterpart in the Rust core: some 300 are the Lisp language itself (data.c, fns.c's list and sequence functions, eval.c, alloc.c, lread.c, print.c, floatfns.c, bytecode, native compilation, the dumper), which TypeScript on QuickJS stands in for, and some 350 are platform code (the macOS front end, fonts, images, xwidgets, TLS, SQLite), which egui and the terminal stand in for. Of the 820 or so editor primitives left, about 160 have a counterpart under Emacs's own name, among Ember's commands, script functions and core functions; more exist under other names, so the real share is nearer a third. The core is about 17,000 lines of Rust.
 
 The mechanisms most of Emacs's Lisp is written against are there: buffers with markers, text properties and overlays, undo, change hooks and read-only text, syntax tables and their scanners, symbols with properties and advice, keymaps as values, the command loop with prefix arguments and keyboard macros, the minibuffer as a buffer, jit-lock, the mode line, processes and timers. What is missing, in the order it blocks ports:
