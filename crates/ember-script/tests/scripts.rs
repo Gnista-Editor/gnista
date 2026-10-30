@@ -619,3 +619,28 @@ fn emacs_regexps_match_as_in_emacs() {
         Some("true false true true true true true true true bar false 12 x search-failed")
     );
 }
+
+/// The script API's names, as CLAUDE.md's naming rule gives them: Emacs's
+/// name in camelCase, -p as P, and each function the prelude defines is
+/// declared for scripts, and each declared one defined.
+#[test]
+fn the_api_defined_is_the_api_declared() {
+    let (mut ed, scripting) = setup();
+    let defined = scripting.eval_expression(&mut ed, "Object.keys(ember).sort()").unwrap();
+    let defined: Vec<String> = serde_json::from_str(&defined).unwrap();
+    let dts = type_definitions(&ed);
+    let declared: std::collections::BTreeSet<String> = dts
+        .lines()
+        .filter_map(|l| {
+            let rest = l.strip_prefix("    function ").or_else(|| l.strip_prefix("    class "))?;
+            Some(rest.split(|c: char| !c.is_alphanumeric() && c != '_').next()?.to_string())
+        })
+        .collect();
+    let undeclared: Vec<&String> = defined.iter().filter(|n| !declared.contains(*n)).collect();
+    assert!(undeclared.is_empty(), "defined but not declared in types.rs: {undeclared:?}");
+    let missing: Vec<&String> = declared.iter().filter(|n| !defined.contains(n)).collect();
+    assert!(missing.is_empty(), "declared in types.rs but not defined in prelude.js: {missing:?}");
+    for name in &defined {
+        assert!(!name.contains(['-', '_']), "{name} is not camelCase");
+    }
+}
