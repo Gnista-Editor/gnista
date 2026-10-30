@@ -90,8 +90,8 @@ impl Editor {
         let id = self.selected_window;
         let index = self.selected_buffer_index();
         let b = &self.buffers[index];
-        let point = b.window_point(id).unwrap_or(b.point());
-        let top_line = self.window(id).map_or(0, |w| w.top_line);
+        // The selected window's point and top line are its buffer's.
+        let (point, top_line) = (b.point(), b.top_line);
         let mut f = self.formatting(id, point, top_line);
         self.with_current_buffer(index, |ed| ed.mode_line_element(&mut f, format, &[], 0, false));
         Ok(f.out)

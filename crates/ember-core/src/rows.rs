@@ -425,7 +425,7 @@ impl Editor {
         if window == self.selected_window {
             (b.top_line, b.point())
         } else {
-            (self.window(window).map_or(b.top_line, |w| w.top_line), b.window_point(window).unwrap_or(b.point()))
+            (b.window_start(window).map_or(0, |p| b.line_of(p)), b.window_point(window).unwrap_or(b.point()))
         }
     }
 

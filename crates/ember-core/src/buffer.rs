@@ -102,6 +102,9 @@ enum Selective {
 /// How many positions the mark ring keeps, as Emacs's `mark-ring-max`.
 const MARK_RING_MAX: usize = 16;
 
+/// Set in a window's id where the buffer keeps the window's start rather than its point.
+const WINDOW_START: u64 = 1 << 62;
+
 /// Text plus the state that goes with it: point, mark, the visited file and
 /// undo history. All positions are character indices.
 pub struct Buffer {
@@ -115,6 +118,8 @@ pub struct Buffer {
     pub top_line: usize,
     /// The points of windows other than the selected one that show this
     /// buffer, which move with edits as Emacs's window-point markers do.
+    /// The points of windows showing the buffer, other than the selected
+    /// one, and their starts, under their ids with [`WINDOW_START`] set.
     window_points: Vec<(u64, usize)>,
     text: Rope,
     point: usize,
@@ -1089,6 +1094,21 @@ impl Buffer {
     pub(crate) fn remove_window_point(&mut self, window: u64) -> Option<usize> {
         let i = self.window_points.iter().position(|(w, _)| *w == window)?;
         Some(self.window_points.remove(i).1)
+    }
+
+    /// Where a window, other than the selected one, showing this buffer
+    /// starts. Starts are kept with the window points, so they move with
+    /// edits as Emacs's window-start markers do.
+    pub(crate) fn window_start(&self, window: u64) -> Option<usize> {
+        self.window_point(window | WINDOW_START)
+    }
+
+    pub(crate) fn set_window_start(&mut self, window: u64, pos: usize) {
+        self.set_window_point(window | WINDOW_START, pos);
+    }
+
+    pub(crate) fn remove_window_start(&mut self, window: u64) -> Option<usize> {
+        self.remove_window_point(window | WINDOW_START)
     }
 
     /// Takes the boundary before the open undo group away, so its edits and

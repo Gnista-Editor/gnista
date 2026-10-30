@@ -4,9 +4,9 @@
 //! primitives they use are here, as Emacs has them in C.
 //!
 //! The selected window's point and top line live in its buffer, so commands
-//! keep using the buffer's. The other windows keep theirs here, and their
-//! points are kept in their buffers too, moving with edits as Emacs's
-//! window-point markers do.
+//! keep using the buffer's. The other windows' points and starts are kept
+//! in their buffers too, moving with edits as Emacs's window-point and
+//! window-start markers do.
 
 use crate::buffer::Buffer;
 use crate::editor::Editor;
@@ -26,8 +26,6 @@ const WINDOW_MIN_WIDTH: usize = 10;
 pub(crate) struct Window {
     pub(crate) id: WindowId,
     pub(crate) buffer: u64,
-    /// The first line shown, while the window is not selected.
-    pub(crate) top_line: usize,
     /// Lines of text and columns, as the front end last laid the window out.
     pub(crate) height: usize,
     pub(crate) width: usize,
@@ -304,7 +302,7 @@ impl Editor {
                 let (point, top_line) = if selected {
                     (buffer.point(), buffer.top_line)
                 } else {
-                    (buffer.window_point(id).unwrap_or(buffer.point()), w.top_line)
+                    (buffer.window_point(id).unwrap_or(buffer.point()), buffer.window_start(id).map_or(0, |p| buffer.line_of(p)))
                 };
                 Some(WindowView { id, selected, buffer, point, top_line })
             })
@@ -353,7 +351,7 @@ impl Editor {
         let window = self.next_window_id;
         let (width, height) = self.window(self.selected_window).map_or((80, 23), |w| (w.width, w.height));
         let point = self.buffers[index].point();
-        self.windows.push(Window { id: window, buffer: self.buffers[index].id, top_line: 0, width, height, used: 0 });
+        self.windows.push(Window { id: window, buffer: self.buffers[index].id, width, height, used: 0 });
         self.buffers[index].set_window_point(window, point);
         self.next_frame_id += 1;
         let id = self.next_frame_id;
@@ -372,12 +370,11 @@ impl Editor {
         let k = self.other_frames.iter().position(|f| f.id == id).ok_or_else(|| Error::new("No such frame"))?;
         // The selected window keeps its point and top line, as when another window is selected.
         let old = self.selected_window;
-        let b = &mut self.buffers[self.current];
-        let (point, top) = (b.point(), b.top_line);
+        let shown = self.selected_buffer_index();
+        let b = &mut self.buffers[shown];
+        let (point, top) = (b.point(), b.line_start(b.top_line.min(b.line_count() - 1)));
         b.set_window_point(old, point);
-        if let Some(w) = self.window_mut(old) {
-            w.top_line = top;
-        }
+        b.set_window_start(old, top);
         let frame = self.other_frames.remove(k);
         self.other_frames.push(Frame {
             id: self.selected_frame,
@@ -390,12 +387,13 @@ impl Editor {
         let used = self.window_use;
         let w = self.window_mut(self.selected_window).expect("a frame's selected window exists");
         w.used = used;
-        let (buffer, top) = (w.buffer, w.top_line);
+        let buffer = w.buffer;
         self.current = self.buffer_index(buffer);
         let b = &mut self.buffers[self.current];
         if let Some(point) = b.remove_window_point(self.selected_window) {
             b.set_point(point);
         }
+        let top = b.remove_window_start(self.selected_window).map_or(0, |p| b.line_of(p));
         b.top_line = top.min(b.line_count() - 1);
         Ok(())
     }
@@ -421,6 +419,7 @@ impl Editor {
             if let Some(w) = self.window(window) {
                 let index = self.buffer_index(w.buffer);
                 self.buffers[index].remove_window_point(window);
+                self.buffers[index].remove_window_start(window);
             }
             self.windows.retain(|w| w.id != window);
         }
@@ -443,7 +442,8 @@ impl Editor {
                 let w = self.window(window)?;
                 let buffer = &self.buffers[self.buffer_index(w.buffer)];
                 let point = buffer.window_point(window).unwrap_or(buffer.point());
-                Some(WindowView { id: window, selected: false, buffer, point, top_line: w.top_line })
+                let top_line = buffer.window_start(window).map_or(0, |p| buffer.line_of(p));
+                Some(WindowView { id: window, selected: false, buffer, point, top_line })
             })
             .collect()
     }
@@ -558,12 +558,13 @@ impl Editor {
         let w = self.window(id).ok_or_else(|| Error::new("No such window"))?;
         let old = self.buffer_index(w.buffer);
         self.buffers[old].remove_window_point(id);
+        self.buffers[old].remove_window_start(id);
         let buffer = self.buffers[index].id;
         let point = self.buffers[index].point();
         let w = self.window_mut(id).expect("checked");
         w.buffer = buffer;
-        w.top_line = 0;
         self.buffers[index].set_window_point(id, point);
+        self.buffers[index].set_window_start(id, 0);
         Ok(())
     }
 
@@ -647,16 +648,12 @@ impl Editor {
         };
         let w = self.window_mut(id).expect("listed windows exist");
         (w.width, w.height) = old_size;
-        self.windows.push(Window {
-            id: new,
-            buffer: view.2,
-            top_line: view.1,
-            width: new_size.0,
-            height: new_size.1,
-            used: 0,
-        });
+        self.windows.push(Window { id: new, buffer: view.2, width: new_size.0, height: new_size.1, used: 0 });
         let index = self.buffer_index(view.2);
-        self.buffers[index].set_window_point(new, view.0);
+        let b = &mut self.buffers[index];
+        b.set_window_point(new, view.0);
+        let start = b.line_start(view.1.min(b.line_count() - 1));
+        b.set_window_start(new, start);
         self.window_tree.split(id, new, side_by_side, first_size);
         self.relayout();
         Ok(new)
@@ -691,6 +688,7 @@ impl Editor {
         let w = self.window(id).expect("checked above");
         let index = self.buffer_index(w.buffer);
         self.buffers[index].remove_window_point(id);
+        self.buffers[index].remove_window_start(id);
         self.windows.retain(|w| w.id != id);
         self.window_tree.remove(id);
         self.relayout();
@@ -721,20 +719,19 @@ impl Editor {
         let old = self.selected_window;
         let shown = self.selected_buffer_index();
         let b = &mut self.buffers[shown];
-        let (point, top) = (b.point(), b.top_line);
+        let (point, top) = (b.point(), b.line_start(b.top_line.min(b.line_count() - 1)));
         b.set_window_point(old, point);
-        if let Some(w) = self.window_mut(old) {
-            w.top_line = top;
-        }
+        b.set_window_start(old, top);
         let w = self.window_mut(id).expect("checked");
         w.used = used;
-        let (buffer, top) = (w.buffer, w.top_line);
+        let buffer = w.buffer;
         self.selected_window = id;
         self.current = self.buffer_index(buffer);
         let b = &mut self.buffers[self.current];
         if let Some(point) = b.remove_window_point(id) {
             b.set_point(point);
         }
+        let top = b.remove_window_start(id).map_or(0, |p| b.line_of(p));
         b.top_line = top.min(b.line_count() - 1);
         Ok(())
     }
@@ -758,12 +755,12 @@ impl Editor {
         for w in &mut self.windows {
             if w.buffer == gone && w.id != selected {
                 w.buffer = id;
-                w.top_line = 0;
                 moved.push(w.id);
             }
         }
         for window in moved {
             self.buffers[replacement].set_window_point(window, point);
+            self.buffers[replacement].set_window_start(window, 0);
         }
     }
 

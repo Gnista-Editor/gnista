@@ -347,7 +347,6 @@ impl Editor {
         editor.windows.push(crate::window::Window {
             id: 1,
             buffer: editor.buffers[0].id,
-            top_line: 0,
             width: 80,
             height: 24,
             used: 0,
