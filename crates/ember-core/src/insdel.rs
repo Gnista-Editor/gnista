@@ -286,7 +286,7 @@ impl Editor {
     }
 
     /// Runs `before-change-functions` with the stretch about to change.
-    fn run_before_change_functions(&mut self, start: usize, end: usize) -> Result<()> {
+    pub(crate) fn run_before_change_functions(&mut self, start: usize, end: usize) -> Result<()> {
         if self.in_change_hooks || self.modification_hooks_inhibited() || !self.hook_has_functions("before-change-functions") {
             return Ok(());
         }
@@ -315,6 +315,25 @@ impl Editor {
             self.buffer_mut().pending_changes.truncate(pending);
         }
         result.map(drop)
+    }
+
+    /// Runs `before-change-functions` before an undo step, as primitive-undo's
+    /// insertions and deletions run them in Emacs: once, over a stretch
+    /// that holds every change the step makes, from its first to the end of
+    /// the buffer, as the buffer cannot call out partway through.
+    pub(crate) fn before_undo(&mut self, continuing: bool, redo: bool) -> Result<()> {
+        let start = if self.buffer().undoing_in_region() {
+            self.buffer().region().map(|r| r.start)
+        } else {
+            self.buffer_mut().next_undo_start(continuing, redo)
+        };
+        match start {
+            Some(start) => {
+                let end = self.buffer().len();
+                self.run_before_change_functions(start.min(end), end)
+            }
+            None => Ok(()),
+        }
     }
 
     /// Whether `inhibit-modification-hooks` is set, so no change hooks run.

@@ -1346,6 +1346,20 @@ impl Buffer {
         Ok(())
     }
 
+    /// Where the changes the next [`Buffer::undo`] or, with `redo`,
+    /// [`Buffer::undo_redo`] takes back start, for the hooks the editor runs
+    /// before it. Closes the open undo group, as both do first.
+    pub(crate) fn next_undo_start(&mut self, continuing: bool, redo: bool) -> Option<usize> {
+        self.undo_boundary();
+        let index = if redo {
+            matches!(self.undo_groups.last(), Some(Group { kind: GroupKind::Undo { .. }, .. })).then(|| self.undo_groups.len() - 1)?
+        } else {
+            let top_is_undo = matches!(self.undo_groups.last(), Some(g) if g.kind != GroupKind::Change);
+            if continuing && top_is_undo { self.pending_undo? } else { self.undo_groups.len().checked_sub(1)? }
+        };
+        self.undo_groups.get(index)?.edits.iter().map(|e| e.pos).min()
+    }
+
     /// Whether [`Buffer::undo`] would find something to undo.
     pub fn can_undo(&self, continuing: bool) -> bool {
         let top_is_undo = matches!(self.undo_groups.last(), Some(g) if g.kind != GroupKind::Change);

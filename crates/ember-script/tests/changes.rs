@@ -431,3 +431,15 @@ fn markers_nothing_refers_to_are_freed() {
     // As Emacs's collector unchains markers nothing refers to; markers act as their positions in arithmetic.
     assert_eq!(result, "[0,3,3,4]");
 }
+
+#[test]
+fn undo_runs_before_change_functions_over_what_it_changes() {
+    let (mut ed, s) = setup();
+    eval(&mut ed, &s, r#"(ember.insert("one two"), globalThis.log = [], ember.addHook("before-change-functions", (b: number, e: number) => log.push([b, e]), { local: true }), 0)"#);
+    ed.type_text(" three");
+    ed.press("C-/").unwrap();
+    // The undo takes out " three", from 7: the hook hears of it before.
+    let log = eval(&mut ed, &s, "log.slice(-1)");
+    assert_eq!(log, "[[7,13]]");
+    assert_eq!(eval(&mut ed, &s, "ember.bufferText()"), r#""one two""#);
+}

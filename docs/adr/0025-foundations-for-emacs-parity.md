@@ -60,7 +60,8 @@ Item 9 came next, as every new command added to the raw edits it would replace:
 - `before-change-functions` run before each change and `after-change-functions` straight after it, with Emacs's arguments, unless `inhibit-modification-hooks` is set; `replace-match` is one change, as replace_range makes it.
 - `kill-region` on read-only text copies it to the kill ring and then signals, or only says so with `kill-read-only-ok`, as simple.el does.
 - Packages bind `inhibit-read-only` with `letBind` rather than turning `buffer-read-only` off and on.
-- Still to come: before-change-functions for undo, reverting and process output, which still go straight to the buffer; and the modification hooks that changing text properties runs in Emacs.
+- Undo runs `before-change-functions` before each step, once, over a stretch from the step's first change to the end of the buffer, as the buffer cannot call out partway through; its changes run `after-change-functions` each.
+- Still to come: before-change-functions for reverting and process output, which still go straight to the buffer; and the modification hooks that changing text properties runs in Emacs.
 
 Item 7 began with functions:
 - `Value::Function` is a function as a value, as a lambda is in Lisp: variables, text properties and overlays hold them, and two are equal only if they are one function. A script's function keeps its identity across the boundary, so `ember.variable(name) === fn`.

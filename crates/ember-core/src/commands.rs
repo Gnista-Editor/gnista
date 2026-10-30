@@ -759,9 +759,13 @@ fn editing(ed: &mut Editor) {
                 return err(if in_region { "No further undo information for region" } else { "No further undo information" });
             }
             if ed.buffer().undoing_in_region() {
+                ed.before_undo(continuing, false)?;
                 ed.buffer_mut().undo_in_region(count.max(0) as usize)?;
             } else {
                 for k in 0..count.max(0) {
+                    if ed.buffer().can_undo(continuing) {
+                        ed.before_undo(continuing, false)?;
+                    }
                     redid = match ed.buffer_mut().undo(continuing) {
                         Err(_) if k > 0 => break,
                         Err(_) if in_region => return err("No further undo information for region"),
@@ -781,6 +785,7 @@ fn editing(ed: &mut Editor) {
         "Undo the last undo, or as many as the prefix argument says: redo.\n\nUnlike undoing an undo with undo, this leaves no trace in the undo history.",
         |ed, _| {
             for _ in 0..ed.prefix_numeric().max(1) {
+                ed.before_undo(false, true)?;
                 ed.buffer_mut().undo_redo()?;
             }
             // So that a following undo carries on from here.
