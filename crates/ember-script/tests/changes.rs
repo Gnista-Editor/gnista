@@ -443,3 +443,47 @@ fn undo_runs_before_change_functions_over_what_it_changes() {
     assert_eq!(log, "[[7,13]]");
     assert_eq!(eval(&mut ed, &s, "ember.bufferText()"), r#""one two""#);
 }
+
+#[test]
+fn yanked_text_does_not_lend_its_properties_to_typing_after_it() {
+    let (mut ed, s) = setup();
+    eval(&mut ed, &s, r#"(ember.insert(ember.propertize("word", { face: "bold" })), ember.insert(" rest"), ember.gotoChar(0))"#);
+    ed.press("M-d C-e C-y").unwrap();
+    ed.type_text("x");
+    // As Emacs 30: #(" restwordx" 5 8 (face bold) 8 9 (rear-nonsticky t face bold)).
+    let result = eval(&mut ed, &s, r#"[ember.bufferText(), ember.getTextProperty(8, "rear-nonsticky"), ember.getTextProperty(9, "face") ?? null]"#);
+    assert_eq!(result, r#"[" restwordx",true,null]"#);
+}
+
+#[test]
+fn yank_pop_keeps_properties_as_yank_does() {
+    let (mut ed, s) = setup();
+    eval(&mut ed, &s, r#"(ember.insert(ember.propertize("old", { face: "bold" })), ember.insert(" new"), ember.gotoChar(0))"#);
+    ed.press("M-d M-d C-e C-y").unwrap();
+    // One kill, "old new"; another from a later kill to cycle past.
+    eval(&mut ed, &s, r#"ember.killNew("plain")"#);
+    ed.press("C-y M-y").unwrap();
+    let result = eval(&mut ed, &s, r#"[ember.bufferText(), ember.getTextProperty(7, "face")]"#);
+    assert_eq!(result, r#"["old newold new","bold"]"#);
+}
+
+#[test]
+fn a_propertized_strings_runs_stay_within_it() {
+    let (mut ed, s) = setup();
+    let result = eval(
+        &mut ed,
+        &s,
+        r#"(() => {
+          ember.insert("xyz");
+          ember.gotoChar(0);
+          ember.insert(new ember.PropertizedString("ab", [[0, 10, { face: "bold" }]]));
+          let moved = true;
+          ember.addHook("before-change-functions", () => { if (moved) { moved = false; ember.gotoChar(0); } }, { local: true });
+          ember.gotoChar(ember.bufferSize());
+          ember.insert(ember.propertize("cd", { face: "italic" }));
+          return [ember.bufferText(), ember.getTextProperty(2, "face") ?? null, ember.getTextProperty(0, "face"), ember.getTextProperty(5, "face") ?? null];
+        })()"#,
+    );
+    // The hook moved point to the start, where the string goes, with its face.
+    assert_eq!(result, r#"["cdabxyz","bold","italic",null]"#);
+}

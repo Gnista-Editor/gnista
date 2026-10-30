@@ -222,6 +222,14 @@ const API: &str = r##"
    * insert now; M-y asks for 1, the kill before it.
    */
   function currentKill(n?: number): string;
+  /** The kill with its text properties, as Emacs's current-kill gives it. */
+  function currentKill(n: number, options: { properties: true }): PropertizedString;
+  /**
+   * Insert a kill as yanking does, as Emacs's insert-for-yank: without the
+   * properties yank-excluded-properties names, and with the last character
+   * rear-nonsticky, so what is typed after it does not take them on.
+   */
+  function insertForYank(text: string | PropertizedString): void;
   /** Take the newest kill off the kill ring and return it, as (pop kill-ring) does. */
   function popKill(): string | undefined;
   /** The command that ran before this one (Emacs's last-command). */

@@ -1650,7 +1650,7 @@ impl Editor {
 
     /// Inserts a kill at point as Emacs's `insert-for-yank` does: without
     /// the properties `yank-excluded-properties` names, all of them if it is t.
-    pub(crate) fn insert_for_yank(&mut self, mut text: crate::properties::Text) -> Result<()> {
+    pub fn insert_for_yank(&mut self, mut text: crate::properties::Text) -> Result<()> {
         match self.variable("yank-excluded-properties") {
             Some(Value::List(names)) => {
                 for (_, props) in &mut text.props {
@@ -1661,7 +1661,14 @@ impl Editor {
             Some(v) if v.is_true() => text.props.clear(),
             _ => {}
         }
-        self.insert_text(&text)
+        self.insert_text(&text)?;
+        // The last character, if it has properties, is rear-nonsticky, so
+        // what is typed after it does not take them on, as insert-for-yank-1 does.
+        let end = self.buffer().point();
+        if !text.string.is_empty() && end > 0 && self.buffer().text_properties_at(end - 1).is_some_and(|p| !p.is_empty()) {
+            self.buffer_mut().put_text_property(end - 1..end, "rear-nonsticky", Value::Bool(true));
+        }
+        Ok(())
     }
 
     // Minibuffer

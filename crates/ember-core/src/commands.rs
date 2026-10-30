@@ -1195,18 +1195,20 @@ fn files_and_buffers(ed: &mut Editor) {
                     name => name.to_string(),
                 };
                 let unique = !matches!(args[1], Arg::Prefix(None));
-                let name = match ed.find_buffer(&name) {
-                    Some(i) if ed.buffers()[i].name == current => name,
-                    Some(_) if unique => ed.unique_buffer_name(&name),
-                    Some(_) => return Err(Error::new(format!("Buffer name \u{2018}{name}\u{2019} is in use"))),
-                    None => name,
+                let taken = |ed: &Editor, n: &str| n != current && ed.find_buffer(n).is_some();
+                let name = if !taken(ed, &name) {
+                    name
+                } else if unique {
+                    // As generate-new-buffer-name with the buffer's own name to ignore.
+                    (2..).map(|n| format!("{name}<{n}>")).find(|n| !taken(ed, n)).expect("some name is free")
+                } else {
+                    return Err(Error::new(format!("Buffer name \u{2018}{name}\u{2019} is in use")));
                 };
                 ed.buffer_mut().name = name;
                 Ok(())
             },
         )
-        .param("newname", ParamKind::String, "")
-        .prompt_with(|ed, _| Ok(format!("Rename buffer (to new name) (default {}): ", ed.buffer().name)))
+        .param("newname", ParamKind::String, "Rename buffer (to new name): ")
         .history("buffer-name-history")
         .param("unique", ParamKind::Prefix, ""),
     );

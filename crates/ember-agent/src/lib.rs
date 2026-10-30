@@ -94,7 +94,9 @@ struct Agent {
 
 /// One conversation, in one agent buffer.
 struct Session {
+    /// The buffer's name, kept current from its id, so a renamed agent buffer keeps its session.
     buffer: String,
+    buffer_id: u64,
     /// The window the agent acts in.
     target: WindowId,
     /// The conversation as the API has it.
@@ -157,11 +159,14 @@ impl Agent {
             ed.insert("* You\n")?;
             ed.buffer_mut().set_modified(false);
         }
+        self.sync_names(ed);
+        let buffer_id = ed.find_buffer(name).map_or(0, |i| ed.buffers()[i].id());
         let mut sessions = self.sessions.borrow_mut();
         match sessions.iter_mut().find(|s| s.buffer == name) {
             Some(s) => s.target = target,
             None => sessions.push(Session {
                 buffer: name.into(),
+                buffer_id,
                 target,
                 messages: Vec::new(),
                 state: State::Idle,
@@ -180,6 +185,7 @@ impl Agent {
         if ed.agent_acting() {
             return Err(Error::new("The agent cannot send itself requests"));
         }
+        self.sync_names(ed);
         let name = ed.window_buffer().name.clone();
         let text = ed.window_buffer().slice(0..ed.window_buffer().len());
         let request = match text.rfind("* You\n") {
@@ -218,6 +224,7 @@ impl Agent {
     }
 
     fn abort(self: &Rc<Self>, ed: &mut Editor) -> Result<()> {
+        self.sync_names(ed);
         let name = ed.window_buffer().name.clone();
         let working = {
             let sessions = self.sessions.borrow();
@@ -263,9 +270,19 @@ impl Agent {
         *self.timer.borrow_mut() = Some(ed.run_with_timer_in_prompts(PUMP_INTERVAL, Some(PUMP_INTERVAL), f));
     }
 
+    /// Brings each session's buffer name up to date, as the buffer may have been renamed.
+    fn sync_names(&self, ed: &Editor) {
+        for s in self.sessions.borrow_mut().iter_mut() {
+            if let Some(i) = ed.buffer_with_id(s.buffer_id) {
+                s.buffer.clone_from(&ed.buffers()[i].name);
+            }
+        }
+    }
+
     /// Takes the events that came in, for every session, and runs tool
     /// calls that are ready. Stops the timer once nothing is working.
     fn pump(self: &Rc<Self>, ed: &mut Editor) {
+        self.sync_names(ed);
         let names: Vec<String> = self.sessions.borrow().iter().map(|s| s.buffer.clone()).collect();
         for name in names {
             self.take_events(ed, &name);

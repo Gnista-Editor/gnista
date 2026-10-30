@@ -734,9 +734,7 @@ fn wrap_row(row: Row, wrap: Wrap, tab_width: usize, indent: usize) -> Vec<Row> {
     let mut k = 0;
     while k < items.len() {
         let w = width_of(char_of(k), col);
-        // Rows after the first have the wrap prefix's room less.
-        let width = if row_start == 0 { wrap.width } else { wrap.width.saturating_sub(indent).max(1) };
-        if col + w > width && k > row_start {
+        if col + w > wrap.width && k > row_start {
             let mut at = match last_space {
                 Some(space) if wrap.words && space > row_start => space,
                 _ => k,
@@ -757,7 +755,9 @@ fn wrap_row(row: Row, wrap: Wrap, tab_width: usize, indent: usize) -> Vec<Row> {
             breaks.push(at);
             row_start = at;
             last_space = None;
-            col = 0;
+            // A continued row starts after the wrap prefix, and its tabs are
+            // measured from the row's start, as they are drawn.
+            col = indent.min(wrap.width.saturating_sub(1));
             k = at;
             continue;
         }

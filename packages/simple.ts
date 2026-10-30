@@ -128,7 +128,7 @@ const yankPop = ember.defineCommand({
     const start = Math.min(point, mark);
     ember.deleteRegion(start, Math.max(point, mark));
     ember.setMark(start);
-    ember.insert(ember.currentKill(ember.prefixNumericValue()));
+    ember.insertForYank(ember.currentKill(ember.prefixNumericValue(), { properties: true }));
     if (pointWasFirst) {
       const end = ember.point();
       ember.gotoChar(start);

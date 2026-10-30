@@ -419,3 +419,18 @@ fn tool_calls_fold_once_the_turn_ends() {
     let reply = text.find("Two buffers.").unwrap();
     assert!(s.ed.invisible_in(b, reply).is_none(), "the reply after it is not");
 }
+
+#[test]
+fn a_renamed_agent_buffer_keeps_its_conversation() {
+    let mut s = setup("notes\n", vec![reply(&[text("First.")], "end_turn"), reply(&[text("Second.")], "end_turn")]);
+    s.ask("one");
+    s.ed.call("rename-buffer", vec![ember_core::Arg::Str("*my agent*".into())]).unwrap();
+    s.ed.press("M->").unwrap();
+    s.ed.type_text("two");
+    s.ed.press("C-c RET").unwrap();
+    assert!(s.ed.take_error().is_none());
+    s.work();
+    let text = s.text_of("*my agent*");
+    assert!(text.contains("First.") && text.contains("* You\ntwo\n* Agent\nSecond."), "{text}");
+    assert_eq!(s.request(1)["messages"].as_array().unwrap().len(), 3, "the second request carries the first exchange");
+}

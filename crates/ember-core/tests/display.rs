@@ -149,3 +149,17 @@ fn the_line_prefix_variable_prefixes_every_line() {
     let texts: Vec<String> = ed.window_rows(2, true).iter().map(|r| r.segments.iter().map(|s| s.text.as_str()).collect()).collect();
     assert_eq!(texts, ["> a", "> b"]);
 }
+
+#[test]
+fn tabs_after_a_wrap_prefix_count_from_the_rows_start() {
+    let mut ed = editor(&format!("{}\t{}", "a".repeat(26), "b".repeat(14)));
+    let w = ed.selected_window();
+    ed.set_window_size(w, 21, 10);
+    ed.make_local_variable("wrap-prefix");
+    ed.set_variable("wrap-prefix", Value::Str("XX".into()));
+    // No row is wider than the 20 columns text gets.
+    for row in ed.window_rows(4, true) {
+        let width: usize = row_glyphs(&row, 8).iter().map(|g| g.width).sum();
+        assert!(width <= 20, "{width} columns: {:?}", row.segments.iter().map(|s| s.text.as_str()).collect::<String>());
+    }
+}

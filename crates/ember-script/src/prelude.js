@@ -69,6 +69,10 @@
     toString() {
       return this.name ?? "#<killed buffer>";
     }
+    /** As Emacs prints a buffer, for help and messages that show values. */
+    toJSON() {
+      return this.live ? `#<buffer ${this.name}>` : "#<killed buffer>";
+    }
   }
   globalThis.__emberBuffer = (id) => {
     let b = buffers.get(id);
@@ -342,7 +346,7 @@
         ? start === undefined ? native.bufferText() : native.bufferText(start)
         : native.bufferText(start ?? 0, end),
     deleteRegion: (start, end) => native.deleteRegion(start, end),
-    bufferName: (buffer) => (buffer === undefined ? native.bufferName() : buffer instanceof Buffer ? buffer.name : String(buffer)),
+    bufferName: (buffer) => (buffer === undefined ? native.bufferName() : ember.getBuffer(buffer)?.name),
     currentBuffer: () => globalThis.__emberBuffer(native.bufferIdOf()),
     getBuffer(buffer) {
       if (buffer instanceof Buffer) return buffer.live ? buffer : undefined;
@@ -356,7 +360,8 @@
       arg === null ? 1 : arg === "-" ? -1 : Array.isArray(arg) ? arg[0] : arg,
     setPrefixArg: (arg) => native.setPrefixArg(arg ?? null),
     lastKey: () => native.lastKey(),
-    currentKill: (n = 0) => native.currentKill(n),
+    currentKill: (n = 0, { properties = false } = {}) => (properties ? native.currentKillText(n) : native.currentKill(n)),
+    insertForYank: (text) => native.insertForYank(text instanceof PropertizedString ? text : String(text)),
     popKill: () => native.popKill() ?? undefined,
     lastCommand: () => native.lastCommand(),
     setThisCommand: (name) => native.setThisCommand(String(name)),

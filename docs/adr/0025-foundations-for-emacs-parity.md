@@ -100,6 +100,16 @@ A review of items 6 to 10 found, and the same round fixed:
 
 Still open from the review: a `display` property over a newline shows its string on each line, where Emacs hides the whole stretch.
 
+A second review, of buffer objects, propertized strings and the line prefixes, found, and the same round fixed:
+- Typing after a yank took on the yanked text's properties; the last yanked character is now rear-nonsticky, as insert-for-yank-1 makes it.
+- `M-y` dropped the properties `C-y` keeps; scripts get `insertForYank` and `currentKill(n, { properties: true })`.
+- Tabs on a continued row were measured without its wrap prefix, so the row drew wider than the window.
+- A propertized string's runs from a script were not kept within the string, and an insertion moved by a hook put the properties where it would have gone.
+- `C-u C-x x r` renamed a buffer away from a name it already had, and its prompt named a default Emacs 30's does not.
+- Renaming the agent's buffer lost its replies; sessions keep the buffer's id.
+
+Still open: the wrap prefix comes from a line's first character, where Emacs takes it from each continued row's; `insertBeforeMarkers` and `insertAndInherit` take plain strings only; the core's `previous_buffer` and xref's buffers are kept by name.
+
 ## Consequences
 
 Ports can follow their Lisp closely: reading input where the Lisp does, catching the conditions it catches, binding what it binds, requiring what it requires. The cost is migrating existing packages, done as each is next touched, and a larger core.

@@ -710,6 +710,23 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
         })?,
     )?;
     native.set(
+        "currentKillText",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, n: Opt<i64>| -> rquickjs::Result<Value<'js>> {
+            let text = with_editor(&ctx, |ed| ed.current_kill_text(n.0.unwrap_or(0)))?;
+            value_to_js(&ctx, &EditorValue::Text(text))
+        })?,
+    )?;
+    native.set(
+        "insertForYank",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, text: Value<'js>| {
+            let text = match value_from_js(&ctx, text)? {
+                EditorValue::Text(text) => text,
+                other => ember_core::Text { string: other.as_str().map(str::to_string).unwrap_or_else(|| other.to_string()), props: Vec::new() },
+            };
+            with_editor(&ctx, |ed| ed.insert_for_yank(text))
+        })?,
+    )?;
+    native.set(
         "popKill",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.pop_kill())))?,
     )?;
@@ -2529,8 +2546,11 @@ fn convert_from_js<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> rquickjs::Result<O
                     None => return Ok(None),
                 }
             }
+            // Counted in characters, and within the string.
+            let n = string.chars().count();
+            let (start, end) = ((start.max(0.0) as usize).min(n), (end.max(0.0) as usize).min(n));
             if end > start && !map.is_empty() {
-                props.push((start as usize..end as usize, map));
+                props.push((start..end, map));
             }
         }
         return Ok(Some(EditorValue::Text(ember_core::Text { string, props })));

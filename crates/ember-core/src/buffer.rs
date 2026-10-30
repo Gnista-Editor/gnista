@@ -692,12 +692,17 @@ impl Buffer {
     /// Inserts a propertized string at a position, its properties with it,
     /// moving point past it if point was there, as `insert` does at point.
     pub(crate) fn insert_text_at(&mut self, pos: usize, text: &crate::properties::Text, move_point: bool) -> Result<()> {
+        // At point, where it is now, as hooks before may have moved it.
+        let pos = if move_point { self.point } else { pos };
         if move_point {
             self.insert(&text.string)?;
         } else {
             self.insert_at(pos, &text.string)?;
         }
-        self.properties.restore(pos, &text.props);
+        // Runs past the string's end are cut there.
+        let n = text.string.chars().count();
+        let props: Vec<_> = text.props.iter().filter(|(r, _)| r.start < n).map(|(r, p)| (r.start..r.end.min(n), p.clone())).collect();
+        self.properties.restore(pos, &props);
         Ok(())
     }
 
