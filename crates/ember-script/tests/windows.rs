@@ -385,3 +385,20 @@ fn previous_buffer_and_next_buffer_go_back_and_forth() {
     ed.press("C-x <right>").unwrap();
     assert_eq!(shown(&ed), "b");
 }
+
+#[test]
+fn a_buffer_shows_again_from_where_it_was_last_shown() {
+    // As Emacs 30.2 does it, in emacs -Q --batch: a window shown the
+    // buffer starts where the last window to show it did, with the point
+    // that window left.
+    let text: String = (0..100).map(|i| format!("line {i}\n")).collect();
+    let (mut ed, s) = setup(&text);
+    ed.set_frame_size(80, 24);
+    eval(&mut ed, &s, "(ember.setWindowStart(undefined, 430), ember.gotoChar(470), 0)");
+    ed.switch_to_buffer("other");
+    ed.press("C-x 2").unwrap();
+    let shown = r#"(globalThis.w = ember.windowList()[1], ember.setWindowBuffer(w, "*scratch*"), [ember.windowStart(w), ember.windowPoint(w)])"#;
+    assert_eq!(eval(&mut ed, &s, shown), "[430,470]");
+    let again = r#"(ember.withCurrentBuffer("*scratch*", () => ember.gotoChar(0)), ember.setWindowBuffer(w, "other"), ember.setWindowBuffer(w, "*scratch*"), [ember.windowStart(w), ember.windowPoint(w)])"#;
+    assert_eq!(eval(&mut ed, &s, again), "[430,470]");
+}

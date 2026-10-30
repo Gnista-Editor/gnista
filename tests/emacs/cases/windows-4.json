@@ -120,5 +120,39 @@
       "c"
     ],
     "windows": true
+  },
+  {
+    "name": "switch-to-buffer-offers-the-last-buffer",
+    "text": "one",
+    "keys": "C-x b C-x b C-x b C-x b",
+    "answers": [
+      "a",
+      "b",
+      "c",
+      ""
+    ],
+    "windows": true
+  },
+  {
+    "name": "other-buffer-passes-over-a-shown-buffer",
+    "text": "one",
+    "keys": "C-x b C-x 2 C-x b C-x b",
+    "answers": [
+      "a",
+      "b",
+      ""
+    ],
+    "windows": true
+  },
+  {
+    "name": "other-buffer-after-going-back",
+    "text": "one",
+    "keys": "C-x b C-x b C-x <left> C-x b",
+    "answers": [
+      "a",
+      "b",
+      ""
+    ],
+    "windows": true
   }
 ]

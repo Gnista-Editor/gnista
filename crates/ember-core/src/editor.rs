@@ -131,8 +131,6 @@ pub struct Editor {
     pub(crate) running: usize,
     /// The command keys named, while the command it is remapped to runs.
     remapped_from: Option<String>,
-    /// The buffer shown before the current one, by id, so renaming it keeps it.
-    previous_buffer: Option<u64>,
     /// Buffers by id, the most recently selected first, as Emacs's buffer
     /// list orders them; see [`Editor::buffer_list`].
     buffer_order: Vec<u64>,
@@ -279,7 +277,6 @@ impl Editor {
             detached_markers: Vec::new(),
             running: 0,
             remapped_from: None,
-            previous_buffer: None,
             buffer_order: Vec::new(),
             buried: Vec::new(),
             minibuffer_id,
@@ -1400,10 +1397,13 @@ impl Editor {
     pub(crate) fn select(&mut self, index: usize) {
         let shown = self.selected_buffer_index();
         if index != shown {
-            self.previous_buffer = Some(self.buffers[shown].id);
             let selected = self.selected_window;
             self.record_window_buffer(selected);
+            self.unshow_buffer(selected);
             self.selected_window_shows(index);
+            // From where the buffer was last shown, as set_window_buffer has it.
+            let b = &mut self.buffers[index];
+            b.top_line = b.line_of(b.last_window_start.min(b.len()));
         }
         self.record_buffer(self.buffers[index].id);
         self.current = index;
@@ -1436,7 +1436,7 @@ impl Editor {
     /// Visits a file in a buffer without showing it, as Emacs's
     /// `find-file-noselect`, and returns the buffer's name.
     pub fn find_file_noselect(&mut self, path: &Path) -> Result<String> {
-        let (current, shown, previous) = (self.buffers[self.current].id, self.window_buffer().id, self.previous_buffer);
+        let (current, shown) = (self.buffers[self.current].id, self.window_buffer().id);
         // Nor does the window note it, or the buffer list.
         let selected = self.selected_window;
         let history = self.window(selected).map(|w| (w.prev_buffers.clone(), w.next_buffers.clone()));
@@ -1453,7 +1453,6 @@ impl Editor {
         if let Some(back) = self.buffer_with_id(current) {
             self.current = back;
         }
-        self.previous_buffer = previous;
         visited.map(|()| name)
     }
 
@@ -1481,17 +1480,20 @@ impl Editor {
         }
     }
 
-    /// The buffer to offer when switching buffers: the one shown before this one.
+    /// The buffer to offer when switching buffers, as Emacs's
+    /// `(other-buffer (current-buffer))`: see [`Editor::other_buffer_than`].
     pub fn other_buffer(&self) -> Option<&str> {
-        let current = &self.buffers[self.current].name;
-        // Internal buffers, whose names start with a space, as the
-        // minibuffer's does, are never offered, as Emacs's other-buffer has it.
-        let offered = |name: &&str| *name != current && !name.starts_with(' ');
-        self.previous_buffer
-            .and_then(|id| self.buffer_with_id(id))
-            .map(|i| self.buffers[i].name.as_str())
-            .filter(offered)
-            .or_else(|| self.buffers.iter().map(|b| b.name.as_str()).find(offered))
+        self.other_buffer_than(self.buffers[self.current].id).map(|i| self.buffers[i].name.as_str())
+    }
+
+    /// The buffer list's first buffer other than `buffer`, as Emacs's
+    /// `other-buffer`: one no window shows if there is any, else one shown;
+    /// internal buffers, whose names start with a space, as the
+    /// minibuffer's does, never.
+    pub(crate) fn other_buffer_than(&self, buffer: u64) -> Option<usize> {
+        let offered: Vec<usize> = self.buffer_list().into_iter().filter(|&i| self.buffers[i].id != buffer && !self.buffers[i].name.starts_with(' ')).collect();
+        let shown = |i: &usize| self.windows.iter().any(|w| w.buffer == self.buffers[*i].id);
+        offered.iter().copied().find(|i| !shown(i)).or_else(|| offered.first().copied())
     }
 
     pub fn kill_buffer(&mut self, name: &str) -> Result<()> {
@@ -1543,13 +1545,7 @@ impl Editor {
         // What a window that found nothing else shows, and what is current
         // if this buffer was: another buffer but internal ones such as the
         // minibuffer, as other-buffer offers, else a new *scratch*.
-        let offered = |ed: &Editor, i: usize| i != index && !ed.buffers[i].name.starts_with(' ');
-        let other = self
-            .previous_buffer
-            .and_then(|id| self.buffer_with_id(id))
-            .filter(|&i| offered(self, i))
-            .or_else(|| self.buffer_list().into_iter().find(|&i| offered(self, i)))
-            .map(|i| self.buffers[i].id);
+        let other = self.other_buffer_than(gone).map(|i| self.buffers[i].id);
         let other = other.unwrap_or_else(|| {
             self.buffers.push(Buffer::new("*scratch*"));
             self.buffers[self.buffers.len() - 1].id
@@ -1811,7 +1807,7 @@ impl Editor {
     pub fn completions(&self, kind: ParamKind, input: &str) -> Vec<String> {
         let names: Vec<String> = match kind {
             ParamKind::Command => self.command_names().map(str::to_string).collect(),
-            ParamKind::Buffer => self.buffers.iter().map(|b| b.name.clone()).collect(),
+            ParamKind::Buffer => self.buffer_list().into_iter().map(|i| self.buffers[i].name.clone()).collect(),
             ParamKind::File => {
                 let (base, name) = input.rfind('/').map_or(("", input), |i| (&input[..=i], &input[i + 1..]));
                 let dir = if base.is_empty() { self.default_directory() } else { expand_file_name(base) };

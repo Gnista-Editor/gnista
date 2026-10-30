@@ -358,9 +358,10 @@ fn quitting_offers_to_save_each_file() {
     visit(&mut ed, &b);
     ed.type_text("B");
     ed.press("C-x C-c").unwrap();
-    assert_eq!(ed.prompt(), Some(format!("Save file {}? (y, n, !, ., q, C-r, C-f, d or C-h) ", a.display()).as_str()));
-    answer(&mut ed, "y");
+    // The buffer list's order, most recently selected first, as Emacs asks.
+    assert_eq!(ed.prompt(), Some(format!("Save file {}? (y, n, !, ., q, C-r, C-f, d or C-h) ", b.display()).as_str()));
     answer(&mut ed, "n");
+    answer(&mut ed, "y");
     assert_eq!(fs::read_to_string(&a).unwrap(), "A\n");
     assert!(!b.exists());
     assert_eq!(ed.prompt(), Some("Modified buffers exist; exit anyway? (yes or no) "));

@@ -636,15 +636,44 @@ impl Editor {
         if self.buffers[old].id != self.buffers[index].id {
             self.record_window_buffer(id);
         }
+        self.unshow_buffer(id);
         self.buffers[old].remove_window_point(id);
         self.buffers[old].remove_window_start(id);
         let buffer = self.buffers[index].id;
-        let point = self.buffers[index].point();
+        let height = self.window(id).map_or(1, |w| w.height.max(1));
         let w = self.window_mut(id).expect("checked");
         w.buffer = buffer;
-        self.buffers[index].set_window_point(id, point);
-        self.buffers[index].set_window_start(id, 0);
+        // From where the buffer was last shown, at its point, as Emacs's
+        // set_window_buffer; recentred if that leaves point out of sight,
+        // as redisplay would.
+        let b = &mut self.buffers[index];
+        let point = b.point();
+        let mut top = b.line_of(b.last_window_start.min(b.len()));
+        let line = b.line_of(point);
+        if line < top || line >= top + height {
+            top = line.saturating_sub(height / 2);
+        }
+        let start = b.line_start(top);
+        b.set_window_point(id, point);
+        b.set_window_start(id, start);
         Ok(())
+    }
+
+    /// Notes where a window started in its buffer as it stops showing it,
+    /// for the next window to show it, as Emacs's unshow_buffer.
+    pub(crate) fn unshow_buffer(&mut self, id: WindowId) {
+        let Some(start) = self.window_start(id) else { return };
+        let buffer = self.window(id).expect("has a start").buffer;
+        let index = self.buffer_index(buffer);
+        let point = self.window_point(id);
+        let b = &mut self.buffers[index];
+        b.last_window_start = start;
+        // Unless the selected window shows the buffer, whose point is the
+        // buffer's, the buffer's point becomes where the window had it.
+        let selected_shows = self.windows.iter().any(|w| w.id == self.selected_window && w.buffer == buffer);
+        if let (false, Some(point)) = (selected_shows, point) {
+            b.set_point(point);
+        }
     }
 
     /// When a window was last selected, as a count: higher is more recent.
@@ -897,6 +926,7 @@ impl Editor {
 
     /// Drops a window, whose buffers forget what they kept for it.
     fn forget_window(&mut self, id: WindowId) {
+        self.unshow_buffer(id);
         for b in &mut self.buffers {
             b.forget_window(id);
         }

@@ -1529,7 +1529,7 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     native.set(
         "bufferList",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| {
-            with_editor(&ctx, |ed| Ok(ed.buffers().iter().map(|b| b.name.clone()).collect::<Vec<_>>()))
+            with_editor(&ctx, |ed| Ok(ed.buffer_list().into_iter().map(|i| ed.buffers()[i].name.clone()).collect::<Vec<_>>()))
         })?,
     )?;
     native.set(

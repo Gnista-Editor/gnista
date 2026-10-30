@@ -123,6 +123,10 @@ pub struct Buffer {
     /// Other windows keep their own. It moves with edits above it, as the
     /// selected window's start is a marker in Emacs.
     pub top_line: usize,
+    /// Where the last window to stop showing the buffer started, where the
+    /// next window to show it starts, as Emacs's `last_window_start`; a
+    /// plain position there too, which edits do not move.
+    pub(crate) last_window_start: usize,
     /// The points of windows showing the buffer, other than the selected
     /// one, under their ids, and their starts under their ids with
     /// [`WINDOW_START`] set, which move with edits as Emacs's window-point
@@ -217,6 +221,7 @@ impl Buffer {
             path: None,
             read_only: false,
             top_line: 0,
+            last_window_start: 0,
             window_points: Vec::new(),
             text: Rope::new(),
             point: 0,
@@ -1085,6 +1090,7 @@ impl Buffer {
         self.mark_active = false;
         self.shift_selected = false;
         self.top_line = 0;
+        self.last_window_start = 0;
         for (_, p) in &mut self.window_points {
             *p = 0;
         }
