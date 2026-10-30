@@ -167,5 +167,68 @@
     "point": 35,
     "keys": "C-M-a C-M-a",
     "modes": []
+  },
+  {
+    "name": "js-forward-sexp-by-nodes",
+    "text": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+    "point": 10,
+    "keys": "C-M-f",
+    "modes": [
+      "js-ts-mode"
+    ]
+  },
+  {
+    "name": "js-forward-sexp-twice",
+    "text": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+    "point": 10,
+    "keys": "C-M-f C-M-f",
+    "modes": [
+      "js-ts-mode"
+    ]
+  },
+  {
+    "name": "js-forward-sexp-in-arguments",
+    "text": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+    "point": 14,
+    "keys": "C-M-f C-M-f C-M-f",
+    "modes": [
+      "js-ts-mode"
+    ]
+  },
+  {
+    "name": "js-forward-sexp-at-the-last-argument",
+    "text": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+    "point": 25,
+    "keys": "C-M-f C-M-f",
+    "modes": [
+      "js-ts-mode"
+    ]
+  },
+  {
+    "name": "js-backward-sexp",
+    "text": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+    "point": 32,
+    "keys": "C-M-b C-M-b",
+    "modes": [
+      "js-ts-mode"
+    ]
+  },
+  {
+    "name": "js-forward-sexp-in-a-comment",
+    "text": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+    "point": 38,
+    "keys": "C-M-f C-M-f",
+    "modes": [
+      "js-ts-mode"
+    ]
+  },
+  {
+    "name": "js-kill-sexp",
+    "text": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+    "point": 14,
+    "keys": "C-M-f C-M-k",
+    "modes": [
+      "js-ts-mode"
+    ]
   }
 ]

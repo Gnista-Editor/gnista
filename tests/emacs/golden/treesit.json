@@ -413,6 +413,155 @@
       "kill_ring": [],
       "modified": false,
       "error": null
+    },
+    {
+      "name": "js-forward-sexp-by-nodes",
+      "input": {
+        "text": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+        "point": 10,
+        "keys": "C-M-f",
+        "modes": [
+          "js-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+      "visible": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "js-forward-sexp-twice",
+      "input": {
+        "text": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+        "point": 10,
+        "keys": "C-M-f C-M-f",
+        "modes": [
+          "js-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+      "visible": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+      "point": 32,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "js-forward-sexp-in-arguments",
+      "input": {
+        "text": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+        "point": 14,
+        "keys": "C-M-f C-M-f C-M-f",
+        "modes": [
+          "js-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+      "visible": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+      "point": 31,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "js-forward-sexp-at-the-last-argument",
+      "input": {
+        "text": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+        "point": 25,
+        "keys": "C-M-f C-M-f",
+        "modes": [
+          "js-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+      "visible": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+      "point": 31,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No next sexp"
+    },
+    {
+      "name": "js-backward-sexp",
+      "input": {
+        "text": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+        "point": 32,
+        "keys": "C-M-b C-M-b",
+        "modes": [
+          "js-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+      "visible": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+      "point": 10,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "js-forward-sexp-in-a-comment",
+      "input": {
+        "text": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+        "point": 38,
+        "keys": "C-M-f C-M-f",
+        "modes": [
+          "js-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+      "visible": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+      "point": 51,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "js-kill-sexp",
+      "input": {
+        "text": "const a = foo(1, [2, 3], {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+        "point": 14,
+        "keys": "C-M-f C-M-k",
+        "modes": [
+          "js-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "const a = foo(1, {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+      "visible": "const a = foo(1, {b: 4});\n// a comment here\nlet s = `x ${a} y`;\n",
+      "point": 15,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        ", [2, 3]"
+      ],
+      "modified": true,
+      "error": null
     }
   ]
 }

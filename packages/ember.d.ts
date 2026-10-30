@@ -1315,6 +1315,14 @@ declare global {
        */
       "ignore": [];
       /**
+       * Go to a definition in the buffer, chosen by name with completion from the buffer's index.
+       *
+       * Kinds of definition, such as Fn or Struct, open a list of their own. The mark is pushed first.
+       *
+       * Defined in packages/imenu.ts.
+       */
+      "imenu": [];
+      /**
        * Indent the current line as the major mode says, through indent-line-function.
        *
        * Defined in packages/indent.ts.
@@ -4637,6 +4645,12 @@ declare global {
        */
       "fill-prefix": Value;
       /**
+       * If non-nil, the function forward-sexp and the commands built on it call with the count, as tree-sitter modes set it.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "forward-sexp-function": Value;
+      /**
        * Whether the terminal's background is "dark" or "light", for choosing face colours there. The graphical front end follows the system instead.
        */
       "frame-background-mode": Value;
@@ -4758,6 +4772,42 @@ declare global {
        * Keymap icomplete-vertical-mode-minibuffer-map.
        */
       "icomplete-vertical-mode-minibuffer-map": Value;
+      /**
+       * Items chosen with M-x imenu, newest first.
+       *
+       * Defined in packages/imenu.ts.
+       */
+      "imenu--history-list": Value;
+      /**
+       * Functions run after M-x imenu goes to an item.
+       *
+       * Defined in packages/imenu.ts.
+       */
+      "imenu-after-jump-hook": Value;
+      /**
+       * Whether imenu-generic-expression's regexps match case loosely.
+       *
+       * Defined in packages/imenu.ts.
+       */
+      "imenu-case-fold-search": Value;
+      /**
+       * The function that makes the buffer's index: a list of [name, position], or [name, items] for a submenu.
+       *
+       * Defined in packages/imenu.ts.
+       */
+      "imenu-create-index-function": Value;
+      /**
+       * For imenu-default-create-index-function: a list of [menu-title, regexp, group], each regexp an Emacs regexp whose group is a definition's name; a null title puts the items at the top.
+       *
+       * Defined in packages/imenu.ts.
+       */
+      "imenu-generic-expression": Value;
+      /**
+       * What spaces in index names are shown as, so a name reads as one word in completion.
+       *
+       * Defined in packages/imenu.ts.
+       */
+      "imenu-space-replacement": Value;
       /**
        * The command that indents the current line, as the major mode says. indent-according-to-mode runs it.
        *
@@ -5030,6 +5080,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-fontify-done-headline": Value;
+      /**
+       * How deep in the outline M-x imenu lists headings.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-imenu-depth": Value;
       /**
        * Where C-c C-x b shows the indirect buffer it makes: "current-window", "other-window", "new-frame" each time, or "dedicated-frame", one frame used again.
        *
@@ -5675,6 +5731,12 @@ declare global {
        * Defined in packages/treesit.ts.
        */
       "treesit-indent-function": Value;
+      /**
+       * What M-x imenu lists in a tree-sitter mode: a list of [category, regexp, pred, name-fn], nodes whose type matches regexp, grouped under category.
+       *
+       * Defined in packages/treesit.ts.
+       */
+      "treesit-simple-imenu-settings": Value;
       /**
        * How tree-sitter modes indent: for each language, [language, rules], each rule [matcher, anchor, offset].
        *

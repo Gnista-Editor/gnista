@@ -3,7 +3,7 @@
 // prog-mode and asks for its grammar with treesit-parser-create.
 
 import { charCount } from "subr";
-import { majorModeSetup, nodeText, searchSubtree } from "treesit";
+import { majorModeSetup, nodeText, nodeTopLevel, searchSubtree } from "treesit";
 
 /** C's comments and operators, as c-mode's and js-mode's syntax tables have them. */
 const C_SYNTAX: { [chars: string]: string } = {
@@ -311,23 +311,61 @@ const jsDefunName = (node: ember.TreesitNode): string | null => {
 
 /** json-ts-mode--defun-name. */
 const jsonDefunName = (node: ember.TreesitNode): string | null =>
-  ["pair", "object"].includes(ember.treesitNodeType(node) ?? "") ? fieldText(node, "key").trim() : null;
+  ["pair", "object"].includes(ember.treesitNodeType(node) ?? "") ? fieldText(node, "key").replace(/^"/, "").replace(/"$/, "") : null;
 
 /** What each language's mode sets for treesit.el, as its mode's body does. */
-const TREESIT_SETTINGS: Record<string, { rules: () => unknown[]; defun: string; name: (node: ember.TreesitNode) => string | null; electric: string }> = {
+/** Any of these names as a whole symbol, as js--regexp-opt-symbol makes a regexp of them. */
+const symbolRegexp = (names: string[]): string => `\\_<\\(${names.map((n) => n.replace(/[.*+?^$\\[\]]/g, "\\$&")).join("\\|")}\\)\\_>`;
+
+/** js--treesit-valid-imenu-entry, as Emacs has it. */
+const jsValidImenuEntry = (node: ember.TreesitNode): unknown =>
+  ember.treesitNodeType(node) === "lexical_declaration" ? nodeTopLevel(node) : true;
+
+const TREESIT_SETTINGS: Record<
+  string,
+  { rules: () => unknown[]; defun: string; name: (node: ember.TreesitNode) => string | null; electric: string; imenu: unknown[]; things?: unknown[] }
+> = {
   rust: {
+    imenu: [
+      ["Module", "\\`mod_item\\'", null, null],
+      ["Enum", "\\`enum_item\\'", null, null],
+      ["Impl", "\\`impl_item\\'", null, null],
+      ["Type", "\\`type_item\\'", null, null],
+      ["Struct", "\\`struct_item\\'", null, null],
+      ["Fn", "\\`function_item\\'", null, null],
+    ],
     rules: () => RUST_RULES,
     defun: "\\(?:enum_item\\|function_item\\|impl_item\\|struct_item\\)",
     name: rustDefunName,
     electric: "{}():;,#",
   },
   javascript: {
+    // js-ts-mode's treesit-thing-settings: js--treesit-sexp-nodes and the rest, as js--regexp-opt-symbol makes them.
+    things: [
+      ["sexp", symbolRegexp([
+        "expression", "parenthesized_expression", "formal_parameters", "pattern", "array", "function", "string", "escape", "template",
+        "regex", "number", "identifier", "this", "super", "true", "false", "null", "undefined", "arguments", "pair", "jsx",
+        "statement_block", "object", "object_pattern", "named_imports", "class_body",
+      ])],
+      ["sentence", symbolRegexp([
+        "import_statement", "debugger_statement", "expression_statement", "if_statement", "switch_statement", "for_statement",
+        "for_in_statement", "while_statement", "do_statement", "try_statement", "with_statement", "break_statement",
+        "continue_statement", "return_statement", "throw_statement", "empty_statement", "labeled_statement", "variable_declaration",
+        "lexical_declaration", "jsx_element", "jsx_self_closing_element",
+      ])],
+      ["text", symbolRegexp(["comment", "template_string"])],
+    ],
+    imenu: [
+      ["Function", "\\`function_declaration\\'", null, null],
+      ["Variable", "\\`lexical_declaration\\'", jsValidImenuEntry, null],
+      ["Class", "\\`\\(?:class_declaration\\|method_definition\\)\\'", null, null],
+    ],
     rules: jsRules,
     defun: "\\(?:class_declaration\\|function_declaration\\|lexical_declaration\\|method_definition\\)",
     name: jsDefunName,
     electric: "{}():;,<>/",
   },
-  json: { rules: () => JSON_RULES, defun: "\\(?:object\\|pair\\)", name: jsonDefunName, electric: "{}():;," },
+  json: { rules: () => JSON_RULES, defun: "\\(?:object\\|pair\\)", name: jsonDefunName, electric: "{}():;,", imenu: [[null, "\\`pair\\'", null, null]] },
 };
 
 const alist = ember.defaultValue("auto-mode-alist");
@@ -380,6 +418,8 @@ for (const mode of modes) {
         ember.setVariable("treesit-simple-indent-rules", [[mode.language, settings.rules()]] as unknown as ember.Value);
         ember.setVariable("treesit-defun-type-regexp", settings.defun);
         ember.setVariable("treesit-defun-name-function", ember.defun(`${mode.name}--defun-name`, settings.name));
+        ember.setVariable("treesit-simple-imenu-settings", settings.imenu as unknown as ember.Value);
+        if (settings.things) ember.setVariable("treesit-thing-settings", [[mode.language, settings.things]] as unknown as ember.Value);
         majorModeSetup(`${mode.name}-map`);
       }
       if (mode.language === "rust") {

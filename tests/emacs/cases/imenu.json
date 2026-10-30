@@ -1,0 +1,164 @@
+[
+  {
+    "name": "imenu-rust-function",
+    "text": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+    "keys": "M-x",
+    "answers": [
+      "imenu",
+      "Fn",
+      "main"
+    ],
+    "modes": [
+      "rust-ts-mode"
+    ]
+  },
+  {
+    "name": "imenu-rust-struct",
+    "text": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+    "point": 200,
+    "keys": "M-x",
+    "answers": [
+      "imenu",
+      "Struct",
+      "Point"
+    ],
+    "modes": [
+      "rust-ts-mode"
+    ]
+  },
+  {
+    "name": "imenu-rust-impl-method",
+    "text": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+    "keys": "M-x",
+    "answers": [
+      "imenu",
+      "Impl",
+      "Point",
+      "len"
+    ],
+    "modes": [
+      "rust-ts-mode"
+    ]
+  },
+  {
+    "name": "imenu-rust-impl-itself",
+    "text": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+    "keys": "M-x",
+    "answers": [
+      "imenu",
+      "Impl",
+      "Display.for.Point",
+      " "
+    ],
+    "modes": [
+      "rust-ts-mode"
+    ]
+  },
+  {
+    "name": "imenu-rust-module-function",
+    "text": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+    "keys": "M-x",
+    "answers": [
+      "imenu",
+      "Module",
+      "util",
+      "helper"
+    ],
+    "modes": [
+      "rust-ts-mode"
+    ]
+  },
+  {
+    "name": "imenu-js-class-method",
+    "text": "function one() {\n  return 1;\n}\n\nclass C {\n  two() {\n    return 2;\n  }\n}\n\nconst three = () => 3;\n",
+    "keys": "M-x",
+    "answers": [
+      "imenu",
+      "Class",
+      "C",
+      "two"
+    ],
+    "modes": [
+      "js-ts-mode"
+    ]
+  },
+  {
+    "name": "imenu-json-nested",
+    "text": "{\n  \"a\": 1,\n  \"b\": {\n    \"c\": 2\n  }\n}\n",
+    "keys": "M-x",
+    "answers": [
+      "imenu",
+      "b",
+      "c"
+    ],
+    "modes": [
+      "json-ts-mode"
+    ]
+  },
+  {
+    "name": "imenu-pushes-the-mark",
+    "text": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+    "point": 5,
+    "keys": "M-x C-x C-x",
+    "answers": [
+      "imenu",
+      "Fn",
+      "main"
+    ],
+    "modes": [
+      "rust-ts-mode"
+    ]
+  },
+  {
+    "name": "imenu-js-function",
+    "text": "function one() {\n  return 1;\n}\n\nclass C {\n  two() {\n    return 2;\n  }\n}\n\nconst three = () => 3;\n",
+    "point": 60,
+    "keys": "M-x",
+    "answers": [
+      "imenu",
+      "Function",
+      "one"
+    ],
+    "modes": [
+      "js-ts-mode"
+    ]
+  },
+  {
+    "name": "imenu-org-top-heading",
+    "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Ember\ntext\n* Done\n",
+    "keys": "M-x",
+    "answers": [
+      "imenu",
+      "Done"
+    ],
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "imenu-org-subheading",
+    "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Ember\ntext\n* Done\n",
+    "keys": "M-x",
+    "answers": [
+      "imenu",
+      "Inbox",
+      "Call.Alice"
+    ],
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "imenu-org-folded-subheading-shows",
+    "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Ember\ntext\n* Done\n",
+    "keys": "S-TAB M-x",
+    "answers": [
+      "imenu",
+      "Projects",
+      "Ember"
+    ],
+    "modes": [
+      "org-mode"
+    ]
+  }
+]

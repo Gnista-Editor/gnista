@@ -6099,15 +6099,71 @@ function searchInBuffer(path: string): number {
 function jump(pos: number): void {
   ember.pushMark(ember.point());
   ember.gotoChar(pos);
+  showContext(pos);
+}
+
+/** Shows the headings above a position if it is folded away, as org-fold-show-context does. */
+function showContext(pos: number): void {
   const all = headings();
   const i = headingIndex(all, lineAt(pos));
   if (i !== undefined && folded(Math.max(0, all[i].start - 1), "outline")) {
-    // Show the headings above it, as org-fold-show-context does.
     for (const h of all.slice(0, i + 1)) {
       if (h.start <= pos) flag(h.end, entryEnd(all, all.indexOf(h)), false);
     }
   }
 }
+
+// Imenu, as org.el's org-imenu-get-tree: headings to org-imenu-depth, a
+// heading with headings under it a submenu of them.
+
+ember.defineVariable({ name: "org-imenu-depth", doc: "How deep in the outline M-x imenu lists headings.", value: 2 });
+
+/** A heading's text as Imenu lists it: no TODO, priority or tags, links as they read. */
+const imenuTitle = (h: Heading): string => h.title.replace(/\[\[([^\]]*)\](?:\[([^\]]*)\])?\]/g, (_m, link: string, desc?: string) => desc ?? link);
+
+type ImenuItem = [string, number | ImenuItem[]];
+
+const orgImenuGetTree = ember.defun("org-imenu-get-tree", () => {
+  const depth = Number(ember.variable("org-imenu-depth") ?? 2);
+  const subs: ImenuItem[][] = Array.from({ length: depth + 1 }, () => []);
+  let lastLevel = 0;
+  for (const h of [...headings()].reverse()) {
+    const headline = imenuTitle(h);
+    if (h.level > depth || !/\S/.test(headline)) continue;
+    if (h.level >= lastLevel) {
+      subs[h.level]!.unshift([headline, h.start]);
+    } else {
+      subs[h.level]!.unshift([headline, subs.slice(h.level + 1).flat()]);
+      for (let i = h.level + 1; i <= depth; i++) subs[i] = [];
+    }
+    lastLevel = h.level;
+  }
+  return (subs[1] ?? []) as unknown as ember.Value;
+});
+
+/**
+ * Shows the heading at a position and its ancestors' heading lines, their
+ * entries left folded, as org-fold-show-set-visibility's ancestors does:
+ * org-fold-heading unfolds from the end of the line before a heading to its end.
+ */
+function showAncestors(pos: number): void {
+  const all = headings();
+  let i = headingIndex(all, lineAt(pos));
+  if (i === undefined) return;
+  // Not at a heading, its entry shows, as org-fold-show-entry.
+  if (all[i]!.start !== ember.lineBeginningPosition(pos)) flag(all[i]!.end, entryEnd(all, i), false);
+  while (i !== undefined) {
+    const h = all[i]!;
+    flag(Math.max(0, h.start - 1), h.end, false);
+    let parent: number = i - 1;
+    while (parent >= 0 && all[parent]!.level >= h.level) parent--;
+    i = parent >= 0 ? parent : undefined;
+  }
+}
+
+ember.addHook("imenu-after-jump-hook", () => {
+  if (ember.derivedModeP("org-mode")) showAncestors(ember.point());
+});
 
 function openLink(link: Link): void {
   const path = link.path;
@@ -7162,6 +7218,7 @@ ember.defineMajorMode({
   bindings: keys,
   setup: () => {
     ember.setVariable("outline-regexp", "\\*+ ");
+    ember.setVariable("imenu-create-index-function", orgImenuGetTree);
     ember.addToInvisibilitySpec("org-hide-drawer", { ellipsis: true });
     ember.addToInvisibilitySpec("org-hide-block", { ellipsis: true });
     ember.addToInvisibilitySpec("org-link");

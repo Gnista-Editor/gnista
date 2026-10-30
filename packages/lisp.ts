@@ -25,10 +25,24 @@ const userError = (message: string): never => {
   throw new Error(message);
 };
 
-/** Moves over `arg` sexps, back if negative, as forward-sexp from code. Throws scan errors. */
-function forwardSexp(arg = 1): void {
+ember.defineVariable({
+  name: "forward-sexp-function",
+  doc: "If non-nil, the function forward-sexp and the commands built on it call with the count, as tree-sitter modes set it.",
+  value: null,
+  local: true,
+});
+
+/** Moves over `arg` sexps by the syntax table, as forward-sexp-default-function. Throws scan errors. */
+export function forwardSexpDefault(arg = 1): void {
   ember.gotoChar(ember.scanSexps(ember.point(), arg) ?? bufferEnd(arg));
   if (arg < 0) ember.backwardPrefixChars();
+}
+
+/** Moves over `arg` sexps, back if negative, as forward-sexp from code, through forward-sexp-function if set. Throws scan errors. */
+function forwardSexp(arg = 1): void {
+  const fn = ember.variable("forward-sexp-function");
+  if (typeof fn === "string" || typeof fn === "function") ember.funcall(fn as string, arg);
+  else forwardSexpDefault(arg);
 }
 
 /** Runs `fn`, turning a scan error into the user error a command reports instead. */

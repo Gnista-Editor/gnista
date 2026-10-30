@@ -8,6 +8,7 @@
 // and ["not", p] combine them, [regexp, function] needs both, and a symbol,
 // Symbol.for("defun"), names a thing in treesit-thing-settings.
 
+import { forwardSexpDefault } from "lisp";
 import { forwardLine, regexpQuote } from "subr";
 
 type Node = ember.TreesitNode;
@@ -611,6 +612,32 @@ ember.defineCommand({
   },
 });
 
+/**
+ * Moves over `arg` sexps by the tree, as treesit-forward-sexp: within the
+ * thing around point, the next or previous sexp thing; in text, such as a
+ * comment, as forward-sexp does by the syntax table. With none left, a
+ * scan error, as forward-sexp gives.
+ */
+export function treesitForwardSexp(arg = 1): void {
+  const pred = Symbol.for("sexp");
+  const here = nodeAt(ember.point(), languageAt(ember.point()));
+  if (here !== undefined && ember.treesitNodeStart(here)! < ember.point() && ember.point() < ember.treesitNodeEnd(here)! && nodeMatchP(here, Symbol.for("text"), true)) {
+    forwardSexpDefault(arg);
+    return;
+  }
+  const moved = arg > 0 ? endOfThing(pred, Math.abs(arg), "restricted") : beginningOfThing(pred, Math.abs(arg), "restricted");
+  if (moved) return;
+  const parent = thingAt(ember.point(), pred, true);
+  const boundary = parent && ember.treesitNodeChild(parent, arg > 0 ? -1 : 0);
+  if (boundary !== undefined) {
+    ember.signal("scan-error", "No more sexp to move across", [
+      "No more sexp to move across",
+      ember.treesitNodeStart(boundary)! + 1,
+      ember.treesitNodeEnd(boundary)! + 1,
+    ]);
+  }
+}
+
 /** The defun around point, the outermost with the top-level tactic, as treesit-defun-at-point. */
 export function defunAtPoint(): Node | undefined {
   const node = thingAt(ember.point(), defunPredicate());
@@ -624,15 +651,67 @@ export function defunName(node: Node | undefined): string | undefined {
   return (ember.funcall(fn as string, node) as string | null) ?? undefined;
 }
 
+// Imenu from the tree, as treesit.el's treesit-simple-imenu.
+
+ember.defineVariable({
+  name: "treesit-simple-imenu-settings",
+  doc: "What M-x imenu lists in a tree-sitter mode: a list of [category, regexp, pred, name-fn], nodes whose type matches regexp, grouped under category.",
+  value: null,
+  local: true,
+});
+
+/** A node and the matching nodes below it, as treesit-induce-sparse-tree makes them. */
+type Sparse = [Node | undefined, Sparse[]];
+
+/** The nodes under `root` that match, as a tree of their own, as treesit-induce-sparse-tree. */
+export function induceSparseTree(root: Node, pred: Predicate, depth = 1000): Sparse {
+  const visit = (n: Node, limit: number): Sparse[] => {
+    const below = limit === 0 ? [] : nodeChildren(n).flatMap((c) => visit(c, limit - 1));
+    return nodeMatchP(n, pred, true) ? [[n, below]] : below;
+  };
+  const below = nodeChildren(root).flatMap((c) => visit(c, depth - 1));
+  return nodeMatchP(root, pred, true) ? [root, below] : [undefined, below];
+}
+
+type ImenuEntry = [string, number | ImenuEntry[]];
+
+/** An index from a sparse tree, as treesit--simple-imenu-1: a defun with defuns inside is a submenu, " " itself. */
+function simpleImenu1(tree: Sparse, pred: ((n: Node) => unknown) | null, nameFn: ((n: Node) => string | null) | null): ImenuEntry[] {
+  const [node, children] = tree;
+  const subtrees = children.flatMap((c) => simpleImenu1(c, pred, nameFn));
+  if (node === undefined) return subtrees;
+  if (pred && nil(pred(node))) return subtrees;
+  const name = (nameFn ? nameFn(node) : defunName(node)) ?? "Anonymous";
+  const start = ember.treesitNodeStart(node)!;
+  return subtrees.length > 0 ? [[name, [[" ", start], ...subtrees]]] : [[name, start]];
+}
+
+/** The buffer's index by treesit-simple-imenu-settings, as treesit-simple-imenu. */
+export const simpleImenu = ember.defun("treesit-simple-imenu", () => {
+  const root = bufferRootNode();
+  const settings = (ember.variable("treesit-simple-imenu-settings") ?? []) as unknown as [string | null, string, unknown, unknown][];
+  const call = (f: unknown) => (typeof f === "function" || typeof f === "string" ? (n: Node) => ember.funcall(f as string, n) : null);
+  return settings.flatMap(([category, regexp, pred, nameFn]): ImenuEntry[] => {
+    const index = simpleImenu1(induceSparseTree(root, regexp), call(pred), call(nameFn) as ((n: Node) => string | null) | null);
+    if (index.length === 0) return [];
+    return category === null ? index : [[category, index] as ImenuEntry];
+  }) as unknown as ember.Value;
+});
+
 /**
  * Turns on what the mode's tree-sitter settings ask for, as
- * treesit-major-mode-setup: indenting by treesit-simple-indent-rules, and
- * C-M-a and C-M-e by treesit-defun-type-regexp or a defun thing.
+ * treesit-major-mode-setup: indenting by treesit-simple-indent-rules,
+ * M-x imenu by treesit-simple-imenu-settings, and C-M-a and C-M-e by
+ * treesit-defun-type-regexp or a defun thing.
  */
 export function majorModeSetup(keymap: string): void {
   if (nil(ember.variable("treesit-defun-skipper"))) ember.setVariable("treesit-defun-skipper", defaultDefunSkipper);
   if (!nil(ember.variable("treesit-simple-indent-rules")) || !nil(ember.variable("treesit-indent-function"))) {
     ember.setVariable("indent-line-function", treesitIndent);
+  }
+  if (!nil(ember.variable("treesit-simple-imenu-settings"))) ember.setVariable("imenu-create-index-function", simpleImenu);
+  if (thingDefinition("sexp") !== undefined) {
+    ember.setVariable("forward-sexp-function", ember.defun("treesit-forward-sexp", (arg: number) => treesitForwardSexp(arg)));
   }
   if (!nil(ember.variable("treesit-defun-type-regexp")) || thingDefinition("defun") !== undefined) {
     ember.remapCommand(keymap, "beginning-of-defun", "treesit-beginning-of-defun");

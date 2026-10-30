@@ -1,0 +1,321 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "imenu-rust-function",
+      "input": {
+        "text": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [
+          "rust-ts-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "imenu",
+          "Fn",
+          "main"
+        ]
+      },
+      "text": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+      "visible": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+      "point": 180,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "imenu-rust-struct",
+      "input": {
+        "text": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+        "point": 200,
+        "keys": "M-x",
+        "modes": [
+          "rust-ts-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "imenu",
+          "Struct",
+          "Point"
+        ]
+      },
+      "text": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+      "visible": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+      "point": 37,
+      "mark": 200,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "imenu-rust-impl-method",
+      "input": {
+        "text": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [
+          "rust-ts-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "imenu",
+          "Impl",
+          "Point",
+          "len"
+        ]
+      },
+      "text": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+      "visible": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+      "point": 67,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "imenu-rust-impl-itself",
+      "input": {
+        "text": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [
+          "rust-ts-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "imenu",
+          "Impl",
+          "Display.for.Point",
+          " "
+        ]
+      },
+      "text": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+      "visible": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+      "point": 131,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "imenu-rust-module-function",
+      "input": {
+        "text": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [
+          "rust-ts-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "imenu",
+          "Module",
+          "util",
+          "helper"
+        ]
+      },
+      "text": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+      "visible": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "imenu-js-class-method",
+      "input": {
+        "text": "function one() {\n  return 1;\n}\n\nclass C {\n  two() {\n    return 2;\n  }\n}\n\nconst three = () => 3;\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [
+          "js-ts-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "imenu",
+          "Class",
+          "C",
+          "two"
+        ]
+      },
+      "text": "function one() {\n  return 1;\n}\n\nclass C {\n  two() {\n    return 2;\n  }\n}\n\nconst three = () => 3;\n",
+      "visible": "function one() {\n  return 1;\n}\n\nclass C {\n  two() {\n    return 2;\n  }\n}\n\nconst three = () => 3;\n",
+      "point": 44,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "imenu-json-nested",
+      "input": {
+        "text": "{\n  \"a\": 1,\n  \"b\": {\n    \"c\": 2\n  }\n}\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [
+          "json-ts-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "imenu",
+          "b",
+          "c"
+        ]
+      },
+      "text": "{\n  \"a\": 1,\n  \"b\": {\n    \"c\": 2\n  }\n}\n",
+      "visible": "{\n  \"a\": 1,\n  \"b\": {\n    \"c\": 2\n  }\n}\n",
+      "point": 25,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "imenu-pushes-the-mark",
+      "input": {
+        "text": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+        "point": 5,
+        "keys": "M-x C-x C-x",
+        "modes": [
+          "rust-ts-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "imenu",
+          "Fn",
+          "main"
+        ]
+      },
+      "text": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+      "visible": "mod util {\n    pub fn helper() {}\n}\n\nstruct Point {\n    x: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n    }\n}\n\nimpl Display for Point {\n    fn fmt(&self) {}\n}\n\nfn main() {\n    let p = Point { x: 1 };\n}\n",
+      "point": 5,
+      "mark": 180,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "imenu-js-function",
+      "input": {
+        "text": "function one() {\n  return 1;\n}\n\nclass C {\n  two() {\n    return 2;\n  }\n}\n\nconst three = () => 3;\n",
+        "point": 60,
+        "keys": "M-x",
+        "modes": [
+          "js-ts-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "imenu",
+          "Function",
+          "one"
+        ]
+      },
+      "text": "function one() {\n  return 1;\n}\n\nclass C {\n  two() {\n    return 2;\n  }\n}\n\nconst three = () => 3;\n",
+      "visible": "function one() {\n  return 1;\n}\n\nclass C {\n  two() {\n    return 2;\n  }\n}\n\nconst three = () => 3;\n",
+      "point": 0,
+      "mark": 60,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "imenu-org-top-heading",
+      "input": {
+        "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Ember\ntext\n* Done\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "imenu",
+          "Done"
+        ]
+      },
+      "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Ember\ntext\n* Done\n",
+      "visible": "* Inbox\nnotes\n** TODO [#A] Call Alice :work:\n** Shopping\n*** Milk\n* Projects\n** Ember\ntext\n* Done\n",
+      "point": 110,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "imenu-org-subheading",
+      "input": {
+        "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Ember\ntext\n* Done\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "imenu",
+          "Inbox",
+          "Call.Alice"
+        ]
+      },
+      "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Ember\ntext\n* Done\n",
+      "visible": "* Inbox\nnotes\n** TODO [#A] Call Alice :work:\n** Shopping\n*** Milk\n* Projects\n** Ember\ntext\n* Done\n",
+      "point": 14,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "imenu-org-folded-subheading-shows",
+      "input": {
+        "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Ember\ntext\n* Done\n",
+        "point": 0,
+        "keys": "S-TAB M-x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "imenu",
+          "Projects",
+          "Ember"
+        ]
+      },
+      "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Ember\ntext\n* Done\n",
+      "visible": "* Inbox\n* Projects\n** Ember\n* Done\n",
+      "point": 96,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    }
+  ]
+}

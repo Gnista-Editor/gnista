@@ -34,7 +34,6 @@ Each entry says whether the difference is **deliberate**, which keeps it, or **n
 - **Tree-sitter queries** (not yet) are strings in tree-sitter's syntax; Emacs's Lisp-form queries are not read. In a string, Emacs 30 cannot run its own predicates, `#equal`, `#match` and `#pred`, where Ember can ([ADR 0036](adr/0036-tree-sitter-for-scripts.md)).
 - **Tree-sitter and narrowing** (not yet): Emacs parses only the accessible part of a narrowed buffer, Ember all of it, so a node's positions may lie outside the narrowing ([ADR 0036](adr/0036-tree-sitter-for-scripts.md)).
 - **Highlighting in tree-sitter modes** (not yet) comes from each grammar's own query, not the mode's `treesit-font-lock-rules`, so faces differ in places from Emacs's.
-- **`C-M-f` in `js-ts-mode`** (not yet) moves by parens, as `treesit-thing-settings`' sexps are not used.
 
 ## Windows and frames
 
@@ -55,6 +54,7 @@ Each entry says whether the difference is **deliberate**, which keeps it, or **n
 - **The `charset` text property** (not yet): Emacs puts it on text decoded in a charset's coding and uses it when encoding again. Ember has none, so `iso-2022-7bit` chooses each character's set by the text's script: JIS X 0208 for text with kana, KS C 5601 with Hangul, else GB 2312, where Emacs writes kana alone in GB 2312's set ([ADR 0035](adr/0035-coding-systems-and-charsets.md)).
 - **Japanese files without a cookie** (not yet): Shift_JIS and EUC-JP open as Latin-1, as there are no language environments to prefer them; Emacs without a Japanese one opens Shift_JIS as `emacs-mule`, which Ember does not have ([ADR 0035](adr/0035-coding-systems-and-charsets.md)).
 - **Saving text the coding cannot write** (not yet) asks for a coding without the `*Warning*` buffer Emacs shows listing the characters; written without asking, from code, it is saved as UTF-8.
+- **Imenu** (not yet) makes the index afresh each time, so there is no `*Rescan*` item, and there is no menu bar index ([ADR 0039](adr/0039-imenu.md)).
 - **Comint** (not yet) has no prompt regexps (`comint-use-prompt-regexp`), history files, `M-r` or completion at the prompt, and shows ANSI colours as text ([ADR 0038](adr/0038-comint-and-shell.md)).
 - **Network connections** (not yet) connect while the command waits; `:nowait`, TLS and datagrams are not there ([ADR 0037](adr/0037-terminals-sockets-and-process-codings.md)).
 - **Connecting or listening** (deliberate) asks the agent's permission while it acts, as running a program does.
