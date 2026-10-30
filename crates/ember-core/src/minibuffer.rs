@@ -207,8 +207,12 @@ impl Editor {
         let input = self.minibuffer_input();
         match f.call(self, &[Value::Str(input)]) {
             Ok(Value::List(items)) => {
-                if let Some(prompt) = &mut self.prompt {
-                    prompt.collection = Some(items.iter().filter_map(|v| v.as_str().map(str::to_string)).collect());
+                let names: Vec<String> = items.iter().filter_map(|v| v.as_str().map(str::to_string)).collect();
+                if let Some(prompt) = &mut self.prompt
+                    && prompt.collection.as_ref() != Some(&names)
+                {
+                    // The sorted completions stay, as icomplete's rotation, unless the names changed.
+                    prompt.collection = Some(names);
                     prompt.sorted = None;
                 }
             }

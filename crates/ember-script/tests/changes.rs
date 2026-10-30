@@ -654,3 +654,58 @@ fn text_can_carry_its_own_keys() {
     ed.press("RET").unwrap();
     assert_eq!(eval(&mut ed, &s, "[followed, ember.bufferText()]"), "[3,\"se\\ne LINK here\"]");
 }
+
+#[test]
+fn buffers_made_current_from_the_minibuffer_are_current() {
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("x.rs");
+    std::fs::write(&file, "fn main() {}\n").unwrap();
+    let (mut ed, s) = setup();
+    eval(&mut ed, &s, &format!(
+        r#"(ember.getBufferCreate("victim"), ember.defineCommand({{ name: "test-visit", run: () => {{
+            const b = ember.findFileNoselect({file:?});
+            globalThis.mode = ember.withCurrentBuffer(b, () => ember.variable("major-mode"));
+            ember.call("kill-buffer", "victim");
+            ember.insert("X");
+          }} }}), ember.bindKey("C-c v", "test-visit", "minibuffer-local-map"), 0)"#
+    ));
+    ed.press("M-x").unwrap();
+    ed.press("C-c v").unwrap();
+    // The file got its mode, and the minibuffer stayed current after the kill.
+    assert_eq!(eval(&mut ed, &s, "mode"), r#""rust-ts-mode""#);
+    assert_eq!(ed.minibuffer_input(), "X");
+    // Fontifying in another buffer during the prompt leaves the minibuffer current.
+    ed.redisplay();
+    assert_eq!(ed.buffer().name, ed.minibuffer().name);
+}
+
+#[test]
+fn local_hooks_bind_locally_and_go_when_emptied() {
+    let (mut ed, s) = setup();
+    let result = eval(
+        &mut ed,
+        &s,
+        r#"(() => {
+          ember.defineHook("test-hook");
+          let ran = 0;
+          const f = () => { ran++; return { found: true }; };
+          ember.addHook("test-hook", f, { local: true });
+          ember.letBind({ "test-hook": null }, () => ember.runHooks("test-hook"));
+          const success = ember.runHookWithArgsUntilSuccess("test-hook");
+          ember.removeHook("test-hook", f, { local: true });
+          return [ran, success, ember.isLocalVariable("test-hook"), ember.variable("test-hook")];
+        })()"#,
+    );
+    // let binds the local value; an object is success; the emptied local value goes.
+    assert_eq!(result, "[1,true,false,[]]");
+}
+
+#[test]
+fn a_keymap_property_at_the_end_of_the_buffer_follows_stickiness() {
+    let (mut ed, s) = setup();
+    eval(&mut ed, &s, r#"(globalThis.n = 0, ember.defineCommand({ name: "test-k", run: () => { n++; } }), ember.defineKeymap("test-k-map"), ember.bindKey("C-c k", "test-k", "test-k-map"), ember.insert("ab"), ember.putTextProperty(1, 2, "keymap", "test-k-map"), 0)"#);
+    ed.press("C-c k").unwrap();
+    eval(&mut ed, &s, r#"ember.putTextProperty(1, 2, "rear-nonsticky", true)"#);
+    let _ = ed.press("C-c k");
+    assert_eq!(eval(&mut ed, &s, "n"), "1");
+}

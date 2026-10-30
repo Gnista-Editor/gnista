@@ -45,6 +45,20 @@ Ahead of keymaps as values, text and overlays can carry keys: a `keymap` propert
 
 A completion table can be a function of the input that gives the names, as Emacs's `completion-table-dynamic` makes one: the editor calls it as the prompt opens and after each command, and the completion styles apply to what it gives. Tables with Emacs's whole protocol (the action argument, boundaries and metadata) and `completion-at-point` remain.
 
+## Review
+
+A review of the work under this ADR found, and the same round fixed:
+- `syntax-propertize` started where the last edit was rather than at its line's start, so a char literal typed a key at a time, with show-paren scanning between keys, was never marked.
+- Visiting a file, killing a buffer, selecting a window or fontifying during a prompt left the minibuffer wrongly current or not: a file visited from the minibuffer got no major mode, and text inserted after a kill went to the wrong buffer.
+- A dynamic completion table threw away icomplete's rotation after every command; it now keeps it while the names are the same.
+- A hook with a local value was not local to `letBind` or `isLocalVariable`; a local value whose functions were all removed stayed as `[t]`.
+- A hook function returning an object did not count as success in `run-hook-with-args-until-success`; what is not an editor value now counts as t.
+- A keymap property on the last character applied at the end of the buffer even where it was rear-nonsticky.
+
+A fuzzer also found `DEL` deleting electric pairs twice undoing in two steps; `delete-char` now calls `undo-auto-amalgamate` whoever calls it, as Emacs's does.
+
+Still open: setting a hook's variable drops its depths, and its named entries cannot be removed with `removeHook`; a propertize function that throws leaves its stretch undone, as in Emacs.
+
 ## Consequences
 
 Ports can keep following their Lisp closely: dispatch hooks, symbol properties, keymaps in text and recursive minibuffers are what the next large ports (completion-at-point, eglot-style backends, Org's links and agenda keys, isearch's minibuffer) are written against. The cost is a second migration of the packages that use hooks, and of the mode line in both front ends; the mode line keeps each front end's look, which its snapshots check.

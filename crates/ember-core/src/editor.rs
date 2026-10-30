@@ -722,11 +722,13 @@ impl Editor {
             return f(self);
         }
         let saved = (self.buffers[self.current].id, self.current_prefix_arg, self.this_command.clone());
+        let in_minibuffer = self.in_minibuffer;
         self.resume(resume);
         let value = f(self);
         if let Some(index) = self.buffers.iter().position(|b| b.id == saved.0) {
             self.current = index;
         }
+        self.in_minibuffer = in_minibuffer;
         self.current_prefix_arg = saved.1;
         if let Some(command) = &resume.command {
             self.last_command = Some(command.clone());
@@ -741,6 +743,7 @@ impl Editor {
     pub(crate) fn resume(&mut self, resume: &Resume) {
         if let Some(index) = self.buffers.iter().position(|b| b.id == resume.buffer) {
             self.current = index;
+            self.in_minibuffer = false;
         }
         self.current_prefix_arg = resume.prefix;
         if resume.command.is_some() {
@@ -1350,6 +1353,8 @@ impl Editor {
         if done >= pos {
             return Ok(());
         }
+        // From the start of the line, as syntax-propertize-wholelines extends it.
+        let done = b.line_start(b.line_of(done));
         let line = b.line_of(pos.max(done + 500).min(b.len()));
         let end = if line + 1 < b.line_count() { b.line_start(line + 1) } else { b.len() };
         let b = self.buffer_mut();
@@ -1416,6 +1421,7 @@ impl Editor {
             self.selected_window_shows(index);
         }
         self.current = index;
+        self.in_minibuffer = false;
     }
 
     /// The named buffer, made empty if there is none, as Emacs's
@@ -1451,12 +1457,14 @@ impl Editor {
     /// `find-file-noselect`, and returns the buffer's name.
     pub fn find_file_noselect(&mut self, path: &Path) -> Result<String> {
         let (current, previous) = (self.buffers[self.current].id, self.previous_buffer);
+        let in_minibuffer = self.in_minibuffer;
         let visited = self.visit_file(path);
         let name = self.buffers[self.current].name.clone();
         if let Some(back) = self.buffers.iter().position(|b| b.id == current) {
             self.current = back;
             self.selected_window_shows(back);
         }
+        self.in_minibuffer = in_minibuffer;
         self.previous_buffer = previous;
         visited.map(|()| name)
     }
@@ -1508,7 +1516,8 @@ impl Editor {
         }
         // As Emacs runs kill-buffer-hook in the buffer, before it goes.
         if self.hook_has_functions("kill-buffer-hook") || self.buffers[index].local_hooks.contains_key("kill-buffer-hook") {
-            let old = self.buffers[self.current].name.clone();
+            // The buffer current before, the minibuffer if it was.
+            let old = self.buffer().name.clone();
             if self.set_current_buffer(name).is_ok() {
                 if let Err(e) = self.run_hooks("kill-buffer-hook") {
                     self.message(format!("Error in kill-buffer-hook: {e}"));
@@ -1532,12 +1541,14 @@ impl Editor {
             self.buffers.push(Buffer::new("*scratch*"));
         }
         let target = if showing { next.clone() } else { Some(current_name) };
+        let in_minibuffer = self.in_minibuffer;
         self.current = target.and_then(|n| self.find_buffer(&n)).unwrap_or(0);
         self.selected_window_shows(self.current);
         // Other windows showing it show what the selected window now does,
         // or the buffer it would switch to.
         let replacement = next.and_then(|n| self.find_buffer(&n)).filter(|_| !showing).unwrap_or(self.current);
         self.replace_buffer_in_windows(gone, replacement);
+        self.in_minibuffer = in_minibuffer;
         Ok(())
     }
 

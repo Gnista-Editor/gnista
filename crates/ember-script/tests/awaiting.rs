@@ -301,3 +301,25 @@ fn a_completion_table_can_be_a_function_of_the_input() {
     let asked = s.eval_expression(&mut ed, "asked").unwrap();
     assert!(asked.contains(r#""cherry/b""#), "{asked}");
 }
+
+#[test]
+fn a_dynamic_table_keeps_icompletes_rotation() {
+    let (mut ed, _s) = setup(
+        r#"
+        ember.defineCommand({
+          name: "pick-fruit",
+          run: async () => { ember.insert(await ember.completingRead("Fruit: ", () => ["apple", "apricot", "avocado"])); },
+        });
+        "#,
+    );
+    ed.press("M-x").unwrap();
+    ed.type_text("pick-fruit");
+    ed.press("RET a").unwrap();
+    let shown = |ed: &Editor| ed.minibuffer_overlay().map(|o| o.after.iter().map(|(t, _)| t.as_str()).collect::<String>()).unwrap_or_default();
+    let before = shown(&ed);
+    ed.press("C-.").unwrap();
+    assert_ne!(shown(&ed), before, "C-. rotates the completions");
+    // As icomplete-force-complete-and-exit takes the first of them.
+    ed.press("C-j").unwrap();
+    assert_eq!(text(&ed), "apricot");
+}

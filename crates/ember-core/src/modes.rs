@@ -221,9 +221,11 @@ impl Editor {
             return None;
         }
         let point = b.point();
-        let at = if point >= b.len() { b.len() - 1 } else { point };
         let named = |v: &crate::Value| v.as_str().map(str::to_string);
-        if let Some(map) = b.char_property(at, name).and_then(named) {
+        // At the end of the buffer only the character before counts, by its stickiness.
+        if point < b.len()
+            && let Some(map) = b.char_property(point, name).and_then(named)
+        {
             return Some(map);
         }
         let before = point.checked_sub(1)?;

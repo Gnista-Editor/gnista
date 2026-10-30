@@ -448,7 +448,7 @@ impl ScriptFunction {
     }
 
     /// Calls the function with editor values and returns what it returns,
-    /// as a function value's call; what is not an editor value is null.
+    /// as a function value's call; what is not an editor value, such as an object, is t.
     fn call_returning(&self, ed: &mut Editor, args: &[EditorValue]) -> Result<EditorValue> {
         enter(&self.context, ed, |ctx| {
             let run = self.run.clone().restore(&ctx).map_err(|e| js_error(&ctx, e))?;
@@ -458,7 +458,8 @@ impl ScriptFunction {
                 .collect::<rquickjs::Result<Vec<_>>>()
                 .map_err(|e| js_error(&ctx, e))?;
             let value: Value = run.call((Rest(args),)).map_err(|e| js_error(&ctx, e))?;
-            convert_from_js(&ctx, value).map(|v| v.unwrap_or(EditorValue::Null)).map_err(|e| js_error(&ctx, e))
+            // What is no editor value, such as an object, is still not nil: t.
+            convert_from_js(&ctx, value).map(|v| v.unwrap_or(EditorValue::Bool(true))).map_err(|e| js_error(&ctx, e))
         })
     }
 

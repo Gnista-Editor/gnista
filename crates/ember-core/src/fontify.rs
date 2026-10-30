@@ -92,11 +92,12 @@ impl Editor {
     /// Runs `f` with a buffer current, as if no prompt were open, then puts
     /// back the buffer and prompt that were, as Emacs's `with-current-buffer`.
     pub fn with_current_buffer<T>(&mut self, index: usize, f: impl FnOnce(&mut Editor) -> T) -> T {
-        let (current, prompt) = (self.current, self.prompt.take());
+        let (current, prompt, in_minibuffer) = (self.current, self.prompt.take(), self.in_minibuffer);
         self.current = index;
         let result = f(self);
         self.current = current;
         self.prompt = prompt;
+        self.in_minibuffer = in_minibuffer;
         result
     }
 

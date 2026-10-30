@@ -354,7 +354,8 @@ impl Editor {
     }
 
     pub fn is_local_variable(&self, name: &str) -> bool {
-        self.buffer().locals.contains_key(name)
+        // A hook is local when the buffer has its own functions for it.
+        self.buffer().locals.contains_key(name) || self.buffer().local_hooks.contains_key(name)
     }
 
     /// Removes all of the current buffer's own values, local hooks and
@@ -367,6 +368,7 @@ impl Editor {
         b.locals.retain(|name, _| permanent.contains(name));
         b.forget_shift_selection();
         b.local_hooks.clear();
+        b.syntax_propertized = 0;
         b.local_map.clear();
         b.syntax_table = crate::syntax_table::STANDARD.to_string();
         b.syntax = None;
@@ -450,6 +452,10 @@ impl Editor {
         let list = if local { self.buffer_mut().local_hooks.get_mut(hook) } else { self.hooks.get_mut(hook) };
         if let Some(list) = list {
             list.retain(|e| e.run.as_ref() != Some(function));
+        }
+        // A local value with no functions left goes, as remove-hook kills it.
+        if local && self.buffer().local_hooks.get(hook).is_some_and(|l| l.iter().all(|e| e.run.is_none())) {
+            self.buffer_mut().local_hooks.remove(hook);
         }
     }
 

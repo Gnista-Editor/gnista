@@ -389,6 +389,7 @@ impl Editor {
         w.used = used;
         let (buffer, top) = (w.buffer, w.top_line);
         self.current = self.buffer_index(buffer);
+        self.in_minibuffer = false;
         let b = &mut self.buffers[self.current];
         if let Some(point) = b.remove_window_point(self.selected_window) {
             b.set_point(point);
@@ -720,6 +721,7 @@ impl Editor {
         let (buffer, top) = (w.buffer, w.top_line);
         self.selected_window = id;
         self.current = self.buffer_index(buffer);
+        self.in_minibuffer = false;
         let b = &mut self.buffers[self.current];
         if let Some(point) = b.remove_window_point(id) {
             b.set_point(point);

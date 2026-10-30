@@ -95,3 +95,16 @@ fn a_rust_char_literal_quote_opens_no_string() {
     ed.set_variable("parse-sexp-lookup-properties", ember_core::Value::Bool(false));
     assert!(s.eval_expression(&mut ed, "ember.scanLists(1, 1, 0)").is_err());
 }
+
+#[test]
+fn a_rust_char_literal_typed_a_key_at_a_time_is_marked() {
+    let mut ed = ember_core::Editor::new();
+    let s = ember_script::Scripting::new(&mut ed).unwrap();
+    ed.call("rust-ts-mode", vec![]).unwrap();
+    // A scan after each key, as show-paren's timer makes one.
+    for c in "f('\"', x);".chars() {
+        ed.type_text(&c.to_string());
+        let _ = s.eval_expression(&mut ed, "ember.parsePartialSexp(0, ember.point()).depth");
+    }
+    assert_eq!(s.eval_expression(&mut ed, "ember.scanLists(1, 1, 0)").unwrap(), "9");
+}
