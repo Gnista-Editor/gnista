@@ -55,7 +55,7 @@ Each entry says whether the difference is **deliberate**, which keeps it, or **n
 - **Japanese files without a cookie** (not yet): Shift_JIS and EUC-JP open as Latin-1, as there are no language environments to prefer them; Emacs without a Japanese one opens Shift_JIS as `emacs-mule`, which Ember does not have ([ADR 0035](adr/0035-coding-systems-and-charsets.md)).
 - **Saving text the coding cannot write** (not yet) asks for a coding without the `*Warning*` buffer Emacs shows listing the characters; written without asking, from code, it is saved as UTF-8.
 - **Imenu** (not yet) makes the index afresh each time, so there is no `*Rescan*` item, and there is no menu bar index ([ADR 0039](adr/0039-imenu.md)).
-- **Comint** (not yet) has no prompt regexps (`comint-use-prompt-regexp`), history files, `M-r` or completion at the prompt, and shows ANSI colours as text ([ADR 0038](adr/0038-comint-and-shell.md)).
+- **Comint** (not yet) has no prompt regexps (`comint-use-prompt-regexp`), history files, `M-r` or completion at the prompt, and ANSI colours other than the 256-colour and RGB ones are faces of Ember's own rather than face attribute lists ([ADR 0038](adr/0038-comint-and-shell.md)).
 - **Network connections** (not yet) connect while the command waits; `:nowait`, TLS and datagrams are not there ([ADR 0037](adr/0037-terminals-sockets-and-process-codings.md)).
 - **Connecting or listening** (deliberate) asks the agent's permission while it acts, as running a program does.
 - **Changing a file's modes or times** (deliberate) asks the agent's permission while it acts, as writing files does; Emacs has no agent to ask.

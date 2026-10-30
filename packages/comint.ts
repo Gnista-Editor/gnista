@@ -1,3 +1,5 @@
+import { applyOnRegion } from "ansi-color";
+
 // Command interpreters in a buffer, after Emacs's comint.el: a program on
 // a pseudo-terminal, its output marked as the `output` field and its prompt
 // left for you to type after, input sent with RET and kept in a history
@@ -147,6 +149,12 @@ export function outputFilter(process: string, text: string): void {
         ember.setMarker(ember.processMark(process)!, ember.point());
         carriageMotion(ember.markerPosition(s.lastOutputStart)!, ember.point());
         ember.setMarker(ember.processMark(process)!, ember.point());
+        // ANSI colours, as ansi-color-process-output does first among comint-output-filter-functions.
+        const ansi = ember.variable("ansi-color-for-comint-mode");
+        if (ansi === true || ansi === "filter") {
+          applyOnRegion(ember.markerPosition(s.lastOutputStart)!, processMark(process), ansi === "filter");
+          ember.gotoChar(processMark(process));
+        }
         const end = ember.point();
         ember.gotoChar(pointAtMark ? end : ember.markerPosition(saved)!);
         ember.runHooks("comint-output-filter-functions", string!);

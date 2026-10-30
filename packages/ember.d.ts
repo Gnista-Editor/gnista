@@ -3945,6 +3945,12 @@ declare global {
        */
       "adaptive-fill-regexp": Value;
       /**
+       * What comint does with ANSI escape sequences in output: t colours the text, filter removes them, nil leaves them.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-for-comint-mode": Value;
+      /**
        * The command typing a space or newline runs to break the line, when Auto Fill mode is on; nil when it is off. Each buffer has its own.
        */
       "auto-fill-function": Value;
@@ -5801,6 +5807,216 @@ declare global {
 
     /** Every face, with its documentation. */
     interface Faces {
+      /**
+       * ANSI black as a background.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bg-black": FaceAttributes;
+      /**
+       * ANSI blue as a background.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bg-blue": FaceAttributes;
+      /**
+       * ANSI bright black as a background.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bg-bright-black": FaceAttributes;
+      /**
+       * ANSI bright blue as a background.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bg-bright-blue": FaceAttributes;
+      /**
+       * ANSI bright cyan as a background.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bg-bright-cyan": FaceAttributes;
+      /**
+       * ANSI bright green as a background.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bg-bright-green": FaceAttributes;
+      /**
+       * ANSI bright magenta as a background.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bg-bright-magenta": FaceAttributes;
+      /**
+       * ANSI bright red as a background.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bg-bright-red": FaceAttributes;
+      /**
+       * ANSI bright white as a background.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bg-bright-white": FaceAttributes;
+      /**
+       * ANSI bright yellow as a background.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bg-bright-yellow": FaceAttributes;
+      /**
+       * ANSI cyan as a background.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bg-cyan": FaceAttributes;
+      /**
+       * ANSI green as a background.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bg-green": FaceAttributes;
+      /**
+       * ANSI magenta as a background.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bg-magenta": FaceAttributes;
+      /**
+       * ANSI red as a background.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bg-red": FaceAttributes;
+      /**
+       * ANSI white as a background.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bg-white": FaceAttributes;
+      /**
+       * ANSI yellow as a background.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bg-yellow": FaceAttributes;
+      /**
+       * ANSI black.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-black": FaceAttributes;
+      /**
+       * ANSI blue.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-blue": FaceAttributes;
+      /**
+       * ANSI bold.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bold": FaceAttributes;
+      /**
+       * ANSI bright black.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bright-black": FaceAttributes;
+      /**
+       * ANSI bright blue.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bright-blue": FaceAttributes;
+      /**
+       * ANSI bright cyan.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bright-cyan": FaceAttributes;
+      /**
+       * ANSI bright green.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bright-green": FaceAttributes;
+      /**
+       * ANSI bright magenta.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bright-magenta": FaceAttributes;
+      /**
+       * ANSI bright red.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bright-red": FaceAttributes;
+      /**
+       * ANSI bright white.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bright-white": FaceAttributes;
+      /**
+       * ANSI bright yellow.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-bright-yellow": FaceAttributes;
+      /**
+       * ANSI cyan.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-cyan": FaceAttributes;
+      /**
+       * ANSI green.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-green": FaceAttributes;
+      /**
+       * ANSI italic.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-italic": FaceAttributes;
+      /**
+       * ANSI magenta.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-magenta": FaceAttributes;
+      /**
+       * ANSI red.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-red": FaceAttributes;
+      /**
+       * ANSI underline.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-underline": FaceAttributes;
+      /**
+       * ANSI white.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-white": FaceAttributes;
+      /**
+       * ANSI yellow.
+       *
+       * Defined in packages/ansi-color.ts.
+       */
+      "ansi-color-yellow": FaceAttributes;
       /**
        * Bold text.
        */

@@ -136,3 +136,24 @@ fn carriage_returns_and_backspaces_as_a_terminal_shows_them() {
     until(&mut ed, |t| t.ends_with("aZ\n$ "));
     assert!(text(&ed).contains("\nX\naZ\n$ "), "{:?}", text(&ed));
 }
+
+#[test]
+fn ansi_colours_become_faces() {
+    let (mut ed, s) = setup();
+    start_shell(&mut ed);
+    type_line(&mut ed, r"printf '\033[1;31mred\033[0m plain \033[38;5;46mx\033[K\n'");
+    until(&mut ed, |t| t.ends_with("red plain x\n$ "));
+    let t = text(&ed);
+    let red = t.rfind("red plain").unwrap();
+    let x = t.rfind("x\n$ ").unwrap();
+    let got = s
+        .eval_expression(&mut ed, &format!("JSON.stringify([ember.getTextProperty({red}, 'face'), ember.getTextProperty({}, 'face') ?? null, ember.getTextProperty({x}, 'face')])", red + 4))
+        .unwrap();
+    assert_eq!(got, r#""[[\"ansi-color-bold\",\"ansi-color-red\"],null,\"ansi-color-rgb-00ff00\"]""#);
+    // A sequence cut between two pieces of output is finished with the second.
+    type_line(&mut ed, r"printf '\033[3'; sleep 0.3; printf '2mgreen\033[0m\n'");
+    until(&mut ed, |t| t.ends_with("green\n$ "));
+    let t = text(&ed);
+    let g = t.rfind("green\n").unwrap();
+    assert_eq!(s.eval_expression(&mut ed, &format!("ember.getTextProperty({g}, 'face')")).unwrap(), r#""ansi-color-green""#);
+}

@@ -27,6 +27,12 @@ With programs on a pseudo-terminal ([ADR 0037](0037-terminals-sockets-and-proces
 - `shell-command-on-region` on `M-|` gives the region as input; with a prefix argument the output replaces it.
 - `async-shell-command` on `M-&` runs on a terminal through comint's filter into `*Async Shell Command*`. It asks for a new buffer if one is running there, and says how it ended.
 
+**ANSI colours** (`packages/ansi-color.ts`, added after the rest), from ansi-color.el:
+- **What it does.** Comint's output goes through `ansi-color-apply-on-region`, as `ansi-color-process-output` does first among Emacs's `comint-output-filter-functions`. SGR sequences (`ESC [ ... m`) set bold, italic, underline, the eight colours and their bright forms, the 256-colour palette and RGB as faces, and other control sequences are removed.
+- **Carrying on.** The rendition carries on into the next output, and a sequence cut off between two reads is finished with the second.
+- **Faces.** The faces are Emacs's `ansi-color-*`, with its X colours in hex. Backgrounds and other colours are faces made for them, as Ember has no face attribute lists.
+- **Turning it off.** `ansi-color-for-comint-mode` set to `filter` only removes the sequences.
+
 **Supporting changes:**
 - `getenv`, and a directory argument to `expandFileName`, as Emacs's have.
 - A process on a terminal is interrupted, quit or stopped with CURRENT-GROUP by writing the terminal's character, as Emacs's SIGNALS_VIA_CHARACTERS.
@@ -48,7 +54,7 @@ Not done yet:
 - `comint-use-prompt-regexp`;
 - history files (`comint-input-ring-file-name`) and `M-r`;
 - completing file names and commands at the prompt;
-- ANSI colours (`ansi-color`);
+- ANSI colours in compilation buffers, and inverse video and faint text, which Ember's faces lack;
 - `comint-accumulate`;
 - an error buffer for shell commands' standard error (`shell-command-default-error-buffer`).
 
