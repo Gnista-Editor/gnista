@@ -82,7 +82,8 @@ Item 10 began with what rows show besides the text:
 - An overlay's `before-string` and `after-string` show at its ends, after-strings of overlays ending at a position before before-strings of those starting there, none for an overlay its own `invisible` hides.
 - A string `display` property shows in place of the text it is on, in that text's face, and an empty one hides it; `(space :width N)` and `(space :align-to COLUMN)` give space.
 - Segments and glyphs say they are strings. The cursor goes on the text after an overlay string and on a display string when point is at the text it stands for, and wrapping moves a string to the next row whole.
-- Still to come: strings with newlines, which end at the first; `line-prefix` and `wrap-prefix`; margins and images; and the mode line formatted by the core from `mode-line-format`.
+- `line-prefix` and `wrap-prefix`, as properties of the text at a line's start or as buffer-local variables, start its first and its continued rows, the wrap prefix taking room from them.
+- Still to come: strings with newlines, which end at the first; margins and images; and the mode line formatted by the core from `mode-line-format`.
 
 ## Review
 

@@ -505,7 +505,7 @@ impl Editor {
         while rows.len() < count && logical < lines {
             logical += 1;
             let (start, line) = (pos, b.line_of(pos));
-            let mut segments: Vec<Segment> = Vec::new();
+            let mut segments: Vec<Segment> = self.prefix_segments(b, start, "line-prefix", dark, &mut styles);
             let end = loop {
                 if pos >= len {
                     break len;
@@ -550,10 +550,17 @@ impl Editor {
             match wrap {
                 Some(wrap) => {
                     let tab_width = self.tab_width_in(b);
-                    let wrapped = wrap_row(row, wrap, tab_width);
+                    // Continued rows start with the wrap prefix, which takes room from them.
+                    let prefix = self.prefix_segments(b, start, "wrap-prefix", dark, &mut styles);
+                    let indent: usize = prefix.iter().map(|s| crate::display::display_width(&s.text, tab_width)).sum();
+                    let wrapped = wrap_row(row, wrap, tab_width, indent);
                     let room = count - rows.len();
-                    rows.extend(wrapped.into_iter().take(room).map(|mut r| {
+                    rows.extend(wrapped.into_iter().take(room).enumerate().map(|(i, mut r)| {
                         r.line = b.line_of(r.start);
+                        if i > 0 && !prefix.is_empty() {
+                            let shown = prefix.iter().map(|s| Segment { start: r.start, ..s.clone() });
+                            r.segments.splice(0..0, shown);
+                        }
                         r
                     }));
                 }
@@ -565,6 +572,17 @@ impl Editor {
             pos = end + 1;
         }
         rows
+    }
+
+    /// What a line or its continued rows start with, as Emacs's
+    /// `line-prefix` and `wrap-prefix` give it: the property of the text at
+    /// the line's start, or else the buffer's variable, if it is a string.
+    fn prefix_segments(&self, b: &Buffer, pos: usize, name: &str, dark: Option<bool>, styles: &mut HashMap<Vec<String>, Style>) -> Vec<Segment> {
+        let at = if pos < b.len() { b.char_property(pos, name).cloned() } else { None };
+        match at.or_else(|| self.variable_in(b, name)) {
+            Some(value @ (Value::Str(_) | Value::Text(_))) => self.string_segments(pos, &value, None, &[], dark, styles),
+            _ => Vec::new(),
+        }
     }
 
     /// The overlay strings that show at a position, as Emacs orders them:
@@ -695,7 +713,7 @@ impl Editor {
 /// the last space before the edge with word wrap, otherwise at the edge.
 /// Tabs are measured from the start of each screen row. An ellipsis is
 /// never split.
-fn wrap_row(row: Row, wrap: Wrap, tab_width: usize) -> Vec<Row> {
+fn wrap_row(row: Row, wrap: Wrap, tab_width: usize, indent: usize) -> Vec<Row> {
     // Every character of the row, as (segment, index in the segment).
     let items: Vec<(usize, usize)> = row
         .segments
@@ -716,7 +734,9 @@ fn wrap_row(row: Row, wrap: Wrap, tab_width: usize) -> Vec<Row> {
     let mut k = 0;
     while k < items.len() {
         let w = width_of(char_of(k), col);
-        if col + w > wrap.width && k > row_start {
+        // Rows after the first have the wrap prefix's room less.
+        let width = if row_start == 0 { wrap.width } else { wrap.width.saturating_sub(indent).max(1) };
+        if col + w > width && k > row_start {
             let mut at = match last_space {
                 Some(space) if wrap.words && space > row_start => space,
                 _ => k,

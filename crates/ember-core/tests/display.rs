@@ -123,3 +123,29 @@ fn a_propertized_overlay_string_shows_in_its_faces() {
     assert_eq!(pieces[1..3], [(": ", true), ("i32", false)]);
     assert_eq!(shown(&ed), "let n: i32 = 3;");
 }
+
+#[test]
+fn line_and_wrap_prefixes_start_rows() {
+    let mut ed = editor("* Heading\nbody text that goes on\n");
+    let w = ed.selected_window();
+    ed.set_window_size(w, 12, 10);
+    let b = ed.window_buffer_mut();
+    b.put_text_property(10..32, "line-prefix", Value::Str("  ".into()));
+    b.put_text_property(10..32, "wrap-prefix", Value::Str("    ".into()));
+    let texts: Vec<String> = ed.window_rows(4, true).iter().map(|r| r.segments.iter().map(|s| s.text.as_str()).collect()).collect();
+    // Rows wrap at 11 columns, at the edge without word-wrap; the
+    // continued ones have four less.
+    assert_eq!(texts[..4], ["* Heading", "  body text", "     that g", "    oes on"]);
+    // The cursor at the line's start goes after its prefix.
+    let row = &ed.window_rows(2, true)[1];
+    assert_eq!(cursor_index(&row_glyphs(row, 8), 10), 2);
+}
+
+#[test]
+fn the_line_prefix_variable_prefixes_every_line() {
+    let mut ed = editor("a\nb");
+    ed.make_local_variable("line-prefix");
+    ed.set_variable("line-prefix", Value::Str("> ".into()));
+    let texts: Vec<String> = ed.window_rows(2, true).iter().map(|r| r.segments.iter().map(|s| s.text.as_str()).collect()).collect();
+    assert_eq!(texts, ["> a", "> b"]);
+}

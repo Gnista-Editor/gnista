@@ -512,6 +512,18 @@ pub(crate) fn install(ed: &mut Editor) {
             Value::Bool(false),
         ),
         Variable::new(
+            "line-prefix",
+            "A string shown at the start of each line, before its text, unless the text there has a line-prefix property of its own. Org's indent mode uses it.",
+            Value::Null,
+        )
+        .local(),
+        Variable::new(
+            "wrap-prefix",
+            "A string shown at the start of each row a long line continues on, unless the text has a wrap-prefix property of its own; it takes room from the row.",
+            Value::Null,
+        )
+        .local(),
+        Variable::new(
             "yank-excluded-properties",
             "The text properties yanking leaves out of what it inserts, or t for all of them, as Emacs's insert-for-yank removes them.",
             Value::List(["category", "field", "follow-link", "fontified", "font-lock-face", "help-echo", "intangible", "invisible", "keymap", "local-map", "mouse-face", "read-only", "yank-handler"].into_iter().map(Value::from).collect()),

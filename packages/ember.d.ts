@@ -4051,6 +4051,10 @@ declare global {
        */
       "line-move-visual": Value;
       /**
+       * A string shown at the start of each line, before its text, unless the text there has a line-prefix property of its own. Org's indent mode uses it.
+       */
+      "line-prefix": Value;
+      /**
        * The current buffer's major mode, as the name of the command that turns it on.
        */
       "major-mode": Value;
@@ -4667,6 +4671,10 @@ declare global {
        * visual-line-mode turns it on.
        */
       "word-wrap": Value;
+      /**
+       * A string shown at the start of each row a long line continues on, unless the text has a wrap-prefix property of its own; it takes room from the row.
+       */
+      "wrap-prefix": Value;
       /**
        * The text properties yanking leaves out of what it inserts, or t for all of them, as Emacs's insert-for-yank removes them.
        */
