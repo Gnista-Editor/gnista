@@ -134,6 +134,9 @@
     const name = native.bufferNameOf(id);
     if (name !== null && name !== undefined) native.setCurrentBuffer(name);
   };
+  /** Forgets a killed buffer's object, once packages have loaded and hooks can be added. */
+  const forgetBuffer = () => buffers.delete(native.bufferIdOf());
+
   /** A buffer's name from a name or a buffer object, as functions that take a buffer accept either. */
   const nameOf = (b) => (b instanceof Buffer ? (b.live ? b.name : ember.signal("error", "Selecting deleted buffer")) : String(b));
 
@@ -1035,6 +1038,8 @@
         Object.fromEntries(Object.entries(bindings).map(([keys, command]) => [String(keys), String(command)])),
       ),
   });
+
+  ember.addHook("kill-buffer-hook", forgetBuffer);
 
   globalThis.console = Object.freeze({
     log: (...items) => native.message(items.map(String).join(" ")),

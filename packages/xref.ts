@@ -14,6 +14,7 @@ type Xref = { file: string; line: number; col: number; length: number; summary: 
 /** Each *xref* buffer's places, by the buffer line each is on. */
 /** What each *xref* buffer shows, kept by buffer so renaming it keeps it. */
 const shown = new Map<ember.Buffer, { byLine: Map<number, Xref>; current?: number }>();
+ember.addHook("kill-buffer-hook", () => shown.delete(ember.currentBuffer()));
 
 /** Shows places in *xref*, grouped by file as xref--insert-xrefs does, and selects it. */
 function showXrefs(xrefs: Xref[]): void {

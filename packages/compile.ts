@@ -123,6 +123,13 @@ type Message = {
  */
 const buffers = new Map<ember.Buffer, { messages: Message[]; parsed: number; current?: number; started: number; matches: number }>();
 
+// A killed buffer's messages go with it, as its buffer-local variables would.
+ember.addHook("kill-buffer-hook", () => {
+  const key = ember.currentBuffer();
+  for (const m of buffers.get(key)?.messages ?? []) if (m.marker !== undefined) ember.deleteMarker(m.marker);
+  buffers.delete(key);
+});
+
 function state(buffer: ember.BufferLike = ember.currentBuffer()) {
   const key = ember.getBuffer(buffer) ?? ember.signal("error", `No such buffer ${buffer}`);
   let s = buffers.get(key);
