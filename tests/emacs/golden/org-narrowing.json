@@ -394,6 +394,120 @@
       "kill_ring": [],
       "modified": false,
       "error": "Beginning of buffer"
+    },
+    {
+      "name": "subtree-to-indirect-buffer-then-edit-it",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 11,
+        "keys": "C-c C-x b C-x o M-> SPC x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "* one\nbody\n* two\nmore\n** child x\n* three\n",
+      "visible": "* one\nbody\n* two\nmore\n** child x\n* three\n",
+      "point": 32,
+      "mark": 11,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 11,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        },
+        {
+          "buffer": "*ember-oracle*::two",
+          "point": 32,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "indirect-buffer-folds-apart-from-its-base",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 11,
+        "keys": "S-TAB C-c C-x b C-x o",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "visible": "* one\n* two\nmore\n** child\n* three\n",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 11,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        },
+        {
+          "buffer": "*ember-oracle*::two",
+          "point": 11,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "a-second-indirect-buffer-replaces-the-first",
+      "input": {
+        "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+        "point": 11,
+        "keys": "C-c C-x b M-> C-c C-x b C-x o",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "visible": "* one\nbody\n* two\nmore\n** child\n* three\n",
+      "point": 39,
+      "mark": 11,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 39,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        },
+        {
+          "buffer": "*ember-oracle*::three",
+          "point": 39,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        }
+      ]
     }
   ]
 }

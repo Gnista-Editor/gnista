@@ -216,6 +216,51 @@ pub struct Buffer {
     pub(crate) pending_changes: Vec<(usize, usize, usize)>,
     /// The visited file's state: modification time, backup and auto-save.
     pub(crate) file: crate::fileio::FileState,
+    /// The buffer whose text this one shares, if it is an indirect buffer.
+    pub(crate) base: Option<u64>,
+    /// While the buffer shares its text, as a base or an indirect buffer:
+    /// what changed since the editor last passed it on to the others.
+    pub(crate) shared: Option<Shared>,
+    /// Whether changes from another buffer sharing the text are being made,
+    /// which are not recorded again.
+    pub(crate) mirroring: bool,
+}
+
+/// A buffer's undo history, moving between the buffers sharing its text.
+pub(crate) struct UndoState {
+    groups: Vec<Group>,
+    open: Vec<Edit>,
+    open_unmodified_at: Option<u64>,
+    open_point: Option<usize>,
+    disabled: bool,
+    save_generation: u64,
+    pending: Option<usize>,
+    selective: Option<Vec<Vec<Selective>>>,
+    in_region: bool,
+    edited: bool,
+}
+
+/// What a buffer sharing its text has changed since the editor last made
+/// the same changes in the others, as Emacs's indirect buffers share one
+/// buffer_text.
+#[derive(Debug, Default)]
+pub(crate) struct Shared {
+    pub(crate) changes: Vec<TextChange>,
+    /// The text properties' generation when last shared.
+    pub(crate) props: u64,
+    /// The modified flag when last shared.
+    pub(crate) modified: bool,
+    /// Whether this buffer holds the undo history its family shares.
+    pub(crate) holds_undo: bool,
+}
+
+/// A change to text a buffer shares, to make in the others.
+#[derive(Clone, Debug)]
+pub(crate) enum TextChange {
+    Insert(usize, String),
+    Delete(usize, usize),
+    /// All of it replaced, as `set_text` does.
+    Reset,
 }
 
 impl Buffer {
@@ -270,6 +315,9 @@ impl Buffer {
             tick: 0,
             pending_changes: Vec::new(),
             file: Default::default(),
+            base: None,
+            shared: None,
+            mirroring: false,
         }
     }
 
@@ -311,6 +359,121 @@ impl Buffer {
         self.open_group.clear();
         self.pending_undo = None;
         self.selective_undo = None;
+    }
+
+    /// A buffer sharing this one's text, as Emacs's `make-indirect-buffer`
+    /// makes one: with its point and narrowing, and, with `clone`, its
+    /// local variables and hooks, keymaps, tables, mark and overlays too.
+    /// This buffer is the base, and holds the undo history they share.
+    pub(crate) fn indirect(&mut self, name: &str, clone: bool) -> Buffer {
+        let (generation, modified) = (self.properties.generation, self.modified);
+        self.shared.get_or_insert_with(|| Shared { changes: Vec::new(), props: generation, modified, holds_undo: true });
+        let mut b = Buffer::new(name);
+        b.text = self.text.clone();
+        b.properties = self.properties.clone();
+        b.point = self.point;
+        b.restriction = self.restriction;
+        b.modified = modified;
+        b.tick = self.tick;
+        b.base = Some(self.id);
+        b.shared = Some(Shared { changes: Vec::new(), props: generation, modified, holds_undo: false });
+        if clone {
+            b.locals = self.locals.clone();
+            b.local_hooks = self.local_hooks.clone();
+            b.local_map = self.local_map.clone();
+            b.syntax_table = self.syntax_table.clone();
+            b.case_table = self.case_table;
+            b.category_table = self.category_table;
+            b.read_only = self.read_only;
+            b.mark = self.mark;
+            b.overlays = self.overlays.clone();
+            b.next_overlay_id = self.next_overlay_id;
+        }
+        b
+    }
+
+    /// Counts changes to the text properties.
+    pub(crate) fn properties_generation(&self) -> u64 {
+        self.properties.generation
+    }
+
+    /// The id of the buffer whose text this one shares, as Emacs's
+    /// `buffer-base-buffer`, if it is an indirect buffer.
+    pub fn base_buffer(&self) -> Option<u64> {
+        self.base
+    }
+
+    /// Notes a change to the text for the buffers sharing it, if any do.
+    fn share(&mut self, change: impl FnOnce() -> TextChange) {
+        if let Some(shared) = &mut self.shared
+            && !self.mirroring
+        {
+            shared.changes.push(change());
+        }
+    }
+
+    /// Makes a change another buffer sharing the text made, as if made here
+    /// too: markers, point and overlays move as they would, but it is not
+    /// recorded for undo, which that buffer did, nor announced to change hooks.
+    pub(crate) fn mirror(&mut self, change: &TextChange, from: &Buffer) {
+        let pending = self.pending_changes.len();
+        self.mirroring = true;
+        match change {
+            TextChange::Insert(pos, s) => self.apply_insert(*pos, s, false),
+            TextChange::Delete(start, end) => {
+                self.apply_delete(*start, *end);
+            }
+            TextChange::Reset => {
+                let (point, restriction) = (self.point, self.restriction);
+                self.text = from.text.clone();
+                if let Some(syntax) = &self.syntax {
+                    syntax.reset();
+                }
+                self.fontified.clear();
+                self.tick += 1;
+                self.point = point.min(self.len());
+                self.restriction = restriction.filter(|&(_, end)| end <= self.len());
+            }
+        }
+        self.mirroring = false;
+        self.pending_changes.truncate(pending);
+    }
+
+    /// Takes the text properties of another buffer sharing the text, as
+    /// they are one in Emacs.
+    pub(crate) fn mirror_properties(&mut self, from: &Buffer) {
+        self.properties = from.properties.clone();
+        self.ppss_cache.get_mut().clear();
+    }
+
+    /// The undo history and what goes with it, to move to another buffer
+    /// sharing the text, as Emacs's indirect buffers share one undo list.
+    pub(crate) fn take_undo(&mut self) -> UndoState {
+        UndoState {
+            groups: std::mem::take(&mut self.undo_groups),
+            open: std::mem::take(&mut self.open_group),
+            open_unmodified_at: self.open_unmodified_at.take(),
+            open_point: self.open_point.take(),
+            disabled: self.undo_disabled,
+            save_generation: self.save_generation,
+            pending: self.pending_undo.take(),
+            selective: self.selective_undo.take(),
+            in_region: std::mem::take(&mut self.undo_in_region),
+            edited: std::mem::take(&mut self.edited_since_command),
+        }
+    }
+
+    pub(crate) fn put_undo(&mut self, state: UndoState) {
+        self.undo_groups = state.groups;
+        self.open_group = state.open;
+        self.open_unmodified_at = state.open_unmodified_at;
+        self.open_point = state.open_point;
+        self.undo_disabled = state.disabled;
+        self.save_generation = state.save_generation;
+        self.pending_undo = state.pending;
+        self.selective_undo = state.selective;
+        self.undo_in_region = state.in_region;
+        self.edited_since_command |= state.edited;
     }
 
     /// Whether edits are recorded for undo, as they are unless Emacs's
@@ -649,6 +812,8 @@ impl Buffer {
             let edit_start = self.syntax.as_ref().map(|_| (point_at(&self.text, p), point_at(&self.text, p + 1)));
             self.text.remove(p..p + 1);
             self.text.insert(p, to.encode_utf8(&mut [0; 4]));
+            self.share(|| TextChange::Delete(p, p + 1));
+            self.share(|| TextChange::Insert(p, to.to_string()));
             if let (Some(syntax), Some((s, old_end))) = (&self.syntax, edit_start) {
                 syntax.edit(&input_edit(s, old_end, point_at(&self.text, p + 1)));
             }
@@ -758,6 +923,7 @@ impl Buffer {
             self.top_line += s.matches('\n').count();
         }
         self.text.insert(pos, s);
+        self.share(|| TextChange::Insert(pos, s.to_string()));
         let n = s.chars().count();
         if let (Some(syntax), Some(start)) = (&self.syntax, start) {
             syntax.edit(&input_edit(start, start, point_at(&self.text, pos + n)));
@@ -824,6 +990,7 @@ impl Buffer {
         // the deletion if it was inside it; a window starts at a line's start.
         let top = (self.top_line > 0 && self.top_line < self.line_count()).then(|| self.line_start(self.top_line));
         self.text.remove(start..end);
+        self.share(|| TextChange::Delete(start, end));
         if let Some(top) = top {
             if end <= top {
                 self.top_line -= deleted.matches('\n').count();
@@ -1218,6 +1385,7 @@ impl Buffer {
     /// For buffers the editor generates, such as `*Help*`.
     pub fn set_text(&mut self, s: &str) {
         self.text = Rope::from_str(s);
+        self.share(|| TextChange::Reset);
         if let Some(syntax) = &self.syntax {
             syntax.reset();
         }
@@ -1637,7 +1805,8 @@ impl Buffer {
     }
 
     fn record(&mut self, edit: Edit) {
-        if self.cancelling {
+        // A change another buffer sharing the text made is recorded there.
+        if self.cancelling || self.mirroring {
             return;
         }
         if !self.change_groups.is_empty() {

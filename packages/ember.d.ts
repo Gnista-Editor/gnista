@@ -161,6 +161,26 @@ declare global {
        */
       "check-parens": [];
       /**
+       * Make an indirect buffer of the current buffer and show it in another window: the same text, with a point, narrowing and modes of its own.
+       *
+       * With a prefix argument, ask for its name; otherwise it is named after the current buffer, made unique.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/simple.ts.
+       */
+      "clone-indirect-buffer": [arg?: PrefixArg];
+      /**
+       * Make an indirect buffer of the current buffer and show it in another window: the same text, with a point, narrowing and modes of its own.
+       *
+       * With a prefix argument, ask for its name; otherwise it is named after the current buffer, made unique.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/simple.ts.
+       */
+      "clone-indirect-buffer-other-window": [arg?: PrefixArg];
+      /**
        * Comment or uncomment the region if it is active. Otherwise put a comment at the end of the line, or indent the one there, or start one on a blank line. With a prefix argument and no region, kill the line's comment.
        *
        * Defined in packages/newcomment.ts.
@@ -2371,7 +2391,7 @@ declare global {
        */
       "org-shiftup": [];
       /**
-       * Show everything, drawers and blocks included.
+       * Show everything accessible, drawers and blocks included.
        *
        * Defined in packages/org.ts.
        */
@@ -2624,6 +2644,16 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-toggle-narrow-to-subtree": [];
+      /**
+       * Show the current subtree in an indirect buffer of its own, narrowed to it: the same text, folded apart.
+       *
+       * A numeric prefix argument takes the subtree of the heading at that level above, or that many levels up if negative. Unless org-indirect-buffer-display is new-frame, the indirect buffer the command made last is killed first; with C-u it is kept.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-tree-to-indirect-buffer": [arg?: PrefixArg];
       /**
        * Bring the statistics cookies, such as [1/3], of the heading or item point is in up to date.
        *
@@ -4652,6 +4682,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-fontify-done-headline": Value;
+      /**
+       * Where C-c C-x b shows the indirect buffer it makes: "current-window", "other-window", "new-frame" each time, or "dedicated-frame", one frame used again.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-indirect-buffer-display": Value;
       /**
        * Whether links show only their description, hiding the brackets and target.
        *
@@ -8066,6 +8102,19 @@ declare global {
      * unmodified; true if undo is off.
      */
     function bufferUndoList(buffer?: string | Buffer): Value[] | true;
+    /**
+     * Makes a buffer sharing base's text, its properties, undo history and
+     * modified flag, with a point, narrowing, markers, overlays and local
+     * variables of its own, as make-indirect-buffer. With clone, it starts
+     * with base's major mode, local variables and overlays, and runs
+     * clone-indirect-buffer-hook in it. The base of an indirect buffer is
+     * its own base. Killing the base kills it.
+     */
+    function makeIndirectBuffer(base: string | Buffer, name: string, clone?: boolean): Buffer;
+    /** The buffer whose text an indirect buffer shares, the current one's by default, as buffer-base-buffer. */
+    function bufferBaseBuffer(buffer?: string | Buffer): Buffer | undefined;
+    /** name, or the first of name<2>, name<3> and on that no buffer has, as generate-new-buffer-name. */
+    function generateNewBufferName(name: string): string;
     /** Starts recording changes for undo, afresh, as buffer-enable-undo. */
     function bufferEnableUndo(buffer?: string | Buffer): void;
     /** Stops recording changes for undo and forgets them, as buffer-disable-undo. */

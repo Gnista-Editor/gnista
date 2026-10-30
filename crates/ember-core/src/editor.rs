@@ -125,6 +125,8 @@ pub struct Editor {
     /// Markers that point nowhere, kept so they can be pointed again, as an
     /// Emacs marker object outlives where it points.
     detached_markers: Vec<crate::buffer::Marker>,
+    /// Whether any buffer has shared its text, so changes must be passed on.
+    pub(crate) has_indirect_buffers: bool,
     /// What waits for the prompts and questions now open to be answered.
     prompt_waiters: Vec<variables::HookFn>,
     /// How many commands are running, one inside another.
@@ -296,6 +298,7 @@ impl Editor {
             processes: Default::default(),
             prompt_waiters: Vec::new(),
             detached_markers: Vec::new(),
+            has_indirect_buffers: false,
             running: 0,
             remapped_from: None,
             buffer_order: Vec::new(),
@@ -545,6 +548,7 @@ impl Editor {
             self.previous_run = self.self_insert_run;
             self.self_insert_run = if amalgamate { self.self_insert_run + 1 } else { 1 };
             self.amalgamating_now = listed;
+            self.claim_undo(self.current);
             self.buffer_mut().command_boundary(amalgamate);
         }
         if command.shift_select {
@@ -1169,6 +1173,7 @@ impl Editor {
             self.adjust_point_for_invisible(old_point, modified);
         }
         self.keep_point_out_of_prompt();
+        self.sync_shared_text();
         // Buffers saved, reverted or undone back to their file give up its lock.
         self.release_locks();
     }
@@ -1542,6 +1547,7 @@ impl Editor {
     pub fn set_current_buffer(&mut self, name: &str) -> Result<String> {
         let old = self.buffer().name.clone();
         let index = self.find_buffer(name).ok_or_else(|| Error::new(format!("No such buffer {name}")))?;
+        self.sync_shared_text();
         self.current = index;
         Ok(old)
     }
@@ -1632,6 +1638,9 @@ impl Editor {
         }
         if b.path.is_some() && b.is_modified() {
             self.check_permission(&format!("discard the unsaved changes in {name}"))?;
+        }
+        for indirect in self.indirect_buffers_of(index) {
+            self.kill_buffer_unsaved(&indirect)?;
         }
         // As Emacs runs kill-buffer-hook in the buffer, before it goes.
         if self.hook_has_functions("kill-buffer-hook") || self.buffers[index].local_hooks.contains_key("kill-buffer-hook") {
@@ -1779,7 +1788,9 @@ impl Editor {
         Ok(())
     }
 
-    pub(crate) fn unique_buffer_name(&self, base: &str) -> String {
+    /// `base`, or the first of `base<2>`, `base<3>` and on that no buffer
+    /// has, as Emacs's `generate-new-buffer-name`.
+    pub fn unique_buffer_name(&self, base: &str) -> String {
         if self.find_buffer(base).is_none() {
             return base.to_string();
         }

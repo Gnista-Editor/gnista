@@ -74,6 +74,12 @@ const variables: [string, string, ember.Value][] = [
   ["org-priority-lowest", "The lowest priority, a capital letter.", "C"],
   ["org-priority-default", "The priority S-<up> and S-<down> start from, and that headings without one count as.", "B"],
   ["org-link-descriptive", "Whether links show only their description, hiding the brackets and target.", true],
+  [
+    "org-indirect-buffer-display",
+    'Where C-c C-x b shows the indirect buffer it makes: "current-window", "other-window", "new-frame" each time, ' +
+      'or "dedicated-frame", one frame used again.',
+    "other-window",
+  ],
   ["org-fontify-done-headline", "Whether the text of a done heading gets the face org-headline-done.", true],
   [
     "org-time-stamp-rounding-minutes",
@@ -2582,6 +2588,90 @@ const narrowToSubtree = ember.defineCommand({
   },
 });
 
+// Subtrees in indirect buffers, as org.el's org-tree-to-indirect-buffer.
+
+/** The buffer the last C-c C-x b made, which the next one kills, as org-last-indirect-buffer. */
+let lastIndirectBuffer: ember.Buffer | undefined;
+/** The frame "dedicated-frame" shows indirect buffers in, as org-indirect-dedicated-frame. */
+let indirectDedicatedFrame: number | undefined;
+
+/** An indirect buffer of `buffer`'s base, named after it and `heading`, as org-get-indirect-buffer. */
+function getIndirectBuffer(buffer: ember.Buffer, heading?: string): ember.Buffer {
+  const base = ember.bufferBaseBuffer(buffer) ?? buffer;
+  const name = ember.generateNewBufferName(`${base.name}${heading === undefined ? "" : `::${heading}`}`);
+  return ember.makeIndirectBuffer(base, name, true);
+}
+
+/** The window showing `buffer`, if one does. */
+function bufferWindow(buffer: ember.Buffer): number | undefined {
+  return buffer.live ? ember.windowList().find((w) => ember.windowBuffer(w) === buffer.name) : undefined;
+}
+
+const treeToIndirectBuffer = ember.defineCommand({
+  name: "org-tree-to-indirect-buffer",
+  doc:
+    "Show the current subtree in an indirect buffer of its own, narrowed to it: the same text, folded apart.\n\n" +
+    "A numeric prefix argument takes the subtree of the heading at that level above, or that many levels up " +
+    "if negative. Unless org-indirect-buffer-display is new-frame, the indirect buffer the command made last " +
+    "is killed first; with C-u it is kept.",
+  params: [{ name: "arg", kind: "prefix" }],
+  run: (arg) => {
+    const cbuf = ember.currentBuffer();
+    const cwin = ember.selectedWindow();
+    const pos = ember.point();
+    const display = String(ember.variable("org-indirect-buffer-display"));
+    const lastWindow = lastIndirectBuffer && bufferWindow(lastIndirectBuffer);
+    const [all, found] = backToHeading();
+    let i = found;
+    if (typeof arg === "number") {
+      const level = arg < 0 ? all[i].level + arg : arg;
+      // Up to the heading at that level, as org-up-heading-safe climbs.
+      while (all[i].level > level) {
+        let parent = i - 1;
+        while (parent >= 0 && all[parent].level >= all[i].level) parent--;
+        if (parent < 0) break;
+        i = parent;
+      }
+    }
+    const h = all[i];
+    const heading = [h.todo, h.priority === undefined ? undefined : `[#${h.priority}]`, h.title].filter((x) => x).join(" ");
+    const beg = h.start;
+    let end = subtreeRegion(all, i)[1];
+    // Up to the next heading's line, not its start, as org-end-of-subtree leaves it.
+    if (end < ember.pointMax()) end--;
+    if (lastIndirectBuffer?.live && display !== "new-frame" && arg === null) ember.call("kill-buffer", lastIndirectBuffer.name ?? "");
+    const ibuf = getIndirectBuffer(cbuf, heading);
+    lastIndirectBuffer = ibuf;
+    if (display === "new-frame" || (arg !== null && display === "dedicated-frame")) {
+      ember.makeFrame(ibuf);
+    } else if (display === "dedicated-frame") {
+      if (indirectDedicatedFrame === undefined || !ember.frameList().includes(indirectDedicatedFrame)) {
+        indirectDedicatedFrame = ember.makeFrame(ibuf);
+      } else {
+        ember.selectFrame(indirectDedicatedFrame);
+        ember.setWindowBuffer(undefined, ibuf);
+      }
+    } else if (display === "current-window") {
+      ember.setWindowBuffer(undefined, ibuf);
+    } else if (display === "other-window") {
+      if (lastWindow !== undefined && ember.windowList().includes(lastWindow)) {
+        ember.setWindowBuffer(lastWindow, ibuf);
+        ember.selectWindow(lastWindow);
+      } else {
+        ember.call("pop-to-buffer", ibuf.name ?? "");
+      }
+    } else {
+      throw new Error("Invalid value");
+    }
+    ember.withCurrentBuffer(ibuf, () => {
+      ember.narrowToRegion(beg, end);
+      ember.call("org-show-all");
+      ember.gotoChar(pos);
+    });
+    if (ember.windowList().includes(cwin)) ember.selectWindow(cwin);
+  },
+});
+
 ember.defineCommand({
   name: "org-toggle-narrow-to-subtree",
   doc: "Narrow to the current subtree, or widen if the buffer is narrowed.",
@@ -3551,9 +3641,10 @@ ember.defineCommand({
 
 ember.defineCommand({
   name: "org-show-all",
-  doc: "Show everything, drawers and blocks included.",
+  doc: "Show everything accessible, drawers and blocks included.",
   run: () => {
-    for (const spec of ["outline", "org-hide-drawer", "org-hide-block"]) flag(0, ember.bufferSize(), false, spec);
+    // As org-fold-show-all: what is outside a narrowing stays as it is.
+    for (const spec of ["outline", "org-hide-drawer", "org-hide-block"]) flag(ember.pointMin(), ember.pointMax(), false, spec);
   },
 });
 
@@ -7027,6 +7118,7 @@ const keys: { [keys: string]: ember.CommandName | ember.DefinedCommand } = {
   "C-c C-c": ctrlCCtrlC,
   "C-c C-x C-b": "org-toggle-checkbox",
   "C-c C-x p": setProperty,
+  "C-c C-x b": treeToIndirectBuffer,
   "C-c C-w": refileCommand,
   "C-c M-w": refileCopyCommand,
   "C-c C-x d": insertDrawer,

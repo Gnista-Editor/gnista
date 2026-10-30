@@ -26,6 +26,7 @@ Each entry says whether the difference is **deliberate**, which keeps it, or **n
 - **Literal searches** (not yet) fold case by the standard case table, not by a buffer's own; regexp searches follow the buffer's.
 - **Case equivalence tables** (not yet): a case table's third extra slot is not worked out.
 - **Putting text properties** (not yet) records no undo, does not mark the buffer modified and runs no change hooks, as if Emacs's `with-silent-modifications` were around every call. Ember's packages fontify and fold this way, as Emacs's font-lock does inside that macro, so a package that relies on properties being undone does not work yet ([ADR 0034](adr/0034-buffer-and-text-property-primitives.md)).
+- **Indirect buffers** (not yet): Org's `org-indirect-buffer-display` frames are not titled after the heading, and `org-cycle-hook` is not run after `C-c C-x b` ([ADR 0034](adr/0034-buffer-and-text-property-primitives.md)).
 - **`buffer-undo-list`** (not yet) can be read, with positions counted from 0, but not written or let-bound; turning undo off is `bufferDisableUndo` ([ADR 0034](adr/0034-buffer-and-text-property-primitives.md)).
 - **Faces as attribute lists** in a `face` property, `(:height 1.5)`, are not read (not yet); faces are named.
 - **`text-scale-adjust`** (not yet) has no lower limit, where Emacs stops at the smallest font a frame can show.
@@ -52,4 +53,5 @@ Kept for completeness, as they cannot be seen:
 
 - Show Paren mode's idle timer exists only while the mode is on.
 - The standard case and category tables are made as char-tables only when code asks for them.
+- An indirect buffer keeps a copy of its base's text, which the editor keeps the same after every change, where Emacs keeps one copy ([ADR 0034](adr/0034-buffer-and-text-property-primitives.md)).
 - Fields compare `field` values with `equal`, where Emacs uses `eq`; only two distinct strings with the same text tell them apart.

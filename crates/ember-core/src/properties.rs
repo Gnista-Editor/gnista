@@ -60,16 +60,20 @@ impl Text {
 #[derive(Clone, Debug, Default)]
 pub(crate) struct TextProperties {
     runs: Vec<Run>,
+    /// Counts changes, so buffers sharing text can tell they must share them.
+    pub(crate) generation: u64,
 }
 
 impl TextProperties {
     pub(crate) fn clear(&mut self) {
         self.runs.clear();
+        self.generation += 1;
     }
 
     /// Makes room for `n` inserted characters at `pos`. Inserted text has no
     /// properties, as with Emacs's `insert`, so a run it lands inside is split.
     pub(crate) fn insert(&mut self, pos: usize, n: usize) {
+        self.generation += 1;
         let mut out = Vec::with_capacity(self.runs.len() + 1);
         for run in self.runs.drain(..) {
             if run.end <= pos {
@@ -87,6 +91,7 @@ impl TextProperties {
     /// Removes the properties of deleted text and closes the gap. Returns
     /// what was removed, relative to `start`.
     pub(crate) fn delete(&mut self, start: usize, end: usize) -> SavedProps {
+        self.generation += 1;
         let n = end - start;
         let mut saved = Vec::new();
         let mut out = Vec::with_capacity(self.runs.len());
@@ -134,6 +139,7 @@ impl TextProperties {
         if start >= end {
             return;
         }
+        self.generation += 1;
         let mut out = Vec::with_capacity(self.runs.len() + 2);
         let mut pos = start;
         let mut pending = std::mem::take(&mut self.runs).into_iter().peekable();

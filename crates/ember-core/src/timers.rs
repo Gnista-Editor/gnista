@@ -124,6 +124,8 @@ impl Editor {
     /// that acts on another buffer makes it current, as with-current-buffer does.
     pub fn run_timers(&mut self) {
         self.poll_processes();
+        // Output inserted in a buffer sharing its text shows in the others.
+        self.sync_shared_text();
         let now = self.now();
         let idle = now.saturating_duration_since(self.timers.last_input);
         if !self.timers.idle_auto_saved

@@ -553,3 +553,34 @@ const electricNewline = ember.defineCommand({
   run: () => ember.insertAndInherit("\n"),
 });
 ember.bindKey("C-j", electricNewline);
+
+// Indirect buffers, as simple.el clones them.
+
+/**
+ * Makes an indirect buffer of the current one, in its major mode and with
+ * its local variables, named as it is, without a <N> suffix, made unique,
+ * and shows it if `display`, as clone-indirect-buffer.
+ */
+function cloneIndirectBuffer(newname: string | undefined, display: boolean): ember.Buffer {
+  let name = newname ?? ember.bufferName();
+  name = name.replace(/<[0-9]+>$/, "");
+  const buffer = ember.makeIndirectBuffer(ember.currentBuffer(), ember.generateNewBufferName(name), true);
+  if (display) ember.call("pop-to-buffer", buffer.name ?? "");
+  return buffer;
+}
+
+for (const name of ["clone-indirect-buffer", "clone-indirect-buffer-other-window"] as const) {
+  const command = ember.defineCommand({
+    name,
+    doc:
+      "Make an indirect buffer of the current buffer and show it in another window: the same text, " +
+      "with a point, narrowing and modes of its own.\n\n" +
+      "With a prefix argument, ask for its name; otherwise it is named after the current buffer, made unique.",
+    params: [{ name: "arg", kind: "prefix" }],
+    run: async (arg) => {
+      const named = arg === null ? undefined : await ember.readString("Name of indirect buffer: ", { default: ember.bufferName() });
+      cloneIndirectBuffer(named === "" ? undefined : named, true);
+    },
+  });
+  if (name === "clone-indirect-buffer-other-window") ember.bindKey("C-x 4 c", command);
+}

@@ -484,6 +484,13 @@
     bufferLocalValue: (name, buffer) => ember.withCurrentBuffer(buffer, () => native.variable(String(name)) ?? undefined),
     bufferUndoList: (buffer) =>
       buffer === undefined ? native.bufferUndoList() : ember.withCurrentBuffer(buffer, () => native.bufferUndoList()),
+    makeIndirectBuffer: (base, name, clone = false) =>
+      globalThis.__emberBuffer(native.makeIndirectBuffer(nameOf(base), String(name), Boolean(clone))),
+    bufferBaseBuffer(buffer) {
+      const id = native.bufferBaseBuffer(buffer === undefined ? native.bufferName() : nameOf(buffer));
+      return id === null || id === undefined ? undefined : globalThis.__emberBuffer(id);
+    },
+    generateNewBufferName: (name) => native.generateNewBufferName(String(name)),
     bufferEnableUndo: (buffer) =>
       buffer === undefined ? native.setUndoEnabled(true) : ember.withCurrentBuffer(buffer, () => native.setUndoEnabled(true)),
     bufferDisableUndo: (buffer) =>

@@ -153,6 +153,78 @@
       "kill_ring": [],
       "modified": false,
       "error": null
+    },
+    {
+      "name": "clone-indirect-buffer-other-window",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "M-> C-x 4 c x C-x o C-f",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "abcx",
+      "visible": "abcx",
+      "point": 4,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 4,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*<2>",
+          "point": 4,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        }
+      ]
+    },
+    {
+      "name": "undo-in-the-base-undoes-the-clones-change",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "C-x 4 c x C-x o C-/",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true
+      },
+      "text": "abc",
+      "visible": "abc",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        },
+        {
+          "buffer": "*ember-oracle*<2>",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        }
+      ]
     }
   ]
 }

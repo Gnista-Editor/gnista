@@ -26,6 +26,7 @@ mod fileio;
 pub mod fileops;
 mod files;
 mod fontify;
+mod indirect;
 mod insdel;
 pub use insdel::Insertion;
 mod key;

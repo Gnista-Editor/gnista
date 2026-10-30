@@ -915,6 +915,7 @@ fn editing(ed: &mut Editor) {
         "undo",
         "Undo the last change, or as many changes as the prefix argument says.\n\nRepeat to undo earlier changes. Undoing is itself a change, so after any other command, undo undoes the undos: it redoes.",
         |ed, _| {
+            ed.claim_undo(ed.current);
             let mut continuing = ed.last_command() == Some("undo") && ed.buffer().undo_continues();
             let mut redid = false;
             // With the region active, or a C-u or C-- argument, Emacs undoes only
@@ -973,6 +974,7 @@ fn editing(ed: &mut Editor) {
         "undo-redo",
         "Undo the last undo, or as many as the prefix argument says: redo.\n\nUnlike undoing an undo with undo, this leaves no trace in the undo history.",
         |ed, args| {
+            ed.claim_undo(ed.current);
             for _ in 0..args[0].as_int()?.max(1) {
                 ed.before_undo(false, true)?;
                 ed.buffer_mut().undo_redo()?;

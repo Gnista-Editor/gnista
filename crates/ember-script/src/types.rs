@@ -1774,6 +1774,19 @@ const API: &str = r##"
    * unmodified; true if undo is off.
    */
   function bufferUndoList(buffer?: string | Buffer): Value[] | true;
+  /**
+   * Makes a buffer sharing base's text, its properties, undo history and
+   * modified flag, with a point, narrowing, markers, overlays and local
+   * variables of its own, as make-indirect-buffer. With clone, it starts
+   * with base's major mode, local variables and overlays, and runs
+   * clone-indirect-buffer-hook in it. The base of an indirect buffer is
+   * its own base. Killing the base kills it.
+   */
+  function makeIndirectBuffer(base: string | Buffer, name: string, clone?: boolean): Buffer;
+  /** The buffer whose text an indirect buffer shares, the current one's by default, as buffer-base-buffer. */
+  function bufferBaseBuffer(buffer?: string | Buffer): Buffer | undefined;
+  /** name, or the first of name<2>, name<3> and on that no buffer has, as generate-new-buffer-name. */
+  function generateNewBufferName(name: string): string;
   /** Starts recording changes for undo, afresh, as buffer-enable-undo. */
   function bufferEnableUndo(buffer?: string | Buffer): void;
   /** Stops recording changes for undo and forgets them, as buffer-disable-undo. */

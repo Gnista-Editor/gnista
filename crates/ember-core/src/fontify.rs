@@ -172,7 +172,10 @@ impl Editor {
                 let rows = self.rows_from(view.buffer, view.top_line, height, usize::MAX, None, wrap);
                 let (Some(first), Some(last)) = (rows.first(), rows.last()) else { break };
                 let range = first.start..last.end;
-                match self.with_current_buffer(index, |ed| ed.fontify_region(range)) {
+                let fontified = self.with_current_buffer(index, |ed| ed.fontify_region(range));
+                // The faces it put are the text's, which other buffers may share.
+                self.sync_shared_text();
+                match fontified {
                     Ok(true) => continue,
                     Ok(false) => break,
                     Err(e) => {

@@ -169,12 +169,16 @@ impl Editor {
         let (start, end) = (moved, (moved + (end - start)).min(self.buffer().len()));
         let inhibit = self.variable("inhibit-read-only").is_some_and(|v| v.is_true());
         let len = self.buffer().len();
+        // Buffers sharing the text share its undo history, which goes where
+        // the change is recorded.
+        self.claim_undo(self.current);
         let b = self.buffer_mut();
         // The buffer's own read-only check gives way as the editor's did.
         let read_only = b.read_only;
         b.read_only &= !inhibit;
         let result = edit(b, start, end);
         self.buffer_mut().read_only = read_only;
+        self.sync_shared_text();
         let value = result?;
         // What the text became, and how long it was, for the hooks after,
         // before after-change-functions can change it again.

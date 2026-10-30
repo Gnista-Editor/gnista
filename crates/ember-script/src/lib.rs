@@ -397,7 +397,10 @@ fn with_editor<T>(ctx: &Ctx<'_>, f: impl FnOnce(&mut Editor) -> Result<T>) -> rq
     // SAFETY: `enter` set this from a live `&mut Editor` that is not used
     // while the script runs, and restores the previous value afterwards.
     let ed = unsafe { &mut *ptr.as_ptr() };
-    f(ed).map_err(|e| throw_error(ctx, &e))
+    let result = f(ed);
+    // What the call changed in a buffer sharing its text, the others see.
+    ed.sync_shared_text();
+    result.map_err(|e| throw_error(ctx, &e))
 }
 
 /// Throws a core error to a script as an Error carrying its condition, as
@@ -2785,9 +2788,37 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
     native.set(
         "bufferUndoList",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| {
-            let list = with_editor(&ctx, |ed| Ok(ed.buffer().undo_list()))?;
+            let list = with_editor(&ctx, |ed| {
+                // An indirect buffer's is its base's.
+                let current = ed.buffer_with_id(ed.buffer().id()).expect("current");
+                ed.claim_undo(current);
+                Ok(ed.buffer().undo_list())
+            })?;
             value_to_js(&ctx, &list.unwrap_or(EditorValue::Bool(true)))
         })?,
+    )?;
+    // Indirect buffers, as buffer.c's: ids, as buffer objects refer to them.
+    native.set(
+        "makeIndirectBuffer",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, base: String, name: String, clone: bool| {
+            with_editor(&ctx, |ed| {
+                let index = ed.make_indirect_buffer(&base, &name, clone)?;
+                Ok(ed.buffers()[index].id() as f64)
+            })
+        })?,
+    )?;
+    native.set(
+        "bufferBaseBuffer",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
+            with_editor(&ctx, |ed| {
+                let index = ed.find_buffer(&name).ok_or_else(|| ember_core::Error::new(format!("No such buffer {name}")))?;
+                Ok(ed.buffers()[index].base_buffer().map(|id| id as f64))
+            })
+        })?,
+    )?;
+    native.set(
+        "generateNewBufferName",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| with_editor(&ctx, |ed| Ok(ed.unique_buffer_name(&name))))?,
     )?;
     native.set(
         "setUndoEnabled",

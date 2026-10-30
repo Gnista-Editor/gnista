@@ -38,5 +38,17 @@
     "name": "other-window-backwards",
     "text": "one\ntwo\nthree",
     "keys": "C-x 2 C-x 3 C-n C-- C-x o C-e"
+  },
+  {
+    "name": "clone-indirect-buffer-other-window",
+    "text": "abc",
+    "keys": "M-> C-x 4 c x C-x o C-f",
+    "windows": true
+  },
+  {
+    "name": "undo-in-the-base-undoes-the-clones-change",
+    "text": "abc",
+    "keys": "C-x 4 c x C-x o C-/",
+    "windows": true
   }
 ]
