@@ -15,6 +15,9 @@ use crate::rows::Row;
 
 pub type WindowId = u64;
 
+/// The minibuffer's window, as scripts name it, which windows' ids never are.
+pub const MINIBUFFER_WINDOW: WindowId = 0;
+
 /// The smallest window that can be made by splitting, counting its mode
 /// line, as Emacs's `window-min-height` and `window-min-width`.
 const WINDOW_MIN_HEIGHT: usize = 4;
@@ -696,8 +699,16 @@ impl Editor {
 
     /// Makes a window the selected one, whose buffer commands act on.
     pub fn select_window(&mut self, id: WindowId) -> Result<()> {
+        if id == MINIBUFFER_WINDOW {
+            return self.select_minibuffer_window();
+        }
         if self.window(id).is_none() {
             return Err(Error::new("No such window"));
+        }
+        // Leaving the minibuffer's window, as C-x o from it does; the prompt stays open.
+        if self.minibuffer_window_selected {
+            self.minibuffer_window_selected = false;
+            self.current = self.selected_buffer_index();
         }
         self.window_use += 1;
         let used = self.window_use;

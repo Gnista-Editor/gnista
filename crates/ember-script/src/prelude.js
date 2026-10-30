@@ -784,6 +784,8 @@
     adviceRemove: (symbol, fn) => native.adviceRemove(symbolName(symbol), typeof fn === "function" ? fn : symbolName(fn)),
     adviceMemberP: (fn, symbol) => native.adviceMemberP(typeof fn === "function" ? fn : symbolName(fn), symbolName(symbol)),
     minibufferPromptEnd: () => native.minibufferPromptEnd(),
+    minibufferDepth: () => native.minibufferDepth(),
+    minibufferWindow: () => 0,
     minibufferContents: () => native.minibufferContents(),
     formatModeLine: (format) => native.formatModeLine(format === undefined ? Symbol.for("mode-line-format") : format),
     fboundp: (name) => native.fboundp(symbolName(name)),

@@ -61,6 +61,16 @@ impl Reading {
     }
 }
 
+/// A prompt a recursive minibuffer opened inside, with what waits for its
+/// answer, put back when the inner one closes.
+pub(crate) struct OuterPrompt {
+    prompt: Prompt,
+    minibuffer: u64,
+    pending_call: Option<crate::editor::PendingCall>,
+    question: Option<crate::questions::Question>,
+    window_selected: bool,
+}
+
 /// What the open prompt reads, for code that adapts to it, as icomplete does.
 #[derive(Clone, Debug, PartialEq)]
 pub struct MinibufferInfo {
@@ -127,6 +137,7 @@ impl Editor {
         let must_match = prompt.require_match;
         self.prompt = Some(prompt);
         self.current = self.minibuffer_index();
+        self.minibuffer_window_selected = true;
         self.mini_window_lines = 1;
         // Its local map is minibuffer-local-map, and the must-match map
         // before it for a prompt that must be answered by a match.
@@ -167,11 +178,13 @@ impl Editor {
         }
         let prompt = self.prompt.take();
         self.minibuffer_mut().set_text("");
-        // The selected window's buffer is current again, as leaving the
-        // minibuffer window makes it.
+        // What was current when it opened is again: the minibuffer it
+        // opened inside, or the selected window's buffer.
         if self.buffers[self.current].id == self.minibuffer_id {
-            self.current = self.selected_buffer_index();
+            let outer = self.outer_prompts.last().filter(|o| o.window_selected).and_then(|o| self.buffer_with_id(o.minibuffer));
+            self.current = outer.unwrap_or_else(|| self.selected_buffer_index());
         }
+        self.minibuffer_window_selected = false;
         prompt
     }
 
@@ -195,7 +208,71 @@ impl Editor {
         } else {
             self.prompt_waiters_clear();
         }
+        self.resume_outer_minibuffer();
         result
+    }
+
+    /// Lets a prompt open while one is, in a minibuffer inside the open
+    /// one, if `enable-recursive-minibuffers` is on, as in Emacs: the open
+    /// prompt, and what waits for its answer, wait until the inner one is done.
+    pub(crate) fn enter_recursive_minibuffer(&mut self) -> Result<()> {
+        if self.prompt.is_none() {
+            return Ok(());
+        }
+        if !self.variable("enable-recursive-minibuffers").is_some_and(|v| v.is_true()) {
+            return Err(Error::new("Command attempted to use minibuffer while in minibuffer"));
+        }
+        let prompt = self.prompt.take().expect("checked above");
+        self.outer_prompts.push(OuterPrompt {
+            prompt,
+            minibuffer: self.minibuffer_id,
+            pending_call: self.pending_call.take(),
+            question: self.question.take(),
+            window_selected: self.minibuffer_window_selected,
+        });
+        let name = format!(" *Minibuf-{}*", self.outer_prompts.len() + 1);
+        let index = self.get_buffer_create(&name);
+        self.minibuffer_id = self.buffers[index].id;
+        Ok(())
+    }
+
+    /// Puts back the prompt a recursive minibuffer opened inside, once the
+    /// inner one is answered or quit and nothing more is being read for it.
+    pub(crate) fn resume_outer_minibuffer(&mut self) {
+        if self.prompt.is_some() || self.question.is_some() || self.pending_call.is_some() || self.reading_keys.is_some() {
+            return;
+        }
+        let Some(outer) = self.outer_prompts.pop() else { return };
+        self.prompt = Some(outer.prompt);
+        self.minibuffer_id = outer.minibuffer;
+        self.pending_call = outer.pending_call;
+        self.question = outer.question;
+        self.minibuffer_window_selected = outer.window_selected;
+        if self.running == 0 || self.minibuffer_window_selected {
+            self.current_from_selected_window();
+        }
+    }
+
+    /// How many minibuffers are open, one inside another, as Emacs's `minibuffer-depth`.
+    pub fn minibuffer_depth(&self) -> usize {
+        self.outer_prompts.len() + usize::from(self.prompt.is_some())
+    }
+
+    /// Whether the minibuffer's window is selected: while a prompt is open,
+    /// unless `C-x o` selected another window.
+    pub fn minibuffer_window_selected(&self) -> bool {
+        self.prompt.is_some() && self.minibuffer_window_selected
+    }
+
+    /// Selects the minibuffer's window, while a prompt is open, as `C-x o`
+    /// does coming back to it.
+    pub fn select_minibuffer_window(&mut self) -> Result<()> {
+        if self.prompt.is_none() {
+            return Err(Error::new("Minibuffer window is not active"));
+        }
+        self.minibuffer_window_selected = true;
+        self.current = self.minibuffer_index();
+        Ok(())
     }
 
     /// Asks the open prompt's completion function for the names its input
@@ -223,9 +300,7 @@ impl Editor {
     /// Emacs's `read-from-minibuffer`, `completing-read` and
     /// `read-file-name` return it.
     pub fn read_from_minibuffer(&mut self, reading: Reading, then: HookFn) -> Result<()> {
-        if self.prompt.is_some() {
-            return Err(Error::new("Command attempted to use minibuffer while in minibuffer"));
-        }
+        self.enter_recursive_minibuffer()?;
         let history = reading.history.clone().unwrap_or_else(|| reading.kind.history().to_string());
         let mut prompt = Prompt::new(&reading.prompt, reading.kind, &history);
         prompt.require_match |= reading.require_match;

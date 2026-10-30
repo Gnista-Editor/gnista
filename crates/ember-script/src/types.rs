@@ -1085,6 +1085,14 @@ const API: &str = r##"
    * the minibuffer, and point is kept after it.
    */
   function minibufferPromptEnd(): number;
+  /** How many minibuffers are open, one inside another, as minibuffer-depth. */
+  function minibufferDepth(): number;
+  /**
+   * The minibuffer's window, as minibuffer-window: in windowList, last,
+   * while a prompt is open, and selectedWindow while it is selected, as it
+   * is when a prompt opens, until other-window selects another.
+   */
+  function minibufferWindow(): number;
   /** The minibuffer's input, after its prompt, as minibuffer-contents. */
   function minibufferContents(): string;
   /**

@@ -1887,11 +1887,26 @@ fn install_native_windows<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs
     )?;
     native.set(
         "selectedWindow",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.selected_window())))?,
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            with_editor(&ctx, |ed| Ok(if ed.minibuffer_window_selected() { ember_core::MINIBUFFER_WINDOW } else { ed.selected_window() }))
+        })?,
     )?;
     native.set(
         "windowList",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.window_list())))?,
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            // The minibuffer's window comes last while a prompt is open, as in Emacs's window-list.
+            with_editor(&ctx, |ed| {
+                let mut windows = ed.window_list();
+                if ed.prompt().is_some() {
+                    windows.push(ember_core::MINIBUFFER_WINDOW);
+                }
+                Ok(windows)
+            })
+        })?,
+    )?;
+    native.set(
+        "minibufferDepth",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.minibuffer_depth())))?,
     )?;
     native.set(
         "lastMouseEvent",
@@ -1923,7 +1938,12 @@ fn install_native_windows<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs
     native.set(
         "windowBuffer",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64| {
-            with_editor(&ctx, |ed| Ok(ed.window_buffer_name(window).map(str::to_string)))
+            with_editor(&ctx, |ed| {
+                if window == ember_core::MINIBUFFER_WINDOW {
+                    return Ok(Some(ed.minibuffer().name.clone()));
+                }
+                Ok(ed.window_buffer_name(window).map(str::to_string))
+            })
         })?,
     )?;
     native.set(

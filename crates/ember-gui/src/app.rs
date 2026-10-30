@@ -481,7 +481,7 @@ fn draw(ui: &Ui, ed: &Editor, frame: FrameId, layout: &Layout, t: Tokens, focuse
     let painter = ui.painter().clone();
     painter.rect_filled(layout.rect, 0.0, t.bg);
     let m = &layout.m;
-    let in_minibuffer = ed.prompt().is_some();
+    let in_minibuffer = ed.minibuffer_window_selected();
     for window in ed.frame_windows(frame) {
         let Some(w) = layout.windows.iter().find(|w| w.id == window.id) else { continue };
         // Other windows show a hollow cursor, as Emacs's do.
@@ -502,7 +502,7 @@ fn draw(ui: &Ui, ed: &Editor, frame: FrameId, layout: &Layout, t: Tokens, focuse
     }
     // Each frame has an echo area; the prompt shows in the selected frame's.
     if frame == ed.selected_frame() {
-        let echo_cursor = if focused { CursorStyle::Filled } else { CursorStyle::Hollow };
+        let echo_cursor = if focused && ed.minibuffer_window_selected() { CursorStyle::Filled } else { CursorStyle::Hollow };
         draw_echo_area(&painter, ed, layout.echo_rect, m, t, echo_cursor);
     }
 }

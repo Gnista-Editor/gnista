@@ -66,7 +66,7 @@ pub fn draw(frame: &mut Frame, ed: &Editor) {
             frame.render_widget(Paragraph::new(bar), divider);
         }
     }
-    let echo_cursor = draw_echo_area(frame, ed, echo_area);
+    let echo_cursor = draw_echo_area(frame, ed, echo_area).filter(|_| ed.minibuffer_window_selected());
     frame.set_cursor_position(echo_cursor.unwrap_or(window_cursor));
 }
 

@@ -57,4 +57,4 @@ pub use rows::{LineNumbers, Row, Segment};
 pub use symbols::{AdviceHow, Definition};
 pub use search::{Match, SearchOptions, expand_replacement, fold_case_for as search_fold_case, looking_at, search, string_match, translate_regexp};
 pub use variables::{Function, HookFn, Value, Variable};
-pub use window::{FrameId, MouseEvent, WindowId, WindowRect, WindowTree, WindowView};
+pub use window::{MINIBUFFER_WINDOW, FrameId, MouseEvent, WindowId, WindowRect, WindowTree, WindowView};

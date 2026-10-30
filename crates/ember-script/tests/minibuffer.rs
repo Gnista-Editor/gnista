@@ -352,3 +352,64 @@ fn the_prompt_is_read_only_text_before_the_input() {
     ed.press("RET").unwrap();
     assert_eq!(ed.prompt(), None);
 }
+
+#[test]
+fn c_x_o_leaves_the_minibuffer_and_comes_back() {
+    let (mut ed, s) = setup();
+    ed.press("M-x").unwrap();
+    ed.type_text("end-of-b");
+    assert_eq!(s.eval_expression(&mut ed, "JSON.stringify([ember.windowList(), ember.selectedWindow()])").unwrap(), r#""[[1,0],0]""#);
+    ed.press("C-x o").unwrap();
+    // The prompt stays open while another window is selected; keys act there.
+    assert_eq!(ed.prompt(), Some("M-x "));
+    assert!(!ed.minibuffer_window_selected());
+    ed.type_text("hello");
+    assert_eq!(ed.window_buffer().slice(0..5), "hello");
+    assert_eq!(input(&ed), "end-of-b");
+    ed.press("C-a C-x o").unwrap();
+    assert!(ed.minibuffer_window_selected());
+    ed.press("TAB RET").unwrap();
+    assert_eq!(ed.prompt(), None);
+    assert_eq!(ed.window_buffer().point(), 5, "end-of-buffer ran in the window's buffer");
+}
+
+#[test]
+fn a_recursive_minibuffer_opens_inside_the_open_one() {
+    let (mut ed, s) = setup();
+    s.eval_typescript(
+        &mut ed,
+        "test.ts",
+        r#"
+        ember.defineCommand({ name: "zz-insert", params: [{ name: "text", kind: "string", prompt: "Text: " }], run: (text: string) => ember.insert(text) });
+        ember.bindKey("C-c i", "zz-insert");
+        "#
+        .to_string(),
+    )
+    .unwrap();
+    ed.press("M-x").unwrap();
+    ed.type_text("forw");
+    // Not unless enable-recursive-minibuffers is on.
+    ed.press("C-c i").unwrap();
+    assert_eq!(ed.echo(), Some("Command attempted to use minibuffer while in minibuffer"));
+    assert_eq!(ed.minibuffer_depth(), 1);
+    ed.set_default("enable-recursive-minibuffers", Value::Bool(true));
+    ed.press("C-c i").unwrap();
+    assert_eq!(ed.prompt(), Some("Text: "));
+    assert_eq!(ed.minibuffer_depth(), 2);
+    assert_eq!(ed.buffer().name, " *Minibuf-2*");
+    ed.type_text("ard-word");
+    ed.press("RET").unwrap();
+    // The answer went into the outer minibuffer, whose prompt is back.
+    assert_eq!(ed.prompt(), Some("M-x "));
+    assert_eq!(ed.minibuffer_depth(), 1);
+    assert_eq!(input(&ed), "forward-word");
+    // C-g in an inner one quits only it.
+    ed.press("C-c i").unwrap();
+    ed.press("C-g").unwrap();
+    assert_eq!(ed.prompt(), Some("M-x "));
+    assert_eq!(input(&ed), "forward-word");
+    assert_eq!(s.eval_expression(&mut ed, "ember.minibufferDepth()").unwrap(), "1");
+    ed.press("RET").unwrap();
+    assert_eq!(ed.prompt(), None);
+    assert_eq!(ed.minibuffer_depth(), 0);
+}

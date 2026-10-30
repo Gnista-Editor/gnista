@@ -10,7 +10,7 @@
 
 use crate::command::ParamKind;
 use crate::editor::{Editor, Prompt, Resume};
-use crate::error::{Error, Result};
+use crate::error::Result;
 use crate::key::{Key, KeyCode};
 use crate::variables::{HookFn, Value};
 
@@ -76,9 +76,7 @@ impl Editor {
     }
 
     fn ask(&mut self, mut question: Question) -> Result<()> {
-        if self.prompt.is_some() {
-            return Err(Error::new("Command attempted to use minibuffer while in minibuffer"));
-        }
+        self.enter_recursive_minibuffer()?;
         question.resume = Some(self.resume_point());
         self.open_question(question, "");
         Ok(())

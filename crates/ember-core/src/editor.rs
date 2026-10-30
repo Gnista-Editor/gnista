@@ -106,7 +106,7 @@ const AMALGAMATING: &[&str] = &[
 const MACRO_REPEAT_LIMIT: usize = 100_000;
 
 /// A command whose arguments are still being read.
-struct PendingCall {
+pub(crate) struct PendingCall {
     command: Rc<Command>,
     args: Vec<Arg>,
     /// The prefix argument the command was started with, kept for when it runs.
@@ -128,13 +128,19 @@ pub struct Editor {
     /// What waits for the prompts and questions now open to be answered.
     prompt_waiters: Vec<variables::HookFn>,
     /// How many commands are running, one inside another.
-    running: usize,
+    pub(crate) running: usize,
     /// The command keys named, while the command it is remapped to runs.
     remapped_from: Option<String>,
     /// The buffer shown before the current one, by id, so renaming it keeps it.
     previous_buffer: Option<u64>,
-    /// The minibuffer, as ` *Minibuf-1*` in the buffer list, by its id.
+    /// The minibuffer, as ` *Minibuf-1*` in the buffer list, by its id;
+    /// in a recursive minibuffer, the innermost, ` *Minibuf-2*` and on.
     pub(crate) minibuffer_id: u64,
+    /// Whether the minibuffer's window is selected while a prompt is open,
+    /// as it is when one opens, until `C-x o` selects another.
+    pub(crate) minibuffer_window_selected: bool,
+    /// The prompts a recursive minibuffer is open inside, outermost first.
+    pub(crate) outer_prompts: Vec<crate::minibuffer::OuterPrompt>,
     pub(crate) prompt: Option<Prompt>,
     /// The messages shown, as *Messages* keeps them.
     pub(crate) message_log: Vec<LoggedMessage>,
@@ -142,9 +148,9 @@ pub struct Editor {
     pub(crate) mini_window_lines: usize,
     /// The frame's height with the echo area, as the front end last said.
     pub(crate) frame_lines: Option<usize>,
-    pending_call: Option<PendingCall>,
+    pub(crate) pending_call: Option<PendingCall>,
     /// Keys read so far for a command parameter of kind [`ParamKind::Keys`].
-    reading_keys: Option<Vec<Key>>,
+    pub(crate) reading_keys: Option<Vec<Key>>,
     /// Keys typed so far of a multi-key binding such as `C-x C-f`.
     pending_keys: Vec<Key>,
     esc_prefix: bool,
@@ -267,6 +273,8 @@ impl Editor {
             remapped_from: None,
             previous_buffer: None,
             minibuffer_id,
+            minibuffer_window_selected: false,
+            outer_prompts: Vec::new(),
             message_log: Vec::new(),
             mini_window_lines: 1,
             frame_lines: None,
@@ -476,8 +484,12 @@ impl Editor {
             return;
         };
         let prompts = command.params.iter().any(|p| !p.kind.from_state());
-        if prompts && (self.prompt.is_some() || self.reading_keys.is_some()) {
+        if prompts && self.reading_keys.is_some() {
             self.message("Command attempted to use minibuffer while in minibuffer");
+            return;
+        }
+        if prompts && let Err(e) = self.enter_recursive_minibuffer() {
+            self.message(e.to_string());
             return;
         }
         // Called from a running command, as call-interactively from Lisp, it
@@ -1083,6 +1095,7 @@ impl Editor {
         if typed {
             self.count_key_for_auto_save();
         }
+        self.resume_outer_minibuffer();
         // Keys a command gave back are read next, but not recorded again.
         if !self.reading_unread {
             self.reading_unread = true;
@@ -1283,7 +1296,7 @@ impl Editor {
     /// Makes the selected window's buffer current, as Emacs's command loop
     /// does before each command.
     pub(crate) fn current_from_selected_window(&mut self) {
-        self.current = if self.prompt.is_some() { self.minibuffer_index() } else { self.selected_buffer_index() };
+        self.current = if self.minibuffer_window_selected() { self.minibuffer_index() } else { self.selected_buffer_index() };
     }
 
     /// A buffer by name, to change it without making it current.

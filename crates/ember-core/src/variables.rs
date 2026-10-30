@@ -601,6 +601,11 @@ pub(crate) fn install(ed: &mut Editor) {
              matches names containing the input, and flex names containing its characters in order.",
             Value::List(["basic", "partial-completion", "emacs22"].map(|s| Value::Str(s.into())).to_vec()),
         ),
+        Variable::new(
+            "enable-recursive-minibuffers",
+            "Whether a command can use the minibuffer while it is open, as M-x does run from the minibuffer: the new prompt opens inside the open one, which waits until it is done.",
+            false,
+        ),
         Variable::new("history-length", "How many earlier answers each minibuffer history keeps.", 100.0),
         Variable::new(
             "completion-category-defaults",
