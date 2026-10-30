@@ -774,6 +774,16 @@ pub(crate) fn install(ed: &mut Editor) {
         Variable::new("variable-name-history", "Variable names answered in the minibuffer, newest first.", Value::List(Vec::new())),
         Variable::new("face-name-history", "Face names answered in the minibuffer, newest first.", Value::List(Vec::new())),
         Variable::new(
+            "process-connection-type",
+            "Whether programs started with make-process talk through a pseudo-terminal, t, or pipes, nil.",
+            true,
+        ),
+        Variable::new(
+            "default-process-coding-system",
+            "How processes' output is decoded and their input encoded: a list of the two coding systems.",
+            Value::List(vec![Value::Str("utf-8-unix".into()), Value::Str("utf-8-unix".into())]),
+        ),
+        Variable::new(
             "coding-system-for-read",
             "The coding system to read files and decode text with, if any, rather than finding it; code binds it around a call, as C-x RET c does.",
             Value::Null,

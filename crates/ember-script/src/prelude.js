@@ -759,7 +759,8 @@
     recoverFromAutoSave: () => native.recoverFromAutoSave(),
     visitedFileChanged: () => native.visitedFileChanged(),
     setVisitedFileName: (file, { alongWithFile = false } = {}) => native.setVisitedFileName(String(file), Boolean(alongWithFile)),
-    expandFileName: (file) => native.expandFileName(String(file)),
+    expandFileName: (file, dir) => (dir === undefined || dir === null ? native.expandFileName(String(file)) : native.expandFileName(String(file), String(dir))),
+    getenv: (name) => native.getenv(String(name)) ?? undefined,
     fileExists: (file) => native.fileExists(String(file)),
     autoSaveFileName: (file) => native.autoSaveFileName(String(file)),
     hasNewerAutoSave: (file) => native.hasNewerAutoSave(String(file)),
@@ -1171,18 +1172,48 @@
       });
     },
     afterPrompts: (fn) => native.afterPrompts(fn),
-    makeProcess({ name, buffer, command, directory, env, filter, sentinel, stderr = true }) {
+    makeProcess({ name, buffer, command, directory, env, filter, sentinel, stderr = true, connectionType, coding }) {
       if (!Array.isArray(command) || command.length === 0) throw new TypeError("makeProcess needs a command: [program, ...args]");
       const pairs = env === undefined ? undefined : Object.entries(env).map(([k, v]) => [String(k), String(v)]);
+      // A pseudo-terminal unless pipes are asked for, as process-connection-type says.
+      const type = connectionType ?? (native.variable("process-connection-type") === false || native.variable("process-connection-type") === null ? "pipe" : "pty");
       return native.makeProcess(
         String(name),
         buffer === undefined || buffer === null ? undefined : nameOf(buffer),
         command.map(String),
-        { directory: directory ?? undefined, env: pairs, stderr: stderr !== false },
+        { directory: directory ?? undefined, env: pairs, stderr: stderr !== false, pty: type === "pty", coding: coding ?? undefined },
         filter ?? undefined,
         sentinel ?? undefined,
       );
     },
+    makeNetworkProcess({ name, buffer, host, service, family, server = false, filter, sentinel, coding }) {
+      const local = family === "local";
+      return native.makeNetworkProcess(
+        {
+          name: String(name),
+          buffer: buffer === undefined || buffer === null ? undefined : nameOf(buffer),
+          host: local ? undefined : String(host ?? "local"),
+          service: String(service === true ? "t" : service),
+          server: Boolean(server),
+          coding: coding ?? undefined,
+        },
+        filter ?? undefined,
+        sentinel ?? undefined,
+      );
+    },
+    processLiveP: (name) => ["run", "open", "listen", "connect", "stop"].includes(native.processInfo(String(name))?.status),
+    processCodingSystem: (name) => native.processPrimitive("process-coding-system", String(name)) ?? undefined,
+    setProcessCodingSystem: (name, decoding, encoding) =>
+      native.processPrimitive("set-process-coding-system", String(name), String(decoding ?? "undecided"), String(encoding ?? decoding ?? "undecided")),
+    processTtyName: (name) => native.processPrimitive("process-tty-name", String(name)) ?? undefined,
+    processType: (name) => native.processPrimitive("process-type", String(name)) ?? undefined,
+    processContact: (name, key) =>
+      key === undefined ? native.processPrimitive("process-contact", String(name)) : native.processPrimitive("process-contact", String(name), String(key)) ?? undefined,
+    setProcessWindowSize: (name, height, width) => native.processPrimitive("set-process-window-size", String(name), height, width),
+    processSendRegion: (name, start, end) => native.processSendString(String(name), native.bufferText(Math.min(start, end), Math.max(start, end))),
+    quitProcess: (name, currentGroup = false) => native.processPrimitive("signal-process", String(name), "QUIT", Boolean(currentGroup)),
+    stopProcess: (name, currentGroup = false) => native.processPrimitive("signal-process", String(name), "TSTP", Boolean(currentGroup)),
+    continueProcess: (name, currentGroup = false) => native.processPrimitive("signal-process", String(name), "CONT", Boolean(currentGroup)),
     processStatus: (name) => native.processInfo(String(name))?.status,
     processExitStatus: (name) => native.processInfo(String(name))?.exitStatus ?? undefined,
     processBuffer: (name) => native.processInfo(String(name))?.buffer ?? undefined,
@@ -1195,9 +1226,9 @@
     getBufferProcess: (buffer) => native.getBufferProcess(nameOf(buffer)) ?? undefined,
     processSendString: (name, text) => native.processSendString(String(name), String(text)),
     processSendEof: (name) => native.processSendEof(String(name)),
-    interruptProcess: (name) => native.signalProcess(String(name), 2),
-    killProcess: (name) => native.signalProcess(String(name), 9),
-    signalProcess: (name, signal) => native.signalProcess(String(name), signal),
+    interruptProcess: (name, currentGroup = false) => native.processPrimitive("signal-process", String(name), "INT", Boolean(currentGroup)),
+    killProcess: (name, currentGroup = false) => native.processPrimitive("signal-process", String(name), "KILL", Boolean(currentGroup)),
+    signalProcess: (name, signal) => native.processPrimitive("signal-process", String(name), signal, false),
     deleteProcess: (name) => native.deleteProcess(String(name)),
     callProcess: (command, { directory, input } = {}) =>
       native.callProcess(command.map(String), directory ?? undefined, input === undefined ? undefined : String(input)),

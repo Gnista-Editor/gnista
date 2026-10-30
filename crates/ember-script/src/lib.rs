@@ -1490,6 +1490,7 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
         })?,
     )?;
     let process_context = context.clone();
+    let network_context = context.clone();
     native.set(
         "makeProcess",
         Function::new(
@@ -1507,6 +1508,8 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
                 let directory: Option<String> = options.get("directory")?;
                 let env: Option<Vec<Vec<String>>> = options.get("env")?;
                 let merge_stderr: Option<bool> = options.get("stderr")?;
+                let pty: bool = options.get::<_, Option<bool>>("pty")?.unwrap_or(false);
+                let coding = coding_pair(&ctx, options.get("coding")?)?;
                 let spec = ember_core::ProcessSpec {
                     name,
                     buffer,
@@ -1516,10 +1519,43 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
                     merge_stderr: merge_stderr.unwrap_or(true),
                     filter: hook(filter),
                     sentinel: hook(sentinel),
+                    pty,
+                    coding,
                 };
                 with_editor(&ctx, |ed| ed.make_process(spec))
             },
         )?,
+    )?;
+    native.set(
+        "makeNetworkProcess",
+        Function::new(
+            ctx.clone(),
+            move |ctx: Ctx<'js>, options: Object<'js>, filter: Option<Function<'js>>, sentinel: Option<Function<'js>>| {
+                let hook = |f: Option<Function<'js>>| {
+                    f.map(|f| ScriptFunction { run: Persistent::save(&ctx, f), context: network_context.clone() }.into_hook())
+                };
+                let spec = ember_core::NetworkSpec {
+                    name: options.get("name")?,
+                    buffer: options.get("buffer")?,
+                    host: options.get("host")?,
+                    service: options.get("service")?,
+                    server: options.get::<_, Option<bool>>("server")?.unwrap_or(false),
+                    filter: hook(filter),
+                    sentinel: hook(sentinel),
+                    coding: coding_pair(&ctx, options.get("coding")?)?,
+                };
+                with_editor(&ctx, |ed| ed.make_network_process(spec))
+            },
+        )?,
+    )?;
+    // The rest of process.c's functions on a process by name, by their Lisp names.
+    native.set(
+        "processPrimitive",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, op: String, name: String, args: Rest<Value<'js>>| -> rquickjs::Result<Value<'js>> {
+            let args = args.0.into_iter().map(|a| value_from_js(&ctx, a)).collect::<rquickjs::Result<Vec<_>>>()?;
+            let value = with_editor(&ctx, |ed| process_primitive(ed, &op, &name, &args))?;
+            value_to_js(&ctx, &value)
+        })?,
     )?;
     native.set(
         "processInfo",
@@ -1531,11 +1567,11 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
             })?;
             let Some((status, buffer, mark, command, pid, query)) = info else { return Ok(None) };
             let object = Object::new(ctx.clone())?;
-            let (kind, code) = match status {
-                ember_core::ProcessStatus::Run => ("run", None),
-                ember_core::ProcessStatus::Exit(c) => ("exit", Some(c)),
-                ember_core::ProcessStatus::Signal(s) => ("signal", Some(s)),
+            let code = match status {
+                ember_core::ProcessStatus::Run => None,
+                ember_core::ProcessStatus::Exit(c) | ember_core::ProcessStatus::Signal(c) => Some(c),
             };
+            let kind = with_editor(&ctx, |ed| Ok(ed.process_status_name(&name).unwrap_or("exit")))?;
             object.set("status", kind)?;
             object.set("exitStatus", code)?;
             object.set("buffer", buffer)?;
@@ -1658,10 +1694,17 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     )?;
     native.set(
         "expandFileName",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| {
-            with_editor(&ctx, |ed| Ok(ed.expand_file_name(&file).display().to_string()))
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String, dir: Opt<String>| {
+            with_editor(&ctx, |ed| {
+                Ok(match dir.0 {
+                    Some(dir) => ember_core::expand_file_name_in(&file, &ed.expand_file_name(&dir)).display().to_string(),
+                    None => ed.expand_file_name(&file).display().to_string(),
+                })
+            })
         })?,
     )?;
+    // As Emacs's getenv: an environment variable of the editor's own.
+    native.set("getenv", Function::new(ctx.clone(), |name: String| std::env::var(name).ok())?)?;
     native.set(
         "fileAttributes",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String| -> rquickjs::Result<Option<Object<'js>>> {
@@ -3669,5 +3712,71 @@ fn first_location(stack: &str) -> Option<String> {
         };
         let looks_like_location = location.contains(':') && !location.starts_with("ember:prelude");
         looks_like_location.then(|| location.to_string())
+    })
+}
+
+/// A process's codings from a script: one name for both ways, or [decode, encode].
+fn coding_pair<'js>(ctx: &Ctx<'js>, value: Option<Value<'js>>) -> rquickjs::Result<Option<(ember_core::coding::Coding, ember_core::coding::Coding)>> {
+    let Some(value) = value.filter(|v| !v.is_undefined() && !v.is_null()) else { return Ok(None) };
+    let names: Vec<String> = match value_from_js(ctx, value)? {
+        EditorValue::List(items) => items.iter().filter_map(|v| v.as_str().map(str::to_string)).collect(),
+        v => v.as_str().map(|s| vec![s.to_string(), s.to_string()]).unwrap_or_default(),
+    };
+    let parse = |n: Option<&String>| -> rquickjs::Result<ember_core::coding::Coding> {
+        let n = n.ok_or_else(|| rquickjs::Exception::throw_type(ctx, "A coding system for each way"))?;
+        ember_core::coding::Coding::parse(n).ok_or_else(|| rquickjs::Exception::throw_type(ctx, &format!("Invalid coding system: {n}")))
+    };
+    Ok(Some((parse(names.first())?, parse(names.get(1).or(names.first()))?)))
+}
+
+/// The signal a name gives, as signal-process takes them: "SIGINT", "int", or a number.
+fn signal_number(value: Option<&EditorValue>) -> Option<i32> {
+    match value? {
+        EditorValue::Number(n) => Some(*n as i32),
+        v => ember_core::process::signal_number(v.as_str()?),
+    }
+}
+
+fn process_primitive(ed: &mut Editor, op: &str, name: &str, args: &[EditorValue]) -> ember_core::Result<EditorValue> {
+    let flag = |i: usize| args.get(i).is_some_and(EditorValue::is_true);
+    Ok(match op {
+        "process-coding-system" => match ed.process_coding_system(name) {
+            Some((d, e)) => EditorValue::List(vec![EditorValue::Str(d.name()), EditorValue::Str(e.name())]),
+            None => EditorValue::Null,
+        },
+        "set-process-coding-system" => {
+            let coding = |i: usize| -> ember_core::Result<ember_core::coding::Coding> {
+                let n = args.get(i).and_then(EditorValue::as_str).unwrap_or("undecided");
+                ember_core::coding::Coding::parse(n).ok_or_else(|| ember_core::Error::new(format!("Invalid coding system: {n}")))
+            };
+            ed.set_process_coding_system(name, coding(0)?, coding(1)?)?;
+            EditorValue::Null
+        }
+        "process-tty-name" => ed.process_tty_name(name).map_or(EditorValue::Null, EditorValue::Str),
+        "process-type" => ed.process_type(name).map_or(EditorValue::Null, |t| EditorValue::Str(t.into())),
+        "process-contact" => match ed.process_contact(name) {
+            None => EditorValue::Bool(true),
+            Some((c, server)) => {
+                let s = |x: Option<String>| x.map_or(EditorValue::Null, EditorValue::Str);
+                match args.first().and_then(EditorValue::as_str).map(|k| k.trim_start_matches(':')) {
+                    None => EditorValue::List(vec![s(c.host), EditorValue::Str(c.service)]),
+                    Some("host") => s(c.host),
+                    Some("service") => EditorValue::Str(c.service),
+                    Some("remote") => s(c.remote),
+                    Some("server") => EditorValue::Bool(server),
+                    Some(_) => EditorValue::Null,
+                }
+            }
+        },
+        "set-process-window-size" => {
+            let n = |i: usize| args.get(i).and_then(EditorValue::as_number).unwrap_or(0.0) as u16;
+            EditorValue::Bool(ed.set_process_window_size(name, n(0), n(1))?)
+        }
+        "signal-process" => {
+            let signal = signal_number(args.first()).ok_or_else(|| ember_core::Error::new("Undefined signal name"))?;
+            ed.signal_process_group(name, signal, flag(1))?;
+            EditorValue::Null
+        }
+        _ => return Err(ember_core::Error::new(format!("No process primitive {op}"))),
     })
 }

@@ -143,3 +143,135 @@ fn killing_a_buffer_with_a_running_process_asks() {
     assert!(ed.find_buffer("*s*").is_none());
     assert!(ed.process_list().is_empty());
 }
+
+/// Runs `ed`'s processes until `done` says so, or a few seconds pass.
+fn until(ed: &mut Editor, s: &Scripting, done: &str) {
+    let start = std::time::Instant::now();
+    while start.elapsed() < Duration::from_secs(5) {
+        ed.accept_process_output(Duration::from_millis(20));
+        if s.eval_expression(ed, done).unwrap() == "true" {
+            return;
+        }
+    }
+    panic!("never: {done}");
+}
+
+#[test]
+fn a_terminal_of_its_own_by_default() {
+    let (mut ed, s) = setup();
+    eval(
+        &mut ed,
+        &s,
+        r#"ember.makeProcess({ name: "t", buffer: "*t*", command: ["sh", "-c", "test -t 0 && echo tty; printf 'a\nb\n'"] });
+        globalThis.ttyName = ember.processTtyName("t");"#,
+    );
+    ed.accept_process_output(Duration::from_secs(5));
+    // No carriage returns, as Emacs sets the terminal up without them.
+    assert_eq!(buffer_text(&ed, "*t*"), "tty\na\nb\n\nProcess t finished\n");
+    assert!(s.eval_expression(&mut ed, "ttyName").unwrap().contains("/dev/"));
+    // With pipes, as process-connection-type nil asks.
+    eval(&mut ed, &s, r#"ember.makeProcess({ name: "p", buffer: "*p*", connectionType: "pipe", command: ["sh", "-c", "test -t 0 && echo tty; echo pipe"] });"#);
+    ed.accept_process_output(Duration::from_secs(5));
+    assert_eq!(buffer_text(&ed, "*p*"), "pipe\n\nProcess p finished\n");
+}
+
+#[test]
+fn end_of_file_and_interrupts_on_a_terminal() {
+    let (mut ed, s) = setup();
+    // C-d on a terminal ends cat's input, which it sees as end of file.
+    eval(&mut ed, &s, r#"ember.makeProcess({ name: "cat", buffer: "*cat*", command: ["cat"] }); ember.processSendString("cat", "hi\n"); ember.processSendEof("cat");"#);
+    ed.accept_process_output(Duration::from_secs(5));
+    assert_eq!(buffer_text(&ed, "*cat*"), "hi\n\nProcess cat finished\n");
+    // Interrupting the job in the foreground, as a shell's C-c C-c does.
+    eval(
+        &mut ed,
+        &s,
+        r#"globalThis.events = [];
+        ember.makeProcess({ name: "sleep", command: ["sleep", "30"], sentinel: (p, e) => events.push(e) });"#,
+    );
+    ed.accept_process_output(Duration::from_millis(200));
+    eval(&mut ed, &s, r#"ember.interruptProcess("sleep", true);"#);
+    until(&mut ed, &s, "events.length > 0");
+    assert_eq!(s.eval_expression(&mut ed, "JSON.stringify(events)").unwrap(), r#""[\"interrupt\\n\"]""#);
+}
+
+#[test]
+fn output_and_input_in_the_process_coding() {
+    let (mut ed, s) = setup();
+    eval(
+        &mut ed,
+        &s,
+        r#"ember.makeProcess({ name: "l", buffer: "*l*", coding: "latin-1", command: ["sh", "-c", "read x; printf '%s' \"$x\" | od -An -tx1; printf '\\351\\n'"] });
+        ember.processSendString("l", "é\n");
+        globalThis.codings = ember.processCodingSystem("l");"#,
+    );
+    ed.accept_process_output(Duration::from_secs(5));
+    let text = buffer_text(&ed, "*l*");
+    assert!(text.contains(" e9\n"), "sent as Latin-1: {text:?}");
+    assert!(text.contains("é\n"), "read as Latin-1: {text:?}");
+    assert_eq!(s.eval_expression(&mut ed, "JSON.stringify(codings)").unwrap(), r#""[\"iso-latin-1\",\"iso-latin-1\"]""#);
+    // UTF-8 split between reads still decodes whole.
+    eval(&mut ed, &s, r#"ember.makeProcess({ name: "u", buffer: "*u*", command: ["sh", "-c", "printf '\\342'; sleep 0.2; printf '\\202\\254\\n'"] });"#);
+    ed.accept_process_output(Duration::from_secs(5));
+    assert_eq!(buffer_text(&ed, "*u*"), "€\n\nProcess u finished\n");
+}
+
+#[test]
+fn network_servers_and_clients() {
+    let (mut ed, s) = setup();
+    eval(
+        &mut ed,
+        &s,
+        r#"globalThis.got = []; globalThis.events = [];
+        ember.makeNetworkProcess({ name: "srv", service: true, server: true,
+          filter: (p, text) => { got.push([p, text]); ember.processSendString(p, text.toUpperCase()); },
+          sentinel: (p, e) => events.push([p, e]) });
+        globalThis.port = ember.processContact("srv", "service");
+        ember.makeNetworkProcess({ name: "cli", buffer: "*cli*", service: Number(port), sentinel: (p, e) => events.push([p, e]) });
+        ember.processSendString("cli", "hello");
+        globalThis.statuses = [ember.processStatus("srv"), ember.processStatus("cli"), ember.processType("cli"), ember.processLiveP("cli")];"#,
+    );
+    until(&mut ed, &s, r#"ember.bufferText !== undefined && ember.withCurrentBuffer("*cli*", () => ember.bufferText()) === "HELLO""#);
+    let got = s.eval_expression(&mut ed, "JSON.stringify([got, events, statuses])").unwrap();
+    assert!(got.contains(r#"\"srv <127.0.0.1:"#), "{got}");
+    assert!(got.contains(r#"\"hello\"]]"#), "{got}");
+    assert!(got.contains(r#"\"open from 127.0.0.1\\n\""#), "{got}");
+    assert!(got.contains(r#"[\"listen\",\"open\",\"network\",true]"#), "{got}");
+    // The client closing shows on the server's side as the remote end going.
+    eval(&mut ed, &s, r#"ember.deleteProcess("cli");"#);
+    until(&mut ed, &s, r#"events.some(([, e]) => e === "connection broken by remote peer\n")"#);
+    let got = s.eval_expression(&mut ed, "JSON.stringify(events)").unwrap();
+    assert!(got.contains(r#"[\"cli\",\"deleted\\n\"]"#), "{got}");
+    eval(&mut ed, &s, r#"ember.deleteProcess("srv");"#);
+    assert!(ed.process_list().is_empty(), "{:?}", ed.process_list());
+}
+
+#[test]
+fn local_sockets() {
+    let (mut ed, s) = setup();
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("sock").display().to_string();
+    eval(
+        &mut ed,
+        &s,
+        &format!(
+            r#"globalThis.got = "";
+            ember.makeNetworkProcess({{ name: "srv", family: "local", service: {path:?}, server: true, filter: (p, text) => {{ got += text; }} }});
+            ember.makeNetworkProcess({{ name: "cli", family: "local", service: {path:?} }});
+            ember.processSendString("cli", "over a socket");
+            globalThis.contact = ember.processContact("cli");"#
+        ),
+    );
+    until(&mut ed, &s, r#"got === "over a socket""#);
+    assert_eq!(s.eval_expression(&mut ed, "JSON.stringify(contact)").unwrap(), format!("{:?}", format!("[null,{path:?}]")));
+}
+
+#[test]
+fn an_agent_needs_approval_to_connect() {
+    let (mut ed, s) = setup();
+    ed.set_agent_acting(true);
+    let result = s.eval_typescript(&mut ed, "t.ts", r#"ember.makeNetworkProcess({ name: "c", host: "example.com", service: 80 });"#.into());
+    assert!(result.is_err());
+    assert!(ed.permission_requested());
+    assert!(ed.process_list().is_empty());
+}

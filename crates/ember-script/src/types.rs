@@ -700,8 +700,10 @@ const API: &str = r##"
    * it, so the buffer stays as modified as it was.
    */
   function setVisitedFileName(file: string, options?: { alongWithFile?: boolean }): void;
-  /** A file name made absolute, with ~ for the home directory, as Emacs's expand-file-name. */
-  function expandFileName(file: string): string;
+  /** A file name made absolute, from dir or default-directory, with ~ for the home directory, as Emacs's expand-file-name. */
+  function expandFileName(file: string, dir?: string): string;
+  /** An environment variable's value, as Emacs's getenv. */
+  function getenv(name: string): string | undefined;
   function fileExists(file: string): boolean;
   /** Whether a file name names a directory, as Emacs's file-directory-p. */
   function fileDirectoryP(file: string): boolean;
@@ -1268,8 +1270,32 @@ const API: &str = r##"
     filter?: (process: string, output: string) => void;
     /** Called with the process and what happened, "finished\n" or "exited abnormally with code 2\n", when it ends. */
     sentinel?: (process: string, event: string) => void;
-    /** Whether standard error comes in as output too: true by default. */
+    /** Whether standard error comes in as output too: true by default; on a pseudo-terminal it always does. */
     stderr?: boolean;
+    /**
+     * A pseudo-terminal, "pty", as a shell or a program that asks questions
+     * wants, or pipes, "pipe"; as process-connection-type says by default.
+     */
+    connectionType?: "pty" | "pipe";
+    /** How its output is decoded and its input encoded: one coding system, or [decoding, encoding]. */
+    coding?: string | [string, string];
+  }
+  /** What makeNetworkProcess opens, as make-network-process takes it. */
+  interface NetworkProcessDefinition {
+    name: string;
+    buffer?: BufferLike;
+    /** The host to connect to, or listen on for a server: "local" for this machine, by default. */
+    host?: string;
+    /** The port, or true for any free one for a server; a socket's file name with family "local". */
+    service: number | string | true;
+    /** "local" for a Unix socket; TCP otherwise. */
+    family?: "local";
+    /** Listen for connections, each of which becomes a process of its own. */
+    server?: boolean;
+    filter?: (process: string, output: string) => void;
+    /** Told "deleted\n", "connection broken by remote peer\n", or for a server's new connection "open from HOST\n". */
+    sentinel?: (process: string, event: string) => void;
+    coding?: string | [string, string];
   }
   /**
    * Start a program running alongside the editor, as Emacs's make-process,
@@ -1278,8 +1304,35 @@ const API: &str = r##"
    * into its buffer. Starting it asks the agent's permission.
    */
   function makeProcess(definition: ProcessDefinition): string;
-  /** "run", "exit" or "signal", or undefined for no such process. */
-  function processStatus(process: string): "run" | "exit" | "signal" | undefined;
+  /**
+   * Open a network connection, or a server for them, as make-network-process,
+   * and return its name. A server's connections are processes of their own,
+   * named after it and who connected. Asks the agent's permission.
+   */
+  function makeNetworkProcess(definition: NetworkProcessDefinition): string;
+  /** "run", "exit" or "signal", for a connection "open" or "closed", for a server "listen", or undefined for no such process. */
+  function processStatus(process: string): "run" | "exit" | "signal" | "open" | "closed" | "listen" | undefined;
+  /** Whether a process is running, or a connection or server open, as process-live-p. */
+  function processLiveP(process: string): boolean;
+  /** How a process's output is decoded and its input encoded, as process-coding-system. */
+  function processCodingSystem(process: string): [string, string] | undefined;
+  function setProcessCodingSystem(process: string, decoding?: string, encoding?: string): void;
+  /** The name of a process's terminal, as process-tty-name, if it talks through one. */
+  function processTtyName(process: string): string | undefined;
+  /** "real" for a program, "network" for a connection or server, as process-type. */
+  function processType(process: string): "real" | "network" | undefined;
+  /** [host, service] for a connection, a part of it by key ("host", "service", "remote", "server"), or true for a program, as process-contact. */
+  function processContact(process: string, key?: string): Value;
+  /** Tell a process's terminal its size, as set-process-window-size; false without one. */
+  function setProcessWindowSize(process: string, height: number, width: number): boolean;
+  /** Send the text between two positions to a process, as process-send-region. */
+  function processSendRegion(process: string, start: number, end: number): void;
+  /** Send SIGQUIT, as quit-process; with currentGroup, to the job in the foreground on its terminal. */
+  function quitProcess(process: string, currentGroup?: boolean): void;
+  /** Stop a process, as stop-process. */
+  function stopProcess(process: string, currentGroup?: boolean): void;
+  /** Let a stopped process go on, as continue-process. */
+  function continueProcess(process: string, currentGroup?: boolean): void;
   /** The exit code, or the signal that ended it. */
   function processExitStatus(process: string): number | undefined;
   function processBuffer(process: string): string | undefined;
@@ -1294,15 +1347,16 @@ const API: &str = r##"
   function processList(): string[];
   /** The process writing to a buffer, as get-buffer-process. */
   function getBufferProcess(buffer: BufferLike): string | undefined;
-  /** Write to a process's standard input. */
+  /** Write to a process's input, encoded in its coding, as process-send-string. */
   function processSendString(process: string, text: string): void;
-  /** Close a process's standard input. */
+  /** Make a process see the end of its input, as process-send-eof: C-d on a terminal, else its input closed. */
   function processSendEof(process: string): void;
-  /** Interrupt a process and what it started, as C-c does in a terminal. */
-  function interruptProcess(process: string): void;
+  /** Interrupt a process and what it started, as C-c does in a terminal; with currentGroup, the job in the foreground on its terminal. */
+  function interruptProcess(process: string, currentGroup?: boolean): void;
   /** Kill a process and what it started. */
-  function killProcess(process: string): void;
-  function signalProcess(process: string, signal: number): void;
+  function killProcess(process: string, currentGroup?: boolean): void;
+  /** Send a signal, by number or name ("SIGINT", "TERM"), as signal-process. */
+  function signalProcess(process: string, signal: number | string): void;
   /** Kill a process and forget it, as delete-process. */
   function deleteProcess(process: string): void;
   /**

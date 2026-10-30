@@ -55,7 +55,8 @@ Each entry says whether the difference is **deliberate**, which keeps it, or **n
 - **The `charset` text property** (not yet): Emacs puts it on text decoded in a charset's coding and uses it when encoding again. Ember has none, so `iso-2022-7bit` chooses each character's set by the text's script: JIS X 0208 for text with kana, KS C 5601 with Hangul, else GB 2312, where Emacs writes kana alone in GB 2312's set ([ADR 0035](adr/0035-coding-systems-and-charsets.md)).
 - **Japanese files without a cookie** (not yet): Shift_JIS and EUC-JP open as Latin-1, as there are no language environments to prefer them; Emacs without a Japanese one opens Shift_JIS as `emacs-mule`, which Ember does not have ([ADR 0035](adr/0035-coding-systems-and-charsets.md)).
 - **Saving text the coding cannot write** (not yet) asks for a coding without the `*Warning*` buffer Emacs shows listing the characters; written without asking, from code, it is saved as UTF-8.
-- **Process output** (not yet) is always UTF-8; `set-process-coding-system` is not there.
+- **Network connections** (not yet) connect while the command waits; `:nowait`, TLS and datagrams are not there ([ADR 0037](adr/0037-terminals-sockets-and-process-codings.md)).
+- **Connecting or listening** (deliberate) asks the agent's permission while it acts, as running a program does.
 - **Changing a file's modes or times** (deliberate) asks the agent's permission while it acts, as writing files does; Emacs has no agent to ask.
 
 ## Invisible differences

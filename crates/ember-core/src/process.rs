@@ -1,5 +1,7 @@
 //! Processes, as Emacs's process.c: programs that run alongside the editor
-//! while their output comes into a buffer, as compilation and grep do.
+//! while their output comes into a buffer, as compilation and grep do, on a
+//! pipe or a pseudo-terminal of their own, and network connections, as
+//! clients or servers, over TCP or a local socket.
 //!
 //! A process is started with [`Editor::make_process`]. Threads read its
 //! output and send it to the editor, which has no thread of its own: front
@@ -13,9 +15,12 @@
 
 use std::io::{Read, Write};
 use std::process::{Child, Command, Stdio};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, Sender, SyncSender, channel, sync_channel};
 use std::time::{Duration, Instant};
 
+use crate::coding::{Coding, Eol};
 use crate::editor::Editor;
 use crate::error::{Error, Result};
 use crate::variables::{HookFn, Value};
@@ -43,6 +48,33 @@ impl Status {
     }
 }
 
+/// The signal a name gives, "SIGINT" or "int", as signal-process takes names.
+pub fn signal_number(name: &str) -> Option<i32> {
+    #[cfg(unix)]
+    {
+        let name = name.trim_start_matches("SIG").trim_start_matches("sig").to_ascii_uppercase();
+        Some(match name.as_str() {
+            "HUP" => libc::SIGHUP,
+            "INT" => libc::SIGINT,
+            "QUIT" => libc::SIGQUIT,
+            "KILL" => libc::SIGKILL,
+            "TERM" => libc::SIGTERM,
+            "STOP" => libc::SIGSTOP,
+            "TSTP" => libc::SIGTSTP,
+            "CONT" => libc::SIGCONT,
+            "USR1" => libc::SIGUSR1,
+            "USR2" => libc::SIGUSR2,
+            "WINCH" => libc::SIGWINCH,
+            _ => return None,
+        })
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = name;
+        None
+    }
+}
+
 /// How Emacs describes a process ended by a signal.
 fn signal_name(sig: i32) -> String {
     match sig {
@@ -54,6 +86,34 @@ fn signal_name(sig: i32) -> String {
         15 => "terminated".into(),
         n => format!("signal {n}"),
     }
+}
+
+/// What a process is connected by, as Emacs's process-type distinguishes.
+pub(crate) enum Kind {
+    Pipe,
+    /// A pseudo-terminal: its controlling side, for its size, its foreground
+    /// group and its end of file, and the terminal's name.
+    #[cfg(unix)]
+    Pty {
+        master: std::fs::File,
+        tty: String,
+    },
+    /// A network connection, and where it goes, as process-contact gives it.
+    Network(Contact),
+    /// A server listening for connections, which become processes of their
+    /// own; dropping the flag stops it.
+    Server(Contact, Arc<AtomicBool>),
+}
+
+/// Where a network process connects or listens.
+#[derive(Clone, Debug)]
+pub struct Contact {
+    /// The host, or None for a local socket.
+    pub host: Option<String>,
+    /// The port, or a local socket's file name.
+    pub service: String,
+    /// For a connection a server accepted, who connected.
+    pub remote: Option<String>,
 }
 
 pub(crate) struct Process {
@@ -79,11 +139,88 @@ pub(crate) struct Process {
     query_on_exit: bool,
     /// When it was seen to have exited, and how, while its output was still open.
     exited: Option<(Instant, Status)>,
+    kind: Kind,
+    /// How its output is decoded and its input encoded, as process-coding-system.
+    coding: (Coding, Coding),
+    /// Bytes of output not decoded yet, the start of a character split
+    /// between reads.
+    pending: Vec<u8>,
 }
 
 enum Event {
-    Output(u64, String),
+    Output(u64, Vec<u8>),
     Closed(u64),
+    /// A server took a connection, from this peer.
+    Accepted(u64, Conn, String),
+}
+
+/// A network connection's socket.
+pub(crate) enum Conn {
+    Tcp(std::net::TcpStream),
+    #[cfg(unix)]
+    Local(std::os::unix::net::UnixStream),
+}
+
+impl Conn {
+    fn try_clone(&self) -> std::io::Result<Conn> {
+        Ok(match self {
+            Conn::Tcp(s) => Conn::Tcp(s.try_clone()?),
+            #[cfg(unix)]
+            Conn::Local(s) => Conn::Local(s.try_clone()?),
+        })
+    }
+
+    fn shutdown(&self, how: std::net::Shutdown) {
+        let _ = match self {
+            Conn::Tcp(s) => s.shutdown(how),
+            #[cfg(unix)]
+            Conn::Local(s) => s.shutdown(how),
+        };
+    }
+}
+
+impl Read for Conn {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        match self {
+            Conn::Tcp(s) => s.read(buf),
+            #[cfg(unix)]
+            Conn::Local(s) => s.read(buf),
+        }
+    }
+}
+
+impl Write for Conn {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        match self {
+            Conn::Tcp(s) => s.write(buf),
+            #[cfg(unix)]
+            Conn::Local(s) => s.write(buf),
+        }
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        match self {
+            Conn::Tcp(s) => s.flush(),
+            #[cfg(unix)]
+            Conn::Local(s) => s.flush(),
+        }
+    }
+}
+
+/// Writes what a process is sent on a thread of its own, so a process that
+/// does not read cannot stop the editor; `close` runs at end of file.
+fn writer(mut out: impl Write + Send + 'static, close: impl FnOnce() + Send + 'static) -> Sender<Option<Vec<u8>>> {
+    let (tx, rx) = channel::<Option<Vec<u8>>>();
+    std::thread::spawn(move || {
+        while let Ok(Some(bytes)) = rx.recv() {
+            if out.write_all(&bytes).and_then(|_| out.flush()).is_err() {
+                break;
+            }
+        }
+        drop(out);
+        close();
+    });
+    tx
 }
 
 /// How many chunks of output wait to be taken in before readers wait,
@@ -98,12 +235,37 @@ pub(crate) struct Processes {
     tx: SyncSender<Event>,
     rx: Receiver<Event>,
     next_id: u64,
+    /// Events taken off the queue while waiting for a process to end,
+    /// which belong to others, to handle first next time.
+    held: std::collections::VecDeque<Event>,
 }
 
 impl Default for Processes {
     fn default() -> Processes {
         let (tx, rx) = sync_channel(QUEUED_CHUNKS);
-        Processes { list: Vec::new(), tx, rx, next_id: 1 }
+        Processes { list: Vec::new(), tx, rx, next_id: 1, held: Default::default() }
+    }
+}
+
+impl Processes {
+    /// Waits for a killed child to end, taking its output off the queue
+    /// meanwhile, as a program on a terminal ends only once what it wrote is
+    /// read; others' output is kept. Gives up after a few seconds.
+    fn reap(&mut self, child: &mut Child, id: u64) -> Option<std::process::ExitStatus> {
+        let until = Instant::now() + Duration::from_secs(3);
+        loop {
+            if let Ok(Some(status)) = child.try_wait() {
+                return Some(status);
+            }
+            if Instant::now() >= until {
+                return None;
+            }
+            match self.rx.recv_timeout(Duration::from_millis(5)) {
+                Ok(Event::Output(i, _) | Event::Closed(i)) if i == id => {}
+                Ok(event) => self.held.push_back(event),
+                Err(_) => {}
+            }
+        }
     }
 }
 
@@ -118,16 +280,33 @@ impl Drop for Processes {
     }
 }
 
-/// Sends SIGHUP to a process's group, then kills what is left.
+/// Sends SIGHUP to a process's group, then kills what is left; a
+/// connection or server is closed.
 fn hang_up(p: &mut Process) {
+    match &p.kind {
+        Kind::Server(_, stop) => {
+            stop.store(true, Ordering::Relaxed);
+            return;
+        }
+        Kind::Network(_) => {
+            p.stdin = None;
+            return;
+        }
+        _ => {}
+    }
     #[cfg(unix)]
     // SAFETY: kill only sends a signal; a stale pid fails harmlessly.
     unsafe {
         libc::kill(-(p.pid as i32), libc::SIGHUP);
     }
+    let pty = p.is_pty();
     if let Some(child) = p.child.as_mut() {
         let _ = child.kill();
-        let _ = child.wait();
+        // A program on a terminal finishes exiting only once what it wrote
+        // has been read, which nothing may do now; it is reaped later.
+        if !pty {
+            let _ = child.wait();
+        }
     }
 }
 
@@ -146,37 +325,105 @@ pub struct ProcessSpec {
     pub merge_stderr: bool,
     pub filter: Option<HookFn>,
     pub sentinel: Option<HookFn>,
+    /// Whether it talks through a pseudo-terminal rather than pipes, as
+    /// process-connection-type t asks.
+    pub pty: bool,
+    /// How its output is decoded and its input encoded, if not as
+    /// default-process-coding-system says.
+    pub coding: Option<(Coding, Coding)>,
 }
 
-/// Reads a stream in chunks, sending each as text, a character split
-/// between chunks kept for the next.
+/// What opens a network connection or server, as make-network-process takes it.
+pub struct NetworkSpec {
+    pub name: String,
+    pub buffer: Option<String>,
+    /// The host to connect to or listen on; None for a local socket.
+    pub host: Option<String>,
+    /// The port, "t" for any free one when listening, or a local socket's file.
+    pub service: String,
+    pub server: bool,
+    pub filter: Option<HookFn>,
+    pub sentinel: Option<HookFn>,
+    pub coding: Option<(Coding, Coding)>,
+}
+
+/// Reads a stream in chunks, sending the bytes on to be decoded.
 fn read_stream(id: u64, mut stream: impl Read + Send + 'static, tx: SyncSender<Event>) {
     std::thread::spawn(move || {
         let mut buf = [0u8; 4096];
-        let mut pending: Vec<u8> = Vec::new();
         loop {
             match stream.read(&mut buf) {
                 Ok(0) | Err(_) => break,
                 Ok(n) => {
-                    pending.extend_from_slice(&buf[..n]);
-                    let valid = match std::str::from_utf8(&pending) {
-                        Ok(s) => s.len(),
-                        Err(e) if e.error_len().is_none() => e.valid_up_to(),
-                        Err(_) => pending.len(),
-                    };
-                    let text = String::from_utf8_lossy(&pending[..valid]).into_owned();
-                    pending.drain(..valid);
-                    if !text.is_empty() && tx.send(Event::Output(id, text)).is_err() {
+                    if tx.send(Event::Output(id, buf[..n].to_vec())).is_err() {
                         return;
                     }
                 }
             }
         }
-        if !pending.is_empty() {
-            let _ = tx.send(Event::Output(id, String::from_utf8_lossy(&pending).into_owned()));
-        }
         let _ = tx.send(Event::Closed(id));
     });
+}
+
+/// A pseudo-terminal set up as Emacs's child_setup_tty sets one up for a
+/// process: no echo, no carriage return before each newline, signals from
+/// C-c and C-\, eight bits, and no erase or kill processing.
+#[cfg(unix)]
+fn open_pty() -> std::io::Result<(std::os::fd::OwnedFd, std::os::fd::OwnedFd, String)> {
+    use std::os::fd::{FromRawFd, OwnedFd};
+    let (mut master, mut slave) = (0, 0);
+    let size = libc::winsize { ws_row: 24, ws_col: 80, ws_xpixel: 0, ws_ypixel: 0 };
+    // SAFETY: openpty fills in two descriptors it opens, which we then own.
+    if unsafe { libc::openpty(&mut master, &mut slave, std::ptr::null_mut(), std::ptr::null_mut(), &size as *const _ as *mut _) } < 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+    // SAFETY: just opened by openpty, and owned by nothing else.
+    let (master, slave) = unsafe { (OwnedFd::from_raw_fd(master), OwnedFd::from_raw_fd(slave)) };
+    use std::os::fd::AsRawFd;
+    // SAFETY: termios is plain data, filled in by tcgetattr before use.
+    let mut t: libc::termios = unsafe { std::mem::zeroed() };
+    // SAFETY: slave is an open terminal and t a valid termios.
+    unsafe {
+        if libc::tcgetattr(slave.as_raw_fd(), &mut t) == 0 {
+            t.c_oflag |= libc::OPOST;
+            t.c_oflag &= !libc::ONLCR;
+            t.c_lflag &= !libc::ECHO;
+            t.c_lflag |= libc::ISIG;
+            t.c_iflag &= !libc::ISTRIP;
+            t.c_cflag = (t.c_cflag & !libc::CSIZE) | libc::CS8;
+            t.c_cc[libc::VERASE] = libc::_POSIX_VDISABLE as libc::cc_t;
+            t.c_cc[libc::VKILL] = libc::_POSIX_VDISABLE as libc::cc_t;
+            libc::tcsetattr(slave.as_raw_fd(), libc::TCSANOW, &t);
+        }
+    }
+    // SAFETY: ttyname returns a pointer to a static string or null.
+    let tty = unsafe {
+        let name = libc::ttyname(slave.as_raw_fd());
+        if name.is_null() { String::new() } else { std::ffi::CStr::from_ptr(name).to_string_lossy().into_owned() }
+    };
+    Ok((master, slave, tty))
+}
+
+/// Takes connections until the server is deleted, passing each on.
+fn accept_loop(id: u64, tx: &SyncSender<Event>, stop: &AtomicBool, mut accept: impl FnMut() -> std::io::Result<(Conn, String)>) {
+    while !stop.load(Ordering::Relaxed) {
+        match accept() {
+            Ok((conn, peer)) => {
+                if let Conn::Tcp(s) = &conn {
+                    let _ = s.set_nonblocking(false);
+                }
+                #[cfg(unix)]
+                if let Conn::Local(s) = &conn {
+                    let _ = s.set_nonblocking(false);
+                }
+                if tx.send(Event::Accepted(id, conn, peer)).is_err() {
+                    return;
+                }
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => std::thread::sleep(Duration::from_millis(10)),
+            Err(_) => return,
+        }
+    }
 }
 
 impl Editor {
@@ -191,53 +438,72 @@ impl Editor {
             Some(d) => self.expand_file_name(d),
             None => self.expand_file_name("."),
         };
-        // Standard output and error share one pipe, as Emacs gives a process,
-        // so what it writes comes in the order it wrote it.
-        let (output, writer) = std::io::pipe().map_err(|e| Error::new(format!("Making a pipe: {e}")))?;
-        let stderr = if spec.merge_stderr { Stdio::from(writer.try_clone()?) } else { Stdio::null() };
         let mut command = Command::new(&program);
-        command
-            .args(&spec.command[1..])
-            .current_dir(&dir)
-            .env("TERM", "dumb")
-            .stdin(Stdio::piped())
-            .stdout(writer)
-            .stderr(stderr);
+        command.args(&spec.command[1..]).current_dir(&dir).env("TERM", "dumb").env("INSIDE_EMACS", "ember");
         for (k, v) in &spec.env {
             command.env(k, v);
         }
-        // Its own process group, so signals reach what it starts too, as
-        // Emacs's processes on a terminal of their own.
         #[cfg(unix)]
-        {
-            use std::os::unix::process::CommandExt;
-            command.process_group(0);
-        }
+        let pty = if spec.pty { Some(open_pty().map_err(|e| Error::new(format!("Opening a pseudo-terminal: {e}")))?) } else { None };
+        #[cfg(not(unix))]
+        let pty: Option<((), (), String)> = None;
+        let mut output: Box<dyn Read + Send> = match &pty {
+            #[cfg(unix)]
+            Some((master, slave, _)) => {
+                // The terminal is the program's input, output and error, and
+                // its controlling terminal, in a session of its own.
+                command.stdin(Stdio::from(slave.try_clone()?)).stdout(Stdio::from(slave.try_clone()?)).stderr(Stdio::from(slave.try_clone()?));
+                use std::os::unix::process::CommandExt;
+                // SAFETY: setsid and the ioctl are async-signal-safe, as pre_exec needs.
+                unsafe {
+                    command.pre_exec(|| {
+                        if libc::setsid() < 0 {
+                            return Err(std::io::Error::last_os_error());
+                        }
+                        libc::ioctl(0, libc::TIOCSCTTY as _, 0);
+                        Ok(())
+                    });
+                }
+                Box::new(std::fs::File::from(master.try_clone()?))
+            }
+            #[cfg(not(unix))]
+            Some(_) => unreachable!(),
+            None => {
+                // Standard output and error share one pipe, as Emacs gives a
+                // process, so what it writes comes in the order it wrote it.
+                let (output, writer) = std::io::pipe().map_err(|e| Error::new(format!("Making a pipe: {e}")))?;
+                let stderr = if spec.merge_stderr { Stdio::from(writer.try_clone()?) } else { Stdio::null() };
+                command.stdin(Stdio::piped()).stdout(writer).stderr(stderr);
+                // Its own process group, so signals reach what it starts too.
+                #[cfg(unix)]
+                {
+                    use std::os::unix::process::CommandExt;
+                    command.process_group(0);
+                }
+                Box::new(output)
+            }
+        };
         let mut child = command.spawn().map_err(|e| Error::new(format!("Searching for program: {e}, {program}")))?;
-        // The command holds the pipe's writing end, which must close here for
-        // the end of the output to be seen.
+        // The command holds the other ends, which must close here for the
+        // end of the output to be seen.
         drop(command);
-        let mut name = spec.name.clone();
-        let mut n = 1;
-        while self.processes.list.iter().any(|p| p.name == name) {
-            name = format!("{}<{n}>", spec.name);
-            n += 1;
-        }
+        let name = self.unique_process_name(&spec.name);
         let id = self.processes.next_id;
         self.processes.next_id += 1;
-        read_stream(id, output, self.processes.tx.clone());
+        let (stdin, kind) = match pty {
+            #[cfg(unix)]
+            Some((master, slave, tty)) => {
+                drop(slave);
+                let input = std::fs::File::from(master.try_clone()?);
+                (Some(writer(input, || {})), Kind::Pty { master: std::fs::File::from(master), tty })
+            }
+            #[cfg(not(unix))]
+            Some(_) => unreachable!(),
+            None => (child.stdin.take().map(|input| writer(input, || {})), Kind::Pipe),
+        };
+        read_stream(id, std::mem::replace(&mut output, Box::new(std::io::empty())), self.processes.tx.clone());
         let open_streams = 1;
-        let stdin = child.stdin.take().map(|mut input| {
-            let (tx, rx) = channel::<Option<Vec<u8>>>();
-            std::thread::spawn(move || {
-                while let Ok(Some(bytes)) = rx.recv() {
-                    if input.write_all(&bytes).and_then(|_| input.flush()).is_err() {
-                        break;
-                    }
-                }
-            });
-            tx
-        });
+        let coding = spec.coding.unwrap_or_else(|| self.default_process_coding());
         let (buffer_id, mark) = match buffer {
             Some(index) => {
                 let b = &mut self.buffers[index];
@@ -261,8 +527,193 @@ impl Editor {
             sentinel: spec.sentinel,
             query_on_exit: true,
             exited: None,
+            kind,
+            coding,
+            pending: Vec::new(),
         });
         Ok(name)
+    }
+
+    /// The codings a new process gets: coding-system-for-read and -write if
+    /// bound, else default-process-coding-system's, as Emacs chooses.
+    fn default_process_coding(&self) -> (Coding, Coding) {
+        let named = |v: Option<Value>| v.and_then(|v| v.as_str().and_then(Coding::parse));
+        let (mut decode, mut encode) = match self.variable("default-process-coding-system") {
+            Some(Value::List(pair)) if pair.len() == 2 => (named(pair.first().cloned()), named(pair.get(1).cloned())),
+            _ => (None, None),
+        };
+        decode = named(self.variable("coding-system-for-read")).or(decode);
+        encode = named(self.variable("coding-system-for-write")).or(encode);
+        let utf8 = Coding::named("utf-8-unix");
+        (decode.unwrap_or(utf8), encode.unwrap_or(utf8))
+    }
+
+    /// A unique process name, made so with "<1>" and on as Emacs does.
+    fn unique_process_name(&self, base: &str) -> String {
+        let mut name = base.to_string();
+        let mut n = 1;
+        while self.processes.list.iter().any(|p| p.name == name) {
+            name = format!("{base}<{n}>");
+            n += 1;
+        }
+        name
+    }
+
+    /// Opens a network connection, or a server listening for them, as
+    /// make-network-process: TCP to a host and port, or a local socket
+    /// with no host. A server's connections are processes of their own,
+    /// named after it and who connected. Asks the agent's permission.
+    pub fn make_network_process(&mut self, spec: NetworkSpec) -> Result<String> {
+        let what = match &spec.host {
+            Some(host) => format!("{host}:{}", spec.service),
+            None => spec.service.clone(),
+        };
+        let verb = if spec.server { "listen on" } else { "connect to" };
+        self.check_permission(&format!("{verb} {what}"))?;
+        let name = self.unique_process_name(&spec.name);
+        let failed = |e: std::io::Error| {
+            Error::signal("file-error", format!("make client process failed: {e}, :name, {}, :service, {}", spec.name, spec.service), vec![])
+        };
+        let id = self.processes.next_id;
+        self.processes.next_id += 1;
+        let mut contact = Contact { host: spec.host.clone(), service: spec.service.clone(), remote: None };
+        let (kind, stdin, open_streams) = if spec.server {
+            let stop = Arc::new(AtomicBool::new(false));
+            let tx = self.processes.tx.clone();
+            let flag = stop.clone();
+            match &spec.host {
+                Some(host) => {
+                    let port = if spec.service == "t" { "0" } else { spec.service.as_str() };
+                    let host = if host == "local" { "127.0.0.1" } else { host.as_str() };
+                    let listener = std::net::TcpListener::bind(format!("{host}:{port}")).map_err(failed)?;
+                    contact.service = listener.local_addr().map(|a| a.port().to_string()).unwrap_or(contact.service);
+                    listener.set_nonblocking(true)?;
+                    std::thread::spawn(move || accept_loop(id, &tx, &flag, || listener.accept().map(|(s, a)| (Conn::Tcp(s), a.to_string()))));
+                }
+                #[cfg(unix)]
+                None => {
+                    let listener = std::os::unix::net::UnixListener::bind(&spec.service).map_err(failed)?;
+                    listener.set_nonblocking(true)?;
+                    let mut n = 0;
+                    std::thread::spawn(move || {
+                        accept_loop(id, &tx, &flag, || {
+                            listener.accept().map(|(s, _)| {
+                                n += 1;
+                                (Conn::Local(s), n.to_string())
+                            })
+                        })
+                    });
+                }
+                #[cfg(not(unix))]
+                None => return Err(Error::new("Local sockets are not supported here")),
+            }
+            (Kind::Server(contact, stop), None, 0)
+        } else {
+            let conn = match &spec.host {
+                Some(host) => {
+                    let host = if host == "local" { "127.0.0.1" } else { host.as_str() };
+                    Conn::Tcp(std::net::TcpStream::connect(format!("{host}:{}", spec.service)).map_err(failed)?)
+                }
+                #[cfg(unix)]
+                None => Conn::Local(std::os::unix::net::UnixStream::connect(&spec.service).map_err(failed)?),
+                #[cfg(not(unix))]
+                None => return Err(Error::new("Local sockets are not supported here")),
+            };
+            let stdin = self.connect(id, conn)?;
+            (Kind::Network(contact), Some(stdin), 1)
+        };
+        let buffer = spec.buffer.as_ref().map(|name| self.get_buffer_create(name));
+        let (buffer_id, mark) = match buffer {
+            Some(index) => {
+                let b = &mut self.buffers[index];
+                let end = b.len();
+                (Some(b.id), Some(b.make_marker(end, false)))
+            }
+            None => (None, None),
+        };
+        let coding = spec.coding.unwrap_or_else(|| self.default_process_coding());
+        self.processes.list.push(Process {
+            id,
+            name: name.clone(),
+            buffer: buffer_id,
+            mark,
+            command: Vec::new(),
+            status: Status::Run,
+            child: None,
+            stdin,
+            pid: 0,
+            open_streams,
+            filter: spec.filter,
+            sentinel: spec.sentinel,
+            query_on_exit: true,
+            exited: None,
+            kind,
+            coding,
+            pending: Vec::new(),
+        });
+        Ok(name)
+    }
+
+    /// Starts reading a connection and returns where to send it text.
+    fn connect(&mut self, id: u64, conn: Conn) -> Result<Sender<Option<Vec<u8>>>> {
+        let reader = conn.try_clone()?;
+        let closer = conn.try_clone()?;
+        read_stream(id, reader, self.processes.tx.clone());
+        Ok(writer(conn, move || closer.shutdown(std::net::Shutdown::Write)))
+    }
+
+    /// A connection a server took becomes a process of its own, as Emacs's
+    /// server_accept_connection makes one: named after the server and who
+    /// connected, with the server's filter, sentinel and codings, and a
+    /// buffer of its own if the server writes to one.
+    fn accept_connection(&mut self, server: u64, conn: Conn, peer: String) {
+        let Some(s) = self.processes.list.iter().find(|p| p.id == server) else { return };
+        let Kind::Server(contact, _) = &s.kind else { return };
+        let label = format!("{} <{peer}>", s.name);
+        let base = s.name.clone();
+        let (filter, sentinel, coding) = (s.filter.clone(), s.sentinel.clone(), s.coding);
+        let buffer_name = (s.filter.is_none()).then(|| {
+            let base = s.buffer.and_then(|b| self.buffers.iter().find(|x| x.id == b)).map_or(base.clone(), |b| b.name.clone());
+            format!("{base} <{peer}>")
+        });
+        let host = peer.rsplit_once(':').map(|(h, _)| h.to_string()).unwrap_or_else(|| "-".into());
+        let contact = Contact { remote: Some(peer.clone()), ..contact.clone() };
+        let name = self.unique_process_name(&label);
+        let id = self.processes.next_id;
+        self.processes.next_id += 1;
+        let Ok(stdin) = self.connect(id, conn) else { return };
+        let (buffer_id, mark) = match buffer_name.map(|n| self.get_buffer_create(&n)) {
+            Some(index) => {
+                let b = &mut self.buffers[index];
+                let end = b.len();
+                (Some(b.id), Some(b.make_marker(end, false)))
+            }
+            None => (None, None),
+        };
+        self.processes.list.push(Process {
+            id,
+            name: name.clone(),
+            buffer: buffer_id,
+            mark,
+            command: Vec::new(),
+            status: Status::Run,
+            child: None,
+            stdin: Some(stdin),
+            pid: 0,
+            open_streams: 1,
+            filter,
+            sentinel: sentinel.clone(),
+            query_on_exit: true,
+            exited: None,
+            kind: Kind::Network(contact),
+            coding,
+            pending: Vec::new(),
+        });
+        if let Some(f) = sentinel
+            && let Err(e) = f(self, &[Value::Str(name), Value::Str(format!("open from {host}\n"))])
+        {
+            self.message(format!("error in process sentinel: {e}"));
+        }
     }
 
     fn process(&self, name: &str) -> Result<&Process> {
@@ -316,19 +767,87 @@ impl Editor {
         Ok(())
     }
 
-    /// Sends text to a process's standard input, as process-send-string.
+    /// Sends text to a process's input, encoded in its coding, as process-send-string.
     pub fn process_send_string(&mut self, name: &str, text: &str) -> Result<()> {
         let p = self.process_mut(name)?;
+        let bytes = p.coding.1.encode_lossy(text).0;
         let stdin = p.stdin.as_ref().ok_or_else(|| Error::new(format!("Process {name} not running")))?;
-        stdin.send(Some(text.as_bytes().to_vec())).map_err(|_| Error::new(format!("Process {name} not running")))
+        stdin.send(Some(bytes)).map_err(|_| Error::new(format!("Process {name} not running")))
     }
 
-    /// Closes a process's standard input, as process-send-eof.
+    /// Makes a process see the end of its input, as process-send-eof: the
+    /// end-of-file character on a terminal, which can go on reading after
+    /// it; a pipe or connection is closed for writing.
     pub fn process_send_eof(&mut self, name: &str) -> Result<()> {
-        if let Some(stdin) = self.process_mut(name)?.stdin.take() {
+        let p = self.process_mut(name)?;
+        if p.status != Status::Run {
+            return Err(Error::new(format!("Process {name} not running: {}", p.status.event().trim_end())));
+        }
+        #[cfg(unix)]
+        if matches!(p.kind, Kind::Pty { .. }) {
+            if let Some(stdin) = &p.stdin {
+                let _ = stdin.send(Some(vec![4]));
+            }
+            return Ok(());
+        }
+        if let Some(stdin) = p.stdin.take() {
             let _ = stdin.send(None);
         }
         Ok(())
+    }
+
+    /// How a process's output is decoded and its input encoded, as process-coding-system.
+    pub fn process_coding_system(&self, name: &str) -> Option<(Coding, Coding)> {
+        self.process(name).ok().map(|p| p.coding)
+    }
+
+    /// Sets how a process's output is decoded and its input encoded, as
+    /// set-process-coding-system: a coding without line ends decodes with
+    /// them undecided.
+    pub fn set_process_coding_system(&mut self, name: &str, decode: Coding, encode: Coding) -> Result<()> {
+        let p = self.process_mut(name)?;
+        p.coding = (decode, encode.with_eol(Some(encode.eol.unwrap_or(Eol::Unix))));
+        Ok(())
+    }
+
+    /// The name of a process's terminal, as process-tty-name, if it has one.
+    pub fn process_tty_name(&self, name: &str) -> Option<String> {
+        match &self.process(name).ok()?.kind {
+            #[cfg(unix)]
+            Kind::Pty { tty, .. } => Some(tty.clone()),
+            _ => None,
+        }
+    }
+
+    /// What a process is, as process-type: "real" for a program, "network" for a connection or server.
+    pub fn process_type(&self, name: &str) -> Option<&'static str> {
+        Some(match self.process(name).ok()?.kind {
+            Kind::Network(_) | Kind::Server(..) => "network",
+            _ => "real",
+        })
+    }
+
+    /// Where a network process connects or listens, as process-contact; None for a program.
+    pub fn process_contact(&self, name: &str) -> Option<(Contact, bool)> {
+        match &self.process(name).ok()?.kind {
+            Kind::Network(c) => Some((c.clone(), false)),
+            Kind::Server(c, _) => Some((c.clone(), true)),
+            _ => None,
+        }
+    }
+
+    /// Tells a process's terminal its size, as set-process-window-size; false if it has none.
+    pub fn set_process_window_size(&mut self, name: &str, height: u16, width: u16) -> Result<bool> {
+        match &self.process(name)?.kind {
+            #[cfg(unix)]
+            Kind::Pty { master, .. } => {
+                use std::os::fd::AsRawFd;
+                let size = libc::winsize { ws_row: height, ws_col: width, ws_xpixel: 0, ws_ypixel: 0 };
+                // SAFETY: master is an open terminal and size a valid winsize.
+                Ok(unsafe { libc::ioctl(master.as_raw_fd(), libc::TIOCSWINSZ, &size) } == 0)
+            }
+            _ => Ok(false),
+        }
     }
 
     /// Hangs up on every process still running, as exiting Emacs does.
@@ -343,14 +862,29 @@ impl Editor {
     /// Sends a signal to a process and what it started, as signal-process:
     /// 2 interrupts (interrupt-process), 9 kills (kill-process).
     pub fn signal_process(&mut self, name: &str, signal: i32) -> Result<()> {
+        self.signal_process_group(name, signal, false)
+    }
+
+    /// Sends a signal as interrupt-process and its kin do: with
+    /// `current_group`, to the job in the foreground on the process's
+    /// terminal, as a shell's C-c C-c does, else to the process's own group.
+    pub fn signal_process_group(&mut self, name: &str, signal: i32, current_group: bool) -> Result<()> {
         let p = self.process_mut(name)?;
-        if p.status != Status::Run {
+        if p.status != Status::Run || p.pid == 0 {
             return Ok(());
         }
         #[cfg(unix)]
         {
-            // The whole group, as the process leads it.
-            let pid = p.pid as i32;
+            // The whole group, as the process leads it, or the terminal's foreground one.
+            let mut pid = p.pid as i32;
+            if current_group && let Kind::Pty { master, .. } = &p.kind {
+                use std::os::fd::AsRawFd;
+                // SAFETY: tcgetpgrp only reads the terminal's foreground group.
+                let group = unsafe { libc::tcgetpgrp(master.as_raw_fd()) };
+                if group > 0 {
+                    pid = group;
+                }
+            }
             // SAFETY: kill only sends a signal; a stale pid fails harmlessly.
             unsafe {
                 libc::kill(-pid, signal);
@@ -367,14 +901,20 @@ impl Editor {
     }
 
     /// Kills a process and forgets it, as delete-process. Its sentinel runs.
+    /// A connection or server is closed, "deleted".
     pub fn delete_process(&mut self, name: &str) -> Result<()> {
-        if self.process(name)?.status == Status::Run {
+        if self.process(name)?.status == Status::Run && self.process(name)?.pid != 0 {
             self.signal_process(name, 9)?;
         }
         let i = self.processes.list.iter().position(|p| p.name == name).expect("found above");
         let mut p = self.processes.list.remove(i);
-        let status = match p.child.as_mut().map(|c| c.wait()) {
-            Some(Ok(status)) => exit_status(status),
+        let network = matches!(p.kind, Kind::Network(_) | Kind::Server(..));
+        if network {
+            hang_up(&mut p);
+        }
+        let status = match p.child.as_mut().map(|c| self.processes.reap(c, p.id)) {
+            Some(Some(status)) => exit_status(status),
+            _ if network => Status::Exit(0),
             _ => Status::Signal(9),
         };
         if p.status == Status::Run {
@@ -397,17 +937,21 @@ impl Editor {
     pub(crate) fn poll_processes(&mut self) {
         let mut drained = false;
         for _ in 0..CHUNKS_PER_POLL {
-            let Ok(event) = self.processes.rx.try_recv() else {
+            let Some(event) = self.processes.held.pop_front().or_else(|| self.processes.rx.try_recv().ok()) else {
                 drained = true;
                 break;
             };
             let name = |ed: &Editor, id: u64| ed.processes.list.iter().find(|p| p.id == id).map(|p| p.name.clone());
             match event {
-                Event::Output(id, text) => {
+                Event::Output(id, bytes) => {
                     if let Some(name) = name(self, id) {
-                        self.process_output(&name, &text);
+                        let text = self.decode_output(id, &bytes);
+                        if !text.is_empty() {
+                            self.process_output(&name, &text);
+                        }
                     }
                 }
+                Event::Accepted(server, conn, peer) => self.accept_connection(server, conn, peer),
                 Event::Closed(id) => {
                     if let Some(p) = self.processes.list.iter_mut().find(|p| p.id == id) {
                         p.open_streams = p.open_streams.saturating_sub(1);
@@ -422,6 +966,15 @@ impl Editor {
         let now = Instant::now();
         for p in &mut self.processes.list {
             if p.status != Status::Run {
+                continue;
+            }
+            // A connection ends when the other side closes it.
+            if matches!(p.kind, Kind::Network(_)) {
+                if p.open_streams == 0 {
+                    p.status = Status::Exit(256);
+                    p.stdin = None;
+                    ended.push(p.name.clone());
+                }
                 continue;
             }
             let exited = match p.exited {
@@ -446,7 +999,7 @@ impl Editor {
             // A process that has ended stays listed, as in Emacs, until deleted;
             // its sentinel runs with it still there.
             let sentinel = self.processes.list[i].sentinel.clone();
-            let event = self.processes.list[i].status.event();
+            let event = self.processes.list[i].event();
             match sentinel {
                 Some(f) => {
                     if let Err(e) = f(self, &[Value::Str(name.clone()), Value::Str(event)]) {
@@ -455,7 +1008,7 @@ impl Editor {
                 }
                 None => {
                     let p = &self.processes.list[i];
-                    let line = format!("\nProcess {} {}", p.name, p.status.event());
+                    let line = format!("\nProcess {} {}", p.name, p.event());
                     let (buffer, mark) = (p.buffer, p.mark);
                     self.insert_process_text(buffer, mark, &line, false);
                 }
@@ -472,7 +1025,7 @@ impl Editor {
     }
 
     fn notify(&mut self, p: &Process) {
-        let event = p.status.event();
+        let event = p.event();
         match &p.sentinel {
             Some(f) => {
                 if let Err(e) = f(self, &[Value::Str(p.name.clone()), Value::Str(event)]) {
@@ -484,6 +1037,26 @@ impl Editor {
                 self.insert_process_text(p.buffer, p.mark, &line, false);
             }
         }
+    }
+
+    /// Decodes a process's output in its coding, keeping the start of a
+    /// character split between reads for the next, as Emacs's decoding
+    /// carryover. Line ends decode as the coding says.
+    fn decode_output(&mut self, id: u64, bytes: &[u8]) -> String {
+        let Some(p) = self.processes.list.iter_mut().find(|p| p.id == id) else { return String::new() };
+        p.pending.extend_from_slice(bytes);
+        let utf8 = matches!(p.coding.0.system().coding_type, "utf-8" | "undecided");
+        let complete = if utf8 {
+            match std::str::from_utf8(&p.pending) {
+                Ok(_) => p.pending.len(),
+                Err(e) if e.error_len().is_none() => e.valid_up_to(),
+                Err(_) => p.pending.len(),
+            }
+        } else {
+            p.pending.len()
+        };
+        let chunk: Vec<u8> = p.pending.drain(..complete).collect();
+        p.coding.0.decode(&chunk).0
     }
 
     fn process_output(&mut self, name: &str, text: &str) {
@@ -563,6 +1136,46 @@ impl Editor {
             Status::Run => 0,
         };
         Ok((code, text))
+    }
+}
+
+impl Process {
+    fn is_pty(&self) -> bool {
+        #[cfg(unix)]
+        return matches!(self.kind, Kind::Pty { .. });
+        #[cfg(not(unix))]
+        false
+    }
+
+    /// The event its sentinel is told, as Emacs's status_message words it: a
+    /// connection is "deleted" or "connection broken by remote peer".
+    fn event(&self) -> String {
+        match (&self.kind, self.status) {
+            (Kind::Network(_) | Kind::Server(..), Status::Exit(0)) => "deleted\n".into(),
+            (Kind::Network(_) | Kind::Server(..), Status::Exit(_)) => "connection broken by remote peer\n".into(),
+            (_, status) => status.event(),
+        }
+    }
+
+    /// Its status as process-status names it: a connection is "open" or
+    /// "closed", a server "listen".
+    fn status_name(&self) -> &'static str {
+        match (&self.kind, self.status) {
+            (Kind::Server(..), Status::Run) => "listen",
+            (Kind::Network(_), Status::Run) => "open",
+            (Kind::Network(_) | Kind::Server(..), _) => "closed",
+            (_, Status::Run) => "run",
+            (_, Status::Exit(_)) => "exit",
+            (_, Status::Signal(_)) => "signal",
+        }
+    }
+}
+
+impl Editor {
+    /// A process's status as process-status names it: "run", "exit",
+    /// "signal", or for a connection "open", "closed" or "listen".
+    pub fn process_status_name(&self, name: &str) -> Option<&'static str> {
+        self.process(name).ok().map(|p| p.status_name())
     }
 }
 
