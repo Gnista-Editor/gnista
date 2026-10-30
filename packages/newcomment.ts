@@ -277,7 +277,7 @@ function commentIndent(): void {
   const ender = commentEnd();
   ember.gotoChar(bol());
   let begpos = commentSearchForward(ember.point(), eol());
-  let cpos: number;
+  let cpos: ember.Marker;
   if (begpos !== undefined) {
     cpos = ember.makeMarker();
   } else {

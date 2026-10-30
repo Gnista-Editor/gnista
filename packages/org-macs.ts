@@ -6,7 +6,7 @@
  * buffer, however made. Setting `pos` moves it into the current buffer,
  * as move-marker does.
  */
-export type Marker = { readonly id: number; pos: number };
+export type Marker = { readonly id: ember.Marker; pos: number };
 
 /** This package's markers, for the edits that place them by a rule of their own, as replace-match does. */
 export const markers: Marker[] = [];

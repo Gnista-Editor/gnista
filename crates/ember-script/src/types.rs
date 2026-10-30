@@ -1164,21 +1164,31 @@ const API: &str = r##"
    * Make a marker: a position that moves with the text as it is edited, as
    * Emacs's copy-marker. It starts at `position`, point by default, in the
    * current buffer or `buffer`. Text inserted where it is goes after it,
-   * unless it `advances`, as a marker of insertion type t. Returns its id.
+   * unless it `advances`, as a marker of insertion type t. Once nothing
+   * refers to it, it is freed, as Emacs's garbage collector frees markers.
    */
-  function makeMarker(position?: number, options?: { buffer?: string; advances?: boolean }): number;
-  /** Forget a marker once nothing will use it again, so it costs nothing more. */
-  function deleteMarker(marker: number): void;
+  function makeMarker(position?: number, options?: { buffer?: BufferLike; advances?: boolean }): Marker;
+  /** A marker, as makeMarker gives it; functions taking a marker also take a process mark's number. */
+  class Marker {
+    private constructor();
+    readonly id: number;
+    /** Where it is, or undefined if it points nowhere. */
+    readonly position: number | undefined;
+  }
+  /** A marker, or a process mark's number. */
+  type MarkerLike = Marker | number;
+  /** Forget a marker now rather than when nothing refers to it, as (set-marker m nil). */
+  function deleteMarker(marker: MarkerLike): void;
   /** Where a marker is, or undefined if it points nowhere. */
-  function markerPosition(marker: number): number | undefined;
+  function markerPosition(marker: MarkerLike): number | undefined;
   /** The buffer a marker is in, or undefined if it points nowhere. */
-  function markerBuffer(marker: number): string | undefined;
+  function markerBuffer(marker: MarkerLike): string | undefined;
   /**
    * Move a marker, as Emacs's set-marker: to a position in its buffer, or in
    * `buffer`. With no position it points nowhere until set again; a marker
    * no longer needed is better deleted with deleteMarker.
    */
-  function setMarker(marker: number, position: number | null, buffer?: string): void;
+  function setMarker(marker: MarkerLike, position: number | null, buffer?: BufferLike): void;
 
   /**
    * Lay an overlay over the text from start up to end, with properties such

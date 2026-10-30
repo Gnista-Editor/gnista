@@ -85,9 +85,9 @@ function lookingAt(regexp: string, p: number): number | undefined {
   const m = ember.search(regexp, { from: p, regexp: true, bound: eolAt(p), caseFold: false });
   return m !== undefined && m.start === p ? m.end : undefined;
 }
-const marker = (pos: number, advances = false): number => ember.makeMarker(pos, { advances });
-const at = (m: number): number => ember.markerPosition(m)!;
-const free = (...ms: number[]): void => ms.forEach((m) => ember.deleteMarker(m));
+const marker = (pos: number, advances = false): ember.Marker => ember.makeMarker(pos, { advances });
+const at = (m: ember.Marker): number => ember.markerPosition(m)!;
+const free = (...ms: ember.Marker[]): void => ms.forEach((m) => ember.deleteMarker(m));
 const saveExcursion = <T>(fn: () => T): T => ember.saveExcursion(fn);
 function barfIfReadOnly(): void {
   if (ember.bufferReadOnly()) throw new Error(`Buffer is read-only: #<buffer ${ember.bufferName()}>`);
@@ -152,7 +152,7 @@ function fillContextPrefix(from: number, to: number): string | undefined {
 }
 
 /** Deletes the fill prefix from each line after the first, as fill-delete-prefix; point goes past the first's. */
-function fillDeletePrefix(from: number, to: number, prefix: string | undefined): number {
+function fillDeletePrefix(from: number, to: ember.Marker, prefix: string | undefined): number {
   const words = prefix !== undefined && !/^[ \t]*$/.test(prefix);
   const fpre = words
     ? new RegExp(`^[ \\t]*(?:${prefix!.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/[ \t]+/g, "[ \\t]*")})?[ \\t]*`)
@@ -186,7 +186,7 @@ function sentenceEnd(): string {
  * sentence-end-double-space and colon-double-space say, and turns tabs into
  * spaces, as canonically-space-region.
  */
-function canonicallySpaceRegion(beg: number, endMarker: number): void {
+function canonicallySpaceRegion(beg: number, endMarker: ember.Marker): void {
   // Tabs become spaces, in place.
   ember.substCharInRegion(beg, at(endMarker), "\t", " ");
   const text = ember.bufferText(beg, at(endMarker));
@@ -221,7 +221,7 @@ function canonicallySpaceRegion(beg: number, endMarker: number): void {
 }
 
 /** Joins a paragraph's lines into one, as fill-delete-newlines: two spaces after a sentence ending a line. */
-function fillDeleteNewlines(from: number, to: number, justify: string | undefined): void {
+function fillDeleteNewlines(from: number, to: ember.Marker, justify: string | undefined): void {
   // A sentence that ends a line gets a second space.
   const end = new RegExp(`[.?!\u2026\u203d][\\]"'\u201d\u2019)}\u00bb\u203a]*$`, "u");
   for (let line = ember.lineOf(at(to)) - 1; line >= ember.lineOf(from); line--) {

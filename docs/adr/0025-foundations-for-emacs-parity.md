@@ -69,7 +69,8 @@ Item 7 began with functions:
 - Processes write their output and errors to one pipe, as Emacs's do, so they arrive in order; two pipes interleaved them by chance.
 - Buffers are objects too: `Value::Buffer` holds a buffer by the id it keeps when renamed, and scripts get one object per buffer (`ember.currentBuffer()`, `getBuffer`), whose `name` follows renames and which every function taking a buffer accepts as its current name. Functions still return names, so code moves over as it is touched; compile.ts keeps `next-error-last-buffer` and its parse state by buffer, so renaming `*compilation*` keeps `M-g n` working. `rename-buffer` (`C-x x r`) came with it.
 - Strings can carry text properties: `Value::Text`, as Emacs's propertized strings. `ember.propertize` makes one and `ember.bufferSubstring` gives one, `insert` puts its properties in with it, and overlay and display strings show in its faces. Kills keep their properties, and yanking leaves out those `yank-excluded-properties` names, as insert-for-yank does.
-- Markers, windows and processes as objects, and markers freed when nothing refers to them, are the rest of item 7.
+- Markers are objects (`ember.makeMarker` gives a `Marker`), freed once nothing refers to them through a `FinalizationRegistry`, as Emacs's collector unchains unreferenced markers; they act as their positions in arithmetic, as Emacs's do. Functions taking a marker also take a number, as a process mark still is. A marker cannot be held in a variable or property yet.
+- Windows and processes as objects, and markers as values in variables, are the rest of item 7.
 
 Item 8 then gave commands Emacs's interactive codes:
 - Parameter kinds the editor fills without asking: `count` ("p", the prefix argument as a number), `prefix` ("P", as it is), `point` ("d"), `mark` ("m"), and `region-beginning` and `region-end` ("r"); and `number` ("n"), read until it is one.

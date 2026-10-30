@@ -96,6 +96,34 @@
   }
   globalThis.__emberText = (string, runs) => new PropertizedString(string, runs);
 
+  /**
+   * A marker as an object, as Emacs's markers are: once nothing refers to
+   * it, the collector frees it and the editor forgets it, as Emacs's GC
+   * unchains unreferenced markers, so code need not delete markers itself.
+   */
+  const markersFreed = new FinalizationRegistry((id) => native.deleteMarker(id));
+  class Marker {
+    constructor(id) {
+      Object.defineProperty(this, "__emberMarkerId", { value: id });
+      // What deleting it early unregisters it with: not the marker itself,
+      // which the registry would keep alive.
+      Object.defineProperty(this, "__emberMarkerToken", { value: {} });
+      Object.freeze(this);
+    }
+    get id() {
+      return this.__emberMarkerId;
+    }
+    /** Where it is, or undefined if it points nowhere. */
+    get position() {
+      return native.markerPosition(this.__emberMarkerId) ?? undefined;
+    }
+    valueOf() {
+      return this.position;
+    }
+  }
+  /** A marker's id, from a marker or the number a process mark is. */
+  const markerId = (m) => (m instanceof Marker ? m.id : m);
+
   /** Makes the buffer with an id current again, if it is still live, as save-current-buffer does. */
   const backTo = (id) => {
     const name = native.bufferNameOf(id);
@@ -893,13 +921,21 @@
       return start - p;
     },
     substCharInRegion: (start, end, from, to) => native.substCharInRegion(start, end, String(from), String(to)),
-    makeMarker: (pos, { buffer, advances = false } = {}) =>
-      native.makeMarker(pos ?? native.point(), buffer === undefined ? undefined : String(buffer), Boolean(advances)),
-    deleteMarker: (m) => native.deleteMarker(m),
-    markerPosition: (m) => native.markerPosition(m) ?? undefined,
-    markerBuffer: (m) => native.markerBuffer(m) ?? undefined,
+    makeMarker(pos, { buffer, advances = false } = {}) {
+      const id = native.makeMarker(pos ?? native.point(), buffer === undefined ? undefined : nameOf(buffer), Boolean(advances));
+      const m = new Marker(id);
+      markersFreed.register(m, id, m.__emberMarkerToken);
+      return m;
+    },
+    Marker,
+    deleteMarker(m) {
+      if (m instanceof Marker) markersFreed.unregister(m.__emberMarkerToken);
+      native.deleteMarker(markerId(m));
+    },
+    markerPosition: (m) => native.markerPosition(markerId(m)) ?? undefined,
+    markerBuffer: (m) => native.markerBuffer(markerId(m)) ?? undefined,
     setMarker: (m, pos, buffer) =>
-      native.setMarker(m, pos === null || pos === undefined ? undefined : pos, buffer === undefined ? undefined : String(buffer)),
+      native.setMarker(markerId(m), pos === null || pos === undefined ? undefined : pos, buffer === undefined ? undefined : nameOf(buffer)),
     overlayPut: (id, name, value) => native.overlayPut(id, String(name), value ?? null),
     overlayGet: (id, name) => native.overlayGet(id, String(name)),
     overlayStart: (id) => native.overlayRange(id)?.[0],

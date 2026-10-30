@@ -113,7 +113,7 @@ type Message = {
   col?: number;
   type: 0 | 1 | 2;
   /** Where it points, once its file has been visited, moving with edits there as compile.el's markers do. */
-  marker?: number;
+  marker?: ember.Marker;
 };
 
 /**
