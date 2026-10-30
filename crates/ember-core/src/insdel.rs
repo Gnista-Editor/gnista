@@ -114,8 +114,9 @@ impl Editor {
     /// Makes a change to the current buffer between `start` and `end` (equal
     /// for an insertion) through the checks and hooks.
     fn modify<T>(&mut self, start: usize, end: usize, edit: impl FnOnce(&mut Buffer) -> Result<T>) -> Result<T> {
-        self.prepare_to_modify(start, end)?;
+        let pending = self.prepare_to_modify(start, end)?;
         let inhibit = self.variable("inhibit-read-only").is_some_and(|v| v.is_true());
+        let len = self.buffer().len();
         let b = self.buffer_mut();
         // The buffer's own read-only check gives way as the editor's did.
         let read_only = b.read_only;
@@ -124,12 +125,17 @@ impl Editor {
         self.buffer_mut().read_only = read_only;
         let value = result?;
         self.run_after_change_functions()?;
+        // What the text became, and how long it was, for the hooks after.
+        let new_end = (end + self.buffer().len()).saturating_sub(len);
+        self.report_modification(pending, start, new_end, end - start)?;
         Ok(value)
     }
 
     /// Refuses a change read-only text or a read-only buffer forbids, then
-    /// runs `before-change-functions`, as Emacs's prepare_to_modify_buffer.
-    fn prepare_to_modify(&mut self, start: usize, end: usize) -> Result<()> {
+    /// runs the hooks of the text about to change, `before-change-functions`
+    /// and those of the overlays there, as Emacs's prepare_to_modify_buffer.
+    /// Returns the hooks to call once the change is made.
+    fn prepare_to_modify(&mut self, start: usize, end: usize) -> Result<Pending> {
         let inhibit = self.variable("inhibit-read-only").unwrap_or(Value::Null);
         let b = self.buffer();
         if b.read_only && !inhibit.is_true() {
@@ -140,7 +146,81 @@ impl Editor {
             ));
         }
         self.verify_interval_modification(start, end, &inhibit)?;
-        self.run_before_change_functions(start, end)
+        if self.in_change_hooks || self.modification_hooks_inhibited() {
+            return Ok(Pending::default());
+        }
+        let b = self.buffer();
+        let functions = |props: Option<&crate::properties::Props>, name: &str| hook_functions(props.and_then(|p| p.get(name)));
+        let mut pending = Pending::default();
+        if start == end {
+            // Inserting runs the hooks of the text on either side once it is in.
+            if start > 0 {
+                pending.insert_hooks.extend(functions(b.text_properties_at(start - 1), "insert-behind-hooks"));
+            }
+            pending.insert_hooks.extend(functions(b.text_properties_at(start), "insert-in-front-hooks"));
+        } else {
+            // Changing text runs its modification-hooks first, each once.
+            let mut hooks: Vec<Value> = Vec::new();
+            let mut pos = start;
+            while pos < end {
+                for f in functions(b.text_properties_at(pos), "modification-hooks") {
+                    if !hooks.contains(&f) {
+                        hooks.push(f);
+                    }
+                }
+                pos = b.next_property_change(pos).map_or(end, |next| next.max(pos + 1));
+            }
+            let args = [Value::Number(start as f64), Value::Number(end as f64)];
+            for f in hooks {
+                self.funcall(&f, &args)?;
+            }
+        }
+        self.run_before_change_functions(start, end)?;
+        // An overlay's hooks: insert-in-front-hooks for an insertion at its
+        // start, insert-behind-hooks at its end, modification-hooks for a
+        // change inside it, as report_overlay_modification calls them.
+        for o in self.buffer().overlays() {
+            let names: &[&str] = if start == end {
+                match (o.start == start, o.end == start) {
+                    (true, true) => &["insert-in-front-hooks", "insert-behind-hooks"],
+                    (true, false) => &["insert-in-front-hooks"],
+                    (false, true) => &["insert-behind-hooks"],
+                    _ if o.start < start && start < o.end => &["modification-hooks"],
+                    _ => &[],
+                }
+            } else if end > o.start && start < o.end {
+                &["modification-hooks"]
+            } else {
+                &[]
+            };
+            for name in names {
+                for f in hook_functions(o.props.get(*name)) {
+                    pending.overlay_hooks.push((o.id, f));
+                }
+            }
+        }
+        let args = [Value::Bool(false), Value::Number(start as f64), Value::Number(end as f64)];
+        for (id, f) in pending.overlay_hooks.clone() {
+            let mut with_overlay = vec![Value::Number(id as f64)];
+            with_overlay.extend(args.iter().cloned());
+            self.funcall(&f, &with_overlay)?;
+        }
+        Ok(pending)
+    }
+
+    /// Calls the hooks a change gathered once it is made: the overlays',
+    /// with what the text became and how long it was, then those of the
+    /// text an insertion went beside, as signal_after_change does.
+    fn report_modification(&mut self, pending: Pending, start: usize, end: usize, old_len: usize) -> Result<()> {
+        for (id, f) in pending.overlay_hooks {
+            let args = [Value::Number(id as f64), Value::Bool(true), Value::Number(start as f64), Value::Number(end as f64), Value::Number(old_len as f64)];
+            self.funcall(&f, &args)?;
+        }
+        let args = [Value::Number(start as f64), Value::Number(end as f64)];
+        for f in pending.insert_hooks {
+            self.funcall(&f, &args)?;
+        }
+        Ok(())
     }
 
     /// Refuses changing text whose `read-only` property forbids it, as
@@ -206,6 +286,24 @@ impl Editor {
     /// Whether `inhibit-modification-hooks` is set, so no change hooks run.
     pub(crate) fn modification_hooks_inhibited(&self) -> bool {
         self.variable("inhibit-modification-hooks").is_some_and(|v| v.is_true())
+    }
+}
+
+/// The hooks a change calls once it is made.
+#[derive(Default)]
+struct Pending {
+    /// Each overlay's hook functions, with the overlay.
+    overlay_hooks: Vec<(u64, Value)>,
+    /// The insert-behind-hooks and insert-in-front-hooks of the text beside an insertion.
+    insert_hooks: Vec<Value>,
+}
+
+/// The functions a hook property holds: a list of them, or one.
+fn hook_functions(value: Option<&Value>) -> Vec<Value> {
+    match value {
+        Some(Value::List(items)) => items.iter().filter(|v| v.is_true()).cloned().collect(),
+        Some(v) if v.is_true() => vec![v.clone()],
+        _ => Vec::new(),
     }
 }
 

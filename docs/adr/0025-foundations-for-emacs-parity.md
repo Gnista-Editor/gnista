@@ -56,7 +56,14 @@ Item 9 came next, as every new command added to the raw edits it would replace:
 - `before-change-functions` run before each change and `after-change-functions` straight after it, with Emacs's arguments, unless `inhibit-modification-hooks` is set; `replace-match` is one change, as replace_range makes it.
 - `kill-region` on read-only text copies it to the kill ring and then signals, or only says so with `kill-read-only-ok`, as simple.el does.
 - Packages bind `inhibit-read-only` with `letBind` rather than turning `buffer-read-only` off and on.
-- Still to come: the `modification-hooks`, `insert-in-front-hooks` and `insert-behind-hooks` properties of text and overlays, which hold functions and so wait for functions as values (item 7); and before-change-functions for undo, reverting and process output, which still go straight to the buffer.
+- Still to come: before-change-functions for undo, reverting and process output, which still go straight to the buffer; and the modification hooks that changing text properties runs in Emacs.
+
+Item 7 began with functions:
+- `Value::Function` is a function as a value, as a lambda is in Lisp: variables, text properties and overlays hold them, and two are equal only if they are one function. A script's function keeps its identity across the boundary, so `ember.variable(name) === fn`.
+- The editor keeps named functions, as symbols' function cells: `Editor::defun`, `fboundp`, `symbol_function` and `funcall`, which calls a function, a named one or a command. Scripts' `ember.defun` lands there, so Rust code calls script functions by name; a script still calls its own directly, so they can take objects.
+- With them, changes call the `modification-hooks`, `insert-in-front-hooks` and `insert-behind-hooks` of text and overlays, in Emacs's order and with its arguments.
+- Processes write their output and errors to one pipe, as Emacs's do, so they arrive in order; two pipes interleaved them by chance.
+- Buffers, markers, windows and processes as objects with stable ids, markers freed when nothing refers to them, and propertized strings, are the rest of item 7.
 
 ## Consequences
 

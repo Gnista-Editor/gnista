@@ -175,3 +175,105 @@ fn killing_read_only_text_copies_it_and_says_so() {
     assert!(ed.take_error().is_none());
     assert_eq!(ed.echo(), Some("Read only text copied to kill ring"));
 }
+
+#[test]
+fn functions_are_values_that_keep_their_identity() {
+    let (mut ed, s) = setup();
+    let result = eval(
+        &mut ed,
+        &s,
+        r#"(() => {
+          const double = (n: number) => n * 2;
+          ember.defineVariable({ name: "test-function", doc: "", value: double });
+          const back = ember.variable("test-function");
+          ember.defun("test-triple", (n: number) => n * 3);
+          return [
+            back === double,
+            ember.funcall(back as (n: number) => number, 4),
+            ember.funcall("test-triple", 4),
+            ember.fboundp("test-triple"),
+            ember.fboundp("forward-char"),
+            ember.fboundp("no-such-function"),
+            ember.conditionCase(() => ember.funcall("no-such-function"), { "void-function": (e) => e.message }),
+          ];
+        })()"#,
+    );
+    assert_eq!(result, r#"[true,8,12,true,true,false,"Symbol’s function definition is void: no-such-function"]"#);
+}
+
+#[test]
+fn text_property_hooks_run_as_emacs_runs_them() {
+    let (mut ed, s) = setup();
+    let result = eval(
+        &mut ed,
+        &s,
+        r#"(() => {
+          const log: unknown[] = [];
+          ember.insert("abcdef");
+          ember.putTextProperty(1, 3, "modification-hooks", [(b: number, e: number) => log.push(["mod", b, e])]);
+          ember.putTextProperty(1, 3, "insert-in-front-hooks", [(b: number, e: number) => log.push(["front", b, e, ember.bufferText(b, e)])]);
+          ember.putTextProperty(1, 3, "insert-behind-hooks", [(b: number, e: number) => log.push(["behind", b, e, ember.bufferText(b, e)])]);
+          ember.addHook("before-change-functions", (b: number, e: number) => log.push(["bcf", b, e]), { local: true });
+          ember.addHook("after-change-functions", (b: number, e: number, l: number) => log.push(["acf", b, e, l]), { local: true });
+          ember.gotoChar(1); ember.insert("X"); log.push("|");
+          ember.gotoChar(4); ember.insert("Y"); log.push("|");
+          ember.gotoChar(3); ember.insert("Z"); log.push("|");
+          ember.deleteRegion(2, 4); log.push("|");
+          ember.deleteRegion(0, 1);
+          return [log, ember.bufferText()];
+        })()"#,
+    );
+    // GNU Emacs 30 logs, a position lower as Ember counts from 0:
+    // (bcf 2 2) (acf 2 3 0) (front 2 3 "X") | (bcf 5 5) (acf 5 6 0) (behind 5 6 "Y") |
+    // (bcf 4 4) (acf 4 5 0) (behind 4 5 "Z") (front 4 5 "Z") | (mod 3 5) (bcf 3 5) (acf 3 3 2) |
+    // (bcf 1 2) (acf 1 1 1), leaving "XcYdef".
+    assert_eq!(
+        result,
+        concat!(
+            r#"[[["bcf",1,1],["acf",1,2,0],["front",1,2,"X"],"|",["bcf",4,4],["acf",4,5,0],["behind",4,5,"Y"],"|","#,
+            r#"["bcf",3,3],["acf",3,4,0],["behind",3,4,"Z"],["front",3,4,"Z"],"|",["mod",2,4],["bcf",2,4],["acf",2,2,2],"|","#,
+            r#"["bcf",0,1],["acf",0,0,1]],"XcYdef"]"#
+        )
+    );
+}
+
+#[test]
+fn overlay_hooks_run_on_either_side_of_a_change() {
+    let (mut ed, s) = setup();
+    let result = eval(
+        &mut ed,
+        &s,
+        r#"(() => {
+          const log: unknown[] = [];
+          ember.insert("abcdef");
+          const o = ember.makeOverlay(1, 3);
+          const hook = (what: string) => [(ov: number, after: boolean, b: number, e: number, l?: number) => log.push([what, ov === o, after, b, e, l ?? null])];
+          ember.overlayPut(o, "modification-hooks", hook("mod"));
+          ember.overlayPut(o, "insert-in-front-hooks", hook("front"));
+          ember.overlayPut(o, "insert-behind-hooks", hook("behind"));
+          ember.addHook("before-change-functions", (b: number, e: number) => log.push(["bcf", b, e]), { local: true });
+          ember.addHook("after-change-functions", (b: number, e: number, l: number) => log.push(["acf", b, e, l]), { local: true });
+          ember.gotoChar(1); ember.insert("X"); log.push("|");
+          ember.gotoChar(4); ember.insert("Y"); log.push("|");
+          ember.gotoChar(3); ember.insert("Z"); log.push("|");
+          ember.deleteRegion(2, 4); log.push("|");
+          ember.deleteRegion(0, 1); log.push("|");
+          ember.deleteRegion(4, 5);
+          return [log, ember.bufferText(), [ember.overlayStart(o), ember.overlayEnd(o)]];
+        })()"#,
+    );
+    // GNU Emacs 30: (bcf 2 2) (front nil 2 2) (acf 2 3 0) (front t 2 3 0) | (bcf 5 5) (behind nil 5 5)
+    // (acf 5 6 0) (behind t 5 6 0) | (bcf 4 4) (mod nil 4 4) (acf 4 5 0) (mod t 4 5 0) | (bcf 3 5)
+    // (mod nil 3 5) (acf 3 3 2) (mod t 3 3 2) | (bcf 1 2) (acf 1 1 1) | (bcf 5 6) (acf 5 5 1),
+    // leaving "XcYdf" and the overlay from 1 to 3.
+    assert_eq!(
+        result,
+        concat!(
+            r#"[[["bcf",1,1],["front",true,false,1,1,null],["acf",1,2,0],["front",true,true,1,2,0],"|","#,
+            r#"["bcf",4,4],["behind",true,false,4,4,null],["acf",4,5,0],["behind",true,true,4,5,0],"|","#,
+            r#"["bcf",3,3],["mod",true,false,3,3,null],["acf",3,4,0],["mod",true,true,3,4,0],"|","#,
+            r#"["bcf",2,4],["mod",true,false,2,4,null],["acf",2,2,2],["mod",true,true,2,2,2],"|","#,
+            r#"["bcf",0,1],["acf",0,0,1],"|",["bcf",4,5],["acf",4,4,1]],"XcYdf",[0,2]]"#
+        )
+    );
+}

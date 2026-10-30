@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -186,6 +186,8 @@ pub struct Editor {
     this_command_set: bool,
     /// Whether `after-change-functions` are running.
     pub(crate) in_change_hooks: bool,
+    /// Functions named for code to call, as Emacs's symbols' function cells.
+    pub(crate) functions: HashMap<String, variables::Function>,
     pub(crate) kill_ring: Vec<String>,
     /// Which kill yanking takes next, counting back from the newest (Emacs's
     /// `kill-ring-yank-pointer`).
@@ -290,6 +292,7 @@ impl Editor {
             command_failed: false,
             this_command_set: false,
             in_change_hooks: false,
+            functions: HashMap::new(),
             kill_ring: Vec::new(),
             yank_pointer: 0,
             last_repeatable: None,

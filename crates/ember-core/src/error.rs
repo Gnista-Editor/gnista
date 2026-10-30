@@ -32,6 +32,7 @@ const ERRORS: &[(&str, &str)] = &[
     ("args-out-of-range", "error"),
     ("wrong-type-argument", "error"),
     ("void-function", "error"),
+    ("invalid-function", "error"),
     ("void-variable", "error"),
     ("end-of-file", "error"),
     ("file-error", "error"),

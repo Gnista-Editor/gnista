@@ -219,7 +219,11 @@ const API: &str = r##"
   function executingKbdMacro(): boolean;
 
   /** A variable's value: what a variable can hold. */
-  type Value = null | boolean | number | string | Value[];
+  /**
+   * What variables, hooks and text properties hold, as Emacs's values: a
+   * function too, as a lambda in a variable, kept as itself.
+   */
+  type Value = null | boolean | number | string | Value[] | ((...args: any[]) => any);
   type VariableName = keyof Variables;
   type HookName = keyof Hooks;
 
@@ -906,8 +910,13 @@ const API: &str = r##"
   function defun<F extends (...args: any[]) => unknown>(name: string, fn: F): string;
   /** Whether a function or command has this name, as fboundp. */
   function fboundp(name: string): boolean;
-  /** Call the function named, or the command, as Emacs's funcall. */
-  function funcall(name: string, ...args: any[]): any;
+  /** The function a name holds, as symbol-function; undefined for none, or a command. */
+  function symbolFunction(name: string): ((...args: any[]) => any) | undefined;
+  /**
+   * Call a function, or the function or command a name holds, as Emacs's
+   * funcall: a variable's value can be either, as `indent-line-function` is.
+   */
+  function funcall(f: string | ((...args: any[]) => any), ...args: any[]): any;
   /**
    * Run `fn` with variables bound to values, then put them back, as Emacs's
    * let: a variable local in the current buffer is bound there, any other

@@ -127,6 +127,9 @@ thread_local! {
     static TIME_LIMIT: Cell<Duration> = const { Cell::new(DEFAULT_TIME_LIMIT) };
     /// Files being loaded, innermost last, so commands know where they were defined.
     static LOADING: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
+    /// The contexts of the scripts running, innermost last, for functions
+    /// made into editor values to call back into.
+    static CONTEXTS: RefCell<Vec<Context>> = const { RefCell::new(Vec::new()) };
     /// Promises rejected with no handler yet, and why: an async command's
     /// error, reported once the code that settled it has finished.
     static UNHANDLED: RefCell<Vec<(Persistent<Value<'static>>, Persistent<Value<'static>>)>> = const { RefCell::new(Vec::new()) };
@@ -299,6 +302,15 @@ impl<T: Copy + 'static> Drop for Restore<T> {
     }
 }
 
+/// Takes the running script's context off [`CONTEXTS`] when dropped.
+struct Popped;
+
+impl Drop for Popped {
+    fn drop(&mut self) {
+        CONTEXTS.with_borrow_mut(|c| c.pop());
+    }
+}
+
 /// Runs `f` in the script context, giving host functions access to `ed`.
 ///
 /// QuickJS's runtime lock is not reentrant. When a script calls a command
@@ -313,6 +325,8 @@ fn enter<R>(context: &Context, ed: &mut Editor, f: impl for<'js> FnOnce(Ctx<'js>
             f(unsafe { Ctx::from_raw(raw) })
         }
         _ => context.with(|ctx| {
+            CONTEXTS.with_borrow_mut(|c| c.push(context.clone()));
+            let _context = Popped;
             let _active = Restore::set(&ACTIVE, Some(ctx.as_raw()));
             let _deadline = Restore::set(&DEADLINE, Some(Instant::now() + TIME_LIMIT.get()));
             let result = f(ctx.clone());
@@ -399,6 +413,21 @@ impl ScriptFunction {
                 .collect::<rquickjs::Result<Vec<_>>>()
                 .map_err(|e| js_error(&ctx, e))?;
             run.call::<_, Value>((Rest(args),)).map(drop).map_err(|e| js_error(&ctx, e))
+        })
+    }
+
+    /// Calls the function with editor values and returns what it returns,
+    /// as a function value's call; what is not an editor value is null.
+    fn call_returning(&self, ed: &mut Editor, args: &[EditorValue]) -> Result<EditorValue> {
+        enter(&self.context, ed, |ctx| {
+            let run = self.run.clone().restore(&ctx).map_err(|e| js_error(&ctx, e))?;
+            let args = args
+                .iter()
+                .map(|a| value_to_js(&ctx, a))
+                .collect::<rquickjs::Result<Vec<_>>>()
+                .map_err(|e| js_error(&ctx, e))?;
+            let value: Value = run.call((Rest(args),)).map_err(|e| js_error(&ctx, e))?;
+            convert_from_js(&ctx, value).map(|v| v.unwrap_or(EditorValue::Null)).map_err(|e| js_error(&ctx, e))
         })
     }
 
@@ -920,6 +949,41 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     native.set(
         "enabledMinorModes",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.enabled_minor_modes())))?,
+    )?;
+    // Functions named for code to call, as Emacs's defun, funcall and
+    // fboundp; a function is a value, so a variable or property can hold one.
+    native.set(
+        "defun",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, f: Function<'js>| {
+            let EditorValue::Function(function) = function_from_js(&ctx, f)? else { unreachable!("a function converts to one") };
+            let function = function.with_name(&name);
+            with_editor(&ctx, |ed| {
+                ed.defun(&name, function);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
+        "fboundp",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| with_editor(&ctx, |ed| Ok(ed.fboundp(&name))))?,
+    )?;
+    native.set(
+        "symbolFunction",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| -> rquickjs::Result<Value<'js>> {
+            match with_editor(&ctx, |ed| Ok(ed.symbol_function(&name)))? {
+                Some(f) => function_to_js(&ctx, &f),
+                None => Ok(Value::new_undefined(ctx.clone())),
+            }
+        })?,
+    )?;
+    native.set(
+        "funcall",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, f: Value<'js>, args: Vec<Value<'js>>| -> rquickjs::Result<Value<'js>> {
+            let f = value_from_js(&ctx, f)?;
+            let args = args.into_iter().map(|a| value_from_js(&ctx, a)).collect::<rquickjs::Result<Vec<_>>>()?;
+            let result = with_editor(&ctx, |ed| ed.funcall(&f, &args))?;
+            value_to_js(&ctx, &result)
+        })?,
     )?;
     native.set(
         "documentation",
@@ -2268,32 +2332,93 @@ fn value_to_js<'js>(ctx: &Ctx<'js>, value: &EditorValue) -> rquickjs::Result<Val
             }
             list.into_value()
         }
+        EditorValue::Function(function) => function_to_js(ctx, function)?,
     })
 }
 
+/// The property a script function keeps its editor identity in, so the
+/// same function passed twice is one value, as one lambda is `eq` to itself.
+const FUNCTION_ID: &str = "__emberFunctionId";
+
+/// A function value as a script sees it: a script's own function given
+/// back as itself, and any other as a function that calls it.
+fn function_to_js<'js>(ctx: &Ctx<'js>, function: &ember_core::Function) -> rquickjs::Result<Value<'js>> {
+    if let Some(script) = function.origin().and_then(|o| o.downcast_ref::<ScriptFunction>())
+        && let Ok(f) = script.run.clone().restore(ctx)
+    {
+        return Ok(f.into_value());
+    }
+    let call = function.clone();
+    let js = Function::new(ctx.clone(), move |ctx: Ctx<'js>, args: Rest<Value<'js>>| -> rquickjs::Result<Value<'js>> {
+        let args = args.0.into_iter().map(|a| value_from_js(&ctx, a)).collect::<rquickjs::Result<Vec<_>>>()?;
+        let result = with_editor(&ctx, |ed| call.call(ed, &args))?;
+        value_to_js(&ctx, &result)
+    })?;
+    js.set(FUNCTION_ID, function.id() as f64)?;
+    if let Some(name) = function.name() {
+        let _ = js.set("displayName", name);
+    }
+    Ok(js.into_value())
+}
+
+/// A script's function as an editor value, keeping the identity it had
+/// the last time it was one.
+fn function_from_js<'js>(ctx: &Ctx<'js>, f: Function<'js>) -> rquickjs::Result<EditorValue> {
+    let Some(context) = CONTEXTS.with_borrow(|c| c.last().cloned()) else {
+        return Err(Exception::throw_internal(ctx, "No script is running"));
+    };
+    let known: Option<f64> = f.get(FUNCTION_ID)?;
+    let name: Option<String> = f.get::<_, Option<Coerced<String>>>("name").ok().flatten().map(|n| n.0).filter(|n| !n.is_empty());
+    let script = Rc::new(ScriptFunction { run: Persistent::save(ctx, f.clone()), context });
+    let call = script.clone();
+    let function = ember_core::Function::new(name.as_deref(), move |ed, args| call.call_returning(ed, args)).with_origin(script);
+    Ok(EditorValue::Function(match known {
+        Some(id) => function.with_id(id as u64),
+        None => {
+            f.set(FUNCTION_ID, function.id() as f64)?;
+            function
+        }
+    }))
+}
+
 fn value_from_js<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> rquickjs::Result<EditorValue> {
+    match convert_from_js(ctx, value)? {
+        Some(value) => Ok(value),
+        None => Err(Exception::throw_type(
+            ctx,
+            "A variable holds null, a boolean, a number, a string, a function, or an array of these",
+        )),
+    }
+}
+
+/// A script value as an editor value, or `None` if it is not one, such as an object.
+fn convert_from_js<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> rquickjs::Result<Option<EditorValue>> {
     if value.is_null() || value.is_undefined() {
-        return Ok(EditorValue::Null);
+        return Ok(Some(EditorValue::Null));
     }
     if let Some(b) = value.as_bool() {
-        return Ok(EditorValue::Bool(b));
+        return Ok(Some(EditorValue::Bool(b)));
     }
     if let Some(n) = value.as_number() {
-        return Ok(EditorValue::Number(n));
+        return Ok(Some(EditorValue::Number(n)));
     }
     if let Some(s) = value.as_string() {
-        return Ok(EditorValue::Str(s.to_string()?));
+        return Ok(Some(EditorValue::Str(s.to_string()?)));
     }
     if let Some(list) = value.as_array() {
-        let items = (0..list.len())
-            .map(|i| value_from_js(ctx, list.get(i)?))
-            .collect::<rquickjs::Result<Vec<_>>>()?;
-        return Ok(EditorValue::List(items));
+        let mut items = Vec::with_capacity(list.len());
+        for i in 0..list.len() {
+            match convert_from_js(ctx, list.get(i)?)? {
+                Some(item) => items.push(item),
+                None => return Ok(None),
+            }
+        }
+        return Ok(Some(EditorValue::List(items)));
     }
-    Err(Exception::throw_type(
-        ctx,
-        "A variable holds null, a boolean, a number, a string, or an array of these",
-    ))
+    if let Some(f) = value.as_function() {
+        return function_from_js(ctx, f.clone()).map(Some);
+    }
+    Ok(None)
 }
 
 /// A prefix argument as scripts see it, in Emacs's forms: null, a number,

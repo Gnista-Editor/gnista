@@ -629,15 +629,18 @@
     defun(name, fn) {
       if (typeof fn !== "function") throw new TypeError("defun takes a name and a function");
       functions.set(String(name), fn);
+      native.defun(String(name), fn);
       return String(name);
     },
-    fboundp: (name) => functions.has(String(name)) || native.commandExists(String(name)),
-    funcall(name, ...args) {
-      const fn = functions.get(String(name));
+    fboundp: (name) => native.fboundp(String(name)),
+    symbolFunction: (name) => functions.get(String(name)) ?? native.symbolFunction(String(name)),
+    funcall(f, ...args) {
+      if (typeof f === "function") return f(...args);
+      // A script's own function is called directly, so it can take objects;
+      // others, and commands, through the editor.
+      const fn = functions.get(String(f));
       if (fn !== undefined) return fn(...args);
-      // A command is a function too.
-      if (native.commandExists(String(name))) return ember.call(String(name), ...args.map(String));
-      throw new Error(`Symbol\u2019s function definition is void: ${name}`);
+      return native.funcall(String(f), args);
     },
     charAfter: (pos) => {
       const p = pos ?? native.point();

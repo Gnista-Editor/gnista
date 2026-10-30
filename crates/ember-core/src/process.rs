@@ -191,14 +191,18 @@ impl Editor {
             Some(d) => self.expand_file_name(d),
             None => self.expand_file_name("."),
         };
+        // Standard output and error share one pipe, as Emacs gives a process,
+        // so what it writes comes in the order it wrote it.
+        let (output, writer) = std::io::pipe().map_err(|e| Error::new(format!("Making a pipe: {e}")))?;
+        let stderr = if spec.merge_stderr { Stdio::from(writer.try_clone()?) } else { Stdio::null() };
         let mut command = Command::new(&program);
         command
             .args(&spec.command[1..])
             .current_dir(&dir)
             .env("TERM", "dumb")
             .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(if spec.merge_stderr { Stdio::piped() } else { Stdio::null() });
+            .stdout(writer)
+            .stderr(stderr);
         for (k, v) in &spec.env {
             command.env(k, v);
         }
@@ -210,6 +214,9 @@ impl Editor {
             command.process_group(0);
         }
         let mut child = command.spawn().map_err(|e| Error::new(format!("Searching for program: {e}, {program}")))?;
+        // The command holds the pipe's writing end, which must close here for
+        // the end of the output to be seen.
+        drop(command);
         let mut name = spec.name.clone();
         let mut n = 1;
         while self.processes.list.iter().any(|p| p.name == name) {
@@ -218,15 +225,8 @@ impl Editor {
         }
         let id = self.processes.next_id;
         self.processes.next_id += 1;
-        let mut open_streams = 0;
-        if let Some(out) = child.stdout.take() {
-            read_stream(id, out, self.processes.tx.clone());
-            open_streams += 1;
-        }
-        if let Some(err) = child.stderr.take() {
-            read_stream(id, err, self.processes.tx.clone());
-            open_streams += 1;
-        }
+        read_stream(id, output, self.processes.tx.clone());
+        let open_streams = 1;
         let stdin = child.stdin.take().map(|mut input| {
             let (tx, rx) = channel::<Option<Vec<u8>>>();
             std::thread::spawn(move || {
@@ -536,25 +536,28 @@ impl Editor {
         let program = command.first().ok_or_else(|| Error::new("No program to run"))?;
         self.check_permission(&format!("run {}", command.join(" ")))?;
         let dir = self.expand_file_name(directory.unwrap_or("."));
-        let mut child = Command::new(program)
+        let (mut output, writer) = std::io::pipe().map_err(|e| Error::new(format!("Making a pipe: {e}")))?;
+        let mut process = Command::new(program);
+        process
             .args(&command[1..])
             .current_dir(&dir)
             .env("TERM", "dumb")
             .stdin(if input.is_some() { Stdio::piped() } else { Stdio::null() })
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|e| Error::new(format!("Searching for program: {e}, {program}")))?;
+            .stdout(writer.try_clone()?)
+            .stderr(writer);
+        let mut child = process.spawn().map_err(|e| Error::new(format!("Searching for program: {e}, {program}")))?;
+        drop(process);
         if let (Some(text), Some(mut stdin)) = (input, child.stdin.take()) {
             let text = text.to_string();
             std::thread::spawn(move || {
                 let _ = stdin.write_all(text.as_bytes());
             });
         }
-        let output = child.wait_with_output().map_err(|e| Error::new(format!("Running {program}: {e}")))?;
-        let mut text = String::from_utf8_lossy(&output.stdout).into_owned();
-        text.push_str(&String::from_utf8_lossy(&output.stderr));
-        let code = match exit_status(output.status) {
+        let mut bytes = Vec::new();
+        std::io::Read::read_to_end(&mut output, &mut bytes).map_err(|e| Error::new(format!("Running {program}: {e}")))?;
+        let status = child.wait().map_err(|e| Error::new(format!("Running {program}: {e}")))?;
+        let text = String::from_utf8_lossy(&bytes).into_owned();
+        let code = match exit_status(status) {
             Status::Exit(c) => c,
             Status::Signal(s) => 128 + s,
             Status::Run => 0,

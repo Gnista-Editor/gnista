@@ -51,5 +51,5 @@ pub use properties::{Overlay, Props};
 pub use process::{ProcessSpec, Status as ProcessStatus};
 pub use rows::{LineNumbers, Row, Segment};
 pub use search::{Match, SearchOptions, expand_replacement, fold_case_for as search_fold_case, looking_at, search, string_match, translate_regexp};
-pub use variables::{HookFn, Value, Variable};
+pub use variables::{Function, HookFn, Value, Variable};
 pub use window::{FrameId, MouseEvent, WindowId, WindowRect, WindowTree, WindowView};

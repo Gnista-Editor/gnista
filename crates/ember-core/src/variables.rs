@@ -17,6 +17,9 @@ pub enum Value {
     Number(f64),
     Str(String),
     List(Vec<Value>),
+    /// A function, as Emacs's variables, hooks and text properties can hold
+    /// one: a lambda as well as a symbol naming one.
+    Function(Function),
 }
 
 impl Value {
@@ -41,6 +44,87 @@ impl Value {
     }
 }
 
+/// What a function value runs: called with values, it returns one.
+type Run = Rc<dyn Fn(&mut Editor, &[Value]) -> Result<Value>>;
+
+/// A function held as a value: called with values, it returns one. Two
+/// are the same only if they are one function, as `eq` compares them.
+#[derive(Clone)]
+pub struct Function {
+    id: u64,
+    name: Option<String>,
+    run: Run,
+    /// What the function was made from, such as a script's own function,
+    /// so it can be given back as itself.
+    origin: Option<Rc<dyn std::any::Any>>,
+}
+
+impl Function {
+    /// A function from Rust code, or from a script's function. `name` is
+    /// what help shows for it, as a symbol's name; lambdas have none.
+    pub fn new(name: Option<&str>, run: impl Fn(&mut Editor, &[Value]) -> Result<Value> + 'static) -> Function {
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+        Function {
+            id: NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
+            name: name.map(str::to_string),
+            run: Rc::new(run),
+            origin: None,
+        }
+    }
+
+    /// Gives the function a name, as defun gives a symbol's function one.
+    pub fn with_name(mut self, name: &str) -> Function {
+        self.name = Some(name.to_string());
+        self
+    }
+
+    /// Notes what the function was made from, for [`Function::origin`].
+    pub fn with_origin(mut self, origin: Rc<dyn std::any::Any>) -> Function {
+        self.origin = Some(origin);
+        self
+    }
+
+    /// Gives the function the identity of one made before from the same
+    /// thing, as a script function seen a second time.
+    pub fn with_id(mut self, id: u64) -> Function {
+        self.id = id;
+        self
+    }
+
+    pub fn origin(&self) -> Option<&dyn std::any::Any> {
+        self.origin.as_deref()
+    }
+
+    /// The identity a function keeps however it is passed around.
+    pub fn id(&self) -> u64 {
+        self.id
+    }
+
+    pub fn name(&self) -> Option<&str> {
+        self.name.as_deref()
+    }
+
+    /// Calls the function, as `funcall`.
+    pub fn call(&self, ed: &mut Editor, args: &[Value]) -> Result<Value> {
+        (self.run)(ed, args)
+    }
+}
+
+impl PartialEq for Function {
+    fn eq(&self, other: &Function) -> bool {
+        self.id == other.id
+    }
+}
+
+impl fmt::Debug for Function {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.name {
+            Some(name) => write!(f, "#<function {name}>"),
+            None => f.write_str("#<function>"),
+        }
+    }
+}
+
 impl fmt::Display for Value {
     /// As a script would write it: `null`, `true`, `8`, `"text"`, `["a", 1]`.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -60,6 +144,7 @@ impl fmt::Display for Value {
                 }
                 f.write_str("]")
             }
+            Value::Function(function) => write!(f, "{function:?}"),
         }
     }
 }
@@ -582,5 +667,48 @@ pub(crate) fn install(ed: &mut Editor) {
         ("after-change-major-mode-hook", "Run after a major mode and its hooks have run."),
     ] {
         ed.define_hook(name, doc);
+    }
+}
+
+impl Editor {
+    /// Names a function for code to call by name, as Emacs's `defun`.
+    pub fn defun(&mut self, name: &str, function: Function) {
+        self.functions.insert(name.to_string(), function);
+    }
+
+    /// Whether a name is a function or a command, as Emacs's `fboundp`.
+    pub fn fboundp(&self, name: &str) -> bool {
+        self.functions.contains_key(name) || self.command(name).is_some()
+    }
+
+    /// The function a name holds, as Emacs's `symbol-function`.
+    pub fn symbol_function(&self, name: &str) -> Option<Function> {
+        self.functions.get(name).cloned()
+    }
+
+    /// Calls a function, or the function or command a name holds, as
+    /// Emacs's `funcall`. A command gets the arguments as text and returns null.
+    pub fn funcall(&mut self, function: &Value, args: &[Value]) -> Result<Value> {
+        match function {
+            Value::Function(f) => f.call(self, args),
+            Value::Str(name) => {
+                if let Some(f) = self.symbol_function(name) {
+                    return f.call(self, args);
+                }
+                if self.command(name).is_some() {
+                    let args = args
+                        .iter()
+                        .map(|a| crate::Arg::Str(match a {
+                            Value::Str(s) => s.clone(),
+                            other => other.to_string(),
+                        }))
+                        .collect();
+                    self.call(name, args)?;
+                    return Ok(Value::Null);
+                }
+                Err(crate::Error::signal("void-function", format!("Symbol\u{2019}s function definition is void: {name}"), vec![function.clone()]))
+            }
+            other => Err(crate::Error::signal("invalid-function", format!("Invalid function: {other}"), vec![other.clone()])),
+        }
     }
 }
