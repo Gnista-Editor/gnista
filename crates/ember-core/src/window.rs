@@ -707,10 +707,8 @@ impl Editor {
         };
         let w = self.window_mut(id).expect("listed windows exist");
         (w.width, w.height) = old_size;
-        // The new window has the old one's previous buffers, as Emacs's split-window gives it.
-        let mut made = Window::new(new, view.2, new_size.0, new_size.1);
-        made.prev_buffers = self.window(id).map(|w| w.prev_buffers.clone()).unwrap_or_default();
-        self.windows.push(made);
+        // A new window has showed no buffers before, as in Emacs.
+        self.windows.push(Window::new(new, view.2, new_size.0, new_size.1));
         let index = self.buffer_index(view.2);
         let b = &mut self.buffers[index];
         b.set_window_point(new, view.0);

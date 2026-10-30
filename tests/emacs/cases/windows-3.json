@@ -1,0 +1,42 @@
+[
+  {
+    "name": "previous-buffer-goes-back",
+    "text": "one",
+    "keys": "C-x b C-x b C-x <left>",
+    "answers": [
+      "a",
+      "b"
+    ],
+    "windows": true
+  },
+  {
+    "name": "previous-buffer-twice-goes-further-back",
+    "text": "one",
+    "keys": "C-x b C-x b C-x <left> C-x <left>",
+    "answers": [
+      "a",
+      "b"
+    ],
+    "windows": true
+  },
+  {
+    "name": "next-buffer-comes-forward-again",
+    "text": "one",
+    "keys": "C-x b C-x b C-x <left> C-x <left> C-x <right>",
+    "answers": [
+      "a",
+      "b"
+    ],
+    "windows": true
+  },
+  {
+    "name": "each-window-goes-back-through-its-own-buffers",
+    "text": "one",
+    "keys": "C-x b C-x 2 C-x o C-x b C-x <left>",
+    "answers": [
+      "a",
+      "b"
+    ],
+    "windows": true
+  }
+]

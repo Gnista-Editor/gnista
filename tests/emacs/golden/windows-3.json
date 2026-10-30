@@ -1,0 +1,145 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "previous-buffer-goes-back",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "C-x b C-x b C-x <left>",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true,
+        "answers": [
+          "a",
+          "b"
+        ]
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "a",
+          "point": 0,
+          "width": 80,
+          "height": 24,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "previous-buffer-twice-goes-further-back",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "C-x b C-x b C-x <left> C-x <left>",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true,
+        "answers": [
+          "a",
+          "b"
+        ]
+      },
+      "text": "one",
+      "visible": "one",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 24,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "next-buffer-comes-forward-again",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "C-x b C-x b C-x <left> C-x <left> C-x <right>",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true,
+        "answers": [
+          "a",
+          "b"
+        ]
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "a",
+          "point": 0,
+          "width": 80,
+          "height": 24,
+          "selected": true
+        }
+      ]
+    },
+    {
+      "name": "each-window-goes-back-through-its-own-buffers",
+      "input": {
+        "text": "one",
+        "point": 0,
+        "keys": "C-x b C-x 2 C-x o C-x b C-x <left>",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true,
+        "answers": [
+          "a",
+          "b"
+        ]
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "a",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        },
+        {
+          "buffer": "a",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        }
+      ]
+    }
+  ]
+}
