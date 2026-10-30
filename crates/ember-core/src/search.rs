@@ -1,212 +1,18 @@
 //! Searching, as Emacs's search.c: literal and regular expression search
 //! forward and backward, with match data for the groups of the last match.
 //!
-//! Regular expressions are written in Emacs's syntax, where `\(`, `\)`,
-//! `\|` and `\{` are special and the bare characters are literal, and are
-//! translated to the `regex` crate's syntax. Back-references such as `\1`
-//! cannot be translated, since the crate does not support them.
+//! Regular expressions are Emacs's, matched by [`crate::regexp`] over the
+//! buffer with its syntax table; literal searches use the `regex` crate,
+//! which is fast at them.
 
 use regex::Regex;
+
+use crate::regexp::{Groups, Haystack, Regexp};
+use crate::syntax_table::Class;
 
 use crate::buffer::Buffer;
 use crate::editor::Editor;
 use crate::error::{Error, Result};
-
-/// Where an Emacs regular expression first matches in a string, in
-/// characters, as Emacs's `string-match`.
-pub fn string_match(pattern: &str, text: &str, fold: bool) -> Result<Option<usize>> {
-    let re = regex::RegexBuilder::new(&translate_regexp(pattern)?)
-        .case_insensitive(fold)
-        .multi_line(true)
-        .build()
-        .map_err(|e| crate::error::Error::signal("invalid-regexp", format!("Invalid regexp: {e}"), Vec::new()))?;
-    Ok(re.find(text).map(|m| text[..m.start()].chars().count()))
-}
-
-/// Translates an Emacs regular expression into the `regex` crate's syntax.
-pub fn translate_regexp(emacs: &str) -> Result<String> {
-    let chars: Vec<char> = emacs.chars().collect();
-    let mut out = String::new();
-    let mut i = 0;
-    // Whether the next character starts an expression, where `*` is literal, as in Emacs.
-    let mut at_start = true;
-    while i < chars.len() {
-        let c = chars[i];
-        let mut starts_next = false;
-        match c {
-            '\\' => {
-                let Some(&next) = chars.get(i + 1) else {
-                    return Err(Error::new("Trailing backslash"));
-                };
-                i += 1;
-                match next {
-                    '(' => {
-                        if chars.get(i + 1) == Some(&'?') && chars.get(i + 2) == Some(&':') {
-                            out.push_str("(?:");
-                            i += 2;
-                        } else {
-                            out.push('(');
-                        }
-                        starts_next = true;
-                    }
-                    ')' => out.push(')'),
-                    '|' => {
-                        out.push('|');
-                        starts_next = true;
-                    }
-                    '{' => {
-                        let close = (i + 1..chars.len().saturating_sub(1))
-                            .find(|&j| chars[j] == '\\' && chars[j + 1] == '}')
-                            .ok_or_else(|| Error::new("Unmatched \\{"))?;
-                        let inner: String = chars[i + 1..close].iter().collect();
-                        let inner = if inner.starts_with(',') { format!("0{inner}") } else { inner };
-                        out.push('{');
-                        out.push_str(&inner);
-                        out.push('}');
-                        i = close + 1;
-                    }
-                    '<' => out.push_str(r"\b{start}"),
-                    '>' => out.push_str(r"\b{end}"),
-                    'b' => out.push_str(r"\b"),
-                    'B' => out.push_str(r"\B"),
-                    'w' => out.push_str(r"\w"),
-                    'W' => out.push_str(r"\W"),
-                    '`' => out.push_str(r"\A"),
-                    '\'' => out.push_str(r"\z"),
-                    '=' => return Err(Error::new("\\= (point) is not supported in regular expressions")),
-                    '_' => match chars.get(i + 1) {
-                        // Symbol boundaries, approximated by word boundaries,
-                        // which treat `_` as part of a word too.
-                        Some('<') => {
-                            out.push_str(r"\b{start}");
-                            i += 1;
-                        }
-                        Some('>') => {
-                            out.push_str(r"\b{end}");
-                            i += 1;
-                        }
-                        _ => return Err(Error::new("Invalid \\_ construct")),
-                    },
-                    's' | 'S' => {
-                        let class = chars.get(i + 1).ok_or_else(|| Error::new("Invalid syntax class"))?;
-                        let set = match class {
-                            '-' | ' ' => r"\s",
-                            'w' => r"\w",
-                            '_' => r"[_\-]",
-                            '.' => r"[[:punct:]]",
-                            '(' => r"[(\[{]",
-                            ')' => r"[)\]}]",
-                            '"' => r#"["']"#,
-                            _ => return Err(Error::new(format!("Invalid syntax class \\s{class}"))),
-                        };
-                        if next == 'S' {
-                            let negated = match set {
-                                r"\s" => r"\S".to_string(),
-                                r"\w" => r"\W".to_string(),
-                                set => format!("[^{}]", &set[1..set.len() - 1]),
-                            };
-                            out.push_str(&negated);
-                        } else {
-                            out.push_str(set);
-                        }
-                        i += 1;
-                    }
-                    d @ '1'..='9' => {
-                        return Err(Error::new(format!("Back-references such as \\{d} are not supported")));
-                    }
-                    // Anything else after a backslash is itself.
-                    other => out.push_str(&regex::escape(&other.to_string())),
-                }
-            }
-            '*' | '+' | '?' if at_start => out.push_str(&regex::escape(&c.to_string())),
-            '*' | '+' | '?' => {
-                out.push(c);
-                // `*?` is a non-greedy repeat in Emacs too.
-                if chars.get(i + 1) == Some(&'?') {
-                    out.push('?');
-                    i += 1;
-                }
-            }
-            '^' if at_start => {
-                out.push_str("(?m:^)");
-                starts_next = true;
-            }
-            '$' if chars.get(i + 1).is_none_or(|_| ends_expression(&chars, i + 1)) => out.push_str("(?m:$)"),
-            '[' => {
-                let (class, next) = translate_class(&chars, i)?;
-                out.push_str(&class);
-                i = next;
-                at_start = false;
-                continue;
-            }
-            '.' => out.push_str("[^\n]"),
-            // Characters special to the crate but literal in Emacs.
-            '(' | ')' | '|' | '{' | '}' | '^' | '$' | '#' | '&' | '-' | '~' => {
-                out.push_str(&regex::escape(&c.to_string()))
-            }
-            c => out.push(c),
-        }
-        at_start = starts_next;
-        i += 1;
-    }
-    Ok(out)
-}
-
-/// Whether position `i` ends an expression: the end, or `\)` or `\|`.
-fn ends_expression(chars: &[char], i: usize) -> bool {
-    i >= chars.len() || (chars[i] == '\\' && matches!(chars.get(i + 1), Some(')') | Some('|')))
-}
-
-/// Translates a bracket expression starting at `chars[start]`, which is
-/// `[`. Returns it and the index after its `]`.
-fn translate_class(chars: &[char], start: usize) -> Result<(String, usize)> {
-    let mut out = String::from("[");
-    let mut i = start + 1;
-    if chars.get(i) == Some(&'^') {
-        out.push('^');
-        i += 1;
-    }
-    // A `]` first is part of the set.
-    let mut first = true;
-    loop {
-        let Some(&c) = chars.get(i) else { return Err(Error::new("Unmatched [ or [^")) };
-        if c == ']' && !first {
-            out.push(']');
-            return Ok((out, i + 1));
-        }
-        first = false;
-        if c == '[' && chars.get(i + 1) == Some(&':') {
-            let close = (i + 2..chars.len().saturating_sub(1))
-                .find(|&j| chars[j] == ':' && chars[j + 1] == ']')
-                .ok_or_else(|| Error::new("Unmatched [:"))?;
-            let name: String = chars[i + 2..close].iter().collect();
-            let class = match name.as_str() {
-                "space" | "blank" => "[:space:]",
-                "word" => r"\w",
-                "nonascii" => r"[^\x00-\x7f]",
-                "multibyte" => r"[^\x00-\xff]",
-                "alpha" | "alnum" | "digit" | "xdigit" | "upper" | "lower" | "punct" | "cntrl" | "graph"
-                | "print" | "ascii" => {
-                    out.push_str(&format!("[:{name}:]"));
-                    i = close + 2;
-                    continue;
-                }
-                _ => return Err(Error::new(format!("Invalid character class [:{name}:]"))),
-            };
-            out.push_str(class);
-            i = close + 2;
-            continue;
-        }
-        match c {
-            '\\' | '[' | '&' | '~' => {
-                out.push('\\');
-                out.push(c);
-            }
-            c => out.push(c),
-        }
-        i += 1;
-    }
-}
 
 /// What a search looks for and how.
 #[derive(Clone, Debug, Default)]
@@ -229,102 +35,78 @@ pub struct Match {
     pub groups: Vec<Option<(usize, usize)>>,
 }
 
-/// Compiles a search pattern.
-pub fn compile(pattern: &str, options: &SearchOptions) -> Result<Regex> {
-    let source = if options.regexp { translate_regexp(pattern)? } else { regex::escape(pattern) };
-    let source = if options.case_fold { format!("(?i){source}") } else { source };
+/// Compiles a literal search pattern.
+fn compile_literal(pattern: &str, case_fold: bool) -> Result<Regex> {
+    let source = regex::escape(pattern);
+    let source = if case_fold { format!("(?i){source}") } else { source };
     Regex::new(&source).map_err(|e| Error::signal("invalid-regexp", format!("Invalid regexp: {e}"), Vec::new()))
 }
 
-/// Searches a buffer from `from`, positions counted in characters.
-///
-/// Only the text a match could lie in is copied out of the buffer: from the
-/// start of the line the search begins on, so `^` and `\b` see what comes
-/// before them, to the bound. A pattern anchored at the buffer's start gets
-/// the text from there.
-pub fn search(b: &Buffer, pattern: &str, from: usize, options: &SearchOptions) -> Result<Option<Match>> {
-    let re = compile(pattern, options)?;
+/// A buffer as a regexp sees it: its accessible portion, its point, and
+/// its characters' syntax classes.
+pub struct BufferHaystack<'a> {
+    pub buffer: &'a Buffer,
+    pub class: &'a dyn Fn(usize, char) -> Class,
+}
+
+impl Haystack for BufferHaystack<'_> {
+    fn char_at(&self, pos: usize) -> Option<char> {
+        if pos >= self.buffer.point_min() && pos < self.buffer.point_max() { self.buffer.char_at(pos) } else { None }
+    }
+    fn min(&self) -> usize {
+        self.buffer.point_min()
+    }
+    fn max(&self) -> usize {
+        self.buffer.point_max()
+    }
+    fn point(&self) -> Option<usize> {
+        Some(self.buffer.point())
+    }
+    fn class_at(&self, pos: usize, c: char) -> Class {
+        (self.class)(pos, c)
+    }
+}
+
+fn to_match(groups: Groups) -> Match {
+    let (start, end) = groups[0].expect("group 0 always matches");
+    Match { start, end, groups }
+}
+
+/// Searches literally in a buffer from `from`, positions counted in
+/// characters, copying out only the text a match could lie in.
+fn search_literal(b: &Buffer, pattern: &str, from: usize, options: &SearchOptions) -> Result<Option<Match>> {
+    let re = compile_literal(pattern, options.case_fold)?;
     let rope = b.text();
-    // A narrowed buffer is searched only where it is accessible, as in Emacs,
-    // and its start is where \` matches.
+    // A narrowed buffer is searched only where it is accessible, as in Emacs.
     let (min, max) = (b.point_min(), b.point_max());
     let from = from.clamp(min, max);
-    let line_start = |pos: usize| b.line_start(b.line_of(pos.min(max))).max(min);
-    let anchored_at_start = re.as_str().contains(r"\A");
     let (lo, hi) = if options.backward {
-        let lo = if anchored_at_start { min } else { options.bound.map_or(min, line_start) };
-        (lo, from)
+        if options.bound.is_some_and(|bound| from < bound) {
+            return Ok(None);
+        }
+        (options.bound.map_or(min, |bound| bound.clamp(min, max)), from)
     } else {
-        let lo = if anchored_at_start { min } else { line_start(from) };
-        (lo, options.bound.map_or(max, |bound| bound.clamp(min, max)))
+        (from, options.bound.map_or(max, |bound| bound.clamp(min, max)))
     };
-    if lo > hi || from > hi {
+    if lo > hi {
         return Ok(None);
     }
     let text = b.slice(lo..hi);
     let base = rope.char_to_byte(lo);
     let to_char = |byte: usize| rope.byte_to_char(base + byte);
-    let byte_of = |pos: usize| rope.char_to_byte(pos) - base;
-    // Group offsets of a match found in `text[start..]`, as buffer positions.
-    let to_match = |start: usize, caps: regex::Captures| {
-        let groups: Vec<Option<(usize, usize)>> = (0..caps.len())
-            .map(|g| caps.get(g).map(|m| (to_char(start + m.start()), to_char(start + m.end()))))
-            .collect();
-        let (start, end) = groups[0].expect("group 0 always matches");
-        Match { start, end, groups }
+    let found = |m: regex::Match| {
+        let (start, end) = (to_char(m.start()), to_char(m.end()));
+        Match { start, end, groups: vec![Some((start, end))] }
     };
     if !options.backward {
-        return Ok(re.captures_at(&text, byte_of(from)).map(|caps| to_match(0, caps)));
+        return Ok(re.find(&text).map(found));
     }
-    let limit = options.bound.map_or(0, |bound| byte_of(bound.clamp(lo, hi)));
-    if options.bound.is_some_and(|bound| from < bound) {
-        return Ok(None);
-    }
-    // The match that starts last before `from` and ends by it, as Emacs's
-    // backward search finds. The last of the non-overlapping matches gives
-    // the lowest place it can start.
-    let haystack = text.as_str();
-    let Some(lowest) = re.find_iter(haystack).filter(|m| m.start() >= limit).last().map(|m| m.start()) else {
-        return Ok(None);
-    };
-    let anchored = Regex::new(&format!(r"\A(?:{})", re.as_str())).map_err(|e| Error::signal("invalid-regexp", format!("Invalid regexp: {e}"), Vec::new()))?;
-    let found = (lowest..=haystack.len())
-        .rev()
-        .filter(|&start| haystack.is_char_boundary(start))
-        .find_map(|start| anchored.captures(&haystack[start..]).map(|caps| to_match(start, caps)));
-    Ok(found)
-}
-
-/// The match of an Emacs regexp starting exactly at `pos`, as Emacs's
-/// looking-at finds it, or `None`. It reads from the start of the line, so
-/// `^` and `\b` see what comes before, and only a little past `pos` unless
-/// the match runs on.
-pub fn looking_at(b: &Buffer, pattern: &str, pos: usize, case_fold: bool) -> Result<Option<Match>> {
-    let re = compile(pattern, &SearchOptions { regexp: true, backward: false, case_fold, bound: None })?;
-    let rope = b.text();
-    let (min, max) = (b.point_min(), b.point_max());
-    let pos = pos.clamp(min, max);
-    let lo = if re.as_str().contains(r"\A") { min } else { b.line_start(b.line_of(pos)).max(min) };
-    let mut window = 4096;
-    loop {
-        let hi = (pos + window).min(max);
-        let text = b.slice(lo..hi);
-        let base = rope.char_to_byte(lo);
-        let at = rope.char_to_byte(pos) - base;
-        let found = re.captures_at(&text, at).filter(|caps| caps.get(0).is_some_and(|m| m.start() == at));
-        match found {
-            // A match that reaches the end of what was read may run on.
-            Some(caps) if caps.get(0).is_some_and(|m| m.end() == text.len()) && hi < max => window *= 8,
-            Some(caps) => {
-                let to_char = |byte: usize| rope.byte_to_char(base + byte);
-                let groups: Vec<Option<(usize, usize)>> =
-                    (0..caps.len()).map(|g| caps.get(g).map(|m| (to_char(m.start()), to_char(m.end())))).collect();
-                let (start, end) = groups[0].expect("group 0 always matches");
-                return Ok(Some(Match { start, end, groups }));
-            }
-            None => return Ok(None),
-        }
-    }
+    // The match that starts last and ends by `from`, as Emacs's backward
+    // search finds: the last of the non-overlapping matches gives the
+    // lowest place it can start.
+    let Some(lowest) = re.find_iter(&text).last().map(|m| m.start()) else { return Ok(None) };
+    let last = (lowest..=text.len()).rev().filter(|&start| text.is_char_boundary(start)).find_map(|start| re.find_at(&text, start).filter(|m| m.start() == start));
+    Ok(last.map(found))
 }
 
 /// Whether search case should be folded for a string, as Emacs decides with
@@ -418,6 +200,72 @@ fn capitalize(text: &str) -> String {
 }
 
 impl Editor {
+    /// A buffer's characters' syntax classes, as its syntax table gives
+    /// them, or their `syntax-table` properties where
+    /// `parse-sexp-lookup-properties` is on.
+    pub(crate) fn syntax_classes<'a>(&'a self, b: &'a Buffer) -> impl Fn(usize, char) -> Class + 'a {
+        let properties = self.variable_in(b, "parse-sexp-lookup-properties").is_some_and(|v| v.is_true());
+        move |pos, c| {
+            if properties
+                && let Some(crate::Value::Str(descriptor)) = b.text_property(pos, "syntax-table")
+                && let Ok(entry) = crate::syntax_table::Entry::parse(descriptor)
+            {
+                return entry.class;
+            }
+            self.syntax_tables.entry(&b.syntax_table, c).class
+        }
+    }
+
+    /// Searches the current buffer from `from`, as Emacs's search.c does:
+    /// a regexp is Emacs's, and a match searching forward reads nothing
+    /// past the bound, and searching backward nothing past `from`.
+    pub fn search(&self, pattern: &str, from: usize, options: &SearchOptions) -> Result<Option<Match>> {
+        let b = self.buffer();
+        if !options.regexp {
+            return search_literal(b, pattern, from, options);
+        }
+        let re = Regexp::cached(pattern, options.case_fold)?;
+        let class = self.syntax_classes(b);
+        let h = BufferHaystack { buffer: b, class: &class };
+        let (min, max) = (b.point_min(), b.point_max());
+        let from = from.clamp(min, max);
+        let found = if options.backward {
+            if options.bound.is_some_and(|bound| from < bound) {
+                return Ok(None);
+            }
+            re.search_backward(&h, from, options.bound.map_or(min, |bound| bound.clamp(min, max)))?
+        } else {
+            re.search_forward(&h, from, options.bound.map_or(max, |bound| bound.clamp(min, max)))?
+        };
+        Ok(found.map(to_match))
+    }
+
+    /// The match of an Emacs regexp starting exactly at `pos` in the
+    /// current buffer, as Emacs's `looking-at` finds it.
+    pub fn looking_at(&self, pattern: &str, pos: usize, case_fold: bool) -> Result<Option<Match>> {
+        let b = self.buffer();
+        let re = Regexp::cached(pattern, case_fold)?;
+        let class = self.syntax_classes(b);
+        let h = BufferHaystack { buffer: b, class: &class };
+        let pos = pos.clamp(b.point_min(), b.point_max());
+        Ok(re.match_at(&h, pos, b.point_max())?.map(to_match))
+    }
+
+    /// Where an Emacs regexp first matches in a string, from `start`, with
+    /// its groups, in characters, as Emacs's `string-match`, the current
+    /// buffer's syntax table giving the classes.
+    pub fn string_match(&self, pattern: &str, text: &str, start: usize, case_fold: bool) -> Result<Option<Match>> {
+        let re = Regexp::cached(pattern, case_fold)?;
+        let b = self.buffer();
+        let class = |c: char| self.syntax_tables.entry(&b.syntax_table, c).class;
+        let h = crate::regexp::StrHaystack { chars: text.chars().collect(), class: &class };
+        let len = h.chars.len();
+        if start > len {
+            return Err(Error::signal("args-out-of-range", format!("Args out of range: {text:?}, {start}"), Vec::new()));
+        }
+        Ok(re.search_forward(&h, start, len)?.map(to_match))
+    }
+
     /// Searches the current buffer from point, as Emacs's `search-forward`
     /// and its relatives do: on success, point moves to the end of the match
     /// (its start, searching backward) and the match is kept for
@@ -426,7 +274,7 @@ impl Editor {
         let mut found = None;
         let mut from = self.buffer().point();
         for _ in 0..count.max(1) {
-            let Some(m) = search(self.buffer(), pattern, from, options)? else { return Ok(None) };
+            let Some(m) = self.search(pattern, from, options)? else { return Ok(None) };
             // An empty match where the last one ended would repeat forever.
             from = if options.backward { m.start } else { m.end };
             found = Some(m);
@@ -476,35 +324,15 @@ impl Editor {
 mod tests {
     use super::*;
 
-    fn t(emacs: &str) -> String {
-        translate_regexp(emacs).unwrap()
+    fn buffer(text: &str) -> Editor {
+        let mut ed = Editor::new();
+        ed.buffer_mut().set_text(text);
+        ed
     }
 
-    #[test]
-    fn translates_emacs_syntax() {
-        assert_eq!(t(r"\(foo\|bar\)"), "(foo|bar)");
-        assert_eq!(t("(a|b)"), r"\(a\|b\)");
-        assert_eq!(t(r"a\{2,3\}"), "a{2,3}");
-        assert_eq!(t(r"a\{,3\}"), "a{0,3}");
-        assert_eq!(t("*a"), r"\*a");
-        assert_eq!(t("^a$"), "(?m:^)a(?m:$)");
-        assert_eq!(t("a^b$c"), r"a\^b\$c");
-        assert_eq!(t(r"\(?:x\)"), "(?:x)");
-        assert_eq!(t("[]a]"), "[]a]");
-        assert_eq!(t("[[:alpha:]_]"), "[[:alpha:]_]");
-        assert_eq!(t("a.b"), "a[^\n]b");
-        assert!(translate_regexp(r"\(a\)\1").is_err());
-    }
-
-    fn buffer(text: &str) -> Buffer {
-        let mut b = Buffer::new("t");
-        b.set_text(text);
-        b
-    }
-
-    fn find(b: &Buffer, pattern: &str, from: usize, regexp: bool, backward: bool) -> Option<(usize, usize)> {
+    fn find(ed: &Editor, pattern: &str, from: usize, regexp: bool, backward: bool) -> Option<(usize, usize)> {
         let options = SearchOptions { regexp, backward, ..Default::default() };
-        search(b, pattern, from, &options).unwrap().map(|m| (m.start, m.end))
+        ed.search(pattern, from, &options).unwrap().map(|m| (m.start, m.end))
     }
 
     #[test]

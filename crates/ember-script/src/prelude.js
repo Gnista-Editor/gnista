@@ -524,7 +524,7 @@
     killNew: (text) => native.killNew(String(text)),
     messages: () => native.messages(),
     projectFiles: (root, { ignores = [] } = {}) => native.projectFiles(String(root), ignores.map(String)),
-    stringMatch: (regexp, text, { caseFold = false } = {}) => native.stringMatch(String(regexp), String(text), Boolean(caseFold)) ?? undefined,
+    stringMatch: (regexp, text, { caseFold = false, start = 0 } = {}) => native.stringMatch(String(regexp), String(text), Boolean(caseFold), start) ?? undefined,
     writeTextFile: (file, text, { mode } = {}) => native.writeTextFile(String(file), String(text), mode ?? undefined),
     fileNameDirectory: (file) => {
       const i = String(file).lastIndexOf("/");
@@ -717,9 +717,10 @@
     },
     matchBeginning: (n = 0) => native.matchData()?.groups[n]?.[0] ?? undefined,
     matchEnd: (n = 0) => native.matchData()?.groups[n]?.[1] ?? undefined,
-    matchString(n = 0) {
+    matchString(n = 0, string) {
       const g = native.matchData()?.groups[n];
-      return g ? native.bufferText(g[0], g[1]) : undefined;
+      if (!g) return undefined;
+      return string === undefined ? native.bufferText(g[0], g[1]) : [...String(string)].slice(g[0], g[1]).join("");
     },
     signal(symbol, message, data = []) {
       const e = new Error(String(message));

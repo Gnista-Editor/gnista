@@ -1,0 +1,10940 @@
+[
+ {
+  "re": "\\(.??\\)\\{,3\\}\\<\\_<",
+  "s": "(bbA_",
+  "fold": false,
+  "emacs": [
+   0,
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "re": "^\\Sw*\\_<",
+  "s": "_a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\W*\\_<\\(\\(\\(.+?_*a\\)*éba+?\\)\\(?:\\>\\) ?\\.\\)*?",
+  "s": "_ (",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\( \\)\\>\\(?:a\\)",
+  "s": "\nAa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\<",
+  "s": "ba(a",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "b\\|a\\S-?\\sw*\\(.\\(?:[]a]é\\)\\(a\\)a\\)\\{1,\\}",
+  "s": "-",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\_<b+?\\|\\(A\\{0,\\}a\\(?:\\s-A*\\)é\\)\\1",
+  "s": "Abb\n ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^(é*?",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "aé",
+  "s": "-b \n_a",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.\\(\\(a\\)*.*\\'\\)\\|\\sw\\)[a-b]*",
+  "s": "é\n a a(",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   6,
+   7,
+   6,
+   7,
+   7,
+   7
+  ]
+ },
+ {
+  "re": "\\(\\(\\(?:a\\)\\).?a??\\((\\{0,\\}[z-a]*\\((\\{2,4\\}\\<.\\s-\\)\\)*\\)??Aé",
+  "s": "bbé-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A\\|a[[:upper:]]",
+  "s": "(é\n)_-a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\s(\\)\\*",
+  "s": "a(é_(",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:word:]]\\|a. ",
+  "s": ")a -aa)-",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "\\(?:a\\)\\{2\\}\\(?:_b*\\(\\(a*a\\)+?\\b\\)\\)",
+  "s": "((((_bb",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\Sw+\\)\\{2\\}\\sw$",
+  "s": "a",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\{1\\}\\(?:_\\{2,\\}\\)*?_\\`",
+  "s": "-\n ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\{0\\}.\\(\\(\\(a+?\\)\\{,1\\}\\) \\)",
+  "s": "aA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\w*?_\\{0,2\\}a_",
+  "s": "b(-_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é+\\( \\(\\(?:A*?_\\)[^a]\\(.+?é_*_\\)*\\)*\\)",
+  "s": ")",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\'\\(\\(a+\\)\\S-*\\(?:\\s.\\W*?\\)a*\\)\\{1,\\}",
+  "s": "AbbAA_-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " \\(.\\( *\\(Aaé.\\)\\{2\\}[^]\n]\\((\\1*\\.?\\)\\{1,3\\}\\)??.\\)",
+  "s": " éb -",
+  "fold": false,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "^\\(\\([^a]a??\\)\\{,1\\}a*\\.\\)é??_?",
+  "s": "é_baAa",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:punct:]]*A",
+  "s": "(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(a(\\(?:[ab]\\`\\)\\)+",
+  "s": "aa é",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\b",
+  "s": "aé\n_é_",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "a+\\*",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\W*.+?\\|.b*\\|\\(?:a_?\\)$",
+  "s": "é_a\naa-a",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(?:\\( \\(?:.\\>[[:punct:]]_\\)*(\\)[[:alpha:]_]?\\1\\{1,\\}\\)*?\\*\\'a",
+  "s": "ééé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:a*\\(b*\\*\\(\\s.\\)+\\.*\\).\\)\\s__",
+  "s": "\n_(\né-ba",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "(\\(a\\) *[[:alpha:]_]\\{1\\}",
+  "s": "A-a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:punct:]]??\\_>a*$",
+  "s": "))a",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   3
+  ]
+ },
+ {
+  "re": ".\\`\\.??\\(?:\\*+?\\(a\\(\\.*?a??\\)\\)??\\)",
+  "s": "ba_a_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\|\\_>\\(\\(?:\\*\\` \\)*.??\\(aa\\)\\s-\\)\\1??\\(\\1??\\)",
+  "s": "bA(\nA-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[z-a]??",
+  "s": "éb-\nA)a",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   7,
+   7
+  ]
+ },
+ {
+  "re": "b* \\(\\sw?a*?\\)[^]\n]",
+  "s": "b-",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\b\\(?:(\\) .\\)a$",
+  "s": "b)(b(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:word:]]é\\(\\s(+?[]a]\\{1,1\\}[a-]\\(\\(\\b\\)\\{1\\}\\)\\)",
+  "s": "\n a_éé",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a+\\(aé??a*\\)\\<",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(*",
+  "s": "(_b)\n ",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(?:a\\{0,\\}_\\)*",
+  "s": "b\naa-",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(.[^a]+\\(.*?\\(a\\)\\{1\\}é\\(a\\)\\{0\\}\\)\\)??\\4[[:upper:]]\\(?:(.+?\\)",
+  "s": "((-A",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "._*\\(?:a\\{1,2\\}\\)a??",
+  "s": " ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\>.A\\(?:aa\\{0\\}\\)",
+  "s": "\nAé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A(? \\|b*[[:word:]]",
+  "s": "b( ",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": ".\\{2\\} ",
+  "s": "a(é-aA_a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(b[^]\n]\\Sw*\\)*\\(A??(+A\\)\\([[:upper:]]+?\\)\\|é\\) ??_",
+  "s": ")A ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_<$",
+  "s": "\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "($",
+  "s": "aé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^.\\(\\(.\\)[^a]b+[^a]\\)??\\Sw+[^]\n]$",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\W\\(?:[[:word:]]_* \\{1,\\}[[:space:]]*?\\)+(",
+  "s": "A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\`éA",
+  "s": " ab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "éb+\\(\\.[z-a]\\{1,\\}a\\)\\{1,\\}",
+  "s": "b(",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s.[^]\n]",
+  "s": "b-a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\._\\{1\\}$",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b+\\_<a\\W\\{1,2\\}",
+  "s": ")",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^.\\( *\\(\\>a[^]\n]_\\)é\\(\\(\\1\\)\\{0,1\\}\\(?:é\\)\\<\\w?\\)\\)+",
+  "s": "(éa",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "b\\{1\\}\\|\\(aa\\{2,\\}\\(a\\* \\)\\)a??[a-b]a$",
+  "s": " aaaaaa_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^. \\(\\w\\>\\>\\)*?\\.",
+  "s": ")",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".+?\\sw??a",
+  "s": " béba-",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   5
+  ]
+ },
+ {
+  "re": "\\.+?",
+  "s": ")(é_",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\..\\([]a]\\|A+?\\.\\.\\)A*?",
+  "s": "bb-)--",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[a-b]*\\>\\|_\\(aa* \\Sw?\\)_a",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "(é\\(.\\Sw??\\)",
+  "s": "\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[a-]..?",
+  "s": " _ b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a??A",
+  "s": "a))ab\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\(?:\\(aaA\\)\\1*?\\S-\\1\\{2,3\\}\\)a(\\)*?\\([[:punct:]]??\\)\\{1,3\\}_\\{1\\}.\\{0\\}",
+  "s": "\n\n",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "a$",
+  "s": "_(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.\\)a",
+  "s": "-éa",
+  "fold": true,
+  "emacs": [
+   1,
+   3,
+   1,
+   2
+  ]
+ },
+ {
+  "re": "\\(?:b\\)$",
+  "s": "abbAéa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b\\(.??\\>\\BA\\)",
+  "s": " -b\n\nAéA",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": " \\(\\(?:[^]\n]\\Swa\\(.aab\\)\\)a\\{1,\\}[[:alpha:]_]\\)",
+  "s": "A",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^A",
+  "s": "bé)A",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a\\|\\(a\\{,1\\}\\)\\1b*\\)*\\|\\.?? a\\2\\|.\\{,2\\}\\(?:..*\\)",
+  "s": "_b-A\nbb",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\*(\\(\\(\\s-*?_+\\)*?_ *\\)*\\2*\\|\\s_\\|_a?[[:upper:]]\\2",
+  "s": "AAba\naa",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\S-??A\\{1,\\}",
+  "s": "_-b(bé) ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_\\(\\>\\b. \\)\\{,1\\}[^]\n]+?\\_>\\|b??\\s-",
+  "s": " a --)",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "\\(?:[[:punct:]]\\s-\\{0\\}\\(\\(\\*+?.a[a-]\\)*\\(a\\ba?a\\)_\\)\\1\\)a",
+  "s": "A(ab)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(_\\(?:\\.(?b+?\\>\\)+\\)\\.\\{,3\\} ",
+  "s": "b(aé__",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^ ?",
+  "s": "-(AA\nbb",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\b\\(?:\\(\\(\\_<\\)*a[a-b]\\)\\>._\\{1\\}\\)",
+  "s": "\nA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^aa",
+  "s": "A) ab(a_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(.+?\\)*\\'a$",
+  "s": "Aa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\sw*.*",
+  "s": "a_ba)b",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   6
+  ]
+ },
+ {
+  "re": "\\sw\\sw??a\\`",
+  "s": "b( a_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\.\\*+é+?\\S-\\)?\\(?:[]a]aa??\\)",
+  "s": "b_)((",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.*(\\s_\\)*.",
+  "s": "aa-ba\n",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "a\\{0,1\\}",
+  "s": "a",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "a[[:upper:]]+\\(b\\(\\*\\)\\>\\(a+\\)\\{,1\\}\\)a",
+  "s": "\n\nA)bAaA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\|\\(\\*\\(\\*\\)\\1\\)* ",
+  "s": "A aaa ",
+  "fold": true,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": ".\\sw[^]\n]\\{1\\}(",
+  "s": "a__",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": " +?\\(.\\((\\(\\*\\_>\\)\\(\\*\\1\\'a\\)??\\)?? *\\)\\>\\|[ab]\\{1,\\}\\(\\(a\\)[[:space:]]+?\\3\\)\\4?\\3\\|\\(?:[[:punct:]]\\4a\\)\\{0,\\}é",
+  "s": "- a",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\_<(*?",
+  "s": "baé_b",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "[^a]*\\_<",
+  "s": "é_b b -",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   6,
+   6
+  ]
+ },
+ {
+  "re": "a",
+  "s": "ba)\né))_",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "\\(?:\\(?:a.\\{0,\\}\\)\\)+?\\W\\(\\w\\{,2\\}.\\{,2\\}\\)*?",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_é\\(?:a\\{2,3\\}\\'[[:upper:]]\\)*?",
+  "s": "b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\Sw\\)a\\(\\(\\(\\W \\)\\'\\)\\)\\|\\3*A\\.[[:space:]]",
+  "s": " (A(\n(b_",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\**é$",
+  "s": "éa)_",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a+?.+?\\s.\\{1\\}.",
+  "s": ")A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^[a-]\\{1,\\}.\\.*\\(?:.\\)\\|a[[:alpha:]_]*",
+  "s": "\n-\n éb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\s-\\{,2\\}\\)\\W+?\\|a\\1",
+  "s": "éé-)aaé\n",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   7,
+   8,
+   7,
+   7
+  ]
+ },
+ {
+  "re": "[[:punct:]]\\|_\\{0,\\}\\|.*_??",
+  "s": ")",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(?:\\<\\_<[z-a]+?\\(\\s(*?\\.+?\\(aa\\)*\\1\\)*\\)a",
+  "s": " ",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "[ab]*?\\<",
+  "s": "b(-ab_b",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": ".*?",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": ".\\(\\(Aé+[z-a]\\)\\)?b+?",
+  "s": "\n -béAaA",
+  "fold": false,
+  "emacs": [
+   2,
+   4
+  ]
+ },
+ {
+  "re": "^(",
+  "s": "Aé-b(a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A??[]a]$",
+  "s": "é-Abb)b ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é[[:alpha:]_][[:word:]]",
+  "s": "-(b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b*?[ab]a",
+  "s": " ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\W\\{2\\}\\(\\*\\_>\\)a\\(\\>\\|.\\)",
+  "s": "\nA(éa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a*\\(.+a.\\_>\\)[^]\n]\\{1\\}\\|\\1a\\s.\\(?:a\\b.a+?\\)\\)[[:punct:]]",
+  "s": "é-bA\n",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "bé\\(?:.\\)\\(.\\`\\.\\(b\\)?\\)??\\|.*$",
+  "s": "aé",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "[z-a]??\\swb\\(\\s_[[:punct:]] \\)",
+  "s": "Aaa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".?\\(\\(?:\\B\\)\\(?:\\(aa*?a\\)\\'\\)*?\\)",
+  "s": "-é-A",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\([a-b]\\((\\*\\_>\\)_\\)\\(?:é\\)a*\\)$",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[]a]\\s.*?\\(A\\s-\\)",
+  "s": "é-",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\b",
+  "s": "(\n_b",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   4,
+   4
+  ]
+ },
+ {
+  "re": "^\\([a-b]+?A.??\\(a_ \\)*\\)??A.\\|\\<_*?",
+  "s": ")b\nA_((",
+  "fold": false,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "\\(\\(\\(?:é\\s-(\\)+?(*_\\)\\w??\\_>\\1\\)\\2??\\b",
+  "s": "\na",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": ".a\\{2,\\}",
+  "s": "ba\n)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\*b+",
+  "s": "Aa)b\nba",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\_<\\(?:\\.aé*\\)+\\Sw",
+  "s": "bbabb",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": " *?[[:word:]]?\\`\\(\\Sw*\\(\\Sw \\)(\\)",
+  "s": " b)))",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é\\(\\(a\\)(_+?(+?\\)",
+  "s": "a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é?\\**?b+",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b\\{,1\\}",
+  "s": "-a",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\_<.?\\(\\(\\(?:a*a\\)+.\\)\\1+\\1\\(?:\\(\\_<.*?a??\\)*.\\)\\|\\b\\sw+?\\*a\\)\\2??",
+  "s": "",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": ".\\{1,\\}",
+  "s": "-)\n\nbA-\n",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   6,
+   7
+  ]
+ },
+ {
+  "re": "[]a]\\>",
+  "s": "\nA_)(ba",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   6,
+   7
+  ]
+ },
+ {
+  "re": "\\.*b",
+  "s": "_b\n a b",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   6,
+   7
+  ]
+ },
+ {
+  "re": "\\(\\(_+\\)*?\\W*\\)A",
+  "s": "a_-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^Aa+[ab](\\|\\(\\(?:a??a\\`b\\)\\{2\\}\\s(b+\\)",
+  "s": "b_b)ab_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_\\*_A",
+  "s": "-é",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:word:]]a*.?",
+  "s": "Aa\n-A",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "^a+?\\(?:é[^]\n]*?\\(\\.*\\<Aa\\)\\|.\\>[z-a]\\*??\\)",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s((??[[:upper:]]+",
+  "s": "bé_)b",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a",
+  "s": " Ab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\s(+\\)+\\)é\\{0,1\\}$",
+  "s": ")b\naé",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é[]a]\\(\\(\\>\\(.*\\) \\)?\\(\\(.[]a]??\\)\\)*?a+\\(?:\\sw+?a+?\\(((*. +\\) \\)\\)+?",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".?b\\.\\*",
+  "s": "((abb",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": " \\`",
+  "s": "abb\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'\\>\\(?: \\(\\(?:_*?a\\)*[[:punct:]]*a\\)*.[[:alpha:]_]\\| é*?\\*\\)_$",
+  "s": " ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\>.*?a\\'",
+  "s": "a(Ab",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\` \\*\\{,3\\}\\(a\\s(\\{0,\\}\\)\\|\\.$",
+  "s": "",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s_?\\([^a]\\.é+?\\)+?",
+  "s": "((é(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A*\\(?:\\.*?\\(\\(\\s-\\*a\\{1,3\\}a??\\)\\)*?\\*\\)..?",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_??\\(a??\\)\\*?\\(a\\(a.+\\(?:a?\\1\\s(\\)\\)??\\w.*?\\)\\|.\\S-$",
+  "s": ")AbA",
+  "fold": true,
+  "emacs": [
+   1,
+   3,
+   1,
+   1,
+   1,
+   3
+  ]
+ },
+ {
+  "re": "^a\\(?:\\*?\\s-\\)\\{1\\}b.",
+  "s": "AaA)_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": " b\\{0\\}",
+  "s": "-)bé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a\\(\\W\\(. \\)\\.\\)[[:space:]]\\) \\.\\|ab",
+  "s": "((-b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A\\.+?A",
+  "s": "b-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\((\\(ab*[[:space:]]\\)*.\\(?:[[:space:]]*\\b\\1\\)\\)\\(?:\\_>\\)Ab*",
+  "s": " a_",
+  "fold": true,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\Sw*\\*",
+  "s": "\naa_b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.*?\\(\\*\\{2\\}[a-]\\{,3\\}\\)(??A\\)*é??[[:alpha:]_]",
+  "s": "\n a)-a",
+  "fold": false,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "\\.\\**\\(\\(éA_+a\\)[^a]+?\\1\\(\\1+?\\1*?\\)\\)",
+  "s": "baA (b",
+  "fold": false,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\`\\(\\S-.\\).\\{1\\}",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "([[:space:]]\\(é\\|[^]\n]_?.*\\(\\>\\)??\\)[a-]\\{0\\}",
+  "s": "b\n_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:word:]].\\{0\\}\\(\\(\\(\\B\\).?\\([^a].A\\{0,\\}[z-a]\\)\\1?\\)\\.\\(?:[[:punct:]](*\\`\\)*\\((\\s_+b\\(A\\{2,\\}a\\)+\\)*?\\)\\|b?\\|[[:upper:]]+?(",
+  "s": "é)",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": ".[ab]??\\(\\([[:alpha:]_]\\(?:[[:alpha:]_]\\{1\\}.é?\\)*?\\)+?_a*\\)+?",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\S-",
+  "s": " a)-b_- ",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "\\>.",
+  "s": " )(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a+\\([[:punct:]]\\{1,\\}\\(a\\{,1\\}\\)\\(\\(\\1\\)(a+.\\)\\)+?[]a]",
+  "s": "(a(",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "[a-]*\\b",
+  "s": "-",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": ".\\([z-a]\\..\\{,2\\}\\)+\\(a\\(\\S-\\{0,\\}\\)\\2\\)",
+  "s": "b\na",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\_>é\\s.b",
+  "s": "b)Aba ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(A*\\.\\)\\1\\(?:aa\\)\\{,2\\}é*",
+  "s": "ab",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a+?\\(a\\(\\>.?a\\)?\\)*\\.[^]\n]\\)[ab]\\sw\\{1\\}_\\{2,\\}",
+  "s": "_ba\na",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\.\\)",
+  "s": " \n ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[a-]??",
+  "s": "a_(Aa",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": ".",
+  "s": "a- ",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(?:\\Sw[a-]\\)\\(?:\\<\\*\\)",
+  "s": "))(b a\n\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " b",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\` a\\|\\_<\\`é??\\.??",
+  "s": "-__a(\na",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^\\w+?",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*\\S- [ab]",
+  "s": "Aabaé\n)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".",
+  "s": "ba",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": ".*a",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[z-a]a??",
+  "s": "aa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a\\*\\(\\(?:[]a]*?\\)\\(a[z-a]\\)*\\(?:\\`\\)\\)+?\\)",
+  "s": "b\n \naa",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\sw(+?_a\\{1,\\}",
+  "s": " A é\nb_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a[[:alpha:]_]\\*??$",
+  "s": "b (-\né",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:_ *[[:word:]]?\\)",
+  "s": ")A)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\BA\\(\\(?:\\w+?\\)+\\)\\1\\)*a+?a+",
+  "s": "-)\n)",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "a?\\|\\(?:b*b\\)?\\|_a+b\\.?",
+  "s": "é",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "\\(\\S-\\{1,\\}a\\)",
+  "s": "",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A\\S-A\\|..$",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b\\{2,2\\}",
+  "s": "_A)a _",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".",
+  "s": "\n(",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": ".\\(aa\\)\\.",
+  "s": "-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([a-]*é .+?\\)?a*?_",
+  "s": "a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\sw\\{1,\\}.\\|a\\{0,0\\}",
+  "s": "-(bb-",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "a",
+  "s": "A\na_(",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\_>\\|b",
+  "s": "-A",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   2,
+   2
+  ]
+ },
+ {
+  "re": "_+a*\\'(?$",
+  "s": "A-é a ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^.\\(.\\_>[a-b]\\)?",
+  "s": ")A\n",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\S-",
+  "s": "\n_",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "a\\{1,\\}\\W??$",
+  "s": "aa)",
+  "fold": false,
+  "emacs": [
+   0,
+   3
+  ]
+ },
+ {
+  "re": "\\(A\\)*[ab]+\\Sw\\{0\\}",
+  "s": "aA\nb",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\.+",
+  "s": "A",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": " ?.\\{0,\\}$",
+  "s": "a)aAa_)A",
+  "fold": false,
+  "emacs": [
+   0,
+   8
+  ]
+ },
+ {
+  "re": " [[:upper:]]",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\_<\\_>\\B\\(?:\\sw\\{1\\}\\(?:(\\w*\\)*\\)\\)+?\\`b_\\{1,2\\}",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\S-\\*",
+  "s": "é_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".[[:space:]][z-a]+[]a]",
+  "s": "-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".[[:upper:]]+?\\(a\\)?\\s(",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\S-a\\|\\s_??\\|b\\**?\\(a+?.a\\)",
+  "s": "\nbb_",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   4,
+   4
+  ]
+ },
+ {
+  "re": "\\(a\\)\\'",
+  "s": "_a(aa ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_.+",
+  "s": " \n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b",
+  "s": "ééb a",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "\\B\\_>",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "([ab]* \\{2\\}\\.",
+  "s": "\né \na(",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s(\\(?:é\\)\\(?:\\(?:é*? \\**\\(a\\)\\)\\{0,1\\}\\1\\1\\(\\(?:a\\swa?[a-]??\\)A \\)\\)\\b",
+  "s": "éabéa_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:space:]]\\(\\(\\(\\s(\\).\\<\\(\\_<\\)?\\)..*\\1+\\)",
+  "s": "\né--",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\'",
+  "s": " a((",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   4,
+   4
+  ]
+ },
+ {
+  "re": "_*b?\\s_*?\\|\\s.\\*\\{1,1\\}\\|\\((.\\).+[[:word:]]",
+  "s": "-aaA",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "b*\\(\\w[z-a]aa\\)??",
+  "s": " (A_A-",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\.*",
+  "s": "(\n(bA",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   5,
+   5
+  ]
+ },
+ {
+  "re": "\\(\\.+_*\\(?:(*\\)?\\)",
+  "s": "_\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^ ",
+  "s": " A",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\B\\s_(_*",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a",
+  "s": "bb_ab é",
+  "fold": false,
+  "emacs": [
+   3,
+   4
+  ]
+ },
+ {
+  "re": "\\*$",
+  "s": "é(A_b_))",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a*a\\)",
+  "s": "A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_+?\\(?:.\\W?\\(_*..+?\\.*?\\)\\|\\( \\)\\{0\\}aé+\\)",
+  "s": "A-)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a\\)",
+  "s": "aab",
+  "fold": false,
+  "emacs": [
+   0,
+   1,
+   0,
+   1
+  ]
+ },
+ {
+  "re": "_",
+  "s": "-b _-",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   4
+  ]
+ },
+ {
+  "re": "\\(\\(\\([^a].[]a]+?a\\)[]a]\\`\\<\\)\\{0,2\\}\\(?:_ ??\\)b??\\)+",
+  "s": "b",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\_<\\Sw_\\(?:.[a-b]\\(?:é+?\\)\\)*\\)*é??é?",
+  "s": "A\n",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\.??\\Swb\\(a[^a]\\)",
+  "s": ")a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\((\\)?.[[:alpha:]_]\\)\\*?é\\{1,\\}b$",
+  "s": "aa)_-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(b+b*.*[ab]\\{1,\\}\\)a??\\s_\\(\\*+.*_\\)\\|\\.?(\\(?:.\\)??é*",
+  "s": " b_-(Aa",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "a",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A.?a+?[a-b]",
+  "s": "ab-\n(\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_\\(.*\\)\\w+\\<",
+  "s": "\nba",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\([[:alpha:]_]*?.\\s_\\)",
+  "s": "é",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.??b*(\\|[[:punct:]]",
+  "s": "éa- ",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "\\(\\_<(*b\\) ?a",
+  "s": "A\n(__é(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(é __+?\\)??\\(?:.é\\(\\w\\)\\2\\{,3\\}\\)\\{,2\\}",
+  "s": "béé((b)é",
+  "fold": false,
+  "emacs": [
+   0,
+   3,
+   null,
+   null,
+   2,
+   3
+  ]
+ },
+ {
+  "re": "\\w?\\(a\\*b*?\\)",
+  "s": "ba\n\n",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".*?",
+  "s": "A-\n\n)bbA",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\'\\(.\\)*?\\1a\\{0,2\\}\\|\\1A*\\|\\S-",
+  "s": "A_ béAéa",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(a*\\)\\{1,2\\}a+?[a-b]?",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\Swa\\(?:é[a-b]?\\)\\(é?\\( \\{0,1\\}a[^]\n]\\)\\)\\)\\(\\1\\(([[:space:]]a\\)\\|\\s_ \\S-* ??\\)??a\\{2,3\\}\\([]a]??.\\{2,2\\}\\`A*\\)",
+  "s": " A",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\Sw[z-a]\\s.\\{,1\\}",
+  "s": "-  b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(\\{,2\\}",
+  "s": "-",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "[[:alpha:]_]?\\([[:punct:]]?é\\(\\b\\*a\\)\\.\\)A*",
+  "s": "\n(abé\n\n ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\W+?A",
+  "s": "a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\S-\\{,3\\}\\(\\<\\*\\{2,3\\} *?A\\)*\\(?:\\w\\)\\<\\)\\B\\|.?",
+  "s": "(_bb_-\n_",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\s.a?\\([[:word:]]*\\)??\\(A+?\\s.\\)",
+  "s": "a-éb\n\n()",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s_",
+  "s": ")",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\b\\.\\*+\\([a-b]\\)",
+  "s": "ba-_éa_A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\.\\(\\.\\)a+\\).*b",
+  "s": "ba",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\_>\\|\\*??\\(a[z-a]a*\\*+?\\)\\'\\'\\)(é*?",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\{,1\\}a??\\(?:a(*b\\{,2\\}a\\)+",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:A\\(\\s.\\)\\B\\)\\(\\1*?A*(\\)?A\\|.",
+  "s": ")()a))b(",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "[a-]\\(\\_>[a-]?a\\)\\{0\\}\\s-+?$",
+  "s": "bb__a ",
+  "fold": true,
+  "emacs": [
+   4,
+   6
+  ]
+ },
+ {
+  "re": "b\\([]a]A\\(A\\'\\W??\\)\\<\\|\\1??\\(\\w*\\)\\{1\\}\\)\\{2,\\}",
+  "s": "))\na-A ",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "A_\\_<",
+  "s": "_aé_Aba",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.*?.\\{,3\\}",
+  "s": "aa",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": ".$",
+  "s": "aaaab ",
+  "fold": false,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": "^.\\s_\\*?",
+  "s": "baA  _",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^[a-b]a",
+  "s": "\n\né_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_",
+  "s": "(bA ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\s.\\((*[a-]a[]a]\\{2\\}\\)(\\{0,1\\}\\)\\( *\\(\\2.\\)\\b\\)\\`$",
+  "s": "-b(aéa",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\*.\\s.\\)A\\(?:\\W \\{0\\}\\((\\(A\\1 *?.??\\)\\{2,2\\}a?[^a]\\)+?\\)",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:alpha:]_]??\\'",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "a?\\*\\{,3\\}\\'\\(é*\\)$",
+  "s": "_b- Ab(b",
+  "fold": false,
+  "emacs": [
+   8,
+   8,
+   8,
+   8
+  ]
+ },
+ {
+  "re": "(\\{2\\}\\w*\\|\\([a-b]+\\s_\\{,2\\}[ab]+\\).",
+  "s": "é)a)",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\.+\\s_+\\(?:\\'\\s(+\\)",
+  "s": "(é\né_) (",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "éb??",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é\\{2\\}\\(a\\{2,3\\}b\\.*\\_<\\)+?",
+  "s": "(",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\Sw\\|A\\w\\Sw_\\)",
+  "s": "\naa",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   1,
+   0,
+   1
+  ]
+ },
+ {
+  "re": "é\\*",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\>",
+  "s": "A(bb_bé)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b\\(\\(\\_<.+?\\)b\\.*\\)??\\*??\\|a$",
+  "s": " b",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "a",
+  "s": "-éé(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:A\\s(*é\\*\\)",
+  "s": "é-a)a( b",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*.+?",
+  "s": "b_)a\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.*?[z-a]",
+  "s": "(\n-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\.\\*+?\\(?:a\\w?\\)*",
+  "s": "))a bé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A\\B\\(?:. \\(\\(a??aa\\)é\\(?:\\s_\\{1\\}a*\\<\\)\\.\\) *\\)[[:alpha:]_]",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " ",
+  "s": "(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?:.é\\)(\\)*a*A??",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\s-+\\(?:a\\{2\\}\\*??\\)??a\\{,1\\}",
+  "s": "é) ()b ",
+  "fold": true,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "\\>\\|\\Sw*",
+  "s": "\n",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "\\**\\(?:\\(A\\_<éA+?\\)\\{0,\\}[ab]ab\\)",
+  "s": "(a(a -",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(Aa\\{1,2\\}\\)\\{1,1\\}_",
+  "s": "(éAb(a_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a(\\(\\(?:.\\{,1\\}\\.+?_\\)\\{2\\}\\)\\)_\\{,3\\}$",
+  "s": ")\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a\\(?:\\>\\)b[^]\n]\\)\\|a",
+  "s": "aA\n",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": ".(\\B",
+  "s": "-)((_bb",
+  "fold": true,
+  "emacs": [
+   1,
+   3
+  ]
+ },
+ {
+  "re": "\\(?:[^]\n]\\**.\\{2,2\\}\\|[[:space:]]b\\)\\{2\\}a$",
+  "s": "a)",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\S-*.\\_<[[:alpha:]_]\\)\\(a[[:space:]]\\)",
+  "s": "b é)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\*\\(\\(?:\\(aé\\)*?.\\{0\\}\\)*\\)\\(?:\\*+\\(aa?\\<.\\)*?\\)*?\\'\\|\\1",
+  "s": "(\naa b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " ",
+  "s": "éAb-_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\{,1\\}_\\{2\\}",
+  "s": "aAa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_<\\B$",
+  "s": "_(a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\s_",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\{0,1\\}",
+  "s": "é\nba_b ",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "A\\(\\(é\\{,1\\}\\)*\\(\\*a\\{0,\\}\\)?\\2\\{,1\\}é\\)+",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": " .(\\([^]\n]a\\(.\\{,3\\}\\_<é+?.\\)\\)",
+  "s": "b(b_-_b",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:(\\)\\>",
+  "s": "A)_aA",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\(?:[[:word:]]\\{0\\}a(\\{2,\\}\\)",
+  "s": "(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a+$",
+  "s": "aé",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:punct:]]\\(?:\\S-_\\)",
+  "s": "b())_",
+  "fold": false,
+  "emacs": [
+   2,
+   5
+  ]
+ },
+ {
+  "re": "\\(?:\\(\\._??.[a-]*\\)*[a-]a(*\\)+?\\|a\\(?:é[a-]a+?\\)+?\\_>",
+  "s": "a ab",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s.??\\(\\w\\(A+?\\)\\)*[[:space:]]??\\| \\2é\\{0\\}",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^\\(?:\\WAa\\_>\\)?",
+  "s": "b",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "A*\\.",
+  "s": "A",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\b\\)(",
+  "s": "-)é)é",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a.",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.",
+  "s": "\nbabéb a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\.?",
+  "s": "a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é[a-]+?\\|[a-b]+\\*$",
+  "s": "é\nab",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\Sw\\w_\\)?A\\(\\(?:a*?\\) a\\)A",
+  "s": "_aa",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "ba??",
+  "s": ")aaaa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s(*\\( +?_?[^a]\\)",
+  "s": "béa\n) ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^.",
+  "s": ")b-A",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": ".$",
+  "s": "\n",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^é",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\s_*? \\|b\\{,3\\}.*\\(\\w\\s_\\w\\)+\\)",
+  "s": "Ab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.a*?",
+  "s": "a)a",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\S-\\((A\\(\\(.??a\\).*\\(.+a(\\)\\)\\{2\\}[a-]+?\\)A",
+  "s": " ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'\\>.+é*",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\<a",
+  "s": "-",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "(?a",
+  "s": " b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a+?.?$",
+  "s": "a(ab) a",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   6,
+   7
+  ]
+ },
+ {
+  "re": ".+é",
+  "s": "(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(__\\*+\\)??",
+  "s": "_a( éb__",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   8,
+   8
+  ]
+ },
+ {
+  "re": "\\(b\\{2\\}_+\\(a\\{,3\\}\\_<\\>\\)\\|\\(b??\\)\\(?:a\\s(\\)??\\2\\(\\..\\)\\{0,1\\}\\)",
+  "s": "é_a_\na)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(?:A\\)",
+  "s": "\n-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[^]\n]\\*b\\|é",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\((*?(\\)\\{2\\}\\s_\\)",
+  "s": "a\n)a a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*",
+  "s": "é-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.\\)\\|\\(\\b\\s_[]a]\\)(é\\>",
+  "s": "\nAa(\n-",
+  "fold": false,
+  "emacs": [
+   1,
+   2,
+   1,
+   2
+  ]
+ },
+ {
+  "re": "\\(.\\{0,0\\}\\(a\\)\\{2,\\}\\([ab]*\\)*?\\( \\(\\2a\\)\\)\\|A.\\(.*\\)\\{1\\}a\\)\\<\\1$",
+  "s": "_b_ b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ". ? *?(+",
+  "s": "aA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^b+?[]a]a\\(a \\)",
+  "s": "b\n-aa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*\\{,2\\}\\(\\(\\*\\(_\\S-*?\\`_\\)\\1+\\)*?\\|_+?\\<.\\(Aa\\)*\\)[^a]+",
+  "s": " a))",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "a+\\s.+?\\.+",
+  "s": "\n babb\n_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é.",
+  "s": " -a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é\\{,2\\}a\\`\\s-",
+  "s": "a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\Sw\\{0\\}a(+\\.*\\|A ",
+  "s": "béAa )",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.$",
+  "s": "bb\n(-éb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".*",
+  "s": "-\nb",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "a[a-b]",
+  "s": "_bé(",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*(\\.",
+  "s": "bb-A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a+_*?éa",
+  "s": "bb-a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A??",
+  "s": "\n(",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "a[[:word:]]?? ??",
+  "s": "aA\nb-\n ",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "a\\*\\{0,\\}",
+  "s": "aa bA",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": ".A",
+  "s": "\né",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.*?",
+  "s": "\n-(-_ )A",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": ".",
+  "s": "é a  b_",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "a+\\*\\(\\(?:\\sw.a?\\)b\\**?\\)",
+  "s": "a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A*\\(\\.\\|a \\(?:a\\)a+?\\)(+?\\|\\(_\\)+..*?\\(\\W\\)*",
+  "s": "Aa-)bb  ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:space:]]a*\\sw",
+  "s": "a Aab_ ",
+  "fold": false,
+  "emacs": [
+   1,
+   3
+  ]
+ },
+ {
+  "re": ".??\\(\\B.\\)\\(?:é[[:space:]]*\\(\\`\\(\\*\\{,3\\}a\\)??\\)\\)",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\s(+A\\<\\(\\(\\Sw+?A*\\s.a\\)\\)\\{,2\\}",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\>.\\{1,\\}",
+  "s": "_(",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "(\\s-+éA$",
+  "s": " é_ba",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([[:punct:]]+\\|A*?\\)a\\(_\\1[[:alpha:]_]\\)$",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\sw\\{0,0\\}\\sw A$",
+  "s": "b) a_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\w\\).\\(.+?[[:alpha:]_]\\)($",
+  "s": ")a_a()-",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\`\\.\\{,1\\}\\(\\(?:é??\\)[ab]\\)\\.\\|.\\)\\|.+?",
+  "s": "A\nb_é_a",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   6,
+   7
+  ]
+ },
+ {
+  "re": "\\*(\\{1,1\\}b\\(?:a\\(\\W\\Sw_?\\)\\{2\\}_+?a*\\)",
+  "s": "b))b\n",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\{,1\\}\\`",
+  "s": "a\nA-é",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "((\\>a\\{,2\\}",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_??",
+  "s": "a\nbabba",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\>[a-b]+?(",
+  "s": "\nb_A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s(a*$",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(A\\{,3\\}_\\{2\\}a\\)\\**a\\)+?[z-a]\\1+?",
+  "s": "a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^[a-b]\\sw\\(?:\\(é\\).?é\\)a",
+  "s": "béb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^(\\(?:\\([^a]\\(\\<\\)A\\((a\\1??\\)\\)*?\\(.A\\{0,1\\}\\3\\)\\)*\\(\\s_\\{0,\\}\\)\\|a*\\**?\\(\\Sw\\([[:punct:]]\\{,1\\}\\' [z-a]\\)\\_>\\)[[:alpha:]_]\\{0\\}",
+  "s": "baA a",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\'(\\(.?\\(\\(a\\{1,1\\}\\)(\\)*\\)$",
+  "s": "((AAa ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\B",
+  "s": "  )A_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\W+(\\sw(",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\S-\\'\\(\\(\\s.??\\_<\\)+\\)+[]a]",
+  "s": "é) ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\((\\b\\(?:\\(?:_\\.+?a\\)\\(\\sw(+(\\{1\\}a*\\)\\.\\)*? *?\\)\\_<\\b\\|A",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(\\{0,2\\}_.\\{,1\\}A",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*\\sw",
+  "s": "éAé_",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:space:]]",
+  "s": "b)aA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(b\\(?:_\\(a\\{0\\}\\s(\\{,1\\}[]a]a\\)\\)\\(a?\\_<\\)*?\\)\\(\\*(\\{0\\}\\(\\(\\wb\\{1,\\}\\3\\)\\(?:.*\\)*?\\1\\**\\)\\|\\*a\\)*aa?\\|\\.??",
+  "s": "",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\_<\\.\\{0,0\\}\\(.\\)*?\\).?\\.",
+  "s": "é)__\naAa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\w\\{2,3\\}a\\).",
+  "s": "\n)b)ab_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_<\\([]a]\\)??",
+  "s": ") __b-",
+  "fold": true,
+  "emacs": [
+   2,
+   2
+  ]
+ },
+ {
+  "re": "\\..*?\\_<",
+  "s": "é ba",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a+\\(b ??(\\{2,\\}\\)+",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:word:]]",
+  "s": "bA- ",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "a\\'",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'(+?",
+  "s": " ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\b[^a]??..\\|\\s_\\s_\\( \\*+?\\)\\(\\s-\\{2,4\\}\\1\\{,2\\}\\(?:\\bba\\.\\{2\\}\\) \\)",
+  "s": "-a)",
+  "fold": true,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "\\(\\(\\([^]\n]?\\)a*\\)\\)\\{,2\\}[]a]\\|\\([[:word:]]*?\\)a",
+  "s": "é)_a(ab",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   5,
+   6,
+   5,
+   5,
+   5,
+   5,
+   5,
+   5
+  ]
+ },
+ {
+  "re": ".\\`\\|a\\s.+\\(\\(é+?a*\\*A?\\)\\*\\{0,2\\}\\)??b\\|b*",
+  "s": "aé",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(?:a?a\\)+?[[:alpha:]_]\\`",
+  "s": "\n-é-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`",
+  "s": "\n)\nA",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\*\\w",
+  "s": "-éb ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^ ??\\(\\*A_??.?\\|\\(a\\{1,\\}\\)?\\*\\B\\`\\)\\(?:\\((\\1\\Sw\\{0,\\}.\\)a\\)A\\{2,\\}",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(.+",
+  "s": "_a A()",
+  "fold": false,
+  "emacs": [
+   4,
+   6
+  ]
+ },
+ {
+  "re": "a?\\(a\\*.\\(?:a_\\{,2\\}\\)\\)\\(?:a\\.?[[:punct:]]\\)\\1",
+  "s": " ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(é[[:alpha:]_]\\(\\(a*\\B\\)\\)*\\)\\_>\\(\\(_*\\)\\(?:.??\\) .\\)\\|\\1+?",
+  "s": " -_ébab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A_*\\sw\\`$",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^a\\(?:\\(\\.+[[:upper:]]\\(\\*+?\\)\\)\\_>\\1.??\\)??",
+  "s": "a-",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(\\(\\.\\W\\)\\([ab]\\(?:\\> \\B\\)\\)\\w\\*\\)_\\(?:\\..*?\\(a\\(a\\)??\\4+\\sw\\)\\)",
+  "s": "\n(a",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\(?:_.b\\)\\{2,4\\}[ab](+?_*",
+  "s": "--(é )",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é\\{2\\}\\<",
+  "s": "A\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_\\{0,\\}\\(.+a*?\\Sw_+\\)\\1\\S-??\\|\\1\\{0,\\}",
+  "s": "aAbab",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^.",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " ",
+  "s": "(ébbbb a",
+  "fold": false,
+  "emacs": [
+   6,
+   7
+  ]
+ },
+ {
+  "re": "\\(.\\(a+?A(\\)+?\\*\\{2,4\\}\\)\\(\\`.?\\2 ?\\|[[:upper:]]\\S-+\\)b.*",
+  "s": ")baAa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:.?A+\\(\\( ??[[:upper:]]aé+?\\)\\)*\\)+? ",
+  "s": "éba )",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_> *a+?",
+  "s": ")",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".a??",
+  "s": "ab",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(A\\)_",
+  "s": " b_ébA\n\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:A*.+\\)*é",
+  "s": "b-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(A\\(_+?\\>\\)\\{0\\}\\)",
+  "s": "\n\na-)bb)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\S-\\{0\\} .[[:upper:]]\\{,3\\}\\)$",
+  "s": "éa_b\n-\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a\\|[^a]\\)+\\swa+\\|aa*?é[^]\n]+?",
+  "s": "b))\n)A",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s(*?\\*\\{1,\\}\\s_",
+  "s": "(éé Abb ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\**\\(a*\\W+?\\(\\(?:.\\)A\\(A\\)?a\\)_\\)*?\\(?:.[[:word:]]?\\*??\\)?",
+  "s": " ab-",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "b\\(\\(A\\Sw\\`\\(a\\)\\)\\)\\(\\(\\(a?\\)[z-a]?\\b\\>\\)\\{1\\}(\\<\\.*?\\)_*",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\(\\waa\\{,3\\}_\\)*\\_<\\)\\|.*a(\\)*\\(?:[[:alpha:]_]_*?\\b.??\\)",
+  "s": "aaé\nb))\n",
+  "fold": false,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": ".\\|\\(\\(.[ab]\\{2,\\}\\)+\\1\\(a\\{1,3\\}A[]a]\\1\\)A\\{,1\\}\\)(A*?a??",
+  "s": "_éé\nb_",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "é",
+  "s": "_b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\..\\(A\\{1,2\\}A??aA\\)+A??",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\W\\(a*\\.*\\)\\1\\)",
+  "s": "-bb)é-_a",
+  "fold": false,
+  "emacs": [
+   0,
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "re": "\\.\\{,2\\}\\B",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".A*\\(\\.*?\\|\\(\\`\\)\\)*$",
+  "s": "a",
+  "fold": false,
+  "emacs": [
+   0,
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "re": "^\\.a*a?.*",
+  "s": " a)(aA\nb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\w\\s.*",
+  "s": "\n)((a",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "^é(\\{,1\\}_\\.+",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^b\\(\\b\\.\\(?:\\(a\\s(\\S-\\)(*\\)\\sw\\)a.$",
+  "s": "_ébA -bb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a?.\\{0,\\}",
+  "s": "b_)",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   3
+  ]
+ },
+ {
+  "re": "[a-]+\\(?:_?(\\)$",
+  "s": ")(\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^b\\(\\(\\(a_*\\)\\S-+?\\(aaA\\)\\)\\(éa+\\ba\\)\\)*?",
+  "s": "bAb)aé",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\.\\|.",
+  "s": "aAa--bA",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "^\\.\\{1,\\}",
+  "s": "a(AA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(\\(a+?a*?_.\\)\\)?\\*\\)*?\\|\\b\\w",
+  "s": "b--a(ébb",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": ".\\|\\(?:\\((a\\)\\{1,\\}(\\).*$",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\*\\(\\(?:a*?a\\)\\) \\)\\{1,\\}[[:alpha:]_]*\\(a*?\\_>\\(\\(a\\)\\(_+\\)\\1?.??\\)*?\\)\\(?:\\_<é+?\\)",
+  "s": "baa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s.",
+  "s": ")_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b[[:upper:]]\\(\\s.\\)\\>",
+  "s": "-\n abé_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^a\\{,1\\}\\(\\S-\\{1,2\\}\\)\\s-\\(\\sw??\\b\\)",
+  "s": "é_\na - ",
+  "fold": false,
+  "emacs": [
+   0,
+   3,
+   0,
+   2,
+   3,
+   3
+  ]
+ },
+ {
+  "re": "A\\.\\{1\\}\\s.",
+  "s": "é_aé",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A",
+  "s": "a_b b(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\* \\(a\\|a*? [[:alpha:]_] +\\)",
+  "s": "a-\n- ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\sw?\\Sw.$",
+  "s": ")A\n\naAaa",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "\\(\\( \\)\\{1\\}.* \\)\\(\\(b*\\([]a]Aa\\B\\)\\)??\\2\\S-*\\)",
+  "s": "_b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s_ _\\{1,3\\}$",
+  "s": "b(é)(éaa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\W?\\'\\(?:(? [a-]\\)*.$",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_<",
+  "s": "\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a",
+  "s": "bAA_éb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[^]\n]",
+  "s": "",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\`\\(?:\\(a*?\\)??\\.\\)\\{1\\}",
+  "s": "( abbb)b",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[]a]? +? ",
+  "s": "bA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^b+A_a",
+  "s": "a)a_ ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(?:a\\(\\*\\)\\|\\b\\.+?[^]\n]\\{0\\}\\)*?A\\(.??\\)+?\\|\\*??$",
+  "s": "_Abé b",
+  "fold": false,
+  "emacs": [
+   6,
+   6
+  ]
+ },
+ {
+  "re": "\\(?:\\'\\)*?",
+  "s": ")-",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\sw \\{,3\\}[[:upper:]]\\|\\(?:[ab]+?\\)*?\\*?\\(?:\\(?:.\\s.??[]a]*é\\)\\(a\\)\\)?$",
+  "s": "a( ba-",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   6,
+   6
+  ]
+ },
+ {
+  "re": "^A??.\\{0\\}.A",
+  "s": "\néébb))-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\{,1\\} .+?\\|a\\{0,\\}_\\(\\(\\b.\\ba\\)\\(\\Ba*?\\`a\\)\\)\\|\\(a.a*\\_<\\)?[z-a]?A?",
+  "s": "_A a",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\w+?\\(\\<\\.+?\\S-.\\)\\)a+\\B \\{2\\}\\|.\\{,3\\}(a",
+  "s": "bA_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b\\(\\'\\)\\*??",
+  "s": "\n_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\b\\*??\\(\\(\\B\\)?\\.\\{,1\\}aa\\)+?\\)_",
+  "s": "aAAba)b\n",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "Aé.*?\\(?:\\B\\)*",
+  "s": "_a\né)_é",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(b?\\)??\\1\\)\\{0,2\\}a\\(?:aa\\|A??.+\\2\\)\\(a??\\(\\(\\2a+?\\.\\{0,\\}\\<\\)\\)A\\{2,\\}.\\)",
+  "s": "\n(A_ba",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\(\\Bé[^]\n]\\)",
+  "s": "a-a\n\nb",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(é \\)\\w+a\\{,2\\}[^a]\\)*a$",
+  "s": "_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_>\\_>(\\|A*\\(?:\\W\\).",
+  "s": "b_)",
+  "fold": false,
+  "emacs": [
+   1,
+   3
+  ]
+ },
+ {
+  "re": "A+?\\s-*?(.$",
+  "s": "\nA)-_a_b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_+? \\.*\\_<",
+  "s": "a ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^ $",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\'\\([z-a]\\W\\)\\)*[ab]",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\S-\\)",
+  "s": "_",
+  "fold": false,
+  "emacs": [
+   0,
+   1,
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\s-\\(a*\\)\\(?:\\1[^a](\\)\\1\\{1,\\}",
+  "s": "_b_-a é(",
+  "fold": false,
+  "emacs": [
+   5,
+   8,
+   6,
+   6
+  ]
+ },
+ {
+  "re": " []a]\\{0\\}$",
+  "s": "é ",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "\\s-?$",
+  "s": "bb",
+  "fold": false,
+  "emacs": [
+   2,
+   2
+  ]
+ },
+ {
+  "re": "a",
+  "s": "(b (\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[a-]\\(A+.\\{2,\\}(\\{0,1\\}\\(\\s- +?.\\)\\)+?",
+  "s": "a\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b*?a+?\\|A\\{2,\\}\\(. \\)?\\1??",
+  "s": "a_a\nabé",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "^.+a\\(\\(\\(a. \\{0,1\\}a\\)??\\(.*a*?\\)\\)a\\( \\)\\)\\*??",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^_?\\(\\s-\\s(\\.\\)*?(",
+  "s": "))abb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_>",
+  "s": "bab\n ",
+  "fold": false,
+  "emacs": [
+   3,
+   3
+  ]
+ },
+ {
+  "re": "é\\{2,4\\}\\(?:.\\S-\\{,1\\}\\.+?\\sw\\)\\**?.",
+  "s": "\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\s.",
+  "s": "bé\n-\n\n)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\(\\W\\*\\)+\\|a\\.*?\\(é\\{1,\\}\\)\\S-",
+  "s": "aéAé",
+  "fold": false,
+  "emacs": [
+   0,
+   3,
+   null,
+   null,
+   1,
+   2
+  ]
+ },
+ {
+  "re": "[[:punct:]]*?",
+  "s": "a\nA((AéA",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   8,
+   8
+  ]
+ },
+ {
+  "re": "^\\(\\(?:éa??\\S-\\{1\\}\\)*[a-]*\\)$",
+  "s": "_\nabb__",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\(a\\{0\\}\\(A\\*\\)\\)?a\\)",
+  "s": "\nb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".(*?\\(.a.\\(_+\\)??\\)*\\(?:\\sw*?\\s_??\\(\\_<\\(\\1\\)*\\)*?\\)",
+  "s": "\nA_éb_é",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   6,
+   7
+  ]
+ },
+ {
+  "re": "^\\*_é",
+  "s": ")(( aé",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\Sw\\(?:\\s(\\)\\{1,3\\}\\(\\S-??\\(.b\\(?:a\\W+a.\\)+?A\\{2,4\\}\\)Aa*\\)a*$",
+  "s": "\nb",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:punct:]]+\\Sw$",
+  "s": "baé(b-",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\(\\Sw\\**b??\\*\\)[a-b](a\\)",
+  "s": "aaa( A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s.\\w",
+  "s": "a\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\Sw\\|[[:space:]]?\\(\\*\\(\\_>\\)?\\)\\_<",
+  "s": "éb(",
+  "fold": false,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "\\(é\\( ??a\\Bé+?\\)\\)[[:upper:]]",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s(b*?\\(\\.[ab]*a\\)+?",
+  "s": "_\n baa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " \\(\\(a\\>\\)\\(?: \\<a\\(\\ba+?\\)\\)\\{,3\\}\\)??",
+  "s": "a_\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\S-_\\<a*",
+  "s": ")b-)aa",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\**\\s.*?\\(?:\\.a\\)\\)\\{0,0\\}",
+  "s": "é_(-b)",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\*a",
+  "s": "béé -",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\*",
+  "s": "\nb)(é",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "ba*_\\( \\{2,4\\}\\.*\\)",
+  "s": "_\na_A ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:word:]]",
+  "s": "(é",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "^é\\{2,2\\}\\(?:.\\.?.??\\.\\{1,1\\}\\|\\(?:\\s(\\{1,\\}ba*\\)*\\b\\)*\\|\\([^]\n]\\{2,3\\}\\_>\\(\\<.\\{,1\\}\\)\\)\\`\\*\\>$",
+  "s": "bb\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?:é*\\)+\\)+\\| ",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "ba*",
+  "s": "- _)a) ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\S-??\\_>\\|[ab]*a..\\{1\\}\\)\\< +\\|\\_>$",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_+?.$",
+  "s": ")",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é\\(?:\\([[:space:]]+\\)\\)ba\\|\\(A+?\\w\\W\\*\\)*\\(a\\_<\\)\\.*a",
+  "s": "((\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[]a]éa",
+  "s": "é)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\B_?\\( [^]\n]\\)\\|_é[a-]a\\{1,2\\}",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a+",
+  "s": " a\n",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": ".*\\(?:A\\(\\_<\\)é*a\\|A\\(a*\\1a?a+?\\)*?\\(?:A+\\)(??\\)*",
+  "s": "(",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": ".\\'a$",
+  "s": "_\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\s.([ab]+?$",
+  "s": "b-b\né(a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\W\\'(\\) +?",
+  "s": "ba_(\nb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.??a\\(a\\(a*\\b.*\\)b\\)\\)",
+  "s": "\n _ )",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:space:]]+ \\|\\*\\*\\|.\\(?:\\_>\\'a*(+\\)*\\(\\.*?a\\<a\\)*\\(\\1a?\\.\\*??\\)",
+  "s": "-a-(ba",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.Aé\\{0\\}\\|\\(é\\(\\W\\{0,\\}.(\\)..\\)\\{1,1\\}\\1+? ",
+  "s": "A\n__a\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(b\\(\\*\\s-a[z-a]\\)??\\s(\\)\\{1,3\\} \\.?",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a*_\\{0\\}\\|\\s-\\{0,\\}\\.\\{2,\\}b*é*",
+  "s": "\n",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^([]a].\\{2\\}\\(\\sw+?\\>\\)",
+  "s": "b)(_ é",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é*?\\(\\sw\\*\\(?:a\\{,1\\}\\)\\)[[:alpha:]_]",
+  "s": " -",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_+[[:punct:]]\\{2,\\}_\\W+",
+  "s": "-_\n\n)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\_<\\(a*\\(a \\Wa?\\)?? [z-a]?\\)\\*\\|[]a]\\b\\)\\{2\\}",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[a-]?_\\{0,1\\}\\|\\`\\(\\_>.+?b+_\\)+?.",
+  "s": "b-ab",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   4,
+   4
+  ]
+ },
+ {
+  "re": "\\* \\*\\**?",
+  "s": "ab)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\( \\)\\1\\`a*\\|[^]\n]\\W\\{1\\}A+?a",
+  "s": "_A",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`\\((.\\<\\)$",
+  "s": "-aba(b_-",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:upper:]]",
+  "s": "b --",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\S-+A.$",
+  "s": "éa",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a",
+  "s": "a",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "_+",
+  "s": "-éa(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\.\\{0\\}\\).",
+  "s": "A _-",
+  "fold": false,
+  "emacs": [
+   0,
+   1,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\.\\(\\(A\\)\\(?:\\(a\\)b\\)\\(?:.\\**é??\\)+?\\s_\\)[[:space:]]\\<",
+  "s": "b_(aa\na_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^A\\(\\(.a\\)\\|[]a]\\S-??\\(a\\{2,4\\}.+a\\{2,3\\}\\)\\B\\)A",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.\\{1,3\\}[]a]\\{,1\\}\\(\\*\\(?:A*\\)+é\\<\\)*?\\|A.\\{,2\\}a_\\)*?\\2\\*\\.",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^[a-]+(*?\\B",
+  "s": "éb-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\{0,0\\}",
+  "s": "-_a",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   3
+  ]
+ },
+ {
+  "re": "^\\>\\([[:punct:]]+a*\\|\\(.\\{1,\\}é*A\\s(\\)*\\)+\\W($",
+  "s": "bé\nba_",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:word:]]+?\\(?:.\\)",
+  "s": "b_))",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "\\B.",
+  "s": "_a-ba_ ",
+  "fold": false,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "^(",
+  "s": "b)éaa_-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\s(+?\\*\\(\\((*?.+?A\\.??\\)\\(\\((*?\\)+?\\2.\\_<\\)?\\)*\\|A*?.",
+  "s": "Aa",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "\\(?:_?é\\.\\)\\w.",
+  "s": "-A\n)",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\<\\|_+\\(a.\\{1,\\}\\sw\\(a\\*.\\)*\\).\\{2,\\}",
+  "s": "(bb) )",
+  "fold": true,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "a\\{,2\\}(\\<.",
+  "s": "-)-()",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\.\\( \\.a\\)",
+  "s": "aaA))a(",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b\\S-\\{,2\\}[^]\n]",
+  "s": "éb A(b(",
+  "fold": false,
+  "emacs": [
+   1,
+   3
+  ]
+ },
+ {
+  "re": "[a-]\\(_*?.+[^]\n]\\{0,\\}\\)+",
+  "s": "_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_\\s(a??",
+  "s": "(bbAa)A(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([[:space:]]*?\\)*\\|\\(\\1*\\1\\)\\s-\\(a\\)[[:punct:]]*$",
+  "s": "A)",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   2,
+   2,
+   2,
+   2
+  ]
+ },
+ {
+  "re": "\\*+?\\sw",
+  "s": "é()b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\_>($",
+  "s": "a ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": " +\\(\\(?:\\(?:[[:word:]]+?a\\Swé\\)*\\)*[ab]\\{1,2\\}b*?[ab]\\)[a-]??$",
+  "s": "\nb_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "(??a",
+  "s": "aAA",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(?:é*?\\s_*[ab]*?A\\)\\'\\([]a]\\)\\|[z-a]\\{2,\\}\\(?:\\s_(\\)a*\\(\\b\\)",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\b\\.",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\B\\)\\(?:.+\\(\\(ab+?a*?\\)+?_\\)\\>b\\)*?\\(\\b\\( \\.*?\\(?:.\\<\\s.*\\)+\\)*é+\\)\\{1,3\\}\\2*?$",
+  "s": "-b_-a\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".??[[:punct:]]*\\Sw*?\\<",
+  "s": "_a\na",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": " \\(a??\\)* ",
+  "s": ")-(_bbA",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(.+\\)\\(a*(\\|_b_*\\)(\\{,2\\}\\1",
+  "s": " éb)\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".*?\\W.$",
+  "s": "éé -(a(-",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   6,
+   8
+  ]
+ },
+ {
+  "re": "aa",
+  "s": "))(a_a\n_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*\\_<a",
+  "s": "aa(_\n_é)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " \\{1\\}\\(\\'\\(\\(a*aa\\)\\1(\\((+?A+A\\)?\\).a\\|\\2\\{1,\\}.[[:word:]]+?\\(a[z-a]+?(\\)\\{,1\\}\\)\\{0,0\\}",
+  "s": "",
+  "fold": true,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "[[:space:]]a??\\'[[:punct:]]",
+  "s": "_\nb ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[a-b]*a\\(.a\\)",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s.\\|a\\(?:. +?\\(a??[[:alpha:]_][]a]\\)\\*\\)\\*\\|.\\s(\\{1,\\} ",
+  "s": "(éA_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".*",
+  "s": "_",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\B",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".*.",
+  "s": "_aa\n(",
+  "fold": false,
+  "emacs": [
+   0,
+   3
+  ]
+ },
+ {
+  "re": "\\w",
+  "s": "-\n baa ",
+  "fold": false,
+  "emacs": [
+   3,
+   4
+  ]
+ },
+ {
+  "re": "\\_>\\`é\\>",
+  "s": ")é é",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\>A\\(?:\\(é.\\)\\{0,\\}\\_>\\)\\)*?\\(\\< \\1\\{2,3\\}(\\)??(\\|\\3*b$",
+  "s": "-\na",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\Wa\\(?:\\*+\\)\\(\\(?:aa??\\_>\\(a\\{2,3\\}_??\\)\\)??é\\{2,\\} A*?\\)\\{2,\\}",
+  "s": "a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A\\(?:.\\(a*\\(a[]a]*?\\)\\(?:aa?\\)+a+\\)??.\\1+?\\)??",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A\\(a??a\\((\\{,2\\}.\\)\\)b",
+  "s": "))",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^.*?\\(?:\\.*\\|\\(A(+?\\)\\).*.*",
+  "s": "a)bb))",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   6
+  ]
+ },
+ {
+  "re": "[a-b]\\s-*?",
+  "s": "b)",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "a\\|é\\b",
+  "s": " b)b)_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^.+",
+  "s": "A )_-( ",
+  "fold": false,
+  "emacs": [
+   0,
+   7
+  ]
+ },
+ {
+  "re": "\\s_\\.??(",
+  "s": "bbb_)  ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\>\\`\\(\\.\\{1\\}(bé+?\\)*?\\(a* *a*?\\)",
+  "s": "b__((A)a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(b[]a]\\{0,1\\}\\)*\\1??\\)\\(\\s_+\\(.\\1\\)\\(\\1(\\)b\\|[[:punct:]]a*?\\)?é[a-b]",
+  "s": "_b)\n a_-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "  \\(.\\)+?b",
+  "s": "aa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A",
+  "s": "a(\nab",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\s.",
+  "s": "\n-éb-_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^(\\.\\{1,1\\}",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.\\{2,\\}\\(_*_\\(a*\\s.\\).\\)*.\\)\\W$",
+  "s": "abab\né",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\S-\\{,2\\}.\\(?:A\\_<\\)\\)b*\\W+",
+  "s": "bb(\n((a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\wAA\\).*?\\(\\s(+?.+[]a]\\{,3\\}\\|.\\(a.a\\.\\)a\\1\\)\\{1,1\\}\\(b+\\*[]a]\\)",
+  "s": "a\n)é-bé\n",
+  "fold": true,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\(\\(\\(a*a+?\\)a*?\\)\\)",
+  "s": "b)_-aa-",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   5,
+   6,
+   5,
+   6,
+   5,
+   6,
+   5,
+   6
+  ]
+ },
+ {
+  "re": "\\(\\(\\<\\)\\1\\)\\{,1\\}\\2?\\s(a",
+  "s": " (_-a",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\(\\B[[:word:]]+?\\s_+?\\b\\)\\(\\s_\\((*.\\{1,\\}\\)\\)+$",
+  "s": "bé-a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A$",
+  "s": ")",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.b",
+  "s": "A_b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é[z-a](+?",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\>(?\\|[a-b]\\..\\{2\\}\\).??a*?$",
+  "s": "a\n )",
+  "fold": false,
+  "emacs": [
+   1,
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "re": "\\B\\(?:\\(a\\s.\\)\\)",
+  "s": "a(aAb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\'\\(\\'\\).??(\\)?.?",
+  "s": "a(_éAb",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "a",
+  "s": "_- ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\'\\.*é*\\|[[:upper:]]\\((.\\)*?b\\{0,\\}\\)$",
+  "s": "_a-éb_",
+  "fold": false,
+  "emacs": [
+   6,
+   6,
+   6,
+   6
+  ]
+ },
+ {
+  "re": "é\\(?:\\s(\\'\\)a",
+  "s": "a_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.é(+?",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".?",
+  "s": "-ba)é\n ",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\* *?",
+  "s": " ééA--",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".?\\|\\(A[ab]?\\)",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "Aa\\{2,\\}a?(*\\|\\_<b\\(\\w*\\s_\\(\\.\\)\\s_\\)",
+  "s": "_A_-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é.*",
+  "s": "",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.a\\*_\\{0\\}\\)\\(?:A?\\|a\\s_\\(a\\)\\)\\s-+",
+  "s": "a ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a*\\)_*?\\(\\(.*?A.\\)*\\)\\{0\\}",
+  "s": "",
+  "fold": true,
+  "emacs": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "a?\\_>",
+  "s": "é(a__",
+  "fold": true,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "^.+?\\(\\(\\W*\\*_a\\)??[a-]*?.+a??\\|\\(\\_>.aé\\)\\1\\{2,2\\}\\`\\((\\{2,\\}\\`a\\)\\)",
+  "s": "\n A(-b_",
+  "fold": false,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "[ab]\\(a\\(?:é+?a?\\)\\{0\\}\\(\\.é\\{,3\\}\\)é\\)\\2\\|\\2\\{1,\\}\\(_\\)\\{,3\\}",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:_??\\(?:b.?[ab]*\\).*\\)\\|\\(\\s.+?\\sw??\\) +.$",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".*?$",
+  "s": "\nb_ éb\né",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "é +\\(\\(\\(a\\Bab\\)??\\(?:a??(\\)+_*\\)\\|_+?\\(a\\)??_(\\{,1\\}\\)\\(?:a\\(\\s.[[:punct:]]\\)\\(\\(a\\)?\\..[a-]*\\)\\.\\)",
+  "s": "aa\n_ b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.[^a]\\.*\\(\\(a??\\)[a-b]\\)",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_<[]a]",
+  "s": "bA",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(a*\\)\\)",
+  "s": " ",
+  "fold": true,
+  "emacs": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "b??\\*+\\|\\>\\b.+",
+  "s": ")-(b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b?\\(?:aa*.?\\).?\\(\\S-a\\(\\Wé\\(?:\\w.\\>\\)+\\((\\*\\)*?\\)*(\\)\\|\\(?:[[:word:]]\\{1\\}\\)*.+?\\b",
+  "s": "(AabA",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\([[:punct:]] ?_\\)?",
+  "s": "ba-AA \n(",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   8,
+   8
+  ]
+ },
+ {
+  "re": "aa\\|\\(\\.\\s(*?a\\).a",
+  "s": "  \né(-",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(a*\\_>\\)\\)é\\*\\(\\1*\\'\\(?:\\1 ?\\)*\\_>\\)",
+  "s": "é_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\.\\)+",
+  "s": "bA-(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".*?",
+  "s": "",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": " _a*?",
+  "s": ")b\n\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a*\\'",
+  "s": "bé(b",
+  "fold": false,
+  "emacs": [
+   4,
+   4
+  ]
+ },
+ {
+  "re": "\\>\\(\\Wb\\)é+é\\|\\Sw.A.*?",
+  "s": "_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\S-.*?_??\\B",
+  "s": "bb(aé é_",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "A??\\(\\( \\(aaa+\\)\\W\\(a.\\)\\).\\3\\)(*",
+  "s": "aaaAA\nbA",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\<",
+  "s": " bé",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\*_\\)*?aA",
+  "s": "A_()a(b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\B\\W\\`",
+  "s": "béaba_ ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "aé",
+  "s": "b-(",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a",
+  "s": "bb ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:_A\\)+?.\\( \\)\\sw+?",
+  "s": "b(ba(a_b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?:.\\{2\\}a*?\\` \\{,1\\}\\)\\{1,2\\}\\|a\\([]a]a\\)\\)$",
+  "s": "a- ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é*bAa\\{1\\}",
+  "s": "é-A-béba",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`\\>",
+  "s": "\nAAaé",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(_\\.\\)\\|\\(?:a\\)\\|[z-a]",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_<\\_>\\|\\*",
+  "s": "( a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " $",
+  "s": " a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b\\{,1\\}\\(a\\([z-a]*?\\*(\\)?\\|\\1b\\)(\\{,3\\}\\( \\2+\\)*$",
+  "s": "b",
+  "fold": false,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "é+\\Sw.*$",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.[[:punct:]]*?\\)??é\\|(*.",
+  "s": "\nAAb-éb",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   6,
+   7
+  ]
+ },
+ {
+  "re": "\\(\\*\\B\\>\\)[[:alpha:]_]",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é\\|\\S-\\(?:.a_a\\)a+\\(\\(\\.*\\W??\\**\\)\\.\\)",
+  "s": "b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\{0,\\}",
+  "s": "(b\né-",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "abA\\(.+.(b\\)\\{0,1\\}",
+  "s": ")",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\**.?.+a",
+  "s": " a bAA",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "b\\|_",
+  "s": "ab",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": ".(a*",
+  "s": "é-é\naa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[ab]\\{1\\}.+",
+  "s": "bA -",
+  "fold": false,
+  "emacs": [
+   0,
+   4
+  ]
+ },
+ {
+  "re": "\\.\\(b\\{,3\\}\\Sw+\\(?:\\(a??Aa\\)*?\\)+?_\\)\\{,1\\}",
+  "s": "a_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\>\\s.*\\(a\\|\\(a\\_<a??\\)??\\(_*\\)[^a]\\)\\{2\\}",
+  "s": " -a)Ab",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   5,
+   4,
+   5,
+   null,
+   null,
+   4,
+   4
+  ]
+ },
+ {
+  "re": "(?.\\(b_\\Sw\\(A+ ?.\\)\\)[[:upper:]]\\|\\(?:[z-a]+?\\)?[a-b]é\\S-*",
+  "s": "a_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(\\(\\_>\\)\\{,1\\}[[:upper:]]\\)A \\(\\Sw\\w.*?[[:word:]]??\\)*\\)*\\(\\(?:\\2\\)??\\)",
+  "s": "bAaA\n\nab",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   8,
+   8,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   8,
+   8
+  ]
+ },
+ {
+  "re": "\\.$",
+  "s": "aé_b\nAa",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\w+? *\\.+ ",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\b\\| ?.\\s_a?$",
+  "s": "_bb A",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(?:\\([[:word:]]\\{,2\\}a.\\{2\\}.\\)*?\\(é[]a](\\)\\)+?",
+  "s": "  b",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.",
+  "s": "_\na(AA ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^.\\b.+?\\_>",
+  "s": "é_\n",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "\\.+\\*A",
+  "s": "A",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "(\\{2,\\}.\\{,3\\}",
+  "s": " -",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^A\\(\\.\\{0,2\\}\\Sw\\(?:.b\\)\\((\\(bA+?\\)+?\\)\\)\\3?",
+  "s": "a  ))ba)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\.\\(\\(\\<[]a]\\*?a\\)?(\\{1,1\\}\\)*?\\)+",
+  "s": "a\n b_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*[a-].*\\Sw+",
+  "s": "aA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_+\\.",
+  "s": " bab_)aé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([]a]\\)+",
+  "s": "\na _b)AA",
+  "fold": false,
+  "emacs": [
+   1,
+   2,
+   1,
+   2
+  ]
+ },
+ {
+  "re": "[^a]\\(?:a+?A??\\)",
+  "s": "a )",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\.\\(?:\\.\\w\\([[:alpha:]_][]a]*a*\\w\\)\\)??(*? ",
+  "s": " --b a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(\\{,1\\}\\|\\>\\_<A",
+  "s": "_)",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\s.+?\\(?:\\.\\*\\(.\\Ba\\{,1\\}\\*\\)*?é\\)",
+  "s": "\nb(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^(\\(a\\{,2\\}(\\)\\|Ab+",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^ ?\\(?:\\**\\(a\\)a_\\)\\|\\'\\sw?\\(\\1+?.\\)+\\(?:\\.\\b\\<\\)",
+  "s": "  bé",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": " *",
+  "s": "b",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^A",
+  "s": "b(\n(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é",
+  "s": ")A--a_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a[^]\n]",
+  "s": "aAé(abb",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   4,
+   6
+  ]
+ },
+ {
+  "re": "[[:space:]]$",
+  "s": "(abé_)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\Sw",
+  "s": "aabAbéb",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:punct:]]\\(\\Sw\\(\\_>aa *\\)+\\W\\)",
+  "s": "baA)é",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(\\(?:(a\\)\\Sw\\)*\\*\\{0,2\\}\\(\\s.*\\)\\)$",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   0,
+   null,
+   null,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\sw*\\)??a",
+  "s": "_-A\nb",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'",
+  "s": "bA\n\n\n-\né",
+  "fold": false,
+  "emacs": [
+   8,
+   8
+  ]
+ },
+ {
+  "re": "^b[[:alpha:]_]A",
+  "s": "\nbaéAa",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:punct:]]\\<_\\{2\\}",
+  "s": "-bé_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(A\\{1\\}\\|([z-a] \\{0\\}\\)\\*\\(\\1a\\).",
+  "s": " b ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.+?[]a]a??[^a]?$",
+  "s": "   A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s-\\{1,3\\}\\s-é_?$",
+  "s": "--_-_ (_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\((\\{0\\}\\(?:\\(?:\\B\\Sw*?.*?a\\)+?\\)+\\)*a*?\\( \\(é\\{2,2\\}[[:alpha:]_][[:space:]]??b+?\\)\\)??\\2$",
+  "s": "--",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:Aé+\\(\\(?:\\S-+b[[:word:]]\\)..\\(([^]\n]a\\{2,3\\}\\)\\)\\{2,3\\}\\)A.+.?$",
+  "s": "bbbbb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^[]a].",
+  "s": "-Ab \nabb",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   5,
+   7
+  ]
+ },
+ {
+  "re": ".*?\\*",
+  "s": "éaa_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\Sw\\{,2\\}b??\\(?:\\(a*?\\(?:\\sw*\\) *_\\{0,\\}\\)\\s.\\|.\\{2,3\\}\\)\\{0,\\}\\|[^a]+a*.*\\|(_",
+  "s": "(é-aA\né_",
+  "fold": false,
+  "emacs": [
+   0,
+   4
+  ]
+ },
+ {
+  "re": ".\\|\\(\\(a*a\\)b\\w\\)*\\2\\(\\S-[z-a]\\(?:[[:upper:]]a\\{,2\\}\\s.\\)\\{0,\\}\\)\\([[:space:]]\\)\\{0,2\\}\\|\\`[a-]a",
+  "s": "\néAaba(A",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": ".*\\(?:\\Sw a?\\|\\(a*\\s(?\\)?.\\)\\|\\s($",
+  "s": "_bé-",
+  "fold": false,
+  "emacs": [
+   0,
+   4,
+   3,
+   3
+  ]
+ },
+ {
+  "re": "a*?",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(.[[:space:]] \\)\\'[[:upper:]]a+?",
+  "s": "a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(?:.+?\\(A\\s_+\\_>\\)??.\\_<\\|\\(\\1\\)\\{,1\\}\\(a\\.+?\\)??(\\{0,\\}\\s.\\)",
+  "s": "_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "([a-]\\{,2\\}\\([z-a]\\)",
+  "s": " Aa_",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\_<\\*\\(.*\\)\\w\\)\\(b\\>\\_>\\)\\(?:é?.*?\\)?\\1",
+  "s": "a",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\(\\(?:\\s.?b*\\)*?\\(\\s. [a-]??\\)é*\\((\\)\\)b\\)*",
+  "s": "a ()A(b\n",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^\\*",
+  "s": " (é_-a_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\<\\b",
+  "s": ")\na\n( _(",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   2,
+   2
+  ]
+ },
+ {
+  "re": "\\(a\\S-\\{2,4\\}\\)",
+  "s": " ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^ \\(\\(\\S-a\\) \\*\\*\\)b*\\<",
+  "s": "a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.\\)+\\1+?a\\{1,\\}",
+  "s": "b(\na",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " ",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_",
+  "s": ")éab)é)a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\wa??\\(b\\((\\{1\\}\\(a?\\_<a[z-a]\\)\\(a_\\)*\\)\\)?\\|é+?é*$",
+  "s": "_aa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\<\\(\\s_a*?.*\\|((\\)??\\| \\B[[:punct:]]",
+  "s": "a A _",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   3,
+   5
+  ]
+ },
+ {
+  "re": " __\\>",
+  "s": "\nb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".a*..\\|(* *?$",
+  "s": "(a",
+  "fold": false,
+  "emacs": [
+   2,
+   2
+  ]
+ },
+ {
+  "re": "\\sw\\(\\(?:[]a]\\.\\{2,\\}\\*\\((é.\\)\\)a\\Swb\\)*$",
+  "s": "ba _ab",
+  "fold": false,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": "\\**?A*[[:space:]]b\\{1\\}",
+  "s": "bbAb",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\(\\( \\'\\(b+[^]\n]*a+\\)\\(\\s.\\)\\)??\\)\\|\\(.\\)\\{,3\\} a",
+  "s": "\nA)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^a[[:alpha:]_]a$",
+  "s": "a-aaé\n\na",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\sw\\|\\(_a\\)[ab]_\\)?a\\(\\.[[:space:]].+?\\)",
+  "s": "\nbb(b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[ab]\\(?:\\w\\.*\\(a\\_<\\(?:Aaab\\)\\s.\\)\\{1\\}\\)*A+",
+  "s": "éaa\naaa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.+?\\(\\(\\([[:alpha:]_]??\\)+?a\\)\\(_\\{1,3\\}\\s(\\1a+\\)+? *\\)*b\\>",
+  "s": "a",
+  "fold": false,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "^\\(.\\'\\(?:a\\{,3\\}\\(?:a\\{2\\}\\'\\)\\)*?.??\\)\\{2\\}\\(\\(\\(aé\\b\\)\\(\\swa??b*\\)\\)a.\\{0\\}\\(?:\\(a.+?a*?\\)A*?\\)??\\)\\|\\`[a-b]*a",
+  "s": "a\nb",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "a+?\\.",
+  "s": "_é\n\n_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\(\\.?\\)?\\B[]a]+?",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".",
+  "s": "éA",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "(*?\\`",
+  "s": "_",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^a*(\\{,1\\}",
+  "s": "b",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^..*",
+  "s": "é(",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "^a*.a",
+  "s": "b\n(-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\`\\sw",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`a",
+  "s": "é-)_a\n ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_\\(aa*\\)\\{1,2\\}",
+  "s": "ab)b\nba",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\W\\*\\*",
+  "s": "A)b aé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_>a[[:word:]]\\{1,3\\}a",
+  "s": "AAaa--_(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\Sw+?a\\{2,\\}",
+  "s": "A",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*\\{,1\\}",
+  "s": ")b_aa(",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "[[:upper:]]??\\B.+?",
+  "s": "AAb)",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": ".\\{0,\\}\\(\\(\\**?a\\{1,1\\}\\)*?\\)\\b\\|\\*\\(a\\2\\1\\)",
+  "s": "aab Ab",
+  "fold": true,
+  "emacs": [
+   0,
+   6,
+   6,
+   6
+  ]
+ },
+ {
+  "re": "a+?[[:upper:]]\\{2,\\}$",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(a[[:word:]]é.\\)\\sw",
+  "s": "\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^A.\\{0\\}\\`",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\s_b \\(bA*\\W.\\)??",
+  "s": "-ab\nb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^.*\\(?:\\([^]\n]\\'\\)\\(?:_\\.\\{,3\\}\\)a_*?\\)$",
+  "s": "_ )",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".*A?",
+  "s": "a  a\n(a",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   7,
+   7
+  ]
+ },
+ {
+  "re": "\\([[:space:]]*\\(\\(?:\\sw\\)A\\)\\{,2\\}\\Sw\\)\\(?:a\\<\\(\\>\\**?\\>\\1\\)\\S-*?\\)+?a*$",
+  "s": "ab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\*",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[]a]*?a\\|[ab]*?\\(\\S-\\{2,4\\}\\)\\1\\{,1\\}\\.\\|\\Sw+?\\(aa\\b\\)é\\(\\`\\2 ??\\)??",
+  "s": "(___ ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'",
+  "s": "Ab_(ba_\n",
+  "fold": false,
+  "emacs": [
+   8,
+   8
+  ]
+ },
+ {
+  "re": "^\\Sw*é??\\_>\\*\\|[[:upper:]]",
+  "s": "a\n-\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".?\\(\\s(a+\\)",
+  "s": "\na_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_\\_>",
+  "s": "\n-))(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(*?A[a-]",
+  "s": "(\n_\nb- ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:word:]]*\\*\\{,1\\}$",
+  "s": "_ A",
+  "fold": false,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "^A?",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^[[:upper:]]",
+  "s": "b\n -",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(+?$",
+  "s": "(",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "[[:alpha:]_]*?.*\\b",
+  "s": "( A\n--a",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   7,
+   7
+  ]
+ },
+ {
+  "re": "\\`é[]a]\\(\\Sw\\**?\\|é\\)",
+  "s": "ééé",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(.\\)*A\\{2,2\\}\\_<.??\\)\\{,3\\}(+.\\1",
+  "s": "(\n\na(b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\w",
+  "s": "_AbA",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".??\\(\\w_\\)+?\\*+?",
+  "s": "bb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a_b",
+  "s": "bébaA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\((\\_<\\)+\\)\\(a\\.b\\)?\\W\\{1\\}",
+  "s": "_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[^]\n]\\{,2\\}é",
+  "s": "\né(é_b",
+  "fold": false,
+  "emacs": [
+   1,
+   4
+  ]
+ },
+ {
+  "re": "[ab]*",
+  "s": "  abé)a",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   7,
+   7
+  ]
+ },
+ {
+  "re": "b\\|\\(.[]a]*?\\)a+",
+  "s": "é_A-_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(??\\(a\\((\\([]a]\\)\\{0,\\}\\1\\1\\{0,\\}\\)??\\w\\|\\2\\(a\\)[[:alpha:]_]+?A\\)*",
+  "s": "aé-a",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "a\\{0\\}a*$",
+  "s": " ",
+  "fold": false,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "^\\b",
+  "s": "éb_b(",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\.\\{1,\\}\\|\\(_\\sw*\\)a\\(\\([[:alpha:]_](*?.*\\)*?[a-].*[z-a]\\)\\b$",
+  "s": "é",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A*?",
+  "s": "( aba)",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "b\\(\\(\\(a??aa\\)(\\)*?[z-a]\\{0\\}\\)*?a",
+  "s": "A((\na",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\([^]\n]\\)\\{0,\\}a+?aé?\\)\\W.\\(\\s.*\\)$",
+  "s": "b_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(_(\\)\\{,1\\}",
+  "s": " -",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": ".*\\(\\(.\\)\\)\\{0,\\}",
+  "s": "a",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "a+\\(?:\\(?:[^a]\\(?:éa\\)*?\\(b*A[ab]\\)A\\)_\\)\\{0,\\}\\*\\(?:_??_b\\)",
+  "s": "( ",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\W*\\s.\\sw?",
+  "s": "b)b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a.\\)a.A*",
+  "s": "\n\nabbaA",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": " .?\\(\\w*?\\([[:alpha:]_]?_+\\sw+?\\)\\(_\\1\\(a+?_?\\`(\\)A\\)\\)\\|[a-b]?\\B\\Sw",
+  "s": "bA\n\na",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "[[:punct:]]*[ab]",
+  "s": "_aa Aaa",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "\\.+a*\\> \\{0,1\\}",
+  "s": "_a()éA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(a+\\)\\.\\).",
+  "s": "abAb)\n\n\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(é??\\(?:\\(\\b\\)\\(éa[[:upper:]]\\(\\.\\)\\)?.\\)",
+  "s": "b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\(?:\\([[:upper:]]+\\)*?\\(\\s-\\s-\\(?:\\1+?_??.\\)\\)?\\_>\\)\\|A\\2$",
+  "s": " (bAAa( ",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": "a.",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?: \\{2,2\\}A\\(?:\\.\\w\\B\\(?:.a\\)+\\)\\B\\)\\s_\\{0,0\\} \\Sw??\\|\\*[]a]",
+  "s": ")A_A) ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\s.\\|\\(\\(a\\*[[:upper:]]\\)\\_<\\)",
+  "s": "aé - ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " +\\( ?\\'\\.\\{0,1\\}A\\)\\{,3\\}\\b",
+  "s": "\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\([ab]\\)[z-a]*?",
+  "s": "(_éé\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:upper:]]+?\\([^]\n]*?[]a]\\(.*?b.\\)\\)*",
+  "s": "\n _\n-aéa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\([^]\n]*\\(a\\)*.\\w?\\)+?a\\{1,3\\}",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:punct:]].\\'$",
+  "s": "bb-b\na ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\W\\{1,2\\}[^]\n]_\\{0,1\\}",
+  "s": " é",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "\\(\\((+\\.+\\.\\)?\\)+a*_",
+  "s": ")-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^a",
+  "s": "aaé\néabA",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\s-\\{2\\}$",
+  "s": "Aab",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é[[:space:]]$",
+  "s": "a-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[]a]\\*\\{,1\\}",
+  "s": ")_A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\b\\.\\((??_._*\\)a\\)?\\(?:b\\{1,2\\}\\.+?\\2\\{2\\}\\.*?\\)",
+  "s": " \n_A(_b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^._",
+  "s": "A_é",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "^[[:punct:]]??\\s_",
+  "s": " ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".",
+  "s": "abaaba_a",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   7,
+   8
+  ]
+ },
+ {
+  "re": " \\s.\\{1,3\\} $",
+  "s": " a)Aé(é ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.*?\\*\\)$",
+  "s": "_)--_)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*\\.\\(?:\\>.\\)é",
+  "s": ")(",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[]a]\\w",
+  "s": " -é A-A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a[^]\n]\\_>b??\\)[[:punct:]]+?\\_> \\|A\\1*\\_>a\\{,3\\}",
+  "s": "aabbbA",
+  "fold": true,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": "\\(\\(\\(aaa*?a+?\\)\\(aaa\\1\\)a.*?\\)\\)",
+  "s": "a",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": " +",
+  "s": "b (ab(-",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "a\\{2,3\\} ",
+  "s": "(Ab( a-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b\\|\\.\\*?",
+  "s": "AAb)Ab(",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": "^[ab]?bA\\(\\s-*\\(\\*[[:upper:]]\\(?:a\\{,3\\}[]a]a*\\)\\)+?\\B\\(?:.a+?\\1a*\\)\\)\\|(",
+  "s": "Ab",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "A\\(\\(\\(a*é*\\Swé??\\)\\{,3\\}\\1é*\\)\\)\\*\\{2\\}A",
+  "s": ") )",
+  "fold": false,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\.*",
+  "s": "(aA_b\n\n_",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   8,
+   8
+  ]
+ },
+ {
+  "re": "\\s_é+?",
+  "s": "-(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a*b+?\\)\\(\\1+é*?[^]\n]b\\)??a\\{,2\\}",
+  "s": "\n((",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:[a-]a*?\\(?:aa[[:word:]]*\\)\\|\\*\\)(\\(b\\)+?a",
+  "s": ") _ b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:upper:]]??a\\{1,\\}\\(\\s(*?\\(?:_*[[:alpha:]_]?\\sw+?\\(a\\{2,\\} \\Sw\\_>\\)\\)\\{0\\}a\\(\\([[:alpha:]_][a-b]a*a\\)\\{0,0\\}\\)\\)a?$",
+  "s": "b ééa(",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.+?",
+  "s": "a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\wA\\*\\)",
+  "s": "A\naé__a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "aa*?_",
+  "s": "\n )",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\B",
+  "s": "b(b__aAb",
+  "fold": false,
+  "emacs": [
+   4,
+   4
+  ]
+ },
+ {
+  "re": "\\`",
+  "s": " b",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^aa??",
+  "s": "_é",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(aaA[z-a]\\)\\.[a-]*[a-b]\\|b\\)\\`($",
+  "s": "éab-b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\**\\(b\\*a\\)",
+  "s": "ab-(a\nA",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s_+ ",
+  "s": "é",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a+?\\((\\s.+?\\)+?a\\Sw+",
+  "s": "A_)aA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a*\\Sw?\\)a[[:word:]]",
+  "s": " é\naa_",
+  "fold": false,
+  "emacs": [
+   2,
+   5,
+   2,
+   3
+  ]
+ },
+ {
+  "re": "A",
+  "s": "b\n-_\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\'\\w\\b\\(?:\\(a+.b[ab]\\)\\)?\\)a\\b\\_>",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\( \\(a\\)??_*\\)",
+  "s": "aa\nb ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\s.\\)*?$",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(?:\\*+?\\(\\(?:\\*[^]\n]é*\\)\\{0\\}\\)* \\)a+?\\W",
+  "s": "a-)",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([^]\n]\\{1,2\\} \\(\\(?:ba\\_>a\\)??\\s.??[]a]*\\)\\|_+?[a-]*?\\)",
+  "s": "(b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\W a*a+$",
+  "s": "a__\n b",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^.*?a*a?\\|A\\{0\\}\\sw\\`\\.",
+  "s": "b\nbab(b",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "_bb*",
+  "s": "bb\n_bb)A",
+  "fold": false,
+  "emacs": [
+   3,
+   6
+  ]
+ },
+ {
+  "re": "a.\\(?:Ab\\bb*\\)*?[[:space:]]*?",
+  "s": " )",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_< \\{1\\}\\|\\W\\{2\\}.",
+  "s": "\n)",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\{1,\\}\\(\\(\\sw\\)b*\\)\\(\\1*[^]\n]\\)*.",
+  "s": "\n \n)_\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\._\\(a\\{2\\}\\)??",
+  "s": "(",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\.??\\(\\(é\\{,2\\}a\\s_\\{2,2\\}\\)\\_>\\)\\`\\*\\)*? \\{2,3\\}\\(\\(\\s-\\2\\)\\{,2\\}a\\{,3\\}\\*\\)\\{,1\\}\\|.A*\\`.",
+  "s": " é\n-aAAé",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A\\(\\`\\([z-a]\\([[:alpha:]_]+\\S-\\)\\{1,\\}é\\)A\\).\\(\\1\\|.\\)*$",
+  "s": "a(b(a_\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\**$",
+  "s": "ba ab",
+  "fold": true,
+  "emacs": [
+   5,
+   5
+  ]
+ },
+ {
+  "re": "\\w+.A",
+  "s": "A-)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A\\{0,2\\}\\s_(",
+  "s": "\n ()-)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(*.",
+  "s": "b(éA",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": ".*\\(?:a+a\\)",
+  "s": "(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:word:]]\\{2\\}\\(\\(\\s(*.*\\(A??(b+?\\)(\\)[[:word:]]??a\\)\\(\\*\\*\\(\\_>.+\\2+\\)\\|\\*\\(.+?.*?a\\)a\\{0\\}b*\\)??(?",
+  "s": ")",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*??é\\`\\|\\(\\( +(\\)\\w+.*a\\)\\S-*\\(?:(\\)\\|\\.+_*",
+  "s": "-a) )ab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\([]a]\\{0\\}a\\)*. ",
+  "s": "aA-aé ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'$",
+  "s": "\nbb )(",
+  "fold": false,
+  "emacs": [
+   6,
+   6
+  ]
+ },
+ {
+  "re": "\\(a.\\w\\)\\s(+",
+  "s": "\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'\\(?:.\\(é??(\\) \\`\\)?aa*",
+  "s": "éAé_(a",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a*\\'a.\\|é_ \\)*?\\(\\1\\{,1\\}\\b[ab]*\\)+? *?a",
+  "s": "\né-ab",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   4,
+   null,
+   null,
+   3,
+   3
+  ]
+ },
+ {
+  "re": "[a-]",
+  "s": "aA",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\s-*\\_>\\s(",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a+?",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(?a(\\|[[:word:]]*\\.\\<",
+  "s": "aé",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^[[:word:]]\\{1,1\\}\\(a\\)+?",
+  "s": "aaaab_\n",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   2,
+   1,
+   2
+  ]
+ },
+ {
+  "re": "^é",
+  "s": "bb\na",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(*?\\(b??é\\sw\\)",
+  "s": "é\n_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " ",
+  "s": "_\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".",
+  "s": "Aa",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\Sw*?\\b\\*(",
+  "s": " -bbbb",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\>",
+  "s": "b  aa",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   5,
+   5
+  ]
+ },
+ {
+  "re": "a",
+  "s": "éa",
+  "fold": true,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "^.",
+  "s": "é",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\.",
+  "s": "\n\nb",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^éé",
+  "s": "  Ab)A ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\<[]a]+\\bé??",
+  "s": "a\nb) _",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(b*?\\(?:a\\{0,1\\}\\(a[[:punct:]]a\\)*?\\s-\\{0\\}\\)*\\)a",
+  "s": "b(baa\nb ",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   4,
+   5,
+   4,
+   4
+  ]
+ },
+ {
+  "re": "\\*_",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s-\\.+_\\{0,2\\}$",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é[]a]\\(_\\{0,\\}\\(\\(\\*+.\\)\\)\\>\\.\\)$",
+  "s": "aaéb\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".*?[[:punct:]]é+?$",
+  "s": "éa_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\*[[:space:]]\\{2\\}[[:alpha:]_]\\(b\\)\\|\\*?\\(?:a\\)\\|\\(\\1*a\\{1,\\}\\)*",
+  "s": "\n)_éa )é",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": ".é\\{1\\}\\|\\_>\\(\\(a\\<a*?\\s.+?\\)a+\\)\\S-\\S-*",
+  "s": "é\n(-_bb ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a\\{,1\\}\\Sw\\{,2\\}\\*?a\\) *\\.",
+  "s": "b)(",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(_\\(a\\(\\w\\)[[:word:]]+ \\)[]a]\\(a\\*\\*\\>\\)\\)",
+  "s": "  é_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a\\(.?.+\\sw\\)[^a]\\{0\\}é\\).*(\\{,3\\}",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^_+\\(\\((??(*?\\.A\\).*\\).*$",
+  "s": "bAAbAb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "aa\\{2,\\}",
+  "s": " ",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\'.??\\)?\\`\\|é\\(?:\\..\\>.\\{2\\}\\)*\\|.*_a",
+  "s": ")ééébb-",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\(\\(?:a*[^]\n]\\)\\)_+a?\\)",
+  "s": "a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\`[z-a]\\(?:[]a]*?\\(\\(aa\\{0\\}é\\)*é+?\\)\\)??\\([^a]\\)$",
+  "s": "--_ab)é(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:alpha:]_]+é\\(\\B \\)\\|\\(.\\sw\\)[^a]+?\\.+?",
+  "s": ")",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a?",
+  "s": "aAbA",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\( \\_<\\(?:a.+\\([[:space:]]a\\)\\(\\s_?? +?[a-b]\\)+\\)\\{2,\\}(*\\).",
+  "s": "(a-b (",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*",
+  "s": "bb)-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s-\\{0\\}\\((a\\)+?A",
+  "s": "-é a-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\`\\<.\\{,1\\}\\)",
+  "s": ")\n_(\na\n",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "(",
+  "s": "a\nA)a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b\\s-*é\\|\\([a-]\\.(\\)*\\.\\{0,\\}\\.\\*??\\|\\(.\\)A\\1",
+  "s": "b())b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " +?(??_",
+  "s": "a)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([[:punct:]]*\\( +?\\(a\\'.\\{2\\}.\\)*\\)*\\(?:\\(\\s(+?_\\).??[^a]\\)\\<\\|aA\\*\\{1\\}\\)\\(\\sw+.a[z-a]*?\\)",
+  "s": "a)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": " \\{,3\\}\\*?? *?$",
+  "s": "é",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "\\([^a]\\(?:\\Wa\\)\\{1\\}_+ \\)\\s.+?\\s(\\|b",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\b$",
+  "s": "_(béa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(A\\(?:\\ba\\{1\\}\\>a\\)+?\\(?:(\\)é\\)\\)?\\b",
+  "s": "a",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^\\(\\**\\s-\\)\\b\\1",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[]a]*?$",
+  "s": "aba",
+  "fold": false,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "\\*\\{1,\\}\\>[[:space:]]\\{2,4\\}(",
+  "s": "aba ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "aé*?",
+  "s": "a - ",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(\\(b\\)\\)\\|[[:space:]]*?A\\([]a]*ba\\{,1\\}a+\\)",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\.\\sw$",
+  "s": "a( aé éb",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a*$",
+  "s": "a",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "A*",
+  "s": "_",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "^\\(\\(\\(a\\{2,\\}\\)\\{1,\\}a\\*??\\)\\{,1\\}\\2\\)*?.\\{2,4\\}",
+  "s": "é))__\n ",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   4
+  ]
+ },
+ {
+  "re": "(b[[:space:]]\\(?:\\(?:\\*(\\(?:(\\{1,\\}a\\)\\{2\\}a\\)\\_<\\)$",
+  "s": "-aA-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b",
+  "s": ")_-(aaé\n",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é",
+  "s": "bbAéa)",
+  "fold": false,
+  "emacs": [
+   3,
+   4
+  ]
+ },
+ {
+  "re": "\\s._+[ab]??_",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b$",
+  "s": "_Aéa_)_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\s.?\\(\\(\\>(*?\\s.+?a+\\)(*\\S-\\)[a-b]a",
+  "s": "A_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\>\\([[:alpha:]_]\\{1,3\\}\\`\\(\\(\\<a*\\)*\\(a*aa+?.??\\)+é\\s(\\)*?\\.?\\)??\\|é[]a]*?\\S-*?[^a]",
+  "s": "bé_((b",
+  "fold": true,
+  "emacs": [
+   1,
+   3
+  ]
+ },
+ {
+  "re": "\\(\\(?:\\*ba\\<\\)\\.+a\\)+a\\.+?\\1*?$",
+  "s": "a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\S-*\\(\\(?:a+\\)*\\)\\.*?a?\\) \\(\\.+?\\*+?\\(?:[[:punct:]]\\)\\{0,2\\}\\)*",
+  "s": ")\n  a",
+  "fold": false,
+  "emacs": [
+   2,
+   3,
+   2,
+   2,
+   2,
+   2
+  ]
+ },
+ {
+  "re": "a*?",
+  "s": "b---)b)",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(a\\)\\{0,\\}\\.??b *",
+  "s": "aA()A(-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\ba\\{2\\}\\.\\(a\\(A\\(?:a\\)?\\(A+? +?\\..\\{0,\\}\\)\\).??[[:word:]]\\)*?",
+  "s": "a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a?\\([a-]*?.\\)\\{1\\}\\(é*A?\\)?",
+  "s": "b-",
+  "fold": true,
+  "emacs": [
+   0,
+   1,
+   0,
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "re": "\\*\\{,2\\} a?",
+  "s": "\na ",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "_\\(b*_\\|é\\.\\)*a",
+  "s": "A-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "aa\\(?:[[:space:]](?_*\\)\\{,1\\}",
+  "s": "(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\S-+?\\.a*\\(a\\.(\\s_\\{,3\\}\\)",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b*",
+  "s": "\n b -__",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\(?:\\b[[:word:]]\\.\\)*\\)\\{,2\\}",
+  "s": "(ba( é",
+  "fold": false,
+  "emacs": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "_+",
+  "s": ")  Aa_Aé",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": "^\\(_a\\(?:\\(\\s_??b.+\\)+\\(_*é\\)+\\)\\)\\{,1\\}a(\\{1\\}",
+  "s": "A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^. \\{1,1\\}\\(.\\_>a+?\\)",
+  "s": "a_b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b(.\\(\\(_\\(a\\{2,2\\}a\\**?\\)\\1\\{1\\}\\)\\{0\\}a*?A\\)\\{2\\}$",
+  "s": "a\néaab",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "A\\s_\\*é+\\|b  \\|\\*",
+  "s": "",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^(_[a-b]*?\\(?:_*\\s_\\.\\)??",
+  "s": "\n(_Aabbb",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   3
+  ]
+ },
+ {
+  "re": "\\Sw\\{1\\}",
+  "s": "aa(-_)",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": "\\b.\\(\\(?:(*\\B\\B\\)\\{2\\}[^]\n]\\)a*$",
+  "s": "A)_(_a",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.\\b(*?.\\)",
+  "s": "A",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\([[:word:]]*\\)\\>\\)\\(\\.\\_<\\|[a-b]a\\{2\\}\\2??\\)\\(?:[a-]A+?\\)\\(?:A\\`.\\)",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".A\\{1,\\}a+?\\|\\(?:.\\.A\\)??$",
+  "s": "é",
+  "fold": false,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "a*bA\\S-\\|\\(a\\)?",
+  "s": "éb",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\_>\\([a-b]\\s(a?[^]\n]\\)*?\\(éab[[:word:]]\\)\\**\\|[[:upper:]]??a\\|.a.\\(A+?a\\s_*?\\)",
+  "s": " b_\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^a\\(aa\\)*?b\\1",
+  "s": "-é\n_a-a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^aa+?\\|_+?$",
+  "s": "a-a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*\\(\\((??\\'A\\)\\{1,\\}\\)\\S-",
+  "s": "aa\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é.\\{0\\}\\(a\\(a\\(?:a\\W*\\s-\\sw+?\\)\\)[ab]\\)*a\\{1,\\}",
+  "s": "_bb-)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\S-*?_",
+  "s": "\na-é_",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "^\\(\\<\\*\\_<\\)A",
+  "s": "\n_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " \\(é??\\<(*\\)\\w[ab]",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\_<",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".*",
+  "s": "",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^[a-b]\\((\\(\\W\\)*\\1A\\)",
+  "s": "b_-",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "^\\(A\\{,1\\}\\(\\.\\.\\.\\(.\\)??\\)é\\)\\{2\\}(+?",
+  "s": "aa)\néé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'é*\\(aé\\) ",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_\\{0,\\}a\\|a\\(_?\\'aé\\)",
+  "s": "(_A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\{,2\\}\\(.\\{0,\\}[^]\n]+\\| *\\S-+.??(+?\\)+_a\\|_a?é*a\\{,1\\}",
+  "s": "_aAa_é",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "b.\\{2\\}\\|éé*a\\*$",
+  "s": "a",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^.",
+  "s": "a_-a",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "(\\((\\{1\\}\\W\\{1\\}\\(.\\)\\b\\)",
+  "s": " ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:alpha:]_]\\{2,\\}é",
+  "s": "éa\na",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b\\`\\(?:a_\\)?a",
+  "s": "A) ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`",
+  "s": "b_-)Aé-A",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^A\\(.\\{0,2\\}b\\(\\([[:space:]]\\.\\)a\\<\\)\\*\\)*\\sw+a",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\.\\(é*\\(.b\\{,1\\}\\)\\1*\\)\\(\\w*A\\)\\)A*_\\3",
+  "s": "",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\.*\\>",
+  "s": "(__",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "éé*$",
+  "s": "-\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_",
+  "s": " aA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?:_+?.\\(?:.((\\)[[:word:]]\\{,3\\}\\)+\\(\\.*?\\)a*é\\|\\_<\\)b\\(?:\\(?:a*\\)\\|(\\)*",
+  "s": "é_(_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\W\\{2,\\}\\([z-a]A\\(?:\\Ba\\{1\\}é\\.\\)\\{0,\\}\\s-*\\)+?b\\)\\(\\.(+?\\|[a-]*aa[z-a]\\)+?\\( *é\\s(\\{0,\\}.\\)?\\|\\(\\1?\\)+?\\(a\\)+.*\\(a.\\)",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[ab]+\\>\\(\\B\\)é",
+  "s": " bAA \n(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(\\(\\_<\\)\\(\\'\\)+?\\(\\1\\.\\)*\\)?[[:word:]]\\|\\S-+\\)(?? a\\{0\\}$",
+  "s": "baabbé",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\(?:_a\\([^]\n]A\\{0,\\}A\\(_.a??\\_>\\)\\)\\2\\)",
+  "s": "-))aéé-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\'A\\{,2\\}[^a]\\([[:punct:]]\\)\\|(+?a??\\)b\\s(.??",
+  "s": "aAéAa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(.*\\)a\\w\\(.*?\\'\\)\\)\\s_$",
+  "s": "a A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*?",
+  "s": "-bé)\n",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "A\\(.[[:space:]]\\{0,\\}\\)bA",
+  "s": "éabaab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^aa\\s.??\\|aa*a",
+  "s": "\nb\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b",
+  "s": "\né\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\W+.+ $",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\.",
+  "s": "-a_aA)b ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`[[:space:]]+.",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\S-",
+  "s": "\n_a",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "[[:word:]]+\\(?:\\(a\\s-A+\\)\\_> \\)\\|\\*",
+  "s": "a_b ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(b\\s_[[:alpha:]_]\\)\\{,3\\}\\1*\\|b*?\\(?:a\\)??a\\b",
+  "s": "é(A\né",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(?:bA\\((\\{,1\\}\\)\\)[[:alpha:]_]\\{2,\\}",
+  "s": "A -)-ba",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " a",
+  "s": "()a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(A\\s-?? \\)\\{0,1\\}\\1?\\)*?a\\(?:[a-]\\Sw\\)",
+  "s": "A)_",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\**[[:punct:]]\\(?:(+\\)\\{,1\\}[]a]$",
+  "s": "aa b",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b\\s.",
+  "s": "b_ -)éb)",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": " \\{2\\}éba",
+  "s": "éé -béA_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b[[:alpha:]_]\\(\\(a*\\)\\)\\{1,\\}.",
+  "s": "éba",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\B",
+  "s": "b ",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\s_\\_<[[:upper:]]* +",
+  "s": ") ab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:word:]]_$",
+  "s": "b- ab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\([[:word:]].a\\)\\*\\)\\{1,\\}\\|\\(?:\\2[[:space:]].\\)\\_<\\*\\)\\(\\.*?\\(?:\\b\\b\\)[[:upper:]]\\*+\\)\\|\\(?:\\s(\\)",
+  "s": "\n(",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "..*?\\S-*A",
+  "s": ")b)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(A?\\((?a\\)\\)??\\)\\{2,4\\}_é+?",
+  "s": "ba )b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\`\\(\\([[:alpha:]_]\\{,2\\}\\)[a-b]b\\{0,0\\}\\`\\)*\\).*?\\>",
+  "s": "-_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[^a]A+b",
+  "s": "é-a a",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^..a+\\.+",
+  "s": "_a)b ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`",
+  "s": ")éébbab",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "é*\\(\\(\\(?:a[a-b]??a\\)?[[:upper:]]*?\\)[[:punct:]]+?\\w+\\)*.",
+  "s": "éA",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": ".A+?",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s-?\\ba",
+  "s": "bA_b_ab(",
+  "fold": false,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": "\\(.\\(?:\\s(??\\)_\\)\\.\\(\\*\\)*[a-b]",
+  "s": "_b\nbA)a\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\Sw[^a][a-b]*",
+  "s": "b_bab_ a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\.é*?[z-a]\\*",
+  "s": "_b)b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_",
+  "s": "ba)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s.a\\((\\)\\{2,3\\}\\*",
+  "s": "_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(.\\s-?",
+  "s": "_\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A.",
+  "s": "b -",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\>\\_>",
+  "s": "a(bb",
+  "fold": false,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "^\\W\\(\\w\\s(\\|\\(a?\\<\\)*a*\\)* ",
+  "s": "\n\n(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.+?",
+  "s": "A",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^A\\(?:[[:alpha:]_]\\{2,\\}\\|.?é* \\)a",
+  "s": "   (bé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\B\\|\\<a+\\)+?(",
+  "s": "b\nba(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_<aéA",
+  "s": "a-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\S-\\)\\(?:\\s_\\*.*\\)\\(\\W+\\)\\)\\(a(??\\sw\\)+.$",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\sw\\)??\\s.\\(a\\B\\`\\)??$",
+  "s": "(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^[[:punct:]]\\(_\\{1\\}\\([a-b]\\*\\)+?\\)+\\(\\1*?\\s_+é+\\)[[:alpha:]_]",
+  "s": "ébA(-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é\\_>(??",
+  "s": "a-A\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a",
+  "s": "éa-b(a",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "^[^a].\\{2,3\\}.\\{0,\\}\\(?:é+?\\)*",
+  "s": "a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s.",
+  "s": "éab  ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^.*?a\\W?",
+  "s": "  ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s_.+? +",
+  "s": "-_)a )b\n",
+  "fold": false,
+  "emacs": [
+   0,
+   5
+  ]
+ },
+ {
+  "re": "[[:upper:]]\\**\\|[^a]?\\(\\*.\\{0\\}\\)\\{,2\\}",
+  "s": "aaa(aA\n)",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(a*\\)+?\\(?:\\B\\>_\\(?:\\.\\.\\)\\)?",
+  "s": "bbb",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   3,
+   3,
+   3
+  ]
+ },
+ {
+  "re": "\\(\\(.?\\(.a(??\\)+\\)\\|\\_<\\)[[:alpha:]_]?a",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\w?\\(?:b\\b\\)",
+  "s": "bb_-a ",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "^b+?$",
+  "s": "Aa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^[z-a]*?\\. ",
+  "s": "\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " ",
+  "s": "aa__",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\s_\\{0\\}",
+  "s": "(\né",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é?\\(\\s.\\<\\(?:b*a??\\(?:.*\\)*\\b\\)_\\{1,\\}\\)(",
+  "s": "_a\n-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:[[:space:]]\\{0\\}a\\)*?\\([[:space:]]\\)\\{,2\\}é*",
+  "s": ")é",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   2,
+   2
+  ]
+ },
+ {
+  "re": "\\(a\\(é+?\\(?:ab?a\\)a*?\\>\\)\\)+\\((*\\( *_??\\)\\2\\)?",
+  "s": " )(a\n-b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "aa+?",
+  "s": " -_b",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[^a]*?Aa\\(\\*b\\)$",
+  "s": ")baé\nA",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a",
+  "s": "A)é)a-a",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   6,
+   7
+  ]
+ },
+ {
+  "re": "\\*\\.",
+  "s": "éAa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\.*?.\\| \\)A??",
+  "s": ")",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "aa\\(\\_<\\>\\([z-a]*\\(?:_\\'a\\'\\)??\\*a*?\\)\\)a*",
+  "s": "Aabaab_a",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\_<\\)*éa??\\_<\\|a\\1+\\|\\([[:space:]]\\)\\{0,\\}\\swé",
+  "s": "bAb\naa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(?:\\([a-b].*?\\)a ?\\)\\sw\\|\\1\\*+?\\)*\\w$",
+  "s": "aAb)ab",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": "b+. \\{,1\\}",
+  "s": "a- é  -a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\(\\B\\S-\\`\\)[[:space:]]_\\.\\|a\\(\\s-\\)*?\\)\\.+?",
+  "s": "a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é(*?$",
+  "s": "aa \né((",
+  "fold": false,
+  "emacs": [
+   4,
+   7
+  ]
+ },
+ {
+  "re": "^\\*a\\{0\\}\\(?:b?\\(\\B ??[[:alpha:]_]*?\\)\\W\\|\\**\\)*$",
+  "s": "a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\{0,0\\}\\s-_*\\(?:_\\(?:\\(a*\\w*\\`\\)_\\.??a\\)??_+\\(\\_<\\)+\\)+",
+  "s": "a\n)bb)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^é*b\\(a\\(b\\)a+\\)??",
+  "s": "a ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[^]\n]",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(b\\(?:\\.\\{0,2\\}é+\\).[^]\n]\\{1,3\\}\\)\\<\\.a\\|\\*$",
+  "s": "\nA",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s_\\>",
+  "s": "b\n)Ab\n-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\S-+ a\\)",
+  "s": "aA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(b\\{2,\\}(\\(?:\\*+?a\\.\\)\\([^a]\\)\\)\\{,3\\}é",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[z-a]",
+  "s": "_\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(A\\s(\\(?:_\\'a\\)??\\)b\\s.*?b\\)\\*a",
+  "s": "\néA_aa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a$",
+  "s": "éb(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:word:]]\\{1,3\\}",
+  "s": "_-_AA-",
+  "fold": false,
+  "emacs": [
+   3,
+   5
+  ]
+ },
+ {
+  "re": "^\\(\\(a\\)\\{,2\\} *?a??\\*\\)*?\\(b\\1??\\.*?\\|é?a\\(aa+?[^]\n]*\\)\\)A",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\>.",
+  "s": "(_a)A(bA",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": "\\*\\{,2\\}\\W\\{1\\}Aa",
+  "s": "bb",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s-\\*.",
+  "s": "-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\(é\\w\\(a*\\)+[[:word:]]*\\)\\|\\(é\\{0,\\}_*?\\)\\)_?",
+  "s": "aéb-_",
+  "fold": false,
+  "emacs": [
+   0,
+   0,
+   0,
+   0,
+   null,
+   null,
+   null,
+   null,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^(*b?$",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "a\\{0\\}_\\(.+?\\s..\\)é",
+  "s": "-b_a)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^a*_??\\(\\(?:a*[[:punct:]]\\{2\\}a\\)?\\b\\)\\(\\1[[:punct:]][[:upper:]]??\\)",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".*?\\_<$",
+  "s": "ba b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*A\\Wa\\{0,\\}\\|\\(ba\\(baa*a*?\\)*?\\_<\\)\\w*\\.*",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s(\\.+[ab].*$",
+  "s": "a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\{,2\\}\\swé",
+  "s": "ab-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(a\\S- _\\)\\1\\**?\\)(\\1_+?",
+  "s": "é-a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\W\\{,3\\}a(+\\s_",
+  "s": "Aa bb-A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\.a?\\)(\\{2,4\\}[a-]a\\)\\(?:_b\\`.\\{0,\\}\\)\\(a(.\\.\\|(\\)",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_<\\(\\(.\\.\\s.?? \\)*é+\\w+?\\)",
+  "s": "ba\na)_a(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:A\\([[:word:]]\\( +?a.?[a-b]+?\\)\\)\\)\\{,3\\}Aé*",
+  "s": "\n-b-_b(-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^aa\\sw(?$",
+  "s": "_aa_) )",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`([a-]\\(é_a?\\s(+?\\)",
+  "s": " _a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\(_+?é \\|.\\.\\)*\\.",
+  "s": "_bébé",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([a-]\\{2\\}\\)*\\B\\`\\(?:\\.b+?\\)\\|a*",
+  "s": "  -  )",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "a$",
+  "s": "_b ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s.?",
+  "s": "_\né_Aaé ",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(a\\)",
+  "s": " é_é b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " ",
+  "s": "A",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^[a-]\\(\\(aa\\_<\\)*\\(?:\\(\\b\\sw\\{2\\}\\)+?b\\)\\(.[a-b]\\)\\2\\)\\{0,\\} *?[[:punct:]]\\{0,\\}",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[ab]*?\\(.\\{,2\\} \\(.A*\\S-\\)+?\\)\\|\\((\\1+\\B\\*\\)",
+  "s": "\n_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(",
+  "s": "a_- éba ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:word:]]",
+  "s": "b-a\n_",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "^\\<[[:alpha:]_]*\\S-*\\(?: ?[a-b]?\\(\\w?a*\\)\\<\\)\\{,3\\}",
+  "s": "A",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "^\\swaé.",
+  "s": "-bé",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b\\wa",
+  "s": "a",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b\\{2,\\}\\s-+?",
+  "s": "b \nab\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(?:_*?\\(?:\\( \\s_\\Sw\\)+?aa\\)\\s-\\*\\)[]a]\\(?:[]a]??a \\)\\>",
+  "s": "é\n -",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(a*\\)\\1\\(\\(?:.+a\\)[^]\n].\\)\\)*?\\|[[:alpha:]_]\\|a*a\\S-\\{,1\\}$",
+  "s": " é ",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^\\(__??\\**\\)*?.\\.",
+  "s": "Aa-\n)-b\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(a*[a-b]*\\)\\1\\s.\\)\\2\\|\\1+?b\\1",
+  "s": "",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "b*\\B",
+  "s": "\né)(é)a-",
+  "fold": false,
+  "emacs": [
+   3,
+   3
+  ]
+ },
+ {
+  "re": "^.\\|.\\(.\\`\\)??.?\\b",
+  "s": "-(- \n",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(\\.*\\(?:\\([[:word:]]+?a+(?.\\)a*\\1*[[:space:]]\\)\\)\\W*[[:space:]]",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\(\\(\\(?:\\_<ab\\{,3\\}a\\)*\\)\\{0,\\}(\\)*?",
+  "s": "béAé",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "[[:word:]]?A\\(\\(?:b+?\\.*\\>\\(a\\{1,3\\}\\)?\\)\\|\\..?\\)\\`",
+  "s": "b\n-)A) ",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\Sw\\{,2\\}\\(\\b\\( *a\\{,1\\}\\(\\`a+_??A\\)\\)\\)",
+  "s": "b-a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é.a*? ",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(b\\|\\`[^]\n]\\`\\)\\1\\w\\1",
+  "s": ")",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\.+?.?\\S-??\\Sw",
+  "s": "éa-aé\n_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é\\{1,2\\}.\\S-",
+  "s": "A-",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b.(*",
+  "s": "abA-)A\n",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   1,
+   3
+  ]
+ },
+ {
+  "re": "^ \\(\\(\\(?:a\\{0,2\\}(*\\)b*_+?\\)\\(.\\{,1\\}a\\([^]\n]_\\<\\)\\2\\)\\)$",
+  "s": "a)b\nab",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A*?\\.*\\(..\\)$",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".",
+  "s": "ba)aé\n--",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   7,
+   8
+  ]
+ },
+ {
+  "re": "a+é*\\(\\(a*?b\\)*\\_>é\\)[^a]\\|.?",
+  "s": "a_é_-bb",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(?:ba??\\(\\(a.\\)\\)a\\)\\(a*_*[a-b]\\)*\\s-\\(.\\(\\(?:([[:punct:]]\\_>\\)_.a+?\\)\\)",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\>\\S-\\(?:((\\(a\\)*[ab]\\)?.\\|éa\\)\\(?:[[:alpha:]_]*\\B\\)[^a]*?",
+  "s": "é_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^ [^a][[:punct:]]??é*",
+  "s": "é_b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\B\\*b\\([^a]??\\b[[:punct:]]*\\|a*?.?\\)$",
+  "s": "_ AbAa ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\._\\( \\(a\\Swa\\s.\\)a \\)\\s(+?\\)",
+  "s": "éabbb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\W+?é*?_?\\|\\s_\\([[:space:]]. \\.\\)?a+?\\)",
+  "s": "b)\nba-)b",
+  "fold": false,
+  "emacs": [
+   1,
+   2,
+   1,
+   2
+  ]
+ },
+ {
+  "re": "\\(\\s(\\`\\s_*?\\)\\(.\\(\\1\\(a\\s(\\)\\)[a-b] \\)b",
+  "s": "ba() )",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^aa_*",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": " +[a-]\\Wa+?",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.+? \\{0,0\\}\\sw\\>",
+  "s": "A ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a*_\\(?:[[:word:]]?\\)*\\|b_+?\\.+?\\(?:\\(?:A*\\)*?A\\)",
+  "s": "-a__A",
+  "fold": false,
+  "emacs": [
+   1,
+   3
+  ]
+ },
+ {
+  "re": ".?[[:space:]]\\*+",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\w\\{0\\}$",
+  "s": " ",
+  "fold": true,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "\\s-*\\(\\>\\(b\\{2\\}\\)\\_<\\s(\\)\\|.a[[:word:]]\\{0\\}\\.\\|.\\**?[^]\n]?A",
+  "s": "Aa\nAAaA",
+  "fold": false,
+  "emacs": [
+   3,
+   5
+  ]
+ },
+ {
+  "re": "\\(?:\\B\\)é[a-]?",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s_*\\s_*é\\(\\S-\\)+?",
+  "s": "_)a- A\nA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\{1\\}\\(b\\)$",
+  "s": "b\na ab",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   4,
+   6,
+   5,
+   6
+  ]
+ },
+ {
+  "re": ".\\{2,4\\} ?A+?\\|\\s(a",
+  "s": ")",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^éé(*?\\(\\(\\(\\s_*b+\\)_+?a+?[]a]\\)a.\\`\\|\\1??\\)",
+  "s": "ébéa ",
+  "fold": false,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "[^]\n]??a??\\([^a]*\\(.é\\`\\)\\>.+\\)",
+  "s": "A_bAb",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.\\(?:é\\)[[:upper:]]\\)*?\\(.*\\)??A??",
+  "s": "__",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\(?:_a\\)\\|\\w\\{2,\\}_\\)",
+  "s": "-b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_<.\\(a\\{0,1\\}(+?a+\\)",
+  "s": "-béaaa_",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\`\\)a\\<",
+  "s": "a_(-)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\s_*?\\.\\(\\wa\\([]a]??\\Ba\\)??b\\{2\\}\\)\\)*a??\\(?:\\sw\\s(\\(?:A.\\)+A??\\)??\\>\\|\\b\\>[^]\n]",
+  "s": "a )",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "\\(\\.+\\(\\(?:a\\)\\{,1\\}\\(?:é.\\)+\\`\\).\\|(\\)\\2\\|\\(?:\\1\\(a\\2\\2\\1\\)a[a-b]+?\\)+\\3",
+  "s": "()\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\([]a]+\\)*(?\\.\\{,3\\}\\)*$",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\(a\\)\\(\\1\\)\\)A\\(\\sw*?A\\| ??\\)\\w",
+  "s": "aabAab\na",
+  "fold": false,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\`\\(\\B\\|.\\)\\1",
+  "s": "(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.\\{1\\}(+?\\*\\)??\\s-?b+a??",
+  "s": ")a baé",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   3,
+   4
+  ]
+ },
+ {
+  "re": "a\\(..\\|\\(a\\).??\\)*A+?a",
+  "s": "(_aaAb\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[a-]a+\\([ab]\\)",
+  "s": ")- éb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?: +\\(\\(?:a\\)+?\\)*\\)",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".é\\|[z-a]a+?[[:space:]]*a*?",
+  "s": "éab)_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(\\(\\b\\)\\)\\<(?\\)\\2+$",
+  "s": ") (a_\n)a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a+é+?é+?a\\|[^]\n]\\(a\\)",
+  "s": "( a ",
+  "fold": true,
+  "emacs": [
+   1,
+   3,
+   2,
+   3
+  ]
+ },
+ {
+  "re": "[[:alpha:]_]??",
+  "s": "A_",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   2,
+   2
+  ]
+ },
+ {
+  "re": "\\(\\(.ba*\\*\\)[[:word:]]\\([ab]\\>b+\\)\\(ab\\)\\)",
+  "s": "( _A ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_<.",
+  "s": "bb)a)bb",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": "b??$",
+  "s": "b(",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   2,
+   2
+  ]
+ },
+ {
+  "re": "^.+?",
+  "s": "a_é-_",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "_[[:punct:]]",
+  "s": "\naé_ ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:punct:]]\\(a\\*\\{1,\\}\\(\\b\\)\\|.Ab.\\{2,\\}\\)\\|\\1",
+  "s": "a _Aa",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\( .(+\\(\\'b?\\B_\\)\\).\\([^a]*\\s(\\((\\)\\{,3\\}_\\)*$",
+  "s": "b-) - a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\([]a]\\)\\*\\Sw\\|\\1+?\\.\\|_??.\\s(\\Sw$",
+  "s": "_\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\{,3\\}a\\(\\S-.*\\)\\{0,1\\}\\1??",
+  "s": ")é_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\*[[:punct:]]\\{2\\}$",
+  "s": "(\né\nAbb",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a\\)\\_>\\..??",
+  "s": "b-_\n a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^[^]\n]?\\(.\\)",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\([[:word:]]a\\sw??(??\\)\\{0,0\\}\\)\\1+",
+  "s": " \n(",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   2,
+   2,
+   2,
+   2
+  ]
+ },
+ {
+  "re": "\\S-+?a\\s_a",
+  "s": "-)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a+",
+  "s": "a)é-bAa_",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "a+?\\(\\..\\(\\*. *\\)\\{0\\}\\1\\).\\{,2\\}",
+  "s": "AAéb\n) ",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "ab?\\s(+\\|(*(__+",
+  "s": "aé(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\**[a-b]*\\|\\_<\\(?:[ab]\\(a[[:space:]]aa\\)\\)\\.",
+  "s": "aAb)_ aA",
+  "fold": true,
+  "emacs": [
+   0,
+   3
+  ]
+ },
+ {
+  "re": "\\(b\\(b*?\\(.??\\s.(+?a??\\)\\)??\\).a$",
+  "s": "( ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^é*\\|\\(\\(?:\\W\\)\\(\\*\\sw?\\)+\\B\\1\\)+?",
+  "s": "(b)",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "b??",
+  "s": "a) ab",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\([]a]\\`_[[:word:]]\\)\\1",
+  "s": " aa(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.+?[a-]\\)\\b\\1\\|\\(?:\\(a\\{0\\}a*\\B\\)?\\2*\\)*b\\{2,\\}[ab]\\{,2\\}b$",
+  "s": "\né",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:punct:]]",
+  "s": "(b)_b",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   4
+  ]
+ },
+ {
+  "re": "[^a]",
+  "s": "bé_a_AAa",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "b\\([^a]a*?a[[:space:]]\\)\\{0\\}",
+  "s": "\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\Swé??\\*",
+  "s": " ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a?a\\`",
+  "s": "é)",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a+\\(a.\\(éa\\)\\(?:\\B\\)\\)*\\)?a??b\\|\\.+",
+  "s": "b)_)_b)",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": "^\\(\\(?:a(\\s.\\)\\.\\Ba\\)",
+  "s": "\nA(-(\nba",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".??",
+  "s": "aaé-é)",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\(\\(a\\{2\\}\\)*?a\\{0,2\\}\\1\\(?:a?\\)\\)\\_>[ab]\\{1\\}\\)??.*?",
+  "s": " -a",
+  "fold": false,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\.",
+  "s": "abaa\n\na",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_??",
+  "s": "( ",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\.*\\)\\`\\|\\<\\s-*?a??\\|\\S-*",
+  "s": "Aé)",
+  "fold": false,
+  "emacs": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\s_a*(*_\\)\\([[:word:]]??\\(\\1.\\(a\\_<.\\)\\)\\{,2\\}A+\\)[[:space:]]??\\.*\\|[[:space:]]\\(\\.?\\(a\\{1,2\\}\\s-\\3\\{,3\\}\\)+b\\.\\)??(",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[^]\n]\\(a+?[[:word:]]\\)?.$",
+  "s": "___b",
+  "fold": false,
+  "emacs": [
+   2,
+   4
+  ]
+ },
+ {
+  "re": "\\>$",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`é*?\\sw+",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\S-\\(?:[[:space:]]\\{1\\}\\(A*a*?\\(a\\)\\)a\\)*?",
+  "s": "A\n",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(\\_>\\sw+?\\)\\(\\s(\\)",
+  "s": ")_)éb_aA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A\\{1,3\\}a",
+  "s": ")",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a+?\\(.\\)\\{1,\\}",
+  "s": "-)éb_é",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\(a*a\\)_.??\\1\\)\\<a\\|[a-]\\{2,\\}[]a]?(?\\)",
+  "s": "Aé",
+  "fold": false,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\(\\(\\.?\\(A(*\\)A\\((\\*b\\)\\)??b\\{0,0\\}\\|b\\*é*?\\)",
+  "s": ")\n-) ",
+  "fold": false,
+  "emacs": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\sw.*[a-b]A*?",
+  "s": "aa_bba_",
+  "fold": false,
+  "emacs": [
+   0,
+   6
+  ]
+ },
+ {
+  "re": "[[:punct:]]?",
+  "s": "-Ab_",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   4,
+   4
+  ]
+ },
+ {
+  "re": "^[[:word:]]\\`\\((?\\'\\)A*",
+  "s": "\na_\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\*.*?\\(é+\\|é\\_<[z-a]A\\)",
+  "s": " b",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b*\\(a\\<\\'a\\|é\\{2,2\\}\\.(*\\.\\)\\{2,\\}",
+  "s": " b((ab-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".",
+  "s": "(\na)",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "^(\\{,3\\}",
+  "s": ")\n",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(?:[^a].[[:space:]]A\\)\\{,2\\}\\([[:word:]]\\{2\\}\\s(\\)\\(\\(\\<\\(\\'A\\.??\\)?\\)*(??\\(?:\\(\\1A\\{,2\\}é\\)\\*b?\\)\\s_\\|\\1\\)\\|\\(A\\)+\\`\\<",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^[a-]\\.",
+  "s": " bb\na",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([ab]a\\`\\)+\\s- ??",
+  "s": "_AAA(b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A*a\\|\\*\\(\\B\\(([a-b]\\S-\\S-\\)\\1\\)\\sw",
+  "s": " bb a_",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\'\\(?:\\_>\\`\\)??a",
+  "s": "()a  A",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\{2,3\\}(\\sw",
+  "s": "_(ba-\n ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\*+?.\\(?:\\(?:_\\{,3\\}a\\)*\\(?:A\\(aba\\{2,4\\}\\)\\)\\([]a]a*?\\s_+?\\)+?\\| \\(\\_<a +?\\b\\)\\)",
+  "s": "ba_bé b-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_>\\(?:aaa*\\)*aA\\{2,4\\}\\|\\(\\(\\**\\*+?[^]\n]*\\)+\\_>\\s.\\)(+a_+?\\|\\2*a*",
+  "s": "b) é-(b_",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\**\\(\\(\\_> +?a\\)\\) *\\)a",
+  "s": "(b",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é[[:alpha:]_]",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(é\\)\\|\\..\\|(.??\\<",
+  "s": "b\nA( ()a",
+  "fold": false,
+  "emacs": [
+   5,
+   7
+  ]
+ },
+ {
+  "re": "\\(b\\)+\\s.\\>\\(a[[:space:]]\\)",
+  "s": "a__(",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\( \\{1,2\\}\\sw\\(_\\(aa\\{2\\}\\*.\\{1,\\}\\)*\\)\\|\\(?:\\.\\Ba\\) \\)\\{0,0\\}\\**(.*$",
+  "s": "b)Aé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*\\(\\s(\\.\\)\\([[:punct:]].\\.+?a\\|\\*\\)$",
+  "s": "(bbb)A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\(?:\\S-\\|(+?[[:word:]][[:alpha:]_]\\).+?.",
+  "s": "aaé ()-",
+  "fold": false,
+  "emacs": [
+   0,
+   4
+  ]
+ },
+ {
+  "re": "\\([[:space:]]\\)+?b",
+  "s": "--a-b)_",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A*\\.??\\S-",
+  "s": "a",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "é\\s_",
+  "s": "baa aA(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\( \\)a\\( ??\\|\\(a\\_<a*?a\\{2\\}\\)\\s_\\{,1\\}\\)a",
+  "s": "b)a(éé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\b",
+  "s": "a) é-_",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   6,
+   6
+  ]
+ },
+ {
+  "re": "b?\\*ab\\|\\(\\_>\\)+\\s_",
+  "s": " b-a\n Ab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*a\\(?:\\(\\Sw\\) *\\1\\*?\\)",
+  "s": "Ab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_[]a]",
+  "s": "\n( \nbaA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s.A\\'\\s_*?",
+  "s": "a(A_A",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_\\{1,2\\}a\\{,1\\}\\(\\(\\([[:space:]][[:word:]]*[[:upper:]]*[^]\n]\\)_\\)\\w[[:upper:]]\\)*?$",
+  "s": "Aé(aa_b(",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(Aa\\{1,\\}.\\`\\)*.?\\(A\\1*b??a*\\)",
+  "s": "\n ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\B\\*\\|(.[[:punct:]]+?[a-b]\\{2,2\\}$",
+  "s": "_é_b ",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(é.A\\{,3\\}\\)a[z-a]*a\\).[^a]\\|A\\{1,\\}\\|\\(.[ab][a-b]?\\)?\\*.",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[z-a]+?\\'\\|[[:space:]]",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^aa??A",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_\\(?:\\s(\\(\\s.\\{1,3\\}\\)\\)\\{,3\\}\\_<[[:punct:]]",
+  "s": " _bAb-\na",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b",
+  "s": "-",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "aé*",
+  "s": "b(-(b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:alpha:]_]",
+  "s": "Aa)_(ab",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(a\\)*.",
+  "s": "-()",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "^A\\s_\\Sw$",
+  "s": "é-(_bbé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.\\)\\|(?",
+  "s": "(-Aab",
+  "fold": false,
+  "emacs": [
+   0,
+   1,
+   0,
+   1
+  ]
+ },
+ {
+  "re": "é",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'\\>\\W+?\\([z-a]\\)",
+  "s": "é-a_éA -",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é\\{1\\}A",
+  "s": "a_AaéA\n",
+  "fold": false,
+  "emacs": [
+   4,
+   6
+  ]
+ },
+ {
+  "re": "aa+?a",
+  "s": "A_bé Aa)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[^]\n].é*\\(\\s_\\)",
+  "s": "a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_??.* ",
+  "s": " )\nb",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "[z-a][[:alpha:]_]?",
+  "s": "((-\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\B\\(A_?? \\{,1\\}\\(\\(\\bA_?a\\)?\\)\\)*_??é\\{1\\}",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": " \\{2,3\\}\\Bé??\\(?:.a\\(?:\\W+a+?.\\)\\)\\{2,\\}",
+  "s": "b(aa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\S-b+.\\{1\\}_\\{,3\\}\\|\\(a*b*[^a]\\{0,\\}\\s.\\)\\.\\{,3\\}",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a.a[[:punct:]]\\)",
+  "s": "aéb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "aaA\\(?:\\(\\( ??a*?\\)\\)+?\\)\\|\\Sw\\(Ab\\((a\\>a\\)*\\)b\\{1\\}\\|\\1a",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\W",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_$",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^ bé\\{2,3\\}\\(\\(a*é \\)*\\(\\(a?\\)??\\)* \\(?:b.\\{0,\\}\\(\\_<a_?[a-]*?\\)?\\'\\)\\)",
+  "s": "(\n)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\*\\| \\(?:\\Ba\\)a\\b\\)\\(\\(\\**\\1\\)A\\)",
+  "s": "a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(a??\\_<a[z-a]?\\)\\(?:\\(a\\{1,2\\}a*_\\.\\)\\sw+\\>\\s-\\)\\{1,\\}\\(\\(?:A+?\\*\\1\\)+?\\Sw[[:space:]][]a]\\)??\\_>\\)\\{,2\\}",
+  "s": "b",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": ".\\(a\\)*",
+  "s": "Aéé",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "b[z-a]??(?$",
+  "s": "()a-)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a(\\<",
+  "s": "ba)bA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[^a]$",
+  "s": "_\nba\néb",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "^\\.\\(.\\(b\\)\\)?",
+  "s": "- )\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a*\\(?:\\(\\( \\*\\W\\{2,2\\}\\`\\)*\\Swab\\{2,4\\}\\)(\\`\\)$",
+  "s": "-éb -a ",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\Sw+\\(\\s_*(?a??\\)\\.\\{,2\\}",
+  "s": " _)",
+  "fold": false,
+  "emacs": [
+   0,
+   3,
+   3,
+   3
+  ]
+ },
+ {
+  "re": "[z-a].a\\_<$",
+  "s": ") ab_A_a",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a.\\(?:\\.?\\)",
+  "s": "-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\s(\\)\\{2,3\\}b[[:upper:]]*?é\\|\\.*\\(?:\\(?:.\\1b\\)+?é\\1\\)\\{,3\\}\\s.?",
+  "s": "\n\n",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": ".",
+  "s": "A",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(?:\\W??\\)??bA?\\>",
+  "s": " -b)_é",
+  "fold": true,
+  "emacs": [
+   1,
+   3
+  ]
+ },
+ {
+  "re": "a\\*(",
+  "s": "abaaa",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a*a[a-]\\) *\\1\\w+",
+  "s": "-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(\\`\\(A\\)\\(\\s-*\\1\\1\\)$",
+  "s": "( --_-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\**\\.*?\\)??(é",
+  "s": "_(-__",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([a-]?\\w\\|..*?\\)??[[:upper:]]",
+  "s": "é",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\([[:alpha:]_](\\)(a\\{,1\\}",
+  "s": "\n)a(a",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_[[:space:]]_\\{2\\}\\.\\{1,\\}",
+  "s": "ab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s_+?\\|\\(aa\\Sw[z-a]\\)$",
+  "s": "(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é+\\(a_??(??\\)\\{1\\}aa*?",
+  "s": "()ab a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_*\\._*\\<",
+  "s": "_a-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_\\` $",
+  "s": "aAaAbba",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_+A??\\W*\\(?:\\Sw\\.a\\)+?",
+  "s": " ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([]a]*.a?\\)\\{0\\}\\( \\)\\'.+",
+  "s": "é",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([[:space:]]\\w.\\)\\1+?",
+  "s": "\né(Ab\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[z-a]??A+?\\(\\(_[]a]a\\)\\1\\*\\|(._\\((.??a*\\)\\)\\3+",
+  "s": "_-a_(aaa",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "^\\(?:[[:word:]]+\\|[]a][^]\n]??.\\S-*\\).??a*",
+  "s": "a( b",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": ".??\\([^]\n]*\\(A  \\)??\\Sw\\)\\2\\(\\([^a]a\\{2,\\}\\(\\2\\1\\)a\\)\\)+$",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_\\*\\(?:a\\s_A??\\(é\\(?:[z-a]a?\\*\\)a*\\)\\)",
+  "s": "ba\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "($",
+  "s": "A(",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "A\\{0,2\\}b*",
+  "s": "_a-((_a",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "[[:upper:]]\\(\\< +\\)\\(?:aa??\\B\\)\\(\\1b \\(\\(a*.\\1a\\).\\)\\)??$",
+  "s": ")(-",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A\\.\\(_\\s_+?[]a]\\(\\.\\(a\\{1,3\\}aa\\)\\{,3\\}\\S-\\)*?\\)?.+",
+  "s": "_béA-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\b$",
+  "s": "\n",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\*\\{,2\\}\\(._.\\| \\).+?\\|a.aA*?\\|\\(aa\\)\\.\\{0\\}",
+  "s": "a)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a\\{,3\\}a+?(*\\)\\(\\<\\s.+?\\)+a",
+  "s": "_aa)(b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\W[^a].\\)\\{1,3\\}\\1\\{0,2\\}\\)??_??\\( *\\2a\\)\\{2,\\}a",
+  "s": "\nbéé(éa",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "[[:space:]] ?",
+  "s": "Ab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(é\\.\\.\\([[:upper:]][z-a]\\{2,\\}\\)\\{2,2\\}\\)b\\W",
+  "s": "ab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\([a-]\\{2,3\\}\\>\\)\\)*b",
+  "s": "(A a)_a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A\\(a.\\|\\(.+\\)\\B\\)*\\(\\_>_\\{1\\}\\)\\|[[:space:]]?",
+  "s": "--b)",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(?:\\(?:\\.\\)\\*?.\\(?:\\(?:A\\)\\{1,1\\}b*\\)\\)\\(?:_\\)",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\sw\\{2,4\\}a+?\\(?:a\\`\\sw+?[[:word:]]\\)\\|\\sw*.*$",
+  "s": "a(-_a",
+  "fold": false,
+  "emacs": [
+   0,
+   5
+  ]
+ },
+ {
+  "re": "[[:space:]]\\(éa[z-a]*\\)*?[^a]\\s(\\|a(+\\(?:.\\)\\|.[z-a]a*\\`",
+  "s": "_(- \nab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A[[:space:]]",
+  "s": "A(__é(a(",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": " aa",
+  "s": "_A-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[z-a] \\{0,2\\}[a-b]a",
+  "s": "_(",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*\\* ",
+  "s": "a\n\na\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:aé\\s-\\(A\\*\\{1\\}\\B\\)\\{,2\\}\\)*?\\(\\(_.\\{,3\\}.*?[[:word:]]\\)\\B\\'\\( [^a]+?[[:upper:]][[:upper:]]??\\)*\\)??\\1*\\2",
+  "s": " -_))",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A\\{0,\\} *",
+  "s": "bbba",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "éb\\B",
+  "s": "(a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_a+\\|\\B$",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": " \\(?: \\)\\B\\.",
+  "s": "a é ab",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(?:é*.a.\\|[]a]?\\(a*?\\)é+\\)",
+  "s": "_A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(a\\)?\\( \\{,3\\}_[^]\n]?\\)b\\{1\\}\\>\\)*",
+  "s": "b(()b\na",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "[a-b]\\w\\.\\s(",
+  "s": "bé ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A+\\|é.\\{0,1\\}b\\*",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a[a-]\\>",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a ",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "éb\\(\\.\\{2\\}A(?.*\\)_",
+  "s": "AAba )a_",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\<\\(?:\\(?:bé\\)*[[:alpha:]_]\\)+?",
+  "s": "é-))ab)",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": " .\\(\\`\\.\\{0,0\\}\\(\\(\\_>a*?[a-b]??[[:upper:]]+?\\)\\(\\1.[[:alpha:]_]\\)\\{2,\\}\\).\\{0,\\}\\)",
+  "s": "b",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "aa\\**?A\\{2,4\\}",
+  "s": ")()b_b-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\.[[:punct:]]??\\)A[^a].",
+  "s": " éé()A\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(b*?é\\.\\).\\B\\)\\|a\\(_*?\\s-\\)\\{1,\\}",
+  "s": "_-b\n-a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(é\\)a.*",
+  "s": "b_A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\B\\_<\\|é\\(\\(?:a*\\.\\{0,\\}_??\\>\\)\\)",
+  "s": "b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*[[:space:]][[:space:]]\\{2,2\\}",
+  "s": "aa-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s-[[:upper:]]\\_<[[:word:]]+",
+  "s": "é",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`\\|A+",
+  "s": "b-A",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^a?\\b \\|é?\\. \\|.",
+  "s": "aa)",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\_>",
+  "s": "(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?:[]a]a*é\\(?:_\\W?a*?\\)\\{1,\\}\\)a\\) a",
+  "s": "b_A_",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\. \\(a\\<[[:alpha:]_]+\\'\\)*b\\{2,4\\}\\)",
+  "s": "_) ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(a\\(\\s_\\{,3\\}\\)\\*\\)é.\\{,2\\}$",
+  "s": "\na",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?:b[ab]\\<\\)??_*a\\)+?\\BA",
+  "s": ")éAaa_ \n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(A.\\{1,1\\}a\\{,1\\}\\<\\)?é*\\*",
+  "s": "_b_",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "(\\B[[:punct:]]\\|\\(.a?\\)_\\1\\{1\\}\\|.??aé(",
+  "s": ")é\n-b_b",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   4,
+   7,
+   4,
+   5
+  ]
+ },
+ {
+  "re": "a\\.\\{0\\} \\{,3\\}",
+  "s": "Aé\nbé _\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\{,2\\}",
+  "s": "_",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\s-+\\>[^]\n]\\{0,\\}$",
+  "s": "\n(aéaA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(?:\\(\\.?[^a]?\\)+?(b\\>\\)+?",
+  "s": "aA",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\sw$",
+  "s": "(a_ba",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\(.\\)A.\\{2,3\\}",
+  "s": ")a-\n)A(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A*",
+  "s": " )éA",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "(\\{0,0\\}\\B\\.*",
+  "s": "_é",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\W?(*?[[:upper:]]",
+  "s": "((a",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   1,
+   3
+  ]
+ },
+ {
+  "re": "A\\(.?\\<\\)*?[[:upper:]]\\.$",
+  "s": "abé)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "(..[a-b]\\|\\w+a\\{2,\\}",
+  "s": "_Ab-)b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?:\\(\\*+a?\\)?\\)\\{0,1\\}\\)[^a]?[ab]b",
+  "s": "bbb",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   3,
+   1,
+   1
+  ]
+ },
+ {
+  "re": " ",
+  "s": " )-_-Abb",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "aé??\\B\\'\\|\\'",
+  "s": "b(_(ab\n",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   7,
+   7
+  ]
+ },
+ {
+  "re": "^.*\\|\\(.\\(?:a\\)* \\)??",
+  "s": "b ",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "[ab]",
+  "s": ")",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^[ab]",
+  "s": ")\n)__abb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\s.[a-]b\\{,3\\}",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?:(*?[a-b]\\)[[:alpha:]_]*\\Sw\\)",
+  "s": "éé_(ba\n",
+  "fold": false,
+  "emacs": [
+   3,
+   7,
+   3,
+   7
+  ]
+ },
+ {
+  "re": "\\(\\B\\) ?",
+  "s": "-",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\Sw*",
+  "s": "A_)",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\ba\\{1\\}\\(?:\\<[[:alpha:]_]?[ab]\\([[:alpha:]_]é.[[:alpha:]_]\\)\\)*?a\\|é\\> ",
+  "s": "bA)",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b* \\{0\\}\\|.+ ",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(a\\)??\\S-\\{1,1\\}",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a+\\Ba\\(a\\)",
+  "s": "é) _(\n-_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\(é\\|[z-a]?\\*\\(a\\{0\\}.a??\\)\\)*\\|\\s(+\\`[a-b]",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\b\\'.A??",
+  "s": "()A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_< \\|\\(a_\\)",
+  "s": "Ab-b\nb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\<\\)*a(+\\|[[:word:]][[:word:]]\\s-\\_>",
+  "s": "bab-\n\n)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\((\\)A??\\|a\\(\\b\\)\\(aa\\{1,2\\}\\1a*?\\).*\\)$",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "a*?",
+  "s": ")- A éb",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   7,
+   7
+  ]
+ },
+ {
+  "re": "\\(?:a\\*A\\|\\.\\)a?a\\(?:(\\(\\(a??\\)+.*?\\)\\(a*.\\(\\1?\\).\\{0\\}\\)\\)",
+  "s": "  (bbA\n",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a[[:punct:]](",
+  "s": "é\n-)- ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.+\\(\\_<.\\B\\)\\1",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[]a]\\(_+?aA+?.\\)\\s([[:upper:]]\\{2,\\}\\|é*?$",
+  "s": ")\naé ",
+  "fold": false,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "(\\**?. ",
+  "s": " ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(?:\\s_\\(\\_>.??a.+\\)*\\`\\(a??\\s(*?a \\)\\)\\{1,1\\}\\*\\sw\\|\\Sw*\\2\\)",
+  "s": "(\n(\né",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\Wa\\(\\B\\(?:.+\\).é\\| ??\\)",
+  "s": "_a bb(Aé",
+  "fold": false,
+  "emacs": [
+   0,
+   2,
+   2,
+   2
+  ]
+ },
+ {
+  "re": "\\b\\<",
+  "s": "aAa_b",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "ba\\s.",
+  "s": "A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\W",
+  "s": "a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(_a+?\\(a*?ab\\S-*\\)\\{2,2\\} *?\\)+\\(é*é[^a]*\\)*\\(\\(?:a\\)+\\)\\)\\s.*?",
+  "s": "é(  ba(",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(a\\_>[a-]a+\\)[z-a]\\.\\{0\\}\\)*?[[:alpha:]_][[:punct:]]",
+  "s": ")a-éb",
+  "fold": true,
+  "emacs": [
+   1,
+   3
+  ]
+ },
+ {
+  "re": "b\\{2,\\}\\(.\\(?:\\(?:_a\\)\\)\\)\\1\\|\\<  ",
+  "s": " (b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é\\|a\\(?:[z-a]\\)A",
+  "s": "a((\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\W.\\>[ab]*?",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\([[:upper:]]\\{,1\\}\\(é+? \\)*\\`\\)\\(?:\\2*?\\<\\)\\([[:punct:]]*[^a]\\)\\)\\{2\\}",
+  "s": ")b(b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é??\\(A?éA\\{2,\\}a\\)\\1",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'A+[[:upper:]]\\b$",
+  "s": "Aéaa()",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:[^]\n]\\)",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[z-a]\\{,2\\}",
+  "s": "b\n-a_\n_é",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "[]a](",
+  "s": "b\naa(a",
+  "fold": true,
+  "emacs": [
+   3,
+   5
+  ]
+ },
+ {
+  "re": "..\\(b\\)\\{2\\}\\1",
+  "s": "-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.\\{,2\\}\\(\\sw\\(?:\\*a\\)[a-]\\)\\(_\\Sw\\)\\{0\\}[[:space:]]\\)(\\_>A",
+  "s": " _)(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\(?:[ab]\\{1,3\\}a\\(\\(\\S-\\).+\\)b\\)\\{0,\\}\\((a*\\)*",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\<[a-b]\\(\\(?:a[a-]+\\).? _*\\)\\)\\{2,\\}aa",
+  "s": "_ab)Aab",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": " *$",
+  "s": " b bé_\n(",
+  "fold": false,
+  "emacs": [
+   6,
+   6
+  ]
+ },
+ {
+  "re": "\\(aa\\(?:\\(éa\\s-*a?\\)\\{,1\\}.\\{0,\\}\\(\\_>a.\\)*?\\)\\)\\|é+?.*\\|\\sw.+b\\2\\{0,2\\}",
+  "s": "bbéb\n(aé",
+  "fold": true,
+  "emacs": [
+   0,
+   4
+  ]
+ },
+ {
+  "re": "\\.[]a]*",
+  "s": "b)-_Aé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\w??a\\(a\\)\\1$",
+  "s": "_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(A\\{1,2\\} \\(?:aa\\)??\\*\\)\\(?:\\w\\([[:alpha:]_]+a\\{,1\\}\\)b*?\\)\\(\\s-*  +?\\)\\)*?\\(\\(\\1+[[:alpha:]_]\\)\\w*\\|\\w?\\1[^]\n]+b\\)*\\( \\{0,0\\}\\)",
+  "s": "A-A",
+  "fold": false,
+  "emacs": [
+   0,
+   0,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(.a*?[[:punct:]]\\(\\w+?\\)\\{1,1\\}\\|\\s(*?\\)*(",
+  "s": ")",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\( *?.??_\\)\\(\\bba*b?\\)\\{0\\}\\.*[^]\n]\\)?\\2?\\([a-]??.*?b\\)",
+  "s": "ébbA",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   2,
+   3,
+   null,
+   null,
+   null,
+   null,
+   2,
+   3
+  ]
+ },
+ {
+  "re": "a\\(\\(?:\\([ab]\\ba*\\)*\\)*\\)",
+  "s": "(é)aéA",
+  "fold": false,
+  "emacs": [
+   3,
+   4,
+   4,
+   4
+  ]
+ },
+ {
+  "re": "^\\(\\((?\\(\\Sw\\)\\{1\\}\\)+?\\(A\\{0,0\\}[[:space:]]\\{,2\\}\\).?\\).\\*\\{1\\}",
+  "s": "\n\né bb\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a",
+  "s": "a()(",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(?:\\'.\\) é??",
+  "s": "a)béb ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A[z-a]\\(\\Sw+\\)",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\*a.(\\)\\|\\1\\1??.",
+  "s": " ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?:. \\)*?\\)\\*\\w",
+  "s": "\nAaa_-",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".?",
+  "s": "ab(b)((-",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   8,
+   8
+  ]
+ },
+ {
+  "re": "\\(?:A\\{0,\\}(\\)a_",
+  "s": "(é(bé-) ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é\\(\\(?:([^a]*\\)??\\s(\\{2,\\}\\)",
+  "s": "ébéA_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\>\\.+\\(a\\)a\\). ",
+  "s": "Ab",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:alpha:]_]éaa$",
+  "s": "é",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s.??\\'a",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " \\<\\.",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\.?é\\*$",
+  "s": "A",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".b+\\b\\|\\(\\s.\\b[[:word:]]\\{2,2\\}\\)$",
+  "s": "a",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".*?A[[:alpha:]_]a*",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\W*é+[^a]",
+  "s": "\n(é)(b",
+  "fold": false,
+  "emacs": [
+   0,
+   4
+  ]
+ },
+ {
+  "re": "\\w\\|\\( a[[:upper:]]\\)?ba+?",
+  "s": "ab_",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(?:.\\w[]a]+\\_>\\|a\\{1,\\}\\(\\.??.a[a-]?\\)A\\(\\_>.\\{2,\\}\\)\\)",
+  "s": " abbb(b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\(a+? \\(aa.\\{2\\}\\B\\)+?\\)\\s( \\S-\\{0,\\}\\)é\\{0\\}",
+  "s": "éa)\n b)",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:punct:]]",
+  "s": " ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".*\\B\\|\\Sw_*\\>[[:space:]]",
+  "s": ")a -\n",
+  "fold": false,
+  "emacs": [
+   0,
+   4
+  ]
+ },
+ {
+  "re": "^\\s_[^a]*?(+?\\S-",
+  "s": "b_\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:.aa\\(b+\\(a*.a??\\)\\1\\'\\)*\\)\\|\\W",
+  "s": "b",
+  "fold": false,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "A??\\b[]a].+?",
+  "s": "(é\na",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\((\\)+?\\1_[a-]\\|\\1AA*\\*",
+  "s": "-A((",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_\\{2\\}$",
+  "s": "A",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "(",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\{2,\\}",
+  "s": ") _",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[ab](\\(?:\\.a\\)\\|\\(?:\\(?:\\Sw\\)\\{,1\\}[[:space:]]\\(a\\)??[[:word:]]\\)\\<[z-a]",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\.(\\{,3\\}a\\_>",
+  "s": "éa)(b\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a$",
+  "s": "aAa)_b))",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^é.",
+  "s": "ab\nb",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s_\\{2,2\\}",
+  "s": "\n (-é",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(aa*?\\)*?",
+  "s": ")(-b-\n-",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   6,
+   6
+  ]
+ },
+ {
+  "re": "^\\*b??",
+  "s": " _éA_-\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\(\\w\\{2\\}a*?\\_>\\)[a-]?(\\(\\<a\\s_\\{2,\\}\\)+\\)\\(\\'\\(?:a?\\)\\{2,\\} \\)+\\)",
+  "s": "(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".é??(+? ",
+  "s": "_ \né_-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\>\\`$",
+  "s": ")bbébaA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\s_\\(a\\{1,3\\}\\s_+?a*?\\)\\{2,\\}\\>",
+  "s": ")-\na",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A\\{1,\\}\\s(_*",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:space:]]\\(\\.\\{1,2\\}A\\| *.*[[:upper:]]\\(?:\\<a*?a?\\)\\).\\{2\\}",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\(\\>(\\)_\\{1,\\}\\*",
+  "s": "b -_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:alpha:]_]+\\(A+é[a-b]\\|\\(?:a*?a?bA\\)\\)",
+  "s": "béA))b(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a\\(\\(\\s.\\S-\\).\\_<\\).\\{,3\\}\\Sw\\|(\\)\\>.*\\s.*",
+  "s": "b\n(b)(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^.\\(\\Sw\\)",
+  "s": "ébbaa(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\W..\\)+?a*[[:space:]]_+$",
+  "s": "a_",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b",
+  "s": "b",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "^.",
+  "s": "A",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": ".+?\\_<A",
+  "s": " b-)Aa",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   5
+  ]
+ },
+ {
+  "re": "a\\(\\'\\|é\\)+[a-]\\{1\\}b*",
+  "s": "aba\nA ab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\W+\\.?[ab]a\\|[a-b]a\\(.\\(\\`é*A+a*\\)\\`\\(?:\\1\\Ba\\{1,1\\}_*\\)+\\)",
+  "s": "",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\.*?\\(?:a\\{1,\\}\\_>a\\)a",
+  "s": "_é éa  ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\.+?a\\>\\)\\(?:a\\{0\\}A+b\\)*?a*\\(\\S-?\\_>\\)*",
+  "s": "a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^a\\{2,\\}\\(\\(A+?\\(?:(*?b_\\W?\\)\\(é\\<\\)+\\)\\(?:.\\{0,0\\}(??A+?_+\\).\\**\\)*\\(\\w+é(*\\)\\{,3\\}",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^ [a-b] *",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\`",
+  "s": "aa\n)) a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\.\\{0\\}\\*[^a][^a]+\\)\\(?:A\\<b\\)+",
+  "s": "-a)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\*\\{0,\\}a*?éb\\)\\(a\\{,3\\}\\s(\\)??A\\1",
+  "s": "-a\nbA\na",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a",
+  "s": "\nA\naaa",
+  "fold": false,
+  "emacs": [
+   3,
+   4
+  ]
+ },
+ {
+  "re": "[[:word:]].*é??",
+  "s": "-_é _ b",
+  "fold": false,
+  "emacs": [
+   2,
+   7
+  ]
+ },
+ {
+  "re": "\\(?:a?a\\.+?a*\\)_?$",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é",
+  "s": "_abb_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\B",
+  "s": ")",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\_>$",
+  "s": "_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\(a\\{,3\\}\\(?:(??(\\(\\s-??é\\)A\\)\\*\\)*\\(?:.*\\1+\\(\\*[]a]\\2\\)\\)\\w?",
+  "s": "(a_b(aé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s-\\(\\(?:[a-b][^]\n]\\)\\s-a\\{1,\\}\\*\\{1\\}\\)??\\(?:A+?\\(é\\{1,2\\}\\(?:\\1a\\)*A\\)+\\(?:A\\w\\)\\)*?\\.+?\\|.\\2\\s(",
+  "s": "é\n-b(é",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b??\\(é*\\|\\(?:aa??\\).\\)\\(\\1?é?\\([[:punct:]]*(\\)b\\) \\|[[:space:]]*?\\>é",
+  "s": "(\n\nab \n-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s(",
+  "s": "_aA  é(",
+  "fold": true,
+  "emacs": [
+   6,
+   7
+  ]
+ },
+ {
+  "re": " \\s(.",
+  "s": "_bb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*\\{,3\\} *\\(\\_>\\(\\( \\{2\\}a\\*\\{0\\}\\)\\{1,\\}\\(?:\\<a é\\{,2\\}\\)(A\\)\\)",
+  "s": "\n)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*\\{0,\\} \\{,2\\}.\\(\\(\\s.?(\\)\\|\\.(*\\)\\|\\W\\(\\1*\\)\\|(??[a-]",
+  "s": "a(é ",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   4,
+   null,
+   null,
+   null,
+   null,
+   4,
+   4
+  ]
+ },
+ {
+  "re": "\\(?:\\(\\b\\)\\|\\Sw\\W\\)",
+  "s": "-\n))(\n) ",
+  "fold": false,
+  "emacs": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "A\\(bé\\'\\|_+?\\)[[:space:]]\\{0,\\}é??",
+  "s": " \n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^b",
+  "s": "-b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\{1\\}a\\{0\\}[^a]*?",
+  "s": "_)b_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_?_\\([]a]a*\\)$",
+  "s": "aa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(?:é_\\S-\\([[:alpha:]_]\\)\\)\\(_?\\)*\\(a\\1*?\\)\\*??\\)",
+  "s": "b)b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\s.\\b\\|\\(. *\\(\\s(\\{0,1\\}\\)?a?\\)\\2a*\\s(*\\|\\2",
+  "s": " A",
+  "fold": false,
+  "emacs": [
+   0,
+   1,
+   0,
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "re": "a*\\.",
+  "s": "(aa)a",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é\\<\\(?:\\(\\((\\)é\\)\\*\\)??_",
+  "s": " )aé",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\B\\.\\)",
+  "s": "_(((_\né",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(é*?\\).??\\w",
+  "s": "éabA",
+  "fold": false,
+  "emacs": [
+   0,
+   1,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^ \\{2\\}",
+  "s": "bba\n\nA\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\{2,3\\}.A??\\|\\_>_",
+  "s": "_é(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(?:a\\|\\( \\{0\\}a\\)é\\{1,\\}\\)A\\1",
+  "s": "",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_\\*\\{,3\\}\\`",
+  "s": "bé)éa_bA",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*+a\\{0\\}",
+  "s": " ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.",
+  "s": "-_) ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[^]\n]b\\{,1\\}",
+  "s": "\n__ aé",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": "\\(\\(\\(a\\_<a+\\).*(+\\w\\)\\**?.\\)+?(\\|a+?\\S-[]a]\\{0,2\\}(",
+  "s": "_é\na",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\'$",
+  "s": "a baab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é[z-a]\\{,1\\}\\(\\.*?a??\\(?:\\.?a*\\b\\s(*\\)\\*\\)[z-a]?",
+  "s": "-)é",
+  "fold": true,
+  "emacs": "none"
+ }
+]

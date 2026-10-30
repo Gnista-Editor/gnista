@@ -1662,8 +1662,15 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     )?;
     native.set(
         "stringMatch",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, pattern: String, text: String, fold: bool| {
-            with_editor(&ctx, |_| Ok(ember_core::string_match(&pattern, &text, fold)?.map(|i| i as f64)))
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pattern: String, text: String, fold: bool, start: Opt<usize>| {
+            with_editor(&ctx, |ed| {
+                let found = ed.string_match(&pattern, &text, start.0.unwrap_or(0), fold)?;
+                let at = found.as_ref().map(|m| m.start as f64);
+                if found.is_some() {
+                    ed.set_match_data(found);
+                }
+                Ok(at)
+            })
         })?,
     )?;
     native.set(
@@ -1770,7 +1777,7 @@ fn install_native_search<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs:
                     let case_fold = fold.unwrap_or_else(|| ember_core::search_fold_case(ed, &pattern, false));
                     let options = ember_core::SearchOptions { regexp, backward, case_fold, bound };
                     let from = from.unwrap_or(ed.buffer().point());
-                    let found = ember_core::search(ed.buffer(), &pattern, from, &options)?;
+                    let found = ed.search(&pattern, from, &options)?;
                     if found.is_some() {
                         ed.set_match_data(found.clone());
                     }
@@ -1786,7 +1793,7 @@ fn install_native_search<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs:
             with_editor(&ctx, |ed| {
                 let case_fold = fold.unwrap_or_else(|| ed.variable("case-fold-search").is_none_or(|v| v.is_true()));
                 let pos = pos.unwrap_or(ed.buffer().point());
-                let found = ember_core::looking_at(ed.buffer(), &pattern, pos, case_fold)?;
+                let found = ed.looking_at(&pattern, pos, case_fold)?;
                 if found.is_some() {
                     ed.set_match_data(found.clone());
                 }

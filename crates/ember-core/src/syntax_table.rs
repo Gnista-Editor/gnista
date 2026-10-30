@@ -39,7 +39,7 @@ pub enum Class {
 }
 
 impl Class {
-    fn from_char(c: char) -> Option<Class> {
+    pub(crate) fn from_char(c: char) -> Option<Class> {
         Some(match c {
             ' ' | '-' => Class::Whitespace,
             '.' => Class::Punct,

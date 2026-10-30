@@ -169,3 +169,26 @@ fn replace_regexp_reports_one_occurrence() {
     assert_eq!(text(&ed), "x = (10)");
     assert_eq!(ed.echo(), Some("Replaced 1 occurrence"));
 }
+
+/// What a script expression gives, as JSON.
+fn eval(ed: &mut Editor, s: &Scripting, code: &str) -> String {
+    s.eval_expression(ed, code).unwrap_or_else(|e| panic!("{code}: {e}"))
+}
+
+#[test]
+fn regexps_are_emacs_s_with_the_buffer_s_syntax() {
+    let (mut ed, s) = setup("foo_bar foo_bar");
+    // `_` is a symbol constituent, so \w stops at it and \_< \_> take it in.
+    assert_eq!(eval(&mut ed, &s, r#"(ember.gotoChar(0), ember.reSearchForward("\\w+"), ember.point())"#), "3");
+    assert_eq!(eval(&mut ed, &s, r#"(ember.gotoChar(0), ember.reSearchForward("\\_<\\(\\(?:\\sw\\|\\s_\\)+\\)\\_>"), ember.matchString(1))"#), r#""foo_bar""#);
+    // Back-references, in the buffer and in strings.
+    assert_eq!(eval(&mut ed, &s, r#"(ember.gotoChar(0), ember.reSearchForward("\\(foo_bar\\) \\1"), ember.point())"#), "15");
+    assert_eq!(eval(&mut ed, &s, r#"[ember.stringMatch("\\(a+\\)b\\1", "xaabaa"), ember.matchString(1, "xaabaa"), ember.matchEnd(0)]"#), r#"[1,"aa",6]"#);
+    // \= is point.
+    assert_eq!(eval(&mut ed, &s, r#"(ember.gotoChar(4), ember.lookingAt("\\=bar"))"#), "true");
+    // A syntax-table property is the character's syntax where parse-sexp-lookup-properties is on.
+    eval(&mut ed, &s, r#"(ember.putTextProperty(3, 4, "syntax-table", "w"), ember.setVariable("parse-sexp-lookup-properties", true), 0)"#);
+    assert_eq!(eval(&mut ed, &s, r#"(ember.gotoChar(0), ember.reSearchForward("\\w+"), ember.point())"#), "7");
+    // Errors are Emacs's.
+    assert!(s.eval_expression(&mut ed, r#"ember.conditionCase(() => ember.stringMatch("\\(a\\)\\2", "aa"), { "invalid-regexp": (e) => { throw new Error("caught " + e.message); } })"#).unwrap_err().to_string().contains("caught Invalid regexp: \"Invalid back reference\""));
+}

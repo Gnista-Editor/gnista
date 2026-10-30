@@ -6629,10 +6629,12 @@ declare global {
     /** Delete a directory, as Emacs's delete-directory: one with files in it only if `recursive`. */
     function deleteDirectory(dir: string, options?: { recursive?: boolean; trash?: boolean }): void;
     /**
-     * Where an Emacs regular expression first matches in a string, as Emacs's
-     * string-match, or undefined. Case matters unless `caseFold`.
+     * Where an Emacs regular expression first matches in a string, from
+     * `start`, as Emacs's string-match, or undefined. Case matters unless
+     * `caseFold`. The match data is the match's, positions in the string, as
+     * matchString with the string gives its groups.
      */
-    function stringMatch(regexp: string, text: string, options?: { caseFold?: boolean }): number | undefined;
+    function stringMatch(regexp: string, text: string, options?: { caseFold?: boolean; start?: number }): number | undefined;
     /**
      * A project's files, as Emacs's project-files for a version-controlled
      * project: those Git tracks and does not ignore, or outside Git every file
@@ -7114,8 +7116,11 @@ declare global {
     function matchBeginning(n?: number): number | undefined;
     /** Where the last match, or its group `n`, ends, as match-end. */
     function matchEnd(n?: number): number | undefined;
-    /** The text of the last match in the buffer, or of its group `n`, as match-string. */
-    function matchString(n?: number): string | undefined;
+    /**
+     * The text of the last match, or of its group `n`, as match-string: in
+     * the buffer, or in `string` after stringMatch matched it.
+     */
+    function matchString(n?: number, string?: string): string | undefined;
     /** An error as a handler of conditionCase sees it: its condition, its data, and its message. */
     interface SignalledError {
       symbol: string;

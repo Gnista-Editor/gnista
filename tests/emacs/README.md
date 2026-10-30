@@ -80,6 +80,14 @@ Turn the ones worth fixing into cases in a `cases/org-fuzz-*.json` file, so they
 
 record.el also makes opening a link in a browser or another program an error, so a case cannot start one.
 
+## Regular expressions
+
+`crates/ember-script/tests/regexp.rs` compares Ember's regexp engine with Emacs's `string-match` and `re-search-backward`. `recorded_cases_match_emacs` checks the cases in `regexps.json`, with what Emacs gave, on every run. `regexps_behave_like_emacs_on_random_cases` makes random regexps and strings, records what Emacs makes of them through `regexp.el`, and prints where Ember differs, writing those to `target/regexp-fuzz/differences.json` in the form of `regexps.json`, where the ones worth keeping go:
+
+```bash
+EMBER_FUZZ_SEED=1 EMBER_FUZZ_CASES=20000 cargo test --release -p ember-script --test regexp -- --ignored --nocapture
+```
+
 ## Completion in the minibuffer
 
 `icomplete/` holds an oracle of its own for what the minibuffer shows as you type: icomplete's list in its four modes, over a collection or a directory of files. Batch Emacs cannot type into the minibuffer, so `icomplete/record.el` runs an interactive Emacs on a pseudo-terminal, feeds it each case's keys from timers, and records the input and what icomplete shows after each key into `golden.json`:
