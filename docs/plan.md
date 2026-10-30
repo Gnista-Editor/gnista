@@ -94,6 +94,9 @@ Started: `ember-mcp` serves the command registry over MCP, so an agent such as C
 - Managing files: copying, renaming, deleting to the trash and making directories, with the agent asking first; `find-alternate-file`, `rename-visited-file`, `read-only-mode`, recent files and `find-file-at-point` ([ADR 0021](adr/0021-managing-files.md)). Oracle cases compare what the commands leave in a directory.
 - Files and saving as safe as in Emacs: backups, auto-saving and recovering, reverting and `auto-revert-mode`, asking before editing or saving a file changed on disk, line ends and Latin-1, and asking about each unsaved file when quitting ([ADR 0018](adr/0018-files-and-saving.md)). Oracle cases now visit real files and compare what is on disk afterwards, and a fuzzer edits, saves and reverts files that change underneath it.
 
+- Foundations for parity, after two architecture reviews ([ADR 0025](adr/0025-foundations-for-emacs-parity.md)): errors with conditions, `letBind`, packages as ES modules that import each other, Emacs regexps wherever a regexp is data, awaitable prompts, functions, buffers, markers, symbols and propertized strings as values, commands with Emacs's interactive codes, one edit path with read-only text and change hooks, overlay and display strings and line prefixes, and hooks with depth. Each review's fixes landed with it.
+- The next foundations, proposed after a third review ([ADR 0026](adr/0026-the-next-foundations.md)): symbols' values and functions in one table, with advice, `mode-line-format` and keymaps as values; the minibuffer as buffers in a window, with recursive minibuffers; then windows as objects, completion tables as functions, `syntax-table` properties and autoloads.
+
 **Later:**
 - Huge files, with background threads for search, highlighting and indexing kept off the core thread, as the brief describes.
 - Lock files, numbered backups and `backup-directory-alist`, and coding systems beyond UTF-8 and Latin-1.
