@@ -1,0 +1,251 @@
+[
+  {
+    "name": "visit-by-coding-cookie-and-save",
+    "files": {
+      "c.txt": "latin-1:-*- coding: latin-2 -*-\n±\n"
+    },
+    "find": "c.txt",
+    "text": "",
+    "keys": "M-> ą C-x C-s"
+  },
+  {
+    "name": "local-variables-name-the-coding",
+    "files": {
+      "v.txt": "latin-1:é\nLocal Variables:\ncoding: windows-1251\nEnd:\n"
+    },
+    "find": "v.txt",
+    "text": "",
+    "keys": "x C-x C-s"
+  },
+  {
+    "name": "utf-16-with-a-signature-round-trips",
+    "files": {
+      "u.txt": "latin-1:ÿþx\u0000\n\u0000"
+    },
+    "find": "u.txt",
+    "text": "",
+    "keys": "M-> é C-x C-s"
+  },
+  {
+    "name": "utf-16-big-endian-round-trips",
+    "files": {
+      "u.txt": "latin-1:þÿ\u0000x\u0000\n"
+    },
+    "find": "u.txt",
+    "text": "",
+    "keys": "C-e y C-x C-s"
+  },
+  {
+    "name": "iso-2022-jp-is-read-and-written",
+    "files": {
+      "j.txt": "latin-1:\u001b$B$\"\u001b(B\n"
+    },
+    "find": "j.txt",
+    "text": "",
+    "keys": "M-> x C-x C-s"
+  },
+  {
+    "name": "euc-jp-looks-like-latin-1",
+    "files": {
+      "e.txt": "latin-1:¤¢¤¤\n"
+    },
+    "find": "e.txt",
+    "text": "",
+    "keys": "M-> x C-x C-s"
+  },
+  {
+    "name": "set-coding-to-shift-jis",
+    "files": {
+      "a.txt": "あい\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-x RET f C-x C-s",
+    "answers": [
+      "sjis"
+    ]
+  },
+  {
+    "name": "set-coding-to-utf-16le-keeps-dos-ends",
+    "files": {
+      "a.txt": "one\r\ntwo\r\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-x RET f C-x C-s",
+    "answers": [
+      "utf-16le"
+    ]
+  },
+  {
+    "name": "set-coding-with-line-ends",
+    "files": {
+      "a.txt": "one\ntwo\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-x RET f C-x C-s",
+    "answers": [
+      "iso-latin-1-dos"
+    ]
+  },
+  {
+    "name": "set-coding-to-euc-kr",
+    "files": {
+      "a.txt": "한글\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-x RET f C-x C-s",
+    "answers": [
+      "euc-kr"
+    ]
+  },
+  {
+    "name": "set-coding-to-gbk",
+    "files": {
+      "a.txt": "中文\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-x RET f C-x C-s",
+    "answers": [
+      "gbk"
+    ]
+  },
+  {
+    "name": "set-coding-to-big5",
+    "files": {
+      "a.txt": "中文\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-x RET f C-x C-s",
+    "answers": [
+      "big5"
+    ]
+  },
+  {
+    "name": "set-coding-to-koi8-r",
+    "files": {
+      "a.txt": "Привет\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-x RET f C-x C-s",
+    "answers": [
+      "koi8-r"
+    ]
+  },
+  {
+    "name": "set-coding-to-windows-1252",
+    "files": {
+      "a.txt": "€ “quoted”\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-x RET f C-x C-s",
+    "answers": [
+      "cp1252"
+    ]
+  },
+  {
+    "name": "set-coding-to-utf-8-with-signature",
+    "files": {
+      "a.txt": "café\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-x RET f C-x C-s",
+    "answers": [
+      "utf-8-with-signature"
+    ]
+  },
+  {
+    "name": "set-coding-to-iso-2022-jp",
+    "files": {
+      "a.txt": "日本語\nabc\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-x RET f C-x C-s",
+    "answers": [
+      "iso-2022-jp"
+    ]
+  },
+  {
+    "name": "revert-in-another-coding",
+    "files": {
+      "a.txt": "latin-1:été\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-x RET r",
+    "answers": [
+      "windows-1251",
+      "yes"
+    ]
+  },
+  {
+    "name": "revert-as-shift-jis-then-save",
+    "files": {
+      "a.txt": "latin-1: ¢\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "C-x RET r M-> x C-x C-s",
+    "answers": [
+      "shift_jis",
+      "yes"
+    ]
+  },
+  {
+    "name": "coding-for-the-next-command-saves",
+    "files": {
+      "a.txt": "café\n"
+    },
+    "find": "a.txt",
+    "text": "",
+    "keys": "M-> x C-x RET c C-x C-s",
+    "answers": [
+      "latin-1"
+    ]
+  },
+  {
+    "name": "coding-for-the-next-command-visits",
+    "files": {
+      "e.txt": "latin-1:¤¢¤¤\n"
+    },
+    "text": "",
+    "keys": "C-x RET c C-x C-f",
+    "answers": [
+      "euc-jp",
+      "e.txt"
+    ],
+    "find": "a.txt"
+  },
+  {
+    "name": "saving-what-the-coding-cannot-hold-asks",
+    "files": {
+      "l.txt": "latin-1:café\n"
+    },
+    "find": "l.txt",
+    "text": "",
+    "keys": "M-> € C-x C-s",
+    "answers": [
+      "utf-8"
+    ]
+  },
+  {
+    "name": "saving-what-the-coding-cannot-hold-default",
+    "files": {
+      "l.txt": "latin-1:café\n"
+    },
+    "find": "l.txt",
+    "text": "",
+    "keys": "M-> あ C-x C-s",
+    "answers": [
+      ""
+    ]
+  }
+]

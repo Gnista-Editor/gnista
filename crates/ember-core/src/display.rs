@@ -1,6 +1,6 @@
 //! How text appears on a character grid, shared by the front ends: tabs
-//! expand to the next tab stop, every `tab-width` columns, and control
-//! characters show as `^X`.
+//! expand to the next tab stop, every `tab-width` columns, control
+//! characters show as `^X`, and raw bytes and C1 controls as `\NNN`.
 
 use unicode_width::UnicodeWidthChar;
 
@@ -14,6 +14,12 @@ pub fn render_char(c: char, col: usize, tab_width: usize, out: &mut String) -> u
             let n = tab_width - col % tab_width;
             out.extend(std::iter::repeat_n(' ', n));
             n
+        }
+        // Raw bytes and the C1 controls show as octal escapes, `\351`.
+        c if crate::coding::char_raw_byte(c).is_some() || ('\u{80}'..='\u{9F}').contains(&c) => {
+            let byte = crate::coding::char_raw_byte(c).unwrap_or(c as u8);
+            out.push_str(&format!("\\{byte:03o}"));
+            4
         }
         c if c.is_control() => {
             out.push('^');

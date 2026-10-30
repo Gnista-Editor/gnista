@@ -770,6 +770,17 @@ pub(crate) fn install(ed: &mut Editor) {
         Variable::new("variable-name-history", "Variable names answered in the minibuffer, newest first.", Value::List(Vec::new())),
         Variable::new("face-name-history", "Face names answered in the minibuffer, newest first.", Value::List(Vec::new())),
         Variable::new(
+            "coding-system-for-read",
+            "The coding system to read files and decode text with, if any, rather than finding it; code binds it around a call, as C-x RET c does.",
+            Value::Null,
+        ),
+        Variable::new(
+            "coding-system-for-write",
+            "The coding system to write files and encode text with, if any, rather than the buffer's own; code binds it around a call, as C-x RET c does.",
+            Value::Null,
+        ),
+        Variable::new("last-coding-system-used", "The coding system the last file read or written, or text decoded or encoded, used.", Value::Null),
+        Variable::new(
             "inhibit-field-text-motion",
             "Whether motion commands and constrain-to-field ignore fields, the stretches of text with one `field` property.",
             false,

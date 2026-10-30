@@ -374,7 +374,8 @@ impl Editor {
             (None, None) => &bytes[..],
             (b, e) => &bytes[b.unwrap_or(0).min(bytes.len())..e.unwrap_or(bytes.len()).min(bytes.len()).max(b.unwrap_or(0).min(bytes.len()))],
         };
-        let (text, coding) = crate::coding::Coding::decode(bytes);
+        let (text, coding) = crate::coding::decode_file(bytes, self.coding_for_read());
+        self.set_variable("last-coding-system-used", Value::Str(coding.name()));
         let n = text.chars().count();
         if replace {
             self.replace_accessible_text(&text)?;
@@ -444,13 +445,14 @@ impl Editor {
         if mustbenew && fs::symlink_metadata(&path).is_ok() {
             return Err(Error::signal("file-already-exists", format!("File exists: {file}"), vec![s("File exists"), s(&file)]));
         }
+        let write_coding = self.coding_for_write();
         let b = self.buffer();
         let text = match &source {
             WriteSource::Buffer => b.slice(0..b.len()),
             WriteSource::Region(a, e) => b.slice((*a).min(*e).min(b.len())..(*a).max(*e).min(b.len())),
             WriteSource::Text(t) => t.clone(),
         };
-        let (bytes, coding) = b.coding().encode(&text);
+        let (bytes, coding) = write_coding.encode(&text);
         let mut options = fs::File::options();
         options.write(true).create(true);
         if append {

@@ -131,18 +131,22 @@ impl Editor {
 
     /// How many default columns a character of a segment takes, starting
     /// `col` columns into its row: a tab to the next tab stop, which are
-    /// every `tab-width` default columns as in Emacs, and `^X` for a
-    /// control character.
+    /// every `tab-width` default columns as in Emacs, `^X` for a control
+    /// character, and `\NNN` for a raw byte or C1 control.
     pub(crate) fn char_columns(&self, segment: &Segment, c: char, col: f32, tab_width: usize) -> f32 {
         if c == '\t' {
             let tab = tab_width.max(1) as f32;
             return (col / tab).floor() * tab + tab - col;
         }
+        let escaped = crate::coding::char_raw_byte(c).is_some() || ('\u{80}'..='\u{9F}').contains(&c);
         if self.on_grid(&segment.style) {
-            return if c.is_control() { 2.0 } else { c.width().unwrap_or(0) as f32 };
+            return if escaped { 4.0 } else if c.is_control() { 2.0 } else { c.width().unwrap_or(0) as f32 };
         }
         let font = FontSpec::of(&segment.style);
         let width = self.metrics.char_width();
+        if escaped {
+            return (self.metrics.advance(&font, '\\') + 3.0 * self.metrics.advance(&font, '0')) / width;
+        }
         if c.is_control() {
             return (self.metrics.advance(&font, '^') + self.metrics.advance(&font, 'X')) / width;
         }

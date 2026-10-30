@@ -6,6 +6,7 @@
 
 mod buffer;
 pub mod casefiddle;
+pub mod charset;
 pub mod chartab;
 mod casetab;
 mod category;
@@ -15,6 +16,7 @@ mod chartab_data;
 pub mod coding;
 mod command;
 pub mod completion;
+mod codingfns;
 mod commands;
 pub mod display;
 mod editor;

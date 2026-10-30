@@ -1758,7 +1758,7 @@ impl Editor {
             if path.is_dir() {
                 return Err(Error::new(format!("{} is a directory", path.display())));
             }
-            let mut buffer = Self::read_visited_file(path)?;
+            let mut buffer = Self::read_visited_file(path, self.coding_for_read())?;
             buffer.name = self.unique_buffer_name(&buffer.name);
             // As Emacs's after-find-file, a file that cannot be written is read-only.
             buffer.read_only = fs::metadata(path).is_ok_and(|m| m.permissions().readonly());

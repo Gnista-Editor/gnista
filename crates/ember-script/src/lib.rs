@@ -84,6 +84,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/lisp.ts", include_str!("../../../packages/lisp.ts")),
     ("packages/paren.ts", include_str!("../../../packages/paren.ts")),
     ("packages/display-line-numbers.ts", include_str!("../../../packages/display-line-numbers.ts")),
+    ("packages/mule.ts", include_str!("../../../packages/mule.ts")),
     ("packages/files.ts", include_str!("../../../packages/files.ts")),
     ("packages/text-mode.ts", include_str!("../../../packages/text-mode.ts")),
     ("packages/face-remap.ts", include_str!("../../../packages/face-remap.ts")),
@@ -569,6 +570,16 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
                 ed.run_interactive(&name);
                 Ok(())
             })
+        })?,
+    )?;
+    // The coding and charset primitives, as coding.c and charset.c: one
+    // native, by the Lisp name, for the prelude's wrappers.
+    native.set(
+        "codingPrimitive",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, args: Rest<Value<'js>>| -> rquickjs::Result<Value<'js>> {
+            let args = args.0.into_iter().map(|a| value_from_js(&ctx, a)).collect::<rquickjs::Result<Vec<_>>>()?;
+            let value = with_editor(&ctx, |ed| ed.coding_primitive(&name, &args))?;
+            value_to_js(&ctx, &value)
         })?,
     )?;
     native.set(

@@ -45,6 +45,12 @@ Each entry says whether the difference is **deliberate**, which keeps it, or **n
 - **Dired** (not yet): `M-DEL` and `* c` read their mark as text and RET, where Emacs reads a key ([ADR 0022](adr/0022-dired-and-projects.md)).
 - **`directory-files`** (not yet) sorts the names even with NOSORT, where Emacs gives the directory's own order ([ADR 0033](adr/0033-file-primitives.md)).
 - **File name handlers** (not yet) are asked by the primitives in ADR 0033 and by visiting and saving, but not yet by `expand-file-name`, `file-attributes` or the copying and renaming commands.
+- **Raw bytes** (deliberate): bytes that are no text in their coding are the characters U+10FF80 to U+10FFFF, where Emacs's are beyond Unicode at #x3FFF80 to #x3FFFFF. They show and are written back as in Emacs ([ADR 0035](adr/0035-coding-systems-and-charsets.md)).
+- **Unibyte strings** (deliberate): scripts hold bytes as strings of characters U+0000 to U+00FF, as Emacs prints unibyte strings, and a string with other characters stands for its UTF-8. So inserting `encodeCodingString`'s result shows Latin-1 letters where Emacs's shows `\303\251` ([ADR 0035](adr/0035-coding-systems-and-charsets.md)).
+- **The `charset` text property** (not yet): Emacs puts it on text decoded in a charset's coding and uses it when encoding again. Ember has none, so `iso-2022-7bit` chooses each character's set by the text's script: JIS X 0208 for text with kana, KS C 5601 with Hangul, else GB 2312, where Emacs writes kana alone in GB 2312's set ([ADR 0035](adr/0035-coding-systems-and-charsets.md)).
+- **Japanese files without a cookie** (not yet): Shift_JIS and EUC-JP open as Latin-1, as there are no language environments to prefer them; Emacs without a Japanese one opens Shift_JIS as `emacs-mule`, which Ember does not have ([ADR 0035](adr/0035-coding-systems-and-charsets.md)).
+- **Saving text the coding cannot write** (not yet) asks for a coding without the `*Warning*` buffer Emacs shows listing the characters; written without asking, from code, it is saved as UTF-8.
+- **Process output** (not yet) is always UTF-8; `set-process-coding-system` is not there.
 - **Changing a file's modes or times** (deliberate) asks the agent's permission while it acts, as writing files does; Emacs has no agent to ask.
 
 ## Invisible differences

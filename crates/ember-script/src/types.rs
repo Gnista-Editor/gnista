@@ -1787,6 +1787,81 @@ const API: &str = r##"
   function bufferBaseBuffer(buffer?: string | Buffer): Buffer | undefined;
   /** name, or the first of name<2>, name<3> and on that no buffer has, as generate-new-buffer-name. */
   function generateNewBufferName(name: string): string;
+  /**
+   * A coding system's name, as utf-8-unix, iso-latin-1 or
+   * japanese-shift-jis-dos: how characters are written as bytes, and how
+   * lines end, or undecided ones without -unix, -dos or -mac.
+   */
+  type CodingSystem = string;
+  /** Whether a name names a coding system, by any of its aliases, as coding-system-p. */
+  function codingSystemP(cs: unknown): boolean;
+  /** The coding system a name names, undefined for null, or a coding-system-error, as check-coding-system. */
+  function checkCodingSystem(cs: CodingSystem | null | undefined): CodingSystem | undefined;
+  /** The coding systems, with their -unix, -dos and -mac forms unless baseOnly, as coding-system-list. */
+  function codingSystemList(baseOnly?: boolean): CodingSystem[];
+  /** A coding system's names, its own first, as coding-system-aliases. */
+  function codingSystemAliases(cs: CodingSystem): CodingSystem[];
+  /** The coding system without its line ends, as coding-system-base. */
+  function codingSystemBase(cs: CodingSystem): CodingSystem;
+  /** How it writes characters, as coding-system-type: "utf-8", "charset", "iso-2022", "shift-jis" and so on. */
+  function codingSystemType(cs: CodingSystem): string;
+  /** Its line ends, 0 for Unix, 1 for DOS and 2 for Mac, or its three forms if undecided, as coding-system-eol-type. */
+  function codingSystemEolType(cs: CodingSystem): number | CodingSystem[];
+  /** It with other line ends, by number or "unix", "dos" or "mac", or undecided ones for null, as coding-system-change-eol-conversion. */
+  function codingSystemChangeEolConversion(cs: CodingSystem, eol: number | "unix" | "dos" | "mac" | null): CodingSystem;
+  /** textCs with eolCs's line ends, as coding-system-change-text-conversion. */
+  function codingSystemChangeTextConversion(eolCs: CodingSystem, textCs: CodingSystem): CodingSystem;
+  /** A property of a coding system, as coding-system-get: ":mime-charset", ":mnemonic", ":name" or ":coding-type". */
+  function codingSystemGet(cs: CodingSystem, prop: string): Value | undefined;
+  /** What the mode line shows for it, as coding-system-mnemonic. */
+  function codingSystemMnemonic(cs: CodingSystem): string;
+  /**
+   * The bytes a coding writes text as, as encode-coding-string: a string of
+   * characters U+0000 to U+00FF, one for each byte. Characters it cannot
+   * write become its default character, a space or, for us-ascii, "?".
+   */
+  function encodeCodingString(string: string, cs: CodingSystem): string;
+  /**
+   * The text bytes are in a coding, as decode-coding-string: bytes as a
+   * string of characters U+0000 to U+00FF, or text, which stands for the
+   * UTF-8 Emacs keeps it in. Bytes that are no text in the coding become
+   * raw-byte characters, U+10FF80 to U+10FFFF, which encode back to them.
+   */
+  function decodeCodingString(string: string, cs: CodingSystem): string;
+  /** Replaces text with the bytes it encodes to, as raw-byte characters, as encode-coding-region. Returns the new length. */
+  function encodeCodingRegion(start: number, end: number, cs: CodingSystem): number;
+  /** Replaces raw bytes, or text as UTF-8, with the text they decode to, as decode-coding-region. Returns the new length. */
+  function decodeCodingRegion(start: number, end: number, cs: CodingSystem): number;
+  /** The coding systems bytes may be in, most likely first, or only that with highest, as detect-coding-string. */
+  function detectCodingString(string: string, highest?: false): CodingSystem[];
+  function detectCodingString(string: string, highest: true): CodingSystem;
+  /** The coding systems a region's raw bytes may be in, as detect-coding-region. */
+  function detectCodingRegion(start: number, end: number, highest?: false): CodingSystem[];
+  function detectCodingRegion(start: number, end: number, highest: true): CodingSystem;
+  /** The coding systems that can write all of a string, ["undecided"] for ASCII, as find-coding-systems-string. */
+  function findCodingSystemsString(string: string): CodingSystem[];
+  /** The coding systems that can write all of a region, as find-coding-systems-region. */
+  function findCodingSystemsRegion(start: number, end: number): CodingSystem[];
+  /**
+   * Where the first character from start to end that a coding cannot write
+   * is, or the first count of them as a list, in string if given, else the
+   * buffer, as unencodable-char-position.
+   */
+  function unencodableCharPosition(start: number, end: number, cs: CodingSystem, count?: number | null, string?: string): number | number[] | undefined;
+  /** For each coding that cannot write all of a region, it and the positions it cannot write, as check-coding-systems-region. */
+  function checkCodingSystemsRegion(start: number, end: number, codings: CodingSystem[]): [CodingSystem, ...number[]][] | undefined;
+  /** Whether a charset by this name exists, as charsetp. */
+  function charsetp(charset: unknown): boolean;
+  /** The charsets, as charset-list. */
+  function charsetList(): string[];
+  /** The charsets in priority order, or only the first, as charset-priority-list. */
+  function charsetPriorityList(highestOnly?: boolean): string[];
+  /** A character's charset, "ascii", "eight-bit" for a raw byte, else "unicode", or the first of restriction that has it, as char-charset. */
+  function charCharset(ch: string, restriction?: string[]): string | undefined;
+  /** A character's code point in a charset, as encode-char. */
+  function encodeChar(ch: string, charset: string): number | undefined;
+  /** The character at a code point of a charset, as decode-char. */
+  function decodeChar(charset: string, code: number): string | undefined;
   /** Starts recording changes for undo, afresh, as buffer-enable-undo. */
   function bufferEnableUndo(buffer?: string | Buffer): void;
   /** Stops recording changes for undo and forgets them, as buffer-disable-undo. */

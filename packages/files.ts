@@ -1,3 +1,5 @@
+import { selectSafeCodingSystem } from "mule";
+
 // Choosing a major mode for a file, after Emacs's files.el.
 
 ember.defineVariable({
@@ -166,10 +168,10 @@ function basicSaveBuffer(then: () => void = () => {}): void {
     return;
   }
   const buffer = ember.bufferName();
-  const save = inBuffer(buffer, () => addFinalNewline(() => {
+  const save = inBuffer(buffer, () => addFinalNewline(() => selectSafeCodingSystem(() => {
     writeBuffer(file);
     then();
-  }));
+  })));
   if (ember.visitedFileChanged()) {
     ember.yesOrNoP(`${nondirectory(file)} has changed since visited or saved.  Save anyway? `, (yes) => {
       if (!yes) throw new Error("Save not confirmed");
@@ -429,36 +431,6 @@ ember.defineCommand({
   },
 });
 
-// Coding systems, after mule.el's set-buffer-file-coding-system.
-
-const CODING_SYSTEMS = ["undecided", "utf-8", "utf-8-with-signature", "iso-latin-1"];
-const CODING_ALIASES: Record<string, string> = { "latin-1": "iso-latin-1", "iso-8859-1": "iso-latin-1", utf8: "utf-8", "prefer-utf-8": "utf-8" };
-
-/** A coding system's full name, or undefined if Ember has no such coding. Without line ends, it keeps `eol`'s. */
-function codingSystem(name: string, eol: string): string | undefined {
-  const match = /^(.*?)(?:-(unix|dos|mac))?$/.exec(name);
-  if (!match) return undefined;
-  const base = CODING_ALIASES[match[1]!] ?? match[1]!;
-  return CODING_SYSTEMS.includes(base) ? `${base}-${match[2] ?? eol}` : undefined;
-}
-
-ember.defineCommand({
-  name: "set-buffer-file-coding-system",
-  doc:
-    "Set how the buffer is written to its file: a coding system such as utf-8, iso-latin-1 or utf-8-with-signature, " +
-    "with -unix, -dos or -mac for its line ends. Without them, the line ends stay as they are.\n\nThe buffer is then modified, to be saved that way.",
-  params: [{ name: "coding", kind: "string", prompt: "Coding system for saved file (default nil): " }],
-  run: (name: string) => {
-    if (name === "") return;
-    const current = String(ember.variable("buffer-file-coding-system") ?? "utf-8-unix");
-    const eol = /-(unix|dos|mac)$/.exec(current)?.[1] ?? "unix";
-    const coding = codingSystem(name, eol);
-    if (coding === undefined) throw new Error(`Invalid coding system: ${name}`);
-    ember.setVariable("buffer-file-coding-system", coding);
-    ember.setBufferModified(true);
-  },
-});
-
 // Reverting buffers when their files change, after autorevert.el, by
 // looking every auto-revert-interval seconds.
 
@@ -703,7 +675,6 @@ ember.bindKey("C-x s", "save-some-buffers");
 ember.bindKey("C-x C-c", "save-buffers-kill-terminal");
 ember.bindKey("C-x x g", "revert-buffer-quick");
 ember.bindKey("M-~", "not-modified");
-ember.bindKey("C-x RET f", "set-buffer-file-coding-system");
 
 // Inserting and writing parts of files, after files.el's insert-file and
 // append-to-file and fileio.c's write-region command.

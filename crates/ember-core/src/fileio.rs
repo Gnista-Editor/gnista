@@ -74,19 +74,21 @@ fn backup_enabled(path: &Path) -> bool {
     !(path.starts_with(&temp) || real.starts_with(&real_temp))
 }
 
-/// Reads a file and decodes it.
-pub(crate) fn read_file(path: &Path) -> Result<(String, Coding)> {
+/// Reads a file and decodes it, in `coding` if given, as
+/// `coding-system-for-read` gives one, else as the file says it is or its
+/// bytes look, as Emacs's `set-auto-coding` and detection decide.
+pub(crate) fn read_file(path: &Path, coding: Option<Coding>) -> Result<(String, Coding)> {
     let bytes = fs::read(path).map_err(|e| crate::fileops::file_error("Opening input file", &e, &[path]))?;
-    Ok(Coding::decode(&bytes))
+    Ok(crate::coding::decode_file(&bytes, coding))
 }
 
 impl Buffer {
     /// The buffer's coding system, from `buffer-file-coding-system`.
     pub(crate) fn coding(&self) -> Coding {
         match self.locals.get("buffer-file-coding-system") {
-            Some(Value::Str(name)) => Coding::parse(name, Eol::Unix).unwrap_or_default(),
+            Some(Value::Str(name)) => Coding::parse(name).map_or_else(Coding::default, |c| c.with_eol(Some(c.eol.unwrap_or(Eol::Unix)))),
             // Not visited from a file: the variable's default.
-            _ => Coding { charset: crate::coding::Charset::Utf8, eol: Eol::Unix },
+            _ => Coding::named("utf-8-unix"),
         }
     }
 
@@ -134,7 +136,7 @@ impl Buffer {
             return Ok(());
         }
         let path = self.path.clone().expect("visited_file_changed checks it");
-        if read_file(&path).is_ok_and(|(text, _)| *self.text() == text.as_str()) {
+        if read_file(&path, None).is_ok_and(|(text, _)| *self.text() == text.as_str()) {
             self.set_visited_file_modtime();
             return Ok(());
         }
@@ -144,12 +146,28 @@ impl Buffer {
 }
 
 impl Editor {
+    /// The coding `coding-system-for-read` says to read files with, if any.
+    pub(crate) fn coding_for_read(&self) -> Option<Coding> {
+        self.variable("coding-system-for-read").and_then(|v| v.as_str().and_then(Coding::parse))
+    }
+
+    /// The coding to write the current buffer with: `coding-system-for-write`
+    /// if it names one, with the buffer's line ends if it gives none, else
+    /// the buffer's own, as Emacs's choose_write_coding_system decides.
+    pub(crate) fn coding_for_write(&self) -> Coding {
+        let own = self.buffer().coding();
+        match self.variable("coding-system-for-write").and_then(|v| v.as_str().and_then(Coding::parse)) {
+            Some(coding) => coding.with_eol(Some(coding.eol.or(own.eol).unwrap_or(Eol::Unix))),
+            None => own,
+        }
+    }
+
     /// Decodes a visited file into a new buffer, noting its coding and
     /// modification time. A missing file gives an empty buffer.
-    pub(crate) fn read_visited_file(path: &Path) -> Result<Buffer> {
+    pub(crate) fn read_visited_file(path: &Path, coding: Option<Coding>) -> Result<Buffer> {
         // A new file is written with buffer-file-coding-system's default.
         let (text, coding) = match fs::metadata(path) {
-            Ok(_) => read_file(path).map(|(text, coding)| (text, Some(coding)))?,
+            Ok(_) => read_file(path, coding).map(|(text, coding)| (text, Some(coding)))?,
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => (String::new(), None),
             Err(e) => return Err(e.into()),
         };
@@ -187,10 +205,11 @@ impl Editor {
             return self.write_region(crate::filefns::WriteSource::Buffer, &name, false, crate::filefns::Visit::Yes, false);
         }
         self.check_permission(&format!("write {}", crate::files::abbreviate_path(&path)))?;
+        let coding = self.coding_for_write();
         let b = &mut self.buffers[self.current];
         // Through symbolic links to the file itself, as Emacs's file-chase-links.
         let real = fs::canonicalize(&path).unwrap_or_else(|_| path.clone());
-        let (bytes, coding) = b.coding().encode(&b.text().to_string());
+        let (bytes, coding) = coding.encode(&b.text().to_string());
         let old = fs::metadata(&real).ok();
         let mut renamed = false;
         if let Some(meta) = &old
@@ -239,7 +258,7 @@ impl Editor {
     /// and point within what changed keeps its place in proportion. The
     /// change can be undone. Read-only buffers are reverted too.
     pub fn replace_with_file(&mut self, path: &Path) -> Result<Coding> {
-        let (new, coding) = read_file(path)?;
+        let (new, coding) = read_file(path, self.coding_for_read())?;
         let b = &mut self.buffers[self.current];
         b.widen();
         let old = b.text().to_string();
@@ -298,7 +317,7 @@ impl Editor {
         let b = &self.buffers[self.current];
         let path = b.path.clone().ok_or_else(|| Error::new("This buffer is not visiting a file"))?;
         let auto = auto_save_file_name(&path);
-        let (text, _) = read_file(&auto)?;
+        let (text, _) = read_file(&auto, None)?;
         let b = &mut self.buffers[self.current];
         let read_only = std::mem::replace(&mut b.read_only, false);
         b.file.allow_supersession = true;

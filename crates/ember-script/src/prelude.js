@@ -197,6 +197,9 @@
   /** Forgets a killed buffer's object, once packages have loaded and hooks can be added. */
   const forgetBuffer = () => buffers.delete(native.bufferIdOf());
 
+  /** Runs a coding or charset primitive by its Lisp name. */
+  const coding = (name, ...args) => native.codingPrimitive(name, ...args);
+
   /** A buffer's name from a name or a buffer object, as functions that take a buffer accept either. */
   const nameOf = (b) => (b instanceof Buffer ? (b.live ? b.name : ember.signal("error", "Selecting deleted buffer")) : String(b));
 
@@ -491,6 +494,35 @@
       return id === null || id === undefined ? undefined : globalThis.__emberBuffer(id);
     },
     generateNewBufferName: (name) => native.generateNewBufferName(String(name)),
+    codingSystemP: (cs) => typeof cs === "string" && coding("coding-system-p", cs),
+    checkCodingSystem: (cs) => (cs === null || cs === undefined ? undefined : coding("check-coding-system", String(cs))),
+    codingSystemList: (baseOnly = false) => coding("coding-system-list", Boolean(baseOnly)),
+    codingSystemAliases: (cs) => coding("coding-system-aliases", String(cs)),
+    codingSystemBase: (cs) => coding("coding-system-base", String(cs)),
+    codingSystemType: (cs) => coding("coding-system-type", String(cs)),
+    codingSystemEolType: (cs) => coding("coding-system-eol-type", String(cs)),
+    codingSystemChangeEolConversion: (cs, eol) => coding("coding-system-change-eol-conversion", String(cs), eol ?? null),
+    codingSystemChangeTextConversion: (eolCs, textCs) => coding("coding-system-change-text-conversion", String(eolCs), String(textCs)),
+    codingSystemGet: (cs, prop) => coding("coding-system-get", String(cs), String(prop)) ?? undefined,
+    codingSystemMnemonic: (cs) => coding("coding-system-get", String(cs), "mnemonic"),
+    encodeCodingString: (string, cs) => coding("encode-coding-string", String(string), String(cs)),
+    decodeCodingString: (string, cs) => coding("decode-coding-string", String(string), String(cs)),
+    encodeCodingRegion: (start, end, cs) => coding("encode-coding-region", start, end, String(cs)),
+    decodeCodingRegion: (start, end, cs) => coding("decode-coding-region", start, end, String(cs)),
+    detectCodingString: (string, highest = false) => coding("detect-coding-string", String(string), Boolean(highest)),
+    detectCodingRegion: (start, end, highest = false) => coding("detect-coding-region", start, end, Boolean(highest)),
+    findCodingSystemsString: (string) => coding("find-coding-systems-string", String(string)),
+    findCodingSystemsRegion: (start, end) => coding("find-coding-systems-region", start, end),
+    unencodableCharPosition: (start, end, cs, count, string) =>
+      coding("unencodable-char-position", start, end, String(cs), count ?? null, string === undefined ? null : String(string)) ?? undefined,
+    checkCodingSystemsRegion: (start, end, codings) =>
+      coding("check-coding-systems-region", start, end, [...codings].map(String)) ?? undefined,
+    charsetp: (charset) => typeof charset === "string" && coding("charsetp", charset),
+    charsetList: () => coding("charset-list"),
+    charsetPriorityList: (highestOnly = false) => coding("charset-priority-list", Boolean(highestOnly)),
+    charCharset: (ch, restriction) => coding("char-charset", String(ch), restriction === undefined ? null : [...restriction].map(String)) ?? undefined,
+    encodeChar: (ch, charset) => coding("encode-char", String(ch), String(charset)) ?? undefined,
+    decodeChar: (charset, code) => coding("decode-char", String(charset), code) ?? undefined,
     bufferEnableUndo: (buffer) =>
       buffer === undefined ? native.setUndoEnabled(true) : ember.withCurrentBuffer(buffer, () => native.setUndoEnabled(true)),
     bufferDisableUndo: (buffer) =>

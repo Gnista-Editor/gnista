@@ -1,0 +1,650 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "visit-by-coding-cookie-and-save",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-> ą C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "c.txt": "latin-1:-*- coding: latin-2 -*-\n±\n"
+        },
+        "find": "c.txt"
+      },
+      "text": "-*- coding: latin-2 -*-\ną\ną\n",
+      "visible": "-*- coding: latin-2 -*-\ną\ną\n",
+      "point": 27,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "c.txt": "latin-1:-*- coding: latin-2 -*-\n±\n±\n",
+        "c.txt~": "latin-1:-*- coding: latin-2 -*-\n±\n"
+      }
+    },
+    {
+      "name": "local-variables-name-the-coding",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "x C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "v.txt": "latin-1:é\nLocal Variables:\ncoding: windows-1251\nEnd:\n"
+        },
+        "find": "v.txt"
+      },
+      "text": "xй\nLocal Variables:\ncoding: windows-1251\nEnd:\n",
+      "visible": "xй\nLocal Variables:\ncoding: windows-1251\nEnd:\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "v.txt": "latin-1:xé\nLocal Variables:\ncoding: windows-1251\nEnd:\n",
+        "v.txt~": "latin-1:é\nLocal Variables:\ncoding: windows-1251\nEnd:\n"
+      }
+    },
+    {
+      "name": "utf-16-with-a-signature-round-trips",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-> é C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "u.txt": "latin-1:ÿþx\u0000\n\u0000"
+        },
+        "find": "u.txt"
+      },
+      "text": "x\né\n",
+      "visible": "x\né\n",
+      "point": 3,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "u.txt": "latin-1:ÿþx\u0000\n\u0000é\u0000\n\u0000",
+        "u.txt~": "latin-1:ÿþx\u0000\n\u0000"
+      }
+    },
+    {
+      "name": "utf-16-big-endian-round-trips",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-e y C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "u.txt": "latin-1:þÿ\u0000x\u0000\n"
+        },
+        "find": "u.txt"
+      },
+      "text": "xy\n",
+      "visible": "xy\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "u.txt": "latin-1:þÿ\u0000x\u0000y\u0000\n",
+        "u.txt~": "latin-1:þÿ\u0000x\u0000\n"
+      }
+    },
+    {
+      "name": "iso-2022-jp-is-read-and-written",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-> x C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "j.txt": "latin-1:\u001b$B$\"\u001b(B\n"
+        },
+        "find": "j.txt"
+      },
+      "text": "あ\nx\n",
+      "visible": "あ\nx\n",
+      "point": 3,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "j.txt": "\u001b$B$\"\u001b(B\nx\n",
+        "j.txt~": "\u001b$B$\"\u001b(B\n"
+      }
+    },
+    {
+      "name": "euc-jp-looks-like-latin-1",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-> x C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "e.txt": "latin-1:¤¢¤¤\n"
+        },
+        "find": "e.txt"
+      },
+      "text": "¤¢¤¤\nx\n",
+      "visible": "¤¢¤¤\nx\n",
+      "point": 6,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "e.txt": "latin-1:¤¢¤¤\nx\n",
+        "e.txt~": "latin-1:¤¢¤¤\n"
+      }
+    },
+    {
+      "name": "set-coding-to-shift-jis",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x RET f C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "sjis"
+        ],
+        "files": {
+          "a.txt": "あい\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "あい\n",
+      "visible": "あい\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "latin-1: ¢\n",
+        "a.txt~": "あい\n"
+      }
+    },
+    {
+      "name": "set-coding-to-utf-16le-keeps-dos-ends",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x RET f C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "utf-16le"
+        ],
+        "files": {
+          "a.txt": "one\r\ntwo\r\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "one\ntwo\n",
+      "visible": "one\ntwo\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "o\u0000n\u0000e\u0000\r\u0000\n\u0000t\u0000w\u0000o\u0000\r\u0000\n\u0000",
+        "a.txt~": "one\r\ntwo\r\n"
+      }
+    },
+    {
+      "name": "set-coding-with-line-ends",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x RET f C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "iso-latin-1-dos"
+        ],
+        "files": {
+          "a.txt": "one\ntwo\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "one\ntwo\n",
+      "visible": "one\ntwo\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\r\ntwo\r\n",
+        "a.txt~": "one\ntwo\n"
+      }
+    },
+    {
+      "name": "set-coding-to-euc-kr",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x RET f C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "euc-kr"
+        ],
+        "files": {
+          "a.txt": "한글\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "한글\n",
+      "visible": "한글\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "latin-1:ÇÑ±Û\n",
+        "a.txt~": "한글\n"
+      }
+    },
+    {
+      "name": "set-coding-to-gbk",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x RET f C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "gbk"
+        ],
+        "files": {
+          "a.txt": "中文\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "中文\n",
+      "visible": "中文\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "latin-1:ÖÐÎÄ\n",
+        "a.txt~": "中文\n"
+      }
+    },
+    {
+      "name": "set-coding-to-big5",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x RET f C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "big5"
+        ],
+        "files": {
+          "a.txt": "中文\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "中文\n",
+      "visible": "中文\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "latin-1:¤¤¤å\n",
+        "a.txt~": "中文\n"
+      }
+    },
+    {
+      "name": "set-coding-to-koi8-r",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x RET f C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "koi8-r"
+        ],
+        "files": {
+          "a.txt": "Привет\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "Привет\n",
+      "visible": "Привет\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "latin-1:ðÒÉ×ÅÔ\n",
+        "a.txt~": "Привет\n"
+      }
+    },
+    {
+      "name": "set-coding-to-windows-1252",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x RET f C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "cp1252"
+        ],
+        "files": {
+          "a.txt": "€ “quoted”\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "€ “quoted”\n",
+      "visible": "€ “quoted”\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "latin-1: quoted\n",
+        "a.txt~": "€ “quoted”\n"
+      }
+    },
+    {
+      "name": "set-coding-to-utf-8-with-signature",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x RET f C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "utf-8-with-signature"
+        ],
+        "files": {
+          "a.txt": "café\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "café\n",
+      "visible": "café\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "﻿café\n",
+        "a.txt~": "café\n"
+      }
+    },
+    {
+      "name": "set-coding-to-iso-2022-jp",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x RET f C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "iso-2022-jp"
+        ],
+        "files": {
+          "a.txt": "日本語\nabc\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "日本語\nabc\n",
+      "visible": "日本語\nabc\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "\u001b$BF|K\\8l\u001b(B\nabc\n",
+        "a.txt~": "日本語\nabc\n"
+      }
+    },
+    {
+      "name": "revert-in-another-coding",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x RET r",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "windows-1251",
+          "yes"
+        ],
+        "files": {
+          "a.txt": "latin-1:été\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "йtй\n",
+      "visible": "йtй\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "latin-1:été\n"
+      }
+    },
+    {
+      "name": "revert-as-shift-jis-then-save",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x RET r M-> x C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "shift_jis",
+          "yes"
+        ],
+        "files": {
+          "a.txt": "latin-1: ¢\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "あい\nx\n",
+      "visible": "あい\nx\n",
+      "point": 4,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "latin-1: ¢\nx\n",
+        "a.txt~": "latin-1: ¢\n"
+      }
+    },
+    {
+      "name": "coding-for-the-next-command-saves",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-> x C-x RET c C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "latin-1"
+        ],
+        "files": {
+          "a.txt": "café\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "café\nx\n",
+      "visible": "café\nx\n",
+      "point": 6,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "latin-1:café\nx\n",
+        "a.txt~": "café\n"
+      }
+    },
+    {
+      "name": "coding-for-the-next-command-visits",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x RET c C-x C-f",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "euc-jp",
+          "e.txt"
+        ],
+        "files": {
+          "e.txt": "latin-1:¤¢¤¤\n"
+        },
+        "find": "a.txt"
+      },
+      "text": "あい\n",
+      "visible": "あい\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "",
+        "e.txt": "latin-1:¤¢¤¤\n"
+      }
+    },
+    {
+      "name": "saving-what-the-coding-cannot-hold-asks",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-> € C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "utf-8"
+        ],
+        "files": {
+          "l.txt": "latin-1:café\n"
+        },
+        "find": "l.txt"
+      },
+      "text": "café\n€\n",
+      "visible": "café\n€\n",
+      "point": 6,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "l.txt": "café\n€\n",
+        "l.txt~": "latin-1:café\n"
+      }
+    },
+    {
+      "name": "saving-what-the-coding-cannot-hold-default",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-> あ C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          ""
+        ],
+        "files": {
+          "l.txt": "latin-1:café\n"
+        },
+        "find": "l.txt"
+      },
+      "text": "café\nあ\n",
+      "visible": "café\nあ\n",
+      "point": 6,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "l.txt": "café\nあ\n",
+        "l.txt~": "latin-1:café\n"
+      }
+    }
+  ]
+}
