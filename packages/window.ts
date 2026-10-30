@@ -76,7 +76,27 @@ interface QuitRestore {
   buffer: string;
 }
 
-const quitRestore = new Map<number, QuitRestore>();
+/** A window's quit-restore parameter, as [kind, previous, selected, buffer]. */
+const quitRestore = {
+  get(window: number): QuitRestore | undefined {
+    const v = ember.windowParameter(window, "quit-restore");
+    if (!Array.isArray(v) || v.length < 4) return undefined;
+    const [kind, previous, selected, buffer] = v;
+    return { kind: kind === "window" ? "window" : "other", previous: typeof previous === "string" ? previous : undefined, selected: Number(selected), buffer: String(buffer) };
+  },
+  has(window: number): boolean {
+    return quitRestore.get(window) !== undefined;
+  },
+  set(window: number, r: QuitRestore): void {
+    ember.setWindowParameter(window, "quit-restore", [r.kind, r.previous ?? null, r.selected, r.buffer]);
+  },
+  delete(window: number): void {
+    ember.setWindowParameter(window, "quit-restore", null);
+  },
+};
+
+/** Whether a window is dedicated to its buffer, which display-buffer does not take for another. */
+const dedicated = (window: number): boolean => ember.windowDedicatedP(window) !== undefined && ember.windowDedicatedP(window) !== false;
 
 function size(window: number) {
   return ember.windowSize(window) ?? { width: 0, height: 0, totalWidth: 0, totalHeight: 0, fullWidth: true };
@@ -85,16 +105,17 @@ function size(window: number) {
 /**
  * The least recently used window, as get-lru-window finds it: one that
  * spans the frame's width if there is any, else any other; the selected
- * window only last, and not at all with `notSelected`.
+ * window only last, and not at all with `notSelected`; a dedicated one
+ * only with `dedicatedOk`.
  */
-function lruWindow(notSelected: boolean): number | undefined {
+function lruWindow(notSelected: boolean, dedicatedOk = false): number | undefined {
   const selected = ember.selectedWindow();
   let best: number | undefined;
   let bestTime = Infinity;
   let second: number | undefined;
   let secondTime = Infinity;
   for (const window of ember.windowList()) {
-    if (notSelected && window === selected) continue;
+    if ((notSelected && window === selected) || (!dedicatedOk && dedicated(window))) continue;
     const time = ember.windowUseTime(window) ?? 0;
     if (window === selected || !size(window).fullWidth) {
       if (time < secondTime) [second, secondTime] = [window, time];
@@ -106,11 +127,11 @@ function lruWindow(notSelected: boolean): number | undefined {
 }
 
 /** The largest window by area, as get-largest-window finds it. */
-function largestWindow(notSelected: boolean): number | undefined {
+function largestWindow(notSelected: boolean, dedicatedOk = false): number | undefined {
   let best: number | undefined;
   let bestArea = -1;
   for (const window of ember.windowList()) {
-    if (notSelected && window === ember.selectedWindow()) continue;
+    if ((notSelected && window === ember.selectedWindow()) || (!dedicatedOk && dedicated(window))) continue;
     const s = size(window);
     const area = s.totalWidth * s.totalHeight;
     if (area > bestArea) [best, bestArea] = [window, area];
@@ -156,7 +177,8 @@ function displayBuffer(buffer: string, inhibitSameWindow = false): number {
   const showing = ember.windowList().filter((w) => ember.windowBuffer(w) === buffer && !(inhibitSameWindow && w === selected));
   const reuse = showing.includes(selected) ? selected : showing[0];
   if (reuse !== undefined) return reuse;
-  const candidates = [largestWindow(false), lruWindow(true)];
+  // A dedicated window may be split, though not reused, as get-largest-window's DEDICATED allows.
+  const candidates = [largestWindow(false, true), lruWindow(true, true)];
   for (const candidate of candidates) {
     if (candidate === undefined) continue;
     const made = splitSensibly(candidate);
@@ -225,8 +247,8 @@ const killBufferAndWindow = ember.defineCommand({
     const buffer = ember.windowBuffer() ?? "";
     const window = ember.selectedWindow();
     if (ember.windowList().length > 1) {
-      ember.deleteWindow(window);
       quitRestore.delete(window);
+      ember.deleteWindow(window);
     }
     ember.call("kill-buffer", buffer);
   },
@@ -284,6 +306,55 @@ const scrollOtherWindowDown = ember.defineCommand({
   name: "scroll-other-window-down",
   doc: "Scroll the next window down a screen, as M-v does in the selected one. A prefix argument says how many lines.",
   run: () => scrollOther("scroll-down-command"),
+});
+
+// The buffers a window showed before, as window.el's previous-buffer and next-buffer.
+
+/** Shows `buffer` in `window` from where it was when the window last showed it. */
+function showAgain(window: number, buffer: string): void {
+  const entry = ember.windowPrevBuffers(window).find(([b]) => b === buffer);
+  ember.setWindowBuffer(window, buffer);
+  if (entry) {
+    ember.setWindowStart(window, entry[1]);
+    if (window === ember.selectedWindow()) ember.gotoChar(entry[2]);
+  }
+}
+
+const previousBuffer = ember.defineCommand({
+  name: "previous-buffer",
+  doc:
+    "Show in the selected window the buffer it showed before this one, as switch-to-prev-buffer.\n\n" +
+    "Repeated, it goes further back; next-buffer comes forward again. A prefix argument goes that many back.",
+  run: () => {
+    const window = ember.selectedWindow();
+    for (let n = ember.prefixNumericValue(ember.prefixArg()); n > 0; n--) {
+      const old = ember.windowBuffer(window) ?? "";
+      const prev = ember.windowPrevBuffers(window);
+      const entry = prev.find(([b]) => b !== old && ember.getBuffer(b) !== undefined);
+      if (!entry) throw new Error("No previous buffer");
+      const oldEntry: [string, number, number] = [old, ember.windowStart(window), ember.point()];
+      const next = ember.windowNextBuffers(window).filter((b) => b !== old && b !== entry[0]);
+      showAgain(window, entry[0]);
+      // The buffer left goes to the end of the previous ones, so going on goes further back.
+      ember.setWindowPrevBuffers(window, [...prev.filter(([b]) => b !== entry[0] && b !== old), oldEntry]);
+      ember.setWindowNextBuffers(window, [old, ...next]);
+    }
+  },
+});
+
+const nextBuffer = ember.defineCommand({
+  name: "next-buffer",
+  doc: "Show in the selected window the buffer previous-buffer went back from, as switch-to-next-buffer. A prefix argument goes that many on.",
+  run: () => {
+    const window = ember.selectedWindow();
+    for (let n = ember.prefixNumericValue(ember.prefixArg()); n > 0; n--) {
+      const old = ember.windowBuffer(window) ?? "";
+      const next = ember.windowNextBuffers(window).filter((b) => b !== old && ember.getBuffer(b) !== undefined);
+      if (next.length === 0) throw new Error("No next buffer");
+      showAgain(window, next[0]);
+      ember.setWindowNextBuffers(window, next.slice(1));
+    }
+  },
 });
 
 // Resizing, as window.el's enlarge-window and shrink-window.
@@ -428,6 +499,8 @@ ember.bindKey("C-x 5 f", findFileOtherFrame);
 ember.bindKey("C-x 5 C-f", findFileOtherFrame);
 ember.bindKey("C-x 5 C-o", displayBufferOtherFrame);
 
+ember.bindKey("C-x <left>", previousBuffer);
+ember.bindKey("C-x <right>", nextBuffer);
 ember.bindKey("C-x 2", splitBelow);
 ember.bindKey("C-x 3", splitRight);
 ember.bindKey("C-x o", otherWindow);

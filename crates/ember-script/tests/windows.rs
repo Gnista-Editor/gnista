@@ -252,3 +252,84 @@ fn code_in_another_buffer_can_change_what_windows_show() {
     let b = ed.window_buffer();
     assert_eq!((b.name.as_str(), b.slice(0..b.len()).as_str()), ("shown", "x"));
 }
+
+fn eval(ed: &mut Editor, s: &Scripting, code: &str) -> String {
+    s.eval_expression(ed, code).unwrap_or_else(|e| panic!("{code}: {e}"))
+}
+
+#[test]
+fn a_window_configuration_puts_the_windows_back() {
+    let (mut ed, s) = setup("one\ntwo\nthree\nfour\n");
+    ed.set_frame_size(80, 24);
+    ed.press("C-x 2 C-n C-n").unwrap();
+    eval(&mut ed, &s, r#"(globalThis.saved = ember.currentWindowConfiguration(), 0)"#);
+    // Delete the windows, show another buffer, and type at the top.
+    ed.press("C-x 1 C-x b").unwrap();
+    ed.type_text("other\n");
+    ed.press("C-x b RET M-<").unwrap();
+    ed.type_text("zero\n");
+    eval(&mut ed, &s, "(ember.setWindowConfiguration(saved), 0)");
+    let got = windows(&ed);
+    assert_eq!(got.len(), 2);
+    // The point followed the text typed above it, as a marker does.
+    assert_eq!(got[0], ("*scratch*".into(), 13, true));
+    assert_eq!(eval(&mut ed, &s, "ember.windowConfigurationP(saved)"), "true");
+    // save-window-excursion puts them back however the code ends.
+    s.eval_expression(&mut ed, r#"ember.saveWindowExcursion(() => { ember.call("delete-other-windows"); throw new Error("out"); })"#).unwrap_err();
+    assert_eq!(windows(&ed).len(), 2);
+}
+
+#[test]
+fn quitting_a_window_uses_its_quit_restore_parameter() {
+    let (mut ed, s) = setup("text");
+    ed.set_frame_size(80, 24);
+    ed.press("C-h f").unwrap();
+    ed.type_text("forward-char");
+    ed.press("RET").unwrap();
+    let help = eval(&mut ed, &s, r#"ember.windowList().find((w) => ember.windowBuffer(w) === "*Help*")"#);
+    assert_eq!(eval(&mut ed, &s, &format!(r#"JSON.stringify(ember.windowParameter({help}, "quit-restore"))"#)), r#""[\"window\",null,1,\"*Help*\"]""#);
+    ed.press("C-x o q").unwrap();
+    assert_eq!(windows(&ed).len(), 1, "the window made for help went");
+}
+
+#[test]
+fn a_dedicated_window_keeps_its_buffer() {
+    let (mut ed, s) = setup("text");
+    ed.set_frame_size(80, 24);
+    eval(&mut ed, &s, "(ember.setWindowDedicatedP(undefined, true), 0)");
+    ed.press("C-x b").unwrap();
+    ed.type_text("notes");
+    ed.press("RET").unwrap();
+    // The buffer went to another window, and this one still shows *scratch*.
+    let got = windows(&ed);
+    assert_eq!(got.len(), 2);
+    assert!(got.iter().any(|(b, _, _)| b == "*scratch*") && got.iter().any(|(b, _, selected)| b == "notes" && *selected));
+    // Killing the buffer of a dedicated window that is not selected deletes it.
+    eval(&mut ed, &s, r#"(ember.setWindowDedicatedP(ember.windowList().find((w) => ember.windowBuffer(w) === "*scratch*"), true), 0)"#);
+    ed.press("C-x b").unwrap();
+    ed.type_text("third");
+    ed.press("RET").unwrap();
+    ed.kill_buffer("*scratch*").unwrap();
+    assert_eq!(windows(&ed).len(), 1);
+}
+
+#[test]
+fn previous_buffer_and_next_buffer_go_back_and_forth() {
+    let (mut ed, _s) = setup("");
+    for name in ["a", "b", "c"] {
+        ed.press("C-x b").unwrap();
+        ed.type_text(name);
+        ed.press("RET").unwrap();
+    }
+    let shown = |ed: &Editor| ed.window_buffer().name.clone();
+    ed.press("C-x <left>").unwrap();
+    assert_eq!(shown(&ed), "b");
+    ed.press("C-x <left>").unwrap();
+    assert_eq!(shown(&ed), "a");
+    ed.press("C-x <left>").unwrap();
+    assert_eq!(shown(&ed), "*scratch*");
+    ed.press("C-x <right>").unwrap();
+    assert_eq!(shown(&ed), "a");
+    ed.press("C-x <right>").unwrap();
+    assert_eq!(shown(&ed), "b");
+}

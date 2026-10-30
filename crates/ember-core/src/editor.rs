@@ -249,6 +249,9 @@ pub struct Editor {
     pub(crate) permissions: crate::permissions::Permissions,
     /// Each window's mode line, as the last redisplay formatted it.
     pub(crate) mode_lines: std::collections::HashMap<crate::window::WindowId, Vec<crate::modeline::ModeLineSegment>>,
+    /// Window configurations kept for code to put back, by id.
+    pub(crate) window_configurations: std::collections::HashMap<u64, crate::window::WindowConfiguration>,
+    pub(crate) next_window_configuration: u64,
 }
 
 impl Default for Editor {
@@ -343,14 +346,11 @@ impl Editor {
             timers: Default::default(),
             permissions: Default::default(),
             mode_lines: Default::default(),
+            window_configurations: Default::default(),
+            next_window_configuration: 0,
         };
-        editor.windows.push(crate::window::Window {
-            id: 1,
-            buffer: editor.buffers[0].id,
-            width: 80,
-            height: 24,
-            used: 0,
-        });
+        let first = crate::window::Window::new(1, editor.buffers[0].id, 80, 24);
+        editor.windows.push(first);
         variables::install(&mut editor);
         crate::modeline::install(&mut editor);
         faces::install(&mut editor);
@@ -1394,6 +1394,8 @@ impl Editor {
         let shown = self.selected_buffer_index();
         if index != shown {
             self.previous_buffer = Some(self.buffers[shown].id);
+            let selected = self.selected_window;
+            self.record_window_buffer(selected);
             self.selected_window_shows(index);
         }
         self.current = index;

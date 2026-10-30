@@ -53,6 +53,8 @@ A completion table can be a function of the input that gives the names, as Emacs
 
 Step 2 went on with one table: `symbols.rs` holds each name's variable, a hook's global functions, its function cell and its property list, where five tables kept them before. A function cell holds a function, a command (a function with an interactive spec, its parameters), or another name, as `defalias` makes; defining a function of a command's name replaces the command, as `defun` without `interactive` does, and the variable and properties of the name stay. `funcall` on a command makes its parameters from the values, numbers for counts and positions and Emacs's forms for a raw prefix argument. Advice is nadvice.el's: `advice-add` with each HOW, depths, and replacing by function or name, kept beside the function cell so it stays when the function is defined again, and applied wherever a call goes by name: keys, M-x, `ember.call`, `funcall` and hooks that hold names. An alias's own advice applies to calls through it. The built-in commands that counted with the prefix argument (`forward-char`, `delete-char`, `kill-word` and the rest, and the search commands) take the count as a parameter instead, as Emacs's `(forward-char N)`, so code passes it and advice sees it. Calling a function held as a value, as `symbolFunction` gives it, does not go through the name's advice, unlike Emacs, where the advice is in the function cell; and a script function advised is called with editor values only.
 
+Of step 4, windows are objects much as Emacs's are ([ADR 0028](0028-windows-as-objects.md)): starts that follow edits, parameters, dedication, the buffers each showed, and configurations.
+
 ## Review
 
 A review of the work under this ADR found, and the same round fixed:

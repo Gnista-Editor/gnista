@@ -1039,8 +1039,50 @@ const API: &str = r##"
    * and what it wrote. Asks the agent's permission first.
    */
   function callProcess(command: string[], options?: { directory?: string; input?: string }): { exit: number; output: string };
-  /** Where the selected window's text starts, at the start of its top line, as window-start. */
-  function windowStart(): number;
+  /**
+   * Where a window's text starts, the selected window's by default, at the
+   * start of its top line, as window-start. Another window's start moves
+   * with edits, as a marker does.
+   */
+  function windowStart(window?: number): number;
+  /** Make a window start at the line holding `pos`, as set-window-start; a window always starts at a line's start. */
+  function setWindowStart(window: number | undefined, pos: number): void;
+  /** A window's parameter, as window-parameter, such as "quit-restore". */
+  function windowParameter(window: number | undefined, name: string | symbol): Value | undefined;
+  /** Set a window's parameter, or with null take it away, as set-window-parameter. */
+  function setWindowParameter(window: number | undefined, name: string | symbol, value: Value): void;
+  /** A window's parameters, as window-parameters. */
+  function windowParameters(window?: number): { [name: string]: Value };
+  /** Whether a window is dedicated to its buffer, as window-dedicated-p: true for strongly, or what it was set to. */
+  function windowDedicatedP(window?: number): Value | undefined;
+  /**
+   * Dedicate a window to its buffer, or with null free it, as
+   * set-window-dedicated-p: switch-to-buffer in a window dedicated with
+   * true shows the buffer in another window, display-buffer passes it
+   * over, and killing its buffer deletes it.
+   */
+  function setWindowDedicatedP(window: number | undefined, flag: Value): void;
+  /** The buffers a window showed before, most recent first, each with where it started and its point, as window-prev-buffers. */
+  function windowPrevBuffers(window?: number): [string, number, number][];
+  function setWindowPrevBuffers(window: number | undefined, buffers: [string, number, number][]): void;
+  /** The buffers previous-buffer went back from in a window, as window-next-buffers. */
+  function windowNextBuffers(window?: number): string[];
+  function setWindowNextBuffers(window: number | undefined, buffers: string[]): void;
+  /** A frame's windows as they are, as current-window-configuration. */
+  interface WindowConfiguration {
+    readonly __emberWindowConfiguration: number;
+  }
+  /**
+   * The selected frame's windows as they are now, to put back with
+   * setWindowConfiguration: each window's buffer, start, point, size and
+   * parameters, which window is selected and which buffer is current.
+   */
+  function currentWindowConfiguration(): WindowConfiguration;
+  /** Put a frame's windows back as a configuration had them, as set-window-configuration. */
+  function setWindowConfiguration(configuration: WindowConfiguration): void;
+  function windowConfigurationP(value: unknown): value is WindowConfiguration;
+  /** Run `fn`, then put the windows back as they were, however it ends, as save-window-excursion. */
+  function saveWindowExcursion<T>(fn: () => T): T;
   /**
    * Name a function so code can call it by name, as Emacs's defun: for
    * variables that hold a function, such as next-error-function. Unlike a

@@ -2197,10 +2197,100 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
     )?;
     native.set(
         "windowStart",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: Opt<u64>| {
             with_editor(&ctx, |ed| {
-                let b = ed.window_buffer();
-                Ok(b.line_start(b.top_line.min(b.line_count() - 1)))
+                let id = window.0.unwrap_or(ed.selected_window());
+                ed.window_start(id).ok_or_else(|| Error::new("No such window"))
+            })
+        })?,
+    )?;
+    native.set(
+        "setWindowStart",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64, pos: usize| with_editor(&ctx, |ed| ed.set_window_start(window, pos)))?,
+    )?;
+    native.set(
+        "windowParameter",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64, name: String| -> rquickjs::Result<Value<'js>> {
+            match with_editor(&ctx, |ed| Ok(ed.window_parameter(window, &name).cloned()))? {
+                Some(v) => value_to_js(&ctx, &v),
+                None => Ok(Value::new_undefined(ctx.clone())),
+            }
+        })?,
+    )?;
+    native.set(
+        "setWindowParameter",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64, name: String, value: Value<'js>| {
+            let value = value_from_js(&ctx, value)?;
+            with_editor(&ctx, |ed| ed.set_window_parameter(window, &name, value))
+        })?,
+    )?;
+    native.set(
+        "windowParameterNames",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64| with_editor(&ctx, |ed| Ok(ed.window_parameters(window).into_iter().map(|(k, _)| k).collect::<Vec<_>>())))?,
+    )?;
+    native.set(
+        "windowDedicatedP",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64| -> rquickjs::Result<Value<'js>> {
+            let v = with_editor(&ctx, |ed| Ok(ed.window_dedicated(window)))?;
+            value_to_js(&ctx, &v)
+        })?,
+    )?;
+    native.set(
+        "setWindowDedicatedP",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64, flag: Value<'js>| {
+            let flag = value_from_js(&ctx, flag)?;
+            with_editor(&ctx, |ed| ed.set_window_dedicated(window, flag))
+        })?,
+    )?;
+    native.set(
+        "windowPrevBuffers",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64| -> rquickjs::Result<Value<'js>> {
+            let entries = with_editor(&ctx, |ed| Ok(ed.window_prev_buffers(window)))?;
+            let list = entries.into_iter().map(|(b, s, p)| EditorValue::List(vec![EditorValue::Str(b), EditorValue::Number(s as f64), EditorValue::Number(p as f64)])).collect();
+            value_to_js(&ctx, &EditorValue::List(list))
+        })?,
+    )?;
+    native.set(
+        "setWindowPrevBuffers",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64, buffers: Value<'js>| {
+            let EditorValue::List(items) = value_from_js(&ctx, buffers)? else {
+                return Err(Exception::throw_type(&ctx, "setWindowPrevBuffers takes [buffer, start, point] entries"));
+            };
+            let entries = items
+                .into_iter()
+                .filter_map(|e| match e {
+                    EditorValue::List(e) => match e.as_slice() {
+                        [b, s, p] => Some((b.as_str()?.to_string(), s.as_number()? as usize, p.as_number()? as usize)),
+                        _ => None,
+                    },
+                    _ => None,
+                })
+                .collect();
+            with_editor(&ctx, |ed| ed.set_window_prev_buffers(window, entries))
+        })?,
+    )?;
+    native.set(
+        "windowNextBuffers",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64| with_editor(&ctx, |ed| Ok(ed.window_next_buffers(window))))?,
+    )?;
+    native.set(
+        "setWindowNextBuffers",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64, buffers: Vec<String>| with_editor(&ctx, |ed| ed.set_window_next_buffers(window, buffers)))?,
+    )?;
+    native.set(
+        "currentWindowConfiguration",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.current_window_configuration())))?,
+    )?;
+    native.set(
+        "setWindowConfiguration",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, id: u64| with_editor(&ctx, |ed| ed.set_window_configuration(id)))?,
+    )?;
+    native.set(
+        "freeWindowConfiguration",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, id: u64| {
+            with_editor(&ctx, |ed| {
+                ed.free_window_configuration(id);
+                Ok(())
             })
         })?,
     )?;

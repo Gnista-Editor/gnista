@@ -1169,6 +1169,15 @@ fn files_and_buffers(ed: &mut Editor) {
                         .ok_or_else(|| Error::new("No other buffer"))?,
                     name => name.to_string(),
                 };
+                // A window dedicated to its buffer keeps it: another window
+                // shows the buffer, as switch-to-buffer pops to it in Emacs.
+                if ed.window_dedicated(ed.selected_window()) == Value::Bool(true) && ed.minibuffer_depth() == 0 {
+                    if ed.command("pop-to-buffer").is_none() {
+                        return Err(Error::new("Cannot switch buffers in a dedicated window"));
+                    }
+                    ed.get_buffer_create(&name);
+                    return ed.call("pop-to-buffer", vec![Arg::Str(name)]);
+                }
                 ed.switch_to_buffer(&name);
                 Ok(())
             },

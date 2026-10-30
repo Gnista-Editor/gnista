@@ -130,6 +130,18 @@
    * unchains unreferenced markers, so code need not delete markers itself.
    */
   const markersFreed = new FinalizationRegistry((id) => native.deleteMarker(id));
+  /**
+   * A frame's windows as they were, to put back, as Emacs's window
+   * configurations: the editor keeps it until nothing refers to it.
+   */
+  const configurationsFreed = new FinalizationRegistry((id) => native.freeWindowConfiguration(id));
+  class WindowConfiguration {
+    constructor(id) {
+      Object.defineProperty(this, "__emberWindowConfiguration", { value: id });
+      configurationsFreed.register(this, id);
+      Object.freeze(this);
+    }
+  }
   class Marker {
     constructor(id) {
       Object.defineProperty(this, "__emberMarkerId", { value: id });
@@ -913,7 +925,31 @@
     deleteProcess: (name) => native.deleteProcess(String(name)),
     callProcess: (command, { directory, input } = {}) =>
       native.callProcess(command.map(String), directory ?? undefined, input === undefined ? undefined : String(input)),
-    windowStart: () => native.windowStart(),
+    windowStart: (window) => native.windowStart(window ?? undefined),
+    setWindowStart: (window, pos) => native.setWindowStart(window ?? native.selectedWindow(), pos),
+    windowParameter: (window, name) => native.windowParameter(window ?? native.selectedWindow(), symbolName(name)),
+    setWindowParameter: (window, name, value) => native.setWindowParameter(window ?? native.selectedWindow(), symbolName(name), value ?? null),
+    windowParameters: (window) => {
+      const w = window ?? native.selectedWindow();
+      return Object.fromEntries(native.windowParameterNames(w).map((n) => [n, native.windowParameter(w, n)]));
+    },
+    windowDedicatedP: (window) => native.windowDedicatedP(window ?? native.selectedWindow()) ?? undefined,
+    setWindowDedicatedP: (window, flag) => native.setWindowDedicatedP(window ?? native.selectedWindow(), flag ?? null),
+    windowPrevBuffers: (window) => native.windowPrevBuffers(window ?? native.selectedWindow()),
+    setWindowPrevBuffers: (window, buffers) => native.setWindowPrevBuffers(window ?? native.selectedWindow(), buffers.map(([b, s, p]) => [String(b), s, p])),
+    windowNextBuffers: (window) => native.windowNextBuffers(window ?? native.selectedWindow()),
+    setWindowNextBuffers: (window, buffers) => native.setWindowNextBuffers(window ?? native.selectedWindow(), buffers.map(String)),
+    currentWindowConfiguration: () => new WindowConfiguration(native.currentWindowConfiguration()),
+    setWindowConfiguration(configuration) {
+      if (!(configuration instanceof WindowConfiguration)) throw new TypeError("setWindowConfiguration takes a window configuration");
+      native.setWindowConfiguration(configuration.__emberWindowConfiguration);
+    },
+    windowConfigurationP: (value) => value instanceof WindowConfiguration,
+    // As Emacs's save-window-excursion: the windows put back as they were, however fn ends.
+    saveWindowExcursion(fn) {
+      const configuration = ember.currentWindowConfiguration();
+      return unwindProtect(fn, () => ember.setWindowConfiguration(configuration));
+    },
     prepareChangeGroup: () => native.prepareChangeGroup(),
     cancelChangeGroup: (handle) => native.cancelChangeGroup(handle),
     acceptChangeGroup: (handle) => native.acceptChangeGroup(handle),

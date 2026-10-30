@@ -12,6 +12,7 @@ use crate::buffer::Buffer;
 use crate::editor::Editor;
 use crate::error::{Error, Result};
 use crate::rows::Row;
+use crate::variables::Value;
 
 pub type WindowId = u64;
 
@@ -31,6 +32,60 @@ pub(crate) struct Window {
     pub(crate) width: usize,
     /// When the window was last selected, to choose one after deleting.
     pub(crate) used: u64,
+    /// Its parameters, as Emacs's `window-parameter` keeps them, such as
+    /// `quit-restore`.
+    pub(crate) parameters: std::collections::BTreeMap<String, Value>,
+    /// Whether it is dedicated to its buffer: nil, t (strongly), or
+    /// anything else (softly), as `set-window-dedicated-p` sets it.
+    pub(crate) dedicated: Value,
+    /// The buffers it showed before, most recent first, each with where it
+    /// started and its point there, as `window-prev-buffers` lists them.
+    pub(crate) prev_buffers: Vec<(u64, usize, usize)>,
+    /// The buffers `previous-buffer` went back from, as `window-next-buffers`.
+    pub(crate) next_buffers: Vec<u64>,
+}
+
+impl Window {
+    pub(crate) fn new(id: WindowId, buffer: u64, width: usize, height: usize) -> Window {
+        Window {
+            id,
+            buffer,
+            width,
+            height,
+            used: 0,
+            parameters: Default::default(),
+            dedicated: Value::Null,
+            prev_buffers: Vec::new(),
+            next_buffers: Vec::new(),
+        }
+    }
+}
+
+/// A frame's windows as they were, to put back, as Emacs's
+/// `current-window-configuration` keeps them: the tree, each window's
+/// buffer, start, point, size and parameters, which window was selected,
+/// and which buffer was current. Starts and points are markers, so they
+/// follow edits made meanwhile.
+pub(crate) struct WindowConfiguration {
+    frame: FrameId,
+    tree: WindowTree,
+    selected: WindowId,
+    current: u64,
+    windows: Vec<SavedWindow>,
+}
+
+struct SavedWindow {
+    id: WindowId,
+    buffer: u64,
+    /// Markers in the buffer for where the window started and its point.
+    start: u64,
+    point: u64,
+    width: usize,
+    height: usize,
+    parameters: std::collections::BTreeMap<String, Value>,
+    dedicated: Value,
+    prev_buffers: Vec<(u64, usize, usize)>,
+    next_buffers: Vec<u64>,
 }
 
 /// How the frame is divided. A split halves a window, the first part above
@@ -351,7 +406,7 @@ impl Editor {
         let window = self.next_window_id;
         let (width, height) = self.window(self.selected_window).map_or((80, 23), |w| (w.width, w.height));
         let point = self.buffers[index].point();
-        self.windows.push(Window { id: window, buffer: self.buffers[index].id, width, height, used: 0 });
+        self.windows.push(Window::new(window, self.buffers[index].id, width, height));
         self.buffers[index].set_window_point(window, point);
         self.next_frame_id += 1;
         let id = self.next_frame_id;
@@ -555,7 +610,11 @@ impl Editor {
             self.select(index);
             return Ok(());
         }
-        let w = self.window(id).ok_or_else(|| Error::new("No such window"))?;
+        if self.window(id).is_none() {
+            return Err(Error::new("No such window"));
+        }
+        self.record_window_buffer(id);
+        let w = self.window(id).expect("checked");
         let old = self.buffer_index(w.buffer);
         self.buffers[old].remove_window_point(id);
         self.buffers[old].remove_window_start(id);
@@ -648,7 +707,10 @@ impl Editor {
         };
         let w = self.window_mut(id).expect("listed windows exist");
         (w.width, w.height) = old_size;
-        self.windows.push(Window { id: new, buffer: view.2, width: new_size.0, height: new_size.1, used: 0 });
+        // The new window has the old one's previous buffers, as Emacs's split-window gives it.
+        let mut made = Window::new(new, view.2, new_size.0, new_size.1);
+        made.prev_buffers = self.window(id).map(|w| w.prev_buffers.clone()).unwrap_or_default();
+        self.windows.push(made);
         let index = self.buffer_index(view.2);
         let b = &mut self.buffers[index];
         b.set_window_point(new, view.0);
@@ -746,8 +808,26 @@ impl Editor {
         }
     }
 
-    /// Shows another buffer in the windows showing a buffer that is going away.
+    /// Shows another buffer in the windows showing a buffer that is going
+    /// away, deleting those dedicated to it where it can, as Emacs's
+    /// replace-buffer-in-windows does, and forgets it in every window's
+    /// previous and next buffers.
     pub(crate) fn replace_buffer_in_windows(&mut self, gone: u64, replacement: usize) {
+        for w in &mut self.windows {
+            w.prev_buffers.retain(|(b, _, _)| *b != gone);
+            w.next_buffers.retain(|b| *b != gone);
+        }
+        let dedicated: Vec<WindowId> = self
+            .window_tree
+            .leaves()
+            .into_iter()
+            .filter(|&id| id != self.selected_window && self.window(id).is_some_and(|w| w.buffer == gone && w.dedicated.is_true()))
+            .collect();
+        for id in dedicated {
+            if self.window_tree.leaves().len() > 1 {
+                let _ = self.delete_window(Some(id));
+            }
+        }
         let id = self.buffers[replacement].id;
         let point = self.buffers[replacement].point();
         let selected = self.selected_window;
@@ -762,6 +842,226 @@ impl Editor {
             self.buffers[replacement].set_window_point(window, point);
             self.buffers[replacement].set_window_start(window, 0);
         }
+    }
+
+    /// Notes the buffer a window shows before it shows another, at the head
+    /// of its previous buffers, with where it started and its point, as
+    /// Emacs's record-window-buffer does.
+    pub(crate) fn record_window_buffer(&mut self, id: WindowId) {
+        let Some(w) = self.window(id) else { return };
+        let buffer = w.buffer;
+        let Some(index) = self.buffer_with_id(buffer) else { return };
+        let b = &self.buffers[index];
+        if b.id == self.minibuffer_id {
+            return;
+        }
+        let (start, point) = if id == self.selected_window {
+            (b.line_start(b.top_line.min(b.line_count() - 1)), b.point())
+        } else {
+            (b.window_start(id).unwrap_or(0), b.window_point(id).unwrap_or(b.point()))
+        };
+        let w = self.window_mut(id).expect("checked");
+        w.prev_buffers.retain(|(b, _, _)| *b != buffer);
+        w.prev_buffers.insert(0, (buffer, start, point));
+        w.next_buffers.retain(|b| *b != buffer);
+    }
+
+    /// A window's parameter, as Emacs's `window-parameter`.
+    pub fn window_parameter(&self, id: WindowId, name: &str) -> Option<&Value> {
+        self.window(id)?.parameters.get(name)
+    }
+
+    /// Sets a window's parameter, or with null takes it away, as `set-window-parameter`.
+    pub fn set_window_parameter(&mut self, id: WindowId, name: &str, value: Value) -> Result<()> {
+        let w = self.window_mut(id).ok_or_else(|| Error::new("No such window"))?;
+        if value == Value::Null {
+            w.parameters.remove(name);
+        } else {
+            w.parameters.insert(name.to_string(), value);
+        }
+        Ok(())
+    }
+
+    /// A window's parameters, as `window-parameters`.
+    pub fn window_parameters(&self, id: WindowId) -> Vec<(String, Value)> {
+        self.window(id).map(|w| w.parameters.iter().map(|(k, v)| (k.clone(), v.clone())).collect()).unwrap_or_default()
+    }
+
+    /// Whether a window is dedicated to its buffer, as `window-dedicated-p`:
+    /// nil, t for strongly, or what it was set to.
+    pub fn window_dedicated(&self, id: WindowId) -> Value {
+        self.window(id).map_or(Value::Null, |w| w.dedicated.clone())
+    }
+
+    pub fn set_window_dedicated(&mut self, id: WindowId, flag: Value) -> Result<()> {
+        let w = self.window_mut(id).ok_or_else(|| Error::new("No such window"))?;
+        w.dedicated = if flag.is_true() { flag } else { Value::Null };
+        Ok(())
+    }
+
+    /// The buffers a window showed before, most recent first, each with
+    /// where it started and its point, as `window-prev-buffers`.
+    pub fn window_prev_buffers(&self, id: WindowId) -> Vec<(String, usize, usize)> {
+        let Some(w) = self.window(id) else { return Vec::new() };
+        w.prev_buffers.iter().filter_map(|&(b, s, p)| self.buffer_with_id(b).map(|i| (self.buffers[i].name.clone(), s, p))).collect()
+    }
+
+    pub fn set_window_prev_buffers(&mut self, id: WindowId, buffers: Vec<(String, usize, usize)>) -> Result<()> {
+        let entries = buffers.into_iter().filter_map(|(name, s, p)| self.find_buffer(&name).map(|i| (self.buffers[i].id, s, p))).collect();
+        self.window_mut(id).ok_or_else(|| Error::new("No such window"))?.prev_buffers = entries;
+        Ok(())
+    }
+
+    /// The buffers `previous-buffer` left in a window, as `window-next-buffers`.
+    pub fn window_next_buffers(&self, id: WindowId) -> Vec<String> {
+        let Some(w) = self.window(id) else { return Vec::new() };
+        w.next_buffers.iter().filter_map(|&b| self.buffer_with_id(b).map(|i| self.buffers[i].name.clone())).collect()
+    }
+
+    pub fn set_window_next_buffers(&mut self, id: WindowId, buffers: Vec<String>) -> Result<()> {
+        let entries = buffers.into_iter().filter_map(|name| self.find_buffer(&name).map(|i| self.buffers[i].id)).collect();
+        self.window_mut(id).ok_or_else(|| Error::new("No such window"))?.next_buffers = entries;
+        Ok(())
+    }
+
+    /// Where a window starts, as `window-start`.
+    pub fn window_start(&self, id: WindowId) -> Option<usize> {
+        let w = self.window(id)?;
+        let b = &self.buffers[self.buffer_index(w.buffer)];
+        Some(if id == self.selected_window { b.line_start(b.top_line.min(b.line_count() - 1)) } else { b.window_start(id).unwrap_or(0) })
+    }
+
+    /// Makes a window start at the line holding `pos`, as `set-window-start`
+    /// does, though a window here always starts at a line's start.
+    pub fn set_window_start(&mut self, id: WindowId, pos: usize) -> Result<()> {
+        let w = self.window(id).ok_or_else(|| Error::new("No such window"))?;
+        let index = self.buffer_index(w.buffer);
+        let selected = id == self.selected_window;
+        let b = &mut self.buffers[index];
+        let line = b.line_of(pos.min(b.len()));
+        if selected {
+            b.top_line = line;
+        } else {
+            let start = b.line_start(line);
+            b.set_window_start(id, start);
+        }
+        Ok(())
+    }
+
+    /// The selected frame's windows as they are now, to put back with
+    /// [`Editor::set_window_configuration`], as Emacs's
+    /// `current-window-configuration`. Returns its id; free it with
+    /// [`Editor::free_window_configuration`].
+    pub fn current_window_configuration(&mut self) -> u64 {
+        let selected = self.selected_window;
+        let mut windows = Vec::new();
+        for id in self.window_tree.leaves() {
+            let Some(w) = self.window(id) else { continue };
+            let (buffer, width, height) = (w.buffer, w.width, w.height);
+            let (parameters, dedicated, prev_buffers, next_buffers) = (w.parameters.clone(), w.dedicated.clone(), w.prev_buffers.clone(), w.next_buffers.clone());
+            let start_pos = self.window_start(id).unwrap_or(0);
+            let index = self.buffer_index(buffer);
+            let b = &mut self.buffers[index];
+            let point_pos = if id == selected { b.point() } else { b.window_point(id).unwrap_or(b.point()) };
+            let (start, point) = (b.make_marker(start_pos, false), b.make_marker(point_pos, false));
+            windows.push(SavedWindow { id, buffer, start, point, width, height, parameters, dedicated, prev_buffers, next_buffers });
+        }
+        let current = self.buffers[self.current].id;
+        self.next_window_configuration += 1;
+        let id = self.next_window_configuration;
+        let saved = WindowConfiguration { frame: self.selected_frame, tree: self.window_tree.clone(), selected, current, windows };
+        self.window_configurations.insert(id, saved);
+        id
+    }
+
+    /// Puts a frame's windows back as a configuration had them, as Emacs's
+    /// `set-window-configuration`: deleted windows come back, others go,
+    /// each shows its buffer from where it started with its point, a
+    /// buffer killed meanwhile replaced by another, and the buffer current
+    /// then is current again if it is live.
+    pub fn set_window_configuration(&mut self, id: u64) -> Result<()> {
+        let config = self.window_configurations.get(&id).ok_or_else(|| Error::new("No such window configuration"))?;
+        if config.frame != self.selected_frame {
+            self.select_frame(config.frame)?;
+        }
+        let config = self.window_configurations.get(&id).expect("checked");
+        let (tree, selected, current) = (config.tree.clone(), config.selected, config.current);
+        type Place = Option<(String, usize)>;
+        let saved: Vec<(WindowId, u64, Place, Place, usize, usize)> = config
+            .windows
+            .iter()
+            .map(|w| (w.id, w.buffer, self.marker_position(w.start).map(|(n, p)| (n.to_string(), p)), self.marker_position(w.point).map(|(n, p)| (n.to_string(), p)), w.width, w.height))
+            .collect();
+        let extras: Vec<_> = config.windows.iter().map(|w| (w.parameters.clone(), w.dedicated.clone(), w.prev_buffers.clone(), w.next_buffers.clone())).collect();
+        // The selected window's point and start go to its buffer first, as
+        // they would on selecting another.
+        let old = self.selected_window;
+        let shown = self.selected_buffer_index();
+        let b = &mut self.buffers[shown];
+        let (point, top) = (b.point(), b.line_start(b.top_line.min(b.line_count() - 1)));
+        b.set_window_point(old, point);
+        b.set_window_start(old, top);
+        // Windows the configuration does not have go.
+        let keep: Vec<WindowId> = saved.iter().map(|w| w.0).collect();
+        for w in self.window_tree.leaves() {
+            if !keep.contains(&w) {
+                if let Some(win) = self.window(w) {
+                    let index = self.buffer_index(win.buffer);
+                    self.buffers[index].remove_window_point(w);
+                    self.buffers[index].remove_window_start(w);
+                }
+                self.windows.retain(|x| x.id != w);
+            }
+        }
+        let fallback = self.other_buffer().and_then(|n| self.find_buffer(n)).unwrap_or(0);
+        for ((id, buffer, start, point, width, height), (parameters, dedicated, prev, next)) in saved.into_iter().zip(extras) {
+            let index = self.buffer_with_id(buffer).unwrap_or(fallback);
+            let buffer = self.buffers[index].id;
+            if let Some(w) = self.window(id) {
+                let old = self.buffer_index(w.buffer);
+                self.buffers[old].remove_window_point(id);
+                self.buffers[old].remove_window_start(id);
+            } else {
+                self.windows.push(Window::new(id, buffer, width, height));
+            }
+            let w = self.window_mut(id).expect("there now");
+            w.buffer = buffer;
+            (w.width, w.height) = (width, height);
+            (w.parameters, w.dedicated, w.prev_buffers, w.next_buffers) = (parameters, dedicated, prev, next);
+            let at = |m: Option<(String, usize)>, b: &Buffer| m.filter(|(n, _)| *n == b.name).map_or(0, |(_, p)| p.min(b.len()));
+            let b = &mut self.buffers[index];
+            let (start, point) = (at(start, b), at(point, b));
+            b.set_window_start(id, b.line_start(b.line_of(start)));
+            b.set_window_point(id, point);
+        }
+        self.window_tree = tree;
+        // As selecting it: its point and start become its buffer's.
+        self.selected_window = selected;
+        let w = self.window(selected).ok_or_else(|| Error::new("No such window"))?;
+        let index = self.buffer_index(w.buffer);
+        let b = &mut self.buffers[index];
+        if let Some(point) = b.remove_window_point(selected) {
+            b.set_point(point);
+        }
+        let top = b.remove_window_start(selected).map_or(0, |p| b.line_of(p));
+        b.top_line = top.min(b.line_count() - 1);
+        self.current = self.buffer_with_id(current).filter(|&i| self.buffers[i].id != self.minibuffer_id).unwrap_or(index);
+        self.relayout();
+        Ok(())
+    }
+
+    /// Lets a configuration go, with its markers.
+    pub fn free_window_configuration(&mut self, id: u64) {
+        if let Some(config) = self.window_configurations.remove(&id) {
+            for w in config.windows {
+                self.delete_marker(w.start);
+                self.delete_marker(w.point);
+            }
+        }
+    }
+
+    pub fn window_configuration_p(&self, id: u64) -> bool {
+        self.window_configurations.contains_key(&id)
     }
 
     /// Feeds a mouse button event, such as `<mouse-1>` or `S-<drag-mouse-1>`,
