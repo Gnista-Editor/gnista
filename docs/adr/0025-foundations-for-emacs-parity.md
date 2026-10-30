@@ -65,6 +65,13 @@ Item 7 began with functions:
 - Processes write their output and errors to one pipe, as Emacs's do, so they arrive in order; two pipes interleaved them by chance.
 - Buffers, markers, windows and processes as objects with stable ids, markers freed when nothing refers to them, and propertized strings, are the rest of item 7.
 
+Item 8 then gave commands Emacs's interactive codes:
+- Parameter kinds the editor fills without asking: `count` ("p", the prefix argument as a number), `prefix` ("P", as it is), `point` ("d"), `mark` ("m"), and `region-beginning` and `region-end` ("r"); and `number` ("n"), read until it is one.
+- Arguments are typed: `Arg::Int` and `Arg::Prefix` beside text and keys, and a script's command gets numbers and Emacs's prefix forms (null, 3, "-", [4]).
+- Code passes values, `ember.call("forward-paragraph", 2)`, and may leave a count or prefix out, which the call's prefix argument fills, as an `&optional` argument is nil. Text becomes an argument of any kind in one place, `Arg::from_text`, which the MCP server and the agent share: values turn into text only at that edge.
+- The generated declarations type each command's arguments: numbers for counts and positions, optional counts.
+- Commands still return nothing: functions (`defun`) are the way to return values, as most Emacs commands are called for their effect. Moving packages that read `prefixNumericValue()` themselves to `count` parameters happens as they are touched; paragraphs.ts and Org's heading motions moved.
+
 ## Consequences
 
 Ports can follow their Lisp closely: reading input where the Lisp does, catching the conditions it catches, binding what it binds, requiring what it requires. The cost is migrating existing packages, done as each is next touched, and a larger core.

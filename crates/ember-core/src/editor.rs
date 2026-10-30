@@ -381,6 +381,14 @@ impl Editor {
         let command = self
             .command(name)
             .ok_or_else(|| Error::new(format!("No such command: {name}")))?;
+        // A count or prefix argument left out comes from the call's prefix
+        // argument, as an &optional one is nil and the command counts 1.
+        let mut args = args;
+        if args.len() < command.params.len() && command.params[args.len()..].iter().all(|p| p.kind.optional()) {
+            for p in &command.params[args.len()..] {
+                args.push(self.state_arg(p.kind, prefix)?);
+            }
+        }
         if args.len() != command.params.len() {
             return Err(Error::new(format!(
                 "{name} takes {} arguments, got {}",
@@ -478,7 +486,8 @@ impl Editor {
             self.message(format!("No such command: {name}"));
             return;
         };
-        if !command.params.is_empty() && (self.prompt.is_some() || self.reading_keys.is_some()) {
+        let prompts = command.params.iter().any(|p| !p.kind.from_state());
+        if prompts && (self.prompt.is_some() || self.reading_keys.is_some()) {
             self.message("Command attempted to use minibuffer while in minibuffer");
             return;
         }
@@ -529,6 +538,21 @@ impl Editor {
     }
 
     fn read_next_arg(&mut self) {
+        // What the editor supplies, the prefix argument, point and the
+        // region, is taken without asking, as interactive "p", "d" and "r".
+        while let Some(call) = &self.pending_call
+            && let Some(param) = call.command.params.get(call.args.len())
+            && param.kind.from_state()
+        {
+            match self.state_arg(param.kind, call.prefix) {
+                Ok(arg) => self.pending_call.as_mut().expect("checked above").args.push(arg),
+                Err(e) => {
+                    self.pending_call = None;
+                    self.fail(e);
+                    return;
+                }
+            }
+        }
         let Some(call) = &self.pending_call else { return };
         if let Some(param) = call.command.params.get(call.args.len()) {
             if param.kind == ParamKind::Keys {
@@ -578,10 +602,38 @@ impl Editor {
             self.answer_typed(&arg.to_string());
             return;
         }
-        if let Some(call) = &mut self.pending_call {
-            call.args.push(arg);
-            self.read_next_arg();
-        }
+        let Some(call) = &mut self.pending_call else { return };
+        // A number is read again until it is one, as read-number does.
+        let arg = match (call.command.params.get(call.args.len()).map(|p| p.kind), arg) {
+            (Some(ParamKind::Number), Arg::Str(text)) => match Arg::from_text(ParamKind::Number, &text) {
+                Ok(n) => n,
+                Err(_) => {
+                    self.message("Please enter a number.");
+                    self.read_next_arg();
+                    return;
+                }
+            },
+            (_, arg) => arg,
+        };
+        call.args.push(arg);
+        self.read_next_arg();
+    }
+
+    /// The argument the editor supplies for a parameter of a kind it
+    /// fills: the prefix argument as a count or as it is, point, the mark,
+    /// or an end of the region, as interactive "p", "P", "d", "m" and "r".
+    pub(crate) fn state_arg(&self, kind: ParamKind, prefix: Option<PrefixArg>) -> Result<Arg> {
+        let b = self.buffer();
+        let no_mark = || Error::new("The mark is not set now, so there is no region");
+        Ok(match kind {
+            ParamKind::Count => Arg::Int(prefix_numeric_value(prefix)),
+            ParamKind::Prefix => Arg::Prefix(prefix),
+            ParamKind::Point => Arg::Int(b.point() as i64),
+            ParamKind::Mark => Arg::Int(b.mark().ok_or_else(|| Error::new("The mark is not set now"))? as i64),
+            ParamKind::RegionBeginning => Arg::Int(b.mark().ok_or_else(no_mark)?.min(b.point()) as i64),
+            ParamKind::RegionEnd => Arg::Int(b.mark().ok_or_else(no_mark)?.max(b.point()) as i64),
+            kind => return Err(Error::new(format!("The editor does not supply a {}", kind.describe()))),
+        })
     }
 
     /// Runs `f` once no prompt or question is open: now if none is, or
@@ -1588,7 +1640,7 @@ impl Editor {
             }
             ParamKind::Variable => self.variables.keys().cloned().collect(),
             ParamKind::Face => self.faces.keys().cloned().collect(),
-            ParamKind::String | ParamKind::Keys => return Vec::new(),
+            _ => return Vec::new(),
         };
         crate::completion::complete(&self.completion_styles(), input, &names)
     }

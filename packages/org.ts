@@ -3768,13 +3768,15 @@ function forwardHeadingSameLevel(arg: number): void {
 const forwardSameLevel = ember.defineCommand({
   name: "org-forward-heading-same-level",
   doc: "Move to the next heading at the same level, under the same parent.",
-  run: () => forwardHeadingSameLevel(ember.prefixNumericValue()),
+  params: [{ name: "arg", kind: "count" }],
+  run: (arg: number) => forwardHeadingSameLevel(arg),
 });
 
 const backwardSameLevel = ember.defineCommand({
   name: "org-backward-heading-same-level",
   doc: "Move to the previous heading at the same level, under the same parent.",
-  run: () => forwardHeadingSameLevel(-ember.prefixNumericValue()),
+  params: [{ name: "arg", kind: "count" }],
+  run: (arg: number) => forwardHeadingSameLevel(-arg),
 });
 
 /**
@@ -5435,7 +5437,7 @@ const setTagsCommand = ember.defineCommand({
   name: "org-set-tags-command",
   doc: "Set the tags of the heading point is under, written as :work:home: or work home; empty removes them.",
   params: [{ name: "tags", prompt: "Tags: ", history: "org-tags-history" }],
-  run: (answer) => setTags(answer.split(/[:\s,]+/).filter((t) => t !== "")),
+  run: (answer: string) => setTags(answer.split(/[:\s,]+/).filter((t) => t !== "")),
 });
 
 ember.defineVariable({ name: "org-tags-history", doc: "Tags answered to org-set-tags-command, newest first.", value: [] });
@@ -6433,13 +6435,15 @@ function dragLine(n: number): void {
 ember.defineCommand({
   name: "org-drag-line-forward",
   doc: "Drag the line at point down past the next line, or as many lines as the prefix argument says.",
-  run: () => dragLine(ember.prefixNumericValue()),
+  params: [{ name: "arg", kind: "count" }],
+  run: (arg: number) => dragLine(arg),
 });
 
 ember.defineCommand({
   name: "org-drag-line-backward",
   doc: "Drag the line at point up past the line before it, or as many lines as the prefix argument says.",
-  run: () => dragLine(-ember.prefixNumericValue()),
+  params: [{ name: "arg", kind: "count" }],
+  run: (arg: number) => dragLine(-arg),
 });
 
 /**

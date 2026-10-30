@@ -1,0 +1,111 @@
+//! Commands with typed parameters, as Emacs's interactive codes give them:
+//! the prefix argument as a count ("p") or as it is ("P"), point, the mark
+//! and the region ("d", "m", "r"), and numbers read in the minibuffer ("n").
+//! Interactively the editor supplies the first kinds without asking; code
+//! passes them as numbers, and may leave a count or prefix out.
+
+use ember_core::Editor;
+use ember_script::Scripting;
+
+fn setup() -> (Editor, Scripting) {
+    let mut ed = Editor::new();
+    let s = Scripting::new(&mut ed).unwrap();
+    s.eval_typescript(
+        &mut ed,
+        "test.ts",
+        r#"
+        globalThis.seen = [];
+        ember.defineCommand({
+          name: "test-count",
+          params: [{ name: "n", kind: "count" }],
+          run: (n: number) => { seen.push(n); },
+        });
+        ember.defineCommand({
+          name: "test-raw",
+          params: [{ name: "arg", kind: "prefix" }],
+          run: (arg: ember.PrefixArg) => { seen.push(arg); },
+        });
+        ember.defineCommand({
+          name: "test-region",
+          params: [{ name: "start", kind: "region-beginning" }, { name: "end", kind: "region-end" }, { name: "at", kind: "point" }],
+          run: (start: number, end: number, at: number) => { seen.push([start, end, at]); },
+        });
+        ember.defineCommand({
+          name: "test-number",
+          params: [{ name: "n", kind: "number", prompt: "How many: " }],
+          run: (n: number) => { seen.push(n * 2); },
+        });
+        "#
+        .to_string(),
+    )
+    .unwrap();
+    (ed, s)
+}
+
+fn mx(ed: &mut Editor, name: &str) {
+    ed.press("M-x").unwrap();
+    ed.type_text(name);
+    ed.press("RET").unwrap();
+}
+
+fn seen(ed: &mut Editor, s: &Scripting) -> String {
+    s.eval_expression(ed, "seen.splice(0)").unwrap()
+}
+
+#[test]
+fn a_count_is_the_prefix_argument_as_a_number() {
+    let (mut ed, s) = setup();
+    mx(&mut ed, "test-count");
+    ed.press("C-u").unwrap();
+    mx(&mut ed, "test-count");
+    ed.press("M-5").unwrap();
+    mx(&mut ed, "test-count");
+    ed.press("M--").unwrap();
+    mx(&mut ed, "test-count");
+    assert_eq!(seen(&mut ed, &s), "[1,4,5,-1]");
+    // From code it is a number, or left out for 1, or the prefix given.
+    s.eval_expression(&mut ed, r#"(ember.call("test-count", 7), ember.call("test-count"), ember.callWithPrefix([16], "test-count"))"#).unwrap();
+    assert_eq!(seen(&mut ed, &s), "[7,1,16]");
+}
+
+#[test]
+fn a_raw_prefix_argument_comes_in_emacs_forms() {
+    let (mut ed, s) = setup();
+    mx(&mut ed, "test-raw");
+    ed.press("C-u").unwrap();
+    mx(&mut ed, "test-raw");
+    ed.press("M--").unwrap();
+    mx(&mut ed, "test-raw");
+    ed.press("M-3").unwrap();
+    mx(&mut ed, "test-raw");
+    assert_eq!(seen(&mut ed, &s), r#"[null,[4],"-",3]"#);
+}
+
+#[test]
+fn the_region_and_point_come_without_asking() {
+    let (mut ed, s) = setup();
+    mx(&mut ed, "test-region");
+    assert_eq!(ed.take_error().map(|e| e.to_string()), Some("The mark is not set now, so there is no region".into()));
+    ed.type_text("hello world");
+    ed.press("C-a C-SPC M-f").unwrap();
+    mx(&mut ed, "test-region");
+    ed.press("C-x C-x").unwrap();
+    mx(&mut ed, "test-region");
+    assert_eq!(seen(&mut ed, &s), "[[0,5,5],[0,5,0]]");
+}
+
+#[test]
+fn a_number_is_asked_for_until_it_is_one() {
+    let (mut ed, s) = setup();
+    mx(&mut ed, "test-number");
+    assert_eq!(ed.prompt(), Some("How many: "));
+    ed.type_text("lots");
+    ed.press("RET").unwrap();
+    assert_eq!(ed.prompt(), Some("How many: "));
+    assert_eq!(ed.messages().last().map(String::as_str), Some("Please enter a number."));
+    ed.type_text("21");
+    ed.press("RET").unwrap();
+    assert_eq!(ed.prompt(), None);
+    s.eval_expression(&mut ed, r#"ember.call("test-number", "4")"#).unwrap();
+    assert_eq!(seen(&mut ed, &s), "[42,8]");
+}

@@ -343,18 +343,38 @@ fn enter<R>(context: &Context, ed: &mut Editor, f: impl for<'js> FnOnce(Ctx<'js>
     }
 }
 
-/// A script's string arguments for a command, as the command's parameters take them.
-fn command_args(ed: &Editor, name: &str, args: Vec<String>) -> Result<Vec<Arg>> {
-    let command = ed.command(name).ok_or_else(|| Error::new(format!("No such command: {name}")))?;
+/// A script's arguments for a command, as the command's parameters take
+/// them: numbers for counts and positions, Emacs's forms for a prefix
+/// argument, and text, from which any of them can be read too.
+fn command_args<'js>(ctx: &Ctx<'js>, name: &str, args: Vec<Value<'js>>) -> rquickjs::Result<Vec<Arg>> {
+    let kinds = with_editor(ctx, |ed| {
+        let command = ed.command(name).ok_or_else(|| Error::new(format!("No such command: {name}")))?;
+        Ok(command.params.iter().map(|p| p.kind).collect::<Vec<_>>())
+    })?;
     args.into_iter()
         .enumerate()
-        .map(|(i, arg)| match command.params.get(i).map(|p| p.kind) {
-            Some(ParamKind::Keys) => Key::parse_seq(&arg)
-                .map(Arg::Keys)
-                .ok_or_else(|| Error::new(format!("Invalid key sequence: {arg:?}"))),
-            _ => Ok(Arg::Str(arg)),
+        .map(|(i, value)| {
+            let kind = kinds.get(i).copied().unwrap_or(ParamKind::String);
+            let text = if value.is_null() || value.is_undefined() {
+                String::new()
+            } else if let Some(list) = value.as_array() {
+                // A prefix argument as C-u gives it, [4].
+                format!("({})", list.get::<Coerced<String>>(0)?.0)
+            } else {
+                value.get::<Coerced<String>>()?.0
+            };
+            Arg::from_text(kind, &text).map_err(|e| throw_error(ctx, &e))
         })
         .collect()
+}
+
+/// A command's argument as a script's command gets it.
+fn arg_to_js<'js>(ctx: &Ctx<'js>, arg: &Arg) -> rquickjs::Result<Value<'js>> {
+    match arg {
+        Arg::Int(n) => Ok(Value::new_number(ctx.clone(), *n as f64)),
+        Arg::Prefix(prefix) => prefix_to_js(ctx, *prefix),
+        other => Ok(rquickjs::String::from_str(ctx.clone(), &other.to_string())?.into_value()),
+    }
 }
 
 /// Gives a host function the editor, turning editor errors into script exceptions.
@@ -390,9 +410,11 @@ struct ScriptFunction {
 }
 
 impl ScriptFunction {
-    fn call(&self, ed: &mut Editor, args: Vec<String>) -> Result<()> {
+    /// Runs the function as a command, with its arguments as scripts take them.
+    fn call(&self, ed: &mut Editor, args: &[Arg]) -> Result<()> {
         enter(&self.context, ed, |ctx| {
             let run = self.run.clone().restore(&ctx).map_err(|e| js_error(&ctx, e))?;
+            let args = args.iter().map(|a| arg_to_js(&ctx, a)).collect::<rquickjs::Result<Vec<_>>>().map_err(|e| js_error(&ctx, e))?;
             run.call::<_, Value>((Rest(args),))
                 .map(drop)
                 .map_err(|e| js_error(&ctx, e))
@@ -400,7 +422,7 @@ impl ScriptFunction {
     }
 
     fn into_command(self) -> impl Fn(&mut Editor, &[Arg]) -> Result<()> {
-        move |ed, args| self.call(ed, args.iter().map(Arg::to_string).collect())
+        move |ed, args| self.call(ed, args)
     }
 
     /// Calls the function with editor values, as hooks pass their arguments.
@@ -533,21 +555,17 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
     )?;
     native.set(
         "call",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, args: Rest<String>| {
-            with_editor(&ctx, |ed| {
-                let args = command_args(ed, &name, args.0)?;
-                ed.call(&name, args)
-            })
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, args: Rest<Value<'js>>| {
+            let args = command_args(&ctx, &name, args.0)?;
+            with_editor(&ctx, |ed| ed.call(&name, args))
         })?,
     )?;
     native.set(
         "callWithPrefix",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, prefix: Value<'js>, name: String, args: Rest<String>| {
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, prefix: Value<'js>, name: String, args: Rest<Value<'js>>| {
             let prefix = prefix_from_js(&ctx, prefix)?;
-            with_editor(&ctx, |ed| {
-                let args = command_args(ed, &name, args.0)?;
-                ed.call_with_prefix(&name, args, prefix)
-            })
+            let args = command_args(&ctx, &name, args.0)?;
+            with_editor(&ctx, |ed| ed.call_with_prefix(&name, args, prefix))
         })?,
     )?;
     native.set(

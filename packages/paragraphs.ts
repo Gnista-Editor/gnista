@@ -77,20 +77,20 @@ function forwardParagraph(arg: number): void {
   }
 }
 
-const count = (): number => ember.prefixNumericValue(ember.prefixArg());
-
 ember.defineCommand({
   name: "forward-paragraph",
   doc: "Move to the end of this paragraph, or the next if between them. With a prefix argument, that many; back if negative.",
   shiftSelect: true,
-  run: () => forwardParagraph(count()),
+  params: [{ name: "arg", kind: "count" }],
+  run: (arg: number) => forwardParagraph(arg),
 });
 
 ember.defineCommand({
   name: "backward-paragraph",
   doc: "Move to the start of this paragraph, or the one before if between them. With a prefix argument, that many.",
   shiftSelect: true,
-  run: () => forwardParagraph(-count()),
+  params: [{ name: "arg", kind: "count" }],
+  run: (arg: number) => forwardParagraph(-arg),
 });
 
 ember.bindKey("M-}", "forward-paragraph");

@@ -121,17 +121,14 @@ impl Prompt {
     }
 
     fn completing(&self) -> bool {
-        self.collection.is_some() || !matches!(self.kind, ParamKind::String | ParamKind::Keys)
+        self.collection.is_some() || self.kind.completes()
     }
 
     fn category(&self) -> Option<String> {
         if self.collection.is_some() {
             return self.category.clone();
         }
-        match self.kind {
-            ParamKind::String | ParamKind::Keys => None,
-            kind => Some(kind.name().to_string()),
-        }
+        self.kind.completes().then(|| self.kind.name().to_string())
     }
 }
 
@@ -288,7 +285,7 @@ impl Editor {
                 .collect(),
             (None, ParamKind::Variable) => self.variables.keys().cloned().collect(),
             (None, ParamKind::Face) => self.faces.keys().cloned().collect(),
-            (None, ParamKind::String | ParamKind::Keys) => Vec::new(),
+            (None, _) => Vec::new(),
         };
         Field { base: String::new(), before: before.to_string(), after: after.to_string(), suffix: String::new(), names }
     }

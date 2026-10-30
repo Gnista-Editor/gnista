@@ -237,17 +237,15 @@ fn call_command(ed: &mut Editor, name: &str, args: &Value) -> Result<String, Str
         Some(Value::Array(items)) => items.iter().map(|v| v.as_str().map_or_else(|| v.to_string(), str::to_string)).collect(),
         _ => Vec::new(),
     };
-    if values.len() != command.params.len() {
+    // A count or prefix argument at the end can be left out, as in Emacs.
+    let required = command.params.iter().rposition(|p| !p.kind.optional()).map_or(0, |i| i + 1);
+    if values.len() < required || values.len() > command.params.len() {
         let names: Vec<&str> = command.params.iter().map(|p| p.name.as_str()).collect();
         return Err(format!("{name} takes {} arguments ({}), not {}", names.len(), names.join(", "), values.len()));
     }
     let mut call_args = Vec::new();
     for (p, v) in command.params.iter().zip(values) {
-        call_args.push(if p.kind == ember_core::ParamKind::Keys {
-            Arg::Keys(Key::parse_seq(&v).ok_or_else(|| format!("Not keys in Emacs notation: {v}"))?)
-        } else {
-            Arg::Str(v)
-        });
+        call_args.push(Arg::from_text(p.kind, &v).map_err(|e| format!("{}: {e}", p.name))?);
     }
     let prefix = match args.get("prefix") {
         None | Some(Value::Null) => None,

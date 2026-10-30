@@ -62,9 +62,11 @@ declare global {
       /**
        * Move to the start of this paragraph, or the one before if between them. With a prefix argument, that many.
        *
+       * @param arg prefix count
+       *
        * Defined in packages/paragraphs.ts.
        */
-      "backward-paragraph": [];
+      "backward-paragraph": [arg?: number];
       /**
        * Move back over a balanced expression. With a prefix argument, that many; forward if negative.
        *
@@ -903,9 +905,11 @@ declare global {
       /**
        * Move to the end of this paragraph, or the next if between them. With a prefix argument, that many; back if negative.
        *
+       * @param arg prefix count
+       *
        * Defined in packages/paragraphs.ts.
        */
-      "forward-paragraph": [];
+      "forward-paragraph": [arg?: number];
       /**
        * Move forward over a balanced expression: a word or symbol, a string, or a list in parens. With a prefix argument, that many; back if negative.
        *
@@ -1649,9 +1653,11 @@ declare global {
       /**
        * Move to the previous heading at the same level, under the same parent.
        *
+       * @param arg prefix count
+       *
        * Defined in packages/org.ts.
        */
-      "org-backward-heading-same-level": [];
+      "org-backward-heading-same-level": [arg?: number];
       /**
        * Capture a note, asking for the key of one of org-capture-templates: its entry goes into its target file, shown narrowed to it. C-c C-c files it and C-c C-k takes it away.
        *
@@ -1813,15 +1819,19 @@ declare global {
       /**
        * Drag the line at point up past the line before it, or as many lines as the prefix argument says.
        *
-       * Defined in packages/org.ts.
-       */
-      "org-drag-line-backward": [];
-      /**
-       * Drag the line at point down past the next line, or as many lines as the prefix argument says.
+       * @param arg prefix count
        *
        * Defined in packages/org.ts.
        */
-      "org-drag-line-forward": [];
+      "org-drag-line-backward": [arg?: number];
+      /**
+       * Drag the line at point down past the next line, or as many lines as the prefix argument says.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-drag-line-forward": [arg?: number];
       /**
        * Move to the end of the line, staying on a folded heading's line rather than going past its hidden text.
        *
@@ -1849,9 +1859,11 @@ declare global {
       /**
        * Move to the next heading at the same level, under the same parent.
        *
+       * @param arg prefix count
+       *
        * Defined in packages/org.ts.
        */
-      "org-forward-heading-same-level": [];
+      "org-forward-heading-same-level": [arg?: number];
       /**
        * Cycle the whole buffer: top headings only, then all headings, then everything.
        *
@@ -5661,11 +5673,36 @@ declare global {
     type DefinedCommand = string & { readonly [definedCommand]: true };
 
     /** How the minibuffer reads a parameter when the command runs from a key or M-x. */
-    type ParamKind = "string" | "file" | "buffer" | "command" | "keys" | "variable" | "face";
+    /**
+     * What a parameter takes. Those read in the minibuffer: "string", "file",
+     * "buffer", "command", "keys", "variable", "face" and "number". Those the
+     * editor supplies without asking, as Emacs's interactive codes: "count",
+     * the prefix argument as a number, 1 without one ("p"); "prefix", the raw
+     * prefix argument, null, a number, "-" or [4] for C-u ("P"); "point"
+     * ("d"); "mark" ("m"); and "region-beginning" and "region-end" ("r").
+     */
+    type ParamKind =
+      | "string"
+      | "file"
+      | "buffer"
+      | "command"
+      | "keys"
+      | "variable"
+      | "face"
+      | "number"
+      | "count"
+      | "prefix"
+      | "point"
+      | "mark"
+      | "region-beginning"
+      | "region-end";
 
     interface Param {
       name: string;
-      /** Defaults to "string". A "keys" parameter is passed in Emacs notation, such as "C-x C-f". */
+      /**
+       * Defaults to "string". A "keys" parameter is passed in Emacs notation,
+       * such as "C-x C-f"; numbers, counts and positions as numbers.
+       */
       kind?: ParamKind;
       /** The minibuffer prompt, or a function of the arguments read before it that gives it. Defaults to the name followed by ": ". */
       prompt?: string | ((...earlier: string[]) => string);
@@ -5698,12 +5735,13 @@ declare global {
       /** Read from the minibuffer, in order, when the command runs from a key or M-x. */
       params?: Param[];
       /**
-       * Receives one string per parameter. Throw an Error to fail with its
+       * Receives one argument per parameter: text, or a number for a number,
+       * count or position, or the prefix argument. Throw an Error to fail with its
        * message. It may be async, awaiting prompts partway through, as
        * `await ember.readString(...)`; it then carries on with the buffer,
        * prefix argument and name it had when it asked.
        */
-      run: (...args: string[]) => void | Promise<void>;
+      run: (...args: any[]) => void | Promise<void>;
       /**
        * Whether it is a motion Shift selects with, as Emacs's ^ interactive
        * spec: with Shift it starts or extends the region, without it ends one

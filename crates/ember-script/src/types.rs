@@ -28,11 +28,36 @@ const API: &str = r##"
   type DefinedCommand = string & { readonly [definedCommand]: true };
 
   /** How the minibuffer reads a parameter when the command runs from a key or M-x. */
-  type ParamKind = "string" | "file" | "buffer" | "command" | "keys" | "variable" | "face";
+  /**
+   * What a parameter takes. Those read in the minibuffer: "string", "file",
+   * "buffer", "command", "keys", "variable", "face" and "number". Those the
+   * editor supplies without asking, as Emacs's interactive codes: "count",
+   * the prefix argument as a number, 1 without one ("p"); "prefix", the raw
+   * prefix argument, null, a number, "-" or [4] for C-u ("P"); "point"
+   * ("d"); "mark" ("m"); and "region-beginning" and "region-end" ("r").
+   */
+  type ParamKind =
+    | "string"
+    | "file"
+    | "buffer"
+    | "command"
+    | "keys"
+    | "variable"
+    | "face"
+    | "number"
+    | "count"
+    | "prefix"
+    | "point"
+    | "mark"
+    | "region-beginning"
+    | "region-end";
 
   interface Param {
     name: string;
-    /** Defaults to "string". A "keys" parameter is passed in Emacs notation, such as "C-x C-f". */
+    /**
+     * Defaults to "string". A "keys" parameter is passed in Emacs notation,
+     * such as "C-x C-f"; numbers, counts and positions as numbers.
+     */
     kind?: ParamKind;
     /** The minibuffer prompt, or a function of the arguments read before it that gives it. Defaults to the name followed by ": ". */
     prompt?: string | ((...earlier: string[]) => string);
@@ -65,12 +90,13 @@ const API: &str = r##"
     /** Read from the minibuffer, in order, when the command runs from a key or M-x. */
     params?: Param[];
     /**
-     * Receives one string per parameter. Throw an Error to fail with its
+     * Receives one argument per parameter: text, or a number for a number,
+     * count or position, or the prefix argument. Throw an Error to fail with its
      * message. It may be async, awaiting prompts partway through, as
      * `await ember.readString(...)`; it then carries on with the buffer,
      * prefix argument and name it had when it asked.
      */
-    run: (...args: string[]) => void | Promise<void>;
+    run: (...args: any[]) => void | Promise<void>;
     /**
      * Whether it is a motion Shift selects with, as Emacs's ^ interactive
      * spec: with Shift it starts or extends the region, without it ends one
@@ -1203,7 +1229,16 @@ pub fn type_definitions(ed: &Editor) -> String {
             .params
             .iter()
             .enumerate()
-            .map(|(i, p)| format!("{}: string", label(&p.name, i)))
+            .map(|(i, p)| {
+                use ember_core::ParamKind::*;
+                let ty = match p.kind {
+                    Number | Count | Point | Mark | RegionBeginning | RegionEnd => "number",
+                    Prefix => "PrefixArg",
+                    _ => "string",
+                };
+                let optional = if p.kind.optional() { "?" } else { "" };
+                format!("{}{optional}: {ty}", label(&p.name, i))
+            })
             .collect();
         out += &format!("    \"{}\": [{}];\n", escape(&command.name), params.join(", "));
     }

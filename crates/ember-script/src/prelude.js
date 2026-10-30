@@ -230,9 +230,9 @@
       return name;
     },
     bindKey: (keys, command, keymap = "global-map") => native.bindKey(String(keys), String(command), String(keymap)),
-    call: (name, ...args) => native.call(String(name), ...args.map(String)),
+    call: (name, ...args) => native.call(String(name), ...args),
     callInteractively: (name) => native.callInteractively(String(name)),
-    callWithPrefix: (prefix, name, ...args) => native.callWithPrefix(prefix ?? null, String(name), ...args.map(String)),
+    callWithPrefix: (prefix, name, ...args) => native.callWithPrefix(prefix ?? null, String(name), ...args),
     message: (text, { log = true } = {}) => native.message(String(text), Boolean(log)),
     insert: (text) => native.insert(String(text)),
     insertBeforeMarkers: (text) => native.insertBeforeMarkers(String(text)),

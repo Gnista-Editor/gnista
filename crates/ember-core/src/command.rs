@@ -22,10 +22,26 @@ pub enum ParamKind {
     Variable,
     /// A face name, completed from the defined faces.
     Face,
+    /// A number typed in the minibuffer, as interactive "n".
+    Number,
+    /// The prefix argument as a count, 1 without one, as interactive "p".
+    /// Never prompted for; from code it can be left out.
+    Count,
+    /// The raw prefix argument, as interactive "P". Never prompted for;
+    /// from code it can be left out.
+    Prefix,
+    /// Point, as interactive "d".
+    Point,
+    /// The mark, as interactive "m".
+    Mark,
+    /// The start of the region, as the first of interactive "r".
+    RegionBeginning,
+    /// The end of the region, as the second of interactive "r".
+    RegionEnd,
 }
 
 impl ParamKind {
-    pub const ALL: [ParamKind; 7] = [
+    pub const ALL: [ParamKind; 14] = [
         ParamKind::String,
         ParamKind::File,
         ParamKind::Buffer,
@@ -33,6 +49,13 @@ impl ParamKind {
         ParamKind::Keys,
         ParamKind::Variable,
         ParamKind::Face,
+        ParamKind::Number,
+        ParamKind::Count,
+        ParamKind::Prefix,
+        ParamKind::Point,
+        ParamKind::Mark,
+        ParamKind::RegionBeginning,
+        ParamKind::RegionEnd,
     ];
 
     /// The kind's name in scripts, such as `"file"`.
@@ -45,7 +68,31 @@ impl ParamKind {
             ParamKind::Keys => "keys",
             ParamKind::Variable => "variable",
             ParamKind::Face => "face",
+            ParamKind::Number => "number",
+            ParamKind::Count => "count",
+            ParamKind::Prefix => "prefix",
+            ParamKind::Point => "point",
+            ParamKind::Mark => "mark",
+            ParamKind::RegionBeginning => "region-beginning",
+            ParamKind::RegionEnd => "region-end",
         }
+    }
+
+    /// Whether the minibuffer completes it against names of its own kind.
+    pub fn completes(self) -> bool {
+        matches!(self, ParamKind::File | ParamKind::Buffer | ParamKind::Command | ParamKind::Variable | ParamKind::Face)
+    }
+
+    /// Whether the editor supplies it rather than the minibuffer reading
+    /// it: the prefix argument, point, the mark and the region.
+    pub fn from_state(self) -> bool {
+        matches!(self, ParamKind::Count | ParamKind::Prefix | ParamKind::Point | ParamKind::Mark | ParamKind::RegionBeginning | ParamKind::RegionEnd)
+    }
+
+    /// Whether code can leave it out, as an &optional argument: a count
+    /// or prefix argument, taken from the call's prefix argument.
+    pub fn optional(self) -> bool {
+        matches!(self, ParamKind::Count | ParamKind::Prefix)
     }
 
     pub fn from_name(name: &str) -> Option<ParamKind> {
@@ -61,6 +108,13 @@ impl ParamKind {
             ParamKind::Keys => "key sequence",
             ParamKind::Variable => "variable name",
             ParamKind::Face => "face name",
+            ParamKind::Number => "number",
+            ParamKind::Count => "prefix count",
+            ParamKind::Prefix => "raw prefix argument",
+            ParamKind::Point => "point",
+            ParamKind::Mark => "mark",
+            ParamKind::RegionBeginning => "region start",
+            ParamKind::RegionEnd => "region end",
         }
     }
 
@@ -72,7 +126,7 @@ impl ParamKind {
             ParamKind::Buffer => "buffer-name-history",
             ParamKind::Variable => "variable-name-history",
             ParamKind::Face => "face-name-history",
-            ParamKind::String | ParamKind::Keys => "minibuffer-history",
+            _ => "minibuffer-history",
         }
     }
 }
@@ -127,30 +181,72 @@ pub struct Param {
 pub enum Arg {
     Str(String),
     Keys(Vec<Key>),
+    /// A number: a count, a position or one typed.
+    Int(i64),
+    /// A raw prefix argument, or none.
+    Prefix(Option<crate::prefix::PrefixArg>),
 }
 
 impl std::fmt::Display for Arg {
-    /// Text as is; key sequences in Emacs notation.
+    /// Text as is; key sequences in Emacs notation; a prefix argument as
+    /// Emacs prints it: nothing for none, (4) for C-u, - and numbers.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use crate::prefix::PrefixArg;
         match self {
             Arg::Str(s) => f.write_str(s),
             Arg::Keys(k) => f.write_str(&crate::key::format_keys(k)),
+            Arg::Int(n) => write!(f, "{n}"),
+            Arg::Prefix(None) => Ok(()),
+            Arg::Prefix(Some(PrefixArg::Universal(n))) => write!(f, "({n})"),
+            Arg::Prefix(Some(PrefixArg::Minus)) => f.write_str("-"),
+            Arg::Prefix(Some(PrefixArg::Number(n))) => write!(f, "{n}"),
         }
     }
 }
 
 impl Arg {
+    /// An argument of a kind from text, as the MCP server and the agent
+    /// pass them: keys in Emacs notation, numbers in digits, and a prefix
+    /// argument as nothing, "-", a number, or C-u or (4).
+    pub fn from_text(kind: ParamKind, text: &str) -> Result<Arg> {
+        use crate::prefix::PrefixArg;
+        let number = |text: &str| text.trim().parse::<i64>().map_err(|_| Error::signal("wrong-type-argument", format!("Not a number: {text:?}"), Vec::new()));
+        Ok(match kind {
+            ParamKind::Keys => Arg::Keys(Key::parse_seq(text).ok_or_else(|| Error::new(format!("Invalid key sequence: {text:?}")))?),
+            ParamKind::Number | ParamKind::Count | ParamKind::Point | ParamKind::Mark | ParamKind::RegionBeginning | ParamKind::RegionEnd => {
+                Arg::Int(number(text)?)
+            }
+            ParamKind::Prefix => Arg::Prefix(match text.trim() {
+                "" | "nil" => None,
+                "-" => Some(PrefixArg::Minus),
+                "C-u" => Some(PrefixArg::Universal(4)),
+                t if t.starts_with('(') && t.ends_with(')') => Some(PrefixArg::Universal(number(&t[1..t.len() - 1])?)),
+                t => Some(PrefixArg::Number(number(t)?)),
+            }),
+            _ => Arg::Str(text.to_string()),
+        })
+    }
+
+    /// The argument as a number, as a count or position parameter takes it.
+    pub fn as_int(&self) -> Result<i64> {
+        match self {
+            Arg::Int(n) => Ok(*n),
+            Arg::Str(s) => s.trim().parse().map_err(|_| Error::new(format!("Expected a number, got {s:?}"))),
+            _ => Err(Error::new("Expected a number")),
+        }
+    }
+
     pub fn as_str(&self) -> Result<&str> {
         match self {
             Arg::Str(s) => Ok(s),
-            Arg::Keys(_) => Err(Error::new("Expected text, got a key sequence")),
+            _ => Err(Error::new("Expected text")),
         }
     }
 
     pub fn as_keys(&self) -> Result<&[Key]> {
         match self {
             Arg::Keys(k) => Ok(k),
-            Arg::Str(_) => Err(Error::new("Expected a key sequence, got text")),
+            _ => Err(Error::new("Expected a key sequence")),
         }
     }
 }
