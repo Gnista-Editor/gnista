@@ -133,7 +133,8 @@ pub struct Editor {
     remapped_from: Option<String>,
     /// The buffer shown before the current one, by id, so renaming it keeps it.
     previous_buffer: Option<u64>,
-    pub(crate) minibuffer: Buffer,
+    /// The minibuffer, as ` *Minibuf-1*` in the buffer list, by its id.
+    pub(crate) minibuffer_id: u64,
     pub(crate) prompt: Option<Prompt>,
     /// The messages shown, as *Messages* keeps them.
     pub(crate) message_log: Vec<LoggedMessage>,
@@ -188,10 +189,6 @@ pub struct Editor {
     this_command_set: bool,
     /// Whether `after-change-functions` are running.
     pub(crate) in_change_hooks: bool,
-    /// Whether the minibuffer is the current buffer: from when a prompt
-    /// opens, and after each command while one is open, unless code makes
-    /// another buffer current, as set-buffer does with a minibuffer open.
-    pub(crate) in_minibuffer: bool,
     /// Kills, oldest first, with their text properties, as Emacs keeps them.
     pub(crate) kill_ring: Vec<crate::properties::Text>,
     /// Which kill yanking takes next, counting back from the newest (Emacs's
@@ -259,8 +256,10 @@ impl Default for Editor {
 impl Editor {
     /// An editor with a `*scratch*` buffer and the built-in commands and bindings.
     pub fn new() -> Editor {
+        let minibuffer = Buffer::new(" *Minibuf-1*");
+        let minibuffer_id = minibuffer.id;
         let mut editor = Editor {
-            buffers: vec![Buffer::new("*scratch*")],
+            buffers: vec![Buffer::new("*scratch*"), minibuffer],
             current: 0,
             syntax_tables: Default::default(),
             processes: Default::default(),
@@ -269,7 +268,7 @@ impl Editor {
             running: 0,
             remapped_from: None,
             previous_buffer: None,
-            minibuffer: Buffer::new(" *Minibuf*"),
+            minibuffer_id,
             message_log: Vec::new(),
             minibuffer_overlay: None,
             mini_window_lines: 1,
@@ -302,7 +301,6 @@ impl Editor {
             command_failed: false,
             this_command_set: false,
             in_change_hooks: false,
-            in_minibuffer: false,
             kill_ring: Vec::new(),
             yank_pointer: 0,
             last_repeatable: None,
@@ -671,7 +669,6 @@ impl Editor {
         self.pending_call = None;
         self.reading_keys = None;
         self.pending_keys.clear();
-        self.minibuffer.set_text("");
         self.transient_map = None;
         self.prefix_arg = None;
         for quit in question_quit.into_iter().chain(prompt_quit) {
@@ -709,13 +706,11 @@ impl Editor {
             return f(self);
         }
         let saved = (self.buffers[self.current].id, self.current_prefix_arg, self.this_command.clone());
-        let in_minibuffer = self.in_minibuffer;
         self.resume(resume);
         let value = f(self);
         if let Some(index) = self.buffers.iter().position(|b| b.id == saved.0) {
             self.current = index;
         }
-        self.in_minibuffer = in_minibuffer;
         self.current_prefix_arg = saved.1;
         if let Some(command) = &resume.command {
             self.last_command = Some(command.clone());
@@ -730,7 +725,6 @@ impl Editor {
     pub(crate) fn resume(&mut self, resume: &Resume) {
         if let Some(index) = self.buffers.iter().position(|b| b.id == resume.buffer) {
             self.current = index;
-            self.in_minibuffer = false;
         }
         self.current_prefix_arg = resume.prefix;
         if resume.command.is_some() {
@@ -1026,7 +1020,7 @@ impl Editor {
         if !succeeded && self.running > 0 {
             return;
         }
-        for b in self.buffers.iter_mut().chain(std::iter::once(&mut self.minibuffer)) {
+        for b in self.buffers.iter_mut() {
             if b.take_changed() && succeeded {
                 b.deactivate_mark();
             }
@@ -1246,18 +1240,26 @@ impl Editor {
 
     // Buffers
 
-    /// The buffer commands act on: the minibuffer while a prompt is open,
-    /// otherwise the buffer shown in the window.
+    /// The current buffer, which commands act on: the minibuffer while a
+    /// prompt is open, otherwise the buffer shown in the selected window,
+    /// unless code makes another current, as set-buffer does.
     pub fn buffer(&self) -> &Buffer {
-        if self.prompt.is_some() && self.in_minibuffer { &self.minibuffer } else { &self.buffers[self.current] }
+        &self.buffers[self.current]
     }
 
     pub fn buffer_mut(&mut self) -> &mut Buffer {
-        if self.prompt.is_some() && self.in_minibuffer {
-            &mut self.minibuffer
-        } else {
-            &mut self.buffers[self.current]
-        }
+        &mut self.buffers[self.current]
+    }
+
+    /// Whether the minibuffer is the current buffer while a prompt is open,
+    /// as Emacs's `minibufferp` of the current buffer.
+    pub fn in_minibuffer(&self) -> bool {
+        self.prompt.is_some() && self.buffers[self.current].id == self.minibuffer_id
+    }
+
+    /// Where the minibuffer is in the buffer list.
+    pub(crate) fn minibuffer_index(&self) -> usize {
+        self.buffer_with_id(self.minibuffer_id).expect("the minibuffer is never killed")
     }
 
     /// The buffer the selected window shows, whichever buffer is current,
@@ -1283,8 +1285,7 @@ impl Editor {
     /// Makes the selected window's buffer current, as Emacs's command loop
     /// does before each command.
     pub(crate) fn current_from_selected_window(&mut self) {
-        self.current = self.selected_buffer_index();
-        self.in_minibuffer = self.prompt.is_some();
+        self.current = if self.prompt.is_some() { self.minibuffer_index() } else { self.selected_buffer_index() };
     }
 
     /// A buffer by name, to change it without making it current.
@@ -1386,7 +1387,6 @@ impl Editor {
             self.selected_window_shows(index);
         }
         self.current = index;
-        self.in_minibuffer = false;
     }
 
     /// The named buffer, made empty if there is none, as Emacs's
@@ -1408,28 +1408,23 @@ impl Editor {
     /// the buffer that was current, to set back.
     pub fn set_current_buffer(&mut self, name: &str) -> Result<String> {
         let old = self.buffer().name.clone();
-        if self.prompt.is_some() && name == self.minibuffer.name {
-            self.in_minibuffer = true;
-            return Ok(old);
-        }
         let index = self.find_buffer(name).ok_or_else(|| Error::new(format!("No such buffer {name}")))?;
         self.current = index;
-        self.in_minibuffer = false;
         Ok(old)
     }
 
     /// Visits a file in a buffer without showing it, as Emacs's
     /// `find-file-noselect`, and returns the buffer's name.
     pub fn find_file_noselect(&mut self, path: &Path) -> Result<String> {
-        let (current, previous) = (self.buffers[self.current].id, self.previous_buffer);
-        let in_minibuffer = self.in_minibuffer;
+        let (current, shown, previous) = (self.buffers[self.current].id, self.window_buffer().id, self.previous_buffer);
         let visited = self.visit_file(path);
         let name = self.buffers[self.current].name.clone();
-        if let Some(back) = self.buffers.iter().position(|b| b.id == current) {
-            self.current = back;
+        if let Some(back) = self.buffer_with_id(shown) {
             self.selected_window_shows(back);
         }
-        self.in_minibuffer = in_minibuffer;
+        if let Some(back) = self.buffer_with_id(current) {
+            self.current = back;
+        }
         self.previous_buffer = previous;
         visited.map(|()| name)
     }
@@ -1446,16 +1441,14 @@ impl Editor {
     /// The buffer to offer when switching buffers: the one shown before this one.
     pub fn other_buffer(&self) -> Option<&str> {
         let current = &self.buffers[self.current].name;
+        // Internal buffers, whose names start with a space, as the
+        // minibuffer's does, are never offered, as Emacs's other-buffer has it.
+        let offered = |name: &&str| *name != current && !name.starts_with(' ');
         self.previous_buffer
             .and_then(|id| self.buffer_with_id(id))
             .map(|i| self.buffers[i].name.as_str())
-            .filter(|name| *name != current)
-            .or_else(|| {
-                self.buffers
-                    .iter()
-                    .map(|b| b.name.as_str())
-                    .find(|name| name != current)
-            })
+            .filter(offered)
+            .or_else(|| self.buffers.iter().map(|b| b.name.as_str()).find(offered))
     }
 
     pub fn kill_buffer(&mut self, name: &str) -> Result<()> {
@@ -1476,6 +1469,9 @@ impl Editor {
             .find_buffer(name)
             .ok_or_else(|| Error::new(format!("No such buffer: {name}")))?;
         let b = &self.buffers[index];
+        if b.id == self.minibuffer_id {
+            return Err(Error::new("Cannot kill the minibuffer"));
+        }
         if b.path.is_some() && b.is_modified() {
             self.check_permission(&format!("discard the unsaved changes in {name}"))?;
         }
@@ -1495,9 +1491,11 @@ impl Editor {
             let _ = self.delete_process(&process);
         }
         let Some(index) = self.find_buffer(name) else { return Ok(()) };
-        let showing = index == self.current;
+        let showing = index == self.selected_buffer_index();
+        let was_current = index == self.current;
         let next = self.other_buffer().map(str::to_string);
         let current_name = self.buffers[self.current].name.clone();
+        let shown_name = self.window_buffer().name.clone();
         let mut removed = self.buffers.remove(index);
         // Its markers point nowhere now.
         self.detached_markers.extend(removed.take_markers());
@@ -1505,15 +1503,15 @@ impl Editor {
         if self.buffers.is_empty() {
             self.buffers.push(Buffer::new("*scratch*"));
         }
-        let target = if showing { next.clone() } else { Some(current_name) };
-        let in_minibuffer = self.in_minibuffer;
-        self.current = target.and_then(|n| self.find_buffer(&n)).unwrap_or(0);
-        self.selected_window_shows(self.current);
+        let target = if showing { next.clone() } else { Some(shown_name) };
+        let shown = target.and_then(|n| self.find_buffer(&n)).unwrap_or(0);
+        self.selected_window_shows(shown);
+        // The buffer current before stays so, unless it was the one killed.
+        self.current = if was_current { shown } else { self.find_buffer(&current_name).unwrap_or(shown) };
         // Other windows showing it show what the selected window now does,
         // or the buffer it would switch to.
-        let replacement = next.and_then(|n| self.find_buffer(&n)).filter(|_| !showing).unwrap_or(self.current);
+        let replacement = next.and_then(|n| self.find_buffer(&n)).filter(|_| !showing).unwrap_or(shown);
         self.replace_buffer_in_windows(gone, replacement);
-        self.in_minibuffer = in_minibuffer;
         Ok(())
     }
 
@@ -1600,7 +1598,7 @@ impl Editor {
     /// directory.
     pub fn default_directory(&self) -> PathBuf {
         // A buffer's own default-directory, as Dired's, comes first.
-        let b = if self.prompt.is_some() { self.window_buffer() } else { self.buffer() };
+        let b = if self.in_minibuffer() { self.window_buffer() } else { self.buffer() };
         if let Some(Value::Str(dir)) = b.locals.get("default-directory") {
             return expand_file_name(dir);
         }
@@ -1698,7 +1696,12 @@ impl Editor {
     }
 
     pub fn minibuffer(&self) -> &Buffer {
-        &self.minibuffer
+        &self.buffers[self.minibuffer_index()]
+    }
+
+    pub(crate) fn minibuffer_mut(&mut self) -> &mut Buffer {
+        let index = self.minibuffer_index();
+        &mut self.buffers[index]
     }
 
     fn initial_input(&self, kind: ParamKind) -> String {
@@ -1802,15 +1805,17 @@ impl Editor {
         if pos < 0 {
             return Err(Error::new("End of history; no default available"));
         }
-        let input = self.minibuffer.slice(0..self.minibuffer.len());
+        let input = self.minibuffer_input();
         let prompt = self.prompt.as_mut().expect("checked above");
         if prompt.history_pos == 0 {
             prompt.typed = input;
         }
         prompt.history_pos = pos as usize;
         let text = if pos == 0 { prompt.typed.clone() } else { items[pos as usize - 1].clone() };
-        self.minibuffer.set_text(&text);
-        self.minibuffer.set_point(self.minibuffer.len());
+        let mb = self.minibuffer_mut();
+        mb.set_text(&text);
+        let end = mb.len();
+        mb.set_point(end);
         Ok(())
     }
 
@@ -1818,7 +1823,7 @@ impl Editor {
     /// without the directory part the user has already typed.
     pub fn minibuffer_completions(&self) -> Vec<String> {
         let Some(prompt) = &self.prompt else { return Vec::new() };
-        let input = self.minibuffer.slice(0..self.minibuffer.len());
+        let input = self.minibuffer_input();
         let candidates = self.prompt_completions(&input);
         if prompt.kind != ParamKind::File || prompt.collection.is_some() {
             return candidates;

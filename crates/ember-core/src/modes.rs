@@ -113,11 +113,8 @@ impl Editor {
     /// map, an overriding map, the minibuffer's while a prompt is open, the
     /// buffer's modes', and the global map, as Emacs's `current-active-maps`.
     pub fn current_active_maps(&self) -> Vec<KeymapId> {
+        // In the minibuffer, its local map is minibuffer-local-map.
         let mut maps: Vec<KeymapId> = self.transient_map.into_iter().chain(self.overriding_map).collect();
-        if self.prompt.is_some() {
-            maps.extend(self.minibuffer.local_map.iter().copied());
-            maps.push(self.minibuffer_map);
-        }
         maps.extend(self.mode_keymaps());
         maps.push(self.global_map);
         maps

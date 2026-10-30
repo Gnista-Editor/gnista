@@ -1100,12 +1100,7 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
         "bufferNameOf",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, id: f64| {
             with_editor(&ctx, |ed| {
-                let id = id as u64;
-                // The minibuffer, which is not in the buffer list, while a prompt is open.
-                if ed.prompt().is_some() && ed.minibuffer().id() == id {
-                    return Ok(Some(ed.minibuffer().name.clone()));
-                }
-                Ok(ed.buffer_with_id(id).map(|i| ed.buffers()[i].name.clone()))
+                Ok(ed.buffer_with_id(id as u64).map(|i| ed.buffers()[i].name.clone()))
             })
         })?,
     )?;

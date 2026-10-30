@@ -222,7 +222,7 @@ impl Editor {
     /// minibuffer is active or `line-move-visual` is off, when lines move by
     /// text lines.
     pub(crate) fn visual_wrap(&self) -> Option<Wrap> {
-        if self.prompt.is_some() || !self.variable("line-move-visual").is_some_and(|v| v.is_true()) {
+        if self.in_minibuffer() || !self.variable("line-move-visual").is_some_and(|v| v.is_true()) {
             return None;
         }
         self.wrap_in(self.selected_window, self.buffer())

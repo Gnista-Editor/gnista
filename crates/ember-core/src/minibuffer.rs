@@ -147,14 +147,17 @@ impl Editor {
         prompt.initial = input.to_string();
         let must_match = prompt.require_match;
         self.prompt = Some(prompt);
-        self.in_minibuffer = true;
+        self.current = self.minibuffer_index();
         self.minibuffer_overlay = None;
         self.mini_window_lines = 1;
+        // Its local map is minibuffer-local-map, and the must-match map
+        // before it for a prompt that must be answered by a match.
         let must_match_map = self.keymap_named(MUST_MATCH_MAP).filter(|_| must_match);
-        let b = &mut self.minibuffer;
+        let local_map = must_match_map.into_iter().chain([self.minibuffer_map]).collect();
+        let b = self.minibuffer_mut();
         b.locals.clear();
         b.local_hooks.clear();
-        b.local_map = must_match_map.into_iter().collect();
+        b.local_map = local_map;
         b.set_text(input);
         b.set_point(b.len());
         if let Err(e) = self.run_hooks("minibuffer-setup-hook") {
@@ -170,8 +173,13 @@ impl Editor {
             self.message(format!("Error in minibuffer-exit-hook: {e}"));
         }
         let prompt = self.prompt.take();
-        self.minibuffer.set_text("");
+        self.minibuffer_mut().set_text("");
         self.minibuffer_overlay = None;
+        // The selected window's buffer is current again, as leaving the
+        // minibuffer window makes it.
+        if self.buffers[self.current].id == self.minibuffer_id {
+            self.current = self.selected_buffer_index();
+        }
         prompt
     }
 
@@ -266,15 +274,17 @@ impl Editor {
 
     /// The minibuffer's input.
     pub fn minibuffer_input(&self) -> String {
-        self.minibuffer.slice(0..self.minibuffer.len())
+        let mb = self.minibuffer();
+        mb.slice(0..mb.len())
     }
 
     /// Replaces the open prompt's input, with point at its end, as an agent
     /// or a test answering it might.
     pub fn set_minibuffer_input(&mut self, text: &str) {
         if self.prompt.is_some() {
-            self.minibuffer.set_text(text);
-            self.minibuffer.set_point(self.minibuffer.len());
+            let mb = self.minibuffer_mut();
+            mb.set_text(text);
+            mb.set_point(mb.len());
         }
     }
 
@@ -344,7 +354,7 @@ impl Editor {
     /// Emacs's `completion-try-completion`: the new input and where point
     /// goes in it.
     pub(crate) fn completion_try(&self) -> completion::Try {
-        self.completion_try_with(&self.minibuffer_input(), self.minibuffer.point(), None)
+        self.completion_try_with(&self.minibuffer_input(), self.minibuffer().point(), None)
     }
 
     /// What completing `input` with point at `point` gives, against `names`
@@ -400,7 +410,7 @@ impl Editor {
     /// in the table's order: a collection's, or a directory's as the system
     /// lists it.
     pub fn completion_all_sorted_completions(&mut self) -> Option<(String, Vec<String>)> {
-        self.completion_all_sorted_completions_at(self.minibuffer.point()).map(|(base, comps, _)| (base, comps))
+        self.completion_all_sorted_completions_at(self.minibuffer().point()).map(|(base, comps, _)| (base, comps))
     }
 
     /// As [`Editor::completion_all_sorted_completions`], as if point were
@@ -485,8 +495,9 @@ impl Editor {
         let Some((base, comps)) = self.completion_all_sorted_completions() else { return false };
         let Some(first) = comps.first() else { return false };
         let text = format!("{base}{first}");
-        self.minibuffer.set_text(&text);
-        self.minibuffer.set_point(self.minibuffer.len());
+        let mb = self.minibuffer_mut();
+        mb.set_text(&text);
+        mb.set_point(mb.len());
         true
     }
 

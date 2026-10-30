@@ -286,3 +286,43 @@ fn icomplete_can_be_turned_off() {
     ed.type_text("a");
     assert_eq!(ed.minibuffer_overlay(), None);
 }
+
+#[test]
+fn the_minibuffer_is_a_buffer_like_any_other() {
+    let (mut ed, s) = setup();
+    s.eval_typescript(
+        &mut ed,
+        "test.ts",
+        r#"
+        globalThis.seen = [];
+        ember.addHook("minibuffer-setup-hook", () => {
+          const b = ember.currentBuffer();
+          seen.push(b.name, ember.bufferLiveP(b));
+          // Its own variables and text properties, as any buffer's.
+          ember.makeLocalVariable("fill-column");
+          ember.setVariable("fill-column", seen.length);
+        });
+        "#
+        .to_string(),
+    )
+    .unwrap();
+    ed.press("C-x b").unwrap();
+    assert_eq!(s.eval_expression(&mut ed, "seen").unwrap(), r#"[" *Minibuf-1*",true]"#);
+    assert!(ed.in_minibuffer());
+    assert_eq!(ed.buffer().name, " *Minibuf-1*");
+    assert_eq!(ed.window_buffer().name, "*scratch*");
+    ed.type_text("abc");
+    assert_eq!(s.eval_expression(&mut ed, r#"ember.withCurrentBuffer(" *Minibuf-1*", () => ember.bufferText(ember.pointMin(), ember.pointMax()))"#).unwrap(), r#""abc""#);
+    // It is not offered as a buffer to switch to, nor killed.
+    assert!(!ed.minibuffer_completions().iter().any(|n| n.starts_with(' ')));
+    ed.press("C-g").unwrap();
+    assert!(!ed.in_minibuffer());
+    assert_eq!(ed.buffer().name, "*scratch*");
+    assert!(ed.kill_buffer(" *Minibuf-1*").is_err());
+    assert_ne!(ed.other_buffer(), Some(" *Minibuf-1*"));
+    // Its own values went when the prompt closed and come anew with the next.
+    assert_eq!(ed.variable("fill-column"), Some(Value::Number(70.0)));
+    ed.press("C-x b").unwrap();
+    assert_eq!(ed.variable("fill-column"), Some(Value::Number(4.0)));
+    ed.press("C-g").unwrap();
+}

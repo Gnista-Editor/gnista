@@ -1096,11 +1096,12 @@ fn minibuffer_complete(ed: &mut Editor) -> Result<bool> {
             Ok(true)
         }
         crate::completion::Try::Completed { text, point } => {
+            let mb = ed.minibuffer_mut();
             if text != input {
-                ed.minibuffer.set_text(&text);
-                ed.minibuffer.set_point(point.min(ed.minibuffer.len()));
+                mb.set_text(&text);
+                mb.set_point(point.min(mb.len()));
             } else {
-                ed.minibuffer.set_point(point.min(ed.minibuffer.len()));
+                mb.set_point(point.min(mb.len()));
                 if ed.is_completion_match(&text) {
                     ed.message("[Complete, but not unique]");
                 }
