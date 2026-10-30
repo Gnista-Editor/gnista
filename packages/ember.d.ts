@@ -6683,7 +6683,7 @@ declare global {
      * Run `fn` with variables bound to values, then put them back, as Emacs's
      * let: a variable local in the current buffer is bound there, any other
      * in its default value, and each is restored where it was bound, even if
-     * `fn` throws or changes buffers. Hooks cannot be bound yet.
+     * `fn` throws or changes buffers. A hook binds as its list of functions.
      */
     function letBind<T>(bindings: { [variable: string]: Value }, fn: () => T): T;
     /**

@@ -603,3 +603,26 @@ fn delete_selection_reads_the_commands_property() {
     ed.type_text("Y");
     assert_eq!(eval(&mut ed, &s, "ember.bufferText()"), r#""X worldY""#);
 }
+
+#[test]
+fn setting_a_hook_sets_its_functions() {
+    let (mut ed, s) = setup();
+    let result = eval(
+        &mut ed,
+        &s,
+        r#"(() => {
+          ember.defineHook("test-hook");
+          const log: string[] = [];
+          ember.defun("test-named", () => { log.push("named"); });
+          const a = () => { log.push("a"); };
+          ember.addHook("test-hook", a);
+          ember.letBind({ "test-hook": [ember.intern("test-named")] }, () => ember.runHooks("test-hook"));
+          ember.runHooks("test-hook");
+          ember.setDefault("test-hook", null);
+          ember.runHooks("test-hook");
+          return log;
+        })()"#,
+    );
+    // Bound to a list naming a function, as (let ((test-hook '(test-named))) ...), then back.
+    assert_eq!(result, r#"["named","a"]"#);
+}

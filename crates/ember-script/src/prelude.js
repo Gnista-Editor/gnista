@@ -612,7 +612,6 @@
       };
       return unwindProtect(() => {
         for (const [name, value] of Object.entries(bindings)) {
-          if (native.isHook(name)) throw new TypeError(`letBind cannot bind the hook ${name} yet`);
           if (native.isLocalVariable(name)) {
             const buffer = native.bufferIdOf();
             const old = native.variable(name);

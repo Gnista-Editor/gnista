@@ -295,6 +295,18 @@ impl Editor {
     /// if it has one or the variable is automatically buffer-local,
     /// otherwise the global value. Setting an unknown variable defines it.
     pub fn set_variable(&mut self, name: &str, value: Value) {
+        if self.variables.get(name).is_some_and(|v| v.hook) {
+            // A hook's value is its functions: setting it replaces them, the
+            // buffer's own if it has them.
+            let entries = self.hook_entries(&value);
+            match self.buffer_mut().local_hooks.get_mut(name) {
+                Some(list) => *list = entries,
+                None => {
+                    self.hooks.insert(name.to_string(), entries.into_iter().filter(|e| e.run.is_some()).collect());
+                }
+            }
+            return;
+        }
         let local = self.variables.get(name).is_some_and(|v| v.local);
         let b = self.buffer_mut();
         if local || b.locals.contains_key(name) {
@@ -306,6 +318,11 @@ impl Editor {
 
     /// Sets the global value, which buffers without their own value see.
     pub fn set_default(&mut self, name: &str, value: Value) {
+        if self.variables.get(name).is_some_and(|v| v.hook) {
+            let entries = self.hook_entries(&value).into_iter().filter(|e| e.run.is_some()).collect();
+            self.hooks.insert(name.to_string(), entries);
+            return;
+        }
         match self.variables.get_mut(name) {
             Some(var) => var.default = value,
             None => {
@@ -315,7 +332,13 @@ impl Editor {
     }
 
     pub fn default_value(&self, name: &str) -> Option<Value> {
-        self.variables.get(name).map(|v| v.default.clone())
+        let var = self.variables.get(name)?;
+        if var.hook {
+            // A hook's global functions.
+            let list = self.hooks.get(name).into_iter().flatten();
+            return Some(Value::List(list.filter_map(|e| e.run.clone().map(Value::Function)).collect()));
+        }
+        Some(var.default.clone())
     }
 
     /// Gives the current buffer its own value of a variable, starting from
@@ -392,6 +415,34 @@ impl Editor {
         let at = if depth <= 0.0 { list.iter().position(|e| e.depth >= depth) } else { list.iter().position(|e| e.depth > depth) };
         list.insert(at.unwrap_or(list.len()), HookEntry { id, run: Some(function), depth });
         id
+    }
+
+    /// A hook's entries from a value set to it: its functions, and names of
+    /// functions, in order, and true for `t`.
+    fn hook_entries(&mut self, value: &Value) -> Vec<HookEntry> {
+        let items = match value {
+            Value::List(items) => items.clone(),
+            Value::Null | Value::Bool(false) => Vec::new(),
+            one => vec![one.clone()],
+        };
+        let mut entries = Vec::new();
+        for item in items {
+            let run = match item {
+                Value::Bool(true) => None,
+                Value::Function(f) => Some(f),
+                other => match other.as_str() {
+                    Some(name) => {
+                        let name = name.to_string();
+                        let call = Value::Str(name.clone());
+                        Some(Function::new(Some(&name), move |ed, args| ed.funcall(&call, args)))
+                    }
+                    None => continue,
+                },
+            };
+            self.next_hook_id += 1;
+            entries.push(HookEntry { id: self.next_hook_id, run, depth: 0.0 });
+        }
+        entries
     }
 
     /// Takes a function off a hook, as Emacs's `remove-hook`.
