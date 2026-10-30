@@ -925,8 +925,16 @@
     deleteProcess: (name) => native.deleteProcess(String(name)),
     callProcess: (command, { directory, input } = {}) =>
       native.callProcess(command.map(String), directory ?? undefined, input === undefined ? undefined : String(input)),
-    windowStart: (window) => native.windowStart(window ?? undefined),
+    windowStart: (window) => native.windowStart(window ?? native.selectedWindow()),
     setWindowStart: (window, pos) => native.setWindowStart(window ?? native.selectedWindow(), pos),
+    windowPoint: (window) => native.windowPoint(window ?? native.selectedWindow()),
+    setWindowPoint: (window, pos) => native.setWindowPoint(window ?? native.selectedWindow(), pos),
+    switchToPrevBuffer: (window, buryOrKill) => {
+      const w = window ?? native.selectedWindow();
+      return (buryOrKill === undefined ? native.switchToPrevBuffer(w) : native.switchToPrevBuffer(w, String(buryOrKill))) ?? undefined;
+    },
+    switchToNextBuffer: (window) => native.switchToNextBuffer(window ?? native.selectedWindow()) ?? undefined,
+    buryBufferInternal: (buffer) => native.buryBufferInternal(String(buffer)),
     windowParameter: (window, name) => native.windowParameter(window ?? native.selectedWindow(), symbolName(name)),
     setWindowParameter: (window, name, value) => native.setWindowParameter(window ?? native.selectedWindow(), symbolName(name), value ?? null),
     windowParameters: (window) => {
@@ -942,7 +950,7 @@
     currentWindowConfiguration: () => new WindowConfiguration(native.currentWindowConfiguration()),
     setWindowConfiguration(configuration) {
       if (!(configuration instanceof WindowConfiguration)) throw new TypeError("setWindowConfiguration takes a window configuration");
-      native.setWindowConfiguration(configuration.__emberWindowConfiguration);
+      return native.setWindowConfiguration(configuration.__emberWindowConfiguration) || undefined;
     },
     windowConfigurationP: (value) => value instanceof WindowConfiguration,
     // As Emacs's save-window-excursion: the windows put back as they were, however fn ends.

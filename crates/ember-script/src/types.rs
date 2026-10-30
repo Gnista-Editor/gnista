@@ -1047,6 +1047,22 @@ const API: &str = r##"
   function windowStart(window?: number): number;
   /** Make a window start at the line holding `pos`, as set-window-start; a window always starts at a line's start. */
   function setWindowStart(window: number | undefined, pos: number): void;
+  /** A window's point, the selected window's by default, as window-point: in the selected window, its buffer's point. */
+  function windowPoint(window?: number): number;
+  /** Move a window's point, as set-window-point. */
+  function setWindowPoint(window: number | undefined, pos: number): void;
+  /**
+   * Show in a window the buffer it showed before, as switch-to-prev-buffer:
+   * one of its previous buffers, where it was, else one from the buffer
+   * list. With "bury" or "kill", the buffer it leaves is forgotten in the
+   * window; with "append", it goes to the end of its previous buffers.
+   * Returns the buffer shown, or undefined if there was none to show.
+   */
+  function switchToPrevBuffer(window?: number, buryOrKill?: "bury" | "kill" | "append"): string | undefined;
+  /** Show in a window the buffer previous-buffer left, as switch-to-next-buffer. Returns it, or undefined. */
+  function switchToNextBuffer(window?: number): string | undefined;
+  /** Put a buffer last in the buffer list, as bury-buffer-internal. */
+  function buryBufferInternal(buffer: string): void;
   /** A window's parameter, as window-parameter, such as "quit-restore". */
   function windowParameter(window: number | undefined, name: string | symbol): Value | undefined;
   /** Set a window's parameter, or with null take it away, as set-window-parameter. */
@@ -1078,8 +1094,12 @@ const API: &str = r##"
    * parameters, which window is selected and which buffer is current.
    */
   function currentWindowConfiguration(): WindowConfiguration;
-  /** Put a frame's windows back as a configuration had them, as set-window-configuration. */
-  function setWindowConfiguration(configuration: WindowConfiguration): void;
+  /**
+   * Put a frame's windows back as a configuration had them, as
+   * set-window-configuration. Point in the buffer that was current then is
+   * left where it is. Returns true, or undefined if the frame is gone.
+   */
+  function setWindowConfiguration(configuration: WindowConfiguration): true | undefined;
   function windowConfigurationP(value: unknown): value is WindowConfiguration;
   /** Run `fn`, then put the windows back as they were, however it ends, as save-window-excursion. */
   function saveWindowExcursion<T>(fn: () => T): T;

@@ -257,6 +257,7 @@ answers come, and then from its answers, as save-some-buffers' do."
         (modes (mapcar #'intern (alist-get 'modes case)))
         (call (alist-get 'call case)))
     (delete-other-windows)
+    (set-window-dedicated-p nil nil)
     ;; The frame laid out afresh: an earlier case's incremental search can
     ;; grow the echo area and leave the windows a line short after it.
     (set-frame-size (selected-frame) 80 24)
@@ -267,7 +268,14 @@ answers come, and then from its answers, as save-some-buffers' do."
       (unless (or (string-prefix-p " " (buffer-name b))
                   (member (buffer-name b) '("*scratch*" "*Messages*")))
         (kill-buffer b)))
+    ;; In the same order whatever earlier cases did, as Ember lists them:
+    ;; the case's buffer, then *Messages*, then *scratch*.
+    (bury-buffer "*Messages*")
+    (bury-buffer "*scratch*")
     (with-current-buffer (ember-oracle--case-buffer case text)
+      ;; The window as new, as Ember's is, with no buffers shown before.
+      (set-window-prev-buffers nil nil)
+      (set-window-next-buffers nil nil)
       ;; As if visiting a file, for commands such as org-refile that need
       ;; one; nothing is written to it.
       (when-let* ((visit (and (not (alist-get 'find case)) (alist-get 'visit case))))

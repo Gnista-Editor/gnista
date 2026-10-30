@@ -65,35 +65,57 @@ const deleteOtherWindows = ember.defineCommand({
 // Displaying buffers, as display-buffer does with its default actions.
 
 /**
- * How to undo showing a buffer in a window, as Emacs's quit-restore window
- * parameter records it: delete a window made for the buffer, or show the
- * buffer it showed before; then select the window that was selected.
+ * How to undo showing a buffer in a window, as display-buffer-record-window
+ * writes the quit-restore window parameter: `["window", "window", SELECTED,
+ * BUFFER]` for a window made to show BUFFER, `["frame", "frame", ...]` for
+ * one on a frame made for it, `["other", [PREVIOUS, START, POINT, HEIGHT],
+ * SELECTED, BUFFER]` for a window that showed PREVIOUS from START with POINT,
+ * and `"same"` first once BUFFER is shown in it again. SELECTED is the window
+ * selected then.
  */
-interface QuitRestore {
-  kind: "window" | "other";
-  previous?: string;
-  selected: number;
-  buffer: string;
+type QuitRestore = [string, string | [string, number, number, number], number, string];
+
+function quitRestore(window: number): QuitRestore | undefined {
+  const v = ember.windowParameter(window, "quit-restore");
+  return Array.isArray(v) && v.length === 4 ? (v as unknown as QuitRestore) : undefined;
 }
 
-/** A window's quit-restore parameter, as [kind, previous, selected, buffer]. */
-const quitRestore = {
-  get(window: number): QuitRestore | undefined {
-    const v = ember.windowParameter(window, "quit-restore");
-    if (!Array.isArray(v) || v.length < 4) return undefined;
-    const [kind, previous, selected, buffer] = v;
-    return { kind: kind === "window" ? "window" : "other", previous: typeof previous === "string" ? previous : undefined, selected: Number(selected), buffer: String(buffer) };
-  },
-  has(window: number): boolean {
-    return quitRestore.get(window) !== undefined;
-  },
-  set(window: number, r: QuitRestore): void {
-    ember.setWindowParameter(window, "quit-restore", [r.kind, r.previous ?? null, r.selected, r.buffer]);
-  },
-  delete(window: number): void {
-    ember.setWindowParameter(window, "quit-restore", null);
-  },
-};
+/**
+ * Notes in a window's quit-restore parameter how to undo showing `buffer`
+ * in it, as display-buffer-record-window: `type` is "reuse" for a window
+ * that was there, else "window" or "frame" for one made for the buffer.
+ */
+function recordWindow(type: "reuse" | "window" | "frame", window: number, buffer: string): void {
+  const selected = ember.selectedWindow();
+  if (type !== "reuse") {
+    ember.setWindowParameter(window, "quit-restore", [type, type, selected, buffer]);
+  } else if (ember.windowBuffer(window) === buffer) {
+    const restore = quitRestore(window);
+    if (restore) {
+      restore[0] = "same";
+      if (window !== selected && window !== restore[2]) restore[2] = selected;
+      ember.setWindowParameter(window, "quit-restore", restore as unknown as ember.Value);
+    }
+  } else {
+    const previous = [ember.windowBuffer(window) ?? "", ember.windowStart(window), ember.windowPoint(window), size(window).totalHeight];
+    ember.setWindowParameter(window, "quit-restore", ["other", previous, selected, buffer]);
+  }
+}
+
+/**
+ * Shows a buffer in the window display-buffer chose, as window--display-buffer:
+ * notes how to undo it, frees a reused window of a dedication, and gives a
+ * new window no previous buffers.
+ */
+function showInWindow(buffer: string, window: number, type: "reuse" | "window" | "frame"): number {
+  recordWindow(type, window, buffer);
+  if (ember.windowBuffer(window) !== buffer) {
+    ember.setWindowDedicatedP(window, null);
+    ember.setWindowBuffer(window, buffer);
+  }
+  if (type !== "reuse") ember.setWindowPrevBuffers(window, []);
+  return window;
+}
 
 /** Whether a window is dedicated to its buffer, which display-buffer does not take for another. */
 const dedicated = (window: number): boolean => ember.windowDedicatedP(window) !== undefined && ember.windowDedicatedP(window) !== false;
@@ -176,30 +198,19 @@ function displayBuffer(buffer: string, inhibitSameWindow = false): number {
   const selected = ember.selectedWindow();
   const showing = ember.windowList().filter((w) => ember.windowBuffer(w) === buffer && !(inhibitSameWindow && w === selected));
   const reuse = showing.includes(selected) ? selected : showing[0];
-  if (reuse !== undefined) return reuse;
+  if (reuse !== undefined) return showInWindow(buffer, reuse, "reuse");
   // A dedicated window may be split, though not reused, as get-largest-window's DEDICATED allows.
   const candidates = [largestWindow(false, true), lruWindow(true, true)];
   for (const candidate of candidates) {
     if (candidate === undefined) continue;
     const made = splitSensibly(candidate);
-    if (made !== undefined) {
-      ember.setWindowBuffer(made, buffer);
-      quitRestore.set(made, { kind: "window", selected, buffer });
-      return made;
-    }
+    if (made !== undefined) return showInWindow(buffer, made, "window");
   }
-  const window = lruWindow(inhibitSameWindow) ?? largestWindow(inhibitSameWindow) ?? selected;
-  const previous = ember.windowBuffer(window);
-  ember.setWindowBuffer(window, buffer);
-  if (!quitRestore.has(window) || quitRestore.get(window)?.buffer !== previous) {
-    quitRestore.set(window, { kind: "other", previous, selected, buffer });
-  } else {
-    // Shown again over what was put there for an earlier display: quitting
-    // still goes back to what was there first.
-    const first = quitRestore.get(window) as QuitRestore;
-    quitRestore.set(window, { ...first, buffer });
-  }
-  return window;
+  const window = lruWindow(inhibitSameWindow) ?? largestWindow(inhibitSameWindow);
+  if (window !== undefined) return showInWindow(buffer, window, "reuse");
+  // Every window is dedicated or ruled out: a new frame, as display-buffer-pop-up-frame.
+  ember.makeFrame(buffer);
+  return showInWindow(buffer, ember.selectedWindow(), "frame");
 }
 
 /** Shows a buffer in some window, as display-buffer does, and selects it. */
@@ -247,35 +258,122 @@ const killBufferAndWindow = ember.defineCommand({
     const buffer = ember.windowBuffer() ?? "";
     const window = ember.selectedWindow();
     if (ember.windowList().length > 1) {
-      quitRestore.delete(window);
+      ember.setWindowParameter(window, "quit-restore", null);
       ember.deleteWindow(window);
     }
     ember.call("kill-buffer", buffer);
   },
 });
 
+/**
+ * Deletes a window if it can be, as window--delete: with `dedicatedOnly`,
+ * only one dedicated to its buffer. The only window of a frame goes with
+ * the frame if there are others and its buffer is being killed; Emacs
+ * would hide such a frame otherwise, which Ember cannot. Says whether it went.
+ */
+function windowDelete(window: number, dedicatedOnly: boolean, kill: boolean): boolean {
+  if (dedicatedOnly && !dedicated(window)) return false;
+  if (ember.windowList().length > 1) {
+    ember.deleteWindow(window);
+    return true;
+  }
+  if (kill && ember.frameList().length > 1) {
+    ember.deleteFrame();
+    return true;
+  }
+  return false;
+}
+
+/** Selects the window selected when a quit window's buffer was shown, if it is still there. */
+function reselect(window: number | undefined): void {
+  if (window !== undefined && window !== ember.selectedWindow() && ember.windowList().includes(window)) ember.selectWindow(window);
+}
+
+/**
+ * Quits a window, as quit-restore-window: deletes it if it is dedicated or
+ * was made for its buffer, else shows what it showed before, as its
+ * quit-restore parameter or its previous buffers say. `buryOrKill` says
+ * what becomes of its buffer: "kill" kills it, "bury" puts it last in the
+ * buffer list and forgets it in the window, and "append" moves it to the
+ * end of the window's previous buffers.
+ */
+function quitRestoreWindow(window: number, buryOrKill?: "bury" | "kill" | "append"): void {
+  const buffer = ember.windowBuffer(window) ?? "";
+  const restore = quitRestore(window);
+  const selectedThen = restore?.[2];
+  const prevBuffer = ember.windowPrevBuffers(window).find(([b]) => b !== buffer)?.[0];
+  const flag = ember.windowDedicatedP(window);
+  const kill = buryOrKill === "kill";
+  if (dedicated(window) && flag !== "side" && windowDelete(window, true, kill)) {
+    reselect(selectedThen);
+  } else if (
+    prevBuffer === undefined &&
+    (restore?.[1] === "frame" || (restore?.[1] === "window" && ember.windowList().length > 1)) &&
+    restore?.[3] === buffer &&
+    windowDelete(window, false, kill)
+  ) {
+    reselect(selectedThen);
+  } else if (restore && Array.isArray(restore[1]) && ember.getBuffer(restore[1][0]) !== undefined && restore[3] === buffer) {
+    const [previous, start, point] = restore[1];
+    // Where the window was in it, from its previous buffers, which follow
+    // edits as the markers Emacs keeps here do.
+    const entry = ember.windowPrevBuffers(window).find(([b]) => b === previous);
+    ember.setWindowDedicatedP(window, null);
+    ember.setWindowBuffer(window, previous);
+    ember.setWindowStart(window, entry?.[1] ?? start);
+    ember.setWindowPoint(window, entry?.[2] ?? point);
+    if (flag === "side") ember.setWindowDedicatedP(window, "side");
+    const appended = buryOrKill === "append" ? ember.windowPrevBuffers(window).find(([b]) => b === buffer) : undefined;
+    if (buryOrKill) {
+      ember.setWindowPrevBuffers(window, ember.windowPrevBuffers(window).filter(([b]) => b !== buffer));
+      ember.setWindowNextBuffers(window, ember.windowNextBuffers(window).filter((b) => b !== buffer));
+    }
+    if (appended) ember.setWindowPrevBuffers(window, [...ember.windowPrevBuffers(window), appended]);
+    ember.setWindowParameter(window, "quit-restore", null);
+    reselect(selectedThen);
+  } else {
+    ember.setWindowParameter(window, "quit-restore", null);
+    ember.setWindowDedicatedP(window, null);
+    if (ember.switchToPrevBuffer(window, buryOrKill) !== undefined) {
+      if (flag === "side") ember.setWindowDedicatedP(window, "side");
+    } else {
+      windowDelete(window, false, kill);
+    }
+    reselect(selectedThen);
+  }
+  if (ember.getBuffer(buffer) === undefined) return;
+  if (kill) ember.call("kill-buffer", buffer);
+  else if (buryOrKill) ember.buryBufferInternal(buffer);
+}
+
 ember.defineCommand({
   name: "quit-window",
   doc:
     "Quit the selected window and bury its buffer.\n\n" +
-    "A window made to show the buffer is deleted; one that showed another buffer before shows it again. " +
-    "Then the window that was selected when the buffer was shown is selected again.",
-  run: () => {
+    "A window made to show the buffer is deleted; one that showed another buffer before shows it again, where it was. " +
+    "Then the window that was selected when the buffer was shown is selected again. With a prefix argument, the buffer is killed.",
+  params: [{ name: "kill", kind: "prefix" }],
+  run: (kill) => {
     const window = ember.selectedWindow();
-    const restore = quitRestore.get(window);
-    quitRestore.delete(window);
-    const buffer = ember.windowBuffer(window);
-    if (restore && restore.buffer === buffer && restore.kind === "window" && ember.windowList().length > 1) {
-      ember.deleteWindow(window);
-    } else if (restore && restore.buffer === buffer && restore.kind === "other" && restore.previous !== undefined) {
-      ember.setWindowBuffer(window, restore.previous);
-    } else {
-      ember.call("switch-to-buffer", "");
-      return;
-    }
-    if (restore.selected !== window && ember.windowList().includes(restore.selected)) {
-      ember.selectWindow(restore.selected);
-    }
+    ember.withCurrentBuffer(ember.windowBuffer(window) ?? "", () => ember.runHooks("quit-window-hook"));
+    quitRestoreWindow(window, kill !== null && kill !== undefined ? "kill" : "bury");
+  },
+});
+
+ember.defineCommand({
+  name: "bury-buffer",
+  doc:
+    "Put a buffer last in the buffer list, the current one by default.\n\n" +
+    "Burying the current buffer shown in the selected window also takes it out of the window: " +
+    "a window dedicated to it is deleted, and any other shows the buffer it showed before.",
+  run: () => {
+    const buffer = ember.bufferName();
+    ember.buryBufferInternal(buffer);
+    const window = ember.selectedWindow();
+    if (window === 0 || ember.windowBuffer(window) !== buffer) return;
+    if (windowDelete(window, true, false)) return;
+    ember.setWindowDedicatedP(window, null);
+    ember.switchToPrevBuffer(window, "bury");
   },
 });
 
@@ -310,34 +408,23 @@ const scrollOtherWindowDown = ember.defineCommand({
 
 // The buffers a window showed before, as window.el's previous-buffer and next-buffer.
 
-/** Shows `buffer` in `window` from where it was when the window last showed it. */
-function showAgain(window: number, buffer: string): void {
-  const entry = ember.windowPrevBuffers(window).find(([b]) => b === buffer);
-  ember.setWindowBuffer(window, buffer);
-  if (entry) {
-    ember.setWindowStart(window, entry[1]);
-    if (window === ember.selectedWindow()) ember.gotoChar(entry[2]);
-  }
+/** Why the selected window cannot switch buffers, if it cannot, as previous-buffer checks. */
+function cannotSwitch(): void {
+  if (ember.selectedWindow() === 0) ember.userError("Cannot switch buffers in minibuffer window");
+  if (ember.windowDedicatedP() === true) ember.userError("Window is strongly dedicated to its buffer");
 }
 
 const previousBuffer = ember.defineCommand({
   name: "previous-buffer",
   doc:
     "Show in the selected window the buffer it showed before this one, as switch-to-prev-buffer.\n\n" +
-    "Repeated, it goes further back; next-buffer comes forward again. A prefix argument goes that many back.",
-  run: () => {
-    const window = ember.selectedWindow();
-    for (let n = ember.prefixNumericValue(ember.prefixArg()); n > 0; n--) {
-      const old = ember.windowBuffer(window) ?? "";
-      const prev = ember.windowPrevBuffers(window);
-      const entry = prev.find(([b]) => b !== old && ember.getBuffer(b) !== undefined);
-      if (!entry) throw new Error("No previous buffer");
-      const oldEntry: [string, number, number] = [old, ember.windowStart(window), ember.point()];
-      const next = ember.windowNextBuffers(window).filter((b) => b !== old && b !== entry[0]);
-      showAgain(window, entry[0]);
-      // The buffer left goes to the end of the previous ones, so going on goes further back.
-      ember.setWindowPrevBuffers(window, [...prev.filter(([b]) => b !== entry[0] && b !== old), oldEntry]);
-      ember.setWindowNextBuffers(window, [old, ...next]);
+    "Repeated, it goes further back, then through the buffer list; next-buffer comes forward again. A prefix argument goes that many back.",
+  params: [{ name: "count", kind: "count" }],
+  run: (count) => {
+    cannotSwitch();
+    const interactive = ember.calledInteractively() && !ember.executingKbdMacro();
+    for (let n = count; n > 0; n--) {
+      if (ember.switchToPrevBuffer() === undefined && interactive) ember.userError("No previous buffer");
     }
   },
 });
@@ -345,14 +432,12 @@ const previousBuffer = ember.defineCommand({
 const nextBuffer = ember.defineCommand({
   name: "next-buffer",
   doc: "Show in the selected window the buffer previous-buffer went back from, as switch-to-next-buffer. A prefix argument goes that many on.",
-  run: () => {
-    const window = ember.selectedWindow();
-    for (let n = ember.prefixNumericValue(ember.prefixArg()); n > 0; n--) {
-      const old = ember.windowBuffer(window) ?? "";
-      const next = ember.windowNextBuffers(window).filter((b) => b !== old && ember.getBuffer(b) !== undefined);
-      if (next.length === 0) throw new Error("No next buffer");
-      showAgain(window, next[0]);
-      ember.setWindowNextBuffers(window, next.slice(1));
+  params: [{ name: "count", kind: "count" }],
+  run: (count) => {
+    cannotSwitch();
+    const interactive = ember.calledInteractively() && !ember.executingKbdMacro();
+    for (let n = count; n > 0; n--) {
+      if (ember.switchToNextBuffer() === undefined && interactive) ember.userError("No next buffer");
     }
   },
 });

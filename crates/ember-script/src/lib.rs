@@ -2209,6 +2209,37 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
         Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64, pos: usize| with_editor(&ctx, |ed| ed.set_window_start(window, pos)))?,
     )?;
     native.set(
+        "windowPoint",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64| with_editor(&ctx, |ed| ed.window_point(window).ok_or_else(|| Error::new("No such window"))))?,
+    )?;
+    native.set(
+        "setWindowPoint",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64, pos: usize| with_editor(&ctx, |ed| ed.set_window_point(window, pos)))?,
+    )?;
+    native.set(
+        "switchToPrevBuffer",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64, how: Opt<String>| {
+            with_editor(&ctx, |ed| {
+                let how = match how.0.as_deref() {
+                    None => None,
+                    Some("bury") => Some(ember_core::BuryOrKill::Bury),
+                    Some("kill") => Some(ember_core::BuryOrKill::Kill),
+                    Some("append") => Some(ember_core::BuryOrKill::Append),
+                    Some(other) => return Err(Error::new(format!("switchToPrevBuffer takes bury, kill or append, not {other}"))),
+                };
+                ed.switch_to_prev_buffer(window, how)
+            })
+        })?,
+    )?;
+    native.set(
+        "switchToNextBuffer",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64| with_editor(&ctx, |ed| ed.switch_to_next_buffer(window)))?,
+    )?;
+    native.set(
+        "buryBufferInternal",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, buffer: String| with_editor(&ctx, |ed| ed.bury_buffer_internal(&buffer)))?,
+    )?;
+    native.set(
         "windowParameter",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64, name: String| -> rquickjs::Result<Value<'js>> {
             match with_editor(&ctx, |ed| Ok(ed.window_parameter(window, &name).cloned()))? {

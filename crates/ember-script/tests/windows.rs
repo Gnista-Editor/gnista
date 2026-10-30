@@ -261,7 +261,7 @@ fn eval(ed: &mut Editor, s: &Scripting, code: &str) -> String {
 fn a_window_configuration_puts_the_windows_back() {
     let (mut ed, s) = setup("one\ntwo\nthree\nfour\n");
     ed.set_frame_size(80, 24);
-    ed.press("C-x 2 C-n C-n").unwrap();
+    ed.press("C-x 2 C-x o C-n C-n C-x o").unwrap();
     eval(&mut ed, &s, r#"(globalThis.saved = ember.currentWindowConfiguration(), 0)"#);
     // Delete the windows, show another buffer, and type at the top.
     ed.press("C-x 1 C-x b").unwrap();
@@ -270,13 +270,47 @@ fn a_window_configuration_puts_the_windows_back() {
     ed.type_text("zero\n");
     eval(&mut ed, &s, "(ember.setWindowConfiguration(saved), 0)");
     let got = windows(&ed);
-    assert_eq!(got.len(), 2);
-    // The point followed the text typed above it, as a marker does.
-    assert_eq!(got[0], ("*scratch*".into(), 13, true));
+    // The other window's point followed the text typed above it, as a
+    // marker does; point in the buffer that was current is left where it
+    // is, as Emacs leaves it.
+    assert_eq!(got, [("*scratch*".into(), 5, true), ("*scratch*".into(), 13, false)]);
     assert_eq!(eval(&mut ed, &s, "ember.windowConfigurationP(saved)"), "true");
     // save-window-excursion puts them back however the code ends.
     s.eval_expression(&mut ed, r#"ember.saveWindowExcursion(() => { ember.call("delete-other-windows"); throw new Error("out"); })"#).unwrap_err();
     assert_eq!(windows(&ed).len(), 2);
+}
+
+#[test]
+fn a_window_excursion_in_the_minibuffer_leaves_it_current() {
+    let (mut ed, s) = setup("text");
+    ed.press("M-x").unwrap();
+    assert_eq!(eval(&mut ed, &s, "(ember.saveWindowExcursion(() => 0), ember.bufferName())"), "\" *Minibuf-1*\"");
+    ed.type_text("x");
+    assert_eq!(ed.minibuffer_input(), "x");
+}
+
+#[test]
+fn a_configuration_of_a_deleted_frame_is_not_put_back() {
+    let (mut ed, s) = setup("text");
+    assert_eq!(
+        eval(&mut ed, &s, "(ember.makeFrame(), globalThis.saved = ember.currentWindowConfiguration(), ember.deleteFrame(), String(ember.setWindowConfiguration(saved)))"),
+        "\"undefined\""
+    );
+    assert_eq!(ed.frame_list().len(), 1);
+}
+
+#[test]
+fn the_selected_windows_start_moves_with_text_above_it() {
+    let text: String = (0..100).map(|i| format!("line {i}\n")).collect();
+    let (mut ed, s) = setup(&text);
+    ed.set_frame_size(80, 24);
+    let start = |ed: &mut Editor| eval(ed, &s, "ember.windowStart()");
+    // Line 62 first, with point in it.
+    eval(&mut ed, &s, "(ember.gotoChar(500), ember.setWindowStart(undefined, 490), 0)");
+    let before = start(&mut ed);
+    eval(&mut ed, &s, r#"(ember.saveExcursion(() => { ember.gotoChar(0); ember.insert("a\nb\nc\n"); }), 0)"#);
+    assert_eq!(start(&mut ed).parse::<usize>().unwrap(), before.parse::<usize>().unwrap() + 6);
+    assert_eq!(ed.window_buffer().top_line, 65, "still showing the same line first");
 }
 
 #[test]
@@ -287,7 +321,7 @@ fn quitting_a_window_uses_its_quit_restore_parameter() {
     ed.type_text("forward-char");
     ed.press("RET").unwrap();
     let help = eval(&mut ed, &s, r#"ember.windowList().find((w) => ember.windowBuffer(w) === "*Help*")"#);
-    assert_eq!(eval(&mut ed, &s, &format!(r#"JSON.stringify(ember.windowParameter({help}, "quit-restore"))"#)), r#""[\"window\",null,1,\"*Help*\"]""#);
+    assert_eq!(eval(&mut ed, &s, &format!(r#"JSON.stringify(ember.windowParameter({help}, "quit-restore"))"#)), r#""[\"window\",\"window\",1,\"*Help*\"]""#);
     ed.press("C-x o q").unwrap();
     assert_eq!(windows(&ed).len(), 1, "the window made for help went");
 }
@@ -297,20 +331,38 @@ fn a_dedicated_window_keeps_its_buffer() {
     let (mut ed, s) = setup("text");
     ed.set_frame_size(80, 24);
     eval(&mut ed, &s, "(ember.setWindowDedicatedP(undefined, true), 0)");
+    // Typed, C-x b refuses, as switch-to-buffer-in-dedicated-window is nil
+    // in Emacs, and so do C-x <left> and set-window-buffer.
     ed.press("C-x b").unwrap();
     ed.type_text("notes");
     ed.press("RET").unwrap();
-    // The buffer went to another window, and this one still shows *scratch*.
+    assert_eq!(ed.echo(), Some("Cannot switch buffers in a dedicated window"));
+    ed.press("C-x <left>").unwrap();
+    assert_eq!(ed.echo(), Some("Window is strongly dedicated to its buffer"));
+    let err = s.eval_expression(&mut ed, r#"(ember.getBufferCreate("notes"), ember.setWindowBuffer(undefined, "notes"))"#).unwrap_err();
+    assert!(err.to_string().contains("Window is dedicated to ‘*scratch*’"), "{err}");
+    assert_eq!(windows(&ed).len(), 1);
+    // From code, the buffer goes to another window.
+    ed.call("switch-to-buffer", vec![ember_core::Arg::Str("notes".into())]).unwrap();
     let got = windows(&ed);
     assert_eq!(got.len(), 2);
     assert!(got.iter().any(|(b, _, _)| b == "*scratch*") && got.iter().any(|(b, _, selected)| b == "notes" && *selected));
-    // Killing the buffer of a dedicated window that is not selected deletes it.
-    eval(&mut ed, &s, r#"(ember.setWindowDedicatedP(ember.windowList().find((w) => ember.windowBuffer(w) === "*scratch*"), true), 0)"#);
-    ed.press("C-x b").unwrap();
-    ed.type_text("third");
-    ed.press("RET").unwrap();
+    // Killing the buffer of a dedicated window deletes the window, selected or not.
     ed.kill_buffer("*scratch*").unwrap();
+    assert_eq!(windows(&ed), [("notes".into(), 0, true)]);
+    ed.press("C-x 2").unwrap();
+    eval(&mut ed, &s, "(ember.setWindowDedicatedP(undefined, true), 0)");
+    ed.kill_buffer("notes").unwrap();
     assert_eq!(windows(&ed).len(), 1);
+    // The only window cannot go: it shows another buffer, and is dedicated no more.
+    ed.switch_to_buffer("last");
+    eval(&mut ed, &s, "(ember.setWindowDedicatedP(undefined, true), 0)");
+    ed.kill_buffer("last").unwrap();
+    assert_eq!(windows(&ed).len(), 1);
+    assert_eq!(eval(&mut ed, &s, "String(ember.windowDedicatedP())"), "\"undefined\"");
+    // A window softly dedicated stops being so when it shows another buffer.
+    eval(&mut ed, &s, r#"(ember.setWindowDedicatedP(undefined, "soft"), ember.getBufferCreate("soft"), ember.setWindowBuffer(undefined, "soft"), 0)"#);
+    assert_eq!(eval(&mut ed, &s, "String(ember.windowDedicatedP())"), "\"undefined\"");
 }
 
 #[test]

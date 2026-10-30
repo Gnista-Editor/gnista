@@ -341,6 +341,10 @@ pub fn run(case: &Case) -> State {
         std::fs::write(file, &case.text).expect("the visited file can be written");
         b.path = Some(file.clone());
     }
+    // Emacs's own buffers, which buffer lists in record.el's Emacs have
+    // after the case's: the message log, then *scratch*.
+    ed.get_buffer_create("*Messages*");
+    ed.get_buffer_create("*scratch*");
     if case.agenda_files {
         let file = file.as_ref().expect("agenda_files needs visit");
         ed.set_variable("org-agenda-files", ember_core::Value::List(vec![ember_core::Value::Str(file.display().to_string())]));
@@ -514,8 +518,18 @@ pub fn differences(emacs: &State, ember: &State) -> String {
             }
         )*};
     }
-    compare!(text, visible, point, mark, mark_active, kill_ring, modified, error);
-    if emacs.windows.is_some() && emacs.windows != ember.windows {
+    // *Messages* logs different messages in each, so a case that ends
+    // there compares only which windows show it, not what it holds.
+    let in_messages = |s: &State| s.windows.as_ref().is_some_and(|ws| ws.iter().any(|w| w.selected && w.buffer == "*Messages*"));
+    if in_messages(emacs) && in_messages(ember) {
+        compare!(kill_ring, error);
+    } else {
+        compare!(text, visible, point, mark, mark_active, kill_ring, modified, error);
+    }
+    let without_messages_points = |s: &State| {
+        s.windows.clone().map(|ws| ws.into_iter().map(|w| WindowState { point: if w.buffer == "*Messages*" { 0 } else { w.point }, ..w }).collect::<Vec<_>>())
+    };
+    if emacs.windows.is_some() && without_messages_points(emacs) != without_messages_points(ember) {
         out.push(format!("    windows: Emacs {:?}, Ember {:?}", emacs.windows, ember.windows));
     }
     if emacs.files != ember.files {

@@ -602,6 +602,12 @@ pub(crate) fn install(ed: &mut Editor) {
             Value::List(["basic", "partial-completion", "emacs22"].map(|s| Value::Str(s.into())).to_vec()),
         ),
         Variable::new(
+            "switch-to-buffer-preserve-window-point",
+            "Whether switch-to-buffer shows a buffer where the window last showed it, with its point there.\n\n\
+             t does whenever the window showed the buffer before, already-displayed only if another window shows it now, and nil never does: the window shows it at the buffer's point.",
+            true,
+        ),
+        Variable::new(
             "enable-recursive-minibuffers",
             "Whether a command can use the minibuffer while it is open, as M-x does run from the minibuffer: the new prompt opens inside the open one, which waits until it is done.",
             false,

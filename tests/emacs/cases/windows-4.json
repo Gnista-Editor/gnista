@@ -1,0 +1,124 @@
+[
+  {
+    "name": "kill-buffer-shows-each-windows-own-previous-buffer",
+    "text": "one",
+    "keys": "C-x b C-x b C-x 3 C-x o C-x b C-x b C-x o C-x k",
+    "answers": [
+      "a",
+      "b",
+      "c",
+      "d",
+      "b"
+    ],
+    "windows": true
+  },
+  {
+    "name": "kill-buffer-in-two-windows",
+    "text": "one",
+    "keys": "C-x b C-x b C-x 2 C-x o C-x b C-x o C-x k",
+    "answers": [
+      "a",
+      "b",
+      "c",
+      "b"
+    ],
+    "windows": true
+  },
+  {
+    "name": "previous-buffer-in-a-fresh-window",
+    "text": "one",
+    "keys": "C-x <left>",
+    "windows": true
+  },
+  {
+    "name": "next-buffer-with-none-left",
+    "text": "one",
+    "keys": "C-x b C-x <right>",
+    "answers": [
+      "a"
+    ],
+    "windows": true
+  },
+  {
+    "name": "previous-buffer-in-a-split-window",
+    "text": "one",
+    "keys": "C-x b C-x 3 C-x <left> C-x o C-x <left>",
+    "answers": [
+      "a"
+    ],
+    "windows": true
+  },
+  {
+    "name": "previous-buffer-three-times",
+    "text": "one",
+    "keys": "C-x b C-x b C-x <left> C-x <left> C-x <left>",
+    "answers": [
+      "a",
+      "b"
+    ],
+    "windows": true
+  },
+  {
+    "name": "previous-buffer-four-times",
+    "text": "one",
+    "keys": "C-x b C-x b C-x <left> C-x <left> C-x <left> C-x <left>",
+    "answers": [
+      "a",
+      "b"
+    ],
+    "windows": true
+  },
+  {
+    "name": "switching-forgets-next-buffers",
+    "text": "one",
+    "keys": "C-x b C-x b C-x <left> C-x b C-x <right>",
+    "answers": [
+      "a",
+      "b",
+      "c"
+    ],
+    "windows": true
+  },
+  {
+    "name": "next-buffer-twice-after-going-back",
+    "text": "one",
+    "keys": "C-x b C-x b C-x b C-x <left> C-x <left> C-x <right> C-x <right>",
+    "answers": [
+      "a",
+      "b",
+      "c"
+    ],
+    "windows": true
+  },
+  {
+    "name": "quit-window-restores-the-reused-windows-point",
+    "text": "one\ntwo\nthree",
+    "keys": "C-x 2 C-x o M-> C-x o C-h f C-x o q",
+    "answers": [
+      "forward-char"
+    ],
+    "windows": true
+  },
+  {
+    "name": "switch-to-buffer-preserves-window-point",
+    "text": "one\ntwo",
+    "keys": "C-x 3 C-x b C-x o M-> C-x o C-x b",
+    "answers": [
+      "b",
+      "*ember-oracle*"
+    ],
+    "windows": true
+  },
+  {
+    "name": "kill-buffer-then-previous-buffer",
+    "text": "one",
+    "keys": "C-x b C-x b C-x b C-x k C-x <left>",
+    "answers": [
+      "a",
+      "b",
+      "c",
+      "c"
+    ],
+    "windows": true
+  }
+]

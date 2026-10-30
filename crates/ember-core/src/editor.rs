@@ -133,6 +133,11 @@ pub struct Editor {
     remapped_from: Option<String>,
     /// The buffer shown before the current one, by id, so renaming it keeps it.
     previous_buffer: Option<u64>,
+    /// Buffers by id, the most recently selected first, as Emacs's buffer
+    /// list orders them; see [`Editor::buffer_list`].
+    buffer_order: Vec<u64>,
+    /// Buffers put at the end of the buffer list, the last buried last.
+    buried: Vec<u64>,
     /// The minibuffer, as ` *Minibuf-1*` in the buffer list, by its id;
     /// in a recursive minibuffer, the innermost, ` *Minibuf-2*` and on.
     pub(crate) minibuffer_id: u64,
@@ -275,6 +280,8 @@ impl Editor {
             running: 0,
             remapped_from: None,
             previous_buffer: None,
+            buffer_order: Vec::new(),
+            buried: Vec::new(),
             minibuffer_id,
             minibuffer_window_selected: false,
             outer_prompts: Vec::new(),
@@ -1398,6 +1405,7 @@ impl Editor {
             self.record_window_buffer(selected);
             self.selected_window_shows(index);
         }
+        self.record_buffer(self.buffers[index].id);
         self.current = index;
     }
 
@@ -1429,7 +1437,15 @@ impl Editor {
     /// `find-file-noselect`, and returns the buffer's name.
     pub fn find_file_noselect(&mut self, path: &Path) -> Result<String> {
         let (current, shown, previous) = (self.buffers[self.current].id, self.window_buffer().id, self.previous_buffer);
+        // Nor does the window note it, or the buffer list.
+        let selected = self.selected_window;
+        let history = self.window(selected).map(|w| (w.prev_buffers.clone(), w.next_buffers.clone()));
+        let (order, buried) = (self.buffer_order.clone(), self.buried.clone());
         let visited = self.visit_file(path);
+        if let (Some(w), Some((prev, next))) = (self.windows.iter_mut().find(|w| w.id == selected), history) {
+            (w.prev_buffers, w.next_buffers) = (prev, next);
+        }
+        (self.buffer_order, self.buried) = (order, buried);
         let name = self.buffers[self.current].name.clone();
         if let Some(back) = self.buffer_with_id(shown) {
             self.selected_window_shows(back);
@@ -1441,13 +1457,28 @@ impl Editor {
         visited.map(|()| name)
     }
 
-    /// Shows the named buffer, creating an empty one if there is none.
+    /// Shows the named buffer, creating an empty one if there is none, as
+    /// switch-to-buffer does: where the window last showed it, with its
+    /// point there, as `switch-to-buffer-preserve-window-point` says.
     pub fn switch_to_buffer(&mut self, name: &str) {
         let index = self.find_buffer(name).unwrap_or_else(|| {
             self.buffers.push(Buffer::new(name));
             self.buffers.len() - 1
         });
+        let selected = self.selected_window;
+        let id = self.buffers[index].id;
+        let shown = self.window(selected).is_some_and(|w| w.buffer == id);
+        let entry = self.window(selected).filter(|w| w.prev_buffers.contains(&id)).and_then(|_| self.buffers[index].prev_entry(selected));
+        let preserve = match self.variable_in(&self.buffers[index], "switch-to-buffer-preserve-window-point") {
+            Some(Value::Str(s)) if s == "already-displayed" => self.windows.iter().any(|w| w.buffer == id),
+            Some(v) => v.is_true(),
+            None => false,
+        };
         self.select(index);
+        if let (false, true, Some((start, point))) = (shown, preserve, entry) {
+            let _ = self.set_window_start(selected, start);
+            let _ = self.set_window_point(selected, point);
+        }
     }
 
     /// The buffer to offer when switching buffers: the one shown before this one.
@@ -1503,36 +1534,79 @@ impl Editor {
             let _ = self.delete_process(&process);
         }
         let Some(index) = self.find_buffer(name) else { return Ok(()) };
-        let showing = index == self.selected_buffer_index();
-        let was_current = index == self.current;
-        // What shows instead: the buffer shown before, else any other but
-        // internal ones such as the minibuffer, else a new *scratch*.
-        let offered = |i: usize| i != index && !self.buffers[i].name.starts_with(' ');
-        let next = self
+        let gone = self.buffers[index].id;
+        // Each window showing it goes back to the buffer it showed before,
+        // or is deleted, while the buffer is still there, as Emacs's
+        // kill-buffer runs replace-buffer-in-windows first.
+        self.replace_buffer_in_windows(gone);
+        let Some(index) = self.buffer_with_id(gone) else { return Ok(()) };
+        // What a window that found nothing else shows, and what is current
+        // if this buffer was: another buffer but internal ones such as the
+        // minibuffer, as other-buffer offers, else a new *scratch*.
+        let offered = |ed: &Editor, i: usize| i != index && !ed.buffers[i].name.starts_with(' ');
+        let other = self
             .previous_buffer
             .and_then(|id| self.buffer_with_id(id))
-            .filter(|&i| offered(i))
-            .or_else(|| (0..self.buffers.len()).find(|&i| offered(i)))
-            .map(|i| self.buffers[i].name.clone());
-        let current_name = self.buffers[self.current].name.clone();
-        let shown_name = self.window_buffer().name.clone();
+            .filter(|&i| offered(self, i))
+            .or_else(|| self.buffer_list().into_iter().find(|&i| offered(self, i)))
+            .map(|i| self.buffers[i].id);
+        let other = other.unwrap_or_else(|| {
+            self.buffers.push(Buffer::new("*scratch*"));
+            self.buffers[self.buffers.len() - 1].id
+        });
+        let current = if self.current == index { other } else { self.buffers[self.current].id };
         let mut removed = self.buffers.remove(index);
         // Its markers point nowhere now.
         self.detached_markers.extend(removed.take_markers());
-        let gone = removed.id;
-        let next = next.or_else(|| {
-            self.buffers.push(Buffer::new("*scratch*"));
-            Some("*scratch*".to_string())
-        });
-        let target = if showing { next.clone() } else { Some(shown_name) };
-        let shown = target.and_then(|n| self.find_buffer(&n)).unwrap_or(0);
-        self.selected_window_shows(shown);
-        // The buffer current before stays so, unless it was the one killed.
-        self.current = if was_current { shown } else { self.find_buffer(&current_name).unwrap_or(shown) };
-        // Other windows showing it show what the selected window now does,
-        // or the buffer it would switch to.
-        let replacement = next.and_then(|n| self.find_buffer(&n)).filter(|_| !showing).unwrap_or(shown);
-        self.replace_buffer_in_windows(gone, replacement);
+        let other_index = self.buffer_with_id(other).expect("live");
+        let point = self.buffers[other_index].point();
+        let selected = self.selected_window;
+        for w in &mut self.windows {
+            w.prev_buffers.retain(|b| *b != gone);
+            w.next_buffers.retain(|b| *b != gone);
+            if w.buffer == gone {
+                w.buffer = other;
+                if w.id != selected {
+                    self.buffers[other_index].set_window_point(w.id, point);
+                    self.buffers[other_index].set_window_start(w.id, 0);
+                }
+            }
+        }
+        self.buffer_order.retain(|b| *b != gone);
+        self.current = self.buffer_with_id(current).unwrap_or(other_index);
+        Ok(())
+    }
+
+    /// The buffers, most recently selected first, as Emacs's `buffer-list`
+    /// orders them: by when each was last shown by `switch-to-buffer` or
+    /// had its window selected, then those never shown in the order they
+    /// were made, then those buried.
+    pub fn buffer_list(&self) -> Vec<usize> {
+        let mut list: Vec<usize> = self.buffer_order.iter().filter_map(|&id| self.buffer_with_id(id)).collect();
+        list.extend((0..self.buffers.len()).filter(|&i| {
+            let id = self.buffers[i].id;
+            !self.buffer_order.contains(&id) && !self.buried.contains(&id)
+        }));
+        list.extend(self.buried.iter().filter_map(|&id| self.buffer_with_id(id)));
+        list
+    }
+
+    /// Puts a buffer first in the buffer list, as Emacs's record_buffer.
+    pub(crate) fn record_buffer(&mut self, id: u64) {
+        self.buffer_order.retain(|b| *b != id);
+        self.buffer_order.insert(0, id);
+        self.buried.retain(|b| *b != id);
+    }
+
+    /// Puts a buffer last in the buffer list, as Emacs's `bury-buffer-internal`.
+    pub fn bury_buffer_internal(&mut self, name: &str) -> Result<()> {
+        let index = self.find_buffer(name).ok_or_else(|| Error::new(format!("No such buffer {name}")))?;
+        let id = self.buffers[index].id;
+        self.buffer_order.retain(|b| *b != id);
+        self.buried.retain(|b| *b != id);
+        self.buried.push(id);
+        let live: Vec<u64> = self.buffers.iter().map(|b| b.id).collect();
+        self.buried.retain(|b| live.contains(b));
         Ok(())
     }
 

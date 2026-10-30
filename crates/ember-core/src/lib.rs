@@ -61,4 +61,4 @@ pub use rows::{LineNumbers, Row, Segment};
 pub use symbols::{AdviceHow, Definition};
 pub use search::{BufferHaystack, Match, SearchOptions, expand_replacement, fold_case_for as search_fold_case};
 pub use variables::{Function, HookFn, Value, Variable};
-pub use window::{MINIBUFFER_WINDOW, FrameId, MouseEvent, WindowId, WindowRect, WindowTree, WindowView};
+pub use window::{BuryOrKill, MINIBUFFER_WINDOW, FrameId, MouseEvent, WindowId, WindowRect, WindowTree, WindowView};

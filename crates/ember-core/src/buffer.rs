@@ -105,6 +105,12 @@ const MARK_RING_MAX: usize = 16;
 /// Set in a window's id where the buffer keeps the window's start rather than its point.
 const WINDOW_START: u64 = 1 << 62;
 
+/// Set in a window's id where the buffer keeps where the window started and
+/// its point when it last showed the buffer, its entry in the window's
+/// previous buffers, which are markers in Emacs.
+const PREV_START: u64 = 1 << 61;
+const PREV_POINT: u64 = 1 << 60;
+
 /// Text plus the state that goes with it: point, mark, the visited file and
 /// undo history. All positions are character indices.
 pub struct Buffer {
@@ -114,12 +120,14 @@ pub struct Buffer {
     pub path: Option<PathBuf>,
     pub read_only: bool,
     /// First line shown in the selected window, when it shows this buffer.
-    /// Other windows keep their own.
+    /// Other windows keep their own. It moves with edits above it, as the
+    /// selected window's start is a marker in Emacs.
     pub top_line: usize,
-    /// The points of windows other than the selected one that show this
-    /// buffer, which move with edits as Emacs's window-point markers do.
     /// The points of windows showing the buffer, other than the selected
-    /// one, and their starts, under their ids with [`WINDOW_START`] set.
+    /// one, under their ids, and their starts under their ids with
+    /// [`WINDOW_START`] set, which move with edits as Emacs's window-point
+    /// and window-start markers do; and the windows' entries for the buffer
+    /// in their previous buffers, with [`PREV_START`] and [`PREV_POINT`].
     window_points: Vec<(u64, usize)>,
     text: Rope,
     point: usize,
@@ -599,6 +607,11 @@ impl Buffer {
         }
         let point_before = self.point;
         let start = self.syntax.as_ref().map(|_| point_at(&self.text, pos));
+        // Lines added above the selected window's start push it down, as
+        // text inserted before a marker does.
+        if self.top_line > 0 && self.top_line < self.line_count() && pos < self.line_start(self.top_line) {
+            self.top_line += s.matches('\n').count();
+        }
         self.text.insert(pos, s);
         let n = s.chars().count();
         if let (Some(syntax), Some(start)) = (&self.syntax, start) {
@@ -662,7 +675,17 @@ impl Buffer {
             if at_start { Some((MarkRef::Marker(m.id), 0)) } else { inside(m.pos).map(|o| (MarkRef::Marker(m.id), o)) }
         }));
         let edit_range = self.syntax.as_ref().map(|_| (point_at(&self.text, start), point_at(&self.text, end)));
+        // The selected window's start moves with the text, to the start of
+        // the deletion if it was inside it; a window starts at a line's start.
+        let top = (self.top_line > 0 && self.top_line < self.line_count()).then(|| self.line_start(self.top_line));
         self.text.remove(start..end);
+        if let Some(top) = top {
+            if end <= top {
+                self.top_line -= deleted.matches('\n').count();
+            } else if start < top {
+                self.top_line = self.line_of(start);
+            }
+        }
         if let (Some(syntax), Some((from, to))) = (&self.syntax, edit_range) {
             syntax.edit(&input_edit(from, to, from));
         }
@@ -1109,6 +1132,27 @@ impl Buffer {
 
     pub(crate) fn remove_window_start(&mut self, window: u64) -> Option<usize> {
         self.remove_window_point(window | WINDOW_START)
+    }
+
+    /// Where a window started and its point when it last showed this
+    /// buffer, its entry in the window's previous buffers.
+    pub(crate) fn prev_entry(&self, window: u64) -> Option<(usize, usize)> {
+        Some((self.window_point(window | PREV_START)?, self.window_point(window | PREV_POINT)?))
+    }
+
+    pub(crate) fn set_prev_entry(&mut self, window: u64, start: usize, point: usize) {
+        self.set_window_point(window | PREV_START, start);
+        self.set_window_point(window | PREV_POINT, point);
+    }
+
+    pub(crate) fn remove_prev_entry(&mut self, window: u64) {
+        self.remove_window_point(window | PREV_START);
+        self.remove_window_point(window | PREV_POINT);
+    }
+
+    /// Forgets everything kept for a window that is going.
+    pub(crate) fn forget_window(&mut self, window: u64) {
+        self.window_points.retain(|(w, _)| w & !(WINDOW_START | PREV_START | PREV_POINT) != window);
     }
 
     /// Takes the boundary before the open undo group away, so its edits and

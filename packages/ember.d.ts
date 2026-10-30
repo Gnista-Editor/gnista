@@ -110,6 +110,14 @@ declare global {
        */
       "beginning-of-visual-line": [];
       /**
+       * Put a buffer last in the buffer list, the current one by default.
+       *
+       * Burying the current buffer shown in the selected window also takes it out of the window: a window dedicated to it is deleted, and any other shows the buffer it showed before.
+       *
+       * Defined in packages/window.ts.
+       */
+      "bury-buffer": [];
+      /**
        * Check the buffer for unbalanced parens and quotes, leaving point at the first one unbalanced.
        *
        * Defined in packages/lisp.ts.
@@ -1503,9 +1511,11 @@ declare global {
       /**
        * Show in the selected window the buffer previous-buffer went back from, as switch-to-next-buffer. A prefix argument goes that many on.
        *
+       * @param count prefix count
+       *
        * Defined in packages/window.ts.
        */
-      "next-buffer": [];
+      "next-buffer": [count?: number];
       /**
        * Visit the place of the next error message, or grep hit, in the compilation or grep buffer used last: its file, at its line. With a prefix argument, that many on; plain C-u starts again from the first.
        *
@@ -2687,11 +2697,13 @@ declare global {
       /**
        * Show in the selected window the buffer it showed before this one, as switch-to-prev-buffer.
        *
-       * Repeated, it goes further back; next-buffer comes forward again. A prefix argument goes that many back.
+       * Repeated, it goes further back, then through the buffer list; next-buffer comes forward again. A prefix argument goes that many back.
+       *
+       * @param count prefix count
        *
        * Defined in packages/window.ts.
        */
-      "previous-buffer": [];
+      "previous-buffer": [count?: number];
       /**
        * Visit the place of the error message before, or as many back as the prefix argument says.
        *
@@ -2909,11 +2921,13 @@ declare global {
       /**
        * Quit the selected window and bury its buffer.
        *
-       * A window made to show the buffer is deleted; one that showed another buffer before shows it again. Then the window that was selected when the buffer was shown is selected again.
+       * A window made to show the buffer is deleted; one that showed another buffer before shows it again, where it was. Then the window that was selected when the buffer was shown is selected again. With a prefix argument, the buffer is killed.
+       *
+       * @param kill raw prefix argument
        *
        * Defined in packages/window.ts.
        */
-      "quit-window": [];
+      "quit-window": [kill?: PrefixArg];
       /**
        * Search backward from point for a regular expression, leaving point at the start of the match.
        *
@@ -4913,6 +4927,12 @@ declare global {
        * Defined in packages/paren.ts.
        */
       "show-paren-when-point-inside-paren": Value;
+      /**
+       * Whether switch-to-buffer shows a buffer where the window last showed it, with its point there.
+       *
+       * t does whenever the window showed the buffer before, already-displayed only if another window shows it now, and nil never does: the window shows it at the buffer's point.
+       */
+      "switch-to-buffer-preserve-window-point": Value;
       /**
        * A function the mode gives, called with a start and an end to put syntax-table properties on the text there, before it is scanned, as Emacs's syntax-propertize calls it.
        */
@@ -7021,6 +7041,22 @@ declare global {
     function windowStart(window?: number): number;
     /** Make a window start at the line holding `pos`, as set-window-start; a window always starts at a line's start. */
     function setWindowStart(window: number | undefined, pos: number): void;
+    /** A window's point, the selected window's by default, as window-point: in the selected window, its buffer's point. */
+    function windowPoint(window?: number): number;
+    /** Move a window's point, as set-window-point. */
+    function setWindowPoint(window: number | undefined, pos: number): void;
+    /**
+     * Show in a window the buffer it showed before, as switch-to-prev-buffer:
+     * one of its previous buffers, where it was, else one from the buffer
+     * list. With "bury" or "kill", the buffer it leaves is forgotten in the
+     * window; with "append", it goes to the end of its previous buffers.
+     * Returns the buffer shown, or undefined if there was none to show.
+     */
+    function switchToPrevBuffer(window?: number, buryOrKill?: "bury" | "kill" | "append"): string | undefined;
+    /** Show in a window the buffer previous-buffer left, as switch-to-next-buffer. Returns it, or undefined. */
+    function switchToNextBuffer(window?: number): string | undefined;
+    /** Put a buffer last in the buffer list, as bury-buffer-internal. */
+    function buryBufferInternal(buffer: string): void;
     /** A window's parameter, as window-parameter, such as "quit-restore". */
     function windowParameter(window: number | undefined, name: string | symbol): Value | undefined;
     /** Set a window's parameter, or with null take it away, as set-window-parameter. */
@@ -7052,8 +7088,12 @@ declare global {
      * parameters, which window is selected and which buffer is current.
      */
     function currentWindowConfiguration(): WindowConfiguration;
-    /** Put a frame's windows back as a configuration had them, as set-window-configuration. */
-    function setWindowConfiguration(configuration: WindowConfiguration): void;
+    /**
+     * Put a frame's windows back as a configuration had them, as
+     * set-window-configuration. Point in the buffer that was current then is
+     * left where it is. Returns true, or undefined if the frame is gone.
+     */
+    function setWindowConfiguration(configuration: WindowConfiguration): true | undefined;
     function windowConfigurationP(value: unknown): value is WindowConfiguration;
     /** Run `fn`, then put the windows back as they were, however it ends, as save-window-excursion. */
     function saveWindowExcursion<T>(fn: () => T): T;
