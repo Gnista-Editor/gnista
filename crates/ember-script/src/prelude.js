@@ -698,6 +698,7 @@
     },
     lookingAt: (regexp, pos, { caseFold } = {}) => native.lookingAt(String(regexp), pos ?? undefined, caseFold ?? undefined),
     reSearchForward(regexp, { bound, noerror = false, caseFold } = {}) {
+      if (bound !== undefined && bound !== null && bound < native.point()) ember.signal("error", "Invalid search bound (wrong side of point)");
       const m = ember.search(regexp, { regexp: true, bound, caseFold });
       if (m === undefined) {
         if (noerror) return undefined;
@@ -707,6 +708,7 @@
       return m.end;
     },
     reSearchBackward(regexp, { bound, noerror = false, caseFold } = {}) {
+      if (bound !== undefined && bound !== null && bound > native.point()) ember.signal("error", "Invalid search bound (wrong side of point)");
       const m = ember.search(regexp, { regexp: true, backward: true, bound, caseFold });
       if (m === undefined) {
         if (noerror) return undefined;

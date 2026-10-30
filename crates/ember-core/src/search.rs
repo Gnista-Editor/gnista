@@ -43,15 +43,39 @@ fn compile_literal(pattern: &str, case_fold: bool) -> Result<Regex> {
 }
 
 /// A buffer as a regexp sees it: its accessible portion, its point, and
-/// its characters' syntax classes.
+/// its characters' syntax classes. It reads the text in chunks, as the
+/// matcher reads one character after another.
 pub struct BufferHaystack<'a> {
-    pub buffer: &'a Buffer,
-    pub class: &'a dyn Fn(usize, char) -> Class,
+    buffer: &'a Buffer,
+    class: &'a dyn Fn(usize, char) -> Class,
+    /// Whether classes come from the table alone, with no `syntax-table` properties.
+    fixed: bool,
+    chunk: std::cell::RefCell<(usize, Vec<char>)>,
+}
+
+/// How many characters a haystack reads at a time.
+const CHUNK: usize = 8192;
+
+impl<'a> BufferHaystack<'a> {
+    pub fn new(buffer: &'a Buffer, class: &'a dyn Fn(usize, char) -> Class, fixed: bool) -> BufferHaystack<'a> {
+        BufferHaystack { buffer, class, fixed, chunk: std::cell::RefCell::new((0, Vec::new())) }
+    }
 }
 
 impl Haystack for BufferHaystack<'_> {
     fn char_at(&self, pos: usize) -> Option<char> {
-        if pos >= self.buffer.point_min() && pos < self.buffer.point_max() { self.buffer.char_at(pos) } else { None }
+        let (min, max) = (self.buffer.point_min(), self.buffer.point_max());
+        if pos < min || pos >= max {
+            return None;
+        }
+        let mut chunk = self.chunk.borrow_mut();
+        let (start, chars) = &mut *chunk;
+        if pos < *start || pos >= *start + chars.len() {
+            // Around `pos`, so reading backward is as quick as forward.
+            *start = pos.saturating_sub(CHUNK / 4).max(min);
+            *chars = self.buffer.chars_between(*start, (*start + CHUNK).min(max));
+        }
+        chars.get(pos - *start).copied()
     }
     fn min(&self) -> usize {
         self.buffer.point_min()
@@ -64,6 +88,45 @@ impl Haystack for BufferHaystack<'_> {
     }
     fn class_at(&self, pos: usize, c: char) -> Class {
         (self.class)(pos, c)
+    }
+    fn fixed_classes(&self) -> bool {
+        self.fixed
+    }
+    fn find(&self, from: usize, limit: usize, backward: bool, test: &mut dyn FnMut(usize, char) -> bool) -> Option<usize> {
+        let (min, max) = (self.buffer.point_min(), self.buffer.point_max());
+        if backward {
+            let (mut pos, limit) = (from.min(max.checked_sub(1)?), limit.max(min));
+            while pos >= limit {
+                // Load the chunk holding `pos`, then look through it.
+                self.char_at(pos)?;
+                let chunk = self.chunk.borrow();
+                let (start, chars) = &*chunk;
+                let low = (*start).max(limit);
+                let found = (low..=pos).rev().find(|&p| test(p, chars[p - start]));
+                if found.is_some() {
+                    return found;
+                }
+                if low == limit || low == 0 {
+                    return None;
+                }
+                pos = low - 1;
+            }
+            None
+        } else {
+            let (mut pos, limit) = (from.max(min), limit.min(max));
+            while pos < limit {
+                self.char_at(pos)?;
+                let chunk = self.chunk.borrow();
+                let (start, chars) = &*chunk;
+                let high = (start + chars.len()).min(limit);
+                let found = (pos..high).find(|&p| test(p, chars[p - start]));
+                if found.is_some() {
+                    return found;
+                }
+                pos = high;
+            }
+            None
+        }
     }
 }
 
@@ -203,17 +266,21 @@ impl Editor {
     /// A buffer's characters' syntax classes, as its syntax table gives
     /// them, or their `syntax-table` properties where
     /// `parse-sexp-lookup-properties` is on.
-    pub(crate) fn syntax_classes<'a>(&'a self, b: &'a Buffer) -> impl Fn(usize, char) -> Class + 'a {
+    /// Also whether classes come from the table alone. ASCII's are looked
+    /// up once.
+    pub(crate) fn syntax_classes<'a>(&'a self, b: &'a Buffer) -> (impl Fn(usize, char) -> Class + 'a, bool) {
         let properties = self.variable_in(b, "parse-sexp-lookup-properties").is_some_and(|v| v.is_true());
-        move |pos, c| {
+        let ascii: Vec<Class> = (0..128u8).map(|c| self.syntax_tables.entry(&b.syntax_table, c as char).class).collect();
+        let class = move |pos, c: char| {
             if properties
                 && let Some(crate::Value::Str(descriptor)) = b.text_property(pos, "syntax-table")
                 && let Ok(entry) = crate::syntax_table::Entry::parse(descriptor)
             {
                 return entry.class;
             }
-            self.syntax_tables.entry(&b.syntax_table, c).class
-        }
+            if c.is_ascii() { ascii[c as usize] } else { self.syntax_tables.entry(&b.syntax_table, c).class }
+        };
+        (class, !properties)
     }
 
     /// Searches the current buffer from `from`, as Emacs's search.c does:
@@ -225,8 +292,8 @@ impl Editor {
             return search_literal(b, pattern, from, options);
         }
         let re = Regexp::cached(pattern, options.case_fold)?;
-        let class = self.syntax_classes(b);
-        let h = BufferHaystack { buffer: b, class: &class };
+        let (class, fixed) = self.syntax_classes(b);
+        let h = BufferHaystack::new(b, &class, fixed);
         let (min, max) = (b.point_min(), b.point_max());
         let from = from.clamp(min, max);
         let found = if options.backward {
@@ -245,8 +312,8 @@ impl Editor {
     pub fn looking_at(&self, pattern: &str, pos: usize, case_fold: bool) -> Result<Option<Match>> {
         let b = self.buffer();
         let re = Regexp::cached(pattern, case_fold)?;
-        let class = self.syntax_classes(b);
-        let h = BufferHaystack { buffer: b, class: &class };
+        let (class, fixed) = self.syntax_classes(b);
+        let h = BufferHaystack::new(b, &class, fixed);
         let pos = pos.clamp(b.point_min(), b.point_max());
         Ok(re.match_at(&h, pos, b.point_max())?.map(to_match))
     }
@@ -257,7 +324,8 @@ impl Editor {
     pub fn string_match(&self, pattern: &str, text: &str, start: usize, case_fold: bool) -> Result<Option<Match>> {
         let re = Regexp::cached(pattern, case_fold)?;
         let b = self.buffer();
-        let class = |c: char| self.syntax_tables.entry(&b.syntax_table, c).class;
+        let ascii: Vec<Class> = (0..128u8).map(|c| self.syntax_tables.entry(&b.syntax_table, c as char).class).collect();
+        let class = |c: char| if c.is_ascii() { ascii[c as usize] } else { self.syntax_tables.entry(&b.syntax_table, c).class };
         let h = crate::regexp::StrHaystack { chars: text.chars().collect(), class: &class };
         let len = h.chars.len();
         if start > len {

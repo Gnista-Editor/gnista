@@ -25,6 +25,22 @@ pub trait Haystack {
     fn point(&self) -> Option<usize>;
     /// The syntax class of the character `c` at `pos`.
     fn class_at(&self, pos: usize, c: char) -> Class;
+    /// Whether a character's class is the same wherever it is, with no
+    /// `syntax-table` properties, so a search can work out once which
+    /// characters can start a match.
+    fn fixed_classes(&self) -> bool {
+        false
+    }
+    /// The first position from `from` before `limit`, or with `backward`
+    /// the last from `from` down to `limit`, whose character passes `test`.
+    /// A haystack that can read faster than one character at a time says so.
+    fn find(&self, from: usize, limit: usize, backward: bool, test: &mut dyn FnMut(usize, char) -> bool) -> Option<usize> {
+        if backward {
+            (limit..=from).rev().find(|&p| self.char_at(p).is_some_and(|c| test(p, c)))
+        } else {
+            (from..limit).find(|&p| self.char_at(p).is_some_and(|c| test(p, c)))
+        }
+    }
 }
 
 /// A string to match, with a syntax table's classes.
@@ -49,6 +65,9 @@ impl Haystack for StrHaystack<'_> {
     fn class_at(&self, _: usize, c: char) -> Class {
         (self.class)(c)
     }
+    fn fixed_classes(&self) -> bool {
+        true
+    }
 }
 
 /// A match's groups as positions: group 0 is the whole match, and a group
@@ -65,7 +84,8 @@ enum Node {
     Concat(Vec<Node>),
     Alt(Vec<Node>),
     Group(Option<usize>, Box<Node>),
-    Repeat { node: Box<Node>, min: u32, max: Option<u32>, greedy: bool },
+    /// With `interval`, from `\{N,M\}`, which Emacs never makes possessive.
+    Repeat { node: Box<Node>, min: u32, max: Option<u32>, greedy: bool, interval: bool },
     Backref(usize),
     Assert(Assert),
     /// A syntax class, `\sC`, or with `true` its complement, `\SC`.
@@ -144,53 +164,131 @@ impl Named {
         })
     }
 
+    /// As Emacs's regex matcher and character.c's alphabeticp, graphicp
+    /// and the rest decide, from the character's general category and
+    /// case for characters past ASCII.
     fn matches(self, c: char, class: Class, fold: bool) -> bool {
+        let gc = || general_category(c);
         match self {
-            Named::Alpha => c.is_alphabetic(),
-            Named::Alnum => c.is_alphanumeric(),
+            Named::Alpha if c.is_ascii() => c.is_ascii_alphabetic(),
+            Named::Alpha => matches!(gc(), "Lu" | "Ll" | "Lt" | "Lm" | "Lo" | "Mn" | "Mc" | "Me" | "Nl"),
+            Named::Alnum if c.is_ascii() => c.is_ascii_alphanumeric(),
+            Named::Alnum => matches!(gc(), "Lu" | "Ll" | "Lt" | "Lm" | "Lo" | "Mn" | "Mc" | "Me" | "Nl" | "Nd"),
             Named::Digit => c.is_ascii_digit(),
             Named::Xdigit => c.is_ascii_hexdigit(),
-            // Under case folding either matches any letter with case, as in Emacs.
-            Named::Upper => c.is_uppercase() || (fold && c.is_lowercase()),
-            Named::Lower => c.is_lowercase() || (fold && c.is_uppercase()),
+            // Under case folding either matches any character with case, as in Emacs.
+            Named::Upper => upper_case(c) || (fold && lower_case(c)),
+            Named::Lower => lower_case(c) || (fold && upper_case(c)),
             Named::Space => class == Class::Whitespace,
             Named::Word => class == Class::Word,
             // ASCII punctuation, and any other character that is not a word constituent.
             Named::Punct => if c.is_ascii() { c.is_ascii_punctuation() } else { class != Class::Word },
-            Named::Blank => c == ' ' || c == '\t' || (!c.is_ascii() && c.is_whitespace() && c != '\u{85}' && !matches!(c, '\u{2028}' | '\u{2029}')),
+            Named::Blank => c == ' ' || c == '\t' || (!c.is_ascii() && gc() == "Zs"),
             Named::Cntrl => (c as u32) < 32,
-            Named::Graph => if c.is_ascii() { c.is_ascii_graphic() } else { !c.is_whitespace() && !c.is_control() },
-            Named::Print => if c.is_ascii() { c == ' ' || c.is_ascii_graphic() } else { !c.is_control() },
+            Named::Graph => if c.is_ascii() { c.is_ascii_graphic() } else { !matches!(gc(), "Zs" | "Zl" | "Zp" | "Cc" | "Cs" | "Cn") },
+            Named::Print => if c.is_ascii() { c == ' ' || c.is_ascii_graphic() } else { !matches!(gc(), "Cc" | "Cs" | "Cn") },
             Named::Ascii | Named::Unibyte => c.is_ascii(),
             Named::Nonascii | Named::Multibyte => !c.is_ascii(),
         }
     }
 }
 
+/// Whether two word constituents next to each other are in different
+/// words, as Emacs's word_boundary_p says with the default
+/// `word-combining-categories` and `word-separating-categories`: of two
+/// scripts they are, unless one is a combining mark or Han next to kana,
+/// and of one script they are not, unless hiragana meets katakana.
+fn word_boundary(c1: char, c2: char) -> bool {
+    if c1.is_ascii() && c2.is_ascii() {
+        return false;
+    }
+    type Pairs = [(Option<char>, Option<char>)];
+    const COMBINING: &Pairs = &[(None, Some('^')), (Some('^'), None), (Some('C'), Some('H')), (Some('C'), Some('K'))];
+    const SEPARATING: &Pairs = &[(Some('H'), Some('K'))];
+    let same = script(c1) == script(c2);
+    let (pairs, default) = if same { (SEPARATING, false) } else { (COMBINING, true) };
+    let is = |cat: char, c: char| category(cat, c).unwrap_or(false);
+    for &(first, second) in pairs {
+        let first_ok = first.is_none_or(|a| is(a, c1) && !is(a, c2));
+        let second_ok = second.is_none_or(|b| !is(b, c1) && is(b, c2));
+        if first_ok && second_ok {
+            return !default;
+        }
+    }
+    default
+}
+
+/// A character's script, as Emacs's `char-script-table` has it.
+fn script(c: char) -> u8 {
+    let u = c as u32;
+    let table = crate::chartab_data::SCRIPT;
+    let i = table.partition_point(|&(_, last, _)| last < u);
+    table.get(i).map_or(0, |&(_, _, s)| s)
+}
+
+/// A character's Unicode general category, such as "Lu", as Emacs's tables have it.
+fn general_category(c: char) -> &'static str {
+    let u = c as u32;
+    let table = crate::chartab_data::GENERAL_CATEGORY;
+    let i = table.partition_point(|&(_, last, _)| last < u);
+    table.get(i).filter(|&&(first, _, _)| first <= u).map_or("Cn", |&(_, _, cat)| crate::chartab_data::CATEGORY_NAMES[cat as usize])
+}
+
+/// Whether a character is upper case, as Emacs's uppercasep: its lower case differs.
+fn upper_case(c: char) -> bool {
+    downcase(c) != c
+}
+
+/// Whether a character is lower case, as Emacs's lowercasep: not upper
+/// case, and its upper case differs.
+fn lower_case(c: char) -> bool {
+    !upper_case(c) && upcase(c) != c
+}
+
 impl Set {
-    fn matches_one(&self, c: char, class: Class, fold: bool) -> bool {
-        self.chars.contains(&c) || self.ranges.iter().any(|&(a, b)| a <= c && c <= b) || self.classes.iter().any(|n| n.matches(c, class, fold))
+    fn matches_one(&self, c: char, class: &dyn Fn() -> Class, fold: bool) -> bool {
+        self.chars.contains(&c)
+            || self.ranges.iter().any(|&(a, b)| a <= c && c <= b)
+            || (!self.classes.is_empty() && {
+                let class = class();
+                self.classes.iter().any(|n| n.matches(c, class, fold))
+            })
     }
 
-    fn matches(&self, c: char, class: Class, fold: bool) -> bool {
-        let found = self.matches_one(c, class, fold) || (fold && (self.matches_one(downcase(c), class, fold) || self.matches_one(upcase(c), class, fold)));
+    fn matches(&self, c: char, class: &dyn Fn() -> Class, fold: bool) -> bool {
+        let found = self.matches_one(c, class, fold)
+            || (fold && [canon(c), downcase(c), upcase(c)].into_iter().any(|f| f != c && self.matches_one(f, class, fold)));
         found != self.negated
     }
 }
 
-fn downcase(c: char) -> char {
-    let mut lower = c.to_lowercase();
-    match (lower.next(), lower.next()) {
-        (Some(l), None) => l,
-        _ => c,
-    }
+/// A character's case-folded form, as Emacs's case canon table gives it:
+/// the lower case of its upper case, so σ, ς and Σ fold together.
+fn canon(c: char) -> char {
+    downcase(upcase(c))
 }
 
+/// A character's lower case in Emacs's standard case table.
+fn downcase(c: char) -> char {
+    if c.is_ascii() {
+        return c.to_ascii_lowercase();
+    }
+    case_in(crate::chartab_data::DOWNCASE, c)
+}
+
+/// A character's upper case in Emacs's standard case table.
 fn upcase(c: char) -> char {
-    let mut upper = c.to_uppercase();
-    match (upper.next(), upper.next()) {
-        (Some(u), None) => u,
-        _ => c,
+    if c.is_ascii() {
+        return c.to_ascii_uppercase();
+    }
+    case_in(crate::chartab_data::UPCASE, c)
+}
+
+fn case_in(table: &[(u32, u32)], c: char) -> char {
+    let u = c as u32;
+    match table.binary_search_by_key(&u, |&(from, _)| from) {
+        Ok(i) => char::from_u32(table[i].1).unwrap_or(c),
+        Err(_) => c,
     }
 }
 
@@ -241,40 +339,56 @@ impl Parser<'_> {
 
     fn branch(&mut self) -> Result<Node> {
         let mut items: Vec<Node> = Vec::new();
-        // Whether the last item can be repeated: `*` with nothing before it,
-        // or after a `^` that is special, is an ordinary character.
-        let mut repeatable = false;
+        // Where the expression a repetition applies to starts, as
+        // regex_compile's laststart: none at the start, or after a special
+        // `^`, where `*` is an ordinary character. Assertions such as `\b`
+        // and `\`` leave it where it was, so `x\b*` repeats `x\b`.
+        let mut last_start: Option<usize> = None;
         let mut at_start = true;
         while let Some(c) = self.peek() {
             if c == '\\' && matches!(self.chars.get(self.i + 1), Some('|') | Some(')')) {
                 break;
             }
             match c {
-                '*' | '+' | '?' if repeatable => {
+                '*' | '+' | '?' if last_start.is_some() => {
                     let (min, max, greedy) = self.repetition();
-                    let last = items.pop().expect("repeatable means an item");
-                    items.push(Node::Repeat { node: Box::new(last), min, max, greedy });
+                    let node = Self::take_from(&mut items, last_start.expect("checked"));
+                    items.push(Node::Repeat { node: Box::new(node), min, max, greedy, interval: false });
                 }
-                '\\' if self.chars.get(self.i + 1) == Some(&'{') && repeatable => {
-                    let (min, max) = self.interval()?;
-                    let last = items.pop().expect("repeatable means an item");
-                    items.push(Node::Repeat { node: Box::new(last), min, max, greedy: true });
-                }
+                '\\' if self.chars.get(self.i + 1) == Some(&'{') => match last_start {
+                    Some(k) => {
+                        let (min, max) = self.interval()?;
+                        let node = Self::take_from(&mut items, k);
+                        items.push(Node::Repeat { node: Box::new(node), min, max, greedy: true, interval: true });
+                    }
+                    // With nothing before it, a well-formed interval is
+                    // ordinary characters, as in Emacs.
+                    None => {
+                        let saved = self.i;
+                        self.interval()?;
+                        self.i = saved + 2;
+                        last_start = Some(items.len());
+                        items.push(Node::Char('{'));
+                    }
+                },
                 '^' if at_start => {
                     self.i += 1;
                     items.push(Node::Assert(Assert::LineStart));
-                    repeatable = false;
+                    last_start = None;
                     at_start = false;
                     continue;
                 }
                 '$' if self.dollar_is_special(self.i) => {
                     self.i += 1;
                     items.push(Node::Assert(Assert::LineEnd));
-                    repeatable = false;
+                    last_start = None;
                 }
                 _ => {
-                    items.push(self.atom()?);
-                    repeatable = true;
+                    let atom = self.atom()?;
+                    if !matches!(atom, Node::Assert(_)) {
+                        last_start = Some(items.len());
+                    }
+                    items.push(atom);
                 }
             }
             at_start = false;
@@ -284,6 +398,12 @@ impl Parser<'_> {
             1 => items.pop().expect("one"),
             _ => Node::Concat(items),
         })
+    }
+
+    /// The items from `k` on, as one, for a repetition to apply to.
+    fn take_from(items: &mut Vec<Node>, k: usize) -> Node {
+        let mut taken: Vec<Node> = items.drain(k..).collect();
+        if taken.len() == 1 { taken.pop().expect("one") } else { Node::Concat(taken) }
     }
 
     /// A run of `*`, `+` and `?`, collapsed into one, as regex_compile's
@@ -321,7 +441,8 @@ impl Parser<'_> {
             (n, Some(n))
         };
         if !self.at_backslash('}') {
-            return Err(invalid("Invalid content of \\{\\}"));
+            let closed = (self.i..self.chars.len().saturating_sub(1)).any(|j| self.chars[j] == '\\' && self.chars[j + 1] == '}');
+            return Err(invalid(if closed { "Invalid content of \\{\\}" } else { "Unmatched \\{" }));
         }
         self.i += 2;
         if max.is_some_and(|max| max < min) || min > 0xffff || max.is_some_and(|m| m > 0xffff) {
@@ -348,11 +469,17 @@ impl Parser<'_> {
             '(' => {
                 let number = if self.peek() == Some('?') {
                     self.i += 1;
+                    if self.peek().is_none() {
+                        return Err(invalid("Unmatched ( or \\("));
+                    }
                     let start = self.i;
                     while self.peek().is_some_and(|c| c.is_ascii_digit()) {
                         self.i += 1;
                     }
-                    if self.peek() != Some(':') {
+                    if self.peek().is_none() {
+                        return Err(invalid("Premature end of regular expression"));
+                    }
+                    if self.peek() != Some(':') || self.chars.get(start) == Some(&'0') {
                         return Err(invalid("Invalid regular expression"));
                     }
                     let digits: String = self.chars[start..self.i].iter().collect();
@@ -392,13 +519,16 @@ impl Parser<'_> {
             'w' => Node::Syntax(Class::Word, false),
             'W' => Node::Syntax(Class::Word, true),
             's' | 'S' => {
-                let Some(d) = self.peek() else { return Err(invalid("Invalid syntax designator")) };
+                let Some(d) = self.peek() else { return Err(invalid("Premature end of regular expression")) };
                 self.i += 1;
-                let class = Class::from_char(d).ok_or_else(|| invalid("Invalid syntax designator"))?;
-                Node::Syntax(class, c == 'S')
+                match Class::from_char(d) {
+                    Some(class) => Node::Syntax(class, c == 'S'),
+                    // A class that does not exist matches nothing, and its complement anything.
+                    None => Node::Set(Set { negated: c == 'S', ..Set::default() }),
+                }
             }
             'c' | 'C' => {
-                let Some(d) = self.peek() else { return Err(invalid("Invalid category designator")) };
+                let Some(d) = self.peek() else { return Err(invalid("Premature end of regular expression")) };
                 self.i += 1;
                 if category(d, ' ').is_none() {
                     return Err(invalid("Invalid category designator"));
@@ -418,7 +548,8 @@ impl Parser<'_> {
                 match d {
                     Some('<') => Node::Assert(Assert::SymbolStart),
                     Some('>') => Node::Assert(Assert::SymbolEnd),
-                    _ => return Err(invalid("Invalid \\_ construct")),
+                    None => return Err(invalid("Premature end of regular expression")),
+                    _ => return Err(invalid("Invalid regular expression")),
                 }
             }
             // Anything else after a backslash is itself.
@@ -467,38 +598,14 @@ impl Parser<'_> {
     }
 }
 
-/// Whether the character `c` is in one of Emacs's standard categories,
-/// worked out from Unicode until Ember has category tables, or `None` for
-/// a category it does not know.
+/// Whether the character `c` is in one of the standard category table's
+/// categories, as Emacs's tables have them, or `None` for a designator
+/// the table does not define.
 fn category(designator: char, c: char) -> Option<bool> {
+    let (_, runs) = crate::chartab_data::CATEGORIES.iter().find(|(d, _)| *d == designator)?;
     let u = c as u32;
-    let han = (0x4e00..=0x9fff).contains(&u) || (0x3400..=0x4dbf).contains(&u) || (0x20000..=0x2ffff).contains(&u) || (0xf900..=0xfaff).contains(&u);
-    let hiragana = (0x3040..=0x309f).contains(&u);
-    let katakana = (0x30a0..=0x30ff).contains(&u) || (0x31f0..=0x31ff).contains(&u) || (0xff66..=0xff9f).contains(&u);
-    let hangul = (0xac00..=0xd7af).contains(&u) || (0x1100..=0x11ff).contains(&u) || (0x3130..=0x318f).contains(&u);
-    let combining = (0x300..=0x36f).contains(&u) || (0x1ab0..=0x1aff).contains(&u) || (0x1dc0..=0x1dff).contains(&u) || (0x20d0..=0x20ff).contains(&u) || (0xfe20..=0xfe2f).contains(&u);
-    Some(match designator {
-        'a' => c.is_ascii() && !c.is_ascii_control(),
-        'l' => (0xa0..=0x24f).contains(&u) || (0x1e00..=0x1eff).contains(&u),
-        'g' => (0x370..=0x3ff).contains(&u) || (0x1f00..=0x1fff).contains(&u),
-        'y' => (0x400..=0x52f).contains(&u),
-        'b' => (0x600..=0x6ff).contains(&u) || (0x750..=0x77f).contains(&u),
-        'w' => (0x590..=0x5ff).contains(&u),
-        't' => (0xe00..=0xe7f).contains(&u),
-        'e' => (0x1200..=0x139f).contains(&u),
-        'h' => hangul,
-        'k' => katakana,
-        'r' => (0xff01..=0xff5e).contains(&u),
-        'K' => katakana,
-        'H' => hiragana,
-        'C' | 'c' => han,
-        'j' => han || hiragana || katakana,
-        '^' => combining,
-        '.' => !combining,
-        '|' => han || hiragana || katakana || hangul,
-        ' ' => c == ' ',
-        _ => return None,
-    })
+    let i = runs.partition_point(|&(_, last)| last < u);
+    Some(runs.get(i).is_some_and(|&(first, _)| first <= u))
 }
 
 #[derive(Clone, Debug)]
@@ -527,6 +634,11 @@ enum Inst {
     /// are, with no going back on them: a loop Emacs judges cannot overlap
     /// what follows it, and so compiles to on_failure_keep_string_jump.
     Span(Class, bool),
+    /// A loop of one character test, the instruction after it: as many as
+    /// there are, giving them back one at a time, or with `greedy` false as
+    /// few as will do, taking one more at a time, as Emacs's simple loops
+    /// match, without a failure point for each character.
+    Star { greedy: bool },
     Match,
 }
 
@@ -541,6 +653,9 @@ pub struct Regexp {
     /// The instructions a match must start with, or `None` if it can be
     /// empty or start with anything, as Emacs's fastmap says.
     first: Option<Vec<usize>>,
+    /// Whether every match starts at the start of a line, with `^`, so a
+    /// search need try nowhere else, as Emacs's matcher skips to a newline.
+    at_line_start: bool,
 }
 
 /// How many instructions a regexp can compile to.
@@ -556,6 +671,22 @@ struct Compiler {
     fold: bool,
 }
 
+/// Whether a node tests one character and consumes it.
+fn single_char(node: &Node) -> bool {
+    matches!(node, Node::Char(_) | Node::Any | Node::Set(_) | Node::Syntax(..) | Node::Category(..))
+}
+
+/// What a node starts with, looking into shy groups and sequences, as
+/// Emacs's compiled code has nothing for a shy group's brackets.
+fn leading(node: &Node) -> Option<&Node> {
+    match node {
+        Node::Group(None, inner) => leading(inner),
+        Node::Concat(items) => items.first().and_then(leading),
+        Node::Empty => None,
+        other => Some(other),
+    }
+}
+
 impl Compiler {
     fn push(&mut self, inst: Inst) -> Result<usize> {
         if self.insts.len() >= MAX_INSTS {
@@ -566,10 +697,17 @@ impl Compiler {
     }
 
     fn emit(&mut self, node: &Node) -> Result<()> {
+        self.emit_in(node, None)
+    }
+
+    /// Emits a node, `follow` being what comes after it once groups and
+    /// alternatives around it end, as Emacs's analysis of loops looks past
+    /// a group's end and an alternative's jump.
+    fn emit_in(&mut self, node: &Node, follow: Option<&Node>) -> Result<()> {
         match node {
             Node::Empty => {}
             Node::Char(c) => {
-                let c = if self.fold { downcase(*c) } else { *c };
+                let c = if self.fold { canon(*c) } else { *c };
                 self.push(Inst::Char(c))?;
             }
             Node::Any => {
@@ -593,34 +731,38 @@ impl Compiler {
             }
             Node::Concat(items) => {
                 for (k, item) in items.iter().enumerate() {
-                    // Emacs's mutually_exclusive_p takes a loop of characters
-                    // that are not words, or not symbols, before \_< for one
-                    // that can never give characters back, though `_` or a
-                    // letter can begin a symbol; its matches are what it finds.
-                    if let Node::Repeat { node, min, max: None, greedy: true } = item
-                        && let Node::Syntax(class @ (Class::Word | Class::Symbol), true) = node.as_ref()
-                        && matches!(items.get(k + 1), Some(Node::Assert(Assert::SymbolStart)))
-                    {
-                        for _ in 0..*min {
-                            self.emit(node)?;
-                        }
-                        self.push(Inst::Span(*class, true))?;
-                        continue;
-                    }
-                    self.emit(item)?;
+                    let next = match items.get(k + 1) {
+                        Some(next) => leading(next).or(follow),
+                        None => follow,
+                    };
+                    self.emit_in(item, next)?;
                 }
+            }
+            // Emacs's mutually_exclusive_p takes a `*` or `+` loop of
+            // characters that are not words, or not symbols, before \_< for
+            // one that can never give characters back, though `_` or a letter
+            // can begin a symbol; its matches are what it finds.
+            Node::Repeat { node, min, max: None, greedy: true, interval: false }
+                if matches!(node.as_ref(), Node::Syntax(Class::Word | Class::Symbol, true))
+                    && matches!(follow, Some(Node::Assert(Assert::SymbolStart))) =>
+            {
+                let Node::Syntax(class, _) = node.as_ref() else { unreachable!("checked") };
+                for _ in 0..*min {
+                    self.emit(node)?;
+                }
+                self.push(Inst::Span(*class, true))?;
             }
             Node::Alt(branches) => {
                 let mut ends = Vec::new();
                 for (k, branch) in branches.iter().enumerate() {
                     if k + 1 < branches.len() {
                         let split = self.push(Inst::Split(0, 0))?;
-                        self.emit(branch)?;
+                        self.emit_in(branch, follow)?;
                         ends.push(self.push(Inst::Jmp(0))?);
                         let next = self.insts.len();
                         self.insts[split] = Inst::Split(split + 1, next);
                     } else {
-                        self.emit(branch)?;
+                        self.emit_in(branch, follow)?;
                     }
                 }
                 let end = self.insts.len();
@@ -631,16 +773,22 @@ impl Compiler {
             Node::Group(number, inner) => match number {
                 Some(n) => {
                     self.push(Inst::Save(2 * n))?;
-                    self.emit(inner)?;
+                    self.emit_in(inner, follow)?;
                     self.push(Inst::Save(2 * n + 1))?;
                 }
-                None => self.emit(inner)?,
+                None => self.emit_in(inner, follow)?,
             },
-            Node::Repeat { node, min, max, greedy } => {
+            Node::Repeat { node, min, max, greedy, .. } => {
                 for _ in 0..*min {
                     self.emit(node)?;
                 }
                 match max {
+                    // A loop of one character never matches nothing, so it
+                    // needs no check of that, and no failure point a character.
+                    None if single_char(node) => {
+                        self.push(Inst::Star { greedy: *greedy })?;
+                        self.emit(node)?;
+                    }
                     None => {
                         let register = self.loops;
                         self.loops += 1;
@@ -684,6 +832,25 @@ enum Frame {
     Branch { pc: usize, pos: usize },
     Slot { slot: usize, old: Option<usize> },
     Loop { register: usize, old: usize },
+    /// A greedy one-character loop at `pc` that took `count` characters
+    /// from `start`, giving one back each time it is returned to.
+    Greedy { pc: usize, start: usize, count: usize },
+    /// A lazy one-character loop at `pc` that has got to `pos`, taking one
+    /// more each time it is returned to.
+    Lazy { pc: usize, pos: usize },
+}
+
+/// The matcher's working memory, kept from one start position to the next.
+struct Scratch {
+    slots: Vec<Option<usize>>,
+    loops: Vec<usize>,
+    stack: Vec<Frame>,
+}
+
+/// Which ASCII characters can start a match, worked out once a search
+/// where classes do not depend on where a character is.
+struct Fastmap {
+    ascii: [bool; 128],
 }
 
 impl Regexp {
@@ -695,8 +862,9 @@ impl Regexp {
         let mut compiler = Compiler { insts: Vec::new(), sets: Vec::new(), loops: 0, fold };
         compiler.emit(&node)?;
         compiler.push(Inst::Match)?;
-        let mut re = Regexp { insts: compiler.insts, sets: compiler.sets, groups: parser.groups, loops: compiler.loops, fold, first: None };
+        let mut re = Regexp { insts: compiler.insts, sets: compiler.sets, groups: parser.groups, loops: compiler.loops, fold, first: None, at_line_start: false };
         re.first = re.first_instructions();
+        re.at_line_start = re.anchored_at_line_start();
         Ok(re)
     }
 
@@ -737,24 +905,45 @@ impl Regexp {
             match &self.insts[pc] {
                 Inst::Char(_) | Inst::Any | Inst::Set(_) | Inst::Syntax(..) | Inst::Category(..) => found.push(pc),
                 Inst::Assert(_) | Inst::Save(_) | Inst::LoopStart(_) => todo.push(pc + 1),
-                Inst::LoopExit { out, .. } => todo.extend([pc + 1, *out]),
-                // It can take nothing, so what follows may start the match too.
-                Inst::Span(..) => return None,
                 Inst::Split(a, b) => todo.extend([*a, *b]),
                 Inst::Jmp(t) => todo.push(*t),
                 Inst::LoopEnd { back, out, .. } => todo.extend([*back, *out]),
-                Inst::Backref(_) | Inst::Match => return None,
+                Inst::LoopExit { out, .. } => todo.extend([pc + 1, *out]),
+                // Each can take nothing, so what follows may start the match too.
+                Inst::Star { .. } => todo.extend([pc + 1, pc + 2]),
+                Inst::Span(..) | Inst::Backref(_) | Inst::Match => return None,
             }
         }
         Some(found)
     }
 
-    /// Whether the instruction at `pc` takes the character `c` at `pos`.
+    /// Whether every path from the start meets `^` before any character
+    /// test, group end or alternative end.
+    fn anchored_at_line_start(&self) -> bool {
+        let mut seen = vec![false; self.insts.len()];
+        let mut todo = vec![0];
+        while let Some(pc) = todo.pop() {
+            if std::mem::replace(&mut seen[pc], true) {
+                continue;
+            }
+            match &self.insts[pc] {
+                Inst::Assert(Assert::LineStart) => {}
+                Inst::Save(_) | Inst::LoopStart(_) => todo.push(pc + 1),
+                Inst::Split(a, b) => todo.extend([*a, *b]),
+                Inst::Jmp(t) => todo.push(*t),
+                _ => return false,
+            }
+        }
+        true
+    }
+
+    /// Whether the instruction at `pc`, a character test, takes the
+    /// character `c` at `pos`.
     fn takes(&self, pc: usize, h: &dyn Haystack, pos: usize, c: char) -> bool {
         match &self.insts[pc] {
-            Inst::Char(want) => *want == c || (self.fold && downcase(c) == *want),
+            Inst::Char(want) => *want == c || (self.fold && canon(c) == *want),
             Inst::Any => c != '\n',
-            Inst::Set(i) => self.sets[*i].matches(c, h.class_at(pos, c), self.fold),
+            Inst::Set(i) => self.sets[*i].matches(c, &|| h.class_at(pos, c), self.fold),
             Inst::Syntax(class, negated) => (h.class_at(pos, c) == *class) != *negated,
             Inst::Category(d, negated) => category(*d, c).unwrap_or(false) != *negated,
             _ => false,
@@ -773,39 +962,80 @@ impl Regexp {
         let (min, max) = (h.min(), h.max());
         let before = |f: fn(&dyn Haystack, usize) -> bool| pos > min && f(h, pos - 1);
         let after = |f: fn(&dyn Haystack, usize) -> bool| pos < max && f(h, pos);
+        // Between two word constituents, a boundary where Emacs's
+        // word_boundary_p sees one, as between letters of two scripts.
+        let between_words = || match (pos.checked_sub(1).and_then(|p| h.char_at(p)), h.char_at(pos)) {
+            (Some(c1), Some(c2)) => word_boundary(c1, c2),
+            _ => false,
+        };
         match a {
             Assert::LineStart => pos == min || h.char_at(pos - 1) == Some('\n'),
             Assert::LineEnd => pos == max || h.char_at(pos) == Some('\n'),
             Assert::BufStart => pos == min,
             Assert::BufEnd => pos == max,
             Assert::Point => h.point() == Some(pos),
-            Assert::WordBound => pos == min || pos == max || before(Self::word_at) != after(Self::word_at),
-            Assert::NotWordBound => pos != min && pos != max && before(Self::word_at) == after(Self::word_at),
-            Assert::WordStart => after(Self::word_at) && !before(Self::word_at),
-            Assert::WordEnd => before(Self::word_at) && !after(Self::word_at),
+            Assert::WordBound => {
+                let (b, a) = (before(Self::word_at), after(Self::word_at));
+                pos == min || pos == max || b != a || (b && between_words())
+            }
+            Assert::NotWordBound => {
+                let (b, a) = (before(Self::word_at), after(Self::word_at));
+                pos != min && pos != max && b == a && !(b && between_words())
+            }
+            Assert::WordStart => after(Self::word_at) && (!before(Self::word_at) || between_words()),
+            Assert::WordEnd => before(Self::word_at) && (!after(Self::word_at) || between_words()),
             Assert::SymbolStart => after(Self::symbol_at) && !before(Self::symbol_at),
             Assert::SymbolEnd => before(Self::symbol_at) && !after(Self::symbol_at),
         }
     }
 
-    /// Whether a match could start at `pos`, before running the machine there.
-    fn may_start(&self, h: &dyn Haystack, pos: usize, limit: usize) -> bool {
+    /// Which ASCII characters can start a match, if the haystack's classes
+    /// do not depend on position and a match cannot be empty.
+    fn fastmap(&self, h: &dyn Haystack) -> Option<Fastmap> {
+        let first = self.first.as_ref()?;
+        if !h.fixed_classes() {
+            return None;
+        }
+        let mut ascii = [false; 128];
+        for (b, slot) in ascii.iter_mut().enumerate() {
+            let c = b as u8 as char;
+            *slot = first.iter().any(|&pc| self.takes(pc, h, 0, c));
+        }
+        Some(Fastmap { ascii })
+    }
+
+    /// Whether a match could start with the character `c` at `pos`,
+    /// before running the machine there.
+    fn may_start_with(&self, h: &dyn Haystack, fast: Option<&Fastmap>, pos: usize, c: char) -> bool {
         let Some(first) = &self.first else { return true };
-        pos < limit && h.char_at(pos).is_some_and(|c| first.iter().any(|&pc| self.takes(pc, h, pos, c)))
+        match fast {
+            Some(fast) if c.is_ascii() => fast.ascii[c as usize],
+            _ => first.iter().any(|&pc| self.takes(pc, h, pos, c)),
+        }
+    }
+
+    fn scratch(&self) -> Scratch {
+        Scratch { slots: vec![None; 2 * (self.groups + 1)], loops: vec![usize::MAX; self.loops], stack: Vec::new() }
     }
 
     /// The match starting exactly at `start` that reads no character at or
     /// after `limit`, as Emacs's re_match_2 finds it, with its groups.
     pub fn match_at(&self, h: &dyn Haystack, start: usize, limit: usize) -> Result<Option<Groups>> {
-        let mut slots: Vec<Option<usize>> = vec![None; 2 * (self.groups + 1)];
-        let mut loops = vec![usize::MAX; self.loops];
-        let mut stack: Vec<Frame> = Vec::new();
+        self.run(h, start, limit, &mut self.scratch())
+    }
+
+    fn run(&self, h: &dyn Haystack, start: usize, limit: usize, scratch: &mut Scratch) -> Result<Option<Groups>> {
+        let Scratch { slots, loops, stack } = scratch;
+        slots.iter_mut().for_each(|s| *s = None);
+        loops.iter_mut().for_each(|l| *l = usize::MAX);
+        stack.clear();
         let (mut pc, mut pos) = (0, start);
         let limit = limit.min(h.max());
+        let take = |pc: usize, pos: usize| pos < limit && h.char_at(pos).is_some_and(|c| self.takes(pc, h, pos, c));
         loop {
             let ok = match &self.insts[pc] {
                 Inst::Char(_) | Inst::Any | Inst::Set(_) | Inst::Syntax(..) | Inst::Category(..) => {
-                    let taken = pos < limit && h.char_at(pos).is_some_and(|c| self.takes(pc, h, pos, c));
+                    let taken = take(pc, pos);
                     if taken {
                         pos += 1;
                         pc += 1;
@@ -821,7 +1051,7 @@ impl Regexp {
                         let len = e - s;
                         let same = pos + len <= limit
                             && (0..len).all(|k| match (h.char_at(s + k), h.char_at(pos + k)) {
-                                (Some(a), Some(b)) => a == b || (self.fold && downcase(a) == downcase(b)),
+                                (Some(a), Some(b)) => a == b || (self.fold && canon(a) == canon(b)),
                                 _ => false,
                             });
                         if same {
@@ -872,6 +1102,22 @@ impl Regexp {
                     pc += 1;
                     true
                 }
+                Inst::Star { greedy: true } => {
+                    let from = pos;
+                    while take(pc + 1, pos) {
+                        pos += 1;
+                    }
+                    if pos > from {
+                        stack.push(Frame::Greedy { pc, start: from, count: pos - from });
+                    }
+                    pc += 2;
+                    true
+                }
+                Inst::Star { greedy: false } => {
+                    stack.push(Frame::Lazy { pc, pos });
+                    pc += 2;
+                    true
+                }
                 Inst::Match => {
                     let mut groups: Groups = (0..=self.groups).map(|g| slots[2 * g].zip(slots[2 * g + 1])).collect();
                     groups[0] = Some((start, pos));
@@ -889,6 +1135,23 @@ impl Regexp {
                             pos = at;
                             break;
                         }
+                        Some(Frame::Greedy { pc: p, start: s, count }) => {
+                            let count = count - 1;
+                            if count > 0 {
+                                stack.push(Frame::Greedy { pc: p, start: s, count });
+                            }
+                            pc = p + 2;
+                            pos = s + count;
+                            break;
+                        }
+                        Some(Frame::Lazy { pc: p, pos: at }) => {
+                            if take(p + 1, at) {
+                                stack.push(Frame::Lazy { pc: p, pos: at + 1 });
+                                pc = p + 2;
+                                pos = at + 1;
+                                break;
+                            }
+                        }
                     }
                 }
             }
@@ -899,12 +1162,30 @@ impl Regexp {
     /// or after `limit`, as re-search-forward finds it.
     pub fn search_forward(&self, h: &dyn Haystack, from: usize, limit: usize) -> Result<Option<Groups>> {
         let limit = limit.min(h.max());
-        for start in from..=limit {
-            if self.may_start(h, start, limit)
-                && let Some(groups) = self.match_at(h, start, limit)?
-            {
+        let fast = self.fastmap(h);
+        let mut scratch = self.scratch();
+        let mut start = from;
+        while start <= limit {
+            // A regexp anchored with `^` can start only at the start of a line.
+            if self.at_line_start && start > h.min() && h.char_at(start - 1) != Some('\n') {
+                match h.find(start, limit, false, &mut |_, c| c == '\n') {
+                    Some(p) => start = p + 1,
+                    None => return Ok(None),
+                }
+                continue;
+            }
+            // Only where the first character can start a match, as Emacs's fastmap skips.
+            if self.first.is_some() {
+                let mut test = |pos: usize, c: char| self.may_start_with(h, fast.as_ref(), pos, c);
+                match h.find(start, limit, false, &mut test) {
+                    Some(p) => start = p,
+                    None => return Ok(None),
+                }
+            }
+            if let Some(groups) = self.run(h, start, limit, &mut scratch)? {
                 return Ok(Some(groups));
             }
+            start += 1;
         }
         Ok(None)
     }
@@ -913,14 +1194,44 @@ impl Regexp {
     /// does not go past `from`, as re-search-backward finds it.
     pub fn search_backward(&self, h: &dyn Haystack, from: usize, bound: usize) -> Result<Option<Groups>> {
         let from = from.min(h.max());
-        for start in (bound.max(h.min())..=from).rev() {
-            if self.may_start(h, start, from)
-                && let Some(groups) = self.match_at(h, start, from)?
-            {
+        let bound = bound.max(h.min());
+        let fast = self.fastmap(h);
+        let mut scratch = self.scratch();
+        let mut start = from;
+        loop {
+            if start < bound {
+                return Ok(None);
+            }
+            if self.at_line_start && start > h.min() && h.char_at(start - 1) != Some('\n') {
+                // A newline just before the bound starts a line at it.
+                match h.find(start - 1, bound.saturating_sub(1).max(h.min()), true, &mut |_, c| c == '\n') {
+                    Some(p) => start = p + 1,
+                    None if bound == h.min() => start = h.min(),
+                    None => return Ok(None),
+                }
+                continue;
+            }
+            if self.first.is_some() {
+                // A match starting at `from` would be empty, which having a
+                // first character rules out.
+                if from == 0 || start.min(from - 1) < bound {
+                    return Ok(None);
+                }
+                let top = start.min(from - 1);
+                let mut test = |pos: usize, c: char| self.may_start_with(h, fast.as_ref(), pos, c);
+                match h.find(top, bound, true, &mut test) {
+                    Some(p) => start = p,
+                    None => return Ok(None),
+                }
+            }
+            if let Some(groups) = self.run(h, start, from, &mut scratch)? {
                 return Ok(Some(groups));
             }
+            if start == 0 {
+                return Ok(None);
+            }
+            start -= 1;
         }
-        Ok(None)
     }
 }
 
@@ -936,6 +1247,37 @@ mod tests {
     fn m(re: &str, s: &str) -> Option<Vec<Option<(usize, usize)>>> {
         let h = StrHaystack { chars: s.chars().collect(), class: &standard };
         Regexp::new(re, false).unwrap().search_forward(&h, 0, usize::MAX).unwrap()
+    }
+
+    fn folded(re: &str, s: &str) -> bool {
+        let h = StrHaystack { chars: s.chars().collect(), class: &standard };
+        Regexp::new(re, true).unwrap().search_forward(&h, 0, usize::MAX).unwrap().is_some()
+    }
+
+    #[test]
+    fn case_folds_through_the_canonical_case() {
+        assert!(folded("σ", "ς") && folded("Σ", "ς") && folded("ς", "σ"));
+        assert!(folded("µ", "μ") && folded("[σ]", "Σ"));
+        assert!(!folded("k", "\u{212a}"), "the Kelvin sign is its own");
+        assert!(folded("[a-z]", "Q") && folded("q", "Q"));
+    }
+
+    #[test]
+    fn a_very_long_line_does_not_overflow() {
+        let line = "x".repeat(3_000_000);
+        assert_eq!(m("^.*$", &line), Some(vec![Some((0, 3_000_000))]));
+        assert_eq!(m("x*\\'", &line), Some(vec![Some((0, 3_000_000))]));
+    }
+
+    #[test]
+    fn errors_are_emacs_s() {
+        let message = |re: &str| Regexp::new(re, false).unwrap_err().to_string();
+        assert_eq!(message("a\\{2"), r#"Invalid regexp: "Unmatched \{""#);
+        assert_eq!(message("\\{"), r#"Invalid regexp: "Unmatched \{""#);
+        assert_eq!(message("\\(?1"), "Invalid regexp: \"Premature end of regular expression\"");
+        assert_eq!(message("\\_"), "Invalid regexp: \"Premature end of regular expression\"");
+        assert_eq!(message("\\_x"), "Invalid regexp: \"Invalid regular expression\"");
+        assert!(Regexp::new("\\(?01:a\\)", false).is_err());
     }
 
     #[test]
@@ -961,6 +1303,13 @@ mod tests {
         assert_eq!(m("a^b$c", "a^b$c"), Some(vec![Some((0, 5))]));
         assert_eq!(m(r"\b", ""), Some(vec![Some((0, 0))]));
         assert_eq!(m(r"\<", ""), None);
+        // As Emacs's laststart: `*` after \` with nothing before is ordinary.
+        assert_eq!(m(r"\`*a", "*a"), Some(vec![Some((0, 2))]));
+        assert_eq!(m(r"\`+a", "+a"), Some(vec![Some((0, 2))]));
+        // Emacs makes only a `*` or `+` loop possessive before \_<, seen through shy groups.
+        assert_eq!(m(r"\Sw*\(?:\_<\)", "_a"), None);
+        assert_eq!(m(r"\S_\{2,\}\_<", "a b"), Some(vec![Some((0, 2))]));
+        assert_eq!(m(r"\sZ", "a"), None);
         assert!(Regexp::new(r"\(a\)\2", false).is_err());
         assert!(Regexp::new("[[:foo:]]", false).is_err());
         assert!(Regexp::new(r"a\{3,2\}", false).is_err());

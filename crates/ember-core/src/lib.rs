@@ -5,6 +5,9 @@
 //! scripts drive it the same way, with no terminal at all.
 
 mod buffer;
+// Written by tests/emacs/unicode.el; not every table is read yet.
+#[allow(dead_code)]
+mod chartab_data;
 pub mod coding;
 mod command;
 pub mod completion;

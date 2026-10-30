@@ -32,6 +32,8 @@ Not audited: the other packages (`isearch.ts`, `replace.ts`, `kmacro.ts`, `repea
 Probably fine, but check:
 
 - `tests/emacs/golden/`: Emacs's output for our own inputs. A program's output is not generally covered by the program's licence.
+- `crates/ember-core/src/chartab_data.rs`: tables written by `tests/emacs/unicode.el` from a running Emacs: each character's general category, script, standard syntax entry, case and categories. They are data from Emacs's tables, most of which come from the Unicode Character Database; like the golden files, Emacs's output rather than its code, though the syntax and category assignments are the FSF's choices.
+- `crates/ember-core/src/regexp.rs`: written from Emacs's documented regexp syntax and from Emacs's behaviour, recorded by the regexp fuzzer, including the quirks of its matcher's loop optimisation, without reading regex-emacs.c.
 - `tests/emacs/record.el`: our own Emacs Lisp, which runs inside Emacs. The FSF regards Emacs Lisp packages as derived from Emacs, so this file may have to be GPL. It is a test tool, not part of Ember, so it can simply stay GPL.
 
 From now on: ask before reading or porting the source of any GPL or similar project. Running Emacs to compare behaviour is fine.

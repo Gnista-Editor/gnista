@@ -109,6 +109,9 @@ impl Rng {
 /// spaces, a newline, parens and a capital, so classes and boundaries matter.
 const CHARS: &[&str] = &["a", "b", "a", "b", "_", " ", "\n", "(", ")", "A", "-", "é"];
 
+/// Characters past ASCII, for classes, categories and case folding.
+const WIDE: &[&str] = &["é", "α", "ς", "σ", "Σ", "µ", "μ", "²", "½", "\u{301}", "漢", "か", "カ", "한", "ǅ", "ª", "\u{212a}", "k", "Я", "ß", "€", "\u{378}", "ﬁ"];
+
 /// A random regexp, as Emacs writes them, `groups` counting the groups
 /// closed so far, which back-references may name.
 fn regexp(rng: &mut Rng, depth: usize, groups: &mut usize) -> String {
@@ -131,10 +134,10 @@ fn regexp(rng: &mut Rng, depth: usize, groups: &mut usize) -> String {
 
 fn piece(rng: &mut Rng, depth: usize, groups: &mut usize) -> String {
     let atom = match rng.below(12) {
-        0..=3 => rng.pick(&["a", "b", "_", " ", "A", "(", "é", "\\.", "\\*"]).to_string(),
+        0..=3 => rng.pick(&["a", "b", "_", " ", "A", "(", "é", "\\.", "\\*", "σ", "Σ", "k", "µ"]).to_string(),
         4 => ".".to_string(),
-        5 => rng.pick(&["[ab]", "[^a]", "[a-b]", "[]a]", "[^]\n]", "[[:space:]]", "[[:word:]]", "[[:upper:]]", "[[:alpha:]_]", "[[:punct:]]", "[a-]", "[z-a]"]).to_string(),
-        6 => rng.pick(&["\\w", "\\W", "\\s-", "\\s_", "\\sw", "\\s.", "\\s(", "\\S-", "\\Sw"]).to_string(),
+        5 => rng.pick(&["[ab]", "[^a]", "[a-b]", "[]a]", "[^]\n]", "[[:space:]]", "[[:word:]]", "[[:upper:]]", "[[:alpha:]_]", "[[:punct:]]", "[a-]", "[z-a]", "[[:alpha:]]", "[[:alnum:]]", "[[:graph:]]", "[[:print:]]", "[[:lower:]]", "[[:blank:]]", "[^[:alpha:]]", "[α-ω]", "[σΣ]"]).to_string(),
+        6 => rng.pick(&["\\w", "\\W", "\\s-", "\\s_", "\\sw", "\\s.", "\\s(", "\\S-", "\\Sw", "\\cl", "\\cg", "\\cj", "\\cL", "\\c|", "\\C^", "\\ca", "\\cC", "\\ch", "\\ck", "\\c.", "\\Cl"]).to_string(),
         7 => rng.pick(&["\\b", "\\B", "\\<", "\\>", "\\_<", "\\_>", "\\`", "\\'"]).to_string(),
         8 if *groups > 0 => format!("\\{}", 1 + rng.below((*groups).min(9))),
         8..=10 if depth < 3 => {
@@ -174,7 +177,7 @@ fn piece(rng: &mut Rng, depth: usize, groups: &mut usize) -> String {
 }
 
 fn string(rng: &mut Rng) -> String {
-    (0..rng.below(9)).map(|_| rng.pick(CHARS)).collect()
+    (0..rng.below(9)).map(|_| if rng.chance(30) { rng.pick(WIDE) } else { rng.pick(CHARS) }).collect()
 }
 
 /// What Emacs gives for each case, through regexp.el.
@@ -219,4 +222,19 @@ fn regexps_behave_like_emacs_on_random_cases() {
     fs::write(dir.join("differences.json"), serde_json::to_string_pretty(&differ).unwrap()).unwrap();
     println!("seed {seed}: {count} cases compared, {} differ", differ.len());
     assert!(differ.is_empty(), "{} differences from Emacs; see above", differ.len());
+}
+
+/// How long failing regexp searches take over 10 MB of text, to keep the
+/// engine near Emacs's speed: about 30 to 600 ms for these there.
+#[test]
+#[ignore]
+fn regexp_searches_over_a_large_buffer_are_fast() {
+    let mut ed = Editor::new();
+    let line = "* Heading with some words 12345 and_more text here (parens) end\n";
+    ed.buffer_mut().set_text(&line.repeat(10_000_000 / line.len()));
+    for pattern in [r"\<zzz\>", r"^\* q", "[0-9]+x", r"\w+qq", "^.*zz$", r"\_<foo_bar\_>"] {
+        let started = std::time::Instant::now();
+        let found = ed.search(pattern, 0, &ember_core::SearchOptions { regexp: true, ..Default::default() }).unwrap();
+        println!("{pattern:16} {:>8.1} ms {}", started.elapsed().as_secs_f64() * 1000.0, if found.is_some() { "found" } else { "" });
+    }
 }

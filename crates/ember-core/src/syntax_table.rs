@@ -195,24 +195,15 @@ pub const STANDARD: &str = "standard-syntax-table";
 /// symbol characters and the rest of ASCII punctuation is punctuation.
 /// Other letters and digits are words, other characters punctuation.
 pub fn standard_entry(c: char) -> Entry {
-    let paren = |class, m| Entry { class, matching: Some(m), flags: 0 };
-    match c {
-        ' ' | '\t' | '\n' | '\r' | '\x0c' => Entry::new(Class::Whitespace),
-        'a'..='z' | 'A'..='Z' | '0'..='9' | '$' | '%' => Entry::new(Class::Word),
-        '(' => paren(Class::Open, ')'),
-        ')' => paren(Class::Close, '('),
-        '[' => paren(Class::Open, ']'),
-        ']' => paren(Class::Close, '['),
-        '{' => paren(Class::Open, '}'),
-        '}' => paren(Class::Close, '{'),
-        '"' => Entry::new(Class::String),
-        '\\' => Entry::new(Class::Escape),
-        '_' | '-' | '+' | '*' | '/' | '&' | '|' | '<' | '>' | '=' => Entry::new(Class::Symbol),
-        c if c.is_ascii() => Entry::new(Class::Punct),
-        c if c.is_alphanumeric() => Entry::new(Class::Word),
-        c if c.is_whitespace() && c != '\u{a0}' => Entry::new(Class::Whitespace),
-        _ => Entry::new(Class::Punct),
-    }
+    use std::sync::OnceLock;
+    // Emacs's standard syntax table, from its own, each run's descriptor parsed once.
+    static ENTRIES: OnceLock<Vec<Entry>> = OnceLock::new();
+    let entries = ENTRIES.get_or_init(|| {
+        crate::chartab_data::SYNTAX.iter().map(|(_, _, d)| Entry::parse(d).unwrap_or(Entry::new(Class::Punct))).collect()
+    });
+    let u = c as u32;
+    let i = crate::chartab_data::SYNTAX.partition_point(|&(_, last, _)| last < u);
+    entries.get(i).copied().unwrap_or(Entry::new(Class::Punct))
 }
 
 /// The syntax tables, by name, and what each buffer's characters are.

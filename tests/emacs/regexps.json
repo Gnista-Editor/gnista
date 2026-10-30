@@ -10936,5 +10936,10760 @@
   "s": "-)é",
   "fold": true,
   "emacs": "none"
+ },
+ {
+  "re": " \\{1,3\\}\\(?:b\\(\\*\\)\\{1\\}\\(\\1\\)\\)\\*",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^(k",
+  "s": " ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\cjk\\(a.\\)\\(k+?µ+\\)",
+  "s": "½漢-\n-aΣ²",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "éb *?\\`",
+  "s": "é\nμ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "aé",
+  "s": "か\nμa",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\{0\\}",
+  "s": "",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": " +?a?\\(a \\)+\\1*?\\|a\\{2,2\\}",
+  "s": "ǅb_(Я",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(?:\\(\\(\\*\\{,1\\}Σ\\)\\)??aa\\1\\{,2\\}\\).\\{0,1\\}\\1\\{1,\\}\\(a??a\\(\\(µ\\)\\(\\Cla+?b*[[:alpha:]]\\{,3\\}\\)*?\\(?:a??.\\)\\)\\{0,\\}µ\\)\\|Σ+?",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a?a\\(a*?\\)*$",
+  "s": "aébaǅbµß",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " \\.\\ckσ\\{0,\\}",
+  "s": "μk",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\([^]\n]k\\)\\{,1\\}\\'\\(\\(a\\)\\1\\)\\{,1\\}µ*?\\)*?\\cg[^a][[:upper:]]",
+  "s": ")か ½é",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "Σ\\{1,3\\}",
+  "s": "µb a)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[z-a]\\{,1\\}é*_$",
+  "s": "  \n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\_>.\\)(\\_<",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\C^\\c..*[[:blank:]]\\)",
+  "s": ")ab\n",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b\\|\\c.\\cl(??.\\|\\C^*.\\c.+?",
+  "s": "͸A",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "^\\(?:.\\(\\([^]\n]*\\cl??\\s(\\).?\\)\\)\\{1,\\}µ\\{2\\}\\|.*?",
+  "s": "_a)-",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\w+?aab",
+  "s": "€)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:a\\)\\{,1\\}",
+  "s": "Aé",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\.\\(\\_>\\(\\W\\)b\\{0,\\}Σ\\|\\ca\\{0,\\}(\\1*?\\)",
+  "s": "bAa\n_k",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\(?:\\*\\(?:\\<\\(A*\\)\\{1\\}\\)µ\\{1,\\}.+\\)\\>a+?",
+  "s": ")\n͸K",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é*\\s_",
+  "s": "²_a€か",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   4
+  ]
+ },
+ {
+  "re": "a[[:word:]]\\_<",
+  "s": "",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "µ\\(\\'\\(\\.*?\\)*?\\_>[]a]\\|\\.\\{2\\}[a-b]\\)\\(.\\)\\2$",
+  "s": ") か) ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(.(\\{,1\\}\\)\\)a",
+  "s": ")",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:alnum:]]\\(σ\\|µ+(*?\\.\\).\\{1\\}",
+  "s": "Σé_(_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\([ab]+?\\)a\\)",
+  "s": "かéb²a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(??",
+  "s": "ß)a_\nb",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   6,
+   6
+  ]
+ },
+ {
+  "re": "^\\(.σ\\)+?\\_>",
+  "s": "é)a -",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\ckb??\\'\\)\\([ab]+éa*\\)*\\1\\2\\)",
+  "s": "ªか",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "^é$",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^ *\\(aΣ\\c.*\\)\\1??",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\c|",
+  "s": "Яa͸\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".??\\(([a-b]\\)\\.\\.\\|a??[a-b]A\\(a\\1\\)",
+  "s": "_\nµ)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_>$",
+  "s": "ς(_A²",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   5,
+   5
+  ]
+ },
+ {
+  "re": "\\(?:é[^[:alpha:]]\\.\\B\\)*.$",
+  "s": "\néb́é",
+  "fold": true,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "ak?\\ck??",
+  "s": "_Ab((",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\ca[a-b]\\|[a-]ké\\{2,4\\}",
+  "s": "a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é+b*__",
+  "s": "-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:lower:]]\\( ?(\\)k",
+  "s": "bb",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\Cl\\{1,\\}",
+  "s": "_한",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "a",
+  "s": "(ﬁαbǅA-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "µ??\\sw",
+  "s": "_aﬁǅbµ\n\n",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "\\(?:b\\(?:[[:alnum:]](\\(?:ab\\)\\)µ*\\(\\cLé??\\bµ*?\\)+\\)\\.\\{,2\\}\\*",
+  "s": "ébbé b(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": " \\*\\{1,\\}[^[:alpha:]]*",
+  "s": "aa\n½_aé_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\>\\(\\(?:µ??\\)\\(?:\\(?:\\ba[[:print:]][a-]\\)\\)\\{,2\\}\\)+?",
+  "s": "Я漢k",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   3,
+   3,
+   3,
+   3
+  ]
+ },
+ {
+  "re": "\\(\\.\\)\\.\\((\\1\\)+?$",
+  "s": ")カ \n-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\c|? ",
+  "s": "μ_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\b\\(A\\_>a\\)\\b",
+  "s": "ba²a",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[a-]",
+  "s": "_é",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a+?_\\(?:b?\\)\\B",
+  "s": "͸AAªa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\b\\_>k\\ch+?",
+  "s": "(_a-bª ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A.??\\(\\c|.\\(\\B\\<b\\B\\)??\\)??[ab]*",
+  "s": "½Ab(€Σ ﬁ",
+  "fold": false,
+  "emacs": [
+   1,
+   3
+  ]
+ },
+ {
+  "re": "\\*",
+  "s": "カ한(Σ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[^]\n]?\\(?:a*.+a\\|µ\\) a",
+  "s": "(_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(aΣ?\\w\\)",
+  "s": "bか(²",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(A\\cj\\{,3\\}Σ\\c|\\)\\1*µ",
+  "s": ")  Ka",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^µ*",
+  "s": "A _Σé)A",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "_a\\(\\(a*[]a]\\Cl*\\)* Σ\\(\\b\\_<\\1*?σ\\)\\)\\|.µ",
+  "s": "aa\n(€b²µ",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "a\\'",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'A",
+  "s": "αé͸(_",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[α-ω]\\(\\(\\(a*ak\\)??\\(a[]a][[:lower:]]\\)\\{2,4\\}(\\(é\\)\\)[[:graph:]]\\(k\\cL?b.\\)[^[:alpha:]]+\\)\\Sw\\{,1\\}\\s_",
+  "s": "A",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*",
+  "s": "ǅé)b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\S-é\\)\\{,3\\}µ$",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\B ",
+  "s": "µb_Aa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "AΣ",
+  "s": "a漢²Σé(",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_[[:alnum:]]",
+  "s": "漢\n\n",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(a\\<\\)σ\\|\\>_\\B\\Cl+\\)\\ch\\{2\\}",
+  "s": "_b͸(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a[[:punct:]].\\([[:alpha:]]\\)\\{1\\}",
+  "s": "μbaé½A",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\(?:[σΣ]σ\\'a\\)\\)(.??\\)",
+  "s": "aé-A-_-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\**a\\|\\._\\{,2\\}\\>$",
+  "s": "ba\n_A\n μ",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "\\(k_\\)??\\ca",
+  "s": ")-",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "^[[:alnum:]]é*?\\cC??Σ*",
+  "s": "(\n-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\(\\sw\\)\\'\\)+\\(.a\\)\\|\\(\\.\\)..*\\)+\\(\\' .*\\5\\)a",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[a-]\\*[[:blank:]]*$",
+  "s": "\nbµ_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*$",
+  "s": "- ﬁb² ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_>\\( *?\\(.\\b\\((?\\)σ\\)\\)",
+  "s": "σ)(\nA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`\\cC\\|aΣ\\b\\(A\\)+?$",
+  "s": "\n(A(́_(b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*",
+  "s": "½カbª a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a*",
+  "s": "_((-aA²)",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^é",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a (\\s(",
+  "s": "bµ-KΣ__",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(aA\\)*?a*?k[a-b]*?",
+  "s": "(ª(ﬁ a²",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\(?:\\B\\ca\\*µ??\\)\\cl[^]\n]\\)?_",
+  "s": "µ",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(?:.a?[α-ω]\\) +.*\\([[:print:]]a\\(\\(\\C^+\\Baé??\\)A\\)a*?\\)",
+  "s": "b A_ k",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^[[:alnum:]]?.??\\(?:\\W??é\\(\\<\\)\\)*?\\c|+?\\|\\(?:é_\\)*?$",
+  "s": "_µaAbか\na",
+  "fold": false,
+  "emacs": [
+   6,
+   6
+  ]
+ },
+ {
+  "re": "a\\(A+\\(.+?\\(é\\)\\>\\1+\\)\\).\\s.",
+  "s": "()éaςA\n(",
+  "fold": false,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\B\\sw\\(\\(\\([[:word:]]\\c|k\\)*\\1\\{,2\\}A\\>\\)\\{0\\}a\\s-??é\\)",
+  "s": "ba한)kb",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\([[:blank:]]*\\cj*\\)+?\\c|",
+  "s": "a-b한",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:punct:]]\\'a",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(ak.\\cl\\)\\(?:[z-a]\\)µ\\|.+?\\S-",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\W\\{1,\\}\\.?\\)k\\(?:\\1\\{,2\\}\\|a\\*\\).??",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\**",
+  "s": "b()béébA",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   8,
+   8
+  ]
+ },
+ {
+  "re": "[a-]\\(.\\)\\cl\\(?:(\\(?:(\\W.??\\(?:\\cjaσ*?\\)\\{1\\}\\)k\\{0,0\\}\\)\\|\\'\\(?:aé.(\\{2,\\}\\).*?$",
+  "s": "α€a_A)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\B\\((\\)\\B",
+  "s": "bba",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^k[[:alnum:]]??σ+\\>",
+  "s": ")éΣ_( ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".+?\\|\\_>\\cL\\{0,\\}.??\\(?:(_\\{,1\\}a?\\)*$",
+  "s": "é",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "(??[[:lower:]]*Aa",
+  "s": "_か) a(a\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".+?",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\>",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "Σ\\W?\\B",
+  "s": " ((a(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\( *\\(?:\\_>\\b\\)*?\\)bΣ",
+  "s": "-αb-μkb",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": " \\<",
+  "s": "b\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.*Σ\\)",
+  "s": "abé",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "(?\\>",
+  "s": "é()한ééaか",
+  "fold": false,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": ".\\(\\(?: *? \\(é+[ab]??a\\.\\)\\{0\\}(\\)\\) \\.*",
+  "s": "か_a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a+k?[^[:alpha:]]*\\.\\|(*a*aa*",
+  "s": "aμ",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\'[^]\n]a",
+  "s": "\n(éébb)a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "σ.\\(A??\\B\\)??\\(\\(?:.??(\\{,2\\}\\1(\\)\\'\\)",
+  "s": " 漢Ka",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^a*?.",
+  "s": ")µb͸ ",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "σ.+?\\<\\W",
+  "s": "k-ЯA bA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\b[[:upper:]]+",
+  "s": "aa\n ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "µ*a",
+  "s": "a한 )a k)",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\w\\*\\{0,2\\}\\(\\c.\\)\\S-",
+  "s": "é漢ﬁ한",
+  "fold": false,
+  "emacs": [
+   0,
+   3,
+   1,
+   2
+  ]
+ },
+ {
+  "re": "\\.a(*.",
+  "s": "ß--)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "Σ\\<µa?",
+  "s": "µЯ漢  ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\*A*\\([ab]\\(\\(\\*_[]a]??\\`\\)+?\\)*\\(a\\(\\2\\)\\( \\)\\{1,1\\}\\2\\)+\\)",
+  "s": "ka(bb",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "(\\cj??\\(?:A\\)[α-ω]??",
+  "s": ")b-ﬁ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(A+[ab]?b*?\\*\\{,1\\}\\)σ+?",
+  "s": "漢μ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^σ*",
+  "s": "_a()",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^\\**\\*+?",
+  "s": "͸²",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".*",
+  "s": "_A( K",
+  "fold": false,
+  "emacs": [
+   0,
+   5
+  ]
+ },
+ {
+  "re": "^\\c.\\(?:k+\\*\\(a.\\)+?.\\|\\sw*?[^]\n]\\{2,2\\}a_\\)\\{,2\\}\\*a",
+  "s": "é͸ǅ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s-\\{2,\\}",
+  "s": "é)",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[z-a]é*",
+  "s": "akμЯ\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\W\\{2,\\}\\*_\\)[^]\n]$",
+  "s": "(_σkbσカ\n",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\Sw ak?$",
+  "s": "€a)_éAé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "k\\{0\\}\\B\\( \\|[σΣ]+?\\c.σ*µ\\)*",
+  "s": "",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b*",
+  "s": "µσ)½漢Яéa",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\b\\*",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:a\\).$",
+  "s": "\n_aA",
+  "fold": false,
+  "emacs": [
+   2,
+   4
+  ]
+ },
+ {
+  "re": "\\(.\\(.\\{1,\\}AΣ*?\\)\\{0,\\}a\\{0,\\}\\(.\\{0,\\}\\)\\)\\(\\2*a\\)b\\|b+?",
+  "s": "é€bAA ",
+  "fold": false,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "\\(\\**?\\)\\_<",
+  "s": "-µéǅ",
+  "fold": false,
+  "emacs": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "é?\\|.*?µ(",
+  "s": "((a_Σ",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^.$",
+  "s": "( ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\C^[a-b]",
+  "s": "\n",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "σ*\\|\\(.*?\\Ba\\)*?\\W( $",
+  "s": "α_kЯA_))",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\b\\)\\{1\\}\\S-+?_\\1",
+  "s": "aか)bb½é\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\(\\'\\*\\(µ*a\\{2\\}\\)*\\1\\)\\)\\_<é.",
+  "s": "A(()(",
+  "fold": false,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\b\\**\\(\\(\\cC\\)[^[:alpha:]]a\\)\\_>",
+  "s": "(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "Aa",
+  "s": "",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\_<[[:alpha:]_]\\{0,0\\}.\\(σ\\( \\.*?\\)\\1*?\\1\\)\\)aé\\{,1\\}\\(\\(\\c.*\\1\\)\\(?:[[:print:]]*\\(\\<\\sw\\)??\\_<A\\)\\)+",
+  "s": "かß",
+  "fold": false,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "A*?[^a]\\{0,\\}\\|\\.\\{2\\}σb+",
+  "s": "_éaA½bb한",
+  "fold": true,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "^µ??µµ*",
+  "s": "\n _AΣ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^a*?[[:graph:]]\\(?:µ\\)µ",
+  "s": "AbA_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^é*\\.\\_>",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([[:blank:]]\\)\\(\\*?\\'A\\)\\2*?\\B$",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\cl*a\\|..\\(\\(\\_> *\\)\\)*$",
+  "s": "ß",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a??[[:space:]]",
+  "s": "\n(ééAé-σ",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": ".*$",
+  "s": "σ-€한",
+  "fold": false,
+  "emacs": [
+   0,
+   4
+  ]
+ },
+ {
+  "re": "Σ$",
+  "s": " aaﬁ)b한é",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "Σ\\w??a\\.??\\|\\.??\\((+?\\C^\\(?:a.\\)\\)*\\b\\_>",
+  "s": "bb",
+  "fold": false,
+  "emacs": [
+   2,
+   2
+  ]
+ },
+ {
+  "re": "é*\\(a\\{,3\\}\\)+",
+  "s": "--(aAaé",
+  "fold": false,
+  "emacs": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\Cl\\(?:_\\(A*?\\)*?\\)*",
+  "s": "²a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".*?\\(?:\\(?:k\\_<\\(?:aa\\)\\(\\s_a?a+?\\`\\)\\{0,\\}\\)\\)*?$",
+  "s": "²\nǅ",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "σ??",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\*??(A",
+  "s": "b)a\nカ́",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\<",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[a-b]",
+  "s": "ς\n͸\nAß½é",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^µ\\{1,\\}\\ck\\S-\\*",
+  "s": "(-\n_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([[:alpha:]_]\\(?:.\\B\\)\\)[[:print:]]+_\\c.??",
+  "s": "  €)-\n(-",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\{1,1\\}[[:word:]]$",
+  "s": "bA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é??[[:upper:]]",
+  "s": "かǅ(αςa",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "µ\\*\\(\\(. .\\{1,\\}a\\)*\\1\\)a*",
+  "s": "かか éªb½",
+  "fold": false,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\.",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\cC+?\\cL\\|[[:alnum:]]\\{2,\\}Σ\\)*?ab\\(_\\1\\)",
+  "s": ")ﬁ_éb-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[ab]\\sw?",
+  "s": "かΣé)a((",
+  "fold": false,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "\\(.\\{,1\\}.\\)\\*\\(\\s(\\{2,4\\}\\(?:\\1\\)+\\(.\\{0,\\}Σ\\)*\\)",
+  "s": "ééΣ-ªbA",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\>\\_>\\<\\(?:\\(A?a\\)\\*\\Sw\\sw\\{,1\\}\\)\\)_?µ",
+  "s": "é(bbΣ€",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\s-[[:alpha:]]",
+  "s": " \n_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^A.??\\wΣ",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\([[:graph:]]\\)\\(_.+?.\\B\\)+$",
+  "s": "́",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:print:]]\\(\\_<\\(\\cC\\(A[]a]*a*\\)µ*?\\)*?\\)[[:print:]]\\(\\.+\\C^\\b\\|k+?a\\(?:[a-b]+?(\\)?[ab]\\{2,\\}\\)",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "Σ\\>σ",
+  "s": "b\nªéb-α)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\cL*[σΣ]",
+  "s": "k\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "ka\\.",
+  "s": "bKカª",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\cL",
+  "s": ")ak_σ",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "\\(?:\\*+[[:graph:]]\\Cl\\)\\c|éa",
+  "s": "(Ka한ßé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:alpha:]][[:punct:]]+\\b",
+  "s": "é(σ漢(é\n",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "\\b\\|\\(\\.\\(a*a\\)_*?\\)??\\c|Σ\\2\\|\\`Aσ$",
+  "s": ")ǅ_a漢",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\S-é??µ\\{,3\\}\\)+?.+",
+  "s": "éa\n か",
+  "fold": false,
+  "emacs": [
+   0,
+   2,
+   0,
+   1
+  ]
+ },
+ {
+  "re": "[^a]??",
+  "s": "(カ\n\n",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^a*?\\c.\\(µ*\\)\\{0,\\}[^]\n]$",
+  "s": "A_",
+  "fold": false,
+  "emacs": [
+   0,
+   2,
+   1,
+   1
+  ]
+ },
+ {
+  "re": "\\*",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\<\\)\\.Σ+",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'",
+  "s": "ßЯσ-",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   4,
+   4
+  ]
+ },
+ {
+  "re": "\\< +?",
+  "s": "€-μa((",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\cj\\)\\|\\*Σ\\(?:\\sw*\\(a*a??[[:print:]](\\)\\((*.A*?\\2*\\)\\)",
+  "s": "\nb",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\(Σ\\)k\\([[:word:]]\\|Σ\\(\\1b+?\\)[[:word:]]\\)",
+  "s": "-²ςa--\nﬁ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(Σ\\_>bb\\)",
+  "s": "aς-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^k$",
+  "s": "\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^ *.*\\|[σΣ]??aa+? ",
+  "s": "ς€-_-_カ",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   0,
+   7
+  ]
+ },
+ {
+  "re": "[]a]?",
+  "s": "k",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\*.\\(\\Bk\\{,2\\}\\(k\\(?:σ .+_\\)*\\s(.\\)\\(\\<[[:upper:]]é\\)\\)\\{,2\\}",
+  "s": " -\n( ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(",
+  "s": ")-μéª",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s_$",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a+é",
+  "s": "A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A\\ch_?",
+  "s": "ßa€",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^ \\{0\\}\\|\\(?:\\(Σ??a\\{2,3\\}.[[:lower:]]\\)\\(\\1\\.\\)\\)\\|\\1\\c|.\\>",
+  "s": "Я",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(?:\\(?:µ\\cj\\)\\{2,\\}a\\)$",
+  "s": "_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\(\\_>\\)?",
+  "s": "ς(kA(\n",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "\\`[^[:alpha:]]",
+  "s": "\nK(aaé_\n",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\*\\(\\sw\\)+?.*?\\(a.*\\)\\|.?A",
+  "s": " aαb_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(Σ\\)[[:word:]]?\\(a+?\\1\\_<\\) ",
+  "s": "b한",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^a\\(\\>\\_>\\)a+?",
+  "s": "A",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^a\\(\\(\\(?:aak+?a\\)µ+a\\(a\\)+\\)\\sw\\2σ\\)$",
+  "s": "--(_)カba",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "aσ",
+  "s": "́漢한b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?: .\\)\\(\\.+\\cj??A\\{0,\\}\\)??[[:alpha:]]\\)\\*\\2a*",
+  "s": ")",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'(*",
+  "s": "½",
+  "fold": false,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": ".σ*",
+  "s": "ék한b",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\'[ab]??",
+  "s": "_a_カ",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   4,
+   4
+  ]
+ },
+ {
+  "re": "\\(A\\)",
+  "s": "( )b_bé(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.?_\\(\\(?:[[:graph:]]*\\)+\\(?:\\(a\\c.\\ch\\)\\.\\)*?.[^]\n]\\)",
+  "s": "aςba)a\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\.+\\)$",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\{,1\\}",
+  "s": "éAb͸-))",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   7,
+   7
+  ]
+ },
+ {
+  "re": "\\(Σ*\\(?: \\{0\\}\\)µ\\)",
+  "s": "_(aµa)",
+  "fold": false,
+  "emacs": [
+   3,
+   4,
+   3,
+   4
+  ]
+ },
+ {
+  "re": " *a.",
+  "s": ")b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\Sw\\.*?\\**",
+  "s": "aカAbaé",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A\\c.Σ*",
+  "s": "ςb_Aab-",
+  "fold": true,
+  "emacs": [
+   3,
+   5
+  ]
+ },
+ {
+  "re": "\\*??\\(A(b\\)σ*\\.",
+  "s": "A_(()",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`\\ck?\\(?:.\\|\\(\\cC?\\*\\)(\\)σ+?",
+  "s": "\n\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".Σ\\{2,4\\}σ",
+  "s": "A",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": " \\|\\(.\\(a\\)\\)aΣ\\.",
+  "s": "éabéA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.*?a?b",
+  "s": "bςé",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "é*\\(\\(\\cg\\)\\1?\\)*?",
+  "s": "-AA\nb(b",
+  "fold": true,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "^A.*?\\>$",
+  "s": "b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\._*?σ_??",
+  "s": "é",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^[[:blank:]]\\|\\**\\(?:\\(a\\{1,2\\}\\)?\\)\\{2,\\}\\(\\(a+?\\)*\\.*?\\c|\\{1,\\}\\)*?_",
+  "s": "-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\cj",
+  "s": "漢_\nカか--ª",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "aΣ\\{,3\\}é\\|\\cg\\{2,3\\}.\\([[:alnum:]]µ\\(\\*\\)\\s(\\)+",
+  "s": "Ab한\n ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\>",
+  "s": "한bか-A)",
+  "fold": false,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "_",
+  "s": "́€͸AaAªµ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a",
+  "s": ")_é-abkA",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "\\sw\\(Σ\\)",
+  "s": "aaA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_\\{,3\\}",
+  "s": "μ(a",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   3
+  ]
+ },
+ {
+  "re": "b .",
+  "s": "b))ǅ²Aσ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\B\\s.a\\{0,1\\}\\)?\\_<aa\\|\\(?:µ\\(a\\*Σ?\\)??\\S-\\)\\ck*\\Sw\\(\\(\\Cl\\)µµ\\)\\{2,\\}",
+  "s": "baカ-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\ck",
+  "s": "a)bЯ__",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^ \\(\\(µ??\\)\\([[:upper:]]\\_>\\1??\\)\\)a*(\\|\\(a \\{1,\\}\\2+?\\(\\w\\{2,4\\}\\)\\)",
+  "s": "b",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "A\\{2,\\}_??(\\{,3\\}\\.\\|é+?",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "k\\(?:(*? \\(\\(b??\\B.\\)\\)\\{1,1\\}\\)+[^[:alpha:]]",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\B\\(.\\(?:a\\(?:.+?a*?a\\{2,\\}\\)µ\\)*?\\)\\(?:_\\)",
+  "s": "²ǅa(͸a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a",
+  "s": "é\nab",
+  "fold": false,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "^a",
+  "s": "bbééª_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "k\\sw$",
+  "s": "カ€(baΣ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\c|a \\{2,4\\}\\|.a",
+  "s": ")Я€aA)€b",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   2,
+   4
+  ]
+ },
+ {
+  "re": "^\\'a\\_>",
+  "s": " ba_(",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a??\\((\\`\\)\\)\\(\\(?:\\C^\\{,2\\}\\>.\\(a[^]\n]?\\2??\\)\\)*(*[[:alnum:]]_\\{0,\\}\\)",
+  "s": "",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(Σ?\\cj[α-ω] \\{,1\\}\\|\\(\\.bb*?a\\)\\{2\\}\\)?é?\\(?:.µ*a\\2\\)\\{2,\\}\\**?",
+  "s": " \n_αA½漢",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "σ?\\.\\|\\.a +k",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "µ\\bk\\(?:\\(σ*\\(?:a\\)\\)é\\)",
+  "s": "b Σ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:( \\)*a?",
+  "s": "A漢",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "µ\\>\\|bΣ",
+  "s": "-_a漢ªAé",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\**a+\\(\\(\\(Σ*?[[:alpha:]_][[:space:]]\\)*?a+?Σ\\)??\\`\\(\\B\\*\\.a\\)+\\)\\4\\{,1\\}$",
+  "s": "²_²)-Aa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(µ[[:space:]]+σµ\\)\\(\\B\\)\\(?:\\*b+\\)\\|é_\\|\\(.é+.\\)*",
+  "s": "-é))",
+  "fold": false,
+  "emacs": [
+   0,
+   3,
+   null,
+   null,
+   null,
+   null,
+   0,
+   3
+  ]
+ },
+ {
+  "re": "^A[z-a]\\(?:a*?\\(\\*\\)*\\.?\\|\\1 \\)*?\\|\\>[[:word:]]",
+  "s": " )",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:aa[[:blank:]]\\(a[^]\n]a*?[[:space:]]??\\)\\)+?a[a-]*\\|.+?",
+  "s": "A(bμμß\n",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "a",
+  "s": "\nb -",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:alpha:]]\\{0\\}$",
+  "s": "- aAb",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   5,
+   5
+  ]
+ },
+ {
+  "re": "a*?\\|k\\*a\\_>",
+  "s": "ǅ\nbaKα-",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\_>\\c.*\\|a\\.?$",
+  "s": "aA",
+  "fold": true,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "σ",
+  "s": "ké",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\ch?\\_>\\.+a",
+  "s": "ς-ba_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^Σ\\_<\\|\\.\\(\\_>\\(µ\\)a\\`\\)+?σ(",
+  "s": "σaé\na",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "µ?k\\{,3\\}",
+  "s": "_a€\n͸b_",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(σ??\\sw\\(?:σ?a[z-a]?\\)\\b\\)??",
+  "s": "-",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "_(a*",
+  "s": ")μaμ-b_",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\(_\\.µ*A\\)Σ\\{,1\\}a",
+  "s": ")α",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\c|._+?",
+  "s": "(é_-Aé)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "..",
+  "s": "(kǅ͸_",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "a.+\\(b+a\\|\\(a\\{0,2\\}_\\{2\\}\\S-*\\)+ba\\)",
+  "s": "a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".*?\\(?:\\(?:[[:print:]]\\.\\_>\\)*_\\(?:\\(Σaa*?a\\)\\(\\>\\)*\\s_*\\)+\\)*?\\'",
+  "s": "μ",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "\\.*",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "[[:space:]][[:graph:]]a+a\\{0\\}",
+  "s": "A",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[z-a]\\(?:a*.\\(?:.\\)\\)\\*?$",
+  "s": "A½ǅb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(\\c|\\{,3\\}.[[:alnum:]]+?",
+  "s": "aЯ_μA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a?[z-a].",
+  "s": "ab-½\n",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([a-b]\\) ",
+  "s": "ςςb_éa",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(a\\c|\\)k",
+  "s": "カb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\C^",
+  "s": "a",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "^.*\\(?:\\s.?\\)",
+  "s": "Яa_A",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   4
+  ]
+ },
+ {
+  "re": "b*?(*?\\|\\(?:[ab]\\{,3\\}k*\\>\\)?\\B.[[:alpha:]_]?",
+  "s": "A(ς-(ba²",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   8,
+   8
+  ]
+ },
+ {
+  "re": "\\(?:a\\)\\{,3\\}\\<k\\.??",
+  "s": "μα_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(é+?\\ca[σΣ]?\\)",
+  "s": "ς漢a\nǅAaΣ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:punct:]]?\\(é*?.\\)*?",
+  "s": "_k",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\.\\w\\{,3\\}",
+  "s": "_(",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^é*\\(?:\\(?:\\`\\)\\)",
+  "s": ") ba(_",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\s(σa*",
+  "s": "(Aaμαß_(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^b\\{2,2\\}",
+  "s": "",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\sw",
+  "s": "\nḰЯ€)é ",
+  "fold": true,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "ab?\\(?:\\(?:Ak*\\(k*\\**µa\\{1\\}\\)\\1\\)+\\s(?Σ\\B\\)",
+  "s": "ª)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[a-b][]a][a-b]b",
+  "s": "漢A-_-k)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A?é\\_<\\(?:\\_<a\\(?:Σ*\\)*?\\)$",
+  "s": ")",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\ck+é\\{0,\\}",
+  "s": " \n(é\n_a",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\ck\\(\\(?:\\ché*?\\(\\_>.\\)\\)[[:blank:]].\\)\\{1,2\\}\\1*? ",
+  "s": "aéß--)b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "kσ\\(.\\_>\\)\\{1,3\\}Σ\\{1,3\\}",
+  "s": "b-)ba\nカ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^Σ*",
+  "s": "abα\n-a",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "_k\\{1,\\}\\(.*?a\\W+\\(A+?σ\\)\\)",
+  "s": "bªa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^.\\*aΣ+",
+  "s": ")µb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a*.\\|éa\\(?: \\(?:a?Σ.?\\>\\)_\\)*\\(A\\(a\\)\\*\\{2,\\}\\s_*?\\)$",
+  "s": "\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([[:word:]]\\_>é*\\(?:\\(σ\\)\\.*\\B_\\)*\\)",
+  "s": ") aabカ",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   5,
+   6,
+   5,
+   6
+  ]
+ },
+ {
+  "re": "_??\\>Σ\\{,3\\}\\(a\\(\\c|.[[:punct:]]\\)\\1.*?\\)\\|\\'$",
+  "s": "σ b",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\(?:\\(é.*b+\\)[]a]+?\\1\\)?µ??\\_>(",
+  "s": "\nǅ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a.\\{1,3\\}_\\|\\c.\\)*?",
+  "s": "kbab)-(",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^k.\\{0\\} \\(?: µ*\\)?",
+  "s": "ª_b_-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:[[:alnum:]]*?é\\(?:(\\(\\ck\\{,2\\}a\\ca\\{,3\\}\\)\\)Σ\\)\\{2\\}µ*\\`",
+  "s": "(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:word:]]",
+  "s": "-ǅ½b",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": " µ+\\|\\B",
+  "s": ") \nﬁσa",
+  "fold": false,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "\\(?:. \\)??",
+  "s": "b",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\(?:\\s(\\{2\\}\\(?:A\\<A\\)\\(?:a\\{2\\}\\*+\\)*?\\)+ .A\\)\\{0,\\}é\\>\\|\\1?.\\(\\(a*.\\1*.??\\)\\{0\\}\\*\\2a\\)\\(σ[z-a]a\\)+?",
+  "s": "\nb€ k ",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "ab*\\(Σ*\\*\\(\\*\\)+?\\1\\|\\1+\\1\\(µa\\{,3\\}[[:alnum:]]a\\)\\)$",
+  "s": "ß)-Aéς",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "[[:graph:]]+?\\s-",
+  "s": "€)(bb)b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\(.?\\)µ",
+  "s": "ς a-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*.\\(\\>µ\\(b\\(aa??[[:upper:]]\\)\\)_??\\)+",
+  "s": "ª)b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^_\\{0\\}",
+  "s": "b_ \n",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "σ\\>\\_<\\|\\.._*?Σ",
+  "s": "bǅaabカ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "Σ*?.",
+  "s": "ά한(é",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "k[[:blank:]]\\|\\(?:b\\)",
+  "s": "\nªbb ",
+  "fold": false,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "\\cg\\ck*b*?\\cL",
+  "s": ")(é",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(?:\\(.\\)\\(a.\\)\\)\\{2\\}\\|.\\2$",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(.[[:blank:]]",
+  "s": " )b²",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s(+\\b\\ch",
+  "s": "b² (½a\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".a*$",
+  "s": "_éa",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "\\s-a\\{1,1\\} a+",
+  "s": "-bAかb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\.?",
+  "s": "͸",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "[[:space:]]a.",
+  "s": "μ-Σ_σ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\S-\\*",
+  "s": "_aa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[a-b]\\(\\caa\\{1,\\}\\(.*\\)\\)\\(k*?\\([[:alnum:]]??[a-b]\\*\\{1,\\}\\2\\)\\3??\\(?:\\(_\\*\\_<\\)+\\_<.*?\\)\\|\\(?:[ab]\\s-\\.??.\\)\\)",
+  "s": "\naª€bς",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\.\\{2,4\\}\\Bak",
+  "s": "-)-\na)-́",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".*?.\\(\\*a\\)\\(a+?a\\{,1\\}\\s_*\\)",
+  "s": "(\naЯb_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "Σ\\(?:b\\([]a]\\{2,\\}\\>\\)\\{2\\}\\)+µ?A$",
+  "s": "-A_Яaaéé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.+a\\{2,4\\}\\c.?\\)(\\(?:\\1??[[:word:]]+\\)",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?:a\\(?:[[:alnum:]]\\{2,\\}a\\{1\\}a\\)\\s_[[:word:]]\\)\\<\\)?\\cj$",
+  "s": "AabAǅ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(k \\)*?\\*.σ\\)$",
+  "s": "k__  ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a*b?\\sw\\(\\(?:é\\([[:lower:]][[:alpha:]_]?[^[:alpha:]]?\\)\\.\\)\\1*?..+\\)*?\\|\\(\\.*Σ*?\\)\\|\\(?:\\ca\\)\\(\\3\\ch+?.a\\).\\{2\\}\\Cl",
+  "s": "a",
+  "fold": false,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "^b[[:lower:]]*\\'$",
+  "s": "kb́b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\_<[[:graph:]]\\(\\(?:σ\\).\\)\\)k*",
+  "s": "-)AaA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\*",
+  "s": "A  _ aA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\*??\\(?:\\(\\`µ\\)k\\)*",
+  "s": "カé½_a͸é",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "Σ\\|.\\|a*",
+  "s": "bb\na-ﬁ",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "^\\Cl\\{,2\\}\\(\\(\\_<\\(?:\\>\\)+\\)\\{2,\\}\\s_Σ\\(a*?\\B\\)\\{2,4\\}\\)",
+  "s": ")A_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é?[[:graph:]]Aé\\|\\s.*σ+b",
+  "s": "ééaµカA ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\sw.\\(?:a.*\\)\\{2,3\\}\\(?:\\'a+?\\s_\\{2,\\}a??\\)",
+  "s": "͸é()bé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^a??a\\*a",
+  "s": "( aa(bbか",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\(?:a b\\)\\S-+_",
+  "s": "(\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[ab]\\Swé??a\\{1,\\}",
+  "s": "b_σか",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "µ(",
+  "s": "\nḱЯbǅ b",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\..\\cj\\)\\)*?\\(?:σ*aé\\{1,2\\}σ\\|\\Sw\\(\\2+?\\)\\)*[[:alnum:]]*",
+  "s": "-",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "a\\((?\\(\\(\\*\\)\\)Σ\\)*?\\cj\\(?:[α-ω]+?\\<b\\)\\{,1\\}",
+  "s": "か a½b͸カµ",
+  "fold": false,
+  "emacs": [
+   2,
+   4
+  ]
+ },
+ {
+  "re": "b$",
+  "s": "ß",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a?k",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "Σa_\\(?:.*A\\.\\)",
+  "s": "-α(",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\<",
+  "s": "(b́bb-ǅ(",
+  "fold": false,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "^\\_<\\(?: \\_>\\|b.*\\)*\\(?:a*Aσ*?\\(?:\\(?:Σ\\)\\)\\)?\\_>",
+  "s": "_-é",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".a",
+  "s": "KbЯ)ba",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   4,
+   6
+  ]
+ },
+ {
+  "re": " µ(.*",
+  "s": "éékéabb",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*µ\\{2\\}\\s-σ+",
+  "s": "a(ª-a",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(?:[[:blank:]]??.\\)a?",
+  "s": "A-²)A",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "é\\([[:blank:]]*\\(?:\\(ba[[:upper:]]*\\)\\)\\)\\{2\\}",
+  "s": ")\nA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([^[:alpha:]]\\{1\\}\\([a-]\\)*b\\{0\\}a\\|\\1A?? *é\\)k \\{,2\\}",
+  "s": "",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "(\\(\\_<[^[:alpha:]]*σ*µ\\)\\(?:\\*.*?\\*\\(\\_<[]a]?\\(.?\\w\\1\\)+?\\)??\\|Σ*\\)?",
+  "s": "́ΣAéaab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\*\\(\\(?:\\.\\)?[^]\n]\\>_+\\)*",
+  "s": ")αa½éb",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\{,3\\}$",
+  "s": "aか",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "\\w*\\(\\s-+?\\>σ\\{,3\\}\\)Σ\\S-",
+  "s": "é))σ²\nǅA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^[[:lower:]]\\{0,\\}\\.",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a",
+  "s": "b́\n_b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(σb+a+?σ+\\)\\1?\\(a+\\c|?\\)\\)$",
+  "s": "ǅǅ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "(*\\(\\Cl*a\\|b+σ\\{0,1\\}\\(?:Σ*\\*\\)\\)\\{,2\\}a.$",
+  "s": "A ª\nα",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "(?",
+  "s": "ﬁ²)漢é_か",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\*\\(?:ba*?\\)+?\\(\\>a.*[^a]\\)\\`\\|\\(éa.*[[:punct:]]\\{0,\\}\\)\\|\\(é?a\\)?a.\\B",
+  "s": "μ)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "k",
+  "s": "Aﬁ bμ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\(a\\|\\Sw.\\)",
+  "s": "b²μabK͸a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(?:(\\)b",
+  "s": "aAb--(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.+\\([α-ω]Σ\\)\\(.\\)*\\|.Σ\\`σ",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\([[:alpha:]]\\)a\\{,3\\}µ\\(σ+[σΣ]+[z-a] +?\\)??\\) a\\|.?",
+  "s": "한--ab ",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "^éb+.??",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\C^a\\s_\\{2\\}$",
+  "s": "Aσカ ǅé한é",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\ck*?\\B[[:space:]](\\{,2\\}\\) *\\1\\([z-a]\\|\\(a+?\\)*\\_<\\)\\|a??",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^\\(σ+[^]\n].\\C^\\)",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": " \\(a\\(a\\(\\.a+\\)\\)\\{1,\\}\\(\\(Σ\\{,3\\}a\\*\\)\\{,2\\}\\)*\\)\\|\\.\\*??_",
+  "s": "ǅ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "ak\\(?:\\(?:.\\(a*?a+?\\>\\)*\\)_\\(\\(?:[a-b]\\1\\)+?\\(?:a\\s-\\)\\b\\)+\\)\\'",
+  "s": "b\nǅ_a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:lower:]]",
+  "s": "Σ)k)AµЯK",
+  "fold": false,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "[a-b][z-a]+\\>\\|σ*[[:lower:]]+?",
+  "s": "-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_>",
+  "s": "-b(AAЯé",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   7,
+   7
+  ]
+ },
+ {
+  "re": "\\s_",
+  "s": "ß́",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "k\\.?\\(\\s(\\{1,\\}.*\\)\\|_\\{,3\\}\\(?:[[:alpha:]_]\\*Σ\\( µ\\)\\)",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a*σ*?",
+  "s": "é(A  ª)ß",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "b[a-b]\\([[:space:]]*\\|\\(Σ??\\)\\(\\s-é_+\\)\\{,1\\}\\ch+?a\\)k*?$",
+  "s": "éabA)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a??b\\{2,2\\}\\|a.+a??\\(\\_<[[:alnum:]]\\)",
+  "s": "\n)한σ漢 σ)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a.$",
+  "s": "a͸é_a_-a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(",
+  "s": "\na)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\Ba$",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é\\{,2\\}k\\{1,\\}",
+  "s": "A-b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b+\\>[[:graph:]]a",
+  "s": "é_b(é",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.\\(?:\\(a*?a(?_\\{2,4\\}\\)[a-b]\\1\\)\\(.+?\\)+?\\)\\{1\\}\\Cl\\*\\{0,\\}\\(\\S-*Σ\\`\\)$",
+  "s": "",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "µ ??",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".é?[[:word:]]?",
+  "s": "aa()漢-́",
+  "fold": true,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "\\(\\(\\cC\\..\\{0\\}\\)\\)??\\(\\`\\sw(\\).?\\.",
+  "s": "ﬁb(ﬁaЯ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\c|\\(?:_*\\_>\\B\\cg\\)\\{2\\}",
+  "s": "(b-ΣAbbA",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\ch\\.é*?",
+  "s": "-K",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(µ\\{,3\\}\\(σ\\)\\(.??\\(\\cla*\\)??\\_<A??\\)\\)\\3",
+  "s": " _ b(ab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\Cl+\\>[[:word:]]",
+  "s": "bς)ς",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\B.*\\(.\\{2,\\}a*?\\Bé+?\\)",
+  "s": ")μǅǅa½",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "bk",
+  "s": "b ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`\\(σ\\B\\cL\\{,2\\}\\(µa\\(a\\)\\)\\)\\(_\\(\\2*_?.\\)\\)[[:print:]]",
+  "s": " ªﬁ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\_<\\<a??a\\{1\\}",
+  "s": " Kσé",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^a",
+  "s": "ba",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "Σ+?\\cC*a*",
+  "s": "_€\nß-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^a+\\ch\\{1,3\\}",
+  "s": "-한baªbA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?:\\w.\\)[a-b]A\\s_\\)",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a+\\s(Σ\\)??k\\1??",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\*\\|µk+?\\(\\(a\\{,3\\}a\\ca\\)\\1*?\\)+\\|.\\1a*",
+  "s": "́ -ς€ébK",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "a+",
+  "s": " aΣßAA(α",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "\\(\\_>ΣµA\\)é\\{2\\}",
+  "s": "b(_\naα",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^a\\{2,\\}σ",
+  "s": "½a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "kµ\\{0\\}\\(b??σ\\|\\(?:a\\)+?σ??\\)+?\\s(",
+  "s": "(ς  か",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a?\\)$",
+  "s": "άa",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   3,
+   3,
+   3
+  ]
+ },
+ {
+  "re": "\\([[:alpha:]]+\\)\\{,1\\}\\1\\{,1\\}\\1",
+  "s": "ba",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\(\\(\\c|\\*+a+?\\>\\)?\\)+?\\B\\(A\\1\\)",
+  "s": "á\naA_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\ca\\Cl*?(*?",
+  "s": ")(a",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "^a*A[[:alpha:]_]\\{,1\\}",
+  "s": "b(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "µa\\**?",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_<\\|Σ\\(\\..\\cCµ?\\)*_+",
+  "s": "bµ-²AAΣ",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\(\\.[^]\n]\\)(\\{,2\\}Σ+?\\(a\\)\\)",
+  "s": " ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\ca",
+  "s": "ǅﬁ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "σ\\{1\\}[ab]k+?",
+  "s": "b)aµ́",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[σΣ][a-b]\\(?:µ+.*?\\)$",
+  "s": "aß €²",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\W\\_>\\)*",
+  "s": "ba\n -b",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\S-*a??\\(\\s.*\\|\\s_\\{0\\}σ??.\\)",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "re": ".A??\\(é_.\\)+?_",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a",
+  "s": "½",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\_<.+?\\s(\\(\\cl\\*[a-]\\)\\{,3\\}\\)",
+  "s": "́_aǅ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(?:\\c|?\\(\\(a.\\)\\{2,3\\}\\(?:a[α-ω]\\{,1\\}a\\)é*?a\\)\\|[[:space:]]\\)*?[[:alpha:]]",
+  "s": "Яµé",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "σ",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\((\\)é\\{2\\}\\b",
+  "s": "--́\naAA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".*\\(.* *\\).",
+  "s": "-́ ",
+  "fold": false,
+  "emacs": [
+   0,
+   3,
+   2,
+   2
+  ]
+ },
+ {
+  "re": "\\(.??\\S-*\\)??",
+  "s": "_(a",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(?:..\\{,2\\}k+\\'\\)\\'\\_>\\(\\_>σ\\)*",
+  "s": "aa͸Я",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:ba*?[^]\n]\\)\\(A .?\\*\\)µ\\{2\\}\\1",
+  "s": "́a-\nカ)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(ka\\|_+?a[[:space:]]\\)[[:word:]][[:punct:]]\\{,1\\}",
+  "s": "²",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:b*\\(?:[]a]A\\)[z-a]\\)\\C^.",
+  "s": "(",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.*?\\)",
+  "s": "b()K\na",
+  "fold": false,
+  "emacs": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "[[:blank:]]*?(é(",
+  "s": "_ab(µé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(Σ*\\w\\)+?b",
+  "s": "(-ﬁ α",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:Σ(+?a\\)(?\\(\\(a\\(σ??[[:alpha:]_]a*?\\_>\\)\\(aa+b??.\\)*?[ab]\\)[α-ω]\\)*?",
+  "s": "bk-AAǅ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "µ*\\((.a\\)a\\.\\|.\\(.?[]a]µ\\{,2\\}\\)",
+  "s": "A a͸",
+  "fold": false,
+  "emacs": [
+   0,
+   3,
+   null,
+   null,
+   1,
+   3
+  ]
+ },
+ {
+  "re": "^\\*\\{2,\\} ??.?\\b",
+  "s": "abμ½ak",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[ab]*.??",
+  "s": "",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^µµ?",
+  "s": "k(½)K_Aﬁ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\(a\\)*Σ\\)_\\|_*µ*\\)[]a]+?",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s.*σ*a*\\|[[:graph:]]",
+  "s": "_bカ_)a)",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   7,
+   7
+  ]
+ },
+ {
+  "re": ".\\(?:a\\_<\\)[[:word:]]*\\B",
+  "s": "(",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\*\\([ab]\\(.é\\<\\)A\\{2,3\\}\\)a*a\\{,2\\}\\)\\(a\\s(\\(a*\\(\\1\\)+?\\)k+\\|a\\)??\\|\\(a\\(a*a\\)a\\Cl??\\)A",
+  "s": "ЯK€)αa ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b*",
+  "s": "béªカb(_a",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   8,
+   8
+  ]
+ },
+ {
+  "re": "a*\\(a+?a*?.*?\\B\\)",
+  "s": "σﬁ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(σ[[:upper:]]A+?µ*\\|_+\\)a+?",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(??\\b",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\_<",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "σ\\'",
+  "s": "b€Яǅ )\n",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A*[z-a]σa?",
+  "s": "σAb",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_>σ\\{,2\\}\\(.\\cg+?\\)*\\1",
+  "s": "\n\n-bb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\b\\ck\\(a\\)\\{1,\\}[^a]\\|.a\\B",
+  "s": "",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".+? _*σ*",
+  "s": "\nか)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_+?\\(a\\)",
+  "s": "a\n)½b(A",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "kµ*a",
+  "s": ")Яé  )Я",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\*\\|[ab]+?\\(\\S-\\(ak(??[ab]\\)σ*\\)",
+  "s": "((_αb_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".*a\\(?:µb?\\)?",
+  "s": "αA(μ\n__a",
+  "fold": false,
+  "emacs": [
+   5,
+   8
+  ]
+ },
+ {
+  "re": "\\>\\**\\(\\_<[α-ω]\\'\\)??",
+  "s": " _μa",
+  "fold": false,
+  "emacs": [
+   3,
+   3
+  ]
+ },
+ {
+  "re": "b\\(µ+\\)a\\{,3\\}",
+  "s": "K",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(\\<b\\(.\\)\\)\\B.+?\\.*\\|a\\(?:a\\{0\\}.b\\.\\)a\\{1,\\}\\)*.\\{2,\\}",
+  "s": " ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\|Aa\\{0\\}\\(?:a*ab??\\(.??\\)\\)\\{0\\}$",
+  "s": "é Σa_",
+  "fold": false,
+  "emacs": [
+   3,
+   4
+  ]
+ },
+ {
+  "re": "\\.\\C^$",
+  "s": "A-µ_ﬁb\n)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\<..*?\\(\\.??\\(?:a\\{2,4\\}aΣ\\)\\{1,\\}\\cg\\{,3\\}[z-a]\\)\\)?σ\\(\\(a\\)+A\\)+?$",
+  "s": "²_kσ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^[[:print:]]",
+  "s": "カba-b",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\c.+",
+  "s": "\n((é(ǅ(k",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   7,
+   8
+  ]
+ },
+ {
+  "re": "\\_>\\(?:\\( *.\\{0,\\}\\)\\1+?\\(..\\_>\\`\\)\\)\\{,1\\}",
+  "s": "͸)ß\n",
+  "fold": false,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "\\Bb\\([[:upper:]]\\.\\{0,\\}\\(\\s((\\b\\)?σ\\{2,\\}\\|\\_<\\cak \\{0,0\\}\\)\\(.*?.\\)*?\\|\\((\\`\\)\\_<",
+  "s": "a한bか\n½",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\*\\{2\\}\\_>a\\)+?.[[:print:]]",
+  "s": "\n(½a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?:\\Bé\\)*\\(a\\cl\\w\\)(?\\1\\)b.\\(?:\\(?:é*?a*\\'\\B\\)??\\)*$",
+  "s": "K ",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "a+σ*",
+  "s": "ǅA\nkA",
+  "fold": true,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": ".",
+  "s": ")-(ǅbé",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "^aa.",
+  "s": "-Σ_)ßa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\**\\(\\([[:alnum:]]\\{2,2\\}\\)\\{0,1\\}\\_<\\(\\(\\'_(*?\\)?\\)\\|\\(a\\)??(\\S-\\)+?_?\\(?:\\**\\)",
+  "s": "σﬁ_a",
+  "fold": false,
+  "emacs": [
+   0,
+   0,
+   0,
+   0,
+   null,
+   null,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\'\\s_*\\(\\(\\(\\_>_aa\\).\\)*\\(σ\\(?: \\{,1\\}\\)+?\\)\\1+?\\|\\1\\)?Σ\\{0,\\}",
+  "s": "b_-kaA½",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": ". ",
+  "s": "b é)",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "\\cj+",
+  "s": "bb€",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "\\ch\\(?:aa*?\\(\\( ( .\\)a?\\)\\1\\)*?\\(A\\cg+?_\\)\\(.+?\\(?:.\\{0,2\\}\\)[[:alpha:]]\\{0,\\}σ\\)$",
+  "s": "Ab漢Σa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^a??",
+  "s": "éK",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(?:\\(k\\((\\)\\)\\|[[:graph:]]?\\)*a[[:space:]]\\C^?$",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a.\\.",
+  "s": "é́(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\cl+\\cj\\)??",
+  "s": "b ﬁa-)",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\.?? *\\(\\_>(a\\*\\{,3\\}\\)\\|µσ??\\1?\\B",
+  "s": "A()a(Ké",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(_\\{,2\\}\\.*\\)+?\\>\\)\\(?:\\(\\([[:alnum:]]+?\\)\\)\\'\\)Σ\\(µ*\\)\\|\\S-*",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": ".\\(?:\\(Σ\\ck[[:alnum:]]\\)*\\**?ab\\)\\*\\|[ab]\\*??",
+  "s": "_ ab͸aé",
+  "fold": true,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "\\(\\(?:é+?\\)\\{2\\}A?\\(\\ch\\)??\\(..\\{,2\\}(??\\)\\|\\.\\(?:\\S-\\)*?[^[:alpha:]]\\1+?\\)??\\|\\2+?\\2$",
+  "s": "ﬁa αbß_a",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "µ\\{1,3\\}",
+  "s": ")ª(bΣ(éb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:alnum:]]+?.\\B",
+  "s": "é b-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a??\\s(\\|a",
+  "s": "カb ",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "k\\_<$",
+  "s": "-ǅbΣAké",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "([[:graph:]]??b\\_>",
+  "s": "\nμA½\n한)(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "µ\\`",
+  "s": "カ-A-aЯ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^k*a+µ\\{2\\}",
+  "s": " ͸aΣ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^σ?",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": " \\cL+?",
+  "s": "µ€aΣ-((b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'aa??\\cL",
+  "s": "͸ßσb)b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "k[[:alpha:]_]\\{0,0\\}a",
+  "s": "\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a??\\(é([σΣ]k\\)\\(\\(a\\{,3\\}(\\s-??\\)\\.\\)$",
+  "s": "かa",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([[:punct:]]\\(?:\\.?\\(\\Ba\\)\\)\\)a\\{2,\\}",
+  "s": ")ª͸",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*é*\\(\\(\\(?:σ\\)\\{,1\\}.\\)\\)",
+  "s": "か ½",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".[[:word:]]+b$",
+  "s": " ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^a",
+  "s": "",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^a\\(é?\\)*\\*??",
+  "s": "-é한b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a\\{0,1\\}.\\(µ*[z-a]\\)*\\)\\_<k+\\|.\\1σ\\(?:_\\{0,\\}\\)\\{2,\\}",
+  "s": "_)",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".? +a+?",
+  "s": "ba) é(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`\\(.a[[:punct:]]\\{0,1\\}\\)",
+  "s": "²Aカ(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^_*\\|(*?.k+",
+  "s": "α())_a",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\(A\\(?:a\\{2,\\}µ(\\)+(\\(Σ*?\\)\\)\\sw\\{,1\\}\\|\\1\\{2,\\}A\\)\\{1\\}k?A+µ\\|\\.*\\2\\|\\1*?",
+  "s": "a",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "[α-ω]\\<\\(\\*\\(\\(?:a\\)\\)\\)_",
+  "s": "カ (",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:graph:]]*µ+\\ck*\\|\\(?:A\\)\\(\\'é\\)[a-]\\*??",
+  "s": "\nß-_\n_α",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\{2,4\\} \\(\\(\\*\\{,2\\}_*[[:print:]]é\\)\\.*k *\\)",
+  "s": "b_μ\nα(ké",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(µ\\b\\)\\cg",
+  "s": "A)€",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.a\\W",
+  "s": "€ßb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "Σ\\{1,\\}_\\(?:\\b\\(a[[:blank:]]\\)+(\\(µ\\)\\)\\B",
+  "s": "µς μé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\cL\\'.σ",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a*?",
+  "s": "͸カ ",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\C^*",
+  "s": "A-µ",
+  "fold": false,
+  "emacs": [
+   0,
+   3
+  ]
+ },
+ {
+  "re": "b[^[:alpha:]]é",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(é+?A([a-b]\\|b\\(a\\_<[^]\n]\\)\\{,2\\}σ\\)",
+  "s": "(́",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\(b\\)+a\\(?:.σ\\{0\\}a+?\\)*?\\)*\\)+?\\(?:\\Cla+\\.+?a\\|.\\cj\\s-+?\\).",
+  "s": "Aα",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\`ka\\).\\{1\\}ab??",
+  "s": "(_aα½ _-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^ka*\\|.*\\([[:alpha:]][[:punct:]]\\)",
+  "s": ")é€b))",
+  "fold": false,
+  "emacs": [
+   0,
+   5,
+   3,
+   5
+  ]
+ },
+ {
+  "re": "\\w",
+  "s": "½ab A ",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "\\(_k\\( \\<\\)?\\). *?",
+  "s": "σ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a*?.",
+  "s": "))aﬁb",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "a",
+  "s": "\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^(",
+  "s": "é_",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\'\\(\\c|*\\(\\'é\\(\\`é\\{0,\\}a\\)\\{2,\\}\\)Aµ\\|.a\\)",
+  "s": "µΣb漢 漢",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:alnum:]]",
+  "s": "- AAǅ",
+  "fold": false,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": ".\\(\\Cl\\{0,1\\}.\\)",
+  "s": "Kαかﬁ",
+  "fold": false,
+  "emacs": [
+   0,
+   3,
+   1,
+   3
+  ]
+ },
+ {
+  "re": "\\(?:ba\\W+?\\|\\(_µ?\\)?\\)[a-b]??.+?_",
+  "s": "Σ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(a??\\)\\C^ \\|\\(Σ*µ*[^]\n]*\\`\\)*?\\(?:[^a]a\\{0,0\\}[a-]\\)a\\)+?\\_<\\|\\(?:[[:alpha:]_]\\)\\'",
+  "s": "A(ﬁ ªμ)ª",
+  "fold": false,
+  "emacs": [
+   2,
+   4,
+   2,
+   2
+  ]
+ },
+ {
+  "re": "[^[:alpha:]]*\\.+?$",
+  "s": " bbα",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^é+a",
+  "s": "½-aﬁﬁЯﬁ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b+?",
+  "s": "ςA漢-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^(*\\(\\([a-]\\cl+_b\\)\\)[σΣ](??$",
+  "s": "A)b\na(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " \\.a[^a]\\|a\\C^",
+  "s": "a",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(_b\\{2\\} (+\\).+ ",
+  "s": "a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a*\\W\\(?:\\(\\(.a*?a\\)a\\1σ*\\)\\)\\(\\1\\)?",
+  "s": "\n",
+  "fold": true,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "aa\\s-*?.\\{1,3\\}\\|.*.+Σ",
+  "s": "-かα)a ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`\\(σ\\{0,\\}\\)*a\\|\\'\\(?:k\\)*\\(b[[:alpha:]]\\)",
+  "s": ")_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^_Σa.\\|aµ+?",
+  "s": "_b½́μ(K-",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.\\)??\\1+bk*",
+  "s": ")-²)(ς_)",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`\\'",
+  "s": "한k(µ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(k\\Cl\\(\\.aΣa\\)*_?\\)* \\)",
+  "s": "kkb_\nb",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(ékk\\)aa",
+  "s": ")͸)-",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "µ",
+  "s": "a-_ǅςK",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\`Σ\\b(\\)\\(?:σ\\(?:_\\*??\\ch??\\)\\cg\\)\\([]a].A\\w\\{1,1\\}\\).",
+  "s": "a한bαカabς",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(\\(\\.\\)a\\)\\'.\\{2\\}\\cg\\).\\{2\\}\\1\\1+",
+  "s": "_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(σ\\<.*\\<\\|a+?[[:alpha:]]?\\ca*\\)µ",
+  "s": "_bb b-€K",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.a\\>\\(\\>.\\{,1\\}a.??\\)$",
+  "s": "\néµ",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^.Σ?\\|a+\\(\\s(?\\)?b*?\\Sw",
+  "s": "-)ﬁé-a",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": " +",
+  "s": "A_bb漢\n€",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\ck+?a\\{1\\}(+\\.*?",
+  "s": "\n(μ(ªaa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\(\\(\\(\\sw([^]\n]a\\)\\)_+?\\)\\'\\|A\\{1\\}\\*",
+  "s": "bª-ªAkﬁ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a.b",
+  "s": "b\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(µ\\)*?$",
+  "s": "a_Ḱa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(?:[z-a]\\)?[[:upper:]]\\{0,1\\} +?",
+  "s": "ςAA²μ_α-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".*(*a??",
+  "s": "μ",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "^\\([[:blank:]]*[[:print:]]\\{0\\} +?\\)\\1\\.",
+  "s": "Aka",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([^a]\\{2,4\\}\\)\\{0,\\}Σ+?a+$",
+  "s": "bЯ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^a+?\\|\\(µ?\\)$",
+  "s": "éabかé)-a",
+  "fold": true,
+  "emacs": [
+   8,
+   8,
+   8,
+   8
+  ]
+ },
+ {
+  "re": "a\\{,1\\}",
+  "s": "k_",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   2,
+   2
+  ]
+ },
+ {
+  "re": "\\([[:alpha:]_]\\*\\)*\\(\\(\\(\\1\\*[a-]_\\)\\)\\{2\\}_\\)",
+  "s": "-\n-á\nbb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A*\\'",
+  "s": "bΣ-Ab_",
+  "fold": true,
+  "emacs": [
+   6,
+   6
+  ]
+ },
+ {
+  "re": "a\\<\\(\\>\\(.\\)*\\)$",
+  "s": "σﬁb(K漢σ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "Σ$",
+  "s": " _\n€b_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a+?.\\(a\\)\\(\\s-(\\)",
+  "s": "ªbaαb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([[:graph:]]*(* \\{1\\}\\)_\\{1,2\\}\\(.a\\|a??a\\cj\\'\\)*?[α-ω]",
+  "s": "\n\n\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "Σ\\(\\b\\)+",
+  "s": "_a-aμb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\ck*",
+  "s": "_é͸Abǅ",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "[a-b]??\\(\\cL\\|\\(.\\{2\\}k\\.\\{,2\\}\\**\\)\\*.\\)??\\2\\S-??",
+  "s": "ßb",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a",
+  "s": "b€",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\_>é?\\_>\\)..*é\\|.",
+  "s": "ﬁか-ß\ń -",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   7,
+   8
+  ]
+ },
+ {
+  "re": "A\\(\\cj+\\)",
+  "s": "AaЯA",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:a\\<\\([^[:alpha:]]\\s.\\)\\{,1\\}.+\\)aa*.",
+  "s": "漢한",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^A*?",
+  "s": " bé-",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\<A[a-]\\s(+",
+  "s": ")",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "σ\\(?:\\([[:alpha:]]*Σa??A\\)*.*?\\)\\{1,2\\}\\|\\(?:A*?\\)\\{2\\}\\.?\\1*.?$",
+  "s": "(²-カ",
+  "fold": true,
+  "emacs": [
+   3,
+   4
+  ]
+ },
+ {
+  "re": "a",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " \\W\\{,3\\}",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\_>\\<\\ca*?\\(\\(?:aσ*?[[:space:]]??a+\\)a\\)\\{1\\}\\)\\(µ\\)?\\cC+\\|Σ\\1\\{2,2\\}[[:space:]]Σ\\|[[:lower:]]\\{,3\\}",
+  "s": " -baA_-A",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "σ",
+  "s": "-éµ)() )",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_+\\(?:Σk\\{0,\\}[[:blank:]]*?\\|k\\{1\\}[[:print:]]\\{0,0\\}\\)+",
+  "s": "ª͸b)()",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\. *\\| +\\(\\cl.\\>\\)?_",
+  "s": "_͸Σ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s_a*\\(\\(\\ca[[:print:]]*\\)a*?A\\ca*\\)*Σ\\{,3\\}",
+  "s": "éЯﬁkbba",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a*\\|[[:alnum:]].+.",
+  "s": "Σ",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "[[:alnum:]]\\(σ\\**?.*?\\|[[:print:]]k\\{1\\}\\cL\\([[:alnum:]]\\s-?σ*a\\)*\\)\\sw\\|\\.$",
+  "s": "A baé한",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:lower:]]µA(",
+  "s": "ﬁééα͸\n-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "σ??k\\(?:\\(\\*+\\)\\.\\|\\1A+a\\)",
+  "s": "カ_ か_(a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\ch*\\(.?(\\)",
+  "s": "_(-ba",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   1,
+   2,
+   1,
+   2
+  ]
+ },
+ {
+  "re": "\\*??A*$",
+  "s": "ßa",
+  "fold": false,
+  "emacs": [
+   2,
+   2
+  ]
+ },
+ {
+  "re": "((",
+  "s": "ß€b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(?:a+\\(k\\(aa+?\\)*?\\1*\\1\\{0\\}\\)\\|(\\)+",
+  "s": "_",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "^k+?A??.",
+  "s": "ǅ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\**\\|é??σ\\{2\\}",
+  "s": "ébα͸K)ab",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\>",
+  "s": "ǅaA_",
+  "fold": false,
+  "emacs": [
+   3,
+   3
+  ]
+ },
+ {
+  "re": "\\cjaA\\b",
+  "s": "aéﬁ(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\{1\\}\\**?$",
+  "s": "ébaµab\nα",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "aé",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\w[ab]\\c.\\|\\(\\(Σ?A\\{1,1\\}é+\\)\\)\\(?:.\\)[[:alpha:]_]\\{,3\\}\\b",
+  "s": "μaAµ_",
+  "fold": false,
+  "emacs": [
+   0,
+   3
+  ]
+ },
+ {
+  "re": "^\\(.\\)??[^]\n]",
+  "s": " ǅ)",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "^...*",
+  "s": "μ\naé_",
+  "fold": false,
+  "emacs": [
+   2,
+   5
+  ]
+ },
+ {
+  "re": "[[:print:]]",
+  "s": " )",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "\\(.Σ.\\|\\_<\\(k\\)Σ\\)?\\*??\\Cl*\\(?:[a-b]*?\\)\\|AσΣ",
+  "s": "b-a ́σ",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "k",
+  "s": "A漢͸ς́ bb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a*\\(?:\\>\\)*\\).$",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_\\|\\(?:[[:alpha:]]\\{2\\}\\(a*a*.\\)ab\\)+?a*\\(.\\( \\)\\)k*?",
+  "s": "か",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a",
+  "s": "\nK漢(漢éς",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\*\\{,2\\}\\c|\\|Σ\\`a",
+  "s": "Kb-ak A ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "Aa\\(_\\{1,\\}\\)\\|k*.$",
+  "s": "é) μaЯ",
+  "fold": false,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": "\\(?:\\(?:[[:space:]]A\\{0,\\}\\)\\{0\\}\\c.??\\>\\sw\\|aµ\\`\\([^[:alpha:]]\\)\\)\\cC\\(?:\\(σ\\*(+a\\)?\\(?:\\`\\(?: ?\\)??[[:blank:]]\\{,1\\}\\(aµ.\\)\\)\\)+?a",
+  "s": "K",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "µ.a*?",
+  "s": "aσba\néA",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": " \\(.+?\\b\\b\\)*?\\b_+?$",
+  "s": "a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^.+\\(\\cj\\{0\\}a??_\\)[z-a]k??",
+  "s": "(- ßé  ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b[[:alpha:]_]\\(a\\{2\\}.\\)",
+  "s": "\n b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\cl*?$",
+  "s": "€é",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "\\B",
+  "s": " ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b",
+  "s": "ébkk-b \n",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": "aµ\\(?:\\cab\\`(\\)*\\|\\(a\\S-\\)+?k+",
+  "s": "μßé)-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^.*?\\(\\(?:é\\(σ+\\cj*a\\)\\)\\{,2\\} \\1??\\|\\c|+[α-ω]\\(\\1\\_<\\)?\\)\\ck*.",
+  "s": "ééA(\néa",
+  "fold": true,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "^\\(.\\)*",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "_[[:blank:]][z-a]",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\(µ*.+\\)a\\s_",
+  "s": "K)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\ck\\{1\\}\\ch([a-]*?",
+  "s": " _€Aß_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": " \\(a\\)a\\(.\\|\\1[σΣ]\\)",
+  "s": "bé漢",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".[^[:alpha:]].[[:punct:]]??",
+  "s": "é_a(_",
+  "fold": false,
+  "emacs": [
+   0,
+   3
+  ]
+ },
+ {
+  "re": "\\S-.\\(\\(?:\\*? A\\)éa??a*\\)",
+  "s": "ªカﬁb--a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:punct:]]\\ca*?",
+  "s": "AéAb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\cl\\{1,2\\}b*?\\(?: \\{0,2\\}σ\\)$",
+  "s": "(_ǅA²é-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.??\\([[:graph:]]+\\*(\\)\\{1\\}A",
+  "s": "Ka",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\b",
+  "s": "éaAaa€",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   6,
+   6
+  ]
+ },
+ {
+  "re": "\\cgµ*?\\S-\\`\\|\\s.a\\{,2\\}\\s_??σ\\{2,\\}$",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "Σ",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:word:]]\\{,2\\}\\(?:a\\((+ba*\\).+?\\Sw\\).*$",
+  "s": ")K ǅ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'$",
+  "s": "a\n漢 ",
+  "fold": false,
+  "emacs": [
+   4,
+   4
+  ]
+ },
+ {
+  "re": ".+\\ch\\{2,\\}\\|a*$",
+  "s": ")\n한",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   3
+  ]
+ },
+ {
+  "re": "é\\(\\s.*\\)",
+  "s": "béaa한α",
+  "fold": false,
+  "emacs": [
+   1,
+   2,
+   2,
+   2
+  ]
+ },
+ {
+  "re": "a",
+  "s": "a\n éb",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(Σa\\)+σb",
+  "s": "Aμ\nA ",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a??a\\)*a",
+  "s": "é½",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "..\\*",
+  "s": "\n)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'a\\cL\\|\\(b+\\)\\|.\\{0,\\}[[:upper:]]+?aA*$",
+  "s": "σǅ한é_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\b\\(σ\\(\\( \\)A \\{1,2\\}\\)+?b\\c|\\)a+A",
+  "s": ")",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(?:\\(Σ[σΣ]_?\\)*\\ch*?a\\>\\)$",
+  "s": "))́",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_>",
+  "s": "́",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "a\\(\\(.\\(éΣaa*\\)+\\)*?\\(.\\)a\\b\\)??$",
+  "s": "aßaΣaかéb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^a??Σ[[:blank:]]\\{,2\\}.",
+  "s": " ǅ(a",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a*\\(?:σ\\{,2\\}ék?\\)*?\\)\\(.\\)\\|\\1\\{2\\}\\ck\\_>",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(?:[[:lower:]].[[:graph:]]?\\)\\{1\\}\\([[:alpha:]]\\)$",
+  "s": "éaéK\nbΣ-",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   4,
+   3,
+   4
+  ]
+ },
+ {
+  "re": "\\.\\(a*.\\)*\\1σ",
+  "s": "ßbμ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:alpha:]]*\\*\\{1,\\}",
+  "s": "baab))",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(b+\\(?:Σ\\(b+.\\)[[:alpha:]_]k\\)\\W*A+\\)a\\(?:aa\\(é *?\\)\\)??\\|Aµ\\((+.+?\\`\\)\\<",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\B\\(\\(\\(A\\{1\\}a\\.\\)\\(é*A.a\\)\\)\\1\\(?:a*_*\\)\\.\\)\\{0\\}",
+  "s": "²Áb((b",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "a[[:blank:]]\\{0\\}\\S-?$",
+  "s": "béáカ)͸k",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.??\\<\\`\\)+\\`\\<$",
+  "s": "α(bba",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\W??",
+  "s": "a-ﬁK σ한",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "[a-]σ$",
+  "s": "-漢αA",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\*\\{0\\}\\.*\\)",
+  "s": "",
+  "fold": true,
+  "emacs": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\_>aσ[[:upper:]]",
+  "s": "ﬁ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " ",
+  "s": "éb__",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\c|a+σb",
+  "s": "_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?:_σ+?a??\\.\\)*\\)\\1.*[ab]\\|\\cC?\\s_+\\1",
+  "s": "(b-a)\n__",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   4,
+   3,
+   3
+  ]
+ },
+ {
+  "re": "\\<\\(a\\)\\{1,3\\}a",
+  "s": "_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^[[:alpha:]]*?\\(?:\\w\\{,2\\}\\)\\((+σ?\\)",
+  "s": " ab)",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^[^a]+",
+  "s": "-aaa-한",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\>",
+  "s": " ͸-か",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   4,
+   4
+  ]
+ },
+ {
+  "re": "\\(?:_*?a*?µ\\{1\\}\\)\\(\\(µ\\(a\\)??\\_<\\)[]a]*?(*?\\|[[:print:]]é\\{1,\\}\\)+?\\*\\.",
+  "s": " \né€-µ",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:A\\(baé\\)\\)?σ*",
+  "s": "aΣba\n",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   5,
+   5
+  ]
+ },
+ {
+  "re": "\\.\\(.\\(µ\\(?:a\\)\\)\\)\\.??[α-ω]",
+  "s": "Aba)bbk漢",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".?\\.?k*\\ch*",
+  "s": "한½éα한漢",
+  "fold": true,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "[^[:alpha:]][α-ω]\\'",
+  "s": "漢)-ab ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_\\_>\\(\\(\\.\\)??\\)*",
+  "s": "k½ςbΣ\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\(a\\)?[[:alpha:]_]+?a??$",
+  "s": "Σ€ªaa__a",
+  "fold": false,
+  "emacs": [
+   1,
+   8
+  ]
+ },
+ {
+  "re": "Σ\\{0\\}.\\{2,\\}\\(\\(\\((+Σ.+a+?\\)\\)?\\s.*(\\)\\_>\\|[[:lower:]]$",
+  "s": "b(aébé",
+  "fold": false,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": ".\\cl\\(\\(\\ck*(\\)\\(?:[[:space:]]\\( *a??\\*\\{0,1\\}\\)\\{,1\\}\\)[[:alpha:]]Σ\\)?Σ?",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "Σ",
+  "s": " ",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^ *\\(Ak\\)[[:alpha:]_]\\(?:a\\(σ\\)\\{0,\\}\\(b*\\)\\(?:[[:alpha:]_]\\(.*σA\\)µ\\)\\)$",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a",
+  "s": "͸",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\|[[:space:]]\\sw??\\(\\*[[:alpha:]]\\<é\\{0\\}\\)",
+  "s": "a",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "k.µ\\(.\\{1\\}\\(_\\{,2\\}.\\(?:A\\{2\\}aa*?_+?\\)\\(aa?\\)+?\\)\\{0,\\}\\*?\\( σ* \\{,3\\}\\)?\\)+",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'",
+  "s": "½)-カaß",
+  "fold": false,
+  "emacs": [
+   6,
+   6
+  ]
+ },
+ {
+  "re": "\\*(\\c|",
+  "s": "a한",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "Σé$",
+  "s": "áAé\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:a\\{2,\\}\\<\\|_*?\\)",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "µ+[σΣ]?",
+  "s": "aé_a-\nか",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\ca?",
+  "s": "́a_",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "éé?",
+  "s": "ﬁk",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[a-b]\\{0,1\\}Σ\\{,1\\}",
+  "s": "kςA-漢€\n",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "[[:space:]]??\\C^\\(.+?\\)a\\{,1\\}",
+  "s": "Abé ﬁ",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   5,
+   4,
+   5
+  ]
+ },
+ {
+  "re": "(",
+  "s": "é-ab((µ",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": "^a+?$",
+  "s": "k\n²한漢",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\ck*",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\B",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\ch\\S-",
+  "s": "_カ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(a+?\\C^\\.\\)\\{,1\\}[[:alpha:]_]+\\_>\\)",
+  "s": "b",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(éak*\\)\\{0,\\}a*",
+  "s": ")",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\ck\\{2,3\\}",
+  "s": "\né)͸-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "µ?aA+?",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\<.*A.*?",
+  "s": "é",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "σ*[]a]??",
+  "s": "áa",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "aa??_*\\(?:\\(\\(σ[[:graph:]]Σa??\\) +.\\)*?\\*\\)",
+  "s": "aﬁAªς_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(?:.*?k*\\cg*\\)+\\(\\*σa\\)*_\\|k?b?Σ$",
+  "s": "_)ß",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "a*?\\(?:\\ch.σ\\)+\\.",
+  "s": "a\nA½",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[^a]",
+  "s": "(a漢",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "^\\sw\\(\\.a*µ\\|k\\(_\\)*.\\)?",
+  "s": "-A(\nA½カ€",
+  "fold": false,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "a*$",
+  "s": "k\nﬁ-́bb",
+  "fold": true,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "a\\{0,2\\}aa$",
+  "s": "a_か(K한 ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\>é\\|.*?\\(\\`\\)\\{1,\\}\\|a\\(\\1\\)??",
+  "s": "a)ǅς-_é",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "re": ".[^[:alpha:]]*\\cj",
+  "s": "é(b\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(A??σ\\{1\\}\\_<\\w\\{0\\}\\)\\*+?",
+  "s": "²Σb\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\*_*\\_<_+\\|é\\)",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\cl*\\|é.*.",
+  "s": "(μ\n_",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "^\\b",
+  "s": "(漢Яé",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\(?:\\(?:.??a*[z-a]\\)?\\)\\)*a+?é\\|\\cC",
+  "s": "_ªǅª",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "µ_+Σ*$",
+  "s": "kªς²a \n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:.+b\\(k+?[^a]\\)a\\{0,2\\}\\|(\\s_\\(µ?\\)\\)*?a*?µ\\.",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^k*?\\([]a]\\{,1\\}\\_>a*\\)\\1a",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "..*",
+  "s": "Ka漢bb́é",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   6,
+   7
+  ]
+ },
+ {
+  "re": "\\(.??\\w\\{2\\}\\(b\\)\\)??.??\\2*?\\`$",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^\\(\\(b*k.\\)\\(aµ\\)\\.??\\(?:.k+?(?A+?\\)\\)",
+  "s": "カªß_é-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\_>\\<\\(?:[[:lower:]]\\(?:a\\B\\)?\\*??a*\\)*[ab]\\)*é?$",
+  "s": "",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\cl",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "éΣ",
+  "s": "a",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a",
+  "s": "-ªßaA",
+  "fold": false,
+  "emacs": [
+   3,
+   4
+  ]
+ },
+ {
+  "re": ".",
+  "s": "éba",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "(*?.",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\'\\`\\(a[[:blank:]]\\{0,2\\}\\)",
+  "s": "AAéς",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:[σΣ]*?.+µ[^[:alpha:]]\\)\\{,2\\}[[:alpha:]_]*[[:lower:]]",
+  "s": ")-b-aς́한",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": "\\(\\(?:a?.*\\)_\\(?:b\\(a?aa??\\)\\(a_é\\)A\\)?é*\\)+?",
+  "s": "μ)σ́€((",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\'a\\)+\\(\\(\\1+[[:alpha:]_]??\\w\\)σé\\)\\|\\(.\\*??a.\\)\\<\\)*\\(?:..\\)[σΣ]\\'$",
+  "s": "ςσ-) )-",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "aσ*?\\.?b?\\|\\(\\(_\\)\\)\\{2,\\}aé\\{,1\\}",
+  "s": "́",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "éa*?\\(.\\)_\\|a? \\1?",
+  "s": "))(ab)Á",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\.\\{1,\\}Σ[σΣ]\\)*A\\1a\\|\\1\\ch\\{0\\}\\([[:alnum:]]?.??é\\)",
+  "s": "bカé€",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([[:graph:]]??.a\\'\\|[a-b]??.\\(\\c.*a\\{2,\\}σ\\)\\)$",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\(a(\\{0\\}\\)\\|.+?a\\([[:lower:]]\\.a? *\\)",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\([[:graph:]]*\\)$",
+  "s": "ﬁb漢A-",
+  "fold": true,
+  "emacs": [
+   0,
+   5,
+   0,
+   5
+  ]
+ },
+ {
+  "re": "a?k*$",
+  "s": "b()ß",
+  "fold": true,
+  "emacs": [
+   4,
+   4
+  ]
+ },
+ {
+  "re": "^\\(\\(?:.a\\(?:aaa\\)\\)+a*.*?\\)\\1\\{1\\}A??",
+  "s": ")_aα",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\ca\\)\\(?:\\1.\\|.a\\{1,\\}µ\\(a_.*\\)\\)\\(é*A\\{1\\}é*k+\\)\\|\\(\\(?: +?\\<\\s.\\)µ\\)\\{0\\}a\\{,1\\}\\|\\`[a-]",
+  "s": "€か)__A ",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\`.\\{0,0\\}\\)\\cg+",
+  "s": "éµ σ\n_a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\(\\>_a\\{0,\\}\\)",
+  "s": "a)\nµª_Яa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^[[:alpha:]]\\|\\(A\\clµ\\)*\\(?:bk\\cg\\)??A",
+  "s": "b- ς-σba",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "σ\\{2,2\\}a*\\|b\\_>\\(\\(\\s(\\).\\{2,4\\}\\)",
+  "s": "bbAa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'\\>",
+  "s": "́²)a½--ß",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   8,
+   8
+  ]
+ },
+ {
+  "re": "^(aΣ*",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\b$",
+  "s": "(aaµσ-",
+  "fold": false,
+  "emacs": [
+   6,
+   6
+  ]
+ },
+ {
+  "re": "ab\\(\\(\\_<\\)a\\)\\(k\\1\\{1,1\\}\\)",
+  "s": "ªª́)か)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[^a]\\`$",
+  "s": "a ½",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:.*\\sw+\\)",
+  "s": ")b",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "a.??b\\{1\\}",
+  "s": ")\naAaAb",
+  "fold": false,
+  "emacs": [
+   4,
+   7
+  ]
+ },
+ {
+  "re": "\\B\\_<",
+  "s": "\n ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:alpha:]_]",
+  "s": "b-",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(?:é[[:alnum:]]\\(a.\\(a\\{1,1\\}a\\{2\\}a*a\\)\\B\\)+?\\1*?\\)+?k?[[:alpha:]]+\\>",
+  "s": "(-_ \n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b\\(σ.\\(a??\\)k\\)σ\\1+\\|\\_>(A\\{,1\\}",
+  "s": "_(b\n カA",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "^\\*.*\\sw",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_>µ\\(\\(.\\<\\)\\| \\{0\\}µ\\)\\s-",
+  "s": "Aµébé-",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:a\\>a\\)*\\(b?\\(?:[a-b].\\)\\s_\\{2,\\}\\)[^]\n]?\\1+",
+  "s": "-ﬁ_한)α",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a.µ*?.$",
+  "s": "\n_ b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a*µ\\(\\_<aµ\\)\\s_",
+  "s": "_- ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b.\\(µ.aµ+?\\)*?\\1",
+  "s": "ª-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\cC\\(a.*?\\)*\\*\\{0\\}\\.\\{,2\\}\\)\\(.\\)é\\1",
+  "s": "__カ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".?\\|[[:punct:]]\\(Σ?(µ_\\)\\{,3\\}",
+  "s": "aba\nA͸b ",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": ".+\\(?:µ\\(?:\\(aA\\)\\)\\|.*\\(k*?aé.\\)\\(?:\\*\\cka+?\\ca\\)+?[[:word:]]\\)",
+  "s": "ba\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(b\\{0,\\}\\|a\\(?:a\\(aa*?.\\)\\)",
+  "s": "Σαb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a+?a\\C^($",
+  "s": " é- ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "k[[:graph:]]\\>.",
+  "s": "a͸€aé\n½",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\ClA*\\)\\{,1\\}.\\(Σ\\b\\1?\\)k*",
+  "s": "--aªé_(²",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".+\\|é.+",
+  "s": "a",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\_<",
+  "s": "bakbA",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "a\\.\\(\\sw\\(A\\{2,4\\}\\)\\{0,2\\}\\|a\\)",
+  "s": "a한b éς́\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".+\\W",
+  "s": "éa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:[[:upper:]]*?\\(k\\(Aa\\)??\\)??a\\(\\s( \\)\\)",
+  "s": "ﬁabα\n))",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:blank:]]\\|\\.\\ca",
+  "s": ")",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^.*\\S-?a\\{,2\\}",
+  "s": "͸ﬁaカkΣAa",
+  "fold": false,
+  "emacs": [
+   0,
+   8
+  ]
+ },
+ {
+  "re": "_+?\\*\\{2,\\}µ",
+  "s": "_ªaa(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\C^",
+  "s": "-(é한",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "a\\|\\(\\_>a\\{1,\\}k??\\(.\\cj\\)??\\)µ[σΣ]a",
+  "s": "-)(-A",
+  "fold": true,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "\\(_\\)+",
+  "s": "é한",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\' [[:upper:]]\\(.*.[[:print:]]σ\\)",
+  "s": "_)カa\n한 ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a\\>µ+?\\|\\((+?\\)?\\)b\\2\\|[[:word:]]\\{0,2\\}\\|\\cj*\\_<\\(?:_\\{1,1\\}\\_<\\>σ\\)a",
+  "s": "͸bAbb",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": " \\(µ.\\)*\\W",
+  "s": "́-)カA\nb)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " *\\(\\*A\\ch??\\)\\{2,\\}\\'",
+  "s": " αaéμ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "µ\\ca+?\\(?:\\(.*\\(a\\cL\\<a\\)\\)??\\`\\(\\(aA?.\\)\\b\\)\\{,3\\}µ*\\)\\ch",
+  "s": "²K\n(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?:\\_>\\(a\\)+\\)\\)\\B",
+  "s": "a AЯ é",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.\\([[:graph:]][[:space:]]\\)+?[[:punct:]]a+?\\)\\**$",
+  "s": "-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(+?éa\\.*",
+  "s": "bb\n)",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": " _",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a $",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\{0\\}",
+  "s": "a_́)ς漢",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   6,
+   6
+  ]
+ },
+ {
+  "re": "\\_<\\cj\\{0,\\}",
+  "s": ") μ)Ab(A",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   7,
+   7
+  ]
+ },
+ {
+  "re": "[[:space:]]\\(a\\)\\{1\\}",
+  "s": "́ébカ_",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(é\\)*\\|\\(b\\)??Ak\\)\\3",
+  "s": "\nЯb漢b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.+?\\(?:\\`.\\(\\([[:blank:]]a_*[^]\n]\\)k\\(?:[[:alpha:]]\\{1,1\\}\\swab\\)\\)*?Σ\\)\\cC\\(?:\\(a\\(aaa*?\\)a\\1\\)[[:upper:]]\\2a\\)+",
+  "s": "(aé a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(Σ?k\\(A+a+ [[:lower:]]\\)+\\)\\S-\\(.σ?\\)\\.\\)+?[[:word:]]*\\(\\(\\cC\\)??\\([α-ω]_\\)\\{1,\\}\\)A",
+  "s": "(a-a-b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.σa\\cL",
+  "s": "(baé)漢\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(µ\\(Σ.\\)\\)?",
+  "s": "( \n _",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "A\\(?:b\\.é??\\)",
+  "s": "\na( ba",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\((\\_>µ\\{,3\\}\\)*?a",
+  "s": "ª ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\>.\\)\\sw_?",
+  "s": "_ª_b  AA",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a[[:alnum:]]\\`",
+  "s": " -Ab)_)σ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_",
+  "s": ")́μか͸",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": " ??\\|\\(?:\\(?:[[:alnum:]]*a+\\)*?\\(a*a*Σ\\)_[σΣ]\\)\\{2,\\}(\\(?:a\\)\\b",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^\\(b\\*µ*\\)\\B",
+  "s": "½_-A\nk-か",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:.\\)\\(a?\\(\\(aé\\)\\>\\)+?\\)+?\\(.+?\\*\\1*\\B\\)+?\\|\\`\\1",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a.",
+  "s": "-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\cj",
+  "s": "_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:print:]]\\swa",
+  "s": "éa-ba한(",
+  "fold": false,
+  "emacs": [
+   2,
+   5
+  ]
+ },
+ {
+  "re": "Σ\\c|\\s_*a\\|b\\(?:\\(?: \\.\\)*?µ\\) *\\b",
+  "s": "bb_)ab",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\( +\\(\\(\\cga\\)+?\\)\\)??a*[α-ω]?$",
+  "s": " éa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".+\\'a[[:alnum:]]",
+  "s": "é_-か ǅA²",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(_é\\)?\\1??_",
+  "s": "b漢",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a+?.\\*é",
+  "s": "ßﬁá",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\(A\\)\\)\\|\\>\\)\\{,3\\}\\'.",
+  "s": "A ßAカ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\ckσ\\)\\s.+\\(\\s_\\1\\s(\\<\\)??\\s_?",
+  "s": "\nǅカ_Яa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a*\\(k*?\\.*?\\([σΣ]\\)\\)*\\>a\\|b*?\\(a\\)+?\\2a*",
+  "s": "αaKA",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": ".+\\(σa\\{2,4\\}\\(σ*?σ*\\)\\(\\_<\\.\\)\\{1,2\\}\\)",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(_a??\\)\\1\\|\\(a\\Cl+?\\)",
+  "s": "aKaaaa ",
+  "fold": true,
+  "emacs": [
+   0,
+   2,
+   null,
+   null,
+   0,
+   2
+  ]
+ },
+ {
+  "re": "(\\(\\s-??\\(?:\\(\\S-+a??aΣ*?\\)??_\\)\\)\\(?:\\(?:(??[a-b]\\(_+\\1*\\)*?.\\)\\{1\\}aΣ*?[[:print:]]??\\)?",
+  "s": "aaK",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\Sw(\\([ab] \\{1\\}\\(\\*\\)\\{2\\}\\|\\>\\1\\)?",
+  "s": "_",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\(?:a*? \\)??bµ",
+  "s": "aK ß",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "Σa$",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_[[:blank:]]\\'\\(?:\\c|+?\\cCA\\|.a\\{,2\\}\\B\\)+",
+  "s": "a)カ\nΣか  ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": " ??[^[:alpha:]]\\(k+\\(.\\)\\{0\\}k\\)",
+  "s": "-σba\nǅ (",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\{0\\}$",
+  "s": "²",
+  "fold": false,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "[[:print:]].*\\ba+",
+  "s": ")漢́",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "ab[[:lower:]]Σ",
+  "s": "A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\. ?a*?",
+  "s": "bb͸\nAか\ń",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a+?",
+  "s": "bA\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "µ",
+  "s": "bЯμ\nЯµ",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": "\\>\\(a+.a\\)\\(?:\\_>\\)",
+  "s": "µ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "µσ+?",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "Σ\\C^\\(?:\\(\\s(_\\c|*\\)\\)+b",
+  "s": "_漢ﬁ(é_한",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\S-",
+  "s": "A",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(\\.\\([[:blank:]]a?\\)+?a\\) ",
+  "s": "a (béé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\*\\c|\\|\\s(*[[:punct:]]+?",
+  "s": "  _",
+  "fold": false,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "(ab?_+",
+  "s": "b (か(σ͸σ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\<$",
+  "s": "-(aς",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(Σ\\{2\\}",
+  "s": "ak",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:alpha:]]\\{0,\\}a",
+  "s": "ǅ ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\>aA*?\\Cl*?",
+  "s": "k한A(_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:word:]]Σ",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\Swa+",
+  "s": "\nﬁ_ςA",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([[:alnum:]]Σ\\*+\\)* .+\\|.a??a\\.*",
+  "s": "aAé½_α_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*(+\\'[[:alpha:]_]*",
+  "s": "()_",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\>\\s_\\{,2\\}\\)\\{2,\\}$",
+  "s": "-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "Σ[z-a]+?\\|Σ??\\([]a]\\(σ*.\\S-??\\s-\\)ba\\)[^a]\\ch",
+  "s": "é\n͸μKμb\n",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\sw",
+  "s": ")-AAAKﬁ",
+  "fold": false,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "a\\( \\)*?[^]\n]+\\*",
+  "s": "σ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\|\\(\\S- \\cl\\)\\(_??\\)*",
+  "s": "\n _½K",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "\\(aaa[^[:alpha:]]\\)*\\1*\\(?:a.\\|.*\\_>.\\)?",
+  "s": ")é-bbé",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   6,
+   6
+  ]
+ },
+ {
+  "re": "A_*\\|aΣ*?a\\(\\_<[[:upper:]]\\*k\\)$",
+  "s": "½kß_Aé½",
+  "fold": false,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "a*",
+  "s": "(é_\nbЯ",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   6,
+   6
+  ]
+ },
+ {
+  "re": "\\(?:[^a]+?_?\\)[a-]",
+  "s": "bbﬁbσカ",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\B.\\(\\(a\\{2,2\\}\\)*?\\(?:.\\{2\\}A+?\\`\\)\\)+\\1?",
+  "s": "\n bμ͸",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\>[^]\n].?\\(?:\\([α-ω]\\*\\{0\\}_[α-ω]*\\)\\(.+\\)+[[:upper:]]\\{1\\}\\)?",
+  "s": "b(ςb-",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s.\\|\\cg[ab]\\cj",
+  "s": "AAbé_a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?: *?.*\\|k\\)",
+  "s": "²(",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "\\(?:é\\B[[:alnum:]]\\)??(\\(\\>\\_>(\\)\\{1,1\\}a*",
+  "s": "b(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(k\\|\\(A\\{0,1\\}a\\{,1\\}aΣ*?\\)a+?.\\)??",
+  "s": "bbか漢́\nΣ",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\(.*\\(?:b\\{,2\\}\\)\\(a(*?\\).?\\)*\\cCσ\\)",
+  "s": "a- ǅ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\cg",
+  "s": "カa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\(b\\{,3\\}\\.\\)\\{1,3\\}",
+  "s": "éﬁς",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^Σb\\(\\(?:\\c.*?\\(\\*[a-]\\{,1\\}σ*\\)*?.?.\\{2,3\\}\\).A+\\)",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^k.\\{2,\\}\\|é*?[a-]_*\\|.A",
+  "s": "a\na b",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "aé",
+  "s": "éA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(?:A\\(?:µ.\\(a*aa\\)+\\)\\ck(\\{,3\\}\\)($",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\S-?.\\|k*?\\sw\\|Σ\\{,1\\}\\.?σ*\\([[:blank:]]aa\\)?$",
+  "s": "ςabkA",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "^A??σb+$",
+  "s": " ς한b)한(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(A\\(.\\)+?a\\)",
+  "s": "µk",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_\\(?:\\bé\\( \\)é\\)*",
+  "s": "(漢b",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:_\\(\\_<\\.\\)[^a].\\)σ",
+  "s": ")ªéb(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\Cl+?[[:word:]]",
+  "s": "-µ-_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".*",
+  "s": " bA -\n",
+  "fold": false,
+  "emacs": [
+   0,
+   5
+  ]
+ },
+ {
+  "re": ".+\\(.\\|a\\(a+?\\)*\\1\\(aa??[α-ω]\\)\\)+",
+  "s": "²한漢\na(",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\.k\\`\\(A+a\\<\\)",
+  "s": "- ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a.kσ",
+  "s": ")k )α",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:space:]]",
+  "s": " é)a-",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "^a_a",
+  "s": "€bA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\{,2\\}[[:punct:]]+Σ\\*\\|a(a",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\{,2\\}\\(Σa\\((\\{1,1\\}(*\\)+\\)._",
+  "s": ")",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a*\\(a \\)*?\\S-$",
+  "s": "__αaσ-",
+  "fold": true,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": "\\B\\'\\*",
+  "s": "한b",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\<Σk\\|A\\.",
+  "s": "K한 -aa)b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^(_+\\(\\*\\{,1\\}\\(k*\\(a\\*?\\)\\Cl\\)(\\)\\_<\\|\\3\\s.\\(\\(?:é*\\`[[:space:]]\\)\\_>.*\\)[^]\n]??",
+  "s": "한_bªς(͸",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "(a\\(µ\\|a[^a]*?é\\{,1\\}\\)*\\(\\(a\\{0,\\}[[:punct:]]??k\\1+\\)(?\\_<\\)\\|\\(\\(.\\.\\{,3\\}\\Sw\\{1\\}\\)\\Sw*\\)[[:space:]]",
+  "s": "b_",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\C^*?",
+  "s": "_Σ_bµǅ²",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "a.\\`\\cL",
+  "s": "\n ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_>a??",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(b.a\\{1,\\}.\\|aµ\\)*?",
+  "s": "σ\nªAa",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(a*(\\)aa$",
+  "s": " \n  ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\.µ\\(\\*+b??\\(\\<\\)+\\)\\|.*\\<[ab]\\(\\**?\\2*\\)\\)??.a*?$",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^µ\\(aΣ\\|\\B\\)",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_<é\\{0\\}b\\{,1\\}$",
+  "s": "aa (",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\(\\(\\c.\\cL\\(?:a+\\)\\)\\)\\>$",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a*?\\(σ*\\(\\ca??.\\{0,\\}..\\)a\\.\\)é\\)??\\(A\\(?:\\s.??\\)\\|\\(σa*?\\)_\\)\\{0\\}\\(\\(\\(\\5\\{1,2\\}[a-]\\)\\{,3\\}\\)a\\{1,2\\}\\(?:.µ*\\(σ\\{2,\\}σ*\\)+?\\)\\|a[]a][[:print:]].\\)*\\|é\\(?:µ+?._\\)\\s(+?$",
+  "s": "ßaééªa²",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   7,
+   7
+  ]
+ },
+ {
+  "re": "[ab]\\cL[ab]\\{,3\\}",
+  "s": "\nbA한ª",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   3
+  ]
+ },
+ {
+  "re": "^b*k\\(.+?\\)*µ??$",
+  "s": " _",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "σ\\(?:b\\cg\\B\\)",
+  "s": " ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^.\\([[:blank:]]\\{1,\\}\\)a*\\cj$",
+  "s": "Ab \né\n ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[^a].?k",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^.\\{2\\}.+\\(A*A+\\)b*?",
+  "s": "-",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(__\\{0\\}\\c|\\)\\Bb\\)",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*\\**?A*?\\<\\|\\(\\(\\s_a[a-b]??a*\\)\\*\\) \\*",
+  "s": " ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(bσ\\{0,1\\}\\(\\`\\ca\\{1\\}\\)\\(.a+?\\)+?\\)??aa\\)ka",
+  "s": "ba²",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*$",
+  "s": "A-) Á",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "µ$",
+  "s": "aµǅ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " .?\\|\\(a\\{,2\\}\\).",
+  "s": "bA",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   2,
+   1,
+   1
+  ]
+ },
+ {
+  "re": "^\\(.\\)*\\1\\([]a]\\W\\>[^]\n]\\)",
+  "s": "(_a_a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:_?a\\B\\ck*\\)",
+  "s": "b½bb)(a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\([]a]?\\)?b\\)[[:alpha:]]* *\\|é\\{0,1\\}",
+  "s": "(² ǅbǅﬁ",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": ".+?_*?\\([[:word:]][[:word:]]\\)é*?",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_>\\(\\s.+[σΣ][[:alpha:]]b\\)+?.?\\1+",
+  "s": "μab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\sw+?",
+  "s": "Ab_é(éa",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   6,
+   7
+  ]
+ },
+ {
+  "re": "\\b\\([[:alpha:]_]\\)",
+  "s": "한)ǅa",
+  "fold": false,
+  "emacs": [
+   0,
+   1,
+   0,
+   1
+  ]
+ },
+ {
+  "re": "a+.\\{1\\}.+?",
+  "s": "\naªa- ",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   6
+  ]
+ },
+ {
+  "re": "^b\\|\\**\\caa",
+  "s": "éa͸_Aa",
+  "fold": false,
+  "emacs": [
+   4,
+   6
+  ]
+ },
+ {
+  "re": "^a[]a]_",
+  "s": " é",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^é\\(\\(\\(σa??a?a*?\\)+?\\<\\(?:\\>\\Sw\\{0,2\\}a* \\)\\)\\(_+[α-ω]*?\\s.*?\\([[:blank:]]\\>\\)\\) \\)\\W*",
+  "s": "abカ)",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "aa\\cL\\s_\\{2\\}",
+  "s": "(b\nb a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ". kµ",
+  "s": "\n_a(α_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(µ+?\\|\\C^\\)\\1\\(..[z-a]\\{2\\}\\(?:\\1\\.(*?\\)\\)*[[:alpha:]]",
+  "s": "€(é\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^a\\(?:σ\\)?a\\{0\\}\\.",
+  "s": "漢",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'\\s-",
+  "s": "ǅα )é́ǅ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(\\{2\\}\\(.b(\\s(\\)*?k*",
+  "s": "_ΣµA_a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(..*?b*?\\)a\\|[[:alpha:]_]\\`a\\|\\1",
+  "s": "ﬁAǅ--é(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^µ??\\<$",
+  "s": "カ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:._?\\(é\\(\\bσ??(*\\)\\)+?a\\)",
+  "s": "abbσﬁ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "Σk",
+  "s": "ª) -(A)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^.?[a-]\\(\\(?:\\(?:σa?a\\).\\{1,1\\}\\(?:aa??é\\)\\)\\(.\\)*?(\\).\\|.\\Sw+[[:alpha:]_]\\{0,\\}",
+  "s": "A ",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "^\\(\\(.\\)\\|a+?[[:blank:]]+?A??\\.\\)($",
+  "s": "b A (ba͸",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\ca(.",
+  "s": "A",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\ca*\\b",
+  "s": "",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\<$",
+  "s": "漢 a)_a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([[:alpha:]]a\\)??a?",
+  "s": "()kb-Kbk",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   8,
+   8
+  ]
+ },
+ {
+  "re": "\\_>ab",
+  "s": "a(A(AaA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a*\\baé",
+  "s": "é",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "σ\\(\\b\\>\\(σ\\caAA\\)\\)",
+  "s": "bAカ_a-K",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a*bµ*?",
+  "s": " é ²",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:a\\.\\(k*\\)\\{1\\}k\\)",
+  "s": "σЯ-bab(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\.((\\)\\{,3\\}a_.*\\|\\Sw$",
+  "s": "A μb",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.?a+",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\bk\\S-a?\\|σaΣ?\\b",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "σ",
+  "s": " (b \nab",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b",
+  "s": "€漢",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\Baa",
+  "s": "é)-Σab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\b.\\(\\(?:\\b[[:alpha:]_]*\\)\\{0\\}\\)\\1??",
+  "s": "A(kA",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "re": "A",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:word:]]??",
+  "s": "a -_",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\(a+.b+?\\)σ\\{0\\}a\\(\\`\\(a\\)*\\)\\|\\.\\)A+?",
+  "s": "A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`",
+  "s": "abαb",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "A??\\(k\\)",
+  "s": "__)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\ba\\|\\_<\\([[:lower:]]*\\)??\\|\\(?:\\B\\cj\\)?\\(a\\`\\*\\{0,2\\}\\)+?",
+  "s": "- ",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "Σ\\_<\\(?:a*[^a]\\)*",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\(?:(\\(b+\\)a\\(.a+?\\)\\)σ+?é.\\)A",
+  "s": "͸)ς",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".[[:punct:]]",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^[[:print:]]\\{2,\\}a",
+  "s": "½カbb_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".??",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "a\\*A\\{1,\\}",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b*",
+  "s": "μK)aa½_",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   7,
+   7
+  ]
+ },
+ {
+  "re": "\\`",
+  "s": "ﬁ _   ",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^ab\\(?:aa[^[:alpha:]](\\)?\\|a$",
+  "s": "ǅaé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*\\{0\\}\\(a.[[:alnum:]]*\\(\\.?\\)\\)",
+  "s": "éμ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.\\w*\\)??\\*(+?",
+  "s": "kǅ(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^a??",
+  "s": "\nKb́",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "Σ+?µ[[:word:]]",
+  "s": "aAς͸KaK",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\cj\\.σ\\{1,\\}$",
+  "s": "(ﬁa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(._a+\\).\\1\\)",
+  "s": "ǅ",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\cC\\( ??[^]\n]\\{2,\\}k+\\(\\B[[:graph:]].\\s_\\)+?\\)*\\'",
+  "s": "͸aaa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "σΣA",
+  "s": "ǅ_ǅ-A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(\\.\\)\\([^]\n]\\)\\).*?\\(k\\(\\c|\\)\\)\\.",
+  "s": "(bαké)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(a*?\\(é\\)*?\\)[[:lower:]]\\|\\Cl*\\( \\b\\)b+\\(?:a\\{1,1\\}\\)\\)??\\(\\w+\\(\\.\\c.\\(.[ab]a?Σ\\)\\)\\5a\\)\\2*?.*",
+  "s": "ª",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\s-*\\*\\>\\|\\_>\\cl+?é+\\)\\1*?a",
+  "s": "aΣééaa",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "σ(",
+  "s": "a)한)Ab",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "(\\(\\*+\\..+\\)(\\.",
+  "s": "AAbﬁ A",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^Σ*é??(*[[:alpha:]]",
+  "s": "aké½aé",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "σ+",
+  "s": "kΣb)((a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.\\Sw[a-b]",
+  "s": "α -\nか漢aa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^ [[:blank:]]*\\ck",
+  "s": " ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\*.\\(?:.*?Σ[[:print:]]?\\)*?\\)ab\\1",
+  "s": "b-b",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\<[[:space:]]+?µ*?a\\{0,\\}",
+  "s": "͸μαk))ﬁ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(σ*_\\.a\\)\\Sw",
+  "s": "\naa²€_ ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\S-a",
+  "s": "-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A\\(.\\(\\Sw[a-]\\)\\<\\)\\_>[σΣ]",
+  "s": "é",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?:.* ??\\)\\*\\)..\\{0,\\}[[:lower:]]+",
+  "s": "(b(é",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([a-b][[:space:]]*a??\\)?\\(\\(?:_\\{0,\\}[[:graph:]]\\)\\(\\s_\\)+?A*?\\w\\)*",
+  "s": "(a( ²aba",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "a+?",
+  "s": "bA(a(²͸a",
+  "fold": false,
+  "emacs": [
+   3,
+   4
+  ]
+ },
+ {
+  "re": ".\\(?:\\*\\)\\|µ",
+  "s": ")_ςAaaaЯ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "(\\.",
+  "s": "μ aáé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a[[:upper:]]+?\\|\\(\\ca\\cL.\\{2,\\}\\)",
+  "s": "͸Aab-͸",
+  "fold": false,
+  "emacs": [
+   1,
+   6,
+   1,
+   6
+  ]
+ },
+ {
+  "re": "\\(µ+\\'\\(\\(.*?aa\\)µ*?\\)*?é\\)\\1_*\\cL",
+  "s": "(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_ \\(\\(.*?\\(?: \\sw+?\\)+?\\(aa\\{,3\\}aσ+\\)_\\)?é\\)*µ",
+  "s": "漢 Я)b(",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\cg.[[:graph:]]*\\)",
+  "s": "a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(A[a-]\\)a\\)\\(?:\\(\\'\\.\\)\\)Σ?",
+  "s": "é",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\cC[[:graph:]]\\)\\|[α-ω]",
+  "s": "μ한é(_",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(\\(é\\(\\s-[[:print:]]A?µ\\)\\'\\(?:[^[:alpha:]]\\1\\)\\).k\\1??\\)\\{0,\\}a\\2*\\b",
+  "s": "-é",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "[]a].a\\{0,2\\}",
+  "s": "a( -a²AA",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": ".A*\\Cl_*?",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\W\\(aa+.A\\)*\\|éa??\\1\\<",
+  "s": "b(Kb_ǅ",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "^a*_\\.",
+  "s": "b",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "Ab",
+  "s": "\n͸µμaΣ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_*\\(\\c.??µ\\**\\)k",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*??\\(\\(?:\\(?:. +?\\)Σ\\([[:punct:]]*.\\_>a??\\)Σ\\)\\((\\*\\1?? \\)\\)_\\|.*[[:print:]]A*",
+  "s": "a_-ª한-ß",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "[z-a][]a]??",
+  "s": "baﬁ _(\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.\\)*?",
+  "s": "a\n-σ\né(_",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^ ?? +\\_>\\|\\(a\\{1\\}a+?\\)\\1[[:lower:]].",
+  "s": "bbbA",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.\\)",
+  "s": "é한αª",
+  "fold": true,
+  "emacs": [
+   0,
+   1,
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(_+\\(a\\*\\{,1\\}\\)aΣ??\\)+?é\\1[[:blank:]]",
+  "s": " é\na",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é\\>\\|.",
+  "s": "é",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": ".\\(σ\\cl??\\)?σ+",
+  "s": "_béb€aa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\([[:blank:]]\\{,1\\}\\(é[ab].\\.\\)\\)\\1\\)?_?",
+  "s": "éﬁ (A AK",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "a_",
+  "s": "µa½²漢b",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b*?µ.?\\(a\\{2,\\}\\(k\\)a\\Cl\\)+?",
+  "s": "éαμ-_カb ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".?",
+  "s": "€b カカ",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(\\`\\)+?.",
+  "s": "漢()a(a͸A",
+  "fold": false,
+  "emacs": [
+   0,
+   1,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^ \\|\\(\\(éaΣ \\)*\\)σ??",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "σ*$",
+  "s": "\né",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "µ",
+  "s": "µb-µ Kaµ",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   7,
+   8
+  ]
+ },
+ {
+  "re": "^[[:alnum:]]$",
+  "s": "_ßéßǅ)",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A??\\>a.+?$",
+  "s": "カǅσςb a",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:a*\\C^a\\|(+?\\)+?aσ\\| *(\\(?:b\\{,2\\}\\cL+\\)+b\\{2\\}",
+  "s": "--͸)μa\nb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^.+\\c|a$",
+  "s": "é b_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(Σ\\{2,4\\}$",
+  "s": " ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\B.+?(",
+  "s": "한 ",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\S-\\(\\(AA\\{1,3\\}[σΣ]+?a\\)\\cg+\\_>b+?\\)??\\2\\)\\(a?A*?\\)a",
+  "s": "²aα",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.(+?\\c|\\.",
+  "s": "Abébカb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_Σ\\|µ\\([α-ω]*\\(\\_>\\) \\{0,\\}\\)*?(",
+  "s": ")a)\n",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A\\(a(k\\)",
+  "s": ") _(_b €",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'b\\*",
+  "s": "A²(bﬁ)σΣ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\{0\\}_\\(\\(\\*\\)\\(\\(a\\)\\Wk\\)\\(\\3σ\\)\\)\\|a*\\|[[:alnum:]]\\>\\b\\(_*?[]a]\\cl+?b\\)$",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(Aa.(+?\\)\\{2,2\\}.+?",
+  "s": "\nKb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A+?\\cl+?\\(?:\\s(\\cC[^]\n]?\\)\\([[:alpha:]]bσ_*?\\)",
+  "s": "\n",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\sw*?\\|a*.a\\|\\**\\(_\\)a?[ab]",
+  "s": "é",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\cl+\\(?:\\(µ\\{,2\\}\\)*k\\_<µ\\)??a",
+  "s": "-(αßéか",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:alpha:]_]\\{1\\}",
+  "s": "-é",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": ".*_",
+  "s": "ª)(k\nªb",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:upper:]]\\( a\\(\\'\\)é\\{,1\\}\\)\\(?:\\(((.a\\)*a??\\2+?\\*\\)\\(?:\\c|??[[:upper:]]\\(\\Cla.+?\\([[:lower:]]\\)\\)*\\)\\|a.k\\(a??\\W\\)*",
+  "s": ")bé \naª",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " *\\(Σ[[:word:]]\\{1\\}\\)",
+  "s": "-)\n-)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "k_.+",
+  "s": " ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^[^]\n]\\(aA\\b\\c.\\)\\{0,1\\}$",
+  "s": ")",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "[[:word:]]  Σ\\{2\\}",
+  "s": "aσ€\nb",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".(σ\\(\\ch\\(?:.\\)+\\)",
+  "s": "b͸",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\<\\(\\(\\(a??\\`.\\{0,1\\} ??\\)\\)\\{0,2\\}\\1\\)?",
+  "s": "é A",
+  "fold": true,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\*\\(\\(Σ\\([]a]?a*?\\)aσ\\)\\)\\|.\\3*?",
+  "s": "éカ\n(a² b",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\*\\(\\<.[[:alnum:]]\\{1\\}.*?\\)(+[σΣ]",
+  "s": "((bΣ_bσK",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\(\\ca?b??a*\\(?:(?.\\)*\\)",
+  "s": ")ª(b\n͸_",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:.*? \\(?:\\ch+?a*?\\)\\{1\\}\\)(?",
+  "s": "́é",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\b",
+  "s": "Σ(²k",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\cg\\*(",
+  "s": "é",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^a\\{,2\\}Σ?(*",
+  "s": "b한\n",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   3,
+   3
+  ]
+ },
+ {
+  "re": "_..$",
+  "s": "-b½ς́",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\(\\(.*?.a\\)Σ(+?\\)?\\)(\\{2,3\\}\\| \\(\\(\\ck[[:alpha:]]a\\)\\(aΣ+?(*?\\s.\\)\\(a?\\_>\\)*\\)*$",
+  "s": "σkAa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "σ",
+  "s": "_²)μAaé²",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.µ\\(a\\)b",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^_\\(?:\\Sw+[[:upper:]]?? \\)a.",
+  "s": "b½_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\cj[[:punct:]]_a\\|a_?[^[:alpha:]]\\(?:\\B\\(µ?\\)*[σΣ]+.??\\)",
+  "s": "α漢é",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[^]\n]*?[^a]\\{2,2\\}.*?[[:space:]]?",
+  "s": "",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:alpha:]_]*",
+  "s": "한_σμ)",
+  "fold": true,
+  "emacs": [
+   0,
+   4
+  ]
+ },
+ {
+  "re": "σk*\\cl",
+  "s": "aA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "k_?\\(Σ?\\|.??\\)??",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:space:]]\\((\\)\\{0\\}é",
+  "s": "\n A_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\.?[[:alnum:]]?µ\\(.\\)",
+  "s": "µé€",
+  "fold": false,
+  "emacs": [
+   0,
+   2,
+   1,
+   2
+  ]
+ },
+ {
+  "re": "a\\'",
+  "s": " σ(é́",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".k??[a-b]k*",
+  "s": "aAα",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "Σ",
+  "s": "\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "k\\(.\\(\\(aµa[[:lower:]]\\)\\)\\)\\S-",
+  "s": "b",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\>a\\{,1\\}\\>",
+  "s": "- 漢ǅςK",
+  "fold": false,
+  "emacs": [
+   3,
+   3
+  ]
+ },
+ {
+  "re": "^\\(?:\\_<\\(\\(ka\\)\\(._a+k?\\)\\) .?\\)+\\_>\\1",
+  "s": "漢éa b-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(?:\\*σ*?\\.a\\)*?\\_<a*",
+  "s": "))ςaǅ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:word:]]\\((\\)..",
+  "s": "_éß\n_b",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\cg",
+  "s": "_bb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\|A",
+  "s": "éカaab",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "µ",
+  "s": "abbééAaa",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a+.\\_>\\)+[^]\n]\\{2\\}σ*a",
+  "s": "€€ (bA漢",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^Σ",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a.A?\\)*µ*?a?\\ck",
+  "s": "babAﬁ_か",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a\\{0,1\\}\\([[:print:]]*?.\\(_a_\\)\\ck\\)\\2+Σ\\)*$",
+  "s": "aςaéAá",
+  "fold": false,
+  "emacs": [
+   7,
+   7
+  ]
+ },
+ {
+  "re": "\\(?:\\(\\_<a\\)\\)a",
+  "s": "a \nb- ςé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a+?σ",
+  "s": "かa͸a -½",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*\\_>.",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\ck\\{0,2\\}\\([[:alpha:]_]((\\cl*\\)\\(µ??\\s-[^[:alpha:]]?\\)",
+  "s": "_a",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A\\|a\\`b??",
+  "s": "µ b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\s-\\)??\\.??_",
+  "s": "b(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\c..*?\\(\\.\\{1\\}\\c|\\ba\\)(?$",
+  "s": " Kμ\n) )",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".k*\\|\\_>",
+  "s": "α_-カ\nªK한",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "a??\\(?:\\(a\\(?:\\B_.\\).A*?\\)\\c|\\{0,1\\}_+\\)b\\1\\{1,\\}$",
+  "s": "(\n_\néé½",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\s.a\\(a.\\.\\_>\\)é\\)\\|\\c.\\2\\*",
+  "s": "a_Abéb",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\ch.\\(\\(?:é\\)\\(\\(?:\\_<b*\\)\\cj.?\\)??Σ\\1*?\\)[σΣ]*\\|\\sw",
+  "s": "²²-",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\<\\_<σ*A*",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.*?ék?\\)\\cC*\\cj\\{0,\\}a",
+  "s": "AΣbb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:space:]]*?Σa*",
+  "s": "μéa(µß)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b*Σ\\.",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "ak\\((??é+?\\cL\\{,2\\}\\)\\(?:\\*[[:graph:]]\\)\\{0\\}",
+  "s": "aA",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\s.Σ?",
+  "s": " \na  \n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.\\)",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é*?$",
+  "s": "\nbb漢-€A-",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\c.$",
+  "s": "σéḱa\na",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   6,
+   7
+  ]
+ },
+ {
+  "re": "\\c.\\(\\(\\(\\B.+?Σ\\) *\\_>\\)b\\1.\\)",
+  "s": "A漢)a",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\.\\{1,\\}",
+  "s": "bb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a+?",
+  "s": "_€",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é\\([[:alpha:]_]\\(b??\\_<\\)\\1\\b\\)$",
+  "s": "",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": ".Σ",
+  "s": "\nα(ǅα",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "Σb_",
+  "s": "bA)€",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\(\\(?:_a\\)+?Σ*\\)??a*?\\)?[[:upper:]]??",
+  "s": "\na_bka½)",
+  "fold": false,
+  "emacs": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "(\\(é[[:alnum:]]\\(.*?[^[:alpha:]]?\\(\\<\\)\\)\\{0,\\}\\)\\(\\(?:a\\{2,4\\}\\)*\\(?:\\(\\>\\)\\s_??\\`\\(.??a??\\)*?\\)*\\)\\4+?\\|(",
+  "s": "bªAb((か\n",
+  "fold": false,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "\\(\\*\\cC.\\)*\\1.\\1",
+  "s": "한€a_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a+\\(?:\\>k\\{1,2\\}\\)*?a",
+  "s": "€b)(Ab",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "σé\\|.",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?:\\([[:upper:]]a\\)*.*?\\)a\\)a_a+?",
+  "s": "ﬁ_a_a",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A\\|a*\\|Σ",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\'[[:blank:]]\\(\\S-*?\\(?:[[:alnum:]]+\\(?:[]a](*?\\)\\.a\\)\\{,3\\}\\)*\\_>",
+  "s": "_ﬁ(é(_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a.\\(\\`\\(k\\**\\sw?\\(a\\{2,3\\}.k??[]a]\\{,3\\}\\)??\\)*\\)+[[:lower:]]+?",
+  "s": "bé bé한Aª",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^σ[[:alpha:]_]\\{1\\}\\|\\( \\)+?\\(\\(?:A\\)\\Wé\\`\\)A\\|\\_>\\.*",
+  "s": "bAbé",
+  "fold": false,
+  "emacs": [
+   4,
+   4
+  ]
+ },
+ {
+  "re": "^\\(\\(\\_<σ[[:blank:]]µ+\\)σ*\\(?:σ\\s_\\)a\\|\\_>b*?[a-b]é*\\)a\\|\\(a\\{1\\}\\Sw\\B\\)\\(?:a\\)+?a",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.\\(\\>.\\(a*\\)\\)\\([[:alpha:]_]\\ch\\)?? \\)A+",
+  "s": "é(",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(σ??\\(\\(?:a\\*\\ca\\).\\'\\)a*?\\(._\\)\\)[ab]",
+  "s": "Ab))-bA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'\\(Σa\\)\\(\\1+\\)\\{0,2\\}",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é\\.σ",
+  "s": "Abǅb€",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(µ\\)[^a]*\\|\\1\\(\\1*\\)?? +?a\\)\\{2,2\\}_\\{,3\\}\\(\\2??b\\)",
+  "s": "a½b)é)",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\( \\(\\`σa\\)[[:blank:]]+?\\)\\1",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "µ[[:alnum:]]*[z-a]\\*",
+  "s": "Яßa",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a[ab][[:alnum:]]\\{,2\\}\\)[[:blank:]]?($",
+  "s": "μ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*\\{2\\}",
+  "s": "\n\n (_(Я-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\((\\{2\\}\\)a*A\\).+[α-ω]k*?",
+  "s": "\n_bµa(́-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^a*",
+  "s": "A한(",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\ck\\Cl\\*+?",
+  "s": "Я€a\nﬁ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:blank:]]\\*a??",
+  "s": "A\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".",
+  "s": "\nカ",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "^Σa\\(é\\(b\\(a?\\)\\{2,\\}\\)?.\\{2,2\\}\\)",
+  "s": "bb-)",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\>a\\`",
+  "s": "한Ab_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^b\\(\\_<\\([[:alpha:]_][a-]a+?\\)\\)*\\(?:\\(?:a\\)\\)*?",
+  "s": "-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".b*?a?",
+  "s": "b\n",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "_",
+  "s": "aσb한)b)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b",
+  "s": "(éb",
+  "fold": false,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "a\\cl\\{2,\\}[[:lower:]]é+?",
+  "s": "ª",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\{1\\}b\\{,2\\}",
+  "s": "bµ_ª--b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\B",
+  "s": "-)ab́-",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   4,
+   4
+  ]
+ },
+ {
+  "re": "a",
+  "s": "ﬁé()a",
+  "fold": false,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "a??",
+  "s": "αα",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\c|+?",
+  "s": "bﬁ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "._",
+  "s": "ab ba͸ﬁ-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "aµ*aΣ??",
+  "s": "ς",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?:a\\(?:a+?\\ck*?a\\)[[:lower:]]\\.\\)\\{,3\\}aé\\{,3\\}\\|\\Cl*\\(\\_<\\)*aσ\\)a\\(\\W.\\)*.*?",
+  "s": ")_€_a-Aﬁ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "Σ",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:b[[:graph:]]\\<A\\)??[z-a]\\(.+? *?\\(?:\\(A.\\)\\)\\).?",
+  "s": "²bǅ\na_ (",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\<",
+  "s": " μ\n-",
+  "fold": false,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "a(*?[[:print:]]",
+  "s": "éé-́Aα-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A*\\ca\\{1,1\\}.",
+  "s": "a(b_",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "\\B\\(\\cL\\)[[:punct:]]\\{,2\\}",
+  "s": "Aé -",
+  "fold": false,
+  "emacs": [
+   1,
+   2,
+   1,
+   2
+  ]
+ },
+ {
+  "re": "\\_<\\(\\.\\s.+\\)aa??",
+  "s": " abK",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^A\\*??[[:space:]].",
+  "s": "éa)a(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a??\\c|*?\\|\\([[:upper:]]\\{2\\}µ*a\\)[[:punct:]]?.\\|\\([z-a][[:graph:]]\\S-\\)\\(a?a+?a[^a]??\\)*\\>[[:punct:]]",
+  "s": "b",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\([]a]*Σ\\)[[:punct:]]??\\|\\<\\(µ+?\\B\\)*µ.+",
+  "s": "-a\n_²€",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\.*?\\(\\_>\\)\\)+\\2*?\\s-+?",
+  "s": "ǅéa K€",
+  "fold": true,
+  "emacs": [
+   3,
+   4,
+   3,
+   3,
+   3,
+   3
+  ]
+ },
+ {
+  "re": "a\\(Σσ\\{2,3\\}\\`\\)?",
+  "s": "かb(́a",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "^\\(?:A\\b\\(_\\{1\\}\\)\\)A",
+  "s": "́ǅσ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^[[:blank:]]\\(\\(?:..\\(a(\\*é\\)Σ\\)\\(?:\\Sw\\)??\\(\\cj\\([[:word:]]\\_>\\)\\(?:ak_\\)[[:space:]]??\\)\\(\\s_\\)\\)k$",
+  "s": "b(ªﬁ_ €",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a?? \\)+?\\1\\|aσ+_\\1",
+  "s": "²_(_é漢)",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_>",
+  "s": ")_a",
+  "fold": false,
+  "emacs": [
+   3,
+   3
+  ]
+ },
+ {
+  "re": "^\\cjk\\{1,1\\}\\swk??\\|b\\{0,0\\}[[:lower:]]é(",
+  "s": "½b€ééか",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\cC\\(?:k.*[a-]\\(a\\{0,0\\}aa.*\\)??\\)\\b\\)\\`\\(?:\\C^.\\s.\\)a\\{1,\\}$",
+  "s": "ß",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "σ",
+  "s": "_b_",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é*?\\cC*.+?\\(?:aσ\\{1,3\\}\\(.\\{0,\\}\\caa\\(?:\\_> \\_<a\\{0,\\}\\)\\)\\)",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é\\(\\(\\(A+?\\.\\)\\)a\\)\\cC\\s_*\\|éb\\_<\\C^*",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(.\\(?:.*a?\\.\\)\\s.\\{,3\\}\\)\\)",
+  "s": "b( b(Aµa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".+µ*?\\(é*_*?\\_<\\(b(\\)\\)??",
+  "s": "\nAkéaba",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   6,
+   7
+  ]
+ },
+ {
+  "re": "σa\\(?:Σa\\(ak+?\\)+?\\_<\\)\\{2\\}",
+  "s": "ς²かab",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\((\\|a*µ?\\( µ\\)\\)\\2\\c.",
+  "s": "A_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".*?a\\|\\b\\|\\(\\s(+?a\\{2\\}a\\)\\{0,\\}",
+  "s": ")\n_(Ab",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   6,
+   6
+  ]
+ },
+ {
+  "re": "\\cj",
+  "s": "b a(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([[:graph:]]??[[:upper:]]\\{,2\\}_\\)*",
+  "s": "a",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "aΣ??[[:blank:]]\\{0,\\}A\\{1,3\\}",
+  "s": "Aßba",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\*??a\\(?:\\(aa*\\)\\bΣ\\|a *\\(\\*é\\)\\{1,3\\}\\)",
+  "s": "α-Ab",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "aa*?\\Cl\\(?:[[:print:]]+b+\\.\\)",
+  "s": "é²漢)½_",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:word:]]A* *",
+  "s": "ß漢-か)bμ½",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\Cl?σ. *\\|\\(.??é+?\\(a\\{1,\\}a\\)\\(k*\\Sw*\\)\\)",
+  "s": "-ǅ((a_b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[ab]?k",
+  "s": "½A",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".k\\(\\*\\)+.",
+  "s": "aKbbKA",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\(a\\>_\\)*\\cg[[:alpha:]_]+\\*\\) µ??\\).\\{,1\\}.\\(\\S-*\\.?(*?\\(?:\\3\\)*?\\|\\*[a-b][a-b]\\2*\\)*?\\|[[:alpha:]].\\(?:\\`\\)\\.",
+  "s": "bb",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "( ",
+  "s": "́½ﬁéAb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "..",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "aa+?.",
+  "s": " Я-(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "aé*?\\(a\\)*",
+  "s": "b\néµaσǅª",
+  "fold": false,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": ".k\\(a\\(aa\\(?:[σΣ]*?.[[:punct:]]\\)\\)*\\)\\2\\{1,1\\}\\|.??\\.µ",
+  "s": "Aé½",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\W+?\\(k\\ch\\)[σΣ]a",
+  "s": "(a b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\c.?",
+  "s": "bé\naaªa",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   7,
+   7
+  ]
+ },
+ {
+  "re": "\\(?:a\\)($",
+  "s": "_b_)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.+a\\([[:alnum:]]+\\)\\.",
+  "s": "KªA",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?:[[:graph:]]σ+\\(k\\{,1\\}[]a]*?a\\*\\)\\)*aµ??\\)\\|k.+?[[:alnum:]]b??$",
+  "s": "-(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_<\\s(σ\\(?:a\\>a\\)",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\. a\\(.\\)\\)",
+  "s": "b-K_",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\`.",
+  "s": "\nΣ Σ(Σ\n",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".+[ab]",
+  "s": "aª(",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a??\\(a\\(\\(?:\\ca\\)??\\cC\\(?:\\Ba\\w\\)* ??\\)\\*?\\**?\\)",
+  "s": "µ) Aa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a",
+  "s": ")bé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\.\\)\\cC\\{1,\\}\\)",
+  "s": "é²a",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_A*",
+  "s": "ǅk½bカb",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:.\\cL\\(?:é\\(\\*\\c.+aσ\\{1,2\\}\\)a*\\)\\(bσ??\\)+?\\)*k*σ?A$",
+  "s": "é",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "Σ?a\\(\\(?:\\s-??\\cl\\(.\\).\\{2,\\}\\)\\([[:alpha:]_]\\)??ba\\)\\|\\<\\3??\\sw*b",
+  "s": "éb\n²K͸",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "\\(?:\\ba?.\\(k??.\\(?:\\**\\_<\\)\\)\\)*a?é(+",
+  "s": "½",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?:\\(?:σ(+ΣΣ\\)?σa\\w+?\\)??\\(.µ?µ[[:upper:]]\\)\\)\\{0,\\}(\\|.+?[a-]*\\(é\\{1\\}\\(\\b\\)\\)\\sw",
+  "s": "́ς\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:punct:]]",
+  "s": "ª bµﬁ",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "b+?.+\\|µ\\sw.$",
+  "s": "ªªﬁK\nµ-ª",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "σ\\(\\([[:space:]]??(\\)\\B\\)\\|a\\.µ?\\([[:word:]]\\)\\{0,\\}",
+  "s": "͸σ)",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\*\\{0,1\\}.µ",
+  "s": "(Aßb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".+?a",
+  "s": "́a_abaµ-",
+  "fold": false,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "a\\ck.$",
+  "s": "kab (éA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(ka\\{0,2\\}\\([[:space:]]\\)\\(\\(?:a\\)*\\1a*?\\)\\|éµb\\).",
+  "s": "カﬁǅbé",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": ".\\(\\(\\(.\\*??a\\)?A\\{0,2\\}µ*?[[:alnum:]]*\\)\\_<\\B\\|\\(aµ?\\)\\)?$",
+  "s": ")-b",
+  "fold": false,
+  "emacs": [
+   2,
+   3
+  ]
+ },
+ {
+  "re": "\\B",
+  "s": "A",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "A[[:lower:]]*?\\(\\(?:é\\.\\(b\\)+\\)\\1\\)??",
+  "s": " bǅ",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "^\\ckk*",
+  "s": "b \n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\.",
+  "s": "͸a_bbéA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^. \\|µ\\{0\\}",
+  "s": "éé͸bσ",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^_\\*+?\\(_\\)",
+  "s": "( ǅ(_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^σ\\(?:Σ\\|_\\cl\\).\\>",
+  "s": "aAb",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^a",
+  "s": "a(α-ªΣ",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\C^??\\(?:\\(?:[]a]??\\<\\)\\s.*\\)b\\(\\*\\)\\|_\\1*?",
+  "s": "bbb)_Aé",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "a",
+  "s": "a",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(?:k\\{2,\\}[]a]\\(?:\\`[[:alnum:]]é\\{2\\}\\)\\)",
+  "s": "a\na-k",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\C^[[:blank:]]\\'\\)",
+  "s": "bßbk한\naか",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(?:\\(éa*a\\)+\\)\\1\\<\\)+\\|_\\(a\\(?:a*[[:alpha:]]*?[a-b]+\\)\\_<\\*\\)+\\`",
+  "s": "-\n²\na",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^a\\(?:A*µ\\(\\(\\cj*?\\)?(?\\_>Σ\\{1,3\\}\\)??\\2\\)\\{2\\}\\(\\1\\.[[:alnum:]]\\{0,\\}\\2*\\|\\c|\\{1\\}\\)$",
+  "s": "\n()(béμ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(_\\{1\\}[σΣ]\\{,3\\}\\)\\|\\(.*aa\\{2,3\\} *\\)\\{0\\}\\C^[^[:alpha:]]\\>",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\cCA",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:.\\>σ\\)\\{2,\\}\\|A_?",
+  "s": "a(-b_ª-A",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "µ?",
+  "s": "",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "akk\\|\\(?:.\\{1,2\\}\\>\\* \\)\\.??",
+  "s": "か\nbカb (ǅ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\{1,\\}\\|_\\(?:\\>a\\{0,1\\}\\(a\\)\\)+\\c..??",
+  "s": "ab-AA",
+  "fold": false,
+  "emacs": [
+   0,
+   5
+  ]
+ },
+ {
+  "re": "\\(\\(\\c.+?\\)\\( \\)??\\)",
+  "s": "bЯé_ ",
+  "fold": false,
+  "emacs": [
+   0,
+   1,
+   0,
+   1,
+   0,
+   1
+  ]
+ },
+ {
+  "re": "(",
+  "s": "µσbk²Á",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[a-]??",
+  "s": "漢é",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   2,
+   2
+  ]
+ },
+ {
+  "re": " \\(k\\w\\)?\\*\\{,3\\}[^[:alpha:]]+?",
+  "s": "\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\c|?é+\\(σΣ\\)+?\\(?:\\1?\\1\\|.ka*?\\c|\\)??\\|é",
+  "s": "aΣaカ_́b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a(??.?",
+  "s": "Я",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a_??",
+  "s": "ας€µA",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\{0\\}\\`",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^\\([^[:alpha:]]*\\(\\(Aσ\\.+\\*\\)\\`\\)??Σ\\{2,4\\}\\`\\)a+a+",
+  "s": "bカ½μ(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^σa\\{2,\\}a",
+  "s": " µAA漢かb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".k*?",
+  "s": "( \n",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": ".(",
+  "s": "͸ ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "Σ+?\\(?:\\(.??\\)\\{0,2\\}[a-b]\\b\\)a",
+  "s": "a(",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": " ",
+  "s": "-)A)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a\\(\\>\\.\\)?\\|a\\{,3\\}.*\\)?\\cL",
+  "s": "漢ǅAéЯé",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   5,
+   6,
+   5,
+   5
+  ]
+ },
+ {
+  "re": "\\B[[:alpha:]_]\\`\\.*\\|b\\{2,2\\}\\|a(\\(?:[^a]*\\_>a\\)*?",
+  "s": "(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(_\\{,1\\}k\\)+[[:lower:]]a\\( \\(?:\\(aaa\\)_\\)σ*.\\{,3\\}\\)*",
+  "s": ")-",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\sw\\|\\cC\\_<\\_<\\)*\\1$",
+  "s": "a_ﬁか",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "µ*",
+  "s": "½\né -",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "[[:alnum:]]??\\cj*?",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "a\\(\\(σ\\(a\\)\\)+µ??\\cl.\\{1,\\}\\)[]a]",
+  "s": "Σ€",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\cC\\(\\( +.\\)+\\W.\\)\\'",
+  "s": "Я)",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^[[:space:]]a[[:lower:]]??Σ\\{2,\\}\\|\\<a\\|é.\\_<",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^éσ\\{,3\\}[]a]\\{1,3\\}_",
+  "s": "Σéaaé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " +k.\\{1,\\}$",
+  "s": "b-A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.a\\(\\`\\)",
+  "s": "Σ\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\>\\(.(\\{,2\\}\\)??\\(?:\\1+(\\(bA+?\\)??\\cg\\{1,\\}\\)\\B\\| [[:punct:]].σ+?",
+  "s": "(σ_(ka",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".?\\|\\S-\\((\\*?\\)\\1\\1",
+  "s": "ß\nかaa-한",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "^\\*+ \\{1,\\}",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[a-b]*?\\(kΣ\\)\\{,1\\}$",
+  "s": "カ",
+  "fold": false,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "^.kΣ",
+  "s": "漢",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "σ.A\\Cl*",
+  "s": "²μ(K_\n()",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:space:]]+?.*",
+  "s": "漢カЯ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s_a[[:alpha:]]",
+  "s": "a_Aa²",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\<[[:alnum:]][[:lower:]]",
+  "s": " _ ﬁ_a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^a??.",
+  "s": "α",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": ".*",
+  "s": " é",
+  "fold": true,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "k",
+  "s": ")ßςα",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`(+\\|\\(\\sw*Σ\\B.*?\\)*\\ca\\*\\{0,\\}",
+  "s": "\nAςa\nΣa",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   6,
+   7
+  ]
+ },
+ {
+  "re": "\\(\\([[:lower:]]\\`\\'\\)??\\`\\)\\(?:\\2*\\._\\)\\1σ+",
+  "s": "b\naか) -",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a$",
+  "s": "é",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a[[:blank:]]+?[[:alnum:]]*\\(a[ab]?.\\)?\\)µ\\{2\\}",
+  "s": "ςKa(-bbb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "σ\\b",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\sw*",
+  "s": "-a-",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(a*\\)",
+  "s": "-é(k_A μ",
+  "fold": false,
+  "emacs": [
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "k[α-ω] $",
+  "s": "-b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "b\\|\\(\\(a\\{2,\\}.\\<\\)\\)\\{0,\\}A+?",
+  "s": "b²(ǅA",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   4,
+   5
+  ]
+ },
+ {
+  "re": "aa$",
+  "s": " _ªA é-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^[[:blank:]]\\{2,\\}",
+  "s": "-_\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\<a\\{0,2\\}",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_",
+  "s": "__))bǅ(",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "\\(?:µ\\)+?$",
+  "s": "éかA)カAσé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[]a]\\{1\\}_",
+  "s": "ς-ª",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\B$",
+  "s": "_µ_a-)€",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\(\\*+?\\(?:\\(σ\\{1\\} +\\'_\\) \\)é\\)\\{0\\}\\2(",
+  "s": "bb__ ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`\\cl\\|\\B",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\>a\\(\\*+\\)*",
+  "s": " )béa_a€",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*\\_>.?\\(a\\)+",
+  "s": "(bb_σ)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A\\(\\(A\\)\\(.\\`ΣΣ\\{0,1\\}\\)*Σµ??\\)\\((\\>\\)\\|\\(\\(_ b\\)*A\\_<\\)\\6\\cC+k",
+  "s": "A(bbé αb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^a",
+  "s": "(aAb",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "k\\{0\\}\\(k[[:alnum:]]*\\(\\(a\\)_?µ\\{0,\\}\\(\\`k*a+\\)\\)+?\\ch\\)+",
+  "s": "éǅ\nßb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[z-a]\\s(",
+  "s": "a_ aa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "µ*\\(Σa \\|µ*?a\\_>\\)k+\\|\\(_\\<\\(σaa\\)+?σ*?\\)\\(\\sw.σ+?\\)??\\cC",
+  "s": "ébbかǅbb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\cj+\\)\\{1\\}.",
+  "s": "カa",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   2
+  ]
+ },
+ {
+  "re": "_a+?$",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\(.+?a+?.??\\)(\\)\\cg.*\\sw*?\\)[a-b]",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\>\\(\\(a+\\(\\ba\\)_\\1\\)\\_<[[:upper:]]+\\|é.\\)",
+  "s": "Σ",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\c.a?\\<\\(ak*?\\|.\\)*?$",
+  "s": "a\nﬁ)é",
+  "fold": false,
+  "emacs": [
+   3,
+   5,
+   4,
+   5
+  ]
+ },
+ {
+  "re": "a$",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:é\\{0,2\\}\\(k\\{,3\\}Σ\\)\\1\\{2,\\}\\s-??\\)",
+  "s": " \néé",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:upper:]].\\|a",
+  "s": " ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(a*(",
+  "s": "½éa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\*\\(?:.??é\\(\\(Aa+?a\\)(\\)+?\\(\\1??k\\)\\)\\{0,\\}",
+  "s": "한",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\*Σ+?a",
+  "s": "baéé(--",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\cC??\\_>[α-ω]",
+  "s": "_ ªé",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^k?\\(\\B\\)+?a",
+  "s": "b)a(bα",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\(A\\)*b+a*σ\\)A\\(\\(a.?.+\\)Σ?\\) ",
+  "s": "́é ß",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^A\\{0,2\\}\\([a-b]a\\(A\\{0\\}A\\(a\\)\\)?\\*\\)*?(",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[^]\n]\\|[[:graph:]].\\|\\sw*é",
+  "s": ")(b",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "^\\`b\\{1,\\}[[:graph:]]*\\>$",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\([[:alpha:]]\\{2,\\}\\caµ \\|\\(?:aaa*?a\\)µ\\).a?a+?",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\*??\\)[σΣ]\\1\\{2,3\\}\\`",
+  "s": "(--²-é漢カ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^µ.\\{2,\\}",
+  "s": "éǅa͸µbǅ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a??$",
+  "s": "-b",
+  "fold": true,
+  "emacs": [
+   2,
+   2
+  ]
+ },
+ {
+  "re": "µbb\\(?:\\(σk\\)\\)+?",
+  "s": "bA",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\([[:space:]]*?\\*\\(\\(?:Σa\\<\\>\\)??\\)\\{1,\\}A??\\)[ab]",
+  "s": "\nǅ\nカ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.*Σ.\\)",
+  "s": "\néa)",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(_\\<\\)é?[[:alpha:]_]?\\)",
+  "s": "(A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\s.[a-]\\(\\W?\\)??\\)\\(a+?\\)\\{2,3\\}\\)\\{0\\}\\(.+[[:upper:]]+\\(ak[[:lower:]]?[α-ω]+?\\)*é\\)\\_<$",
+  "s": "b ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\*σ[[:graph:]]*?a\\)+\\`k\\{,1\\}\\(a\\<\\|_??\\b\\s.\\)+",
+  "s": "b-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_<µ",
+  "s": " \n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a*\\>[[:graph:]]*",
+  "s": "ßb))",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   2,
+   4
+  ]
+ },
+ {
+  "re": "\\_>",
+  "s": "a",
+  "fold": false,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "^Σ*\\(\\Cl\\( \\)\\)\\{1,3\\}A\\(\\.?\\1.*?\\(\\(.*.\\2+?\\)??Σ\\1[[:word:]]\\)*\\)",
+  "s": "aª σa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "σ*σ[[:word:]]*?",
+  "s": "²ab)a(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(.A*.\\)\\s-*\\(σ.\\1\\)+?",
+  "s": "カbkbé",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\sw\\<\\|a$",
+  "s": "ǅςカ€",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\(\\([[:alpha:]][[:graph:]]\\B\\.??\\)\\{,3\\}.\\)+?_a",
+  "s": "A",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:é\\)\\([[:print:]]\\{1\\}A.?σ\\)+?\\_<.?\\|[a-]a*\\.",
+  "s": "aéς漢",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\(a\\{0,2\\}aa+_\\)+?Σ\\).\\b\\(k* \\{1\\}_b\\)??\\).\\_<$",
+  "s": "ǅba)ß\n_é",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[^a]+\\C^\\{0,\\}.*?",
+  "s": "²\na-ﬁkカª",
+  "fold": false,
+  "emacs": [
+   0,
+   8
+  ]
+ },
+ {
+  "re": "\\(\\b.+\\)\\([[:punct:]]\\(\\(\\c.\\1*\\'\\)\\)*\\`\\3\\{,3\\}\\)*?[a-]*",
+  "s": "_ _-²",
+  "fold": false,
+  "emacs": [
+   0,
+   5,
+   0,
+   5
+  ]
+ },
+ {
+  "re": "\\cC\\{1\\}$",
+  "s": "éKé",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "(",
+  "s": "½a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\>é+\\.\\(\\([[:space:]]?A\\)\\)",
+  "s": "_a(éΣa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\s-a\\B\\cC\\)\\(\\.a\\.\\)\\'b",
+  "s": "漢b\nǅa_ς(",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a\\.+?σ*?\\`\\|\\<",
+  "s": "漢ǅA",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(?:é+_+?a\\{1,1\\}\\)",
+  "s": ")½かµb",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.aa+\\(\\(\\`[[:alpha:]]+µ+?\\)éé\\|\\(aA+?\\1\\{2,2\\}\\)+?\\)?\\|a\\*(*?",
+  "s": "_babé",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\(\\_>a\\'σ\\)*?",
+  "s": "a(Яb_μb",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": ".*?[[:alnum:]]\\>",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_<A",
+  "s": "aa漢é ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_>A\\| ",
+  "s": "\n \nΣªbb",
+  "fold": false,
+  "emacs": [
+   1,
+   2
+  ]
+ },
+ {
+  "re": "\\b$",
+  "s": "Σ)-漢-b_a",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   8,
+   8
+  ]
+ },
+ {
+  "re": "a\\(k\\(é*?σ.+?σ\\)+\\)",
+  "s": "",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\S-\\.\\(?:\\.\\)\\{2,4\\}\\<",
+  "s": "((a(- ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".",
+  "s": "bςA_b\n(",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\bΣ",
+  "s": "ééǅ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^[σΣ]\\bé\\|\\(\\.?\\(?:a\\{0\\}\\)?\\(Σ\\B\\)??\\W??\\)\\{0,\\}µ\\(\\1\\{1,\\}\\)",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_<",
+  "s": "μbaé a",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(?:\\'é\\)\\|\\<k??\\|\\>",
+  "s": "_b한",
+  "fold": false,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "\\(Σ\\{1,3\\}\\)a+?\\(.+\\([[:space:]]??\\s-A\\)*\\|\\*µ+\\(a+(\\.?\\>\\)A\\)*\\*??",
+  "s": "Aéa_a",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[^a]",
+  "s": "ǅ\n€Aµ",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\.[[:alpha:]_]",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`[[:alpha:]_]+?Σ*",
+  "s": " 한a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "µ*\\(?:a\\{1,2\\}µ??\\b\\(\\(a\\c.\\)\\)\\)\\|\\_<(\\2a\\{1,\\}",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\cj",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "µ[[:graph:]]\\{,3\\}\\`_\\{,3\\}\\|\\S-\\_>\\s-\\{2,3\\}k$",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:print:]]a+?",
+  "s": "aAba",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   2,
+   4
+  ]
+ },
+ {
+  "re": "^\\b\\(a\\)Σ\\{0,1\\}_*?",
+  "s": "",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:µ\\cC\\{2\\}\\|\\*\\cL\\)[[:alpha:]_]*?(",
+  "s": "))ab漢",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(é\\(?:[[:graph:]]+?σ?b*\\)\\)",
+  "s": "カ) )k",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\..",
+  "s": "a ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^Σ\\B\\(.\\)\\(.\\<\\)\\{0,\\}",
+  "s": "漢\néA\n-͸",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\(\\*\\B\\)σ\\((+[[:alpha:]_].*\\**?\\)",
+  "s": "(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": " \\{2,4\\}a.",
+  "s": "_(\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\<\\(?:\\<(\\{2,2\\}\\)*\\B",
+  "s": "ab σ)a a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "bb?\\(\\**\\( \\)\\|é\\)*\\1*",
+  "s": ")\n\nΣ͸b\n",
+  "fold": false,
+  "emacs": [
+   5,
+   6
+  ]
+ },
+ {
+  "re": "µ+?\\Sw",
+  "s": "μα한)ß",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "µ?b*",
+  "s": "éσaß",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\*a",
+  "s": "ﬁAab) ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\'\\<",
+  "s": "_ﬁ한 漢",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".A*\\([[:alnum:]]??\\(?:Σ[a-]\\)\\)$",
+  "s": "μb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".\\{,3\\}\\B$",
+  "s": "bé-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:print:]]\\(\\(aa+a\\.\\)\\)\\(\\(?:\\_>σ\\{,1\\}\\)\\)",
+  "s": "AA-a_",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".+ .",
+  "s": "b ßA)",
+  "fold": false,
+  "emacs": [
+   0,
+   3
+  ]
+ },
+ {
+  "re": "\\(a\\(?:\\([^a]\\)\\{0,0\\}\\)+?σ+?\\1\\)\\>\\|_\\>[^a]*?\\(a\\{0\\}\\)?",
+  "s": "",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\s(\\*a\\(\\.*(\\|\\*\\)\\|\\1",
+  "s": "_bA_é\nΣ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(?:.\\(a??\\)\\{1\\}.a\\)\\b\\'\\) (",
+  "s": "",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.*\\ca+$",
+  "s": "(²",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "A??\\([[:print:]]\\{1,2\\}[[:space:]]+?\\(?:\\(µ\\{,3\\}a*\\)\\{0\\}\\.a[[:alpha:]]??\\)\\.\\)AA\\{1\\}",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a*\\*\\{,1\\}\\(\\W?(A\\{2,\\}\\)",
+  "s": "_ ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_[α-ω]\\|[[:upper:]]\\{0,0\\}.\\(\\C^Aa\\)\\b",
+  "s": "α_aσ ",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".??a*\\([σΣ]\\(\\(\\_<\\)k\\1\\.*\\)k\\)\\{0,0\\}\\|a*.",
+  "s": "μAaé",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\.[^a]+?A",
+  "s": "µαa͸ﬁ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\cj.*?\\W(",
+  "s": "éé",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_>.\\( \\([^]\n]??\\)\\(?:\\b\\1*[z-a]\\)\\|[a-]µk\\)*",
+  "s": "́",
+  "fold": false,
+  "backward": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "[^[:alpha:]]+?\\**\\(a\\)",
+  "s": "bb-²",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "k_\\|\\swa*\\(?:.\\(A\\sw*?aa?\\).\\)\\_>",
+  "s": "a)漢abA)b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\B\\(.[[:alpha:]]a?é\\)*?\\|k$",
+  "s": "é_a-\n͸( ",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   7,
+   7
+  ]
+ },
+ {
+  "re": "\\(?:\\(?:σ\\)\\(\\<\\)\\)",
+  "s": "a\né_ςa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".b",
+  "s": "αa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\C^?b\\{2\\}\\s_+?",
+  "s": "ﬁ_µ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "_\\*b\\s_",
+  "s": "Aéaaa",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(\\(\\w+\\)*[[:upper:]]\\)σ+\\1\\)?",
+  "s": "K",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\`\\(a\\.*?[z-a]??\\)\\_>",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "é?",
+  "s": "ab½",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(A\\{,1\\}[[:upper:]]\\{,1\\}\\)\\{0\\}",
+  "s": "(a \naa²",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "(*?a?",
+  "s": "b_\n²",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\cL??aa\\{0\\}\\(\\(\\([^[:alpha:]]\\)*\\)\\{0,1\\}\\|.??\\)+",
+  "s": "a\n)\naA( ",
+  "fold": false,
+  "emacs": [
+   0,
+   4,
+   4,
+   4,
+   4,
+   4,
+   3,
+   4
+  ]
+ },
+ {
+  "re": "\\(.??\\(?:\\`\\(?:aµa\\)+\\s_é\\)*\\`\\(\\(.+?a\\)éa\\)??\\|σ\\{2,3\\}\\s-\\).[[:print:]]*.$",
+  "s": "-²-ab",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   0,
+   5,
+   0,
+   0
+  ]
+ },
+ {
+  "re": "\\(\\(a\\)?\\1\\)",
+  "s": "Kbαé\n_ka",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": ".\\(?:\\>\\ch\\cj\\|µ\\<Σ\\(a.?\\)\\)",
+  "s": "-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "µ",
+  "s": "μabé-a\n",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^.\\>\\(\\(\\'\\(a\\{1\\}\\cl*?σ\\s-??\\)\\)\\<\\1[ab]\\)",
+  "s": "",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\(\\.\\)\\1\\1\\w",
+  "s": "--_-_²",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(_*\\)Σ",
+  "s": "カμ²)béb€",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a*?\\(\\*\\([[:punct:]]..a\\)\\(σ\\(a(\\)+\\1_\\)\\)\\(\\(\\`_A\\)\\(?:\\(a\\1*\\1\\)*.\\{2,4\\}\\).\\)+",
+  "s": ")éαé",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\(σ[^]\n]*?[[:graph:]]*\\)*?Σµ*\\|\\1+?\\(\\w*?\\1\\)*\\2[[:alnum:]]\\|.*?(*b\\2",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.σ+?\\cg",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(a\\)\\|\\1[^]\n]*[]a] ",
+  "s": ")aéa",
+  "fold": false,
+  "emacs": [
+   1,
+   2,
+   1,
+   2
+  ]
+ },
+ {
+  "re": ".*?a\\(µa\\(\\<\\)\\)\\{2,\\}$",
+  "s": "€_A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^.\\(?:\\(\\(\\ck\\_<\\'.??\\)*\\)\\s_\\|a\\1\\1\\)\\|[[:punct:]]",
+  "s": "µa漢",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:punct:]]\\B.\\|é[z-a]+",
+  "s": "éΣ)",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "Σ\\(.+a\\)*?\\1",
+  "s": "½aaA",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(A\\{2,4\\}\\(éa+._\\{,1\\}\\)\\)*\\([[:alnum:]].A+a\\)?\\(?:\\'\\cL[[:alnum:]]\\|σ\\{2,\\}\\s(\\)*",
+  "s": "(",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   1,
+   1
+  ]
+ },
+ {
+  "re": "\\s(",
+  "s": "bbσAb",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a+A\\sw\\*\\{0\\}",
+  "s": "ak",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^_k\\(\\(?:\\(.\\c.a*\\)\\)*.\\B\\(A??\\(a+?[^]\n]??\\)+(\\)*\\)",
+  "s": "K(aªa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(a\\)a\\)+?\\W*\\_<\\(b\\)*",
+  "s": "Я\né한_A",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "σA\\(\\swµ\\)*\\.*?",
+  "s": "b_σカb",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\([[:space:]]k[[:alpha:]]*?\\(.a+?\\_>\\)*\\)+\\)+a.A\\{0,2\\}",
+  "s": "( (",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\.é\\(?:b\\{1\\}\\)+?",
+  "s": " ½bﬁb\n(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": ".*a??([ab]",
+  "s": "a",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a(a*?\\|\\S-*a\\(?:[^]\n]+?\\(a*?\\cg\\)\\)",
+  "s": "a",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\<\\(\\cC\\{,1\\}µ*\\)\\>",
+  "s": "(_é(-ﬁa ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "_",
+  "s": "\n½ª ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\W*",
+  "s": "μA漢aﬁß한)",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "µ+_??a\\{1,\\}\\(?: \\s_*\\(Σ\\)?\\|A.\\{1\\}\\s-\\)",
+  "s": "Ka\n(b한a",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(k*é+?\\( +?\\(\\.\\{,1\\}a*\\)[[:lower:]]\\)+\\|\\cl\\C^*\\.*?\\)[^]\n].$",
+  "s": "€b)é",
+  "fold": false,
+  "emacs": [
+   1,
+   4,
+   1,
+   2
+  ]
+ },
+ {
+  "re": "\\(\\(?:\\ck\\W\\*?\\)+?\\_<\\)\\`[σΣ]+\\|.\\(_*\\)*?\\(é\\_<\\)Σ",
+  "s": "́)",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "σ",
+  "s": "\né_éς",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "σ\\{,2\\}[[:lower:]]+?\\* +\\|\\b\\Swé",
+  "s": "€",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\s-",
+  "s": " b",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "[a-]\\(\\.\\)_[a-b]",
+  "s": " )b(a ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\([[:blank:]]\\*+?\\)\\cj\\)",
+  "s": "bbaЯ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "é$",
+  "s": "\nKé漢",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\>",
+  "s": ")K ª_\n\na",
+  "fold": false,
+  "emacs": [
+   2,
+   2
+  ]
+ },
+ {
+  "re": "[[:graph:]].",
+  "s": "\n",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "σ\\c|",
+  "s": "\n\néμ",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^_\\{,1\\}_*",
+  "s": "a(a(b ",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": ".b",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".",
+  "s": "ςb_é_aς",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "\\cj\\{0,\\}\\.*.\\{,2\\}$",
+  "s": "́",
+  "fold": false,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "a[[:graph:]]$",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_>\\(a+ a\\(?:\\cl\\)\\)a",
+  "s": " ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "éΣ\\|.*\\b$",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "^\\.??é*\\(?:.\\(\\(a\\)+?(+\\)\\).+\\|\\(Σ\\ch\\{2,3\\}\\(ak*?aa??\\)\\([z-a]\\1a\\)\\)[a-]\\{0,\\}\\W*\\'",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".+",
+  "s": "aª½)²)b",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   6,
+   7
+  ]
+ },
+ {
+  "re": "\\(\\(a*\\)\\{1,\\}\\1+?\\1k\\)[a-b] *?_+?",
+  "s": "\n(½",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "^.a\\|a\\(\\(a?\\)+\\)\\{0,\\}[[:alnum:]]?\\2\\|\\*",
+  "s": " ªa²͸(한-",
+  "fold": true,
+  "backward": true,
+  "emacs": [
+   2,
+   3,
+   3,
+   3,
+   3,
+   3
+  ]
+ },
+ {
+  "re": "^a[ab]+?\\|µb\\{,1\\}\\|a$",
+  "s": "",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "a?a\\(a\\(σµ\\{,2\\}A\\)?µ\\{0\\}\\(\\1é\\C^\\)??\\|b??[a-b]a\\)",
+  "s": "Σ",
+  "fold": false,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "^\\Cl",
+  "s": " ",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[[:lower:]]\\(?:a\\B(\\{2\\}\\| a _\\)",
+  "s": "aéb\n_Я",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\<",
+  "s": "ß かΣéAab",
+  "fold": true,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "[[:blank:]]_\\|[[:blank:]]+?ak\\|A",
+  "s": "aab́é",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "a*.+?\\`$",
+  "s": "a(-",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^a\\(µ+?\\([[:upper:]]\\(?:aΣ??k\\{1,3\\}a*\\)[[:alnum:]][[:alpha:]]\\{1,3\\}\\)*?[a-][z-a]\\)\\(?:\\`[a-b]\\)[[:punct:]]",
+  "s": "-か( ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": ".",
+  "s": "_bAé",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   4
+  ]
+ },
+ {
+  "re": "\\cL*\\s.*?\\Sw+?",
+  "s": "ǅék_aab",
+  "fold": false,
+  "emacs": [
+   0,
+   4
+  ]
+ },
+ {
+  "re": "a$",
+  "s": "€aééé²",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^é\\{2\\}\\(\\C^\\)a\\{2,4\\}",
+  "s": "a -)-(カa",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "(",
+  "s": "éb漢(",
+  "fold": false,
+  "backward": true,
+  "emacs": [
+   3,
+   4
+  ]
+ },
+ {
+  "re": "\\<a\\{1\\}σé$",
+  "s": "́²  漢b-",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\(A+\\(aσ.*?Σ\\)+?\\*\\)é+\\c|\\)??_*a",
+  "s": "(か\nЯ",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "..??\\ckσ*?",
+  "s": "μbéakbA",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "b[[:alnum:]]Σ\\|σ[[:punct:]]\\Sw",
+  "s": "Я한ba )-",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\ca\\{,1\\}",
+  "s": " 한",
+  "fold": true,
+  "emacs": [
+   0,
+   1
+  ]
+ },
+ {
+  "re": "[[:space:]]\\*+$",
+  "s": "_²baか",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "µ\\{,3\\}",
+  "s": "ςb",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "Aa\\|b\\sw\\(µa\\cL*[[:alpha:]]\\)+?\\|\\_>a\\*",
+  "s": "αbǅa(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\..\\(\\(?: *\\(µa\\)\\1*\\)+?.a.*?\\)\\2",
+  "s": "é_éかbǅΣ",
+  "fold": true,
+  "emacs": "error invalid-regexp"
+ },
+ {
+  "re": "\\(\\(\\(?:aa+?k*\\)*\\)A[[:upper:]]\\)\\{2,\\}[[:blank:]]\\|\\cj*\\(.*\\sw.+?\\)\\(a\\*\\)",
+  "s": "a\n ",
+  "fold": true,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\cj\\b\\(_?\\)a",
+  "s": "aK\n)b_)(",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(\\`a*\\_>\\|a*?\\(a\\*a\\)?\\(a?a??\\)µ\\)",
+  "s": "é-ﬁ b",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^a*\\(?:\\(.\\)\\{0,\\}b[ab]*\\`\\)\\{0,2\\}\\>",
+  "s": " \n_²--",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\Sw\\(\\(_\\([[:graph:]]b\\{2,\\}a\\{,2\\}A\\)?a\\b\\)\\_>\\)\\{0,\\}.\\{0\\} \\|σa*",
+  "s": " (A",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[z-a]\\{1,\\}",
+  "s": "́_b",
+  "fold": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\`\\.*é[a-]",
+  "s": "͸",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "^\\Bσb\\(?:\\>\\)+$",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "[^]\n]\\.σ??\\(a\\{2\\}\\(?:[^]\n][]a]*[[:space:]]??\\)µ\\)*?",
+  "s": "b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:a\\*+?\\)\\(\\(\\(?:a.*\\)aAa\\)*?\\)\\(_\\)k",
+  "s": "Σa--b",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "\\_>\\(.\\)[[:alpha:]]\\{0\\}\\>\\|\\_>\\1*?",
+  "s": "",
+  "fold": false,
+  "backward": true,
+  "emacs": "none"
+ },
+ {
+  "re": "\\(?:\\sw*[[:lower:]]*\\)_\\ca+?\\|\\**\\_>σ\\s_$",
+  "s": "éЯa한-",
+  "fold": false,
+  "emacs": "none"
+ },
+ {
+  "re": "^k*[[:print:]]A\\'\\|a*",
+  "s": "",
+  "fold": false,
+  "emacs": [
+   0,
+   0
+  ]
+ },
+ {
+  "re": "a\\(\\s_\\{0\\}\\)+?",
+  "s": "Aªﬁ\n\néa",
+  "fold": false,
+  "emacs": [
+   6,
+   7,
+   7,
+   7
+  ]
  }
 ]
