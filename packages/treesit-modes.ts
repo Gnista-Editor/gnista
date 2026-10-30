@@ -3,6 +3,7 @@
 // prog-mode and asks for its grammar with treesit-parser-create.
 
 import { charCount } from "subr";
+import { majorModeSetup, nodeText, searchSubtree } from "treesit";
 
 /** C's comments and operators, as c-mode's and js-mode's syntax tables have them. */
 const C_SYNTAX: { [chars: string]: string } = {
@@ -203,6 +204,132 @@ ember.defineCommand({
   },
 });
 
+// --- Tree-sitter indentation and navigation, as each mode's file has them ----------
+
+/** Whether a "*" starts the line, as c-ts-common-looking-at-star. */
+const lookingAtStar = (_n: unknown, _p: unknown, bol: number): boolean => ember.charAfter(bol) === "*";
+
+/** Just after the "/*" a block comment starts with, as c-ts-common-comment-start-after-first-star. */
+const commentStartAfterFirstStar = (_n: unknown, parent: ember.TreesitNode): number => {
+  const start = ember.treesitNodeStart(parent)!;
+  return ember.bufferText(start, start + 2) === "/*" ? start + 2 : start;
+};
+
+const ruleFor = (type: string, offset: string) => [["parent-is", type], "parent-bol", offset];
+
+/** rust-ts-mode--indent-rules. */
+const RUST_RULES = [
+  [["parent-is", "source_file"], "column-0", 0],
+  [["node-is", ")"], "parent-bol", 0],
+  [["node-is", "]"], "parent-bol", 0],
+  [["node-is", "}"], ["and", "parent", "parent-bol"], 0],
+  [["and", ["parent-is", "comment"], lookingAtStar], commentStartAfterFirstStar, -1],
+  [["parent-is", "comment"], "prev-adaptive-prefix", 0],
+  ...[
+    "arguments", "await_expression", "array_expression", "binary_expression", "block", "declaration_list", "enum_variant_list",
+    "field_declaration_list", "field_expression", "field_initializer_list", "let_declaration", "macro_definition", "parameters",
+    "struct_pattern", "token_tree", "use_list",
+  ].map((type) => ruleFor(type, "rust-ts-mode-indent-offset")),
+];
+
+/** json-ts--indent-rules. */
+const JSON_RULES = [
+  [["node-is", "}"], "parent-bol", 0],
+  [["node-is", ")"], "parent-bol", 0],
+  [["node-is", "]"], "parent-bol", 0],
+  ruleFor("object", "json-ts-mode-indent-offset"),
+  ruleFor("array", "json-ts-mode-indent-offset"),
+];
+
+/** JSX's rules for older or newer grammars, as js-jsx--treesit-indent-compatibility-bb1f97b chooses them. */
+function jsxCompatibility(): unknown[] {
+  const fragment = ember.conditionCase(
+    () => (ember.treesitQueryCompile("javascript", "(jsx_fragment) @capture"), true),
+    { error: () => false },
+  );
+  return fragment
+    ? [[["match", "<", "jsx_fragment"], "parent", 0], ruleFor("jsx_fragment", "js-indent-level").map((x, i) => (i === 1 ? "parent" : x))]
+    : [[["match", "<", "jsx_text"], "parent", 0], ruleFor("jsx_text", "js-indent-level").map((x, i) => (i === 1 ? "parent" : x))];
+}
+
+/** js--treesit-indent-rules. */
+const jsRules = (): unknown[] => {
+  const switchCase = "switch_\\(?:case\\|default\\)";
+  return [
+    [["parent-is", "program"], "parent-bol", 0],
+    [["node-is", "}"], "parent-bol", 0],
+    [["node-is", ")"], "parent-bol", 0],
+    [["node-is", "]"], "parent-bol", 0],
+    [["node-is", ">"], "parent-bol", 0],
+    [["and", ["parent-is", "comment"], lookingAtStar], commentStartAfterFirstStar, -1],
+    [["parent-is", "comment"], "prev-adaptive-prefix", 0],
+    ruleFor("ternary_expression", "js-indent-level"),
+    ruleFor("member_expression", "js-indent-level"),
+    [["node-is", switchCase], "parent-bol", 0],
+    [["node-is", "statement_block"], "parent-bol", "js-indent-level"],
+    ...["named_imports", "statement_block", "variable_declarator", "arguments", "array", "formal_parameters"].map((t) => ruleFor(t, "js-indent-level")),
+    [["parent-is", "template_string"], "no-indent"],
+    ...[
+      "template_substitution", "object_pattern", "object", "pair", "arrow_function", "parenthesized_expression", "binary_expression",
+      "class_body", switchCase, "statement_block",
+    ].map((t) => ruleFor(t, "js-indent-level")),
+    [["match", "while", "do_statement"], "parent-bol", 0],
+    [["match", "else", "if_statement"], "parent-bol", 0],
+    ruleFor("\\(?:\\(?:do\\|for\\(?:_in\\)?\\|if\\|while\\)_statement\\|else_clause\\)", "js-indent-level"),
+    ...jsxCompatibility(),
+    [["node-is", "jsx_closing_element"], "parent", 0],
+    [["match", "jsx_element", "statement"], "parent", "js-indent-level"],
+    [["parent-is", "jsx_element"], "parent", "js-indent-level"],
+    ruleFor("jsx_text", "js-indent-level"),
+    [["parent-is", "jsx_opening_element"], "parent", "js-indent-level"],
+    ruleFor("jsx_expression", "js-indent-level"),
+    [["match", "/", "jsx_self_closing_element"], "parent", 0],
+    [["parent-is", "jsx_self_closing_element"], "parent", "js-indent-level"],
+    ["no-node", "parent-bol", 0],
+  ];
+};
+
+const fieldText = (node: ember.TreesitNode, field: string): string =>
+  String(nodeText(ember.treesitNodeChildByFieldName(node, field), true) ?? "");
+
+/** rust-ts-mode--defun-name. */
+const rustDefunName = (node: ember.TreesitNode): string | null => {
+  const type = ember.treesitNodeType(node);
+  if (type === "impl_item") {
+    const trait = ember.treesitNodeChildByFieldName(node, "trait");
+    return `${trait ? `${nodeText(trait, true)} for ` : ""}${fieldText(node, "type")}`;
+  }
+  return ["enum_item", "function_item", "mod_item", "struct_item", "type_item"].includes(type ?? "") ? fieldText(node, "name") : null;
+};
+
+/** js--treesit-defun-name. */
+const jsDefunName = (node: ember.TreesitNode): string | null => {
+  const type = ember.treesitNodeType(node);
+  const named = type === "lexical_declaration" ? searchSubtree(node, "variable_declarator", false, false, 1) : ["function_declaration", "method_definition", "class_declaration"].includes(type ?? "") ? node : undefined;
+  return named ? fieldText(named, "name") : null;
+};
+
+/** json-ts-mode--defun-name. */
+const jsonDefunName = (node: ember.TreesitNode): string | null =>
+  ["pair", "object"].includes(ember.treesitNodeType(node) ?? "") ? fieldText(node, "key").trim() : null;
+
+/** What each language's mode sets for treesit.el, as its mode's body does. */
+const TREESIT_SETTINGS: Record<string, { rules: () => unknown[]; defun: string; name: (node: ember.TreesitNode) => string | null; electric: string }> = {
+  rust: {
+    rules: () => RUST_RULES,
+    defun: "\\(?:enum_item\\|function_item\\|impl_item\\|struct_item\\)",
+    name: rustDefunName,
+    electric: "{}():;,#",
+  },
+  javascript: {
+    rules: jsRules,
+    defun: "\\(?:class_declaration\\|function_declaration\\|lexical_declaration\\|method_definition\\)",
+    name: jsDefunName,
+    electric: "{}():;,<>/",
+  },
+  json: { rules: () => JSON_RULES, defun: "\\(?:object\\|pair\\)", name: jsonDefunName, electric: "{}():;," },
+};
+
 const alist = ember.defaultValue("auto-mode-alist");
 const entries = Array.isArray(alist) ? [...alist] : [];
 
@@ -233,7 +360,7 @@ for (const mode of modes) {
       `Files matching ${mode.pattern} use it; see auto-mode-alist.`,
     syntax: mode.syntax,
     setup: () => {
-      ember.treesitParserCreate(mode.language);
+      ember.treesitSetPrimaryLanguage(mode.language);
       if (mode.comment !== undefined) {
         ember.setVariable("comment-start", mode.comment.start);
         ember.setVariable("comment-end", "");
@@ -241,11 +368,20 @@ for (const mode of modes) {
       }
       ember.setVariable("parse-sexp-ignore-comments", true);
       if (mode.tabs === false) ember.setVariable("indent-tabs-mode", false);
-      ember.setVariable("indent-line-function", mode.language === "python" ? "python-indent-line-function" : "js-indent-line");
-      // Typing a closing brace or paren reindents its line, as electric-indent-chars has them;
       // Python reindents the line it leaves only by hand, as electric-indent-inhibit says.
-      ember.setVariable("electric-indent-chars", mode.language === "python" ? ["\n"] : ["\n", "}", ")", "]"]);
       ember.setVariable("electric-indent-inhibit", mode.language === "python");
+      const settings = TREESIT_SETTINGS[mode.language];
+      if (settings === undefined) {
+        ember.setVariable("indent-line-function", "python-indent-line-function");
+        ember.setVariable("electric-indent-chars", ["\n"]);
+      } else {
+        // Typing these reindents the line, as the mode's electric-indent-chars has them.
+        ember.setVariable("electric-indent-chars", ["\n", ...settings.electric]);
+        ember.setVariable("treesit-simple-indent-rules", [[mode.language, settings.rules()]] as unknown as ember.Value);
+        ember.setVariable("treesit-defun-type-regexp", settings.defun);
+        ember.setVariable("treesit-defun-name-function", ember.defun(`${mode.name}--defun-name`, settings.name));
+        majorModeSetup(`${mode.name}-map`);
+      }
       if (mode.language === "rust") {
         ember.setVariable("syntax-propertize-function", rustSyntaxPropertize);
         ember.setVariable("parse-sexp-lookup-properties", true);

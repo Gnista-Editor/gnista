@@ -206,7 +206,8 @@ pub struct Buffer {
     pub(crate) ppss_cache: std::cell::RefCell<Vec<(usize, crate::syntax_table::ParseState)>>,
     pub(crate) ppss_table: std::cell::RefCell<String>,
     /// The tree-sitter tree, if a major mode gave the buffer a language.
-    pub(crate) syntax: Option<SyntaxTree>,
+    /// Its tree-sitter parsers, newest first, as Emacs's `treesit-parser-list`.
+    pub(crate) parsers: Vec<SyntaxTree>,
     /// The stretches already fontified by `jit-lock-functions`, in order.
     pub(crate) fontified: Vec<Range<usize>>,
     /// Counts changes to the text, as Emacs's `buffer-modified-tick`.
@@ -310,7 +311,7 @@ impl Buffer {
             category_table: None,
             ppss_cache: Default::default(),
             ppss_table: Default::default(),
-            syntax: None,
+            parsers: Vec::new(),
             fontified: Vec::new(),
             tick: 0,
             pending_changes: Vec::new(),
@@ -392,6 +393,11 @@ impl Buffer {
         b
     }
 
+    /// The parser that highlights the buffer, which its major mode made.
+    pub(crate) fn primary_syntax(&self) -> Option<&SyntaxTree> {
+        self.parsers.iter().find(|p| p.primary)
+    }
+
     /// Counts changes to the text properties.
     pub(crate) fn properties_generation(&self) -> u64 {
         self.properties.generation
@@ -426,8 +432,8 @@ impl Buffer {
             TextChange::Reset => {
                 let (point, restriction) = (self.point, self.restriction);
                 self.text = from.text.clone();
-                if let Some(syntax) = &self.syntax {
-                    syntax.reset();
+                for parser in &self.parsers {
+                    parser.reset();
                 }
                 self.fontified.clear();
                 self.tick += 1;
@@ -809,13 +815,14 @@ impl Buffer {
         self.check_writable()?;
         for p in positions {
             let props = self.properties.save(p, p + 1);
-            let edit_start = self.syntax.as_ref().map(|_| (point_at(&self.text, p), point_at(&self.text, p + 1)));
+            let edit_start = (!self.parsers.is_empty()).then(|| (point_at(&self.text, p), point_at(&self.text, p + 1)));
             self.text.remove(p..p + 1);
             self.text.insert(p, to.encode_utf8(&mut [0; 4]));
             self.share(|| TextChange::Delete(p, p + 1));
             self.share(|| TextChange::Insert(p, to.to_string()));
-            if let (Some(syntax), Some((s, old_end))) = (&self.syntax, edit_start) {
-                syntax.edit(&input_edit(s, old_end, point_at(&self.text, p + 1)));
+            if let Some((s, old_end)) = edit_start {
+                let edit = input_edit(s, old_end, point_at(&self.text, p + 1));
+                self.parsers.iter().for_each(|parser| parser.edit(&edit));
             }
             self.unfontify_from(p);
             self.tick += 1;
@@ -916,7 +923,7 @@ impl Buffer {
             return;
         }
         let point_before = self.point;
-        let start = self.syntax.as_ref().map(|_| point_at(&self.text, pos));
+        let start = (!self.parsers.is_empty()).then(|| point_at(&self.text, pos));
         // Lines added above the selected window's start push it down, as
         // text inserted before a marker does.
         if self.top_line > 0 && self.top_line < self.line_count() && pos < self.line_start(self.top_line) {
@@ -925,8 +932,9 @@ impl Buffer {
         self.text.insert(pos, s);
         self.share(|| TextChange::Insert(pos, s.to_string()));
         let n = s.chars().count();
-        if let (Some(syntax), Some(start)) = (&self.syntax, start) {
-            syntax.edit(&input_edit(start, start, point_at(&self.text, pos + n)));
+        if let Some(start) = start {
+            let edit = input_edit(start, start, point_at(&self.text, pos + n));
+            self.parsers.iter().for_each(|parser| parser.edit(&edit));
         }
         if self.point >= pos {
             self.point += n;
@@ -985,7 +993,7 @@ impl Buffer {
             let at_start = m.advances && m.pos == start && start < end;
             if at_start { Some((MarkRef::Marker(m.id), 0)) } else { inside(m.pos).map(|o| (MarkRef::Marker(m.id), o)) }
         }));
-        let edit_range = self.syntax.as_ref().map(|_| (point_at(&self.text, start), point_at(&self.text, end)));
+        let edit_range = (!self.parsers.is_empty()).then(|| (point_at(&self.text, start), point_at(&self.text, end)));
         // The selected window's start moves with the text, to the start of
         // the deletion if it was inside it; a window starts at a line's start.
         let top = (self.top_line > 0 && self.top_line < self.line_count()).then(|| self.line_start(self.top_line));
@@ -998,8 +1006,9 @@ impl Buffer {
                 self.top_line = self.line_of(start);
             }
         }
-        if let (Some(syntax), Some((from, to))) = (&self.syntax, edit_range) {
-            syntax.edit(&input_edit(from, to, from));
+        if let Some((from, to)) = edit_range {
+            let edit = input_edit(from, to, from);
+            self.parsers.iter().for_each(|parser| parser.edit(&edit));
         }
         let shift = |p: usize| if p >= end { p - (end - start) } else { p.min(start) };
         if let Some((a, b)) = &mut self.restriction {
@@ -1386,8 +1395,8 @@ impl Buffer {
     pub fn set_text(&mut self, s: &str) {
         self.text = Rope::from_str(s);
         self.share(|| TextChange::Reset);
-        if let Some(syntax) = &self.syntax {
-            syntax.reset();
+        for parser in &self.parsers {
+            parser.reset();
         }
         self.properties.clear();
         self.overlays.clear();

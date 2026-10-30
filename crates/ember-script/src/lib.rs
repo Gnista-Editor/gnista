@@ -91,6 +91,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/case-table.ts", include_str!("../../../packages/case-table.ts")),
     ("packages/outline.ts", include_str!("../../../packages/outline.ts")),
     ("packages/prog-mode.ts", include_str!("../../../packages/prog-mode.ts")),
+    ("packages/treesit.ts", include_str!("../../../packages/treesit.ts")),
     ("packages/treesit-modes.ts", include_str!("../../../packages/treesit-modes.ts")),
     ("packages/delsel.ts", include_str!("../../../packages/delsel.ts")),
     ("packages/elec-pair.ts", include_str!("../../../packages/elec-pair.ts")),
@@ -574,6 +575,15 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
     )?;
     // The coding and charset primitives, as coding.c and charset.c: one
     // native, by the Lisp name, for the prelude's wrappers.
+    // The tree-sitter primitives, as treesit.c, likewise.
+    native.set(
+        "treesitPrimitive",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, args: Rest<Value<'js>>| -> rquickjs::Result<Value<'js>> {
+            let args = args.0.into_iter().map(|a| value_from_js(&ctx, a)).collect::<rquickjs::Result<Vec<_>>>()?;
+            let value = with_editor(&ctx, |ed| ed.treesit_primitive(&name, &args))?;
+            value_to_js(&ctx, &value)
+        })?,
+    )?;
     native.set(
         "codingPrimitive",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, args: Rest<Value<'js>>| -> rquickjs::Result<Value<'js>> {
@@ -3336,6 +3346,17 @@ fn value_to_js<'js>(ctx: &Ctx<'js>, value: &EditorValue) -> rquickjs::Result<Val
             let make: Function = ctx.globals().get("__emberCharTable")?;
             make.call((*id as f64,))?
         }
+        // The prelude's objects for tree-sitter parsers and nodes.
+        EditorValue::Treesit(object) => {
+            let make: Function = ctx.globals().get("__emberTreesit")?;
+            let (kind, raw): (&str, Vec<f64>) = match object {
+                ember_core::treesitfns::TsObject::Parser { buffer, parser } => ("parser", vec![*buffer as f64, *parser as f64]),
+                ember_core::treesitfns::TsObject::Node(r) => {
+                    ("node", [r.buffer as f64, r.parser as f64, r.generation as f64].into_iter().chain(r.path.iter().map(|&i| i as f64)).collect())
+                }
+            };
+            make.call((kind, raw))?
+        }
         // A symbol is JavaScript's registered symbol of its name, interned as Emacs's are.
         EditorValue::Symbol(name) => {
             let symbol: Object = ctx.globals().get("Symbol")?;
@@ -3468,6 +3489,24 @@ fn convert_from_js<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> rquickjs::Result<O
         && let Some(id) = object.get::<_, Option<f64>>("__emberKeymapId")?
     {
         return Ok(Some(EditorValue::Keymap(id as usize)));
+    }
+    if let Some(object) = value.as_object()
+        && let Some(raw) = object.get::<_, Option<Vec<f64>>>("__emberTreesitParser")?
+        && raw.len() == 2
+    {
+        return Ok(Some(EditorValue::Treesit(ember_core::treesitfns::TsObject::Parser { buffer: raw[0] as u64, parser: raw[1] as u64 })));
+    }
+    if let Some(object) = value.as_object()
+        && let Some(raw) = object.get::<_, Option<Vec<f64>>>("__emberTreesitNode")?
+        && raw.len() >= 3
+    {
+        let r = ember_core::treesitfns::NodeRef {
+            buffer: raw[0] as u64,
+            parser: raw[1] as u64,
+            generation: raw[2] as u64,
+            path: raw[3..].iter().map(|&i| i as u32).collect(),
+        };
+        return Ok(Some(EditorValue::Treesit(ember_core::treesitfns::TsObject::Node(r))));
     }
     if let Some(object) = value.as_object()
         && let Some(id) = object.get::<_, Option<f64>>("__emberCharTableId")?

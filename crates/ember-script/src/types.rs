@@ -1057,17 +1057,91 @@ const API: &str = r##"
   /** The languages Ember has tree-sitter grammars for. */
   function treesitLanguages(): string[];
   function treesitLanguageAvailable(language: string): boolean;
+  /** Whether Ember has a grammar for a language, as treesit-language-available-p. */
+  function treesitLanguageAvailableP(language: string): boolean;
+  /** Whether tree-sitter is there, as treesit-available-p: always. */
+  function treesitAvailableP(): boolean;
   /**
-   * Parse the current buffer with a tree-sitter grammar and highlight it from
-   * then on (Emacs's treesit-parser-create). A major mode's setup calls this;
-   * changing the major mode removes it.
+   * Parse the current buffer with a tree-sitter grammar and highlight it
+   * from then on; null stops. A major mode's setup calls this, then
+   * treesitParserCreate for the same language finds that parser.
    */
-  function treesitParserCreate(language: string): void;
-  function treesitParserDelete(): void;
+  function treesitSetPrimaryLanguage(language: string | null): void;
+  /** A tree-sitter parser of a buffer, as Emacs's treesit-parser objects: the same object each time. */
+  class TreesitParser {
+    private constructor();
+    readonly __emberTreesitParser: readonly number[];
+  }
+  /** A node of a buffer's syntax tree, as Emacs's treesit-node objects. Compare them with treesitNodeEq. */
+  class TreesitNode {
+    private constructor();
+    readonly __emberTreesitNode: readonly number[];
+  }
+  function treesitParserP(x: unknown): x is TreesitParser;
+  function treesitNodeP(x: unknown): x is TreesitNode;
+  /**
+   * A parser for a language in a buffer, the current one by default, as
+   * treesit-parser-create: one there already with the same language and
+   * tag unless noReuse. An indirect buffer's parsers are its base's.
+   */
+  function treesitParserCreate(language: string, buffer?: BufferLike | null, noReuse?: boolean, tag?: string | null): TreesitParser;
+  function treesitParserDelete(parser: TreesitParser): void;
+  /** A buffer's parsers, newest first, for a language if given, with a tag, untagged ones for none, or any for true, as treesit-parser-list. */
+  function treesitParserList(buffer?: BufferLike | null, language?: string | null, tag?: string | true | null): TreesitParser[];
+  function treesitParserBuffer(parser: TreesitParser): Buffer;
+  function treesitParserLanguage(parser: TreesitParser): string;
+  function treesitParserTag(parser: TreesitParser): string | undefined;
+  /** The root of a parser's tree, parsing the buffer first if it changed. */
+  function treesitParserRootNode(parser: TreesitParser): TreesitNode;
+  function treesitNodeParser(node: TreesitNode): TreesitParser;
+  /** A node's type, as "function_item", or the text of an anonymous node, as "(". */
+  function treesitNodeType(node: TreesitNode | undefined | null): string | undefined;
+  function treesitNodeStart(node: TreesitNode | undefined | null): number | undefined;
+  function treesitNodeEnd(node: TreesitNode | undefined | null): number | undefined;
+  /** The node's subtree as tree-sitter writes it, "(source_file (function_item ...))", as treesit-node-string. */
+  function treesitNodeString(node: TreesitNode | undefined | null): string | undefined;
+  function treesitNodeParent(node: TreesitNode | undefined | null): TreesitNode | undefined;
+  /** The nth child, counting named ones only if named, from the end if negative, as treesit-node-child. */
+  function treesitNodeChild(node: TreesitNode | undefined | null, n: number, named?: boolean): TreesitNode | undefined;
+  function treesitNodeChildCount(node: TreesitNode | undefined | null, named?: boolean): number | undefined;
+  function treesitNodeChildByFieldName(node: TreesitNode | undefined | null, field: string): TreesitNode | undefined;
+  function treesitNodeFieldNameForChild(node: TreesitNode | undefined | null, n: number): string | undefined;
+  function treesitNodeNextSibling(node: TreesitNode | undefined | null, named?: boolean): TreesitNode | undefined;
+  function treesitNodePrevSibling(node: TreesitNode | undefined | null, named?: boolean): TreesitNode | undefined;
+  /** The first child that ends after pos, as treesit-node-first-child-for-pos. */
+  function treesitNodeFirstChildForPos(node: TreesitNode | undefined | null, pos: number, named?: boolean): TreesitNode | undefined;
+  /** The smallest descendant covering beg to end, as treesit-node-descendant-for-range. */
+  function treesitNodeDescendantForRange(node: TreesitNode | undefined | null, beg: number, end: number, named?: boolean): TreesitNode | undefined;
+  /** A node's property, as treesit-node-check: "named", "missing", "extra", "has-error", "has-changes", "live" or "outdated". */
+  function treesitNodeCheck(node: TreesitNode, property: string): boolean;
+  function treesitNodeEq(a: TreesitNode | undefined | null, b: TreesitNode | undefined | null): boolean;
+  /** Compiles a query, checking it, as treesit-query-compile; queries are strings in tree-sitter's syntax. */
+  function treesitQueryCompile(language: string, query: string): string;
+  /**
+   * The captures of a query in a node, a parser's tree, or the buffer's tree
+   * for a language, as treesit-query-capture: [name, node] pairs, or nodes
+   * alone with nodeOnly, between beg and end if given, each match's
+   * together with grouped. Emacs's predicates are (#equal @a @b),
+   * (#match "regexp" @a) with an Emacs regexp, and (#pred function @a).
+   */
+  function treesitQueryCapture(
+    node: TreesitNode | TreesitParser | string,
+    query: string,
+    beg?: number | null,
+    end?: number | null,
+    nodeOnly?: false,
+    grouped?: boolean,
+  ): [string, TreesitNode][];
+  function treesitQueryCapture(
+    node: TreesitNode | TreesitParser | string,
+    query: string,
+    beg: number | null | undefined,
+    end: number | null | undefined,
+    nodeOnly: true,
+    grouped?: boolean,
+  ): TreesitNode[];
   /** The current buffer's tree-sitter language, if it has one. */
   function treesitLanguage(): string | undefined;
-  /** The smallest named syntax node at a position: its type, such as "function_item", and its range. */
-  function treesitNodeAt(position: number): { type: string; start: number; end: number } | undefined;
 
   /**
    * Set a text property on the characters from start up to end (Emacs's

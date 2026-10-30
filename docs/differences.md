@@ -31,6 +31,11 @@ Each entry says whether the difference is **deliberate**, which keeps it, or **n
 - **Faces as attribute lists** in a `face` property, `(:height 1.5)`, are not read (not yet); faces are named.
 - **`text-scale-adjust`** (not yet) has no lower limit, where Emacs stops at the smallest font a frame can show.
 
+- **Tree-sitter queries** (not yet) are strings in tree-sitter's syntax; Emacs's Lisp-form queries are not read. In a string, Emacs 30 cannot run its own predicates, `#equal`, `#match` and `#pred`, where Ember can ([ADR 0036](adr/0036-tree-sitter-for-scripts.md)).
+- **Tree-sitter and narrowing** (not yet): Emacs parses only the accessible part of a narrowed buffer, Ember all of it, so a node's positions may lie outside the narrowing ([ADR 0036](adr/0036-tree-sitter-for-scripts.md)).
+- **Highlighting in tree-sitter modes** (not yet) comes from each grammar's own query, not the mode's `treesit-font-lock-rules`, so faces differ in places from Emacs's.
+- **`C-M-f` in `js-ts-mode`** (not yet) moves by parens, as `treesit-thing-settings`' sexps are not used.
+
 ## Windows and frames
 
 - **Window starts** (not yet): a window always starts at the start of a line. So in the terminal, `C-v` over continued lines scrolls by lines of text rather than screen rows ([ADR 0029](adr/0029-redisplay-beyond-rows.md)).

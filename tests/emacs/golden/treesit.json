@@ -1,0 +1,418 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "rust-indent-region",
+      "input": {
+        "text": "fn main() {\nlet x = compute(1,\n2);\nif x > 0 {\nprintln!(\"{}\", x);\n} else {\nlet v = vec![\n1,\n2,\n];\n}\n}\n\nstruct Point {\nx: i32,\ny: i32,\n}\n\nimpl Point {\nfn len(&self) -> i32 {\nself.x\n.abs()\n}\n}\n",
+        "point": 0,
+        "keys": "C-x h C-M-\\",
+        "modes": [
+          "rust-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "fn main() {\n    let x = compute(1,\n        2);\n    if x > 0 {\n        println!(\"{}\", x);\n    } else {\n        let v = vec![\n            1,\n            2,\n        ];\n    }\n}\n\nstruct Point {\n    x: i32,\n    y: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n            .abs()\n    }\n}\n",
+      "visible": "fn main() {\n    let x = compute(1,\n        2);\n    if x > 0 {\n        println!(\"{}\", x);\n    } else {\n        let v = vec![\n            1,\n            2,\n        ];\n    }\n}\n\nstruct Point {\n    x: i32,\n    y: i32,\n}\n\nimpl Point {\n    fn len(&self) -> i32 {\n        self.x\n            .abs()\n    }\n}\n",
+      "point": 0,
+      "mark": 298,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "rust-tab-on-a-closing-brace",
+      "input": {
+        "text": "fn main() {\nlet x = compute(1,\n2);\nif x > 0 {\nprintln!(\"{}\", x);\n} else {\nlet v = vec![\n1,\n2,\n];\n}\n}\n\nstruct Point {\nx: i32,\ny: i32,\n}\n\nimpl Point {\nfn len(&self) -> i32 {\nself.x\n.abs()\n}\n}\n",
+        "point": 0,
+        "keys": "M-> C-p C-p TAB",
+        "modes": [
+          "rust-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "fn main() {\nlet x = compute(1,\n2);\nif x > 0 {\nprintln!(\"{}\", x);\n} else {\nlet v = vec![\n1,\n2,\n];\n}\n}\n\nstruct Point {\nx: i32,\ny: i32,\n}\n\nimpl Point {\nfn len(&self) -> i32 {\nself.x\n.abs()\n}\n}\n",
+      "visible": "fn main() {\nlet x = compute(1,\n2);\nif x > 0 {\nprintln!(\"{}\", x);\n} else {\nlet v = vec![\n1,\n2,\n];\n}\n}\n\nstruct Point {\nx: i32,\ny: i32,\n}\n\nimpl Point {\nfn len(&self) -> i32 {\nself.x\n.abs()\n}\n}\n",
+      "point": 186,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "rust-newline-indents",
+      "input": {
+        "text": "fn main() {\n}\n",
+        "point": 11,
+        "keys": "RET l e t SPC x ; RET",
+        "modes": [
+          "rust-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "fn main() {\n    let x;\n    \n}\n",
+      "visible": "fn main() {\n    let x;\n    \n}\n",
+      "point": 27,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "rust-beginning-of-defun",
+      "input": {
+        "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+        "point": 120,
+        "keys": "C-M-a",
+        "modes": [
+          "rust-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+      "visible": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+      "point": 94,
+      "mark": 120,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "rust-beginning-of-defun-twice",
+      "input": {
+        "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+        "point": 120,
+        "keys": "C-M-a C-M-a",
+        "modes": [
+          "rust-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+      "visible": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+      "point": 56,
+      "mark": 120,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "rust-beginning-of-defun-three-times",
+      "input": {
+        "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+        "point": 120,
+        "keys": "C-M-a C-M-a C-M-a",
+        "modes": [
+          "rust-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+      "visible": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+      "point": 47,
+      "mark": 120,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "rust-end-of-defun",
+      "input": {
+        "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+        "point": 3,
+        "keys": "C-M-e",
+        "modes": [
+          "rust-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+      "visible": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+      "point": 20,
+      "mark": 3,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "rust-end-of-defun-twice",
+      "input": {
+        "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+        "point": 3,
+        "keys": "C-M-e C-M-e",
+        "modes": [
+          "rust-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+      "visible": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+      "point": 46,
+      "mark": 3,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "rust-end-of-defun-inside-impl",
+      "input": {
+        "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+        "point": 75,
+        "keys": "C-M-e C-M-e",
+        "modes": [
+          "rust-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+      "visible": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+      "point": 133,
+      "mark": 75,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "rust-beginning-of-defun-with-a-count",
+      "input": {
+        "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+        "point": 140,
+        "keys": "M-2 C-M-a",
+        "modes": [
+          "rust-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+      "visible": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+      "point": 21,
+      "mark": 135,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "rust-beginning-of-defun-backwards-count",
+      "input": {
+        "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+        "point": 3,
+        "keys": "C-u - 1 C-M-a",
+        "modes": [
+          "rust-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+      "visible": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+      "point": 21,
+      "mark": 3,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "js-indent-region",
+      "input": {
+        "text": "function f(a, b) {\nif (a) {\nreturn {\nx: 1,\ny: [1,\n2],\n};\n} else {\nconst g = (c) => {\nreturn c;\n};\n}\nswitch (b) {\ncase 1:\nbreak;\ndefault:\nf(1,\n2);\n}\n}\n",
+        "point": 0,
+        "keys": "C-x h C-M-\\",
+        "modes": [
+          "js-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "function f(a, b) {\n    if (a) {\n\treturn {\n\t    x: 1,\n\t    y: [1,\n\t\t2],\n\t};\n    } else {\n\tconst g = (c) => {\n\t    return c;\n\t};\n    }\n    switch (b) {\n    case 1:\n\tbreak;\n    default:\n\tf(1,\n\t    2);\n    }\n}\n",
+      "visible": "function f(a, b) {\n    if (a) {\n\treturn {\n\t    x: 1,\n\t    y: [1,\n\t\t2],\n\t};\n    } else {\n\tconst g = (c) => {\n\t    return c;\n\t};\n    }\n    switch (b) {\n    case 1:\n\tbreak;\n    default:\n\tf(1,\n\t    2);\n    }\n}\n",
+      "point": 0,
+      "mark": 206,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "js-beginning-of-defun",
+      "input": {
+        "text": "function one() {\n  return 1;\n}\n\nclass C {\n  two() {\n    return 2;\n  }\n}\n\nconst three = () => 3;\n",
+        "point": 60,
+        "keys": "C-M-a",
+        "modes": [
+          "js-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "function one() {\n  return 1;\n}\n\nclass C {\n  two() {\n    return 2;\n  }\n}\n\nconst three = () => 3;\n",
+      "visible": "function one() {\n  return 1;\n}\n\nclass C {\n  two() {\n    return 2;\n  }\n}\n\nconst three = () => 3;\n",
+      "point": 42,
+      "mark": 60,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "js-end-of-defun",
+      "input": {
+        "text": "function one() {\n  return 1;\n}\n\nclass C {\n  two() {\n    return 2;\n  }\n}\n\nconst three = () => 3;\n",
+        "point": 0,
+        "keys": "C-M-e C-M-e C-M-e",
+        "modes": [
+          "js-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "function one() {\n  return 1;\n}\n\nclass C {\n  two() {\n    return 2;\n  }\n}\n\nconst three = () => 3;\n",
+      "visible": "function one() {\n  return 1;\n}\n\nclass C {\n  two() {\n    return 2;\n  }\n}\n\nconst three = () => 3;\n",
+      "point": 96,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "json-indent-region",
+      "input": {
+        "text": "{\n\"a\": 1,\n\"b\": [\n1,\n{\n\"c\": true\n}\n],\n\"d\": {}\n}\n",
+        "point": 0,
+        "keys": "C-x h C-M-\\",
+        "modes": [
+          "json-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "{\n  \"a\": 1,\n  \"b\": [\n    1,\n    {\n      \"c\": true\n    }\n  ],\n  \"d\": {}\n}\n",
+      "visible": "{\n  \"a\": 1,\n  \"b\": [\n    1,\n    {\n      \"c\": true\n    }\n  ],\n  \"d\": {}\n}\n",
+      "point": 0,
+      "mark": 73,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "json-beginning-of-defun",
+      "input": {
+        "text": "{\n  \"a\": {\n    \"b\": 1\n  },\n  \"c\": 2\n}\n",
+        "point": 20,
+        "keys": "C-M-a",
+        "modes": [
+          "json-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "{\n  \"a\": {\n    \"b\": 1\n  },\n  \"c\": 2\n}\n",
+      "visible": "{\n  \"a\": {\n    \"b\": 1\n  },\n  \"c\": 2\n}\n",
+      "point": 11,
+      "mark": 20,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "defun-by-open-paren-in-column-0",
+      "input": {
+        "text": "(one\n  (two))\n\n(three\n  four)\n",
+        "point": 30,
+        "keys": "C-M-a",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(one\n  (two))\n\n(three\n  four)\n",
+      "visible": "(one\n  (two))\n\n(three\n  four)\n",
+      "point": 15,
+      "mark": 30,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "end-of-defun-by-open-paren-in-column-0",
+      "input": {
+        "text": "(one\n  (two))\n\n(three\n  four)\n",
+        "point": 2,
+        "keys": "C-M-e",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(one\n  (two))\n\n(three\n  four)\n",
+      "visible": "(one\n  (two))\n\n(three\n  four)\n",
+      "point": 14,
+      "mark": 2,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "end-of-defun-twice-by-parens",
+      "input": {
+        "text": "(one\n  (two))\n\n(three\n  four)\n",
+        "point": 2,
+        "keys": "C-M-e C-M-e",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(one\n  (two))\n\n(three\n  four)\n",
+      "visible": "(one\n  (two))\n\n(three\n  four)\n",
+      "point": 30,
+      "mark": 2,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "beginning-of-defun-back-twice-by-parens",
+      "input": {
+        "text": "(one\n  (two))\n\n(three\n  four)\n",
+        "point": 35,
+        "keys": "C-M-a C-M-a",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(one\n  (two))\n\n(three\n  four)\n",
+      "visible": "(one\n  (two))\n\n(three\n  four)\n",
+      "point": 0,
+      "mark": 30,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    }
+  ]
+}

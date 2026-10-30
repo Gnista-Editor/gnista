@@ -53,6 +53,7 @@ mod syntax;
 mod textprop;
 pub mod syntax_table;
 mod timers;
+pub mod treesitfns;
 mod window;
 mod variables;
 

@@ -116,6 +116,39 @@
     }
     return t;
   };
+  /** A tree-sitter parser of a buffer, as Emacs's treesit-parser objects: the same object each time. */
+  class TreesitParser {
+    constructor(raw) {
+      Object.defineProperty(this, "__emberTreesitParser", { value: Object.freeze(raw) });
+      Object.freeze(this);
+    }
+    toJSON() {
+      return "#<treesit-parser>";
+    }
+  }
+  /** A node of a syntax tree, as Emacs's treesit-node objects; treesitNodeEq compares them. */
+  class TreesitNode {
+    constructor(raw) {
+      Object.defineProperty(this, "__emberTreesitNode", { value: Object.freeze(raw) });
+      Object.freeze(this);
+    }
+    toJSON() {
+      return `#<treesit-node ${native.treesitPrimitive("treesit-node-type", this)}>`;
+    }
+  }
+  const treesitParsers = new Map();
+  globalThis.__emberTreesit = (kind, raw) => {
+    if (kind === "node") return new TreesitNode(raw);
+    const key = raw.join(":");
+    let p = treesitParsers.get(key);
+    if (p === undefined) {
+      p = new TreesitParser(raw);
+      treesitParsers.set(key, p);
+    }
+    return p;
+  };
+  /** Runs a tree-sitter primitive by its Lisp name; nil comes back as undefined. */
+  const treesit = (name, ...args) => native.treesitPrimitive(name, ...args.map((a) => (a === undefined ? null : a))) ?? undefined;
   const keymapArg = (k) => (k instanceof Keymap ? k : symbolName(k));
   const bindingArg = (b) => (b === null || b === undefined ? null : b instanceof Keymap ? b : symbolName(b));
   // A transient map made from the same bindings is made once.
@@ -812,10 +845,42 @@
 
     treesitLanguages: () => native.treesitLanguages(),
     treesitLanguageAvailable: (language) => native.treesitLanguages().includes(String(language)),
-    treesitParserCreate: (language) => native.treesitSetLanguage(String(language)),
-    treesitParserDelete: () => native.treesitSetLanguage(null),
+    treesitLanguageAvailableP: (language) => treesit("treesit-language-available-p", String(language)),
+    treesitAvailableP: () => true,
+    treesitSetPrimaryLanguage: (language) => native.treesitSetLanguage(language === null || language === undefined ? null : String(language)),
+    TreesitParser,
+    TreesitNode,
+    treesitParserP: (x) => x instanceof TreesitParser,
+    treesitNodeP: (x) => x instanceof TreesitNode,
+    treesitParserCreate: (language, buffer, noReuse = false, tag) =>
+      treesit("treesit-parser-create", String(language), buffer ?? null, Boolean(noReuse), tag ?? null),
+    treesitParserDelete: (parser) => treesit("treesit-parser-delete", parser),
+    treesitParserList: (buffer, language, tag) => treesit("treesit-parser-list", buffer ?? null, language ?? null, tag ?? null),
+    treesitParserBuffer: (parser) => treesit("treesit-parser-buffer", parser),
+    treesitParserLanguage: (parser) => treesit("treesit-parser-language", parser),
+    treesitParserTag: (parser) => treesit("treesit-parser-tag", parser),
+    treesitParserRootNode: (parser) => treesit("treesit-parser-root-node", parser),
+    treesitNodeParser: (node) => treesit("treesit-node-parser", node),
+    treesitNodeType: (node) => treesit("treesit-node-type", node),
+    treesitNodeStart: (node) => treesit("treesit-node-start", node),
+    treesitNodeEnd: (node) => treesit("treesit-node-end", node),
+    treesitNodeString: (node) => treesit("treesit-node-string", node),
+    treesitNodeParent: (node) => treesit("treesit-node-parent", node),
+    treesitNodeChild: (node, n, named = false) => treesit("treesit-node-child", node, n, Boolean(named)),
+    treesitNodeChildCount: (node, named = false) => treesit("treesit-node-child-count", node, Boolean(named)),
+    treesitNodeChildByFieldName: (node, field) => treesit("treesit-node-child-by-field-name", node, String(field)),
+    treesitNodeFieldNameForChild: (node, n) => treesit("treesit-node-field-name-for-child", node, n),
+    treesitNodeNextSibling: (node, named = false) => treesit("treesit-node-next-sibling", node, Boolean(named)),
+    treesitNodePrevSibling: (node, named = false) => treesit("treesit-node-prev-sibling", node, Boolean(named)),
+    treesitNodeFirstChildForPos: (node, pos, named = false) => treesit("treesit-node-first-child-for-pos", node, pos, Boolean(named)),
+    treesitNodeDescendantForRange: (node, beg, end, named = false) =>
+      treesit("treesit-node-descendant-for-range", node, beg, end, Boolean(named)),
+    treesitNodeCheck: (node, property) => treesit("treesit-node-check", node, String(property)),
+    treesitNodeEq: (a, b) => (a === null || a === undefined || b === null || b === undefined ? a === b : treesit("treesit-node-eq", a, b)),
+    treesitQueryCompile: (language, query) => treesit("treesit-query-compile", String(language), String(query)),
+    treesitQueryCapture: (node, query, beg, end, nodeOnly = false, grouped = false) =>
+      treesit("treesit-query-capture", node, String(query), beg ?? null, end ?? null, Boolean(nodeOnly), Boolean(grouped)),
     treesitLanguage: () => native.treesitLanguage() ?? undefined,
-    treesitNodeAt: (pos) => native.treesitNodeAt(pos) ?? undefined,
 
     putTextProperty: (start, end, name, value) => native.putTextProperty(start, end, String(name), value ?? null),
     removeTextProperty: (start, end, name) => native.removeTextProperty(start, end, String(name)),

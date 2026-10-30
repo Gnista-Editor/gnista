@@ -118,6 +118,16 @@ declare global {
        */
       "beginning-of-buffer": [];
       /**
+       * Move back to the beginning of a defun, or as many as the prefix argument says; forward if negative.
+       *
+       * A defun starts at an open paren in column 0, unless the major mode says otherwise.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "beginning-of-defun": [arg?: number];
+      /**
        * Move point to the start of the screen line it is on, which is not the start of its line where a long line continues.
        *
        * Defined in packages/simple.ts.
@@ -830,6 +840,14 @@ declare global {
        * Unless the region is active, leaves the mark where point was. With a numeric prefix argument N, move to N tenths of the way from the end instead, at the start of the next line. Plain C-u does not leave the mark.
        */
       "end-of-buffer": [];
+      /**
+       * Move forward to the end of a defun, or as many as the prefix argument says; back if negative.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "end-of-defun": [arg?: number];
       /**
        * Move point to the end of the screen line it is on.
        *
@@ -3509,6 +3527,22 @@ declare global {
        */
       "transpose-words": [];
       /**
+       * Move back to the beginning of a defun, by the syntax tree, or as many as the prefix argument says; forward if negative.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/treesit.ts.
+       */
+      "treesit-beginning-of-defun": [arg?: number];
+      /**
+       * Move forward to the end of a defun, by the syntax tree, or as many as the prefix argument says; back if negative.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/treesit.ts.
+       */
+      "treesit-end-of-defun": [arg?: number];
+      /**
        * Take the comment starts and ends out of the region's lines. With a prefix argument, take out that many levels.
        *
        * Defined in packages/newcomment.ts.
@@ -3783,6 +3817,12 @@ declare global {
        */
       "backup-by-copying": Value;
       /**
+       * If non-nil, the function beginning-of-defun calls with its count to find a defun's start.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "beginning-of-defun-function": Value;
+      /**
        * How far to look for a matching paren, in characters, or nil to look through the whole buffer.
        *
        * Defined in packages/paren.ts.
@@ -4047,6 +4087,12 @@ declare global {
        */
       "defining-kbd-macro": Value;
       /**
+       * If non-nil, an Emacs regexp for the text that may come before a defun's open paren.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "defun-prompt-regexp": Value;
+      /**
        * Whether DEL and <delete> delete the active region rather than one character.
        *
        * If the value is "kill", they kill the region instead, so it can be yanked back.
@@ -4264,6 +4310,18 @@ declare global {
        * Whether a command can use the minibuffer while it is open, as M-x does run from the minibuffer: the new prompt opens inside the open one, which waits until it is done.
        */
       "enable-recursive-minibuffers": Value;
+      /**
+       * If non-nil, the function end-of-defun calls to move from a defun's start to after its end; nil moves over a sexp.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "end-of-defun-function": Value;
+      /**
+       * Whether end-of-defun moves to the end of the line before looking for the defun.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "end-of-defun-moves-to-eol": Value;
       /**
        * Commands run with M-x, newest first.
        */
@@ -4632,6 +4690,12 @@ declare global {
        * Defined in packages/fill.ts.
        */
       "normal-auto-fill-function": Value;
+      /**
+       * Whether an open paren in column 0 starts a defun.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "open-paren-in-column-0-is-defun-start": Value;
       /**
        * The buffer's TODO state sequences: each a list of the states not done and the states done.
        *
@@ -5289,6 +5353,48 @@ declare global {
        * Defined in packages/face-remap.ts.
        */
       "text-scale-mode-step": Value;
+      /**
+       * A function that gives the name of a defun node, or nil.
+       *
+       * Defined in packages/treesit.ts.
+       */
+      "treesit-defun-name-function": Value;
+      /**
+       * A function called after moving by defuns, to put point at a line's start or after a defun.
+       *
+       * Defined in packages/treesit.ts.
+       */
+      "treesit-defun-skipper": Value;
+      /**
+       * How C-M-a and C-M-e treat defuns inside defuns: "nested" visits them, "top-level" only the outermost.
+       *
+       * Defined in packages/treesit.ts.
+       */
+      "treesit-defun-tactic": Value;
+      /**
+       * An Emacs regexp matching the types of the nodes that are defuns, for C-M-a and C-M-e.
+       *
+       * Defined in packages/treesit.ts.
+       */
+      "treesit-defun-type-regexp": Value;
+      /**
+       * The function treesit-indent asks for [anchor, offset], given the node, its parent and the line's start.
+       *
+       * Defined in packages/treesit.ts.
+       */
+      "treesit-indent-function": Value;
+      /**
+       * How tree-sitter modes indent: for each language, [language, rules], each rule [matcher, anchor, offset].
+       *
+       * Defined in packages/treesit.ts.
+       */
+      "treesit-simple-indent-rules": Value;
+      /**
+       * For each language, [language, [[thing, predicate], ...]]: what a sexp, sentence, defun or other thing is.
+       *
+       * Defined in packages/treesit.ts.
+       */
+      "treesit-thing-settings": Value;
       /**
        * Whether long lines are cut off at the window's edge rather than continued on the next screen line.
        *
@@ -7421,17 +7527,91 @@ declare global {
     /** The languages Ember has tree-sitter grammars for. */
     function treesitLanguages(): string[];
     function treesitLanguageAvailable(language: string): boolean;
+    /** Whether Ember has a grammar for a language, as treesit-language-available-p. */
+    function treesitLanguageAvailableP(language: string): boolean;
+    /** Whether tree-sitter is there, as treesit-available-p: always. */
+    function treesitAvailableP(): boolean;
     /**
-     * Parse the current buffer with a tree-sitter grammar and highlight it from
-     * then on (Emacs's treesit-parser-create). A major mode's setup calls this;
-     * changing the major mode removes it.
+     * Parse the current buffer with a tree-sitter grammar and highlight it
+     * from then on; null stops. A major mode's setup calls this, then
+     * treesitParserCreate for the same language finds that parser.
      */
-    function treesitParserCreate(language: string): void;
-    function treesitParserDelete(): void;
+    function treesitSetPrimaryLanguage(language: string | null): void;
+    /** A tree-sitter parser of a buffer, as Emacs's treesit-parser objects: the same object each time. */
+    class TreesitParser {
+      private constructor();
+      readonly __emberTreesitParser: readonly number[];
+    }
+    /** A node of a buffer's syntax tree, as Emacs's treesit-node objects. Compare them with treesitNodeEq. */
+    class TreesitNode {
+      private constructor();
+      readonly __emberTreesitNode: readonly number[];
+    }
+    function treesitParserP(x: unknown): x is TreesitParser;
+    function treesitNodeP(x: unknown): x is TreesitNode;
+    /**
+     * A parser for a language in a buffer, the current one by default, as
+     * treesit-parser-create: one there already with the same language and
+     * tag unless noReuse. An indirect buffer's parsers are its base's.
+     */
+    function treesitParserCreate(language: string, buffer?: BufferLike | null, noReuse?: boolean, tag?: string | null): TreesitParser;
+    function treesitParserDelete(parser: TreesitParser): void;
+    /** A buffer's parsers, newest first, for a language if given, with a tag, untagged ones for none, or any for true, as treesit-parser-list. */
+    function treesitParserList(buffer?: BufferLike | null, language?: string | null, tag?: string | true | null): TreesitParser[];
+    function treesitParserBuffer(parser: TreesitParser): Buffer;
+    function treesitParserLanguage(parser: TreesitParser): string;
+    function treesitParserTag(parser: TreesitParser): string | undefined;
+    /** The root of a parser's tree, parsing the buffer first if it changed. */
+    function treesitParserRootNode(parser: TreesitParser): TreesitNode;
+    function treesitNodeParser(node: TreesitNode): TreesitParser;
+    /** A node's type, as "function_item", or the text of an anonymous node, as "(". */
+    function treesitNodeType(node: TreesitNode | undefined | null): string | undefined;
+    function treesitNodeStart(node: TreesitNode | undefined | null): number | undefined;
+    function treesitNodeEnd(node: TreesitNode | undefined | null): number | undefined;
+    /** The node's subtree as tree-sitter writes it, "(source_file (function_item ...))", as treesit-node-string. */
+    function treesitNodeString(node: TreesitNode | undefined | null): string | undefined;
+    function treesitNodeParent(node: TreesitNode | undefined | null): TreesitNode | undefined;
+    /** The nth child, counting named ones only if named, from the end if negative, as treesit-node-child. */
+    function treesitNodeChild(node: TreesitNode | undefined | null, n: number, named?: boolean): TreesitNode | undefined;
+    function treesitNodeChildCount(node: TreesitNode | undefined | null, named?: boolean): number | undefined;
+    function treesitNodeChildByFieldName(node: TreesitNode | undefined | null, field: string): TreesitNode | undefined;
+    function treesitNodeFieldNameForChild(node: TreesitNode | undefined | null, n: number): string | undefined;
+    function treesitNodeNextSibling(node: TreesitNode | undefined | null, named?: boolean): TreesitNode | undefined;
+    function treesitNodePrevSibling(node: TreesitNode | undefined | null, named?: boolean): TreesitNode | undefined;
+    /** The first child that ends after pos, as treesit-node-first-child-for-pos. */
+    function treesitNodeFirstChildForPos(node: TreesitNode | undefined | null, pos: number, named?: boolean): TreesitNode | undefined;
+    /** The smallest descendant covering beg to end, as treesit-node-descendant-for-range. */
+    function treesitNodeDescendantForRange(node: TreesitNode | undefined | null, beg: number, end: number, named?: boolean): TreesitNode | undefined;
+    /** A node's property, as treesit-node-check: "named", "missing", "extra", "has-error", "has-changes", "live" or "outdated". */
+    function treesitNodeCheck(node: TreesitNode, property: string): boolean;
+    function treesitNodeEq(a: TreesitNode | undefined | null, b: TreesitNode | undefined | null): boolean;
+    /** Compiles a query, checking it, as treesit-query-compile; queries are strings in tree-sitter's syntax. */
+    function treesitQueryCompile(language: string, query: string): string;
+    /**
+     * The captures of a query in a node, a parser's tree, or the buffer's tree
+     * for a language, as treesit-query-capture: [name, node] pairs, or nodes
+     * alone with nodeOnly, between beg and end if given, each match's
+     * together with grouped. Emacs's predicates are (#equal @a @b),
+     * (#match "regexp" @a) with an Emacs regexp, and (#pred function @a).
+     */
+    function treesitQueryCapture(
+      node: TreesitNode | TreesitParser | string,
+      query: string,
+      beg?: number | null,
+      end?: number | null,
+      nodeOnly?: false,
+      grouped?: boolean,
+    ): [string, TreesitNode][];
+    function treesitQueryCapture(
+      node: TreesitNode | TreesitParser | string,
+      query: string,
+      beg: number | null | undefined,
+      end: number | null | undefined,
+      nodeOnly: true,
+      grouped?: boolean,
+    ): TreesitNode[];
     /** The current buffer's tree-sitter language, if it has one. */
     function treesitLanguage(): string | undefined;
-    /** The smallest named syntax node at a position: its type, such as "function_item", and its range. */
-    function treesitNodeAt(position: number): { type: string; start: number; end: number } | undefined;
 
     /**
      * Set a text property on the characters from start up to end (Emacs's

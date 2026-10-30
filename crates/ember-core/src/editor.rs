@@ -193,6 +193,8 @@ pub struct Editor {
     pub(crate) symbols: BTreeMap<String, crate::symbols::Symbol>,
     pub(crate) faces: BTreeMap<String, Face>,
     pub(crate) grammars: BTreeMap<&'static str, crate::syntax::Grammar>,
+    /// Tree-sitter queries compiled so far, by language and source.
+    pub(crate) treesit_queries: std::collections::HashMap<(String, String), std::rc::Rc<tree_sitter::Query>>,
     pub(crate) next_hook_id: u64,
     /// Whether the running command was started by keys or M-x rather than
     /// called from code (Emacs's `called-interactively-p`).
@@ -336,6 +338,7 @@ impl Editor {
             symbols: BTreeMap::new(),
             faces: BTreeMap::new(),
             grammars: crate::syntax::builtin_grammars().into_iter().collect(),
+            treesit_queries: Default::default(),
             next_hook_id: 0,
             interactive: false,
             prefix_arg: None,

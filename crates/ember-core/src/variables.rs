@@ -31,6 +31,8 @@ pub enum Value {
     Keymap(crate::keymap::KeymapId),
     /// A char-table, by its id, as Emacs's char-tables are values.
     CharTable(crate::chartab::CharTableId),
+    /// A tree-sitter parser or node, as Emacs's treesit objects.
+    Treesit(crate::treesitfns::TsObject),
 }
 
 impl Value {
@@ -164,6 +166,8 @@ impl fmt::Display for Value {
             Value::Symbol(name) => f.write_str(name),
             Value::Keymap(id) => write!(f, "#<keymap {id}>"),
             Value::CharTable(id) => write!(f, "#<char-table {id}>"),
+            Value::Treesit(crate::treesitfns::TsObject::Parser { parser, .. }) => write!(f, "#<treesit-parser {parser}>"),
+            Value::Treesit(crate::treesitfns::TsObject::Node(_)) => write!(f, "#<treesit-node>"),
         }
     }
 }
@@ -375,7 +379,7 @@ impl Editor {
         b.syntax_propertized = 0;
         b.local_map.clear();
         b.syntax_table = crate::syntax_table::STANDARD.to_string();
-        b.syntax = None;
+        b.parsers.clear();
         b.fontified.clear();
         result
     }

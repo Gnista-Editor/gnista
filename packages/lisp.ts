@@ -5,6 +5,8 @@
 // and C-M-d down into one; C-M-k kills a sexp and C-M-SPC marks one; M-(
 // puts parens around sexps.
 
+import { forwardLine } from "subr";
+
 ember.defineVariable({
   name: "parens-require-spaces",
   doc: "Whether M-( puts a space before and after the parens it inserts, where a word or other parens are next to them.",
@@ -288,7 +290,163 @@ ember.defineCommand({
   },
 });
 
+// Moving by defuns, after lisp.el's beginning-of-defun and end-of-defun:
+// a defun starts at an open paren in column 0, or as defun-prompt-regexp
+// says, unless the mode gives beginning-of-defun-function and
+// end-of-defun-function, as tree-sitter modes do.
+
+for (const [name, value, doc] of [
+  ["beginning-of-defun-function", null, "If non-nil, the function beginning-of-defun calls with its count to find a defun's start."],
+  ["end-of-defun-function", null, "If non-nil, the function end-of-defun calls to move from a defun's start to after its end; nil moves over a sexp."],
+  ["defun-prompt-regexp", null, "If non-nil, an Emacs regexp for the text that may come before a defun's open paren."],
+  ["open-paren-in-column-0-is-defun-start", true, "Whether an open paren in column 0 starts a defun."],
+  ["end-of-defun-moves-to-eol", true, "Whether end-of-defun moves to the end of the line before looking for the defun."],
+] as const) {
+  ember.defineVariable({ name, value, doc });
+}
+
+const truthy = (v: ember.Value | undefined): boolean => v !== null && v !== undefined && v !== false;
+
+/** Pushes the mark before a run of a movement command, as beginning-of-defun does. */
+function markBeforeMoving(command: string): void {
+  if (ember.thisCommand() === command && ember.lastCommand() !== command && !ember.regionActive()) ember.pushMark(ember.point());
+}
+
+/**
+ * Searches back for `regexp` `count` times, forward if negative, outside
+ * strings and comments; on failure goes to the buffer's end and returns
+ * false, as (re-search-backward REGEXP nil 'move COUNT) in a loop.
+ */
+function searchOutsideStrings(regexp: string, count: number): boolean {
+  for (let i = 0; i < Math.abs(count); i++) {
+    for (;;) {
+      const found = count > 0 ? ember.reSearchBackward(regexp, { noerror: true }) : ember.reSearchForward(regexp, { noerror: true });
+      if (found === undefined) {
+        ember.gotoChar(count > 0 ? ember.pointMin() : ember.pointMax());
+        return false;
+      }
+      const at = ember.point();
+      if (ember.matchBeginning() !== undefined && ember.syntaxPpss(at).start === null) break;
+    }
+  }
+  return true;
+}
+
+/** Moves to the character that starts a defun, as beginning-of-defun-raw; true if it found one. */
+export function beginningOfDefunRaw(arg = 1): boolean {
+  const fn = ember.variable("beginning-of-defun-function");
+  if (truthy(fn)) return truthy(ember.funcall(fn as string, arg));
+  const prompt = ember.variable("defun-prompt-regexp");
+  const column0 = truthy(ember.variable("open-paren-in-column-0-is-defun-start"));
+  if (truthy(prompt) || column0) {
+    if (arg < 0 && ember.point() < ember.pointMax()) ember.gotoChar(ember.point() + 1);
+    const regexp = truthy(prompt) ? `${column0 ? "^\\s(\\|" : ""}\\(?:${String(prompt)}\\)\\s(` : "^\\s(";
+    if (!searchOutsideStrings(regexp, arg)) return false;
+    ember.gotoChar((ember.matchEnd() as number) - 1);
+    return true;
+  }
+  if (arg === 0) return true;
+  // The outermost list around point, then lists at top level.
+  let st = ember.syntaxPpss();
+  if (st.start !== null) {
+    ember.gotoChar(st.start);
+    st = ember.syntaxPpss();
+  }
+  const enclosing = st.openParens[0];
+  if (enclosing !== undefined) ember.gotoChar(enclosing);
+  let n = arg;
+  if (enclosing !== undefined && n > 0) n--;
+  if (enclosing === undefined && n < 0 && ember.charSyntax(ember.charAfter(ember.point()) ?? "") !== "(") n++;
+  const scan = ember.scanLists(ember.point(), -n, 0);
+  if (scan === null) {
+    ember.gotoChar(arg > 0 ? ember.pointMin() : ember.pointMax());
+    return false;
+  }
+  ember.gotoChar(scan);
+  if (arg > 0) return true;
+  const next = ember.scanLists(ember.point(), 1, -1);
+  if (next === null) {
+    ember.gotoChar(ember.pointMax());
+    return false;
+  }
+  ember.gotoChar(next - 1);
+  return true;
+}
+
+ember.defineCommand({
+  name: "beginning-of-defun",
+  doc:
+    "Move back to the beginning of a defun, or as many as the prefix argument says; forward if negative.\n\n" +
+    "A defun starts at an open paren in column 0, unless the major mode says otherwise.",
+  params: [{ name: "arg", kind: "count" }],
+  shiftSelect: true,
+  run: (arg: number) => {
+    markBeforeMoving("beginning-of-defun");
+    if (beginningOfDefunRaw(arg)) ember.gotoChar(ember.lineBeginningPosition());
+  },
+});
+
+/** Moves from a defun's start to after its end, as end-of-defun-function. */
+function endOfDefunFunction(): void {
+  const fn = ember.variable("end-of-defun-function");
+  if (truthy(fn)) ember.funcall(fn as string);
+  else forwardSexp(1);
+}
+
+/** Past spaces and a newline or comment after a defun's end, as end-of-defun's skip. */
+function skipAfterDefun(): void {
+  if (ember.point() === ember.lineBeginningPosition()) return;
+  ember.skipCharsForward(" \t");
+  if (ember.lookingAt("\\s<\\|\n")) forwardLine(1);
+}
+
+ember.defineCommand({
+  name: "end-of-defun",
+  doc: "Move forward to the end of a defun, or as many as the prefix argument says; back if negative.",
+  params: [{ name: "arg", kind: "count" }],
+  shiftSelect: true,
+  run: (argIn: number) => {
+    markBeforeMoving("end-of-defun");
+    let arg = argIn === 0 ? 1 : argIn;
+    const pos = ember.point();
+    let success = false;
+    if (truthy(ember.variable("end-of-defun-moves-to-eol"))) ember.gotoChar(ember.lineEndPosition());
+    beginningOfDefunRaw(1);
+    let beg = ember.point();
+    reporting("Containing expression ends prematurely", () => endOfDefunFunction());
+    if (arg <= 1) skipAfterDefun();
+    if (arg > 0) {
+      if (ember.point() > pos) arg--;
+      else ember.gotoChar(pos);
+      if (arg !== 0 && (success = beginningOfDefunRaw(-arg))) endOfDefunFunction();
+    } else if (arg < 0) {
+      if (ember.point() < pos) arg++;
+      else ember.gotoChar(beg);
+      if (arg !== 0 && (success = beginningOfDefunRaw(-arg))) {
+        beg = ember.point();
+        endOfDefunFunction();
+      }
+    }
+    skipAfterDefun();
+    while (arg < 0 && ember.point() >= pos && success) {
+      ember.gotoChar(beg);
+      success = beginningOfDefunRaw(-arg);
+      if (ember.point() >= beg || !success) {
+        arg = 0;
+      } else {
+        beg = ember.point();
+        endOfDefunFunction();
+        skipAfterDefun();
+      }
+    }
+  },
+});
+
 for (const [keys, command] of [
+  ["C-M-a", "beginning-of-defun"],
+  ["C-M-<home>", "beginning-of-defun"],
+  ["C-M-e", "end-of-defun"],
+  ["C-M-<end>", "end-of-defun"],
   ["C-M-f", "forward-sexp"],
   ["C-M-<right>", "forward-sexp"],
   ["C-M-b", "backward-sexp"],

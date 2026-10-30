@@ -904,7 +904,7 @@ struct SyntaxFaces {
 
 impl SyntaxFaces {
     fn at(&mut self, b: &Buffer, pos: usize, lines: usize) -> Option<&'static str> {
-        let syntax = b.syntax.as_ref()?;
+        let syntax = b.primary_syntax()?;
         if pos < self.start || pos >= self.start + self.faces.len() {
             let line = b.line_of(pos);
             let end = b.line_start((line + lines.max(1)).min(b.line_count() - 1)).max(b.line_end(line));
@@ -916,7 +916,7 @@ impl SyntaxFaces {
 
     /// Where the syntax face next changes after `pos`, up to `limit`.
     fn next_change(&mut self, b: &Buffer, pos: usize, limit: usize, lines: usize) -> usize {
-        if b.syntax.is_none() {
+        if b.primary_syntax().is_none() {
             return limit;
         }
         let face = self.at(b, pos, lines);

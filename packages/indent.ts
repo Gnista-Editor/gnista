@@ -28,7 +28,8 @@ ember.defineCommand({
     const fn = ember.variable("indent-line-function");
     const ignored = ember.variable("indent-line-ignored-functions");
     if (typeof fn === "string" && !(Array.isArray(ignored) && ignored.includes(fn))) {
-      ember.call(fn as ember.CommandName);
+      // A function or a command, as Emacs funcalls it.
+      ember.funcall(fn);
       return;
     }
     // As the line before, or none after a blank line.
@@ -229,7 +230,7 @@ ember.defineCommand({
       ember.insert("\t".repeat(Math.max(1, ember.prefixNumericValue(ember.prefixArg()))));
       return;
     }
-    ember.call((typeof fn === "string" ? fn : "indent-relative") as ember.CommandName);
+    ember.funcall(typeof fn === "string" ? fn : "indent-relative");
   },
 });
 

@@ -14,7 +14,7 @@ use crate::error::{Error, Result};
 
 /// A language Ember can parse: a grammar and its highlighting query.
 pub(crate) struct Grammar {
-    language: Language,
+    pub(crate) language: Language,
     highlights_source: &'static str,
     /// Compiled on first use, since compiling takes a while.
     highlights: OnceCell<Rc<Query>>,
@@ -45,9 +45,19 @@ pub(crate) fn builtin_grammars() -> Vec<(&'static str, Grammar)> {
     ]
 }
 
-/// A buffer's syntax tree.
+/// A buffer's syntax tree, and the parser that keeps it, as Emacs's
+/// tree-sitter parser objects.
 pub(crate) struct SyntaxTree {
+    /// Its id, which parser and node objects refer to it by.
+    pub(crate) id: u64,
     pub(crate) language: String,
+    /// The tag code gave it, as `treesit-parser-create`'s TAG.
+    pub(crate) tag: Option<String>,
+    /// Whether it is the one the major mode made, which highlights.
+    pub(crate) primary: bool,
+    /// Counts the trees parsed, so a node from an earlier one is known to
+    /// be out of date, as Emacs's node timestamps.
+    pub(crate) generation: Cell<u64>,
     parser: RefCell<Parser>,
     tree: RefCell<Option<Tree>>,
     /// Whether edits since the last parse are waiting to be parsed.
@@ -56,13 +66,18 @@ pub(crate) struct SyntaxTree {
 }
 
 impl SyntaxTree {
-    pub(crate) fn new(name: &str, grammar: &Grammar) -> Result<SyntaxTree> {
+    pub(crate) fn new(name: &str, grammar: &Grammar, tag: Option<String>, primary: bool) -> Result<SyntaxTree> {
+        static NEXT_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
         let mut parser = Parser::new();
         parser
             .set_language(&grammar.language)
             .map_err(|e| Error::new(format!("Cannot use the {name} grammar: {e}")))?;
         Ok(SyntaxTree {
+            id: NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
             language: name.to_string(),
+            tag,
+            primary,
+            generation: Cell::new(0),
             parser: RefCell::new(parser),
             tree: RefCell::new(None),
             stale: Cell::new(true),
@@ -83,8 +98,14 @@ impl SyntaxTree {
         self.stale.set(true);
     }
 
+    /// The tree as last parsed, with the edits since applied to it but not
+    /// parsed again, as a node taken from it still sees it in Emacs.
+    pub(crate) fn last_parsed(&self) -> Option<Tree> {
+        self.tree.borrow().clone()
+    }
+
     /// The tree for the text, parsing first if it is out of date.
-    fn parsed(&self, text: &Rope) -> Option<Tree> {
+    pub(crate) fn parsed(&self, text: &Rope) -> Option<Tree> {
         if self.stale.get() || self.tree.borrow().is_none() {
             let old = self.tree.borrow().clone();
             let len = text.len_bytes();
@@ -98,6 +119,7 @@ impl SyntaxTree {
             let tree = self.parser.borrow_mut().parse_with_options(&mut read, old.as_ref(), None);
             *self.tree.borrow_mut() = tree;
             self.stale.set(false);
+            self.generation.set(self.generation.get() + 1);
         }
         self.tree.borrow().clone()
     }
@@ -191,23 +213,27 @@ impl crate::editor::Editor {
                     .grammars
                     .get(name)
                     .ok_or_else(|| Error::new(format!("No grammar for {name}")))?;
-                Some(SyntaxTree::new(name, grammar)?)
+                Some(SyntaxTree::new(name, grammar, None, true)?)
             }
             None => None,
         };
-        self.buffer_mut().syntax = syntax;
+        let b = self.buffer_mut();
+        b.parsers.retain(|p| !p.primary);
+        if let Some(syntax) = syntax {
+            b.parsers.insert(0, syntax);
+        }
         Ok(())
     }
 
     /// The current buffer's language, if it has a syntax tree.
     pub fn buffer_language(&self) -> Option<&str> {
-        self.buffer().syntax.as_ref().map(|s| s.language.as_str())
+        self.buffer().primary_syntax().map(|s| s.language.as_str())
     }
 
     /// The kind and range of the smallest named syntax node at a position.
     pub fn syntax_node_at(&self, pos: usize) -> Option<(String, usize, usize)> {
         let b = self.buffer();
-        b.syntax.as_ref()?.node_at(b.text(), pos)
+        b.primary_syntax()?.node_at(b.text(), pos)
     }
 }
 
@@ -237,7 +263,7 @@ mod tests {
     fn faces_of(language: &str, source: &str) -> Vec<(String, &'static str)> {
         let grammars = builtin_grammars();
         let grammar = &grammars.iter().find(|(n, _)| *n == language).unwrap().1;
-        let tree = SyntaxTree::new(language, grammar).unwrap();
+        let tree = SyntaxTree::new(language, grammar, None, true).unwrap();
         let text = Rope::from_str(source);
         let faces = tree.faces(&text, 0, text.len_chars());
         // Runs of the same face, with their text.

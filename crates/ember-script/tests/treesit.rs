@@ -74,8 +74,10 @@ fn scripts_can_ask_about_nodes() {
             &mut ed,
             "test.ts",
             r#"
-            const node = ember.treesitNodeAt(4)!;
-            ember.message(`${node.type} ${node.start} ${node.end} ${ember.treesitLanguage()} ${ember.treesitLanguageAvailable("rust")}`);
+            import("treesit").then(({ nodeAt }) => {
+              const node = nodeAt(4)!;
+              ember.message(`${ember.treesitNodeType(node)} ${ember.treesitNodeStart(node)} ${ember.treesitNodeEnd(node)} ${ember.treesitLanguage()} ${ember.treesitLanguageAvailable("rust")}`);
+            });
             "#
             .to_string(),
         )
@@ -95,4 +97,116 @@ fn prog_mode_hook_runs_for_programming_modes() {
         .unwrap();
     ed.call("python-ts-mode", vec![]).unwrap();
     assert_eq!(ed.echo(), Some("programming"));
+}
+
+/// Runs TypeScript with treesit.ts's functions as `t`, and gives what it
+/// leaves in `globalThis.result`, as JSON.
+fn with_treesit(ed: &mut Editor, scripting: &Scripting, code: &str) -> String {
+    scripting
+        .eval_typescript(ed, "test.ts", format!("import(\"treesit\").then((t: any) => {{ globalThis.result = JSON.stringify((() => {{ {code} }})()); }});"))
+        .unwrap();
+    let got = scripting.eval_expression(ed, "globalThis.result").unwrap();
+    serde_json::from_str::<String>(&got).unwrap_or(got)
+}
+
+const RUST: &str = "fn main() {\n    let x = 1;\n    foo(x, 2);\n}\n\nfn other() {}\n";
+
+#[test]
+fn nodes_as_emacs_gives_them() {
+    // Emacs 30.2 on the same text, its positions counting from 1.
+    let (mut ed, s) = setup();
+    ed.window_buffer_mut().set_text(RUST);
+    let got = with_treesit(
+        &mut ed,
+        &s,
+        r#"
+        const p = ember.treesitParserCreate("rust");
+        const root = ember.treesitParserRootNode(p);
+        const fn = ember.treesitNodeChild(root, 0)!;
+        const body = ember.treesitNodeChildByFieldName(fn, "body")!;
+        const type = ember.treesitNodeType;
+        return [type(root), ember.treesitNodeStart(root), ember.treesitNodeEnd(root), ember.treesitNodeChildCount(root),
+          ember.treesitNodeChildCount(fn), ember.treesitNodeChildCount(fn, true), type(fn), type(ember.treesitNodeChild(fn, -1)),
+          type(ember.treesitNodeChild(fn, 0)), type(ember.treesitNodeChild(fn, 0, true)), ember.treesitNodeFieldNameForChild(fn, 1),
+          ember.treesitNodeFieldNameForChild(fn, 0) ?? null, type(ember.treesitNodeNextSibling(fn)), type(ember.treesitNodeNextSibling(fn, true)),
+          type(ember.treesitNodePrevSibling(ember.treesitNodeChild(root, 1))), type(ember.treesitNodeParent(body)),
+          type(ember.treesitNodeFirstChildForPos(body, 19)), type(ember.treesitNodeFirstChildForPos(body, 19, true)),
+          type(ember.treesitNodeDescendantForRange(root, 19, 20)), type(ember.treesitNodeDescendantForRange(root, 19, 20, true)),
+          ember.treesitNodeString(ember.treesitNodeChild(root, 1)), ember.treesitNodeEq(ember.treesitNodeParent(body), fn),
+          type(t.nodeAt(20)), type(t.nodeAt(11)), type(t.nodeAt(11, undefined, true)), ember.treesitNodeStart(t.nodeAt(44)),
+          type(t.nodeOn(16, 26)), t.nodeText(ember.treesitNodeChildByFieldName(fn, "name"), true),
+          ember.treesitNodeCheck(fn, "named"), ember.treesitNodeCheck(ember.treesitNodeChild(fn, 0)!, "named"), ember.treesitNodeCheck(fn, "has-error")];
+        "#,
+    );
+    // Emacs: ("source_file" 1 60 2 4 3 "function_item" "block" "fn" "identifier" "name" nil "function_item" ...)
+    assert_eq!(
+        got,
+        r#"["source_file",0,59,2,4,3,"function_item","block","fn","identifier","name",null,"function_item","function_item","function_item","function_item","let_declaration","let_declaration","let_declaration","let_declaration","(function_item name: (identifier) parameters: (parameters) body: (block))",true,"identifier","{","identifier",45,"let_declaration","main",true,false,false]"#
+    );
+}
+
+#[test]
+fn queries_and_searches_as_emacs_gives_them() {
+    let (mut ed, s) = setup();
+    ed.window_buffer_mut().set_text(RUST);
+    s.eval_typescript(&mut ed, "pred.ts", r#"ember.defun("long-name-p", (n: ember.TreesitNode) => ember.treesitNodeEnd(n)! - ember.treesitNodeStart(n)! > 3);"#.into()).unwrap();
+    let got = with_treesit(
+        &mut ed,
+        &s,
+        r#"
+        const root = ember.treesitParserRootNode(ember.treesitParserCreate("rust"));
+        const fn = ember.treesitNodeChild(root, 0)!;
+        const text = (n: any) => (n === undefined ? null : t.nodeText(n, true));
+        const pairs = (cs: [string, ember.TreesitNode][]) => cs.map(([name, n]) => [name, text(n)]);
+        return [
+          pairs(ember.treesitQueryCapture(root, "(function_item name: (identifier) @name) (call_expression function: (identifier) @call)")),
+          pairs(ember.treesitQueryCapture(root, "(call_expression function: (identifier) @f arguments: (arguments (integer_literal) @n))", 14, 39)),
+          ember.treesitQueryCapture("rust", "(integer_literal) @n", null, null, true).map(text),
+          ember.treesitNodeType(t.searchForward(t.nodeAt(20), "identifier")), text(t.searchForward(t.nodeAt(20), "identifier")),
+          text(t.searchForward(t.nodeAt(20), "identifier", true)), ember.treesitNodeType(t.searchForward(t.nodeAt(20), "block")),
+          text(t.searchSubtree(fn, "integer_literal")), text(t.searchSubtree(fn, "integer_literal", true)),
+          ember.treesitNodeType(t.searchSubtree(fn, "integer_literal", false, false, 2)) ?? null,
+          // Emacs's predicates, which its string queries write as tree-sitter's.
+          ember.treesitQueryCapture(root, '((identifier) @id (#match "^o" @id))', null, null, true).map(text),
+          ember.treesitQueryCapture(root, '((identifier) @id (#equal @id "x"))', null, null, true).map(text),
+          ember.treesitQueryCapture(root, '((identifier) @id (#pred long-name-p @id))', null, null, true).map(text),
+          ember.treesitQueryCapture(root, "(let_declaration pattern: (_) @p value: (_) @v)", null, null, false, true).map(pairs),
+        ];
+        "#,
+    );
+    // Emacs: ((name . "main") (call . "foo") (name . "other")) ((f . "foo") (n . "2")) ("1" "2")
+    //        ("identifier" "foo" "main" "block" "1" "2" nil)
+    assert_eq!(
+        got,
+        r#"[[["name","main"],["call","foo"],["name","other"]],[["f","foo"],["n","2"]],["1","2"],"identifier","foo","main","block","1","2",null,["other"],["x","x"],["main","other"],[[["p","x"],["v","1"]]]]"#
+    );
+}
+
+#[test]
+fn parsers_and_nodes_out_of_date() {
+    let (mut ed, s) = setup();
+    ed.window_buffer_mut().set_text(RUST);
+    let got = with_treesit(
+        &mut ed,
+        &s,
+        r#"
+        const p = ember.treesitParserCreate("rust");
+        const root = ember.treesitParserRootNode(p);
+        const counts = [ember.treesitParserList().length, ember.treesitParserCreate("rust") === p, ember.treesitParserCreate("rust", null, true) === p,
+          ember.treesitParserList().length, (ember.treesitParserCreate("rust", null, false, "mine"), ember.treesitParserList().length),
+          ember.treesitParserList(null, null, true).length, ember.treesitParserList(null, "rust", "mine").length,
+          ember.treesitParserLanguage(p), ember.treesitParserTag(p) ?? null];
+        const old = ember.treesitNodeChild(root, 0)!;
+        ember.gotoChar(0);
+        ember.insert("// c\n");
+        // Out of date only once the tree is parsed again, as Emacs's.
+        const before = [ember.treesitNodeCheck(old, "outdated"), ember.treesitNodeCheck(old, "live"), ember.treesitNodeType(old)];
+        const now = ember.treesitNodeType(ember.treesitNodeChild(ember.treesitParserRootNode(p), 0));
+        const after = [ember.treesitNodeCheck(old, "outdated"), ember.conditionCase(() => ember.treesitNodeType(old), { "treesit-node-outdated": () => "outdated" })];
+        ember.treesitParserDelete(p);
+        return [...counts, ...before, now, ...after, ember.treesitNodeCheck(old, "live"), ember.treesitParserList(null, null, true).length];
+        "#,
+    );
+    // Emacs: (1 t nil 2 2 3 1 rust nil) (nil t "function_item" "line_comment")
+    assert_eq!(got, r#"[1,true,false,2,2,3,1,"rust",null,false,true,"function_item","line_comment",true,"outdated",false,2]"#);
 }

@@ -37,7 +37,7 @@ impl Editor {
             return Err(Error::new("Cannot make an indirect buffer of the minibuffer"));
         }
         let made = self.buffers[base].indirect(name, clone);
-        let language = clone.then(|| self.buffers[base].syntax.as_ref().map(|s| s.language.clone())).flatten();
+        let language = clone.then(|| self.buffers[base].primary_syntax().map(|s| s.language.clone())).flatten();
         self.buffers.push(made);
         self.has_indirect_buffers = true;
         let made = self.buffers.len() - 1;

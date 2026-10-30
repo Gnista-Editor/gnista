@@ -1,0 +1,171 @@
+[
+  {
+    "name": "rust-indent-region",
+    "text": "fn main() {\nlet x = compute(1,\n2);\nif x > 0 {\nprintln!(\"{}\", x);\n} else {\nlet v = vec![\n1,\n2,\n];\n}\n}\n\nstruct Point {\nx: i32,\ny: i32,\n}\n\nimpl Point {\nfn len(&self) -> i32 {\nself.x\n.abs()\n}\n}\n",
+    "keys": "C-x h C-M-\\",
+    "modes": [
+      "rust-ts-mode"
+    ]
+  },
+  {
+    "name": "rust-tab-on-a-closing-brace",
+    "text": "fn main() {\nlet x = compute(1,\n2);\nif x > 0 {\nprintln!(\"{}\", x);\n} else {\nlet v = vec![\n1,\n2,\n];\n}\n}\n\nstruct Point {\nx: i32,\ny: i32,\n}\n\nimpl Point {\nfn len(&self) -> i32 {\nself.x\n.abs()\n}\n}\n",
+    "point": 0,
+    "keys": "M-> C-p C-p TAB",
+    "modes": [
+      "rust-ts-mode"
+    ]
+  },
+  {
+    "name": "rust-newline-indents",
+    "text": "fn main() {\n}\n",
+    "point": 11,
+    "keys": "RET l e t SPC x ; RET",
+    "modes": [
+      "rust-ts-mode"
+    ]
+  },
+  {
+    "name": "rust-beginning-of-defun",
+    "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+    "point": 120,
+    "keys": "C-M-a",
+    "modes": [
+      "rust-ts-mode"
+    ]
+  },
+  {
+    "name": "rust-beginning-of-defun-twice",
+    "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+    "point": 120,
+    "keys": "C-M-a C-M-a",
+    "modes": [
+      "rust-ts-mode"
+    ]
+  },
+  {
+    "name": "rust-beginning-of-defun-three-times",
+    "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+    "point": 120,
+    "keys": "C-M-a C-M-a C-M-a",
+    "modes": [
+      "rust-ts-mode"
+    ]
+  },
+  {
+    "name": "rust-end-of-defun",
+    "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+    "point": 3,
+    "keys": "C-M-e",
+    "modes": [
+      "rust-ts-mode"
+    ]
+  },
+  {
+    "name": "rust-end-of-defun-twice",
+    "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+    "point": 3,
+    "keys": "C-M-e C-M-e",
+    "modes": [
+      "rust-ts-mode"
+    ]
+  },
+  {
+    "name": "rust-end-of-defun-inside-impl",
+    "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+    "point": 75,
+    "keys": "C-M-e C-M-e",
+    "modes": [
+      "rust-ts-mode"
+    ]
+  },
+  {
+    "name": "rust-beginning-of-defun-with-a-count",
+    "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+    "point": 140,
+    "keys": "M-2 C-M-a",
+    "modes": [
+      "rust-ts-mode"
+    ]
+  },
+  {
+    "name": "rust-beginning-of-defun-backwards-count",
+    "text": "fn one() {\n    1;\n}\n\nstruct S {\n    a: i32,\n}\n\nimpl S {\n    fn two(&self) {\n        2;\n    }\n\n    fn three(&self) {\n        3;\n    }\n}\n",
+    "point": 3,
+    "keys": "C-u - 1 C-M-a",
+    "modes": [
+      "rust-ts-mode"
+    ]
+  },
+  {
+    "name": "js-indent-region",
+    "text": "function f(a, b) {\nif (a) {\nreturn {\nx: 1,\ny: [1,\n2],\n};\n} else {\nconst g = (c) => {\nreturn c;\n};\n}\nswitch (b) {\ncase 1:\nbreak;\ndefault:\nf(1,\n2);\n}\n}\n",
+    "keys": "C-x h C-M-\\",
+    "modes": [
+      "js-ts-mode"
+    ]
+  },
+  {
+    "name": "js-beginning-of-defun",
+    "text": "function one() {\n  return 1;\n}\n\nclass C {\n  two() {\n    return 2;\n  }\n}\n\nconst three = () => 3;\n",
+    "point": 60,
+    "keys": "C-M-a",
+    "modes": [
+      "js-ts-mode"
+    ]
+  },
+  {
+    "name": "js-end-of-defun",
+    "text": "function one() {\n  return 1;\n}\n\nclass C {\n  two() {\n    return 2;\n  }\n}\n\nconst three = () => 3;\n",
+    "point": 0,
+    "keys": "C-M-e C-M-e C-M-e",
+    "modes": [
+      "js-ts-mode"
+    ]
+  },
+  {
+    "name": "json-indent-region",
+    "text": "{\n\"a\": 1,\n\"b\": [\n1,\n{\n\"c\": true\n}\n],\n\"d\": {}\n}\n",
+    "keys": "C-x h C-M-\\",
+    "modes": [
+      "json-ts-mode"
+    ]
+  },
+  {
+    "name": "json-beginning-of-defun",
+    "text": "{\n  \"a\": {\n    \"b\": 1\n  },\n  \"c\": 2\n}\n",
+    "point": 20,
+    "keys": "C-M-a",
+    "modes": [
+      "json-ts-mode"
+    ]
+  },
+  {
+    "name": "defun-by-open-paren-in-column-0",
+    "text": "(one\n  (two))\n\n(three\n  four)\n",
+    "point": 30,
+    "keys": "C-M-a",
+    "modes": []
+  },
+  {
+    "name": "end-of-defun-by-open-paren-in-column-0",
+    "text": "(one\n  (two))\n\n(three\n  four)\n",
+    "point": 2,
+    "keys": "C-M-e",
+    "modes": []
+  },
+  {
+    "name": "end-of-defun-twice-by-parens",
+    "text": "(one\n  (two))\n\n(three\n  four)\n",
+    "point": 2,
+    "keys": "C-M-e C-M-e",
+    "modes": []
+  },
+  {
+    "name": "beginning-of-defun-back-twice-by-parens",
+    "text": "(one\n  (two))\n\n(three\n  four)\n",
+    "point": 35,
+    "keys": "C-M-a C-M-a",
+    "modes": []
+  }
+]
