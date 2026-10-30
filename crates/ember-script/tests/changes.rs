@@ -626,3 +626,31 @@ fn setting_a_hook_sets_its_functions() {
     // Bound to a list naming a function, as (let ((test-hook '(test-named))) ...), then back.
     assert_eq!(result, r#"["named","a"]"#);
 }
+
+#[test]
+fn text_can_carry_its_own_keys() {
+    let (mut ed, s) = setup();
+    eval(
+        &mut ed,
+        &s,
+        r#"(() => {
+          globalThis.followed = 0;
+          ember.defineCommand({ name: "test-follow", run: () => { followed++; } });
+          ember.defineKeymap("test-link-map");
+          ember.bindKey("RET", "test-follow", "test-link-map");
+          ember.insert("see LINK here");
+          ember.putTextProperty(4, 8, "keymap", "test-link-map");
+          return 0;
+        })()"#,
+    );
+    // On the link, and just after it, as the property sticks to its end, RET follows it.
+    for pos in [4, 6, 8] {
+        eval(&mut ed, &s, &format!("ember.gotoChar({pos})"));
+        ed.press("RET").unwrap();
+    }
+    assert_eq!(eval(&mut ed, &s, "[followed, ember.bufferText()]"), r#"[3,"see LINK here"]"#);
+    // Elsewhere RET is RET.
+    eval(&mut ed, &s, "ember.gotoChar(2)");
+    ed.press("RET").unwrap();
+    assert_eq!(eval(&mut ed, &s, "[followed, ember.bufferText()]"), "[3,\"se\\ne LINK here\"]");
+}

@@ -200,14 +200,40 @@ impl Editor {
     /// The transient, minibuffer and global maps come before and after these.
     pub(crate) fn mode_keymaps(&self) -> Vec<String> {
         let b = self.buffer();
-        let mut maps: Vec<String> = self
-            .minor_modes
-            .iter()
-            .filter(|m| self.minor_mode_on(b, &m.name))
-            .filter_map(|m| m.keymap.clone())
-            .collect();
-        maps.extend(b.local_map.iter().cloned());
+        // A keymap property at point comes first, and a local-map property
+        // stands in for the buffer's own, as Emacs's current-active-maps has them.
+        let mut maps: Vec<String> = self.keymap_property_at_point("keymap").into_iter().collect();
+        maps.extend(self.minor_modes.iter().filter(|m| self.minor_mode_on(b, &m.name)).filter_map(|m| m.keymap.clone()));
+        match self.keymap_property_at_point("local-map") {
+            Some(map) => maps.push(map),
+            None => maps.extend(b.local_map.iter().cloned()),
+        }
         maps
+    }
+
+    /// The keymap a `keymap` or `local-map` property names at point, as
+    /// Emacs's get_local_map finds it: on the character after point, at the
+    /// end of the buffer the last one, else the one before if the property
+    /// sticks to its end. Keymaps are named, so the property is a name.
+    fn keymap_property_at_point(&self, name: &str) -> Option<String> {
+        let b = self.buffer();
+        if b.is_empty() {
+            return None;
+        }
+        let point = b.point();
+        let at = if point >= b.len() { b.len() - 1 } else { point };
+        let named = |v: &crate::Value| v.as_str().map(str::to_string);
+        if let Some(map) = b.char_property(at, name).and_then(named) {
+            return Some(map);
+        }
+        let before = point.checked_sub(1)?;
+        let props = b.text_properties_at(before)?;
+        let nonsticky = match props.get("rear-nonsticky") {
+            Some(crate::Value::Bool(true)) => true,
+            Some(crate::Value::List(names)) => names.iter().any(|n| n.as_str() == Some(name)),
+            _ => false,
+        };
+        if nonsticky { None } else { props.get(name).and_then(named) }
     }
 
     /// The keys bound to a command in the keymaps that apply to the current
