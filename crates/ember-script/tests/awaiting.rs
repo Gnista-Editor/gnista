@@ -251,3 +251,21 @@ fn timers_run_while_a_prompt_waits() {
     let log = ed.buffers().iter().find(|b| b.name == "log").unwrap();
     assert_eq!(log.slice(0..log.len()), "tick tick ");
 }
+
+#[test]
+fn the_sample_config_loads_and_its_awaiting_command_works() {
+    let mut ed = Editor::new();
+    let s = Scripting::new(&mut ed).unwrap();
+    s.load_file(&mut ed, std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples/init.ts"))).unwrap();
+    ed.press("C-u 2 C-c n").unwrap();
+    assert_eq!(ed.prompt(), Some("Note 1 of 2: "));
+    ed.type_text("one");
+    ed.press("RET").unwrap();
+    ed.type_text("two");
+    ed.press("RET").unwrap();
+    ed.press("y").unwrap();
+    assert_eq!(ed.window_buffer().name, "*notes*");
+    let notes = text(&ed);
+    assert!(notes.ends_with(" one\n") || notes.contains(" one\n"), "{notes}");
+    assert!(notes.ends_with(" two\n"), "{notes}");
+}

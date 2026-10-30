@@ -69,6 +69,23 @@ const countWords = ember.defineCommand({
 });
 ember.bindKey("C-c w", countWords);
 
+// A command that asks as it goes, awaiting each answer, and takes the
+// prefix argument as a count: C-u 3 C-c n asks for three notes.
+const jotNotes = ember.defineCommand({
+  name: "jot-notes",
+  doc: "Ask for notes, as many as the prefix argument says, and add each to *notes* with the time.",
+  params: [{ name: "count", kind: "count" }],
+  run: async (count: number) => {
+    ember.getBufferCreate("*notes*");
+    for (let i = 1; i <= count; i++) {
+      const note = await ember.readString(count > 1 ? `Note ${i} of ${count}: ` : "Note: ");
+      ember.withCurrentBuffer("*notes*", () => ember.insert(`${new Date().toISOString().slice(11, 16)} ${note}\n`));
+    }
+    if (await ember.yOrNP("Show the notes? ")) ember.call("switch-to-buffer", "*notes*");
+  },
+});
+ember.bindKey("C-c n", jotNotes);
+
 // Org's agenda and capture, on the keys Org's manual suggests. Emacs leaves
 // them unbound, as Ember does.
 ember.setVariable("org-agenda-files", ["~/org/notes.org"]);
