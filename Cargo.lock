@@ -1442,6 +1442,7 @@ dependencies = [
  "ember-mcp",
  "ember-script",
  "fontique",
+ "objc2-app-kit 0.3.2",
  "tempfile",
 ]
 

@@ -14,6 +14,7 @@ mod category;
 #[allow(dead_code)]
 mod chartab_data;
 mod colors_data;
+pub mod font;
 mod fringe;
 pub mod coding;
 mod command;
@@ -76,7 +77,8 @@ pub use modes::MinorMode;
 pub use prefix::{PrefixArg, prefix_numeric_value};
 pub use properties::{Overlay, Props, Text};
 pub use process::{Contact, NetworkSpec, ProcessSpec, Status as ProcessStatus};
-pub use fringe::{FringeAlign, FringeBitmap, STANDARD_BITMAPS};
+pub use font::{Font, FontKind, FontSize, font_spec};
+pub use fringe::{FringeAlign, FringeBitmap, RowFringes, STANDARD_BITMAPS, WindowFringes};
 pub use rows::{FringeSpec, LineNumbers, Margin, Row, Segment};
 pub use symbols::{AdviceHow, Definition};
 pub use search::{BufferHaystack, Match, SearchOptions, expand_replacement, fold_case_for as search_fold_case};

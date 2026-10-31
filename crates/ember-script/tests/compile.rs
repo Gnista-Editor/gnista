@@ -65,9 +65,20 @@ fn next_error_visits_each_message_in_turn() {
     assert_eq!(ed.window_buffer().name, "a.rs");
     assert_eq!(ed.buffer().point(), 9 + 8, "line 2, column 9");
     assert_eq!(ed.messages().last().map(String::as_str), Some("Next locus from *compilation*"));
+    // The overlay arrow marks the message in *compilation*: as a triangle
+    // in the fringe on a graphical frame, as nothing on a terminal, its
+    // overlay-arrow-string being empty there, as compile.el sets it.
+    let comp = &ed.buffers()[ed.find_buffer("*compilation*").unwrap()];
+    let Some(Value::Marker(arrow)) = ed.variable_in(comp, "overlay-arrow-position") else { panic!("no arrow") };
+    let first = comp.slice(0..comp.len()).find("\nsrc/a.rs").unwrap() + 1;
+    assert_eq!(ed.marker_position(arrow), Some(("*compilation*", first)));
+    assert_eq!(ed.variable("overlay-arrow-position"), Some(Value::Null), "only *compilation* has it");
     ed.press("M-g n").unwrap();
     assert_eq!(ed.window_buffer().name, "b.rs");
     assert_eq!(ed.buffer().point(), 8, "the start of line 3");
+    let comp = &ed.buffers()[ed.find_buffer("*compilation*").unwrap()];
+    assert_eq!(ed.variable_in(comp, "overlay-arrow-position"), Some(Value::Marker(arrow)), "the same marker, moved");
+    assert_eq!(ed.marker_position(arrow), Some(("*compilation*", comp.slice(0..comp.len()).find("\nsrc/b.rs").unwrap() + 1)));
     ed.press("M-g n").unwrap();
     assert_eq!(ed.take_error().map(|e| e.to_string()).as_deref(), Some("Past last error"));
     ed.press("M-g p").unwrap();

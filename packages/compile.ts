@@ -535,6 +535,12 @@ function compilationNextErrorFunction(n: number, reset: boolean): void {
   const from = s.current ?? (n === 0 ? ember.point() : 0);
   const m = nthMessage(n, from);
   s.current = m.start;
+  // The overlay arrow at the message's line: a triangle in the fringe, or
+  // nothing on a terminal, its string being empty here.
+  const at = ember.lineStart(ember.lineOf(m.start));
+  const arrow = ember.variable("overlay-arrow-position");
+  if (arrow instanceof ember.Marker) ember.setMarker(arrow, at);
+  else ember.setVariable("overlay-arrow-position", ember.makeMarker(at));
   gotoLocus(buffer, m);
 }
 
@@ -660,6 +666,9 @@ ember.defineMajorMode({
     ember.setReadOnly(true);
     ember.setVariable("next-error-function", "compilation-next-error-function");
     ember.setVariable("truncate-lines", false);
+    ember.makeLocalVariable("overlay-arrow-position");
+    ember.makeLocalVariable("overlay-arrow-string");
+    ember.setVariable("overlay-arrow-string", "");
   },
 });
 

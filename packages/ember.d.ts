@@ -6691,6 +6691,10 @@ declare global {
        */
       "frame-background-mode": Value;
       /**
+       * Mapping from logical to physical fringe indicator bitmaps. The value is an alist of (INDICATOR . BITMAPS) where INDICATOR is `truncation', `continuation', `overlay-arrow', `top', `bottom', `top-bottom', `up', `down', `empty-line' or `unknown', and BITMAPS is a bitmap for both fringes, or a list (LEFT RIGHT [LEFT1 RIGHT1]) with the bitmaps for the left and right fringe and for a partial last line, t meaning the default's.
+       */
+      "fringe-indicator-alist": Value;
+      /**
        * Keymap fundamental-mode-map.
        */
       "fundamental-mode-map": Value;
@@ -6916,6 +6920,14 @@ declare global {
        * Whether indenting uses tabs as well as spaces, a tab for every tab-width columns.
        */
       "indent-tabs-mode": Value;
+      /**
+       * Visually indicate buffer boundaries and scrolling. If non-nil, the first and last line of the buffer are marked in the fringe of a window on graphical displays with angle bitmaps, or if the window can be scrolled, the top and bottom line of the window are marked with up and down arrow bitmaps. If value is `left' or `right', both angle and arrow bitmaps are displayed in the left or right fringe. An alist of (INDICATOR . POSITION) with the indicators `top', `bottom', `up', `down' and t (any other) places each on the `left' or `right', or nowhere for nil; any other value puts the angles on the left and no arrows.
+       */
+      "indicate-buffer-boundaries": Value;
+      /**
+       * Visually indicate unused ("empty") screen lines after the buffer end. If non-nil, a bitmap is displayed in the left fringe of a window on graphical displays for each screen line that doesn't correspond to any buffer text, or in the right fringe if the value is `right'.
+       */
+      "indicate-empty-lines": Value;
       /**
        * Whether keys typed in this buffer are left out of recent-keys, as a password prompt's are.
        */
@@ -7575,6 +7587,18 @@ declare global {
        * Defined in packages/outline.ts.
        */
       "outline-regexp": Value;
+      /**
+       * Marker for where to display an arrow on top of the buffer text. This must be the beginning of a line in order to work. See also `overlay-arrow-string'.
+       */
+      "overlay-arrow-position": Value;
+      /**
+       * String to display as an arrow in text-mode frames. See also `overlay-arrow-position'.
+       */
+      "overlay-arrow-string": Value;
+      /**
+       * List of variables (symbols) which hold markers for overlay arrows. The symbols on this list are examined during redisplay to determine where to display overlay arrows.
+       */
+      "overlay-arrow-variable-list": Value;
       /**
        * Whether Overwrite mode is on in this buffer. Use the command overwrite-mode to change it.
        *
@@ -10131,7 +10155,7 @@ declare global {
      * What variables, hooks and text properties hold, as Emacs's values: a
      * function too, as a lambda in a variable, kept as itself.
      */
-    type Value = null | boolean | number | string | symbol | Value[] | ((...args: any[]) => any) | Buffer | PropertizedString | Keymap | CharTable;
+    type Value = null | boolean | number | string | symbol | Value[] | ((...args: any[]) => any) | Buffer | PropertizedString | Keymap | CharTable | Marker | Font;
     /**
      * A keymap, as Emacs's keymaps are values: bound to a prefix key in
      * another keymap it is that key's prefix map, shared wherever it is
@@ -10146,6 +10170,16 @@ declare global {
     interface CharTable {
       readonly __emberCharTableId: number;
     }
+    /**
+     * A font spec, entity or object, as Emacs's font values: a spec to match
+     * fonts against (`fontSpec`), a font that exists (`findFont`, `listFonts`),
+     * or an open font (`fontAt`). Read its properties with `fontGet`.
+     */
+    interface Font {
+      readonly __emberFontKind: "font-spec" | "font-entity" | "font-object";
+    }
+    /** A font property's name, as `fontSpec` and `fontGet` take them. */
+    type FontProperty = ":family" | ":foundry" | ":weight" | ":slant" | ":width" | ":size" | ":point-size" | ":adstyle" | ":registry" | ":dpi" | ":spacing" | ":avgwidth" | ":name" | ":script" | ":lang" | ":otf" | (string & {});
     /** A character as char-tables take one: its code point, or a string of it. */
     type CharCode = number | string;
     /** A range of characters: null for the default value, a character, or [from, to]. */
@@ -10824,6 +10858,42 @@ declare global {
     function colorSupportedP(color: string): boolean;
     /** The names of the colours Emacs knows, as defined-colors. */
     function definedColors(): string[];
+    /**
+     * A font spec, as font-spec: properties and values in turn, such as
+     * `fontSpec(":family", "Menlo", ":size", 12, ":weight", Symbol.for("bold"))`.
+     * A whole `:size` is in pixels; `:point-size` gives one in points. `:name`
+     * is parsed as an XLFD or Fontconfig name. Signals invalid-font-property
+     * errors as Emacs does.
+     */
+    function fontSpec(...plist: Value[]): Font;
+    /** A font's property, as font-get: names as symbols, undefined for none. */
+    function fontGet(font: Font, property: FontProperty): Value | undefined;
+    /** Set a font spec's property, as font-put, changing the spec. Returns the value. */
+    function fontPut(font: Font, property: FontProperty, value: Value): Value;
+    /** Whether a value is a font, or one of a kind, as fontp. */
+    function fontp(object: unknown, kind?: "font-spec" | "font-entity" | "font-object"): boolean;
+    /** A font's XLFD name, runs of wildcards folded into one if `foldWildcards`, as font-xlfd-name. */
+    function fontXlfdName(font: Font, foldWildcards?: boolean): string;
+    /** The font families the frame can show, sorted, as font-family-list: none on a terminal. */
+    function fontFamilyList(): string[];
+    /** The name of the font a face is drawn in, as face-font, or undefined on a terminal. */
+    function faceFont(face: FaceName | (string & {})): string | undefined;
+    /** The open font the text at a position is drawn in, as font-at, or undefined on a terminal. */
+    function fontAt(pos: number): Font | undefined;
+    /** The font that best matches a spec, as find-font. */
+    function findFont(spec: Font): Font | undefined;
+    /** The fonts matching a spec, at most `max`, as list-fonts. */
+    function listFonts(spec: Font, max?: number): Font[];
+    /** The XLFD names of the fonts matching a pattern with `*` and `?`, at most `max`, as x-list-fonts. */
+    function xListFonts(pattern: string, max?: number): string[];
+    /** What font-info says of a font by name: [name, full name, size, height, baseline offset, relative compose, default ascent, max width, ascent, descent, space width, average width, file, capability]. */
+    function fontInfo(name: string): Value[] | undefined;
+    /** An open font's [name, file, pixel size, max width, ascent, descent, space width, average width, capability], as query-font. */
+    function queryFont(font: Font): Value[] | undefined;
+    /** Whether a font has a glyph for a character, as font-has-char-p. */
+    function fontHasCharP(font: Font, char: string): boolean;
+    /** Whether the default face's font, or one it falls back on, can show a character, as char-displayable-p. */
+    function charDisplayableP(char: string): boolean;
     /** How far apart two colours look, as color-distance. */
     function colorDistance(color1: string, color2: string): number;
     /** Whether a colour is a shade of grey, as color-gray-p. */

@@ -303,7 +303,7 @@ const API: &str = r##"
    * What variables, hooks and text properties hold, as Emacs's values: a
    * function too, as a lambda in a variable, kept as itself.
    */
-  type Value = null | boolean | number | string | symbol | Value[] | ((...args: any[]) => any) | Buffer | PropertizedString | Keymap | CharTable;
+  type Value = null | boolean | number | string | symbol | Value[] | ((...args: any[]) => any) | Buffer | PropertizedString | Keymap | CharTable | Marker | Font;
   /**
    * A keymap, as Emacs's keymaps are values: bound to a prefix key in
    * another keymap it is that key's prefix map, shared wherever it is
@@ -318,6 +318,16 @@ const API: &str = r##"
   interface CharTable {
     readonly __emberCharTableId: number;
   }
+  /**
+   * A font spec, entity or object, as Emacs's font values: a spec to match
+   * fonts against (`fontSpec`), a font that exists (`findFont`, `listFonts`),
+   * or an open font (`fontAt`). Read its properties with `fontGet`.
+   */
+  interface Font {
+    readonly __emberFontKind: "font-spec" | "font-entity" | "font-object";
+  }
+  /** A font property's name, as `fontSpec` and `fontGet` take them. */
+  type FontProperty = ":family" | ":foundry" | ":weight" | ":slant" | ":width" | ":size" | ":point-size" | ":adstyle" | ":registry" | ":dpi" | ":spacing" | ":avgwidth" | ":name" | ":script" | ":lang" | ":otf" | (string & {});
   /** A character as char-tables take one: its code point, or a string of it. */
   type CharCode = number | string;
   /** A range of characters: null for the default value, a character, or [from, to]. */
@@ -996,6 +1006,42 @@ const API: &str = r##"
   function colorSupportedP(color: string): boolean;
   /** The names of the colours Emacs knows, as defined-colors. */
   function definedColors(): string[];
+  /**
+   * A font spec, as font-spec: properties and values in turn, such as
+   * `fontSpec(":family", "Menlo", ":size", 12, ":weight", Symbol.for("bold"))`.
+   * A whole `:size` is in pixels; `:point-size` gives one in points. `:name`
+   * is parsed as an XLFD or Fontconfig name. Signals invalid-font-property
+   * errors as Emacs does.
+   */
+  function fontSpec(...plist: Value[]): Font;
+  /** A font's property, as font-get: names as symbols, undefined for none. */
+  function fontGet(font: Font, property: FontProperty): Value | undefined;
+  /** Set a font spec's property, as font-put, changing the spec. Returns the value. */
+  function fontPut(font: Font, property: FontProperty, value: Value): Value;
+  /** Whether a value is a font, or one of a kind, as fontp. */
+  function fontp(object: unknown, kind?: "font-spec" | "font-entity" | "font-object"): boolean;
+  /** A font's XLFD name, runs of wildcards folded into one if `foldWildcards`, as font-xlfd-name. */
+  function fontXlfdName(font: Font, foldWildcards?: boolean): string;
+  /** The font families the frame can show, sorted, as font-family-list: none on a terminal. */
+  function fontFamilyList(): string[];
+  /** The name of the font a face is drawn in, as face-font, or undefined on a terminal. */
+  function faceFont(face: FaceName | (string & {})): string | undefined;
+  /** The open font the text at a position is drawn in, as font-at, or undefined on a terminal. */
+  function fontAt(pos: number): Font | undefined;
+  /** The font that best matches a spec, as find-font. */
+  function findFont(spec: Font): Font | undefined;
+  /** The fonts matching a spec, at most `max`, as list-fonts. */
+  function listFonts(spec: Font, max?: number): Font[];
+  /** The XLFD names of the fonts matching a pattern with `*` and `?`, at most `max`, as x-list-fonts. */
+  function xListFonts(pattern: string, max?: number): string[];
+  /** What font-info says of a font by name: [name, full name, size, height, baseline offset, relative compose, default ascent, max width, ascent, descent, space width, average width, file, capability]. */
+  function fontInfo(name: string): Value[] | undefined;
+  /** An open font's [name, file, pixel size, max width, ascent, descent, space width, average width, capability], as query-font. */
+  function queryFont(font: Font): Value[] | undefined;
+  /** Whether a font has a glyph for a character, as font-has-char-p. */
+  function fontHasCharP(font: Font, char: string): boolean;
+  /** Whether the default face's font, or one it falls back on, can show a character, as char-displayable-p. */
+  function charDisplayableP(char: string): boolean;
   /** How far apart two colours look, as color-distance. */
   function colorDistance(color1: string, color2: string): number;
   /** Whether a colour is a shade of grey, as color-gray-p. */

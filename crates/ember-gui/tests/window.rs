@@ -24,7 +24,7 @@ fn harness_stepping(editor: Editor, theme: Theme, step_dt: f32) -> Harness<'stat
         .build_eframe(move |cc| {
             // egui's built-in fonts only, so snapshots look the same everywhere.
             ember_gui::theme::install_fonts(&cc.egui_ctx, false);
-            EmberApp::new(editor)
+            EmberApp::new(editor).silent()
         });
     harness.run();
     harness
@@ -173,6 +173,19 @@ fn margins_and_fringes() {
         .unwrap();
     ed.press("M-<").unwrap();
     harness(ed, Theme::Dark).snapshot("margins_and_fringes_dark");
+}
+
+#[test]
+fn overlay_arrow_and_fringe_indicators() {
+    let mut ed = Editor::new();
+    ed.type_text("first line\nsecond line\nthird line\n");
+    let at = ed.buffer().line_start(1);
+    let marker = ed.buffer_mut().make_marker(at, false);
+    ed.set_variable("overlay-arrow-position", ember_core::Value::Marker(marker));
+    ed.set_variable("indicate-empty-lines", ember_core::Value::Bool(true));
+    ed.set_variable("indicate-buffer-boundaries", ember_core::Value::Symbol("left".into()));
+    ed.press("M-<").unwrap();
+    harness(ed, Theme::Dark).snapshot("overlay_arrow_and_fringe_indicators_dark");
 }
 
 #[test]

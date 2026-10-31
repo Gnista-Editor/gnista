@@ -14,6 +14,9 @@ ember-script = { version = "0.1.0", path = "../ember-script" }
 ember-mcp = { version = "0.1.0", path = "../ember-mcp" }
 fontique = "0.11"
 
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSGraphics"] }
+
 [dev-dependencies]
 egui_kittest = { version = "0.37", features = ["wgpu", "snapshot", "eframe"] }
 tempfile = "3.27.0"

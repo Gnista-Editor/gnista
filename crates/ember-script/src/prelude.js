@@ -219,6 +219,37 @@
       return this.position;
     }
   }
+  // Markers the editor holds in variables and properties: kept from the
+  // registry that deletes collected ones, and the same object each time.
+  const markersKept = new Map();
+  globalThis.__emberKeepMarker = (m) => {
+    if (!markersKept.has(m.id)) {
+      markersFreed.unregister(m.__emberMarkerToken);
+      markersKept.set(m.id, m);
+    }
+  };
+  globalThis.__emberMarker = (id) => {
+    let m = markersKept.get(id);
+    if (m === undefined) {
+      m = new Marker(id);
+      markersKept.set(id, m);
+    }
+    return m;
+  };
+  /**
+   * A font spec, entity or object, as Emacs's font values: its kind and
+   * its properties, which fontPut changes in place.
+   */
+  class Font {
+    constructor(kind, plist) {
+      Object.defineProperty(this, "__emberFontKind", { value: kind });
+      Object.defineProperty(this, "__emberFontPlist", { value: plist });
+    }
+    toJSON() {
+      return `#<${this.__emberFontKind}>`;
+    }
+  }
+  globalThis.__emberFont = (kind, plist) => new Font(kind, plist);
   /** A marker's id, from a marker or the number a process mark is. */
   const markerId = (m) => (m instanceof Marker ? m.id : m);
 
@@ -1585,6 +1616,25 @@
       native.copyFace(String(oldFace), String(newFace));
       return String(newFace);
     },
+    fontSpec: (...plist) => native.fontSpec(plist),
+    fontGet: (font, property) => native.fontGet(font, String(property)) ?? undefined,
+    fontPut(font, property, value) {
+      const changed = native.fontPut(font, String(property), value ?? null);
+      font.__emberFontPlist.splice(0, Infinity, ...changed.__emberFontPlist);
+      return value;
+    },
+    fontp: (object, kind) => object instanceof Font && (kind === undefined || object.__emberFontKind === kind),
+    fontXlfdName: (font, fold) => native.fontXlfdName(font, Boolean(fold)),
+    fontFamilyList: () => native.fontFamilyList(),
+    faceFont: (face) => native.faceFont(symbolName(face)) ?? undefined,
+    fontAt: (pos) => native.fontAt(pos) ?? undefined,
+    findFont: (spec) => native.listFonts(spec, 1)[0],
+    listFonts: (spec, max) => native.listFonts(spec, max ?? undefined),
+    xListFonts: (pattern, max) => native.xListFonts(String(pattern), max ?? undefined),
+    fontInfo: (name) => native.fontInfo(String(name)) ?? undefined,
+    queryFont: (font) => native.queryFont(font) ?? undefined,
+    fontHasCharP: (font, c) => native.fontHasCharP(font, typeof c === "number" ? String.fromCodePoint(c) : String(c)),
+    charDisplayableP: (c) => native.charDisplayableP(typeof c === "number" ? String.fromCodePoint(c) : String(c)),
     colorValues: (color) => native.colorValues(String(color)) ?? undefined,
     colorValuesFromColorSpec: (spec) => native.colorValuesFromColorSpec(String(spec)) ?? undefined,
     colorDefinedP: (color) => native.colorValues(String(color)) != null,

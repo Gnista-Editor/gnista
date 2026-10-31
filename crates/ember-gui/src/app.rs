@@ -49,6 +49,8 @@ pub struct EmberApp {
     focused_frame: FrameId,
     /// Until when the frame flashes for the bell, with `visible-bell`, in egui's seconds.
     flash_until: Option<f64>,
+    /// Whether the bell sounds without `visible-bell`; tests keep it quiet.
+    audible_bell: bool,
 }
 
 /// How long a second click may follow the first to count as a double click, in seconds.
@@ -92,7 +94,14 @@ impl EmberApp {
             titles: std::collections::HashMap::new(),
             focused_frame: 1,
             flash_until: None,
+            audible_bell: true,
         }
+    }
+
+    /// The same window with a bell that makes no sound, for tests.
+    pub fn silent(mut self) -> EmberApp {
+        self.audible_bell = false;
+        self
     }
 
     /// Answers an agent's messages from `requests`, as ember-mcp passes them
@@ -108,13 +117,19 @@ impl EmberApp {
         self
     }
 
-    /// Flashes the frame briefly when the bell rang and `visible-bell` is
-    /// set, as Emacs on a graphical frame does; egui has no sound for the
-    /// audible bell.
+    /// Rings the bell when a command did: flashes the frame briefly with
+    /// `visible-bell` set, else sounds the system's beep, as Emacs's Mac
+    /// port calls `NSBeep`. Elsewhere egui has no sound, so it flashes.
     fn flash(&mut self, ui: &Ui) {
         let now = ui.input(|i| i.time);
-        if self.editor.take_bell() && self.editor.variable("visible-bell").is_some_and(|v| v.is_true()) {
-            self.flash_until = Some(now + 0.1);
+        if self.editor.take_bell() {
+            let visible = self.editor.variable("visible-bell").is_some_and(|v| v.is_true());
+            if visible || !cfg!(target_os = "macos") {
+                self.flash_until = Some(now + 0.1);
+            } else if self.audible_bell {
+                #[cfg(target_os = "macos")]
+                objc2_app_kit::NSBeep();
+            }
         }
         match self.flash_until {
             Some(until) if now < until => {
@@ -675,6 +690,21 @@ fn draw_buffer(
         (cursor_x - area.width() / 2.0).max(0.0)
     };
 
+    // What the fringes show, as the core picks it once it knows which rows
+    // are cut off at either side.
+    let truncated: Vec<[bool; 2]> = rows
+        .iter()
+        .zip(&laid_out)
+        .map(|(row, (galley, _))| [hscroll > 0.0, !row.continued && galley.size().x - hscroll > area.width() + 0.5])
+        .collect();
+    let fringes = ed.window_fringes(window.id, &rows, &truncated);
+    let draw_fringe = |side: usize, spec: &ember_core::FringeSpec, top: f32, height: f32| {
+        let face = spec.face.clone().unwrap_or_else(|| ed.fringe_bitmap_face(&spec.bitmap));
+        let color = ed.style_for(&[face], t.dark).foreground.map(color32).unwrap_or(t.faint);
+        let rect = Rect::from_min_max(pos2(view.fringes[side].left(), top), pos2(view.fringes[side].right(), top + height));
+        fringe::draw_bitmap(painter, ed, &spec.bitmap, rect, color);
+    };
+
     // Text scrolled sideways stays out of the line numbers.
     let clipped = painter.with_clip_rect(Rect::from_min_max(pos2(view.clip.left().max(area.left()), view.clip.top()), view.clip.max));
     let row_top = |row: usize| area.top() + tops[row] - view.scroll_offset;
@@ -716,23 +746,29 @@ fn draw_buffer(
             let galley = painter.layout_job(job);
             painter.with_clip_rect(*margin).galley(pos2(margin.left(), top + (heights[i] - galley.size().y) / 2.0), galley, t.ink);
         }
-        // The fringes: what display specs put there, the curly arrows of a
-        // continued line, and the arrows of a truncated one.
-        let follows = if i == 0 { rows[i].start > b.line_start(rows[i].line) } else { rows[i - 1].continued && !rows[i - 1].broken };
-        let mut fringes = ed.row_fringes(&rows[i], follows).map(|f| f.map(|f| (f.bitmap, f.face)));
-        if !rows[i].continued && galley.size().x - hscroll > area.width() + 0.5 && fringes[1].is_none() {
-            fringes[1] = Some(("right-arrow".into(), None));
-        }
-        if hscroll > 0.0 && fringes[0].is_none() {
-            fringes[0] = Some(("left-arrow".into(), None));
-        }
-        for (side, fringe) in fringes.iter().enumerate() {
-            if let Some((bitmap, face)) = fringe {
-                let face = face.clone().unwrap_or_else(|| ed.fringe_bitmap_face(bitmap));
-                let color = ed.style_for(&[face], t.dark).foreground.map(color32).unwrap_or(t.faint);
-                let rect = Rect::from_min_max(pos2(view.fringes[side].left(), top), pos2(view.fringes[side].right(), top + heights[i]));
-                fringe::draw_bitmap(painter, ed, bitmap, rect, color);
+        // The fringes: what display specs put there, the arrows of a
+        // continued or truncated line, the buffer's boundaries and empty
+        // lines, and the overlay arrow over the left one.
+        let here = &fringes.rows[i];
+        for (side, spec) in [(0, &here.left), (1, &here.right), (0, &here.arrow)] {
+            if let Some(spec) = spec {
+                draw_fringe(side, spec, top, heights[i]);
             }
+        }
+    }
+    // Below the end of the buffer, the marks indicate-empty-lines puts there.
+    if fringes.empty.iter().any(Option::is_some) {
+        let mut top = row_top(rows.len().saturating_sub(1)) + heights.last().copied().unwrap_or(0.0);
+        if rows.is_empty() {
+            top = area.top();
+        }
+        while top < view.clip.bottom() {
+            for (side, spec) in fringes.empty.iter().enumerate() {
+                if let Some(spec) = spec {
+                    draw_fringe(side, spec, top, m.line_height);
+                }
+            }
+            top += m.line_height;
         }
     }
     // A window whose cursor internal-show-cursor hid shows none.

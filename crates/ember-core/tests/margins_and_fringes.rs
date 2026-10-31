@@ -130,3 +130,121 @@ fn errors_ring_the_bell() {
     assert!(ed.take_bell(), "End of buffer rings it, as Emacs's command loop does");
     assert!(!ed.take_bell());
 }
+
+fn row_text(row: &ember_core::Row) -> String {
+    row.segments.iter().map(|seg| seg.text.as_str()).collect()
+}
+
+fn bitmap(spec: &Option<ember_core::FringeSpec>) -> Option<&str> {
+    spec.as_ref().map(|f| f.bitmap.as_str())
+}
+
+#[test]
+fn the_overlay_arrow_writes_over_its_row_without_fringes() {
+    let mut ed = Editor::new();
+    ed.type_text("one\n\ttwo\nthree\n");
+    let at = ed.buffer().line_start(1);
+    let marker = ed.buffer_mut().make_marker(at, false);
+    ed.set_variable("overlay-arrow-position", Value::Marker(marker));
+    let rows = ed.rows_of_window(ed.selected_window(), 3, true);
+    // Over the first two columns of the tab, leaving the rest of its width.
+    assert_eq!(row_text(&rows[1]), "=>      two");
+    assert_eq!(row_text(&rows[0]), "one");
+    // A variable's own string, and an empty one shows nothing.
+    ed.put("overlay-arrow-position", "overlay-arrow-string", s(">"));
+    assert_eq!(row_text(&ed.rows_of_window(ed.selected_window(), 3, true)[1]), ">       two");
+    ed.put("overlay-arrow-position", "overlay-arrow-string", Value::Null);
+    ed.set_variable("overlay-arrow-string", s(""));
+    assert_eq!(row_text(&ed.rows_of_window(ed.selected_window(), 3, true)[1]), "\ttwo");
+}
+
+#[test]
+fn the_overlay_arrow_is_a_fringe_bitmap_with_fringes() {
+    let mut ed = Editor::new();
+    ed.set_text_metrics(Arc::new(WithFringes));
+    ed.type_text("one\ntwo\n");
+    let marker = ed.buffer_mut().make_marker(4, false);
+    ed.set_variable("overlay-arrow-position", Value::Marker(marker));
+    ed.redisplay();
+    let w = ed.selected_window();
+    let rows = ed.rows_to_draw(w, true);
+    assert_eq!(row_text(&rows[1]), "two", "the text stays");
+    let fringes = ed.window_fringes(w, &rows, &[]);
+    assert_eq!(bitmap(&fringes.rows[1].arrow), Some("right-triangle"));
+    assert_eq!(fringes.rows[0].arrow, None);
+    ed.put("overlay-arrow-position", "overlay-arrow-bitmap", Value::Symbol("left-arrow".into()));
+    assert_eq!(bitmap(&ed.window_fringes(w, &rows, &[]).rows[1].arrow), Some("left-arrow"));
+    assert_eq!(ed.fringe_bitmaps_at_pos(w, 5), Some([Some("left-arrow".into()), None]));
+}
+
+#[test]
+fn empty_lines_and_buffer_boundaries_are_marked_as_emacs_does() {
+    let mut ed = Editor::new();
+    ed.set_text_metrics(Arc::new(WithFringes));
+    ed.set_frame_size(20, 10);
+    ed.type_text("a\nb\n");
+    ed.set_variable("indicate-empty-lines", Value::Bool(true));
+    ed.redisplay();
+    let w = ed.selected_window();
+    let rows = ed.rows_to_draw(w, true);
+    let fringes = ed.window_fringes(w, &rows, &[]);
+    // The empty line after the last newline is marked, and those below it.
+    assert_eq!(rows.len(), 3);
+    assert_eq!(bitmap(&fringes.rows[2].left), Some("empty-line"));
+    assert_eq!(fringes.rows[1].left, None);
+    assert_eq!(bitmap(&fringes.empty[0]), Some("empty-line"));
+    ed.set_variable("indicate-empty-lines", Value::Symbol("right".into()));
+    assert_eq!(bitmap(&ed.window_fringes(w, &rows, &[]).empty[1]), Some("empty-line"));
+    ed.set_variable("indicate-empty-lines", Value::Bool(false));
+
+    // The angles at the buffer's first and last lines.
+    ed.set_variable("indicate-buffer-boundaries", Value::Symbol("left".into()));
+    let fringes = ed.window_fringes(w, &rows, &[]);
+    assert_eq!(bitmap(&fringes.rows[0].left), Some("top-left-angle"));
+    assert_eq!(bitmap(&fringes.rows[1].left), Some("bottom-left-angle"));
+    // One line, without a newline, is both, partial at the buffer's end.
+    ed.press("C-x h").unwrap();
+    ed.press("DEL").unwrap();
+    ed.type_text("only");
+    let rows = ed.rows_to_draw(w, true);
+    assert_eq!(bitmap(&ed.window_fringes(w, &rows, &[]).rows[0].left), Some("top-right-angle"));
+
+    // Scrolled into a long buffer, arrows at the window's top and bottom.
+    ed.type_text(&"\nline".repeat(40));
+    ed.press("M-<").unwrap();
+    ed.press("C-v").unwrap();
+    let rows = ed.rows_to_draw(w, true);
+    let fringes = ed.window_fringes(w, &rows, &[]);
+    assert_eq!(bitmap(&fringes.rows[0].left), Some("up-arrow"));
+    let last = (0..rows.len()).rev().find(|&k| fringes.rows[k].left.is_some()).unwrap();
+    assert_eq!(bitmap(&fringes.rows[last].left), Some("down-arrow"));
+    // An alist puts each where it says.
+    let alist = Value::List(vec![
+        Value::List(vec![Value::Symbol("up".into()), Value::Symbol("right".into())]),
+        Value::List(vec![Value::Symbol("t".into()), Value::Symbol("left".into())]),
+    ]);
+    ed.set_variable("indicate-buffer-boundaries", alist);
+    let fringes = ed.window_fringes(w, &rows, &[]);
+    assert_eq!((fringes.rows[0].left.clone(), bitmap(&fringes.rows[0].right)), (None, Some("up-arrow")));
+}
+
+#[test]
+fn fringe_indicator_alist_names_the_bitmaps() {
+    let mut ed = Editor::new();
+    ed.set_text_metrics(Arc::new(WithFringes));
+    let b = ed.buffer();
+    assert_eq!(ed.logical_fringe_bitmap(b, "continuation", true, false).as_deref(), Some("right-curly-arrow"));
+    assert_eq!(ed.logical_fringe_bitmap(b, "bottom", false, true).as_deref(), Some("top-right-angle"));
+    assert_eq!(ed.logical_fringe_bitmap(b, "up", true, false).as_deref(), Some("up-arrow"));
+    // A buffer's own value, falling back to the default's for t and missing ones.
+    let sym = |n: &str| Value::Symbol(n.into());
+    ed.set_variable(
+        "fringe-indicator-alist",
+        Value::List(vec![Value::List(vec![sym("continuation"), sym("t"), sym("right-arrow")]), Value::List(vec![sym("truncation")])]),
+    );
+    let b = ed.buffer();
+    assert_eq!(ed.logical_fringe_bitmap(b, "continuation", true, false).as_deref(), Some("right-arrow"));
+    assert_eq!(ed.logical_fringe_bitmap(b, "continuation", false, false).as_deref(), Some("left-curly-arrow"));
+    assert_eq!(ed.logical_fringe_bitmap(b, "truncation", false, false), None);
+    assert_eq!(ed.logical_fringe_bitmap(b, "top", false, false).as_deref(), Some("top-left-angle"));
+}

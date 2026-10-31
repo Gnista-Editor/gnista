@@ -20,7 +20,7 @@ fn render(name: &str, editor: Editor, theme: Theme) {
         .allow_missing_glyphs()
         .build_eframe(move |cc| {
             ember_gui::theme::install_fonts(&cc.egui_ctx, true);
-            EmberApp::new(editor)
+            EmberApp::new(editor).silent()
         });
     harness.run();
     let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target/visual-review");

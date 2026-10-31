@@ -7,7 +7,9 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use ember_core::layout::{FontSpec, TextMetrics};
+use std::sync::OnceLock;
+
+use ember_core::layout::{FontMetrics, FontSpec, TextMetrics};
 use egui::{FontFamily, FontId};
 
 use crate::theme::{TEXT_SIZE, bold_mono};
@@ -32,12 +34,14 @@ pub struct EguiMetrics {
     line_height: f32,
     /// Advances already measured, by font and character.
     advances: Mutex<HashMap<(u32, bool, bool, char), f32>>,
+    /// The system's font families and egui's own, found once when asked.
+    families: OnceLock<Vec<String>>,
 }
 
 impl EguiMetrics {
     /// Metrics for the default font's character width and line height.
     pub fn new(ctx: egui::Context, char_width: f32, line_height: f32) -> EguiMetrics {
-        EguiMetrics { ctx, char_width, line_height, advances: Mutex::new(HashMap::new()) }
+        EguiMetrics { ctx, char_width, line_height, advances: Mutex::new(HashMap::new()), families: OnceLock::new() }
     }
 }
 
@@ -67,5 +71,48 @@ impl TextMetrics for EguiMetrics {
 
     fn char_height(&self) -> f32 {
         self.line_height
+    }
+
+    /// The font egui draws a face in: the first of its family's fonts,
+    /// at the face's size. egui keeps no ascent, so the line is split as
+    /// fonts commonly split it, four fifths above the baseline.
+    fn font_metrics(&self, font: &FontSpec) -> Option<FontMetrics> {
+        let id = font_id(font);
+        let family = self.ctx.fonts(|f| f.definitions().families.get(&id.family).and_then(|names| names.first().cloned()))?;
+        let height = self.line_height(font);
+        let ascent = (height * 0.8).round();
+        let (space, average, widest) = self.ctx.fonts_mut(|f| {
+            let space = f.glyph_width(&id, ' ');
+            let widths: Vec<f32> = ('!'..='~').map(|c| f.glyph_width(&id, c)).collect();
+            let average = widths.iter().sum::<f32>() / widths.len() as f32;
+            (space, average, widths.into_iter().fold(0.0, f32::max))
+        });
+        Some(FontMetrics {
+            family,
+            size: id.size,
+            ascent,
+            descent: height - ascent,
+            space_width: space,
+            average_width: average,
+            max_width: widest,
+            monospace: !font.proportional(),
+            bold: font.bold,
+            italic: font.italic,
+        })
+    }
+
+    fn font_families(&self) -> Vec<String> {
+        self.families
+            .get_or_init(|| {
+                let mut collection = fontique::Collection::new(fontique::CollectionOptions { shared: false, system_fonts: true });
+                let mut names: Vec<String> = collection.family_names().map(str::to_string).collect();
+                self.ctx.fonts(|f| names.extend(f.definitions().font_data.keys().cloned()));
+                names
+            })
+            .clone()
+    }
+
+    fn has_glyph(&self, font: &FontSpec, c: char) -> bool {
+        self.ctx.fonts_mut(|f| f.has_glyph(&font_id(font), c))
     }
 }

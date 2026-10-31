@@ -3129,6 +3129,98 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
             Ok(())
         }))?,
     )?;
+    // Fonts, as font.c's primitives.
+    fn font_arg<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> rquickjs::Result<ember_core::Font> {
+        match value_from_js(ctx, value)? {
+            EditorValue::Font(font) => Ok(*font),
+            other => Err(rquickjs::Error::new_from_js_message("value", "font", format!("Not a font: {other}"))),
+        }
+    }
+    let font_value = |font: ember_core::Font| EditorValue::Font(Box::new(font));
+    native.set(
+        "fontSpec",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, plist: Value<'js>| {
+            let plist = match value_from_js(&ctx, plist)? {
+                EditorValue::List(items) => items,
+                _ => Vec::new(),
+            };
+            let font = with_editor(&ctx, |_| ember_core::font_spec(&plist))?;
+            value_to_js(&ctx, &font_value(font))
+        })?,
+    )?;
+    native.set(
+        "fontGet",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, font: Value<'js>, key: String| {
+            let font = font_arg(&ctx, font)?;
+            value_to_js(&ctx, &font.get(&key))
+        })?,
+    )?;
+    native.set(
+        "fontPut",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, font: Value<'js>, key: String, value: Value<'js>| {
+            let mut font = font_arg(&ctx, font)?;
+            let value = value_from_js(&ctx, value)?;
+            with_editor(&ctx, |_| font.put(&key, value))?;
+            value_to_js(&ctx, &font_value(font))
+        })?,
+    )?;
+    native.set(
+        "fontXlfdName",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, font: Value<'js>, fold: bool| rquickjs::Result::Ok(font_arg(&ctx, font)?.xlfd_name(fold)))?,
+    )?;
+    native.set("fontFamilyList", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.font_family_list())))?)?;
+    native.set("faceFont", Function::new(ctx.clone(), |ctx: Ctx<'js>, face: String| with_editor(&ctx, |ed| Ok(ed.face_font(&face))))?)?;
+    native.set(
+        "fontAt",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, pos: f64| {
+            let font = with_editor(&ctx, |ed| Ok(ed.font_at(pos as usize)))?;
+            font.map(|f| value_to_js(&ctx, &font_value(f))).transpose()
+        })?,
+    )?;
+    native.set(
+        "listFonts",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, spec: Value<'js>, max: Option<f64>| {
+            let spec = font_arg(&ctx, spec)?;
+            let fonts = with_editor(&ctx, |ed| Ok(ed.list_fonts(&spec, max.map(|m| m as usize))))?;
+            value_to_js(&ctx, &EditorValue::List(fonts.into_iter().map(font_value).collect()))
+        })?,
+    )?;
+    native.set(
+        "xListFonts",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pattern: String, max: Option<f64>| {
+            with_editor(&ctx, |ed| Ok(ed.x_list_fonts(&pattern, max.map(|m| m as usize))))
+        })?,
+    )?;
+    native.set(
+        "fontInfo",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
+            let info = with_editor(&ctx, |ed| Ok(ed.font_info(&name)))?;
+            info.map(|i| value_to_js(&ctx, &EditorValue::List(i))).transpose()
+        })?,
+    )?;
+    native.set(
+        "queryFont",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, font: Value<'js>| {
+            let font = font_arg(&ctx, font)?;
+            let info = with_editor(&ctx, |ed| Ok(ed.query_font(&font)))?;
+            info.map(|i| value_to_js(&ctx, &EditorValue::List(i))).transpose()
+        })?,
+    )?;
+    native.set(
+        "fontHasCharP",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, font: Value<'js>, c: String| {
+            let font = font_arg(&ctx, font)?;
+            let c = c.chars().next().unwrap_or('\0');
+            with_editor(&ctx, |ed| Ok(ed.font_has_char_p(&font, c)))
+        })?,
+    )?;
+    native.set(
+        "charDisplayableP",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, c: String| {
+            let c = c.chars().next().unwrap_or('\0');
+            with_editor(&ctx, |ed| Ok(ed.char_displayable_p(c)))
+        })?,
+    )?;
     native.set(
         "colorValues",
         Function::new(ctx.clone(), |spec: String| ember_core::color_values(&spec).map(|v| v.map(u32::from).to_vec()))?,
@@ -3690,6 +3782,17 @@ fn value_to_js<'js>(ctx: &Ctx<'js>, value: &EditorValue) -> rquickjs::Result<Val
             };
             make.call((kind, raw))?
         }
+        // The prelude's Font, holding its kind and its properties.
+        EditorValue::Font(font) => {
+            let make: Function = ctx.globals().get("__emberFont")?;
+            let plist = value_to_js(ctx, &EditorValue::List(font.to_plist()))?;
+            make.call((font.kind.name(), plist))?
+        }
+        // The prelude's Marker for the id, the one the value was made from.
+        EditorValue::Marker(id) => {
+            let make: Function = ctx.globals().get("__emberMarker")?;
+            make.call((*id as f64,))?
+        }
         // A symbol is JavaScript's registered symbol of its name, interned as Emacs's are.
         EditorValue::Symbol(name) => {
             let symbol: Object = ctx.globals().get("Symbol")?;
@@ -3840,6 +3943,26 @@ fn convert_from_js<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> rquickjs::Result<O
             path: raw[3..].iter().map(|&i| i as u32).collect(),
         };
         return Ok(Some(EditorValue::Treesit(ember_core::treesitfns::TsObject::Node(r))));
+    }
+    if let Some(object) = value.as_object()
+        && let Some(kind) = object.get::<_, Option<String>>("__emberFontKind")?
+        && let Some(kind) = ember_core::FontKind::from_name(&kind)
+    {
+        let plist = match convert_from_js(ctx, object.get("__emberFontPlist")?)? {
+            Some(EditorValue::List(items)) => items,
+            _ => Vec::new(),
+        };
+        let font = ember_core::Font::from_plist(kind, &plist).map_err(|e| rquickjs::Error::new_from_js_message("value", "font", e.to_string()))?;
+        return Ok(Some(EditorValue::Font(Box::new(font))));
+    }
+    // A marker the editor now holds, which collecting the script's object
+    // must no longer delete, as a Lisp marker lives while a variable has it.
+    if let Some(object) = value.as_object()
+        && let Some(id) = object.get::<_, Option<f64>>("__emberMarkerId")?
+    {
+        let keep: Function = ctx.globals().get("__emberKeepMarker")?;
+        keep.call::<_, ()>((object.clone(),))?;
+        return Ok(Some(EditorValue::Marker(id as u64)));
     }
     if let Some(object) = value.as_object()
         && let Some(id) = object.get::<_, Option<f64>>("__emberCharTableId")?

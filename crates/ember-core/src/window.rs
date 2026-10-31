@@ -408,7 +408,9 @@ impl Editor {
     pub fn rows_of_window(&self, id: WindowId, count: usize, dark: bool) -> Vec<Row> {
         let Some(view) = self.windows().into_iter().find(|v| v.id == id) else { return Vec::new() };
         let wrap = self.wrap_in(id, view.buffer);
-        self.rows_in(view.buffer, view.top_line, count, dark, wrap)
+        let mut rows = self.rows_in(view.buffer, view.top_line, count, dark, wrap);
+        self.put_overlay_arrows(view.buffer, &mut rows, dark, self.tab_width_in(view.buffer));
+        rows
     }
 
     /// The frames, newest first, as Emacs's `frame-list` orders them.

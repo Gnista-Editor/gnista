@@ -33,6 +33,11 @@ pub enum Value {
     CharTable(crate::chartab::CharTableId),
     /// A tree-sitter parser or node, as Emacs's treesit objects.
     Treesit(crate::treesitfns::TsObject),
+    /// A marker, by its id, as Emacs's markers are values a variable such
+    /// as `overlay-arrow-position` can hold.
+    Marker(u64),
+    /// A font spec, entity or object, as Emacs's font vectors.
+    Font(Box<crate::font::Font>),
 }
 
 impl Value {
@@ -168,6 +173,8 @@ impl fmt::Display for Value {
             Value::CharTable(id) => write!(f, "#<char-table {id}>"),
             Value::Treesit(crate::treesitfns::TsObject::Parser { parser, .. }) => write!(f, "#<treesit-parser {parser}>"),
             Value::Treesit(crate::treesitfns::TsObject::Node(_)) => write!(f, "#<treesit-node>"),
+            Value::Marker(id) => write!(f, "#<marker {id}>"),
+            Value::Font(font) => write!(f, "#<{} {}>", font.kind.name(), font.xlfd_name(true)),
         }
     }
 }
@@ -793,6 +800,42 @@ pub(crate) fn install(ed: &mut Editor) {
         ),
         Variable::new("ring-bell-function", "A function `ding` calls instead of ringing the bell, or nil to ring it.", Value::Null),
         Variable::new("visible-bell", "Whether the bell flashes the frame rather than sounding.", false),
+        Variable::new("overlay-arrow-position", "Marker for where to display an arrow on top of the buffer text. This must be the beginning of a line in order to work. See also `overlay-arrow-string'.", Value::Null),
+        Variable::new("overlay-arrow-string", "String to display as an arrow in text-mode frames. See also `overlay-arrow-position'.", "=>"),
+        Variable::new(
+            "overlay-arrow-variable-list",
+            "List of variables (symbols) which hold markers for overlay arrows. The symbols on this list are examined during redisplay to determine where to display overlay arrows.",
+            Value::List(vec![Value::Symbol("overlay-arrow-position".into())]),
+        ),
+        Variable::new("indicate-empty-lines", "Visually indicate unused (\"empty\") screen lines after the buffer end. If non-nil, a bitmap is displayed in the left fringe of a window on graphical displays for each screen line that doesn't correspond to any buffer text, or in the right fringe if the value is `right'.", false).local(),
+        Variable::new(
+            "indicate-buffer-boundaries",
+            "Visually indicate buffer boundaries and scrolling. If non-nil, the first and last line of the buffer are marked in the fringe of a window on graphical displays with angle bitmaps, or if the window can be scrolled, the top and bottom line of the window are marked with up and down arrow bitmaps. If value is `left' or `right', both angle and arrow bitmaps are displayed in the left or right fringe. An alist of (INDICATOR . POSITION) with the indicators `top', `bottom', `up', `down' and t (any other) places each on the `left' or `right', or nowhere for nil; any other value puts the angles on the left and no arrows.",
+            Value::Null,
+        )
+        .local(),
+        Variable::new(
+            "fringe-indicator-alist",
+            "Mapping from logical to physical fringe indicator bitmaps. The value is an alist of (INDICATOR . BITMAPS) where INDICATOR is `truncation', `continuation', `overlay-arrow', `top', `bottom', `top-bottom', `up', `down', `empty-line' or `unknown', and BITMAPS is a bitmap for both fringes, or a list (LEFT RIGHT [LEFT1 RIGHT1]) with the bitmaps for the left and right fringe and for a partial last line, t meaning the default's.",
+            Value::List(
+                [
+                    vec!["truncation", "left-arrow", "right-arrow"],
+                    vec!["continuation", "left-curly-arrow", "right-curly-arrow"],
+                    vec!["overlay-arrow", "right-triangle"],
+                    vec!["up", "up-arrow"],
+                    vec!["down", "down-arrow"],
+                    vec!["top", "top-left-angle", "top-right-angle"],
+                    vec!["bottom", "bottom-left-angle", "bottom-right-angle", "top-right-angle", "top-left-angle"],
+                    vec!["top-bottom", "left-bracket", "right-bracket", "top-right-angle", "top-left-angle"],
+                    vec!["empty-line", "empty-line"],
+                    vec!["unknown", "question-mark"],
+                ]
+                .into_iter()
+                .map(|entry| Value::List(entry.into_iter().map(|s| Value::Symbol(s.into())).collect()))
+                .collect(),
+            ),
+        )
+        .local(),
         Variable::new("left-margin-width", "Columns of left margin a window showing the buffer has, beside its text, for `(margin left-margin)` display strings.", 0.0).local(),
         Variable::new("right-margin-width", "Columns of right margin a window showing the buffer has, for `(margin right-margin)` display strings.", 0.0).local(),
         Variable::new(

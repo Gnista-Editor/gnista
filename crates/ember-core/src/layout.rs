@@ -73,6 +73,38 @@ pub trait TextMetrics: Send + Sync {
     fn fringes(&self) -> bool {
         false
     }
+    /// The font a front end draws `font` in, as Emacs's font backend opens
+    /// one for a face, or none where faces have no fonts, as on a terminal.
+    fn font_metrics(&self, font: &FontSpec) -> Option<FontMetrics> {
+        let _ = font;
+        None
+    }
+    /// The font families the front end can draw in, as `font-family-list`.
+    fn font_families(&self) -> Vec<String> {
+        Vec::new()
+    }
+    /// Whether the font a front end draws `font` in, its fallbacks
+    /// included, has a glyph for a character.
+    fn has_glyph(&self, font: &FontSpec, c: char) -> bool {
+        let _ = (font, c);
+        true
+    }
+}
+
+/// An open font, as a front end draws in it: its family's name, and its
+/// size and metrics in the front end's units, which are pixels to Emacs.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct FontMetrics {
+    pub family: String,
+    pub size: f32,
+    pub ascent: f32,
+    pub descent: f32,
+    pub space_width: f32,
+    pub average_width: f32,
+    pub max_width: f32,
+    pub monospace: bool,
+    pub bold: bool,
+    pub italic: bool,
 }
 
 /// A terminal's metrics, which headless editors use too: a character is a
@@ -207,7 +239,13 @@ impl Editor {
     /// for the part of a row that shows below its whole lines, or when it is
     /// scrolled smoothly between them.
     pub fn rows_to_draw(&self, window: WindowId, dark: bool) -> Vec<Row> {
-        self.rows_within(window, dark, 1)
+        let mut rows = self.rows_within(window, dark, 1);
+        if !self.metrics.fringes()
+            && let Some(view) = self.windows().into_iter().find(|v| v.id == window)
+        {
+            self.put_overlay_arrows(view.buffer, &mut rows, dark, self.tab_width_in(view.buffer));
+        }
+        rows
     }
 
     /// The rows that start within a window's height and `extra` lines more.

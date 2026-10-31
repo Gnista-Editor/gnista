@@ -888,7 +888,7 @@ impl Editor {
     /// The faces at a position, apart from syntax: overlays' first, highest priority first,
     /// then the text's own. Text with no `face` takes its `font-lock-face`,
     /// as Emacs's font-lock-mode, always on here, makes it an alias.
-    fn faces_at(&self, b: &Buffer, pos: usize) -> Vec<String> {
+    pub(crate) fn faces_at(&self, b: &Buffer, pos: usize) -> Vec<String> {
         let mut faces: Vec<String> = b
             .overlays_at(pos)
             .into_iter()
