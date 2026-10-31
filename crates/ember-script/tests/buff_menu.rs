@@ -23,9 +23,15 @@ fn c_x_c_b_lists_the_buffers_with_their_marks_size_and_mode() {
     ed.press("C-x C-b").unwrap();
     let list = text_of(&mut ed, &s, "*Buffer List*");
     let lines: Vec<&str> = list.lines().collect();
-    assert_eq!(lines[0], "CRM Buffer                 Size Mode             File");
+    // The titles are in the header line, lined up with the columns, as Emacs's.
+    let header = s
+        .eval_expression(&mut ed, "ember.withCurrentBuffer('*Buffer List*', () => String(ember.formatModeLine(ember.variable('header-line-format'))))")
+        .unwrap();
+    let header: String = serde_json::from_str(&header).unwrap();
+    assert_eq!(header, "CRM Buffer                 Size Mode             File");
+    // Each column is padded to its width, the size right-aligned, as Emacs's text is.
     let notes = lines.iter().find(|l| l.contains("notes")).unwrap();
-    assert_eq!(*notes, ". * notes                     5 Fundamental");
+    assert_eq!(*notes, ". * notes                     5 Fundamental      ");
     assert!(lines.iter().any(|l| l.contains("*scratch*")), "{list}");
     assert!(!lines.iter().any(|l| l.contains("*Buffer List*")), "{list}");
     // The list shows in another window; this one keeps its buffer.
@@ -42,7 +48,7 @@ fn marked_buffers_are_killed_and_ret_visits_one() {
     assert_eq!(ed.window_buffer().name, "*Buffer List*");
     // To the line for "one", mark it to be killed, and do it.
     let at = s
-        .eval_expression(&mut ed, "(() => { for (let l = 1; l < ember.lineCount(); l++) if (ember.lineText(l).includes(' one ')) return l; })()")
+        .eval_expression(&mut ed, "(() => { for (let l = 0; l < ember.lineCount(); l++) if (ember.lineText(l).includes(' one ')) return l; })()")
         .unwrap();
     let line: usize = at.parse().unwrap();
     ed.press("M-<").unwrap();
@@ -58,7 +64,7 @@ fn marked_buffers_are_killed_and_ret_visits_one() {
     assert!(!list.contains(" one "), "{list}");
     // RET on "two" shows it here.
     let at = s
-        .eval_expression(&mut ed, "(() => { for (let l = 1; l < ember.lineCount(); l++) if (ember.lineText(l).includes(' two ')) return l; })()")
+        .eval_expression(&mut ed, "(() => { for (let l = 0; l < ember.lineCount(); l++) if (ember.lineText(l).includes(' two ')) return l; })()")
         .unwrap();
     let line: usize = at.parse().unwrap();
     ed.press("M-<").unwrap();

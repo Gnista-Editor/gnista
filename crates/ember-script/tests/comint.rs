@@ -339,3 +339,47 @@ fn c_c_m_r_finds_inputs_starting_with_what_is_typed() {
     ed.press("RET").unwrap();
     assert_eq!(input(&ed).0, "true");
 }
+
+#[test]
+fn m_r_searches_the_history_with_isearch() {
+    let (mut ed, s) = setup();
+    start_shell(&mut ed);
+    for line in ["echo one", "true", "echo two", "exit_not"] {
+        type_line(&mut ed, line);
+        until(&mut ed, |t| t.ends_with("$ "));
+    }
+    ed.type_text("typed");
+    ed.press("M-r").unwrap();
+    ed.type_text("echo");
+    // Each input back in turn, put after the prompt, point at the match, as comint-history-isearch-search.
+    assert_eq!(input(&ed), ("echo two".to_string(), 0));
+    assert_eq!(ed.echo(), Some("History item: 2"));
+    // The search's prompt shows over the program's.
+    let shown = s
+        .eval_expression(
+            &mut ed,
+            "(() => { const at = ember.lineBeginningPosition(); return String(ember.overlaysAt(at).map((o) => ember.overlayGet(o, 'display')).find((d) => d !== undefined)); })()",
+        )
+        .unwrap();
+    assert_eq!(shown, "\"Regexp history I-search backward: \"");
+    ed.press("C-r").unwrap();
+    assert_eq!(input(&ed).0, "echo one");
+    // DEL goes back to the state before, and the input with it.
+    ed.press("DEL").unwrap();
+    assert_eq!(input(&ed).0, "echo two");
+    ed.press("C-r").unwrap();
+    ed.press("RET").unwrap();
+    assert_eq!(input(&ed), ("echo one".to_string(), 0));
+    // The search is put back as it was: C-r searches the buffer again, and no mark was left.
+    assert_eq!(s.eval_expression(&mut ed, "ember.variable('isearch-search-fun-function')").unwrap(), "\"isearch-search-fun-default\"");
+    assert_eq!(s.eval_expression(&mut ed, "ember.variable('comint-history-isearch')").unwrap(), "false");
+    // C-g puts back what was typed.
+    ed.press("RET").unwrap();
+    until(&mut ed, |t| t.ends_with("one\n$ "));
+    ed.type_text("mine");
+    ed.press("M-r").unwrap();
+    ed.type_text("tru");
+    assert_eq!(input(&ed).0, "true");
+    ed.press("C-g").unwrap();
+    assert_eq!(input(&ed).0, "mine");
+}

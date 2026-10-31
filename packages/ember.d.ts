@@ -18,6 +18,12 @@ declare global {
        */
       "Buffer-menu-1-window": [];
       /**
+       * Show this line's buffer, and the one shown before it in another window.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-2-window": [];
+      /**
        * Move up and take the marks off that line's buffer.
        *
        * Defined in packages/buff-menu.ts.
@@ -30,19 +36,21 @@ declare global {
        */
       "Buffer-menu-bury": [];
       /**
-       * Mark this line's buffer to be killed by x, and move down; with a prefix argument, that many lines.
+       * Mark this line's buffer to be killed by x, and move down; with a prefix argument, that many lines, back if negative.
        *
-       * @param arg prefix count
+       * @param n prefix count
        *
        * Defined in packages/buff-menu.ts.
        */
-      "Buffer-menu-delete": [arg?: number];
+      "Buffer-menu-delete": [n?: number];
       /**
-       * Mark this line's buffer to be killed by x, and move up.
+       * Mark this line's buffer to be killed by x, and move up; with a prefix argument, that many lines.
+       *
+       * @param n prefix count
        *
        * Defined in packages/buff-menu.ts.
        */
-      "Buffer-menu-delete-backwards": [];
+      "Buffer-menu-delete-backwards": [n?: number];
       /**
        * Save the buffers marked S and kill those marked D.
        *
@@ -62,19 +70,13 @@ declare global {
        */
       "Buffer-menu-mode": [];
       /**
-       * Move to the next line.
+       * Mark this line's buffer as not modified, or with a prefix argument as modified.
        *
-       * @param arg prefix count
-       *
-       * Defined in packages/buff-menu.ts.
-       */
-      "Buffer-menu-next-line": [arg?: number];
-      /**
-       * Mark this line's buffer as not modified, as M-~ does there.
+       * @param arg raw prefix argument
        *
        * Defined in packages/buff-menu.ts.
        */
-      "Buffer-menu-not-modified": [];
+      "Buffer-menu-not-modified": [arg?: PrefixArg];
       /**
        * Show this line's buffer in another window, and select it.
        *
@@ -82,27 +84,13 @@ declare global {
        */
       "Buffer-menu-other-window": [];
       /**
-       * Move to the line before.
-       *
-       * @param arg prefix count
-       *
-       * Defined in packages/buff-menu.ts.
-       */
-      "Buffer-menu-previous-line": [arg?: number];
-      /**
-       * Make the list again.
-       *
-       * Defined in packages/buff-menu.ts.
-       */
-      "Buffer-menu-revert": [];
-      /**
        * Mark this line's buffer to be saved by x, and move down.
        *
        * Defined in packages/buff-menu.ts.
        */
       "Buffer-menu-save": [];
       /**
-       * Show this line's buffer, and those marked with m in other windows.
+       * Show this line's buffer as the only window, and those marked with m in windows below it.
        *
        * Defined in packages/buff-menu.ts.
        */
@@ -120,29 +108,59 @@ declare global {
        */
       "Buffer-menu-this-window": [];
       /**
-       * Show only buffers visiting files, or all of them again.
+       * Show only buffers visiting files, or not; a positive prefix argument shows them and zero or negative does not.
+       *
+       * @param arg raw prefix argument
        *
        * Defined in packages/buff-menu.ts.
        */
-      "Buffer-menu-toggle-files-only": [];
+      "Buffer-menu-toggle-files-only": [arg?: PrefixArg];
       /**
-       * Make this line's buffer read-only, or editable again.
+       * Show internal buffers too, or not; a positive prefix argument shows them and zero or negative does not.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-toggle-internal": [arg?: PrefixArg];
+      /**
+       * Make this line's buffer read-only, or editable again, as C-x C-q there.
        *
        * Defined in packages/buff-menu.ts.
        */
       "Buffer-menu-toggle-read-only": [];
       /**
-       * Take the marks off this line's buffer, and move down.
+       * Take the marks off this line's buffer, and move down; with a prefix argument, up.
+       *
+       * @param backup raw prefix argument
        *
        * Defined in packages/buff-menu.ts.
        */
-      "Buffer-menu-unmark": [];
+      "Buffer-menu-unmark": [backup?: PrefixArg];
       /**
        * Take the marks off every buffer.
        *
        * Defined in packages/buff-menu.ts.
        */
       "Buffer-menu-unmark-all": [];
+      /**
+       * Take one kind of mark off every buffer: the one typed, or with RET all of them.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-unmark-all-buffers": [];
+      /**
+       * View this line's buffer in view mode.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-view": [];
+      /**
+       * View this line's buffer in view mode, in another window.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-view-other-window": [];
       /**
        * Go back to the mark, popping it.
        *
@@ -749,6 +767,18 @@ declare global {
        * Defined in packages/comint.ts.
        */
       "comint-delete-output": [kill?: PrefixArg];
+      /**
+       * Search back through the input history for a string, incrementally: each match is put after the prompt.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-history-isearch-backward": [];
+      /**
+       * Search back through the input history for a regular expression, incrementally: each match is put after the prompt.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-history-isearch-backward-regexp": [];
       /**
        * Interrupt the job running in the program, as C-c does at a terminal.
        *
@@ -2135,6 +2165,14 @@ declare global {
        */
       "grep-mode": [];
       /**
+       * Keep header-line-indent and header-line-indent-width as wide as the line numbers, so a header line lines up with the text below it.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/tabulated-list.ts.
+       */
+      "header-line-indent-mode": [];
+      /**
        * The major mode of the *Help* buffer. q goes back to the buffer before it.
        *
        * Defined in packages/help.ts.
@@ -2405,15 +2443,27 @@ declare global {
       /**
        * Search backward incrementally. See isearch-forward for the keys that work while searching.
        *
-       * Defined in packages/isearch.ts.
-       */
-      "isearch-backward": [];
-      /**
-       * Search backward incrementally for a regular expression, in Emacs's syntax. See isearch-forward.
+       * @param regexp raw prefix argument
        *
        * Defined in packages/isearch.ts.
        */
-      "isearch-backward-regexp": [];
+      "isearch-backward": [regexp?: PrefixArg];
+      /**
+       * Search backward incrementally for a regular expression, in Emacs's syntax. See isearch-forward.
+       *
+       * @param regexp raw prefix argument
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-backward-regexp": [regexp?: PrefixArg];
+      /**
+       * Take the last character off the search string and search again, keeping the effect of other commands.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-del-char": [n?: number];
       /**
        * Take back the last change to the search: the last character typed, or the last C-s or C-r.
        *
@@ -2429,17 +2479,21 @@ declare global {
       /**
        * Search forward incrementally: as you type, point moves to the next match of what you have typed.
        *
-       * C-s again finds the next match, and once a search fails, wraps round to the start. C-r searches backward. DEL takes back the last character or step, C-w adds the next word from the buffer and C-y the last kill. RET ends the search, leaving point at the match and the mark where the search started; any other key does the same and then runs. C-g goes back to where the search started, or while it fails, removes what does not match. Case is ignored unless the string has a capital letter.
+       * C-s again finds the next match, and once a search fails, wraps round to the start. C-r searches backward. DEL takes back the last character or step, C-w adds the next word from the buffer and C-y the last kill. RET ends the search, leaving point at the match and the mark where the search started; any other key does the same and then runs. C-g goes back to where the search started, or while it fails, removes what does not match. Case is ignored unless the string has a capital letter. With a prefix argument, searches for a regexp.
+       *
+       * @param regexp raw prefix argument
        *
        * Defined in packages/isearch.ts.
        */
-      "isearch-forward": [];
+      "isearch-forward": [regexp?: PrefixArg];
       /**
        * Search forward incrementally for a regular expression, in Emacs's syntax. See isearch-forward.
        *
+       * @param regexp raw prefix argument
+       *
        * Defined in packages/isearch.ts.
        */
-      "isearch-forward-regexp": [];
+      "isearch-forward-regexp": [regexp?: PrefixArg];
       /**
        * Add the character typed to the search string, or for any other key, end the search and run the key.
        *
@@ -2461,11 +2515,19 @@ declare global {
        */
       "isearch-repeat-forward": [];
       /**
-       * Switch between searching for a string and for a regular expression.
+       * Switch between searching for a string and for a regular expression; what is typed next searches the new way.
        *
        * Defined in packages/isearch.ts.
        */
       "isearch-toggle-regexp": [];
+      /**
+       * Add the next character after point to the search string, or as many as the prefix argument says.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-yank-char": [n?: number];
       /**
        * Add the last kill to the search string.
        *
@@ -2475,9 +2537,11 @@ declare global {
       /**
        * Add the rest of the word after point to the search string, or the next character if point is not before a word.
        *
+       * @param n prefix count
+       *
        * Defined in packages/isearch.ts.
        */
-      "isearch-yank-word-or-char": [];
+      "isearch-yank-word-or-char": [n?: number];
       /**
        * Indent the current line of code by the braces and parens it is in, as js-mode does, by js-indent-level, or the mode's own offset.
        *
@@ -4944,6 +5008,12 @@ declare global {
        */
       "sort-lines": [beg: number, end: number, reverse?: PrefixArg];
       /**
+       * The parent of modes for buffers that are read rather than edited: q quits the window, g makes the buffer again, SPC and DEL page, < and > go to the ends, and h or ? describes the mode.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "special-mode": [];
+      /**
        * Split the line at point, moving the rest of it down to the column it was at. A fill prefix the line starts with goes on the new line too, unless there is a prefix argument.
        *
        * @param arg raw prefix argument
@@ -5014,6 +5084,58 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "tabify": [arg?: PrefixArg];
+      /**
+       * The parent of modes that list entries in columns, titled in the header line. S sorts by the column point is in, n and p move by lines, M-<left> and M-<right> by columns, and { and } narrow and widen a column.
+       *
+       * Defined in packages/tabulated-list.ts.
+       */
+      "tabulated-list-mode": [];
+      /**
+       * Narrow the column point is in by one column, or as many as the prefix argument says.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/tabulated-list.ts.
+       */
+      "tabulated-list-narrow-current-column": [n?: number];
+      /**
+       * Go to the start of the next column on this line; with a prefix argument, that many.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/tabulated-list.ts.
+       */
+      "tabulated-list-next-column": [n?: number];
+      /**
+       * Go to the start of the column point is in, or the one before; with a prefix argument, that many.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/tabulated-list.ts.
+       */
+      "tabulated-list-previous-column": [n?: number];
+      /**
+       * Make the list again: run tabulated-list-revert-hook, then print the entries, point kept on its entry.
+       *
+       * Defined in packages/tabulated-list.ts.
+       */
+      "tabulated-list-revert": [];
+      /**
+       * Sort the list by the column point is in; again to reverse it. With a numeric prefix argument N, by the Nth column, and with -1, back in the order the entries came.
+       *
+       * @param n raw prefix argument
+       *
+       * Defined in packages/tabulated-list.ts.
+       */
+      "tabulated-list-sort": [n?: PrefixArg];
+      /**
+       * Widen the column point is in by one column, or as many as the prefix argument says.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/tabulated-list.ts.
+       */
+      "tabulated-list-widen-current-column": [n?: number];
       /**
        * The major mode for writing text meant for people to read.
        *
@@ -5466,11 +5588,23 @@ declare global {
     /** Every variable, with its documentation. */
     interface Variables {
       /**
+       * The mark d puts on a buffer to be killed by x.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-del-char": Value;
+      /**
        * Whether the buffer list shows only buffers visiting files.
        *
        * Defined in packages/buff-menu.ts.
        */
       "Buffer-menu-files-only": Value;
+      /**
+       * The mark m puts on a buffer to be shown by v.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-marker-char": Value;
       /**
        * Keymap Buffer-menu-mode-map.
        */
@@ -5482,11 +5616,29 @@ declare global {
        */
       "Buffer-menu-mode-width": Value;
       /**
+       * The width of the buffer list's name column, or a function of the buffers listed that gives it.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-name-width": Value;
+      /**
+       * Whether the buffer list shows internal buffers, whose names start with a space.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-show-internal": Value;
+      /**
        * The width of the buffer list's size column.
        *
        * Defined in packages/buff-menu.ts.
        */
       "Buffer-menu-size-width": Value;
+      /**
+       * Whether the buffer list's column titles show in the header line, rather than as its first line.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-use-header-line": Value;
       /**
        * Whether an abbrev typed in capitals expands all in capitals, rather than with each word capitalized.
        *
@@ -5717,6 +5869,12 @@ declare global {
        * Defined in packages/comint.ts.
        */
       "comint-eol-on-send": Value;
+      /**
+       * Whether C-r and C-M-r search the input history rather than the buffer: t always, dwim when the search starts at the command line, nil never. M-r searches the history whatever it says.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-history-isearch": Value;
       /**
        * A regexp for entries of the history file to leave out.
        *
@@ -6470,6 +6628,30 @@ declare global {
        */
       "grep-mode-map": Value;
       /**
+       * What a window's header line shows, a mode line construct as `mode-line-format` is; nil, the default, for no header line. A window's `header-line-format` parameter takes its place, and `none` there hides it.
+       */
+      "header-line-format": Value;
+      /**
+       * Spaces as wide as the line numbers, which a header line starts with to line up with the text, as header-line-indent-mode keeps it.
+       *
+       * Defined in packages/tabulated-list.ts.
+       */
+      "header-line-indent": Value;
+      /**
+       * Whether Header-Line-Indent mode is on in this buffer. Use the command header-line-indent-mode to change it.
+       *
+       * Defined in packages/tabulated-list.ts.
+       */
+      "header-line-indent-mode": Value;
+      /**
+       * Keymap header-line-indent-mode-map.
+       */
+      "header-line-indent-mode-map": Value;
+      /**
+       * How many columns the line numbers take left of the text, which a header line's `:align-to` positions can add to line titles up with the text, as header-line-indent-mode keeps it.
+       */
+      "header-line-indent-width": Value;
+      /**
        * Keymap help-map.
        */
       "help-map": Value;
@@ -6652,9 +6834,159 @@ declare global {
        */
       "input-decode-map": Value;
       /**
+       * Whether point has been moved back so that the string may match from further back.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-adjusted": Value;
+      /**
+       * Where the search may not move back past while the string grows, as a regexp's \| widens it.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-barrier": Value;
+      /**
+       * Whether the search ignores case: t, nil, or yes after M-c.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-case-fold-search": Value;
+      /**
+       * Why the string cannot be searched for, such as an unfinished regexp, or nil.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-error": Value;
+      /**
+       * A function of a match's start and end that says whether the search may stop there.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-filter-predicate": Value;
+      /**
+       * Whether the search goes forward.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-forward": Value;
+      /**
+       * Whether the prompt counts the matches.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-lazy-count": Value;
+      /**
+       * The search string as the prompt shows it, control characters as ^X.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-message": Value;
+      /**
+       * The function that says where the search stands, instead of isearch-message, or nil.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-message-function": Value;
+      /**
+       * Text added before "I-search" in the search's prompt, such as "history ".
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-message-prefix-add": Value;
+      /**
+       * " Isearch" while a search is going on, else nil.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-mode": Value;
+      /**
+       * Whether the search being ended was cancelled, while isearch-mode-end-hook runs.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-mode-end-hook-quit": Value;
+      /**
        * Keymap isearch-mode-map.
        */
       "isearch-mode-map": Value;
+      /**
+       * Whether the search is a nonincremental one.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-nonincremental": Value;
+      /**
+       * Where point was when the search began, where the mark goes when it ends.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-opoint": Value;
+      /**
+       * The other end of the match from point.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-other-end": Value;
+      /**
+       * A function called as each state of the search is saved, which gives a function the state is restored with when DEL goes back to it, or nil.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-push-state-function": Value;
+      /**
+       * Whether the search is for a regular expression.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-regexp": Value;
+      /**
+       * Whether C-r after C-s, or C-s after C-r, first goes to the other end of the match, so the next search finds the one after it.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-repeat-on-direction-change": Value;
+      /**
+       * The function that gives the function isearch searches with, called with no arguments; the function it gives takes the string, a bound and noerror, as re-search-forward does, and moves point to the match.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-search-fun-function": Value;
+      /**
+       * The string being searched for.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-string": Value;
+      /**
+       * Whether the search has found the string.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-success": Value;
+      /**
+       * Whether the search is suspended to read from the minibuffer.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-suspended": Value;
+      /**
+       * The function that moves point to where a failing search wraps round to, instead of the other end of the buffer, or nil.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-wrap-function": Value;
+      /**
+       * Whether the search has wrapped round the end of the buffer.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-wrapped": Value;
+      /**
+       * Whether text was just yanked into the search string.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "isearch-yank-flag": Value;
       /**
        * How far JavaScript indents each level.
        *
@@ -7321,6 +7653,12 @@ declare global {
        */
       "regexp-search-ring": Value;
       /**
+       * How many regular expressions regexp-search-ring keeps.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "regexp-search-ring-max": Value;
+      /**
        * Whether saving adds a newline to a file that does not end in one: true adds it, false leaves the file as it is, "ask" asks first. Text and programming modes set it from mode-require-final-newline.
        *
        * Defined in packages/files.ts.
@@ -7445,7 +7783,15 @@ declare global {
        */
       "search-ring": Value;
       /**
-       * Whether an upper case letter in a search string typed interactively makes that search match case exactly.
+       * How many strings search-ring keeps.
+       *
+       * Defined in packages/isearch.ts.
+       */
+      "search-ring-max": Value;
+      /**
+       * Whether a capital letter in the search string makes the search case-sensitive: not-yanks, the default, as t except that text yanked into the string is lowercased first.
+       *
+       * Defined in packages/isearch.ts.
        */
       "search-upper-case": Value;
       /**
@@ -7593,6 +7939,10 @@ declare global {
        */
       "sort-fold-case": Value;
       /**
+       * Keymap special-mode-map.
+       */
+      "special-mode-map": Value;
+      /**
        * Strings given to C-x r t, newest first.
        *
        * Defined in packages/rect.ts.
@@ -7624,6 +7974,58 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "tabify-regexp": Value;
+      /**
+       * The entries of a tabulated list, each [id, columns], or a function that gives them. A column is its text, or [text, ...properties] for a button.
+       *
+       * Defined in packages/tabulated-list.ts.
+       */
+      "tabulated-list-entries": Value;
+      /**
+       * The columns of a tabulated list: for each, [name, width, sort, ...properties]. sort is true to sort by the column's text, a predicate on two entries, or false for a column that does not sort. :right-align true and :pad-right N among the properties align it right and set the spaces after it, 1 by default.
+       *
+       * Defined in packages/tabulated-list.ts.
+       */
+      "tabulated-list-format": Value;
+      /**
+       * What follows the title of the column the list is sorted by, ascending.
+       *
+       * Defined in packages/tabulated-list.ts.
+       */
+      "tabulated-list-gui-sort-indicator-asc": Value;
+      /**
+       * What follows the title of the column the list is sorted by, descending.
+       *
+       * Defined in packages/tabulated-list.ts.
+       */
+      "tabulated-list-gui-sort-indicator-desc": Value;
+      /**
+       * Keymap tabulated-list-mode-map.
+       */
+      "tabulated-list-mode-map": Value;
+      /**
+       * How many columns are left empty at the start of each line, for marks such as the buffer list's.
+       *
+       * Defined in packages/tabulated-list.ts.
+       */
+      "tabulated-list-padding": Value;
+      /**
+       * The function that inserts an entry, given its id and columns.
+       *
+       * Defined in packages/tabulated-list.ts.
+       */
+      "tabulated-list-printer": Value;
+      /**
+       * The column the list is sorted by, as [name, reversed], or nil for the order the entries came in.
+       *
+       * Defined in packages/tabulated-list.ts.
+       */
+      "tabulated-list-sort-key": Value;
+      /**
+       * Whether the column titles show in the header line, rather than as the first line of the buffer.
+       *
+       * Defined in packages/tabulated-list.ts.
+       */
+      "tabulated-list-use-header-line": Value;
       /**
        * Where temporary files are made.
        */
@@ -8017,6 +8419,12 @@ declare global {
        */
       "bold-italic": FaceAttributes;
       /**
+       * The buffers' names in the buffer list.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "buffer-menu-buffer": FaceAttributes;
+      /**
        * Input sent in a comint buffer.
        *
        * Defined in packages/comint.ts.
@@ -8274,6 +8682,14 @@ declare global {
        * Defined in packages/compile.ts.
        */
       "grep-match": FaceAttributes;
+      /**
+       * The header line at the top of a window, which `header-line-format` gives; front ends draw it as a bar, as the mode line.
+       */
+      "header-line": FaceAttributes;
+      /**
+       * What the mouse is over in the header line, such as a column title to sort by.
+       */
+      "header-line-highlight": FaceAttributes;
       /**
        * A face for highlighting with hi-lock: aquamarine.
        *
@@ -8719,6 +9135,12 @@ declare global {
        */
       "success": FaceAttributes;
       /**
+       * The column titles of a tabulated list shown as its first line.
+       *
+       * Defined in packages/tabulated-list.ts.
+       */
+      "tabulated-list-fake-header": FaceAttributes;
+      /**
        * Underlined text.
        */
       "underline": FaceAttributes;
@@ -8981,6 +9403,18 @@ declare global {
        */
       "grep-mode-hook": Value;
       /**
+       * Run after Header-Line-Indent mode is turned on or off.
+       */
+      "header-line-indent-mode-hook": Value;
+      /**
+       * Run after Header-Line-Indent mode is turned off.
+       */
+      "header-line-indent-mode-off-hook": Value;
+      /**
+       * Run after Header-Line-Indent mode is turned on.
+       */
+      "header-line-indent-mode-on-hook": Value;
+      /**
        * Run after entering Help mode, after the hooks of the modes it is built on.
        */
       "help-mode-hook": Value;
@@ -9024,6 +9458,18 @@ declare global {
        * Run after Icomplete-Vertical mode is turned on.
        */
       "icomplete-vertical-mode-on-hook": Value;
+      /**
+       * Run as a search ends; isearch-mode-end-hook-quit is true if it was cancelled.
+       */
+      "isearch-mode-end-hook": Value;
+      /**
+       * Run as a search starts, in the buffer searched.
+       */
+      "isearch-mode-hook": Value;
+      /**
+       * Run after each change the search shows.
+       */
+      "isearch-update-post-hook": Value;
       /**
        * Called with a start and an end to fontify that stretch of whole lines, just before it is shown. A major mode adds its function here, buffer-locally, and the function puts face and other properties on the text. Editing a line refontifies it and everything after it.
        */
@@ -9208,6 +9654,18 @@ declare global {
        * Run after Show-Paren mode is turned on.
        */
       "show-paren-mode-on-hook": Value;
+      /**
+       * Run after entering Special mode, after the hooks of the modes it is built on.
+       */
+      "special-mode-hook": Value;
+      /**
+       * Run after entering Tabulated mode, after the hooks of the modes it is built on.
+       */
+      "tabulated-list-mode-hook": Value;
+      /**
+       * Run when a tabulated list is made again, before it is printed: where a mode gathers its entries afresh.
+       */
+      "tabulated-list-revert-hook": Value;
       /**
        * Run after entering Text mode, after the hooks of the modes it is built on.
        */

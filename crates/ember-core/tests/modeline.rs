@@ -90,3 +90,50 @@ fn a_field_width_cuts_text_after_other_text_and_errors_leave_one_construct_out()
     assert_eq!(format(&mut ed, list(vec![s("a"), list(vec![sym(":eval"), Value::Function(boom)]), s("b")])), "ab");
     assert!(ed.messages().iter().any(|m| m.contains("Error during redisplay: boom")));
 }
+
+#[test]
+fn a_header_line_shows_above_the_text_of_windows_whose_buffer_has_a_format() {
+    let mut ed = Editor::new();
+    ed.set_frame_size(40, 10);
+    let id = ed.selected_window();
+    assert_eq!(ed.window_size(id).map(|s| s.1), Some(9), "no header line by default");
+    ed.set_variable("header-line-format", list(vec![s("Header %b")]));
+    ed.set_frame_size(40, 10);
+    ed.redisplay();
+    assert!(ed.window_wants_header_line(id, 10));
+    assert_eq!(ed.window_size(id).map(|s| s.1), Some(8), "the header line takes a line from the text");
+    let header: String = ed.header_line(id).unwrap().iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(header, "Header *scratch*");
+    // A window two lines high has no room for one, as in Emacs.
+    assert!(!ed.window_wants_header_line(id, 2));
+    // The window's parameter takes the buffer's place, and none hides it.
+    ed.set_window_parameter(id, "header-line-format", s("Mine")).unwrap();
+    ed.redisplay();
+    assert_eq!(ed.header_line(id).unwrap()[0].text, "Mine");
+    ed.set_window_parameter(id, "header-line-format", sym("none")).unwrap();
+    ed.redisplay();
+    assert!(ed.header_line(id).is_none());
+    assert!(!ed.window_wants_header_line(id, 10));
+    // Other buffers have none: the variable is buffer-local.
+    ed.set_window_parameter(id, "header-line-format", Value::Null).unwrap();
+    ed.switch_to_buffer("other");
+    ed.redisplay();
+    assert!(ed.header_line(id).is_none());
+}
+
+#[test]
+fn align_to_spaces_line_titles_up_at_columns() {
+    use ember_core::{Props, Text};
+    let mut ed = Editor::new();
+    let space = |column: Value| {
+        let mut props = Props::new();
+        props.insert("display".into(), list(vec![sym("space"), sym(":align-to"), column]));
+        Value::Text(Text::propertize(" ", props))
+    };
+    let format = list(vec![s("Name"), space(Value::Number(8.0)), s("Size"), space(list(vec![sym("+"), sym("header-line-indent-width"), Value::Number(15.0)])), s("Mode")]);
+    let text: String = ed.format_mode_line(&format).unwrap().into_iter().map(|s| s.text).collect();
+    assert_eq!(text, "Name    Size   Mode");
+    ed.set_variable("header-line-indent-width", Value::Number(3.0));
+    let text: String = ed.format_mode_line(&format).unwrap().into_iter().map(|s| s.text).collect();
+    assert_eq!(text, "Name    Size      Mode");
+}

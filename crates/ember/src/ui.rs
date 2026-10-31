@@ -15,6 +15,8 @@ struct WindowArea {
     id: WindowId,
     text: Rect,
     mode_line: Rect,
+    /// The line above the text, when the window's buffer has a `header-line-format`.
+    header_line: Option<Rect>,
     /// The column between this window and the one to its right.
     divider: Option<Rect>,
 }
@@ -28,10 +30,12 @@ fn window_areas(ed: &Editor, width: u16, height: u16) -> Vec<WindowArea> {
         .map(|r| {
             let (x, y, w, h) = (r.x as u16, r.y as u16, (r.width as u16).max(1), (r.height as u16).max(2));
             let text_width = if r.divider { w.saturating_sub(1).max(1) } else { w };
+            let header = u16::from(ed.window_wants_header_line(r.id, h as usize));
             WindowArea {
                 id: r.id,
-                text: Rect::new(x, y, text_width, h - 1),
+                text: Rect::new(x, y + header, text_width, h - 1 - header),
                 mode_line: Rect::new(x, y + h - 1, w, 1),
+                header_line: (header == 1).then(|| Rect::new(x, y, text_width, 1)),
                 divider: r.divider.then(|| Rect::new(x + w - 1, y, 1, h - 1)),
             }
         })
@@ -61,6 +65,9 @@ pub fn draw(frame: &mut Frame, ed: &Editor) {
             window_cursor = cursor;
         }
         draw_mode_line(frame, ed, &view, area.mode_line);
+        if let Some(header) = area.header_line {
+            draw_header_line(frame, ed, &view, header);
+        }
         if let Some(divider) = area.divider {
             let bar: Vec<Line> = (0..divider.height).map(|_| Line::from("|")).collect();
             frame.render_widget(Paragraph::new(bar), divider);
@@ -119,7 +126,8 @@ fn dark(ed: &Editor) -> bool {
 pub fn mouse_target(ed: &Editor, width: u16, height: u16, x: u16, y: u16) -> Option<(WindowId, Option<usize>)> {
     let areas = window_areas(ed, width, height);
     let area = areas.iter().find(|a| {
-        let r = Rect::new(a.text.x, a.text.y, a.mode_line.width, a.text.height + 1);
+        let top = a.header_line.map_or(a.text.y, |h| h.y);
+        let r = Rect::new(a.text.x, top, a.mode_line.width, a.mode_line.y + 1 - top);
         r.contains(Position::new(x, y))
     })?;
     if !area.text.contains(Position::new(x, y)) {
@@ -248,6 +256,25 @@ fn draw_mode_line(frame: &mut Frame, ed: &Editor, view: &WindowView, area: Rect)
         style = style.add_modifier(Modifier::DIM);
     }
     frame.render_widget(Paragraph::new(text).style(style), area);
+}
+
+/// Draws a window's header line, as the core formatted `header-line-format`:
+/// in reverse video, as Emacs's header-line face is on a terminal, its bold
+/// faces bold.
+fn draw_header_line(frame: &mut Frame, ed: &Editor, view: &WindowView, area: Rect) {
+    let base = Style::new().add_modifier(Modifier::REVERSED);
+    let dark = dark(ed);
+    let spans: Vec<Span> = ed
+        .header_line(view.id)
+        .unwrap_or_default()
+        .iter()
+        .map(|segment| {
+            let style = ed.style_for(&segment.faces, dark);
+            let style = if style.bold { base.add_modifier(Modifier::BOLD) } else { base };
+            Span::styled(segment.text.clone(), style)
+        })
+        .collect();
+    frame.render_widget(Paragraph::new(Line::from(spans)).style(base), area);
 }
 
 /// Draws the minibuffer or the current message. Returns the cursor position
@@ -397,6 +424,22 @@ mod tests {
         assert_eq!(row.trim_end(), "plain boldlast");
         assert!(buf[(6, 0)].modifier.contains(Modifier::BOLD));
         assert!(!buf[(0, 0)].modifier.contains(Modifier::BOLD));
+    }
+
+    #[test]
+    fn a_header_line_takes_the_top_line_of_its_window() {
+        let mut ed = Editor::new();
+        ed.type_text("one\ntwo");
+        ed.set_variable("header-line-format", ember_core::Value::Str(" Name %b".into()));
+        let rows = render(&mut ed, 30, 6);
+        assert_eq!(rows[0], " Name *scratch*");
+        assert_eq!(rows[1], "one");
+        assert_eq!(rows[2], "two");
+        assert!(rows[4].starts_with("U:**-  *scratch*"), "{}", rows[4]);
+        assert_eq!(ed.viewport_height(), 3, "the header line and mode line take two of the five lines");
+        // A click on the header line is over no text.
+        assert_eq!(mouse_target(&ed, 30, 6, 2, 0).map(|t| t.1), Some(None));
+        assert_eq!(mouse_target(&ed, 30, 6, 1, 1).map(|t| t.1), Some(Some(1)));
     }
 
     #[test]

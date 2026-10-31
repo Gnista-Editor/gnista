@@ -387,7 +387,8 @@ impl Editor {
     }
 
     /// Tells the editor how big a window is: columns, and lines of text
-    /// without the mode line. Front ends call this when they lay windows out.
+    /// without the mode line and header line. Front ends call this when
+    /// they lay windows out.
     pub fn set_window_size(&mut self, id: WindowId, width: usize, height: usize) {
         if let Some(w) = self.window_mut(id) {
             w.width = width.max(1);
@@ -563,9 +564,10 @@ impl Editor {
         let Some((cols, lines)) = self.frame_size else { return };
         for r in self.window_tree.rects(0.0, 0.0, cols as f32, lines as f32, (1.0, 1.0)) {
             let divider = usize::from(r.divider);
+            let header = usize::from(self.window_wants_header_line(r.id, r.height as usize));
             if let Some(w) = self.window_mut(r.id) {
                 w.width = (r.width as usize).saturating_sub(divider).max(1);
-                w.height = (r.height as usize).saturating_sub(1).max(1);
+                w.height = (r.height as usize).saturating_sub(1 + header).max(1);
             }
         }
     }

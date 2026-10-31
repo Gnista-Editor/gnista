@@ -1,5 +1,6 @@
 import { applyOnRegion } from "ansi-color";
 import { readPasswd, regexpQuote } from "subr";
+import { isearchSearchFunDefault, isearchMessage, isearchMessagePrefix } from "isearch";
 
 // Command interpreters in a buffer, after Emacs's comint.el: a program on
 // a pseudo-terminal, its output marked as the `output` field and its prompt
@@ -318,6 +319,7 @@ ember.defineMajorMode({
     "C-d": "comint-delchar-or-maybe-eof",
     "M-p": "comint-previous-input",
     "M-n": "comint-next-input",
+    "M-r": "comint-history-isearch-backward-regexp",
     "C-c M-r": "comint-previous-matching-input-from-input",
     "C-c M-s": "comint-next-matching-input-from-input",
     "C-<up>": "comint-previous-input",
@@ -339,6 +341,7 @@ ember.defineMajorMode({
   } as Record<string, ember.CommandName>,
   setup: () => {
     state();
+    ember.addHook("isearch-mode-hook", historyIsearchSetup, { local: true });
     ember.setVariable("comint-preoutput-filter-functions", [dropEcho]);
     ember.setVariable("scroll-conservatively", 101);
   },
@@ -584,6 +587,172 @@ export function writeInputRing(): void {
   ember.writeTextFile(path, [...s.ring].reverse().map((input) => input + separator).join(""));
 }
 ember.defun("comint-write-input-ring", () => writeInputRing());
+
+// Isearch in the input history, as comint.el's: M-r searches back through
+// the inputs sent before for a regexp, each match put after the prompt in
+// turn, the prompt showing the search's own.
+
+ember.defineVariable({
+  name: "comint-history-isearch",
+  doc: "Whether C-r and C-M-r search the input history rather than the buffer: t always, dwim when the search starts at the command line, nil never. M-r searches the history whatever it says.",
+  value: false,
+});
+
+/** Where the input on point's line starts, after the prompt, as comint-line-beginning-position. */
+const lineBeginningPosition = (): number => ember.constrainToField(ember.lineBeginningPosition(), ember.lineEndPosition());
+
+/** The start of the line the prompt is on. */
+const promptLineStart = (): number => ember.lineBeginningPosition(lineBeginningPosition());
+
+/** The overlay that shows the search's prompt over the program's, as comint-history-isearch-message-overlay. */
+const messageOverlays = new Map<string, number>();
+
+/** Puts the input `pos` places back in the history after the prompt, or what was typed for undefined, as comint-goto-input. */
+function gotoInput(pos: number | undefined): void {
+  const s = state();
+  if (s.index === undefined) s.stored = oldInput();
+  s.index = pos;
+  if (pos !== undefined && s.ring.length > 0) replaceInput(s.ring[pos]!);
+  else replaceInput(s.stored ?? "");
+}
+
+/** The function isearch searches the history with, as comint-history-isearch-search gives. */
+function historyIsearchSearch(): (string: string, bound?: ember.Value, noerror?: ember.Value) => number | undefined {
+  return (string, bound, noerror) => {
+    const searchFun = isearchSearchFunDefault();
+    const forward = ember.variable("isearch-forward") === true;
+    const s = state();
+    // Lazy highlighting searches with a bound: not in the prompt or the output.
+    if (typeof bound === "number" && forward && !afterPmark()) ember.gotoChar(processMark(bufferProcess()));
+    const here = searchFun(string, forward ? bound : lineBeginningPosition(), noerror);
+    if (here !== undefined) return here;
+    if (typeof bound === "number") return undefined;
+    // Then put the inputs before or after this one in, one by one, and search each.
+    return ember.conditionCase(
+      () => {
+        for (;;) {
+          if (forward) {
+            if (s.index === undefined) ember.signal("error", "End of history; no next item");
+            previousInput(-1);
+            ember.gotoChar(lineBeginningPosition());
+          } else {
+            if (s.index === s.ring.length - 1) ember.signal("error", "Beginning of history; no preceding item");
+            previousInput(1);
+            ember.gotoChar(ember.pointMax());
+          }
+          ember.setVariable("isearch-barrier", ember.point());
+          ember.setVariable("isearch-opoint", ember.point());
+          const found = searchFun(string, forward ? undefined : lineBeginningPosition(), noerror);
+          if (found !== undefined) return ember.point();
+        }
+      },
+      { error: () => undefined },
+    );
+  };
+}
+
+/** Shows the search's prompt over the program's while the search succeeds, as comint-history-isearch-message. */
+function historyIsearchMessage(cqHack?: ember.Value, ellipsis?: ember.Value): void {
+  if (ember.variable("isearch-success") !== true || truthyValue(ember.variable("isearch-error"))) {
+    isearchMessage(truthyValue(cqHack), truthyValue(ellipsis));
+    return;
+  }
+  const buffer = ember.bufferName();
+  const start = promptLineStart();
+  const end = lineBeginningPosition();
+  let o = messageOverlays.get(buffer);
+  if (o !== undefined && ember.overlayStart(o) !== undefined) ember.moveOverlay(o, start, end);
+  else {
+    o = ember.makeOverlay(start, end);
+    ember.overlayPut(o, "evaporate", true);
+    messageOverlays.set(buffer, o);
+  }
+  ember.overlayPut(o, "display", isearchMessagePrefix(truthyValue(ellipsis)));
+  const index = state().index;
+  if (index !== undefined && !truthyValue(ellipsis)) ember.message(`History item: ${index + 1}`);
+  else ember.message("");
+}
+
+/** Wraps a failing search round to the newest input or the oldest, as comint-history-isearch-wrap. */
+function historyIsearchWrap(): void {
+  const forward = ember.variable("isearch-forward") === true;
+  if (forward) gotoInput(state().ring.length - 1);
+  else gotoInput(undefined);
+  ember.gotoChar(forward ? lineBeginningPosition() : ember.pointMax());
+}
+
+/** Keeps where the search is in the history with each of its states, as comint-history-isearch-push-state. */
+function historyIsearchPushState(): (cmd: ember.Value) => void {
+  const index = state().index;
+  return () => gotoInput(index);
+}
+
+const truthyValue = (v: ember.Value | undefined) => v !== undefined && v !== null && v !== false;
+
+const searchVariables: [string, ember.Value][] = [
+  ["isearch-search-fun-function", historyIsearchSearch as unknown as ember.Value],
+  ["isearch-message-function", historyIsearchMessage as unknown as ember.Value],
+  ["isearch-wrap-function", historyIsearchWrap as unknown as ember.Value],
+  ["isearch-push-state-function", historyIsearchPushState as unknown as ember.Value],
+];
+
+/** Makes a search that starts here search the history, as comint-history-isearch-setup on isearch-mode-hook. */
+function historyIsearchSetup(): void {
+  const how = ember.variable("comint-history-isearch");
+  const proc = ember.getBufferProcess(ember.bufferName());
+  if (proc === undefined) return;
+  // Not where the prompt is empty, as in a finished shell's buffer.
+  if (promptLineStart() === lineBeginningPosition()) return;
+  if (!(how === true || (how === "dwim" && afterPmark()))) return;
+  ember.setVariable("isearch-message-prefix-add", "history ");
+  for (const [name, value] of searchVariables) {
+    ember.makeLocalVariable(name);
+    ember.setVariable(name, value);
+  }
+  ember.makeLocalVariable("isearch-lazy-count");
+  ember.setVariable("isearch-lazy-count", false);
+  ember.addHook("isearch-mode-end-hook", historyIsearchEnd, { local: true });
+}
+
+/** What comint-history-isearch was before M-r set it, put back as the search ends, as custom-reevaluate-setting does. */
+let savedHowToSearch: ember.Value | undefined;
+
+/** Puts the search back as it was, as comint-history-isearch-end on isearch-mode-end-hook. */
+function historyIsearchEnd(): void {
+  const o = messageOverlays.get(ember.bufferName());
+  if (o !== undefined) ember.deleteOverlay(o);
+  messageOverlays.delete(ember.bufferName());
+  ember.setVariable("isearch-message-prefix-add", null);
+  for (const [name] of searchVariables) ember.killLocalVariable(name);
+  ember.killLocalVariable("isearch-lazy-count");
+  // So the search leaves no mark behind.
+  ember.setVariable("isearch-opoint", ember.point());
+  ember.removeHook("isearch-mode-end-hook", historyIsearchEnd, { local: true });
+  if (ember.variable("isearch-suspended") !== true && savedHowToSearch !== undefined) {
+    ember.setVariable("comint-history-isearch", savedHowToSearch);
+    savedHowToSearch = undefined;
+  }
+}
+
+ember.defineCommand({
+  name: "comint-history-isearch-backward",
+  doc: "Search back through the input history for a string, incrementally: each match is put after the prompt.",
+  run: () => {
+    savedHowToSearch ??= ember.variable("comint-history-isearch") ?? false;
+    ember.setVariable("comint-history-isearch", true);
+    ember.call("isearch-backward");
+  },
+});
+
+ember.defineCommand({
+  name: "comint-history-isearch-backward-regexp",
+  doc: "Search back through the input history for a regular expression, incrementally: each match is put after the prompt.",
+  run: () => {
+    savedHowToSearch ??= ember.variable("comint-history-isearch") ?? false;
+    ember.setVariable("comint-history-isearch", true);
+    ember.call("isearch-backward-regexp");
+  },
+});
 
 ember.defineCommand({
   name: "comint-previous-input",

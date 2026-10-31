@@ -290,6 +290,8 @@ pub struct Editor {
     pub(crate) permissions: crate::permissions::Permissions,
     /// Each window's mode line, as the last redisplay formatted it.
     pub(crate) mode_lines: std::collections::HashMap<crate::window::WindowId, Vec<crate::modeline::ModeLineSegment>>,
+    /// Each window's header line as the last redisplay formatted it, for windows whose format has one.
+    pub(crate) header_lines: std::collections::HashMap<crate::window::WindowId, Vec<crate::modeline::ModeLineSegment>>,
     /// Window configurations kept for code to put back, by id.
     pub(crate) window_configurations: std::collections::HashMap<u64, crate::window::WindowConfiguration>,
     pub(crate) next_window_configuration: u64,
@@ -402,6 +404,7 @@ impl Editor {
             timers: Default::default(),
             permissions: Default::default(),
             mode_lines: Default::default(),
+            header_lines: Default::default(),
             window_configurations: Default::default(),
             next_window_configuration: 0,
         };

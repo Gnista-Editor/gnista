@@ -57,7 +57,7 @@ A real terminal was checked for what the shell does on C-c. The interactive Emac
 
 Not done yet:
 - `comint-use-prompt-regexp`;
-- `M-r`, searching the history incrementally, which needs isearch's `isearch-search-fun-function` and the hooks around it;
+- `M-r`, searching the history incrementally, which needed isearch's `isearch-search-fun-function` and the hooks around it ([ADR 0042](0042-isearch-state-and-comint-history-search.md) added them and it);
 - completing file names and commands at the prompt;
 - ANSI colours in compilation buffers, and inverse video and faint text, which Ember's faces lack;
 - `comint-accumulate`;

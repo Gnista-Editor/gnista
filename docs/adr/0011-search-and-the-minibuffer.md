@@ -28,7 +28,7 @@ Translate regexps to the `regex` crate, and give scripts the primitives for moda
 
 **Modal commands**: `Editor::set_overriding_map` puts a named keymap ahead of all but a transient map, as Emacs's `overriding-terminal-local-map`. A keymap can have a default binding for keys it does not bind, as an Emacs keymap's `[t]`. `Editor::unread_keys` makes keys the next read, as `unread-command-events`. With these:
 
-- `isearch.ts` follows `isearch.el`: `C-s`, `C-r`, `C-M-s`, `C-M-r`, wrapping after a failure, `DEL`, `C-g`, `C-w`, `C-y` and `M-r`, the current match in the `isearch` face and the others nearby in `lazy-highlight`, prompts worded as Emacs words them, and `search-ring`.
+- `isearch.ts` follows `isearch.el` (and since [ADR 0042](0042-isearch-state-and-comint-history-search.md) keeps its state and hooks): `C-s`, `C-r`, `C-M-s`, `C-M-r`, wrapping after a failure, `DEL`, `C-g`, `C-w`, `C-y` and `M-r`, the current match in the `isearch` face and the others nearby in `lazy-highlight`, prompts worded as Emacs words them, and `search-ring`.
 - `replace.ts` follows `replace.el`: `query-replace` (`M-%`), `query-replace-regexp` (`C-M-%`), `replace-string` and `replace-regexp`, on the region when it is active from a key or M-x. The keys while asking are `y`, `SPC`, `n`, `DEL`, `!`, `.`, `,`, `^`, `q`, `RET` and `C-g`.
 - Neither blocks: each key is its own command, so the editor keeps drawing between them.
 

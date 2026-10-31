@@ -183,6 +183,30 @@ ember.defineMajorMode({
   doc: "The major mode with no specialisations. Other major modes are defined by how they differ from it.",
 });
 
+// Special mode, the parent of modes for buffers that are read rather than
+// edited, as simple.el's: q quits, g makes the buffer again, SPC and DEL
+// page, and the keymap is suppressed, digits giving a prefix argument.
+
+ember.defineMajorMode({
+  name: "special-mode",
+  modeName: "Special",
+  doc: "The parent of modes for buffers that are read rather than edited: q quits the window, g makes the buffer again, SPC and DEL page, < and > go to the ends, and h or ? describes the mode.",
+  bindings: {
+    q: "quit-window",
+    SPC: "scroll-up-command",
+    "S-SPC": "scroll-down-command",
+    DEL: "scroll-down-command",
+    h: "describe-mode",
+    "?": "describe-mode",
+    ">": "end-of-buffer",
+    "<": "beginning-of-buffer",
+    g: "revert-buffer",
+    "-": "negative-argument",
+    ...Object.fromEntries([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => [String(d), "digit-argument"])),
+  } as Record<string, ember.CommandName>,
+  setup: () => ember.setReadOnly(true),
+});
+
 // Overwrite mode: <insert>.
 
 const overwriteMode = ember.defineMinorMode({

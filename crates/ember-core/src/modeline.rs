@@ -58,7 +58,44 @@ impl Editor {
         self.mode_lines.get(&window).map_or(&[], Vec::as_slice)
     }
 
-    /// Formats every window's mode line from its buffer's `mode-line-format`.
+    /// The header line of a window as the last redisplay formatted it, if
+    /// its format gives one. A window shows it only when
+    /// [`Editor::window_wants_header_line`] says so.
+    pub fn header_line(&self, window: WindowId) -> Option<&[ModeLineSegment]> {
+        self.header_lines.get(&window).map(Vec::as_slice)
+    }
+
+    /// The header line format a window has, as Emacs's
+    /// window_wants_header_line reads it: its `header-line-format`
+    /// parameter, unless that is `none`, which hides it, else its buffer's
+    /// `header-line-format`. `None` when that is nil.
+    fn header_line_format_of(&self, id: WindowId) -> Option<Value> {
+        let w = self.window(id)?;
+        let format = match w.parameters.get("header-line-format") {
+            Some(Value::Symbol(name) | Value::Str(name)) if name == "none" => return None,
+            Some(value) if value.is_true() => value.clone(),
+            _ => {
+                let index = self.buffer_with_id(w.buffer)?;
+                self.variable_in(&self.buffers[index], "header-line-format")?
+            }
+        };
+        match format {
+            Value::Null | Value::Bool(false) => None,
+            Value::List(ref items) if items.is_empty() => None,
+            format => Some(format),
+        }
+    }
+
+    /// Whether a window `total_lines` high, its mode line counted, shows a
+    /// header line: it has a format, and is tall enough for a line of text
+    /// as well, as Emacs's window_wants_header_line asks. Front ends lay the
+    /// window out with this.
+    pub fn window_wants_header_line(&self, id: WindowId, total_lines: usize) -> bool {
+        total_lines > 2 && self.header_line_format_of(id).is_some()
+    }
+
+    /// Formats every window's mode line from its buffer's
+    /// `mode-line-format`, and its header line from `header-line-format`.
     pub(crate) fn update_mode_lines(&mut self) {
         let windows: Vec<(WindowId, u64, usize, usize)> = self
             .frame_list()
@@ -66,14 +103,21 @@ impl Editor {
             .flat_map(|f| self.frame_windows(f).into_iter().map(|v| (v.id, v.buffer.id(), v.point, v.top_line)).collect::<Vec<_>>())
             .collect();
         let mut lines = HashMap::new();
+        let mut headers = HashMap::new();
         for (id, buffer, point, top_line) in windows {
             let Some(index) = self.buffer_with_id(buffer) else { continue };
             let format = self.variable_in(&self.buffers[index], "mode-line-format").unwrap_or(Value::Null);
             let mut f = self.formatting(id, point, top_line);
             self.with_current_buffer(index, |ed| ed.mode_line_element(&mut f, &format, &[], 0, false));
             lines.insert(id, f.out);
+            if let Some(format) = self.header_line_format_of(id) {
+                let mut f = self.formatting(id, point, top_line);
+                self.with_current_buffer(index, |ed| ed.mode_line_element(&mut f, &format, &[], 0, false));
+                headers.insert(id, f.out);
+            }
         }
         self.mode_lines = lines;
+        self.header_lines = headers;
     }
 
     /// What formatting a window's mode line starts from. %- fills the
@@ -117,8 +161,15 @@ impl Editor {
             Value::Str(s) => self.mode_line_string(f, s, faces),
             Value::Text(t) => {
                 for (range, text) in text_runs(t) {
+                    let props = t.properties_at(range.start);
                     let mut with = faces.to_vec();
-                    with.extend(t.properties_at(range.start).and_then(|p| p.get("face")).map(face_names).unwrap_or_default());
+                    with.extend(props.and_then(|p| p.get("face")).map(face_names).unwrap_or_default());
+                    // A `(space :align-to COLUMN)` display spec pads to the column, as tabulated lists' header lines line their titles up.
+                    if let Some(column) = props.and_then(|p| p.get("display")).and_then(|d| self.align_to(d)) {
+                        let pad = column.saturating_sub(f.columns());
+                        f.push(&" ".repeat(pad), &with);
+                        continue;
+                    }
                     if literal {
                         f.push(&text, &with);
                     } else {
@@ -200,6 +251,30 @@ impl Editor {
                 }
             },
             Value::Null | Value::Bool(_) | Value::Number(_) | Value::Buffer(_) | Value::Keymap(_) | Value::CharTable(_) | Value::Treesit(_) => {}
+        }
+    }
+
+    /// The column a `(space :align-to POS)` display spec in a mode line or
+    /// header line reaches, POS a number, a variable such as
+    /// `header-line-indent-width`, or a sum `(+ ...)` of them, as Emacs's
+    /// calc_pixel_width_or_height counts in columns.
+    fn align_to(&self, spec: &Value) -> Option<usize> {
+        let Value::List(items) = spec else { return None };
+        if items.first().and_then(Value::as_str) != Some("space") {
+            return None;
+        }
+        let at = items.iter().position(|v| v.as_str() == Some(":align-to"))?;
+        self.align_position(items.get(at + 1)?).map(|n| n.max(0.0) as usize)
+    }
+
+    fn align_position(&self, pos: &Value) -> Option<f64> {
+        match pos {
+            Value::Number(n) => Some(*n),
+            Value::Symbol(name) | Value::Str(name) => self.variable(name).and_then(|v| v.as_number()),
+            Value::List(items) if items.first().and_then(Value::as_str) == Some("+") => {
+                items[1..].iter().map(|v| self.align_position(v)).sum()
+            }
+            _ => None,
         }
     }
 
@@ -409,6 +484,19 @@ pub(crate) fn install(ed: &mut Editor) {
         )
         .local(),
     );
+    ed.define_variable(
+        Variable::new(
+            "header-line-format",
+            "What a window's header line shows, a mode line construct as `mode-line-format` is; nil, the default, for no header line. A window's `header-line-format` parameter takes its place, and `none` there hides it.",
+            Value::Null,
+        )
+        .local(),
+    );
+    ed.define_variable(Variable::new(
+        "header-line-indent-width",
+        "How many columns the line numbers take left of the text, which a header line's `:align-to` positions can add to line titles up with the text, as header-line-indent-mode keeps it.",
+        Value::Number(0.0),
+    ).local());
     ed.define_variable(Variable::new("minor-mode-alist", "The minor modes' lighters in the mode line, as [mode, lighter] pairs: each lighter shows while its mode's variable is true.", Value::List(Vec::new())));
     ed.define_variable(Variable::new("defining-kbd-macro", "Whether a keyboard macro is being defined, which the mode line shows as Def.", false));
 }

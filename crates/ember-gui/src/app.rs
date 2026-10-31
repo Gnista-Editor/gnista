@@ -419,6 +419,8 @@ struct WindowLayout {
     rect: Rect,
     text_rect: Rect,
     mode_rect: Rect,
+    /// The bar above the text, when the window's buffer has a `header-line-format`.
+    header_rect: Option<Rect>,
     /// Whether another window lies to the right, past a hairline.
     divider: bool,
 }
@@ -464,11 +466,16 @@ impl Layout {
             .map(|r| {
                 let rect = Rect::from_min_size(pos2(r.x, r.y), vec2(r.width, r.height));
                 let mode_rect = Rect::from_min_max(pos2(rect.left(), rect.bottom() - bar_height), rect.max);
+                let total_lines = (rect.height() / m.line_height).round() as usize;
+                let header_rect = ed
+                    .window_wants_header_line(r.id, total_lines)
+                    .then(|| Rect::from_min_size(rect.min, vec2(rect.width(), bar_height)));
+                let text_top = header_rect.map_or(rect.top(), |h| h.bottom());
                 let text_rect = Rect::from_min_max(
-                    rect.min + vec2(PAD_X, PAD_Y),
+                    pos2(rect.left() + PAD_X, text_top + PAD_Y),
                     pos2(rect.right() - PAD_X, mode_rect.top()),
                 );
-                WindowLayout { id: r.id, rect, text_rect, mode_rect, divider: r.divider }
+                WindowLayout { id: r.id, rect, text_rect, mode_rect, header_rect, divider: r.divider }
             })
             .collect();
         for w in &windows {
@@ -493,11 +500,15 @@ fn draw(ui: &Ui, ed: &Editor, frame: FrameId, layout: &Layout, t: Tokens, focuse
             CursorStyle::Hollow
         };
         // A line scrolled partly out of view slides under the top edge of the window.
-        let clip = Rect::from_min_max(w.rect.min, pos2(w.rect.right(), w.mode_rect.top()));
+        let top = w.header_rect.map_or(w.rect.top(), |h| h.bottom());
+        let clip = Rect::from_min_max(pos2(w.rect.left(), top), pos2(w.rect.right(), w.mode_rect.top()));
         let offset = if window.id == scroll.0 { scroll.1 } else { 0.0 };
         let view = View { area: w.text_rect, clip, scroll_offset: offset };
         draw_buffer(&painter, ed, &window, &view, m, t, cursor);
         draw_mode_line(&painter, ed, &window, w.mode_rect, m, t);
+        if let Some(header) = w.header_rect {
+            draw_header_line(&painter, ed, &window, header, m, t);
+        }
         if w.divider {
             painter.vline(w.rect.right() - 0.5, w.rect.y_range(), Stroke::new(1.0, t.line));
         }
@@ -515,7 +526,7 @@ fn draw(ui: &Ui, ed: &Editor, frame: FrameId, layout: &Layout, t: Tokens, focuse
 fn hit(ed: &Editor, layout: &Layout, pos: Pos2, scroll: (WindowId, f32)) -> Option<(WindowId, Option<usize>)> {
     let m = &layout.m;
     let w = layout.windows.iter().find(|w| w.rect.contains(pos))?;
-    if pos.y >= w.mode_rect.top() {
+    if pos.y >= w.mode_rect.top() || w.header_rect.is_some_and(|h| pos.y < h.bottom()) {
         return Some((w.id, None));
     }
     let view = ed.windows().into_iter().find(|v| v.id == w.id)?;
@@ -836,6 +847,28 @@ fn draw_mode_line(painter: &Painter, ed: &Editor, window: &WindowView, rect: Rec
             None => text_format(m, t.muted),
             Some("mode-line-buffer-id") => text_format(m, if window.selected { t.ink_strong } else { t.muted }),
             Some("mode-line-emphasis") => text_format(m, t.accent_ink),
+            Some("shadow") => text_format(m, t.faint),
+            Some(_) => face_format(&ed.style_for(&segment.faces, t.dark), &default_style, m, t),
+        };
+        job.append(&segment.text, 0.0, format);
+    }
+    let galley = painter.layout_job(job);
+    let y = rect.center().y - galley.size().y / 2.0;
+    painter.with_clip_rect(rect).galley(pos2(rect.left() + PAD_X, y), galley, t.ink);
+}
+
+/// Draws a window's header line, as the core formatted `header-line-format`:
+/// a bar like the mode line's, with a hairline under it, its text in the
+/// mode line's muted ink and bold faces strong.
+fn draw_header_line(painter: &Painter, ed: &Editor, window: &WindowView, rect: Rect, m: &Metrics, t: Tokens) {
+    painter.rect_filled(rect, 0.0, t.sunken);
+    painter.hline(rect.x_range(), rect.bottom() - 0.5, Stroke::new(1.0, t.line));
+    let default_style = Style::default();
+    let mut job = LayoutJob::default();
+    for segment in ed.header_line(window.id).unwrap_or_default() {
+        let format = match segment.faces.last().map(String::as_str) {
+            None => text_format(m, t.muted),
+            Some("bold") => text_format(m, t.ink_strong),
             Some("shadow") => text_format(m, t.faint),
             Some(_) => face_format(&ed.style_for(&segment.faces, t.dark), &default_style, m, t),
         };

@@ -743,7 +743,8 @@ impl Editor {
     }
 
     /// The faces at a position, apart from syntax: overlays' first, highest priority first,
-    /// then the text's own.
+    /// then the text's own. Text with no `face` takes its `font-lock-face`,
+    /// as Emacs's font-lock-mode, always on here, makes it an alias.
     fn faces_at(&self, b: &Buffer, pos: usize) -> Vec<String> {
         let mut faces: Vec<String> = b
             .overlays_at(pos)
@@ -751,7 +752,7 @@ impl Editor {
             .filter_map(|o| o.props.get("face"))
             .flat_map(face_names)
             .collect();
-        if let Some(face) = b.text_property(pos, "face") {
+        if let Some(face) = b.text_property(pos, "face").or_else(|| b.text_property(pos, "font-lock-face")) {
             faces.extend(face_names(face));
         }
         faces

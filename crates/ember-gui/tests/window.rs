@@ -103,6 +103,19 @@ fn line_numbers() {
     harness(ed, Theme::Dark).snapshot("line_numbers_dark");
 }
 
+/// The buffer list: its column titles in the header line above the text,
+/// lined up with the columns, the sorted one bold.
+#[test]
+fn header_line() {
+    let mut ed = sample();
+    let _scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    ed.call("switch-to-buffer", vec![ember_core::Arg::Str("notes.txt".into())]).unwrap();
+    ed.type_text("Some notes");
+    ed.call("buffer-menu", vec![ember_core::Arg::Prefix(None)]).unwrap();
+    ed.press("S").unwrap();
+    harness(ed, Theme::Dark).snapshot("header_line_dark");
+}
+
 #[test]
 fn keys_reach_the_editor() {
     let mut h = harness(Editor::new(), Theme::Dark);

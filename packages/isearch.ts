@@ -5,6 +5,18 @@
 // cancels it. Any other key ends the search and then does what it usually
 // does. The current match is highlighted with the isearch face and the other
 // matches nearby with lazy-highlight.
+//
+// The search keeps isearch.el's state in its variables (isearch-string,
+// isearch-forward, isearch-success, isearch-error, isearch-other-end and the
+// rest) and a stack of states that DEL pops, so a mode can search something
+// other than the buffer's text as Emacs's modes do: isearch-mode-hook runs
+// as a search starts and isearch-mode-end-hook as it ends, and
+// isearch-search-fun-function, isearch-message-function,
+// isearch-wrap-function and isearch-push-state-function replace how it
+// searches, what it says, how it wraps and what each state keeps, as
+// comint.ts's history search does.
+
+import { truthy, regexpQuote } from "subr";
 
 ember.defineFace({
   name: "isearch",
@@ -22,226 +34,491 @@ ember.defineFace({
   attributes: { background: "bad", foreground: "bg" },
 });
 
-ember.defineVariable({
-  name: "search-ring",
-  doc: "Strings searched for with incremental search, most recent first.",
-  value: [],
-});
-ember.defineVariable({
-  name: "regexp-search-ring",
-  doc: "Regular expressions searched for with incremental search, most recent first.",
-  value: [],
-});
-ember.defineVariable({
-  name: "lazy-highlight-max-at-a-time",
-  doc: "How many other matches incremental search highlights at most, around point.",
-  value: 200,
-});
+for (const [name, doc, value, local] of [
+  ["search-ring", "Strings searched for with incremental search, most recent first.", [], false],
+  ["regexp-search-ring", "Regular expressions searched for with incremental search, most recent first.", [], false],
+  ["search-ring-max", "How many strings search-ring keeps.", 16, false],
+  ["regexp-search-ring-max", "How many regular expressions regexp-search-ring keeps.", 16, false],
+  ["lazy-highlight-max-at-a-time", "How many other matches incremental search highlights at most, around point.", 200, false],
+  [
+    "search-upper-case",
+    "Whether a capital letter in the search string makes the search case-sensitive: not-yanks, the default, as t except that text yanked into the string is lowercased first.",
+    "not-yanks",
+    false,
+  ],
+  ["isearch-search-fun-function", "The function that gives the function isearch searches with, called with no arguments; the function it gives takes the string, a bound and noerror, as re-search-forward does, and moves point to the match.", "isearch-search-fun-default", false],
+  ["isearch-message-function", "The function that says where the search stands, instead of isearch-message, or nil.", null, false],
+  ["isearch-wrap-function", "The function that moves point to where a failing search wraps round to, instead of the other end of the buffer, or nil.", null, false],
+  ["isearch-push-state-function", "A function called as each state of the search is saved, which gives a function the state is restored with when DEL goes back to it, or nil.", null, false],
+  ["isearch-filter-predicate", "A function of a match's start and end that says whether the search may stop there.", "isearch-filter-visible", false],
+  ["isearch-message-prefix-add", "Text added before \"I-search\" in the search's prompt, such as \"history \".", null, false],
+  ["isearch-lazy-count", "Whether the prompt counts the matches.", false, false],
+  ["isearch-repeat-on-direction-change", "Whether C-r after C-s, or C-s after C-r, first goes to the other end of the match, so the next search finds the one after it.", false, false],
+  ["isearch-mode", "\" Isearch\" while a search is going on, else nil.", null, false],
+  ["isearch-string", "The string being searched for.", "", false],
+  ["isearch-message", "The search string as the prompt shows it, control characters as ^X.", "", false],
+  ["isearch-forward", "Whether the search goes forward.", true, false],
+  ["isearch-regexp", "Whether the search is for a regular expression.", false, false],
+  ["isearch-success", "Whether the search has found the string.", true, false],
+  ["isearch-error", "Why the string cannot be searched for, such as an unfinished regexp, or nil.", null, false],
+  ["isearch-wrapped", "Whether the search has wrapped round the end of the buffer.", false, false],
+  ["isearch-barrier", "Where the search may not move back past while the string grows, as a regexp's \\| widens it.", 0, false],
+  ["isearch-opoint", "Where point was when the search began, where the mark goes when it ends.", 0, false],
+  ["isearch-other-end", "The other end of the match from point.", null, false],
+  ["isearch-case-fold-search", "Whether the search ignores case: t, nil, or yes after M-c.", true, false],
+  ["isearch-nonincremental", "Whether the search is a nonincremental one.", false, false],
+  ["isearch-suspended", "Whether the search is suspended to read from the minibuffer.", false, false],
+  ["isearch-adjusted", "Whether point has been moved back so that the string may match from further back.", false, false],
+  ["isearch-yank-flag", "Whether text was just yanked into the search string.", false, false],
+  ["isearch-mode-end-hook-quit", "Whether the search being ended was cancelled, while isearch-mode-end-hook runs.", false, false],
+] as const) {
+  ember.defineVariable({ name, doc, value: value as unknown as ember.Value, local });
+}
+ember.defineHook("isearch-mode-hook", "Run as a search starts, in the buffer searched.");
+ember.defineHook("isearch-mode-end-hook", "Run as a search ends; isearch-mode-end-hook-quit is true if it was cancelled.");
+ember.defineHook("isearch-update-post-hook", "Run after each change the search shows.");
 
-/** One step of a search, which DEL goes back to. */
-interface Step {
+const get = (name: string) => ember.variable(name);
+const set = (name: string, value: ember.Value) => ember.setVariable(name, value);
+const flag = (name: string) => truthy(get(name));
+const str = (name: string) => String(get(name) ?? "");
+
+/** One state of the search, which DEL goes back to, as isearch--state. */
+interface State {
   string: string;
+  message: string;
   point: number;
-  /** Where the current match starts and ends, if it found one. */
-  match?: { start: number; end: number };
   success: boolean;
-  wrapped: boolean;
   forward: boolean;
-  /** Why the string cannot be searched for, such as an unfinished regexp. */
-  error?: string;
+  otherEnd: number | undefined;
+  error: string | undefined;
+  wrapped: boolean;
+  barrier: number;
+  caseFold: ember.Value;
+  popFun: ember.Value | undefined;
+  match: { start: number; end: number } | undefined;
 }
 
-interface Search {
-  regexp: boolean;
-  origin: number;
-  steps: Step[];
-  /** The overlay on the current match, and on the other matches. */
-  current?: number;
-  others: number[];
+/** The states, the newest first, as isearch-cmds. */
+let cmds: State[] = [];
+/** Whether the search has not yet searched, as isearch-just-started. */
+let justStarted = false;
+/** The case folding before this search began, as isearch-last-case-fold-search. */
+let lastCaseFold: ember.Value = true;
+/** The match isearch-search found, as isearch-match-data. */
+let matchData: { start: number; end: number } | undefined;
+/** Where yanking a word goes on from after a failing search, as isearch--yank-prev-point. */
+let yankPrevPoint: number | undefined;
+/** The overlays on the match and the other matches. */
+let current: number | undefined;
+let others: number[] = [];
+
+function getState(): State {
+  const pushFn = get("isearch-push-state-function");
+  return {
+    string: str("isearch-string"),
+    message: str("isearch-message"),
+    point: ember.point(),
+    success: flag("isearch-success"),
+    forward: flag("isearch-forward"),
+    otherEnd: (get("isearch-other-end") as number | null) ?? undefined,
+    error: (get("isearch-error") as string | null) ?? undefined,
+    wrapped: flag("isearch-wrapped"),
+    barrier: Number(get("isearch-barrier") ?? 0),
+    caseFold: get("isearch-case-fold-search") ?? null,
+    popFun: truthy(pushFn) ? (ember.funcall(pushFn as string) as ember.Value) : undefined,
+    match: matchData,
+  };
 }
 
-let active: Search | undefined;
-
-function top(search: Search): Step {
-  return search.steps[search.steps.length - 1];
+/** Makes a state the search's, as isearch--set-state. */
+function setState(cmd: State): void {
+  set("isearch-string", cmd.string);
+  set("isearch-message", cmd.message);
+  set("isearch-success", cmd.success);
+  set("isearch-forward", cmd.forward);
+  set("isearch-other-end", cmd.otherEnd ?? null);
+  set("isearch-error", cmd.error ?? null);
+  set("isearch-wrapped", cmd.wrapped);
+  set("isearch-barrier", cmd.barrier);
+  set("isearch-case-fold-search", cmd.caseFold);
+  matchData = cmd.match;
+  if (typeof cmd.popFun === "function" || (typeof cmd.popFun === "string" && ember.fboundp(cmd.popFun))) ember.funcall(cmd.popFun as string, cmd as unknown as ember.Value);
+  ember.gotoChar(cmd.point);
 }
 
-function ringName(regexp: boolean): string {
-  return regexp ? "regexp-search-ring" : "search-ring";
+const pushState = () => cmds.unshift(getState());
+function popState(): void {
+  cmds.shift();
+  setState(cmds[0]);
 }
 
-function ring(regexp: boolean): string[] {
-  const value = ember.variable(ringName(regexp));
-  return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
+/** How the prompt shows a character: control characters as ^X, as isearch-text-char-description. */
+function charDescription(text: string): string {
+  return [...text].map((c) => {
+    const code = c.codePointAt(0)!;
+    if (code < 32 && c !== "\t" && c !== "\n") return `^${String.fromCharCode(code + 64)}`;
+    if (code === 127) return "^?";
+    return c;
+  }).join("");
 }
 
-/** What the echo area shows while searching, as Emacs words it. */
-function prompt(search: Search): string {
-  const step = top(search);
-  const parts: string[] = [];
-  if (!step.success && !step.error) parts.push("Failing");
-  else if (step.wrapped) parts.push("Wrapped");
-  parts.push(search.regexp ? "Regexp I-search" : "I-search");
-  let text = parts.join(" ");
-  if (!step.forward) text += " backward";
-  text = text.charAt(0).toUpperCase() + text.slice(1);
-  const suffix = step.error ? ` [${step.error}]` : "";
-  return `${text}: ${step.string}${suffix}`;
-}
-
-function clearHighlights(search: Search) {
-  if (search.current !== undefined) ember.deleteOverlay(search.current);
-  search.current = undefined;
-  for (const id of search.others) ember.deleteOverlay(id);
-  search.others = [];
-}
-
-/** Highlights the current match, and the other matches within a few hundred lines. */
-function highlight(search: Search) {
-  clearHighlights(search);
-  const step = top(search);
-  if (step.string === "" || step.error) return;
-  if (step.match && step.success) {
-    search.current = ember.makeOverlay(step.match.start, step.match.end, { face: "isearch", priority: 1001 });
+/** Whether a string has no capital letters, those quoted with \ in a regexp aside, as isearch-no-upper-case-p. */
+export function isearchNoUpperCaseP(string: string, regexp: boolean): boolean {
+  let quote = false;
+  for (const c of string) {
+    if (regexp && c === "\\") quote = !quote;
+    else {
+      if (!quote && c !== c.toLowerCase()) return false;
+      quote = false;
+    }
   }
-  const max = Number(ember.variable("lazy-highlight-max-at-a-time") ?? 200);
+  return !(regexp && /\[:(upp|low)er:\]/.test(string));
+}
+
+/** The search's prompt up to the string, as isearch-message-prefix: "Failing wrapped regexp I-search backward: " and the like. */
+export function isearchMessagePrefix(ellipsis = false, nonincremental = flag("isearch-nonincremental")): string {
+  const success = flag("isearch-success");
+  const forward = flag("isearch-forward");
+  const wrapped = flag("isearch-wrapped");
+  const opoint = Number(get("isearch-opoint") ?? 0);
+  void ellipsis;
+  const m =
+    (success ? "" : "failing ") +
+    (get("isearch-adjusted") === true ? "pending " : "") +
+    (wrapped && !truthy(get("isearch-wrap-function")) && (forward ? ember.point() > opoint : ember.point() < opoint) ? "over" : "") +
+    (wrapped ? "wrapped " : "") +
+    (!success && !truthy(get("isearch-case-fold-search")) ? "case-sensitive " : "") +
+    (flag("isearch-regexp") ? "regexp " : "") +
+    str("isearch-message-prefix-add") +
+    (nonincremental ? "search" : "I-search") +
+    (forward ? "" : " backward") +
+    ": ";
+  return m.charAt(0).toUpperCase() + m.slice(1);
+}
+
+function messageSuffix(): string {
+  const error = get("isearch-error");
+  return truthy(error) ? ` [${String(error)}]` : "";
+}
+
+/** Says where the search stands in the echo area, as isearch-message. */
+export function isearchMessage(_cqHack = false, ellipsis = false): void {
+  ember.letBind({ "message-log-max": null }, () => ember.message(isearchMessagePrefix(ellipsis) + str("isearch-message") + messageSuffix()));
+}
+ember.defun("isearch-message", (cq?: ember.Value, ellipsis?: ember.Value) => isearchMessage(truthy(cq), truthy(ellipsis)));
+
+function callMessage(cqHack = false, ellipsis = false): void {
+  const f = get("isearch-message-function");
+  if (truthy(f)) ember.funcall(f as string, cqHack, ellipsis);
+  else isearchMessage(cqHack, ellipsis);
+}
+
+/** The function searching the buffer for the string as a regexp or literally, in the search's direction, as isearch-search-fun-default gives. */
+export function isearchSearchFunDefault(): (string: string, bound?: ember.Value, noerror?: ember.Value) => number | undefined {
+  return (string, bound, noerror) => {
+    const regexp = flag("isearch-regexp") ? string : regexpQuote(string);
+    const options = { bound: typeof bound === "number" ? bound : undefined, noerror: truthy(noerror) };
+    return flag("isearch-forward") ? ember.reSearchForward(regexp, options) : ember.reSearchBackward(regexp, options);
+  };
+}
+ember.defun("isearch-search-fun-default", isearchSearchFunDefault);
+
+/** The function to search with, as isearch-search-fun: what isearch-search-fun-function gives. */
+export function isearchSearchFun(): (string: string, bound?: ember.Value, noerror?: ember.Value) => number | undefined {
+  const f = get("isearch-search-fun-function");
+  if (!truthy(f) || f === "isearch-search-fun-default") return isearchSearchFunDefault();
+  return ember.funcall(f as string) as unknown as (string: string, bound?: ember.Value, noerror?: ember.Value) => number | undefined;
+}
+
+ember.defun("isearch-filter-visible", () => true);
+
+/** Searches for the string, moving point to the match if found, as isearch-search-string. */
+function searchString(string: string, bound: number | undefined, noerror: boolean): number | undefined {
+  const fn = isearchSearchFun();
+  const pos = ember.saveExcursion(() => fn(string, bound ?? null, noerror));
+  if (pos === undefined || pos === null) return undefined;
+  ember.gotoChar(pos);
+  return pos;
+}
+
+/** Searches with the current string, as isearch-search: sets isearch-success and isearch-error, and goes back to the last state's point if it fails. */
+function isearchSearch(): void {
+  if (get("isearch-case-fold-search") === true && truthy(get("search-upper-case"))) {
+    set("isearch-case-fold-search", isearchNoUpperCaseP(str("isearch-string"), flag("isearch-regexp")));
+  }
+  ember.conditionCase(
+    () =>
+      ember.letBind({ "case-fold-search": truthy(get("isearch-case-fold-search")) }, () => {
+        set("isearch-error", null);
+        const filter = get("isearch-filter-predicate");
+        for (;;) {
+          const found = searchString(str("isearch-string"), undefined, true) !== undefined;
+          set("isearch-success", found);
+          if (!found) break;
+          const [b, e] = [ember.matchBeginning(0)!, ember.matchEnd(0)!];
+          if (!truthy(filter) || filter === "isearch-filter-visible" || truthy(ember.funcall(filter as string, b, e))) break;
+          if (b === e) {
+            const forward = flag("isearch-forward");
+            if (forward ? ember.point() >= ember.pointMax() : ember.point() <= ember.pointMin()) {
+              set("isearch-success", false);
+              break;
+            }
+            ember.gotoChar(ember.point() + (forward ? 1 : -1));
+          }
+        }
+        justStarted = false;
+        if (flag("isearch-success")) {
+          const [b, e] = [ember.matchBeginning(0)!, ember.matchEnd(0)!];
+          set("isearch-other-end", flag("isearch-forward") ? b : e);
+          matchData = { start: b, end: e };
+        }
+      }),
+    {
+      "invalid-regexp": (e) => {
+        const message = String(e.data[0] ?? e.message);
+        set("isearch-error", /^(Premature |Unmatched )/.test(message) ? "incomplete input" : message);
+      },
+      "search-failed": (e) => {
+        set("isearch-success", false);
+        set("isearch-error", (e.data[1] as string | undefined) ?? null);
+      },
+      error: (e) => set("isearch-error", e.message),
+    },
+  );
+  if (!flag("isearch-success")) {
+    const top = cmds[0];
+    if (typeof top.popFun === "function" || (typeof top.popFun === "string" && ember.fboundp(top.popFun))) ember.funcall(top.popFun as string, top as unknown as ember.Value);
+    ember.gotoChar(top.point);
+  }
+}
+
+function clearHighlights(): void {
+  if (current !== undefined) ember.deleteOverlay(current);
+  current = undefined;
+  for (const id of others) ember.deleteOverlay(id);
+  others = [];
+}
+
+/** Highlights the other matches within a few hundred lines, searching forward with bounds as lazy highlighting does. */
+function lazyHighlight(): void {
+  const string = str("isearch-string");
+  if (string === "" || truthy(get("isearch-error"))) return;
+  const max = Number(get("lazy-highlight-max-at-a-time") ?? 200);
   const line = ember.lineOf(ember.point());
   const from = ember.lineStart(Math.max(0, line - 100));
   const to = ember.lineEnd(Math.min(ember.lineCount() - 1, line + 100));
-  const caseFold = ember.foldCaseFor(step.string, true);
-  let pos = from;
-  while (search.others.length < max) {
-    const m = ember.search(step.string, { from: pos, regexp: search.regexp, bound: to, caseFold });
-    if (m === undefined) break;
-    if (m.end === m.start) {
-      // An empty match shows nothing; step past it.
-      pos = m.end + 1;
-      if (pos > to) break;
-      continue;
-    }
-    if (!(step.match && m.start === step.match.start && m.end === step.match.end)) {
-      search.others.push(ember.makeOverlay(m.start, m.end, { face: "lazy-highlight", priority: 1000 }));
-    }
-    pos = m.end;
-  }
+  const forward = get("isearch-forward") ?? true;
+  ember.saveExcursion(() =>
+    ember.letBind({ "case-fold-search": truthy(get("isearch-case-fold-search")) }, () => {
+      set("isearch-forward", true);
+      try {
+        const fn = isearchSearchFun();
+        ember.gotoChar(from);
+        while (others.length < max) {
+          const found = ember.ignoreErrors(() => fn(string, to, true));
+          if (found === undefined || found === null) break;
+          const [b, e] = [ember.matchBeginning(0)!, ember.matchEnd(0)!];
+          if (b === e) {
+            if (ember.point() >= to) break;
+            ember.gotoChar(ember.point() + 1);
+            continue;
+          }
+          if (!(matchData && b === matchData.start && e === matchData.end)) others.push(ember.makeOverlay(b, e, { face: "lazy-highlight", priority: 1000 }));
+        }
+      } finally {
+        set("isearch-forward", forward);
+      }
+    }),
+  );
 }
 
-/**
- * Looks for the string from a position, wrapping round to the other end of
- * the buffer if asked, and returns the step that results.
- */
-function find(search: Search, string: string, from: number, forward: boolean, wrap: boolean, wrapped: boolean): Step {
-  const last = top(search);
-  const step: Step = { string, point: last.point, match: last.match, success: false, wrapped, forward };
-  if (string === "") {
-    return { ...step, success: true, match: undefined, point: last.point };
+/** Shows the search as it stands: the prompt, the match and the others, as isearch-update. */
+function isearchUpdate(): void {
+  callMessage();
+  clearHighlights();
+  const otherEnd = get("isearch-other-end");
+  if (typeof otherEnd === "number" && otherEnd !== ember.point() && flag("isearch-success")) {
+    current = ember.makeOverlay(Math.min(otherEnd, ember.point()), Math.max(otherEnd, ember.point()), { face: "isearch", priority: 1001 });
   }
-  const caseFold = ember.foldCaseFor(string, true);
-  try {
-    let m = ember.search(string, { from, regexp: search.regexp, backward: !forward, caseFold });
-    if (m === undefined && wrap) {
-      step.wrapped = true;
-      m = ember.search(string, {
-        from: forward ? 0 : ember.bufferSize(),
-        regexp: search.regexp,
-        backward: !forward,
-        caseFold,
-      });
-    }
-    if (m !== undefined) {
-      return { ...step, success: true, match: { start: m.start, end: m.end }, point: forward ? m.end : m.start };
-    }
-  } catch (e) {
-    // An unfinished regular expression, such as "\\(", fails without an error.
-    return { ...step, error: "incomplete input" };
-  }
-  return step;
+  set("isearch-adjusted", false);
+  set("isearch-yank-flag", false);
+  ember.runHooks("isearch-update-post-hook");
+  lazyHighlight();
 }
 
-/** Shows a step: moves point, highlights, and says where the search is. */
-function show(search: Search) {
-  const step = top(search);
-  ember.gotoChar(step.point);
-  highlight(search);
-  ember.message(prompt(search));
+/** Adds a string to the front of the ring, as isearch-update-ring. */
+function updateRing(string: string, regexp: boolean): void {
+  const name = regexp ? "regexp-search-ring" : "search-ring";
+  const ring = get(name);
+  const previous = Array.isArray(ring) ? ring.filter((s) => typeof s === "string" && s !== string) : [];
+  set(name, [string, ...previous].slice(0, Number(get(regexp ? "regexp-search-ring-max" : "search-ring-max") ?? 16)) as ember.Value);
 }
 
-function begin(forward: boolean, regexp: boolean) {
-  const point = ember.point();
-  active = {
-    regexp,
-    origin: point,
-    steps: [{ string: "", point, success: true, wrapped: false, forward }],
-    others: [],
-  };
+function ring(regexp: boolean): string[] {
+  const value = get(regexp ? "regexp-search-ring" : "search-ring");
+  return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
+}
+
+/** Starts a search, as isearch-mode. */
+export function isearchMode(forward: boolean, regexp = false): void {
+  set("isearch-forward", forward);
+  set("isearch-regexp", regexp);
+  lastCaseFold = get("isearch-case-fold-search") ?? true;
+  set("isearch-case-fold-search", truthy(get("case-fold-search")));
+  set("isearch-string", "");
+  set("isearch-message", "");
+  cmds = [];
+  set("isearch-success", true);
+  set("isearch-wrapped", false);
+  set("isearch-barrier", ember.point());
+  set("isearch-adjusted", false);
+  set("isearch-yank-flag", false);
+  set("isearch-error", null);
+  set("isearch-other-end", null);
+  justStarted = true;
+  matchData = undefined;
+  yankPrevPoint = undefined;
+  set("isearch-opoint", ember.point());
+  set("isearch-mode", " Isearch");
   ember.setOverridingMap("isearch-mode-map");
-  ember.message(prompt(active));
+  ember.runHooks("isearch-mode-hook");
+  pushState();
+  isearchUpdate();
 }
 
-/** Ends the search, leaving point where it is, as RET does. */
-function finish(search: Search) {
-  clearHighlights(search);
+/** Whether a search is going on. */
+const searching = () => get("isearch-mode") !== null && get("isearch-mode") !== undefined;
+
+/** Ends the search, as isearch-done: with `nopush` the string is not added to the ring. */
+export function isearchDone(nopush = false, edit = false): void {
   ember.setOverridingMap(null);
-  active = undefined;
-  const string = top(search).string;
-  if (string !== "") {
-    const name = ringName(search.regexp);
-    const previous = ring(search.regexp).filter((s) => s !== string);
-    ember.setVariable(name, [string, ...previous].slice(0, 16));
-  }
-  if (ember.point() !== search.origin) {
-    ember.pushMark(search.origin);
-    ember.message("Mark saved where search started");
-  } else {
-    ember.message("");
-  }
-}
-
-function current(): Search {
-  if (active === undefined) throw new Error("Not searching");
-  return active;
-}
-
-/** C-s and C-r: start a search, or while searching, find the next match. */
-function repeat(forward: boolean, regexp: boolean) {
-  if (active === undefined) {
-    begin(forward, regexp);
-    return;
-  }
-  const search = active;
-  const last = top(search);
-  // Searching again with nothing typed uses the last string searched for.
-  if (last.string === "") {
-    const previous = ring(search.regexp)[0];
-    if (previous === undefined) {
-      search.steps.push({ ...last, forward });
-      ember.message(prompt(search));
-      return;
+  clearHighlights();
+  set("isearch-mode", null);
+  const string = str("isearch-string");
+  if (string !== "" && !nopush) updateRing(string, flag("isearch-regexp"));
+  ember.letBind({ "isearch-mode-end-hook-quit": nopush && !edit }, () => ember.runHooks("isearch-mode-end-hook"));
+  const opoint = Number(get("isearch-opoint") ?? ember.point());
+  if (ember.point() !== opoint) {
+    if (!(truthy(get("transient-mark-mode")) && ember.regionActive())) {
+      ember.pushMark(opoint);
+      if (ember.minibufferDepth() === 0 && !edit) ember.message("Mark saved where search started");
     }
-    search.steps.push(find(search, previous, last.point, forward, false, false));
-    show(search);
-    return;
+  } else if (!edit) ember.message("");
+}
+
+function requireSearch(): void {
+  if (!searching()) ember.userError("Not searching");
+}
+
+/** Searches again with the string grown, as isearch-search-and-update. */
+function searchAndUpdate(): void {
+  if (flag("isearch-success") || flag("isearch-regexp")) {
+    const forward = flag("isearch-forward");
+    const opoint = Number(get("isearch-opoint"));
+    const barrier = Number(get("isearch-barrier"));
+    // Searching back, the longer string may match where point is, as long as it ends before where the search began.
+    let matchedHere = false;
+    if (!forward && !flag("isearch-adjusted")) {
+      const string = str("isearch-string");
+      let fold = truthy(get("isearch-case-fold-search"));
+      if (get("isearch-case-fold-search") === true && truthy(get("search-upper-case"))) fold = isearchNoUpperCaseP(string, flag("isearch-regexp"));
+      const here = ember.ignoreErrors(() => ember.lookingAt(flag("isearch-regexp") ? string : regexpQuote(string), undefined, { caseFold: fold }));
+      matchedHere = here === true && (flag("isearch-yank-flag") || ember.matchEnd(0)! <= Math.min(opoint, barrier));
+    }
+    if (matchedHere) {
+      set("isearch-success", true);
+      set("isearch-error", null);
+      set("isearch-other-end", ember.matchEnd(0)!);
+      matchData = { start: ember.matchBeginning(0)!, end: ember.matchEnd(0)! };
+      if (get("isearch-case-fold-search") === true && truthy(get("search-upper-case"))) {
+        set("isearch-case-fold-search", isearchNoUpperCaseP(str("isearch-string"), flag("isearch-regexp")));
+      }
+    } else {
+      callMessage(false, true);
+      const otherEnd = get("isearch-other-end");
+      if (typeof otherEnd === "number" && !flag("isearch-adjusted")) {
+        ember.gotoChar(forward ? otherEnd : Math.min(opoint, barrier, otherEnd + 1));
+      }
+      isearchSearch();
+    }
   }
-  // Turning round first moves to the other end of the current match.
-  if (forward !== last.forward && last.match && last.success) {
-    search.steps.push({ ...last, forward, point: forward ? last.match.end : last.match.start });
-    show(search);
-    return;
+  pushState();
+  isearchUpdate();
+}
+
+/** Adds text to the search string and searches again, as isearch-process-search-string. */
+function processSearchString(string: string, message: string): void {
+  set("isearch-string", str("isearch-string") + string);
+  set("isearch-message", str("isearch-message") + message);
+  searchAndUpdate();
+}
+
+/** Adds yanked text to the search string, as isearch-yank-string: lowercased if case is ignored, quoted in a regexp. */
+function yankString(string: string): void {
+  if (truthy(get("isearch-case-fold-search")) && get("search-upper-case") === "not-yanks") string = string.toLowerCase();
+  if (flag("isearch-regexp")) string = regexpQuote(string);
+  set("isearch-yank-flag", true);
+  processSearchString(string, charDescription(string));
+}
+
+/** Finds the next match in a direction, wrapping round once a search has failed, as isearch-repeat. */
+function isearchRepeat(direction: "forward" | "backward", count = 1): void {
+  const forward = direction === "forward";
+  if (flag("isearch-forward") === forward) {
+    if (str("isearch-string") === "") {
+      const previous = ring(flag("isearch-regexp"))[0];
+      if (previous === undefined) set("isearch-error", "No previous search string");
+      else {
+        set("isearch-string", previous);
+        set("isearch-message", charDescription(previous));
+        set("isearch-case-fold-search", lastCaseFold);
+      }
+    } else if (!flag("isearch-success")) {
+      set("isearch-wrapped", true);
+      const wrap = get("isearch-wrap-function");
+      if (truthy(wrap)) ember.funcall(wrap as string);
+      else ember.gotoChar(forward ? ember.pointMin() : ember.pointMax());
+    }
+  } else {
+    const otherEnd = get("isearch-other-end");
+    if (typeof otherEnd === "number" && flag("isearch-repeat-on-direction-change")) ember.gotoChar(otherEnd);
+    set("isearch-forward", !flag("isearch-forward"));
+    set("isearch-success", true);
   }
-  let from = last.point;
-  if (last.match && last.match.start === last.match.end) {
-    // After an empty match, start one character on so the search moves.
-    from = forward ? Math.min(from + 1, ember.bufferSize()) : Math.max(from - 1, 0);
+  set("isearch-barrier", ember.point());
+  if (str("isearch-string") === "") set("isearch-success", true);
+  else {
+    const saved = [...cmds];
+    while (count-- > 0) {
+      if (flag("isearch-success") && ember.point() === get("isearch-other-end") && !justStarted) {
+        // After an empty match, step on so the search moves.
+        if (flag("isearch-forward") ? ember.point() >= ember.pointMax() : ember.point() <= ember.pointMin()) set("isearch-success", false);
+        else {
+          ember.gotoChar(ember.point() + (flag("isearch-forward") ? 1 : -1));
+          isearchSearch();
+        }
+      } else isearchSearch();
+      if (count > 0) pushState();
+      if (!flag("isearch-success") || truthy(get("isearch-error"))) count = 0;
+    }
+    cmds = saved;
   }
-  // A search that has failed wraps round to the other end of the buffer.
-  const wrap = !last.success && forward === last.forward;
-  if (wrap) from = forward ? 0 : ember.bufferSize();
-  const step = find(search, last.string, from, forward, false, last.wrapped || wrap);
-  search.steps.push(step.success || step.error ? step : { ...step, point: last.point, match: last.match });
-  show(search);
+  pushState();
+  isearchUpdate();
 }
 
 ember.defineKeymap("isearch-mode-map");
+
+/** C-s, C-r and their regexp forms: start a search, or while searching, find the next match. */
+function startOrRepeat(forward: boolean, regexp: boolean, arg: ember.PrefixArg): void {
+  if (searching()) {
+    isearchRepeat(forward ? "forward" : "backward");
+    return;
+  }
+  // A prefix argument switches between string and regexp, as isearch-forward's REGEXP-P.
+  isearchMode(forward, arg === null ? regexp : !regexp);
+}
 
 const isearchForward = ember.defineCommand({
   name: "isearch-forward",
@@ -251,63 +528,54 @@ const isearchForward = ember.defineCommand({
     "DEL takes back the last character or step, C-w adds the next word from the buffer and C-y the last kill. " +
     "RET ends the search, leaving point at the match and the mark where the search started; any other key " +
     "does the same and then runs. C-g goes back to where the search started, or while it fails, removes " +
-    "what does not match. Case is ignored unless the string has a capital letter.",
-  run: () => repeat(true, false),
+    "what does not match. Case is ignored unless the string has a capital letter. With a prefix argument, searches for a regexp.",
+  params: [{ name: "regexp", kind: "prefix" }],
+  run: (arg: ember.PrefixArg) => startOrRepeat(true, false, arg),
 });
 
 const isearchBackward = ember.defineCommand({
   name: "isearch-backward",
   doc: "Search backward incrementally. See isearch-forward for the keys that work while searching.",
-  run: () => repeat(false, false),
+  params: [{ name: "regexp", kind: "prefix" }],
+  run: (arg: ember.PrefixArg) => startOrRepeat(false, false, arg),
 });
 
 const isearchForwardRegexp = ember.defineCommand({
   name: "isearch-forward-regexp",
   doc: "Search forward incrementally for a regular expression, in Emacs's syntax. See isearch-forward.",
-  run: () => repeat(true, true),
+  params: [{ name: "regexp", kind: "prefix" }],
+  run: (arg: ember.PrefixArg) => startOrRepeat(true, true, arg),
 });
 
 const isearchBackwardRegexp = ember.defineCommand({
   name: "isearch-backward-regexp",
   doc: "Search backward incrementally for a regular expression, in Emacs's syntax. See isearch-forward.",
-  run: () => repeat(false, true),
+  params: [{ name: "regexp", kind: "prefix" }],
+  run: (arg: ember.PrefixArg) => startOrRepeat(false, true, arg),
 });
 
 const repeatForward = ember.defineCommand({
   name: "isearch-repeat-forward",
   doc: "Find the next match forward of the string being searched for.",
-  run: () => repeat(true, current().regexp),
+  run: () => {
+    requireSearch();
+    isearchRepeat("forward");
+  },
 });
 
 const repeatBackward = ember.defineCommand({
   name: "isearch-repeat-backward",
   doc: "Find the next match backward of the string being searched for.",
-  run: () => repeat(false, current().regexp),
+  run: () => {
+    requireSearch();
+    isearchRepeat("backward");
+  },
 });
-
-/** Adds text to the search string and searches again from the current match. */
-function extend(text: string) {
-  const search = current();
-  const last = top(search);
-  const string = last.string + text;
-  // Typing more keeps looking at the current match first: forward from its
-  // start, or backward from far enough after it for the longer string to
-  // match there, but not past where the search began.
-  const length = Array.from(string).length;
-  const from = last.match
-    ? last.forward
-      ? last.match.start
-      : Math.min(search.origin, last.match.start + length)
-    : last.point;
-  const step = last.success || last.error ? find(search, string, from, last.forward, false, last.wrapped) : { ...last, string };
-  search.steps.push(step.success || step.error ? step : { ...step, point: last.point, match: last.match });
-  show(search);
-}
 
 /** The character a key types, if it is a printing character. */
 function printingChar(key: string | undefined): string | undefined {
   if (key === undefined) return undefined;
-  if (key === "SPC") return " ";
+  if (key === "SPC" || key === "S-SPC") return " ";
   return Array.from(key).length === 1 ? key : undefined;
 }
 
@@ -320,10 +588,10 @@ const printingCharCommand = ember.defineCommand({
     const key = ember.lastKey();
     const c = printingChar(key);
     if (c !== undefined) {
-      extend(c);
+      processSearchString(c, charDescription(c));
       return;
     }
-    finish(current());
+    isearchDone();
     if (key !== undefined) ember.unreadKeys(key);
   },
 });
@@ -332,47 +600,106 @@ const deleteChar = ember.defineCommand({
   name: "isearch-delete-char",
   doc: "Take back the last change to the search: the last character typed, or the last C-s or C-r.",
   run: () => {
-    const search = current();
-    if (search.steps.length > 1) search.steps.pop();
-    show(search);
+    requireSearch();
+    if (cmds.length > 1) popState();
+    isearchUpdate();
+  },
+});
+
+ember.defineCommand({
+  name: "isearch-del-char",
+  doc: "Take the last character off the search string and search again, keeping the effect of other commands.",
+  params: [{ name: "n", kind: "count" }],
+  run: (n = 1) => {
+    requireSearch();
+    const string = [...str("isearch-string")];
+    if (string.length > 0) {
+      const kept = string.slice(0, string.length - Math.min(n, string.length)).join("");
+      set("isearch-string", kept);
+      set("isearch-message", charDescription(kept));
+    }
+    callMessage(false, true);
+    const otherEnd = get("isearch-other-end");
+    if (typeof otherEnd === "number") ember.gotoChar(otherEnd);
+    isearchSearch();
+    pushState();
+    isearchUpdate();
   },
 });
 
 const exit = ember.defineCommand({
   name: "isearch-exit",
   doc: "End the search, leaving point at the match and the mark where the search started.",
-  run: () => finish(current()),
+  run: () => {
+    requireSearch();
+    isearchDone();
+  },
 });
+
+/** Ends the search and goes back to where it started, as isearch-cancel. */
+function isearchCancel(): void {
+  if (truthy(get("isearch-push-state-function")) && cmds.length > 0) setState(cmds[cmds.length - 1]);
+  else ember.gotoChar(Number(get("isearch-opoint")));
+  isearchDone(true);
+  ember.message("Quit");
+}
 
 const abort = ember.defineCommand({
   name: "isearch-abort",
-  doc:
-    "While the search fails, remove what does not match; otherwise end it and go back to where it started.",
+  doc: "While the search fails, remove what does not match; otherwise end it and go back to where it started.",
   run: () => {
-    const search = current();
-    if (!top(search).success) {
-      while (search.steps.length > 1 && !top(search).success) search.steps.pop();
-      show(search);
+    requireSearch();
+    if (flag("isearch-success") && !truthy(get("isearch-error"))) {
+      set("isearch-success", false);
+      isearchCancel();
       return;
     }
-    clearHighlights(search);
-    ember.setOverridingMap(null);
-    active = undefined;
-    ember.gotoChar(search.origin);
-    ember.message("Quit");
+    while ((!flag("isearch-success") || truthy(get("isearch-error"))) && cmds.length > 1) popState();
+    isearchUpdate();
   },
 });
+
+/** Adds the text from point to where `jump` moves, as isearch-yank-internal. */
+function yankInternal(jump: () => number): void {
+  const text = ember.saveExcursion(() => {
+    const otherEnd = get("isearch-other-end");
+    if (!flag("isearch-forward") && typeof otherEnd === "number") ember.gotoChar(otherEnd);
+    if (!flag("isearch-success") && yankPrevPoint !== undefined) ember.gotoChar(yankPrevPoint);
+    const start = ember.point();
+    const end = jump();
+    yankPrevPoint = flag("isearch-success") ? undefined : end;
+    return ember.bufferSubstringNoProperties(Math.min(start, end), Math.max(start, end));
+  });
+  yankString(text);
+}
 
 const yankWord = ember.defineCommand({
   name: "isearch-yank-word-or-char",
   doc: "Add the rest of the word after point to the search string, or the next character if point is not before a word.",
-  run: () => {
-    const point = ember.point();
-    const size = ember.bufferSize();
-    if (point >= size) return;
-    const word = ember.search("\\w+", { from: point, regexp: true, caseFold: false });
-    const end = word && word.start === point ? word.end : point + 1;
-    extend(ember.bufferText(point, end));
+  params: [{ name: "n", kind: "count" }],
+  run: (n = 1) => {
+    requireSearch();
+    yankInternal(() => {
+      for (let i = 0; i < n; i++) {
+        const word = (c: string | undefined) => c !== undefined && ember.charSyntax(c) === "w";
+        if (word(ember.charAfter()) || word(ember.charAfter(ember.point() + 1))) ember.call("forward-word", 1);
+        else if (ember.point() < ember.pointMax()) ember.gotoChar(ember.point() + 1);
+      }
+      return ember.point();
+    });
+  },
+});
+
+ember.defineCommand({
+  name: "isearch-yank-char",
+  doc: "Add the next character after point to the search string, or as many as the prefix argument says.",
+  params: [{ name: "n", kind: "count" }],
+  run: (n = 1) => {
+    requireSearch();
+    yankInternal(() => {
+      ember.gotoChar(Math.min(ember.pointMax(), ember.point() + n));
+      return ember.point();
+    });
   },
 });
 
@@ -380,20 +707,21 @@ const yankKill = ember.defineCommand({
   name: "isearch-yank-kill",
   doc: "Add the last kill to the search string.",
   run: () => {
+    if (!searching()) isearchMode(true);
     const kill = ember.currentKill();
-    if (kill !== undefined) extend(kill);
+    if (kill !== undefined) yankString(kill);
   },
 });
 
 const toggleRegexp = ember.defineCommand({
   name: "isearch-toggle-regexp",
-  doc: "Switch between searching for a string and for a regular expression.",
+  doc: "Switch between searching for a string and for a regular expression; what is typed next searches the new way.",
   run: () => {
-    const search = current();
-    search.regexp = !search.regexp;
-    const last = top(search);
-    search.steps.push(find(search, last.string, search.origin, last.forward, false, false));
-    show(search);
+    if (!searching()) isearchMode(true);
+    set("isearch-regexp", !flag("isearch-regexp"));
+    set("isearch-success", true);
+    set("isearch-adjusted", "toggle");
+    isearchUpdate();
   },
 });
 
@@ -414,6 +742,7 @@ for (const [keys, command] of [
   ["C-w", yankWord],
   ["C-y", yankKill],
   ["M-r", toggleRegexp],
+  ["M-s r", toggleRegexp],
 ] as const) {
   ember.bindKey(keys, command, "isearch-mode-map");
 }

@@ -36,7 +36,8 @@ fn isearch_prompts_say_how_it_is_going() {
     ed.press("DEL C-s C-s").unwrap();
     assert_eq!(ed.echo(), Some("Failing I-search: hel"));
     ed.press("C-s").unwrap();
-    assert_eq!(ed.echo(), Some("Wrapped I-search: hel"));
+    // Past where the search began, as Emacs 30.2 says it.
+    assert_eq!(ed.echo(), Some("Overwrapped I-search: hel"));
     assert_eq!(point(&ed), 3);
     ed.press("C-r").unwrap();
     assert_eq!(ed.echo(), Some("Wrapped I-search backward: hel"));
