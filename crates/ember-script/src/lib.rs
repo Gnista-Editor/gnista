@@ -5,6 +5,7 @@
 //! declarations from the command registry.
 
 pub mod config;
+mod bidi;
 mod strip;
 mod types;
 
@@ -77,6 +78,7 @@ impl rquickjs::loader::Loader for PackageLoader {
 const PACKAGES: &[(&str, &str)] = &[
     ("packages/subr.ts", include_str!("../../../packages/subr.ts")),
     ("packages/simple.ts", include_str!("../../../packages/simple.ts")),
+    ("packages/bindings.ts", include_str!("../../../packages/bindings.ts")),
     ("packages/iso-transl.ts", include_str!("../../../packages/iso-transl.ts")),
     ("packages/paragraphs.ts", include_str!("../../../packages/paragraphs.ts")),
     ("packages/page.ts", include_str!("../../../packages/page.ts")),
@@ -1949,6 +1951,7 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.this_command().map(str::to_string))))?,
     )?;
     install_native_text(ctx, native)?;
+    bidi::install_native_bidi(ctx, native)?;
     install_native_treesit(ctx, native)?;
     install_native_windows(ctx, native)?;
     install_native_search(ctx, native)?;

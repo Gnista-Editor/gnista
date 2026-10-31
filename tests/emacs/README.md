@@ -88,6 +88,16 @@ record.el also makes opening a link in a browser or another program an error, so
 EMBER_FUZZ_SEED=1 EMBER_FUZZ_CASES=20000 cargo test --release -p ember-script --test regexp -- --ignored --nocapture
 ```
 
+## Bidirectional text
+
+`bidi/` holds an oracle for how Emacs shows bidirectional text, which batch Emacs cannot, as it has no window to reorder for. `bidi/record.el` runs an interactive Emacs inside tmux, whose screen it reads with `tmux capture-pane`, and records for each case in `cases.json` the window's lines, `bidi-resolved-levels` of each, where each position shows, `move-point-visually` both ways from each position, `current-bidi-paragraph-direction` and `bidi-find-overridden-directionality` into `golden.json`:
+
+```bash
+cd tests/emacs/bidi && tmux new-session -d -x 40 -y 16 "emacs -Q -nw -l $PWD/record.el"
+```
+
+It writes `golden.json` and exits after a minute or two. `cargo test -p ember-script --test bidi` compares Ember with it; `KNOWN` there lists the few places Ember differs, and where tmux shows a cell other than Emacs drew. `bidi-data.el`, run in batch, writes the bidi tables Ember reorders with into `crates/ember-core/src/bidi_data.rs`.
+
 ## Completion in the minibuffer
 
 `icomplete/` holds an oracle of its own for what the minibuffer shows as you type: icomplete's list in its four modes, over a collection or a directory of files. Batch Emacs cannot type into the minibuffer, so `icomplete/record.el` runs an interactive Emacs on a pseudo-terminal, feeds it each case's keys from timers, and records the input and what icomplete shows after each key into `golden.json`:

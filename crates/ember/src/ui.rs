@@ -2,7 +2,7 @@
 
 use std::ops::Range;
 
-use ember_core::display::{Glyph, cursor_index, position_at_column, row_glyphs};
+use ember_core::display::{Glyph, cursor_glyph, position_at_column, row_glyphs, row_showing};
 use ember_core::{Color as FaceColor, Editor, LineNumbers, Row, Style as FaceStyle, WindowId, WindowView, palette};
 use ratatui::Frame;
 use ratatui::layout::{Position, Rect};
@@ -117,14 +117,29 @@ fn window_rows(ed: &Editor, view: &WindowView, area: Rect) -> WindowRows {
     let tab_width = ed.tab_width_in(view.buffer);
     let glyph_rows: Vec<Vec<Glyph>> = rows.iter().map(|r| row_glyphs(r, tab_width)).collect();
     let point = view.point;
-    let point_row = rows.iter().position(|r| r.shows_point(point)).unwrap_or(0);
+    let point_row = row_showing(&rows, point, tab_width).unwrap_or(0);
     let point_col: usize = glyph_rows
         .get(point_row)
-        .map(|g| g[..cursor_index(g, point)].iter().map(|g| g.width).sum())
+        .map(|g| g[..cursor_glyph(&rows[point_row], g, point)].iter().map(|g| g.width).sum())
         .unwrap_or(0);
+    // A right-to-left row is laid out from the right edge.
+    let point_col = match rows.get(point_row).filter(|r| r.right_to_left) {
+        Some(row) => (point_col as i64 + rtl_offset(row, &glyph_rows[point_row], width)).max(0) as usize,
+        None => point_col,
+    };
     // Scroll horizontally, as Emacs does, when point would be off the right edge.
     let hscroll = if point_col < width { 0 } else { point_col - width / 2 };
     WindowRows { rows, glyph_rows, point_row, point_col, hscroll, numbers }
+}
+
+/// Where a right-to-left row starts in a text area `width` columns wide:
+/// laid out from the right edge, as Emacs's bidi display lays it out, and
+/// negative when a truncated row is wider than the window.
+fn rtl_offset(row: &Row, glyphs: &[Glyph], width: usize) -> i64 {
+    if !row.right_to_left {
+        return 0;
+    }
+    width as i64 - glyphs.iter().map(|g| g.width as i64).sum::<i64>()
 }
 
 fn dark(ed: &Editor) -> bool {
@@ -149,6 +164,11 @@ pub fn mouse_target(ed: &Editor, width: u16, height: u16, x: u16, y: u16) -> Opt
     let text = text_area(area.text, gutter(&drawn.numbers, area.text));
     let row = (y - area.text.y) as usize;
     let position = match (drawn.rows.get(row), drawn.glyph_rows.get(row)) {
+        (Some(row), Some(glyphs)) if row.right_to_left => {
+            // Left of a right-to-left row's text is the end of its line.
+            let col = x as i64 - text.x as i64 - rtl_offset(row, glyphs, text.width as usize);
+            if col < 0 { glyphs.first().and_then(|g| g.pos).unwrap_or(row.end) } else { position_at_column(row, glyphs, col as usize) }
+        }
         (Some(row), Some(glyphs)) => position_at_column(row, glyphs, x.saturating_sub(text.x) as usize + drawn.hscroll),
         _ => view.buffer.len(),
     };
@@ -184,10 +204,12 @@ fn draw_window(frame: &mut Frame, ed: &Editor, view: &WindowView, area: Rect, ma
     let width = area.width as usize;
     // Only the selected window shows the region, as in Emacs.
     let region = if view.selected { view.buffer.active_region() } else { None };
+    // Lines broken between words show no continuation mark, as on Emacs's terminals.
+    let marks = !ed.variable_in(view.buffer, "word-wrap").is_some_and(|v| v.is_true());
     let lines: Vec<Line> = rows
         .iter()
         .zip(&glyph_rows)
-        .map(|(row, glyphs)| row_line(row, glyphs, hscroll, width, region.as_ref(), dark))
+        .map(|(row, glyphs)| row_line(row, glyphs, hscroll, width, region.as_ref(), dark, marks))
         .collect();
     frame.render_widget(Paragraph::new(lines), area);
     Position::new(area.x + (point_col - hscroll) as u16, area.y + point_row as u16)
@@ -203,7 +225,11 @@ fn row_line(
     width: usize,
     region: Option<&Range<usize>>,
     dark: bool,
+    marks: bool,
 ) -> Line<'static> {
+    if row.right_to_left {
+        return rtl_row_line(row, glyphs, width, region, dark, marks);
+    }
     let selected = |pos: usize| region.is_some_and(|r| r.contains(&pos));
     let mut spans: Vec<Span<'static>> = Vec::new();
     let push = |spans: &mut Vec<Span<'static>>, s: &str, style: Style| match spans.last_mut() {
@@ -236,11 +262,61 @@ fn row_line(
         let bg = terminal_style(extend, dark).bg.unwrap_or(Color::Reset);
         push(&mut spans, &" ".repeat(fill), Style::new().bg(bg));
     }
-    // A continued line ends with a backslash in the last column, as in Emacs.
-    if row.continued && !row.broken {
+    // A continued line ends with a backslash in the last column, as in
+    // Emacs, unless it was broken after a space between words.
+    let mid_word = col + 1 >= hscroll + width && glyphs.last().is_some_and(|g| !matches!(g.c, ' ' | '\t'));
+    if row.continued && !row.broken && (marks || mid_word) {
         let fill = (hscroll + width).saturating_sub(col + 1);
         push(&mut spans, &" ".repeat(fill), Style::new());
         push(&mut spans, "\\", Style::new());
+    }
+    Line::from(spans)
+}
+
+/// A right-to-left row as a terminal line, as Emacs on a terminal shows it:
+/// from the right edge, a selected newline or a face that extends filling
+/// the columns left of it, a continued line's mark, `/`, in the leftmost
+/// column, and a `$` there for a truncated line that goes on past the left
+/// edge.
+fn rtl_row_line(row: &Row, glyphs: &[Glyph], width: usize, region: Option<&Range<usize>>, dark: bool, marks: bool) -> Line<'static> {
+    let selected = |pos: usize| region.is_some_and(|r| r.contains(&pos));
+    let mut spans: Vec<Span<'static>> = Vec::new();
+    let push = |spans: &mut Vec<Span<'static>>, s: &str, style: Style| match spans.last_mut() {
+        Some(last) if last.style == style => last.content.to_mut().push_str(s),
+        _ => spans.push(Span::styled(s.to_string(), style)),
+    };
+    let offset = rtl_offset(row, glyphs, width);
+    let truncated = offset < 0;
+    let full = offset <= 1 && glyphs.first().is_some_and(|g| !matches!(g.c, ' ' | '\t'));
+    let mark = if truncated { Some("$") } else { (row.continued && !row.broken && (marks || full)).then_some("/") };
+    let mut col: i64 = 0;
+    if let Some(mark) = mark {
+        push(&mut spans, mark, Style::new());
+        col = 1;
+    }
+    if offset > col {
+        let fill = " ".repeat((offset - col) as usize);
+        let style = if selected(row.end) && !row.continued {
+            Style::new().add_modifier(Modifier::REVERSED)
+        } else if let Some(extend) = row.extend.as_ref().filter(|_| !row.continued) {
+            Style::new().bg(terminal_style(extend, dark).bg.unwrap_or(Color::Reset))
+        } else {
+            Style::new()
+        };
+        push(&mut spans, &fill, style);
+        col = offset;
+    }
+    let mut x = offset;
+    for glyph in glyphs {
+        let w = glyph.width as i64;
+        if x >= col && x + w <= width as i64 {
+            let mut style = terminal_style(&row.segments[glyph.segment].style, dark);
+            if glyph.pos.is_some_and(selected) {
+                style = style.add_modifier(Modifier::REVERSED);
+            }
+            push(&mut spans, &glyph.text, style);
+        }
+        x += w;
     }
     Line::from(spans)
 }
@@ -327,10 +403,11 @@ fn draw_echo_area(frame: &mut Frame, ed: &Editor, area: Rect) -> Option<Position
     for (k, row) in rows.iter().take(area.height as usize).enumerate() {
         let glyphs = row_glyphs(row, 8);
         if cursor.is_none() && row.shows_point(point) {
-            let x: usize = glyphs[..cursor_index(&glyphs, point)].iter().map(|g| g.width).sum();
+            let x: usize = glyphs[..cursor_glyph(row, &glyphs, point)].iter().map(|g| g.width).sum();
+            let x = (x as i64 + rtl_offset(row, &glyphs, width)).max(0) as usize;
             cursor = Some(Position::new(area.x + x.min(width.saturating_sub(1)) as u16, area.y + k as u16));
         }
-        lines.push(row_line(row, &glyphs, 0, width, None, dark));
+        lines.push(row_line(row, &glyphs, 0, width, None, dark, true));
     }
     frame.render_widget(Paragraph::new(lines), area);
     cursor.or(Some(Position::new(area.x, area.y)))
@@ -421,6 +498,27 @@ mod tests {
         ed.press("M-<").unwrap();
         let rows = render(&mut ed, 20, 5);
         assert_eq!(rows[0], " 1 one");
+    }
+
+    #[test]
+    fn right_to_left_text_is_drawn_from_the_right_edge() {
+        let mut ed = Editor::new();
+        ed.type_text("שלום (abc)\nאחד שתיים שלוש ארבע חמש שש");
+        ed.press("M-<").unwrap();
+        let mut terminal = Terminal::new(TestBackend::new(20, 6)).unwrap();
+        layout_windows(&mut ed, 20, 6);
+        terminal.draw(|frame| draw(frame, &ed)).unwrap();
+        let buf = terminal.backend().buffer();
+        let line = |y: u16| (0..20).map(|x| buf[(x, y)].symbol()).collect::<String>();
+        // Reordered as Emacs shows it on a terminal, mirrored brackets and
+        // all; a continued line marked with / at the left.
+        assert_eq!(line(0), "          (abc) םולש");
+        assert_eq!(line(1), "/עברא שולש םייתש דחא");
+        assert_eq!(line(2).trim_end(), "             שש שמח");
+        // The cursor on ש, the first character, at the right edge.
+        assert_eq!(terminal.get_cursor_position().unwrap(), Position::new(19, 0));
+        // A click left of the text is the end of its line.
+        assert_eq!(mouse_target(&ed, 20, 6, 2, 0).map(|t| t.1), Some(Some(10)));
     }
 
     #[test]

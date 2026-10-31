@@ -4,6 +4,11 @@
 //! [`Editor::handle_key`] and reads its state back to draw it. Tests and
 //! scripts drive it the same way, with no terminal at all.
 
+pub mod bidi;
+mod bidi_display;
+pub use bidi_display::is_bidi_control;
+// Written by tests/emacs/bidi-data.el.
+mod bidi_data;
 mod buffer;
 pub mod casefiddle;
 pub mod charset;

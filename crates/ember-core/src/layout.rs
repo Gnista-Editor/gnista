@@ -146,6 +146,8 @@ impl Editor {
             return (col / tab).floor() * tab + tab - col;
         }
         let escaped = crate::coding::char_raw_byte(c).is_some() || ('\u{80}'..='\u{9F}').contains(&c);
+        // The bidi controls show as a space.
+        let c = if crate::bidi_display::is_bidi_control(c) { ' ' } else { c };
         if self.on_grid(&segment.style) {
             return if escaped { 4.0 } else if c.is_control() { 2.0 } else { c.width().unwrap_or(0) as f32 };
         }
@@ -242,12 +244,15 @@ impl Editor {
         let b = view.buffer;
         let rows = self.rows_filling(window, true);
         let tab_width = self.tab_width_in(b);
+        // Bidirectional text broken into rows spreads a line over them.
+        let showing = crate::display::row_showing(&rows, pos, tab_width);
         let mut y = 0.0;
         for (k, row) in rows.iter().enumerate() {
-            if row.shows_point(pos) && !row.in_string {
+            if showing == Some(k) {
                 let glyphs = crate::display::row_glyphs(row, tab_width);
-                let index = crate::display::cursor_index(&glyphs, pos);
-                let col: f32 = self.glyph_columns(row, &glyphs, tab_width)[..index].iter().sum();
+                let index = crate::display::cursor_glyph(row, &glyphs, pos);
+                // A right-to-left row is laid out from the right edge.
+                let col: f32 = self.glyph_columns(row, &glyphs, tab_width)[..index].iter().sum::<f32>() + self.row_offset_in(window, row);
                 let (cw, ch) = (self.metrics.char_width(), self.metrics.char_height());
                 return Some(Posn { window, point: pos, x: col * cw, y: y * ch, col, row: k });
             }
@@ -272,6 +277,9 @@ impl Editor {
             if want_line < top + height || k + 1 == rows.len() {
                 let glyphs = crate::display::row_glyphs(row, tab_width);
                 let widths = self.glyph_columns(row, &glyphs, tab_width);
+                // A right-to-left row is laid out from the right edge.
+                let offset = self.row_offset_in(window, row);
+                let want_col = want_col - offset;
                 let mut col = 0.0;
                 let mut point = row.end;
                 for (i, glyph) in glyphs.iter().enumerate() {
@@ -283,6 +291,7 @@ impl Editor {
                     col += widths[i];
                 }
                 let col = if point == row.end { col } else { widths[..glyphs.iter().position(|g| g.pos == Some(point)).unwrap_or(0)].iter().sum() };
+                let col = col + offset;
                 return Some(Posn { window, point, x: col * cw, y: top * ch, col, row: k });
             }
             top += height;

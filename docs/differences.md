@@ -46,6 +46,20 @@ Each entry says whether the difference is **deliberate**, which keeps it, or **n
 - **Tree-sitter and narrowing** (not yet): Emacs parses only the accessible part of a narrowed buffer, Ember all of it, so a node's positions may lie outside the narrowing ([ADR 0036](adr/0036-tree-sitter-for-scripts.md)).
 - **Highlighting in tree-sitter modes** (not yet) comes from each grammar's own query, not the mode's `treesit-font-lock-rules`, so faces differ in places from Emacs's.
 
+## Bidirectional text
+
+Ember reorders text as Emacs 30.2 does, and `tests/emacs/bidi/` compares the two on 281 lines ([ADR 0047](adr/0047-bidirectional-text.md)). Where they differ:
+
+- **Arabic in the GUI** (not yet): letters do not join, as each letter of a right-to-left script is drawn on its own, spaced to its column, so egui's shaper cannot turn the core's visual order around again. On a terminal Emacs does not join them either.
+- **Directional controls in the GUI** (not yet): LRM, RLE, LRI and the others show as a space a column wide, as on a terminal, where Emacs's graphical frames show a thin space a pixel wide.
+- **Line numbers** (not yet) stay left of a right-to-left row, where Emacs puts them on its right.
+- **Strings in bidirectional lines** (not yet): a `(space ...)` display spec is reordered as an object, where bidi.c treats it as a paragraph separator; a display string in several faces is reordered a face at a time; and a line an overlay string with a newline breaks is not reordered.
+- **Embeddings inside isolates** (not yet): a PDF that ends an embedding inside an isolate can take the level outside the embedding where bidi.c gives it the level inside, which moves where it shows.
+- **The Arabic letter mark**, U+061C (not yet), shows as a space, where Emacs on a terminal shows it as itself.
+- **`move-point-visually`** (not yet): on a truncated right-to-left line, and from inside text a display string covers, Emacs lays the line out afresh and lands elsewhere than what it shows suggests; Ember moves by what shows. At the end of the buffer on a wrapped line, Emacs can signal end-of-buffer where Ember stays.
+- **A truncated right-to-left line** (not yet) is not scrolled sideways to keep point in view, as left-to-right ones are; its start shows at the right edge.
+- **Lines continued with mixed directions** (unverified): moving by screen lines over a line whose rows hold characters from both ends of a run, as visual-order breaking can make, is not compared with Emacs.
+
 ## Windows and frames
 
 - **Window starts** (not yet): a window always starts at the start of a line. So in the terminal, `C-v` over continued lines scrolls by lines of text rather than screen rows ([ADR 0029](adr/0029-redisplay-beyond-rows.md)).

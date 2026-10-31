@@ -51,7 +51,8 @@ fn pixel_sizes_motion_and_direction() {
     assert_eq!(eval(&mut ed, &s, "ember.stringPixelWidth('')"), "0");
     eval(&mut ed, &s, "(() => { ember.insert('ab\\ncd'); ember.gotoChar(1); })()");
     assert_eq!(eval(&mut ed, &s, "ember.movePointVisually(1)"), "2");
-    assert_eq!(eval(&mut ed, &s, "ember.movePointVisually(1) === undefined && ember.point() === 2"), "true", "the line's end stops it");
+    // From the line's end to the next line's start, as Emacs moves.
+    assert_eq!(eval(&mut ed, &s, "ember.movePointVisually(1)"), "3");
     assert_eq!(eval(&mut ed, &s, "ember.currentBidiParagraphDirection()"), "\"left-to-right\"");
 }
 

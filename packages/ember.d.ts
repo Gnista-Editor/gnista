@@ -2785,6 +2785,22 @@ declare global {
        */
       "kmacro-start-macro-or-insert-counter": [];
       /**
+       * Move point a character to the left, or as many as the prefix argument says: back in left-to-right text and forward in right-to-left, or to the left on display with visual-order-cursor-movement.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/bindings.ts.
+       */
+      "left-char": [n?: number];
+      /**
+       * Move point a word to the left, or as many as the prefix argument says: back in left-to-right text and forward in right-to-left.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/bindings.ts.
+       */
+      "left-word": [n?: number];
+      /**
        * Show the abbrevs in *Abbrevs*: each table, and each abbrev in it with how often it was used and its expansion.
        *
        * Defined in packages/abbrev.ts.
@@ -4848,6 +4864,22 @@ declare global {
        */
       "revert-buffer-with-coding-system": [arg?: PrefixArg];
       /**
+       * Move point a character to the right, or as many as the prefix argument says: forward in left-to-right text and back in right-to-left, or to the right on display with visual-order-cursor-movement.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/bindings.ts.
+       */
+      "right-char": [n?: number];
+      /**
+       * Move point a word to the right, or as many as the prefix argument says: forward in left-to-right text and back in right-to-left.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/bindings.ts.
+       */
+      "right-word": [n?: number];
+      /**
        * The major mode for editing Rust, highlighted from a tree-sitter syntax tree.
        *
        * Files matching \.rs\' use it; see auto-mode-alist.
@@ -5852,6 +5884,34 @@ declare global {
        * Defined in packages/lisp.ts.
        */
       "beginning-of-defun-function": Value;
+      /**
+       * Whether bidirectional text is reordered for display in the visual order, right-to-left scripts such as Hebrew and Arabic shown right to left.
+       *
+       * Setting it to nil is meant for debugging the display, and skips reordering altogether.
+       */
+      "bidi-display-reordering": Value;
+      /**
+       * Whether paired brackets are resolved as other neutral characters, rather than by the bidi algorithm's rule N0 for brackets, which can be slow in long lines with many of them.
+       */
+      "bidi-inhibit-bpa": Value;
+      /**
+       * If non-nil, the direction of every paragraph in the buffer: left-to-right or right-to-left.
+       *
+       * If nil, the default, each paragraph's direction comes from its first strong directional character.
+       */
+      "bidi-paragraph-direction": Value;
+      /**
+       * If non-nil, a regexp matching a line that separates paragraphs. Nil means empty lines.
+       *
+       * It is matched at the start of a line, so it is best begun with ^.
+       */
+      "bidi-paragraph-separate-re": Value;
+      /**
+       * If non-nil, a regexp matching a line that starts or separates paragraphs, where a paragraph's direction is worked out afresh. Nil means empty lines.
+       *
+       * It is matched at the start of a line, so it is best begun with ^.
+       */
+      "bidi-paragraph-start-re": Value;
       /**
        * How far to look for a matching paren, in characters, or nil to look through the whole buffer.
        *
@@ -6920,6 +6980,10 @@ declare global {
        * Whether keys typed in this buffer are left out of recent-keys, as a password prompt's are.
        */
       "inhibit--record-char": Value;
+      /**
+       * Whether characters such as parentheses are shown as they are in right-to-left text, rather than as their mirror images.
+       */
+      "inhibit-bidi-mirroring": Value;
       /**
        * Whether motion commands and constrain-to-field ignore fields, the stretches of text with one `field` property.
        */
@@ -8293,6 +8357,12 @@ declare global {
        * Keymap visual-line-mode-map.
        */
       "visual-line-mode-map": Value;
+      /**
+       * Whether <left> and <right> move to the character left or right of point on display, wherever it is in the buffer, rather than back and forward as the paragraph's direction says.
+       *
+       * Defined in packages/bindings.ts.
+       */
+      "visual-order-cursor-movement": Value;
       /**
        * The kinds of whitespace problem whitespace-cleanup fixes: empty, indentation, trailing, space-after-tab and space-before-tab, or their ::tab and ::space forms.
        *
@@ -11412,10 +11482,19 @@ declare global {
     function invisibleP(posOrProp: number | Value): boolean | "ellipsis";
     /** The value of a display spec at a position, as get-display-property: 2.0 for height in `[[height, 2.0]]`. */
     function getDisplayProperty(position: number, prop: string, object?: unknown, properties?: { display?: Value }): Value | undefined;
-    /** The direction of the paragraph at point, as current-bidi-paragraph-direction: always left to right. */
-    function currentBidiParagraphDirection(): "left-to-right" | "right-to-left";
-    /** Move to the next character on the line in display order, or the one before for a negative direction, as move-point-visually; undefined at the line's edge. */
-    function movePointVisually(direction: number): number | undefined;
+    /**
+     * The direction of the paragraph at point in a buffer, the current one by
+     * default, as current-bidi-paragraph-direction: bidi-paragraph-direction's
+     * if set, else its first strong character's, or the paragraph's before.
+     */
+    function currentBidiParagraphDirection(buffer?: BufferLike): "left-to-right" | "right-to-left";
+    /**
+     * Move point to the character on its right on display, or its left for a
+     * negative direction, wherever that is in the buffer, as
+     * move-point-visually; signals beginning-of-buffer or end-of-buffer.
+     * Returns the new point.
+     */
+    function movePointVisually(direction: number): number;
     /** Ring the bell, as ding: ring-bell-function if set, else the front end sounds it or, with visible-bell, flashes. */
     function ding(): void;
     /** Ring the bell, as beep. */
@@ -11426,6 +11505,26 @@ declare global {
     function redrawDisplay(): void;
     /** Draw a frame again, as redraw-frame. */
     function redrawFrame(): void;
+    /**
+     * The resolved bidi levels of the characters on a screen line of the
+     * selected window, the one point is on by default, from the start of the
+     * line: its left edge for left-to-right text and its right for
+     * right-to-left, as bidi-resolved-levels.
+     */
+    function bidiResolvedLevels(vpos?: number): number[] | undefined;
+    /**
+     * The first position from from to to where directional controls change a
+     * character's direction in a way that could mislead, in a buffer (the
+     * current one by default) or a string, its paragraphs in baseDir,
+     * left-to-right by default, as bidi-find-overridden-directionality.
+     */
+    function bidiFindOverriddenDirectionality(from: number, to: number, object?: BufferLike | string | PropertizedString, baseDir?: "left-to-right" | "right-to-left"): number | undefined;
+    /**
+     * A character's Unicode property, as get-char-code-property: bidi-class
+     * ("L", "R", "AL", ...), mirroring and paired-bracket (a character),
+     * bracket-type ("o", "c" or "n") or mirrored ("Y" or "N").
+     */
+    function getCharCodeProperty(char: string | number, property: "bidi-class" | "mirroring" | "paired-bracket" | "bracket-type" | "mirrored"): string | undefined;
     /** Whether the buffers, their names and modified flags, or the frames changed since it was last asked, as frame-or-buffer-changed-p. */
     function frameOrBufferChangedP(): boolean;
     /** The tab bar's height in lines, as tab-bar-height: Ember has none. */

@@ -91,14 +91,18 @@ pub fn bold_mono() -> FontFamily {
     FontFamily::Name("mono-bold".into())
 }
 
-/// Fonts to fall back on, by kind: Japanese and Chinese, Korean, emoji.
-/// Each list names macOS's font first, then Linux's and Windows's, with how
-/// far to move its glyphs down, as a fraction of the font size, so they sit
-/// on the main font's line: CJK fonts' taller ascent lifts them otherwise.
-const FALLBACKS: [(&[&str], f32); 3] = [
+/// Fonts to fall back on, by kind: Japanese and Chinese, Korean, emoji,
+/// Hebrew and Arabic. Each list names macOS's font first, then Linux's and
+/// Windows's, with how far to move its glyphs down, as a fraction of the
+/// font size, so they sit on the main font's line: CJK fonts' taller ascent
+/// lifts them otherwise. Hebrew and Arabic letters are spaced to the grid's
+/// columns, as wide characters are, since these fonts are proportional.
+const FALLBACKS: [(&[&str], f32); 5] = [
     (&["Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", "Microsoft YaHei"], 0.15),
     (&["Apple SD Gothic Neo", "Noto Sans CJK KR", "Malgun Gothic"], 0.15),
     (&["Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji"], 0.0),
+    (&["Arial Hebrew", "Noto Sans Hebrew", "DejaVu Sans Mono", "Arial"], 0.0),
+    (&["Geeza Pro", "Noto Sans Arabic", "DejaVu Sans", "Arial"], 0.0),
 ];
 
 /// Puts Geist Mono first for monospace text and Inter first for interface

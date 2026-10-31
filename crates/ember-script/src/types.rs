@@ -1584,10 +1584,19 @@ const API: &str = r##"
   function invisibleP(posOrProp: number | Value): boolean | "ellipsis";
   /** The value of a display spec at a position, as get-display-property: 2.0 for height in `[[height, 2.0]]`. */
   function getDisplayProperty(position: number, prop: string, object?: unknown, properties?: { display?: Value }): Value | undefined;
-  /** The direction of the paragraph at point, as current-bidi-paragraph-direction: always left to right. */
-  function currentBidiParagraphDirection(): "left-to-right" | "right-to-left";
-  /** Move to the next character on the line in display order, or the one before for a negative direction, as move-point-visually; undefined at the line's edge. */
-  function movePointVisually(direction: number): number | undefined;
+  /**
+   * The direction of the paragraph at point in a buffer, the current one by
+   * default, as current-bidi-paragraph-direction: bidi-paragraph-direction's
+   * if set, else its first strong character's, or the paragraph's before.
+   */
+  function currentBidiParagraphDirection(buffer?: BufferLike): "left-to-right" | "right-to-left";
+  /**
+   * Move point to the character on its right on display, or its left for a
+   * negative direction, wherever that is in the buffer, as
+   * move-point-visually; signals beginning-of-buffer or end-of-buffer.
+   * Returns the new point.
+   */
+  function movePointVisually(direction: number): number;
   /** Ring the bell, as ding: ring-bell-function if set, else the front end sounds it or, with visible-bell, flashes. */
   function ding(): void;
   /** Ring the bell, as beep. */
@@ -1598,6 +1607,26 @@ const API: &str = r##"
   function redrawDisplay(): void;
   /** Draw a frame again, as redraw-frame. */
   function redrawFrame(): void;
+  /**
+   * The resolved bidi levels of the characters on a screen line of the
+   * selected window, the one point is on by default, from the start of the
+   * line: its left edge for left-to-right text and its right for
+   * right-to-left, as bidi-resolved-levels.
+   */
+  function bidiResolvedLevels(vpos?: number): number[] | undefined;
+  /**
+   * The first position from from to to where directional controls change a
+   * character's direction in a way that could mislead, in a buffer (the
+   * current one by default) or a string, its paragraphs in baseDir,
+   * left-to-right by default, as bidi-find-overridden-directionality.
+   */
+  function bidiFindOverriddenDirectionality(from: number, to: number, object?: BufferLike | string | PropertizedString, baseDir?: "left-to-right" | "right-to-left"): number | undefined;
+  /**
+   * A character's Unicode property, as get-char-code-property: bidi-class
+   * ("L", "R", "AL", ...), mirroring and paired-bracket (a character),
+   * bracket-type ("o", "c" or "n") or mirrored ("Y" or "N").
+   */
+  function getCharCodeProperty(char: string | number, property: "bidi-class" | "mirroring" | "paired-bracket" | "bracket-type" | "mirrored"): string | undefined;
   /** Whether the buffers, their names and modified flags, or the frames changed since it was last asked, as frame-or-buffer-changed-p. */
   function frameOrBufferChangedP(): boolean;
   /** The tab bar's height in lines, as tab-bar-height: Ember has none. */

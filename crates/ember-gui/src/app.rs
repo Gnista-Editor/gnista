@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use ember_core::display::{Glyph, cursor_index, row_glyphs};
+use ember_core::display::{Glyph, cursor_glyph, row_glyphs, row_showing};
 use ember_core::layout::FontSpec;
 use ember_core::{Editor, FrameId, Key, KeyCode, MouseEvent, MouseKind, Row, Style, WindowId, WindowView};
 use egui::text::{CCursor, LayoutJob, TextFormat};
@@ -636,7 +636,8 @@ fn draw_buffer(
     // Only the selected window shows the region, as in Emacs.
     let region = if window.selected { b.active_region() } else { None };
     let point = window.point;
-    let point_row = rows.iter().position(|r| r.shows_point(point));
+    // Bidirectional text broken into rows spreads a line over them.
+    let point_row = row_showing(&rows, point, tab_width);
 
     let laid_out: Vec<(Arc<Galley>, Vec<Glyph>)> = rows
         .iter()
@@ -658,17 +659,19 @@ fn draw_buffer(
         })
         .collect();
 
+    // A right-to-left row is laid out from the window's right edge.
+    let offsets: Vec<f32> = rows.iter().map(|r| ed.row_offset_in(window.id, r) * m.char_width).collect();
     // Scroll horizontally, as Emacs does, when point would be off the right edge.
     let cursor = point_row.map(|i| {
         let (galley, glyphs) = &laid_out[i];
-        let index = cursor_index(glyphs, point);
+        let index = cursor_glyph(&rows[i], glyphs, point);
         let char_index: usize = glyphs[..index].iter().map(|g| g.text.chars().count()).sum();
         let under = glyphs.get(index).filter(|g| g.pos == Some(point)).and_then(|g| g.text.chars().next());
         (i, galley.clone(), char_index, under)
     });
     let cursor_x = cursor
         .as_ref()
-        .map_or(0.0, |(_, galley, index, _)| galley.pos_from_cursor(CCursor::new(*index)).min.x);
+        .map_or(0.0, |(i, galley, index, _)| galley.pos_from_cursor(CCursor::new(*index)).min.x + offsets[*i]);
     let hscroll = if cursor_x + m.char_width <= area.width() {
         0.0
     } else {
@@ -687,9 +690,21 @@ fn draw_buffer(
             let glyph = galley.rows.first().and_then(|r| r.row.glyphs.last().map(|g| g.logical_rect().translate(r.pos.to_vec2())));
             let (top, bottom) = glyph.map_or((row_top(i), row_top(i) + heights[i]), |g| (y + g.top(), y + g.bottom()));
             let x = area.left() - hscroll + galley.size().x;
-            clipped.rect_filled(Rect::from_min_max(pos2(x, top), pos2(area.right(), bottom)), 0.0, color32(bg));
+            // Left of a right-to-left row's text.
+            let (from, to) = if rows[i].right_to_left { (area.left(), area.left() + offsets[i]) } else { (x, area.right()) };
+            clipped.rect_filled(Rect::from_min_max(pos2(from, top), pos2(to, bottom)), 0.0, color32(bg));
         }
         if let Some(r) = &region
+            && (rows[i].right_to_left || ember_core::display::reordered(&laid_out[i].1))
+        {
+            // Bidirectional text can show the region in pieces.
+            let left = area.left() - hscroll + offsets[i];
+            let top = row_top(i);
+            for (from, to) in region_pieces(&rows[i], &laid_out[i].1, galley, r) {
+                let (from, to) = (from.map_or(area.left(), |x| left + x), to.map_or(area.right(), |x| left + x));
+                clipped.rect_filled(Rect::from_min_max(pos2(from, top), pos2(to, top + heights[i])), 0.0, selection);
+            }
+        } else if let Some(r) = &region
             && let Some((from, to)) = region_span(&rows[i], &laid_out[i].1, galley, r)
         {
             let left = area.left() - hscroll;
@@ -698,10 +713,11 @@ fn draw_buffer(
             clipped.rect_filled(Rect::from_min_max(pos2(left + from, top), pos2(right, top + heights[i])), 0.0, selection);
         }
         let y = row_top(i) + (heights[i] - galley.size().y) / 2.0;
-        clipped.galley(pos2(area.left() - hscroll, y), galley.clone(), t.ink);
-        draw_decorations(&clipped, &rows[i], &laid_out[i].1, galley, area.left() - hscroll, row_top(i), heights[i], &default_style, t);
+        clipped.galley(pos2(area.left() - hscroll + offsets[i], y), galley.clone(), t.ink);
+        draw_apart(&clipped, &rows[i], &laid_out[i].1, galley, pos2(area.left() - hscroll + offsets[i], y), &default_style, m, t);
+        draw_decorations(&clipped, &rows[i], &laid_out[i].1, galley, area.left() - hscroll + offsets[i], row_top(i), heights[i], &default_style, t);
         if let Some(bold) = &emboldened[i] {
-            clipped.galley(pos2(area.left() - hscroll + FAUX_BOLD_OFFSET, y), bold.clone(), t.ink);
+            clipped.galley(pos2(area.left() - hscroll + offsets[i] + FAUX_BOLD_OFFSET, y), bold.clone(), t.ink);
         }
         let top = row_top(i);
         // What the margins show beside the row.
@@ -723,7 +739,7 @@ fn draw_buffer(
         if !rows[i].continued && galley.size().x - hscroll > area.width() + 0.5 && fringes[1].is_none() {
             fringes[1] = Some(("right-arrow".into(), None));
         }
-        if hscroll > 0.0 && fringes[0].is_none() {
+        if (hscroll > 0.0 || offsets[i] < -0.5) && fringes[0].is_none() {
             fringes[0] = Some(("left-arrow".into(), None));
         }
         for (side, fringe) in fringes.iter().enumerate() {
@@ -764,10 +780,77 @@ fn region_span(row: &Row, glyphs: &[Glyph], galley: &Galley, region: &std::ops::
     }
 }
 
+/// Where the region covers a row reordered for bidirectional text, as
+/// pieces from one x offset into its galley to another, `None` for the
+/// window's edge: each run of selected glyphs, and the window's edge past
+/// the end of the line when its newline is selected, which a right-to-left
+/// row shows at its left.
+fn region_pieces(row: &Row, glyphs: &[Glyph], galley: &Galley, region: &std::ops::Range<usize>) -> Vec<(Option<f32>, Option<f32>)> {
+    let selected = |g: &Glyph| g.pos.is_some_and(|p| region.contains(&p));
+    let x = |index: usize| galley.pos_from_cursor(CCursor::new(glyphs[..index].iter().map(|g| g.text.chars().count()).sum::<usize>())).min.x;
+    let mut pieces = Vec::new();
+    let mut k = 0;
+    while k < glyphs.len() {
+        if !selected(&glyphs[k]) {
+            k += 1;
+            continue;
+        }
+        let start = k;
+        while k < glyphs.len() && selected(&glyphs[k]) {
+            k += 1;
+        }
+        pieces.push((Some(x(start)), Some(x(k))));
+    }
+    if !row.continued && region.contains(&row.end) {
+        if row.right_to_left {
+            pieces.push((None, Some(0.0)));
+        } else {
+            pieces.push((Some(galley.size().x), None));
+        }
+    }
+    pieces
+}
+
 /// Whether a glyph is one character drawn wider than a column, such as CJK
 /// text or an emoji, which gets a section of its own to fit the grid.
 fn is_wide(glyph: &Glyph) -> bool {
     glyph.width > 1 && glyph.text.chars().count() == 1
+}
+
+/// Whether a character is of a right-to-left script: Hebrew, Arabic and
+/// the others from U+0590 to U+08FF, their presentation forms, and those
+/// beyond the Basic Multilingual Plane.
+fn rtl_script(c: char) -> bool {
+    matches!(c as u32, 0x590..=0x8FF | 0xFB1D..=0xFDFF | 0xFE70..=0xFEFF | 0x10800..=0x10FFF | 0x1E800..=0x1EFFF)
+}
+
+/// Whether a glyph is drawn on its own, over a space the row's galley keeps
+/// for it: a character of a right-to-left script. The core has put the
+/// row in visual order already, and egui's shaper would turn a run of such
+/// characters around again, as it shapes them right to left.
+fn apart(glyph: &Glyph) -> bool {
+    glyph.text.chars().count() == 1 && rtl_script(glyph.c)
+}
+
+/// Draws the glyphs of a row's galley that are drawn on their own, each
+/// over the space kept for it, in the face of its segment.
+#[allow(clippy::too_many_arguments)]
+fn draw_apart(painter: &Painter, row: &Row, glyphs: &[Glyph], galley: &Galley, origin: egui::Pos2, default_style: &Style, m: &Metrics, t: Tokens) {
+    let mut index = 0;
+    for g in glyphs {
+        if apart(g) {
+            let x = galley.pos_from_cursor(CCursor::new(index)).min.x;
+            let seg = &row.segments[g.segment];
+            let mut format = face_format(&seg.style, default_style, m, t);
+            format.background = Color32::TRANSPARENT;
+            format.line_height = galley.rows.first().map(|r| r.height());
+            let mut job = LayoutJob::default();
+            job.append(&g.text, 0.0, format);
+            let glyph = painter.layout_job(job);
+            painter.galley(pos2(origin.x + x, origin.y), glyph, t.ink);
+        }
+        index += g.text.chars().count().max(1);
+    }
 }
 
 /// A row as one layout job: a section for each run of glyphs with the same
@@ -792,7 +875,7 @@ fn row_job(
 ) -> LayoutJob {
     let mut job = LayoutJob::default();
     // Glyphs spaced to a width of their own rather than the font's.
-    let spaced = |g: &Glyph| if columns.is_some() { g.c == '\t' } else { is_wide(g) };
+    let spaced = |g: &Glyph| apart(g) || if columns.is_some() { g.c == '\t' } else { is_wide(g) };
     let mut i = 0;
     while i < glyphs.len() {
         let segment = glyphs[i].segment;
@@ -803,7 +886,8 @@ fn row_job(
             i += 1;
         }
         if alone {
-            text.push_str(&glyphs[i].text);
+            // A space keeps the place of a glyph drawn on its own.
+            text.push_str(if apart(&glyphs[i]) { " " } else { &glyphs[i].text });
             i += 1;
         }
         let seg = &row.segments[segment];
@@ -815,8 +899,11 @@ fn row_job(
             let g = &glyphs[i - 1];
             let n = g.text.chars().count().max(1) as f32;
             let want = columns.map_or(g.width as f32, |c| c[i - 1]) * m.char_width;
-            let natural: f32 = g.text.chars().map(|c| advance(&format.font_id, c)).sum();
-            format.extra_letter_spacing = (want - natural) / n;
+            let natural: f32 = if apart(g) { advance(&format.font_id, ' ') } else { g.text.chars().map(|c| advance(&format.font_id, c)).sum() };
+            // A character no font has, drawn as a box, keeps the box's width.
+            if natural > 0.0 {
+                format.extra_letter_spacing = (want - natural) / n;
+            }
         }
         // The row's full height, so backgrounds such as the region's meet
         // the rows above and below.
@@ -843,7 +930,8 @@ fn bold_only_job(row: &Row, glyphs: &[Glyph], height: f32, default_style: &Style
             format.color = Color32::TRANSPARENT;
         }
         format.line_height = Some(height);
-        job.append(&glyph.text, 0.0, format);
+        // Right-to-left letters are drawn on their own, without the second copy.
+        job.append(if apart(glyph) { " " } else { &glyph.text }, 0.0, format);
     }
     job
 }
@@ -1037,15 +1125,19 @@ fn draw_echo_area(painter: &Painter, ed: &Editor, rect: Rect, m: &Metrics, t: To
         }
         let glyphs = row_glyphs(row, 8);
         let galley = painter.layout_job(row_job(row, &glyphs, None, m.line_height, &default_style, m, t, &advance));
+        // A right-to-left row from the right edge.
+        let offset = ed.row_offset(row, (rect.width() - 2.0 * PAD_X) / m.char_width, 8) * m.char_width;
+        let origin_x = origin_x + offset;
         painter.galley(pos2(origin_x, y + (m.line_height - galley.size().y) / 2.0), galley.clone(), t.ink);
+        draw_apart(&painter, row, &glyphs, &galley, pos2(origin_x, y + (m.line_height - galley.size().y) / 2.0), &default_style, m, t);
         if at_point.is_none() && row.shows_point(point) {
-            let index = cursor_index(&glyphs, point);
+            let index = cursor_glyph(row, &glyphs, point);
             let char_index: usize = glyphs[..index].iter().map(|g| g.text.chars().count()).sum();
             let under = glyphs.get(index).and_then(|g| g.text.chars().next());
-            at_point = Some((galley, char_index, under, y));
+            at_point = Some((galley, char_index, under, y, origin_x));
         }
     }
-    if let Some((galley, index, under, y)) = at_point {
+    if let Some((galley, index, under, y, origin_x)) = at_point {
         let cursor_x = galley.pos_from_cursor(CCursor::new(index)).min.x;
         draw_cursor(&painter, &galley, index, under, pos2(origin_x + cursor_x, y), m.line_height, &FontSpec::default_font(), m, t, cursor);
     }
