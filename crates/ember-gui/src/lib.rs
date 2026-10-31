@@ -2,6 +2,7 @@
 
 mod app;
 pub mod clipboard;
+mod fringe;
 pub mod keys;
 pub mod metrics;
 pub mod modeline;

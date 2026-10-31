@@ -44,6 +44,12 @@ pub(crate) struct Window {
     pub(crate) prev_buffers: Vec<u64>,
     /// The buffers `previous-buffer` went back from, as `window-next-buffers`.
     pub(crate) next_buffers: Vec<u64>,
+    /// Its margins' widths in columns, as `set-window-margins` set them for
+    /// the buffer it then showed; otherwise the buffer's `left-margin-width`
+    /// and `right-margin-width` count, as `set-window-buffer` takes them.
+    pub(crate) margins: Option<(u64, usize, usize)>,
+    /// Whether its cursor is drawn, as `internal-show-cursor` sets it.
+    pub(crate) cursor_shown: bool,
 }
 
 impl Window {
@@ -58,6 +64,8 @@ impl Window {
             dedicated: Value::Null,
             prev_buffers: Vec::new(),
             next_buffers: Vec::new(),
+            margins: None,
+            cursor_shown: true,
         }
     }
 }
@@ -1091,6 +1099,45 @@ impl Editor {
         if let Some(w) = self.window_mut(id) {
             w.prev_buffers.retain(|b| live.contains(b));
             w.next_buffers.retain(|b| live.contains(b));
+        }
+    }
+
+    /// A window's left and right margins in columns, as Emacs's
+    /// `window-margins`: as `set-window-margins` set them while it shows the
+    /// same buffer, else its buffer's `left-margin-width` and
+    /// `right-margin-width`. Front ends leave them beside the text.
+    pub fn window_margins(&self, id: WindowId) -> (usize, usize) {
+        let Some(w) = self.window(id) else { return (0, 0) };
+        if let Some((buffer, left, right)) = w.margins
+            && buffer == w.buffer
+        {
+            return (left, right);
+        }
+        let Some(index) = self.buffer_with_id(w.buffer) else { return (0, 0) };
+        let b = &self.buffers[index];
+        let width = |name: &str| self.variable_in(b, name).and_then(|v| v.as_number()).map_or(0, |n| n.max(0.0) as usize);
+        (width("left-margin-width"), width("right-margin-width"))
+    }
+
+    /// Sets a window's margins while it shows its buffer, as Emacs's
+    /// `set-window-margins`. Returns whether they changed.
+    pub fn set_window_margins(&mut self, id: WindowId, left: usize, right: usize) -> bool {
+        let before = self.window_margins(id);
+        if let Some(w) = self.window_mut(id) {
+            w.margins = Some((w.buffer, left, right));
+        }
+        before != (left, right)
+    }
+
+    /// Whether a window's cursor is drawn, as Emacs's `internal-show-cursor-p`.
+    pub fn window_cursor_shown(&self, id: WindowId) -> bool {
+        self.window(id).is_none_or(|w| w.cursor_shown)
+    }
+
+    /// Shows or hides a window's cursor, as `internal-show-cursor`.
+    pub fn show_window_cursor(&mut self, id: WindowId, shown: bool) {
+        if let Some(w) = self.window_mut(id) {
+            w.cursor_shown = shown;
         }
     }
 

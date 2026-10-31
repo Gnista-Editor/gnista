@@ -17,6 +17,8 @@ struct WindowArea {
     mode_line: Rect,
     /// The line above the text, when the window's buffer has a `header-line-format`.
     header_line: Option<Rect>,
+    /// The margins left and right of the text, as `window-margins` gives them.
+    margins: [Rect; 2],
     /// The column between this window and the one to its right.
     divider: Option<Rect>,
 }
@@ -29,13 +31,19 @@ fn window_areas(ed: &Editor, width: u16, height: u16) -> Vec<WindowArea> {
         .into_iter()
         .map(|r| {
             let (x, y, w, h) = (r.x as u16, r.y as u16, (r.width as u16).max(1), (r.height as u16).max(2));
-            let text_width = if r.divider { w.saturating_sub(1).max(1) } else { w };
+            let body_width = if r.divider { w.saturating_sub(1).max(1) } else { w };
             let header = u16::from(ed.window_wants_header_line(r.id, h as usize));
+            // The margins take columns from the text, leaving it one at least.
+            let (left, right) = ed.window_margins(r.id);
+            let left = (left as u16).min(body_width.saturating_sub(1));
+            let right = (right as u16).min(body_width.saturating_sub(1 + left));
+            let (top, height) = (y + header, h - 1 - header);
             WindowArea {
                 id: r.id,
-                text: Rect::new(x, y + header, text_width, h - 1 - header),
+                text: Rect::new(x + left, top, body_width - left - right, height),
                 mode_line: Rect::new(x, y + h - 1, w, 1),
-                header_line: (header == 1).then(|| Rect::new(x, y, text_width, 1)),
+                header_line: (header == 1).then(|| Rect::new(x, y, body_width, 1)),
+                margins: [Rect::new(x, top, left, height), Rect::new(x + body_width - right, top, right, height)],
                 divider: r.divider.then(|| Rect::new(x + w - 1, y, 1, h - 1)),
             }
         })
@@ -60,7 +68,7 @@ pub fn draw(frame: &mut Frame, ed: &Editor) {
     let mut window_cursor = Position::new(0, 0);
     for view in ed.windows() {
         let Some(area) = areas.iter().find(|a| a.id == view.id) else { continue };
-        let cursor = draw_window(frame, ed, &view, area.text);
+        let cursor = draw_window(frame, ed, &view, area.text, area.margins);
         if view.selected {
             window_cursor = cursor;
         }
@@ -74,7 +82,10 @@ pub fn draw(frame: &mut Frame, ed: &Editor) {
         }
     }
     let echo_cursor = draw_echo_area(frame, ed, echo_area).filter(|_| ed.minibuffer_window_selected());
-    frame.set_cursor_position(echo_cursor.unwrap_or(window_cursor));
+    // A window whose cursor internal-show-cursor hid shows none.
+    if echo_cursor.is_some() || ed.window_cursor_shown(ed.selected_window()) {
+        frame.set_cursor_position(echo_cursor.unwrap_or(window_cursor));
+    }
 }
 
 /// A window's rows as drawn, with their glyphs, where point is, and how
@@ -127,7 +138,7 @@ pub fn mouse_target(ed: &Editor, width: u16, height: u16, x: u16, y: u16) -> Opt
     let areas = window_areas(ed, width, height);
     let area = areas.iter().find(|a| {
         let top = a.header_line.map_or(a.text.y, |h| h.y);
-        let r = Rect::new(a.text.x, top, a.mode_line.width, a.mode_line.y + 1 - top);
+        let r = Rect::new(a.mode_line.x, top, a.mode_line.width, a.mode_line.y + 1 - top);
         r.contains(Position::new(x, y))
     })?;
     if !area.text.contains(Position::new(x, y)) {
@@ -144,10 +155,21 @@ pub fn mouse_target(ed: &Editor, width: u16, height: u16, x: u16, y: u16) -> Opt
     Some((area.id, Some(position)))
 }
 
-/// Draws a window's rows and returns where its point is on screen.
-fn draw_window(frame: &mut Frame, ed: &Editor, view: &WindowView, area: Rect) -> Position {
+/// Draws a window's rows, and what shows in its margins beside them, and
+/// returns where its point is on screen.
+fn draw_window(frame: &mut Frame, ed: &Editor, view: &WindowView, area: Rect, margins: [Rect; 2]) -> Position {
     let dark = dark(ed);
     let WindowRows { rows, glyph_rows, point_row, point_col, hscroll, numbers } = window_rows(ed, view, area);
+    for (side, margin) in margins.iter().enumerate().filter(|(_, m)| m.width > 0) {
+        let lines: Vec<Line> = rows
+            .iter()
+            .map(|row| {
+                let segments = &row.margins[side];
+                Line::from(segments.iter().map(|seg| Span::styled(seg.text.clone(), terminal_style(&seg.style, dark))).collect::<Vec<_>>())
+            })
+            .collect();
+        frame.render_widget(Paragraph::new(lines), *margin);
+    }
     // Line numbers, in their faces, left of the text.
     let gutter = gutter(&numbers, area);
     if let Some(numbers) = &numbers {
@@ -208,6 +230,11 @@ fn row_line(
     if selected(row.end) && !row.continued && col < hscroll + width {
         let fill = hscroll + width - col.max(hscroll);
         push(&mut spans, &" ".repeat(fill), Style::new().add_modifier(Modifier::REVERSED));
+    } else if let Some(extend) = row.extend.as_ref().filter(|_| !row.continued && col < hscroll + width) {
+        // A face that extends fills the rest of the row with its background.
+        let fill = hscroll + width - col.max(hscroll);
+        let bg = terminal_style(extend, dark).bg.unwrap_or(Color::Reset);
+        push(&mut spans, &" ".repeat(fill), Style::new().bg(bg));
     }
     // A continued line ends with a backslash in the last column, as in Emacs.
     if row.continued && !row.broken {
@@ -232,6 +259,9 @@ fn terminal_style(style: &FaceStyle, dark: bool) -> Style {
     }
     if let Some(c) = style.background {
         out = out.bg(rgb(c));
+    }
+    if let Some(c) = style.underline_color.filter(|_| style.underline) {
+        out = out.underline_color(rgb(c));
     }
     for (on, modifier) in [
         (style.bold, Modifier::BOLD),
@@ -440,6 +470,24 @@ mod tests {
         // A click on the header line is over no text.
         assert_eq!(mouse_target(&ed, 30, 6, 2, 0).map(|t| t.1), Some(None));
         assert_eq!(mouse_target(&ed, 30, 6, 1, 1).map(|t| t.1), Some(Some(1)));
+    }
+
+    #[test]
+    fn margins_show_beside_the_text() {
+        let mut ed = Editor::new();
+        ed.type_text("one\ntwo");
+        ed.set_variable("left-margin-width", ember_core::Value::Number(2.0));
+        let spec = ember_core::Value::List(vec![
+            ember_core::Value::List(vec![ember_core::Value::Symbol("margin".into()), ember_core::Value::Symbol("left-margin".into())]),
+            ember_core::Value::Str(">".into()),
+        ]);
+        let start = ed.buffer().line_start(1);
+        ed.buffer_mut().put_text_property(start..start + 1, "display", spec);
+        let rows = render(&mut ed, 20, 5);
+        assert_eq!(rows[0], "  one");
+        assert_eq!(rows[1], "> wo", "the text the spec is on shows nothing in the text");
+        // Clicks in the margin are over no text.
+        assert_eq!(mouse_target(&ed, 20, 5, 0, 0).map(|t| t.1), Some(None));
     }
 
     #[test]

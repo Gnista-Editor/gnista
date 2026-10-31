@@ -154,6 +154,8 @@
   const bindingArg = (b) => (b === null || b === undefined ? null : b instanceof Keymap ? b : Array.isArray(b) ? b.map(String) : symbolName(b));
   // A transient map made from the same bindings is made once.
   const transientMaps = new Map();
+  // What frame-or-buffer-changed-p saw last.
+  let frameOrBufferState;
   globalThis.__emberBuffer = (id) => {
     let b = buffers.get(id);
     if (b === undefined) {
@@ -1276,6 +1278,90 @@
       return native.windowTextPixelSize(w, from ?? native.windowStart(w), to ?? native.windowEnd(w));
     },
     linePixelHeight: () => native.linePixelHeight(),
+    bufferTextPixelSize: (buffer) => native.bufferTextPixelSize(ember.getBuffer(buffer ?? native.bufferName())?.id ?? native.bufferIdOf()),
+    stringPixelWidth(string) {
+      if (String(string) === "") return 0;
+      const temp = ember.getBufferCreate(ember.generateNewBufferName(" *string-pixel-width*"));
+      return unwindProtect(
+        () => ember.withCurrentBuffer(temp, () => {
+          ember.insert(string);
+          return ember.bufferTextPixelSize(temp)[0];
+        }),
+        () => ember.call("kill-buffer", temp),
+      );
+    },
+    displayLineIsContinuedP: () => native.lineIsContinued(),
+    // As Emacs's invisible-p: of a position, or of an invisible property's
+    // value; true, "ellipsis" for text an ellipsis stands for, or false.
+    invisibleP(posOrProp) {
+      const how = typeof posOrProp === "number"
+        ? native.invisibleValue(posOrProp >= native.pointMin() && posOrProp < native.pointMax() ? native.charProperty(posOrProp, "invisible") ?? null : null)
+        : native.invisibleValue(posOrProp ?? null);
+      return how === 2 ? "ellipsis" : how === 1;
+    },
+    // As Emacs's get-display-property: the value of PROP among the display
+    // specs at POSITION, as `(height 2.0)` is PROP height's.
+    getDisplayProperty(position, prop, object, properties) {
+      const display = properties !== undefined ? properties.display
+        : object !== undefined && typeof object === "object" ? undefined
+        : native.charProperty(position, "display");
+      if (!Array.isArray(display)) return undefined;
+      const name = symbolName(prop);
+      const specs = display.length > 0 && Array.isArray(display[0]) ? display : [display];
+      for (const spec of specs) if (Array.isArray(spec) && symbolName(spec[0]) === name) return spec[1];
+      return undefined;
+    },
+    currentBidiParagraphDirection: () => "left-to-right",
+    // In left-to-right text, the next character or the one before on the
+    // line, as move-point-visually; at the line's edge, undefined.
+    movePointVisually(direction) {
+      const p = native.point();
+      const target = direction > 0 ? p + 1 : p - 1;
+      if (direction > 0 ? p >= ember.lineEndPosition() : p <= ember.lineBeginningPosition()) return undefined;
+      native.gotoChar(target);
+      return target;
+    },
+    ding: () => native.ding(),
+    beep: () => native.ding(),
+    redisplay: () => native.redisplay(),
+    redrawDisplay: () => native.redisplay(),
+    redrawFrame: () => native.redisplay(),
+    // As frame-or-buffer-changed-p: whether the buffers, their names and
+    // modified flags, or the frames changed since it was last asked.
+    frameOrBufferChangedP() {
+      const now = JSON.stringify([
+        native.bufferList(),
+        native.bufferList().map((b) => ember.withCurrentBuffer(b, () => native.bufferModified())),
+        native.frameList(),
+      ]);
+      const changed = now !== frameOrBufferState;
+      frameOrBufferState = now;
+      return changed;
+    },
+    tabBarHeight: () => 0,
+    toolBarHeight: () => 0,
+    longLineOptimizationsP: () => false,
+    windowMargins(window) {
+      const [left, right] = native.windowMargins(window ?? native.selectedWindow());
+      return [left === 0 ? undefined : left, right === 0 ? undefined : right];
+    },
+    setWindowMargins: (window, left, right) => native.setWindowMargins(window ?? native.selectedWindow(), left ?? 0, right ?? 0),
+    windowFringes: () => (native.windowFringes() ? [8, 8, false, false] : [0, 0, false, false]),
+    internalShowCursor: (window, show) => native.showWindowCursor(window ?? native.selectedWindow(), Boolean(show)),
+    internalShowCursorP: (window) => native.windowCursorShown(window ?? native.selectedWindow()),
+    defineFringeBitmap(bitmap, bits, height, width, align = "center") {
+      const rows = [...bits];
+      while (height !== undefined && rows.length < height) rows.push(0);
+      native.defineFringeBitmap(symbolName(bitmap), rows.slice(0, height ?? rows.length), width ?? null, String(align));
+      return symbolName(bitmap);
+    },
+    destroyFringeBitmap: (bitmap) => native.destroyFringeBitmap(symbolName(bitmap)),
+    setFringeBitmapFace: (bitmap, face) => native.setFringeBitmapFace(symbolName(bitmap), face === undefined || face === null ? null : symbolName(face)),
+    fringeBitmapP: (bitmap) => native.fringeBitmapP(symbolName(bitmap)),
+    fringeBitmapsAtPos(pos, window) {
+      const got = native.fringeBitmapsAtPos(pos ?? native.point(), window ?? native.selectedWindow());
+      return got ? [got[0] || undefined, got[1] || undefined] : undefined;
+    },
     defaultFontWidth: () => native.defaultFontWidth(),
     defaultFontHeight: () => native.defaultFontHeight(),
     windowPoint: (window) => native.windowPoint(window ?? native.selectedWindow()),
@@ -1479,10 +1565,37 @@
     defineFace({ name, doc = "", attributes = {}, dark = {}, light = {} }) {
       native.defineFace(String(name), String(doc), attributes, dark, light);
     },
+    // Attributes as an object, or as Emacs's plist: [":weight", "bold", ...].
     setFaceAttribute: (name, attributes, { background = "both" } = {}) =>
-      native.setFaceAttribute(String(name), attributes, String(background)),
+      native.setFaceAttribute(
+        String(name),
+        Array.isArray(attributes) ? Object.fromEntries(attributes.flatMap((v, i) => (i % 2 === 0 ? [[String(v), attributes[i + 1]]] : []))) : attributes,
+        String(background),
+      ),
     faceAttributes: (name, { dark = true } = {}) => native.faceAttributes(String(name), Boolean(dark)),
     faceInfo: (name) => native.faceInfo(String(name)) ?? undefined,
+    faceAttribute: (face, attribute, inherit = false) => native.faceAttribute(String(face), String(attribute), Boolean(inherit)),
+    faceList: () => native.faceList(),
+    facep: (face) => native.faceInfo(String(face)) != null,
+    makeFace: (name) => {
+      native.makeFace(String(name));
+      return String(name);
+    },
+    copyFace: (oldFace, newFace) => {
+      native.copyFace(String(oldFace), String(newFace));
+      return String(newFace);
+    },
+    colorValues: (color) => native.colorValues(String(color)) ?? undefined,
+    colorValuesFromColorSpec: (spec) => native.colorValuesFromColorSpec(String(spec)) ?? undefined,
+    colorDefinedP: (color) => native.colorValues(String(color)) != null,
+    colorSupportedP: (color) => native.colorValues(String(color)) != null,
+    definedColors: () => native.definedColors(),
+    colorDistance(color1, color2) {
+      const d = native.colorDistance(String(color1), String(color2));
+      if (d == null) ember.signal("error", `Invalid color: ${native.colorValues(String(color1)) == null ? color1 : color2}`);
+      return d;
+    },
+    colorGrayP: (color) => native.colorGrayP(String(color)) === true,
 
     // As Emacs's derived-mode-p: whether the buffer's major mode is one of
     // these or built on one.

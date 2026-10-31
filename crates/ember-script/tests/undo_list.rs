@@ -66,3 +66,17 @@ fn an_apply_entry_pushed_onto_the_list_runs_when_undone() {
     ed.press("C-/").unwrap();
     assert_eq!(eval(&mut ed, &s, "ember.variable('undone')"), "3");
 }
+
+#[test]
+fn fontifying_between_keys_leaves_typing_one_undo_step() {
+    let mut ed = Editor::new();
+    let s = Scripting::new(&mut ed).unwrap();
+    // A jit-lock function that styles text, as a mode's font-lock does.
+    eval(&mut ed, &s, "ember.addHook('jit-lock-functions', (start, end) => ember.putTextProperty(start, end, 'face', 'bold'), { local: true })");
+    for c in ["a", "b", "c"] {
+        ed.type_text(c);
+        ed.redisplay();
+    }
+    ed.press("C-/").unwrap();
+    assert_eq!(eval(&mut ed, &s, "ember.bufferText(0, ember.bufferSize())"), "\"\"", "typing amalgamates, as Emacs's does");
+}

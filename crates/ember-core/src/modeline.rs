@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use crate::buffer::Buffer;
 use crate::editor::Editor;
 use crate::error::Result;
+use crate::faces::face_names;
 use crate::variables::{Value, Variable};
 use crate::window::WindowId;
 
@@ -375,13 +376,6 @@ impl Editor {
     }
 }
 
-/// A face property's faces: one name, or a list of them.
-fn face_names(value: &Value) -> Vec<String> {
-    match value {
-        Value::List(items) => items.iter().filter_map(|v| v.as_str().map(str::to_string)).collect(),
-        other => other.as_str().map(str::to_string).into_iter().collect(),
-    }
-}
 
 /// A propertized string's stretches of the same properties, by character.
 fn text_runs(t: &crate::properties::Text) -> Vec<(std::ops::Range<usize>, String)> {

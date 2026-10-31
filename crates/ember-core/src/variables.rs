@@ -791,6 +791,10 @@ pub(crate) fn install(ed: &mut Editor) {
                 .to_vec(),
             ),
         ),
+        Variable::new("ring-bell-function", "A function `ding` calls instead of ringing the bell, or nil to ring it.", Value::Null),
+        Variable::new("visible-bell", "Whether the bell flashes the frame rather than sounding.", false),
+        Variable::new("left-margin-width", "Columns of left margin a window showing the buffer has, beside its text, for `(margin left-margin)` display strings.", 0.0).local(),
+        Variable::new("right-margin-width", "Columns of right margin a window showing the buffer has, for `(margin right-margin)` display strings.", 0.0).local(),
         Variable::new(
             "buffer-undo-list",
             "The current buffer's undo history, newest first: nil between commands, a number for where point was before one, [beg, end] for text inserted there, [text, pos] for text deleted at pos (negative if point was after it), [nil, prop, value, beg, end] for a text property's old value, [apply, fn, ...args] for a function undo calls, and [t] where the buffer was unmodified. t while changes are not recorded. Setting it sets the history, t to stop recording.",

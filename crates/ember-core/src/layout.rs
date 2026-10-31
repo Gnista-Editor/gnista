@@ -66,6 +66,13 @@ pub trait TextMetrics: Send + Sync {
     fn uniform(&self) -> bool {
         false
     }
+    /// Whether windows have fringes beside their text, as a graphical
+    /// frame's do, where the arrows for continued and truncated lines go.
+    /// Without them, as on a terminal, a continued line ends with a `\` in
+    /// the last column, which the text then cannot use.
+    fn fringes(&self) -> bool {
+        false
+    }
 }
 
 /// A terminal's metrics, which headless editors use too: a character is a
@@ -300,7 +307,18 @@ impl Editor {
     pub fn window_text_pixel_size(&self, window: WindowId, from: usize, to: usize) -> Option<(f32, f32)> {
         let view = self.frame_list().into_iter().flat_map(|f| self.frame_windows(f)).find(|v| v.id == window)?;
         let b = view.buffer;
-        let wrap = self.wrap_in(window, b);
+        Some(self.text_pixel_size(b, self.wrap_in(window, b), from, to))
+    }
+
+    /// The width and height of a buffer's accessible text, in the metrics'
+    /// units, as Emacs's `buffer-text-pixel-size`, its lines unwrapped:
+    /// what `string-pixel-width` measures a string with.
+    pub fn buffer_text_pixel_size(&self, buffer: u64) -> Option<(f32, f32)> {
+        let b = &self.buffers[self.buffer_with_id(buffer)?];
+        Some(self.text_pixel_size(b, None, b.point_min(), b.point_max()))
+    }
+
+    fn text_pixel_size(&self, b: &Buffer, wrap: Option<crate::rows::Wrap>, from: usize, to: usize) -> (f32, f32) {
         let tab_width = self.tab_width_in(b);
         let (from, to) = (from.min(to).max(b.point_min()), to.max(from).min(b.point_max()));
         let first = b.line_of(from);
@@ -317,7 +335,16 @@ impl Editor {
             width = width.max(shown);
             height += self.row_height(b, row);
         }
-        Some((width * self.metrics.char_width(), height * self.metrics.char_height()))
+        (width * self.metrics.char_width(), height * self.metrics.char_height())
+    }
+
+    /// Whether the row point shows in, in the selected window, goes on in
+    /// the next, as Emacs's `display--line-is-continued-p`.
+    pub fn line_is_continued(&self) -> bool {
+        let b = self.window_buffer();
+        let wrap = self.wrap_in(self.selected_window, b);
+        let (rows, k, _) = self.screen_position(b, b.point(), wrap);
+        rows.get(k).is_some_and(|r| r.continued)
     }
 
     /// How tall the row point's line shows in is in the selected window, in

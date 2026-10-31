@@ -616,8 +616,9 @@ impl Buffer {
     pub fn set_undo_list(&mut self, value: &Value) {
         let off = matches!(value, Value::Bool(true)) || value.as_str() == Some("t");
         if off {
+            // Kept aside as it is, the open step too, so turning recording
+            // back on carries on with it: no boundary is made, as in Emacs.
             if !self.undo_disabled {
-                self.undo_boundary();
                 self.stashed_undo = Some(Box::new(self.take_undo()));
                 self.undo_disabled = true;
             }

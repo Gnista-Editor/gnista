@@ -140,6 +140,9 @@ mod tests {
             continued: false,
             broken: false,
             in_string: false,
+            extend: None,
+            margins: Default::default(),
+            fringes: Default::default(),
         };
         let glyphs = row_glyphs(&row, 8);
         assert_eq!(position_at_column(&row, &glyphs, 0), 10);

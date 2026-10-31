@@ -116,6 +116,65 @@ fn header_line() {
     harness(ed, Theme::Dark).snapshot("header_line_dark");
 }
 
+/// Emacs's face attributes drawn: a coloured wavy underline, an overline,
+/// a box, a coloured strike-through, inverse video, colour names, and a
+/// background that extends to the window's edge.
+#[test]
+fn face_decorations() {
+    let mut ed = Editor::new();
+    let scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    ed.type_text("wavy over boxed struck inverse named\nextended line\nplain\n");
+    scripting
+        .eval_typescript(
+            &mut ed,
+            "setup.ts",
+            r#"
+            const put = (from: number, to: number, face: any) => ember.putTextProperty(from, to, "face", face);
+            put(0, 4, [":underline", [":color", "red", ":style", "wave"]]);
+            put(5, 9, [":overline", true]);
+            put(10, 15, [":box", [":line-width", 1, ":color", "orange"]]);
+            put(16, 22, [":strike-through", "dodger blue"]);
+            put(23, 30, [":inverse-video", true]);
+            put(31, 36, [":foreground", "medium sea green", ":weight", "bold"]);
+            put(37, 51, [":background", "dark slate blue", ":extend", true]);
+            "#
+            .into(),
+        )
+        .unwrap();
+    ed.press("M->").unwrap();
+    harness(ed, Theme::Dark).snapshot("face_decorations_dark");
+}
+
+/// Margins and fringes: margin text, a continued line's curly arrows, a
+/// fringe spec's triangle and a defined bitmap, beside the text.
+#[test]
+fn margins_and_fringes() {
+    let mut ed = Editor::new();
+    let scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    ed.type_text(&format!("{}\nsecond line\nthird line\n", "a long line that goes on past the edge of the window and so is continued in the next row of it"));
+    scripting
+        .eval_typescript(
+            &mut ed,
+            "setup.ts",
+            r#"
+            const sym = (s: string) => Symbol.for(s) as any;
+            ember.setVariable("left-margin-width", 2);
+            const second = ember.lineStart(1);
+            const third = ember.lineStart(2);
+            ember.putTextProperty(0, 1, "display", [[sym("margin"), sym("left-margin")], ember.propertize("1", { face: "warning" })]);
+            const o = ember.makeOverlay(second, second);
+            ember.overlayPut(o, "before-string", ember.propertize(" ", { display: [sym("left-fringe"), sym("right-triangle"), sym("error")] }));
+            ember.defineFringeBitmap("my-dots", [0b10101010, 0, 0b01010101, 0, 0b10101010], 5, 8);
+            const p = ember.makeOverlay(third, third);
+            ember.overlayPut(p, "before-string", ember.propertize(" ", { display: [sym("right-fringe"), sym("my-dots"), sym("success")] }));
+            "#
+            .into(),
+        )
+        .unwrap();
+    ed.press("M-<").unwrap();
+    harness(ed, Theme::Dark).snapshot("margins_and_fringes_dark");
+}
+
 #[test]
 fn keys_reach_the_editor() {
     let mut h = harness(Editor::new(), Theme::Dark);

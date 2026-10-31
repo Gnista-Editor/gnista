@@ -8,6 +8,7 @@
 
 mod ui;
 
+use std::io::Write;
 use std::{env, io};
 
 use std::time::{Duration, Instant};
@@ -73,6 +74,19 @@ fn run(terminal: &mut DefaultTerminal, editor: &mut Editor) -> io::Result<()> {
             }
             Event::Mouse(event) => mouse.handle(editor, event, size.width, size.height),
             _ => {}
+        }
+        // The bell: the terminal's own, or with visible-bell its flash, as
+        // Emacs on a terminal rings it.
+        if editor.take_bell() {
+            let visible = editor.variable("visible-bell").is_some_and(|v| v.is_true());
+            let mut out = io::stdout();
+            out.write_all(if visible { b"\x1b[?5h" } else { b"\x07" })?;
+            out.flush()?;
+            if visible {
+                std::thread::sleep(std::time::Duration::from_millis(50));
+                out.write_all(b"\x1b[?5l")?;
+                out.flush()?;
+            }
         }
     }
     Ok(())

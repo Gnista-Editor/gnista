@@ -42,12 +42,64 @@ pub struct Segment {
     /// Whether the cursor goes on its first character when point is where
     /// it shows, as a string's `cursor` property says in Emacs.
     pub cursor: bool,
+    /// The margin a `(margin left-margin)` display spec puts it in, for the
+    /// row to show beside its text rather than in it.
+    pub margin: Option<Margin>,
+    /// The fringe bitmap a `(left-fringe BITMAP FACE)` display spec puts
+    /// beside the row, in place of the text it is on.
+    pub fringe: Option<FringeSpec>,
+}
+
+/// A bitmap a display spec puts in a fringe: which fringe, the bitmap's
+/// name, as `define-fringe-bitmap` or Emacs's standard ones name them, and
+/// the face it is drawn in, `fringe` by default.
+#[derive(Clone, Debug, PartialEq)]
+pub struct FringeSpec {
+    pub side: Margin,
+    pub bitmap: String,
+    pub face: Option<String>,
+}
+
+/// A display spec that puts a bitmap in a fringe, `(left-fringe BITMAP FACE)`.
+fn fringe_spec(value: &Value) -> Option<FringeSpec> {
+    let Value::List(items) = value else { return None };
+    let side = match items.first()?.as_str()? {
+        "left-fringe" => Margin::Left,
+        "right-fringe" => Margin::Right,
+        _ => return None,
+    };
+    let bitmap = items.get(1)?.as_str()?.to_string();
+    let face = items.get(2).and_then(Value::as_str).map(str::to_string);
+    Some(FringeSpec { side, bitmap, face })
+}
+
+/// A window's margin, beside its text.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Margin {
+    Left,
+    Right,
+}
+
+/// A display spec that puts a string in a margin, `((margin left-margin)
+/// STRING)`: which margin, and the string.
+fn margin_spec(value: &Value) -> Option<(Margin, &Value)> {
+    let Value::List(items) = value else { return None };
+    let [Value::List(location), string] = items.as_slice() else { return None };
+    if location.first()?.as_str()? != "margin" {
+        return None;
+    }
+    let side = match location.get(1)?.as_str()? {
+        "left-margin" => Margin::Left,
+        "right-margin" => Margin::Right,
+        _ => return None,
+    };
+    Some((side, string))
 }
 
 impl Segment {
     /// A segment of buffer text.
     pub fn text(start: usize, text: String, style: Style) -> Segment {
-        Segment { start, text, style, ellipsis: false, string: false, covers: None, breaks: false, cursor: false }
+        Segment { start, text, style, ellipsis: false, string: false, covers: None, breaks: false, cursor: false, margin: None, fringe: None }
     }
 
     /// Whether it is drawn whole, never split by wrapping: an ellipsis or a string.
@@ -94,6 +146,15 @@ pub struct Row {
     /// Whether it shows only an overlay string's lines after its first,
     /// no text, so point is never on it and vertical motion passes it.
     pub in_string: bool,
+    /// The style of the newline that ends it, when its faces `:extend`
+    /// their background to the window's edge, as Emacs draws past a
+    /// line's end.
+    pub extend: Option<Style>,
+    /// What shows in the window's left and right margins beside it, from
+    /// `(margin left-margin)` display specs on its text and its strings.
+    pub margins: [Vec<Segment>; 2],
+    /// The bitmaps display specs put in its left and right fringes.
+    pub fringes: [Option<FringeSpec>; 2],
 }
 
 impl Row {
@@ -128,18 +189,18 @@ fn invisibility(value: &Value, spec: &Value) -> Option<bool> {
         Value::List(entries) => entries,
         _ => return None,
     };
+    // Names as strings or symbols, as scripts give either.
     let names: Vec<&str> = match value {
-        Value::Str(s) => vec![s.as_str()],
         Value::List(items) => items.iter().filter_map(|v| v.as_str()).collect(),
-        _ => Vec::new(),
+        other => other.as_str().into_iter().collect(),
     };
     for entry in entries {
         match entry {
             Value::Bool(true) if *value == Value::Bool(true) => return Some(false),
-            Value::Str(name) if names.contains(&name.as_str()) => return Some(false),
+            Value::Str(name) | Value::Symbol(name) if names.contains(&name.as_str()) => return Some(false),
             Value::List(pair) => {
-                if let Some(Value::Str(name)) = pair.first()
-                    && names.contains(&name.as_str())
+                if let Some(name) = pair.first().and_then(Value::as_str)
+                    && names.contains(&name)
                 {
                     return Some(pair.get(1).is_some_and(|v| v.is_true()));
                 }
@@ -151,6 +212,13 @@ fn invisibility(value: &Value, spec: &Value) -> Option<bool> {
 }
 
 impl Editor {
+    /// Whether an `invisible` property's value hides text under the current
+    /// buffer's `buffer-invisibility-spec`, and if so whether with an
+    /// ellipsis, as Emacs's `invisible-p` asks of a property value.
+    pub fn invisible_value(&self, value: &Value) -> Option<bool> {
+        invisibility(value, &self.invisibility_spec(self.buffer()))
+    }
+
     fn invisibility_spec(&self, b: &Buffer) -> Value {
         self.variable_in(b, "buffer-invisibility-spec").unwrap_or(Value::Bool(true))
     }
@@ -406,7 +474,9 @@ impl Editor {
         }
         let words = self.variable_in(b, "word-wrap").is_some_and(|v| v.is_true());
         let numbers = self.line_number_columns(window, b);
-        Some(Wrap { width: width.saturating_sub(1 + numbers).max(1), words })
+        // Without fringes the last column holds the continuation mark.
+        let mark = usize::from(!self.metrics.fringes());
+        Some(Wrap { width: width.saturating_sub(mark + numbers).max(1), words })
     }
 
     /// How a buffer numbers its lines, as `display-line-numbers` says, or
@@ -526,6 +596,7 @@ impl Editor {
             logical += 1;
             let (start, line) = (pos, b.line_of(pos));
             let mut segments: Vec<Segment> = self.prefix_segments(b, start, "line-prefix", dark, &mut styles);
+            let mut extend = None;
             let end = loop {
                 if pos >= len {
                     // Strings at the end of the buffer show too, as icomplete's list does.
@@ -549,7 +620,19 @@ impl Editor {
                 }
                 let line_end = b.line_end(b.line_of(pos)).min(len);
                 if pos == line_end {
-                    // A visible newline ends the row.
+                    // A visible newline ends the row, its faces' background
+                    // going on to the edge if they extend.
+                    if let Some(dark) = dark
+                        && pos < len
+                    {
+                        let faces = self.faces_at(b, pos);
+                        if !faces.is_empty() {
+                            let style = styles.entry(faces).or_insert_with_key(|f| self.style_for_in(b, f, dark)).clone();
+                            if style.extend && style.background.is_some() {
+                                extend = Some(style);
+                            }
+                        }
+                    }
                     break pos;
                 }
                 if let Some((end, segment)) = self.display_at(b, pos, line_end, &segments, dark, &mut styles) {
@@ -571,7 +654,18 @@ impl Editor {
                 segments.push(Segment::text(pos, b.slice(pos..chunk_end), style));
                 pos = chunk_end;
             };
-            for row in split_at_string_newlines(Row { line, start, end, segments, continued: false, broken: false, in_string: false }) {
+            // What goes in the margins shows beside the line's first row.
+            let (beside, segments): (Vec<Segment>, Vec<Segment>) = segments.into_iter().partition(|s| s.margin.is_some() || s.fringe.is_some());
+            let mut margins = [Vec::new(), Vec::new()];
+            let mut fringes = [None, None];
+            for seg in beside {
+                match (seg.margin, &seg.fringe) {
+                    (_, Some(f)) => fringes[usize::from(f.side == Margin::Right)] = Some(f.clone()),
+                    (Some(side), None) => margins[usize::from(side == Margin::Right)].push(seg),
+                    (None, None) => {}
+                }
+            }
+            for row in split_at_string_newlines(Row { line, start, end, segments, continued: false, broken: false, in_string: false, extend, margins, fringes }) {
                 if rows.len() >= count {
                     break;
                 }
@@ -661,7 +755,34 @@ impl Editor {
         let mut out: Vec<Segment> = Vec::new();
         let mut last: Option<Vec<String>> = None;
         let mut breaks = false;
+        // A run of characters whose display puts a string in a margin shows
+        // that string there, once, and nothing in their place.
+        let mut margin_run: Option<&Value> = None;
         for (i, c) in string.chars().enumerate() {
+            let display = match value {
+                Value::Text(t) => t.properties_at(i).and_then(|p| p.get("display")),
+                _ => None,
+            };
+            if let Some(fringe) = display.and_then(fringe_spec) {
+                if margin_run != display {
+                    out.push(Segment { string: true, covers, fringe: Some(fringe), ..Segment::text(pos, String::new(), Style::default()) });
+                    margin_run = display;
+                    last = None;
+                }
+                continue;
+            }
+            if let Some(spec) = display.filter(|d| margin_spec(d).is_some()) {
+                if margin_run != Some(spec) {
+                    let (side, shown) = margin_spec(spec).expect("checked");
+                    let mut segs = self.string_segments(b, pos, shown, covers, base, dark, styles);
+                    segs.iter_mut().for_each(|s| s.margin = Some(side));
+                    out.extend(segs);
+                    margin_run = Some(spec);
+                    last = None;
+                }
+                continue;
+            }
+            margin_run = None;
             if c == '\n' {
                 // A newline right after another leaves an empty row.
                 if breaks {
@@ -712,6 +833,28 @@ impl Editor {
         styles: &mut HashMap<Vec<String>, Style>,
     ) -> Option<(usize, Vec<Segment>)> {
         let value = b.char_property(pos, "display")?.clone();
+        if let Some(fringe) = fringe_spec(&value) {
+            // The text is replaced by nothing; the bitmap shows in the fringe.
+            let mut end = pos;
+            while end < line_end && b.char_property(end, "display") == Some(&value) {
+                end = b.next_char_property_change(end).min(line_end).max(end + 1);
+            }
+            return Some((end, vec![Segment { string: true, covers: Some(end), fringe: Some(fringe), ..Segment::text(pos, String::new(), Style::default()) }]));
+        }
+        if let Some((side, string)) = margin_spec(&value) {
+            // The text is replaced by nothing; the string shows in the margin.
+            let mut end = pos;
+            while end < line_end && b.char_property(end, "display") == Some(&value) {
+                end = b.next_char_property_change(end).min(line_end).max(end + 1);
+            }
+            let mut shown = self.string_segments(b, pos, string, Some(end), &[], dark, styles);
+            shown.iter_mut().for_each(|s| s.margin = Some(side));
+            if shown.is_empty() {
+                // Still covering the text, so it is hidden.
+                shown.push(Segment { string: true, covers: Some(end), margin: Some(side), ..Segment::text(pos, String::new(), Style::default()) });
+            }
+            return Some((end, shown));
+        }
         let text = match &value {
             Value::Str(_) | Value::Text(_) => String::new(),
             Value::List(items) if items.first().and_then(Value::as_str) == Some("space") => {
@@ -774,7 +917,18 @@ fn split_at_string_newlines(row: Row) -> Vec<Row> {
     for seg in row.segments {
         if seg.breaks && rows.len() < 1000 {
             let at = seg.start;
-            let next = Row { line: current.line, start: at, end: current.end, segments: Vec::new(), continued: false, broken: false, in_string: false };
+            let next = Row {
+                line: current.line,
+                start: at,
+                end: current.end,
+                segments: Vec::new(),
+                continued: false,
+                broken: false,
+                in_string: false,
+                extend: current.extend.take(),
+                margins: Default::default(),
+                fringes: Default::default(),
+            };
             let mut done = std::mem::replace(&mut current, next);
             done.end = at;
             done.broken = true;
@@ -891,7 +1045,9 @@ fn wrap_row(ed: &Editor, row: Row, wrap: Wrap, tab_width: usize, indent: usize) 
         let last = n + 2 == bounds.len();
         let start = if n == 0 { row.start } else { position_of(from) };
         let end = if last { row.end } else { position_of(to) };
-        out.push(Row { line: row.line, start, end, segments, continued: !last || row.continued, broken: last && row.broken, in_string: row.in_string });
+        let extend = if last { row.extend.clone() } else { None };
+        let (margins, fringes) = if n == 0 { (row.margins.clone(), row.fringes.clone()) } else { Default::default() };
+        out.push(Row { line: row.line, start, end, segments, continued: !last || row.continued, broken: last && row.broken, in_string: row.in_string, extend, margins, fringes });
     }
     out
 }

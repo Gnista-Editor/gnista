@@ -100,6 +100,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/delsel.ts", include_str!("../../../packages/delsel.ts")),
     ("packages/elec-pair.ts", include_str!("../../../packages/elec-pair.ts")),
     ("packages/help.ts", include_str!("../../../packages/help.ts")),
+    ("packages/faces.ts", include_str!("../../../packages/faces.ts")),
     ("packages/repeat.ts", include_str!("../../../packages/repeat.ts")),
     ("packages/kmacro.ts", include_str!("../../../packages/kmacro.ts")),
     ("packages/window.ts", include_str!("../../../packages/window.ts")),
@@ -2519,6 +2520,79 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
             })
         })?,
     )?;
+    native.set(
+        "bufferTextPixelSize",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, buffer: u64| {
+            with_editor(&ctx, |ed| {
+                let (w, h) = ed.buffer_text_pixel_size(buffer).ok_or_else(|| Error::new("No such buffer"))?;
+                Ok(vec![w as f64, h as f64])
+            })
+        })?,
+    )?;
+    native.set("lineIsContinued", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.line_is_continued())))?)?;
+    native.set("ding", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| ed.ding()))?)?;
+    native.set("redisplay", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| {
+        ed.redisplay();
+        Ok(())
+    }))?)?;
+    native.set(
+        "invisibleValue",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, value: Value<'js>| {
+            let value = value_from_js(&ctx, value)?;
+            with_editor(&ctx, |ed| Ok(ed.invisible_value(&value).map(|ellipsis| if ellipsis { 2 } else { 1 })))
+        })?,
+    )?;
+    native.set(
+        "windowMargins",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64| with_editor(&ctx, |ed| Ok(<[usize; 2]>::from(ed.window_margins(window)).to_vec())))?,
+    )?;
+    native.set(
+        "setWindowMargins",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64, left: usize, right: usize| {
+            with_editor(&ctx, |ed| Ok(ed.set_window_margins(window, left, right)))
+        })?,
+    )?;
+    native.set("windowFringes", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.text_metrics().fringes())))?)?;
+    native.set(
+        "showWindowCursor",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64, shown: bool| with_editor(&ctx, |ed| {
+            ed.show_window_cursor(window, shown);
+            Ok(())
+        }))?,
+    )?;
+    native.set(
+        "windowCursorShown",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64| with_editor(&ctx, |ed| Ok(ed.window_cursor_shown(window))))?,
+    )?;
+    native.set(
+        "defineFringeBitmap",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, bits: Vec<u32>, width: Option<u8>, align: String| {
+            let align = match align.as_str() {
+                "top" => ember_core::FringeAlign::Top,
+                "bottom" => ember_core::FringeAlign::Bottom,
+                _ => ember_core::FringeAlign::Center,
+            };
+            with_editor(&ctx, |ed| ed.define_fringe_bitmap(&name, bits.into_iter().map(|b| b as u16).collect(), width, align))
+        })?,
+    )?;
+    native.set(
+        "destroyFringeBitmap",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| with_editor(&ctx, |ed| {
+            ed.destroy_fringe_bitmap(&name);
+            Ok(())
+        }))?,
+    )?;
+    native.set(
+        "setFringeBitmapFace",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, face: Option<String>| with_editor(&ctx, |ed| ed.set_fringe_bitmap_face(&name, face)))?,
+    )?;
+    native.set("fringeBitmapP", Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| with_editor(&ctx, |ed| Ok(ed.fringe_bitmap_p(&name))))?)?;
+    native.set(
+        "fringeBitmapsAtPos",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pos: usize, window: u64| {
+            with_editor(&ctx, |ed| Ok(ed.fringe_bitmaps_at_pos(window, pos).map(|[l, r]| vec![l.unwrap_or_default(), r.unwrap_or_default()])))
+        })?,
+    )?;
     native.set("linePixelHeight", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.line_pixel_height() as f64)))?)?;
     native.set("defaultFontWidth", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.default_font_width() as f64)))?)?;
     native.set("defaultFontHeight", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.default_font_height() as f64)))?)?;
@@ -3003,14 +3077,16 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
     native.set(
         "setFaceAttribute",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, attrs: Object<'js>, background: String| {
-            let attrs = face_attrs_from_js(&attrs)?;
+            let values = face_attr_values_from_js(&attrs)?;
             let background = match background.as_str() {
                 "dark" => Background::Dark,
                 "light" => Background::Light,
                 _ => Background::Both,
             };
             with_editor(&ctx, |ed| {
-                ed.set_face_attributes(&name, attrs, background);
+                for (key, value) in &values {
+                    ed.set_face_attribute(&name, key, value, background);
+                }
                 Ok(())
             })
         })?,
@@ -3021,6 +3097,59 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
             let attrs = with_editor(&ctx, |ed| Ok(ed.face_attrs(&name, dark)))?;
             face_attrs_to_js(&ctx, &attrs)
         })?,
+    )?;
+    native.set(
+        "faceAttribute",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, key: String, inherit: bool| {
+            let value = with_editor(&ctx, |ed| Ok(ed.face_attribute(&name, &face_attribute_key(&key), inherit)))?;
+            plist_or_value_to_js(&ctx, &value)
+        })?,
+    )?;
+    native.set(
+        "faceList",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            with_editor(&ctx, |ed| {
+                let mut names: Vec<String> = ed.faces().map(|f| f.name.clone()).collect();
+                names.sort();
+                Ok(names)
+            })
+        })?,
+    )?;
+    native.set(
+        "makeFace",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| with_editor(&ctx, |ed| {
+            ed.make_face(&name);
+            Ok(())
+        }))?,
+    )?;
+    native.set(
+        "copyFace",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, old: String, new: String| with_editor(&ctx, |ed| {
+            ed.copy_face(&old, &new);
+            Ok(())
+        }))?,
+    )?;
+    native.set(
+        "colorValues",
+        Function::new(ctx.clone(), |spec: String| ember_core::color_values(&spec).map(|v| v.map(u32::from).to_vec()))?,
+    )?;
+    native.set(
+        "colorValuesFromColorSpec",
+        Function::new(ctx.clone(), |spec: String| ember_core::color_values_from_spec(&spec).map(|v| v.map(u32::from).to_vec()))?,
+    )?;
+    native.set(
+        "definedColors",
+        Function::new(ctx.clone(), || ember_core::color_names().map(str::to_string).collect::<Vec<_>>())?,
+    )?;
+    native.set(
+        "colorDistance",
+        Function::new(ctx.clone(), |a: String, b: String| -> Option<f64> {
+            Some(ember_core::color_distance(ember_core::color_values(&a)?, ember_core::color_values(&b)?) as f64)
+        })?,
+    )?;
+    native.set(
+        "colorGrayP",
+        Function::new(ctx.clone(), |spec: String| ember_core::color_values(&spec).map(ember_core::color_gray_p))?,
     )?;
     native.set(
         "faceInfo",
@@ -3047,21 +3176,81 @@ fn props_to_js<'js>(ctx: &Ctx<'js>, props: &ember_core::Props) -> rquickjs::Resu
     Ok(object)
 }
 
-/// Face attributes from an object such as `{ foreground: "accent", bold: true }`.
+/// The Emacs attribute a script's face attribute key stands for: `weight`
+/// is `:weight`, `inverseVideo` `:inverse-video`, and `bold`, `italic` and
+/// `strike` are shorthands for `:weight bold`, `:slant italic` and
+/// `:strike-through`.
+fn face_attribute_key(key: &str) -> String {
+    match key {
+        "strike" => ":strike-through".into(),
+        _ if key.starts_with(':') => key.into(),
+        _ => {
+            let mut out = String::from(":");
+            for c in key.chars() {
+                if c.is_ascii_uppercase() {
+                    out.push('-');
+                    out.push(c.to_ascii_lowercase());
+                } else {
+                    out.push(c);
+                }
+            }
+            out
+        }
+    }
+}
+
+/// A face attribute's key as scripts give it: `:inverse-video` is `inverseVideo`.
+fn camel_key(key: &str) -> String {
+    let mut name = String::new();
+    let mut upper = false;
+    for c in key.trim_start_matches(':').chars() {
+        if c == '-' {
+            upper = true;
+        } else {
+            name.push(if upper { c.to_ascii_uppercase() } else { c });
+            upper = false;
+        }
+    }
+    name
+}
+
+/// Face attributes from an object such as `{ foreground: "accent", weight:
+/// "bold", underline: { color: "red", style: "wave" } }`, each value as
+/// Emacs gives it, an object standing for a plist.
 fn face_attrs_from_js<'js>(object: &Object<'js>) -> rquickjs::Result<FaceAttrs> {
-    let text = |key: &str| object.get::<_, Option<String>>(key);
-    let flag = |key: &str| object.get::<_, Option<bool>>(key);
-    Ok(FaceAttrs {
-        foreground: text("foreground")?,
-        background: text("background")?,
-        bold: flag("bold")?,
-        italic: flag("italic")?,
-        underline: flag("underline")?,
-        strike: flag("strike")?,
-        height: object.get::<_, Option<f64>>("height")?.map(ember_core::FaceHeight::from_number),
-        family: text("family")?,
-        inherit: text("inherit")?,
-    })
+    let mut attrs = FaceAttrs::default();
+    for (key, value) in face_attr_values_from_js(object)? {
+        attrs.set(&key, &value);
+    }
+    Ok(attrs)
+}
+
+/// Each attribute in such an object, as its Emacs name and value.
+fn face_attr_values_from_js<'js>(object: &Object<'js>) -> rquickjs::Result<Vec<(String, EditorValue)>> {
+    let ctx = object.ctx().clone();
+    let mut values = Vec::new();
+    for key in object.keys::<String>() {
+        let key = key?;
+        let value: Value<'js> = object.get(&key)?;
+        if value.is_undefined() {
+            continue;
+        }
+        let value = match value.as_object() {
+            Some(inner) if !value.is_array() && !value.is_function() && value.as_string().is_none() => {
+                let mut plist = Vec::new();
+                for k in inner.keys::<String>() {
+                    let k = k?;
+                    let v: Value<'js> = inner.get(&k)?;
+                    plist.push(EditorValue::Symbol(face_attribute_key(&k)));
+                    plist.push(value_from_js(&ctx, v)?);
+                }
+                EditorValue::List(plist)
+            }
+            _ => value_from_js(&ctx, value)?,
+        };
+        values.push((face_attribute_key(&key), value));
+    }
+    Ok(values)
 }
 
 /// A character as scripts give one: a code point, or a string of one character.
@@ -3422,22 +3611,42 @@ fn posn_to_js<'js>(ctx: &Ctx<'js>, posn: Option<ember_core::layout::Posn>) -> rq
     Ok(object.into_value())
 }
 
+/// Face attributes as scripts see them: an object of the attributes that
+/// are set, keyed as scripts give them (`weight`, `inverseVideo`), each
+/// value as Emacs's `face-attribute` gives it, with `bold` and `italic`
+/// added where the weight and slant say so.
 fn face_attrs_to_js<'js>(ctx: &Ctx<'js>, attrs: &FaceAttrs) -> rquickjs::Result<Object<'js>> {
     let object = Object::new(ctx.clone())?;
-    if let Some(height) = attrs.height {
-        object.set("height", height.as_number())?;
+    let plist = attrs.to_plist();
+    for pair in plist.chunks(2) {
+        let [key, value] = pair else { break };
+        let Some(key) = key.as_str() else { continue };
+        object.set(camel_key(key).as_str(), plist_or_value_to_js(ctx, value)?)?;
     }
-    for (key, value) in [("foreground", &attrs.foreground), ("background", &attrs.background), ("family", &attrs.family), ("inherit", &attrs.inherit)] {
-        if let Some(v) = value {
-            object.set(key, v.as_str())?;
-        }
+    if attrs.is_bold() {
+        object.set("bold", true)?;
     }
-    for (key, value) in [("bold", attrs.bold), ("italic", attrs.italic), ("underline", attrs.underline), ("strike", attrs.strike)] {
-        if let Some(v) = value {
-            object.set(key, v)?;
-        }
+    if attrs.is_italic() {
+        object.set("italic", true)?;
     }
     Ok(object)
+}
+
+/// A face attribute's value as scripts see it: a plist such as an
+/// underline's `(:color "red" :style wave)` as an object, `{ color: "red",
+/// style: "wave" }`, anything else as it is.
+fn plist_or_value_to_js<'js>(ctx: &Ctx<'js>, value: &EditorValue) -> rquickjs::Result<Value<'js>> {
+    let EditorValue::List(items) = value else { return value_to_js(ctx, value) };
+    if !items.first().and_then(EditorValue::as_str).is_some_and(|k| k.starts_with(':')) {
+        return value_to_js(ctx, value);
+    }
+    let object = Object::new(ctx.clone())?;
+    for pair in items.chunks(2) {
+        let [key, v] = pair else { break };
+        let Some(key) = key.as_str() else { continue };
+        object.set(camel_key(key).as_str(), value_to_js(ctx, v)?)?;
+    }
+    Ok(object.into_value())
 }
 
 /// A variable's value as scripts see it: null, a boolean, a number, a string or an array.

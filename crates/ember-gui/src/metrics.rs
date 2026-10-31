@@ -42,6 +42,10 @@ impl EguiMetrics {
 }
 
 impl TextMetrics for EguiMetrics {
+    fn fringes(&self) -> bool {
+        true
+    }
+
     fn advance(&self, font: &FontSpec, c: char) -> f32 {
         let key = (font.scale.to_bits(), font.proportional(), font.bold, c);
         if let Some(&w) = self.advances.lock().expect("not poisoned").get(&key) {

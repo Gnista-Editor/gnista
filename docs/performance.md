@@ -47,6 +47,8 @@ On 2026-10-30, after the core began laying rows out with a front end's metrics (
 
 These are after ADR 0029's second step, where `C-v` measures the rows it scrolls past; after the first, `C-v` took 2.67, 2.71 and 2.92 ms.
 
+On 2026-10-31, after faces gained Emacs's attributes and the GUI its fringes ([ADR 0044](adr/0044-faces-as-emacs-s.md), [ADR 0045](adr/0045-margins-fringes-and-redisplay-primitives.md)), a style resolved from a list of faces is kept until a face changes, as merging faces now copies twice as many fields. With it the numbers are where they were (Org: `C-v` 2.27 ms against 2.24, typing 1.98 against 1.94, RET 61.9 against 62.3; text: `C-v` 0.14 ms). Incremental search had slowed when isearch.ts began searching a string as a quoted regexp; searching it literally again, `C-s` for a word at the end of the 100 MB file takes 39 ms, where it took 984.
+
 ## What changed
 
 - **Org's headings and element tree are kept between keys.** The element parser asked for the buffer's headings hundreds of times per key, and each time every line was read again. `headings()` and the parse are now kept until the text (the buffer's modified tick) or the TODO keywords change.

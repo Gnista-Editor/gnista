@@ -198,6 +198,8 @@ pub struct Editor {
     /// Every symbol's value, function, properties and advice.
     pub(crate) symbols: BTreeMap<String, crate::symbols::Symbol>,
     pub(crate) faces: BTreeMap<String, Face>,
+    /// Styles worked out for lists of faces on each background, until a face changes.
+    pub(crate) style_cache: std::cell::RefCell<std::collections::HashMap<(Vec<String>, bool), crate::faces::Style>>,
     pub(crate) grammars: BTreeMap<&'static str, crate::syntax::Grammar>,
     /// Tree-sitter queries compiled so far, by language and source.
     pub(crate) treesit_queries: std::collections::HashMap<(String, String), std::rc::Rc<tree_sitter::Query>>,
@@ -292,6 +294,10 @@ pub struct Editor {
     pub(crate) mode_lines: std::collections::HashMap<crate::window::WindowId, Vec<crate::modeline::ModeLineSegment>>,
     /// Each window's header line as the last redisplay formatted it, for windows whose format has one.
     pub(crate) header_lines: std::collections::HashMap<crate::window::WindowId, Vec<crate::modeline::ModeLineSegment>>,
+    /// The fringe bitmaps `define-fringe-bitmap` defined.
+    pub(crate) fringe_bitmaps: crate::fringe::FringeBitmaps,
+    /// Whether `ding` rang the bell since a front end last looked.
+    bell: bool,
     /// Window configurations kept for code to put back, by id.
     pub(crate) window_configurations: std::collections::HashMap<u64, crate::window::WindowConfiguration>,
     pub(crate) next_window_configuration: u64,
@@ -300,6 +306,26 @@ pub struct Editor {
 impl Default for Editor {
     fn default() -> Editor {
         Editor::new()
+    }
+}
+
+impl Editor {
+    /// Rings the bell, as Emacs's `ding`: calls `ring-bell-function` if it
+    /// is set, else leaves the bell for the front end to sound or, with
+    /// `visible-bell`, flash.
+    pub fn ding(&mut self) -> crate::error::Result<()> {
+        match self.variable("ring-bell-function") {
+            Some(f) if f.is_true() => self.funcall(&f, &[]).map(drop),
+            _ => {
+                self.bell = true;
+                Ok(())
+            }
+        }
+    }
+
+    /// Whether the bell rang since the last call, for a front end to sound it.
+    pub fn take_bell(&mut self) -> bool {
+        std::mem::take(&mut self.bell)
     }
 }
 
@@ -352,6 +378,7 @@ impl Editor {
             minor_modes: Vec::new(),
             symbols: BTreeMap::new(),
             faces: BTreeMap::new(),
+            style_cache: Default::default(),
             grammars: crate::syntax::builtin_grammars().into_iter().collect(),
             treesit_queries: Default::default(),
             next_hook_id: 0,
@@ -405,6 +432,8 @@ impl Editor {
             permissions: Default::default(),
             mode_lines: Default::default(),
             header_lines: Default::default(),
+            fringe_bitmaps: Default::default(),
+            bell: false,
             window_configurations: Default::default(),
             next_window_configuration: 0,
         };
@@ -834,6 +863,8 @@ impl Editor {
     /// Shows an error as a failed command's, in the echo area.
     pub(crate) fn fail(&mut self, e: Error) {
         self.show_error(e.to_string());
+        // As Emacs's command loop rings the bell on an error (bitch_at_user).
+        let _ = self.ding();
         self.last_error = Some(e);
         self.command_failed = true;
     }

@@ -12,6 +12,7 @@ use egui::{
     ViewportCommand, pos2, vec2,
 };
 
+use crate::fringe;
 use crate::keys::{Input, translate};
 use crate::metrics::{EguiMetrics, font_id};
 use crate::theme::{self, LINE_SPACING, TEXT_SIZE, Tokens, color32};
@@ -46,6 +47,8 @@ pub struct EmberApp {
     /// window when another is selected.
     titles: std::collections::HashMap<FrameId, String>,
     focused_frame: FrameId,
+    /// Until when the frame flashes for the bell, with `visible-bell`, in egui's seconds.
+    flash_until: Option<f64>,
 }
 
 /// How long a second click may follow the first to count as a double click, in seconds.
@@ -88,6 +91,7 @@ impl EmberApp {
             main_frame: 1,
             titles: std::collections::HashMap::new(),
             focused_frame: 1,
+            flash_until: None,
         }
     }
 
@@ -102,6 +106,25 @@ impl EmberApp {
         self.agent = requests;
         self.scripting = scripting;
         self
+    }
+
+    /// Flashes the frame briefly when the bell rang and `visible-bell` is
+    /// set, as Emacs on a graphical frame does; egui has no sound for the
+    /// audible bell.
+    fn flash(&mut self, ui: &Ui) {
+        let now = ui.input(|i| i.time);
+        if self.editor.take_bell() && self.editor.variable("visible-bell").is_some_and(|v| v.is_true()) {
+            self.flash_until = Some(now + 0.1);
+        }
+        match self.flash_until {
+            Some(until) if now < until => {
+                let color = if ui.visuals().dark_mode { Color32::from_white_alpha(40) } else { Color32::from_black_alpha(40) };
+                let layer = egui::LayerId::new(egui::Order::Foreground, egui::Id::unique("visible-bell"));
+                ui.painter().clone().with_layer_id(layer).rect_filled(ui.max_rect(), 0.0, color);
+                ui.ctx().request_repaint_after(std::time::Duration::from_secs_f64(until - now));
+            }
+            _ => self.flash_until = None,
+        }
     }
 
     /// Answers the agent's waiting messages, each as one call of its own.
@@ -124,6 +147,7 @@ impl EmberApp {
         if let Some(due) = self.editor.next_timer_in() {
             ctx.request_repaint_after(due);
         }
+        self.flash(ui);
         // Where native windows cannot open, embedded in this one instead, as
         // in tests, this window shows the selected frame, as a terminal does.
         if ctx.embed_viewports() {
@@ -421,6 +445,10 @@ struct WindowLayout {
     mode_rect: Rect,
     /// The bar above the text, when the window's buffer has a `header-line-format`.
     header_rect: Option<Rect>,
+    /// The margins left and right of the text, as `window-margins` gives them.
+    margins: [Rect; 2],
+    /// The fringes outside them, where bitmaps such as continuation arrows go.
+    fringes: [Rect; 2],
     /// Whether another window lies to the right, past a hairline.
     divider: bool,
 }
@@ -471,11 +499,22 @@ impl Layout {
                     .window_wants_header_line(r.id, total_lines)
                     .then(|| Rect::from_min_size(rect.min, vec2(rect.width(), bar_height)));
                 let text_top = header_rect.map_or(rect.top(), |h| h.bottom());
-                let text_rect = Rect::from_min_max(
-                    pos2(rect.left() + PAD_X, text_top + PAD_Y),
-                    pos2(rect.right() - PAD_X, mode_rect.top()),
-                );
-                WindowLayout { id: r.id, rect, text_rect, mode_rect, header_rect, divider: r.divider }
+                // [fringe][margin][text][margin][fringe], as Emacs lays a window out.
+                let (left, right) = ed.window_margins(r.id);
+                let (top, bottom) = (text_top + PAD_Y, mode_rect.top());
+                let inner = (rect.left() + PAD_X, rect.right() - PAD_X);
+                let left_margin = (inner.0 + left as f32 * m.char_width).min(inner.1 - m.char_width);
+                let right_margin = (inner.1 - right as f32 * m.char_width).max(left_margin + m.char_width);
+                let text_rect = Rect::from_min_max(pos2(left_margin, top), pos2(right_margin, bottom));
+                let margins = [
+                    Rect::from_min_max(pos2(inner.0, top), pos2(left_margin, bottom)),
+                    Rect::from_min_max(pos2(right_margin, top), pos2(inner.1, bottom)),
+                ];
+                let fringes = [
+                    Rect::from_min_max(pos2(rect.left(), top), pos2(inner.0, bottom)),
+                    Rect::from_min_max(pos2(inner.1, top), pos2(rect.right(), bottom)),
+                ];
+                WindowLayout { id: r.id, rect, text_rect, mode_rect, header_rect, margins, fringes, divider: r.divider }
             })
             .collect();
         for w in &windows {
@@ -501,9 +540,10 @@ fn draw(ui: &Ui, ed: &Editor, frame: FrameId, layout: &Layout, t: Tokens, focuse
         };
         // A line scrolled partly out of view slides under the top edge of the window.
         let top = w.header_rect.map_or(w.rect.top(), |h| h.bottom());
-        let clip = Rect::from_min_max(pos2(w.rect.left(), top), pos2(w.rect.right(), w.mode_rect.top()));
+        // Text stops at the text area's edge, leaving the margins and fringes beside it.
+        let clip = Rect::from_min_max(pos2(w.text_rect.left(), top), pos2(w.text_rect.right(), w.mode_rect.top()));
         let offset = if window.id == scroll.0 { scroll.1 } else { 0.0 };
-        let view = View { area: w.text_rect, clip, scroll_offset: offset };
+        let view = View { area: w.text_rect, clip, scroll_offset: offset, margins: w.margins, fringes: w.fringes };
         draw_buffer(&painter, ed, &window, &view, m, t, cursor);
         draw_mode_line(&painter, ed, &window, w.mode_rect, m, t);
         if let Some(header) = w.header_rect {
@@ -543,11 +583,14 @@ fn hit(ed: &Editor, layout: &Layout, pos: Pos2, scroll: (WindowId, f32)) -> Opti
     Some((w.id, Some(position)))
 }
 
-/// Where buffer text goes and how far it is scrolled.
+/// Where buffer text goes and how far it is scrolled, and the margins and
+/// fringes beside it.
 struct View {
     area: Rect,
     clip: Rect,
     scroll_offset: f32,
+    margins: [Rect; 2],
+    fringes: [Rect; 2],
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -636,6 +679,16 @@ fn draw_buffer(
     let clipped = painter.with_clip_rect(Rect::from_min_max(pos2(view.clip.left().max(area.left()), view.clip.top()), view.clip.max));
     let row_top = |row: usize| area.top() + tops[row] - view.scroll_offset;
     for (i, (galley, _)) in laid_out.iter().enumerate() {
+        // A face that extends fills the rest of the row with its background.
+        if let Some(bg) = rows[i].extend.as_ref().and_then(|s| s.background).filter(|_| !rows[i].continued) {
+            // As high as the text's own background, which egui draws over
+            // each glyph's logical rectangle; the row's for an empty line.
+            let y = row_top(i) + (heights[i] - galley.size().y) / 2.0;
+            let glyph = galley.rows.first().and_then(|r| r.row.glyphs.last().map(|g| g.logical_rect().translate(r.pos.to_vec2())));
+            let (top, bottom) = glyph.map_or((row_top(i), row_top(i) + heights[i]), |g| (y + g.top(), y + g.bottom()));
+            let x = area.left() - hscroll + galley.size().x;
+            clipped.rect_filled(Rect::from_min_max(pos2(x, top), pos2(area.right(), bottom)), 0.0, color32(bg));
+        }
         if let Some(r) = &region
             && let Some((from, to)) = region_span(&rows[i], &laid_out[i].1, galley, r)
         {
@@ -646,21 +699,50 @@ fn draw_buffer(
         }
         let y = row_top(i) + (heights[i] - galley.size().y) / 2.0;
         clipped.galley(pos2(area.left() - hscroll, y), galley.clone(), t.ink);
+        draw_decorations(&clipped, &rows[i], &laid_out[i].1, galley, area.left() - hscroll, row_top(i), heights[i], &default_style, t);
         if let Some(bold) = &emboldened[i] {
             clipped.galley(pos2(area.left() - hscroll + FAUX_BOLD_OFFSET, y), bold.clone(), t.ink);
         }
-        // A continued line ends with a faint mark in the last column, where
-        // Emacs puts an arrow in the fringe.
-        if rows[i].continued && !rows[i].broken {
-            let mark = painter.layout_no_wrap("\\".to_string(), m.font.clone(), t.faint);
-            let cols = (area.width() / m.char_width).floor().max(1.0);
-            clipped.galley(pos2(area.left() + (cols - 1.0) * m.char_width, y), mark, t.faint);
+        let top = row_top(i);
+        // What the margins show beside the row.
+        for (side, margin) in view.margins.iter().enumerate() {
+            if rows[i].margins[side].is_empty() || margin.width() <= 0.0 {
+                continue;
+            }
+            let mut job = LayoutJob::default();
+            for seg in &rows[i].margins[side] {
+                job.append(&seg.text, 0.0, face_format(&seg.style, &default_style, m, t));
+            }
+            let galley = painter.layout_job(job);
+            painter.with_clip_rect(*margin).galley(pos2(margin.left(), top + (heights[i] - galley.size().y) / 2.0), galley, t.ink);
+        }
+        // The fringes: what display specs put there, the curly arrows of a
+        // continued line, and the arrows of a truncated one.
+        let follows = if i == 0 { rows[i].start > b.line_start(rows[i].line) } else { rows[i - 1].continued && !rows[i - 1].broken };
+        let mut fringes = ed.row_fringes(&rows[i], follows).map(|f| f.map(|f| (f.bitmap, f.face)));
+        if !rows[i].continued && galley.size().x - hscroll > area.width() + 0.5 && fringes[1].is_none() {
+            fringes[1] = Some(("right-arrow".into(), None));
+        }
+        if hscroll > 0.0 && fringes[0].is_none() {
+            fringes[0] = Some(("left-arrow".into(), None));
+        }
+        for (side, fringe) in fringes.iter().enumerate() {
+            if let Some((bitmap, face)) = fringe {
+                let face = face.clone().unwrap_or_else(|| ed.fringe_bitmap_face(bitmap));
+                let color = ed.style_for(&[face], t.dark).foreground.map(color32).unwrap_or(t.faint);
+                let rect = Rect::from_min_max(pos2(view.fringes[side].left(), top), pos2(view.fringes[side].right(), top + heights[i]));
+                fringe::draw_bitmap(painter, ed, bitmap, rect, color);
+            }
         }
     }
-    if let Some((i, galley, index, under)) = cursor {
+    // A window whose cursor internal-show-cursor hid shows none.
+    if let Some((i, galley, index, under)) = cursor.filter(|_| ed.window_cursor_shown(window.id)) {
         let pos = pos2(area.left() - hscroll + cursor_x, row_top(i));
         let font = rows[i].segments.iter().find(|s| s.start <= point).map(|s| FontSpec::of(&s.style)).unwrap_or_else(FontSpec::default_font);
-        draw_cursor(&clipped, &galley, index, under, pos, heights[i], &font, m, t, style);
+        // At the end of a line that fills the row, the cursor goes in the
+        // right fringe, as Emacs's overflow-newline-into-fringe puts it.
+        let cursor_clip = Rect::from_min_max(clipped.clip_rect().min, pos2(view.fringes[1].right(), clipped.clip_rect().bottom()));
+        draw_cursor(&painter.with_clip_rect(cursor_clip), &galley, index, under, pos, heights[i], &font, m, t, style);
     }
 }
 
@@ -778,13 +860,63 @@ fn face_format(style: &Style, default_style: &Style, m: &Metrics, t: Tokens) -> 
         format.background = color32(bg);
     }
     format.italics = style.italic;
-    if style.underline {
-        format.underline = Stroke::new(1.0, color);
+    // A wavy underline is drawn after the row, by `draw_decorations`.
+    if style.underline && !style.underline_wave {
+        format.underline = Stroke::new(1.0, style.underline_color.map(color32).unwrap_or(color));
     }
     if style.strike {
-        format.strikethrough = Stroke::new(1.0, color);
+        format.strikethrough = Stroke::new(1.0, style.strike_color.map(color32).unwrap_or(color));
     }
     format
+}
+
+/// Where each run of a row's glyphs from one segment lies in its galley:
+/// the segment, and its left and right x.
+fn segment_spans(glyphs: &[Glyph], galley: &Galley) -> Vec<(usize, f32, f32)> {
+    let x = |index: usize| galley.pos_from_cursor(CCursor::new(index)).min.x;
+    let mut spans: Vec<(usize, f32, f32)> = Vec::new();
+    let mut index = 0;
+    for glyph in glyphs {
+        let n = glyph.text.chars().count();
+        let (from, to) = (x(index), x(index + n));
+        match spans.last_mut() {
+            Some(last) if last.0 == glyph.segment => last.2 = to,
+            _ => spans.push((glyph.segment, from, to)),
+        }
+        index += n;
+    }
+    spans
+}
+
+/// Draws what egui's text formats cannot, as Emacs draws its faces: an
+/// overline, a wavy underline and a box, each in its colour or the text's,
+/// over a row laid out at `left`, `top`, `height` high.
+#[allow(clippy::too_many_arguments)]
+fn draw_decorations(painter: &Painter, row: &Row, glyphs: &[Glyph], galley: &Galley, left: f32, top: f32, height: f32, default_style: &Style, t: Tokens) {
+    for (segment, x0, x1) in segment_spans(glyphs, galley) {
+        let style = &row.segments[segment].style;
+        if !(style.overline || style.underline_wave || style.box_line.is_some()) || x1 <= x0 {
+            continue;
+        }
+        let ink = style.foreground.or(default_style.foreground).map(color32).unwrap_or(t.ink);
+        let (x0, x1) = (left + x0, left + x1);
+        if style.overline {
+            painter.hline(x0..=x1, top + 0.5, Stroke::new(1.0, style.overline_color.map(color32).unwrap_or(ink)));
+        }
+        if style.underline_wave {
+            let color = style.underline_color.map(color32).unwrap_or(ink);
+            let y = top + height - 2.5;
+            let step = 2.0;
+            let points: Vec<egui::Pos2> =
+                (0..=((x1 - x0) / step).ceil() as usize).map(|k| pos2((x0 + k as f32 * step).min(x1), if k % 2 == 0 { y } else { y + 1.5 })).collect();
+            painter.add(egui::Shape::line(points, Stroke::new(1.0, color)));
+        }
+        if let Some((width, color)) = style.box_line {
+            let color = color.map(color32).unwrap_or(ink);
+            let rect = Rect::from_min_max(pos2(x0, top), pos2(x1, top + height));
+            painter.rect_stroke(rect, 0.0, Stroke::new(width.unsigned_abs().max(1) as f32, color), StrokeKind::Inside);
+        }
+    }
 }
 
 /// Draws a box cursor at `pos`, as wide as the character under it.

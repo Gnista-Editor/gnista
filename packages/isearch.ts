@@ -217,9 +217,18 @@ function callMessage(cqHack = false, ellipsis = false): void {
 /** The function searching the buffer for the string as a regexp or literally, in the search's direction, as isearch-search-fun-default gives. */
 export function isearchSearchFunDefault(): (string: string, bound?: ember.Value, noerror?: ember.Value) => number | undefined {
   return (string, bound, noerror) => {
-    const regexp = flag("isearch-regexp") ? string : regexpQuote(string);
+    const forward = flag("isearch-forward");
     const options = { bound: typeof bound === "number" ? bound : undefined, noerror: truthy(noerror) };
-    return flag("isearch-forward") ? ember.reSearchForward(regexp, options) : ember.reSearchBackward(regexp, options);
+    if (flag("isearch-regexp")) return forward ? ember.reSearchForward(string, options) : ember.reSearchBackward(string, options);
+    // A string is searched for literally, as search-forward does, which is
+    // far faster in a large buffer than the regexp engine on it quoted.
+    const m = ember.search(string, { backward: !forward, bound: options.bound });
+    if (m === undefined) {
+      if (options.noerror) return undefined;
+      ember.signal("search-failed", `Search failed: "${string}"`, [string]);
+    }
+    ember.gotoChar(forward ? m!.end : m!.start);
+    return ember.point();
   };
 }
 ember.defun("isearch-search-fun-default", isearchSearchFunDefault);

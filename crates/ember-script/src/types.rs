@@ -892,14 +892,42 @@ const API: &str = r##"
   function regionActive(): boolean;
 
   type FaceName = keyof Faces;
-  /** A face's own attributes. Colours are palette names, such as "accent" or "muted", or "#rrggbb" and "#rrggbbaa". */
+  /** A line under, over or through text: true, a colour, or a colour and a style. */
+  type FaceDecoration = boolean | string | { color?: string; style?: "line" | "wave" | "double-line" | "dots" | "dashes" | (string & {}) };
+  /**
+   * A face's own attributes, as Emacs's: each key is Emacs's without its
+   * colon, in camelCase (`inverseVideo` is `:inverse-video`), and
+   * "unspecified" leaves an attribute to the faces below. Colours are
+   * palette names, such as "accent" or "muted", the colour names Emacs
+   * knows, such as "dark slate gray", or specs: "#rgb" to "#rrrrggggbbbb",
+   * "rgb:R/G/B", "rgbi:R/G/B", and "#rrggbbaa" with alpha.
+   */
   interface FaceAttributes {
     foreground?: string;
     background?: string;
+    /** A colour for text whose background makes its foreground hard to see. */
+    distantForeground?: string;
+    /** From "ultra-light" to "ultra-heavy"; "semi-bold" and heavier draw bold. */
+    weight?: string;
+    /** "normal", "italic", "oblique", "reverse-italic" or "reverse-oblique". */
+    slant?: string;
+    /** "condensed", "expanded" and the like. */
+    width?: string;
+    /** Shorthand for weight "bold", or "normal" when false. */
     bold?: boolean;
+    /** Shorthand for slant "italic", or "normal" when false. */
     italic?: boolean;
-    underline?: boolean;
-    strike?: boolean;
+    underline?: FaceDecoration;
+    overline?: FaceDecoration;
+    strikeThrough?: FaceDecoration;
+    /** Shorthand for strikeThrough. */
+    strike?: FaceDecoration;
+    /** A line round the text: true, its width, a colour, or all of these with a style such as "released-button". */
+    box?: boolean | number | string | { lineWidth?: number; color?: string; style?: string };
+    /** Whether foreground and background swap. */
+    inverseVideo?: boolean;
+    /** Whether the background goes on to the window's edge after a line's end. */
+    extend?: boolean;
     /**
      * Its size, as Emacs's :height: a whole number is absolute, in tenths
      * of a point (120 is 12 points), and one with a fraction a factor of
@@ -908,8 +936,11 @@ const API: &str = r##"
     height?: number;
     /** Its font family, as Emacs's :family: "Monospace", "Sans Serif" for a proportional font, or a font's name. */
     family?: string;
-    /** A face to take the attributes this one does not set from. */
-    inherit?: FaceName | (string & {});
+    foundry?: string;
+    font?: string;
+    stipple?: string;
+    /** The faces to take the attributes this one does not set from, earlier ones first. */
+    inherit?: FaceName | (string & {}) | (FaceName | (string & {}))[];
   }
   interface FaceDefinition {
     /** Lowercase words joined by dashes, ending in -face for faces of a mode: "outline-1". */
@@ -924,10 +955,14 @@ const API: &str = r##"
   }
   /** Define a face (Emacs's defface). A face that exists keeps its attributes, which may be customised. */
   function defineFace(definition: FaceDefinition): void;
-  /** Change some of a face's attributes, for both backgrounds or one (Emacs's set-face-attribute). */
+  /**
+   * Change some of a face's attributes, for both backgrounds or one
+   * (Emacs's set-face-attribute): as an object, or as Emacs's plist,
+   * [":weight", "bold", ":foreground", "red"]. A face not yet defined is made.
+   */
   function setFaceAttribute(
     name: FaceName | (string & {}),
-    attributes: FaceAttributes,
+    attributes: FaceAttributes | Value[],
     options?: { background?: "both" | "dark" | "light" },
   ): void;
   /** A face's attributes with what it inherits filled in, for a dark background unless told otherwise. */
@@ -936,6 +971,35 @@ const API: &str = r##"
   function faceInfo(name: FaceName | (string & {})):
     | { doc: string; source?: string; attributes: FaceAttributes; dark: FaceAttributes; light: FaceAttributes }
     | undefined;
+  /**
+   * One of a face's attributes, as Emacs's face-attribute: by its Emacs
+   * name (":weight") or a script's ("weight"), on the frame's background;
+   * with `inherit`, what the face inherits counts too. "unspecified" if
+   * nothing sets it.
+   */
+  function faceAttribute(face: FaceName | (string & {}), attribute: string, inherit?: boolean): Value;
+  /** The names of all faces, sorted, as face-list. */
+  function faceList(): string[];
+  /** Whether a face of this name exists, as facep. */
+  function facep(face: string): boolean;
+  /** Make a face with no attributes if there is none of this name, as make-face. Returns its name. */
+  function makeFace(name: string): string;
+  /** Make a face with another's attributes, as copy-face. Returns its name. */
+  function copyFace(oldFace: FaceName | (string & {}), newFace: string): string;
+  /** A colour's red, green and blue from 0 to 65535, as color-values, or undefined if it is no colour. */
+  function colorValues(color: string): [number, number, number] | undefined;
+  /** The values of a colour spec ("#rgb", "rgb:R/G/B", "rgbi:R/G/B"), not a name, as color-values-from-color-spec. */
+  function colorValuesFromColorSpec(spec: string): [number, number, number] | undefined;
+  /** Whether a colour is one Ember can show, as color-defined-p. */
+  function colorDefinedP(color: string): boolean;
+  /** Whether a colour can be shown, as color-supported-p: every colour can. */
+  function colorSupportedP(color: string): boolean;
+  /** The names of the colours Emacs knows, as defined-colors. */
+  function definedColors(): string[];
+  /** How far apart two colours look, as color-distance. */
+  function colorDistance(color1: string, color2: string): number;
+  /** Whether a colour is a shade of grey, as color-gray-p. */
+  function colorGrayP(color: string): boolean;
 
   /**
    * Split a window, the selected one by default, in two (Emacs's
@@ -1506,6 +1570,66 @@ const API: &str = r##"
   function windowTextPixelSize(window?: number, from?: number, to?: number): [number, number];
   /** How tall the row point is on shows in the selected window, as line-pixel-height. */
   function linePixelHeight(): number;
+  /** The width and height of a buffer's text, its lines unwrapped, as buffer-text-pixel-size. */
+  function bufferTextPixelSize(buffer?: string): [number, number];
+  /** How wide a string shows, in its faces, as string-pixel-width. */
+  function stringPixelWidth(string: string | PropertizedString): number;
+  /** Whether the row point shows in goes on in the next, as display--line-is-continued-p. */
+  function displayLineIsContinuedP(): boolean;
+  /**
+   * Whether text is invisible, as invisible-p: at a position, or with an
+   * invisible property's value, under buffer-invisibility-spec; "ellipsis"
+   * if an ellipsis stands for it.
+   */
+  function invisibleP(posOrProp: number | Value): boolean | "ellipsis";
+  /** The value of a display spec at a position, as get-display-property: 2.0 for height in `[[height, 2.0]]`. */
+  function getDisplayProperty(position: number, prop: string, object?: unknown, properties?: { display?: Value }): Value | undefined;
+  /** The direction of the paragraph at point, as current-bidi-paragraph-direction: always left to right. */
+  function currentBidiParagraphDirection(): "left-to-right" | "right-to-left";
+  /** Move to the next character on the line in display order, or the one before for a negative direction, as move-point-visually; undefined at the line's edge. */
+  function movePointVisually(direction: number): number | undefined;
+  /** Ring the bell, as ding: ring-bell-function if set, else the front end sounds it or, with visible-bell, flashes. */
+  function ding(): void;
+  /** Ring the bell, as beep. */
+  function beep(): void;
+  /** Redisplay now, as redisplay. */
+  function redisplay(): void;
+  /** Draw the frame again, as redraw-display. */
+  function redrawDisplay(): void;
+  /** Draw a frame again, as redraw-frame. */
+  function redrawFrame(): void;
+  /** Whether the buffers, their names and modified flags, or the frames changed since it was last asked, as frame-or-buffer-changed-p. */
+  function frameOrBufferChangedP(): boolean;
+  /** The tab bar's height in lines, as tab-bar-height: Ember has none. */
+  function tabBarHeight(): number;
+  /** The tool bar's height in lines, as tool-bar-height: Ember has none. */
+  function toolBarHeight(): number;
+  /** Whether redisplay is cutting corners for long lines, as long-line-optimizations-p: never. */
+  function longLineOptimizationsP(): boolean;
+  /** A window's left and right margins in columns, undefined for none, as window-margins. */
+  function windowMargins(window?: number): [number | undefined, number | undefined];
+  /** Set a window's margins while it shows its buffer, as set-window-margins. Returns whether they changed. */
+  function setWindowMargins(window: number | undefined, left?: number, right?: number): boolean;
+  /** A window's fringe widths and whether they are outside the margins, as window-fringes: 8 each in the GUI, none on a terminal. */
+  function windowFringes(window?: number): [number, number, boolean, boolean];
+  /** Show or hide a window's cursor, as internal-show-cursor. */
+  function internalShowCursor(window: number | undefined, show: boolean): void;
+  /** Whether a window's cursor shows, as internal-show-cursor-p. */
+  function internalShowCursorP(window?: number): boolean;
+  /**
+   * Define a fringe bitmap from rows of bits, the leftmost the most
+   * significant of `width` (8 by default), as define-fringe-bitmap; `align`
+   * lines it up in a taller row. Returns its name.
+   */
+  function defineFringeBitmap(bitmap: string, bits: number[], height?: number, width?: number, align?: "top" | "center" | "bottom"): string;
+  /** Forget a defined fringe bitmap, as destroy-fringe-bitmap. */
+  function destroyFringeBitmap(bitmap: string): void;
+  /** Draw a fringe bitmap in a face, or the fringe face with none, as set-fringe-bitmap-face. */
+  function setFringeBitmapFace(bitmap: string, face?: FaceName | (string & {})): void;
+  /** Whether a fringe bitmap of this name is standard or defined, as fringe-bitmap-p. */
+  function fringeBitmapP(bitmap: string): boolean;
+  /** The bitmaps in the left and right fringes beside a position, as fringe-bitmaps-at-pos; undefined if it does not show. */
+  function fringeBitmapsAtPos(pos?: number, window?: number): [string | undefined, string | undefined] | undefined;
   /** The width of a character of the current buffer's default font, its remapping counted, as default-font-width. */
   function defaultFontWidth(): number;
   /** The height of a line of the current buffer's default font, as default-font-height. */

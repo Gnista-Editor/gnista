@@ -32,7 +32,7 @@ The steps:
 
 1. Metrics, `:height` and `:family`, face remapping, `text-scale-adjust` and `variable-pitch-mode`, row geometry with wrapping and window filling by size, and the position functions. The GUI draws proportional and scaled text.
 2. Line motion by pixels: `line-move-visual`'s goal column as an x position, as Emacs keeps it, and `C-v` and `M-v` by height in mixed rows.
-3. The header line (`header-line-format`, done in [ADR 0041](0041-header-line-and-tabulated-lists.md)), margins (`left-margin-width`, `(margin left-margin)` display specs) and fringes with their bitmaps, which `display-line-numbers`, the continuation mark and `next-error` would use.
+3. The header line (`header-line-format`, done in [ADR 0041](0041-header-line-and-tabulated-lists.md)), margins (done with fringes in [ADR 0045](0045-margins-fringes-and-redisplay-primitives.md)) (`left-margin-width`, `(margin left-margin)` display specs) and fringes with their bitmaps, which `display-line-numbers`, the continuation mark and `next-error` would use.
 4. Images: `create-image`, `(image ...)` display specs and `insert-image`, PNG, JPEG and SVG, drawn by the GUI and shown as text in the terminal.
 5. Bidirectional text, as Emacs's bidi.c reorders it for display.
 6. The minibuffer's rows wrapped as a window's are, with `resize-mini-windows`.
