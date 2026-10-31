@@ -1,0 +1,233 @@
+//! What a frame shows, as plain data a front end draws from: step 2 of
+//! docs/multithreading.md. After redisplay the core describes each frame:
+//! for each window, its rows with their styles, glyphs and geometry, the
+//! cursor, the region, line numbers, fringes, margins and images, its
+//! mode line and header line; and the echo area or the minibuffer's rows.
+//! A front end draws only from this, never asking the editor, so the
+//! editor can run on a thread of its own while the window draws the last
+//! description it has (step 3).
+//!
+//! Units are the front end's, as the layout's are: the metrics it gave the
+//! editor measure every width and height here.
+
+use std::collections::HashMap;
+use std::ops::Range;
+use std::sync::Arc;
+
+use crate::display::{Glyph, row_glyphs};
+use crate::editor::Editor;
+use crate::faces::Style;
+use crate::fringe::{FringeBitmap, WindowFringes};
+use crate::image::Rgba;
+use crate::modeline::ModeLineSegment;
+use crate::rows::{FringeSpec, LineNumbers, Margin, Row};
+use crate::window::{FrameId, WindowId};
+
+/// One frame as a front end draws it.
+#[derive(Clone, Debug)]
+pub struct FrameDescription {
+    pub frame: FrameId,
+    /// Whether its styles are for a dark background.
+    pub dark: bool,
+    /// How its windows divide it.
+    pub tree: crate::window::WindowTree,
+    /// How many lines the echo area takes, more for a minibuffer showing
+    /// completions.
+    pub echo_lines: usize,
+    /// Whether it is the selected frame, whose echo area shows prompts.
+    pub selected: bool,
+    /// Whether the minibuffer's window is selected, so it has the cursor.
+    pub minibuffer_selected: bool,
+    pub windows: Vec<WindowDescription>,
+    pub echo: Echo,
+    /// The `default` face, which text without faces of its own shows in.
+    pub default_style: Style,
+    /// Fringe bitmaps `define-fringe-bitmap` defined, by name, for drawing
+    /// those the windows show; the standard ones front ends draw themselves.
+    pub fringe_bitmaps: HashMap<String, FringeBitmap>,
+    /// Each image's pixels, by its id, for the images the windows show.
+    pub images: HashMap<u64, Option<Arc<Rgba>>>,
+}
+
+/// What the echo area shows.
+#[derive(Clone, Debug)]
+pub enum Echo {
+    /// A message, or nothing.
+    Message(Option<String>),
+    /// The minibuffer while a prompt is open: its rows, as a window's, and
+    /// where point is in it.
+    Prompt { rows: Vec<RowDescription>, point: usize },
+}
+
+/// One window as a front end draws it.
+#[derive(Clone, Debug)]
+pub struct WindowDescription {
+    pub id: WindowId,
+    /// Whether it is the frame's selected window.
+    pub selected: bool,
+    pub point: usize,
+    /// The region, shown only in the selected window, as Emacs shows it.
+    pub region: Option<Range<usize>>,
+    pub tab_width: usize,
+    /// The rows that fill it, one more partly shown when scrolled between lines.
+    pub rows: Vec<RowDescription>,
+    /// The row point shows on, if any.
+    pub point_row: Option<usize>,
+    pub line_numbers: Option<LineNumbers>,
+    /// `line-number` and `line-number-current-line`.
+    pub line_number_styles: [Style; 2],
+    pub region_style: Style,
+    /// What its fringes show, for rows not truncated at either side.
+    pub fringes: WindowFringes,
+    /// The bitmaps a row truncated on the left or right shows instead,
+    /// unless a display spec put one there, as fringe.c gives them priority.
+    pub truncation: [Option<FringeSpec>; 2],
+    /// Each fringe bitmap's style, from its face, by bitmap and face.
+    pub fringe_styles: HashMap<(String, Option<String>), Style>,
+    /// Whether its cursor is drawn, as `internal-show-cursor` says.
+    pub cursor_shown: bool,
+    /// Its left and right margins' widths in columns.
+    pub margins: (usize, usize),
+    /// Whether its buffer breaks long lines between words, as
+    /// `word-wrap` says, which shows no continuation mark on a terminal.
+    pub word_wrap: bool,
+    /// The mode line, formatted at redisplay, each piece with its style.
+    pub mode_line: Vec<(ModeLineSegment, Style)>,
+    pub header_line: Option<Vec<(ModeLineSegment, Style)>>,
+}
+
+/// One row as a front end draws it: the row the core built, its glyphs,
+/// and where they go.
+#[derive(Clone, Debug)]
+pub struct RowDescription {
+    pub row: Row,
+    pub glyphs: Vec<Glyph>,
+    /// Its height, as a multiple of a default line's.
+    pub height: f32,
+    /// Each glyph's width in default columns.
+    pub columns: Vec<f32>,
+    /// Whether it lies on the grid of default columns, all in the default
+    /// font's size and fixed width, so a front end can lay it out as text.
+    pub on_grid: bool,
+    /// How many default columns its glyphs take.
+    pub width: f32,
+    /// How far right of the text area's left edge it starts, in default
+    /// columns: a right-to-left row is laid out from the right edge.
+    pub offset: f32,
+    /// For a row with images, its ascent, on which text and images sit.
+    pub ascent: Option<f32>,
+    /// Where each of its segments' boxes starts below the row's top, for a
+    /// row with images, and those of its margins'.
+    pub segment_tops: Vec<f32>,
+    pub margin_tops: [Vec<f32>; 2],
+}
+
+impl Editor {
+    fn describe_row(&self, b: &crate::buffer::Buffer, window: Option<WindowId>, row: Row, tab_width: usize) -> RowDescription {
+        let glyphs = row_glyphs(&row, tab_width);
+        let on_grid = self.row_on_grid(&row);
+        let columns = self.glyph_columns(&row, &glyphs, tab_width);
+        let width = columns.iter().sum();
+        let offset = window.map_or(0.0, |w| self.row_offset_in(w, &row));
+        let ascent = self.row_ascent(b, &row);
+        let (segment_tops, margin_tops) = if ascent.is_some() {
+            let tops = |segments: &[crate::rows::Segment]| segments.iter().map(|s| self.image_top(b, &row, s)).collect::<Vec<f32>>();
+            (tops(&row.segments), [tops(&row.margins[0]), tops(&row.margins[1])])
+        } else {
+            (Vec::new(), [Vec::new(), Vec::new()])
+        };
+        RowDescription {
+            height: self.row_height(b, &row),
+            columns,
+            on_grid,
+            width,
+            offset,
+            ascent,
+            segment_tops,
+            margin_tops,
+            glyphs,
+            row,
+        }
+    }
+
+    /// Describes a frame as a front end draws it, after `redisplay`:
+    /// styles for a dark or light background, and images' pixels at
+    /// `scale` device pixels to a unit.
+    pub fn describe_frame(&self, frame: FrameId, dark: bool, scale: f32) -> FrameDescription {
+        let style = |faces: &[&str]| self.style_for(&faces.iter().map(|f| f.to_string()).collect::<Vec<_>>(), dark);
+        let mut bitmaps = HashMap::new();
+        let mut images = HashMap::new();
+        let mut windows = Vec::new();
+        for view in self.frame_windows(frame) {
+            let b = view.buffer;
+            let tab_width = self.tab_width_in(b);
+            let rows: Vec<RowDescription> = self.rows_to_draw(view.id, dark).into_iter().map(|row| self.describe_row(b, Some(view.id), row, tab_width)).collect();
+            let plain: Vec<Row> = rows.iter().map(|r| r.row.clone()).collect();
+            let fringes = self.window_fringes(view.id, &plain, &[]);
+            let truncation = [
+                self.logical_fringe_bitmap(b, "truncation", false, false).map(|bitmap| FringeSpec { side: Margin::Left, bitmap, face: None }),
+                self.logical_fringe_bitmap(b, "truncation", true, false).map(|bitmap| FringeSpec { side: Margin::Right, bitmap, face: None }),
+            ];
+            let mut fringe_styles = HashMap::new();
+            let shown = fringes.rows.iter().flat_map(|r| [&r.left, &r.right, &r.arrow]).chain(fringes.empty.iter()).chain(truncation.iter()).flatten();
+            for spec in shown {
+                let face = spec.face.clone().unwrap_or_else(|| self.fringe_bitmap_face(&spec.bitmap));
+                fringe_styles.entry((spec.bitmap.clone(), spec.face.clone())).or_insert_with(|| self.style_for(&[face], dark));
+                if let Some(bitmap) = self.fringe_bitmap(&spec.bitmap) {
+                    bitmaps.entry(spec.bitmap.clone()).or_insert_with(|| bitmap.clone());
+                }
+            }
+            for row in &rows {
+                for seg in row.row.segments.iter().chain(row.row.margins.iter().flatten()) {
+                    if let Some(image) = &seg.image {
+                        images.entry(image.id).or_insert_with(|| self.image_rgba(image.id, scale));
+                    }
+                }
+            }
+            let line_numbers = self.line_numbers(view.id, &plain);
+            let styled = |segments: &[ModeLineSegment]| segments.iter().map(|s| (s.clone(), self.style_for(&s.faces, dark))).collect::<Vec<_>>();
+            let point_row = crate::display::row_showing(&plain, view.point, tab_width);
+            windows.push(WindowDescription {
+                id: view.id,
+                selected: view.selected,
+                point: view.point,
+                point_row,
+                region: if view.selected { b.active_region() } else { None },
+                tab_width,
+                rows,
+                line_numbers,
+                line_number_styles: [style(&["line-number"]), style(&["line-number-current-line"])],
+                region_style: style(&["region"]),
+                fringes,
+                truncation,
+                fringe_styles,
+                cursor_shown: self.window_cursor_shown(view.id),
+                margins: self.window_margins(view.id),
+                word_wrap: self.variable_in(b, "word-wrap").is_some_and(|v| v.is_true()),
+                mode_line: styled(self.mode_line(view.id)),
+                header_line: self.header_line(view.id).map(styled),
+            });
+        }
+        let selected = frame == self.selected_frame();
+        let echo = if selected && self.prompt().is_some() {
+            let mb = self.minibuffer();
+            let rows = self.minibuffer_rows(dark).into_iter().map(|row| self.describe_row(mb, None, row, 8)).collect();
+            Echo::Prompt { rows, point: mb.point() }
+        } else {
+            Echo::Message(if selected { self.echo().map(str::to_string) } else { None })
+        };
+        FrameDescription {
+            frame,
+            dark,
+            tree: self.frame_tree(frame).cloned().unwrap_or(crate::window::WindowTree::Leaf(0)),
+            echo_lines: if selected { self.mini_window_lines() } else { 1 },
+            selected,
+            minibuffer_selected: self.minibuffer_window_selected(),
+            windows,
+            echo,
+            default_style: style(&["default"]),
+            fringe_bitmaps: bitmaps,
+            images,
+        }
+    }
+}

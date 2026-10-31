@@ -58,7 +58,8 @@ fn run(terminal: &mut DefaultTerminal, editor: &mut Editor) -> io::Result<()> {
         let size = terminal.size()?;
         ui::layout_windows(editor, size.width, size.height);
         editor.redisplay();
-        terminal.draw(|frame| ui::draw(frame, editor))?;
+        let description = ui::describe(editor);
+        terminal.draw(|frame| ui::draw(frame, &description))?;
         // Wait for a key, or until a timer or auto-save is due.
         if let Some(due) = editor.next_timer_in()
             && !event::poll(due)?

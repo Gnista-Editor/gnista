@@ -3,7 +3,8 @@
 use std::ops::Range;
 
 use ember_core::display::{Glyph, cursor_glyph, position_at_column, row_glyphs, row_showing};
-use ember_core::{Color as FaceColor, Editor, LineNumbers, Row, Style as FaceStyle, WindowId, WindowView, palette};
+use ember_core::frame_description::{Echo, FrameDescription, WindowDescription};
+use ember_core::{Color as FaceColor, Editor, LineNumbers, Row, Style as FaceStyle, WindowId, WindowTree, WindowView, palette};
 use ratatui::Frame;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Color, Modifier, Style};
@@ -23,18 +24,38 @@ struct WindowArea {
     divider: Option<Rect>,
 }
 
-/// Divides the screen above the echo area among the windows.
+/// Divides the screen above the echo area among the windows, as the editor
+/// says they divide it.
 fn window_areas(ed: &Editor, width: u16, height: u16) -> Vec<WindowArea> {
-    let height = height.saturating_sub(ed.mini_window_lines() as u16).max(2);
-    ed.window_tree()
+    areas_of(ed.window_tree(), ed.mini_window_lines(), &|id, h| ed.window_wants_header_line(id, h), &|id| ed.window_margins(id), width, height)
+}
+
+/// As [`window_areas`], as a frame description says.
+fn described_areas(fd: &FrameDescription, width: u16, height: u16) -> Vec<WindowArea> {
+    let window = |id: WindowId| fd.windows.iter().find(|w| w.id == id);
+    let header = |id, h: usize| h > 2 && window(id).is_some_and(|w| w.header_line.is_some());
+    let margins = |id| window(id).map_or((0, 0), |w| w.margins);
+    areas_of(&fd.tree, fd.echo_lines, &header, &margins, width, height)
+}
+
+fn areas_of(
+    tree: &WindowTree,
+    echo_lines: usize,
+    wants_header: &dyn Fn(WindowId, usize) -> bool,
+    margins_of: &dyn Fn(WindowId) -> (usize, usize),
+    width: u16,
+    height: u16,
+) -> Vec<WindowArea> {
+    let height = height.saturating_sub(echo_lines as u16).max(2);
+    tree
         .rects(0.0, 0.0, width as f32, height as f32, (1.0, 1.0))
         .into_iter()
         .map(|r| {
             let (x, y, w, h) = (r.x as u16, r.y as u16, (r.width as u16).max(1), (r.height as u16).max(2));
             let body_width = if r.divider { w.saturating_sub(1).max(1) } else { w };
-            let header = u16::from(ed.window_wants_header_line(r.id, h as usize));
+            let header = u16::from(wants_header(r.id, h as usize));
             // The margins take columns from the text, leaving it one at least.
-            let (left, right) = ed.window_margins(r.id);
+            let (left, right) = margins_of(r.id);
             let left = (left as u16).min(body_width.saturating_sub(1));
             let right = (right as u16).min(body_width.saturating_sub(1 + left));
             let (top, height) = (y + header, h - 1 - header);
@@ -60,41 +81,42 @@ pub fn layout_windows(ed: &mut Editor, width: u16, height: u16) {
     }
 }
 
-pub fn draw(frame: &mut Frame, ed: &Editor) {
+/// Draws a frame as the core described it, asking the editor nothing.
+pub fn draw(frame: &mut Frame, fd: &FrameDescription) {
     let screen = frame.area();
-    let echo = (ed.mini_window_lines() as u16).min(screen.height);
+    let echo = (fd.echo_lines as u16).min(screen.height);
     let echo_area = Rect::new(screen.x, screen.bottom().saturating_sub(echo), screen.width, echo);
-    let areas = window_areas(ed, screen.width, screen.height);
+    let areas = described_areas(fd, screen.width, screen.height);
     let mut window_cursor = Position::new(0, 0);
-    for view in ed.windows() {
-        let Some(area) = areas.iter().find(|a| a.id == view.id) else { continue };
-        let cursor = draw_window(frame, ed, &view, area.text, area.margins);
-        if view.selected {
+    let mut cursor_shown = false;
+    for w in &fd.windows {
+        let Some(area) = areas.iter().find(|a| a.id == w.id) else { continue };
+        let cursor = draw_window(frame, fd, w, area.text, area.margins);
+        if w.selected {
             window_cursor = cursor;
+            cursor_shown = w.cursor_shown;
         }
-        draw_mode_line(frame, ed, &view, area.mode_line);
+        draw_mode_line(frame, w, area.mode_line);
         if let Some(header) = area.header_line {
-            draw_header_line(frame, ed, &view, header);
+            draw_header_line(frame, w, header);
         }
         if let Some(divider) = area.divider {
             let bar: Vec<Line> = (0..divider.height).map(|_| Line::from("|")).collect();
             frame.render_widget(Paragraph::new(bar), divider);
         }
     }
-    let echo_cursor = draw_echo_area(frame, ed, echo_area).filter(|_| ed.minibuffer_window_selected());
+    let echo_cursor = draw_echo_area(frame, fd, echo_area).filter(|_| fd.minibuffer_selected);
     // A window whose cursor internal-show-cursor hid shows none.
-    if echo_cursor.is_some() || ed.window_cursor_shown(ed.selected_window()) {
+    if echo_cursor.is_some() || cursor_shown {
         frame.set_cursor_position(echo_cursor.unwrap_or(window_cursor));
     }
 }
 
-/// A window's rows as drawn, with their glyphs, where point is, and how
+/// A window's rows as a mouse event finds them, with their glyphs, and how
 /// far the window is scrolled horizontally.
 struct WindowRows {
     rows: Vec<Row>,
     glyph_rows: Vec<Vec<Glyph>>,
-    point_row: usize,
-    point_col: usize,
     hscroll: usize,
     /// The line numbers left of the text, if the buffer shows them.
     numbers: Option<LineNumbers>,
@@ -129,7 +151,7 @@ fn window_rows(ed: &Editor, view: &WindowView, area: Rect) -> WindowRows {
     };
     // Scroll horizontally, as Emacs does, when point would be off the right edge.
     let hscroll = if point_col < width { 0 } else { point_col - width / 2 };
-    WindowRows { rows, glyph_rows, point_row, point_col, hscroll, numbers }
+    WindowRows { rows, glyph_rows, hscroll, numbers }
 }
 
 /// Where a right-to-left row starts in a text area `width` columns wide:
@@ -140,6 +162,12 @@ fn rtl_offset(row: &Row, glyphs: &[Glyph], width: usize) -> i64 {
         return 0;
     }
     width as i64 - glyphs.iter().map(|g| g.width as i64).sum::<i64>()
+}
+
+/// What the terminal draws from: the selected frame, described after
+/// redisplay, its styles for the background `frame-background-mode` says.
+pub fn describe(ed: &Editor) -> FrameDescription {
+    ed.describe_frame(ed.selected_frame(), dark(ed), 1.0)
 }
 
 fn dark(ed: &Editor) -> bool {
@@ -177,40 +205,46 @@ pub fn mouse_target(ed: &Editor, width: u16, height: u16, x: u16, y: u16) -> Opt
 
 /// Draws a window's rows, and what shows in its margins beside them, and
 /// returns where its point is on screen.
-fn draw_window(frame: &mut Frame, ed: &Editor, view: &WindowView, area: Rect, margins: [Rect; 2]) -> Position {
-    let dark = dark(ed);
-    let WindowRows { rows, glyph_rows, point_row, point_col, hscroll, numbers } = window_rows(ed, view, area);
+fn draw_window(frame: &mut Frame, fd: &FrameDescription, w: &WindowDescription, area: Rect, margins: [Rect; 2]) -> Position {
+    let dark = fd.dark;
+    let rows = &w.rows;
     for (side, margin) in margins.iter().enumerate().filter(|(_, m)| m.width > 0) {
         let lines: Vec<Line> = rows
             .iter()
-            .map(|row| {
-                let segments = &row.margins[side];
+            .map(|r| {
+                let segments = &r.row.margins[side];
                 Line::from(segments.iter().map(|seg| Span::styled(seg.text.clone(), terminal_style(&seg.style, dark))).collect::<Vec<_>>())
             })
             .collect();
         frame.render_widget(Paragraph::new(lines), *margin);
     }
     // Line numbers, in their faces, left of the text.
-    let gutter = gutter(&numbers, area);
-    if let Some(numbers) = &numbers {
-        let face = |current: bool| {
-            let name = if current { "line-number-current-line" } else { "line-number" };
-            terminal_style(&ed.style_for(&[name.to_string()], dark), dark)
-        };
+    let numbers = &w.line_numbers;
+    let gutter = gutter(numbers, area);
+    if let Some(numbers) = numbers {
+        let face = |current: bool| terminal_style(&w.line_number_styles[usize::from(current)], dark);
         let lines: Vec<Line> = numbers.labels.iter().map(|(label, current)| Line::from(Span::styled(label.clone(), face(*current)))).collect();
         frame.render_widget(Paragraph::new(lines), Rect::new(area.x, area.y, gutter, area.height));
     }
     let area = text_area(area, gutter);
     let width = area.width as usize;
+    let point_row = w.point_row.unwrap_or(0);
+    let point_col: usize = rows
+        .get(point_row)
+        .map(|r| r.glyphs[..cursor_glyph(&r.row, &r.glyphs, w.point)].iter().map(|g| g.width).sum())
+        .unwrap_or(0);
+    // A right-to-left row is laid out from the right edge.
+    let point_col = match rows.get(point_row).filter(|r| r.row.right_to_left) {
+        Some(r) => (point_col as i64 + rtl_offset(&r.row, &r.glyphs, width)).max(0) as usize,
+        None => point_col,
+    };
+    // Scroll horizontally, as Emacs does, when point would be off the right edge.
+    let hscroll = if point_col < width { 0 } else { point_col - width / 2 };
     // Only the selected window shows the region, as in Emacs.
-    let region = if view.selected { view.buffer.active_region() } else { None };
+    let region = w.region.clone();
     // Lines broken between words show no continuation mark, as on Emacs's terminals.
-    let marks = !ed.variable_in(view.buffer, "word-wrap").is_some_and(|v| v.is_true());
-    let lines: Vec<Line> = rows
-        .iter()
-        .zip(&glyph_rows)
-        .map(|(row, glyphs)| row_line(row, glyphs, hscroll, width, region.as_ref(), dark, marks))
-        .collect();
+    let marks = !w.word_wrap;
+    let lines: Vec<Line> = rows.iter().map(|r| row_line(&r.row, &r.glyphs, hscroll, width, region.as_ref(), dark, marks)).collect();
     frame.render_widget(Paragraph::new(lines), area);
     Position::new(area.x + (point_col - hscroll) as u16, area.y + point_row as u16)
 }
@@ -352,13 +386,13 @@ fn terminal_style(style: &FaceStyle, dark: bool) -> Style {
     out
 }
 
-fn draw_mode_line(frame: &mut Frame, ed: &Editor, view: &WindowView, area: Rect) {
+fn draw_mode_line(frame: &mut Frame, w: &WindowDescription, area: Rect) {
     // What mode-line-format shows, which the core formatted at redisplay.
-    let text: String = ed.mode_line(view.id).iter().map(|s| s.text.as_str()).collect();
+    let text: String = w.mode_line.iter().map(|(s, _)| s.text.as_str()).collect();
     // The selected window's mode line stands out; the others are dimmed,
     // as Emacs's mode-line-inactive face is.
     let mut style = Style::new().add_modifier(Modifier::REVERSED);
-    if !view.selected {
+    if !w.selected {
         style = style.add_modifier(Modifier::DIM);
     }
     frame.render_widget(Paragraph::new(text).style(style), area);
@@ -367,15 +401,13 @@ fn draw_mode_line(frame: &mut Frame, ed: &Editor, view: &WindowView, area: Rect)
 /// Draws a window's header line, as the core formatted `header-line-format`:
 /// in reverse video, as Emacs's header-line face is on a terminal, its bold
 /// faces bold.
-fn draw_header_line(frame: &mut Frame, ed: &Editor, view: &WindowView, area: Rect) {
+fn draw_header_line(frame: &mut Frame, w: &WindowDescription, area: Rect) {
     let base = Style::new().add_modifier(Modifier::REVERSED);
-    let dark = dark(ed);
-    let spans: Vec<Span> = ed
-        .header_line(view.id)
-        .unwrap_or_default()
+    let spans: Vec<Span> = w
+        .header_line
         .iter()
-        .map(|segment| {
-            let style = ed.style_for(&segment.faces, dark);
+        .flatten()
+        .map(|(segment, style)| {
             let style = if style.bold { base.add_modifier(Modifier::BOLD) } else { base };
             Span::styled(segment.text.clone(), style)
         })
@@ -387,27 +419,27 @@ fn draw_header_line(frame: &mut Frame, ed: &Editor, view: &WindowView, area: Rec
 /// when the minibuffer is active, since the cursor belongs there. What the
 /// minibuffer's overlay adds, such as icomplete's list, follows the input,
 /// and each newline in it starts another line of the echo area.
-fn draw_echo_area(frame: &mut Frame, ed: &Editor, area: Rect) -> Option<Position> {
-    if ed.prompt().is_none() {
-        frame.render_widget(Paragraph::new(ed.echo().unwrap_or("")), area);
-        return None;
-    }
+fn draw_echo_area(frame: &mut Frame, fd: &FrameDescription, area: Rect) -> Option<Position> {
+    let (rows, point) = match &fd.echo {
+        Echo::Message(message) => {
+            frame.render_widget(Paragraph::new(message.as_deref().unwrap_or("")), area);
+            return None;
+        }
+        Echo::Prompt { rows, point } => (rows, *point),
+    };
     // The minibuffer's rows, as a window's: the prompt and input in their
     // faces, and what overlays add, such as icomplete's list.
-    let dark = dark(ed);
-    let rows = ed.minibuffer_rows(dark);
-    let point = ed.minibuffer().point();
     let width = area.width as usize;
     let mut cursor = None;
     let mut lines = Vec::new();
-    for (k, row) in rows.iter().take(area.height as usize).enumerate() {
-        let glyphs = row_glyphs(row, 8);
+    for (k, r) in rows.iter().take(area.height as usize).enumerate() {
+        let (row, glyphs) = (&r.row, &r.glyphs);
         if cursor.is_none() && row.shows_point(point) {
-            let x: usize = glyphs[..cursor_glyph(row, &glyphs, point)].iter().map(|g| g.width).sum();
-            let x = (x as i64 + rtl_offset(row, &glyphs, width)).max(0) as usize;
+            let x: usize = glyphs[..cursor_glyph(row, glyphs, point)].iter().map(|g| g.width).sum();
+            let x = (x as i64 + rtl_offset(row, glyphs, width)).max(0) as usize;
             cursor = Some(Position::new(area.x + x.min(width.saturating_sub(1)) as u16, area.y + k as u16));
         }
-        lines.push(row_line(row, &glyphs, 0, width, None, dark, true));
+        lines.push(row_line(row, glyphs, 0, width, None, fd.dark, true));
     }
     frame.render_widget(Paragraph::new(lines), area);
     cursor.or(Some(Position::new(area.x, area.y)))
@@ -423,7 +455,8 @@ mod tests {
         let mut terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
         layout_windows(ed, width, height);
         ed.redisplay();
-        terminal.draw(|frame| draw(frame, ed)).unwrap();
+        let fd = describe(ed);
+        terminal.draw(|frame| draw(frame, &fd)).unwrap();
         let buf = terminal.backend().buffer();
         (0..height)
             .map(|y| {
@@ -507,7 +540,8 @@ mod tests {
         ed.press("M-<").unwrap();
         let mut terminal = Terminal::new(TestBackend::new(20, 6)).unwrap();
         layout_windows(&mut ed, 20, 6);
-        terminal.draw(|frame| draw(frame, &ed)).unwrap();
+        let fd = describe(&ed);
+        terminal.draw(|frame| draw(frame, &fd)).unwrap();
         let buf = terminal.backend().buffer();
         let line = |y: u16| (0..20).map(|x| buf[(x, y)].symbol()).collect::<String>();
         // Reordered as Emacs shows it on a terminal, mirrored brackets and
@@ -527,7 +561,8 @@ mod tests {
         ed.type_text("abc\ndef");
         ed.press("M-< <right> S-<down>").unwrap();
         let mut terminal = Terminal::new(TestBackend::new(20, 5)).unwrap();
-        terminal.draw(|frame| draw(frame, &ed)).unwrap();
+        let fd = describe(&ed);
+        terminal.draw(|frame| draw(frame, &fd)).unwrap();
         let buf = terminal.backend().buffer();
         let reversed = |x: u16, y: u16| buf[(x, y)].modifier.contains(Modifier::REVERSED);
         // "bc" and the newline on the first line, which fills the row to its
@@ -545,7 +580,8 @@ mod tests {
         // The first newline and "hidden" with its newline.
         b.put_text_property(10..18, "invisible", ember_core::Value::Bool(true));
         let mut terminal = Terminal::new(TestBackend::new(20, 5)).unwrap();
-        terminal.draw(|frame| draw(frame, &ed)).unwrap();
+        let fd = describe(&ed);
+        terminal.draw(|frame| draw(frame, &fd)).unwrap();
         let buf = terminal.backend().buffer();
         let row: String = (0..20).map(|x| buf[(x, 0)].symbol()).collect();
         // The hidden newline joins the first and third lines into one row.

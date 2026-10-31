@@ -3,14 +3,15 @@
 //! row of the fringe.
 
 use egui::{Color32, Painter, Pos2, Rect, Shape, Stroke, StrokeKind, pos2, vec2};
-use ember_core::{Editor, FringeAlign};
+use ember_core::{FringeAlign, FringeBitmap};
 
 /// How wide a bitmap is drawn, as Emacs's are 8 pixels.
 const WIDTH: f32 = 8.0;
 
-/// Draws a fringe bitmap by name in a row of a fringe.
-pub fn draw_bitmap(painter: &Painter, ed: &Editor, name: &str, row: Rect, color: Color32) {
-    if let Some(bitmap) = ed.fringe_bitmap(name) {
+/// Draws a fringe bitmap by name in a row of a fringe: one
+/// `define-fringe-bitmap` defined from its bits, else a standard one.
+pub fn draw_bitmap(painter: &Painter, defined: Option<&FringeBitmap>, name: &str, row: Rect, color: Color32) {
+    if let Some(bitmap) = defined {
         draw_bits(painter, &bitmap.bits, bitmap.width, bitmap.align, row, color);
         return;
     }

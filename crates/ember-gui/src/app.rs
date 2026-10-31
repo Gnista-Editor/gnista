@@ -3,9 +3,10 @@
 
 use std::sync::Arc;
 
-use ember_core::display::{Glyph, cursor_glyph, row_glyphs, row_showing};
+use ember_core::display::{Glyph, cursor_glyph};
+use ember_core::frame_description::{Echo, FrameDescription, RowDescription, WindowDescription};
 use ember_core::layout::FontSpec;
-use ember_core::{Editor, FrameId, Key, KeyCode, MouseEvent, MouseKind, Row, Style, WindowId, WindowView};
+use ember_core::{Editor, FrameId, Key, KeyCode, MouseEvent, MouseKind, Row, Style, WindowId};
 use egui::text::{CCursor, LayoutJob, TextFormat};
 use egui::{
     Color32, FontFamily, FontId, Galley, Painter, PointerButton, Pos2, Rect, Stroke, StrokeKind, Ui,
@@ -262,7 +263,9 @@ impl EmberApp {
         // The selected frame's window types into it, so only it shows filled cursors.
         let focused = ctx.input(|i| i.focused) && frame_selected;
         let scroll = if frame_selected { (self.scroll_window, self.scroll_offset) } else { (0, 0.0) };
-        draw(ui, &self.editor, frame, &layout, Tokens::get(&ctx), focused, scroll);
+        let t = Tokens::get(&ctx);
+        let description = self.editor.describe_frame(frame, t.dark, ctx.pixels_per_point());
+        draw(ui, &description, &layout, t, focused, scroll);
     }
 
     /// The window the scroll offset applies to, its buffer and its top line.
@@ -541,12 +544,13 @@ impl Layout {
     }
 }
 
-fn draw(ui: &Ui, ed: &Editor, frame: FrameId, layout: &Layout, t: Tokens, focused: bool, scroll: (WindowId, f32)) {
+/// Draws a frame as the core described it, asking the editor nothing.
+fn draw(ui: &Ui, fd: &FrameDescription, layout: &Layout, t: Tokens, focused: bool, scroll: (WindowId, f32)) {
     let painter = ui.painter().clone();
     painter.rect_filled(layout.rect, 0.0, t.bg);
     let m = &layout.m;
-    let in_minibuffer = ed.minibuffer_window_selected();
-    for window in ed.frame_windows(frame) {
+    let in_minibuffer = fd.minibuffer_selected;
+    for window in &fd.windows {
         let Some(w) = layout.windows.iter().find(|w| w.id == window.id) else { continue };
         // Other windows show a hollow cursor, as Emacs's do.
         let cursor = if window.selected && focused && !in_minibuffer {
@@ -560,19 +564,19 @@ fn draw(ui: &Ui, ed: &Editor, frame: FrameId, layout: &Layout, t: Tokens, focuse
         let clip = Rect::from_min_max(pos2(w.text_rect.left(), top), pos2(w.text_rect.right(), w.mode_rect.top()));
         let offset = if window.id == scroll.0 { scroll.1 } else { 0.0 };
         let view = View { area: w.text_rect, clip, scroll_offset: offset, margins: w.margins, fringes: w.fringes };
-        draw_buffer(&painter, ed, &window, &view, m, t, cursor);
-        draw_mode_line(&painter, ed, &window, w.mode_rect, m, t);
+        draw_buffer(&painter, fd, window, &view, m, t, cursor);
+        draw_mode_line(&painter, window, w.mode_rect, m, t);
         if let Some(header) = w.header_rect {
-            draw_header_line(&painter, ed, &window, header, m, t);
+            draw_header_line(&painter, window, header, m, t);
         }
         if w.divider {
             painter.vline(w.rect.right() - 0.5, w.rect.y_range(), Stroke::new(1.0, t.line));
         }
     }
     // Each frame has an echo area; the prompt shows in the selected frame's.
-    if frame == ed.selected_frame() {
-        let echo_cursor = if focused && ed.minibuffer_window_selected() { CursorStyle::Filled } else { CursorStyle::Hollow };
-        draw_echo_area(&painter, ed, layout.echo_rect, m, t, echo_cursor);
+    if fd.selected {
+        let echo_cursor = if focused && fd.minibuffer_selected { CursorStyle::Filled } else { CursorStyle::Hollow };
+        draw_echo_area(&painter, fd, layout.echo_rect, m, t, echo_cursor);
     }
 }
 
@@ -612,34 +616,32 @@ struct View {
 #[allow(clippy::too_many_arguments)]
 fn draw_buffer(
     painter: &Painter,
-    ed: &Editor,
-    window: &WindowView,
+    fd: &FrameDescription,
+    window: &WindowDescription,
     view: &View,
     m: &Metrics,
     t: Tokens,
     style: CursorStyle,
 ) {
-    let b = window.buffer;
-    let tab_width = ed.tab_width_in(b);
     // As many rows as fill the window, one partly shown when scrolled between lines.
-    let rows = ed.rows_to_draw(window.id, t.dark);
-    let heights: Vec<f32> = rows.iter().map(|r| ed.row_height(b, r) * m.line_height).collect();
+    let described = &window.rows;
+    let rows: Vec<&Row> = described.iter().map(|r| &r.row).collect();
+    let heights: Vec<f32> = described.iter().map(|r| r.height * m.line_height).collect();
     let tops: Vec<f32> = heights.iter().scan(0.0, |y, h| {
         let top = *y;
         *y += h;
         Some(top)
     }).collect();
-    let default_style = ed.style_for(&["default".to_string()], t.dark);
+    let default_style = &fd.default_style;
     // Line numbers, in their faces, left of the text, which starts after them.
-    let numbers = ed.line_numbers(window.id, &rows);
+    let numbers = &window.line_numbers;
     let gutter = numbers.as_ref().map_or(0.0, |n| n.width as f32 * m.char_width);
-    if let Some(numbers) = &numbers {
+    if let Some(numbers) = numbers {
         let clipped = painter.with_clip_rect(view.clip);
         for (i, (label, current)) in numbers.labels.iter().enumerate() {
-            let face = if *current { "line-number-current-line" } else { "line-number" };
-            let style = ed.style_for(&[face.to_string()], t.dark);
+            let style = &window.line_number_styles[usize::from(*current)];
             let mut job = LayoutJob::default();
-            job.append(label, 0.0, face_format(&style, &default_style, m, t));
+            job.append(label, 0.0, face_format(style, default_style, m, t));
             let galley = painter.layout_job(job);
             let (Some(top), Some(height)) = (tops.get(i), heights.get(i)) else { break };
             let top = view.area.top() + top - view.scroll_offset;
@@ -647,41 +649,38 @@ fn draw_buffer(
         }
     }
     let area = Rect::from_min_max(pos2(view.area.left() + gutter, view.area.top()), view.area.max);
-    let region_style = ed.style_for(&["region".to_string()], t.dark);
-    let selection = region_style.background.map(color32).unwrap_or(t.selection);
+    let selection = window.region_style.background.map(color32).unwrap_or(t.selection);
     // Only the selected window shows the region, as in Emacs.
-    let region = if window.selected { b.active_region() } else { None };
+    let region = &window.region;
     let point = window.point;
     // Bidirectional text broken into rows spreads a line over them.
-    let point_row = row_showing(&rows, point, tab_width);
+    let point_row = window.point_row;
 
-    let laid_out: Vec<(Arc<Galley>, Vec<Glyph>)> = rows
+    let laid_out: Vec<(Arc<Galley>, &[Glyph])> = described
         .iter()
-        .map(|row| {
-            let glyphs = row_glyphs(row, tab_width);
+        .map(|r| {
             let advance = |font: &FontId, c: char| painter.ctx().fonts_mut(|f| f.glyph_width(font, c));
-            let columns = (!ed.row_on_grid(row)).then(|| ed.glyph_columns(row, &glyphs, tab_width));
-            let height = image_text_height(ed, b, row, m).unwrap_or(ed.row_height(b, row) * m.line_height);
-            let job = row_job(row, &glyphs, columns.as_deref(), height, &default_style, m, t, &advance);
-            (painter.layout_job(job), glyphs)
+            let columns = (!r.on_grid).then_some(r.columns.as_slice());
+            let height = image_text_height(r, m).unwrap_or(r.height * m.line_height);
+            let job = row_job(&r.row, &r.glyphs, columns, height, default_style, m, t, &advance);
+            (painter.layout_job(job), r.glyphs.as_slice())
         })
         .collect();
     // Without a bold face, bold text is drawn a second time just to the right.
-    let emboldened: Vec<Option<Arc<Galley>>> = rows
+    let emboldened: Vec<Option<Arc<Galley>>> = described
         .iter()
-        .zip(&laid_out)
-        .map(|(row, (_, glyphs))| {
-            let bold = theme::faux_bold() && row.segments.iter().any(|s| s.style.bold);
-            bold.then(|| painter.layout_job(bold_only_job(row, glyphs, ed.row_height(b, row) * m.line_height, &default_style, m, t)))
+        .map(|r| {
+            let bold = theme::faux_bold() && r.row.segments.iter().any(|s| s.style.bold);
+            bold.then(|| painter.layout_job(bold_only_job(&r.row, &r.glyphs, r.height * m.line_height, default_style, m, t)))
         })
         .collect();
 
     // A right-to-left row is laid out from the window's right edge.
-    let offsets: Vec<f32> = rows.iter().map(|r| ed.row_offset_in(window.id, r) * m.char_width).collect();
+    let offsets: Vec<f32> = described.iter().map(|r| r.offset * m.char_width).collect();
     // Scroll horizontally, as Emacs does, when point would be off the right edge.
     let cursor = point_row.map(|i| {
         let (galley, glyphs) = &laid_out[i];
-        let index = cursor_glyph(&rows[i], glyphs, point);
+        let index = cursor_glyph(rows[i], glyphs, point);
         let char_index: usize = glyphs[..index].iter().map(|g| g.text.chars().count()).sum();
         let under = glyphs.get(index).filter(|g| g.pos == Some(point)).and_then(|g| g.text.chars().next());
         (i, galley.clone(), char_index, under)
@@ -695,20 +694,22 @@ fn draw_buffer(
         (cursor_x - area.width() / 2.0).max(0.0)
     };
 
-    // What the fringes show, as the core picks it once it knows which rows
-    // are cut off at either side.
-    let truncated: Vec<[bool; 2]> = rows
-        .iter()
-        .zip(&laid_out)
-        .zip(&offsets)
-        .map(|((row, (galley, _)), offset)| [hscroll > 0.0 || *offset < -0.5, !row.continued && galley.size().x - hscroll > area.width() + 0.5])
-        .collect();
-    let fringes = ed.window_fringes(window.id, &rows, &truncated);
+    // What the fringes show: a row cut off at either side shows the
+    // truncation arrow there, unless a display spec put a bitmap there.
+    let fringes = &window.fringes;
+    let fringe_at = |i: usize| {
+        let (row, galley) = (rows[i], &laid_out[i].0);
+        let truncated = [hscroll > 0.0 || offsets[i] < -0.5, !row.continued && galley.size().x - hscroll > area.width() + 0.5];
+        let here = &fringes.rows[i];
+        let pick = |side: usize, computed: &Option<ember_core::FringeSpec>| {
+            if truncated[side] && row.fringes[side].is_none() { window.truncation[side].clone() } else { computed.clone() }
+        };
+        [pick(0, &here.left), pick(1, &here.right), here.arrow.clone()]
+    };
     let draw_fringe = |side: usize, spec: &ember_core::FringeSpec, top: f32, height: f32| {
-        let face = spec.face.clone().unwrap_or_else(|| ed.fringe_bitmap_face(&spec.bitmap));
-        let color = ed.style_for(&[face], t.dark).foreground.map(color32).unwrap_or(t.faint);
+        let color = window.fringe_styles.get(&(spec.bitmap.clone(), spec.face.clone())).and_then(|s| s.foreground).map(color32).unwrap_or(t.faint);
         let rect = Rect::from_min_max(pos2(view.fringes[side].left(), top), pos2(view.fringes[side].right(), top + height));
-        fringe::draw_bitmap(painter, ed, &spec.bitmap, rect, color);
+        fringe::draw_bitmap(painter, fd.fringe_bitmaps.get(&spec.bitmap), &spec.bitmap, rect, color);
     };
 
     // Text scrolled sideways stays out of the line numbers.
@@ -728,33 +729,33 @@ fn draw_buffer(
             clipped.rect_filled(Rect::from_min_max(pos2(from, top), pos2(to, bottom)), 0.0, color32(bg));
         }
         if let Some(r) = &region
-            && (rows[i].right_to_left || ember_core::display::reordered(&laid_out[i].1))
+            && (rows[i].right_to_left || ember_core::display::reordered(laid_out[i].1))
         {
             // Bidirectional text can show the region in pieces.
             let left = area.left() - hscroll + offsets[i];
             let top = row_top(i);
-            for (from, to) in region_pieces(&rows[i], &laid_out[i].1, galley, r) {
+            for (from, to) in region_pieces(rows[i], laid_out[i].1, galley, r) {
                 let (from, to) = (from.map_or(area.left(), |x| left + x), to.map_or(area.right(), |x| left + x));
                 clipped.rect_filled(Rect::from_min_max(pos2(from, top), pos2(to, top + heights[i])), 0.0, selection);
             }
         } else if let Some(r) = &region
-            && let Some((from, to)) = region_span(&rows[i], &laid_out[i].1, galley, r)
+            && let Some((from, to)) = region_span(rows[i], laid_out[i].1, galley, r)
         {
             let left = area.left() - hscroll;
             let right = to.map_or(area.right(), |x| left + x);
             let top = row_top(i);
             clipped.rect_filled(Rect::from_min_max(pos2(left + from, top), pos2(right, top + heights[i])), 0.0, selection);
         }
-        let y = match ed.row_ascent(b, &rows[i]) {
+        let y = match described[i].ascent {
             // A row with images sits its text on the row's baseline.
             Some(ascent) => row_top(i) + ascent - galley_baseline(galley),
             None => row_top(i) + (heights[i] - galley.size().y) / 2.0,
         };
         let x = area.left() - hscroll + offsets[i];
         clipped.galley(pos2(x, y), galley.clone(), t.ink);
-        draw_row_images(&clipped, ed, b, &rows[i], &laid_out[i].1, pos2(x, row_top(i)), m, t);
-        draw_apart(&clipped, &rows[i], &laid_out[i].1, galley, pos2(x, y), &default_style, m, t);
-        draw_decorations(&clipped, &rows[i], &laid_out[i].1, galley, x, row_top(i), heights[i], &default_style, t);
+        draw_row_images(&clipped, fd, &described[i], pos2(x, row_top(i)), m, t);
+        draw_apart(&clipped, rows[i], laid_out[i].1, galley, pos2(x, y), default_style, m, t);
+        draw_decorations(&clipped, rows[i], laid_out[i].1, galley, x, row_top(i), heights[i], default_style, t);
         if let Some(bold) = &emboldened[i] {
             clipped.galley(pos2(area.left() - hscroll + offsets[i] + FAUX_BOLD_OFFSET, y), bold.clone(), t.ink);
         }
@@ -765,12 +766,12 @@ fn draw_buffer(
                 continue;
             }
             if rows[i].margins[side].iter().any(|s| s.image.is_some()) {
-                draw_margin_with_images(&painter.with_clip_rect(*margin), ed, b, &rows[i], side, pos2(margin.left(), top), heights[i], &default_style, m, t);
+                draw_margin_with_images(&painter.with_clip_rect(*margin), fd, &described[i], side, pos2(margin.left(), top), heights[i], default_style, m, t);
                 continue;
             }
             let mut job = LayoutJob::default();
             for seg in &rows[i].margins[side] {
-                job.append(&seg.text, 0.0, face_format(&seg.style, &default_style, m, t));
+                job.append(&seg.text, 0.0, face_format(&seg.style, default_style, m, t));
             }
             let galley = painter.layout_job(job);
             painter.with_clip_rect(*margin).galley(pos2(margin.left(), top + (heights[i] - galley.size().y) / 2.0), galley, t.ink);
@@ -778,8 +779,8 @@ fn draw_buffer(
         // The fringes: what display specs put there, the arrows of a
         // continued or truncated line, the buffer's boundaries and empty
         // lines, and the overlay arrow over the left one.
-        let here = &fringes.rows[i];
-        for (side, spec) in [(0, &here.left), (1, &here.right), (0, &here.arrow)] {
+        let [left, right, arrow] = fringe_at(i);
+        for (side, spec) in [(0, &left), (1, &right), (0, &arrow)] {
             if let Some(spec) = spec {
                 draw_fringe(side, spec, top, heights[i]);
             }
@@ -801,13 +802,13 @@ fn draw_buffer(
         }
     }
     // A window whose cursor internal-show-cursor hid shows none.
-    if let Some((i, galley, index, under)) = cursor.filter(|_| ed.window_cursor_shown(window.id)) {
+    if let Some((i, galley, index, under)) = cursor.filter(|_| window.cursor_shown) {
         let pos = pos2(area.left() - hscroll + cursor_x, row_top(i));
         let font = rows[i].segments.iter().find(|s| s.start <= point).map(|s| FontSpec::of(&s.style)).unwrap_or_else(FontSpec::default_font);
         // At the end of a line that fills the row, the cursor goes in the
         // right fringe, as Emacs's overflow-newline-into-fringe puts it.
         let cursor_clip = Rect::from_min_max(clipped.clip_rect().min, pos2(view.fringes[1].right(), clipped.clip_rect().bottom()));
-        if let Some(rect) = cursor_on_image(ed, b, &rows[i], &laid_out[i].1, point, pos2(area.left() - hscroll + offsets[i], row_top(i)), m) {
+        if let Some(rect) = cursor_on_image(&described[i], point, pos2(area.left() - hscroll + offsets[i], row_top(i)), m) {
             painter.with_clip_rect(cursor_clip).rect_stroke(rect, 0.0, Stroke::new(1.0, t.ink), StrokeKind::Outside);
             return;
         }
@@ -1110,7 +1111,7 @@ fn text_format(m: &Metrics, color: Color32) -> TextFormat {
     TextFormat { font_id: m.font.clone(), color, expand_bg: 0.0, ..Default::default() }
 }
 
-fn draw_mode_line(painter: &Painter, ed: &Editor, window: &WindowView, rect: Rect, m: &Metrics, t: Tokens) {
+fn draw_mode_line(painter: &Painter, window: &WindowDescription, rect: Rect, m: &Metrics, t: Tokens) {
     // The selected window's mode line is a well; the others' sit on the page,
     // as Emacs's mode-line-inactive face is plainer.
     painter.rect_filled(rect, 0.0, if window.selected { t.sunken } else { t.bg });
@@ -1120,13 +1121,13 @@ fn draw_mode_line(painter: &Painter, ed: &Editor, window: &WindowView, rect: Rec
     // in the selected window, shadow faint, and what stands out in the accent.
     let default_style = Style::default();
     let mut job = LayoutJob::default();
-    for segment in ed.mode_line(window.id) {
+    for (segment, style) in &window.mode_line {
         let format = match segment.faces.last().map(String::as_str) {
             None => text_format(m, t.muted),
             Some("mode-line-buffer-id") => text_format(m, if window.selected { t.ink_strong } else { t.muted }),
             Some("mode-line-emphasis") => text_format(m, t.accent_ink),
             Some("shadow") => text_format(m, t.faint),
-            Some(_) => face_format(&ed.style_for(&segment.faces, t.dark), &default_style, m, t),
+            Some(_) => face_format(style, &default_style, m, t),
         };
         job.append(&segment.text, 0.0, format);
     }
@@ -1138,17 +1139,17 @@ fn draw_mode_line(painter: &Painter, ed: &Editor, window: &WindowView, rect: Rec
 /// Draws a window's header line, as the core formatted `header-line-format`:
 /// a bar like the mode line's, with a hairline under it, its text in the
 /// mode line's muted ink and bold faces strong.
-fn draw_header_line(painter: &Painter, ed: &Editor, window: &WindowView, rect: Rect, m: &Metrics, t: Tokens) {
+fn draw_header_line(painter: &Painter, window: &WindowDescription, rect: Rect, m: &Metrics, t: Tokens) {
     painter.rect_filled(rect, 0.0, t.sunken);
     painter.hline(rect.x_range(), rect.bottom() - 0.5, Stroke::new(1.0, t.line));
     let default_style = Style::default();
     let mut job = LayoutJob::default();
-    for segment in ed.header_line(window.id).unwrap_or_default() {
+    for (segment, style) in window.header_line.iter().flatten() {
         let format = match segment.faces.last().map(String::as_str) {
             None => text_format(m, t.muted),
             Some("bold") => text_format(m, t.ink_strong),
             Some("shadow") => text_format(m, t.faint),
-            Some(_) => face_format(&ed.style_for(&segment.faces, t.dark), &default_style, m, t),
+            Some(_) => face_format(style, &default_style, m, t),
         };
         job.append(&segment.text, 0.0, format);
     }
@@ -1157,39 +1158,41 @@ fn draw_header_line(painter: &Painter, ed: &Editor, window: &WindowView, rect: R
     painter.with_clip_rect(rect).galley(pos2(rect.left() + PAD_X, y), galley, t.ink);
 }
 
-fn draw_echo_area(painter: &Painter, ed: &Editor, rect: Rect, m: &Metrics, t: Tokens, cursor: CursorStyle) {
+fn draw_echo_area(painter: &Painter, fd: &FrameDescription, rect: Rect, m: &Metrics, t: Tokens, cursor: CursorStyle) {
     let painter = painter.with_clip_rect(rect);
     let origin_x = rect.left() + PAD_X;
-    if ed.prompt().is_none() {
-        if let Some(message) = ed.echo() {
-            let galley = painter.layout_no_wrap(message.to_string(), m.font.clone(), t.muted);
-            painter.galley(pos2(origin_x, rect.center().y - galley.size().y / 2.0), galley, t.muted);
+    let (rows, point) = match &fd.echo {
+        Echo::Message(message) => {
+            if let Some(message) = message {
+                let galley = painter.layout_no_wrap(message.to_string(), m.font.clone(), t.muted);
+                painter.galley(pos2(origin_x, rect.center().y - galley.size().y / 2.0), galley, t.muted);
+            }
+            return;
         }
-        return;
-    }
+        Echo::Prompt { rows, point } => (rows, *point),
+    };
     // The minibuffer's rows, as a window's: the prompt and input in their
     // faces, and what overlays add, such as icomplete's list, each newline
     // in it starting another row.
-    let rows = ed.minibuffer_rows(t.dark);
-    let default_style = ed.style_for(&["default".to_string()], t.dark);
+    let default_style = &fd.default_style;
     let advance = |font: &FontId, c: char| painter.ctx().fonts_mut(|f| f.glyph_width(font, c));
-    let point = ed.minibuffer().point();
     let top = rect.top() + BAR_PAD;
     let mut at_point = None;
-    for (k, row) in rows.iter().enumerate() {
+    for (k, described) in rows.iter().enumerate() {
+        let (row, glyphs) = (&described.row, &described.glyphs);
         let y = top + k as f32 * m.line_height;
         if y + m.line_height > rect.bottom() - BAR_PAD + 0.5 {
             break;
         }
-        let glyphs = row_glyphs(row, 8);
-        let galley = painter.layout_job(row_job(row, &glyphs, None, m.line_height, &default_style, m, t, &advance));
+        let galley = painter.layout_job(row_job(row, glyphs, None, m.line_height, default_style, m, t, &advance));
         // A right-to-left row from the right edge.
-        let offset = ed.row_offset(row, (rect.width() - 2.0 * PAD_X) / m.char_width, 8) * m.char_width;
+        let width = (rect.width() - 2.0 * PAD_X) / m.char_width;
+        let offset = if row.right_to_left { (width - described.width) * m.char_width } else { 0.0 };
         let origin_x = origin_x + offset;
         painter.galley(pos2(origin_x, y + (m.line_height - galley.size().y) / 2.0), galley.clone(), t.ink);
-        draw_apart(&painter, row, &glyphs, &galley, pos2(origin_x, y + (m.line_height - galley.size().y) / 2.0), &default_style, m, t);
+        draw_apart(&painter, row, glyphs, &galley, pos2(origin_x, y + (m.line_height - galley.size().y) / 2.0), default_style, m, t);
         if at_point.is_none() && row.shows_point(point) {
-            let index = cursor_glyph(row, &glyphs, point);
+            let index = cursor_glyph(row, glyphs, point);
             let char_index: usize = glyphs[..index].iter().map(|g| g.text.chars().count()).sum();
             let under = glyphs.get(index).and_then(|g| g.text.chars().next());
             at_point = Some((galley, char_index, under, y, origin_x));
@@ -1203,9 +1206,9 @@ fn draw_echo_area(painter: &Painter, ed: &Editor, rect: Rect, m: &Metrics, t: To
 
 /// The height a row with images lays its text out at: its tallest text's
 /// line; `None` for a row without images.
-fn image_text_height(ed: &Editor, b: &ember_core::Buffer, row: &Row, m: &Metrics) -> Option<f32> {
-    ed.row_ascent(b, row)?;
-    let scale = row.segments.iter().filter(|s| s.image.is_none() && !s.text.is_empty()).map(|s| s.style.scale).fold(1.0f32, f32::max);
+fn image_text_height(row: &RowDescription, m: &Metrics) -> Option<f32> {
+    row.ascent?;
+    let scale = row.row.segments.iter().filter(|s| s.image.is_none() && !s.text.is_empty()).map(|s| s.style.scale).fold(1.0f32, f32::max);
     Some(m.line_height * scale)
 }
 
@@ -1216,19 +1219,18 @@ fn galley_baseline(galley: &Galley) -> f32 {
 
 /// Draws the images a row shows over the room its galley left for them,
 /// each on the row's baseline as its ascent says.
-#[allow(clippy::too_many_arguments)]
-fn draw_row_images(painter: &Painter, ed: &Editor, b: &ember_core::Buffer, row: &Row, glyphs: &[Glyph], origin: Pos2, m: &Metrics, t: Tokens) {
-    if !row.segments.iter().any(|s| s.image.is_some()) {
+fn draw_row_images(painter: &Painter, fd: &FrameDescription, row: &RowDescription, origin: Pos2, m: &Metrics, t: Tokens) {
+    if !row.row.segments.iter().any(|s| s.image.is_some()) {
         return;
     }
     // Each glyph's x as the core laid the row out, which the galley's spacing follows.
-    let columns = ed.glyph_columns(row, glyphs, ed.tab_width_in(b));
     let mut x = 0.0;
-    for (glyph, width) in glyphs.iter().zip(&columns) {
-        let seg = &row.segments[glyph.segment];
+    for (glyph, width) in row.glyphs.iter().zip(&row.columns) {
+        let seg = &row.row.segments[glyph.segment];
         if let Some(img) = &seg.image {
             let ink = seg.style.foreground.map(color32).unwrap_or(t.ink);
-            image::draw_image(painter, ed, img, pos2(origin.x + x * m.char_width, origin.y + ed.image_top(b, row, seg)), ink);
+            let top = row.segment_tops.get(glyph.segment).copied().unwrap_or(0.0);
+            image::draw_image(painter, fd, img, pos2(origin.x + x * m.char_width, origin.y + top), ink);
         }
         x += width;
     }
@@ -1236,25 +1238,26 @@ fn draw_row_images(painter: &Painter, ed: &Editor, b: &ember_core::Buffer, row: 
 
 /// Where the cursor's box goes when point is on an image: round the
 /// image, as Emacs draws it; `None` when point is not on one.
-fn cursor_on_image(ed: &Editor, b: &ember_core::Buffer, row: &Row, glyphs: &[Glyph], point: usize, origin: Pos2, m: &Metrics) -> Option<Rect> {
-    let index = cursor_glyph(row, glyphs, point);
-    let glyph = glyphs.get(index).filter(|g| g.pos == Some(point))?;
-    let seg = &row.segments[glyph.segment];
-    let img = seg.image.as_ref()?;
-    let x: f32 = ed.glyph_columns(row, glyphs, ed.tab_width_in(b))[..index].iter().sum();
-    Some(image::glyph_rect(img, pos2(origin.x + x * m.char_width, origin.y + ed.image_top(b, row, seg))))
+fn cursor_on_image(row: &RowDescription, point: usize, origin: Pos2, m: &Metrics) -> Option<Rect> {
+    let index = cursor_glyph(&row.row, &row.glyphs, point);
+    let glyph = row.glyphs.get(index).filter(|g| g.pos == Some(point))?;
+    let img = row.row.segments[glyph.segment].image.as_ref()?;
+    let x: f32 = row.columns[..index].iter().sum();
+    let top = row.segment_tops.get(glyph.segment).copied().unwrap_or(0.0);
+    Some(image::glyph_rect(img, pos2(origin.x + x * m.char_width, origin.y + top)))
 }
 
 /// Draws a margin's segments beside a row when some are images: text and
 /// images one after another, each image on the row's baseline.
 #[allow(clippy::too_many_arguments)]
-fn draw_margin_with_images(painter: &Painter, ed: &Editor, b: &ember_core::Buffer, row: &Row, side: usize, top_left: Pos2, height: f32, default_style: &Style, m: &Metrics, t: Tokens) {
+fn draw_margin_with_images(painter: &Painter, fd: &FrameDescription, row: &RowDescription, side: usize, top_left: Pos2, height: f32, default_style: &Style, m: &Metrics, t: Tokens) {
     let mut x = top_left.x;
-    for seg in &row.margins[side] {
+    for (k, seg) in row.row.margins[side].iter().enumerate() {
         match &seg.image {
             Some(img) => {
                 let ink = seg.style.foreground.map(color32).unwrap_or(t.ink);
-                image::draw_image(painter, ed, img, pos2(x, top_left.y + ed.image_top(b, row, seg)), ink);
+                let top = row.margin_tops[side].get(k).copied().unwrap_or(0.0);
+                image::draw_image(painter, fd, img, pos2(x, top_left.y + top), ink);
                 x += img.advance();
             }
             None => {

@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use egui::{Color32, ColorImage, Painter, Pos2, Rect, Stroke, StrokeKind, TextureHandle, TextureOptions, pos2, vec2};
-use ember_core::Editor;
+use ember_core::frame_description::FrameDescription;
 use ember_core::image::ImageGlyph;
 
 /// How many frames a texture is kept for after it was last drawn.
@@ -27,7 +27,7 @@ fn textures(ctx: &egui::Context) -> Arc<Mutex<Textures>> {
 }
 
 /// An image's texture, decoded and uploaded the first time it is drawn.
-fn texture(ctx: &egui::Context, ed: &Editor, image: &ImageGlyph) -> Option<TextureHandle> {
+fn texture(ctx: &egui::Context, fd: &FrameDescription, image: &ImageGlyph) -> Option<TextureHandle> {
     let scale = ctx.pixels_per_point();
     let key = (image.id, scale.to_bits());
     let frame = ctx.cumulative_pass_nr();
@@ -41,7 +41,7 @@ fn texture(ctx: &egui::Context, ed: &Editor, image: &ImageGlyph) -> Option<Textu
         *last = frame;
         return handle.clone();
     }
-    let handle = ed.image_rgba(image.id, scale).map(|rgba| {
+    let handle = fd.images.get(&image.id).cloned().flatten().map(|rgba| {
         let pixels = ColorImage::from_rgba_unmultiplied([rgba.width as usize, rgba.height as usize], &rgba.pixels);
         // Smooth when shrinking, sharp pixels when enlarging, as Emacs's
         // default image-transform-smoothing chooses.
@@ -56,7 +56,7 @@ fn texture(ctx: &egui::Context, ed: &Editor, image: &ImageGlyph) -> Option<Textu
 /// Draws an image glyph whose box starts at `top_left`: the part of the
 /// image its slice shows, inside its margins, with its relief; or an
 /// empty box, as Emacs draws an image it could not load.
-pub fn draw_image(painter: &Painter, ed: &Editor, image: &ImageGlyph, top_left: Pos2, ink: Color32) {
+pub fn draw_image(painter: &Painter, fd: &FrameDescription, image: &ImageGlyph, top_left: Pos2, ink: Color32) {
     let (dx, dy) = image.image_offset();
     let [sx, sy, sw, sh] = image.slice;
     let rect = Rect::from_min_size(pos2(top_left.x + dx, top_left.y + dy), vec2(sw, sh));
@@ -64,7 +64,7 @@ pub fn draw_image(painter: &Painter, ed: &Editor, image: &ImageGlyph, top_left: 
         painter.rect_stroke(rect, 0.0, Stroke::new(1.0, ink), StrokeKind::Inside);
         return;
     }
-    if let Some(texture) = texture(painter.ctx(), ed, image) {
+    if let Some(texture) = texture(painter.ctx(), fd, image) {
         let uv = Rect::from_min_max(pos2(sx / image.width, sy / image.height), pos2((sx + sw) / image.width, (sy + sh) / image.height));
         painter.image(texture.id(), rect, uv, Color32::WHITE);
     }

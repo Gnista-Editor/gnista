@@ -168,6 +168,8 @@ With it, a second engine (step 4) or a second platform (the web) is a second gen
 
 **Exit check.** `grep` finds no `Editor` method called from `draw*` in `ember-gui` or from `ui.rs`'s drawing in `ember`; the snapshot tests pass; `key_to_frame` is within 0.1 ms of the drawing-call cost measured before the change.
 
+**Done**, 2026-10-31 ([ADR 0050](adr/0050-the-frame-description.md)), for drawing: the GUI's and terminal's draw functions take only a `FrameDescription`, every snapshot and terminal test passes unchanged, and `key_to_frame` is within 0.1 ms of the drawing calls. Window layout and hit-testing are left for step 3, where they become messages to the editor's thread.
+
 ## Step 3: the editor thread
 
 **What it is.** The editor and its script runtime move to a thread of their own, running a command loop in the core. The UI thread sends input and draws the latest description. This is what gives goal 1.

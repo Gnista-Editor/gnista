@@ -382,3 +382,48 @@ fn startup() {
     times.sort_by(f64::total_cmp);
     println!("startup: {:.1} ms (median of 5; fastest {:.1})", times[2], times[0]);
 }
+
+/// From a key to its frame description, which front ends draw from
+/// (docs/multithreading.md, step 2), against a key and the editor calls
+/// the GUI made to draw before: rows, glyph columns and row heights.
+#[test]
+#[ignore]
+fn key_to_frame() {
+    let lines = env_usize("EMBER_BENCH_ORG_LINES", 50_000);
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("big.org");
+    std::fs::write(&path, org_text(lines)).unwrap();
+    for (title, gui) in [("cells", false), ("GUI metrics", true)] {
+        let mut line = Vec::new();
+        // Each in an editor of its own, opened the same way, so each moves
+        // through the same part of the file.
+        for (kind, describe) in [("drawing calls", false), ("description", true)] {
+            let mut ed = Editor::new();
+            let _scripting = Scripting::new(&mut ed).unwrap();
+            if gui {
+                ed.set_text_metrics(std::sync::Arc::new(GuiLike));
+            }
+            let w = ed.selected_window();
+            ed.set_window_size(w, COLS, ROWS);
+            ed.call("find-file", vec![ember_core::Arg::Str(path.to_string_lossy().to_string())]).unwrap();
+            let middle = ed.window_buffer().line_count() / 2;
+            let pos = ed.window_buffer().line_start(middle);
+            ed.window_buffer_mut().set_point(pos);
+            for (name, n, keys) in [("C-v", 20, "C-v"), ("C-n", 20, "C-n"), ("typing", 20, "x")] {
+                let start = Instant::now();
+                for _ in 0..n {
+                    ed.press(keys).ok();
+                    if describe {
+                        ed.advance_clock(Duration::from_millis(200));
+                        ed.redisplay();
+                        std::hint::black_box(ed.describe_frame(ed.selected_frame(), true, 2.0));
+                    } else {
+                        gui_frame(&mut ed);
+                    }
+                }
+                line.push(format!("{kind} {name} {:.2} ms", start.elapsed().as_secs_f64() * 1000.0 / n as f64));
+            }
+        }
+        println!("key to frame, Org file of {lines} lines, {title}: {}", line.join(", "));
+    }
+}

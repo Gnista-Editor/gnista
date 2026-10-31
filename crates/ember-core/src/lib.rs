@@ -20,6 +20,7 @@ mod category;
 mod chartab_data;
 mod colors_data;
 pub mod font;
+pub mod frame_description;
 pub mod quit;
 mod specbind;
 mod fringe;
