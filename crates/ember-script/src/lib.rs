@@ -8,6 +8,7 @@ pub mod config;
 mod bidi;
 mod images;
 mod strip;
+mod strip_js;
 mod types;
 
 pub use strip::{strip_module_types, strip_types};
@@ -57,6 +58,8 @@ impl rquickjs::loader::Resolver for PackageResolver {
     }
 }
 
+include!(concat!(env!("OUT_DIR"), "/stripped.rs"));
+
 /// Loads a package as an ES module, its types erased.
 struct PackageLoader;
 
@@ -68,7 +71,10 @@ impl rquickjs::loader::Loader for PackageLoader {
         _attributes: Option<rquickjs::loader::ImportAttributes<'js>>,
     ) -> rquickjs::Result<rquickjs::Module<'js, rquickjs::module::Declared>> {
         let (file, source) = package_source(name).ok_or_else(|| rquickjs::Error::new_loading(name))?;
-        let js = strip_module_types(file, source.to_string()).map_err(|e| rquickjs::Error::new_loading_message(name, e.to_string()))?;
+        let js = match stripped(file) {
+            Some(js) => js.to_string(),
+            None => strip_module_types(file, source.to_string()).map_err(|e| rquickjs::Error::new_loading_message(name, e.to_string()))?,
+        };
         rquickjs::Module::declare(ctx.clone(), file, js)
     }
 }

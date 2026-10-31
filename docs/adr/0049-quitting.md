@@ -39,7 +39,7 @@ Option 2, with the interrupt kept as the emergency exit.
 ## Consequences
 
 - **Stopping work.** Once step 3 moves keys to another thread, `C-g` stops any script or long search. Until then the API and the tests use it, and nothing a user sees changes.
-- **Speed.** Keys are unchanged in the benchmark; the checks are a decrement in loops and an atomic load per call into the editor. Startup rose from 60 to 75 ms, the cost of parsing the stripped packages again. Stripping the shipped packages when Ember is built removes both parses.
+- **Speed.** Keys are unchanged in the benchmark; the checks are a decrement in loops and an atomic load per call into the editor. Startup rose from 60 to 75 ms, the cost of parsing the stripped packages again, until the shipped packages were stripped when Ember is built (`crates/ember-script/build.rs`): 42 ms.
 - **Columns in errors.** Columns after a loop's opening brace on that line move right by the check's length.
 - **Not yet checked, as Emacs checks them:** reading and writing files, decoding, line counting over long stretches, sorting, and `parse-partial-sexp`, whose scanner returns no error. Each gets a check when it is measured to run long enough to matter.
 

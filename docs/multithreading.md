@@ -141,7 +141,7 @@ With it, a second engine (step 4) or a second platform (the web) is a second gen
 
 **Exit check.** The tests above pass. The terminal, whose stdin is read by the main thread today, cannot use this until step 3; nothing user-visible changes yet.
 
-**Done**, 2026-10-31 ([ADR 0049](adr/0049-quitting.md)). The flag, `maybe_quit` in the regexp matcher and `scan-lists`, the check at every call from a script, the loop checks in `strip.rs`, the binding stack in `specbind.rs`, and the emergency exit with its unwinding, each with the tests named above. Left for when they are measured to matter: checks in file reading and writing, decoding, sorting and `parse-partial-sexp`. Startup rose from 60 to 75 ms for the second parse.
+**Done**, 2026-10-31 ([ADR 0049](adr/0049-quitting.md)). The flag, `maybe_quit` in the regexp matcher and `scan-lists`, the check at every call from a script, the loop checks in `strip.rs`, the binding stack in `specbind.rs`, and the emergency exit with its unwinding, each with the tests named above. Left for when they are measured to matter: checks in file reading and writing, decoding, sorting and `parse-partial-sexp`. Startup rose from 60 to 75 ms for the second parse; stripping the shipped packages when Ember is built brought it to 42 ms.
 
 ## Step 2: the frame description
 

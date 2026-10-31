@@ -72,6 +72,7 @@ So the rule in step 4 splits: `S-TAB` is primitives, and a faster engine would n
 
 ## What changed
 
+- **The shipped packages are stripped when Ember is built**, as Emacs byte-compiles its preloaded Lisp: a new editor loads its packages in 42 ms (`startup` in the bench), where stripping them as it started took 60 ms, and 75 with the loop checks of [ADR 0049](adr/0049-quitting.md).
 - **Overlays are found by id and by position without a pass over them all** (above): `S-TAB` in the 50,000-line Org file from 110 to 29 ms.
 - **Org's headings and element tree are kept between keys.** The element parser asked for the buffer's headings hundreds of times per key, and each time every line was read again. `headings()` and the parse are now kept until the text (the buffer's modified tick) or the TODO keywords change.
 - **The element parser parses only the branch it is asked about.** `elementAt` needs only the heading whose entry holds the position, its ancestors and their sections, as Org's `org-element-at-point` does, so the rest of the buffer is left unparsed.
