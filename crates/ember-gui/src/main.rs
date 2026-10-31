@@ -4,7 +4,7 @@
 
 use std::env;
 
-use ember_core::{Arg, Editor, expand_file_name};
+use ember_core::{Arg, expand_file_name};
 use ember_gui::{EmberApp, theme};
 use ember_script::config;
 
@@ -14,20 +14,6 @@ fn main() -> eframe::Result {
         match arg.as_str() {
             "-q" | "--no-init" => no_init = true,
             _ => files.push(arg),
-        }
-    }
-
-    let mut editor = Editor::new();
-    // Kills and yanks share the system clipboard, as in Emacs.
-    if let Some(clipboard) = ember_gui::clipboard::SystemClipboard::new() {
-        editor.set_clipboard(Box::new(clipboard));
-    }
-    // Before init.ts, which may change it.
-    ember_gui::modeline::install(&mut editor);
-    let scripting = config::setup_with(&mut editor, !no_init, ember_agent::install);
-    for file in files {
-        if let Err(e) = editor.call("find-file", vec![Arg::Str(expand_file_name(&file).display().to_string())]) {
-            editor.message(e.to_string());
         }
     }
 
@@ -43,19 +29,33 @@ fn main() -> eframe::Result {
         options,
         Box::new(move |cc| {
             theme::install_fonts(&cc.egui_ctx, true);
-            let mut app = EmberApp::new(editor);
+            // The editor runs on a thread of its own, made there, and the
+            // window draws what it last described, so a long command never
+            // stops the window redrawing, and C-g reaches it.
+            let mut app = EmberApp::threaded(&cc.egui_ctx, move |editor| {
+                // Kills and yanks share the system clipboard, as in Emacs.
+                if let Some(clipboard) = ember_gui::clipboard::SystemClipboard::new() {
+                    editor.set_clipboard(Box::new(clipboard));
+                }
+                let scripting = config::setup_with(editor, !no_init, ember_agent::install);
+                for file in files {
+                    if let Err(e) = editor.call("find-file", vec![Arg::Str(expand_file_name(&file).display().to_string())]) {
+                        editor.message(e.to_string());
+                    }
+                }
+                scripting
+            });
             // An agent reaches this editor through ember-mcp, by a socket
             // only this user can open; a request wakes the window to answer it.
             let ctx = cc.egui_ctx.clone();
             let requests = match ember_mcp::socket::listen(&ember_mcp::socket::default_path(), move || ctx.request_repaint()) {
                 Ok(requests) => Some(requests),
                 Err(e) => {
-                    app.editor.message(format!("No agent socket: {e}"));
+                    app.message(format!("No agent socket: {e}"));
                     None
                 }
             };
-            // Commands defined by scripts hold the runtime, so the app keeps it.
-            Ok(Box::new(app.with_agent(requests, scripting)))
+            Ok(Box::new(app.with_agent(requests, None)))
         }),
     )
 }

@@ -27,6 +27,8 @@ use crate::window::{FrameId, WindowId};
 #[derive(Clone, Debug)]
 pub struct FrameDescription {
     pub frame: FrameId,
+    /// The name of the buffer its selected window shows, for its title.
+    pub title: String,
     /// Whether its styles are for a dark background.
     pub dark: bool,
     /// How its windows divide it.
@@ -63,6 +65,11 @@ pub enum Echo {
 #[derive(Clone, Debug)]
 pub struct WindowDescription {
     pub id: WindowId,
+    /// The buffer it shows, the first line it shows, and how many lines
+    /// the buffer has, for scrolling.
+    pub buffer: String,
+    pub top_line: usize,
+    pub line_count: usize,
     /// Whether it is the frame's selected window.
     pub selected: bool,
     pub point: usize,
@@ -189,6 +196,9 @@ impl Editor {
             let point_row = crate::display::row_showing(&plain, view.point, tab_width);
             windows.push(WindowDescription {
                 id: view.id,
+                buffer: b.name.clone(),
+                top_line: view.top_line,
+                line_count: b.line_count(),
                 selected: view.selected,
                 point: view.point,
                 point_row,
@@ -216,8 +226,10 @@ impl Editor {
         } else {
             Echo::Message(if selected { self.echo().map(str::to_string) } else { None })
         };
+        let title = windows.iter().find(|w| w.selected).or(windows.first()).map(|w| w.buffer.clone()).unwrap_or_default();
         FrameDescription {
             frame,
+            title,
             dark,
             tree: self.frame_tree(frame).cloned().unwrap_or(crate::window::WindowTree::Leaf(0)),
             echo_lines: if selected { self.mini_window_lines() } else { 1 },

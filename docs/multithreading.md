@@ -214,6 +214,8 @@ With it, a second engine (step 4) or a second platform (the web) is a second gen
 
 **Exit check.** The terminal and the GUI run on the loop; during a 5-second command the GUI paints at its frame rate, resizes, and `C-g` interrupts within 50 ms; `key_to_frame` is within 0.1 ms of step 2's figure; all tests pass with the moved tests on the driver.
 
+**Done**, 2026-10-31 ([ADR 0051](adr/0051-the-editor-thread.md)): `Driver` in `driver.rs`; the terminal and the GUI binary run the editor on its thread and draw what it publishes; `C-g` sets the quit flag and goes as input. Tests that drive an editor on their own thread keep doing so: the GUI's snapshot tests run the editor on the window's thread (`EmberApp::new`), so none had to move. Process output still waits for the loop's next timer rather than sending `Wake`.
+
 ## Step 4: V8 instead of QuickJS, if the profile says so
 
 [ADR 0003](adr/0003-typescript-on-quickjs.md) chose QuickJS for its size and simple embedding, and against V8 for binary size, build complexity and `deno_core`'s async-first API; it left V8 open "if scripts ever get too slow". The iOS JIT ban was a later concern and is gone.

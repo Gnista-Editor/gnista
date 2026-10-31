@@ -1,9 +1,11 @@
 //! The editor window: the buffer, the mode line and the echo area, drawn
 //! from editor state each frame, as the terminal front end does.
 
-use std::sync::Arc;
+use std::any::Any;
+use std::sync::{Arc, Mutex};
 
 use ember_core::display::{Glyph, cursor_glyph};
+use ember_core::driver::{Driver, Input as DriverInput};
 use ember_core::frame_description::{Echo, FrameDescription, RowDescription, WindowDescription};
 use ember_core::layout::FontSpec;
 use ember_core::{Editor, FrameId, Key, KeyCode, MouseEvent, MouseKind, Row, Style, WindowId};
@@ -26,23 +28,24 @@ const PAD_Y: f32 = 12.0;
 const BAR_PAD: f32 = 6.0;
 
 pub struct EmberApp {
-    pub editor: Editor,
+    /// The editor: on a thread of its own, or on this one, for tests.
+    backend: Backend,
+    /// What each frame shows, as the editor last described it.
+    frames: Vec<FrameDescription>,
+    /// Which publication `frames` came from, with the editor on its own thread.
+    generation: u64,
+    /// Whether the editor wants to exit, as `C-x C-c` does.
+    exit: bool,
+    /// Whether the bell rang, and if so whether it flashes.
+    bell: Option<bool>,
     title: String,
     mac: bool,
-    /// How far the view is scrolled past the window's top line, in points,
-    /// for smooth scrolling. Always less than one line; whole lines are the
-    /// core's `top_line`.
-    scroll_offset: f32,
-    /// The window the offset applies to: the one last scrolled.
-    scroll_window: WindowId,
-    /// The window, buffer and top line the offset belongs to. If something
-    /// else moves the view, such as C-v or switching buffers, the offset resets.
-    scroll_anchor: (WindowId, String, usize),
-    mouse: Mouse,
-    /// Messages from an agent through ember-mcp, answered between frames,
-    /// and the script runtime its eval_typescript tool uses.
+    /// Smooth scrolling's offset, shared with the editor's thread, which
+    /// moves whole lines.
+    scroll: Arc<Mutex<Scroll>>,
+    mouse: Arc<Mutex<Mouse>>,
+    /// Messages from an agent through ember-mcp, answered between frames.
     agent: Option<std::sync::mpsc::Receiver<ember_mcp::socket::Request>>,
-    scripting: Option<ember_script::Scripting>,
     /// The frame this native window shows; the others get windows of their own.
     main_frame: FrameId,
     /// Each frame's last title, and the frame last selected, to focus its
@@ -53,6 +56,51 @@ pub struct EmberApp {
     flash_until: Option<f64>,
     /// Whether the bell sounds without `visible-bell`; tests keep it quiet.
     audible_bell: bool,
+    /// Whether the primary button is down, so moves are drags.
+    button_down: bool,
+    /// What each frame's layout last told the editor, so it is told again
+    /// only when it changes.
+    told: std::collections::HashMap<FrameId, Sizes>,
+}
+
+/// Where the editor runs.
+enum Backend {
+    /// On this thread: what is sent runs at once, and frames are described
+    /// as they are drawn, as tests drive it, deterministically.
+    Inline { editor: Box<Editor>, keep: Box<dyn Any> },
+    /// On a thread of its own (docs/multithreading.md, step 3): input goes
+    /// to it and the window draws what it last published, never waiting.
+    Thread { driver: Driver, look: Arc<Mutex<(bool, f32)>> },
+}
+
+impl Backend {
+    /// Runs `f` with the editor and what its setup kept: now, or in turn
+    /// on the editor's thread.
+    fn run(&mut self, f: impl FnOnce(&mut Editor, &mut dyn Any) + Send + 'static) {
+        match self {
+            Backend::Inline { editor, keep } => f(editor, &mut **keep),
+            Backend::Thread { driver, .. } => driver.send(DriverInput::Run(Box::new(f))),
+        }
+    }
+
+    fn key(&mut self, key: Key) {
+        match self {
+            Backend::Inline { editor, .. } => editor.handle_key(key),
+            Backend::Thread { driver, .. } => driver.key(key),
+        }
+    }
+}
+
+/// Smooth scrolling: how far the view is scrolled past the window's top
+/// line, in points, always less than one line, whole lines being the
+/// core's `top_line`; the window it applies to, the one last scrolled; and
+/// the window, buffer and top line it belongs to, so that when something
+/// else moves the view, such as C-v or switching buffers, it resets.
+#[derive(Default)]
+struct Scroll {
+    offset: f32,
+    window: WindowId,
+    anchor: (WindowId, String, usize),
 }
 
 /// How long a second click may follow the first to count as a double click, in seconds.
@@ -80,23 +128,80 @@ impl eframe::App for EmberApp {
 }
 
 impl EmberApp {
+    /// A window on an editor on this thread, as tests use.
     pub fn new(mut editor: Editor) -> EmberApp {
         crate::modeline::install(&mut editor);
+        EmberApp::with_backend(Backend::Inline { editor: Box::new(editor), keep: Box::new(Option::<ember_script::Scripting>::None) })
+    }
+
+    /// A window on an editor on a thread of its own, made there by
+    /// `setup`, which returns the script runtime the editor keeps. `ctx` is
+    /// woken when the editor has something new to draw.
+    pub fn threaded(ctx: &egui::Context, setup: impl FnOnce(&mut Editor) -> Option<ember_script::Scripting> + Send + 'static) -> EmberApp {
+        let look = Arc::new(Mutex::new((true, ctx.pixels_per_point())));
+        let described = look.clone();
+        let wake = ctx.clone();
+        let driver = Driver::spawn(
+            move |editor| {
+                crate::modeline::install(editor);
+                Box::new(setup(editor))
+            },
+            move |editor| {
+                let (dark, scale) = *described.lock().unwrap_or_else(|e| e.into_inner());
+                editor.redisplay();
+                editor.frame_list().into_iter().map(|f| editor.describe_frame(f, dark, scale)).collect()
+            },
+            move || wake.request_repaint(),
+        );
+        EmberApp::with_backend(Backend::Thread { driver, look })
+    }
+
+    fn with_backend(backend: Backend) -> EmberApp {
         EmberApp {
-            editor,
+            backend,
+            frames: Vec::new(),
+            generation: 0,
+            exit: false,
+            bell: None,
             title: String::new(),
             mac: cfg!(target_os = "macos"),
-            scroll_offset: 0.0,
-            scroll_window: 0,
-            scroll_anchor: (0, String::new(), 0),
-            mouse: Mouse::default(),
+            scroll: Default::default(),
+            mouse: Default::default(),
             agent: None,
-            scripting: None,
             main_frame: 1,
             titles: std::collections::HashMap::new(),
             focused_frame: 1,
             flash_until: None,
             audible_bell: true,
+            button_down: false,
+            told: std::collections::HashMap::new(),
+        }
+    }
+
+    /// Runs `f` with the editor and waits for its answer: at once on this
+    /// thread, or in turn on the editor's own.
+    pub fn with_editor<T: Send + 'static>(&mut self, f: impl FnOnce(&mut Editor) -> T + Send + 'static) -> T {
+        match &mut self.backend {
+            Backend::Inline { editor, .. } => f(editor),
+            Backend::Thread { driver, .. } => driver.with(f),
+        }
+    }
+
+    /// Runs `f` with the editor without waiting for it.
+    pub fn run(&mut self, f: impl FnOnce(&mut Editor) + Send + 'static) {
+        self.backend.run(move |editor, _| f(editor));
+    }
+
+    /// Shows a message in the echo area, as the editor's `message` does.
+    pub fn message(&mut self, text: String) {
+        self.backend.run(move |editor, _| editor.message(text));
+    }
+
+    /// The editor, when it runs on this thread, as in tests.
+    pub fn editor(&self) -> &Editor {
+        match &self.backend {
+            Backend::Inline { editor, .. } => editor,
+            Backend::Thread { .. } => panic!("the editor runs on a thread of its own"),
         }
     }
 
@@ -107,15 +212,17 @@ impl EmberApp {
     }
 
     /// Answers an agent's messages from `requests`, as ember-mcp passes them
-    /// on, with the editor this window shows. Keeps the script runtime too,
-    /// which commands that scripts define need alive.
+    /// on, with the editor this window shows. An editor on this thread
+    /// keeps `scripting` too, which commands that scripts define need alive.
     pub fn with_agent(
         mut self,
         requests: Option<std::sync::mpsc::Receiver<ember_mcp::socket::Request>>,
         scripting: Option<ember_script::Scripting>,
     ) -> EmberApp {
         self.agent = requests;
-        self.scripting = scripting;
+        if let Backend::Inline { keep, .. } = &mut self.backend {
+            *keep = Box::new(scripting);
+        }
         self
     }
 
@@ -124,8 +231,7 @@ impl EmberApp {
     /// port calls `NSBeep`. Elsewhere egui has no sound, so it flashes.
     fn flash(&mut self, ui: &Ui) {
         let now = ui.input(|i| i.time);
-        if self.editor.take_bell() {
-            let visible = self.editor.variable("visible-bell").is_some_and(|v| v.is_true());
+        if let Some(visible) = self.bell.take() {
             if visible || !cfg!(target_os = "macos") {
                 self.flash_until = Some(now + 0.1);
             } else if self.audible_bell {
@@ -144,12 +250,58 @@ impl EmberApp {
         }
     }
 
-    /// Answers the agent's waiting messages, each as one call of its own.
+    /// Answers the agent's waiting messages, each as one call of its own,
+    /// with the editor and its script runtime.
     fn answer_agent(&mut self) {
         let Some(requests) = &self.agent else { return };
-        for request in requests.try_iter() {
-            let reply = ember_mcp::handle_message(&mut self.editor, self.scripting.as_ref(), &request.line);
-            let _ = request.reply.send(reply);
+        let waiting: Vec<_> = requests.try_iter().collect();
+        for request in waiting {
+            self.backend.run(move |editor, keep| {
+                let scripting = keep.downcast_ref::<Option<ember_script::Scripting>>().and_then(Option::as_ref);
+                let reply = ember_mcp::handle_message(editor, scripting, &request.line);
+                let _ = request.reply.send(reply);
+            });
+        }
+    }
+
+    /// Takes in what the editor last published, when it runs on a thread of
+    /// its own; on this one, runs its timers and takes its bell.
+    fn refresh(&mut self, ctx: &egui::Context, dark: bool) {
+        match &mut self.backend {
+            Backend::Inline { editor, .. } => {
+                // Timers and auto-saving, and a wake-up for the next one due.
+                editor.run_timers();
+                if let Some(due) = editor.next_timer_in() {
+                    ctx.request_repaint_after(due);
+                }
+                if editor.take_bell() {
+                    self.bell = Some(editor.variable("visible-bell").is_some_and(|v| v.is_true()));
+                }
+                self.exit = editor.should_quit();
+            }
+            Backend::Thread { driver, look } => {
+                *look.lock().unwrap_or_else(|e| e.into_inner()) = (dark, ctx.pixels_per_point());
+                let mut published = driver.published();
+                if published.generation != self.generation {
+                    self.generation = published.generation;
+                    self.frames = published.frames.clone();
+                }
+                if std::mem::take(&mut published.bell) {
+                    self.bell = Some(published.visible_bell);
+                }
+                self.exit = published.exit;
+            }
+        }
+    }
+
+    /// The frames there are, and the one selected.
+    fn frame_list(&self) -> (Vec<FrameId>, FrameId) {
+        match &self.backend {
+            Backend::Inline { editor, .. } => (editor.frame_list(), editor.selected_frame()),
+            Backend::Thread { .. } => (
+                self.frames.iter().map(|f| f.frame).collect(),
+                self.frames.iter().find(|f| f.selected).map_or(self.main_frame, |f| f.frame),
+            ),
         }
     }
 
@@ -159,26 +311,36 @@ impl EmberApp {
         let ctx = ui.ctx().clone();
         self.handle_close(&ctx);
         self.answer_agent();
-        // Timers and auto-saving, and a wake-up for the next one due.
-        self.editor.run_timers();
-        if let Some(due) = self.editor.next_timer_in() {
-            ctx.request_repaint_after(due);
-        }
+        self.refresh(&ctx, Tokens::get(&ctx).dark);
         self.flash(ui);
+        let (frames, selected) = self.frame_list();
+        if frames.is_empty() {
+            // The editor's thread has not described a frame yet: keys typed
+            // meanwhile still go to it, in order.
+            ui.painter().rect_filled(ui.max_rect(), 0.0, Tokens::get(&ctx).bg);
+            let events = ctx.input(|i| i.events.clone());
+            for input in translate(&events, self.mac) {
+                match input {
+                    Input::Key(key) => self.backend.key(key),
+                    Input::Command(name) => self.backend.run(move |editor, _| editor.command_execute(name)),
+                }
+            }
+            return;
+        }
         // Where native windows cannot open, embedded in this one instead, as
         // in tests, this window shows the selected frame, as a terminal does.
         if ctx.embed_viewports() {
-            self.main_frame = self.editor.selected_frame();
+            self.main_frame = selected;
             let main = self.main_frame;
             self.show_frame(ui, main);
             return;
         }
-        if !self.editor.frame_list().contains(&self.main_frame) {
-            self.main_frame = *self.editor.frame_list().last().expect("there is always a frame");
+        if !frames.contains(&self.main_frame) {
+            self.main_frame = *frames.last().expect("there is always a frame");
         }
         let main = self.main_frame;
         self.show_frame(ui, main);
-        for frame in self.editor.frame_list() {
+        for frame in frames {
             if frame == main {
                 continue;
             }
@@ -187,18 +349,45 @@ impl EmberApp {
             ctx.show_viewport_immediate(frame_viewport(frame), builder, |ctx, _class| {
                 // Closing a frame's window deletes the frame.
                 if ctx.input(|i| i.viewport().close_requested()) {
-                    let _ = self.editor.delete_frame(Some(frame));
+                    self.backend.run(move |editor, _| {
+                        let _ = editor.delete_frame(Some(frame));
+                    });
                     return;
                 }
                 egui::CentralPanel::default().frame(egui::Frame::NONE).show(ctx, |ui| self.show_frame(ui, frame));
             });
         }
         // A frame newly selected, as by C-x 5 o, gets the focus.
-        let selected = self.editor.selected_frame();
+        let (_, selected) = self.frame_list();
         if selected != self.focused_frame {
             self.focused_frame = selected;
             let viewport = if selected == self.main_frame { egui::ViewportId::ROOT } else { frame_viewport(selected) };
             ctx.send_viewport_cmd_to(viewport, ViewportCommand::Focus);
+        }
+    }
+
+    /// Lays a frame out: from the editor, telling it each window's size,
+    /// or from its last description, sending the sizes to its thread.
+    fn layout(&mut self, ui: &Ui, frame: FrameId) -> Option<Layout> {
+        let m = Metrics::of(ui);
+        match &mut self.backend {
+            Backend::Inline { editor, .. } => Some(Layout::new(ui, editor, frame, m)),
+            Backend::Thread { driver, .. } => {
+                let fd = self.frames.iter().find(|f| f.frame == frame)?;
+                let layout = Layout::described(ui, fd, m);
+                let sizes = layout.sizes(fd.selected);
+                // Told again only when they change, as telling the editor
+                // anything has it describe its frames again.
+                if self.told.get(&frame) != Some(&sizes) {
+                    self.told.insert(frame, sizes.clone());
+                    let ctx = ui.ctx().clone();
+                    driver.run(move |editor| {
+                        set_metrics(editor, &ctx, sizes.metrics.0, sizes.metrics.1);
+                        apply_sizes(editor, &sizes);
+                    });
+                }
+                Some(layout)
+            }
         }
     }
 
@@ -218,13 +407,15 @@ impl EmberApp {
                     | egui::Event::MouseWheel { .. }
             )
         });
-        if input && frame != self.editor.selected_frame() {
-            let _ = self.editor.select_frame(frame);
+        if input && frame != self.frame_list().1 {
+            self.backend.run(move |editor, _| {
+                let _ = editor.select_frame(frame);
+            });
             self.focused_frame = frame;
         }
-        let selected = frame == self.editor.selected_frame();
+        let selected = frame == self.frame_list().1;
         // Window sizes first, for the commands this frame's keys run.
-        let before = Layout::new(ui, &mut self.editor, frame);
+        let Some(before) = self.layout(ui, frame) else { return };
         if selected {
             let time = ctx.input(|i| i.time);
             for event in &events {
@@ -232,138 +423,84 @@ impl EmberApp {
             }
             for input in translate(&events, self.mac) {
                 match input {
-                    Input::Key(key) => self.editor.handle_key(key),
-                    Input::Command(name) => self.editor.command_execute(name),
+                    Input::Key(key) => self.backend.key(key),
+                    Input::Command(name) => self.backend.run(move |editor, _| editor.command_execute(name)),
                 }
             }
         }
-        if !self.editor.frame_list().contains(&frame) {
+        if !self.frame_list().0.contains(&frame) {
             return;
         }
-        let frame_selected = frame == self.editor.selected_frame();
-        if self.view() != self.scroll_anchor {
-            self.scroll_offset = 0.0;
-        }
+        let frame_selected = frame == self.frame_list().1;
         // Input may have split or deleted windows.
-        let layout = Layout::new(ui, &mut self.editor, frame);
+        let Some(layout) = self.layout(ui, frame) else { return };
         if frame_selected {
             self.scroll(&ctx, &layout);
         }
-        let top = self.editor.window_buffer().top_line;
-        self.editor.redisplay();
-        if self.editor.window_buffer().top_line != top && self.scroll_window == self.editor.selected_window() {
-            self.scroll_offset = 0.0;
+        let t = Tokens::get(&ctx);
+        let description = match &mut self.backend {
+            Backend::Inline { editor, .. } => {
+                editor.redisplay();
+                self.exit = editor.should_quit();
+                editor.describe_frame(frame, t.dark, ctx.pixels_per_point())
+            }
+            Backend::Thread { .. } => match self.frames.iter().find(|f| f.frame == frame) {
+                Some(fd) => fd.clone(),
+                None => return,
+            },
+        };
+        // The view moved some other way than by the wheel, as by C-v or
+        // switching buffers: no offset.
+        if frame_selected {
+            let mut scroll = self.scroll.lock().unwrap_or_else(|e| e.into_inner());
+            let view = description.windows.iter().find(|w| w.id == scroll.window).map_or((0, String::new(), 0), |w| (w.id, w.buffer.clone(), w.top_line));
+            if view != scroll.anchor {
+                scroll.offset = 0.0;
+                scroll.anchor = view;
+            }
         }
-        self.scroll_anchor = self.view();
 
-        if self.editor.should_quit() {
+        if self.exit {
             ctx.send_viewport_cmd_to(egui::ViewportId::ROOT, ViewportCommand::Close);
         }
-        self.update_title(&ctx, frame);
+        self.update_title(&ctx, frame, &description.title);
         // The selected frame's window types into it, so only it shows filled cursors.
         let focused = ctx.input(|i| i.focused) && frame_selected;
-        let scroll = if frame_selected { (self.scroll_window, self.scroll_offset) } else { (0, 0.0) };
-        let t = Tokens::get(&ctx);
-        let description = self.editor.describe_frame(frame, t.dark, ctx.pixels_per_point());
+        let scroll = if frame_selected {
+            let s = self.scroll.lock().unwrap_or_else(|e| e.into_inner());
+            (s.window, s.offset)
+        } else {
+            (0, 0.0)
+        };
         draw(ui, &description, &layout, t, focused, scroll);
-    }
-
-    /// The window the scroll offset applies to, its buffer and its top line.
-    fn view(&self) -> (WindowId, String, usize) {
-        let ed = &self.editor;
-        let view = ed.windows().into_iter().find(|w| w.id == self.scroll_window);
-        view.map_or((0, String::new(), 0), |w| (w.id, w.buffer.name.clone(), w.top_line))
     }
 
     /// Turns presses, moves and releases of the primary button into
     /// `<down-mouse-1>`, `<drag-mouse-1>`, `<mouse-1>`, `<double-mouse-1>`
-    /// and `<triple-mouse-1>`, with Shift as `S-`.
+    /// and `<triple-mouse-1>`, with Shift as `S-`, and drags of a mode line
+    /// or divider into resizing, on the editor's thread.
     fn pointer(&mut self, event: &egui::Event, layout: &Layout, time: f64) {
-        let offset = (self.scroll_window, self.scroll_offset);
         let (pos, pressed, shift) = match event {
             egui::Event::PointerButton { pos, button: PointerButton::Primary, pressed, modifiers } => {
+                self.button_down = *pressed;
                 (*pos, Some(*pressed), modifiers.shift)
             }
-            egui::Event::PointerMoved(pos) if self.mouse.pressed.is_some() || self.mouse.resizing.is_some() => (*pos, None, false),
+            // Moves matter only while the button is down, for drags.
+            egui::Event::PointerMoved(pos) if self.button_down => (*pos, None, false),
             _ => return,
         };
-        if self.resize_drag(pos, pressed, layout) {
-            return;
-        }
-        let ed = &mut self.editor;
-        let target = hit(ed, layout, pos, offset);
-        let key = |kind| Key { code: KeyCode::Mouse(kind, 1), ctrl: false, meta: false, shift };
-        let mouse = &mut self.mouse;
-        match pressed {
-            Some(true) => {
-                let Some((window, position)) = target else { return };
-                mouse.clicks = match mouse.last_press {
-                    Some((t, p, n)) if time - t < DOUBLE_CLICK && p.distance(pos) < 4.0 => n % 3 + 1,
-                    _ => 1,
-                };
-                mouse.last_press = Some((time, pos, mouse.clicks));
-                mouse.pressed = Some((window, position));
-                mouse.dragged = false;
-                if mouse.clicks == 1 {
-                    ed.mouse(key(MouseKind::Down), MouseEvent { window, position, start: None });
-                }
+        let (mouse, scroll, layout) = (self.mouse.clone(), self.scroll.clone(), layout.clone());
+        self.backend.run(move |ed, _| {
+            let mut mouse = mouse.lock().unwrap_or_else(|e| e.into_inner());
+            if pressed.is_none() && mouse.pressed.is_none() && mouse.resizing.is_none() {
+                return;
             }
-            Some(false) => {
-                let Some(start) = mouse.pressed.take() else { return };
-                if mouse.dragged {
-                    return;
-                }
-                let kind = match mouse.clicks {
-                    2 => MouseKind::Double,
-                    3 => MouseKind::Triple,
-                    _ => MouseKind::Click,
-                };
-                let (window, position) = target.unwrap_or(start);
-                ed.mouse(key(kind), MouseEvent { window, position, start: None });
-            }
-            None => {
-                let (Some(start), Some((window, position))) = (mouse.pressed, target) else { return };
-                if mouse.dragged || start != (window, position) {
-                    mouse.dragged = true;
-                    ed.mouse(key(MouseKind::Drag), MouseEvent { window, position, start: Some(start) });
-                }
-            }
-        }
-    }
-
-    /// Dragging a window's mode line or the divider on its right moves that
-    /// edge, a whole line or column at a time, as Emacs's
-    /// mouse-drag-mode-line and mouse-drag-vertical-line do. Returns whether
-    /// the event was part of such a drag.
-    fn resize_drag(&mut self, pos: Pos2, pressed: Option<bool>, layout: &Layout) -> bool {
-        let m = &layout.m;
-        match (pressed, self.mouse.resizing) {
-            (Some(true), _) => {
-                let bottom = layout.echo_rect.top();
-                let grip = layout.windows.iter().find_map(|w| {
-                    let on_divider = w.divider && (pos.x - w.rect.right()).abs() <= 3.0 && w.rect.y_range().contains(pos.y);
-                    let on_mode_line = w.mode_rect.contains(pos) && w.rect.bottom() < bottom - 1.0;
-                    (on_divider || on_mode_line).then_some((w.id, on_divider))
-                });
-                let Some((window, divider)) = grip else { return false };
-                self.mouse.resizing = Some((window, divider, if divider { pos.x } else { pos.y }));
-                true
-            }
-            (Some(false), Some(_)) => {
-                self.mouse.resizing = None;
-                true
-            }
-            (None, Some((window, divider, from))) => {
-                let (along, unit) = if divider { (pos.x, m.char_width) } else { (pos.y, m.line_height) };
-                let delta = ((along - from) / unit).trunc() as i64;
-                if delta != 0 {
-                    let moved = self.editor.move_window_edge(window, delta, divider);
-                    self.mouse.resizing = Some((window, divider, from + moved as f32 * unit));
-                }
-                true
-            }
-            _ => false,
-        }
+            let offset = {
+                let s = scroll.lock().unwrap_or_else(|e| e.into_inner());
+                (s.window, s.offset)
+            };
+            pointer(ed, &mut mouse, pos, pressed, shift, &layout, time, offset);
+        });
     }
 
     /// Smooth scrolling from the mouse wheel or a trackpad. egui smooths
@@ -379,43 +516,39 @@ impl EmberApp {
         }
         // The window under the pointer scrolls, selected or not, as in Emacs.
         let hover = ctx.input(|i| i.pointer.hover_pos());
-        let window = hover
-            .and_then(|p| layout.windows.iter().find(|w| w.rect.contains(p)))
-            .map_or(self.editor.selected_window(), |w| w.id);
-        if window != self.scroll_window {
-            self.scroll_window = window;
-            self.scroll_offset = 0.0;
-        }
-        let top_of = |ed: &Editor| ed.windows().into_iter().find(|w| w.id == window).map(|w| (w.top_line, w.buffer.line_count()));
-        let Some((top, lines)) = top_of(&self.editor) else { return };
-        let wanted = (top as f32 * line_height + self.scroll_offset - dy)
-            .clamp(0.0, (lines - 1) as f32 * line_height);
-        let wanted_top = (wanted / line_height).floor() as usize;
-        self.editor.wheel_in(Some(window), wanted_top as isize - top as isize);
-        let top = top_of(&self.editor).map_or(0, |(top, _)| top);
-        // If the wheel is bound to something else, there is nothing to offset.
-        self.scroll_offset = if top == wanted_top { wanted - top as f32 * line_height } else { 0.0 };
+        let under = hover.and_then(|p| layout.windows.iter().find(|w| w.rect.contains(p))).map(|w| w.id);
+        let scroll = self.scroll.clone();
+        self.backend.run(move |ed, _| {
+            let window = under.unwrap_or(ed.selected_window());
+            let mut s = scroll.lock().unwrap_or_else(|e| e.into_inner());
+            if window != s.window {
+                s.window = window;
+                s.offset = 0.0;
+            }
+            let top_of = |ed: &Editor| ed.windows().into_iter().find(|w| w.id == window).map(|w| (w.top_line, w.buffer.line_count(), w.buffer.name.clone()));
+            let Some((top, lines, _)) = top_of(ed) else { return };
+            let wanted = (top as f32 * line_height + s.offset - dy).clamp(0.0, (lines - 1) as f32 * line_height);
+            let wanted_top = (wanted / line_height).floor() as usize;
+            ed.wheel_in(Some(window), wanted_top as isize - top as isize);
+            let (top, name) = top_of(ed).map_or((0, String::new()), |(top, _, name)| (top, name));
+            // If the wheel is bound to something else, there is nothing to offset.
+            s.offset = if top == wanted_top { wanted - top as f32 * line_height } else { 0.0 };
+            s.anchor = (window, name, top);
+        });
     }
 
     /// Closing the window runs save-buffers-kill-terminal, as C-x C-c does:
     /// with unsaved files the window stays open while it asks about them,
     /// and closes once answered.
     fn handle_close(&mut self, ctx: &egui::Context) {
-        if ctx.input(|i| i.viewport().close_requested()) && !self.editor.should_quit() {
-            self.editor.run_interactive("save-buffers-kill-terminal");
-            if !self.editor.should_quit() {
-                ctx.send_viewport_cmd(ViewportCommand::CancelClose);
-            }
+        if ctx.input(|i| i.viewport().close_requested()) && !self.exit {
+            ctx.send_viewport_cmd(ViewportCommand::CancelClose);
+            self.backend.run(|editor, _| editor.run_interactive("save-buffers-kill-terminal"));
         }
     }
 
     /// The native window's title: the buffer its frame's selected window shows.
-    fn update_title(&mut self, ctx: &egui::Context, frame: FrameId) {
-        let name = if frame == self.editor.selected_frame() {
-            self.editor.window_buffer().name.clone()
-        } else {
-            self.editor.frame_windows(frame).first().map_or_else(String::new, |w| w.buffer.name.clone())
-        };
+    fn update_title(&mut self, ctx: &egui::Context, frame: FrameId, name: &str) {
         let title = format!("{name} — Ember");
         if self.titles.get(&frame) != Some(&title) {
             ctx.send_viewport_cmd(ViewportCommand::Title(title.clone()));
@@ -424,6 +557,87 @@ impl EmberApp {
             }
             self.titles.insert(frame, title);
         }
+    }
+}
+
+/// A press, move or release of the primary button, as Emacs's mouse keys,
+/// with the editor: see [`EmberApp::pointer`].
+#[allow(clippy::too_many_arguments)]
+fn pointer(ed: &mut Editor, mouse: &mut Mouse, pos: Pos2, pressed: Option<bool>, shift: bool, layout: &Layout, time: f64, offset: (WindowId, f32)) {
+    if resize_drag(ed, mouse, pos, pressed, layout) {
+        return;
+    }
+    let target = hit(ed, layout, pos, offset);
+    let key = |kind| Key { code: KeyCode::Mouse(kind, 1), ctrl: false, meta: false, shift };
+    match pressed {
+        Some(true) => {
+            let Some((window, position)) = target else { return };
+            mouse.clicks = match mouse.last_press {
+                Some((t, p, n)) if time - t < DOUBLE_CLICK && p.distance(pos) < 4.0 => n % 3 + 1,
+                _ => 1,
+            };
+            mouse.last_press = Some((time, pos, mouse.clicks));
+            mouse.pressed = Some((window, position));
+            mouse.dragged = false;
+            if mouse.clicks == 1 {
+                ed.mouse(key(MouseKind::Down), MouseEvent { window, position, start: None });
+            }
+        }
+        Some(false) => {
+            let Some(start) = mouse.pressed.take() else { return };
+            if mouse.dragged {
+                return;
+            }
+            let kind = match mouse.clicks {
+                2 => MouseKind::Double,
+                3 => MouseKind::Triple,
+                _ => MouseKind::Click,
+            };
+            let (window, position) = target.unwrap_or(start);
+            ed.mouse(key(kind), MouseEvent { window, position, start: None });
+        }
+        None => {
+            let (Some(start), Some((window, position))) = (mouse.pressed, target) else { return };
+            if mouse.dragged || start != (window, position) {
+                mouse.dragged = true;
+                ed.mouse(key(MouseKind::Drag), MouseEvent { window, position, start: Some(start) });
+            }
+        }
+    }
+}
+
+/// Dragging a window's mode line or the divider on its right moves that
+/// edge, a whole line or column at a time, as Emacs's
+/// mouse-drag-mode-line and mouse-drag-vertical-line do. Returns whether
+/// the event was part of such a drag.
+fn resize_drag(ed: &mut Editor, mouse: &mut Mouse, pos: Pos2, pressed: Option<bool>, layout: &Layout) -> bool {
+    let m = &layout.m;
+    match (pressed, mouse.resizing) {
+        (Some(true), _) => {
+            let bottom = layout.echo_rect.top();
+            let grip = layout.windows.iter().find_map(|w| {
+                let on_divider = w.divider && (pos.x - w.rect.right()).abs() <= 3.0 && w.rect.y_range().contains(pos.y);
+                let on_mode_line = w.mode_rect.contains(pos) && w.rect.bottom() < bottom - 1.0;
+                (on_divider || on_mode_line).then_some((w.id, on_divider))
+            });
+            let Some((window, divider)) = grip else { return false };
+            mouse.resizing = Some((window, divider, if divider { pos.x } else { pos.y }));
+            true
+        }
+        (Some(false), Some(_)) => {
+            mouse.resizing = None;
+            true
+        }
+        (None, Some((window, divider, from))) => {
+            let (along, unit) = if divider { (pos.x, m.char_width) } else { (pos.y, m.line_height) };
+            let delta = ((along - from) / unit).trunc() as i64;
+            if delta != 0 {
+                let moved = ed.move_window_edge(window, delta, divider);
+                mouse.resizing = Some((window, divider, from + moved as f32 * unit));
+            }
+            true
+        }
+        _ => false,
     }
 }
 
@@ -441,22 +655,65 @@ enum CursorStyle {
 }
 
 /// Fonts and sizes shared by the parts of the window.
+#[derive(Clone)]
 struct Metrics {
     font: FontId,
     line_height: f32,
     char_width: f32,
 }
 
+impl Metrics {
+    fn of(ui: &Ui) -> Metrics {
+        let font = FontId::new(TEXT_SIZE, FontFamily::Monospace);
+        let em = ui.painter().layout_no_wrap("M".to_string(), font.clone(), Color32::PLACEHOLDER);
+        Metrics { line_height: (em.size().y * LINE_SPACING).round(), char_width: em.size().x, font }
+    }
+}
+
+/// Gives the editor the GUI's fonts' measures, if it lacks them.
+fn set_metrics(ed: &mut Editor, ctx: &egui::Context, char_width: f32, line_height: f32) {
+    let known = ed.text_metrics();
+    if known.uniform() || known.char_width() != char_width || known.char_height() != line_height {
+        ed.set_text_metrics(Arc::new(EguiMetrics::new(ctx.clone(), char_width, line_height)));
+    }
+}
+
+/// What a layout tells the editor: the fonts' measures, and for the
+/// selected frame its size in cells and its height in lines, and each
+/// window's text area in columns and lines.
+#[derive(Clone, PartialEq)]
+struct Sizes {
+    metrics: (f32, f32),
+    frame: Option<((usize, usize), usize)>,
+    windows: Vec<(WindowId, usize, usize)>,
+}
+
+/// Tells the editor its windows' sizes, as a layout gives them.
+fn apply_sizes(ed: &mut Editor, sizes: &Sizes) {
+    if let Some(((cols, lines), frame_lines)) = sizes.frame {
+        ed.mini_window_height(frame_lines);
+        ed.set_frame_size(cols, lines);
+    }
+    for &(id, cols, rows) in &sizes.windows {
+        ed.set_window_size(id, cols, rows);
+    }
+}
+
 /// Where the parts of the frame go this frame: the editor's windows, each
 /// with its mode line, and the echo area across the bottom.
+#[derive(Clone)]
 struct Layout {
     rect: Rect,
     windows: Vec<WindowLayout>,
     echo_rect: Rect,
     m: Metrics,
+    /// The frame's size in cells and its height in lines with the echo area.
+    frame_cells: (usize, usize),
+    frame_lines: usize,
 }
 
 /// Where one editor window goes.
+#[derive(Clone)]
 struct WindowLayout {
     id: WindowId,
     rect: Rect,
@@ -481,32 +738,56 @@ impl WindowLayout {
 
 impl Layout {
     /// Lays a frame out and tells the editor how big each of its windows is.
-    fn new(ui: &Ui, ed: &mut Editor, frame: FrameId) -> Layout {
+    fn new(ui: &Ui, ed: &mut Editor, frame: FrameId, m: Metrics) -> Layout {
+        set_metrics(ed, ui.ctx(), m.char_width, m.line_height);
         let rect = ui.max_rect();
-        let font = FontId::new(TEXT_SIZE, FontFamily::Monospace);
-        let em = ui.painter().layout_no_wrap("M".to_string(), font.clone(), Color32::PLACEHOLDER);
-        let m = Metrics { line_height: (em.size().y * LINE_SPACING).round(), char_width: em.size().x, font };
-        // The core lays text out with these fonts' measures.
-        let known = ed.text_metrics();
-        if known.uniform() || known.char_width() != m.char_width || known.char_height() != m.line_height {
-            ed.set_text_metrics(Arc::new(EguiMetrics::new(ui.ctx().clone(), m.char_width, m.line_height)));
-        }
-        let bar_height = m.line_height + 2.0 * BAR_PAD;
+        let frame_lines = ((rect.height() - 2.0 * BAR_PAD) / m.line_height).floor().max(1.0) as usize;
         // The selected frame's echo area grows for a minibuffer of several
         // lines, such as a vertical list of completions.
-        let echo_lines = if frame == ed.selected_frame() {
-            ed.mini_window_height(((rect.height() - 2.0 * BAR_PAD) / m.line_height).floor().max(1.0) as usize)
-        } else {
-            1
-        };
+        let echo_lines = if frame == ed.selected_frame() { ed.mini_window_height(frame_lines) } else { 1 };
+        let tree = ed.frame_tree(frame).cloned().unwrap_or(ember_core::WindowTree::Leaf(0));
+        let layout = Layout::compute(rect, m, &tree, echo_lines, frame_lines, &|id, lines| ed.window_wants_header_line(id, lines), &|id| ed.window_margins(id));
+        // The frame in cells, which resized windows' sizes count in.
+        if frame == ed.selected_frame() {
+            ed.set_frame_size(layout.frame_cells.0, layout.frame_cells.1);
+        }
+        for (id, cols, rows) in layout.sizes(false).windows {
+            ed.set_window_size(id, cols, rows);
+        }
+        layout
+    }
+
+    /// Lays a frame out as its last description says.
+    fn described(ui: &Ui, fd: &FrameDescription, m: Metrics) -> Layout {
+        let rect = ui.max_rect();
+        let frame_lines = ((rect.height() - 2.0 * BAR_PAD) / m.line_height).floor().max(1.0) as usize;
+        let window = |id: WindowId| fd.windows.iter().find(|w| w.id == id);
+        let echo_lines = if fd.selected { fd.echo_lines.min(frame_lines.saturating_sub(2).max(1)) } else { 1 };
+        Layout::compute(
+            rect,
+            m,
+            &fd.tree,
+            echo_lines,
+            frame_lines,
+            &|id, lines| lines > 2 && window(id).is_some_and(|w| w.header_line.is_some()),
+            &|id| window(id).map_or((0, 0), |w| w.margins),
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn compute(
+        rect: Rect,
+        m: Metrics,
+        tree: &ember_core::WindowTree,
+        echo_lines: usize,
+        frame_lines: usize,
+        wants_header: &dyn Fn(WindowId, usize) -> bool,
+        margins_of: &dyn Fn(WindowId) -> (usize, usize),
+    ) -> Layout {
+        let bar_height = m.line_height + 2.0 * BAR_PAD;
         let echo_height = bar_height + (echo_lines - 1) as f32 * m.line_height;
         let echo_rect = Rect::from_min_max(pos2(rect.left(), rect.bottom() - echo_height), rect.max);
         let frame_height = echo_rect.top() - rect.top();
-        // The frame in cells, which resized windows' sizes count in.
-        if frame == ed.selected_frame() {
-            ed.set_frame_size((rect.width() / m.char_width) as usize, (frame_height / m.line_height) as usize);
-        }
-        let tree = ed.frame_tree(frame).cloned().unwrap_or(ember_core::WindowTree::Leaf(0));
         let windows: Vec<WindowLayout> = tree
             .rects(rect.left(), rect.top(), rect.width(), frame_height, (m.char_width, m.line_height))
             .into_iter()
@@ -514,12 +795,10 @@ impl Layout {
                 let rect = Rect::from_min_size(pos2(r.x, r.y), vec2(r.width, r.height));
                 let mode_rect = Rect::from_min_max(pos2(rect.left(), rect.bottom() - bar_height), rect.max);
                 let total_lines = (rect.height() / m.line_height).round() as usize;
-                let header_rect = ed
-                    .window_wants_header_line(r.id, total_lines)
-                    .then(|| Rect::from_min_size(rect.min, vec2(rect.width(), bar_height)));
+                let header_rect = wants_header(r.id, total_lines).then(|| Rect::from_min_size(rect.min, vec2(rect.width(), bar_height)));
                 let text_top = header_rect.map_or(rect.top(), |h| h.bottom());
                 // [fringe][margin][text][margin][fringe], as Emacs lays a window out.
-                let (left, right) = ed.window_margins(r.id);
+                let (left, right) = margins_of(r.id);
                 let (top, bottom) = (text_top + PAD_Y, mode_rect.top());
                 let inner = (rect.left() + PAD_X, rect.right() - PAD_X);
                 let left_margin = (inner.0 + left as f32 * m.char_width).min(inner.1 - m.char_width);
@@ -536,11 +815,17 @@ impl Layout {
                 WindowLayout { id: r.id, rect, text_rect, mode_rect, header_rect, margins, fringes, divider: r.divider }
             })
             .collect();
-        for w in &windows {
-            let cols = ((w.text_rect.width() / m.char_width).floor() as usize).max(1);
-            ed.set_window_size(w.id, cols, w.rows(&m));
+        let frame_cells = ((rect.width() / m.char_width) as usize, (frame_height / m.line_height) as usize);
+        Layout { rect, windows, echo_rect, m, frame_cells, frame_lines }
+    }
+
+    /// What it tells the editor, the frame's size too if it is selected.
+    fn sizes(&self, selected: bool) -> Sizes {
+        Sizes {
+            metrics: (self.m.char_width, self.m.line_height),
+            frame: selected.then_some((self.frame_cells, self.frame_lines)),
+            windows: self.windows.iter().map(|w| (w.id, ((w.text_rect.width() / self.m.char_width).floor() as usize).max(1), w.rows(&self.m))).collect(),
         }
-        Layout { rect, windows, echo_rect, m }
     }
 }
 

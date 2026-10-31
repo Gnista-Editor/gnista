@@ -251,7 +251,7 @@ fn keys_reach_the_editor() {
     h.key_press_modifiers(Modifiers::CTRL, Key::A);
     h.event(Event::Text(">".into()));
     h.run();
-    let b = h.state().editor.window_buffer();
+    let b = h.state().editor().window_buffer();
     assert_eq!(b.slice(0..b.len()), ">hello");
 
     // A prefix key, then a command that prompts in the minibuffer.
@@ -259,7 +259,7 @@ fn keys_reach_the_editor() {
     h.key_press(Key::B);
     h.event(Event::Text("b".into()));
     h.run();
-    assert_eq!(h.state().editor.prompt(), Some("Switch to buffer: "));
+    assert_eq!(h.state().editor().prompt(), Some("Switch to buffer: "));
 }
 
 #[test]
@@ -267,8 +267,8 @@ fn the_window_shows_the_buffer_name() {
     let h = harness(sample(), Theme::Dark);
     // The mode line is drawn text, not a widget, so check the editor state
     // the frame was drawn from.
-    assert_eq!(h.state().editor.window_buffer().name, "*scratch*");
-    assert!(h.state().editor.viewport_height() > 5);
+    assert_eq!(h.state().editor().window_buffer().name, "*scratch*");
+    assert!(h.state().editor().viewport_height() > 5);
 }
 
 /// The sample with a shift selection from the middle of one line, across a
@@ -299,7 +299,7 @@ fn shift_arrows_select_in_the_window() {
     h.key_press_modifiers(Modifiers::SHIFT, Key::ArrowRight);
     h.key_press_modifiers(Modifiers::SHIFT, Key::ArrowRight);
     h.run();
-    assert_eq!(h.state().editor.window_buffer().active_region(), Some(0..2));
+    assert_eq!(h.state().editor().window_buffer().active_region(), Some(0..2));
 }
 
 /// Many numbered lines, with point at the top.
@@ -340,31 +340,31 @@ fn the_wheel_scrolls_smoothly() {
     let mut h = harness(long_buffer(), Theme::Dark);
     // Content moves up by 100 points: about four and a half lines.
     trackpad(&mut h, -100.0, Modifiers::NONE);
-    let b = h.state().editor.window_buffer();
+    let b = h.state().editor().window_buffer();
     assert!((3..=5).contains(&b.top_line), "top line {}", b.top_line);
     // Point was at the top, so it moved down to stay in the window.
     assert_eq!(b.line_of(b.point()), b.top_line);
     h.snapshot("scrolled_dark");
 
     trackpad(&mut h, 1000.0, Modifiers::NONE);
-    assert_eq!(h.state().editor.window_buffer().top_line, 0);
+    assert_eq!(h.state().editor().window_buffer().top_line, 0);
 }
 
 #[test]
 fn mouse_wheel_notches_scroll_several_lines() {
     let mut h = harness(long_buffer(), Theme::Dark);
     mouse_wheel(&mut h, -1.0);
-    let first = h.state().editor.window_buffer().top_line;
+    let first = h.state().editor().window_buffer().top_line;
     assert!(first >= 1, "one notch scrolled {first} lines");
     mouse_wheel(&mut h, -1.0);
-    assert!(h.state().editor.window_buffer().top_line > first);
+    assert!(h.state().editor().window_buffer().top_line > first);
 }
 
 #[test]
 fn ctrl_wheel_does_not_scroll() {
     let mut h = harness(long_buffer(), Theme::Dark);
     trackpad(&mut h, -100.0, Modifiers::CTRL);
-    assert_eq!(h.state().editor.window_buffer().top_line, 0);
+    assert_eq!(h.state().editor().window_buffer().top_line, 0);
 }
 
 /// An outline with heading faces, a folded subtree and some faces in the text.
@@ -454,8 +454,8 @@ fn split_windows() {
     let mut h = harness(ed, Theme::Dark);
     h.snapshot("windows_dark");
     // Each window was told its size: three windows, each fewer lines than the frame.
-    assert_eq!(h.state().editor.window_list().len(), 3);
-    assert!(h.state().editor.viewport_height() < 10);
+    assert_eq!(h.state().editor().window_list().len(), 3);
+    assert!(h.state().editor().viewport_height() < 10);
 }
 
 /// Presses or releases the primary button over a character of the text.
@@ -484,7 +484,7 @@ fn clicks_and_drags_move_point_and_select() {
     // "An editor that works..." is the third line.
     press(&mut h, (2, 3), true, Modifiers::NONE);
     press(&mut h, (2, 3), false, Modifiers::NONE);
-    let b = h.state().editor.window_buffer();
+    let b = h.state().editor().window_buffer();
     assert_eq!(b.point(), b.line_start(2) + 3);
     assert_eq!(b.active_region(), None);
 
@@ -494,7 +494,7 @@ fn clicks_and_drags_move_point_and_select() {
     h.event(Event::PointerMoved(pos));
     h.run();
     press(&mut h, (2, 9), false, Modifiers::NONE);
-    let b = h.state().editor.window_buffer();
+    let b = h.state().editor().window_buffer();
     let start = b.line_start(2);
     assert_eq!(b.active_region(), Some(start..start + 9));
     h.snapshot("mouse_selection_dark");
@@ -510,7 +510,7 @@ fn double_click_selects_a_word() {
         press(&mut h, (2, 5), true, Modifiers::NONE);
         press(&mut h, (2, 5), false, Modifiers::NONE);
     }
-    let b = h.state().editor.window_buffer();
+    let b = h.state().editor().window_buffer();
     let start = b.line_start(2);
     assert_eq!(b.active_region(), Some(start + 3..start + 9), "\"editor\"");
 }
@@ -577,7 +577,7 @@ fn dragging_a_mode_line_resizes_the_windows() {
     let _scripting = ember_script::Scripting::new(&mut ed).unwrap();
     ed.press("C-x 2").unwrap();
     let mut h = harness(ed, Theme::Dark);
-    let heights = |h: &Harness<'_, EmberApp>| h.state().editor.window_total_sizes().iter().map(|s| s.2).collect::<Vec<_>>();
+    let heights = |h: &Harness<'_, EmberApp>| h.state().editor().window_total_sizes().iter().map(|s| s.2).collect::<Vec<_>>();
     let before = heights(&h);
     // The top window's mode line: the frame above the echo area is halved.
     let lh = h.ctx.fonts_mut(|f| {
@@ -599,7 +599,7 @@ fn dragging_a_mode_line_resizes_the_windows() {
     assert_eq!(after[0], before[0] + 3, "{before:?} then {after:?}");
     assert_eq!(after[1], before[1] - 3);
     // A drag on the mode line is not a click in the text.
-    assert_eq!(h.state().editor.window_buffer().active_region(), None);
+    assert_eq!(h.state().editor().window_buffer().active_region(), None);
 }
 
 #[test]
@@ -611,18 +611,18 @@ fn the_selected_frame_shows_where_windows_cannot_open() {
     h.run();
     // The test harness embeds viewports, as a browser would, so the one
     // window shows the selected frame, with its two windows, as a terminal does.
-    assert_eq!(h.state().editor.frame_list().len(), 2);
-    assert_eq!(h.state().editor.window_list().len(), 2);
+    assert_eq!(h.state().editor().frame_list().len(), 2);
+    assert_eq!(h.state().editor().window_list().len(), 2);
     h.event(Event::Text("x".into()));
     h.run();
-    let b = h.state().editor.window_buffer();
+    let b = h.state().editor().window_buffer();
     assert!(b.slice(0..b.len()).contains("editorx"), "typing goes to the selected frame");
     h.key_press_modifiers(Modifiers::CTRL, Key::X);
     h.event(Event::Text("5".into()));
     h.event(Event::Text("o".into()));
     h.run();
-    assert_eq!(h.state().editor.selected_frame(), 1);
-    assert_eq!(h.state().editor.window_list().len(), 1, "the first frame has one window");
+    assert_eq!(h.state().editor().selected_frame(), 1);
+    assert_eq!(h.state().editor().window_list().len(), 1, "the first frame has one window");
 }
 
 #[test]
@@ -645,7 +645,7 @@ fn scaled_and_proportional_text() {
     let mut h = harness(ed, Theme::Dark);
     h.snapshot("scaled_dark");
     // A click on the proportional text lands on the character drawn there.
-    let ed = &h.state().editor;
+    let ed = h.state().editor();
     let posn = ed.posn_at_point(prose.0 + 5, ed.selected_window()).unwrap();
     assert!(posn.y > ember_gui::theme::TEXT_SIZE * 1.5, "below the taller heading row: {posn:?}");
 }
