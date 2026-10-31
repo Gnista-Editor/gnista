@@ -131,14 +131,14 @@ impl Buffer {
     /// The next position after `pos` where an overlay starts or ends, as
     /// `next-overlay-change`, or the end of the accessible text.
     pub fn next_overlay_change(&self, pos: usize) -> usize {
-        let edges = self.overlays().iter().flat_map(|o| [o.start, o.end]);
+        let edges = self.overlays().flat_map(|o| [o.start, o.end]);
         edges.filter(|&e| e > pos).fold(self.point_max(), usize::min)
     }
 
     /// The last position before `pos` where an overlay starts or ends, as
     /// `previous-overlay-change`, or the start of the accessible text.
     pub fn previous_overlay_change(&self, pos: usize) -> usize {
-        let edges = self.overlays().iter().flat_map(|o| [o.start, o.end]);
+        let edges = self.overlays().flat_map(|o| [o.start, o.end]);
         edges.filter(|&e| e < pos).fold(self.point_min(), usize::max)
     }
 

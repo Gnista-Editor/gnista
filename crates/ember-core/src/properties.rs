@@ -233,11 +233,256 @@ pub struct Overlay {
     /// Whether text inserted at the end goes in the overlay rather than
     /// after it, as REAR-ADVANCE says.
     pub rear_advance: bool,
+    /// Deleted, and kept until the list is compacted.
+    deleted: bool,
+}
+
+/// A buffer's overlays, in the order they were made, so ids are sorted and
+/// one is found by binary search. Deleting marks an overlay and the list
+/// drops marked ones once they are half of it, so deleting many, as
+/// folding a large Org file does, costs no more than making them.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct OverlayList {
+    items: Vec<Overlay>,
+    deleted: usize,
+    /// Where overlays are, built when first asked after a change.
+    index: std::cell::RefCell<Option<std::rc::Rc<OverlayIndex>>>,
+}
+
+/// Overlays by position: the positions where one starts or ends, sorted,
+/// with the overlays at each, and for each stretch between two such
+/// positions the overlays covering it. Redisplay asks what covers a
+/// position and where the next change is at every step, which this
+/// answers by binary search instead of a pass over every overlay.
+#[derive(Debug, Default)]
+pub(crate) struct OverlayIndex {
+    /// How many of the list's entries it covers; those made since are
+    /// checked one by one until there are enough to build it again.
+    built: usize,
+    /// Each edge, sorted, with the overlay (an index into the list) that
+    /// starts or ends there.
+    edges: Vec<(usize, u32)>,
+    /// The distinct edges, sorted; stretch `k` runs from `bounds[k]` to
+    /// `bounds[k + 1]`.
+    bounds: Vec<usize>,
+    /// The overlays covering each stretch: `covering[spans[k]..spans[k + 1]]`.
+    spans: Vec<u32>,
+    covering: Vec<u32>,
+}
+
+/// Past this many covering entries, as with thousands of nested overlays,
+/// the index keeps no stretches and covering positions are found by a pass.
+const MAX_COVERING: usize = 1 << 20;
+
+impl OverlayIndex {
+    fn build(items: &[Overlay]) -> OverlayIndex {
+        let mut edges: Vec<(usize, u32)> = Vec::with_capacity(items.len() * 2);
+        for (i, o) in items.iter().enumerate().filter(|(_, o)| !o.deleted) {
+            edges.push((o.start, i as u32));
+            if o.end != o.start {
+                edges.push((o.end, i as u32));
+            }
+        }
+        edges.sort_unstable();
+        let mut bounds: Vec<usize> = edges.iter().map(|e| e.0).collect();
+        bounds.dedup();
+        // Sweep the edges: at each bound, those starting join and those
+        // ending leave the overlays covering the stretch after it.
+        let mut active: Vec<u32> = Vec::new();
+        let mut spans = Vec::with_capacity(bounds.len() + 1);
+        let mut covering = Vec::new();
+        let mut e = 0;
+        for &b in &bounds {
+            while e < edges.len() && edges[e].0 == b {
+                let i = edges[e].1;
+                let o = &items[i as usize];
+                if o.end == b {
+                    active.retain(|&a| a != i);
+                } else if o.start == b {
+                    active.push(i);
+                }
+                e += 1;
+            }
+            spans.push(covering.len() as u32);
+            covering.extend_from_slice(&active);
+            if covering.len() > MAX_COVERING {
+                return OverlayIndex { built: items.len(), edges, bounds, spans: Vec::new(), covering: Vec::new() };
+            }
+        }
+        spans.push(covering.len() as u32);
+        OverlayIndex { built: items.len(), edges, bounds, spans, covering }
+    }
+
+    /// The overlays covering `pos` (start <= pos < end), as indices, or
+    /// `None` when the index keeps no stretches.
+    fn covering(&self, pos: usize) -> Option<&[u32]> {
+        if self.spans.is_empty() && !self.bounds.is_empty() {
+            return None;
+        }
+        // The last bound at or before pos.
+        let k = match self.bounds.partition_point(|&b| b <= pos) {
+            0 => return Some(&[]),
+            k => k - 1,
+        };
+        Some(&self.covering[self.spans[k] as usize..self.spans[k + 1] as usize])
+    }
+
+    /// The overlays starting or ending at `pos`.
+    fn at_edge(&self, pos: usize) -> &[(usize, u32)] {
+        let from = self.edges.partition_point(|e| e.0 < pos);
+        let to = self.edges.partition_point(|e| e.0 <= pos);
+        &self.edges[from..to]
+    }
+
+}
+
+impl OverlayList {
+    pub(crate) fn push(&mut self, overlay: Overlay) {
+        debug_assert!(self.items.last().is_none_or(|o| o.id < overlay.id));
+        self.items.push(overlay);
+    }
+
+    /// The index, built again when overlays made since it was built are
+    /// an eighth of it, so making many costs O(n log n) in all.
+    fn spatial(&self) -> std::rc::Rc<OverlayIndex> {
+        let mut index = self.index.borrow_mut();
+        if let Some(i) = index.as_ref()
+            && self.items.len() - i.built > (i.built / 8).max(64)
+        {
+            *index = None;
+        }
+        index.get_or_insert_with(|| std::rc::Rc::new(OverlayIndex::build(&self.items))).clone()
+    }
+
+    /// Overlays made since the index was built, with their indices.
+    fn newer<'a>(&'a self, index: &OverlayIndex) -> impl Iterator<Item = (u32, &'a Overlay)> + 'a {
+        let built = index.built;
+        self.items[built..].iter().enumerate().filter(|(_, o)| !o.deleted).map(move |(k, o)| ((built + k) as u32, o))
+    }
+
+    fn live(&self, i: u32) -> Option<&Overlay> {
+        Some(&self.items[i as usize]).filter(|o| !o.deleted)
+    }
+
+    fn changed(&mut self) {
+        *self.index.get_mut() = None;
+    }
+
+    /// The overlays covering `pos`: those with start <= pos < end.
+    pub(crate) fn covering(&self, pos: usize) -> Vec<&Overlay> {
+        let index = self.spatial();
+        let mut found: Vec<&Overlay> = match index.covering(pos) {
+            Some(found) => found.iter().filter_map(|&i| self.live(i)).collect(),
+            None => self.items[..index.built].iter().filter(|o| !o.deleted && o.start <= pos && pos < o.end).collect(),
+        };
+        found.extend(self.newer(&index).map(|(_, o)| o).filter(|o| o.start <= pos && pos < o.end));
+        found
+    }
+
+    /// The overlays starting or ending at `pos`, each once, in the order made.
+    pub(crate) fn at_edge(&self, pos: usize) -> Vec<&Overlay> {
+        let index = self.spatial();
+        let mut found: Vec<u32> = index.at_edge(pos).iter().map(|e| e.1).collect();
+        found.extend(self.newer(&index).filter(|(_, o)| o.start == pos || o.end == pos).map(|(i, _)| i));
+        found.sort_unstable();
+        found.dedup();
+        found.into_iter().filter_map(|i| self.live(i)).collect()
+    }
+
+    /// The overlays overlapping `start..end`, and empty ones at or inside
+    /// it, as Emacs's `overlays-in` finds them, in the order made.
+    pub(crate) fn overlapping(&self, start: usize, end: usize) -> Vec<&Overlay> {
+        let overlaps = |o: &Overlay| (o.start < end && o.end > start) || (o.start == o.end && o.start >= start && o.start <= end);
+        let index = self.spatial();
+        let mut found: Vec<u32> = match index.covering(start) {
+            Some(covering) => {
+                let mut found: Vec<u32> = covering.iter().copied().filter(|&i| self.items[i as usize].start < end).collect();
+                let from = index.edges.partition_point(|e| e.0 < start);
+                for &(pos, i) in index.edges[from..].iter().take_while(|e| e.0 <= end) {
+                    let o = &self.items[i as usize];
+                    if (o.start == pos && pos > start && pos < end) || (o.start == o.end && pos >= start) {
+                        found.push(i);
+                    }
+                }
+                found
+            }
+            None => (0..index.built as u32).filter(|&i| overlaps(&self.items[i as usize])).collect(),
+        };
+        found.extend(self.newer(&index).filter(|(_, o)| overlaps(o)).map(|(i, _)| i));
+        found.sort_unstable();
+        found.dedup();
+        found.into_iter().filter_map(|i| self.live(i)).collect()
+    }
+
+    /// The first position after `pos` where an overlay starts or ends.
+    pub(crate) fn next_edge(&self, pos: usize) -> Option<usize> {
+        let index = self.spatial();
+        let from = index.edges.partition_point(|e| e.0 <= pos);
+        let indexed = index.edges[from..].iter().find(|e| !self.items[e.1 as usize].deleted).map(|e| e.0);
+        let newer = self.newer(&index).flat_map(|(_, o)| [o.start, o.end]).filter(|&e| e > pos).min();
+        match (indexed, newer) {
+            (Some(a), Some(b)) => Some(a.min(b)),
+            (a, b) => a.or(b),
+        }
+    }
+
+    fn index(&self, id: u64) -> Option<usize> {
+        self.items.binary_search_by_key(&id, |o| o.id).ok().filter(|&i| !self.items[i].deleted)
+    }
+
+    pub(crate) fn get(&self, id: u64) -> Option<&Overlay> {
+        self.index(id).map(|i| &self.items[i])
+    }
+
+    /// An overlay to move: the index is built again after.
+    pub(crate) fn get_mut(&mut self, id: u64) -> Option<&mut Overlay> {
+        self.changed();
+        self.index(id).map(|i| &mut self.items[i])
+    }
+
+    /// An overlay's properties, which the index does not depend on.
+    pub(crate) fn props_mut(&mut self, id: u64) -> Option<&mut Props> {
+        self.index(id).map(|i| &mut self.items[i].props)
+    }
+
+    pub(crate) fn remove(&mut self, id: u64) {
+        if let Some(i) = self.index(id) {
+            self.items[i].deleted = true;
+            self.items[i].props.clear();
+            self.deleted += 1;
+            if self.deleted > 32 && self.deleted * 2 > self.items.len() {
+                self.changed();
+                self.items.retain(|o| !o.deleted);
+                self.deleted = 0;
+            }
+        }
+    }
+
+    pub(crate) fn iter(&self) -> impl DoubleEndedIterator<Item = &Overlay> + Clone {
+        self.items.iter().filter(|o| !o.deleted)
+    }
+
+    pub(crate) fn iter_mut(&mut self) -> impl Iterator<Item = &mut Overlay> {
+        self.changed();
+        self.items.iter_mut().filter(|o| !o.deleted)
+    }
+
+    pub(crate) fn retain(&mut self, keep: impl Fn(&Overlay) -> bool) {
+        self.changed();
+        self.items.retain(|o| !o.deleted && keep(o));
+        self.deleted = 0;
+    }
+
+    pub(crate) fn clear(&mut self) {
+        self.changed();
+        self.items.clear();
+        self.deleted = 0;
+    }
 }
 
 impl Overlay {
     pub(crate) fn new(id: u64, start: usize, end: usize) -> Overlay {
-        Overlay { id, start, end, props: Props::new(), front_advance: false, rear_advance: false }
+        Overlay { id, start, end, props: Props::new(), front_advance: false, rear_advance: false, deleted: false }
     }
 
     /// Moves the overlay's ends for an insertion, as Emacs moves overlay
@@ -336,5 +581,53 @@ mod tests {
         assert_eq!((o.start, o.end), (2, 6));
         o.delete(0, 3);
         assert_eq!((o.start, o.end), (0, 3));
+    }
+}
+
+#[cfg(test)]
+mod overlay_index_tests {
+    use super::*;
+
+    /// The index answers as a pass over every overlay does, after making,
+    /// moving and deleting them.
+    #[test]
+    fn the_index_agrees_with_a_pass_over_every_overlay() {
+        let mut list = OverlayList::default();
+        let mut seed = 7u64;
+        let mut rand = |n: usize| {
+            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            (seed >> 33) as usize % n
+        };
+        for id in 1..=300u64 {
+            let start = rand(200);
+            let end = start + rand(30) * (rand(4).min(1));
+            list.push(Overlay::new(id, start, end));
+        }
+        for _ in 0..100 {
+            let id = rand(300) as u64 + 1;
+            match rand(8) {
+                0 => {
+                    if let Some(o) = list.get_mut(id) {
+                        o.start = o.start.saturating_sub(3);
+                    }
+                }
+                1 | 2 => {
+                    let next = list.items.last().map_or(1, |o| o.id + 1);
+                    let start = rand(200);
+                    list.push(Overlay::new(next, start, start + rand(10)));
+                }
+                _ => list.remove(id),
+            }
+            for pos in [rand(240), rand(240), 0, 199] {
+                let ids = |v: Vec<&Overlay>| { let mut v: Vec<u64> = v.iter().map(|o| o.id).collect(); v.sort(); v };
+                assert_eq!(ids(list.covering(pos)), ids(list.iter().filter(|o| o.start <= pos && pos < o.end).collect()));
+                assert_eq!(ids(list.at_edge(pos)), ids(list.iter().filter(|o| o.start == pos || o.end == pos).collect()));
+                let next = list.iter().flat_map(|o| [o.start, o.end]).filter(|&e| e > pos).min();
+                assert_eq!(list.next_edge(pos), next);
+                let end = pos + rand(20);
+                let overlapping = list.iter().filter(|o| (o.start < end && o.end > pos) || (o.start == o.end && o.start >= pos && o.start <= end)).collect();
+                assert_eq!(ids(list.overlapping(pos, end)), ids(overlapping));
+            }
+        }
     }
 }

@@ -349,7 +349,7 @@ impl Editor {
     pub(crate) fn screen_height_in(&self, b: &Buffer, row_line: usize, wrap: Option<Wrap>) -> usize {
         // A truncated line takes one row, unless an overlay string adds more.
         let strings_with_newlines = || {
-            b.overlays().iter().any(|o| ["before-string", "after-string"].iter().any(|n| o.props.get(*n).and_then(Value::as_str).is_some_and(|s| s.contains('\n'))))
+            b.overlays().any(|o| ["before-string", "after-string"].iter().any(|n| o.props.get(*n).and_then(Value::as_str).is_some_and(|s| s.contains('\n'))))
         };
         if wrap.is_none() && !strings_with_newlines() { 1 } else { self.screen_rows_of(b, row_line, wrap).len().max(1) }
     }
@@ -458,8 +458,8 @@ impl Editor {
     /// character before, overlays apply inside them.
     fn pos_invisible_in(&self, b: &Buffer, pos: usize) -> bool {
         let spec = self.invisibility_spec(b);
-        let from_overlay = b.overlays().iter().any(|o| {
-            o.start < pos && pos < o.end && o.props.get("invisible").is_some_and(|v| invisibility(v, &spec).is_some())
+        let from_overlay = b.overlays_at(pos).into_iter().any(|o| {
+            o.start < pos && o.props.get("invisible").is_some_and(|v| invisibility(v, &spec).is_some())
         });
         let from_text = pos > 0 && b.text_property(pos - 1, "invisible").is_some_and(|v| invisibility(v, &spec).is_some());
         from_overlay || from_text
@@ -748,9 +748,9 @@ impl Editor {
     fn push_overlay_strings(&self, b: &Buffer, pos: usize, segments: &mut Vec<Segment>, dark: Option<bool>, styles: &mut HashMap<Vec<String>, Style>) {
         let spec = self.variable_in(b, "buffer-invisibility-spec").unwrap_or(Value::Bool(true));
         let mut overlays: Vec<&crate::properties::Overlay> = b
-            .overlays()
-            .iter()
-            .filter(|o| (o.start == pos || o.end == pos) && !o.props.get("invisible").is_some_and(|v| invisibility(v, &spec).is_some()))
+            .overlays_at_edge(pos)
+            .into_iter()
+            .filter(|o| !o.props.get("invisible").is_some_and(|v| invisibility(v, &spec).is_some()))
             .collect();
         overlays.sort_by(|a, b| a.priority().total_cmp(&b.priority()).then(a.id.cmp(&b.id)));
         // An empty overlay's before-string comes before its own after-string.

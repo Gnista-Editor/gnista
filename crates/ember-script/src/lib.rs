@@ -2925,13 +2925,7 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
         Function::new(ctx.clone(), |ctx: Ctx<'js>, start: usize, end: usize| {
             with_editor(&ctx, |ed| {
                 // Overlays that overlap the range, and empty ones inside it, as Emacs's overlays-in.
-                Ok(ed
-                    .buffer()
-                    .overlays()
-                    .iter()
-                    .filter(|o| (o.start < end && o.end > start) || (o.start == o.end && o.start >= start && o.start <= end))
-                    .map(|o| o.id as f64)
-                    .collect::<Vec<f64>>())
+                Ok(ed.buffer().overlays_in(start, end).into_iter().map(|o| o.id as f64).collect::<Vec<f64>>())
             })
         })?,
     )?;

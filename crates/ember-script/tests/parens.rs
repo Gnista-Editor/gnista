@@ -21,7 +21,6 @@ fn highlighted(ed: &mut Editor) -> Vec<(usize, usize, String)> {
     let mut found: Vec<(usize, usize, String)> = ed
         .buffer()
         .overlays()
-        .iter()
         .filter_map(|o| {
             let face = o.props.get("face")?.as_str()?.to_string();
             face.starts_with("show-paren").then_some((o.start, o.end, face))

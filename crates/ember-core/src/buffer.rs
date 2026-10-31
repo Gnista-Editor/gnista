@@ -238,7 +238,7 @@ pub struct Buffer {
     /// The local keymap and any composed over it, first looked up first.
     pub(crate) local_map: Vec<crate::keymap::KeymapId>,
     properties: TextProperties,
-    overlays: Vec<Overlay>,
+    overlays: crate::properties::OverlayList,
     next_overlay_id: u64,
     markers: Vec<Marker>,
     /// The name of the syntax table the buffer uses, as its major mode sets it.
@@ -362,7 +362,7 @@ impl Buffer {
             syntax_propertized: 0,
             local_map: Vec::new(),
             properties: TextProperties::default(),
-            overlays: Vec::new(),
+            overlays: Default::default(),
             next_overlay_id: 0,
             markers: Vec::new(),
             syntax_table: crate::syntax_table::STANDARD.to_string(),
@@ -1172,7 +1172,7 @@ impl Buffer {
             }
         }
         self.properties.insert(pos, n);
-        for overlay in &mut self.overlays {
+        for overlay in self.overlays.iter_mut() {
             overlay.insert(pos, n, before_markers);
         }
         self.unfontify_from(pos);
@@ -1245,7 +1245,7 @@ impl Buffer {
             m.pos = shift(m.pos);
         }
         let deleted_props = self.properties.delete(start, end);
-        for overlay in &mut self.overlays {
+        for overlay in self.overlays.iter_mut() {
             overlay.delete(start, end);
         }
         self.overlays.retain(|o| !o.evaporates());
@@ -1568,18 +1568,17 @@ impl Buffer {
     }
 
     pub fn overlay(&self, id: u64) -> Option<&Overlay> {
-        self.overlays.iter().find(|o| o.id == id)
+        self.overlays.get(id)
     }
 
     fn overlay_mut(&mut self, id: u64) -> Result<&mut Overlay> {
         self.overlays
-            .iter_mut()
-            .find(|o| o.id == id)
+            .get_mut(id)
             .ok_or_else(|| Error::new(format!("No such overlay: {id}")))
     }
 
     pub fn overlay_put(&mut self, id: u64, name: &str, value: Value) -> Result<()> {
-        self.overlay_mut(id)?.props.insert(name.to_string(), value);
+        self.overlays.props_mut(id).ok_or_else(|| Error::new(format!("No such overlay: {id}")))?.insert(name.to_string(), value);
         Ok(())
     }
 
@@ -1592,18 +1591,29 @@ impl Buffer {
     }
 
     pub fn delete_overlay(&mut self, id: u64) {
-        self.overlays.retain(|o| o.id != id);
+        self.overlays.remove(id);
+    }
+
+    /// The overlays overlapping `start..end`, and empty ones at or inside
+    /// it, in the order made, as Emacs's `overlays-in`.
+    pub fn overlays_in(&self, start: usize, end: usize) -> Vec<&Overlay> {
+        self.overlays.overlapping(start, end)
+    }
+
+    /// The overlays starting or ending at `pos`, in the order made.
+    pub fn overlays_at_edge(&self, pos: usize) -> Vec<&Overlay> {
+        self.overlays.at_edge(pos)
     }
 
     /// Every overlay, in the order they were made.
-    pub fn overlays(&self) -> &[Overlay] {
-        &self.overlays
+    pub fn overlays(&self) -> impl DoubleEndedIterator<Item = &Overlay> + Clone {
+        self.overlays.iter()
     }
 
     /// Overlays covering the character at `pos`, highest priority first,
     /// and the most recently made first among equals.
     pub fn overlays_at(&self, pos: usize) -> Vec<&Overlay> {
-        let mut found: Vec<&Overlay> = self.overlays.iter().filter(|o| o.start <= pos && pos < o.end).collect();
+        let mut found: Vec<&Overlay> = self.overlays.covering(pos);
         found.sort_by(|a, b| b.priority().total_cmp(&a.priority()).then(b.id.cmp(&a.id)));
         found
     }
@@ -1619,15 +1629,8 @@ impl Buffer {
 
     /// The next position after `pos` where text properties or overlays change.
     pub fn next_char_property_change(&self, pos: usize) -> usize {
-        let mut next = self.next_property_change(pos).unwrap_or(self.len());
-        for o in &self.overlays {
-            for edge in [o.start, o.end] {
-                if edge > pos && edge < next {
-                    next = edge;
-                }
-            }
-        }
-        next
+        let next = self.next_property_change(pos).unwrap_or(self.len());
+        self.overlays.next_edge(pos).map_or(next, |edge| edge.min(next))
     }
 
     /// Replaces all text without recording undo and ignoring read-only.

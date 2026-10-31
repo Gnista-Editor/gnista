@@ -645,7 +645,7 @@ impl Editor {
     pub fn minibuffer_strings(&self) -> (String, String) {
         let mb = self.minibuffer();
         let end = mb.len();
-        let mut overlays: Vec<&crate::properties::Overlay> = mb.overlays().iter().collect();
+        let mut overlays: Vec<&crate::properties::Overlay> = mb.overlays().collect();
         overlays.sort_by(|a, b| a.priority().total_cmp(&b.priority()).then(a.id.cmp(&b.id)));
         let strings = |at: usize, name: &str| -> String {
             overlays

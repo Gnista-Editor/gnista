@@ -303,3 +303,67 @@ fn gui_layout() {
         println!("GUI layout, Org file of {lines} lines, {title}: {}", line.join(", "));
     }
 }
+
+/// Repeats one key in the Org file for a while, for a sampling profiler to
+/// attach to (`sample`, Instruments, `perf`), as docs/multithreading.md's
+/// step 0 profiles the slow keys:
+///
+/// ```text
+/// EMBER_PROFILE_KEY='S-<tab>' cargo test --release -p ember-script --test bench profile_key -- --ignored --nocapture
+/// ```
+///
+/// `EMBER_PROFILE_SECONDS` sets how long (20 by default), `EMBER_PROFILE_SETUP`
+/// a command to run first (such as `variable-pitch-mode`, which also gives
+/// the GUI's metrics), and `EMBER_PROFILE_AT` where point starts: `middle`,
+/// `heading` (a heading near the middle), or `start`. The key `find-file`
+/// visits the file again each time instead.
+#[test]
+#[ignore]
+fn profile_key() {
+    let key = std::env::var("EMBER_PROFILE_KEY").unwrap_or_else(|_| "S-<tab>".into());
+    let seconds = env_usize("EMBER_PROFILE_SECONDS", 20) as u64;
+    let setup = std::env::var("EMBER_PROFILE_SETUP").unwrap_or_default();
+    let at = std::env::var("EMBER_PROFILE_AT").unwrap_or_else(|_| "start".into());
+    let lines = env_usize("EMBER_BENCH_ORG_LINES", 50_000);
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("big.org");
+    std::fs::write(&path, org_text(lines)).unwrap();
+    let path = path.to_string_lossy().to_string();
+    let mut ed = Editor::new();
+    let _scripting = Scripting::new(&mut ed).unwrap();
+    if !setup.is_empty() {
+        ed.set_text_metrics(std::sync::Arc::new(GuiLike));
+    }
+    let w = ed.selected_window();
+    ed.set_window_size(w, COLS, ROWS);
+    ed.call("find-file", vec![ember_core::Arg::Str(path.clone())]).unwrap();
+    if !setup.is_empty() {
+        ed.call(&setup, vec![]).unwrap();
+    }
+    let middle = ed.window_buffer().line_count() / 2;
+    let line = match at.as_str() {
+        "middle" => middle,
+        "heading" => (middle..middle + 40).find(|&l| ed.window_buffer().line_text(l).starts_with("* TODO")).unwrap(),
+        _ => 0,
+    };
+    let pos = ed.window_buffer().line_start(line);
+    ed.window_buffer_mut().set_point(pos);
+    println!("profiling {key} in pid {}", std::process::id());
+    let until = Instant::now() + Duration::from_secs(seconds);
+    let mut n = 0;
+    while Instant::now() < until {
+        if key == "find-file" {
+            ed.call("kill-buffer", vec![]).ok();
+            ed.call("find-file", vec![ember_core::Arg::Str(path.clone())]).unwrap();
+        } else {
+            ed.press(&key).ok();
+            // Back where it started, so each key does the same work.
+            if key == "C-c C-t" || key == "RET" {
+                ed.press("C-/").ok();
+            }
+        }
+        if !setup.is_empty() { gui_frame(&mut ed) } else { frame(&mut ed) }
+        n += 1;
+    }
+    println!("{key}: {n} times, {:.2} ms each", seconds as f64 * 1000.0 / n as f64);
+}
