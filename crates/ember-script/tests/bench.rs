@@ -367,3 +367,18 @@ fn profile_key() {
     }
     println!("{key}: {n} times, {:.2} ms each", seconds as f64 * 1000.0 / n as f64);
 }
+
+/// How long a new editor takes to load its packages, as at startup.
+#[test]
+#[ignore]
+fn startup() {
+    let mut times = Vec::new();
+    for _ in 0..5 {
+        let start = Instant::now();
+        let mut ed = Editor::new();
+        let _scripting = Scripting::new(&mut ed).unwrap();
+        times.push(start.elapsed().as_secs_f64() * 1000.0);
+    }
+    times.sort_by(f64::total_cmp);
+    println!("startup: {:.1} ms (median of 5; fastest {:.1})", times[2], times[0]);
+}

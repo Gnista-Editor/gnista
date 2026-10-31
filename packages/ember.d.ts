@@ -7112,6 +7112,10 @@ declare global {
        */
       "inhibit-modification-hooks": Value;
       /**
+       * Non-nil inhibits C-g quitting from happening immediately. Note that `quit-flag' will still be set by typing C-g, so a quit will be signaled as soon as `inhibit-quit' is nil. To prevent this happening, set `quit-flag' to nil before making `inhibit-quit' nil.
+       */
+      "inhibit-quit": Value;
+      /**
        * Whether to ignore read-only buffers and text: t ignores both, and a list lets through text whose read-only property is one of its values. Bind it with letBind around code that writes into a read-only buffer.
        */
       "inhibit-read-only": Value;
@@ -11066,6 +11070,14 @@ declare global {
     function colorSupportedP(color: string): boolean;
     /** The names of the colours Emacs knows, as defined-colors. */
     function definedColors(): string[];
+    /** Signal quit if C-g was typed and inhibit-quit is nil, as maybe_quit. Loops check it themselves every 1024 iterations, and every call into the editor does. */
+    function maybeQuit(): void;
+    /** Whether C-g was typed and not yet answered, as quit-flag. */
+    function quitFlag(): boolean;
+    /** Set or clear quit-flag, as setting the variable does. */
+    function setQuitFlag(on: boolean): void;
+    /** Run fn with inhibit-quit nil, so C-g quits it even where quitting is inhibited, as with-local-quit. */
+    function withLocalQuit<T>(fn: () => T): T;
     /**
      * A font spec, as font-spec: properties and values in turn, such as
      * `fontSpec(":family", "Menlo", ":size", 12, ":weight", Symbol.for("bold"))`.

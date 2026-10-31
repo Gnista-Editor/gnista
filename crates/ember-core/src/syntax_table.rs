@@ -312,12 +312,16 @@ pub struct Scanner<'a> {
     /// Whether a character's `syntax-table` property, a descriptor such as
     /// ".", overrides the table, as `parse-sexp-lookup-properties` says.
     pub lookup_properties: bool,
+    /// The flag a long scan checks, if quitting can stop it.
+    pub quit: Option<&'a crate::quit::QuitState>,
+    /// Steps since the scan last checked it.
+    steps: std::cell::Cell<u32>,
 }
 
 impl<'a> Scanner<'a> {
     pub fn new(buffer: &'a Buffer, tables: &'a SyntaxTables, table: &'a str, ignore_comments: bool, min: usize, max: usize) -> Scanner<'a> {
         let ascii = std::array::from_fn(|i| tables.entry(table, i as u8 as char));
-        Scanner { buffer, tables, table, ignore_comments, min, max, chunk: Default::default(), ascii, lookup_properties: false }
+        Scanner { buffer, tables, table, ignore_comments, min, max, chunk: Default::default(), ascii, lookup_properties: false, quit: None, steps: Default::default() }
     }
 
     pub fn char_at(&self, pos: usize) -> Option<char> {
@@ -713,6 +717,17 @@ impl<'a> Scanner<'a> {
     /// Moves over `count` balanced expressions, or lists if not `sexp`, as
     /// Emacs's scan_lists, starting `depth` levels in. Returns where it
     /// stopped, or none at an end of the buffer with nothing left to scan.
+    /// Signals `quit` every so many steps if the user asked to quit, as
+    /// Emacs's scan_lists checks while it scans.
+    fn maybe_quit(&self) -> Result<()> {
+        let n = self.steps.get().wrapping_add(1);
+        self.steps.set(n);
+        match self.quit {
+            Some(q) if n.is_multiple_of(4096) => q.check(),
+            _ => Ok(()),
+        }
+    }
+
     pub fn scan_lists(&self, from: usize, mut count: i64, mut depth: i64, sexp: bool) -> Result<Option<usize>> {
         let min_depth = depth.min(0);
         let mut pos = from.clamp(self.min, self.max);
@@ -720,6 +735,7 @@ impl<'a> Scanner<'a> {
         while count > 0 {
             let mut done = false;
             while pos < self.max {
+                self.maybe_quit()?;
                 let e = self.entry_at(pos).expect("inside the buffer");
                 if depth == min_depth {
                     last_good = pos;
@@ -817,6 +833,7 @@ impl<'a> Scanner<'a> {
         while count < 0 {
             let mut done = false;
             while pos > self.min {
+                self.maybe_quit()?;
                 pos -= 1;
                 let mut e = self.entry_at(pos).expect("inside the buffer");
                 if depth == min_depth {

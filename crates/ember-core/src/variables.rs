@@ -342,6 +342,9 @@ impl Editor {
 
     /// Sets the global value, which buffers without their own value see.
     pub fn set_default(&mut self, name: &str, value: Value) {
+        if name == "inhibit-quit" {
+            self.quitting.set_inhibit(value.is_true());
+        }
         if self.var(name).is_some_and(|v| v.hook) {
             let entries = self.hook_entries(&value).into_iter().filter(|e| e.run.is_some()).collect();
             self.symbol_mut(name).hook = entries;
@@ -727,6 +730,11 @@ pub(crate) fn install(ed: &mut Editor) {
             Value::Bool(false),
         )
         .local(),
+        Variable::new(
+            "inhibit-quit",
+            "Non-nil inhibits C-g quitting from happening immediately. Note that `quit-flag' will still be set by typing C-g, so a quit will be signaled as soon as `inhibit-quit' is nil. To prevent this happening, set `quit-flag' to nil before making `inhibit-quit' nil.",
+            Value::Bool(false),
+        ),
         Variable::new(
             "inhibit-read-only",
             "Whether to ignore read-only buffers and text: t ignores both, and a list lets through text whose read-only property is one of its values. Bind it with letBind around code that writes into a read-only buffer.",

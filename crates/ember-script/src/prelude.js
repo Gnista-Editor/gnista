@@ -250,6 +250,8 @@
     }
   }
   globalThis.__emberFont = (kind, plist) => new Font(kind, plist);
+  // The loop checks' countdown to calling ember.maybeQuit (strip.rs).
+  globalThis.__emberQuit = 1024;
   /** A marker's id, from a marker or the number a process mark is. */
   const markerId = (m) => (m instanceof Marker ? m.id : m);
 
@@ -526,30 +528,8 @@
     // As save-restriction: the buffer's narrowing put back after `fn`,
     // following edits to its edges, or the buffer widened if it was not narrowed.
     saveRestriction(fn) {
-      const buffer = native.bufferIdOf();
-      const narrowed = ember.bufferNarrowedP();
-      const beg = narrowed ? native.makeMarker(native.pointMin(), undefined, false) : null;
-      const end = narrowed ? native.makeMarker(native.pointMax(), undefined, true) : null;
-      return unwindProtect(fn, () => {
-        const name = native.bufferNameOf(buffer);
-        if (name !== null && name !== undefined) {
-          const old = native.bufferIdOf();
-          native.setCurrentBuffer(name);
-          try {
-            native.widen();
-            if (narrowed) {
-              const start = native.markerPosition(beg);
-              native.narrowToRegion(start, Math.max(start, native.markerPosition(end)));
-            }
-          } finally {
-            backTo(old);
-          }
-        }
-        if (narrowed) {
-          native.deleteMarker(beg);
-          native.deleteMarker(end);
-        }
-      });
+      const id = native.recordRestriction();
+      return unwindProtect(fn, () => native.unbind(id));
     },
     bufferLocalValue: (name, buffer) => ember.withCurrentBuffer(buffer, () => native.variable(String(name)) ?? undefined),
     bufferUndoList: (buffer) =>
@@ -871,9 +851,14 @@
     setReadOnly: (on) => native.setReadOnly(Boolean(on)),
     bufferReadOnly: () => native.bufferReadOnly(),
     withCurrentBuffer: (name, fn) => {
-      const old = native.bufferIdOf();
-      native.setCurrentBuffer(nameOf(name));
-      return unwindProtect(fn, () => backTo(old));
+      const id = native.recordCurrentBuffer();
+      try {
+        native.setCurrentBuffer(nameOf(name));
+      } catch (e) {
+        native.unbind(id);
+        throw e;
+      }
+      return unwindProtect(fn, () => native.unbind(id));
     },
     findFileNoselect: (file) => native.findFileNoselect(file),
     setWindowBuffer: (window, buffer) => native.setWindowBuffer(window ?? native.selectedWindow(), nameOf(buffer)),
@@ -1001,36 +986,15 @@
     killRegion: (beg, end) => native.killRegion(beg, end),
     letBind(bindings, fn) {
       // As let: a variable local in the current buffer is bound there, any
-      // other in its default value; each is restored where it was bound.
-      const restore = [];
-      const unbind = () => {
-        for (const undo of restore.reverse()) undo();
-      };
+      // other in its default value; each is restored where it was bound,
+      // by the editor's binding stack.
+      const ids = [];
       return unwindProtect(() => {
-        for (const [name, value] of Object.entries(bindings)) {
-          if (native.isLocalVariable(name)) {
-            const buffer = native.bufferIdOf();
-            const old = native.variable(name);
-            restore.push(() => {
-              const there = native.bufferNameOf(buffer);
-              if (there === null || there === undefined) return;
-              const back = native.bufferIdOf();
-              native.setCurrentBuffer(there);
-              try {
-                native.setVariable(name, old ?? null);
-              } finally {
-                backTo(back);
-              }
-            });
-            native.setVariable(name, value ?? null);
-          } else {
-            const old = native.defaultValue(name);
-            restore.push(() => native.setDefault(name, old ?? null));
-            native.setDefault(name, value ?? null);
-          }
-        }
+        for (const [name, value] of Object.entries(bindings)) ids.push(native.specbind(name, value ?? null));
         return fn();
-      }, unbind);
+      }, () => {
+        for (const id of ids.reverse()) native.unbind(id);
+      });
     },
     emacsRegexp(regexp, { caseFold = false } = {}) {
       const key = `${caseFold ? "i" : "c"}${regexp}`;
@@ -1223,14 +1187,8 @@
     skipCharsForward: (chars, limit) => skipChars(String(chars), limit ?? native.pointMax(), 1),
     skipCharsBackward: (chars, limit) => skipChars(String(chars), limit ?? native.pointMin(), -1),
     saveExcursion(fn) {
-      const buffer = native.bufferIdOf();
-      const marker = native.makeMarker(native.point(), undefined, false);
-      return unwindProtect(fn, () => {
-        const p = native.markerPosition(marker);
-        native.deleteMarker(marker);
-        backTo(buffer);
-        if (native.bufferIdOf() === buffer && p !== undefined && p !== null) native.gotoChar(p);
-      });
+      const id = native.recordExcursion();
+      return unwindProtect(fn, () => native.unbind(id));
     },
     afterPrompts: (fn) => native.afterPrompts(fn),
     makeProcess({ name, buffer, command, directory, env, filter, sentinel, stderr = true, connectionType, coding }) {
@@ -1622,6 +1580,20 @@
     copyFace: (oldFace, newFace) => {
       native.copyFace(String(oldFace), String(newFace));
       return String(newFace);
+    },
+    maybeQuit() {
+      globalThis.__emberQuit = 1024;
+      native.maybeQuit();
+    },
+    quitFlag: () => native.quitFlag(),
+    setQuitFlag: (on) => native.setQuitFlag(Boolean(on)),
+    withLocalQuit(fn) {
+      // As with-local-quit: inhibit-quit off for the body, and a quit
+      // deferred before it signalled once the body is done.
+      return ember.letBind({ "inhibit-quit": false }, () => {
+        ember.maybeQuit();
+        return fn();
+      });
     },
     fontSpec: (...plist) => native.fontSpec(plist),
     fontGet: (font, property) => native.fontGet(font, String(property)) ?? undefined,

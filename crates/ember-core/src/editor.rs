@@ -199,6 +199,10 @@ pub struct Editor {
     pub(crate) symbols: BTreeMap<String, crate::symbols::Symbol>,
     pub(crate) faces: BTreeMap<String, Face>,
     /// Styles worked out for lists of faces on each background, until a face changes.
+    /// Whether quitting was asked for, which other threads may set.
+    pub(crate) quitting: std::sync::Arc<crate::quit::QuitState>,
+    /// What scripts have bound, to restore as their forms end.
+    pub(crate) specpdl: crate::specbind::Specpdl,
     pub(crate) style_cache: std::cell::RefCell<std::collections::HashMap<(Vec<String>, bool), crate::faces::Style>>,
     /// The images display specs have loaded, as a frame's image cache.
     pub(crate) images: std::cell::RefCell<crate::image::ImageCache>,
@@ -380,6 +384,8 @@ impl Editor {
             minor_modes: Vec::new(),
             symbols: BTreeMap::new(),
             faces: BTreeMap::new(),
+            quitting: Default::default(),
+            specpdl: Default::default(),
             style_cache: Default::default(),
             images: Default::default(),
             grammars: crate::syntax::builtin_grammars().into_iter().collect(),
@@ -848,6 +854,10 @@ impl Editor {
     }
 
     fn execute(&mut self, command: Rc<Command>, args: Vec<Arg>, prefix: Option<PrefixArg>) {
+        // As Emacs's command loop, a command starts with no quit pending.
+        if self.running == 0 {
+            self.quitting.clear();
+        }
         let start = (self.buffers[self.current].id, self.buffers[self.current].point());
         if let Err(e) = self.run_command(command.clone(), args.clone(), prefix) {
             if let Some((buffer, path)) = self.take_supersession() {
@@ -1623,6 +1633,7 @@ impl Editor {
         let ignore_comments = self.variable("parse-sexp-ignore-comments").is_some_and(|v| v.is_true());
         let mut scanner = crate::syntax_table::Scanner::new(b, &self.syntax_tables, &b.syntax_table, ignore_comments, b.point_min(), b.point_max());
         scanner.lookup_properties = self.variable("parse-sexp-lookup-properties").is_some_and(|v| v.is_true());
+        scanner.quit = Some(&self.quitting);
         scanner
     }
 

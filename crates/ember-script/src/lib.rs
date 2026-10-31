@@ -144,9 +144,13 @@ const PACKAGES: &[(&str, &str)] = &[
 ];
 
 /// How long a script may run before it is stopped, unless changed with
-/// [`Scripting::set_time_limit`]. The editor is single threaded, so a script
-/// stuck in a loop would otherwise freeze it.
-pub const DEFAULT_TIME_LIMIT: Duration = Duration::from_secs(10);
+/// [`Scripting::set_time_limit`]: a backstop for a script that ignores
+/// `C-g`, which quits it at its next call into the editor or loop check.
+pub const DEFAULT_TIME_LIMIT: Duration = Duration::from_secs(60);
+
+/// How many times `C-g` stops a script that has not answered it: the
+/// emergency exit, which runs none of its `finally` blocks.
+const QUITS_TO_STOP: u32 = 3;
 
 thread_local! {
     /// The editor that host functions act on, set while a script runs. See [`enter`].
@@ -156,6 +160,13 @@ thread_local! {
     /// When the outermost running script must stop.
     static DEADLINE: Cell<Option<Instant>> = const { Cell::new(None) };
     static TIME_LIMIT: Cell<Duration> = const { Cell::new(DEFAULT_TIME_LIMIT) };
+    /// The running editor's quit flag, which the interrupt handler reads.
+    static QUITTING: RefCell<Option<std::sync::Arc<ember_core::QuitState>>> = const { RefCell::new(None) };
+    /// Whether the outermost script was stopped by `C-g` rather than the time limit.
+    static STOPPED_BY_QUIT: Cell<bool> = const { Cell::new(false) };
+    /// Whether the outermost script was stopped without unwinding, so what
+    /// it bound is restored from the binding stack.
+    static STOPPED: Cell<bool> = const { Cell::new(false) };
     /// Files being loaded, innermost last, so commands know where they were defined.
     static LOADING: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
     /// The contexts of the scripts running, innermost last, for functions
@@ -191,7 +202,16 @@ impl Scripting {
         let runtime = Runtime::new().map_err(|e| Error::new(e.to_string()))?;
         runtime.set_loader(PackageResolver, PackageLoader);
         runtime.set_interrupt_handler(Some(Box::new(|| {
-            DEADLINE.get().is_some_and(|deadline| Instant::now() > deadline)
+            // C-g pressed again and again while the script went on, or the time limit.
+            let quit = QUITTING.with_borrow(|q| q.as_ref().is_some_and(|q| q.presses() >= QUITS_TO_STOP));
+            if quit {
+                STOPPED_BY_QUIT.set(true);
+            }
+            let stop = quit || DEADLINE.get().is_some_and(|deadline| Instant::now() > deadline);
+            if stop {
+                STOPPED.set(true);
+            }
+            stop
         })));
         runtime.set_host_promise_rejection_tracker(Some(Box::new(|ctx, promise, reason, handled| {
             UNHANDLED.with_borrow_mut(|unhandled| {
@@ -368,7 +388,21 @@ fn enter<R>(context: &Context, ed: &mut Editor, f: impl for<'js> FnOnce(Ctx<'js>
             let _context = Popped;
             let _active = Restore::set(&ACTIVE, Some(ctx.as_raw()));
             let _deadline = Restore::set(&DEADLINE, Some(Instant::now() + TIME_LIMIT.get()));
+            let state = with_editor_ref(|ed| ed.quit_state().clone());
+            let previous = QUITTING.with_borrow_mut(|q| std::mem::replace(q, state));
+            let _quitting = scopeguard_quitting(previous);
+            STOPPED_BY_QUIT.set(false);
+            STOPPED.set(false);
+            let depth = with_editor_ref(|ed| ed.specpdl_depth()).unwrap_or(0);
             let result = f(ctx.clone());
+            if STOPPED.get() {
+                // Stopped where no finally ran: restore what it bound, as
+                // Emacs's emergency escape unwinds to top level.
+                if let Some(ptr) = EDITOR.get() {
+                    // SAFETY: as in `with_editor`; the script has stopped.
+                    unsafe { &mut *ptr.as_ptr() }.unbind_to(depth);
+                }
+            }
             // What waits on promises settled meanwhile runs now, before the
             // editor goes on: an async command awaiting a prompt carries on
             // as soon as the answer comes.
@@ -416,7 +450,30 @@ fn arg_to_js<'js>(ctx: &Ctx<'js>, arg: &Arg) -> rquickjs::Result<Value<'js>> {
     }
 }
 
-/// Gives a host function the editor, turning editor errors into script exceptions.
+/// The running editor's quit flag, read at the outermost entry.
+fn with_editor_ref<T>(f: impl FnOnce(&Editor) -> T) -> Option<T> {
+    // SAFETY: as in `with_editor`; only read, before the script runs.
+    EDITOR.get().map(|ptr| f(unsafe { ptr.as_ref() }))
+}
+
+/// Puts back the quit flag the interrupt handler read before a script ran.
+struct QuittingRestore(Option<std::sync::Arc<ember_core::QuitState>>);
+
+impl Drop for QuittingRestore {
+    fn drop(&mut self) {
+        let previous = self.0.take();
+        QUITTING.with_borrow_mut(|q| *q = previous);
+    }
+}
+
+fn scopeguard_quitting(previous: Option<std::sync::Arc<ember_core::QuitState>>) -> QuittingRestore {
+    QuittingRestore(previous)
+}
+
+/// Gives a host function the editor, turning editor errors into script
+/// exceptions. Every call is a safe point: a quit asked for since the
+/// script last called in is signalled here, as `quit`, which the script
+/// can catch, as Lisp's primitives check `quit-flag`.
 fn with_editor<T>(ctx: &Ctx<'_>, f: impl FnOnce(&mut Editor) -> Result<T>) -> rquickjs::Result<T> {
     let Some(ptr) = EDITOR.get() else {
         return Err(Exception::throw_internal(ctx, "No editor is active"));
@@ -424,6 +481,9 @@ fn with_editor<T>(ctx: &Ctx<'_>, f: impl FnOnce(&mut Editor) -> Result<T>) -> rq
     // SAFETY: `enter` set this from a live `&mut Editor` that is not used
     // while the script runs, and restores the previous value afterwards.
     let ed = unsafe { &mut *ptr.as_ptr() };
+    if let Err(e) = ed.maybe_quit() {
+        return Err(throw_error(ctx, &e));
+    }
     let result = f(ed);
     // What the call changed in a buffer sharing its text, the others see.
     ed.sync_shared_text();
@@ -3129,6 +3189,44 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
             Ok(())
         }))?,
     )?;
+    // The binding stack, as Emacs's specpdl: letBind, withCurrentBuffer,
+    // saveExcursion and saveRestriction push entries and unbind them.
+    native.set(
+        "specbind",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String, value: Value<'js>| {
+            let value = value_from_js(&ctx, value)?;
+            with_editor(&ctx, |ed| Ok(ed.specbind(&name, value) as f64))
+        })?,
+    )?;
+    native.set("recordCurrentBuffer", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.record_current_buffer() as f64)))?)?;
+    native.set("recordExcursion", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.record_excursion() as f64)))?)?;
+    native.set("recordRestriction", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.record_restriction() as f64)))?)?;
+    // Restoring is never a place to quit: the cleanup always runs.
+    native.set(
+        "unbind",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, id: f64| {
+            let Some(ptr) = EDITOR.get() else {
+                return Err(Exception::throw_internal(&ctx, "No editor is active"));
+            };
+            // SAFETY: as in `with_editor`.
+            let ed = unsafe { &mut *ptr.as_ptr() };
+            ed.unbind(id as u64);
+            ed.sync_shared_text();
+            Ok(())
+        })?,
+    )?;
+    // Quitting: the loop checks call this every 1024 iterations.
+    native.set("maybeQuit", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |_| Ok(())))?)?;
+    native.set(
+        "quitFlag",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor_ref(|ed| ed.quit_state().requested()).ok_or_else(|| Exception::throw_internal(&ctx, "No editor is active")))?,
+    )?;
+    native.set(
+        "setQuitFlag",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, on: bool| {
+            with_editor_ref(|ed| if on { ed.request_quit() } else { ed.quit_state().clear() }).ok_or_else(|| Exception::throw_internal(&ctx, "No editor is active"))
+        })?,
+    )?;
     // Fonts, as font.c's primitives.
     fn font_arg<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> rquickjs::Result<ember_core::Font> {
         match value_from_js(ctx, value)? {
@@ -4071,7 +4169,11 @@ fn failure(ctx: &Ctx<'_>, err: rquickjs::Error) -> Failure {
         .filter_map(|v| value_from_js(ctx, v).ok())
         .collect();
     if name == "InternalError" && message == "interrupted" {
-        let message = format!("Script stopped after running for {:?}", TIME_LIMIT.get());
+        let message = if STOPPED_BY_QUIT.get() {
+            "Quit: the command was stopped".to_string()
+        } else {
+            format!("Script stopped after running for {:?}", TIME_LIMIT.get())
+        };
         return Failure { message, is_bug: false, location, symbol: Some("quit".into()), data };
     }
     // Errors the engine raises point at mistakes in the script; include their type.

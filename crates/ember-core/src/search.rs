@@ -51,6 +51,8 @@ pub struct BufferHaystack<'a> {
     /// Whether classes come from the table alone, with no `syntax-table` properties.
     fixed: bool,
     chunk: std::cell::RefCell<(usize, Vec<char>)>,
+    /// The flag to check while searching, if quitting can stop it.
+    quit: Option<&'a crate::quit::QuitState>,
 }
 
 /// How many characters a haystack reads at a time.
@@ -58,11 +60,21 @@ const CHUNK: usize = 8192;
 
 impl<'a> BufferHaystack<'a> {
     pub fn new(buffer: &'a Buffer, class: &'a dyn Fn(usize, char) -> Class, fixed: bool) -> BufferHaystack<'a> {
-        BufferHaystack { buffer, class, fixed, chunk: std::cell::RefCell::new((0, Vec::new())) }
+        BufferHaystack { buffer, class, fixed, chunk: std::cell::RefCell::new((0, Vec::new())), quit: None }
+    }
+
+    /// The same haystack, a search in which `C-g` stops.
+    pub fn quitting(mut self, quit: &'a crate::quit::QuitState) -> BufferHaystack<'a> {
+        self.quit = Some(quit);
+        self
     }
 }
 
 impl Haystack for BufferHaystack<'_> {
+    fn maybe_quit(&self) -> Result<()> {
+        self.quit.map_or(Ok(()), |q| q.check())
+    }
+
     fn char_at(&self, pos: usize) -> Option<char> {
         let (min, max) = (self.buffer.point_min(), self.buffer.point_max());
         if pos < min || pos >= max {
@@ -309,7 +321,7 @@ impl Editor {
             }
             let re = Regexp::cached(pattern, options.case_fold)?;
             let (class, fixed) = self.syntax_classes(b);
-            let h = BufferHaystack::new(b, &class, fixed);
+            let h = BufferHaystack::new(b, &class, fixed).quitting(&self.quitting);
             let (min, max) = (b.point_min(), b.point_max());
             let from = from.clamp(min, max);
             let found = if options.backward {
@@ -331,7 +343,7 @@ impl Editor {
             let b = self.buffer();
             let re = Regexp::cached(pattern, case_fold)?;
             let (class, fixed) = self.syntax_classes(b);
-            let h = BufferHaystack::new(b, &class, fixed);
+            let h = BufferHaystack::new(b, &class, fixed).quitting(&self.quitting);
             let pos = pos.clamp(b.point_min(), b.point_max());
             Ok(re.match_at(&h, pos, b.point_max())?.map(to_match))
         })

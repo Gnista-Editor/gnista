@@ -31,6 +31,11 @@ pub trait Haystack {
     fn fixed_classes(&self) -> bool {
         false
     }
+    /// Signals `quit` if the user asked to quit, as the matcher checks
+    /// between start positions and every so many steps, as Emacs's does.
+    fn maybe_quit(&self) -> Result<()> {
+        Ok(())
+    }
     /// The first position from `from` before `limit`, or with `backward`
     /// the last from `from` down to `limit`, whose character passes `test`.
     /// A haystack that can read faster than one character at a time says so.
@@ -1076,7 +1081,13 @@ impl Regexp {
         let (mut pc, mut pos) = (0, start);
         let limit = limit.min(h.max());
         let take = |pc: usize, pos: usize| pos < limit && h.char_at(pos).is_some_and(|c| self.takes(pc, h, pos, c));
+        let mut steps = 0u32;
         loop {
+            // A pattern that backtracks without end can still be quit.
+            steps = steps.wrapping_add(1);
+            if steps.is_multiple_of(65536) {
+                h.maybe_quit()?;
+            }
             let ok = match &self.insts[pc] {
                 Inst::Char(_) | Inst::Any | Inst::Set(_) | Inst::Syntax(..) | Inst::Category(..) => {
                     let taken = take(pc, pos);
@@ -1209,7 +1220,12 @@ impl Regexp {
         let fast = self.fastmap(h);
         let mut scratch = self.scratch();
         let mut start = from;
+        let mut tries = 0u32;
         while start <= limit {
+            tries = tries.wrapping_add(1);
+            if tries.is_multiple_of(256) {
+                h.maybe_quit()?;
+            }
             // A regexp anchored with `^` can start only at the start of a line.
             if self.at_line_start && start > h.min() && h.char_at(start - 1) != Some('\n') {
                 match h.find(start, limit, false, &mut |_, c| c == '\n') {
@@ -1242,7 +1258,12 @@ impl Regexp {
         let fast = self.fastmap(h);
         let mut scratch = self.scratch();
         let mut start = from;
+        let mut tries = 0u32;
         loop {
+            tries = tries.wrapping_add(1);
+            if tries.is_multiple_of(256) {
+                h.maybe_quit()?;
+            }
             if start < bound {
                 return Ok(None);
             }

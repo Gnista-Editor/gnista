@@ -8,6 +8,9 @@ license.workspace = true
 ember-core = { version = "0.1.0", path = "../ember-core" }
 rquickjs = { version = "0.14", features = ["loader"] }
 swc_common = "26"
+swc_ecma_ast = "29"
+swc_ecma_parser = "46"
+swc_ecma_visit = "29"
 swc_ts_fast_strip = "59"
 
 [dev-dependencies]
