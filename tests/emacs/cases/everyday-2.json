@@ -1,0 +1,173 @@
+[
+  {
+    "name": "forward-page",
+    "text": "one\ntwo\n\fthree\nfour\n\ffive\n",
+    "keys": "C-x ]"
+  },
+  {
+    "name": "forward-page-twice",
+    "text": "one\ntwo\n\fthree\nfour\n\ffive\n",
+    "keys": "C-x ] C-x ]"
+  },
+  {
+    "name": "backward-page",
+    "text": "one\ntwo\n\fthree\nfour\n\ffive\n",
+    "keys": "M-> C-x ["
+  },
+  {
+    "name": "backward-page-twice",
+    "text": "one\ntwo\n\fthree\nfour\n\ffive\n",
+    "keys": "M-> C-x [ C-x ["
+  },
+  {
+    "name": "mark-page",
+    "text": "one\ntwo\n\fthree\nfour\n\ffive\n",
+    "keys": "C-x ] C-n C-x C-p C-w"
+  },
+  {
+    "name": "count-lines-page",
+    "text": "one\ntwo\n\fthree\nfour\n\ffive\n",
+    "keys": "C-x ] C-n C-x l",
+    "message": true
+  },
+  {
+    "name": "what-page",
+    "text": "one\ntwo\n\fthree\nfour\n\ffive\n",
+    "keys": "C-x ] C-n M-x",
+    "answers": [
+      "what-page"
+    ],
+    "message": true
+  },
+  {
+    "name": "tabify",
+    "text": "a        b\n        c\n",
+    "keys": "C-x h M-x",
+    "answers": [
+      "tabify"
+    ]
+  },
+  {
+    "name": "untabify",
+    "text": "a\tb\n\tc\n",
+    "keys": "C-x h M-x",
+    "answers": [
+      "untabify"
+    ]
+  },
+  {
+    "name": "center-line",
+    "text": "hello\n",
+    "keys": "M-x",
+    "answers": [
+      "center-line"
+    ]
+  },
+  {
+    "name": "center-region",
+    "text": "a\n\nbb\n",
+    "keys": "C-x h M-x",
+    "answers": [
+      "center-region"
+    ]
+  },
+  {
+    "name": "transpose-sexps",
+    "text": "(a b) (c d)",
+    "keys": "C-M-f C-M-t"
+  },
+  {
+    "name": "transpose-sexps-symbols",
+    "text": "foo bar baz",
+    "keys": "M-f C-M-t"
+  },
+  {
+    "name": "transpose-sexps-error",
+    "text": "(a b)",
+    "keys": "C-M-t"
+  },
+  {
+    "name": "transpose-sentences",
+    "text": "One.  Two.  Three.",
+    "keys": "M-e M-e M-x",
+    "answers": [
+      "transpose-sentences"
+    ]
+  },
+  {
+    "name": "transpose-paragraphs",
+    "text": "a\n\nb\n\nc\n",
+    "keys": "C-n C-n C-n M-x",
+    "answers": [
+      "transpose-paragraphs"
+    ]
+  },
+  {
+    "name": "kill-paragraph",
+    "text": "a\nb\n\nc\n",
+    "keys": "C-f M-x C-y C-y",
+    "answers": [
+      "kill-paragraph"
+    ]
+  },
+  {
+    "name": "backward-kill-paragraph",
+    "text": "a\n\nb\nc\n",
+    "keys": "M-> M-x",
+    "answers": [
+      "backward-kill-paragraph"
+    ]
+  },
+  {
+    "name": "append-to-buffer",
+    "text": "hello world",
+    "keys": "C-SPC M-f M-x C-x b RET",
+    "answers": [
+      "append-to-buffer",
+      "other",
+      "other"
+    ]
+  },
+  {
+    "name": "insert-buffer",
+    "text": "abc",
+    "keys": "C-x h M-x C-x b RET C-x h M-x",
+    "answers": [
+      "copy-to-buffer",
+      "b2",
+      "b2",
+      "insert-buffer",
+      "b2"
+    ]
+  },
+  {
+    "name": "mark-defun",
+    "text": "(defun a ()\n  1)\n\n;; about b\n(defun b ()\n  2)\n\n(defun c ()\n  3)\n",
+    "keys": "C-n C-n C-n C-n C-n C-M-h C-w"
+  },
+  {
+    "name": "mark-defun-twice",
+    "text": "(defun a ()\n  1)\n\n;; about b\n(defun b ()\n  2)\n\n(defun c ()\n  3)\n",
+    "keys": "C-M-h C-M-h C-w"
+  },
+  {
+    "name": "mark-defun-between",
+    "text": "(defun a ()\n  1)\n\n;; about b\n(defun b ()\n  2)\n\n(defun c ()\n  3)\n",
+    "keys": "C-n C-n C-M-h C-w"
+  },
+  {
+    "name": "mark-defun-prefix",
+    "text": "(defun a ()\n  1)\n\n;; about b\n(defun b ()\n  2)\n\n(defun c ()\n  3)\n",
+    "keys": "C-u 2 C-M-h C-w"
+  },
+  {
+    "name": "narrow-to-defun",
+    "text": "(defun a ()\n  1)\n\n;; about b\n(defun b ()\n  2)\n\n(defun c ()\n  3)\n",
+    "keys": "C-n C-n C-n C-n C-n C-x n d"
+  },
+  {
+    "name": "narrow-to-defun-first",
+    "text": "(defun a ()\n  1)\n\n;; about b\n(defun b ()\n  2)\n\n(defun c ()\n  3)\n",
+    "keys": "C-x n d"
+  }
+]

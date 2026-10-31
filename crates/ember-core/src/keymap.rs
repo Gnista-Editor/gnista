@@ -16,6 +16,10 @@ pub type KeymapId = usize;
 #[derive(Clone, Debug, PartialEq)]
 pub enum Binding {
     Command(String),
+    /// A key sequence, as an Emacs string or vector binding: a keyboard
+    /// macro in an ordinary keymap, and what the keys become in a
+    /// translation map such as `key-translation-map`.
+    Keys(Vec<Key>),
     /// A prefix key: the keys after it are looked up in that keymap.
     Keymap(KeymapId),
     /// Nothing, hiding the parents' binding, as `(define-key map key nil)`.
@@ -38,6 +42,8 @@ struct Map {
 #[derive(Debug, PartialEq, Eq)]
 pub enum Lookup {
     Command(String),
+    /// Bound to a key sequence: a keyboard macro, or a translation.
+    Keys(Vec<Key>),
     /// The sequence so far is a prefix; more keys are needed.
     Prefix,
     Unbound,
@@ -85,9 +91,9 @@ impl Keymaps {
             for x in self.chain(m) {
                 match x.bindings.get(key) {
                     Some(Binding::Keymap(k)) => out.push(Binding::Keymap(*k)),
-                    Some(Binding::Command(c)) => {
+                    Some(b @ (Binding::Command(_) | Binding::Keys(_))) => {
                         if !bound {
-                            out.push(Binding::Command(c.clone()));
+                            out.push(b.clone());
                         }
                         bound = true;
                         break;
@@ -173,6 +179,7 @@ impl Keymaps {
                     }
                 }
                 Some(Binding::Command(c)) if last => return Some(Binding::Command(c.clone())),
+                Some(Binding::Keys(k)) if last => return Some(Binding::Keys(k.clone())),
                 _ => return None,
             }
         }
@@ -182,6 +189,7 @@ impl Keymaps {
     pub fn lookup(&self, map: KeymapId, keys: &[Key]) -> Lookup {
         match self.binding_of(map, keys) {
             Some(Binding::Command(c)) => Lookup::Command(c),
+            Some(Binding::Keys(k)) => Lookup::Keys(k),
             Some(Binding::Keymap(_)) => Lookup::Prefix,
             Some(Binding::Nil) | None => Lookup::Unbound,
         }
@@ -222,6 +230,8 @@ impl Keymaps {
             prefix.push(*key);
             match binding {
                 Binding::Command(c) => out.push((prefix.clone(), c.clone())),
+                // As describe-bindings lists a string or vector binding.
+                Binding::Keys(_) => out.push((prefix.clone(), "Keyboard Macro".to_string())),
                 Binding::Keymap(m) if !path.contains(m) && path.len() < DEPTH => {
                     path.push(*m);
                     self.collect(*m, prefix, path, out);

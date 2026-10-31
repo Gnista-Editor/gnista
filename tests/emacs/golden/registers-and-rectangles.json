@@ -1,0 +1,243 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "jump-to-empty-register",
+      "input": {
+        "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+        "point": 0,
+        "keys": "C-x r j",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "z"
+        ]
+      },
+      "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+      "visible": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Register doesn’t contain a buffer position or configuration"
+    },
+    {
+      "name": "insert-empty-register",
+      "input": {
+        "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+        "point": 0,
+        "keys": "C-x r i",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "q"
+        ]
+      },
+      "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+      "visible": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Register does not contain text"
+    },
+    {
+      "name": "kill-rectangle",
+      "input": {
+        "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+        "point": 0,
+        "keys": "C-f C-SPC C-n C-n C-f C-f C-x r k",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "adef\ngjkl\nmpqr\nstuvwx\n",
+      "visible": "adef\ngjkl\nmpqr\nstuvwx\n",
+      "point": 11,
+      "mark": 1,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kill-and-yank-rectangle",
+      "input": {
+        "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+        "point": 0,
+        "keys": "C-f C-SPC C-n C-n C-f C-f C-x r k M-> C-x r y",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "adef\ngjkl\nmpqr\nstuvwx\nbc\nhi\nno",
+      "visible": "adef\ngjkl\nmpqr\nstuvwx\nbc\nhi\nno",
+      "point": 30,
+      "mark": 22,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "yank-rectangle-mid-line",
+      "input": {
+        "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+        "point": 0,
+        "keys": "C-f C-SPC C-n C-f C-x r M-w C-n C-n C-e C-x r y",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "abcdef\nghijkl\nmnopqr\nstuvwxb\n      h",
+      "visible": "abcdef\nghijkl\nmnopqr\nstuvwxb\n      h",
+      "point": 36,
+      "mark": 27,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-rectangle",
+      "input": {
+        "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+        "point": 0,
+        "keys": "C-f C-f C-SPC C-n C-n C-n C-f C-x r d",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "abdef\nghjkl\nmnpqr\nstvwx\n",
+      "visible": "abdef\nghjkl\nmnpqr\nstvwx\n",
+      "point": 20,
+      "mark": 2,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "open-rectangle",
+      "input": {
+        "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+        "point": 0,
+        "keys": "C-f C-SPC C-n C-n C-f C-f C-x r o",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a  bcdef\ng  hijkl\nm  nopqr\nstuvwx\n",
+      "visible": "a  bcdef\ng  hijkl\nm  nopqr\nstuvwx\n",
+      "point": 1,
+      "mark": 1,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "clear-rectangle",
+      "input": {
+        "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+        "point": 0,
+        "keys": "C-f C-SPC C-n C-n C-f C-f C-x r c",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a  def\ng  jkl\nm  pqr\nstuvwx\n",
+      "visible": "a  def\ng  jkl\nm  pqr\nstuvwx\n",
+      "point": 15,
+      "mark": 1,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "string-rectangle",
+      "input": {
+        "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+        "point": 0,
+        "keys": "C-f C-SPC C-n C-n C-f C-f C-x r t",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "XY"
+        ]
+      },
+      "text": "aXYdef\ngXYjkl\nmXYpqr\nstuvwx\n",
+      "visible": "aXYdef\ngXYjkl\nmXYpqr\nstuvwx\n",
+      "point": 17,
+      "mark": 1,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "rectangle-number-lines",
+      "input": {
+        "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+        "point": 0,
+        "keys": "C-SPC C-n C-n C-n C-x r N",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "1 abcdef\n2 ghijkl\n3 mnopqr\n4 stuvwx\n",
+      "visible": "1 abcdef\n2 ghijkl\n3 mnopqr\n4 stuvwx\n",
+      "point": 27,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kill-rectangle-short-lines",
+      "input": {
+        "text": "abcdef\nab\nabcdef\n",
+        "point": 0,
+        "keys": "C-f C-f C-f C-SPC C-n C-n C-f C-f C-x r k M-> C-x r y",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "abcf\nab\nabcf\nde\n  \nde",
+      "visible": "abcf\nab\nabcf\nde\n  \nde",
+      "point": 21,
+      "mark": 13,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "rectangle-with-tabs",
+      "input": {
+        "text": "a\tb\nabcdefghij\n",
+        "point": 0,
+        "keys": "C-f C-f C-SPC C-n C-f C-f C-f C-x r k",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "b\nij\n",
+      "visible": "b\nij\n",
+      "point": 5,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

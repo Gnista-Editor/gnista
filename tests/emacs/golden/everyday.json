@@ -1,0 +1,1039 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "back-to-indentation",
+      "input": {
+        "text": "   foo bar\n",
+        "point": 0,
+        "keys": "C-e M-m",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "   foo bar\n",
+      "visible": "   foo bar\n",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "back-to-indentation-blank-line",
+      "input": {
+        "text": "x\n   \ny",
+        "point": 0,
+        "keys": "C-n M-m",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "x\n   \ny",
+      "visible": "x\n   \ny",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "delete-horizontal-space",
+      "input": {
+        "text": "a   \t  b",
+        "point": 0,
+        "keys": "C-a M-f C-f C-f M-\\",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "ab",
+      "visible": "ab",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-horizontal-space-backward",
+      "input": {
+        "text": "a     b",
+        "point": 0,
+        "keys": "C-a M-f C-f C-f C-u M-\\",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a   b",
+      "visible": "a   b",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "cycle-spacing-once",
+      "input": {
+        "text": "a     b",
+        "point": 0,
+        "keys": "C-a M-f C-f C-f M-SPC",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a b",
+      "visible": "a b",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "cycle-spacing-twice",
+      "input": {
+        "text": "a     b",
+        "point": 0,
+        "keys": "C-a M-f C-f C-f M-SPC M-SPC",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "ab",
+      "visible": "ab",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "cycle-spacing-thrice-restores",
+      "input": {
+        "text": "a     b",
+        "point": 0,
+        "keys": "C-a M-f C-f C-f M-SPC M-SPC M-SPC",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a     b",
+      "visible": "a     b",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "cycle-spacing-negative-joins-lines",
+      "input": {
+        "text": "a   \n   b",
+        "point": 0,
+        "keys": "C-a C-e M-- M-SPC",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a b",
+      "visible": "a b",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "just-one-space-with-count",
+      "input": {
+        "text": "a     b",
+        "point": 0,
+        "keys": "C-a M-f C-u 3 M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "just-one-space"
+        ]
+      },
+      "text": "a   b",
+      "visible": "a   b",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-indentation",
+      "input": {
+        "text": "foo\n    bar\n",
+        "point": 0,
+        "keys": "C-n M-^",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "foo bar\n",
+      "visible": "foo bar\n",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-indentation-with-prefix",
+      "input": {
+        "text": "foo  \n    bar\n",
+        "point": 0,
+        "keys": "C-u M-^",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "foo bar\n",
+      "visible": "foo bar\n",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-indentation-before-paren",
+      "input": {
+        "text": "(foo\n    )\n",
+        "point": 0,
+        "keys": "C-n M-^",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(foo)\n",
+      "visible": "(foo)\n",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-blank-lines-many",
+      "input": {
+        "text": "a\n\n\n\nb\n",
+        "point": 0,
+        "keys": "C-n C-n C-x C-o",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\n\nb\n",
+      "visible": "a\n\nb\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-blank-lines-single",
+      "input": {
+        "text": "a\n\nb\n",
+        "point": 0,
+        "keys": "C-n C-x C-o",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\nb\n",
+      "visible": "a\nb\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-blank-lines-after-nonblank",
+      "input": {
+        "text": "a\n\n\n\nb\n",
+        "point": 0,
+        "keys": "C-x C-o",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\nb\n",
+      "visible": "a\nb\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-trailing-whitespace",
+      "input": {
+        "text": "a  \nb\t\n\fc \n\n\n\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "delete-trailing-whitespace"
+        ]
+      },
+      "text": "a\nb\n\fc\n",
+      "visible": "a\nb\n\fc\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kill-whole-line",
+      "input": {
+        "text": "one\ntwo\nthree\n",
+        "point": 0,
+        "keys": "C-n C-f M-x C-y",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "kill-whole-line"
+        ]
+      },
+      "text": "one\ntwo\nthree\n",
+      "visible": "one\ntwo\nthree\n",
+      "point": 8,
+      "mark": 4,
+      "mark_active": false,
+      "kill_ring": [
+        "two\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kill-whole-line-twice-appends",
+      "input": {
+        "text": "one\ntwo\nthree\n",
+        "point": 0,
+        "keys": "M-x M-x C-y",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "kill-whole-line",
+          "kill-whole-line"
+        ]
+      },
+      "text": "one\ntwo\nthree\n",
+      "visible": "one\ntwo\nthree\n",
+      "point": 8,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [
+        "one\ntwo\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kill-whole-line-negative",
+      "input": {
+        "text": "one\ntwo\nthree\n",
+        "point": 0,
+        "keys": "C-n C-f M-- M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "kill-whole-line"
+        ]
+      },
+      "text": "one\nthree\n",
+      "visible": "one\nthree\n",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "\ntwo"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kill-whole-line-zero",
+      "input": {
+        "text": "one\ntwo\nthree\n",
+        "point": 0,
+        "keys": "C-n C-f M-0 M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "kill-whole-line"
+        ]
+      },
+      "text": "one\n\nthree\n",
+      "visible": "one\n\nthree\n",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "two"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "zap-to-char",
+      "input": {
+        "text": "hello world",
+        "point": 0,
+        "keys": "M-z",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "o"
+        ]
+      },
+      "text": " world",
+      "visible": " world",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "hello"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "zap-to-char-twice",
+      "input": {
+        "text": "hello world",
+        "point": 0,
+        "keys": "M-2 M-z",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "o"
+        ]
+      },
+      "text": "rld",
+      "visible": "rld",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "hello wo"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "zap-to-char-backward",
+      "input": {
+        "text": "hello world",
+        "point": 0,
+        "keys": "C-e M-- M-z",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "o"
+        ]
+      },
+      "text": "hello w",
+      "visible": "hello w",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "orld"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "zap-to-char-missing",
+      "input": {
+        "text": "hello world",
+        "point": 0,
+        "keys": "M-z",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "q"
+        ]
+      },
+      "text": "hello world",
+      "visible": "hello world",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Search failed: \"q\""
+    },
+    {
+      "name": "goto-line",
+      "input": {
+        "text": "a\nb\nc\nd\n",
+        "point": 0,
+        "keys": "M-g g",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "3"
+        ]
+      },
+      "text": "a\nb\nc\nd\n",
+      "visible": "a\nb\nc\nd\n",
+      "point": 4,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "goto-line-prefix",
+      "input": {
+        "text": "a\nb\nc\nd\n",
+        "point": 0,
+        "keys": "M-4 M-g g",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\nb\nc\nd\n",
+      "visible": "a\nb\nc\nd\n",
+      "point": 6,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "goto-line-past-end",
+      "input": {
+        "text": "a\nb\n",
+        "point": 0,
+        "keys": "M-9 M-g M-g",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "a\nb\n",
+      "visible": "a\nb\n",
+      "point": 4,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "goto-char",
+      "input": {
+        "text": "abcdef",
+        "point": 0,
+        "keys": "M-4 M-g c",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "abcdef",
+      "visible": "abcdef",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "what-line",
+      "input": {
+        "text": "a\nb\nc\n",
+        "point": 0,
+        "keys": "C-n C-n M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "what-line"
+        ],
+        "message": true
+      },
+      "text": "a\nb\nc\n",
+      "visible": "a\nb\nc\n",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": "Line 3"
+    },
+    {
+      "name": "what-cursor-position",
+      "input": {
+        "text": "abc\ndef",
+        "point": 0,
+        "keys": "C-n C-f C-x =",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "message": true
+      },
+      "text": "abc\ndef",
+      "visible": "abc\ndef",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": "Char: e (101, #o145, #x65) point=6 of 7 (71%) column=1"
+    },
+    {
+      "name": "what-cursor-position-eob",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "C-e C-x =",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "message": true
+      },
+      "text": "abc",
+      "visible": "abc",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": "point=4 of 3 (EOB) column=3"
+    },
+    {
+      "name": "what-cursor-position-space",
+      "input": {
+        "text": "a c",
+        "point": 0,
+        "keys": "C-f C-x =",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "message": true
+      },
+      "text": "a c",
+      "visible": "a c",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": "Char: SPC (32, #o40, #x20) point=2 of 3 (33%) column=1"
+    },
+    {
+      "name": "what-cursor-position-non-ascii",
+      "input": {
+        "text": "é",
+        "point": 0,
+        "keys": "C-x =",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "message": true
+      },
+      "text": "é",
+      "visible": "é",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": "Char: é (233, #o351, #xe9, file ...) point=1 of 1 (0%) column=0"
+    },
+    {
+      "name": "count-words-region",
+      "input": {
+        "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+        "point": 0,
+        "keys": "C-SPC M-} M-=",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "message": true
+      },
+      "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+      "visible": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+      "point": 87,
+      "mark": 0,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": "Region has 2 lines, 5 sentences, 15 words, and 87 characters"
+    },
+    {
+      "name": "count-words-buffer",
+      "input": {
+        "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "count-words"
+        ],
+        "message": true
+      },
+      "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+      "visible": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": "Buffer has 4 lines, 7 sentences, 18 words, and 111 characters"
+    },
+    {
+      "name": "mark-word",
+      "input": {
+        "text": "one two three",
+        "point": 0,
+        "keys": "M-@ C-w",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": " two three",
+      "visible": " two three",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [
+        "one"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "mark-word-twice",
+      "input": {
+        "text": "one two three",
+        "point": 0,
+        "keys": "M-@ M-@ C-w",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": " three",
+      "visible": " three",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [
+        "one two"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "mark-paragraph",
+      "input": {
+        "text": "a\nb\n\nc\nd\n",
+        "point": 0,
+        "keys": "C-n M-h C-w",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\nc\nd\n",
+      "visible": "\nc\nd\n",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [
+        "a\nb\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "split-line",
+      "input": {
+        "text": "foo bar",
+        "point": 0,
+        "keys": "C-a M-f C-M-o",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "foo \n    bar",
+      "visible": "foo \n    bar",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "quoted-insert-control",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-q C-a C-q TAB",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\u0001\t",
+      "visible": "\u0001\t",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "quoted-insert-count",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-u 3 C-q z",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "zzz",
+      "visible": "zzz",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "forward-sentence",
+      "input": {
+        "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+        "point": 0,
+        "keys": "M-e",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+      "visible": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-sentence-three",
+      "input": {
+        "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+        "point": 0,
+        "keys": "M-e M-e M-e",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+      "visible": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+      "point": 47,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-sentence-across-paragraph",
+      "input": {
+        "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+        "point": 0,
+        "keys": "M-3 M-e M-e M-e",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+      "visible": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+      "point": 86,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backward-sentence",
+      "input": {
+        "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+        "point": 0,
+        "keys": "M-> M-a",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+      "visible": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+      "point": 105,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backward-sentence-twice",
+      "input": {
+        "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+        "point": 0,
+        "keys": "M-> M-a M-a M-a",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+      "visible": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+      "point": 70,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "kill-sentence",
+      "input": {
+        "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+        "point": 0,
+        "keys": "M-e M-k",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "Hello there.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+      "visible": "Hello there.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+      "point": 12,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "  This is a test."
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "backward-kill-sentence",
+      "input": {
+        "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+        "point": 0,
+        "keys": "M-e M-e C-x DEL",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "Hello there.    And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+      "visible": "Hello there.    And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+      "point": 14,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "This is a test."
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "fixup-whitespace",
+      "input": {
+        "text": "a   b",
+        "point": 0,
+        "keys": "C-f C-f M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "fixup-whitespace"
+        ]
+      },
+      "text": "a b",
+      "visible": "a b",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "append-next-kill",
+      "input": {
+        "text": "one two three",
+        "point": 0,
+        "keys": "M-d C-f C-M-w M-d C-y",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": " onetwo three",
+      "visible": " onetwo three",
+      "point": 7,
+      "mark": 1,
+      "mark_active": false,
+      "kill_ring": [
+        "onetwo"
+      ],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

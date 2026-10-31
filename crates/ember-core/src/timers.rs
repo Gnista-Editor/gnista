@@ -136,6 +136,8 @@ impl Editor {
             self.timers.keys_since_auto_save = 0;
             self.do_auto_save(false);
         }
+        // Code reading a key whose time is up gets nil.
+        self.key_read_timed_out();
         let mut due = Vec::new();
         self.timers.list.retain_mut(|timer| match &mut timer.kind {
             TimerKind::At { due: at, repeat } if *at <= now => {
@@ -184,6 +186,9 @@ impl Editor {
             && self.buffers.iter().any(|b| b.needs_auto_save())
         {
             consider(idle_until(timeout));
+        }
+        if let Some(deadline) = self.key_read_deadline() {
+            consider(deadline.saturating_duration_since(now));
         }
         // Often while a process runs, to take its output in.
         if self.processes_running() {

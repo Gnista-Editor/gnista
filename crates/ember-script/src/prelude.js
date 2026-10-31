@@ -150,7 +150,8 @@
   /** Runs a tree-sitter primitive by its Lisp name; nil comes back as undefined. */
   const treesit = (name, ...args) => native.treesitPrimitive(name, ...args.map((a) => (a === undefined ? null : a))) ?? undefined;
   const keymapArg = (k) => (k instanceof Keymap ? k : symbolName(k));
-  const bindingArg = (b) => (b === null || b === undefined ? null : b instanceof Keymap ? b : symbolName(b));
+  // A binding: a command, a keymap, nil, or keys, as a string or vector binding in Emacs.
+  const bindingArg = (b) => (b === null || b === undefined ? null : b instanceof Keymap ? b : Array.isArray(b) ? b.map(String) : symbolName(b));
   // A transient map made from the same bindings is made once.
   const transientMaps = new Map();
   globalThis.__emberBuffer = (id) => {
@@ -532,6 +533,8 @@
     codingSystemList: (baseOnly = false) => coding("coding-system-list", Boolean(baseOnly)),
     codingSystemAliases: (cs) => coding("coding-system-aliases", String(cs)),
     codingSystemBase: (cs) => coding("coding-system-base", String(cs)),
+    setCodingSystemPriority: (...codings) => coding("set-coding-system-priority", ...codings.map(String)),
+    codingSystemPriorityList: (highestp = false) => coding("coding-system-priority-list", Boolean(highestp)),
     codingSystemType: (cs) => coding("coding-system-type", String(cs)),
     codingSystemEolType: (cs) => coding("coding-system-eol-type", String(cs)),
     codingSystemChangeEolConversion: (cs, eol) => coding("coding-system-change-eol-conversion", String(cs), eol ?? null),
@@ -592,6 +595,7 @@
     popKill: () => native.popKill() ?? undefined,
     lastCommand: () => native.lastCommand(),
     setThisCommand: (name) => native.setThisCommand(String(name)),
+    setLastCommand: (name) => native.setLastCommand(name === null || name === undefined ? null : String(name)),
     setMark: (position) => native.setMark(position ?? undefined),
     repeatLastCommand: (arg) => native.repeatLastCommand(arg ?? null),
     startKbdMacro: () => native.startKbdMacro(),
@@ -636,10 +640,31 @@
     yOrNP: (question, then) => answering(then, (answer, quit) => native.ask("y-or-n", String(question), [], answer, quit)),
     readAnswer: (question, answers, then) =>
       answering(then, (answer, quit) => native.ask("answer", String(question), answers.map(String), answer, quit)),
-    readKey: (prompt, then) => answering(then, (answer, quit) => native.readKeyEvent("key", String(prompt ?? ""), answer, quit)),
-    readEvent: (prompt, then) => answering(then, (answer, quit) => native.readKeyEvent("event", String(prompt ?? ""), answer, quit)),
-    readChar: (prompt, then) => answering(then, (answer, quit) => native.readKeyEvent("char", String(prompt ?? ""), answer, quit)),
-    readKeySequence: (prompt, then) => answering(then, (answer, quit) => native.readKeyEvent("sequence", String(prompt ?? ""), answer, quit)),
+    readKey: (prompt, then) => answering(then, (answer, quit) => native.readKeyEvent("key", String(prompt ?? ""), null, answer, quit)),
+    readEvent(prompt, then, options) {
+      if (typeof then !== "function") [then, options] = [undefined, then];
+      const seconds = options?.seconds ?? null;
+      return answering(then, (answer, quit) =>
+        native.readKeyEvent("event", String(prompt ?? ""), seconds, (key) => answer(key ?? undefined), quit));
+    },
+    readChar(prompt, then, options) {
+      if (typeof then !== "function") [then, options] = [undefined, then];
+      const seconds = options?.seconds ?? null;
+      return answering(then, (answer, quit) =>
+        native.readKeyEvent("char", String(prompt ?? ""), seconds, (key) => answer(key ?? undefined), quit));
+    },
+    readKeySequence: (prompt, then) => answering(then, (answer, quit) => native.readKeyEvent("sequence", String(prompt ?? ""), null, answer, quit)),
+    sleepFor: (seconds, then) => answering(then, (done) => native.sleepFor(Number(seconds), () => done(undefined))),
+    async sitFor(seconds) {
+      // As subr.el's sit-for: input already waiting ends it at once, and
+      // input that comes is put back to be read as a command.
+      if (native.inputPendingP()) return false;
+      if (seconds <= 0) return true;
+      const key = await ember.readEvent(undefined, { seconds });
+      if (key === undefined) return true;
+      ember.unreadKeys(key);
+      return false;
+    },
     recursiveEdit: (then) => answering(then, (done, quit) => native.recursiveEdit(() => done(undefined), quit)),
     recursionDepth: () => native.recursionDepth(),
     thisCommandKeys: () => native.thisCommandKeys().join(" "),
@@ -758,7 +783,8 @@
     revertToVisitedFile: () => native.revertToVisitedFile(),
     recoverFromAutoSave: () => native.recoverFromAutoSave(),
     visitedFileChanged: () => native.visitedFileChanged(),
-    setVisitedFileName: (file, { alongWithFile = false } = {}) => native.setVisitedFileName(String(file), Boolean(alongWithFile)),
+    setVisitedFileName: (file, { alongWithFile = false } = {}) =>
+      native.setVisitedFileName(file === null || file === undefined ? null : String(file), Boolean(alongWithFile)),
     expandFileName: (file, dir) => (dir === undefined || dir === null ? native.expandFileName(String(file)) : native.expandFileName(String(file), String(dir))),
     getenv: (name) => native.getenv(String(name)) ?? undefined,
     fileExists: (file) => native.fileExists(String(file)),

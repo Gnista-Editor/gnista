@@ -415,7 +415,18 @@ pub fn run(case: &Case) -> State {
     // with none left, reading the minibuffer is an error, as batch Emacs
     // would read it from standard input.
     let mut answer_prompts = |ed: &mut Editor, error: &mut Option<String>| {
-        while ed.prompt().is_some() {
+        // A key read partway through a command, as zap-to-char's character,
+        // takes an answer too while there are any, as record.el gives
+        // read-char-from-minibuffer one.
+        while ed.prompt().is_some() || (ed.reading_single_key() && answers.len() > 0) {
+            if ed.prompt().is_none() {
+                let answer = answers.next().expect("checked above");
+                ed.type_text(&answer.chars().take(1).collect::<String>());
+                if let Some(e) = ed.take_error() {
+                    error.get_or_insert(e.to_string());
+                }
+                continue;
+            }
             let Some(answer) = answers.next() else {
                 ed.handle_key(Key::parse("C-g").expect("C-g parses"));
                 ed.take_error();

@@ -1,0 +1,407 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "sort-lines",
+      "input": {
+        "text": "banana\napple\ncherry\napple\nBanana\n",
+        "point": 0,
+        "keys": "C-x h M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "sort-lines"
+        ]
+      },
+      "text": "Banana\napple\napple\nbanana\ncherry\n",
+      "visible": "Banana\napple\napple\nbanana\ncherry\n",
+      "point": 0,
+      "mark": 33,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "sort-lines-reverse",
+      "input": {
+        "text": "banana\napple\ncherry\napple\nBanana\n",
+        "point": 0,
+        "keys": "C-x h C-u M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "sort-lines"
+        ]
+      },
+      "text": "cherry\nbanana\napple\napple\nBanana\n",
+      "visible": "cherry\nbanana\napple\napple\nBanana\n",
+      "point": 0,
+      "mark": 33,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "sort-lines-no-final-newline",
+      "input": {
+        "text": "b\nc\na",
+        "point": 0,
+        "keys": "C-x h M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "sort-lines"
+        ]
+      },
+      "text": "a\nb\nc",
+      "visible": "a\nb\nc",
+      "point": 0,
+      "mark": 5,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "reverse-region",
+      "input": {
+        "text": "one\ntwo\nthree\n",
+        "point": 0,
+        "keys": "C-x h M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "reverse-region"
+        ]
+      },
+      "text": "three\ntwo\none\n",
+      "visible": "three\ntwo\none\n",
+      "point": 0,
+      "mark": 14,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "reverse-region-partial-lines",
+      "input": {
+        "text": "one\ntwo\nthree\nfour\n",
+        "point": 0,
+        "keys": "C-f C-SPC C-n C-n C-f M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "reverse-region"
+        ]
+      },
+      "text": "one\ntwo\nthree\nfour\n",
+      "visible": "one\ntwo\nthree\nfour\n",
+      "point": 10,
+      "mark": 1,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-duplicate-lines",
+      "input": {
+        "text": "banana\napple\ncherry\napple\nBanana\n",
+        "point": 0,
+        "keys": "C-x h M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "delete-duplicate-lines"
+        ],
+        "message": true
+      },
+      "text": "banana\napple\ncherry\nBanana\n",
+      "visible": "banana\napple\ncherry\nBanana\n",
+      "point": 0,
+      "mark": 27,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": "Deleted 1 duplicate line"
+    },
+    {
+      "name": "delete-duplicate-lines-backward",
+      "input": {
+        "text": "a\nb\na\nc\nb\n",
+        "point": 0,
+        "keys": "C-x h C-u M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "delete-duplicate-lines"
+        ],
+        "message": true
+      },
+      "text": "a\nc\nb\n",
+      "visible": "a\nc\nb\n",
+      "point": 0,
+      "mark": 6,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": "Deleted 2 duplicate lines backward"
+    },
+    {
+      "name": "delete-duplicate-lines-adjacent",
+      "input": {
+        "text": "a\na\nb\na\n",
+        "point": 0,
+        "keys": "C-x h C-u C-u M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "delete-duplicate-lines"
+        ],
+        "message": true
+      },
+      "text": "a\nb\na\n",
+      "visible": "a\nb\na\n",
+      "point": 0,
+      "mark": 6,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": "Deleted 1 adjacent duplicate line"
+    },
+    {
+      "name": "keep-lines",
+      "input": {
+        "text": "banana\napple\ncherry\napple\nBanana\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "keep-lines",
+          "an"
+        ]
+      },
+      "text": "banana\nBanana\n",
+      "visible": "banana\nBanana\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "keep-lines-from-point",
+      "input": {
+        "text": "banana\napple\ncherry\napple\nBanana\n",
+        "point": 0,
+        "keys": "C-n C-n M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "keep-lines",
+          "an"
+        ]
+      },
+      "text": "banana\napple\nBanana\n",
+      "visible": "banana\napple\nBanana\n",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "flush-lines",
+      "input": {
+        "text": "banana\napple\ncherry\napple\nBanana\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "flush-lines",
+          "^a"
+        ],
+        "message": true
+      },
+      "text": "banana\ncherry\nBanana\n",
+      "visible": "banana\ncherry\nBanana\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": "Deleted 2 matching lines"
+    },
+    {
+      "name": "flush-lines-case-sensitive",
+      "input": {
+        "text": "banana\napple\ncherry\napple\nBanana\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "flush-lines",
+          "B"
+        ],
+        "message": true
+      },
+      "text": "banana\napple\ncherry\napple\n",
+      "visible": "banana\napple\ncherry\napple\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": "Deleted 1 matching line"
+    },
+    {
+      "name": "flush-lines-region",
+      "input": {
+        "text": "banana\napple\ncherry\napple\nBanana\n",
+        "point": 0,
+        "keys": "C-n C-SPC C-n C-n M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "flush-lines",
+          "a"
+        ]
+      },
+      "text": "banana\ncherry\napple\nBanana\n",
+      "visible": "banana\ncherry\napple\nBanana\n",
+      "point": 7,
+      "mark": 7,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "how-many",
+      "input": {
+        "text": "banana\napple\ncherry\napple\nBanana\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "how-many",
+          "an"
+        ],
+        "message": true
+      },
+      "text": "banana\napple\ncherry\napple\nBanana\n",
+      "visible": "banana\napple\ncherry\napple\nBanana\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": "4 occurrences"
+    },
+    {
+      "name": "how-many-empty-matches",
+      "input": {
+        "text": "a\n\nb\n\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "how-many",
+          "^$"
+        ],
+        "message": true
+      },
+      "text": "a\n\nb\n\n",
+      "visible": "a\n\nb\n\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": "2 occurrences"
+    },
+    {
+      "name": "kill-matching-lines",
+      "input": {
+        "text": "banana\napple\ncherry\napple\nBanana\n",
+        "point": 0,
+        "keys": "M-x M-> C-y",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "kill-matching-lines",
+          "apple"
+        ]
+      },
+      "text": "banana\ncherry\nBanana\napple\napple\n",
+      "visible": "banana\ncherry\nBanana\napple\napple\n",
+      "point": 33,
+      "mark": 21,
+      "mark_active": false,
+      "kill_ring": [
+        "apple\napple\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "copy-matching-lines",
+      "input": {
+        "text": "banana\napple\ncherry\napple\nBanana\n",
+        "point": 0,
+        "keys": "M-x M-> C-y",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "copy-matching-lines",
+          "an"
+        ]
+      },
+      "text": "banana\napple\ncherry\napple\nBanana\nbanana\nBanana\n",
+      "visible": "banana\napple\ncherry\napple\nBanana\nbanana\nBanana\n",
+      "point": 47,
+      "mark": 33,
+      "mark_active": false,
+      "kill_ring": [
+        "banana\nBanana\n"
+      ],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

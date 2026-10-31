@@ -1,0 +1,253 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "dabbrev-backward",
+      "input": {
+        "text": "foobar foobaz\nfo",
+        "point": 0,
+        "keys": "M-> M-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "foobar foobaz\nfoobaz",
+      "visible": "foobar foobaz\nfoobaz",
+      "point": 20,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "dabbrev-again-older",
+      "input": {
+        "text": "foobar foobaz\nfo",
+        "point": 0,
+        "keys": "M-> M-/ M-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "foobar foobaz\nfoobar",
+      "visible": "foobar foobaz\nfoobar",
+      "point": 20,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "dabbrev-third-time-none",
+      "input": {
+        "text": "qzxbar qzxbaz\nqz",
+        "point": 0,
+        "keys": "M-> M-/ M-/ M-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "qzxbar qzxbaz\nqz",
+      "visible": "qzxbar qzxbaz\nqz",
+      "point": 16,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "No further dynamic expansion for ‘qz’ found"
+    },
+    {
+      "name": "dabbrev-forward",
+      "input": {
+        "text": "fo\nforward fortune",
+        "point": 0,
+        "keys": "C-e M-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "forward\nforward fortune",
+      "visible": "forward\nforward fortune",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "dabbrev-none",
+      "input": {
+        "text": "xyz qq",
+        "point": 0,
+        "keys": "M-> M-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "xyz qq",
+      "visible": "xyz qq",
+      "point": 6,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No dynamic expansion for ‘qq’ found"
+    },
+    {
+      "name": "dabbrev-case-replace",
+      "input": {
+        "text": "Hello hello_world\nHe",
+        "point": 0,
+        "keys": "M-> M-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "Hello hello_world\nHello_World",
+      "visible": "Hello hello_world\nHello_World",
+      "point": 29,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "dabbrev-capital-abbrev",
+      "input": {
+        "text": "foobar\nFo",
+        "point": 0,
+        "keys": "M-> M-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "foobar\nFoobar",
+      "visible": "foobar\nFoobar",
+      "point": 13,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "dabbrev-upcase-abbrev",
+      "input": {
+        "text": "foobar\nFOO",
+        "point": 0,
+        "keys": "M-> M-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "foobar\nFOOBAR",
+      "visible": "foobar\nFOOBAR",
+      "point": 13,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "dabbrev-space-copies-next-word",
+      "input": {
+        "text": "alpha beta gamma\nal",
+        "point": 0,
+        "keys": "M-> M-/ SPC M-/ SPC M-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "alpha beta gamma\nalpha beta gamma",
+      "visible": "alpha beta gamma\nalpha beta gamma",
+      "point": 33,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "dabbrev-prefix-arg",
+      "input": {
+        "text": "fa fb fc\nf",
+        "point": 0,
+        "keys": "M-> M-2 M-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "fa fb fc\nfb",
+      "visible": "fa fb fc\nfb",
+      "point": 11,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "dabbrev-after-punctuation",
+      "input": {
+        "text": "foobar\nfoo.",
+        "point": 0,
+        "keys": "M-> M-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "foobar\nfoo.",
+      "visible": "foobar\nfoo.",
+      "point": 11,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No dynamic expansion for ‘foo.’ found"
+    },
+    {
+      "name": "dabbrev-symbol-chars",
+      "input": {
+        "text": "my-long-name\nmy",
+        "point": 0,
+        "keys": "M-> M-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "my-long-name\nmy-long-name",
+      "visible": "my-long-name\nmy-long-name",
+      "point": 25,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "dabbrev-undo",
+      "input": {
+        "text": "foobar\nfo",
+        "point": 0,
+        "keys": "M-> M-/ C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "foobar\nfo",
+      "visible": "foobar\nfo",
+      "point": 9,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    }
+  ]
+}

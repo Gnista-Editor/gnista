@@ -111,6 +111,16 @@ impl Editor {
                 strings(std::iter::once(c.system().name).chain(c.system().aliases.iter().copied()).map(|n| format!("{n}{suffix}")))
             }
             "coding-system-base" => Value::Str(coding(0)?.system().name.to_string()),
+            "set-coding-system-priority" => {
+                let codings = (0..args.len()).map(coding).collect::<Result<Vec<_>>>()?;
+                crate::coding::set_priority(&codings);
+                Value::Null
+            }
+            "coding-system-priority-list" => {
+                let list = crate::coding::priority_list();
+                let names = list.iter().map(|c| c.system().name.to_string());
+                if given(args, 0) { strings(names.take(1)) } else { strings(names) }
+            }
             "coding-system-type" => Value::Str(coding(0)?.system().coding_type.to_string()),
             "coding-system-eol-type" => {
                 let c = coding(0)?;

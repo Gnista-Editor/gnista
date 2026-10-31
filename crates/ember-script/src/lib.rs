@@ -77,7 +77,9 @@ impl rquickjs::loader::Loader for PackageLoader {
 const PACKAGES: &[(&str, &str)] = &[
     ("packages/subr.ts", include_str!("../../../packages/subr.ts")),
     ("packages/simple.ts", include_str!("../../../packages/simple.ts")),
+    ("packages/iso-transl.ts", include_str!("../../../packages/iso-transl.ts")),
     ("packages/paragraphs.ts", include_str!("../../../packages/paragraphs.ts")),
+    ("packages/page.ts", include_str!("../../../packages/page.ts")),
     ("packages/indent.ts", include_str!("../../../packages/indent.ts")),
     ("packages/fill.ts", include_str!("../../../packages/fill.ts")),
     ("packages/newcomment.ts", include_str!("../../../packages/newcomment.ts")),
@@ -85,6 +87,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/paren.ts", include_str!("../../../packages/paren.ts")),
     ("packages/display-line-numbers.ts", include_str!("../../../packages/display-line-numbers.ts")),
     ("packages/mule.ts", include_str!("../../../packages/mule.ts")),
+    ("packages/mule-diag.ts", include_str!("../../../packages/mule-diag.ts")),
     ("packages/files.ts", include_str!("../../../packages/files.ts")),
     ("packages/text-mode.ts", include_str!("../../../packages/text-mode.ts")),
     ("packages/face-remap.ts", include_str!("../../../packages/face-remap.ts")),
@@ -115,6 +118,10 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/xref.ts", include_str!("../../../packages/xref.ts")),
     ("packages/project.ts", include_str!("../../../packages/project.ts")),
     ("packages/replace.ts", include_str!("../../../packages/replace.ts")),
+    ("packages/sort.ts", include_str!("../../../packages/sort.ts")),
+    ("packages/rect.ts", include_str!("../../../packages/rect.ts")),
+    ("packages/register.ts", include_str!("../../../packages/register.ts")),
+    ("packages/dabbrev.ts", include_str!("../../../packages/dabbrev.ts")),
     ("packages/org-macs.ts", include_str!("../../../packages/org-macs.ts")),
     ("packages/org-table.ts", include_str!("../../../packages/org-table.ts")),
     ("packages/org.ts", include_str!("../../../packages/org.ts")),
@@ -767,6 +774,15 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
         })?,
     )?;
     native.set(
+        "setLastCommand",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, name: Option<String>| {
+            with_editor(&ctx, |ed| {
+                ed.set_last_command(name.as_deref());
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
         "setThisCommand",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, name: String| {
             with_editor(&ctx, |ed| {
@@ -1064,6 +1080,7 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
             match found {
                 Some(ember_core::Binding::Command(c)) => value_to_js(&ctx, &EditorValue::Str(c)),
                 Some(ember_core::Binding::Keymap(m)) => value_to_js(&ctx, &EditorValue::Keymap(m)),
+                Some(ember_core::Binding::Keys(k)) => value_to_js(&ctx, &EditorValue::List(k.iter().map(|k| EditorValue::Str(k.to_string())).collect())),
                 Some(ember_core::Binding::Nil) | None => Ok(Value::new_undefined(ctx.clone())),
             }
         })?,
@@ -1302,7 +1319,7 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
         "readKeyEvent",
         Function::new(
             ctx.clone(),
-            move |ctx: Ctx<'js>, kind: String, prompt: String, run: Function<'js>, quit: Opt<Option<Function<'js>>>| {
+            move |ctx: Ctx<'js>, kind: String, prompt: String, seconds: Option<f64>, run: Function<'js>, quit: Opt<Option<Function<'js>>>| {
                 let then = ScriptFunction { run: Persistent::save(&ctx, run), context: key_context.clone() }.into_hook();
                 let quit = quit.0.flatten().map(|f| ScriptFunction { run: Persistent::save(&ctx, f), context: key_context.clone() }.into_hook());
                 let kind = match kind.as_str() {
@@ -1311,9 +1328,21 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
                     "char" => ember_core::keyboard::ReadKind::Char,
                     _ => ember_core::keyboard::ReadKind::KeySequence,
                 };
-                with_editor(&ctx, |ed| ed.read_key_event(kind, &prompt, then, quit))
+                let timeout = seconds.map(|s| std::time::Duration::from_secs_f64(s.max(0.0)));
+                with_editor(&ctx, |ed| ed.read_key_event(kind, &prompt, timeout, then, quit))
             },
         )?,
+    )?;
+    let sleep_context = context.clone();
+    native.set(
+        "sleepFor",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, seconds: f64, run: Function<'js>| {
+            let then = ScriptFunction { run: Persistent::save(&ctx, run), context: sleep_context.clone() }.into_hook();
+            with_editor(&ctx, |ed| {
+                ed.sleep_for(seconds, then);
+                Ok(())
+            })
+        })?,
     )?;
     let edit_context = context.clone();
     native.set(
@@ -1692,8 +1721,14 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     )?;
     native.set(
         "setVisitedFileName",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: String, along: Opt<bool>| {
-            with_editor(&ctx, |ed| ed.set_visited_file_name_along(&ed.expand_file_name(&file), along.0 == Some(true)))
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, file: Option<String>, along: Opt<bool>| {
+            with_editor(&ctx, |ed| match file {
+                Some(file) => ed.set_visited_file_name_along(&ed.expand_file_name(&file), along.0 == Some(true)),
+                None => {
+                    ed.forget_visited_file();
+                    Ok(())
+                }
+            })
         })?,
     )?;
     native.set(

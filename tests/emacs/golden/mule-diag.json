@@ -1,0 +1,314 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "describe-utf-8",
+      "input": {
+        "text": "x",
+        "point": 0,
+        "keys": "C-h C C-x o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "utf-8"
+        ]
+      },
+      "text": "U -- utf-8 (alias: mule-utf-8 cp65001)\n\nUTF-8 (no signature (BOM))\nType: utf-8 (UTF-8: Emacs internal multibyte form)\nEOL type: Automatic selection from:\n\t[utf-8-unix utf-8-dos utf-8-mac]\nThis coding system encodes the following charsets:\n  unicode\n",
+      "visible": "U -- utf-8 (alias: mule-utf-8 cp65001)\n\nUTF-8 (no signature (BOM))\nType: utf-8 (UTF-8: Emacs internal multibyte form)\nEOL type: Automatic selection from:\n\t[utf-8-unix utf-8-dos utf-8-mac]\nThis coding system encodes the following charsets:\n  unicode\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "describe-utf-8-dos",
+      "input": {
+        "text": "x",
+        "point": 0,
+        "keys": "C-h C C-x o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "utf-8-dos"
+        ]
+      },
+      "text": "U -- utf-8-dos (alias: mule-utf-8-dos cp65001-dos)\n\nUTF-8 (no signature (BOM))\nType: utf-8 (UTF-8: Emacs internal multibyte form)\nEOL type: CRLF\nThis coding system encodes the following charsets:\n  unicode\n",
+      "visible": "U -- utf-8-dos (alias: mule-utf-8-dos cp65001-dos)\n\nUTF-8 (no signature (BOM))\nType: utf-8 (UTF-8: Emacs internal multibyte form)\nEOL type: CRLF\nThis coding system encodes the following charsets:\n  unicode\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "describe-latin-1",
+      "input": {
+        "text": "x",
+        "point": 0,
+        "keys": "C-h C C-x o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "latin-1"
+        ]
+      },
+      "text": "1 -- latin-1 (alias of iso-latin-1)\n\nISO 2022 based 8-bit encoding for Latin-1 (MIME:ISO-8859-1).\nType: charset (charset)\nEOL type: Automatic selection from:\n\t[iso-latin-1-unix iso-latin-1-dos iso-latin-1-mac]\nThis coding system encodes the following charsets:\n  iso-8859-1\n",
+      "visible": "1 -- latin-1 (alias of iso-latin-1)\n\nISO 2022 based 8-bit encoding for Latin-1 (MIME:ISO-8859-1).\nType: charset (charset)\nEOL type: Automatic selection from:\n\t[iso-latin-1-unix iso-latin-1-dos iso-latin-1-mac]\nThis coding system encodes the following charsets:\n  iso-8859-1\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "describe-iso-latin-1-mac",
+      "input": {
+        "text": "x",
+        "point": 0,
+        "keys": "C-h C C-x o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "iso-latin-1-mac"
+        ]
+      },
+      "text": "1 -- iso-latin-1-mac (alias: iso-8859-1-mac latin-1-mac)\n\nISO 2022 based 8-bit encoding for Latin-1 (MIME:ISO-8859-1).\nType: charset (charset)\nEOL type: CR\nThis coding system encodes the following charsets:\n  iso-8859-1\n",
+      "visible": "1 -- iso-latin-1-mac (alias: iso-8859-1-mac latin-1-mac)\n\nISO 2022 based 8-bit encoding for Latin-1 (MIME:ISO-8859-1).\nType: charset (charset)\nEOL type: CR\nThis coding system encodes the following charsets:\n  iso-8859-1\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "describe-shift_jis",
+      "input": {
+        "text": "x",
+        "point": 0,
+        "keys": "C-h C C-x o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "shift_jis"
+        ]
+      },
+      "text": "S -- shift_jis (alias of japanese-shift-jis)\n\nShift-JIS 8-bit encoding for Japanese (MIME:SHIFT_JIS)\nType: shift-jis (Shift-JIS, MS-KANJI)\nEOL type: Automatic selection from:\n\t[japanese-shift-jis-unix japanese-shift-jis-dos japanese-shift-jis-mac]\nThis coding system encodes the following charsets:\n  ascii katakana-jisx0201 japanese-jisx0208\n",
+      "visible": "S -- shift_jis (alias of japanese-shift-jis)\n\nShift-JIS 8-bit encoding for Japanese (MIME:SHIFT_JIS)\nType: shift-jis (Shift-JIS, MS-KANJI)\nEOL type: Automatic selection from:\n\t[japanese-shift-jis-unix japanese-shift-jis-dos japanese-shift-jis-mac]\nThis coding system encodes the following charsets:\n  ascii katakana-jisx0201 japanese-jisx0208\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "describe-iso-2022-jp",
+      "input": {
+        "text": "x",
+        "point": 0,
+        "keys": "C-h C C-x o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "iso-2022-jp"
+        ]
+      },
+      "text": "J -- iso-2022-jp (alias: junet)\n\nISO 2022 based 7bit encoding for Japanese (MIME:ISO-2022-JP).\nType: iso-2022 (variant of ISO-2022)\nInitial designations:\n  G0 -- ascii:ASCII (ISO646 IRV), and also used by the following:\n\tjapanese-jisx0208-1978:JISX0208.1978 Japanese Kanji (so called \"old JIS\"): ISO-IR-42\n\tjapanese-jisx0208:JISX0208.1983/1990 Japanese Kanji: ISO-IR-87\n\tlatin-jisx0201:Roman Part of JISX0201.1976\n  G1 -- never used\n  G2 -- never used\n  G3 -- never used\nOther specifications: \n  short ascii-at-eol ascii-at-cntl 7-bit designation\n\nEOL type: Automatic selection from:\n\t[iso-2022-jp-unix iso-2022-jp-dos iso-2022-jp-mac]\nThis coding system encodes the following charsets:\n  ascii japanese-jisx0208 japanese-jisx0208-1978 latin-jisx0201\n",
+      "visible": "J -- iso-2022-jp (alias: junet)\n\nISO 2022 based 7bit encoding for Japanese (MIME:ISO-2022-JP).\nType: iso-2022 (variant of ISO-2022)\nInitial designations:\n  G0 -- ascii:ASCII (ISO646 IRV), and also used by the following:\n\tjapanese-jisx0208-1978:JISX0208.1978 Japanese Kanji (so called \"old JIS\"): ISO-IR-42\n\tjapanese-jisx0208:JISX0208.1983/1990 Japanese Kanji: ISO-IR-87\n\tlatin-jisx0201:Roman Part of JISX0201.1976\n  G1 -- never used\n  G2 -- never used\n  G3 -- never used\nOther specifications: \n  short ascii-at-eol ascii-at-cntl 7-bit designation\n\nEOL type: Automatic selection from:\n\t[iso-2022-jp-unix iso-2022-jp-dos iso-2022-jp-mac]\nThis coding system encodes the following charsets:\n  ascii japanese-jisx0208 japanese-jisx0208-1978 latin-jisx0201\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "describe-undecided",
+      "input": {
+        "text": "x",
+        "point": 0,
+        "keys": "C-h C C-x o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "undecided"
+        ]
+      },
+      "text": "- -- undecided\n\nNo conversion on encoding, automatic conversion on decoding.\nType: undecided (do automatic conversion)\nEOL type: Automatic selection from:\n\t[undecided-unix undecided-dos undecided-mac]\nThis coding system encodes the following charsets:\n  ascii\n",
+      "visible": "- -- undecided\n\nNo conversion on encoding, automatic conversion on decoding.\nType: undecided (do automatic conversion)\nEOL type: Automatic selection from:\n\t[undecided-unix undecided-dos undecided-mac]\nThis coding system encodes the following charsets:\n  ascii\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "describe-no-conversion",
+      "input": {
+        "text": "x",
+        "point": 0,
+        "keys": "C-h C C-x o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "no-conversion"
+        ]
+      },
+      "text": "= -- no-conversion (alias: binary)\n\nDo no conversion.\n\nWhen you visit a file with this coding, the file is read into a\nunibyte buffer as is, thus each byte of a file is treated as a\ncharacter.\nType: raw-text (text with random binary characters)\nEOL type: LF\n",
+      "visible": "= -- no-conversion (alias: binary)\n\nDo no conversion.\n\nWhen you visit a file with this coding, the file is read into a\nunibyte buffer as is, thus each byte of a file is treated as a\ncharacter.\nType: raw-text (text with random binary characters)\nEOL type: LF\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "describe-raw-text-unix",
+      "input": {
+        "text": "x",
+        "point": 0,
+        "keys": "C-h C C-x o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "raw-text-unix"
+        ]
+      },
+      "text": "t -- raw-text-unix\n\nRaw text, which means text contains random 8-bit codes.\nEncoding text with this coding system produces the actual byte\nsequence of the text in buffers and strings.  An exception is made for\ncharacters from the ‘eight-bit’ character set.  Each of them is encoded\ninto a single byte.\n\nWhen you visit a file with this coding, the file is read into a\nunibyte buffer as is (except for EOL format), thus each byte of a file\nis treated as a character.\nType: raw-text (text with random binary characters)\nEOL type: LF\n",
+      "visible": "t -- raw-text-unix\n\nRaw text, which means text contains random 8-bit codes.\nEncoding text with this coding system produces the actual byte\nsequence of the text in buffers and strings.  An exception is made for\ncharacters from the ‘eight-bit’ character set.  Each of them is encoded\ninto a single byte.\n\nWhen you visit a file with this coding, the file is read into a\nunibyte buffer as is (except for EOL format), thus each byte of a file\nis treated as a character.\nType: raw-text (text with random binary characters)\nEOL type: LF\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "describe-cp1252",
+      "input": {
+        "text": "x",
+        "point": 0,
+        "keys": "C-h C C-x o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "cp1252"
+        ]
+      },
+      "text": "* -- cp1252 (alias of windows-1252)\n\nwindows-1252 (Western European) encoding (MIME: WINDOWS-1252)\nType: charset (charset)\nEOL type: Automatic selection from:\n\t[windows-1252-unix windows-1252-dos windows-1252-mac]\nThis coding system encodes the following charsets:\n  windows-1252\n",
+      "visible": "* -- cp1252 (alias of windows-1252)\n\nwindows-1252 (Western European) encoding (MIME: WINDOWS-1252)\nType: charset (charset)\nEOL type: Automatic selection from:\n\t[windows-1252-unix windows-1252-dos windows-1252-mac]\nThis coding system encodes the following charsets:\n  windows-1252\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "describe-utf-16-le",
+      "input": {
+        "text": "x",
+        "point": 0,
+        "keys": "C-h C C-x o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "utf-16-le"
+        ]
+      },
+      "text": "U -- utf-16-le (alias of utf-16le-with-signature)\n\nUTF-16 (little endian, with signature (BOM)).\nType: utf-16\nEOL type: Automatic selection from:\n\t[utf-16le-with-signature-unix utf-16le-with-signature-dos utf-16le-with-signature-mac]\nThis coding system encodes the following charsets:\n  unicode\n",
+      "visible": "U -- utf-16-le (alias of utf-16le-with-signature)\n\nUTF-16 (little endian, with signature (BOM)).\nType: utf-16\nEOL type: Automatic selection from:\n\t[utf-16le-with-signature-unix utf-16le-with-signature-dos utf-16le-with-signature-mac]\nThis coding system encodes the following charsets:\n  unicode\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "describe-chinese-gb18030",
+      "input": {
+        "text": "x",
+        "point": 0,
+        "keys": "C-h C C-x o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "chinese-gb18030"
+        ]
+      },
+      "text": "c -- chinese-gb18030 (alias: gb18030)\n\nGB18030 encoding for Chinese (MIME:GB18030).\nType: charset (charset)\nEOL type: Automatic selection from:\n\t[chinese-gb18030-unix chinese-gb18030-dos chinese-gb18030-mac]\nThis coding system encodes the following charsets:\n  ascii gb18030-2-byte gb18030-4-byte-bmp gb18030-4-byte-smp gb18030-4-byte-ext-1 gb18030-4-byte-ext-2\n",
+      "visible": "c -- chinese-gb18030 (alias: gb18030)\n\nGB18030 encoding for Chinese (MIME:GB18030).\nType: charset (charset)\nEOL type: Automatic selection from:\n\t[chinese-gb18030-unix chinese-gb18030-dos chinese-gb18030-mac]\nThis coding system encodes the following charsets:\n  ascii gb18030-2-byte gb18030-4-byte-bmp gb18030-4-byte-smp gb18030-4-byte-ext-1 gb18030-4-byte-ext-2\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "describe-korean-iso-8bit",
+      "input": {
+        "text": "x",
+        "point": 0,
+        "keys": "C-h C C-x o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "korean-iso-8bit"
+        ]
+      },
+      "text": "K -- korean-iso-8bit (alias: euc-kr euc-korea ks_c_5601-1987)\n\nISO 2022 based EUC encoding for Korean KSC5601 (MIME:EUC-KR).\nType: iso-2022 (variant of ISO-2022)\nInitial designations:\n  G0 -- ascii:ASCII (ISO646 IRV)\n  G1 -- korean-ksc5601:KSC5601 Korean Hangul and Hanja: ISO-IR-149\n  G2 -- never used\n  G3 -- never used\n\nEOL type: Automatic selection from:\n\t[korean-iso-8bit-unix korean-iso-8bit-dos korean-iso-8bit-mac]\nThis coding system encodes the following charsets:\n  ascii korean-ksc5601\n",
+      "visible": "K -- korean-iso-8bit (alias: euc-kr euc-korea ks_c_5601-1987)\n\nISO 2022 based EUC encoding for Korean KSC5601 (MIME:EUC-KR).\nType: iso-2022 (variant of ISO-2022)\nInitial designations:\n  G0 -- ascii:ASCII (ISO646 IRV)\n  G1 -- korean-ksc5601:KSC5601 Korean Hangul and Hanja: ISO-IR-149\n  G2 -- never used\n  G3 -- never used\n\nEOL type: Automatic selection from:\n\t[korean-iso-8bit-unix korean-iso-8bit-dos korean-iso-8bit-mac]\nThis coding system encodes the following charsets:\n  ascii korean-ksc5601\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "describe-current-coding-system",
+      "input": {
+        "text": "x",
+        "point": 0,
+        "keys": "C-h C C-x o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          ""
+        ]
+      },
+      "text": "Coding system for saving this buffer:\n  Not set locally, use the default.\nDefault coding system (for new files):\n  U -- utf-8-unix (alias: mule-utf-8-unix cp65001-unix)\n\nCoding system for keyboard input:\n  U -- utf-8-unix (alias: mule-utf-8-unix cp65001-unix)\n\nCoding system for terminal output:\n  U -- utf-8-unix (alias: mule-utf-8-unix cp65001-unix)\n\nCoding system for inter-client cut and paste:\n  nil\nDefaults for subprocess I/O:\n  decoding: U -- utf-8-unix (alias: mule-utf-8-unix cp65001-unix)\n\n  encoding: U -- utf-8-unix (alias: mule-utf-8-unix cp65001-unix)\n\n\nPriority order for recognizing coding systems when reading files:\n  1. utf-8 (alias: mule-utf-8 cp65001)\n  2. iso-2022-7bit \n  3. iso-latin-1 (alias: iso-8859-1 latin-1)\n  4. iso-2022-7bit-lock (alias: iso-2022-int-1)\n  5. iso-2022-8bit-ss2 \n  6. emacs-mule \n  7. raw-text \n  8. iso-2022-jp (alias: junet)\n  9. in-is13194-devanagari (alias: devanagari)\n  10. chinese-iso-8bit (alias: cn-gb-2312 euc-china euc-cn cn-gb gb2312)\n  11. utf-8-auto \n  12. utf-8-with-signature \n  13. utf-16 \n  14. utf-16be-with-signature (alias: utf-16-be)\n  15. utf-16le-with-signature (alias: utf-16-le)\n  16. utf-16be \n  17. utf-16le \n  18. japanese-shift-jis (alias: shift_jis sjis)\n  19. chinese-big5 (alias: big5 cn-big5 cp950)\n  20. undecided \n\n  Other coding systems cannot be distinguished automatically\n  from these, and therefore cannot be recognized automatically\n  with the present coding system priorities.\n\nParticular coding systems specified for certain file names:\n\n  OPERATION\tTARGET PATTERN\t\tCODING SYSTEM(s)\n  ---------\t--------------\t\t----------------\n  File I/O\t\"\\\\.\\\\(arc\\\\|zip\\\\|lzh\\\\|lha\\\\|zoo\\\\|[jew]ar\\\\|xpi\\\\|rar\\\\|7z\\\\|squashfs\\\\|ARC\\\\|ZIP\\\\|LZH\\\\|LHA\\\\|ZOO\\\\|[JEW]AR\\\\|XPI\\\\|RAR\\\\|7Z\\\\|SQUASHFS\\\\)\\\\'\"\n\t\t\t\t\tno-conversion-multibyte\n\t\t\"\\\\.\\\\(exe\\\\|EXE\\\\)\\\\'\"\tno-conversion\n\t\t\"\\\\.\\\\(sx[dmicw]\\\\|odt\\\\|tar\\\\|t[bg]z\\\\)\\\\'\"\n\t\t\t\t\tno-conversion\n\t\t\"\\\\.\\\\(gz\\\\|Z\\\\|bz\\\\|bz2\\\\|xz\\\\|gpg\\\\)\\\\'\"\n\t\t\t\t\tno-conversion\n\t\t\"\\\\.\\\\(jpe?g\\\\|png\\\\|gif\\\\|tiff?\\\\|p[bpgn]m\\\\)\\\\'\"\n\t\t\t\t\tno-conversion\n\t\t\"\\\\.pdf\\\\'\"\t\tno-conversion\n\t\t\"/#[^/]+#\\\\'\"\t\tutf-8-emacs-unix\n\t\t\"\\\\.tzst\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.zst\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.dz\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.txz\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.xz\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.lzma\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.lz\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.g?z\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.\\\\(?:tgz\\\\|svgz\\\\|sifz\\\\)\\\\'\"\n\t\t\t\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.tbz2?\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.bz2\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.Z\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.elc\\\\'\"\t\tutf-8-emacs\n\t\t\"\\\\.el\\\\'\"\t\tprefer-utf-8\n\t\t\"\\\\.utf\\\\(-8\\\\)?\\\\'\"\tutf-8\n\t\t\"\\\\.xml\\\\'\"\t\txml-find-file-coding-system\n\t\t\"\\\\(\\\\`\\\\|/\\\\)loaddefs.el\\\\'\"\n\t\t\t\t\t(raw-text . raw-text-unix)\n\t\t\"\\\\.tar\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.po[tx]?\\\\'\\\\|\\\\.po\\\\.\"\n\t\t\t\t\tpo-find-file-coding-system\n\t\t\"\\\\.\\\\(tex\\\\|ltx\\\\|dtx\\\\|drv\\\\)\\\\'\"\n\t\t\t\t\tlatexenc-find-file-coding-system\n\t\t\"\"\t\t\t(undecided)\n  Process I/O\tnothing specified\n  Network I/O\tnothing specified\n",
+      "visible": "Coding system for saving this buffer:\n  Not set locally, use the default.\nDefault coding system (for new files):\n  U -- utf-8-unix (alias: mule-utf-8-unix cp65001-unix)\n\nCoding system for keyboard input:\n  U -- utf-8-unix (alias: mule-utf-8-unix cp65001-unix)\n\nCoding system for terminal output:\n  U -- utf-8-unix (alias: mule-utf-8-unix cp65001-unix)\n\nCoding system for inter-client cut and paste:\n  nil\nDefaults for subprocess I/O:\n  decoding: U -- utf-8-unix (alias: mule-utf-8-unix cp65001-unix)\n\n  encoding: U -- utf-8-unix (alias: mule-utf-8-unix cp65001-unix)\n\n\nPriority order for recognizing coding systems when reading files:\n  1. utf-8 (alias: mule-utf-8 cp65001)\n  2. iso-2022-7bit \n  3. iso-latin-1 (alias: iso-8859-1 latin-1)\n  4. iso-2022-7bit-lock (alias: iso-2022-int-1)\n  5. iso-2022-8bit-ss2 \n  6. emacs-mule \n  7. raw-text \n  8. iso-2022-jp (alias: junet)\n  9. in-is13194-devanagari (alias: devanagari)\n  10. chinese-iso-8bit (alias: cn-gb-2312 euc-china euc-cn cn-gb gb2312)\n  11. utf-8-auto \n  12. utf-8-with-signature \n  13. utf-16 \n  14. utf-16be-with-signature (alias: utf-16-be)\n  15. utf-16le-with-signature (alias: utf-16-le)\n  16. utf-16be \n  17. utf-16le \n  18. japanese-shift-jis (alias: shift_jis sjis)\n  19. chinese-big5 (alias: big5 cn-big5 cp950)\n  20. undecided \n\n  Other coding systems cannot be distinguished automatically\n  from these, and therefore cannot be recognized automatically\n  with the present coding system priorities.\n\nParticular coding systems specified for certain file names:\n\n  OPERATION\tTARGET PATTERN\t\tCODING SYSTEM(s)\n  ---------\t--------------\t\t----------------\n  File I/O\t\"\\\\.\\\\(arc\\\\|zip\\\\|lzh\\\\|lha\\\\|zoo\\\\|[jew]ar\\\\|xpi\\\\|rar\\\\|7z\\\\|squashfs\\\\|ARC\\\\|ZIP\\\\|LZH\\\\|LHA\\\\|ZOO\\\\|[JEW]AR\\\\|XPI\\\\|RAR\\\\|7Z\\\\|SQUASHFS\\\\)\\\\'\"\n\t\t\t\t\tno-conversion-multibyte\n\t\t\"\\\\.\\\\(exe\\\\|EXE\\\\)\\\\'\"\tno-conversion\n\t\t\"\\\\.\\\\(sx[dmicw]\\\\|odt\\\\|tar\\\\|t[bg]z\\\\)\\\\'\"\n\t\t\t\t\tno-conversion\n\t\t\"\\\\.\\\\(gz\\\\|Z\\\\|bz\\\\|bz2\\\\|xz\\\\|gpg\\\\)\\\\'\"\n\t\t\t\t\tno-conversion\n\t\t\"\\\\.\\\\(jpe?g\\\\|png\\\\|gif\\\\|tiff?\\\\|p[bpgn]m\\\\)\\\\'\"\n\t\t\t\t\tno-conversion\n\t\t\"\\\\.pdf\\\\'\"\t\tno-conversion\n\t\t\"/#[^/]+#\\\\'\"\t\tutf-8-emacs-unix\n\t\t\"\\\\.tzst\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.zst\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.dz\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.txz\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.xz\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.lzma\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.lz\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.g?z\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.\\\\(?:tgz\\\\|svgz\\\\|sifz\\\\)\\\\'\"\n\t\t\t\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.tbz2?\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.bz2\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.Z\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.elc\\\\'\"\t\tutf-8-emacs\n\t\t\"\\\\.el\\\\'\"\t\tprefer-utf-8\n\t\t\"\\\\.utf\\\\(-8\\\\)?\\\\'\"\tutf-8\n\t\t\"\\\\.xml\\\\'\"\t\txml-find-file-coding-system\n\t\t\"\\\\(\\\\`\\\\|/\\\\)loaddefs.el\\\\'\"\n\t\t\t\t\t(raw-text . raw-text-unix)\n\t\t\"\\\\.tar\\\\'\"\t\t(no-conversion . no-conversion)\n\t\t\"\\\\.po[tx]?\\\\'\\\\|\\\\.po\\\\.\"\n\t\t\t\t\tpo-find-file-coding-system\n\t\t\"\\\\.\\\\(tex\\\\|ltx\\\\|dtx\\\\|drv\\\\)\\\\'\"\n\t\t\t\t\tlatexenc-find-file-coding-system\n\t\t\"\"\t\t\t(undecided)\n  Process I/O\tnothing specified\n  Network I/O\tnothing specified\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    }
+  ]
+}

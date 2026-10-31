@@ -1,0 +1,247 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "occur-lists-lines",
+      "input": {
+        "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+        "point": 0,
+        "keys": "M-s o C-x o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "alpha"
+        ]
+      },
+      "text": "3 matches in 2 lines for \"alpha\" in buffer: *ember-oracle*\n      1:alpha one\n      3:alpha two alpha\n",
+      "visible": "3 matches in 2 lines for \"alpha\" in buffer: *ember-oracle*\n      1:alpha one\n      3:alpha two alpha\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "occur-one-match-per-line",
+      "input": {
+        "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+        "point": 0,
+        "keys": "M-s o C-x o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "^[bg]"
+        ]
+      },
+      "text": "2 matches for \"^[bg]\" in buffer: *ember-oracle*\n      2:beta\n      4:gamma\n",
+      "visible": "2 matches for \"^[bg]\" in buffer: *ember-oracle*\n      2:beta\n      4:gamma\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "occur-no-match",
+      "input": {
+        "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+        "point": 0,
+        "keys": "M-s o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "zzz"
+        ],
+        "message": true
+      },
+      "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+      "visible": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": "Searched 1 buffer; no matches for \"zzz\""
+    },
+    {
+      "name": "occur-message",
+      "input": {
+        "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+        "point": 0,
+        "keys": "M-s o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "alpha"
+        ],
+        "message": true
+      },
+      "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+      "visible": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": "Searched 1 buffer; 3 matches for \"alpha\""
+    },
+    {
+      "name": "occur-ret-goes-there",
+      "input": {
+        "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+        "point": 0,
+        "keys": "M-s o C-x o C-n C-n RET",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "alpha"
+        ]
+      },
+      "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+      "visible": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+      "point": 15,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "occur-next-error",
+      "input": {
+        "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+        "point": 0,
+        "keys": "M-> M-s o M-g n M-g n",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "alpha"
+        ]
+      },
+      "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+      "visible": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+      "point": 15,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "occur-in-region",
+      "input": {
+        "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+        "point": 0,
+        "keys": "C-n C-SPC M-> M-s o C-x o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "a"
+        ]
+      },
+      "text": "7 matches in 3 lines for \"a\" in buffer: *ember-oracle* within region: 11-38\n      2:beta\n      3:alpha two alpha\n      4:gamma\n",
+      "visible": "7 matches in 3 lines for \"a\" in buffer: *ember-oracle* within region: 11-38\n      2:beta\n      3:alpha two alpha\n      4:gamma\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "occur-case-fold",
+      "input": {
+        "text": "Foo\nfoo\nFOO bar\n",
+        "point": 0,
+        "keys": "M-s o C-x o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "foo"
+        ]
+      },
+      "text": "3 matches for \"foo\" in buffer: *ember-oracle*\n      1:Foo\n      2:foo\n      3:FOO bar\n",
+      "visible": "3 matches for \"foo\" in buffer: *ember-oracle*\n      1:Foo\n      2:foo\n      3:FOO bar\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "occur-case-sensitive-upper",
+      "input": {
+        "text": "Foo\nfoo\nFOO bar\n",
+        "point": 0,
+        "keys": "M-s o C-x o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "Foo"
+        ]
+      },
+      "text": "1 match for \"Foo\" in buffer: *ember-oracle*\n      1:Foo\n",
+      "visible": "1 match for \"Foo\" in buffer: *ember-oracle*\n      1:Foo\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "occur-windows",
+      "input": {
+        "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+        "point": 0,
+        "keys": "M-s o",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "windows": true,
+        "answers": [
+          "alpha"
+        ]
+      },
+      "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+      "visible": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        },
+        {
+          "buffer": "*Occur*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        }
+      ]
+    }
+  ]
+}

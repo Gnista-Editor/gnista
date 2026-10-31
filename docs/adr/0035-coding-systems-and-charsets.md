@@ -69,8 +69,12 @@ What differs from Emacs is in [differences.md](../differences.md):
 
 Not done yet:
 - **Coding systems Emacs has and Ember lacks:** `emacs-mule`, UTF-7, the ISO-2022 variants beyond JIS, CNS 11643 and the Indic and Vietnamese ones.
-- **Processes** still read and write UTF-8 (`set-process-coding-system`).
-- **Choosing codings:** `prefer-coding-system`, language environments, `describe-coding-system` on `C-h C`, and `auto-coding-alist` by file name.
+- **Choosing codings:** language environments, and `auto-coding-alist` by file name.
+- **The priority list** in `describe-current-coding-system`.
+
+Added since: processes' codings ([ADR 0037](0037-terminals-sockets-and-process-codings.md)), and `describe-coding-system` on `C-h C` (`packages/mule-diag.ts`, from mule-diag.el). Emacs's description of each coding system, its documentation, type, ISO 2022 designations and charsets, is generated from Emacs by `tests/emacs/mule-diag.el` into a table, and the mnemonic, aliases and line ends are worked out as `print-coding-system-briefly` does. With no name it shows the coding systems in use, as `describe-current-coding-system`, up to the priority list. Thirteen Emacs comparison cases match (`mule-diag.json`).
+
+Then `prefer-coding-system`, from mule-cmds.el, with `set-coding-system-priority` and `coding-system-priority-list` in the core: detection tries the preferred coding systems first, each only if the file's bytes read in it without error, before its own order. Emacs prefers by coding category, so preferring `windows-1252` there wins over UTF-8 for any file that is not ASCII, as here. `set-default-coding-systems` makes it the default for new buffers and processes, and a buffer still undecided, as an ASCII file's, is written in the default when text that needs more is saved. The priority is the editor thread's. Three cases match Emacs: reading Shift_JIS again after preferring it, a new file saved in it, and Windows-1252 read in place of UTF-8.
 
 ## Dependencies introduced
 

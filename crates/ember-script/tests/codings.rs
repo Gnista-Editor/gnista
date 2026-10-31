@@ -129,3 +129,19 @@ fn charsets_and_code_points() {
     // Emacs: ascii unicode unicode (ascii) 9250 "あ" 22096 233 233 t nil 49 42148 18257 "é" iso-8859-1
     assert_eq!(got, r#"["ascii","unicode","unicode",["ascii"],9250,"あ",22096,233,233,true,false,49,42148,18257,"é","iso-8859-1"]"#);
 }
+
+#[test]
+fn preferring_a_coding_system_puts_it_first_where_the_bytes_fit() {
+    let (mut ed, s) = setup();
+    eval(&mut ed, &s, BYTES);
+    // Shift_JIS bytes for 日本, which are Latin-1 text too, and bytes that are not Shift_JIS.
+    let detect = r#"JSON.stringify([ember.detectCodingString("\x93\xfa\x96\x7b", true), ember.detectCodingString("\xff\xfe\xff", true)])"#;
+    assert_eq!(eval(&mut ed, &s, detect), r#"["iso-latin-1","iso-latin-1"]"#);
+    eval(&mut ed, &s, r#"ember.setCodingSystemPriority("japanese-shift-jis")"#);
+    assert_eq!(eval(&mut ed, &s, detect), r#"["japanese-shift-jis","iso-latin-1"]"#);
+    assert_eq!(
+        eval(&mut ed, &s, "JSON.stringify(ember.codingSystemPriorityList())"),
+        r#"["japanese-shift-jis","utf-8","iso-2022-7bit","iso-latin-1","iso-2022-jp","undecided"]"#
+    );
+    assert_eq!(eval(&mut ed, &s, "JSON.stringify(ember.codingSystemPriorityList(true))"), r#"["japanese-shift-jis"]"#);
+}

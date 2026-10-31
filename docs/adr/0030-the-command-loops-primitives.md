@@ -27,7 +27,11 @@ Events stay key descriptions, as Ember's keys are everywhere; a mouse event's pl
 
 ## Consequences
 
-Packages can read keys and edit recursively as Emacs's Lisp does, written with `await`. What Emacs does that this does not: events as Lisp values with their positions inside them, so a mouse event read by `read-event` carries no place of its own; `read-event` with a timeout, and `sit-for` waiting for input; keys a command reads with `read-event` added to `this-command-keys`; and `read-key-sequence`'s translation keymaps (`input-decode-map`, `function-key-map`, `key-translation-map`), which Ember does not have yet.
+Packages can read keys and edit recursively as Emacs's Lisp does, written with `await`. What Emacs does that this does not: events as Lisp values with their positions inside them, so a mouse event read by `read-event` carries no place of its own; keys a command reads with `read-event` added to `this-command-keys`; and `function-key-map`, which Ember does not have yet.
+
+Added since: `read-event` and `read-char` take Emacs's SECONDS (`{ seconds }`) and give undefined when no key comes in time, the deadline counted among the timers front ends wake for. On them, `sit-for` (`ember.sitFor`) waits until the time passes or a key comes, putting the key back to run as a command, as subr.el's does, and `sleep-for` (`ember.sleepFor`) goes on after its time in the command's buffer.
+
+Also added since: **translation keymaps.** A key can be bound to keys, as an Emacs string or vector binding (`ember.bindKey("C-c m", ["a", "b"])`): in an ordinary keymap they are typed as a keyboard macro. `input-decode-map` and then `key-translation-map` translate the keys the command loop reads, as read_key_sequence does: from where each map last stopped, keys it binds to keys become those keys, or what a function bound there returns, and keys it binds to nothing are passed over; a prefix in either waits for more. On them, `packages/iso-transl.ts` gives `C-x 8` as iso-transl.el does (`C-x 8 ' e` is é), its table generated from Emacs by `tests/emacs/iso-transl.el`. Six Emacs comparison cases match (`iso-transl.json`).
 
 ## Dependencies introduced
 

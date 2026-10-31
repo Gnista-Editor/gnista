@@ -319,5 +319,7 @@ ember.defineMajorMode({
   setup: () => {
     ember.addToInvisibilitySpec("outline", { ellipsis: true });
     ember.addHook("jit-lock-functions", fontifyHeadings, { local: true });
+    // M-x imenu lists the headings, as outline-imenu-generic-expression.
+    ember.setVariable("imenu-generic-expression", [[null, `^\\(?:${String(ember.variable("outline-regexp"))}\\).*$`, 0]]);
   },
 });

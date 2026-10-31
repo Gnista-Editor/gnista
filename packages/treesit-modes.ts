@@ -3,7 +3,7 @@
 // prog-mode and asks for its grammar with treesit-parser-create.
 
 import { charCount } from "subr";
-import { majorModeSetup, nodeText, nodeTopLevel, searchSubtree } from "treesit";
+import { bufferRootNode, defunName, induceSparseTree, majorModeSetup, nodeText, nodeTopLevel, searchSubtree } from "treesit";
 
 /** C's comments and operators, as c-mode's and js-mode's syntax tables have them. */
 const C_SYNTAX: { [chars: string]: string } = {
@@ -71,6 +71,37 @@ const modes: ModeSpec[] = [
     tabs: false,
   },
 ];
+
+// --- Python's Imenu, as python.el's python-imenu-treesit-create-index ------
+
+ember.defun("python--treesit-defun-name", (node: ember.TreesitNode) => {
+  const type = ember.treesitNodeType(node);
+  if (type !== "function_definition" && type !== "class_definition") return undefined;
+  return nodeText(ember.treesitNodeChildByFieldName(node, "name"), true) as string | undefined;
+});
+
+/** How an item is labelled, as python-imenu-format-item-label: "name (def)". */
+const pythonLabel = (type: string, name: string) => `${name} (${type})`;
+
+type PythonSparse = [ember.TreesitNode | undefined, PythonSparse[]];
+type PythonEntry = [string, number | PythonEntry[]];
+
+/** The index from a sparse tree of definitions, as python--imenu-treesit-create-index-1. */
+function pythonImenu1([node, children]: PythonSparse): PythonEntry[] {
+  const subtrees = children.flatMap(pythonImenu1);
+  if (node === undefined) return subtrees;
+  const type = ember.treesitNodeType(node) === "class_definition" ? "class" : "def";
+  const name = defunName(node) ?? "Anonymous";
+  const start = ember.treesitNodeStart(node)!;
+  if (subtrees.length === 0) return [[pythonLabel(type, name), start]];
+  // As python-imenu-format-parent-item-label and -jump-label.
+  return [[`${pythonLabel(type, name)}...`, [[type === "class" ? "*class definition*" : "*function definition*", start], ...subtrees]]];
+}
+
+ember.defun("python-imenu-treesit-create-index", () => {
+  const tree = induceSparseTree(bufferRootNode("python"), "^\\(?:function\\|class\\)_definition$", 1000) as PythonSparse;
+  return pythonImenu1(tree) as unknown as ember.Value;
+});
 
 // --- Indentation -------------------------------------------------------------
 
@@ -412,6 +443,10 @@ for (const mode of modes) {
       if (settings === undefined) {
         ember.setVariable("indent-line-function", "python-indent-line-function");
         ember.setVariable("electric-indent-chars", ["\n"]);
+        ember.setVariable("imenu-create-index-function", "python-imenu-treesit-create-index");
+        ember.setVariable("treesit-defun-type-regexp", "\\(?:class\\|function\\)_definition");
+        ember.setVariable("treesit-defun-name-function", "python--treesit-defun-name");
+        majorModeSetup(`${mode.name}-map`);
       } else {
         // Typing these reindents the line, as the mode's electric-indent-chars has them.
         ember.setVariable("electric-indent-chars", ["\n", ...settings.electric]);
@@ -437,5 +472,6 @@ for (const mode of modes) {
   }
   entries.push([mode.pattern, mode.name]);
 }
+ember.defineKey("python-ts-mode-map", "C-c C-j", "imenu");
 
 ember.setDefault("auto-mode-alist", entries);

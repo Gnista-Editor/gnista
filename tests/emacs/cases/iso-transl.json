@@ -1,0 +1,32 @@
+[
+  {
+    "name": "c-x-8-acute",
+    "text": "",
+    "keys": "C-x 8 ' e C-x 8 ' E"
+  },
+  {
+    "name": "c-x-8-umlaut-and-sharp-s",
+    "text": "",
+    "keys": "C-x 8 \" u C-x 8 \" s"
+  },
+  {
+    "name": "c-x-8-symbols",
+    "text": "",
+    "keys": "C-x 8 * C C-x 8 E C-x 8 * L C-x 8 C C-x 8 o"
+  },
+  {
+    "name": "c-x-8-then-undefined",
+    "text": "",
+    "keys": "C-x 8 ' z x"
+  },
+  {
+    "name": "c-x-still-a-prefix",
+    "text": "ab",
+    "keys": "C-x h C-w"
+  },
+  {
+    "name": "c-x-8-repeated-with-prefix",
+    "text": "",
+    "keys": "C-u 3 C-x 8 ' e"
+  }
+]

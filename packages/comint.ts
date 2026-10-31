@@ -1,10 +1,15 @@
 import { applyOnRegion } from "ansi-color";
+import { readPasswd, regexpQuote } from "subr";
 
 // Command interpreters in a buffer, after Emacs's comint.el: a program on
 // a pseudo-terminal, its output marked as the `output` field and its prompt
 // left for you to type after, input sent with RET and kept in a history
 // (M-p, M-n), and the subjob signals on C-c C-c, C-c C-z and C-c C-\.
 // Modes for shells and REPLs, as shell.ts's shell-mode, derive from it.
+
+/** Emacs 30's comint-password-prompt-regexp, as it builds it from password-word-equivalents. */
+const PASSWORD_PROMPT =
+  "\\(^ *\\|\\( SMB\\|'s\\|Bad\\|C\\(?:VS\\|urrent\\)\\|Enter\\(?: \\(?:Auth\\|\\(?:sam\\|th\\)e\\)\\)?\\|Kerberos\\|LDAP\\|New\\|Old\\|PEM\\|Re\\(?:peat\\|type\\)\\|SUDO\\|UNIX\\|Verify\\|\\[sudo]\\|doas\\|enter\\(?: \\(?:auth\\|\\(?:sam\\|th\\)e\\)\\)?\\|login\\|new\\|old\\) +.*\\)\\(?:\\(?:adgangskode\\|contrase\\(?:\\(?:ny\\|ñ\\)a\\)\\|decryption key\\|encryption key\\|geslo\\|h\\(?:\\(?:asł\\|esl\\)o\\)\\|iphasiwedi\\|jelszó\\|l\\(?:ozinka\\|ösenord\\)\\|m\\(?:ot de passe\\|ật khẩu\\)\\|p\\(?:a\\(?:rola\\|s\\(?:ahitza\\|s\\(?: phrase\\|code\\|ord\\|phrase\\|wor[dt]\\)\\|vorto\\)\\)\\|in\\)\\|s\\(?:alasana\\|enha\\|laptažodis\\)\\|wachtwoord\\|лозинка\\|пароль\\|ססמה\\|كلمة السر\\|गुप्तशब्द\\|शब्दकूट\\|গুপ্তশব্দ\\|পাসওয়ার্ড\\|ਪਾਸਵਰਡ\\|પાસવર્ડ\\|ପ୍ରବେଶ ସଙ୍କେତ\\|கடவுச்சொல்\\|సంకేతపదము\\|ಗುಪ್ತಪದ\\|അടയാളവാക്ക്\\|රහස්පදය\\|ពាក្យសម្ងាត់\\|パスワード\\|密[码碼]\\|암호\\)\\|Response\\)\\(?:\\(?:, try\\)? *again\\| (empty for no passphrase)\\| (again)\\)?\\(?: [[:alpha:]]+ .+\\)?[[:blank:]]*[:：﹕︓៖][[:space:]]*\\'\\|^Enter encryption key: (repeat) *\\'\\|^([^)@ \t\n]+@[^)@ \t\n]+) Password: *\\'";
 
 for (const [name, doc, value, local] of [
   ["comint-input-ring-size", "How many inputs a comint buffer keeps for M-p and M-n.", 500, false],
@@ -13,6 +18,12 @@ for (const [name, doc, value, local] of [
   ["comint-eol-on-send", "Whether RET moves to the end of the input before sending it.", true, false],
   ["comint-process-echoes", "Whether the program echoes its input, which RET then takes out of its output.", false, true],
   ["comint-preoutput-filter-functions", "Functions each piece of output goes through before it is inserted; each returns the text to insert.", [], true],
+  ["comint-password-prompt-regexp", "An Emacs regexp matching a program's prompts for a password, which comint then reads without showing it.", PASSWORD_PROMPT, false],
+  ["comint-input-ring-file-name", "The file comint-read-input-ring reads the history from and comint-write-input-ring writes it to, or nil for none.", null, true],
+  ["comint-input-ring-separator", "The regexp between inputs in the history file.", "\n", false],
+  ["comint-input-history-ignore", "A regexp for entries of the history file to leave out.", "^#", false],
+  ["comint-input-ring-file-prefix", "A regexp for what to skip at the start of each entry of the history file, such as zsh's time stamps.", null, true],
+  ["comint-move-point-for-matching-input", "Where C-c M-r and C-c M-s leave point: after-input where it was, end-of-line at the end.", "after-input", false],
   ["comint-terminfo-terminal", "The terminal comint programs are told they run on, as TERM.", "dumb", false],
 ] as const) {
   ember.defineVariable({ name, doc, value: value as ember.Value, local });
@@ -25,6 +36,8 @@ interface State {
   index: number | undefined;
   /** What was typed before M-p, put back when going past the newest. */
   stored: string | undefined;
+  /** The input C-c M-r and C-c M-s search the history for. */
+  matching: string;
   lastInputStart: ember.Marker;
   lastInputEnd: ember.Marker;
   lastOutputStart: ember.Marker;
@@ -39,6 +52,7 @@ function state(buffer = ember.bufferName()): State {
       ring: [],
       index: undefined,
       stored: undefined,
+      matching: "",
       lastInputStart: ember.makeMarker(ember.pointMax()),
       lastInputEnd: ember.makeMarker(ember.pointMax()),
       lastOutputStart: ember.makeMarker(ember.pointMax()),
@@ -304,6 +318,8 @@ ember.defineMajorMode({
     "C-d": "comint-delchar-or-maybe-eof",
     "M-p": "comint-previous-input",
     "M-n": "comint-next-input",
+    "C-c M-r": "comint-previous-matching-input-from-input",
+    "C-c M-s": "comint-next-matching-input-from-input",
     "C-<up>": "comint-previous-input",
     "C-<down>": "comint-next-input",
     "C-c C-a": "comint-bol-or-process-mark",
@@ -367,32 +383,207 @@ function replaceInput(text: string): void {
   });
 }
 
+/** Whether point is at the command line, after the process mark. */
+const afterPmark = (): boolean => processMark(bufferProcess()) <= ember.point();
+
+/** The count to search with, as comint-search-arg: 0 starts again from the newest. */
+function searchArg(arg: number): number {
+  const s = state();
+  if (!afterPmark()) ember.userError("Not at command line");
+  if (s.ring.length === 0) ember.userError("Empty input ring");
+  if (arg === 0) {
+    s.index = undefined;
+    return 1;
+  }
+  return arg;
+}
+
+const mod = (a: number, n: number): number => ((a % n) + n) % n;
+
+/**
+ * The index of the input matching `regexp` `arg` places along the history
+ * from where M-p and M-n are, as comint-previous-matching-input-string-position:
+ * back for a positive `arg`, forward for a negative one, round the ring.
+ */
+function matchingPosition(regexp: string, argIn: number): number | undefined {
+  const s = state();
+  const ring = s.ring;
+  if (ring.length === 0) ember.userError("No history");
+  const len = ring.length;
+  let arg = argIn;
+  const motion = arg > 0 ? 1 : -1;
+  const start = s.index !== undefined ? mod(s.index + motion, len) : arg >= 0 ? 0 : len - 1;
+  let n = mod(start - motion, len);
+  let tried = false;
+  const matches = (i: number) => ember.stringMatch(regexp, ring[i]!) !== undefined;
+  while (arg !== 0 && !tried) {
+    const prev = n;
+    n = mod(n + motion, len);
+    while (n < len && !tried && !matches(n)) {
+      n = mod(n + motion, len);
+      tried = n === prev;
+    }
+    arg += arg > 0 ? -1 : 1;
+  }
+  return matches(n) ? n : undefined;
+}
+
+/** Puts back what was typed before going through the history, as comint-restore-input. */
+function restoreInput(): void {
+  const s = state();
+  if (s.index === undefined) return;
+  replaceInput("");
+  if ((s.stored ?? "") !== "") {
+    replaceInput(s.stored!);
+    ember.message("Input restored");
+  }
+  s.index = undefined;
+}
+
+/**
+ * Puts the input matching `regexp` `n` places back in the history after
+ * the prompt, forward if negative, as comint-previous-matching-input; with
+ * `restore`, wrapping round puts back what was typed instead.
+ */
+function previousMatchingInput(regexp: string, nIn: number, restore = false): void {
+  const n = searchArg(nIn);
+  const s = state();
+  const pos = matchingPosition(regexp, n);
+  if (pos === undefined) ember.userError("Not found");
+  if (s.index !== undefined && restore && ((n < 0 && s.index < pos) || (n > 0 && s.index > pos))) {
+    restoreInput();
+    return;
+  }
+  if (s.index === undefined) s.stored = ember.bufferSubstringNoProperties(processMark(bufferProcess()), ember.pointMax());
+  s.index = pos;
+  ember.message(`History item: ${pos + 1}`);
+  replaceInput(s.ring[pos]!);
+}
+
 /** Goes `arg` inputs back in the history, forward if negative, as comint-previous-input. */
 function previousInput(arg: number): void {
   const s = state();
-  if (s.ring.length === 0) throw new Error("Empty input ring");
-  const pmark = processMark(bufferProcess());
-  if (s.index === undefined) {
-    s.stored = ember.bufferSubstringNoProperties(pmark, ember.pointMax());
-    if (arg < 0) {
-      // Going forward from the newest wraps to the oldest, as Emacs's ring does.
-      s.index = s.ring.length + arg;
-    } else {
-      s.index = arg - 1;
-    }
-  } else if ((arg < 0 && s.index === 0) || (arg > 0 && s.index === s.ring.length - 1)) {
-    if (s.stored !== undefined && arg < 0) {
-      replaceInput(s.stored);
-      s.index = undefined;
-      return;
-    }
-    s.index = (((s.index + arg) % s.ring.length) + s.ring.length) % s.ring.length;
+  if (
+    s.index !== undefined &&
+    ((arg < 0 && s.index === 0) || (arg > 0 && s.index === s.ring.length - 1)) &&
+    s.stored !== undefined
+  ) {
+    restoreInput();
   } else {
-    s.index = Math.max(0, Math.min(s.ring.length - 1, s.index + arg));
+    previousMatchingInput(".", arg);
   }
-  replaceInput(s.ring[s.index]!);
-  ember.message(`History item: ${s.index + 1}`);
 }
+
+/** Reads a regexp to search the history for, as comint-regexp-arg: empty means the last one. */
+async function regexpArg(prompt: string): Promise<string> {
+  const regexp = await ember.readString(prompt, { history: "minibuffer-history-search-history" });
+  if (regexp !== "") return regexp;
+  const history = ember.variable("minibuffer-history-search-history");
+  return Array.isArray(history) && typeof history[0] === "string" ? history[0] : regexp;
+}
+
+ember.defineCommand({
+  name: "comint-previous-matching-input",
+  doc: "Put the last input matching a regexp after the prompt; with a prefix argument, the Nth last, or the Nth next if negative.",
+  params: [{ name: "n", kind: "count" }],
+  run: async (n: number) => previousMatchingInput(await regexpArg("Previous input matching (regexp): "), n),
+});
+
+ember.defineCommand({
+  name: "comint-next-matching-input",
+  doc: "Put the next input matching a regexp after the prompt; with a prefix argument, the Nth next, or the Nth last if negative.",
+  params: [{ name: "n", kind: "count" }],
+  run: async (n: number) => previousMatchingInput(await regexpArg("Next input matching (regexp): "), -n),
+});
+
+/** Goes `n` inputs back through those starting with what is typed before point, as comint-previous-matching-input-from-input. */
+function matchingInputFromInput(n: number): void {
+  const s = state();
+  const opoint = ember.point();
+  const last = ember.lastCommand();
+  if (last !== "comint-previous-matching-input-from-input" && last !== "comint-next-matching-input-from-input") {
+    s.matching = ember.bufferSubstringNoProperties(processMark(bufferProcess()), ember.point());
+    s.index = undefined;
+  }
+  previousMatchingInput(`^${regexpQuote(s.matching)}`, n, true);
+  if (ember.variable("comint-move-point-for-matching-input") === "after-input") ember.gotoChar(opoint);
+}
+
+ember.defineCommand({
+  name: "comint-previous-matching-input-from-input",
+  doc: "Put the last input that starts with what is typed before point after the prompt; again, the one before.",
+  params: [{ name: "n", kind: "count" }],
+  run: (n: number) => matchingInputFromInput(n),
+});
+
+ember.defineCommand({
+  name: "comint-next-matching-input-from-input",
+  doc: "Put the next input that starts with what is typed before point after the prompt; again, the one after.",
+  params: [{ name: "n", kind: "count" }],
+  run: (n: number) => matchingInputFromInput(-n),
+});
+
+/** Runs `f` in a buffer of its own, killed afterwards, as with-temp-buffer. */
+function withTempBuffer<T>(f: () => T): T {
+  const name = ember.generateNewBufferName(" *temp*");
+  ember.getBufferCreate(name);
+  try {
+    return ember.withCurrentBuffer(name, f);
+  } finally {
+    ember.call("kill-buffer", name);
+  }
+}
+
+/**
+ * Reads the buffer's history from comint-input-ring-file-name, newest last
+ * in the file, as comint-read-input-ring: entries are split by
+ * comint-input-ring-separator, and those matching comint-input-history-ignore
+ * are left out. With `silent`, says nothing if the file cannot be read.
+ */
+export function readInputRing(silent = false): void {
+  const file = ember.variable("comint-input-ring-file-name");
+  if (typeof file !== "string" || file === "") return;
+  if (!ember.fileReadableP(ember.expandFileName(file))) {
+    if (!silent) ember.message(`Cannot read history file ${file}`);
+    return;
+  }
+  const size = Number(ember.variable("comint-input-ring-size") ?? 500);
+  const separator = String(ember.variable("comint-input-ring-separator") ?? "\n");
+  const prefix = ember.variable("comint-input-ring-file-prefix");
+  const ignore = String(ember.variable("comint-input-history-ignore") ?? "^#");
+  const ignoredups = !nil(ember.variable("comint-input-ignoredups"));
+  const ring: string[] = [];
+  withTempBuffer(() => {
+    ember.insertFileContents(ember.expandFileName(file));
+    ember.gotoChar(ember.pointMax());
+    while (ring.length < size && ember.reSearchBackward(separator, { noerror: true }) !== undefined) {
+      const end = ember.matchBeginning(0)!;
+      ember.gotoChar(ember.reSearchBackward(separator, { noerror: true }) !== undefined ? ember.matchEnd(0)! : ember.pointMin());
+      if (typeof prefix === "string" && prefix !== "" && ember.lookingAt(prefix)) ember.gotoChar(ember.matchEnd(0)!);
+      const history = ember.bufferSubstringNoProperties(ember.point(), end);
+      if (ember.stringMatch(ignore, history) === undefined && (!ignoredups || ring.length === 0 || ring[0] !== history)) ring.push(history);
+    }
+  });
+  const s = state();
+  s.ring = ring;
+  s.index = undefined;
+}
+ember.defun("comint-read-input-ring", (silent?: boolean) => readInputRing(Boolean(silent)));
+
+/** Writes the buffer's history to comint-input-ring-file-name, oldest first, as comint-write-input-ring. */
+export function writeInputRing(): void {
+  const file = ember.variable("comint-input-ring-file-name");
+  const s = state();
+  if (typeof file !== "string" || file === "" || s.ring.length === 0) return;
+  const path = ember.expandFileName(file);
+  if (!ember.fileWritableP(path)) {
+    ember.message(`Cannot write history file ${file}`);
+    return;
+  }
+  const separator = String(ember.variable("comint-input-ring-separator") ?? "\n");
+  ember.writeTextFile(path, [...s.ring].reverse().map((input) => input + separator).join(""));
+}
+ember.defun("comint-write-input-ring", () => writeInputRing());
 
 ember.defineCommand({
   name: "comint-previous-input",
@@ -566,3 +757,43 @@ ember.defineCommand({
 ember.addHook("kill-buffer-hook", () => {
   states.delete(ember.bufferName());
 });
+
+/**
+ * Reads a line without showing it and sends it to the buffer's process, as
+ * comint-send-invisible: for passwords, which then go in no history.
+ */
+export async function sendInvisible(prompt = "Non-echoed text: "): Promise<void> {
+  const buffer = ember.bufferName();
+  const proc = ember.getBufferProcess(buffer);
+  if (proc === undefined) throw new Error(`Buffer ${buffer} has no process`);
+  const prefix = ember.windowBuffer() === buffer ? "" : `(In buffer ${buffer}) `;
+  const str = await readPasswd(prefix + prompt);
+  if (ember.processLiveP(proc)) ember.processSendString(proc, `${str}\n`);
+}
+
+ember.defineCommand({
+  name: "comint-send-invisible",
+  doc: "Read a line without showing it, as a password, and send it to the buffer's process.",
+  run: () => sendInvisible(),
+});
+
+/** How deep password prompts have nested, so a program that keeps asking cannot recurse without end. */
+let promptDepth = 0;
+
+/**
+ * Reads a password when the program's output ends in a prompt for one, as
+ * comint-watch-for-password-prompt, the last of comint-output-filter-functions.
+ */
+export const watchForPasswordPrompt = (string: string): void => {
+  const regexp = ember.variable("comint-password-prompt-regexp");
+  if (typeof regexp !== "string" || ember.stringMatch(regexp, string.replaceAll("\r", ""), { caseFold: true }) === undefined) return;
+  if (promptDepth >= 10) {
+    ember.message("Password prompt recursion too deep");
+    return;
+  }
+  if (ember.getBufferProcess(ember.bufferName()) === undefined) return;
+  const prompt = string.replace(/^[ \n\r\t\v\f\b\x07]+/, "").replace(/\n+$/, "");
+  promptDepth++;
+  sendInvisible(prompt).finally(() => promptDepth--);
+};
+ember.addHook("comint-output-filter-functions", watchForPasswordPrompt);

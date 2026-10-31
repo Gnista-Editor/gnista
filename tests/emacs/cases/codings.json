@@ -247,5 +247,44 @@
     "answers": [
       ""
     ]
+  },
+  {
+    "name": "prefer-shift-jis-then-revisit",
+    "files": {
+      "j.txt": "latin-1:ú{\n"
+    },
+    "find": "j.txt",
+    "text": "",
+    "keys": "M-x C-x C-v",
+    "answers": [
+      "prefer-coding-system",
+      "japanese-shift-jis",
+      "j.txt"
+    ]
+  },
+  {
+    "name": "prefer-shift-jis-then-new-file-saves-in-it",
+    "files": {},
+    "find": "n.txt",
+    "text": "",
+    "keys": "M-x 日 本 C-x C-s",
+    "answers": [
+      "prefer-coding-system",
+      "japanese-shift-jis"
+    ]
+  },
+  {
+    "name": "prefer-windows-1252-over-utf-8",
+    "files": {
+      "w.txt": "latin-1:Ã©\n"
+    },
+    "find": "w.txt",
+    "text": "",
+    "keys": "M-x C-x C-v",
+    "answers": [
+      "prefer-coding-system",
+      "windows-1252",
+      "w.txt"
+    ]
   }
 ]

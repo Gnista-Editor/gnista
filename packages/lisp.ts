@@ -456,6 +456,140 @@ ember.defineCommand({
   },
 });
 
+/** Whether the line is only comments and space, as beginning-of-defun--in-emptyish-line-p. */
+function inEmptyishLine(): boolean {
+  return ember.saveExcursion(() => {
+    ember.gotoChar(ember.lineBeginningPosition());
+    const ppss = ember.syntaxPpss();
+    if (ppss.inString !== null) return false;
+    const eol = ember.lineEndPosition();
+    if (ppss.inComment !== null && ppss.start !== null) ember.gotoChar(ppss.start);
+    ember.forwardComment(ember.pointMax());
+    return eol < ember.point();
+  });
+}
+
+/** Moves to the start of the defun and the comments just above it, as beginning-of-defun-comments. */
+function beginningOfDefunComments(arg = 1): void {
+  ember.callWithPrefix(arg, "beginning-of-defun");
+  let firstLine = false;
+  for (;;) {
+    firstLine = forwardLine(-1) === -1;
+    let ppss = ember.syntaxPpss(ember.lineEndPosition());
+    // A comment across lines: back to its start.
+    while (ppss.inComment !== null && ppss.start !== null && ppss.start < ember.lineBeginningPosition()) {
+      ember.gotoChar(ppss.start);
+      ppss = ember.syntaxPpss(ember.lineEndPosition());
+    }
+    if (firstLine) break;
+    ember.skipSyntaxBackward("-", ember.lineBeginningPosition());
+    if (ember.point() === ember.lineBeginningPosition()) break;
+    if (!inEmptyishLine()) break;
+  }
+  forwardLine(firstLine ? 0 : 1);
+}
+
+ember.defineCommand({
+  name: "mark-defun",
+  doc:
+    "Put point at the start of this defun, the comments above it included, and the mark at its end; " +
+    "with a prefix argument, that many defuns. Again, or with the region active, mark the next ones too.",
+  params: [{ name: "arg", kind: "count" }],
+  run: (argIn: number) =>
+    ember.conditionCase(
+      () => {
+        let arg = argIn;
+        if (ember.lastCommand() === "mark-defun-back") arg = -arg;
+        if (arg < 0) ember.setThisCommand("mark-defun-back" as ember.CommandName);
+        const endOfDefun = () => ember.call("end-of-defun");
+        if (ember.regionActive()) {
+          if (arg >= 0) {
+            ember.setMark(ember.saveExcursion(() => {
+              ember.gotoChar(ember.mark()!);
+              for (let i = 0; i < arg; i++) endOfDefun();
+              return ember.point();
+            }));
+          } else {
+            beginningOfDefunComments(-arg);
+          }
+        } else {
+          const opoint = ember.point();
+          ember.pushMark(opoint);
+          beginningOfDefunComments();
+          let beg = ember.point();
+          endOfDefun();
+          let end = ember.point();
+          // Before the first defun, or past this one's end: the next one.
+          if ((ember.point() <= opoint && arg > 0) || beg === ember.pointMin()) {
+            ember.gotoChar(opoint);
+            endOfDefun();
+            end = ember.point();
+            beginningOfDefunComments();
+            beg = ember.point();
+          }
+          ember.gotoChar(beg);
+          if (arg > 0) {
+            for (let i = 0; i < arg; i++) endOfDefun();
+            end = ember.point();
+            ember.pushMark(end, { activate: true });
+            ember.gotoChar(beg);
+          } else {
+            ember.gotoChar(beg);
+            if (arg !== -1) ember.callWithPrefix(-arg - 1, "beginning-of-defun");
+            ember.pushMark(end, { activate: true });
+          }
+        }
+        ember.skipCharsBackward("[:space:]\n");
+        if (ember.point() > ember.pointMin()) forwardLine(1);
+      },
+      { "scan-error": (e) => ember.userError(e.message) },
+    ),
+});
+
+ember.defineVariable({ name: "narrow-to-defun-include-comments", doc: "Whether narrow-to-defun takes in the comments before the defun.", value: false });
+
+ember.defineCommand({
+  name: "narrow-to-defun",
+  doc: "Narrow to the defun around point, or the one after it, and the comments before it if narrow-to-defun-include-comments says so.",
+  run: () => {
+    const [beg, end] = ember.saveExcursion(() => {
+      ember.widen();
+      const opoint = ember.point();
+      // From a character on, so a defun starting at point is this one.
+      const here = ember.point();
+      if (ember.point() !== ember.lineEndPosition()) ember.gotoChar(ember.point() + 1);
+      ember.call("beginning-of-defun");
+      if (ember.point() < here) {
+        ember.gotoChar(here);
+        ember.call("beginning-of-defun");
+      }
+      let b = ember.point();
+      ember.call("end-of-defun");
+      let e = ember.point();
+      while (ember.lookingAt("^\n")) forwardLine(1);
+      if (ember.point() <= opoint) {
+        ember.gotoChar(opoint);
+        ember.call("end-of-defun");
+        e = ember.point();
+        ember.call("beginning-of-defun");
+        b = ember.point();
+      }
+      if (truthy(ember.variable("narrow-to-defun-include-comments"))) {
+        ember.gotoChar(b);
+        if (ember.forwardComment(-1)) {
+          while (ember.forwardComment(-1));
+          const delim = ember.variable("page-delimiter");
+          if (typeof delim === "string" && delim !== "") while (ember.reSearchForward(delim, { bound: b, noerror: true }) !== undefined);
+          ember.skipCharsForward("[:space:]\n");
+          b = ember.lineBeginningPosition();
+        }
+      }
+      return [b, e];
+    });
+    ember.narrowToRegion(beg, end);
+  },
+});
+
 for (const [keys, command] of [
   ["C-M-a", "beginning-of-defun"],
   ["C-M-<home>", "beginning-of-defun"],
@@ -474,6 +608,8 @@ for (const [keys, command] of [
   ["C-M-k", "kill-sexp"],
   ["C-M-DEL", "backward-kill-sexp"],
   ["C-M-SPC", "mark-sexp"],
+  ["C-M-h", "mark-defun"],
+  ["C-x n d", "narrow-to-defun"],
   ["C-M-@", "mark-sexp"],
   ["M-(", "insert-parentheses"],
 ] as const) {

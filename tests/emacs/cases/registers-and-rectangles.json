@@ -1,0 +1,71 @@
+[
+  {
+    "name": "jump-to-empty-register",
+    "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+    "keys": "C-x r j",
+    "answers": [
+      "z"
+    ]
+  },
+  {
+    "name": "insert-empty-register",
+    "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+    "keys": "C-x r i",
+    "answers": [
+      "q"
+    ]
+  },
+  {
+    "name": "kill-rectangle",
+    "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+    "keys": "C-f C-SPC C-n C-n C-f C-f C-x r k"
+  },
+  {
+    "name": "kill-and-yank-rectangle",
+    "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+    "keys": "C-f C-SPC C-n C-n C-f C-f C-x r k M-> C-x r y"
+  },
+  {
+    "name": "yank-rectangle-mid-line",
+    "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+    "keys": "C-f C-SPC C-n C-f C-x r M-w C-n C-n C-e C-x r y"
+  },
+  {
+    "name": "delete-rectangle",
+    "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+    "keys": "C-f C-f C-SPC C-n C-n C-n C-f C-x r d"
+  },
+  {
+    "name": "open-rectangle",
+    "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+    "keys": "C-f C-SPC C-n C-n C-f C-f C-x r o"
+  },
+  {
+    "name": "clear-rectangle",
+    "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+    "keys": "C-f C-SPC C-n C-n C-f C-f C-x r c"
+  },
+  {
+    "name": "string-rectangle",
+    "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+    "keys": "C-f C-SPC C-n C-n C-f C-f C-x r t",
+    "answers": [
+      "XY"
+    ]
+  },
+  {
+    "name": "rectangle-number-lines",
+    "text": "abcdef\nghijkl\nmnopqr\nstuvwx\n",
+    "keys": "C-SPC C-n C-n C-n C-x r N"
+  },
+  {
+    "name": "kill-rectangle-short-lines",
+    "text": "abcdef\nab\nabcdef\n",
+    "keys": "C-f C-f C-f C-SPC C-n C-n C-f C-f C-x r k M-> C-x r y"
+  },
+  {
+    "name": "rectangle-with-tabs",
+    "text": "a\tb\nabcdefghij\n",
+    "keys": "C-f C-f C-SPC C-n C-f C-f C-f C-x r k"
+  }
+]

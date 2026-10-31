@@ -1,0 +1,302 @@
+[
+  {
+    "name": "back-to-indentation",
+    "text": "   foo bar\n",
+    "keys": "C-e M-m"
+  },
+  {
+    "name": "back-to-indentation-blank-line",
+    "text": "x\n   \ny",
+    "keys": "C-n M-m"
+  },
+  {
+    "name": "delete-horizontal-space",
+    "text": "a   \t  b",
+    "keys": "C-a M-f C-f C-f M-\\"
+  },
+  {
+    "name": "delete-horizontal-space-backward",
+    "text": "a     b",
+    "keys": "C-a M-f C-f C-f C-u M-\\"
+  },
+  {
+    "name": "cycle-spacing-once",
+    "text": "a     b",
+    "keys": "C-a M-f C-f C-f M-SPC"
+  },
+  {
+    "name": "cycle-spacing-twice",
+    "text": "a     b",
+    "keys": "C-a M-f C-f C-f M-SPC M-SPC"
+  },
+  {
+    "name": "cycle-spacing-thrice-restores",
+    "text": "a     b",
+    "keys": "C-a M-f C-f C-f M-SPC M-SPC M-SPC"
+  },
+  {
+    "name": "cycle-spacing-negative-joins-lines",
+    "text": "a   \n   b",
+    "keys": "C-a C-e M-- M-SPC"
+  },
+  {
+    "name": "just-one-space-with-count",
+    "text": "a     b",
+    "keys": "C-a M-f C-u 3 M-x",
+    "answers": [
+      "just-one-space"
+    ]
+  },
+  {
+    "name": "delete-indentation",
+    "text": "foo\n    bar\n",
+    "keys": "C-n M-^"
+  },
+  {
+    "name": "delete-indentation-with-prefix",
+    "text": "foo  \n    bar\n",
+    "keys": "C-u M-^"
+  },
+  {
+    "name": "delete-indentation-before-paren",
+    "text": "(foo\n    )\n",
+    "keys": "C-n M-^"
+  },
+  {
+    "name": "delete-blank-lines-many",
+    "text": "a\n\n\n\nb\n",
+    "keys": "C-n C-n C-x C-o"
+  },
+  {
+    "name": "delete-blank-lines-single",
+    "text": "a\n\nb\n",
+    "keys": "C-n C-x C-o"
+  },
+  {
+    "name": "delete-blank-lines-after-nonblank",
+    "text": "a\n\n\n\nb\n",
+    "keys": "C-x C-o"
+  },
+  {
+    "name": "delete-trailing-whitespace",
+    "text": "a  \nb\t\n\fc \n\n\n\n",
+    "keys": "M-x",
+    "answers": [
+      "delete-trailing-whitespace"
+    ]
+  },
+  {
+    "name": "kill-whole-line",
+    "text": "one\ntwo\nthree\n",
+    "keys": "C-n C-f M-x C-y",
+    "answers": [
+      "kill-whole-line"
+    ]
+  },
+  {
+    "name": "kill-whole-line-twice-appends",
+    "text": "one\ntwo\nthree\n",
+    "keys": "M-x M-x C-y",
+    "answers": [
+      "kill-whole-line",
+      "kill-whole-line"
+    ]
+  },
+  {
+    "name": "kill-whole-line-negative",
+    "text": "one\ntwo\nthree\n",
+    "keys": "C-n C-f M-- M-x",
+    "answers": [
+      "kill-whole-line"
+    ]
+  },
+  {
+    "name": "kill-whole-line-zero",
+    "text": "one\ntwo\nthree\n",
+    "keys": "C-n C-f M-0 M-x",
+    "answers": [
+      "kill-whole-line"
+    ]
+  },
+  {
+    "name": "zap-to-char",
+    "text": "hello world",
+    "keys": "M-z",
+    "answers": [
+      "o"
+    ]
+  },
+  {
+    "name": "zap-to-char-twice",
+    "text": "hello world",
+    "keys": "M-2 M-z",
+    "answers": [
+      "o"
+    ]
+  },
+  {
+    "name": "zap-to-char-backward",
+    "text": "hello world",
+    "keys": "C-e M-- M-z",
+    "answers": [
+      "o"
+    ]
+  },
+  {
+    "name": "zap-to-char-missing",
+    "text": "hello world",
+    "keys": "M-z",
+    "answers": [
+      "q"
+    ]
+  },
+  {
+    "name": "goto-line",
+    "text": "a\nb\nc\nd\n",
+    "keys": "M-g g",
+    "answers": [
+      "3"
+    ]
+  },
+  {
+    "name": "goto-line-prefix",
+    "text": "a\nb\nc\nd\n",
+    "keys": "M-4 M-g g"
+  },
+  {
+    "name": "goto-line-past-end",
+    "text": "a\nb\n",
+    "keys": "M-9 M-g M-g"
+  },
+  {
+    "name": "goto-char",
+    "text": "abcdef",
+    "keys": "M-4 M-g c"
+  },
+  {
+    "name": "what-line",
+    "text": "a\nb\nc\n",
+    "keys": "C-n C-n M-x",
+    "answers": [
+      "what-line"
+    ],
+    "message": true
+  },
+  {
+    "name": "what-cursor-position",
+    "text": "abc\ndef",
+    "keys": "C-n C-f C-x =",
+    "message": true
+  },
+  {
+    "name": "what-cursor-position-eob",
+    "text": "abc",
+    "keys": "C-e C-x =",
+    "message": true
+  },
+  {
+    "name": "what-cursor-position-space",
+    "text": "a c",
+    "keys": "C-f C-x =",
+    "message": true
+  },
+  {
+    "name": "what-cursor-position-non-ascii",
+    "text": "é",
+    "keys": "C-x =",
+    "message": true
+  },
+  {
+    "name": "count-words-region",
+    "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+    "keys": "C-SPC M-} M-=",
+    "message": true
+  },
+  {
+    "name": "count-words-buffer",
+    "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+    "keys": "M-x",
+    "answers": [
+      "count-words"
+    ],
+    "message": true
+  },
+  {
+    "name": "mark-word",
+    "text": "one two three",
+    "keys": "M-@ C-w"
+  },
+  {
+    "name": "mark-word-twice",
+    "text": "one two three",
+    "keys": "M-@ M-@ C-w"
+  },
+  {
+    "name": "mark-paragraph",
+    "text": "a\nb\n\nc\nd\n",
+    "keys": "C-n M-h C-w"
+  },
+  {
+    "name": "split-line",
+    "text": "foo bar",
+    "keys": "C-a M-f C-M-o"
+  },
+  {
+    "name": "quoted-insert-control",
+    "text": "",
+    "keys": "C-q C-a C-q TAB"
+  },
+  {
+    "name": "quoted-insert-count",
+    "text": "",
+    "keys": "C-u 3 C-q z"
+  },
+  {
+    "name": "forward-sentence",
+    "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+    "keys": "M-e"
+  },
+  {
+    "name": "forward-sentence-three",
+    "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+    "keys": "M-e M-e M-e"
+  },
+  {
+    "name": "forward-sentence-across-paragraph",
+    "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+    "keys": "M-3 M-e M-e M-e"
+  },
+  {
+    "name": "backward-sentence",
+    "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+    "keys": "M-> M-a"
+  },
+  {
+    "name": "backward-sentence-twice",
+    "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+    "keys": "M-> M-a M-a M-a"
+  },
+  {
+    "name": "kill-sentence",
+    "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+    "keys": "M-e M-k"
+  },
+  {
+    "name": "backward-kill-sentence",
+    "text": "Hello there.  This is a test.  And a third one!\nNext paragraph here.  Second sentence.\n\nLast paragraph.  Done.\n",
+    "keys": "M-e M-e C-x DEL"
+  },
+  {
+    "name": "fixup-whitespace",
+    "text": "a   b",
+    "keys": "C-f C-f M-x",
+    "answers": [
+      "fixup-whitespace"
+    ]
+  },
+  {
+    "name": "append-next-kill",
+    "text": "one two three",
+    "keys": "M-d C-f C-M-w M-d C-y"
+  }
+]

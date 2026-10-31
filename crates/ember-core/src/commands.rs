@@ -1615,6 +1615,10 @@ fn bind_defaults(ed: &mut Editor) {
         let global = ed.global_map();
         ed.keymaps_mut().bind(global, &Key::parse_seq(keys).expect("valid keys"), crate::keymap::Binding::Keymap(map));
     }
+    // The translation maps the command loop reads keys through.
+    for name in ["input-decode-map", "key-translation-map"] {
+        ed.define_keymap(name, None);
+    }
     let global = [
         ("C-f", "forward-char"),
         ("<right>", "forward-char"),

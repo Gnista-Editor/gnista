@@ -37,6 +37,8 @@ pub(crate) struct KeyReader {
     then: HookFn,
     quit: Option<HookFn>,
     resume: Resume,
+    /// When to stop waiting and answer nil, as `read-event`'s SECONDS.
+    deadline: Option<std::time::Instant>,
 }
 
 pub(crate) struct RecursiveEdit {
@@ -87,14 +89,65 @@ impl Editor {
     /// `read-event`, `read-char` and `read-key-sequence` return it: a key's
     /// description, such as "C-x" or "<f1>", or a key sequence's, "C-x C-f".
     /// `C-g` quits, but for a key sequence, where it is a key like others.
-    pub fn read_key_event(&mut self, kind: ReadKind, prompt: &str, then: HookFn, quit: Option<HookFn>) -> Result<()> {
+    /// With a `timeout`, `then` gets nil if no key comes in that time, as
+    /// `read-event` and `read-char` with SECONDS.
+    pub fn read_key_event(&mut self, kind: ReadKind, prompt: &str, timeout: Option<std::time::Duration>, then: HookFn, quit: Option<HookFn>) -> Result<()> {
         if self.keyboard.reader.is_some() {
             return Err(Error::new("Already reading a key"));
         }
         let resume = self.resume_point();
-        self.keyboard.reader = Some(KeyReader { kind, prompt: prompt.to_string(), keys: Vec::new(), then, quit, resume });
-        self.message = (!prompt.is_empty()).then(|| prompt.to_string());
+        let deadline = timeout.map(|t| self.now() + t);
+        self.keyboard.reader = Some(KeyReader { kind, prompt: prompt.to_string(), keys: Vec::new(), then, quit, resume, deadline });
+        // With no prompt, what the echo area shows stays, as sit-for's message does.
+        if !prompt.is_empty() {
+            self.message = Some(prompt.to_string());
+        }
         Ok(())
+    }
+
+    /// When code reading a key with a timeout stops waiting, if it does.
+    pub(crate) fn key_read_deadline(&self) -> Option<std::time::Instant> {
+        self.keyboard.reader.as_ref().and_then(|r| r.deadline)
+    }
+
+    /// Answers nil to code reading a key whose timeout has passed, as
+    /// `read-event` returns nil when SECONDS pass with no input.
+    pub(crate) fn key_read_timed_out(&mut self) {
+        let now = self.now();
+        if !self.keyboard.reader.as_ref().is_some_and(|r| r.deadline.is_some_and(|d| d <= now)) {
+            return;
+        }
+        let reader = self.keyboard.reader.take().expect("a reader waits");
+        if !reader.prompt.is_empty() {
+            self.message = None;
+        }
+        let then = reader.then.clone();
+        if let Err(e) = self.run_resumed(&reader.resume, |ed| then(ed, &[Value::Null])) {
+            self.prompt_waiters_clear();
+            self.fail(e);
+            return;
+        }
+        self.run_prompt_waiters();
+    }
+
+    /// Runs `then` after `secs` seconds in the context of the command that
+    /// asked, as code after Emacs's `sleep-for` runs. Keys typed meanwhile
+    /// run their commands rather than waiting for it.
+    pub fn sleep_for(&mut self, secs: f64, then: HookFn) {
+        let resume = self.resume_point();
+        self.run_with_timer(
+            secs,
+            None,
+            std::rc::Rc::new(move |ed: &mut Editor, _: &[Value]| {
+                let result = ed.run_resumed(&resume, |ed| then(ed, &[]));
+                if result.is_ok() {
+                    ed.run_prompt_waiters();
+                } else {
+                    ed.prompt_waiters_clear();
+                }
+                result
+            }),
+        );
     }
 
     /// Whether code is waiting for a key, which the next key goes to.
@@ -152,8 +205,12 @@ impl Editor {
     }
 
     /// Notes a key typed, for `recent-keys`, keeping the last
-    /// `lossage-size` keys.
+    /// `lossage-size` keys, unless the current buffer's
+    /// `inhibit--record-char` says not to, as a password prompt's does.
     pub(crate) fn record_lossage_key(&mut self, key: Key) {
+        if self.variable("inhibit--record-char").is_some_and(|v| v.is_true()) {
+            return;
+        }
         let k = &mut self.keyboard;
         k.lossage.push_back(Lossage::Key(key));
         while k.lossage.iter().filter(|e| matches!(e, Lossage::Key(_))).count() > k.lossage_size {
@@ -219,7 +276,7 @@ impl Editor {
 
     /// Whether code waits for a single key, which takes ESC as it comes,
     /// as Emacs's `read-key` does, rather than as a prefix for Meta.
-    pub(crate) fn reading_single_key(&self) -> bool {
+    pub fn reading_single_key(&self) -> bool {
         self.keyboard.reader.as_ref().is_some_and(|r| r.kind != ReadKind::KeySequence)
     }
 

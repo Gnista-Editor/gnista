@@ -367,11 +367,19 @@ impl Editor {
     }
 
     /// Removes all of the current buffer's own values, local hooks and
-    /// local keymap, as a new major mode does first. Runs
+    /// local keymap, as a new major mode does first, but for permanent
+    /// ones. Runs
     /// `change-major-mode-hook` beforehand, as Emacs does.
     pub fn kill_all_local_variables(&mut self) -> Result<()> {
         let result = self.run_hooks("change-major-mode-hook");
-        let permanent: Vec<String> = self.variables().filter(|v| v.permanent).map(|v| v.name.clone()).collect();
+        // Permanent: defined so, or with a permanent-local property, as Lisp puts one.
+        let permanent: Vec<String> = self
+            .buffer()
+            .locals
+            .keys()
+            .filter(|name| self.var(name).is_some_and(|v| v.permanent) || self.get(name, "permanent-local").is_some_and(|v| v.is_true()))
+            .cloned()
+            .collect();
         let b = self.buffer_mut();
         b.locals.retain(|name, _| permanent.contains(name));
         b.forget_shift_selection();
@@ -686,6 +694,12 @@ pub(crate) fn install(ed: &mut Editor) {
             "The directory Ember's configuration and its saved state are in, such as recentf's list of recent files: ~/.config/ember unless EMBER_CONFIG_DIR or XDG_CONFIG_HOME say otherwise. Nil when there is none, as in tests.",
             Value::Bool(false),
         ),
+        Variable::new(
+            "inhibit--record-char",
+            "Whether keys typed in this buffer are left out of recent-keys, as a password prompt's are.",
+            Value::Bool(false),
+        )
+        .local(),
         Variable::new(
             "inhibit-read-only",
             "Whether to ignore read-only buffers and text: t ignores both, and a list lets through text whose read-only property is one of its values. Bind it with letBind around code that writes into a read-only buffer.",

@@ -114,11 +114,14 @@ const API: &str = r##"
    * Bind a key sequence in Emacs notation, such as "C-c d", to a command, in
    * the global keymap or a named one such as "text-mode-map". Bound to a
    * keymap, the keys are a prefix and that keymap its prefix map; to null,
-   * they run nothing, hiding the parent keymap's binding.
+   * they run nothing, hiding the parent keymap's binding. Bound to a list
+   * of keys, such as ["C-a", "x"], they type those keys as a keyboard
+   * macro, as a string or vector binding does in Emacs; in a translation
+   * map such as "key-translation-map", the keys read become those keys.
    */
-  function bindKey(keys: string, command: CommandName | DefinedCommand | Keymap | null, keymap?: string | Keymap): void;
+  function bindKey(keys: string, command: CommandName | DefinedCommand | Keymap | string[] | null, keymap?: string | Keymap): void;
   /** Bind keys in a keymap, as bindKey, in Emacs's order of arguments (define-key). */
-  function defineKey(keymap: string | Keymap, keys: string, binding: CommandName | DefinedCommand | Keymap | null): void;
+  function defineKey(keymap: string | Keymap, keys: string, binding: CommandName | DefinedCommand | Keymap | string[] | null): void;
   /**
    * Unbind keys in a keymap, as keymap-unset: bound to nothing, which hides
    * the parent keymap's binding, or with `remove` taken out, so it shows.
@@ -136,7 +139,7 @@ const API: &str = r##"
    * What keys are bound to in a keymap and its parents, as lookup-key: a
    * command's name, a prefix map, or undefined.
    */
-  function lookupKey(keymap: string | Keymap, keys: string): string | Keymap | undefined;
+  function lookupKey(keymap: string | Keymap, keys: string): string | Keymap | string[] | undefined;
   /**
    * The keymaps active now, in the order keys are looked up, as
    * current-active-maps: a transient map, an overriding one, the
@@ -268,6 +271,8 @@ const API: &str = r##"
    * this-command). yank-pop sets "yank", so that M-y can follow M-y.
    */
   function setThisCommand(name: CommandName | DefinedCommand): void;
+  /** Make the next command, and the next kill, see `name` as the last command, as setting Emacs's last-command does. */
+  function setLastCommand(name: CommandName | DefinedCommand | null): void;
   /** Put the mark at a position without activating the region, or remove it with null. */
   function setMark(position: number | null): void;
   /**
@@ -532,12 +537,26 @@ const API: &str = r##"
    */
   function readKey(prompt?: string): Promise<string>;
   function readKey(prompt: string | undefined, then: (key: string) => void): void;
-  /** Read an event, a key or a mouse event, as Emacs's read-event; the last mouse event's place is lastMouseEvent(). */
+  /**
+   * Read an event, a key or a mouse event, as Emacs's read-event; the last
+   * mouse event's place is lastMouseEvent(). With `seconds`, give up after
+   * that long with undefined, as read-event's SECONDS.
+   */
   function readEvent(prompt?: string): Promise<string>;
+  function readEvent(prompt: string | undefined, options: { seconds: number }): Promise<string | undefined>;
   function readEvent(prompt: string | undefined, then: (key: string) => void): void;
-  /** Read a character, as Emacs's read-char: anything else, such as <f1>, is an error. */
+  /** Read a character, as Emacs's read-char: anything else, such as <f1>, is an error. With `seconds`, undefined if none comes in that long. */
   function readChar(prompt?: string): Promise<string>;
+  function readChar(prompt: string | undefined, options: { seconds: number }): Promise<string | undefined>;
   function readChar(prompt: string | undefined, then: (char: string) => void): void;
+  /**
+   * Wait `seconds`, as Emacs's sit-for: true if the time passed, false as
+   * soon as a key is typed, which is then read as a command.
+   */
+  function sitFor(seconds: number): Promise<boolean>;
+  /** Wait `seconds` before going on, as Emacs's sleep-for. Keys typed meanwhile run their commands. */
+  function sleepFor(seconds: number): Promise<void>;
+  function sleepFor(seconds: number, then: () => void): void;
   /**
    * Read a whole key sequence, as the command loop reads one, by the keymaps
    * active now, as Emacs's read-key-sequence: "C-x C-f". C-g is a key in it.
@@ -696,10 +715,10 @@ const API: &str = r##"
   function visitedFileChanged(): boolean;
   /**
    * Make the current buffer visit another file, as Emacs's
-   * set-visited-file-name. `alongWithFile` says the file was renamed with
-   * it, so the buffer stays as modified as it was.
+   * set-visited-file-name, or none with null. `alongWithFile` says the
+   * file was renamed with it, so the buffer stays as modified as it was.
    */
-  function setVisitedFileName(file: string, options?: { alongWithFile?: boolean }): void;
+  function setVisitedFileName(file: string | null, options?: { alongWithFile?: boolean }): void;
   /** A file name made absolute, from dir or default-directory, with ~ for the home directory, as Emacs's expand-file-name. */
   function expandFileName(file: string, dir?: string): string;
   /** An environment variable's value, as Emacs's getenv. */
@@ -1931,6 +1950,13 @@ const API: &str = r##"
   function codingSystemAliases(cs: CodingSystem): CodingSystem[];
   /** The coding system without its line ends, as coding-system-base. */
   function codingSystemBase(cs: CodingSystem): CodingSystem;
+  /**
+   * Make detection try these coding systems first, in this order, when a
+   * file's bytes read in them without error, as set-coding-system-priority.
+   */
+  function setCodingSystemPriority(...codings: CodingSystem[]): void;
+  /** The coding systems in the order detection tries them, or with `highestp` only the first, as coding-system-priority-list. */
+  function codingSystemPriorityList(highestp?: boolean): CodingSystem[];
   /** How it writes characters, as coding-system-type: "utf-8", "charset", "iso-2022", "shift-jis" and so on. */
   function codingSystemType(cs: CodingSystem): string;
   /** Its line ends, 0 for Unix, 1 for DOS and 2 for Mac, or its three forms if undecided, as coding-system-eol-type. */

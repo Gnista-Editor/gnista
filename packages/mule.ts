@@ -25,11 +25,13 @@ function bufferCoding(): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
-/** Reads a coding system's name with completion; empty input gives undefined. */
-async function readCodingSystem(prompt: string): Promise<string | undefined> {
+/** Reads a coding system's name with completion, as read-coding-system; empty input gives undefined. */
+export async function readCodingSystem(prompt: string, { asTyped = false } = {}): Promise<string | undefined> {
   const name = await ember.completingRead(prompt, ember.codingSystemList(), { history: "coding-system-history" });
   if (name === "") return undefined;
-  return ember.checkCodingSystem(name);
+  // Checked either way; an alias stays as typed if asked, as a symbol read stays itself.
+  const coding = ember.checkCodingSystem(name);
+  return asTyped ? name : coding;
 }
 
 ember.defineVariable({ name: "coding-system-history", doc: "Coding systems answered in the minibuffer, newest first.", value: [] });
@@ -66,6 +68,52 @@ function withCoding(variables: string[], coding: string, fn: () => void): void {
     ember.afterPrompts(restore);
   }
 }
+
+ember.defineVariable({
+  name: "default-file-name-coding-system",
+  doc: "How file names are encoded: always UTF-8, as on macOS, since Ember keeps file names as Rust strings.",
+  value: "utf-8-unix",
+});
+
+/**
+ * Makes `coding` the default for new buffers and for processes, keeping
+ * the processes' line ends, as Emacs's set-default-coding-systems.
+ */
+export function setDefaultCodingSystems(coding: string): void {
+  ember.checkCodingSystem(coding);
+  ember.setDefault("buffer-file-coding-system", coding);
+  const process = ember.variable("default-process-coding-system");
+  if (Array.isArray(process) && process.length === 2) {
+    ember.setVariable(
+      "default-process-coding-system",
+      process.map((p) => ember.codingSystemChangeTextConversion(String(p), coding)),
+    );
+  }
+}
+
+ember.defineCommand({
+  name: "prefer-coding-system",
+  doc:
+    "Make a coding system the one files are read in when their bytes fit it, and the default for new files and processes.\n\n" +
+    "Its line ends, if named, become the default too.",
+  run: async () => {
+    const coding = await readCodingSystem("Prefer coding system: ", { asTyped: true });
+    if (coding === undefined || !ember.codingSystemP(coding)) throw new Error(`Invalid coding system \`${coding ?? "nil"}'`);
+    const type = ember.codingSystemType(coding);
+    if (type === "raw-text" || type === "undecided") throw new Error(`Can't prefer the coding system \`${coding}'`);
+    let base = String(ember.codingSystemBase(coding));
+    const eol = ember.codingSystemEolType(coding);
+    ember.setCodingSystemPriority(base);
+    if (base !== coding) ember.message(`Highest priority is set to ${base} (base of ${coding})`);
+    if (typeof eol === "number") base = ember.codingSystemChangeEolConversion(base, eol);
+    setDefaultCodingSystems(base);
+    if (base !== ember.variable("default-file-name-coding-system")) {
+      ember.message(
+        "The default value of `file-name-coding-system' was not changed because the specified coding system is not suitable for file names.",
+      );
+    }
+  },
+});
 
 ember.defineCommand({
   name: "revert-buffer-with-coding-system",

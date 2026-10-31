@@ -1,0 +1,114 @@
+[
+  {
+    "name": "describe-utf-8",
+    "text": "x",
+    "keys": "C-h C C-x o",
+    "answers": [
+      "utf-8"
+    ]
+  },
+  {
+    "name": "describe-utf-8-dos",
+    "text": "x",
+    "keys": "C-h C C-x o",
+    "answers": [
+      "utf-8-dos"
+    ]
+  },
+  {
+    "name": "describe-latin-1",
+    "text": "x",
+    "keys": "C-h C C-x o",
+    "answers": [
+      "latin-1"
+    ]
+  },
+  {
+    "name": "describe-iso-latin-1-mac",
+    "text": "x",
+    "keys": "C-h C C-x o",
+    "answers": [
+      "iso-latin-1-mac"
+    ]
+  },
+  {
+    "name": "describe-shift_jis",
+    "text": "x",
+    "keys": "C-h C C-x o",
+    "answers": [
+      "shift_jis"
+    ]
+  },
+  {
+    "name": "describe-iso-2022-jp",
+    "text": "x",
+    "keys": "C-h C C-x o",
+    "answers": [
+      "iso-2022-jp"
+    ]
+  },
+  {
+    "name": "describe-undecided",
+    "text": "x",
+    "keys": "C-h C C-x o",
+    "answers": [
+      "undecided"
+    ]
+  },
+  {
+    "name": "describe-no-conversion",
+    "text": "x",
+    "keys": "C-h C C-x o",
+    "answers": [
+      "no-conversion"
+    ]
+  },
+  {
+    "name": "describe-raw-text-unix",
+    "text": "x",
+    "keys": "C-h C C-x o",
+    "answers": [
+      "raw-text-unix"
+    ]
+  },
+  {
+    "name": "describe-cp1252",
+    "text": "x",
+    "keys": "C-h C C-x o",
+    "answers": [
+      "cp1252"
+    ]
+  },
+  {
+    "name": "describe-utf-16-le",
+    "text": "x",
+    "keys": "C-h C C-x o",
+    "answers": [
+      "utf-16-le"
+    ]
+  },
+  {
+    "name": "describe-chinese-gb18030",
+    "text": "x",
+    "keys": "C-h C C-x o",
+    "answers": [
+      "chinese-gb18030"
+    ]
+  },
+  {
+    "name": "describe-korean-iso-8bit",
+    "text": "x",
+    "keys": "C-h C C-x o",
+    "answers": [
+      "korean-iso-8bit"
+    ]
+  },
+  {
+    "name": "describe-current-coding-system",
+    "text": "x",
+    "keys": "C-h C C-x o",
+    "answers": [
+      ""
+    ]
+  }
+]

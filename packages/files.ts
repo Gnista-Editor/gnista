@@ -632,9 +632,23 @@ ember.defineCommand({
   run: (file: string) => {
     const old = ember.bufferName();
     const replace = () => {
+      // The old buffer gives up its name and file first, so the same file
+      // is read afresh, as files.el renames it " **lose**".
+      const oldFile = ember.bufferFileName();
       ember.setBufferModified(false);
-      ember.call("find-file", file);
-      if (ember.bufferName() !== old) ember.call("kill-buffer", old);
+      ember.setVisitedFileName(null);
+      const lose = ember.generateNewBufferName(" **lose**");
+      ember.call("rename-buffer", lose);
+      try {
+        ember.call("find-file", file);
+      } finally {
+        if (ember.bufferName() === lose) {
+          // Visiting failed: the old buffer is as it was.
+          ember.call("rename-buffer", old);
+          if (oldFile !== undefined) ember.setVisitedFileName(oldFile, { alongWithFile: true });
+        }
+      }
+      if (ember.bufferName() !== lose) ember.call("kill-buffer", lose);
     };
     if (ember.bufferModified() && ember.bufferFileName() !== undefined) {
       if (!ember.calledInteractively()) throw new Error(`Buffer ${old} modified`);

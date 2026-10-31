@@ -16,6 +16,22 @@ declare global {
        */
       "abort-recursive-edit": [];
       /**
+       * Make the next kill join onto the last one on the kill ring, as consecutive kills do.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "append-next-kill": [];
+      /**
+       * Insert the region's text into another buffer at its point, which moves after it.
+       *
+       * @param buffer buffer name
+       * @param start region start
+       * @param end region end
+       *
+       * Defined in packages/simple.ts.
+       */
+      "append-to-buffer": [buffer: string, start: number, end: number];
+      /**
        * Add the region to the end of a file.
        *
        * @param start region start
@@ -25,6 +41,16 @@ declare global {
        * Defined in packages/files.ts.
        */
       "append-to-file": [start: number, end: number, file: string];
+      /**
+       * Add the region's text to the end of the text in a register; with a prefix argument, delete it too.
+       *
+       * @param start region start
+       * @param end region end
+       * @param del raw prefix argument
+       *
+       * Defined in packages/register.ts.
+       */
+      "append-to-register": [start: number, end: number, del?: PrefixArg];
       /**
        * Run a shell command in the background, its output going into *Async Shell Command* as it comes.
        *
@@ -60,6 +86,12 @@ declare global {
        */
       "auto-save-mode": [];
       /**
+       * Move point to the first character on the line that is not a space or tab.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "back-to-indentation": [];
+      /**
        * Move point backward a character, or as many as the prefix argument says.
        *
        * A negative argument moves forward.
@@ -67,6 +99,22 @@ declare global {
        * @param n prefix count
        */
       "backward-char": [n?: number];
+      /**
+       * Kill from point back to the start of the paragraph; with a prefix argument, back to the start of that many.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/paragraphs.ts.
+       */
+      "backward-kill-paragraph": [arg?: number];
+      /**
+       * Kill from point back to the start of the sentence; with a prefix argument, back to the start of that many.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/paragraphs.ts.
+       */
+      "backward-kill-sentence": [arg?: number];
       /**
        * Kill the balanced expression before point. With a prefix argument, that many.
        *
@@ -88,6 +136,14 @@ declare global {
        */
       "backward-list": [];
       /**
+       * Move to the start of this page, just after the form feed before; with a prefix argument, that many pages back.
+       *
+       * @param count prefix count
+       *
+       * Defined in packages/page.ts.
+       */
+      "backward-page": [count?: number];
+      /**
        * Move to the start of this paragraph, or the one before if between them. With a prefix argument, that many.
        *
        * @param arg prefix count
@@ -96,11 +152,27 @@ declare global {
        */
       "backward-paragraph": [arg?: number];
       /**
+       * Move to the start of this sentence, or the one before if at its start; with a prefix argument, that many.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/paragraphs.ts.
+       */
+      "backward-sentence": [arg?: number];
+      /**
        * Move back over a balanced expression. With a prefix argument, that many; forward if negative.
        *
        * Defined in packages/lisp.ts.
        */
       "backward-sexp": [];
+      /**
+       * Move back a line, or as many as the prefix argument says, to its first character that is not a space or tab.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/simple.ts.
+       */
+      "backward-to-indentation": [arg?: number];
       /**
        * Move back out of a list, to its open paren, or out of a string. With a prefix argument, that many levels.
        *
@@ -175,11 +247,38 @@ declare global {
        */
       "capitalize-word": [n?: number];
       /**
+       * Center the line between the left margin and fill-column; with a prefix argument, that many lines, back if negative.
+       *
+       * @param nlines raw prefix argument
+       *
+       * Defined in packages/text-mode.ts.
+       */
+      "center-line": [nlines?: PrefixArg];
+      /**
+       * Center each line of the region that is not blank, as center-line does.
+       *
+       * @param from region start
+       * @param to region end
+       *
+       * Defined in packages/text-mode.ts.
+       */
+      "center-region": [from: number, to: number];
+      /**
        * Check the buffer for unbalanced parens and quotes, leaving point at the first one unbalanced.
        *
        * Defined in packages/lisp.ts.
        */
       "check-parens": [];
+      /**
+       * Replace the text in the rectangle between point and the mark with spaces; with a prefix argument, short lines are padded too.
+       *
+       * @param start region start
+       * @param end region end
+       * @param fill raw prefix argument
+       *
+       * Defined in packages/rect.ts.
+       */
+      "clear-rectangle": [start: number, end: number, fill?: PrefixArg];
       /**
        * Make an indirect buffer of the current buffer and show it in another window: the same text, with a point, narrowing and modes of its own.
        *
@@ -269,6 +368,22 @@ declare global {
        */
       "comint-next-input": [arg?: number];
       /**
+       * Put the next input matching a regexp after the prompt; with a prefix argument, the Nth next, or the Nth last if negative.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-next-matching-input": [n?: number];
+      /**
+       * Put the next input that starts with what is typed before point after the prompt; again, the one after.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-next-matching-input-from-input": [n?: number];
+      /**
        * Go to the input after the next prompt, or as many on as the prefix argument says.
        *
        * @param n prefix count
@@ -284,6 +399,22 @@ declare global {
        * Defined in packages/comint.ts.
        */
       "comint-previous-input": [arg?: number];
+      /**
+       * Put the last input matching a regexp after the prompt; with a prefix argument, the Nth last, or the Nth next if negative.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-previous-matching-input": [n?: number];
+      /**
+       * Put the last input that starts with what is typed before point after the prompt; again, the one before.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-previous-matching-input-from-input": [n?: number];
       /**
        * Go to the input after the previous prompt, or as many back as the prefix argument says.
        *
@@ -310,6 +441,12 @@ declare global {
        * Defined in packages/comint.ts.
        */
       "comint-send-input": [];
+      /**
+       * Read a line without showing it, as a password, and send it to the buffer's process.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-send-invisible": [];
       /**
        * Go to the end of the buffer, showing as much output as fits.
        *
@@ -439,11 +576,112 @@ declare global {
        */
       "copy-file": [file: string, newname: string];
       /**
+       * Copy the lines after point, or in the region, that have a match for a regexp to the kill ring, together as one kill.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "copy-matching-lines": [];
+      /**
+       * Copy the text in the rectangle between point and the mark, to be yanked with C-x r y.
+       *
+       * @param start region start
+       * @param end region end
+       *
+       * Defined in packages/rect.ts.
+       */
+      "copy-rectangle-as-kill": [start: number, end: number];
+      /**
+       * Copy the rectangle between point and the mark into a register, to insert with C-x r i; with a prefix argument, delete it too.
+       *
+       * @param start region start
+       * @param end region end
+       * @param del raw prefix argument
+       *
+       * Defined in packages/register.ts.
+       */
+      "copy-rectangle-to-register": [start: number, end: number, del?: PrefixArg];
+      /**
+       * Put the region's text on the kill ring without deleting it, as if it had been killed.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "copy-region-as-kill": [];
+      /**
+       * Replace another buffer's text with the region's.
+       *
+       * @param buffer buffer name
+       * @param start region start
+       * @param end region end
+       *
+       * Defined in packages/simple.ts.
+       */
+      "copy-to-buffer": [buffer: string, start: number, end: number];
+      /**
+       * Copy the region's text into a register, to insert with C-x r i; with a prefix argument, delete it too.
+       *
+       * @param start region start
+       * @param end region end
+       * @param del raw prefix argument
+       *
+       * Defined in packages/register.ts.
+       */
+      "copy-to-register": [start: number, end: number, del?: PrefixArg];
+      /**
+       * Say how many lines the page has, and how many are before and after point.
+       *
+       * Defined in packages/page.ts.
+       */
+      "count-lines-page": [];
+      /**
+       * Say how many lines, sentences, words and characters the buffer has, or the region if it is active; with a prefix argument, the whole buffer's too.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/simple.ts.
+       */
+      "count-words": [arg?: PrefixArg];
+      /**
+       * Say how many lines, sentences, words and characters the region has, whether or not it is active; with a prefix argument, the buffer's.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/simple.ts.
+       */
+      "count-words-region": [arg?: PrefixArg];
+      /**
+       * Change the space around point, a different way each time in a row, as cycle-spacing-actions says: first one space, then none, then as it was.
+       *
+       * The prefix argument is the number of spaces, and when negative, newlines are deleted too.
+       *
+       * @param n raw prefix argument
+       *
+       * Defined in packages/simple.ts.
+       */
+      "cycle-spacing": [n?: PrefixArg];
+      /**
+       * Expand the word before point to the nearest word before it that starts with it, else one after it, else one in another buffer. Again, try the next one.
+       *
+       * A positive prefix argument takes the Nth distinct word back; a negative one looks forward. After an expansion and a space, M-/ copies the word that followed the expansion.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/dabbrev.ts.
+       */
+      "dabbrev-expand": [arg?: PrefixArg];
+      /**
        * Break the line and indent the new one, continuing a comment point is in, as comment-indent-new-line does.
        *
        * Defined in packages/newcomment.ts.
        */
       "default-indent-new-line": [];
+      /**
+       * Delete the spaces, tabs and newlines around point; with a prefix argument, only those before it.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/simple.ts.
+       */
+      "delete-all-space": [arg?: PrefixArg];
       /**
        * Delete the character before point, or as many as the prefix argument says.
        *
@@ -452,6 +690,12 @@ declare global {
        * @param n prefix count
        */
       "delete-backward-char": [n?: number];
+      /**
+       * On a blank line, delete the blank lines around it but one; on a lone blank line, delete it; else delete the blank lines after this one.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "delete-blank-lines": [];
       /**
        * Delete the character after point, or as many as the prefix argument says.
        *
@@ -470,6 +714,18 @@ declare global {
        * Defined in packages/files.ts.
        */
       "delete-directory": [dir: string];
+      /**
+       * Delete each line in the region that is the same as one before it.
+       *
+       * With C-u, keep the last of each instead; with C-u C-u, only lines next to each other count; with C-u C-u C-u, repeated blank lines stay.
+       *
+       * @param beg region start
+       * @param end region end
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/sort.ts.
+       */
+      "delete-duplicate-lines": [beg: number, end: number, arg?: PrefixArg];
       /**
        * Delete a file. With delete-by-moving-to-trash, on in Ember, it goes to the trash, from where it can be put back.
        *
@@ -495,6 +751,30 @@ declare global {
        */
       "delete-frame": [];
       /**
+       * Delete the spaces and tabs around point; with a prefix argument, only those before it.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/simple.ts.
+       */
+      "delete-horizontal-space": [arg?: PrefixArg];
+      /**
+       * Join this line to the one before it, leaving one space or none between them; with a prefix argument, to the one after.
+       *
+       * A fill prefix at the start of the joined line is deleted too.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/simple.ts.
+       */
+      "delete-indentation": [arg?: PrefixArg];
+      /**
+       * Delete all the input in the minibuffer, leaving the prompt.
+       *
+       * Defined in packages/subr.ts.
+       */
+      "delete-minibuffer-contents": [];
+      /**
        * Delete every frame but the selected one.
        *
        * Defined in packages/window.ts.
@@ -507,6 +787,16 @@ declare global {
        */
       "delete-other-windows": [];
       /**
+       * Delete the text in the rectangle between point and the mark; with a prefix argument, lines too short are padded first.
+       *
+       * @param start region start
+       * @param end region end
+       * @param fill raw prefix argument
+       *
+       * Defined in packages/rect.ts.
+       */
+      "delete-rectangle": [start: number, end: number, fill?: PrefixArg];
+      /**
        * Typing replaces the selection, rather than inserting next to it.
        *
        * While the region is active, typing, RET and C-y first delete it. DEL and <delete> delete it whether or not this mode is on; see delete-active-region.
@@ -516,6 +806,12 @@ declare global {
        * Defined in packages/delsel.ts.
        */
       "delete-selection-mode": [];
+      /**
+       * Delete the spaces and tabs at the ends of lines, in the region if it is active, else in the whole buffer, where empty lines at the end go too, as delete-trailing-lines says. Form feeds stay.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "delete-trailing-whitespace": [];
       /**
        * Delete the selected window, giving its space to its neighbour.
        *
@@ -529,11 +825,25 @@ declare global {
        */
       "describe-bindings": [];
       /**
+       * Show what a coding system is: its mnemonic, aliases, documentation, type, line ends and the charsets it can write.
+       *
+       * With no name, show the coding systems in use now, as describe-current-coding-system.
+       *
+       * Defined in packages/mule-diag.ts.
+       */
+      "describe-coding-system": [];
+      /**
        * Show the documentation of a command.
        *
        * @param command command name
        */
       "describe-command": [command: string];
+      /**
+       * Show the coding systems in use now: for saving the buffer, for new files, for the keyboard and terminal, and for processes.
+       *
+       * Defined in packages/mule-diag.ts.
+       */
+      "describe-current-coding-system": [];
       /**
        * Show a face's documentation and attributes, and what it looks like on dark and light backgrounds.
        *
@@ -1135,6 +1445,18 @@ declare global {
        */
       "first-error": [];
       /**
+       * Leave one space or none around point, as the text on either side calls for.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "fixup-whitespace": [];
+      /**
+       * Delete the lines after point, or in the region, that have a match for a regexp.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "flush-lines": [];
+      /**
        * Fontify the whole buffer now, rather than as it comes into view.
        */
       "font-lock-ensure": [];
@@ -1157,6 +1479,14 @@ declare global {
        */
       "forward-list": [];
       /**
+       * Move to the end of this page, past the next form feed; with a prefix argument, that many pages, back if negative.
+       *
+       * @param count prefix count
+       *
+       * Defined in packages/page.ts.
+       */
+      "forward-page": [count?: number];
+      /**
        * Move to the end of this paragraph, or the next if between them. With a prefix argument, that many; back if negative.
        *
        * @param arg prefix count
@@ -1165,11 +1495,27 @@ declare global {
        */
       "forward-paragraph": [arg?: number];
       /**
+       * Move to the end of this sentence, or the next if between them; with a prefix argument, that many, back if negative.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/paragraphs.ts.
+       */
+      "forward-sentence": [arg?: number];
+      /**
        * Move forward over a balanced expression: a word or symbol, a string, or a list in parens. With a prefix argument, that many; back if negative.
        *
        * Defined in packages/lisp.ts.
        */
       "forward-sexp": [];
+      /**
+       * Move forward a line, or as many as the prefix argument says, to its first character that is not a space or tab.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/simple.ts.
+       */
+      "forward-to-indentation": [arg?: number];
       /**
        * Move point forward to the end of a word, or as many words as the prefix argument says.
        *
@@ -1201,6 +1547,24 @@ declare global {
        */
       "global-display-line-numbers-mode": [];
       /**
+       * Go to a position in the buffer, counting characters from 1: the prefix argument's, else one asked for.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/simple.ts.
+       */
+      "goto-char": [arg?: PrefixArg];
+      /**
+       * Go to a line, counting from 1 at the start of the buffer: the prefix argument's, else one asked for, the number at point by default.
+       *
+       * The mark is pushed first, unless the region is active. In a narrowed buffer, a line outside it widens the buffer, as widen-automatically says.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/simple.ts.
+       */
+      "goto-line": [arg?: PrefixArg];
+      /**
        * Run grep, with the arguments you give, in the background, showing its hits in *grep*. M-g n (next-error) then visits each in turn.
        *
        * @param command text
@@ -1220,6 +1584,12 @@ declare global {
        * Defined in packages/help.ts.
        */
       "help-mode": [];
+      /**
+       * Say how many matches for a regexp there are after point, or in the region.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "how-many": [];
       /**
        * Step back through the completions icomplete shows: the last becomes the first, which C-j takes.
        *
@@ -1323,6 +1693,14 @@ declare global {
        */
       "imenu": [];
       /**
+       * Add the prefix argument, 1 by default, to the number in a register; to one with text, or none, add the region's text.
+       *
+       * @param prefix raw prefix argument
+       *
+       * Defined in packages/register.ts.
+       */
+      "increment-register": [prefix?: PrefixArg];
+      /**
        * Indent the current line as the major mode says, through indent-line-function.
        *
        * Defined in packages/indent.ts.
@@ -1383,6 +1761,14 @@ declare global {
        */
       "insert": [text: string];
       /**
+       * Insert another buffer's text after point, leaving the mark after it.
+       *
+       * @param buffer buffer name
+       *
+       * Defined in packages/simple.ts.
+       */
+      "insert-buffer": [buffer: string];
+      /**
        * Insert a file's text after point, leaving point before it and the mark after it.
        *
        * @param file file name
@@ -1396,6 +1782,14 @@ declare global {
        * Defined in packages/lisp.ts.
        */
       "insert-parentheses": [];
+      /**
+       * Insert what a register holds, leaving point before it and the mark after; with a prefix argument, point after it.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/register.ts.
+       */
+      "insert-register": [arg?: PrefixArg];
       /**
        * While the search fails, remove what does not match; otherwise end it and go back to where it started.
        *
@@ -1507,6 +1901,26 @@ declare global {
        */
       "json-ts-mode": [];
       /**
+       * Go to the position or restore the window configuration stored in a register.
+       *
+       * Defined in packages/register.ts.
+       */
+      "jump-to-register": [];
+      /**
+       * Leave one space where there are spaces and tabs around point; with a prefix argument, that many, and newlines go too if it is negative.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/simple.ts.
+       */
+      "just-one-space": [n?: number];
+      /**
+       * Delete the lines after point, or in the region, that have no match for a regexp. A match across lines keeps them all.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "keep-lines": [];
+      /**
        * Cancel the current prompt or key sequence, and deactivate the region.
        */
       "keyboard-quit": [];
@@ -1537,6 +1951,30 @@ declare global {
        */
       "kill-line": [];
       /**
+       * Kill the lines after point, or in the region, that have a match for a regexp, together as one kill.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "kill-matching-lines": [];
+      /**
+       * Kill from point to the end of the paragraph; with a prefix argument, to the end of that many.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/paragraphs.ts.
+       */
+      "kill-paragraph": [arg?: number];
+      /**
+       * Kill the text in the rectangle between point and the mark, to be yanked with C-x r y; with a prefix argument, short lines are padded.
+       *
+       * @param start region start
+       * @param end region end
+       * @param fill raw prefix argument
+       *
+       * Defined in packages/rect.ts.
+       */
+      "kill-rectangle": [start: number, end: number, fill?: PrefixArg];
+      /**
        * Kill the text between point and the mark.
        */
       "kill-region": [];
@@ -1544,6 +1982,14 @@ declare global {
        * Copy the text between point and the mark to the kill ring.
        */
       "kill-ring-save": [];
+      /**
+       * Kill from point to the end of the sentence; with a prefix argument, to the end of that many, back if negative.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/paragraphs.ts.
+       */
+      "kill-sentence": [arg?: number];
       /**
        * Kill the balanced expression after point. With a prefix argument, that many; before point if negative.
        *
@@ -1558,6 +2004,14 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "kill-visual-line": [];
+      /**
+       * Kill the line point is on, its newline too; with a prefix argument, that many lines, back with the newline before them if negative, and with 0 the line without its newline.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/simple.ts.
+       */
+      "kill-whole-line": [arg?: number];
       /**
        * Kill forward to the end of a word, or as many words as the prefix argument says.
        *
@@ -1639,6 +2093,40 @@ declare global {
        */
       "make-frame-command": [];
       /**
+       * Put point at the start of this defun, the comments above it included, and the mark at its end; with a prefix argument, that many defuns. Again, or with the region active, mark the next ones too.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "mark-defun": [arg?: number];
+      /**
+       * Put the mark at the end of the sentence; again, at the end of the next.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/paragraphs.ts.
+       */
+      "mark-end-of-sentence": [arg?: number];
+      /**
+       * Put point at the start of this page and the mark at its end; with a prefix argument, of the page that many after.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/page.ts.
+       */
+      "mark-page": [arg?: PrefixArg];
+      /**
+       * Put point at the start of this paragraph and the mark at its end; with a prefix argument, at the end of that many.
+       *
+       * Again, or with the region active, the next paragraphs are marked too.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/paragraphs.ts.
+       */
+      "mark-paragraph": [arg?: number];
+      /**
        * Set the mark after the next balanced expression, activating the region. Again, or with the region active, extend it by another; with a prefix argument, by that many.
        *
        * Defined in packages/lisp.ts.
@@ -1648,6 +2136,16 @@ declare global {
        * Put point at the beginning of the buffer and the mark at the end.
        */
       "mark-whole-buffer": [];
+      /**
+       * Set the mark at the end of the next word; with a prefix argument, that many words on.
+       *
+       * Again, or with the region active, the mark moves a word further, away from point.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/simple.ts.
+       */
+      "mark-word": [arg?: PrefixArg];
       /**
        * Complete the minibuffer input as far as it is unambiguous.
        *
@@ -1739,6 +2237,20 @@ declare global {
        */
       "mwheel-scroll": [];
       /**
+       * Narrow to the defun around point, or the one after it, and the comments before it if narrow-to-defun-include-comments says so.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "narrow-to-defun": [];
+      /**
+       * Narrow to this page; with a prefix argument, to the page that many after, or before if negative.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/page.ts.
+       */
+      "narrow-to-page": [arg?: PrefixArg];
+      /**
        * Restrict editing in this buffer to the region: the rest is hidden and out of reach until widen (C-x n w).
        */
       "narrow-to-region": [];
@@ -1809,11 +2321,83 @@ declare global {
        */
       "not-modified": [];
       /**
+       * Store a number in a register: the prefix argument, or else the number after point, which point moves past.
+       *
+       * @param number raw prefix argument
+       *
+       * Defined in packages/register.ts.
+       */
+      "number-to-register": [number?: PrefixArg];
+      /**
+       * List the lines of the buffer, or of the region if it is active, that match a regexp, in *Occur*.
+       *
+       * There RET goes to a line's match, C-o shows it, n and p go through them, and M-g n does from anywhere.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "occur": [];
+      /**
+       * The mode of *Occur*: the lines matching a regexp. RET goes to one, o in another window, C-o shows it, n and p and M-n and M-p move, g lists them again.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "occur-mode": [];
+      /**
+       * Show the occurrence on this line in another window, staying in *Occur*.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "occur-mode-display-occurrence": [];
+      /**
+       * Go to the occurrence on this line.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "occur-mode-goto-occurrence": [];
+      /**
+       * Go to the occurrence on this line, in another window.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "occur-mode-goto-occurrence-other-window": [];
+      /**
+       * Move to the next occurrence in *Occur*; with a prefix argument, that many.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/replace.ts.
+       */
+      "occur-next": [n?: number];
+      /**
+       * Move to the occurrence before in *Occur*; with a prefix argument, that many back.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/replace.ts.
+       */
+      "occur-prev": [n?: number];
+      /**
+       * Make *Occur* again, for the same regexp in the same buffer.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "occur-revert-buffer": [];
+      /**
        * Insert a newline after point, leaving point where it is; with a prefix argument, that many.
        *
        * Defined in packages/simple.ts.
        */
       "open-line": [];
+      /**
+       * Insert blank space filling the rectangle between point and the mark, pushing its text right; with a prefix argument, short lines too.
+       *
+       * @param start region start
+       * @param end region end
+       * @param fill raw prefix argument
+       *
+       * Defined in packages/rect.ts.
+       */
+      "open-rectangle": [start: number, end: number, fill?: PrefixArg];
       /**
        * Capture with the template of the key given, as org-capture does once it has asked.
        *
@@ -2945,6 +3529,12 @@ declare global {
        */
       "overwrite-mode": [];
       /**
+       * Store point's position in a register, to go back to with C-x r j.
+       *
+       * Defined in packages/register.ts.
+       */
+      "point-to-register": [];
+      /**
        * Show a buffer in some window, as display-buffer does, and select that window.
        *
        * @param buffer buffer name
@@ -2952,6 +3542,34 @@ declare global {
        * Defined in packages/window.ts.
        */
       "pop-to-buffer": [buffer: string];
+      /**
+       * Make a coding system the one files are read in when their bytes fit it, and the default for new files and processes.
+       *
+       * Its line ends, if named, become the default too.
+       *
+       * Defined in packages/mule.ts.
+       */
+      "prefer-coding-system": [];
+      /**
+       * Insert the region's text into another buffer at its point, which stays before it.
+       *
+       * @param buffer buffer name
+       * @param start region start
+       * @param end region end
+       *
+       * Defined in packages/simple.ts.
+       */
+      "prepend-to-buffer": [buffer: string, start: number, end: number];
+      /**
+       * Add the region's text to the start of the text in a register; with a prefix argument, delete it too.
+       *
+       * @param start region start
+       * @param end region end
+       * @param del raw prefix argument
+       *
+       * Defined in packages/register.ts.
+       */
+      "prepend-to-register": [start: number, end: number, del?: PrefixArg];
       /**
        * Show in the selected window the buffer it showed before this one, as switch-to-prev-buffer.
        *
@@ -3187,6 +3805,16 @@ declare global {
        */
       "quit-window": [kill?: PrefixArg];
       /**
+       * Insert the next character typed, whatever it is, such as a control character; with a prefix argument, that many.
+       *
+       * Octal digits, as read-quoted-char-radix says, give a character's code instead: the first other key ends them, and is typed itself unless it is RET.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/simple.ts.
+       */
+      "quoted-insert": [arg?: number];
+      /**
        * Search backward from point for a regular expression, leaving point at the start of the match.
        *
        * A prefix argument finds that many matches, and a negative one searches the other way. Case is ignored if case-fold-search is on. Regular expressions use Emacs's syntax.
@@ -3213,11 +3841,33 @@ declare global {
        */
       "read-only-mode": [];
       /**
+       * Hide the password being read in the minibuffer: C-u clears it and TAB shows or hides it.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/subr.ts.
+       */
+      "read-passwd-mode": [];
+      /**
+       * Show the password being read as typed, or hide it again.
+       *
+       * Defined in packages/subr.ts.
+       */
+      "read-passwd-toggle-visibility": [];
+      /**
        * Scroll so the line with point is in the middle of the window.
        *
        * With a numeric prefix argument N, put it on line N of the window instead, counting from the bottom if N is negative.
        */
       "recenter": [];
+      /**
+       * Scroll so the line with point is in the middle of the window; again, at the top; again, at the bottom, as recenter-positions says. With a prefix argument, put it on that line of the window, as recenter does.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/window.ts.
+       */
+      "recenter-top-bottom": [arg?: PrefixArg];
       /**
        * Visit one of the files visited or saved recently, as recentf-open does.
        *
@@ -3283,6 +3933,18 @@ declare global {
        */
       "recover-this-file": [];
       /**
+       * Insert numbers down the left edge of the rectangle between point and the mark, from 1.
+       *
+       * With a prefix argument, ask for the first number and the format, %d by default, padded to the widest.
+       *
+       * @param start region start
+       * @param end region end
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/rect.ts.
+       */
+      "rectangle-number-lines": [start: number, end: number, arg?: PrefixArg];
+      /**
        * Edit recursively: go on with commands, with [ ] around the modes in the mode line, until C-M-c goes back to what entered the edit or C-] quits it.
        */
       "recursive-edit": [];
@@ -3344,6 +4006,15 @@ declare global {
        * Defined in packages/replace.ts.
        */
       "replace-string": [from: string, to: string];
+      /**
+       * Reverse the order of the whole lines in the region.
+       *
+       * @param beg region start
+       * @param end region end
+       *
+       * Defined in packages/sort.ts.
+       */
+      "reverse-region": [beg: number, end: number];
       /**
        * Replace the buffer's text with its file's, after asking.
        *
@@ -3581,6 +4252,24 @@ declare global {
        */
       "shrink-window-if-larger-than-buffer": [];
       /**
+       * Sort the lines in the region alphabetically; with a prefix argument, the other way round. sort-fold-case says whether case matters.
+       *
+       * @param beg region start
+       * @param end region end
+       * @param reverse raw prefix argument
+       *
+       * Defined in packages/sort.ts.
+       */
+      "sort-lines": [beg: number, end: number, reverse?: PrefixArg];
+      /**
+       * Split the line at point, moving the rest of it down to the column it was at. A fill prefix the line starts with goes on the new line too, unless there is a prefix argument.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/simple.ts.
+       */
+      "split-line": [arg?: PrefixArg];
+      /**
        * Split the selected window into two, one above the other.
        *
        * The selected window stays on top and the new one below shows the same buffer at the same place. A prefix argument gives the selected window that many lines, or the new one if it is negative.
@@ -3596,6 +4285,15 @@ declare global {
        * Defined in packages/window.ts.
        */
       "split-window-right": [];
+      /**
+       * Replace the text in the rectangle between point and the mark with a string on each line.
+       *
+       * @param start region start
+       * @param end region end
+       *
+       * Defined in packages/rect.ts.
+       */
+      "string-rectangle": [start: number, end: number];
       /**
        * Show a buffer in the window, creating it if it does not exist.
        *
@@ -3626,6 +4324,14 @@ declare global {
        * Defined in packages/indent.ts.
        */
       "tab-to-tab-stop": [];
+      /**
+       * Turn runs of spaces in the region into tabs where that keeps the columns, or in the whole buffer with a prefix argument.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/simple.ts.
+       */
+      "tabify": [arg?: PrefixArg];
       /**
        * The major mode for writing text meant for people to read.
        *
@@ -3707,6 +4413,26 @@ declare global {
        */
       "transpose-lines": [];
       /**
+       * Exchange this paragraph with the one before; with a prefix argument, move it past that many.
+       *
+       * Defined in packages/paragraphs.ts.
+       */
+      "transpose-paragraphs": [];
+      /**
+       * Exchange this sentence with the one before; with a prefix argument, move it past that many.
+       *
+       * Defined in packages/paragraphs.ts.
+       */
+      "transpose-sentences": [];
+      /**
+       * Exchange the balanced expressions around point, leaving point after both.
+       *
+       * With a prefix argument, move the one before point past that many; with 0, exchange those at point and the mark.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "transpose-sexps": [];
+      /**
        * Exchange the words around point, leaving point after both.
        *
        * With a prefix argument, move the word before point past that many words; with 0, exchange the words at point and the mark.
@@ -3775,6 +4501,14 @@ declare global {
        */
       "universal-coding-system-argument": [];
       /**
+       * Turn the tabs in the region into spaces, keeping the columns, or in the whole buffer with a prefix argument.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/simple.ts.
+       */
+      "untabify": [arg?: PrefixArg];
+      /**
        * Move forward out of a list, past its close paren, or out of a string. With a prefix argument, that many levels.
        *
        * Defined in packages/lisp.ts.
@@ -3825,6 +4559,12 @@ declare global {
        */
       "view-lossage": [];
       /**
+       * Say what a register holds.
+       *
+       * Defined in packages/register.ts.
+       */
+      "view-register": [];
+      /**
        * Continue long lines at word boundaries, and make C-a, C-e and C-k work on screen lines.
        *
        * It turns word-wrap on in the buffer and turns truncate-lines off.
@@ -3835,9 +4575,33 @@ declare global {
        */
       "visual-line-mode": [];
       /**
+       * Say what character is after point, in decimal, octal and hex, and how the file writes it if it is not ASCII; and where point is, as a position, a percentage of the buffer, and a column.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "what-cursor-position": [];
+      /**
+       * Say which line point is on, counting from the start of the buffer, and of the narrowing too if the buffer is narrowed.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "what-line": [];
+      /**
+       * Say which page point is on, and which line of it.
+       *
+       * Defined in packages/page.ts.
+       */
+      "what-page": [];
+      /**
        * Remove the restriction on this buffer, making all of it accessible again.
        */
       "widen": [];
+      /**
+       * Store the frame's windows and what they show in a register, to restore with C-x r j.
+       *
+       * Defined in packages/register.ts.
+       */
+      "window-configuration-to-register": [];
       /**
        * Write the current buffer to a file and visit that file instead.
        *
@@ -3922,6 +4686,32 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "yank-pop": [];
+      /**
+       * Insert the rectangle killed last, its top left corner at point.
+       *
+       * Defined in packages/rect.ts.
+       */
+      "yank-rectangle": [];
+      /**
+       * Kill up to and including the next occurrence of a character; with a prefix argument, the Nth, back if negative.
+       *
+       * An upper-case character is searched for exactly; others fold case as case-fold-search says.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/simple.ts.
+       */
+      "zap-to-char": [arg?: number];
+      /**
+       * Kill up to, but not including, the next occurrence of a character; with a prefix argument, the Nth, back if negative.
+       *
+       * An upper-case character is searched for exactly; others fold case as case-fold-search says.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/simple.ts.
+       */
+      "zap-up-to-char": [arg?: number];
     }
 
     /** Every variable, with its documentation. */
@@ -4107,11 +4897,35 @@ declare global {
        */
       "comint-eol-on-send": Value;
       /**
+       * A regexp for entries of the history file to leave out.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-input-history-ignore": Value;
+      /**
        * Whether an input the same as the last one is left out of the history.
        *
        * Defined in packages/comint.ts.
        */
       "comint-input-ignoredups": Value;
+      /**
+       * The file comint-read-input-ring reads the history from and comint-write-input-ring writes it to, or nil for none.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-input-ring-file-name": Value;
+      /**
+       * A regexp for what to skip at the start of each entry of the history file, such as zsh's time stamps.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-input-ring-file-prefix": Value;
+      /**
+       * The regexp between inputs in the history file.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-input-ring-separator": Value;
       /**
        * How many inputs a comint buffer keeps for M-p and M-n.
        *
@@ -4122,6 +4936,18 @@ declare global {
        * Keymap comint-mode-map.
        */
       "comint-mode-map": Value;
+      /**
+       * Where C-c M-r and C-c M-s leave point: after-input where it was, end-of-line at the end.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-move-point-for-matching-input": Value;
+      /**
+       * An Emacs regexp matching a program's prompts for a password, which comint then reads without showing it.
+       *
+       * Defined in packages/comint.ts.
+       */
+      "comint-password-prompt-regexp": Value;
       /**
        * Functions each piece of output goes through before it is inserted; each returns the text to insert.
        *
@@ -4319,9 +5145,81 @@ declare global {
        */
       "ctl-x-x-map": Value;
       /**
+       * What M-SPC does each time in a row: just-one-space, delete-all-space, delete-space-after, delete-space-before or restore.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "cycle-spacing-actions": Value;
+      /**
+       * The regexp for a character of an abbreviation, or nil for word and symbol characters.
+       *
+       * Defined in packages/dabbrev.ts.
+       */
+      "dabbrev-abbrev-char-regexp": Value;
+      /**
+       * Whether M-/ looks only before point.
+       *
+       * Defined in packages/dabbrev.ts.
+       */
+      "dabbrev-backward-only": Value;
+      /**
+       * Whether words differing only in case are different expansions: case-replace to follow it, or t or nil.
+       *
+       * Defined in packages/dabbrev.ts.
+       */
+      "dabbrev-case-distinction": Value;
+      /**
+       * Whether M-/ matches words of another case: case-fold-search to follow it, or t or nil.
+       *
+       * Defined in packages/dabbrev.ts.
+       */
+      "dabbrev-case-fold-search": Value;
+      /**
+       * Whether an expansion takes the case of the abbreviation: case-replace to follow it, or t or nil.
+       *
+       * Defined in packages/dabbrev.ts.
+       */
+      "dabbrev-case-replace": Value;
+      /**
+       * Whether M-/ then looks in all other buffers.
+       *
+       * Defined in packages/dabbrev.ts.
+       */
+      "dabbrev-check-all-buffers": Value;
+      /**
+       * Whether M-/ looks in other buffers of the same major mode once the current one has none.
+       *
+       * Defined in packages/dabbrev.ts.
+       */
+      "dabbrev-check-other-buffers": Value;
+      /**
+       * Whether runs of spaces and newlines in an expansion become one space.
+       *
+       * Defined in packages/dabbrev.ts.
+       */
+      "dabbrev-eliminate-newlines": Value;
+      /**
+       * Buffers M-/ never looks in.
+       *
+       * Defined in packages/dabbrev.ts.
+       */
+      "dabbrev-ignored-buffer-names": Value;
+      /**
+       * Whether an abbreviation with capitals matches only the same case.
+       *
+       * Defined in packages/dabbrev.ts.
+       */
+      "dabbrev-upcase-means-case-search": Value;
+      /**
        * Where the buffer looks up relative file names, as a directory name ending in /. Nil means the directory of its file, or else the directory Ember started in. Dired sets it to the directory it lists.
        */
       "default-directory": Value;
+      /**
+       * How file names are encoded: always UTF-8, as on macOS, since Ember keeps file names as Rust strings.
+       *
+       * Defined in packages/mule.ts.
+       */
+      "default-file-name-coding-system": Value;
       /**
        * How filling lines lines up: left, full (both edges), or none.
        *
@@ -4366,6 +5264,12 @@ declare global {
        * Keymap delete-selection-mode-map.
        */
       "delete-selection-mode-map": Value;
+      /**
+       * Whether delete-trailing-whitespace on the whole buffer deletes empty lines at its end too.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "delete-trailing-lines": Value;
       /**
        * The switches this Dired buffer lists with, which s changes.
        *
@@ -4689,6 +5593,12 @@ declare global {
        */
       "global-map": Value;
       /**
+       * Line numbers answered to goto-line, newest first.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "goto-line-history": Value;
+      /**
        * The command M-x grep offers to run.
        *
        * Defined in packages/compile.ts.
@@ -4831,6 +5741,10 @@ declare global {
        */
       "indent-tabs-mode": Value;
       /**
+       * Whether keys typed in this buffer are left out of recent-keys, as a password prompt's are.
+       */
+      "inhibit--record-char": Value;
+      /**
        * Whether motion commands and constrain-to-field ignore fields, the stretches of text with one `field` property.
        */
       "inhibit-field-text-motion": Value;
@@ -4850,6 +5764,10 @@ declare global {
        * Whether to ignore read-only buffers and text: t ignores both, and a list lets through text whose read-only property is one of its values. Bind it with letBind around code that writes into a read-only buffer.
        */
       "inhibit-read-only": Value;
+      /**
+       * Keymap input-decode-map.
+       */
+      "input-decode-map": Value;
       /**
        * Keymap isearch-mode-map.
        */
@@ -4875,6 +5793,10 @@ declare global {
        */
       "json-ts-mode-map": Value;
       /**
+       * Keymap key-translation-map.
+       */
+      "key-translation-map": Value;
+      /**
        * Whether killing read-only text only says it was copied to the kill ring, rather than signalling an error.
        */
       "kill-read-only-ok": Value;
@@ -4896,6 +5818,24 @@ declare global {
        * A string shown at the start of each line, before its text, unless the text there has a line-prefix property of its own. Org's indent mode uses it.
        */
       "line-prefix": Value;
+      /**
+       * The face of occur's line naming the buffer.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "list-matching-lines-buffer-name-face": Value;
+      /**
+       * The face occur shows matches in.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "list-matching-lines-face": Value;
+      /**
+       * The face of the line numbers occur shows.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "list-matching-lines-prefix-face": Value;
       /**
        * The current buffer's major mode, as the name of the command that turns it on.
        */
@@ -4965,6 +5905,12 @@ declare global {
        */
       "narrow-map": Value;
       /**
+       * Whether narrow-to-defun takes in the comments before the defun.
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "narrow-to-defun-include-comments": Value;
+      /**
        * The function, named with ember.defun, that visits the next message's place in this buffer, as next-error calls it, in this buffer: with a count, and whether to start over.
        *
        * Defined in packages/compile.ts.
@@ -4994,6 +5940,16 @@ declare global {
        * Defined in packages/fill.ts.
        */
       "normal-auto-fill-function": Value;
+      /**
+       * Functions run after occur makes *Occur*.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "occur-hook": Value;
+      /**
+       * Keymap occur-mode-map.
+       */
+      "occur-mode-map": Value;
       /**
        * Whether an open paren in column 0 starts a defun.
        *
@@ -5288,6 +6244,12 @@ declare global {
        */
       "overwrite-mode-map": Value;
       /**
+       * The regexp for the start of a page: a form feed at the start of a line.
+       *
+       * Defined in packages/page.ts.
+       */
+      "page-delimiter": Value;
+      /**
        * Whether M-( puts a space before and after the parens it inserts, where a word or other parens are next to them.
        *
        * Defined in packages/lisp.ts.
@@ -5362,9 +6324,49 @@ declare global {
        */
       "read-buffer-completion-ignore-case": Value;
       /**
+       * Characters read by zap-to-char and its kin, newest first.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "read-char-history": Value;
+      /**
        * Whether completing file names ignores the case of letters: on where the file system does, as on macOS and Windows.
        */
       "read-file-name-completion-ignore-case": Value;
+      /**
+       * The character read-passwd shows in place of each character of a password; * when nil.
+       *
+       * Defined in packages/subr.ts.
+       */
+      "read-hide-char": Value;
+      /**
+       * Whether the password being read is shown as read-hide-char rather than as typed.
+       *
+       * Defined in packages/subr.ts.
+       */
+      "read-passwd--hide-password": Value;
+      /**
+       * Whether Read-Passwd mode is on in this buffer. Use the command read-passwd-mode to change it.
+       *
+       * Defined in packages/subr.ts.
+       */
+      "read-passwd-mode": Value;
+      /**
+       * Keymap read-passwd-mode-map.
+       */
+      "read-passwd-mode-map": Value;
+      /**
+       * The radix C-q reads a character code in: 8, 10 or 16.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "read-quoted-char-radix": Value;
+      /**
+       * Where C-l puts the line with point each time in a row: middle, top, bottom, or a line of the window.
+       *
+       * Defined in packages/window.ts.
+       */
+      "recenter-positions": Value;
       /**
        * When the list of recent files loses files that are gone: mode, when recentf-mode turns on, or never.
        *
@@ -5411,6 +6413,12 @@ declare global {
        * Defined in packages/recentf.ts.
        */
       "recentf-save-file": Value;
+      /**
+       * Regexps answered at prompts that ask for one, newest first.
+       *
+       * Defined in packages/replace.ts.
+       */
+      "regexp-history": Value;
       /**
        * Regular expressions searched for with incremental search, most recent first.
        *
@@ -5550,11 +6558,47 @@ declare global {
        */
       "select-enable-clipboard": Value;
       /**
+       * The coding system for text cut and pasted between programs, or nil for the default.
+       *
+       * Defined in packages/mule-diag.ts.
+       */
+      "selection-coding-system": Value;
+      /**
+       * The regexp for the end of a sentence, or nil for the one sentence-end makes from the variables above.
+       *
+       * Defined in packages/paragraphs.ts.
+       */
+      "sentence-end": Value;
+      /**
+       * The regexp for the punctuation that ends a sentence, with what may close it.
+       *
+       * Defined in packages/paragraphs.ts.
+       */
+      "sentence-end-base": Value;
+      /**
        * Whether a sentence ends with two spaces after its period, so a period followed by one space is no end of sentence, and filling keeps two.
        *
        * Defined in packages/fill.ts.
        */
       "sentence-end-double-space": Value;
+      /**
+       * Whether a sentence can end with two spaces and no full stop, as in Thai.
+       *
+       * Defined in packages/paragraphs.ts.
+       */
+      "sentence-end-without-period": Value;
+      /**
+       * Characters that end a sentence with no space after them, as Chinese and Japanese full stops do.
+       *
+       * Defined in packages/paragraphs.ts.
+       */
+      "sentence-end-without-space": Value;
+      /**
+       * The name of the shell this buffer runs.
+       *
+       * Defined in packages/shell.ts.
+       */
+      "shell--start-prog": Value;
       /**
        * The buffer shell commands' output goes into when it does not fit in the echo area.
        *
@@ -5585,6 +6629,12 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "shell-file-name": Value;
+      /**
+       * The file shell-mode reads the history from: nil for $HISTFILE or the shell's own default, t for none.
+       *
+       * Defined in packages/shell.ts.
+       */
+      "shell-history-file-name": Value;
       /**
        * Keymap shell-mode-map.
        */
@@ -5642,6 +6692,18 @@ declare global {
        */
       "show-paren-when-point-inside-paren": Value;
       /**
+       * Whether sorting ignores the case of letters.
+       *
+       * Defined in packages/sort.ts.
+       */
+      "sort-fold-case": Value;
+      /**
+       * Strings given to C-x r t, newest first.
+       *
+       * Defined in packages/rect.ts.
+       */
+      "string-rectangle-history": Value;
+      /**
        * Whether switch-to-buffer shows a buffer where the window last showed it, with its point there.
        *
        * t does whenever the window showed the buffer before, already-displayed only if another window shows it now, and nil never does: the window shows it at the buffer's point.
@@ -5661,6 +6723,12 @@ declare global {
        * How many columns apart tab stops are, for showing tab characters.
        */
       "tab-width": Value;
+      /**
+       * The regexp for the spaces tabify turns into tabs where it can.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "tabify-regexp": Value;
       /**
        * Where temporary files are made.
        */
@@ -5785,6 +6853,12 @@ declare global {
        * Keymap visual-line-mode-map.
        */
       "visual-line-mode-map": Value;
+      /**
+       * Whether goto-line widens a narrowed buffer to go to a line outside it.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "widen-automatically": Value;
       /**
        * Whether continued lines break at spaces and tabs rather than in the middle of a word.
        *
@@ -6912,6 +7986,10 @@ declare global {
        */
       "next-error-hook": Value;
       /**
+       * Run after entering Occur mode, after the hooks of the modes it is built on.
+       */
+      "occur-mode-hook": Value;
+      /**
        * Run after entering Org-Agenda mode, after the hooks of the modes it is built on.
        */
       "org-agenda-mode-hook": Value;
@@ -6979,6 +8057,18 @@ declare global {
        * Run after entering Python mode, after the hooks of the modes it is built on.
        */
       "python-ts-mode-hook": Value;
+      /**
+       * Run after Read-Passwd mode is turned on or off.
+       */
+      "read-passwd-mode-hook": Value;
+      /**
+       * Run after Read-Passwd mode is turned off.
+       */
+      "read-passwd-mode-off-hook": Value;
+      /**
+       * Run after Read-Passwd mode is turned on.
+       */
+      "read-passwd-mode-on-hook": Value;
       /**
        * Run after Recentf mode is turned on or off.
        */
@@ -7174,11 +8264,14 @@ declare global {
      * Bind a key sequence in Emacs notation, such as "C-c d", to a command, in
      * the global keymap or a named one such as "text-mode-map". Bound to a
      * keymap, the keys are a prefix and that keymap its prefix map; to null,
-     * they run nothing, hiding the parent keymap's binding.
+     * they run nothing, hiding the parent keymap's binding. Bound to a list
+     * of keys, such as ["C-a", "x"], they type those keys as a keyboard
+     * macro, as a string or vector binding does in Emacs; in a translation
+     * map such as "key-translation-map", the keys read become those keys.
      */
-    function bindKey(keys: string, command: CommandName | DefinedCommand | Keymap | null, keymap?: string | Keymap): void;
+    function bindKey(keys: string, command: CommandName | DefinedCommand | Keymap | string[] | null, keymap?: string | Keymap): void;
     /** Bind keys in a keymap, as bindKey, in Emacs's order of arguments (define-key). */
-    function defineKey(keymap: string | Keymap, keys: string, binding: CommandName | DefinedCommand | Keymap | null): void;
+    function defineKey(keymap: string | Keymap, keys: string, binding: CommandName | DefinedCommand | Keymap | string[] | null): void;
     /**
      * Unbind keys in a keymap, as keymap-unset: bound to nothing, which hides
      * the parent keymap's binding, or with `remove` taken out, so it shows.
@@ -7196,7 +8289,7 @@ declare global {
      * What keys are bound to in a keymap and its parents, as lookup-key: a
      * command's name, a prefix map, or undefined.
      */
-    function lookupKey(keymap: string | Keymap, keys: string): string | Keymap | undefined;
+    function lookupKey(keymap: string | Keymap, keys: string): string | Keymap | string[] | undefined;
     /**
      * The keymaps active now, in the order keys are looked up, as
      * current-active-maps: a transient map, an overriding one, the
@@ -7328,6 +8421,8 @@ declare global {
      * this-command). yank-pop sets "yank", so that M-y can follow M-y.
      */
     function setThisCommand(name: CommandName | DefinedCommand): void;
+    /** Make the next command, and the next kill, see `name` as the last command, as setting Emacs's last-command does. */
+    function setLastCommand(name: CommandName | DefinedCommand | null): void;
     /** Put the mark at a position without activating the region, or remove it with null. */
     function setMark(position: number | null): void;
     /**
@@ -7592,12 +8687,26 @@ declare global {
      */
     function readKey(prompt?: string): Promise<string>;
     function readKey(prompt: string | undefined, then: (key: string) => void): void;
-    /** Read an event, a key or a mouse event, as Emacs's read-event; the last mouse event's place is lastMouseEvent(). */
+    /**
+     * Read an event, a key or a mouse event, as Emacs's read-event; the last
+     * mouse event's place is lastMouseEvent(). With `seconds`, give up after
+     * that long with undefined, as read-event's SECONDS.
+     */
     function readEvent(prompt?: string): Promise<string>;
+    function readEvent(prompt: string | undefined, options: { seconds: number }): Promise<string | undefined>;
     function readEvent(prompt: string | undefined, then: (key: string) => void): void;
-    /** Read a character, as Emacs's read-char: anything else, such as <f1>, is an error. */
+    /** Read a character, as Emacs's read-char: anything else, such as <f1>, is an error. With `seconds`, undefined if none comes in that long. */
     function readChar(prompt?: string): Promise<string>;
+    function readChar(prompt: string | undefined, options: { seconds: number }): Promise<string | undefined>;
     function readChar(prompt: string | undefined, then: (char: string) => void): void;
+    /**
+     * Wait `seconds`, as Emacs's sit-for: true if the time passed, false as
+     * soon as a key is typed, which is then read as a command.
+     */
+    function sitFor(seconds: number): Promise<boolean>;
+    /** Wait `seconds` before going on, as Emacs's sleep-for. Keys typed meanwhile run their commands. */
+    function sleepFor(seconds: number): Promise<void>;
+    function sleepFor(seconds: number, then: () => void): void;
     /**
      * Read a whole key sequence, as the command loop reads one, by the keymaps
      * active now, as Emacs's read-key-sequence: "C-x C-f". C-g is a key in it.
@@ -7756,10 +8865,10 @@ declare global {
     function visitedFileChanged(): boolean;
     /**
      * Make the current buffer visit another file, as Emacs's
-     * set-visited-file-name. `alongWithFile` says the file was renamed with
-     * it, so the buffer stays as modified as it was.
+     * set-visited-file-name, or none with null. `alongWithFile` says the
+     * file was renamed with it, so the buffer stays as modified as it was.
      */
-    function setVisitedFileName(file: string, options?: { alongWithFile?: boolean }): void;
+    function setVisitedFileName(file: string | null, options?: { alongWithFile?: boolean }): void;
     /** A file name made absolute, from dir or default-directory, with ~ for the home directory, as Emacs's expand-file-name. */
     function expandFileName(file: string, dir?: string): string;
     /** An environment variable's value, as Emacs's getenv. */
@@ -8991,6 +10100,13 @@ declare global {
     function codingSystemAliases(cs: CodingSystem): CodingSystem[];
     /** The coding system without its line ends, as coding-system-base. */
     function codingSystemBase(cs: CodingSystem): CodingSystem;
+    /**
+     * Make detection try these coding systems first, in this order, when a
+     * file's bytes read in them without error, as set-coding-system-priority.
+     */
+    function setCodingSystemPriority(...codings: CodingSystem[]): void;
+    /** The coding systems in the order detection tries them, or with `highestp` only the first, as coding-system-priority-list. */
+    function codingSystemPriorityList(highestp?: boolean): CodingSystem[];
     /** How it writes characters, as coding-system-type: "utf-8", "charset", "iso-2022", "shift-jis" and so on. */
     function codingSystemType(cs: CodingSystem): string;
     /** Its line ends, 0 for Unix, 1 for DOS and 2 for Mac, or its three forms if undecided, as coding-system-eol-type. */

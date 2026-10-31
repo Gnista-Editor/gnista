@@ -402,3 +402,22 @@ fn a_buffer_shows_again_from_where_it_was_last_shown() {
     let again = r#"(ember.withCurrentBuffer("*scratch*", () => ember.gotoChar(0)), ember.setWindowBuffer(w, "other"), ember.setWindowBuffer(w, "*scratch*"), [ember.windowStart(w), ember.windowPoint(w)])"#;
     assert_eq!(eval(&mut ed, &s, again), "[430,470]");
 }
+
+#[test]
+fn c_l_puts_the_line_in_the_middle_then_at_the_top_then_the_bottom() {
+    let text: String = (0..100).map(|i| format!("line {i}\n")).collect();
+    let (mut ed, _s) = setup(&text);
+    ed.set_viewport_height(10);
+    for _ in 0..50 {
+        ed.press("C-n").unwrap();
+    }
+    let top = |ed: &Editor| ed.window_buffer().top_line;
+    ed.press("C-l").unwrap();
+    assert_eq!(top(&ed), 45, "middle");
+    ed.press("C-l").unwrap();
+    assert_eq!(top(&ed), 50, "top");
+    ed.press("C-l").unwrap();
+    assert_eq!(top(&ed), 41, "bottom");
+    ed.press("C-l").unwrap();
+    assert_eq!(top(&ed), 45, "middle again");
+}

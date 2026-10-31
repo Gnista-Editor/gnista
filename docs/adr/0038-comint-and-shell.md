@@ -13,7 +13,7 @@ With programs on a pseudo-terminal ([ADR 0037](0037-terminals-sockets-and-proces
 **Comint:**
 - **Output** goes through `comint-preoutput-filter-functions`, then in at the process mark as the `output` field. Carriage returns and backspaces work as a terminal shows them, as `comint-carriage-motion` does. Then `comint-output-filter-functions` run. The last line becomes the prompt, read-only with `comint-prompt-read-only`, highlighted as `comint-highlight-prompt`.
 - **RET** (`comint-send-input`) sends what is after the prompt, or, before it, the old input at point again. It marks what was sent, runs `comint-input-filter-functions` and keeps the input in a history.
-- **The history.** `M-p` and `M-n` go through it, as `comint-input-ring` with its size and `comint-input-ignoredups`.
+- **The history.** `M-p` and `M-n` go through it, as `comint-input-ring` with its size and `comint-input-ignoredups`, searching it as Emacs does, round the ring. `C-c M-r` and `C-c M-s` go to the inputs that start with what is typed before point, and `comint-previous-matching-input` asks for a regexp. `comint-read-input-ring` and `comint-write-input-ring` read and write a history file as Emacs's do, and `shell-mode` reads the shell's own (`shell-history-file-name`, else `$HISTFILE`, else `~/.bash_history`, `~/.zsh_history`, `~/.sh_history` or `~/.history`, with `$HISTSIZE`). The shell writes it, as on Emacs.
 - **Signals.** `C-c C-c`, `C-c C-z` and `C-c C-\` signal the job in the foreground, as the terminal's own characters (C-c, C-z, C-\) do. That is what Emacs does where signals go via characters, as on macOS and BSD, so the shell sees the interrupt as it would at a terminal.
 - **The other keys:** `C-c C-d` and `C-d` at the end send end of file, `C-c C-u` kills the input, `C-c C-o` deletes the last output, `C-c M-o` clears the buffer, `C-c C-a` goes to the start of the input, `C-c C-n` and `C-c C-p` go from prompt to prompt, `C-c C-m` copies old input, and `C-c C-r` and `C-c C-e` show output.
 - **`make-comint-in-buffer` and `comint-exec`** start a program on a terminal, with `TERM` from `comint-terminfo-terminal` and the window's size.
@@ -32,6 +32,11 @@ With programs on a pseudo-terminal ([ADR 0037](0037-terminals-sockets-and-proces
 - **Carrying on.** The rendition carries on into the next output, and a sequence cut off between two reads is finished with the second.
 - **Faces.** The faces are Emacs's `ansi-color-*`, with its X colours in hex. Backgrounds and other colours are faces made for them, as Ember has no face attribute lists.
 - **Turning it off.** `ansi-color-for-comint-mode` set to `filter` only removes the sequences.
+
+**Passwords** (added after the rest):
+- **Reading them.** `read-passwd`, from auth-source.el, is `readPasswd` in `subr.ts`. It reads with `read-string` and no history, shows the input as `read-hide-char` (`*`) through a `display` property after each command, and keeps its keys out of `recent-keys`, as `inhibit--record-char` does. In `read-passwd-mode`, `C-u` clears the input and `TAB` shows or hides it. With CONFIRM it reads twice and starts over until both agree.
+- **Spotting prompts.** `comint-watch-for-password-prompt` is on `comint-output-filter-functions`, as in Emacs. Output matching `comint-password-prompt-regexp`, Emacs 30's own, reads a password with `comint-send-invisible` and sends it.
+- **Checking.** 24 prompts are matched as Emacs 30.2 matches them, and `stty -echo; read` in a shell gets the password without it reaching the buffer.
 
 **Supporting changes:**
 - `getenv`, and a directory argument to `expandFileName`, as Emacs's have.
@@ -52,7 +57,7 @@ A real terminal was checked for what the shell does on C-c. The interactive Emac
 
 Not done yet:
 - `comint-use-prompt-regexp`;
-- history files (`comint-input-ring-file-name`) and `M-r`;
+- `M-r`, searching the history incrementally, which needs isearch's `isearch-search-fun-function` and the hooks around it;
 - completing file names and commands at the prompt;
 - ANSI colours in compilation buffers, and inverse video and faint text, which Ember's faces lack;
 - `comint-accumulate`;

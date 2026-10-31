@@ -160,5 +160,75 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "imenu-python-function",
+    "text": "import os\n\nclass Point:\n    def __init__(self, x):\n        self.x = x\n\n    def length(self):\n        def inner():\n            return 1\n        return inner()\n\ndef main():\n    p = Point(1)\n\nasync def fetch():\n    pass\n",
+    "keys": "M-x",
+    "answers": [
+      "imenu",
+      "main.(def)"
+    ],
+    "modes": [
+      "python-ts-mode"
+    ]
+  },
+  {
+    "name": "imenu-python-class-method",
+    "text": "import os\n\nclass Point:\n    def __init__(self, x):\n        self.x = x\n\n    def length(self):\n        def inner():\n            return 1\n        return inner()\n\ndef main():\n    p = Point(1)\n\nasync def fetch():\n    pass\n",
+    "keys": "M-x",
+    "answers": [
+      "imenu",
+      "Point.(class)...",
+      "length.(def)...",
+      "inner.(def)"
+    ],
+    "modes": [
+      "python-ts-mode"
+    ]
+  },
+  {
+    "name": "imenu-python-class-itself",
+    "text": "import os\n\nclass Point:\n    def __init__(self, x):\n        self.x = x\n\n    def length(self):\n        def inner():\n            return 1\n        return inner()\n\ndef main():\n    p = Point(1)\n\nasync def fetch():\n    pass\n",
+    "keys": "M-x",
+    "answers": [
+      "imenu",
+      "Point.(class)...",
+      "*class.definition*"
+    ],
+    "modes": [
+      "python-ts-mode"
+    ]
+  },
+  {
+    "name": "imenu-python-async",
+    "text": "import os\n\nclass Point:\n    def __init__(self, x):\n        self.x = x\n\n    def length(self):\n        def inner():\n            return 1\n        return inner()\n\ndef main():\n    p = Point(1)\n\nasync def fetch():\n    pass\n",
+    "keys": "C-c C-j",
+    "answers": [
+      "fetch.(def)"
+    ],
+    "modes": [
+      "python-ts-mode"
+    ]
+  },
+  {
+    "name": "imenu-python-defun-moves",
+    "text": "import os\n\nclass Point:\n    def __init__(self, x):\n        self.x = x\n\n    def length(self):\n        def inner():\n            return 1\n        return inner()\n\ndef main():\n    p = Point(1)\n\nasync def fetch():\n    pass\n",
+    "keys": "M-> C-M-a C-M-a C-M-e",
+    "modes": [
+      "python-ts-mode"
+    ]
+  },
+  {
+    "name": "imenu-outline-heading",
+    "text": "* One\ntext\n** Two words\nmore\n* Three\n",
+    "keys": "M-x",
+    "answers": [
+      "imenu",
+      "**.Two.words"
+    ],
+    "modes": [
+      "outline-mode"
+    ]
   }
 ]

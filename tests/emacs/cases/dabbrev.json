@@ -1,0 +1,67 @@
+[
+  {
+    "name": "dabbrev-backward",
+    "text": "foobar foobaz\nfo",
+    "keys": "M-> M-/"
+  },
+  {
+    "name": "dabbrev-again-older",
+    "text": "foobar foobaz\nfo",
+    "keys": "M-> M-/ M-/"
+  },
+  {
+    "name": "dabbrev-third-time-none",
+    "text": "qzxbar qzxbaz\nqz",
+    "keys": "M-> M-/ M-/ M-/"
+  },
+  {
+    "name": "dabbrev-forward",
+    "text": "fo\nforward fortune",
+    "keys": "C-e M-/"
+  },
+  {
+    "name": "dabbrev-none",
+    "text": "xyz qq",
+    "keys": "M-> M-/"
+  },
+  {
+    "name": "dabbrev-case-replace",
+    "text": "Hello hello_world\nHe",
+    "keys": "M-> M-/"
+  },
+  {
+    "name": "dabbrev-capital-abbrev",
+    "text": "foobar\nFo",
+    "keys": "M-> M-/"
+  },
+  {
+    "name": "dabbrev-upcase-abbrev",
+    "text": "foobar\nFOO",
+    "keys": "M-> M-/"
+  },
+  {
+    "name": "dabbrev-space-copies-next-word",
+    "text": "alpha beta gamma\nal",
+    "keys": "M-> M-/ SPC M-/ SPC M-/"
+  },
+  {
+    "name": "dabbrev-prefix-arg",
+    "text": "fa fb fc\nf",
+    "keys": "M-> M-2 M-/"
+  },
+  {
+    "name": "dabbrev-after-punctuation",
+    "text": "foobar\nfoo.",
+    "keys": "M-> M-/"
+  },
+  {
+    "name": "dabbrev-symbol-chars",
+    "text": "my-long-name\nmy",
+    "keys": "M-> M-/"
+  },
+  {
+    "name": "dabbrev-undo",
+    "text": "foobar\nfo",
+    "keys": "M-> M-/ C-/"
+  }
+]

@@ -58,6 +58,9 @@ pub(crate) struct Resume {
     buffer: u64,
     prefix: Option<PrefixArg>,
     command: Option<String>,
+    /// The command before it, which it still sees as last-command, as an
+    /// Emacs command that waits for an answer does.
+    last_command: Option<String>,
 }
 
 /// A message as *Messages* logs it.
@@ -111,6 +114,9 @@ pub(crate) struct PendingCall {
     args: Vec<Arg>,
     /// The prefix argument the command was started with, kept for when it runs.
     prefix: Option<PrefixArg>,
+    /// The command before it, which it sees as last-command when it runs,
+    /// whatever ran while its arguments were typed, as in Emacs.
+    last_command: Option<String>,
 }
 
 /// All editor state. A front end feeds it keys with [`Editor::handle_key`]
@@ -235,6 +241,10 @@ pub struct Editor {
     last_macro: Option<Vec<Key>>,
     /// How many keyboard macros are running, one inside another.
     pub(crate) executing_macro: usize,
+    /// Where `input-decode-map` and `key-translation-map` next look in the
+    /// keys being read: the keys before have been translated or matched
+    /// nothing, as read_key_sequence's indec and keytran starts.
+    translation_starts: [usize; 2],
     last_command: Option<String>,
     this_command: Option<String>,
     pub(crate) last_key: Option<Key>,
@@ -358,6 +368,7 @@ impl Editor {
             macro_sequence_start: 0,
             last_macro: None,
             executing_macro: 0,
+            translation_starts: [0; 2],
             last_command: None,
             this_command: None,
             last_key: None,
@@ -404,6 +415,13 @@ impl Editor {
     /// The command that ran before the one running now.
     pub fn last_command(&self) -> Option<&str> {
         self.last_command.as_deref()
+    }
+
+    /// Makes the next kill or command see `name` as the last command, as
+    /// Lisp sets `last-command`: kill-whole-line sets it to kill-region so
+    /// its two kills join.
+    pub fn set_last_command(&mut self, name: Option<&str>) {
+        self.last_command = name.map(str::to_string);
     }
 
     /// Runs a command with its arguments supplied directly instead of
@@ -566,7 +584,7 @@ impl Editor {
                 Err(e) => self.fail(e),
             }
         } else {
-            self.pending_call = Some(PendingCall { command, args: Vec::new(), prefix });
+            self.pending_call = Some(PendingCall { command, args: Vec::new(), prefix, last_command: self.last_command.clone() });
             self.read_next_arg();
         }
     }
@@ -640,6 +658,7 @@ impl Editor {
             return;
         }
         let call = self.pending_call.take().expect("checked above");
+        self.last_command = call.last_command;
         self.execute(call.command, call.args, call.prefix);
     }
 
@@ -742,7 +761,12 @@ impl Editor {
 
     /// The running command's context, for its prompt's answer to run in.
     pub(crate) fn resume_point(&self) -> Resume {
-        Resume { buffer: self.buffers[self.current].id, prefix: self.current_prefix_arg, command: self.this_command.clone() }
+        Resume {
+            buffer: self.buffers[self.current].id,
+            prefix: self.current_prefix_arg,
+            command: self.this_command.clone(),
+            last_command: self.last_command.clone(),
+        }
     }
 
     /// Runs what answers a prompt in the context of the command that asked.
@@ -779,6 +803,7 @@ impl Editor {
         self.current_prefix_arg = resume.prefix;
         if resume.command.is_some() {
             self.this_command = resume.command.clone();
+            self.last_command = resume.last_command.clone();
         }
     }
 
@@ -1262,8 +1287,21 @@ impl Editor {
         }
 
         self.message = None;
+        if self.pending_keys.is_empty() {
+            self.translation_starts = [0; 2];
+        }
         self.pending_keys.push(key);
-        match self.lookup(&self.pending_keys) {
+        let translating = self.translate_pending_keys();
+        let key = *self.pending_keys.last().unwrap_or(&key);
+        let found = self.lookup(&self.pending_keys);
+        // A translation map's prefix keeps reading only keys the keymaps
+        // do not bind, as read_key_sequence's loop has it, so C-x C-x runs
+        // although C-x starts C-x 8 in key-translation-map.
+        if translating && found == Lookup::Unbound {
+            self.message = Some(format!("{}-", format_keys(&self.pending_keys)));
+            return;
+        }
+        match found {
             Lookup::Prefix => {
                 self.shift_translated = false;
                 self.message = Some(format!("{}-", format_keys(&self.pending_keys)));
@@ -1274,6 +1312,19 @@ impl Editor {
                 self.last_key = Some(key);
                 self.note_command_keys(&keys);
                 self.command_loop_run(&name);
+            }
+            // Keys bound to keys are a keyboard macro, as a string or
+            // vector binding is in Emacs.
+            Lookup::Keys(to) => {
+                let keys = std::mem::take(&mut self.pending_keys);
+                self.transient_map = None;
+                self.note_command_keys(&keys);
+                self.executing_macro += 1;
+                let result = self.type_keys(&to, 1);
+                self.executing_macro -= 1;
+                if let Err(e) = result {
+                    self.fail(e);
+                }
             }
             // Shift translation, as in Emacs: a shifted key with no binding of
             // its own acts as the key without Shift, so S-<right> runs
@@ -1314,6 +1365,47 @@ impl Editor {
                 }
             }
         }
+    }
+
+    /// Translates the keys being read by `input-decode-map` and then
+    /// `key-translation-map`, as Emacs's read_key_sequence does: keys from
+    /// where each map last stopped that it binds to keys become those keys,
+    /// or to a function, what it returns for them; keys it binds to nothing
+    /// are passed over. Returns whether a map waits for more keys, as for
+    /// `C-x 8` before the character it makes, which matters only while the
+    /// keymaps bind the keys to nothing.
+    fn translate_pending_keys(&mut self) -> bool {
+        let mut waiting = false;
+        for (i, name) in ["input-decode-map", "key-translation-map"].into_iter().enumerate() {
+            let Some(map) = self.keymap_named(name) else { continue };
+            while self.translation_starts[i] < self.pending_keys.len() {
+                let start = self.translation_starts[i];
+                let to = match self.keymaps.lookup(map, &self.pending_keys[start..]) {
+                    Lookup::Prefix => {
+                        waiting = true;
+                        break;
+                    }
+                    Lookup::Unbound => {
+                        self.translation_starts[i] += 1;
+                        continue;
+                    }
+                    Lookup::Keys(to) => to,
+                    // A function is called with the prompt and gives the keys.
+                    Lookup::Command(f) => match self.funcall(&Value::Str(f), &[Value::Str(String::new())]) {
+                        Ok(Value::Str(keys)) => Key::parse_seq(&keys).unwrap_or_default(),
+                        Ok(Value::List(items)) => items.iter().filter_map(|k| k.as_str().and_then(Key::parse_seq)).flatten().collect(),
+                        _ => {
+                            self.translation_starts[i] += 1;
+                            continue;
+                        }
+                    },
+                };
+                self.pending_keys.truncate(start);
+                self.pending_keys.extend(to);
+                self.translation_starts[i] = self.pending_keys.len();
+            }
+        }
+        waiting
     }
 
     /// Looks a key sequence up in the active keymaps, in Emacs's order: a
@@ -2022,7 +2114,8 @@ impl Editor {
     /// does on RET: not an empty answer or a repeat of the newest, and no
     /// more than `history-length` of them.
     pub(crate) fn add_to_history(&mut self, history: &str, answer: &str) {
-        if answer.is_empty() {
+        // A history of t keeps no history, as read-passwd asks.
+        if answer.is_empty() || history == "t" {
             return;
         }
         let mut items = match self.variable(history) {

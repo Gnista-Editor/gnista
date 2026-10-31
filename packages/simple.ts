@@ -312,15 +312,21 @@ function transposeRegions(pos1: [number, number], pos2: [number, number]): void 
 
 /**
  * Moves the object before point past `arg` objects, as transpose-subr does.
- * `mover` moves over `n` objects, forward if positive.
+ * `mover` moves over `n` objects, forward if positive, or with `special`
+ * returns the ends of the object `n` objects away.
  */
-function transposeSubr(mover: (n: number) => void, arg: number): void {
-  const aux = (x: number): [number, number] => {
-    mover(x);
-    const first = ember.point();
-    mover(-x);
-    return [first, ember.point()];
-  };
+export function transposeSubr(mover: (n: number) => void, arg: number): void;
+export function transposeSubr(mover: (n: number) => [number, number], arg: number, special: true): void;
+export function transposeSubr(mover: ((n: number) => void) | ((n: number) => [number, number]), arg: number, special = false): void {
+  // With `special`, the mover gives the object's ends itself, as transpose-sexps' does.
+  const aux = special
+    ? (mover as (n: number) => [number, number])
+    : (x: number): [number, number] => {
+        mover(x);
+        const first = ember.point();
+        mover(-x);
+        return [first, ember.point()];
+      };
   if (arg === 0) {
     const mark = ember.mark();
     if (mark === undefined) throw new Error("No mark set in this buffer");
@@ -700,3 +706,837 @@ ember.defineCommand({
 
 ember.bindKey("M-!", "shell-command");
 ember.bindKey("M-|", "shell-command-on-region");
+
+// Everyday editing commands from simple.el: indentation and spaces, blank
+// lines, killing whole lines and up to a character, going to a line, and
+// what is at point.
+
+ember.defineCommand({
+  name: "back-to-indentation",
+  doc: "Move point to the first character on the line that is not a space or tab.",
+  shiftSelect: true,
+  run: () => {
+    ember.gotoChar(ember.lineBeginningPosition());
+    ember.skipSyntaxForward(" ", ember.lineEndPosition());
+    // Back over characters with whitespace syntax and the prefix flag.
+    ember.backwardPrefixChars();
+  },
+});
+ember.bindKey("M-m", "back-to-indentation");
+
+for (const [name, doc, dir] of [
+  ["forward-to-indentation", "Move forward a line, or as many as the prefix argument says, to its first character that is not a space or tab.", 1],
+  ["backward-to-indentation", "Move back a line, or as many as the prefix argument says, to its first character that is not a space or tab.", -1],
+] as const) {
+  ember.defineCommand({
+    name,
+    doc,
+    shiftSelect: true,
+    params: [{ name: "arg", kind: "count" }],
+    run: (arg: number) => {
+      forwardLine(dir * arg);
+      ember.skipCharsForward(" \t");
+    },
+  });
+}
+
+/** Deletes the characters in `chars` around point, or only before it, as delete-space--internal. */
+function deleteSpace(chars: string, backwardOnly: boolean): void {
+  const orig = ember.point();
+  let end = orig;
+  if (!backwardOnly) {
+    ember.skipCharsForward(chars);
+    end = ember.constrainToField(ember.point(), orig, true);
+  }
+  ember.gotoChar(orig);
+  ember.skipCharsBackward(chars);
+  const start = ember.constrainToField(ember.point(), orig);
+  ember.deleteRegion(start, end);
+  ember.gotoChar(start);
+}
+
+ember.defineCommand({
+  name: "delete-horizontal-space",
+  doc: "Delete the spaces and tabs around point; with a prefix argument, only those before it.",
+  params: [{ name: "arg", kind: "prefix" }],
+  run: (arg: ember.PrefixArg) => deleteSpace(" \t", arg !== null),
+});
+ember.bindKey("M-\\", "delete-horizontal-space");
+
+ember.defineCommand({
+  name: "delete-all-space",
+  doc: "Delete the spaces, tabs and newlines around point; with a prefix argument, only those before it.",
+  params: [{ name: "arg", kind: "prefix" }],
+  run: (arg: ember.PrefixArg) => deleteSpace(" \t\r\n", arg !== null),
+});
+
+/** Leaves `n` spaces where there are spaces and tabs around point, newlines too if n is negative, as just-one-space. */
+function justOneSpace(n = 1): void {
+  const orig = ember.point();
+  const skip = n < 0 ? " \t\n\r" : " \t";
+  let num = Math.abs(n);
+  ember.skipCharsBackward(skip);
+  ember.gotoChar(ember.constrainToField(ember.point(), orig));
+  num -= ember.skipCharsForward(" ", ember.point() + num);
+  const mid = ember.point();
+  ember.skipCharsForward(skip);
+  const end = ember.constrainToField(ember.point(), orig, true);
+  ember.deleteRegion(mid, end);
+  ember.gotoChar(mid);
+  ember.insert(" ".repeat(Math.max(0, num)));
+}
+
+ember.defineCommand({
+  name: "just-one-space",
+  doc: "Leave one space where there are spaces and tabs around point; with a prefix argument, that many, and newlines go too if it is negative.",
+  params: [{ name: "n", kind: "count" }],
+  run: (n: number) => justOneSpace(n),
+});
+
+ember.defineVariable({
+  name: "cycle-spacing-actions",
+  doc: "What M-SPC does each time in a row: just-one-space, delete-all-space, delete-space-after, delete-space-before or restore.",
+  value: ["just-one-space", "delete-all-space", "restore"],
+});
+
+/** What M-SPC started with: where point was, the space around it, the prefix argument, and what it did last. */
+let cycleSpacing: { origPos: number; whitespace: string; n: ember.PrefixArg; last: string | undefined } | undefined;
+
+ember.defineCommand({
+  name: "cycle-spacing",
+  doc:
+    "Change the space around point, a different way each time in a row, as cycle-spacing-actions says: " +
+    "first one space, then none, then as it was.\n\n" +
+    "The prefix argument is the number of spaces, and when negative, newlines are deleted too.",
+  params: [{ name: "n", kind: "prefix" }],
+  run: (n: ember.PrefixArg) => {
+    const actions = (ember.variable("cycle-spacing-actions") ?? []) as string[];
+    const same = (a: ember.PrefixArg, b: ember.PrefixArg) => JSON.stringify(a) === JSON.stringify(b);
+    if (ember.lastCommand() !== "cycle-spacing" || cycleSpacing === undefined || (n !== null && !same(cycleSpacing.n, n))) {
+      const orig = ember.point();
+      const [start, end] = ember.saveExcursion(() => {
+        ember.skipCharsBackward(" \t\n\r");
+        const s = ember.constrainToField(ember.point(), orig);
+        ember.gotoChar(s);
+        ember.skipCharsForward(" \t\n\r");
+        return [s, ember.constrainToField(ember.point(), orig, true)];
+      });
+      cycleSpacing = { origPos: orig, whitespace: ember.bufferSubstringNoProperties(start, end), n, last: undefined };
+    }
+    const context = cycleSpacing;
+    const i = context.last === undefined ? 0 : actions.indexOf(context.last) + 1;
+    const action = i < actions.length ? actions[i]! : actions[0]!;
+    const restore = () => {
+      deleteSpace(" \t\r\n", false);
+      ember.insert(context.whitespace);
+      ember.gotoChar(context.origPos);
+    };
+    restore();
+    const numeric = ember.prefixNumericValue(context.n);
+    const newlines = context.n === "-" || numeric < 0;
+    const deleteSpaceDir = (count: number, forward: boolean) => {
+      const orig = ember.point();
+      const chars = newlines ? " \t\r\n" : " \t";
+      const skip = (max?: number) =>
+        forward
+          ? ember.skipCharsForward(chars, max === undefined ? undefined : ember.point() + max)
+          : ember.skipCharsBackward(chars, max === undefined ? undefined : ember.point() - max);
+      if (count === 0 || count === Math.abs(skip(count))) {
+        const start = ember.point();
+        skip();
+        const end = ember.point();
+        if (start !== end) ember.deleteRegion(Math.min(start, end), Math.max(start, end));
+        ember.gotoChar(forward ? orig : Math.min(start, end) + count);
+      }
+    };
+    if (action === "just-one-space") justOneSpace(numeric);
+    else if (action === "delete-space-after") deleteSpaceDir(context.n === "-" ? 0 : Math.abs(numeric), true);
+    else if (action === "delete-space-before") deleteSpaceDir(context.n === "-" ? 0 : Math.abs(numeric), false);
+    else if (action === "delete-all-space") deleteSpace(newlines ? " \t\r\n" : " \t", false);
+    else if (action !== "restore") ember.funcall(action, context.n);
+    context.last = action;
+  },
+});
+ember.bindKey("M-SPC", "cycle-spacing");
+
+ember.defineCommand({
+  name: "fixup-whitespace",
+  doc: "Leave one space or none around point, as the text on either side calls for.",
+  run: () => {
+    ember.saveExcursion(() => {
+      deleteSpace(" \t", false);
+      const none = ember.lookingAt("^\\|$\\|\\s)") || (ember.point() > ember.pointMin() && ember.lookingAt("$\\|\\s(\\|\\s'", ember.point() - 1));
+      if (!none) ember.insert(" ");
+    });
+  },
+});
+
+ember.defineCommand({
+  name: "delete-indentation",
+  doc:
+    "Join this line to the one before it, leaving one space or none between them; with a prefix argument, to the one after.\n\n" +
+    "A fill prefix at the start of the joined line is deleted too.",
+  params: [{ name: "arg", kind: "prefix" }],
+  run: (arg: ember.PrefixArg) => {
+    if (arg !== null) forwardLine(1);
+    ember.gotoChar(ember.lineBeginningPosition());
+    if (ember.point() <= ember.pointMin()) return;
+    const prefix = ember.variable("fill-prefix");
+    ember.deleteRegion(ember.point() - 1, ember.point());
+    if (typeof prefix === "string" && prefix !== "" && ember.bufferSubstringNoProperties(ember.point(), Math.min(ember.pointMax(), ember.point() + prefix.length)) === prefix) {
+      ember.deleteRegion(ember.point(), ember.point() + prefix.length);
+    }
+    ember.call("fixup-whitespace");
+  },
+});
+ember.bindKey("M-^", "delete-indentation");
+
+ember.defineCommand({
+  name: "delete-blank-lines",
+  doc: "On a blank line, delete the blank lines around it but one; on a lone blank line, delete it; else delete the blank lines after this one.",
+  run: () => {
+    const [thisBlank, singleBlank] = ember.saveExcursion(() => {
+      ember.gotoChar(ember.lineBeginningPosition());
+      const blank = ember.lookingAt("[ \t]*$");
+      const single =
+        blank &&
+        !ember.lookingAt("[ \t]*\n[ \t]*$") &&
+        (ember.point() === ember.pointMin() || (forwardLine(-1), !ember.lookingAt("[ \t]*$")));
+      return [blank, single];
+    });
+    if (thisBlank) {
+      ember.gotoChar(ember.lineBeginningPosition());
+      if (singleBlank) forwardLine(1);
+      const from = ember.point();
+      const to = ember.reSearchBackward("[^ \t\n]", { noerror: true }) !== undefined ? (forwardLine(1), ember.point()) : ember.pointMin();
+      ember.deleteRegion(Math.min(from, to), Math.max(from, to));
+      ember.gotoChar(Math.min(from, to));
+    }
+    if (!(thisBlank && singleBlank)) {
+      ember.saveExcursion(() => {
+        ember.gotoChar(ember.lineEndPosition());
+        forwardLine(1);
+        const from = ember.point();
+        const to = ember.reSearchForward("[^ \t\n]", { noerror: true }) !== undefined ? ember.lineBeginningPosition() : ember.pointMax();
+        ember.deleteRegion(from, to);
+      });
+    }
+    // Just before a newline at the end of the buffer: delete that line.
+    if (ember.lookingAt("^[ \t]*\n\\'")) ember.deleteRegion(ember.point(), ember.pointMax());
+  },
+});
+ember.bindKey("C-x C-o", "delete-blank-lines");
+
+ember.defineVariable({ name: "delete-trailing-lines", doc: "Whether delete-trailing-whitespace on the whole buffer deletes empty lines at its end too.", value: true });
+
+ember.defineCommand({
+  name: "delete-trailing-whitespace",
+  doc:
+    "Delete the spaces and tabs at the ends of lines, in the region if it is active, else in the whole buffer, " +
+    "where empty lines at the end go too, as delete-trailing-lines says. Form feeds stay.",
+  run: () => {
+    const mark = ember.mark();
+    const [start, end] = ember.regionActive() && mark !== undefined ? [Math.min(mark, ember.point()), Math.max(mark, ember.point())] : [undefined, undefined];
+    ember.saveExcursion(() => {
+      const endMarker = end === undefined ? undefined : ember.makeMarker(end);
+      ember.gotoChar(start ?? ember.pointMin());
+      // Whitespace syntax but a form feed, as the command's own syntax table has it.
+      while (ember.reSearchForward("[ \t ]+$", { bound: endMarker === undefined ? undefined : ember.markerPosition(endMarker), noerror: true }) !== undefined) {
+        const b = ember.matchBeginning(0)!;
+        const e = ember.matchEnd(0)!;
+        if (ember.getTextProperty(b, "read-only") === undefined) ember.deleteRegion(b, e);
+        else ember.gotoChar(e);
+      }
+      if (endMarker !== undefined) {
+        ember.deleteMarker(endMarker);
+      } else if (ember.variable("delete-trailing-lines") !== false && ember.variable("delete-trailing-lines") !== null) {
+        ember.gotoChar(ember.pointMax());
+        if (ember.pointMax() === ember.bufferSize() && ember.skipCharsBackward("\n") <= -2) ember.deleteRegion(ember.point() + 1, ember.pointMax());
+      }
+    });
+  },
+});
+
+ember.defineCommand({
+  name: "kill-whole-line",
+  doc:
+    "Kill the line point is on, its newline too; with a prefix argument, that many lines, " +
+    "back with the newline before them if negative, and with 0 the line without its newline.",
+  params: [{ name: "arg", kind: "count" }],
+  run: (arg: number) => {
+    const eobp = () => ember.point() === ember.pointMax();
+    const bobp = () => ember.point() === ember.pointMin();
+    if (arg > 0 && eobp() && ember.saveExcursion(() => (ember.gotoChar(ember.lineBeginningPosition()), eobp()))) ember.signal("end-of-buffer", "End of buffer");
+    if (arg < 0 && bobp() && ember.saveExcursion(() => (ember.gotoChar(ember.lineEndPosition()), bobp()))) ember.signal("beginning-of-buffer", "Beginning of buffer");
+    if (ember.lastCommand() !== "kill-region") {
+      ember.killNew("");
+      ember.setLastCommand("kill-region");
+    }
+    const begin = ember.makeMarker(ember.point());
+    let region1End: ember.Marker;
+    if (arg === 0) {
+      region1End = ember.makeMarker(ember.lineBeginningPosition());
+      ember.gotoChar(ember.lineEndPosition());
+    } else if (arg < 0) {
+      region1End = ember.makeMarker(ember.lineEndPosition());
+      forwardLine(1 + arg);
+      if (!bobp()) ember.gotoChar(ember.point() - 1);
+    } else {
+      region1End = ember.makeMarker(ember.lineBeginningPosition());
+      ember.gotoChar(ember.lineBeginningPosition());
+      forwardLine(arg);
+    }
+    const second = ember.point();
+    const secondMarker = ember.makeMarker(second);
+    ember.killRegion(ember.markerPosition(begin)!, ember.markerPosition(region1End)!);
+    ember.setLastCommand("kill-region");
+    ember.killRegion(ember.markerPosition(begin)!, ember.markerPosition(secondMarker)!);
+    for (const m of [begin, region1End, secondMarker]) ember.deleteMarker(m);
+    ember.setThisCommand("kill-region");
+  },
+});
+ember.bindKey("C-S-DEL", "kill-whole-line");
+
+/** The character a key types, as the key read stands for it: C-a is ^A, RET is ^M. Undefined for keys that are not characters. */
+export function keyChar(key: string): string | undefined {
+  const named: Record<string, string> = { SPC: " ", TAB: "\t", RET: "\r", ESC: "\x1b", DEL: "\x7f", "C-SPC": "\0", "C-@": "\0" };
+  if (named[key] !== undefined) return named[key];
+  if ([...key].length === 1) return key;
+  const control = /^C-(.)$/.exec(key);
+  if (control !== null) {
+    const c = control[1]!;
+    if (c === "?") return "\x7f";
+    const code = c.toUpperCase().charCodeAt(0);
+    if (code >= 0x40 && code <= 0x5f) return String.fromCharCode(code & 0x1f);
+  }
+  return undefined;
+}
+
+/** Kills to the arg'th `char`, and it too unless `upTo`, as zap-to-char and zap-up-to-char. */
+function zap(arg: number, char: string, upTo: boolean): void {
+  // Read interactively, an upper-case letter searches exactly.
+  const fold = char.toLowerCase() !== char ? false : undefined;
+  const p = ember.point();
+  if (!upTo) {
+    const m = ember.search(char, { backward: arg < 0, caseFold: fold });
+    let found = m;
+    for (let i = 1; found !== undefined && i < Math.abs(arg); i++) {
+      ember.gotoChar(arg < 0 ? found.start : found.end);
+      found = ember.search(char, { backward: arg < 0, caseFold: fold });
+    }
+    ember.gotoChar(p);
+    if (found === undefined) ember.signal("search-failed", `Search failed: "${char}"`, [char]);
+    ember.killRegion(p, arg < 0 ? found!.start : found!.end);
+  } else {
+    const direction = arg >= 0 ? 1 : -1;
+    // Past a match right at point, as zap-up-to-char's forward-char does.
+    const start = p + direction;
+    if (start < ember.pointMin() || start > ember.pointMax()) ember.signal("search-failed", `Search failed: "${char}"`, [char]);
+    ember.gotoChar(start);
+    let found = ember.search(char, { backward: arg < 0, caseFold: fold });
+    for (let i = 1; found !== undefined && i < Math.abs(arg); i++) {
+      ember.gotoChar(arg < 0 ? found.start : found.end);
+      found = ember.search(char, { backward: arg < 0, caseFold: fold });
+    }
+    ember.gotoChar(p);
+    if (found === undefined) ember.signal("search-failed", `Search failed: "${char}"`, [char]);
+    ember.killRegion(p, arg < 0 ? found!.end : found!.start);
+  }
+  ember.setThisCommand("kill-region");
+}
+
+ember.defineVariable({ name: "read-char-history", doc: "Characters read by zap-to-char and its kin, newest first.", value: [] });
+
+for (const [name, doc, upTo] of [
+  ["zap-to-char", "Kill up to and including the next occurrence of a character; with a prefix argument, the Nth, back if negative.", false],
+  ["zap-up-to-char", "Kill up to, but not including, the next occurrence of a character; with a prefix argument, the Nth, back if negative.", true],
+] as const) {
+  ember.defineCommand({
+    name,
+    doc: `${doc}\n\nAn upper-case character is searched for exactly; others fold case as case-fold-search says.`,
+    params: [{ name: "arg", kind: "count" }],
+    run: async (arg: number) => {
+      const char = keyChar(await ember.readChar(upTo ? "Zap up to char: " : "Zap to char: "));
+      if (char === undefined) ember.userError("Non-character input-event");
+      zap(arg, char!, upTo);
+    },
+  });
+}
+ember.bindKey("M-z", "zap-to-char");
+
+ember.defineVariable({ name: "goto-line-history", doc: "Line numbers answered to goto-line, newest first.", value: [] });
+ember.defineVariable({ name: "widen-automatically", doc: "Whether goto-line widens a narrowed buffer to go to a line outside it.", value: true });
+
+/** The number at point, if there is one, as number-at-point finds it. */
+function numberAtPoint(): number | undefined {
+  const line = ember.bufferSubstringNoProperties(ember.lineBeginningPosition(), ember.lineEndPosition());
+  const col = ember.point() - ember.lineBeginningPosition();
+  for (const m of line.matchAll(/-?[0-9]+(?:\.[0-9]+)?/g)) {
+    if (m.index! <= col && col <= m.index! + m[0].length) return Number(m[0]);
+  }
+  return undefined;
+}
+
+/** The line number of a position, counting from 1 at the start of the accessible text. */
+const lineNumberAtPos = (pos = ember.point()): number =>
+  ember.bufferSubstringNoProperties(ember.pointMin(), pos).split("\n").length;
+
+ember.defineCommand({
+  name: "goto-line",
+  doc:
+    "Go to a line, counting from 1 at the start of the buffer: the prefix argument's, else one asked for, " +
+    "the number at point by default.\n\nThe mark is pushed first, unless the region is active. In a narrowed " +
+    "buffer, a line outside it widens the buffer, as widen-automatically says.",
+  params: [{ name: "arg", kind: "prefix" }],
+  run: async (arg: ember.PrefixArg) => {
+    let line: number;
+    if (arg !== null && !Array.isArray(arg)) {
+      line = ember.prefixNumericValue(arg);
+    } else {
+      const n = numberAtPoint();
+      const def = n !== undefined && Number.isInteger(n) && n >= 0 ? n : undefined;
+      const narrowed = ember.bufferNarrowedP();
+      const here = ember.saveRestriction(() => {
+        ember.widen();
+        return lineNumberAtPos();
+      });
+      const shown = def ?? here;
+      const answer = await ember.readString(`Goto${narrowed ? " absolute" : ""} line (default ${shown}): `, { history: "goto-line-history" });
+      line = answer.trim() === "" ? shown : Number(answer);
+      if (!Number.isFinite(line)) ember.userError("Please enter a number.");
+    }
+    if (!ember.regionActive()) ember.pushMark(ember.point());
+    const pos = ember.saveRestriction(() => {
+      ember.widen();
+      ember.gotoChar(ember.pointMin());
+      forwardLine(line - 1);
+      return ember.point();
+    });
+    if (ember.bufferNarrowedP() && ember.variable("widen-automatically") !== false && (pos < ember.pointMin() || pos > ember.pointMax())) ember.widen();
+    ember.gotoChar(pos);
+  },
+});
+ember.bindKey("M-g g", "goto-line");
+ember.bindKey("M-g M-g", "goto-line");
+
+ember.defineCommand({
+  name: "goto-char",
+  doc: "Go to a position in the buffer, counting characters from 1: the prefix argument's, else one asked for.",
+  params: [{ name: "arg", kind: "prefix" }],
+  run: async (arg: ember.PrefixArg) => {
+    const pos = arg !== null ? ember.prefixNumericValue(arg) : Number(await ember.readString(`Go to char (default ${ember.point() + 1}): `));
+    ember.gotoChar(Math.max(ember.pointMin(), Math.min(ember.pointMax(), (Number.isFinite(pos) && pos > 0 ? pos : ember.point() + 1) - 1)));
+  },
+});
+ember.bindKey("M-g c", "goto-char");
+
+ember.defineCommand({
+  name: "what-line",
+  doc: "Say which line point is on, counting from the start of the buffer, and of the narrowing too if the buffer is narrowed.",
+  run: () => {
+    const n = lineNumberAtPos();
+    if (ember.pointMin() === 0) {
+      ember.message(`Line ${n}`);
+      return;
+    }
+    const start = ember.pointMin();
+    const whole = ember.saveRestriction(() => {
+      ember.widen();
+      return lineNumberAtPos(start);
+    });
+    ember.message(`line ${n + whole - 1} (narrowed line ${n})`);
+  },
+});
+
+/** A key's description, as single-key-description writes a character. */
+function charDescription(c: string): string {
+  const code = c.codePointAt(0)!;
+  if (code === 32) return "SPC";
+  if (code === 9) return "TAB";
+  if (code === 13) return "RET";
+  if (code === 27) return "ESC";
+  if (code === 127) return "DEL";
+  if (code < 32) return `C-${String.fromCharCode(code + 96)}`;
+  return c;
+}
+
+ember.defineCommand({
+  name: "what-cursor-position",
+  doc:
+    "Say what character is after point, in decimal, octal and hex, and how the file writes it if it is not ASCII; " +
+    "and where point is, as a position, a percentage of the buffer, and a column.",
+  run: () => {
+    const pos = ember.point() + 1;
+    const total = ember.bufferSize();
+    const [beg, end] = [ember.pointMin() + 1, ember.pointMax() + 1];
+    const percent = Math.round((100 * (pos - 1)) / Math.max(1, total));
+    const col = ember.currentColumn();
+    const narrowed = beg !== 1 || end !== total + 1;
+    if (pos === end) {
+      ember.message(narrowed ? `point=${pos} of ${total} (${percent}%) <${beg}-${end}> column=${col}` : `point=${pos} of ${total} (EOB) column=${col}`);
+      return;
+    }
+    const c = ember.bufferSubstringNoProperties(pos - 1, pos);
+    const code = c.codePointAt(0)!;
+    const num = `${code}, #o${code.toString(8)}, #x${code.toString(16)}`;
+    let encoding = `(${num})`;
+    const display = ember.charProperty(pos - 1, "display");
+    if (code >= 0x10ff80) {
+      encoding = `(${num}, raw-byte)`;
+    } else if (display !== undefined && display !== null) {
+      let to = ember.nextSingleCharPropertyChange(pos - 1, "display") ?? ember.pointMax();
+      let under = "";
+      if (to >= pos - 1 + 4) {
+        under = "...";
+        to = pos - 1 + 4;
+      }
+      under = ember.bufferSubstringNoProperties(pos - 1, to) + under;
+      encoding = typeof display === "string" ? `(${num}, part of display "${under}"->"${display}")` : `(${num}, part of display "${under}")`;
+    } else if (code >= 128) {
+      const coding = String(ember.variable("buffer-file-coding-system") ?? "utf-8-unix");
+      if (ember.unencodableCharPosition(pos - 1, pos, coding) === undefined) {
+        const bytes = [...ember.encodeCodingString(c, coding)];
+        encoding = `(${num}, file ${bytes.length > 1 ? "..." : bytes.map((b) => `#x${b.codePointAt(0)!.toString(16).toUpperCase()}`).join(" ")})`;
+      }
+    }
+    const shown = code < 128 ? charDescription(c) : c;
+    ember.message(
+      narrowed
+        ? `Char: ${code < 256 ? charDescription(c) : c} ${encoding} point=${pos} of ${total} (${percent}%) <${beg}-${end}> column=${col}`
+        : `Char: ${shown} ${encoding} point=${pos} of ${total} (${percent}%) column=${col}`,
+    );
+  },
+});
+ember.bindKey("C-x =", "what-cursor-position");
+
+/** How many words there are from start to end, as count-words from Lisp: across fields. */
+export function countWords(start: number, end: number): number {
+  return ember.letBind({ "inhibit-field-text-motion": true }, () =>
+    ember.saveExcursion(() =>
+      ember.saveRestriction(() => {
+        ember.narrowToRegion(start, end);
+        ember.gotoChar(ember.pointMin());
+        let words = 0;
+        for (;;) {
+          const p = ember.point();
+          ember.call("forward-word", 1);
+          if (ember.point() === p) break;
+          // forward-word-strictly fails at the end with no word left.
+          if (!/\w/u.test(ember.bufferSubstringNoProperties(p, ember.point()))) break;
+          words++;
+        }
+        return words;
+      }),
+    ),
+  );
+}
+
+/** What count-words says of a stretch of text, as count-words--format. */
+function countWordsFormat(what: string, start: number, end: number): string {
+  const lines = countLines(start, end);
+  const sentences = (ember.funcall("count-sentences", start, end) as number) ?? 0;
+  const words = countWords(start, end);
+  const chars = end - start;
+  const s = (n: number) => (n === 1 ? "" : "s");
+  return `${what} has ${lines} line${s(lines)}, ${sentences} sentence${s(sentences)}, ${words} word${s(words)}, and ${chars} character${s(chars)}`;
+}
+
+/** How many lines there are from start to end, as count-lines: a last line without a newline counts. */
+function countLines(start: number, end: number): number {
+  const text = ember.bufferSubstringNoProperties(start, end);
+  const newlines = text.split("\n").length - 1;
+  return text === "" || text.endsWith("\n") ? newlines : newlines + 1;
+}
+
+const bufferFormat = () => countWordsFormat(ember.bufferNarrowedP() ? "Narrowed part of buffer" : "Buffer", ember.pointMin(), ember.pointMax());
+
+ember.defineCommand({
+  name: "count-words",
+  doc:
+    "Say how many lines, sentences, words and characters the buffer has, or the region if it is active; " +
+    "with a prefix argument, the whole buffer's too.",
+  params: [{ name: "arg", kind: "prefix" }],
+  run: (arg: ember.PrefixArg) => {
+    const mark = ember.mark();
+    const region = ember.regionActive() && mark !== undefined;
+    const totals =
+      arg !== null && (region || ember.bufferNarrowedP())
+        ? ember.saveRestriction(() => {
+            ember.widen();
+            return countWordsFormat("; buffer in total", ember.pointMin(), ember.pointMax());
+          })
+        : "";
+    const text = region ? countWordsFormat("Region", Math.min(mark!, ember.point()), Math.max(mark!, ember.point())) : bufferFormat();
+    ember.message(text + totals);
+  },
+});
+
+ember.defineCommand({
+  name: "count-words-region",
+  doc: "Say how many lines, sentences, words and characters the region has, whether or not it is active; with a prefix argument, the buffer's.",
+  params: [{ name: "arg", kind: "prefix" }],
+  run: (arg: ember.PrefixArg) => {
+    if (arg !== null) {
+      ember.message(bufferFormat());
+      return;
+    }
+    const mark = ember.mark() ?? ember.point();
+    ember.message(countWordsFormat("Region", Math.min(mark, ember.point()), Math.max(mark, ember.point())));
+  },
+});
+ember.bindKey("M-=", "count-words-region");
+
+ember.defineCommand({
+  name: "mark-word",
+  doc:
+    "Set the mark at the end of the next word; with a prefix argument, that many words on.\n\n" +
+    "Again, or with the region active, the mark moves a word further, away from point.",
+  params: [{ name: "arg", kind: "prefix" }],
+  run: (arg: ember.PrefixArg) => {
+    const mark = ember.mark();
+    if ((ember.lastCommand() === "mark-word" && mark !== undefined) || ember.regionActive()) {
+      const n = arg !== null ? ember.prefixNumericValue(arg) : mark! < ember.point() ? -1 : 1;
+      ember.setMark(ember.saveExcursion(() => {
+        ember.gotoChar(mark!);
+        ember.call("forward-word", n);
+        return ember.point();
+      }));
+      return;
+    }
+    const to = ember.saveExcursion(() => {
+      ember.call("forward-word", ember.prefixNumericValue(arg));
+      return ember.point();
+    });
+    ember.pushMark(to, { activate: true });
+  },
+});
+ember.bindKey("M-@", "mark-word");
+
+ember.defineCommand({
+  name: "split-line",
+  doc:
+    "Split the line at point, moving the rest of it down to the column it was at. " +
+    "A fill prefix the line starts with goes on the new line too, unless there is a prefix argument.",
+  params: [{ name: "arg", kind: "prefix" }],
+  run: (arg: ember.PrefixArg) => {
+    ember.skipCharsForward(" \t");
+    const col = ember.currentColumn();
+    const pos = ember.point();
+    const fill = ember.variable("fill-prefix");
+    const prefix = arg === null && typeof fill === "string" && fill !== "" ? fill : undefined;
+    const has = prefix !== undefined && ember.bufferSubstringNoProperties(ember.lineBeginningPosition(), Math.min(ember.pointMax(), ember.lineBeginningPosition() + prefix.length)) === prefix;
+    ember.insert("\n");
+    if (has) ember.insertAndInherit(prefix!);
+    ember.indentTo(col);
+    ember.gotoChar(pos);
+  },
+});
+ember.bindKey("C-M-o", "split-line");
+
+ember.defineVariable({ name: "read-quoted-char-radix", doc: "The radix C-q reads a character code in: 8, 10 or 16.", value: 8 });
+
+ember.defineCommand({
+  name: "quoted-insert",
+  doc:
+    "Insert the next character typed, whatever it is, such as a control character; with a prefix argument, that many.\n\n" +
+    "Octal digits, as read-quoted-char-radix says, give a character's code instead: the first other key ends them, " +
+    "and is typed itself unless it is RET.",
+  params: [{ name: "arg", kind: "count" }],
+  run: async (arg: number) => {
+    const radix = Number(ember.variable("read-quoted-char-radix") ?? 8);
+    const digit = (k: string) => {
+      const d = k.length === 1 ? parseInt(k, radix) : NaN;
+      return Number.isNaN(d) ? undefined : d;
+    };
+    let key = await ember.readEvent();
+    let code: number | undefined;
+    let char: string | undefined;
+    if (digit(key) !== undefined && ember.variable("overwrite-mode") !== "overwrite-mode-textual") {
+      code = 0;
+      while (digit(key) !== undefined) {
+        code = code * radix + digit(key)!;
+        key = await ember.readEvent();
+      }
+      if (key !== "RET") ember.unreadKeys(key);
+      char = String.fromCodePoint(code);
+    } else {
+      char = keyChar(key);
+    }
+    if (char === undefined) ember.userError(`${key} is not a valid character`);
+    for (let i = 0; i < arg; i++) ember.insertAndInherit(char!);
+  },
+});
+ember.bindKey("C-q", "quoted-insert");
+
+ember.defineCommand({
+  name: "copy-region-as-kill",
+  doc: "Put the region's text on the kill ring without deleting it, as if it had been killed.",
+  // As M-w copies, joining a kill just before it.
+  run: () => ember.call("kill-ring-save"),
+});
+
+ember.defineCommand({
+  name: "append-next-kill",
+  doc: "Make the next kill join onto the last one on the kill ring, as consecutive kills do.",
+  run: () => {
+    ember.setThisCommand("kill-region");
+    ember.message("If the next command is a kill, it will append");
+  },
+});
+ember.bindKey("C-M-w", "append-next-kill");
+
+/** The ends of the sexp `arg` sexps away from point, as transpose-sexps-default-function. */
+function transposeSexpsDefault(arg: number): [number, number] {
+  const sexp = (): number =>
+    ember.saveExcursion(() => {
+      ember.callWithPrefix(arg, "forward-sexp");
+      return ember.point();
+    });
+  const inSymbol =
+    arg > 0 ? ember.lookingAt("\\sw\\|\\s_") : ember.point() > ember.pointMin() && ember.lookingAt("\\sw\\|\\s_", ember.point() - 1);
+  if (inSymbol) {
+    // Jumping over a symbol, perhaps from inside it.
+    if (arg > 0) ember.skipSyntaxBackward("w_");
+    else ember.skipSyntaxForward("w_");
+    return [sexp(), ember.point()];
+  }
+  // Between sexps: a step back first, so either direction takes the same one.
+  if (arg > 0) ember.skipSyntaxBackward(" .");
+  else ember.skipSyntaxForward(" .");
+  const there = sexp();
+  for (;;) {
+    const comment = ember.forwardComment(arg > 0 ? 1 : -1);
+    const punctuation = arg > 0 ? ember.skipSyntaxForward(".") : ember.skipSyntaxBackward(".");
+    if (!comment && punctuation === 0) break;
+  }
+  return [there, ember.point()];
+}
+
+ember.defineCommand({
+  name: "transpose-sexps",
+  doc:
+    "Exchange the balanced expressions around point, leaving point after both.\n\n" +
+    "With a prefix argument, move the one before point past that many; with 0, exchange those at point and the mark.",
+  run: () =>
+    ember.conditionCase(() => transposeSubr(transposeSexpsDefault, ember.prefixNumericValue(), true), {
+      "scan-error": () => ember.userError("Not between two complete sexps"),
+    }),
+});
+ember.bindKey("C-M-t", "transpose-sexps");
+
+ember.defineCommand({
+  name: "tabify",
+  doc: "Turn runs of spaces in the region into tabs where that keeps the columns, or in the whole buffer with a prefix argument.",
+  params: [{ name: "arg", kind: "prefix" }],
+  run: (arg: ember.PrefixArg) => {
+    const mark = ember.mark();
+    if (arg === null && mark === undefined) ember.userError("The mark is not set now, so there is no region");
+    const [start, end] = arg !== null ? [ember.pointMin(), ember.pointMax()] : [Math.min(mark!, ember.point()), Math.max(mark!, ember.point())];
+    const tabWidth = Number(ember.variable("tab-width") ?? 8);
+    ember.saveExcursion(() =>
+      ember.saveRestriction(() => {
+        // From the start of the line, so columns count right.
+        ember.narrowToRegion(ember.lineBeginningPosition(start), end);
+        ember.gotoChar(start);
+        ember.letBind({ "indent-tabs-mode": true }, () => {
+          while (ember.reSearchForward(String(ember.variable("tabify-regexp") ?? " [ \t]+"), { noerror: true }) !== undefined) {
+            const endCol = ember.currentColumn();
+            const beg = ember.matchBeginning(0)!;
+            const begCol = ember.saveExcursion(() => {
+              ember.gotoChar(beg);
+              ember.skipCharsForward("\t");
+              return ember.currentColumn();
+            });
+            if (Math.floor(endCol / tabWidth) !== Math.floor(begCol / tabWidth)) {
+              ember.deleteRegion(beg, ember.point());
+              ember.gotoChar(beg);
+              ember.indentTo(endCol);
+            }
+          }
+        });
+      }),
+    );
+  },
+});
+ember.defineVariable({ name: "tabify-regexp", doc: "The regexp for the spaces tabify turns into tabs where it can.", value: " [ \t]+" });
+
+ember.defineCommand({
+  name: "untabify",
+  doc: "Turn the tabs in the region into spaces, keeping the columns, or in the whole buffer with a prefix argument.",
+  params: [{ name: "arg", kind: "prefix" }],
+  run: (arg: ember.PrefixArg) => {
+    const mark = ember.mark();
+    if (arg === null && mark === undefined) ember.userError("The mark is not set now, so there is no region");
+    const [start, end] = arg !== null ? [ember.pointMin(), ember.pointMax()] : [Math.min(mark!, ember.point()), Math.max(mark!, ember.point())];
+    const c = ember.currentColumn();
+    ember.saveExcursion(() =>
+      ember.saveRestriction(() => {
+        ember.narrowToRegion(ember.pointMin(), end);
+        ember.gotoChar(start);
+        for (let m = ember.search("\t"); m !== undefined; m = ember.search("\t")) {
+          const tabBeg = m.start;
+          ember.gotoChar(tabBeg);
+          ember.skipCharsForward("\t");
+          const column = ember.currentColumn();
+          ember.deleteRegion(tabBeg, ember.point());
+          ember.gotoChar(tabBeg);
+          ember.letBind({ "indent-tabs-mode": false }, () => ember.indentTo(column));
+        }
+      }),
+    );
+    ember.moveToColumn(c);
+  },
+});
+
+/** Inserts the region's text in another buffer, as append-to-buffer and its kin: `how` says where. */
+function regionToBuffer(buffer: string, start: number, end: number, how: "append" | "prepend" | "copy"): void {
+  const from = ember.bufferName();
+  ember.getBufferCreate(buffer);
+  ember.withCurrentBuffer(buffer, () => {
+    if (ember.bufferReadOnly()) ember.signal("buffer-read-only", `Buffer is read-only: ${buffer}`);
+    const point = ember.point();
+    // Windows showing the buffer with their point where text goes in follow it, as append-to-buffer moves them.
+    const windows = ember.windowList().filter((w) => ember.windowBuffer(w) === buffer && ember.windowPoint(w) === point);
+    if (how === "copy") {
+      ember.deleteRegion(ember.pointMin(), ember.pointMax());
+      ember.saveExcursion(() => ember.insertBufferSubstring(from, start, end));
+    } else if (how === "prepend") {
+      ember.saveExcursion(() => ember.insertBufferSubstring(from, start, end));
+    } else {
+      ember.insertBufferSubstring(from, start, end);
+      for (const w of windows) ember.setWindowPoint(w, ember.point());
+    }
+  });
+}
+
+for (const [name, doc, prompt, how] of [
+  ["append-to-buffer", "Insert the region's text into another buffer at its point, which moves after it.", "Append to buffer: ", "append"],
+  ["prepend-to-buffer", "Insert the region's text into another buffer at its point, which stays before it.", "Prepend to buffer: ", "prepend"],
+  ["copy-to-buffer", "Replace another buffer's text with the region's.", "Copy to buffer: ", "copy"],
+] as const) {
+  ember.defineCommand({
+    name,
+    doc,
+    params: [
+      { name: "buffer", kind: "buffer", prompt },
+      { name: "start", kind: "region-beginning" },
+      { name: "end", kind: "region-end" },
+    ],
+    run: (buffer: string, start: number, end: number) => regionToBuffer(buffer, start, end, how),
+  });
+}
+
+ember.defineCommand({
+  name: "insert-buffer",
+  doc: "Insert another buffer's text after point, leaving the mark after it.",
+  params: [{ name: "buffer", kind: "buffer", prompt: "Insert buffer: " }],
+  run: (buffer: string) => {
+    if (!ember.getBuffer(buffer)) throw new Error(`No such buffer: ${buffer}`);
+    const [start, stop] = ember.withCurrentBuffer(buffer, () => [ember.pointMin(), ember.pointMax()] as const);
+    const end = ember.saveExcursion(() => {
+      ember.insertBufferSubstring(buffer, start, stop);
+      return ember.point();
+    });
+    ember.pushMark(end);
+  },
+});

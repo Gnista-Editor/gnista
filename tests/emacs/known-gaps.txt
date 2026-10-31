@@ -13,3 +13,8 @@ org-fuzz-9/seed16-0666-m-s-right---c-return  # malformed planning timestamp
 
 # Intentional differences, not to be fixed.
 arguments/delete-more-than-there-is  # Emacs reports an internal "Args out of range" error naming the buffer; Ember says "End of buffer". The text is unchanged in both.
+
+# describe-current-coding-system shows what Ember has: the coding systems in
+# use, but not the detection priority list or the coding systems for
+# particular file names that follow them in Emacs.
+mule-diag/describe-current-coding-system  # no coding priority list yet

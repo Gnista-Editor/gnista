@@ -1,0 +1,557 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "forward-page",
+      "input": {
+        "text": "one\ntwo\n\fthree\nfour\n\ffive\n",
+        "point": 0,
+        "keys": "C-x ]",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\fthree\nfour\n\ffive\n",
+      "visible": "one\ntwo\n\fthree\nfour\n\ffive\n",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "forward-page-twice",
+      "input": {
+        "text": "one\ntwo\n\fthree\nfour\n\ffive\n",
+        "point": 0,
+        "keys": "C-x ] C-x ]",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\fthree\nfour\n\ffive\n",
+      "visible": "one\ntwo\n\fthree\nfour\n\ffive\n",
+      "point": 21,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backward-page",
+      "input": {
+        "text": "one\ntwo\n\fthree\nfour\n\ffive\n",
+        "point": 0,
+        "keys": "M-> C-x [",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\fthree\nfour\n\ffive\n",
+      "visible": "one\ntwo\n\fthree\nfour\n\ffive\n",
+      "point": 21,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "backward-page-twice",
+      "input": {
+        "text": "one\ntwo\n\fthree\nfour\n\ffive\n",
+        "point": 0,
+        "keys": "M-> C-x [ C-x [",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\fthree\nfour\n\ffive\n",
+      "visible": "one\ntwo\n\fthree\nfour\n\ffive\n",
+      "point": 9,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "mark-page",
+      "input": {
+        "text": "one\ntwo\n\fthree\nfour\n\ffive\n",
+        "point": 0,
+        "keys": "C-x ] C-n C-x C-p C-w",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one\ntwo\n\ffive\n",
+      "visible": "one\ntwo\n\ffive\n",
+      "point": 9,
+      "mark": 9,
+      "mark_active": false,
+      "kill_ring": [
+        "three\nfour\n\f"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "count-lines-page",
+      "input": {
+        "text": "one\ntwo\n\fthree\nfour\n\ffive\n",
+        "point": 0,
+        "keys": "C-x ] C-n C-x l",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "message": true
+      },
+      "text": "one\ntwo\n\fthree\nfour\n\ffive\n",
+      "visible": "one\ntwo\n\fthree\nfour\n\ffive\n",
+      "point": 17,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": "Page has 2 lines (2 + 1)"
+    },
+    {
+      "name": "what-page",
+      "input": {
+        "text": "one\ntwo\n\fthree\nfour\n\ffive\n",
+        "point": 0,
+        "keys": "C-x ] C-n M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "what-page"
+        ],
+        "message": true
+      },
+      "text": "one\ntwo\n\fthree\nfour\n\ffive\n",
+      "visible": "one\ntwo\n\fthree\nfour\n\ffive\n",
+      "point": 17,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": "Page 2, line 2"
+    },
+    {
+      "name": "tabify",
+      "input": {
+        "text": "a        b\n        c\n",
+        "point": 0,
+        "keys": "C-x h M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "tabify"
+        ]
+      },
+      "text": "a\t b\n\tc\n",
+      "visible": "a\t b\n\tc\n",
+      "point": 0,
+      "mark": 8,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "untabify",
+      "input": {
+        "text": "a\tb\n\tc\n",
+        "point": 0,
+        "keys": "C-x h M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "untabify"
+        ]
+      },
+      "text": "a       b\n        c\n",
+      "visible": "a       b\n        c\n",
+      "point": 0,
+      "mark": 20,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "center-line",
+      "input": {
+        "text": "hello\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "center-line"
+        ]
+      },
+      "text": "\t\t\t\thello\n",
+      "visible": "\t\t\t\thello\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "center-region",
+      "input": {
+        "text": "a\n\nbb\n",
+        "point": 0,
+        "keys": "C-x h M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "center-region"
+        ]
+      },
+      "text": "\t\t\t\t  a\n\n\t\t\t\t  bb\n",
+      "visible": "\t\t\t\t  a\n\n\t\t\t\t  bb\n",
+      "point": 0,
+      "mark": 18,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "transpose-sexps",
+      "input": {
+        "text": "(a b) (c d)",
+        "point": 0,
+        "keys": "C-M-f C-M-t",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(c d) (a b)",
+      "visible": "(c d) (a b)",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "transpose-sexps-symbols",
+      "input": {
+        "text": "foo bar baz",
+        "point": 0,
+        "keys": "M-f C-M-t",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "bar foo baz",
+      "visible": "bar foo baz",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "transpose-sexps-error",
+      "input": {
+        "text": "(a b)",
+        "point": 0,
+        "keys": "C-M-t",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(a b)",
+      "visible": "(a b)",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "transpose-sentences",
+      "input": {
+        "text": "One.  Two.  Three.",
+        "point": 0,
+        "keys": "M-e M-e M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "transpose-sentences"
+        ]
+      },
+      "text": "One.  Three.  Two.",
+      "visible": "One.  Three.  Two.",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "transpose-paragraphs",
+      "input": {
+        "text": "a\n\nb\n\nc\n",
+        "point": 0,
+        "keys": "C-n C-n C-n M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "transpose-paragraphs"
+        ]
+      },
+      "text": "a\n\nc\n\nb\n",
+      "visible": "a\n\nc\n\nb\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "kill-paragraph",
+      "input": {
+        "text": "a\nb\n\nc\n",
+        "point": 0,
+        "keys": "C-f M-x C-y C-y",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "kill-paragraph"
+        ]
+      },
+      "text": "a\nb\n\nb\n\nc\n",
+      "visible": "a\nb\n\nb\n\nc\n",
+      "point": 7,
+      "mark": 4,
+      "mark_active": false,
+      "kill_ring": [
+        "\nb\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "backward-kill-paragraph",
+      "input": {
+        "text": "a\n\nb\nc\n",
+        "point": 0,
+        "keys": "M-> M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "backward-kill-paragraph"
+        ]
+      },
+      "text": "a\n",
+      "visible": "a\n",
+      "point": 2,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [
+        "\nb\nc\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "append-to-buffer",
+      "input": {
+        "text": "hello world",
+        "point": 0,
+        "keys": "C-SPC M-f M-x C-x b RET",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "append-to-buffer",
+          "other",
+          "other"
+        ]
+      },
+      "text": "hello\n",
+      "visible": "hello\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "insert-buffer",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "C-x h M-x C-x b RET C-x h M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "copy-to-buffer",
+          "b2",
+          "b2",
+          "insert-buffer",
+          "b2"
+        ]
+      },
+      "text": "\nabc\nabc",
+      "visible": "\nabc\nabc",
+      "point": 0,
+      "mark": 4,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "mark-defun",
+      "input": {
+        "text": "(defun a ()\n  1)\n\n;; about b\n(defun b ()\n  2)\n\n(defun c ()\n  3)\n",
+        "point": 0,
+        "keys": "C-n C-n C-n C-n C-n C-M-h C-w",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun a ()\n  1)\n\n;; about b\n\n(defun c ()\n  3)\n",
+      "visible": "(defun a ()\n  1)\n\n;; about b\n\n(defun c ()\n  3)\n",
+      "point": 29,
+      "mark": 29,
+      "mark_active": false,
+      "kill_ring": [
+        "(defun b ()\n  2)\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "mark-defun-twice",
+      "input": {
+        "text": "(defun a ()\n  1)\n\n;; about b\n(defun b ()\n  2)\n\n(defun c ()\n  3)\n",
+        "point": 0,
+        "keys": "C-M-h C-M-h C-w",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n(defun c ()\n  3)\n",
+      "visible": "\n(defun c ()\n  3)\n",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [
+        "(defun a ()\n  1)\n\n;; about b\n(defun b ()\n  2)\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "mark-defun-between",
+      "input": {
+        "text": "(defun a ()\n  1)\n\n;; about b\n(defun b ()\n  2)\n\n(defun c ()\n  3)\n",
+        "point": 0,
+        "keys": "C-n C-n C-M-h C-w",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun a ()\n  1)\n\n;; about b\n\n(defun c ()\n  3)\n",
+      "visible": "(defun a ()\n  1)\n\n;; about b\n\n(defun c ()\n  3)\n",
+      "point": 29,
+      "mark": 29,
+      "mark_active": false,
+      "kill_ring": [
+        "(defun b ()\n  2)\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "mark-defun-prefix",
+      "input": {
+        "text": "(defun a ()\n  1)\n\n;; about b\n(defun b ()\n  2)\n\n(defun c ()\n  3)\n",
+        "point": 0,
+        "keys": "C-u 2 C-M-h C-w",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "\n(defun c ()\n  3)\n",
+      "visible": "\n(defun c ()\n  3)\n",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [
+        "(defun a ()\n  1)\n\n;; about b\n(defun b ()\n  2)\n"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "narrow-to-defun",
+      "input": {
+        "text": "(defun a ()\n  1)\n\n;; about b\n(defun b ()\n  2)\n\n(defun c ()\n  3)\n",
+        "point": 0,
+        "keys": "C-n C-n C-n C-n C-n C-x n d",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun a ()\n  1)\n\n;; about b\n(defun b ()\n  2)\n\n(defun c ()\n  3)\n",
+      "visible": "(defun a ()\n  1)\n\n;; about b\n(defun b ()\n  2)\n\n(defun c ()\n  3)\n",
+      "point": 41,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "narrow-to-defun-first",
+      "input": {
+        "text": "(defun a ()\n  1)\n\n;; about b\n(defun b ()\n  2)\n\n(defun c ()\n  3)\n",
+        "point": 0,
+        "keys": "C-x n d",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun a ()\n  1)\n\n;; about b\n(defun b ()\n  2)\n\n(defun c ()\n  3)\n",
+      "visible": "(defun a ()\n  1)\n\n;; about b\n(defun b ()\n  2)\n\n(defun c ()\n  3)\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    }
+  ]
+}

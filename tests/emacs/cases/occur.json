@@ -1,0 +1,85 @@
+[
+  {
+    "name": "occur-lists-lines",
+    "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+    "keys": "M-s o C-x o",
+    "answers": [
+      "alpha"
+    ]
+  },
+  {
+    "name": "occur-one-match-per-line",
+    "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+    "keys": "M-s o C-x o",
+    "answers": [
+      "^[bg]"
+    ]
+  },
+  {
+    "name": "occur-no-match",
+    "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+    "keys": "M-s o",
+    "answers": [
+      "zzz"
+    ],
+    "message": true
+  },
+  {
+    "name": "occur-message",
+    "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+    "keys": "M-s o",
+    "answers": [
+      "alpha"
+    ],
+    "message": true
+  },
+  {
+    "name": "occur-ret-goes-there",
+    "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+    "keys": "M-s o C-x o C-n C-n RET",
+    "answers": [
+      "alpha"
+    ]
+  },
+  {
+    "name": "occur-next-error",
+    "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+    "keys": "M-> M-s o M-g n M-g n",
+    "answers": [
+      "alpha"
+    ]
+  },
+  {
+    "name": "occur-in-region",
+    "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+    "keys": "C-n C-SPC M-> M-s o C-x o",
+    "answers": [
+      "a"
+    ]
+  },
+  {
+    "name": "occur-case-fold",
+    "text": "Foo\nfoo\nFOO bar\n",
+    "keys": "M-s o C-x o",
+    "answers": [
+      "foo"
+    ]
+  },
+  {
+    "name": "occur-case-sensitive-upper",
+    "text": "Foo\nfoo\nFOO bar\n",
+    "keys": "M-s o C-x o",
+    "answers": [
+      "Foo"
+    ]
+  },
+  {
+    "name": "occur-windows",
+    "text": "alpha one\nbeta\nalpha two alpha\ngamma\n",
+    "keys": "M-s o",
+    "answers": [
+      "alpha"
+    ],
+    "windows": true
+  }
+]

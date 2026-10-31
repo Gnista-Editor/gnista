@@ -603,3 +603,42 @@ ember.bindKey("C-x }", enlargeWindowHorizontally);
 ember.bindKey("C-x {", shrinkWindowHorizontally);
 ember.bindKey("C-x +", balanceWindows);
 ember.bindKey("C-x -", shrinkIfLarger);
+
+// C-l, after window.el's recenter-top-bottom: the line with point to the
+// middle, then the top, then the bottom of the window, each time in a row.
+
+ember.defineVariable({
+  name: "recenter-positions",
+  doc: "Where C-l puts the line with point each time in a row: middle, top, bottom, or a line of the window.",
+  value: ["middle", "top", "bottom"],
+});
+
+let recenterLastOp: ember.Value | undefined;
+
+ember.defineCommand({
+  name: "recenter-top-bottom",
+  doc:
+    "Scroll so the line with point is in the middle of the window; again, at the top; again, at the bottom, " +
+    "as recenter-positions says. With a prefix argument, put it on that line of the window, as recenter does.",
+  params: [{ name: "arg", kind: "prefix" }],
+  run: (arg: ember.PrefixArg) => {
+    if (arg !== null) {
+      ember.callWithPrefix(arg, "recenter");
+      return;
+    }
+    const positions = (ember.variable("recenter-positions") ?? ["middle"]) as ember.Value[];
+    if (ember.lastCommand() === "recenter-top-bottom") {
+      const i = positions.findIndex((p) => JSON.stringify(p) === JSON.stringify(recenterLastOp));
+      recenterLastOp = i >= 0 && i + 1 < positions.length ? positions[i + 1] : positions[0];
+    } else {
+      recenterLastOp = positions[0];
+    }
+    const margin = Math.max(0, Number(ember.variable("scroll-margin") ?? 0));
+    const op = recenterLastOp;
+    if (op === "middle") ember.callWithPrefix(null, "recenter");
+    else if (op === "top") ember.callWithPrefix(margin, "recenter");
+    else if (op === "bottom") ember.callWithPrefix(-1 - margin, "recenter");
+    else if (typeof op === "number" && Number.isInteger(op)) ember.callWithPrefix(op, "recenter");
+  },
+});
+ember.bindKey("C-l", "recenter-top-bottom");

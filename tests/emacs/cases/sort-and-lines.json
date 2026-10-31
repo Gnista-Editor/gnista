@@ -1,0 +1,154 @@
+[
+  {
+    "name": "sort-lines",
+    "text": "banana\napple\ncherry\napple\nBanana\n",
+    "keys": "C-x h M-x",
+    "answers": [
+      "sort-lines"
+    ]
+  },
+  {
+    "name": "sort-lines-reverse",
+    "text": "banana\napple\ncherry\napple\nBanana\n",
+    "keys": "C-x h C-u M-x",
+    "answers": [
+      "sort-lines"
+    ]
+  },
+  {
+    "name": "sort-lines-no-final-newline",
+    "text": "b\nc\na",
+    "keys": "C-x h M-x",
+    "answers": [
+      "sort-lines"
+    ]
+  },
+  {
+    "name": "reverse-region",
+    "text": "one\ntwo\nthree\n",
+    "keys": "C-x h M-x",
+    "answers": [
+      "reverse-region"
+    ]
+  },
+  {
+    "name": "reverse-region-partial-lines",
+    "text": "one\ntwo\nthree\nfour\n",
+    "keys": "C-f C-SPC C-n C-n C-f M-x",
+    "answers": [
+      "reverse-region"
+    ]
+  },
+  {
+    "name": "delete-duplicate-lines",
+    "text": "banana\napple\ncherry\napple\nBanana\n",
+    "keys": "C-x h M-x",
+    "answers": [
+      "delete-duplicate-lines"
+    ],
+    "message": true
+  },
+  {
+    "name": "delete-duplicate-lines-backward",
+    "text": "a\nb\na\nc\nb\n",
+    "keys": "C-x h C-u M-x",
+    "answers": [
+      "delete-duplicate-lines"
+    ],
+    "message": true
+  },
+  {
+    "name": "delete-duplicate-lines-adjacent",
+    "text": "a\na\nb\na\n",
+    "keys": "C-x h C-u C-u M-x",
+    "answers": [
+      "delete-duplicate-lines"
+    ],
+    "message": true
+  },
+  {
+    "name": "keep-lines",
+    "text": "banana\napple\ncherry\napple\nBanana\n",
+    "keys": "M-x",
+    "answers": [
+      "keep-lines",
+      "an"
+    ]
+  },
+  {
+    "name": "keep-lines-from-point",
+    "text": "banana\napple\ncherry\napple\nBanana\n",
+    "keys": "C-n C-n M-x",
+    "answers": [
+      "keep-lines",
+      "an"
+    ]
+  },
+  {
+    "name": "flush-lines",
+    "text": "banana\napple\ncherry\napple\nBanana\n",
+    "keys": "M-x",
+    "answers": [
+      "flush-lines",
+      "^a"
+    ],
+    "message": true
+  },
+  {
+    "name": "flush-lines-case-sensitive",
+    "text": "banana\napple\ncherry\napple\nBanana\n",
+    "keys": "M-x",
+    "answers": [
+      "flush-lines",
+      "B"
+    ],
+    "message": true
+  },
+  {
+    "name": "flush-lines-region",
+    "text": "banana\napple\ncherry\napple\nBanana\n",
+    "keys": "C-n C-SPC C-n C-n M-x",
+    "answers": [
+      "flush-lines",
+      "a"
+    ]
+  },
+  {
+    "name": "how-many",
+    "text": "banana\napple\ncherry\napple\nBanana\n",
+    "keys": "M-x",
+    "answers": [
+      "how-many",
+      "an"
+    ],
+    "message": true
+  },
+  {
+    "name": "how-many-empty-matches",
+    "text": "a\n\nb\n\n",
+    "keys": "M-x",
+    "answers": [
+      "how-many",
+      "^$"
+    ],
+    "message": true
+  },
+  {
+    "name": "kill-matching-lines",
+    "text": "banana\napple\ncherry\napple\nBanana\n",
+    "keys": "M-x M-> C-y",
+    "answers": [
+      "kill-matching-lines",
+      "apple"
+    ]
+  },
+  {
+    "name": "copy-matching-lines",
+    "text": "banana\napple\ncherry\napple\nBanana\n",
+    "keys": "M-x M-> C-y",
+    "answers": [
+      "copy-matching-lines",
+      "an"
+    ]
+  }
+]

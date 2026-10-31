@@ -17,9 +17,11 @@ Status: accepted · 2026-10-30
 - `treesit-induce-sparse-tree` and `treesit-simple-imenu`, from treesit.el and treesit.c. Each setting's matching nodes become entries under their category. A node with matching nodes inside it becomes a submenu with itself as `" "`, named by the setting's function or `treesit-defun-name`. `treesit-major-mode-setup` turns it on.
 - `rust-ts-mode`, `js-ts-mode` and `json-ts-mode` have Emacs's settings, including js-mode's `js--treesit-valid-imenu-entry` as Emacs has it. That keeps the Variable category empty for top-level declarations, as Emacs 30's does. The JSON defun name loses the key's quotes, as Emacs's does.
 
+**Python** (`treesit-modes.ts`): `python-ts-mode` makes its index with `python-imenu-treesit-create-index`, as python.el: definitions as `name (def)` and `name (class)`, and one with definitions inside as `name (class)...`, holding `*class definition*` or `*function definition*` for itself. It moves by defuns as `treesit-major-mode-setup` sets up, and `C-c C-j` is `imenu`, as in Emacs.
+
 **Org** (`org.ts`): `org-imenu-get-tree` lists headings to `org-imenu-depth` (2), without TODO, priority or tags, with links shown as they read. A heading with headings under it is a submenu of them. After a jump, the heading and its ancestors' heading lines are shown and their entries stay folded, as `org-fold-show-context` with `ancestors` does.
 
-The Emacs comparison has 12 cases (`imenu.json`), all matching: Rust functions, structs, impls and their methods, modules, JavaScript classes and functions, nested JSON keys, the mark, and Org headings, folded ones included.
+The Emacs comparison has 17 cases (`imenu.json`), all matching: Rust functions, structs, impls and their methods, modules, JavaScript classes and functions, nested JSON keys, Python classes, methods and nested functions, the mark, and Org headings, folded ones included.
 
 ## Consequences
 
@@ -28,7 +30,7 @@ The Emacs comparison has 12 cases (`imenu.json`), all matching: Rust functions, 
 Not done yet:
 - **Caching:** the index is made afresh each time, with no `*Rescan*` item.
 - **Other ways to choose:** no menu bar index, `imenu-flatten` or `imenu-sort-function`.
-- **Other modes:** Python and outline modes give no index yet.
+- **Other modes:** outline modes give no index yet.
 
 ## Dependencies introduced
 

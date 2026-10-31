@@ -1,0 +1,122 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "c-x-8-acute",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x 8 ' e C-x 8 ' E",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "éÉ",
+      "visible": "éÉ",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "c-x-8-umlaut-and-sharp-s",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x 8 \" u C-x 8 \" s",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "üß",
+      "visible": "üß",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "c-x-8-symbols",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x 8 * C C-x 8 E C-x 8 * L C-x 8 C C-x 8 o",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "©€£©°",
+      "visible": "©€£©°",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "c-x-8-then-undefined",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x 8 ' z x",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "źx",
+      "visible": "źx",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "c-x-still-a-prefix",
+      "input": {
+        "text": "ab",
+        "point": 0,
+        "keys": "C-x h C-w",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [
+        "ab"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "c-x-8-repeated-with-prefix",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-u 3 C-x 8 ' e",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "ééé",
+      "visible": "ééé",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

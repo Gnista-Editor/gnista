@@ -81,7 +81,7 @@ impl Editor {
     }
 
     /// Binds a key sequence in a keymap, by its name or as a value, to a
-    /// command, or as a prefix key to a keymap, or to nil, which hides a
+    /// command, to a list of keys, or as a prefix key to a keymap, or to nil, which hides a
     /// parent's binding. `None` takes the binding out, as keymap-unset's REMOVE.
     pub fn define_key(&mut self, keymap: &Value, keys: &[Key], binding: Option<&Value>) -> Result<()> {
         let map = self.keymap_of(keymap)?;
@@ -89,6 +89,21 @@ impl Editor {
             None => self.keymaps.unbind(map, keys),
             Some(Value::Null) => self.keymaps.bind(map, keys, Binding::Nil),
             Some(Value::Keymap(prefix)) => self.keymaps.bind(map, keys, Binding::Keymap(*prefix)),
+            // A list of keys, as a vector binding in Emacs: a keyboard
+            // macro, or in a translation map what the keys become.
+            Some(Value::List(items)) => {
+                let mut to = Vec::new();
+                for item in items {
+                    let text = item.as_str().ok_or_else(|| Error::new(format!("Not a key: {item}")))?;
+                    // One character is that character, a space or a no-break space included.
+                    let mut chars = text.chars();
+                    match (chars.next(), chars.next()) {
+                        (Some(c), None) => to.push(Key::new(crate::key::KeyCode::Char(c))),
+                        _ => to.extend(Key::parse_seq(text).ok_or_else(|| Error::new(format!("Invalid key sequence: {text}")))?),
+                    }
+                }
+                self.keymaps.bind(map, keys, Binding::Keys(to));
+            }
             Some(command) => {
                 let name = command.as_str().ok_or_else(|| Error::new(format!("Not a command or keymap: {command}")))?;
                 self.keymaps.bind(map, keys, Binding::Command(name.to_string()));

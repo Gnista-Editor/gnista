@@ -108,3 +108,103 @@ fn recursive_edits_wait_for_c_m_c_or_quit_with_c_bracket() {
     assert_eq!(s.eval_expression(&mut ed, "ember.recursionDepth()").unwrap(), "0");
     assert!(ed.prompt().is_none());
 }
+
+#[test]
+fn read_event_gives_up_after_its_seconds_and_sit_for_stops_for_a_key() {
+    use std::time::Duration;
+    let (mut ed, s) = setup();
+    s.eval_typescript(
+        &mut ed,
+        "t.ts",
+        r#"
+        ember.bindKey("C-c e", ember.defineCommand({
+          name: "test-read-event-timeout",
+          run: async () => ember.insert(`${await ember.readEvent("Event: ", { seconds: 2 }) ?? "nil"}|`),
+        }));
+        ember.bindKey("C-c w", ember.defineCommand({
+          name: "test-sit-for",
+          run: async () => ember.insert(`${await ember.sitFor(2)}|`),
+        }));
+        ember.bindKey("C-c z", ember.defineCommand({
+          name: "test-sleep-for",
+          run: async () => {
+            await ember.sleepFor(1);
+            ember.insert("slept|");
+          },
+        }));
+        "#
+        .into(),
+    )
+    .unwrap();
+    // A key in time is the answer; none, and it is nil after the seconds.
+    ed.press("C-c e").unwrap();
+    assert_eq!(ed.echo(), Some("Event: "));
+    ed.advance_clock(Duration::from_secs(1));
+    ed.press("a").unwrap();
+    ed.press("C-c e").unwrap();
+    assert!(ed.next_timer_in().is_some_and(|d| d <= Duration::from_secs(2)), "the front end wakes for the timeout");
+    ed.advance_clock(Duration::from_secs(2));
+    assert_eq!(text(&ed), "a|nil|");
+    assert_eq!(ed.echo(), None);
+    // sit-for: true when the time passes; false at a key, which then runs.
+    ed.press("C-c w").unwrap();
+    ed.advance_clock(Duration::from_secs(2));
+    ed.press("C-c w x").unwrap();
+    assert_eq!(text(&ed), "a|nil|true|false|x");
+    // sleep-for goes on after its time, in the buffer it started in.
+    ed.press("C-c z").unwrap();
+    assert_eq!(text(&ed), "a|nil|true|false|x");
+    ed.advance_clock(Duration::from_secs(1));
+    assert_eq!(text(&ed), "a|nil|true|false|xslept|");
+}
+
+#[test]
+fn c_x_8_types_characters_through_key_translation_map() {
+    let (mut ed, s) = setup();
+    ed.press("C-x 8").unwrap();
+    assert_eq!(ed.echo(), Some("C-x 8-"));
+    ed.press("' e").unwrap();
+    ed.press("C-x 8 \" u C-x 8 * SPC C-x 8 E").unwrap();
+    assert_eq!(text(&ed), "éü\u{a0}€");
+    // C-x is still a prefix of its own.
+    ed.press("C-x h C-w").unwrap();
+    assert_eq!(text(&ed), "");
+    // In the minibuffer too, as Emacs translates every key sequence read.
+    ed.press("M-x").unwrap();
+    ed.press("C-x 8 ' a").unwrap();
+    assert_eq!(s.eval_expression(&mut ed, "ember.minibufferContents()").unwrap(), r#""á""#);
+}
+
+#[test]
+fn keys_bound_to_keys_are_typed_and_input_decode_map_translates_first() {
+    let (mut ed, s) = setup();
+    s.eval_typescript(
+        &mut ed,
+        "t.ts",
+        r#"
+        ember.bindKey("C-c m", ["a", "C-a", "b"]);
+        ember.defineKey("input-decode-map", "<f5>", ["C-c", "m"]);
+        ember.defineKey("key-translation-map", "C-c q", ember.defun("test-translate", () => "Q"));
+        "#
+        .into(),
+    )
+    .unwrap();
+    ed.press("C-c m").unwrap();
+    assert_eq!(text(&ed), "ba");
+    ed.press("C-e <f5>").unwrap();
+    assert_eq!(text(&ed), "bbaa");
+    ed.press("C-e C-c q").unwrap();
+    assert_eq!(text(&ed), "bbaaQ");
+    assert_eq!(s.eval_expression(&mut ed, "JSON.stringify(ember.lookupKey('global-map', 'C-c m'))").unwrap(), r#""[\"a\",\"C-a\",\"b\"]""#);
+}
+
+#[test]
+fn c_q_reads_a_character_or_its_octal_code() {
+    let (mut ed, _s) = setup();
+    // 101 is A, ended by RET; 142 is b, ended by x, which is typed itself.
+    ed.press("C-q 1 0 1 RET C-q 1 4 2 x C-q C-a").unwrap();
+    assert_eq!(text(&ed), "Abx\u{1}");
+    // C-S-DEL kills the whole line, as C-S-<backspace> does in Emacs.
+    ed.press("C-S-DEL").unwrap();
+    assert_eq!(text(&ed), "");
+}

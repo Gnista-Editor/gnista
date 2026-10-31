@@ -337,6 +337,11 @@ impl Coding {
         if matches!(self.system().kind, Kind::Ascii) { b'?' } else { b' ' }
     }
 
+    /// Whether the coding is not decided yet, as `undecided` is.
+    pub fn is_undecided(&self) -> bool {
+        matches!(self.system().kind, Kind::Undecided)
+    }
+
     /// Decodes bytes, finding the line ends if they are not decided, as
     /// Emacs's `decode-coding-string`. An undecided coding is first found
     /// from the bytes. Returns the text and the coding used, decided.
@@ -432,8 +437,54 @@ impl Coding {
     }
 }
 
+thread_local! {
+    /// The coding systems detection tries first, most preferred first, as
+    /// `set-coding-system-priority` and `prefer-coding-system` make them.
+    static PRIORITY: std::cell::RefCell<Vec<Coding>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// Puts `codings` first among those detection prefers, in that order, as
+/// Emacs's `set-coding-system-priority`: the others keep theirs after them.
+pub fn set_priority(codings: &[Coding]) {
+    PRIORITY.with(|p| {
+        let mut p = p.borrow_mut();
+        let named = |c: &Coding, d: &Coding| c.system().name == d.system().name;
+        p.retain(|c| !codings.iter().any(|d| named(c, d)));
+        for (i, c) in codings.iter().enumerate() {
+            p.insert(i, c.with_eol(None));
+        }
+    });
+}
+
+/// The coding systems in the order detection tries them, as Emacs's
+/// `coding-system-priority-list`: those preferred, then Ember's own order.
+pub fn priority_list() -> Vec<Coding> {
+    let mut list = PRIORITY.with(|p| p.borrow().clone());
+    for name in ["utf-8", "iso-2022-7bit", "iso-latin-1", "iso-2022-jp", "japanese-shift-jis", "undecided"] {
+        let c = Coding::named(name).with_eol(None);
+        if !list.iter().any(|d| d.system().name == name) {
+            list.push(c);
+        }
+    }
+    list
+}
+
+impl Coding {
+    /// Whether bytes that are not all ASCII read in this coding without an
+    /// error, so detection may choose it when it is preferred.
+    fn fits(&self, bytes: &[u8]) -> bool {
+        match self.system().kind {
+            Kind::Utf8(_) => std::str::from_utf8(bytes.strip_prefix(UTF8_SIGNATURE).unwrap_or(bytes)).is_ok(),
+            Kind::Latin1 => true,
+            Kind::Single(encoding, _) | Kind::Multi(encoding, _) => decode_cleanly(encoding, bytes),
+            Kind::Undecided | Kind::Utf16 { .. } | Kind::Ascii | Kind::Iso2022Seven | Kind::RawText => false,
+        }
+    }
+}
+
 /// The coding systems that could have written `bytes`, most likely first,
-/// as Emacs's `detect-coding-string` lists them. Line ends are not decided.
+/// as Emacs's `detect-coding-string` lists them, those preferred first if
+/// the bytes fit them. Line ends are not decided.
 pub fn detect(bytes: &[u8]) -> Vec<Coding> {
     let base = |name: &str| Coding::named(name).with_eol(None);
     let scan = Scan::of(bytes);
@@ -453,6 +504,11 @@ pub fn detect(bytes: &[u8]) -> Vec<Coding> {
     found.push(base("iso-latin-1"));
     if !found.iter().any(|c| c.system().name == "utf-8") && decode_cleanly(e::SHIFT_JIS, bytes) {
         found.push(base("japanese-shift-jis"));
+    }
+    let preferred: Vec<Coding> = PRIORITY.with(|p| p.borrow().iter().filter(|c| c.fits(bytes)).copied().collect());
+    if !preferred.is_empty() {
+        found.retain(|c| !preferred.iter().any(|p| p.system().name == c.system().name));
+        found.splice(0..0, preferred);
     }
     found
 }

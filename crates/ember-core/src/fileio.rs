@@ -155,7 +155,19 @@ impl Editor {
     /// if it names one, with the buffer's line ends if it gives none, else
     /// the buffer's own, as Emacs's choose_write_coding_system decides.
     pub(crate) fn coding_for_write(&self) -> Coding {
-        let own = self.buffer().coding();
+        // A buffer with no coding of its own, as a new file's, has the
+        // variable's default, which prefer-coding-system sets, and one
+        // still undecided, as an ASCII file's, writes in the default with
+        // its own line ends, as select-safe-coding-system chooses.
+        let default = self.default_value("buffer-file-coding-system").and_then(|v| v.as_str().and_then(Coding::parse));
+        let own = match (self.buffer().locals.get("buffer-file-coding-system"), default) {
+            (None, Some(c)) => c.with_eol(Some(c.eol.unwrap_or(Eol::Unix))),
+            (Some(_), Some(c)) if self.buffer().coding().is_undecided() && !c.is_undecided() => {
+                let own = self.buffer().coding();
+                c.with_eol(Some(own.eol.or(c.eol).unwrap_or(Eol::Unix)))
+            }
+            _ => self.buffer().coding(),
+        };
         match self.variable("coding-system-for-write").and_then(|v| v.as_str().and_then(Coding::parse)) {
             Some(coding) => coding.with_eol(Some(coding.eol.or(own.eol).unwrap_or(Eol::Unix))),
             None => own,
@@ -396,6 +408,19 @@ impl Editor {
             b.file.auto_save = Some(new);
         }
         Ok(())
+    }
+
+    /// Makes the current buffer visit no file, giving up the file's lock,
+    /// as Emacs's `set-visited-file-name` with nil.
+    pub fn forget_visited_file(&mut self) {
+        let b = &mut self.buffers[self.current];
+        if std::mem::take(&mut b.file.locked)
+            && let Some(path) = &b.path
+        {
+            crate::filelock::unlock(path);
+        }
+        b.path = None;
+        b.file.modtime_known = false;
     }
 
     /// Asks the front end to exit, as Emacs's `kill-emacs`.

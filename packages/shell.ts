@@ -2,7 +2,7 @@
 // on a terminal in *shell*, in shell-mode, built on comint, which follows
 // the directory as cd, pushd and popd change it.
 
-import { makeComintInBuffer, outputFilter } from "comint";
+import { makeComintInBuffer, outputFilter, readInputRing } from "comint";
 
 for (const [name, doc, value] of [
   ["explicit-shell-file-name", "The shell M-x shell runs, if not $ESHELL or shell-file-name.", null],
@@ -51,6 +51,42 @@ function directoryTracker(input: string): void {
 }
 ember.defun("shell-directory-tracker", directoryTracker);
 
+ember.defineVariable({
+  name: "shell-history-file-name",
+  doc: "The file shell-mode reads the history from: nil for $HISTFILE or the shell's own default, t for none.",
+  value: null,
+});
+ember.defineVariable({ name: "shell--start-prog", doc: "The name of the shell this buffer runs.", value: null, local: true });
+ember.put("shell--start-prog", "permanent-local", true);
+
+/**
+ * Reads the shell's history file into the buffer's history, as shell-mode
+ * does: shell-history-file-name, else $HISTFILE, else the shell's own
+ * default, with $HISTSIZE for the history's size.
+ */
+function historySetup(): void {
+  const shell = String(ember.variable("shell--start-prog") ?? "");
+  const named = ember.variable("shell-history-file-name");
+  let file: string | undefined = typeof named === "string" ? named : named === null || named === undefined ? ember.getenv("HISTFILE") : undefined;
+  if (file === "") file = undefined;
+  if (file === undefined && (named === null || named === undefined)) {
+    file = { bash: "~/.bash_history", ksh: "~/.sh_history", zsh: "~/.zsh_history" }[shell] ?? "~/.history";
+  }
+  if (file !== undefined) {
+    const size = Number(ember.getenv("HISTSIZE") ?? "");
+    if (Number.isInteger(size) && size > 0) {
+      ember.makeLocalVariable("comint-input-ring-size");
+      ember.setVariable("comint-input-ring-size", size);
+    }
+  }
+  if (file !== undefined && ember.fileTruename(ember.expandFileName(file)) === ember.fileTruename("/dev/null")) file = undefined;
+  ember.setVariable("comint-input-ring-file-name", file ?? null);
+  if (shell === "zsh") {
+    ember.setVariable("comint-input-ring-file-prefix", ": [[:digit:]]+:[[:digit:]]+;");
+  }
+  readInputRing(true);
+}
+
 ember.defineMajorMode({
   name: "shell-mode",
   modeName: "Shell",
@@ -63,6 +99,7 @@ ember.defineMajorMode({
     ember.makeLocalVariable("comint-prompt-regexp");
     ember.setVariable("comint-prompt-regexp", ember.variable("shell-prompt-pattern") ?? null);
     ember.addHook("comint-input-filter-functions", directoryTracker, { local: true });
+    historySetup();
   },
 });
 
@@ -85,6 +122,7 @@ ember.defineCommand({
       const startfile = [`~/.emacs_${name}`, `~/.emacs.d/init_${name}.sh`].map((f) => ember.expandFileName(f)).find((f) => ember.fileExistsP(f));
       ember.getBufferCreate(buffer);
       ember.withCurrentBuffer(buffer, () => {
+        ember.setVariable("shell--start-prog", name);
         if (ember.variable("major-mode") !== "shell-mode") ember.call("shell-mode");
       });
       makeComintInBuffer("shell", buffer, program, startfile, ...args);

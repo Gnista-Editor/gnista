@@ -316,6 +316,154 @@
       "kill_ring": [],
       "modified": false,
       "error": null
+    },
+    {
+      "name": "imenu-python-function",
+      "input": {
+        "text": "import os\n\nclass Point:\n    def __init__(self, x):\n        self.x = x\n\n    def length(self):\n        def inner():\n            return 1\n        return inner()\n\ndef main():\n    p = Point(1)\n\nasync def fetch():\n    pass\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [
+          "python-ts-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "imenu",
+          "main.(def)"
+        ]
+      },
+      "text": "import os\n\nclass Point:\n    def __init__(self, x):\n        self.x = x\n\n    def length(self):\n        def inner():\n            return 1\n        return inner()\n\ndef main():\n    p = Point(1)\n\nasync def fetch():\n    pass\n",
+      "visible": "import os\n\nclass Point:\n    def __init__(self, x):\n        self.x = x\n\n    def length(self):\n        def inner():\n            return 1\n        return inner()\n\ndef main():\n    p = Point(1)\n\nasync def fetch():\n    pass\n",
+      "point": 159,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "imenu-python-class-method",
+      "input": {
+        "text": "import os\n\nclass Point:\n    def __init__(self, x):\n        self.x = x\n\n    def length(self):\n        def inner():\n            return 1\n        return inner()\n\ndef main():\n    p = Point(1)\n\nasync def fetch():\n    pass\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [
+          "python-ts-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "imenu",
+          "Point.(class)...",
+          "length.(def)...",
+          "inner.(def)"
+        ]
+      },
+      "text": "import os\n\nclass Point:\n    def __init__(self, x):\n        self.x = x\n\n    def length(self):\n        def inner():\n            return 1\n        return inner()\n\ndef main():\n    p = Point(1)\n\nasync def fetch():\n    pass\n",
+      "visible": "import os\n\nclass Point:\n    def __init__(self, x):\n        self.x = x\n\n    def length(self):\n        def inner():\n            return 1\n        return inner()\n\ndef main():\n    p = Point(1)\n\nasync def fetch():\n    pass\n",
+      "point": 101,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "imenu-python-class-itself",
+      "input": {
+        "text": "import os\n\nclass Point:\n    def __init__(self, x):\n        self.x = x\n\n    def length(self):\n        def inner():\n            return 1\n        return inner()\n\ndef main():\n    p = Point(1)\n\nasync def fetch():\n    pass\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [
+          "python-ts-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "imenu",
+          "Point.(class)...",
+          "*class.definition*"
+        ]
+      },
+      "text": "import os\n\nclass Point:\n    def __init__(self, x):\n        self.x = x\n\n    def length(self):\n        def inner():\n            return 1\n        return inner()\n\ndef main():\n    p = Point(1)\n\nasync def fetch():\n    pass\n",
+      "visible": "import os\n\nclass Point:\n    def __init__(self, x):\n        self.x = x\n\n    def length(self):\n        def inner():\n            return 1\n        return inner()\n\ndef main():\n    p = Point(1)\n\nasync def fetch():\n    pass\n",
+      "point": 11,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "imenu-python-async",
+      "input": {
+        "text": "import os\n\nclass Point:\n    def __init__(self, x):\n        self.x = x\n\n    def length(self):\n        def inner():\n            return 1\n        return inner()\n\ndef main():\n    p = Point(1)\n\nasync def fetch():\n    pass\n",
+        "point": 0,
+        "keys": "C-c C-j",
+        "modes": [
+          "python-ts-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "fetch.(def)"
+        ]
+      },
+      "text": "import os\n\nclass Point:\n    def __init__(self, x):\n        self.x = x\n\n    def length(self):\n        def inner():\n            return 1\n        return inner()\n\ndef main():\n    p = Point(1)\n\nasync def fetch():\n    pass\n",
+      "visible": "import os\n\nclass Point:\n    def __init__(self, x):\n        self.x = x\n\n    def length(self):\n        def inner():\n            return 1\n        return inner()\n\ndef main():\n    p = Point(1)\n\nasync def fetch():\n    pass\n",
+      "point": 189,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "imenu-python-defun-moves",
+      "input": {
+        "text": "import os\n\nclass Point:\n    def __init__(self, x):\n        self.x = x\n\n    def length(self):\n        def inner():\n            return 1\n        return inner()\n\ndef main():\n    p = Point(1)\n\nasync def fetch():\n    pass\n",
+        "point": 0,
+        "keys": "M-> C-M-a C-M-a C-M-e",
+        "modes": [
+          "python-ts-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "import os\n\nclass Point:\n    def __init__(self, x):\n        self.x = x\n\n    def length(self):\n        def inner():\n            return 1\n        return inner()\n\ndef main():\n    p = Point(1)\n\nasync def fetch():\n    pass\n",
+      "visible": "import os\n\nclass Point:\n    def __init__(self, x):\n        self.x = x\n\n    def length(self):\n        def inner():\n            return 1\n        return inner()\n\ndef main():\n    p = Point(1)\n\nasync def fetch():\n    pass\n",
+      "point": 188,
+      "mark": 159,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "imenu-outline-heading",
+      "input": {
+        "text": "* One\ntext\n** Two words\nmore\n* Three\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [
+          "outline-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "imenu",
+          "**.Two.words"
+        ]
+      },
+      "text": "* One\ntext\n** Two words\nmore\n* Three\n",
+      "visible": "* One\ntext\n** Two words\nmore\n* Three\n",
+      "point": 11,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
     }
   ]
 }

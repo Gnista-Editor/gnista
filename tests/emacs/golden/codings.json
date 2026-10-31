@@ -645,6 +645,96 @@
         "l.txt": "café\nあ\n",
         "l.txt~": "latin-1:café\n"
       }
+    },
+    {
+      "name": "prefer-shift-jis-then-revisit",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-x C-x C-v",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "prefer-coding-system",
+          "japanese-shift-jis",
+          "j.txt"
+        ],
+        "files": {
+          "j.txt": "latin-1:ú{\n"
+        },
+        "find": "j.txt"
+      },
+      "text": "日本\n",
+      "visible": "日本\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "j.txt": "latin-1:ú{\n"
+      }
+    },
+    {
+      "name": "prefer-shift-jis-then-new-file-saves-in-it",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-x 日 本 C-x C-s",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "prefer-coding-system",
+          "japanese-shift-jis"
+        ],
+        "find": "n.txt"
+      },
+      "text": "日本\n",
+      "visible": "日本\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "n.txt": "latin-1:ú{\n",
+        "n.txt~": ""
+      }
+    },
+    {
+      "name": "prefer-windows-1252-over-utf-8",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "M-x C-x C-v",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "prefer-coding-system",
+          "windows-1252",
+          "w.txt"
+        ],
+        "files": {
+          "w.txt": "latin-1:Ã©\n"
+        },
+        "find": "w.txt"
+      },
+      "text": "Ã©\n",
+      "visible": "Ã©\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "w.txt": "é\n"
+      }
     }
   ]
 }

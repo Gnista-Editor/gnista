@@ -17,6 +17,10 @@ Each entry says whether the difference is **deliberate**, which keeps it, or **n
 ## Keys and the command loop
 
 - **`read-key-sequence` and ESC** (not yet): ESC then x reads as `M-x`, where Emacs's gives the two keys `ESC x`. `read-key` takes ESC alone, as Emacs does.
+- **`zap-to-char`** (not yet) reads its character as a key rather than from the minibuffer, so there is no history to go back through ([ADR 0040](adr/0040-everyday-editing-commands.md)).
+- **`what-cursor-position`** (not yet) with a prefix argument does not describe the character, as `describe-char` is not there, and shows no character names.
+- **`sleep-for`** (not yet): keys typed while a command sleeps run their commands at once, where Emacs keeps them until the command ends.
+- **Translation keymaps** (not yet): `input-decode-map` and `key-translation-map` translate the keys the command loop reads, but not those `read-key-sequence` reads partway through a command, and there is no `function-key-map`.
 - **`this-command-keys`** (not yet): keys a command reads with `read-event` are not added to it, as Emacs adds them.
 - **Disabled commands** (not yet): `upcase-region`, `downcase-region` and the others novice.el disables for new users run straight away.
 - **Errors' wording** (deliberate): deleting more characters than there are says "End of buffer", where Emacs reports an internal "Args out of range" naming the buffer. The text is the same in both.
@@ -28,6 +32,7 @@ Each entry says whether the difference is **deliberate**, which keeps it, or **n
 - **Putting text properties** (not yet) records no undo, does not mark the buffer modified and runs no change hooks, as if Emacs's `with-silent-modifications` were around every call. Ember's packages fontify and fold this way, as Emacs's font-lock does inside that macro, so a package that relies on properties being undone does not work yet ([ADR 0034](adr/0034-buffer-and-text-property-primitives.md)).
 - **Indirect buffers** (not yet): Org's `org-indirect-buffer-display` frames are not titled after the heading, and `org-cycle-hook` is not run after `C-c C-x b` ([ADR 0034](adr/0034-buffer-and-text-property-primitives.md)).
 - **`buffer-undo-list`** (not yet) can be read, with positions counted from 0, but not written or let-bound; turning undo off is `bufferDisableUndo` ([ADR 0034](adr/0034-buffer-and-text-property-primitives.md)).
+- **Display strings next to each other** (not yet): a `display` property over several characters shows once if the strings are equal, where Emacs shows each character's string apart unless they are the same object. `read-passwd` therefore hides a password with one string of stars, so the cursor shows after them rather than among them when point is moved inside.
 - **Faces as attribute lists** in a `face` property, `(:height 1.5)`, are not read (not yet); faces are named.
 - **`text-scale-adjust`** (not yet) has no lower limit, where Emacs stops at the smallest font a frame can show.
 
@@ -47,6 +52,7 @@ Each entry says whether the difference is **deliberate**, which keeps it, or **n
 - **Auto-revert** (not yet) polls every `auto-revert-interval` seconds rather than being told by the system ([ADR 0018](adr/0018-files-and-saving.md)).
 - **The clipboard** (not yet): X11's primary selection is not used, and the terminal does not write the clipboard ([ADR 0031](adr/0031-the-system-clipboard.md)).
 - **Dired** (not yet): `M-DEL` and `* c` read their mark as text and RET, where Emacs reads a key ([ADR 0022](adr/0022-dired-and-projects.md)).
+- **`describe-current-coding-system`** (not yet) stops before Emacs's priority list for detecting coding systems and the coding systems it keeps for particular file names, as Ember detects in a fixed order ([ADR 0035](adr/0035-coding-systems-and-charsets.md)).
 - **`directory-files`** (not yet) sorts the names even with NOSORT, where Emacs gives the directory's own order ([ADR 0033](adr/0033-file-primitives.md)).
 - **File name handlers** (not yet) are asked by the primitives in ADR 0033 and by visiting and saving, but not yet by `expand-file-name`, `file-attributes` or the copying and renaming commands.
 - **Raw bytes** (deliberate): bytes that are no text in their coding are the characters U+10FF80 to U+10FFFF, where Emacs's are beyond Unicode at #x3FFF80 to #x3FFFFF. They show and are written back as in Emacs ([ADR 0035](adr/0035-coding-systems-and-charsets.md)).
