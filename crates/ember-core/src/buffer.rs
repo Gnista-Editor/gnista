@@ -167,6 +167,11 @@ pub struct Buffer {
     /// in their previous buffers, with [`PREV_START`] and [`PREV_POINT`].
     window_points: Vec<(u64, usize)>,
     text: Rope,
+    /// Whether text that may need reordering for display, right-to-left
+    /// letters, Arabic digits or directional controls, was ever put in the
+    /// buffer since its text was last set, so redisplay can skip bidi for
+    /// buffers without any ([ADR 0047](../../../docs/adr/0047-bidirectional-text.md)).
+    pub(crate) has_rtl: bool,
     point: usize,
     mark: Option<usize>,
     /// Earlier marks, most recent first, as Emacs's `mark-ring`.
@@ -326,6 +331,7 @@ impl Buffer {
             last_window_start: 0,
             window_points: Vec::new(),
             text: Rope::new(),
+            has_rtl: false,
             point: 0,
             mark: None,
             mark_ring: Vec::new(),
@@ -485,6 +491,7 @@ impl Buffer {
             TextChange::Reset => {
                 let (point, restriction) = (self.point, self.restriction);
                 self.text = from.text.clone();
+                self.has_rtl = from.has_rtl;
                 for parser in &self.parsers {
                     parser.reset();
                 }
@@ -1029,6 +1036,7 @@ impl Buffer {
             let edit_start = (!self.parsers.is_empty()).then(|| (point_at(&self.text, p), point_at(&self.text, p + 1)));
             self.text.remove(p..p + 1);
             self.text.insert(p, to.encode_utf8(&mut [0; 4]));
+            self.has_rtl |= crate::bidi::reorders(to);
             self.share(|| TextChange::Delete(p, p + 1));
             self.share(|| TextChange::Insert(p, to.to_string()));
             if let Some((s, old_end)) = edit_start {
@@ -1142,6 +1150,7 @@ impl Buffer {
             self.top_line += s.matches('\n').count();
         }
         self.text.insert(pos, s);
+        self.has_rtl |= crate::bidi::needs_reordering(s);
         self.share(|| TextChange::Insert(pos, s.to_string()));
         let n = s.chars().count();
         if let Some(start) = start {
@@ -1625,6 +1634,7 @@ impl Buffer {
     /// For buffers the editor generates, such as `*Help*`.
     pub fn set_text(&mut self, s: &str) {
         self.text = Rope::from_str(s);
+        self.has_rtl = crate::bidi::needs_reordering(s);
         self.share(|| TextChange::Reset);
         for parser in &self.parsers {
             parser.reset();

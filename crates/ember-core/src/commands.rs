@@ -591,12 +591,15 @@ fn line_move(ed: &mut Editor, n: i64) -> Result<()> {
 /// size or a proportional font, measured as the front end's fonts are,
 /// unwrapped as a truncated line shows.
 fn off_grid_row(ed: &Editor, b: &Buffer, pos: usize) -> Option<crate::rows::Row> {
-    if ed.text_metrics().uniform() {
+    // Rows reordered for bidirectional text are measured as they show too.
+    let bidi = ed.bidi_lines(b).is_some();
+    if ed.text_metrics().uniform() && !bidi {
         return None;
     }
     let rows = ed.screen_rows_of(b, ed.row_line_in(b, b.line_of(pos)), None);
     let row = rows.iter().find(|r| r.shows_point(pos)).or(rows.first())?;
-    (!ed.row_on_grid(row)).then(|| row.clone())
+    let reordered = bidi && (row.right_to_left || crate::display::reordered(&crate::display::row_glyphs(row, ed.tab_width_in(b))));
+    (!ed.row_on_grid(row) || reordered).then(|| row.clone())
 }
 
 /// The column, in default columns as the layout measures it, of where a
@@ -604,8 +607,8 @@ fn off_grid_row(ed: &Editor, b: &Buffer, pos: usize) -> Option<crate::rows::Row>
 fn row_column(ed: &Editor, b: &Buffer, row: &crate::rows::Row, pos: usize) -> f32 {
     let tab = ed.tab_width_in(b);
     let glyphs = crate::display::row_glyphs(row, tab);
-    let index = crate::display::cursor_index(&glyphs, pos);
-    ed.glyph_columns(row, &glyphs, tab)[..index].iter().sum()
+    let index = crate::display::cursor_glyph(row, &glyphs, pos);
+    ed.glyph_columns(row, &glyphs, tab)[..index].iter().sum::<f32>() + ed.row_offset_in(ed.selected_window(), row)
 }
 
 /// Where a goal column lands in a row, as Emacs's vertical-motion does
@@ -616,7 +619,8 @@ fn position_at_x(ed: &Editor, b: &Buffer, row: &crate::rows::Row, goal: f32) -> 
     let tab = ed.tab_width_in(b);
     let glyphs = crate::display::row_glyphs(row, tab);
     let widths = ed.glyph_columns(row, &glyphs, tab);
-    let mut x = 0.0;
+    // A right-to-left row is laid out from the window's right edge.
+    let mut x = ed.row_offset_in(ed.selected_window(), row);
     for (i, glyph) in glyphs.iter().enumerate() {
         if x + widths[i] > goal {
             // An ellipsis or a string stands before the text after it.
@@ -749,14 +753,16 @@ fn line_move_visual(ed: &mut Editor, n: i64, wrap: crate::rows::Wrap) -> Result<
         k -= 1;
     }
     let row = &rows[k];
-    if !ed.row_on_grid(row) || goal.fract() != 0.0 {
+    let glyphs = crate::display::row_glyphs(row, ed.tab_width_in(b));
+    // Bidirectional text is measured where it shows.
+    let reordered = row.right_to_left || crate::display::reordered(&glyphs);
+    if !ed.row_on_grid(row) || goal.fract() != 0.0 || reordered {
         let target = position_at_x(ed, b, row, goal);
         ed.goal_column = Some(goal);
         ed.buffer_mut().set_point(target);
         return Ok(());
     }
     let goal = goal as usize;
-    let glyphs = crate::display::row_glyphs(row, ed.tab_width_in(b));
     // As move-to-column does: where the column is first reached, so past a
     // character that spans it, and before hidden text that starts there.
     let mut target = row.end;

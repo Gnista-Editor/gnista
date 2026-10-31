@@ -34,7 +34,7 @@ The steps:
 2. Line motion by pixels: `line-move-visual`'s goal column as an x position, as Emacs keeps it, and `C-v` and `M-v` by height in mixed rows.
 3. The header line (`header-line-format`, done in [ADR 0041](0041-header-line-and-tabulated-lists.md)), margins (done with fringes in [ADR 0045](0045-margins-fringes-and-redisplay-primitives.md)) (`left-margin-width`, `(margin left-margin)` display specs) and fringes with their bitmaps, which `display-line-numbers`, the continuation mark and `next-error` would use.
 4. Images: `create-image`, `(image ...)` display specs and `insert-image`, PNG, JPEG and SVG, drawn by the GUI and shown as text in the terminal.
-5. Bidirectional text, as Emacs's bidi.c reorders it for display.
+5. Bidirectional text, as Emacs's bidi.c reorders it for display (done in [ADR 0047](0047-bidirectional-text.md)).
 6. The minibuffer's rows wrapped as a window's are, with `resize-mini-windows`.
 
 ## Progress
@@ -44,6 +44,8 @@ Step 1 is done. With the GUI's metrics, keys in a 50,000-line Org file cost 0.3 
 Step 2 is done. Off the grid, `C-n` and `C-p` keep their goal as an x position, a fractional column, and land before the glyph that reaches past it, as `vertical-motion` does with a goal in pixels; `C-v` and `M-v` move the window by as many whole lines as fill the screen less two lines of context, and point that would leave it goes to the last line showing whole. On the grid both work as before, so the terminal still scrolls by lines of text rather than screen rows, which differs from Emacs for continued lines until a window can start partway through a line. `C-v` with the GUI's metrics costs 0.3 ms more for measuring the rows it passes.
 
 Step 4 is done ([ADR 0046](0046-images.md)): `(image ...)` display specs on text, overlays, strings and in the margins, sliced or whole, PNG, JPEG, GIF's first frame and SVG, with image.c's primitives and image.el's functions and commands, and a minimal `image-mode`. The core reads each image's size from its header and lays rows out as tall as their images, on the baseline as `:ascent` says, matching Emacs's line heights and positions; the GUI decodes and draws them, and the terminal shows the text, as Emacs's terminals do. Buffers without images take the same paths as before.
+
+Step 5 is done ([ADR 0047](0047-bidirectional-text.md)). Lines with right-to-left text are reordered as they are made into rows, before they are broken into screen rows, as Emacs breaks them; a right-to-left row is laid out from the window's right edge, by an offset the posn functions, line motion and both front ends take from the core. A buffer that never held a right-to-left character, an Arabic digit or a directional control makes its rows as before. The oracle, an interactive Emacs whose screen tmux reads, agrees on 281 recorded cases but for the few the ADR lists.
 
 ## Consequences
 

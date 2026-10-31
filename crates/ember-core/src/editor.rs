@@ -444,6 +444,7 @@ impl Editor {
         editor.windows.push(first);
         variables::install(&mut editor);
         crate::modeline::install(&mut editor);
+        crate::bidi_display::install(&mut editor);
         faces::install(&mut editor);
         commands::install(&mut editor);
         editor

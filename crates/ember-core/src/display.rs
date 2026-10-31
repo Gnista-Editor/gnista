@@ -26,6 +26,12 @@ pub fn render_char(c: char, col: usize, tab_width: usize, out: &mut String) -> u
             out.push(char::from_u32(c as u32 ^ 0x40).unwrap_or('?'));
             2
         }
+        // The bidi controls show as a space, as Emacs's thin space for
+        // them is on a terminal.
+        c if crate::bidi_display::is_bidi_control(c) => {
+            out.push(' ');
+            1
+        }
         c => {
             out.push(c);
             c.width().unwrap_or(0)
@@ -111,6 +117,53 @@ pub fn cursor_index(glyphs: &[Glyph], point: usize) -> usize {
     glyphs[strings..index].iter().position(|g| g.cursor).map_or(index, |i| strings + i)
 }
 
+/// Where point goes among a row's glyphs, as [`cursor_index`], in a row
+/// reordered for bidirectional text too: on the glyph showing point, the
+/// first of a string's from the start of the row, the right in a
+/// right-to-left row, as Emacs puts the cursor on a tab's or an escape's
+/// rightmost cell there; for hidden text, on the next character shown;
+/// and past the row's end, at the end of the line, which a right-to-left
+/// row shows at its left.
+pub fn cursor_glyph(row: &crate::Row, glyphs: &[Glyph], point: usize) -> usize {
+    if !row.right_to_left && !reordered(glyphs) {
+        return cursor_index(glyphs, point);
+    }
+    let pick = |pos: usize| {
+        let mut at = glyphs.iter().enumerate().filter(|(_, g)| g.pos == Some(pos)).map(|(i, _)| i);
+        if row.right_to_left { at.next_back() } else { at.next() }
+    };
+    if let Some(i) = pick(point) {
+        return i;
+    }
+    if let Some(next) = glyphs.iter().filter_map(|g| g.pos).filter(|&p| p > point).min() {
+        return pick(next).expect("a glyph shows it");
+    }
+    if row.right_to_left { 0 } else { glyphs.len() }
+}
+
+/// Which of a window's rows shows a position: the first whose range has
+/// it, unless that is a continued or right-to-left row without a glyph for
+/// it and a later row has one, as a line reordered for bidirectional text
+/// and then broken into screen rows spreads its characters over them.
+pub fn row_showing(rows: &[crate::Row], pos: usize, tab_width: usize) -> Option<usize> {
+    let k = rows.iter().position(|r| r.shows_point(pos) && !r.in_string)?;
+    // Only rows whose ranges overlap the next's, as a reordered line's
+    // rows may, need their glyphs looked at.
+    let overlaps = rows[k].continued && rows.get(k + 1).is_some_and(|n| n.start < rows[k].end);
+    let has = |r: &crate::Row| row_glyphs(r, tab_width).iter().any(|g| g.pos == Some(pos));
+    if !overlaps || has(&rows[k]) {
+        return Some(k);
+    }
+    let later = rows[k + 1..].iter().position(|r| r.shows_point(pos) && !r.in_string && has(r));
+    Some(later.map_or(k, |j| k + 1 + j))
+}
+
+/// Whether a row's glyphs are out of the buffer's order, as bidirectional
+/// text is reordered for display.
+pub fn reordered(glyphs: &[Glyph]) -> bool {
+    glyphs.windows(2).any(|w| w[0].pos.zip(w[1].pos).is_some_and(|(a, b)| a > b))
+}
+
 /// The buffer position under a column of a row, for a mouse click: the
 /// character drawn there, or the end of the row past its last glyph.
 pub fn position_at_column(row: &crate::Row, glyphs: &[Glyph], col: usize) -> usize {
@@ -143,6 +196,7 @@ mod tests {
             extend: None,
             margins: Default::default(),
             fringes: Default::default(),
+            right_to_left: false,
         };
         let glyphs = row_glyphs(&row, 8);
         assert_eq!(position_at_column(&row, &glyphs, 0), 10);

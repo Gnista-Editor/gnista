@@ -1342,21 +1342,28 @@
       for (const spec of specs) if (Array.isArray(spec) && symbolName(spec[0]) === name) return spec[1];
       return undefined;
     },
-    currentBidiParagraphDirection: () => "left-to-right",
-    // In left-to-right text, the next character or the one before on the
-    // line, as move-point-visually; at the line's edge, undefined.
-    movePointVisually(direction) {
-      const p = native.point();
-      const target = direction > 0 ? p + 1 : p - 1;
-      if (direction > 0 ? p >= ember.lineEndPosition() : p <= ember.lineBeginningPosition()) return undefined;
-      native.gotoChar(target);
-      return target;
-    },
+    currentBidiParagraphDirection: (buffer) =>
+      buffer === undefined || buffer === null ? native.currentBidiParagraphDirection() : ember.withCurrentBuffer(buffer, () => native.currentBidiParagraphDirection()),
+    movePointVisually: (direction) => native.movePointVisually(direction),
     ding: () => native.ding(),
     beep: () => native.ding(),
     redisplay: () => native.redisplay(),
     redrawDisplay: () => native.redisplay(),
     redrawFrame: () => native.redisplay(),
+    // Bidirectional text, as xdisp.c's primitives and get-char-code-property
+    // answer about it (ADR 0047).
+    bidiResolvedLevels: (vpos) => (vpos === undefined || vpos === null ? native.bidiResolvedLevels() : native.bidiResolvedLevels(vpos)) ?? undefined,
+    bidiFindOverriddenDirectionality(from, to, object, baseDir) {
+      const rtl = baseDir !== undefined && baseDir !== null && symbolName(baseDir) === "right-to-left";
+      const string = typeof object === "string" ? object : object instanceof PropertizedString ? object.string : undefined;
+      const found = string !== undefined
+        ? native.bidiFindOverriddenDirectionality(from, to, string, rtl)
+        : object === undefined || object === null
+          ? native.bidiFindOverriddenDirectionality(from, to, null, rtl)
+          : ember.withCurrentBuffer(object, () => native.bidiFindOverriddenDirectionality(from, to, null, rtl));
+      return found ?? undefined;
+    },
+    getCharCodeProperty: (char, property) => native.getCharCodeProperty(char, symbolName(property)) ?? undefined,
     // As frame-or-buffer-changed-p: whether the buffers, their names and
     // modified flags, or the frames changed since it was last asked.
     frameOrBufferChangedP() {

@@ -147,6 +147,62 @@ fn face_decorations() {
 
 /// Margins and fringes: margin text, a continued line's curly arrows, a
 /// fringe spec's triangle and a defined bitmap, beside the text.
+/// Hebrew and Arabic paragraphs, from the window's right edge, a Hebrew
+/// word inside English, a long right-to-left line continued, with its
+/// curly arrows in the fringes the other way round, and the region over
+/// the mixed line in two pieces.
+fn bidirectional() -> Editor {
+    let mut ed = Editor::new();
+    ed.type_text(
+        "שלום עולם! (Hello)\n\
+         \n\
+         An English line with עברית inside it\n\
+         \n\
+         مرحبا بالعالم 123\n\
+         \n\
+         זוהי שורה ארוכה מאוד בעברית שתיגלש לשורה הבאה בחלון ואף לשורה שאחריה בלי ספק בכלל\n",
+    );
+    // The region from "line" into the Hebrew word, the cursor on ע.
+    let line = ed.buffer().line_start(2);
+    ed.buffer_mut().set_point(line + 11);
+    ed.press("C-SPC").unwrap();
+    ed.buffer_mut().set_point(line + 22);
+    ed
+}
+
+/// A harness drawing Hebrew and Arabic, which egui's built-in fonts lack, as
+/// boxes, so the snapshot shows the layout the same on every machine; or
+/// with the installed fonts, which have them, with `system_fonts`.
+fn harness_without_glyphs(editor: Editor, system_fonts: bool) -> Harness<'static, EmberApp> {
+    let mut harness = Harness::builder()
+        .with_size(vec2(640.0, 360.0))
+        .with_theme(Theme::Dark)
+        .with_step_dt(0.25)
+        .allow_missing_glyphs()
+        .build_eframe(move |cc| {
+            ember_gui::theme::install_fonts(&cc.egui_ctx, system_fonts);
+            EmberApp::new(editor)
+        });
+    harness.run();
+    harness
+}
+
+#[test]
+fn bidirectional_text() {
+    harness_without_glyphs(bidirectional(), false).snapshot("bidirectional_dark");
+}
+
+/// The same with the fonts installed here, to see that Hebrew and Arabic
+/// glyphs show: `cargo test -p ember-gui --test window -- --ignored
+/// bidirectional_text_in_installed_fonts`, then look at
+/// `tests/snapshots/bidirectional_installed_dark.new.png`, which is not kept.
+#[test]
+#[ignore = "depends on the fonts installed"]
+fn bidirectional_text_in_installed_fonts() {
+    let mut h = harness_without_glyphs(bidirectional(), true);
+    let _ = h.try_snapshot("bidirectional_installed_dark");
+}
+
 #[test]
 fn margins_and_fringes() {
     let mut ed = Editor::new();

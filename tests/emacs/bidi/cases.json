@@ -1,0 +1,1445 @@
+[
+ {
+  "name": "hebrew-paragraph",
+  "text": "שלום עולם"
+ },
+ {
+  "name": "hebrew-with-english",
+  "text": "שלום world עולם"
+ },
+ {
+  "name": "english-with-hebrew",
+  "text": "hello שלום עולם world"
+ },
+ {
+  "name": "paragraphs",
+  "text": "abc אבג def\n\nאבג abc דהו\n\n123 456\n\nשלום\nabc"
+ },
+ {
+  "name": "numbers-in-hebrew",
+  "text": "מחיר 123 שקל, 1.5 או -45 ו-50% ($100)"
+ },
+ {
+  "name": "arabic",
+  "text": "مرحبا بالعالم 123 و ١٢٣ abc"
+ },
+ {
+  "name": "arabic-numbers",
+  "text": "العدد 1,234.5 و ٤٥٦/٧ end"
+ },
+ {
+  "name": "brackets-in-hebrew",
+  "text": "שלום (abc) עולם [def] {x} <y>"
+ },
+ {
+  "name": "brackets-in-english",
+  "text": "abc (שלום) def [אבג (גד) הו] end"
+ },
+ {
+  "name": "brackets-without-bpa",
+  "text": "abc (שלום) def [אבג (גד) הו] end",
+  "vars": {
+   "bidi-inhibit-bpa": true
+  }
+ },
+ {
+  "name": "brackets-mixed",
+  "text": "אבג (abc] def) הו a(b)ש"
+ },
+ {
+  "name": "mirroring",
+  "text": "א<ב>ג«ד»ה(ו)ז[ח]ט{י}"
+ },
+ {
+  "name": "trailing-space",
+  "text": "שלום   \nabc   \t\nאבג\tdef"
+ },
+ {
+  "name": "tabs",
+  "text": "א\tב\tabc\tג"
+ },
+ {
+  "name": "forced-rtl",
+  "text": "hello world (abc) 123\n\nאבג def",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "forced-ltr",
+  "text": "שלום עולם (abc) 123\n\nabc אבג",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "no-reordering",
+  "text": "שלום abc עולם",
+  "vars": {
+   "bidi-display-reordering": false
+  }
+ },
+ {
+  "name": "embeddings",
+  "text": "abc ‫def אבג‬ ghi ‮jkl‬ mno ‭אבג‬"
+ },
+ {
+  "name": "isolates",
+  "text": "אבג ⁦abc דהו⁩ def ⁧xyz⁩ ⁨שלום abc⁩ end"
+ },
+ {
+  "name": "marks",
+  "text": "abc‏ (1) ‎אבג (2)‏"
+ },
+ {
+  "name": "neutral-paragraph-after-rtl",
+  "text": "שלום\n\n123 ...\n\nabc"
+ },
+ {
+  "name": "rtl-wrapped",
+  "text": "זוהי שורה ארוכה מאוד בעברית שתיגלש לשורה הבאה ואף לשורה שאחריה בלי ספק"
+ },
+ {
+  "name": "rtl-wrapped-with-english",
+  "text": "זוהי שורה ארוכה עם some English words in the middle שתיגלש לשורה הבאה"
+ },
+ {
+  "name": "ltr-wrapped-with-hebrew",
+  "text": "This is a long line with שלום עולם ומה שלומך היום חבר יקר in the middle of it"
+ },
+ {
+  "name": "rtl-word-wrap",
+  "text": "זוהי שורה ארוכה מאוד בעברית שתיגלש לשורה הבאה ואף לשורה שאחריה",
+  "vars": {
+   "word-wrap": true
+  }
+ },
+ {
+  "name": "ltr-word-wrap",
+  "text": "This line is long enough to be broken between its words, with שלום in it",
+  "vars": {
+   "word-wrap": true
+  }
+ },
+ {
+  "name": "rtl-truncated",
+  "text": "זוהי שורה ארוכה מאוד בעברית שתיחתך בקצה החלון ולא תיגלש\nabc",
+  "vars": {
+   "truncate-lines": true
+  }
+ },
+ {
+  "name": "empty-rtl-lines",
+  "text": "שלום\n\nעולם\n"
+ },
+ {
+  "name": "display-string",
+  "text": "אבג XYZ דהו abc",
+  "props": [
+   [
+    4,
+    7,
+    "display",
+    "שלום"
+   ]
+  ]
+ },
+ {
+  "name": "invisible",
+  "text": "אבג abc דהו",
+  "props": [
+   [
+    4,
+    7,
+    "invisible",
+    true
+   ]
+  ]
+ },
+ {
+  "name": "control-chars",
+  "text": "אבג\u0001ד abc"
+ },
+ {
+  "name": "random-0",
+  "text": "+(ab 2ع",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "random-1",
+  "text": "a[1 a1 א‫>aa٣‪عאبa",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "random-2",
+  "text": "‪۴ג/ ‬\"ب!!b, ב <⁧"
+ },
+ {
+  "name": "random-3",
+  "text": "3>Lב⁧3‪ع]2 ب/ع} "
+ },
+ {
+  "name": "random-4",
+  "text": "13 ٣ع"
+ },
+ {
+  "name": "random-5",
+  "text": "2ב]"
+ },
+ {
+  "name": "random-6",
+  "text": "عL3⁩ ٣{א3‬-1א۴‭a()< )"
+ },
+ {
+  "name": "random-7",
+  "text": "א‬2ع۴‪ب)بa٣(ג%(,۴Lb۴"
+ },
+ {
+  "name": "random-8",
+  "text": "a‫a{1 בא(Lב",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-9",
+  "text": "٣cא 1ב2aعبL",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-10",
+  "text": "3א%)aac c  ٣א⁨(3א.ع-ב,aב⁦}",
+  "vars": {
+   "bidi-inhibit-bpa": true
+  }
+ },
+ {
+  "name": "random-11",
+  "text": "a!בc+c+]$א>1){ #aאb-<$2‪ع3a#عב",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-12",
+  "text": "ג‎(גא/[\"ג} 2⁩א bL>א %[عגב{%‬<c"
+ },
+ {
+  "name": "random-13",
+  "text": "בبع‎cb",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-14",
+  "text": "(ع+אbא<+\"1ב()a/bb}aא‎"
+ },
+ {
+  "name": "random-15",
+  "text": "1 c[1⁦"
+ },
+ {
+  "name": "random-16",
+  "text": ">בא2b:aa⁩ב$1בa!⁧⁧bא#"
+ },
+ {
+  "name": "random-17",
+  "text": "{2גLאאג)b b-גא⁦aL(-!",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "random-18",
+  "text": "٣-$אaא",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-19",
+  "text": "{ aa ג2]b ג3/Lcc{ב ["
+ },
+ {
+  "name": "random-20",
+  "text": "<c>aב>("
+ },
+ {
+  "name": "random-21",
+  "text": "‫⁩אב٣a{א  11א1٣a[L2(\"⁨a -$c⁩ב"
+ },
+ {
+  "name": "random-22",
+  "text": "#אa٣3.1 "
+ },
+ {
+  "name": "random-23",
+  "text": "ב ‭ ג% :⁧א"
+ },
+ {
+  "name": "random-24",
+  "text": "3}c }ב ]ع  $]<‮+Lאא+ a  ג3c"
+ },
+ {
+  "name": "random-25",
+  "text": "٣bאb"
+ },
+ {
+  "name": "random-26",
+  "text": "‭c [:"
+ },
+ {
+  "name": "random-27",
+  "text": "]א]‪>ع>1#2א1٣>:בع"
+ },
+ {
+  "name": "random-28",
+  "text": "٣-a⁧אאLcא",
+  "vars": {
+   "bidi-inhibit-bpa": true
+  }
+ },
+ {
+  "name": "random-29",
+  "text": "א ()⁧٣2] +عבb)b ٣⁦ ⁧c3+ב3ג٣",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-30",
+  "text": " ג٣ג +b!ع۴‏,   א!"
+ },
+ {
+  "name": "random-31",
+  "text": "ب ‎בL#٣גaعبب{- < 2 "
+ },
+ {
+  "name": "random-32",
+  "text": "בa c عאLa a!(ب ב1אL3אb$",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-33",
+  "text": ":a3‫ "
+ },
+ {
+  "name": "random-34",
+  "text": "בב٣אגa >:1۴aב ‏۴ג عع2א% א"
+ },
+ {
+  "name": "random-35",
+  "text": "[a>#ב1 (L,",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-36",
+  "text": "1! %א٣cc ג א  בbع2bLa"
+ },
+ {
+  "name": "random-37",
+  "text": "אa )⁦#ג[b bع3عcא)1-א ג$>‏a("
+ },
+ {
+  "name": "random-38",
+  "text": "<]באc).(aع}٣+",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "random-39",
+  "text": "1[>aa"
+ },
+ {
+  "name": "random-40",
+  "text": "\" 1L"
+ },
+ {
+  "name": "random-41",
+  "text": "  [:ع,⁧"
+ },
+ {
+  "name": "random-42",
+  "text": "א$(Lب .⁧>۴"
+ },
+ {
+  "name": "random-43",
+  "text": "}ب:    א⁨c!]]ab)2ع⁩a٣1bع "
+ },
+ {
+  "name": "random-44",
+  "text": " אא",
+  "vars": {
+   "bidi-inhibit-bpa": true
+  }
+ },
+ {
+  "name": "random-45",
+  "text": "aع בb((]בبא۴",
+  "vars": {
+   "bidi-inhibit-bpa": true
+  }
+ },
+ {
+  "name": "random-46",
+  "text": "3ع<2b)٣۴[-3a⁩"
+ },
+ {
+  "name": "random-47",
+  "text": "cع٣bג-a):בבגב 3٣c!גגa⁩2!\"⁧"
+ },
+ {
+  "name": "random-48",
+  "text": "!(c٣-"
+ },
+ {
+  "name": "random-49",
+  "text": "א-ג‎(عב$ג3aאאcb ‪#)⁨  אa+.](",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "random-50",
+  "text": "L{aع] ב<${<ب/٣‫( )؜אא  32ب}(-",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-51",
+  "text": "‎a‮ .٣)3‏ב .‏בب‪\"3%-1c1c ⁨אaب:",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-52",
+  "text": "ع\"</>\"[ع1(ع 2ג1b"
+ },
+ {
+  "name": "random-53",
+  "text": "c‏)عb(‬ب‪בبבג!א)"
+ },
+ {
+  "name": "random-54",
+  "text": " bb⁦אaא2‬ع [b%‏"
+ },
+ {
+  "name": "random-55",
+  "text": "بa:\"  [ ‏ L( aא.{b1 "
+ },
+ {
+  "name": "random-56",
+  "text": "b]bع>א3ب<‎ב2<٣א"
+ },
+ {
+  "name": "random-57",
+  "text": "{b  ג} a,ב>b3",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "random-58",
+  "text": "بbL+$‮٣%cب",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "random-59",
+  "text": "ב23%אL  -1c3٣c ‎א#2b< א,)",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-60",
+  "text": " אא+}بaa",
+  "vars": {
+   "bidi-inhibit-bpa": true
+  }
+ },
+ {
+  "name": "random-61",
+  "text": "א ב,{א عbגb>c-גb؜בא٣גb"
+ },
+ {
+  "name": "random-62",
+  "text": "\".א ב3ב‬ג(.[%{"
+ },
+ {
+  "name": "random-63",
+  "text": "- 2ب\"באבc%bא<בa٣‫אb  a⁨ג"
+ },
+ {
+  "name": "random-64",
+  "text": "  aב c!c}א[]ג<c]ع1b%א/(%a‬!."
+ },
+ {
+  "name": "random-65",
+  "text": "‪ba1 בعب1b . ))$٣ ۴("
+ },
+ {
+  "name": "random-66",
+  "text": "ג2 \"#b‬{ba ب א,<!#بג ג(",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "random-67",
+  "text": "3a/<L.2ג ⁨a<ع[L bג⁧:(1"
+ },
+ {
+  "name": "random-68",
+  "text": "::\"1عb2אbaب(:‪1ع3)"
+ },
+ {
+  "name": "random-69",
+  "text": "⁧)‫aع, "
+ },
+ {
+  "name": "random-70",
+  "text": " ‎٣אبcL:a٣۴cعaאאa3L3"
+ },
+ {
+  "name": "random-71",
+  "text": "aع1+abb)a3 a]1 cc+) "
+ },
+ {
+  "name": "random-72",
+  "text": "(۴  )3ב\"אבL bג\"אאع+",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-73",
+  "text": "‭אa-#٣ ",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "random-74",
+  "text": "۴عא,a(a"
+ },
+ {
+  "name": "random-75",
+  "text": "بc$/٣\"]cא ع Lבc"
+ },
+ {
+  "name": "random-76",
+  "text": "b)א1ב)$# אa)",
+  "vars": {
+   "bidi-inhibit-bpa": true
+  }
+ },
+ {
+  "name": "random-77",
+  "text": "c!)b1$ 3ع!⁩א‫:3)-  )⁩+:٣אac/"
+ },
+ {
+  "name": "random-78",
+  "text": "]⁦ بאb)b۴1",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-79",
+  "text": "ع )גאa ][",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-80",
+  "text": "$L3٣אג}⁩"
+ },
+ {
+  "name": "random-81",
+  "text": "גaa%<"
+ },
+ {
+  "name": "random-82",
+  "text": "2-a{+bع3+באג"
+ },
+ {
+  "name": "random-83",
+  "text": "۴>2ب"
+ },
+ {
+  "name": "random-84",
+  "text": "($۴‏a%(גع3a-a"
+ },
+ {
+  "name": "random-85",
+  "text": ">גع۴,-"
+ },
+ {
+  "name": "random-86",
+  "text": "b٣ג!٣!>גc-$ب{بגגאع  א( "
+ },
+ {
+  "name": "random-87",
+  "text": "-#aL\"אbב אאב"
+ },
+ {
+  "name": "random-88",
+  "text": "3()א٣۴גב3a)(a‎بc۴  ,٣L>א$⁧"
+ },
+ {
+  "name": "random-89",
+  "text": "אאa‮ג⁦ א\"a⁩aא۴a b)a٣אב2عع:",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-90",
+  "text": "L#‬-#ג2\""
+ },
+ {
+  "name": "random-91",
+  "text": "/‬1 גaب (‬)+۴32 -]12)"
+ },
+ {
+  "name": "random-92",
+  "text": "ב ع٣אa (1ג3א2ג‎c{ab"
+ },
+ {
+  "name": "random-93",
+  "text": "א٣a"
+ },
+ {
+  "name": "random-94",
+  "text": "ג$({אbb‎.b ‭%",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "random-95",
+  "text": " L 3-عבب٣1{aא‪%#,אعאc‎ "
+ },
+ {
+  "name": "random-96",
+  "text": "  1",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-97",
+  "text": "aع۴}3ב%"
+ },
+ {
+  "name": "random-98",
+  "text": "):ب[ .bא%.⁧\""
+ },
+ {
+  "name": "random-99",
+  "text": "אb33b!⁨aaa ]aa٣גaaאאב۴אאא<א۴"
+ },
+ {
+  "name": "random-100",
+  "text": "גb+3bLאב(aב a"
+ },
+ {
+  "name": "random-101",
+  "text": "aבג$1(/bא ",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-102",
+  "text": ")אבאبאaאLג1}:#{عبא)}>%ba(<٣!"
+ },
+ {
+  "name": "random-103",
+  "text": ")بגב‭3عבבb۴ c.cc)אגבב2acג1b",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-104",
+  "text": "aL٣⁩ Lג‮3{](,"
+ },
+ {
+  "name": "random-105",
+  "text": ":Lع⁨} (a[ב+א ",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "random-106",
+  "text": " abcع<cאב3>٣"
+ },
+ {
+  "name": "random-107",
+  "text": "({13L{א(באc a2L(bא א"
+ },
+ {
+  "name": "random-108",
+  "text": "אג-[/⁩aב2aaع۴caב +‏%<+2"
+ },
+ {
+  "name": "random-109",
+  "text": "א‎.ב‎"
+ },
+ {
+  "name": "random-110",
+  "text": "ב[אב2‬ב,a1"
+ },
+ {
+  "name": "random-111",
+  "text": "ב  2באLcb"
+ },
+ {
+  "name": "random-112",
+  "text": "+}ع1)⁧א א a3+ !(+3a۴+ c$a "
+ },
+ {
+  "name": "random-113",
+  "text": "א.٣]1{Lc\"aגג)+2-}"
+ },
+ {
+  "name": "random-114",
+  "text": ":3‎‏bא‎גL!#ב۴ب1۴L"
+ },
+ {
+  "name": "random-115",
+  "text": "$(בca⁩bع: #1"
+ },
+ {
+  "name": "random-116",
+  "text": "גאbb٣cع2٣$$‫$2בג "
+ },
+ {
+  "name": "random-117",
+  "text": "L ۴(a\"א]1<b",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-118",
+  "text": "בبגbع{}#]3בגcL(⁩<"
+ },
+ {
+  "name": "random-119",
+  "text": "bbacعבב",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-120",
+  "text": " ב .ع]בbLcbbב‏2/\"ג"
+ },
+ {
+  "name": "random-121",
+  "text": "$12ع٣אאא$א > ג‪גג$:ب"
+ },
+ {
+  "name": "random-122",
+  "text": "‏>ב‏ع a:⁦ג(#<א)בא{baג)‬b()Lגعג"
+ },
+ {
+  "name": "random-123",
+  "text": "٣ב‪Lc٣⁦c1٣1]%  $a א $a:c2"
+ },
+ {
+  "name": "random-124",
+  "text": "גc<גa2٣< ",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "random-125",
+  "text": "a a)L() bعb ‏٣:/cعג بع۴אaאa/"
+ },
+ {
+  "name": "random-126",
+  "text": "1bL)٣a]בcא عبג 3b!גab{"
+ },
+ {
+  "name": "random-127",
+  "text": "1cabב2",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-128",
+  "text": " ⁩$b٣"
+ },
+ {
+  "name": "random-129",
+  "text": "٣/‫.٣ب!"
+ },
+ {
+  "name": "random-130",
+  "text": ")בbא% bג}א $a1⁦b2a"
+ },
+ {
+  "name": "random-131",
+  "text": "عa$ב#1א‏ב⁧2٣",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "random-132",
+  "text": " 1ב$ב⁧ع⁦"
+ },
+ {
+  "name": "random-133",
+  "text": "+ع אa‏2)bג[ב⁩}c3c1a2+גع ",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-134",
+  "text": " #a1aא‮ +",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-135",
+  "text": "ב# +<b3ג}aL#(b٣ א٣אא3<[1"
+ },
+ {
+  "name": "random-136",
+  "text": "-א]א\"a%ב21)L"
+ },
+ {
+  "name": "random-137",
+  "text": "\"⁩ ‬"
+ },
+ {
+  "name": "random-138",
+  "text": "3cLא)aa1)אc< ع"
+ },
+ {
+  "name": "random-139",
+  "text": ">(aב  ‏<( عa 1{c].< 13bא-L"
+ },
+ {
+  "name": "random-140",
+  "text": "‪,#ع⁧[aع{بaع1b$2ب3 ג‫+٣",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "random-141",
+  "text": ">a:> 1 ב(ب⁧a-b ⁧2[אa(بb/"
+ },
+ {
+  "name": "random-142",
+  "text": "בa a)"
+ },
+ {
+  "name": "random-143",
+  "text": "ב٣#]]L,}א%‎, ב"
+ },
+ {
+  "name": "random-144",
+  "text": "٣ $:א:א⁧{bعc)⁦([aع c1عb<  ב⁩:",
+  "vars": {
+   "bidi-inhibit-bpa": true
+  }
+ },
+ {
+  "name": "random-145",
+  "text": "aא٣ ۴",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "random-146",
+  "text": "1٣Lאא%>א",
+  "vars": {
+   "bidi-inhibit-bpa": true
+  }
+ },
+ {
+  "name": "random-147",
+  "text": "a},]1אב:b/ba"
+ },
+ {
+  "name": "random-148",
+  "text": "# /a⁨aא"
+ },
+ {
+  "name": "random-149",
+  "text": "٣!אa{ב-3אع٣ג⁩عب٣1b +c#٣3[cבaب"
+ },
+ {
+  "name": "wrapped-0",
+  "text": "bגc)]אאa ؜.({3ع\"3>{ג\">ب}cLאLL3ג3۴"
+ },
+ {
+  "name": "wrapped-1",
+  "text": "( > (ג⁩‮c  1٣2\"3)ג}>1+! 2אב c>א>ב‭ 33:$בא3\"#a) >L a:אא}b٣]",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-2",
+  "text": "‫a< aגאabaa!عb\" ٣a$(א⁧a‪, ב2ב۴%aאع#c‭b [a(‬"
+ },
+ {
+  "name": "wrapped-3",
+  "text": "2ג}גא⁧: ‭/אcL1א! aא abא(#ג ב cعc3bba ba/1٣ع  א(بa$}\"-!:",
+  "vars": {
+   "word-wrap": true
+  }
+ },
+ {
+  "name": "wrapped-4",
+  "text": "3!%ב⁩عa bב[/a1ب2א$aבع\"a L+ع1 عb",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-5",
+  "text": "#גعאb#2a ב‭cع2{  ب2 عc$۴  b -aL٣(<("
+ },
+ {
+  "name": "wrapped-6",
+  "text": "‎.bבא/ 1٣b٣‬ b3 א<1 ب‏(-c1a$}L32ب \" 2‮ג : ]א#ع/⁨,a1 }.)a‫ %>}b) א $L(c#1א"
+ },
+ {
+  "name": "wrapped-7",
+  "text": " ⁧ ג>٣/a$\"!1}1‎#ג ‪؜א,[ a3‏/cב1aa]+א/3c  באבג‬ב.3!3א$]c3ba‬"
+ },
+ {
+  "name": "wrapped-8",
+  "text": "ב‭b)ععבa1c1ב<!1.\"גbאL عג(א),ع)ג}\"3 ‬  {\" ⁨ב#/ععL‭ג2<L‮baגג!} 1٣",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-9",
+  "text": "عב,cב\"bcאאبאגאא%גع ac]1 c٣[ג %ع‏ع2#ב[$$٣⁩‎[1ب٣ab‏b\" !aב(abגLc/b⁧.a>א",
+  "vars": {
+   "word-wrap": true
+  }
+ },
+ {
+  "name": "wrapped-10",
+  "text": "a ٣a٣a)ג٣אعa٣א1(#,ג.ع\"٣ /3)c‭Lאגccבבbbא٣2בبc۴b% אعacaא ٣ {אcב ‏c "
+ },
+ {
+  "name": "wrapped-11",
+  "text": "⁨>1בא) ב>+بب 1:b א>אג٣ع٣!א  (11ג2אL",
+  "vars": {
+   "word-wrap": true
+  }
+ },
+ {
+  "name": "wrapped-12",
+  "text": " ]גaع,2 :-b\"{٣)b(a‎a٣(/)a2 ב-אc  ,1בb2(א+]"
+ },
+ {
+  "name": "wrapped-13",
+  "text": "א }$ ٣אאa/c#ع1⁧ع2عאא٣)b‫/a ع3b33(-  אa2bcב٣#"
+ },
+ {
+  "name": "wrapped-14",
+  "text": ".٣ c a3אa۴  bג%ג(‪ב2ב%ca1,ג⁨٣a: 3 بא",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-15",
+  "text": "a$⁦)/ב>aא(<ع>b$aאLaب3ב:a3٣ع!bب1ع⁧+311‬(.c$bגa ⁨,+א11بאא ‬)#aב[⁧۴+ א ع"
+ },
+ {
+  "name": "wrapped-16",
+  "text": ">א]cב\"גb א⁧:ع11٣b )1‪  !۴cא<L1  Lאב!ב ⁧אבa$אba[בבب \"(٣2#א}%",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "wrapped-17",
+  "text": "2 aג2<⁧}.-א#cב)+ 1ב3-א[⁩Lא) א$א{$3cب2גLא \"[#(cא a",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-18",
+  "text": "אLع[a}ב+2b‭L(}1‮ac2a)٣(בa<אبb$1אaג(cא#,(.]c!abb 3!⁨‬#ג‭ א۴aa. { c ⁩/2ב",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-19",
+  "text": "c abc< ‬  !b‎א  (‎}/א.a⁧ب3+!٣b{b‬c  ,# b3+#א⁩/a‫bא /1בabab)גאبacc ‪ع‏."
+ },
+ {
+  "name": "wrapped-20",
+  "text": "aب [La(عבcאאאא3)בب2[ ⁩L(ב-٣-בaa\"<1b[32.cא) ⁩1⁧<3<ca)c3  א(a"
+ },
+ {
+  "name": "wrapped-21",
+  "text": "٣ב‏ (<\"-)3אבאa#ع>a(Lבב‭.1Laع⁨1/}aבبאع c ב:L(ب)⁦-aع⁨: 2‪"
+ },
+ {
+  "name": "wrapped-22",
+  "text": " ג[aa٣‭)٣cבb.aגבع>,Laאc#1{-b-a)א)#)Lbאאגb.,+‭‎ג אعaא‏בع٣‫ב: ⁨‏3c+ב>ب$"
+ },
+ {
+  "name": "wrapped-23",
+  "text": "‬L%!,abcaع2٣c‪bג1אא(! )aאa13אאaaعب\"ب"
+ },
+ {
+  "name": "wrapped-24",
+  "text": "  L>!)b 3٣א ( ב b aab:⁩1.$[⁧)גa"
+ },
+ {
+  "name": "wrapped-25",
+  "text": "(⁨b‮b‎ב3b$cבא‏א2bع{ aa1‬‬ א۴۴ <()⁦א1ב‬بא/) }אba"
+ },
+ {
+  "name": "wrapped-26",
+  "text": "ع1 /c.aא)!א L3גb1۴]bבaאא)‪א2٣2‭‬aب٣.٣)",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-27",
+  "text": "٣:۴ב‫ ]3a a א)ב%-b+c!גב<]}aגa عca.ac3b[א3!ב א۴#a%$b‬ب1+ب>aa"
+ },
+ {
+  "name": "wrapped-28",
+  "text": ".א‬b<ג!גb/ב‪)א2۴ א+3$۴1عع‏٣bع  bب1[א!)a3٣,<א)a)אa)⁧: عא/)אعאא{aaL(+ "
+ },
+ {
+  "name": "wrapped-29",
+  "text": "$abبbבב⁩⁦/ببa1c٣)ع )!بא<3א {⁩عאאבא!,abL⁦ג(אא‪a3٣ג ]אב2",
+  "vars": {
+   "word-wrap": true
+  }
+ },
+ {
+  "name": "wrapped-30",
+  "text": " 3בc1}(ع!אבب1<عب</cع))>+א-גאאc -⁨,a  ) a٣‏a.LL$בبc‫a٣ !>ع >אbאאבb1⁦b L"
+ },
+ {
+  "name": "wrapped-31",
+  "text": "),אc۴ع א גבL 3٣)a٣גא)אب1cבa3,؜‭ג‮bc٣ $aب2ع  b",
+  "vars": {
+   "word-wrap": true
+  }
+ },
+ {
+  "name": "wrapped-32",
+  "text": "a Lאגב בא: ۴$ب c(#L ,baa٣1בbaب%L+ bLאאג(ג3>/c⁩٣בcא ]‎a3ב2‪L+ba(a1אג b1a%3א",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-33",
+  "text": "(ב11ב#ב![בaa)بba א!ג,ג:cאba+‎a}בcaגb31c}- א   L‬1b!ב<אa3۴/"
+ },
+ {
+  "name": "wrapped-34",
+  "text": "ב2a/⁩ $א!c )bع ⁩,גב⁦בaعa)>) c)bب{‪]عa1(<אb ]א   [.א\",",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-35",
+  "text": "ב(c٣!א<2 caא$<+٣ع3 {ג/גאaب%31 1 ۴‬ג1 ב(בc٣+בא؜3 ب۴בc) בب۴a#‏ 1b٣- }אb⁧٣<%>%"
+ },
+ {
+  "name": "wrapped-36",
+  "text": ",aa$,ב⁦[ב]גعג+,22):+ )%#bع٣عع$ عבaبבבא)א( >a[ב ‮ع\"بc‏a٣+] L12۴\"baבב٣, ",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-37",
+  "text": ":L 1بL% ()ג٣#عa >2!a-ع.ג אבببب‫3+b٣  "
+ },
+ {
+  "name": "wrapped-38",
+  "text": "b$a<)b-11bb‭a+ ٣Lב1\"Lع(( -⁨%{aבב.1‏ג א>$عב,b>ب  }3א +<aabaאL!גגb /[\""
+ },
+ {
+  "name": "wrapped-39",
+  "text": "#a א1‏ L(ع3בL⁩عא(bبba⁩2:cגa[a‪‮אבLa2٣}2Lبcaع)",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-40",
+  "text": "[‏$ב c٣)٣ L{cג$!bב אعL‎(ع‏<בa ,אaב\" / ",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "wrapped-41",
+  "text": "2\"% {⁩ ‫بבאع<גאb \"بc ]ب2ع٣:\"ג‮#1[א۴>[{٣. א⁦(2$‫aב}a באaבع:)%c٣\"א א",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "wrapped-42",
+  "text": " ‏ג([Lגع‎ب%L  בبג -!% ٣11א2#%בג-]a(ب aא)(aא2 عع$2+אג}<!אאבbc{#c "
+ },
+ {
+  "name": "wrapped-43",
+  "text": "-,א{ג-a/[#)+۴)Lع( > /,א )אع1 ab! بcac<b]L(א  3א3א⁧1+ב1><)‫‎",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-44",
+  "text": "ع31cב1ب\"L [٣{1٣) (a‬,aع2 א (%/3؜L .(عb1!L}‎#aعבג",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-45",
+  "text": "L$א)>٣ع%ג),٣[ב- א>בb1ב-.Lab.א /ג23א‬"
+ },
+ {
+  "name": "wrapped-46",
+  "text": "גع\"2+ببa 2א a}٣[3c2א۴a (+ג/ع⁦>1(א\"/a.ع.bג‪+3/bcبג2۴bב) ,a:bאא‎גבbب(גبbcb"
+ },
+ {
+  "name": "wrapped-47",
+  "text": "2-ع אג ג‏1a2{L1۴}a b ‪,aב2<1א  ⁩# }La)#"
+ },
+ {
+  "name": "wrapped-48",
+  "text": "٣ %+a‫ %3::אc} a #א}ב ccb1 c a$[א ٣cב",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "wrapped-49",
+  "text": "ב)\"عb!א‎ع31aגb2b%٣!)#(ع)#)}/>a\"23אב۴גaגc‏b  ؜  #<[3⁦-",
+  "vars": {
+   "word-wrap": true
+  }
+ },
+ {
+  "name": "wrapped-50",
+  "text": " גג{ب1aג.a.\"Lגbbbc(⁨ab3۴ب!3ع٣1%؜a٣אبaא-⁨۴  ב.cL(",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-51",
+  "text": "1!א ٣L1a1bb1عLcב‮⁦בa2<א‎بאaב٣בع 3bb{Lع ⁨3 #(2א"
+ },
+ {
+  "name": "wrapped-52",
+  "text": "]בגL!2 $,L< ⁩ a: {]אa<(בع!b{א(aعc۴ב۴  ⁨>⁦א( )\"1 bعבc!,٣א# ]{]}ג.b[‮(‫",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "wrapped-53",
+  "text": " ‬א,bع‫bLccא‭%3(:⁨ג٣>ב!ع1عbג ]+a-:#אa٣א)]a 1ب",
+  "vars": {
+   "word-wrap": true
+  }
+ },
+ {
+  "name": "wrapped-54",
+  "text": "b‪!1⁨( ٣ -(אبאa %א)  -ב:א٣)3{)1عב1b)אacגג#גא233ع٣⁩ג 1 ع(‎  a  c )"
+ },
+ {
+  "name": "wrapped-55",
+  "text": "c$Lc3)1ع٣٣)cגa<baאא(عa%גa2ב1/Lb{.(.(bאגא‫א‎ عאac(2+  ع b"
+ },
+ {
+  "name": "wrapped-56",
+  "text": "}2 }אL-baa([ع1+בגعא ۴bb 2] -א%1 א‎‬⁩عL1 :aא‮٣a+ >",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-57",
+  "text": "אa/22[)b>#۴אאعא ג bLaא]א(a1بא2⁧%</>>ba2אב, cבאא1$1‏ :ب1 +aגבa٣א 2a ؜(+גLc۴]"
+ },
+ {
+  "name": "wrapped-58",
+  "text": "ba 2ב {bבa א1c(13ع ]-1‮[  $3. ب a!c[%aع(",
+  "vars": {
+   "word-wrap": true
+  }
+ },
+ {
+  "name": "wrapped-59",
+  "text": "٣⁩b[בac ! :بבعacא!>ב‬c:b-⁩  :)2<  א(‬a1 ))ב2 ⁧ba]abعa!",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-60",
+  "text": "בb 2‬ a‫a:גcb+a\"/ב} ۴ $٣) acב:c )ג"
+ },
+ {
+  "name": "wrapped-61",
+  "text": ":L, א>בa2> אع<\"12ב/<ג)3  ,L⁦aאb/1⁨Lbaב)ג3בב a۴‪ב2.בL]aא2",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-62",
+  "text": "!b) b(גc%אבbאab٣2ع[א- b בL1ع {bב",
+  "vars": {
+   "word-wrap": true
+  }
+ },
+ {
+  "name": "wrapped-63",
+  "text": " אaع(ב$ L-c(2<1ع11(בa.ccג2א!ב!בa[عa#(ع ‏ב#‎ב[b/٣ 3 b{٣  3{"
+ },
+ {
+  "name": "wrapped-64",
+  "text": " aبbع22aa(א1+(۴⁧ عג #3,א‮[)בc2(‫גאaאbאL‫بaא)בג"
+ },
+ {
+  "name": "wrapped-65",
+  "text": "‬٣L 3۴א⁦}<)‪א عא 3א٣ع-  בגא‬⁩אع3b.:אב/‫b { ‎אL⁦1 ٣-aab{aعc,/(  L1⁦1)٣ב!",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-66",
+  "text": "b‏}ב aב)2.בא,1$ אג[a a1‭⁩3א c!%b2#א۴)⁨ )!/⁨٣2ب3‎ b.bبca‎ אbא‎bacع⁩Lא></"
+ },
+ {
+  "name": "wrapped-67",
+  "text": "[‬א:{a:ב2Lع<בبcعאגب٣##a2‏{. גaא\"ع2בa۴b(-bאacבععa‪ب‏L/{ع א L]\"ב",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "wrapped-68",
+  "text": "a]عLאعגbב ⁦ב⁨(א  ٣גאבa‏ 3Lc⁩+}b(3٣ع>2+1 )بa(,aعא.ع‏ 1a bL3 bبa1Lגaג۴א[ בaba",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "wrapped-69",
+  "text": "ב۴1 c \"بאאב#3L1אאג 1אaL%,אב/b%3ב+c2גLب>[3( 2אבعb-3/a>:۴ב א\"L2ב⁧א$b>\""
+ },
+ {
+  "name": "wrapped-70",
+  "text": "א$>٣2 2+‫L‭ג  ב} ($1,‏1 ٣/‪12 ‎ب3 (",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-71",
+  "text": ": $b٣)א bא1aع3٣<(א>+(bبג3<aבb 33-א-%)א22a(א א ‬a",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "wrapped-72",
+  "text": "אאع ],L2a. La/(\"a< אa[a1ג+c۴ عa%ב\"בL3عa%ב\"cb3 ‪ "
+ },
+ {
+  "name": "wrapped-73",
+  "text": "c[>۴!.[בא3.:)aبcb٣⁩:b%3{ aבב۴1a ג ٣b۴: (!b1$בבb%⁧,  ⁧ع1Lבג3ب)",
+  "vars": {
+   "word-wrap": true
+  }
+ },
+ {
+  "name": "wrapped-74",
+  "text": "גca‏א,גb/-a:!ع1‭ {1(בLבאא‫b בع‏$.)aגb{ ]+a2]‫]a>2.b⁩ "
+ },
+ {
+  "name": "wrapped-75",
+  "text": "c>א :۴ (#⁦.)[}bבa.2٣+}1ع$aab ٣a23(3ب. 11a‬ع2ع2 א>aع[a "
+ },
+ {
+  "name": "wrapped-76",
+  "text": "אa3a)3}ג2٣ab#L] א٣ c aa%ب,c<ع(}באع٣⁨1L(}!}בعא({ع"
+ },
+ {
+  "name": "wrapped-77",
+  "text": "c %.cc+a,⁩٣2.2عc aגב.ב2!<(ב))⁧c(",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-78",
+  "text": " \"[בعaa3⁩>a1>גaא ع2)\"ب 2(בع‭ <(",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-79",
+  "text": "א (גג2c!a ) aאa(:⁦b)ג:⁦א baعc +א",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-80",
+  "text": "⁨)א-⁦-}$عבعب,b۴א⁦א -#٣ع.ב‏٣+2> cbL  גגגב}ac٣אaא۴ع1abb)‬ a,ع",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-81",
+  "text": "⁨/גbb:a‏א,א  > ٣)عbabع1>(\"La۴ب,{ /a a{בבع‬ב ؜b3abא‏(a!٣a%ع$‎cב٣ ",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-82",
+  "text": "ba1}‭(ב3+.א[ב3‪ב٣ אبc){בba عבא} ab⁦א ع )גבa$L-a.۴a‎,ג3"
+ },
+ {
+  "name": "wrapped-83",
+  "text": "אع,$3 aאב 3א ג(ca c]%1a(a#ג,b3بaaא۴abc-‫L2cאL:٣!/a‬ع)⁧2( a,([a٣1\"bג1"
+ },
+ {
+  "name": "wrapped-84",
+  "text": "2\"ב  ٣1Lבב / bb!ב\"bac2 aa)L1ع؜1a}aב1,+ L3 b2 ‬",
+  "vars": {
+   "word-wrap": true
+  }
+ },
+ {
+  "name": "wrapped-85",
+  "text": "3بb 1 ‪בع <!عא,){אب۴אa٣א+ב3!bבa,]]⁨אb. {/Lب۴ ]\"\":.ب ع<ב٣ג3"
+ },
+ {
+  "name": "wrapped-86",
+  "text": "Lc1‪אb۴ ‮ L-בcאLא\"<א‪1c-(גaa+ )‎(בב13L(ع٣Lב ⁩1"
+ },
+ {
+  "name": "wrapped-87",
+  "text": "גc#-33 ב عع[.٣ع⁩ع}ב+⁧عa⁩אL⁩בבa,۴>#אא1>bבב#ג"
+ },
+ {
+  "name": "wrapped-88",
+  "text": "b!a‭בب3عב13+عL%abג٣b‬ 2+גa>3>عא:⁩c+a-1ع>2ب(\"cc⁨  ⁨‬$א ع.11۴ ب ab"
+ },
+ {
+  "name": "wrapped-89",
+  "text": "+/)c} aב۴+(ב/‭b[L,[]א‏‬عb)ב)aב2٣ 2 b(1a a:!عב:[+"
+ },
+ {
+  "name": "wrapped-90",
+  "text": "‮ 31}}ع‫‏:cع2a$ב>בa‏).11٣ב>c$a!אא(bגaבb[אع]a a"
+ },
+ {
+  "name": "wrapped-91",
+  "text": "aع [aא‪(ג‬2.1ab. !ב ب/א)‫ג ,b  ב c בL)عא"
+ },
+ {
+  "name": "wrapped-92",
+  "text": ")ab3א, 1aع+3c/٣,۴א]1aא)ب א1ع3 ]1a<! ب‎}\"ب%Lא1בba{bגbع א3a<⁧+א11ab",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-93",
+  "text": "‎aא‎[ \"baא1#1‬L1!b1$ ٣גب a!)/٣a aca‫א[aבab(]  ():]1(-‬בa(א\" )۴ %L> $aג:(:}\""
+ },
+ {
+  "name": "wrapped-94",
+  "text": "ב‬bع2[a⁩2aב2)ג:א22baabب⁨ ۴,)>a b(א. ] }  גאبאb+א(bb:!a(3:)ba\"c:عL",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-95",
+  "text": " 1: (b)cאג+]‪⁩٣c(cLL\"ع  a)bא1 ‬ב ])/%{)aא{ ٣a.] 1:אא1 <"
+ },
+ {
+  "name": "wrapped-96",
+  "text": "1bعב⁦באع ג\"ג]⁩c%٣(3a : b⁨Lב23ג]ع(]בb‏:2א ٣c\"}bع:)<عa)+",
+  "vars": {
+   "bidi-paragraph-direction": "right-to-left"
+  }
+ },
+ {
+  "name": "wrapped-97",
+  "text": "ג21aa3,%3$אא! ⁦א$ב1אL..\"א cא‭c1 ג: (c,א]+ب ,aL#‎ ,٣2٣⁨(#",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ },
+ {
+  "name": "wrapped-98",
+  "text": "אb]c)2גع]\"ג:ג%ב<a2ع bbب b+ع ⁧b>٣"
+ },
+ {
+  "name": "wrapped-99",
+  "text": ">א)\"+<!:23,(abא{#2aac,]caL۴א 22 a\"a(אبא32۴אא",
+  "vars": {
+   "bidi-paragraph-direction": "left-to-right"
+  }
+ }
+]

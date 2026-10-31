@@ -162,6 +162,12 @@ pub struct Row {
     pub margins: [Vec<Segment>; 2],
     /// The bitmaps display specs put in its left and right fringes.
     pub fringes: [Option<FringeSpec>; 2],
+    /// Whether it is in a right-to-left paragraph, its segments reordered
+    /// for display and laid out from the window's right edge, as Emacs's
+    /// bidi display shows them ([ADR 0047]).
+    ///
+    /// [ADR 0047]: ../../../docs/adr/0047-bidirectional-text.md
+    pub right_to_left: bool,
 }
 
 impl Row {
@@ -320,8 +326,12 @@ impl Editor {
     pub(crate) fn screen_position(&self, b: &Buffer, pos: usize, wrap: Option<Wrap>) -> (Vec<Row>, usize, usize) {
         let rows = self.screen_rows_of(b, self.row_line_in(b, b.line_of(pos)), wrap);
         let k = rows.iter().position(|r| r.shows_point(pos)).unwrap_or(rows.len().saturating_sub(1));
+        // A reordered line's continued rows can overlap: the one with point's glyph.
+        let k = if rows[k].continued && !rows[k].in_string { crate::display::row_showing(&rows, pos, self.tab_width_in(b)).unwrap_or(k) } else { k };
         let glyphs = crate::display::row_glyphs(&rows[k], self.tab_width_in(b));
-        let col = glyphs[..crate::display::cursor_index(&glyphs, pos)].iter().map(|g| g.width).sum();
+        let col: usize = glyphs[..crate::display::cursor_glyph(&rows[k], &glyphs, pos)].iter().map(|g| g.width).sum();
+        // A right-to-left row is laid out from the window's right edge.
+        let col = if rows[k].right_to_left { (col as f32 + self.row_offset_in(self.selected_window, &rows[k])).max(0.0) as usize } else { col };
         (rows, k, col)
     }
 
@@ -599,10 +609,13 @@ impl Editor {
         let mut strings_at = None;
         // Syntax faces, worked out for a window's worth of lines at a time.
         let mut syntax = SyntaxFaces::default();
+        // How lines with bidirectional text are reordered, if any can be.
+        let mut bidi = self.bidi_lines(b);
         while rows.len() < count && logical < lines {
             logical += 1;
             let (start, line) = (pos, b.line_of(pos));
             let mut segments: Vec<Segment> = self.prefix_segments(b, start, "line-prefix", dark, &mut styles);
+            let prefix_len = segments.len();
             let mut extend = None;
             let end = loop {
                 if pos >= len {
@@ -672,7 +685,10 @@ impl Editor {
                     (None, None) => {}
                 }
             }
-            for row in split_at_string_newlines(Row { line, start, end, segments, continued: false, broken: false, in_string: false, extend, margins, fringes }) {
+            let mut row = Row { line, start, end, segments, continued: false, broken: false, in_string: false, extend, margins, fringes, right_to_left: false };
+            // Reordered for display where the line has bidirectional text.
+            let reordered = bidi.as_mut().and_then(|lines| lines.reorder(self, b, &mut row, prefix_len));
+            for row in split_at_string_newlines(row) {
                 if rows.len() >= count {
                     break;
                 }
@@ -690,10 +706,19 @@ impl Editor {
                                 let shown = prefix.iter().map(|s| Segment { start: r.start, ..s.clone() });
                                 r.segments.splice(0..0, shown);
                             }
+                            if let Some(dir) = reordered {
+                                self.finish_bidi_row(&mut r, dir, i == 0, start, end, tab_width);
+                            }
                             r
                         }));
                     }
-                    None => rows.push(row),
+                    None => {
+                        let mut row = row;
+                        if let Some(dir) = reordered {
+                            self.finish_bidi_row(&mut row, dir, true, start, end, self.tab_width_in(b));
+                        }
+                        rows.push(row)
+                    }
                 }
             }
             if end >= len {
@@ -964,6 +989,7 @@ fn split_at_string_newlines(row: Row) -> Vec<Row> {
                 extend: current.extend.take(),
                 margins: Default::default(),
                 fringes: Default::default(),
+                right_to_left: current.right_to_left,
             };
             let mut done = std::mem::replace(&mut current, next);
             done.end = at;
@@ -1083,7 +1109,7 @@ fn wrap_row(ed: &Editor, row: Row, wrap: Wrap, tab_width: usize, indent: usize) 
         let end = if last { row.end } else { position_of(to) };
         let extend = if last { row.extend.clone() } else { None };
         let (margins, fringes) = if n == 0 { (row.margins.clone(), row.fringes.clone()) } else { Default::default() };
-        out.push(Row { line: row.line, start, end, segments, continued: !last || row.continued, broken: last && row.broken, in_string: row.in_string, extend, margins, fringes });
+        out.push(Row { line: row.line, start, end, segments, continued: !last || row.continued, broken: last && row.broken, in_string: row.in_string, extend, margins, fringes, right_to_left: row.right_to_left });
     }
     out
 }

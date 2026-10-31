@@ -439,7 +439,9 @@ impl Editor {
                 if is_eob && boundary_bot == Some(side) {
                     return logical(side, "bottom", bot_ends_at_zv);
                 }
-                let continued = if side == Side::Left { follows } else { row.continued && !row.broken };
+                // A right-to-left row goes on at its left and comes from the right.
+                let (goes_on, came) = (row.continued && !row.broken, follows);
+                let continued = if (side == Side::Left) != row.right_to_left { came } else { goes_on };
                 if continued {
                     return logical(side, "continuation", false);
                 }
@@ -477,8 +479,11 @@ impl Editor {
         }
         let b = self.buffer();
         let arrow = |side: Margin| self.logical_fringe_bitmap(b, "continuation", side == Margin::Right, false).map(|bitmap| FringeSpec { side, bitmap, face: None });
-        let left = row.fringes[0].clone().or_else(|| if follows { arrow(Margin::Left) } else { None });
-        let right = row.fringes[1].clone().or_else(|| if row.continued && !row.broken { arrow(Margin::Right) } else { None });
+        // A right-to-left row goes on at its left and comes from the right.
+        let (goes_on, came) = (row.continued && !row.broken, follows);
+        let (at_left, at_right) = if row.right_to_left { (goes_on, came) } else { (came, goes_on) };
+        let left = row.fringes[0].clone().or_else(|| if at_left { arrow(Margin::Left) } else { None });
+        let right = row.fringes[1].clone().or_else(|| if at_right { arrow(Margin::Right) } else { None });
         [left, right]
     }
 }

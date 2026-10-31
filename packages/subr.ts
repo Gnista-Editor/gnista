@@ -128,3 +128,14 @@ export async function readPasswd(prompt: string, confirm = false, def?: string):
     ember.removeHook("minibuffer-setup-hook", setup);
   }
 }
+
+/**
+ * A string that can be put in left-to-right text without the right-to-left
+ * text in it taking the punctuation after it along, as Emacs's
+ * bidi-string-mark-left-to-right: with an invisible left-to-right mark
+ * after it if it has a right-to-left character.
+ */
+export function bidiStringMarkLeftToRight(str: string): string | ember.PropertizedString {
+  if (typeof str !== "string") ember.signal("wrong-type-argument", "Wrong type argument: stringp", [str]);
+  return ember.stringMatch("\\cR", str) === undefined ? str : ember.concat(str, ember.propertize("\u200e", { invisible: true }));
+}
