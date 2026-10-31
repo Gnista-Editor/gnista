@@ -19,6 +19,7 @@ mod category;
 #[allow(dead_code)]
 mod chartab_data;
 mod colors_data;
+pub mod driver;
 pub mod font;
 pub mod frame_description;
 pub mod quit;

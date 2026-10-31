@@ -9,10 +9,12 @@
 mod ui;
 
 use std::io::Write;
+use std::sync::{Arc, Mutex};
 use std::{env, io};
 
 use std::time::{Duration, Instant};
 
+use ember_core::driver::{Driver, Input};
 use ember_core::{Arg, Editor, Key, KeyCode, MouseEvent, MouseKind, WindowId, expand_file_name};
 use ember_script::{config, type_definitions};
 use ratatui::DefaultTerminal;
@@ -32,63 +34,106 @@ fn main() -> io::Result<()> {
         }
     }
 
-    let mut editor = Editor::new();
-    let _scripting = config::setup_with(&mut editor, !no_init, ember_agent::install);
     if print_types {
+        let mut editor = Editor::new();
+        let _scripting = config::setup_with(&mut editor, !no_init, ember_agent::install);
         print!("{}", type_definitions(&editor));
         return Ok(());
-    }
-    for file in files {
-        if let Err(e) = editor.call("find-file", vec![Arg::Str(expand_file_name(&file).display().to_string())]) {
-            editor.message(e.to_string());
-        }
     }
 
     let mut terminal = ratatui::init();
     execute!(io::stdout(), EnableMouseCapture)?;
-    let result = run(&mut terminal, &mut editor);
+    // The editor runs on a thread of its own; this one reads the terminal
+    // and draws what the editor last published, so a long command never
+    // stops the screen updating, and C-g reaches it.
+    let size = terminal.size()?;
+    let size = Arc::new(Mutex::new((size.width, size.height)));
+    let laid_out = size.clone();
+    let driver = Driver::spawn(
+        move |editor| {
+            let scripting = config::setup_with(editor, !no_init, ember_agent::install);
+            for file in files {
+                if let Err(e) = editor.call("find-file", vec![Arg::Str(expand_file_name(&file).display().to_string())]) {
+                    editor.message(e.to_string());
+                }
+            }
+            Box::new(scripting)
+        },
+        move |editor| {
+            let (width, height) = *laid_out.lock().unwrap_or_else(|e| e.into_inner());
+            ui::layout_windows(editor, width, height);
+            editor.redisplay();
+            vec![ui::describe(editor)]
+        },
+        || {},
+    );
+    let result = run(&mut terminal, &driver, &size);
+    drop(driver);
     execute!(io::stdout(), DisableMouseCapture)?;
     ratatui::restore();
     result
 }
 
-fn run(terminal: &mut DefaultTerminal, editor: &mut Editor) -> io::Result<()> {
-    let mut mouse = Mouse::default();
-    while !editor.should_quit() {
-        let size = terminal.size()?;
-        ui::layout_windows(editor, size.width, size.height);
-        editor.redisplay();
-        let description = ui::describe(editor);
-        terminal.draw(|frame| ui::draw(frame, &description))?;
-        // Wait for a key, or until a timer or auto-save is due.
-        if let Some(due) = editor.next_timer_in()
-            && !event::poll(due)?
-        {
-            editor.run_timers();
+/// How often the screen looks for a new frame from the editor while no
+/// input comes.
+const FRAME_POLL: Duration = Duration::from_millis(16);
+
+fn run(terminal: &mut DefaultTerminal, driver: &Driver, size: &Mutex<(u16, u16)>) -> io::Result<()> {
+    let mouse = Arc::new(Mutex::new(Mouse::default()));
+    let mut drawn = 0;
+    loop {
+        // What the editor last published, whatever it is doing now.
+        let (description, bell) = {
+            let mut published = driver.published();
+            if published.exit {
+                return Ok(());
+            }
+            let fresh = published.generation != drawn;
+            drawn = published.generation;
+            let bell = std::mem::take(&mut published.bell).then_some(published.visible_bell);
+            (published.frames.first().filter(|_| fresh).cloned(), bell)
+        };
+        if let Some(description) = description {
+            terminal.draw(|frame| ui::draw(frame, &description))?;
+        }
+        if let Some(visible) = bell {
+            ring_bell(visible)?;
+        }
+        if !event::poll(FRAME_POLL)? {
             continue;
         }
         match event::read()? {
             Event::Key(key) if key.kind == KeyEventKind::Press => {
                 if let Some(key) = convert_key(key) {
-                    editor.handle_key(key);
+                    driver.key(key);
                 }
             }
-            Event::Mouse(event) => mouse.handle(editor, event, size.width, size.height),
+            Event::Mouse(event) => {
+                let (width, height) = *size.lock().unwrap_or_else(|e| e.into_inner());
+                let mouse = mouse.clone();
+                driver.run(move |editor| {
+                    mouse.lock().unwrap_or_else(|e| e.into_inner()).handle(editor, event, width, height);
+                });
+            }
+            Event::Resize(width, height) => {
+                *size.lock().unwrap_or_else(|e| e.into_inner()) = (width, height);
+                driver.send(Input::Wake);
+            }
             _ => {}
         }
-        // The bell: the terminal's own, or with visible-bell its flash, as
-        // Emacs on a terminal rings it.
-        if editor.take_bell() {
-            let visible = editor.variable("visible-bell").is_some_and(|v| v.is_true());
-            let mut out = io::stdout();
-            out.write_all(if visible { b"\x1b[?5h" } else { b"\x07" })?;
-            out.flush()?;
-            if visible {
-                std::thread::sleep(std::time::Duration::from_millis(50));
-                out.write_all(b"\x1b[?5l")?;
-                out.flush()?;
-            }
-        }
+    }
+}
+
+/// The bell: the terminal's own, or with visible-bell its flash, as Emacs
+/// on a terminal rings it.
+fn ring_bell(visible: bool) -> io::Result<()> {
+    let mut out = io::stdout();
+    out.write_all(if visible { b"\x1b[?5h" } else { b"\x07" })?;
+    out.flush()?;
+    if visible {
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        out.write_all(b"\x1b[?5l")?;
+        out.flush()?;
     }
     Ok(())
 }
