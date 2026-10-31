@@ -101,3 +101,36 @@ fn a_panic_in_a_command_is_reported_and_the_editor_goes_on() {
     d.key(key("x"));
     assert_eq!(d.with(|ed| ed.buffer().slice(0..ed.buffer().len())), "x");
 }
+
+#[test]
+fn process_output_arrives_with_no_key() {
+    let d = driver();
+    d.with(|ed| {
+        ed.get_buffer_create("out");
+        ed.make_process(ember_core::ProcessSpec {
+            name: "echo".into(),
+            buffer: Some("out".into()),
+            command: vec!["sh".into(), "-c".into(), "sleep 0.1; echo hello".into()],
+            directory: None,
+            env: Vec::new(),
+            merge_stderr: true,
+            filter: None,
+            sentinel: None,
+            pty: false,
+            coding: None,
+        })
+        .unwrap();
+    });
+    let until = Instant::now() + Duration::from_secs(5);
+    let text = |d: &Driver| {
+        d.with(|ed| {
+            let i = ed.find_buffer("out").unwrap();
+            let b = &ed.buffers()[i];
+            b.slice(0..b.len())
+        })
+    };
+    while !text(&d).contains("hello") {
+        assert!(Instant::now() < until, "the output never came");
+        std::thread::sleep(Duration::from_millis(5));
+    }
+}

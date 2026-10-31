@@ -89,11 +89,17 @@ impl Driver {
         let published = Arc::new(Mutex::new(Published::default()));
         let (quit_tx, quit_rx) = channel();
         let shared = published.clone();
+        let waker = input.clone();
         let thread = std::thread::Builder::new()
             .name("editor".into())
             .stack_size(STACK)
             .spawn(move || {
                 let mut ed = Editor::new();
+                // Process output wakes the loop, rather than waiting for its next timer.
+                let waker = Mutex::new(waker);
+                ed.set_process_waker(Arc::new(move || {
+                    let _ = waker.lock().unwrap_or_else(|e| e.into_inner()).send(Input::Wake);
+                }));
                 let keep = setup(&mut ed);
                 let _ = quit_tx.send(ed.quit_handle());
                 run(ed, keep, rx, describe, wake, shared);

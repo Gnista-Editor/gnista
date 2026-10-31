@@ -15,7 +15,7 @@
 
 use std::io::{Read, Write};
 use std::process::{Child, Command, Stdio};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, Sender, SyncSender, channel, sync_channel};
 use std::time::{Duration, Instant};
@@ -230,9 +230,31 @@ const QUEUED_CHUNKS: usize = 64;
 /// limits Emacs, so a flood of output leaves the editor answering.
 const CHUNKS_PER_POLL: usize = 32;
 
+/// Wakes whatever waits for input when a process has something, as the
+/// editor's thread does ([`crate::driver::Driver`]).
+pub type Waker = Arc<dyn Fn() + Send + Sync>;
+
+/// The sending end of the events processes' threads report, which wakes
+/// the editor's thread as it sends.
+#[derive(Clone)]
+struct EventSender {
+    tx: SyncSender<Event>,
+    wake: Arc<Mutex<Option<Waker>>>,
+}
+
+impl EventSender {
+    fn send(&self, event: Event) -> std::result::Result<(), std::sync::mpsc::SendError<Event>> {
+        self.tx.send(event)?;
+        if let Some(wake) = self.wake.lock().unwrap_or_else(|e| e.into_inner()).as_ref() {
+            wake();
+        }
+        Ok(())
+    }
+}
+
 pub(crate) struct Processes {
     list: Vec<Process>,
-    tx: SyncSender<Event>,
+    tx: EventSender,
     rx: Receiver<Event>,
     next_id: u64,
     /// Events taken off the queue while waiting for a process to end,
@@ -243,6 +265,7 @@ pub(crate) struct Processes {
 impl Default for Processes {
     fn default() -> Processes {
         let (tx, rx) = sync_channel(QUEUED_CHUNKS);
+        let tx = EventSender { tx, wake: Arc::new(Mutex::new(None)) };
         Processes { list: Vec::new(), tx, rx, next_id: 1, held: Default::default() }
     }
 }
@@ -348,7 +371,7 @@ pub struct NetworkSpec {
 }
 
 /// Reads a stream in chunks, sending the bytes on to be decoded.
-fn read_stream(id: u64, mut stream: impl Read + Send + 'static, tx: SyncSender<Event>) {
+fn read_stream(id: u64, mut stream: impl Read + Send + 'static, tx: EventSender) {
     std::thread::spawn(move || {
         let mut buf = [0u8; 4096];
         loop {
@@ -405,7 +428,7 @@ fn open_pty() -> std::io::Result<(std::os::fd::OwnedFd, std::os::fd::OwnedFd, St
 }
 
 /// Takes connections until the server is deleted, passing each on.
-fn accept_loop(id: u64, tx: &SyncSender<Event>, stop: &AtomicBool, mut accept: impl FnMut() -> std::io::Result<(Conn, String)>) {
+fn accept_loop(id: u64, tx: &EventSender, stop: &AtomicBool, mut accept: impl FnMut() -> std::io::Result<(Conn, String)>) {
     while !stop.load(Ordering::Relaxed) {
         match accept() {
             Ok((conn, peer)) => {
@@ -423,6 +446,15 @@ fn accept_loop(id: u64, tx: &SyncSender<Event>, stop: &AtomicBool, mut accept: i
             Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => std::thread::sleep(Duration::from_millis(10)),
             Err(_) => return,
         }
+    }
+}
+
+impl Editor {
+    /// Calls `wake` whenever a process or network connection has output or
+    /// an event to take in, so whatever waits for input, as the editor's
+    /// thread does, takes it at once rather than at its next timer.
+    pub fn set_process_waker(&mut self, wake: Waker) {
+        *self.processes.tx.wake.lock().unwrap_or_else(|e| e.into_inner()) = Some(wake);
     }
 }
 
