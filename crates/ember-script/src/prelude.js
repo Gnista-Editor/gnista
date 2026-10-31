@@ -1010,6 +1010,7 @@
       re.lastIndex = 0;
       return re;
     },
+    matchingLines: (regexp, { caseFold } = {}) => native.matchingLines(String(regexp), caseFold ?? undefined),
     lookingAt: (regexp, pos, { caseFold } = {}) => native.lookingAt(String(regexp), pos ?? undefined, caseFold ?? undefined),
     reSearchForward(regexp, { bound, noerror = false, caseFold } = {}) {
       if (bound !== undefined && bound !== null && bound < native.point()) ember.signal("error", "Invalid search bound (wrong side of point)");

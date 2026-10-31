@@ -1067,6 +1067,30 @@ impl Regexp {
         Scratch { slots: vec![None; 2 * (self.groups + 1)], loops: vec![usize::MAX; self.loops], stack: Vec::new() }
     }
 
+    /// Which of `starts`, each a position and the character there (none at
+    /// the end), a match begins at, by their indices, as `looking-at` at
+    /// each would say: each character is tested against those that can
+    /// start a match first, as Emacs's fastmap skips.
+    pub fn matching_starts(&self, h: &dyn Haystack, starts: &[(usize, Option<char>)], limit: usize) -> Result<Vec<usize>> {
+        let fast = self.fastmap(h);
+        let mut scratch = self.scratch();
+        let mut found = Vec::new();
+        for (k, &(pos, c)) in starts.iter().enumerate() {
+            if k % 1024 == 1023 {
+                h.maybe_quit()?;
+            }
+            if let Some(c) = c
+                && !self.may_start_with(h, fast.as_ref(), pos, c)
+            {
+                continue;
+            }
+            if self.run(h, pos, limit, &mut scratch)?.is_some() {
+                found.push(k);
+            }
+        }
+        Ok(found)
+    }
+
     /// The match starting exactly at `start` that reads no character at or
     /// after `limit`, as Emacs's re_match_2 finds it, with its groups.
     pub fn match_at(&self, h: &dyn Haystack, start: usize, limit: usize) -> Result<Option<Groups>> {

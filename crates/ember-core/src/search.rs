@@ -53,6 +53,8 @@ pub struct BufferHaystack<'a> {
     chunk: std::cell::RefCell<(usize, Vec<char>)>,
     /// The flag to check while searching, if quitting can stop it.
     quit: Option<&'a crate::quit::QuitState>,
+    /// How many characters it reads at a time.
+    window: usize,
 }
 
 /// How many characters a haystack reads at a time.
@@ -60,7 +62,14 @@ const CHUNK: usize = 8192;
 
 impl<'a> BufferHaystack<'a> {
     pub fn new(buffer: &'a Buffer, class: &'a dyn Fn(usize, char) -> Class, fixed: bool) -> BufferHaystack<'a> {
-        BufferHaystack { buffer, class, fixed, chunk: std::cell::RefCell::new((0, Vec::new())), quit: None }
+        BufferHaystack { buffer, class, fixed, chunk: std::cell::RefCell::new((0, Vec::new())), quit: None, window: CHUNK }
+    }
+
+    /// The same haystack reading `n` characters at a time: fewer suit
+    /// matches tried at scattered places, as at each line's start.
+    pub fn reading(mut self, n: usize) -> BufferHaystack<'a> {
+        self.window = n.max(16);
+        self
     }
 
     /// The same haystack, a search in which `C-g` stops.
@@ -84,8 +93,8 @@ impl Haystack for BufferHaystack<'_> {
         let (start, chars) = &mut *chunk;
         if pos < *start || pos >= *start + chars.len() {
             // Around `pos`, so reading backward is as quick as forward.
-            *start = pos.saturating_sub(CHUNK / 4).max(min);
-            *chars = self.buffer.chars_between(*start, (*start + CHUNK).min(max));
+            *start = pos.saturating_sub(self.window / 4).max(min);
+            *chars = self.buffer.chars_between(*start, (*start + self.window).min(max));
         }
         chars.get(pos - *start).copied()
     }
@@ -333,6 +342,58 @@ impl Editor {
                 re.search_forward(&h, from, options.bound.map_or(max, |bound| bound.clamp(min, max)))?
             };
             Ok(found.map(to_match))
+        })
+    }
+
+    /// Each line of the current buffer's accessible portion that an Emacs
+    /// regexp matches at the start of: its number, where it starts, and its
+    /// text, as a pass with `looking-at` at every line's start would find
+    /// them, as Org finds its headings. Faster than one search per line,
+    /// and quit stops it.
+    pub fn matching_lines(&self, pattern: &str, case_fold: bool) -> Result<Vec<(usize, usize, String)>> {
+        crate::regexp::with_tables(self.search_tables(), || {
+            let b = self.buffer();
+            let re = Regexp::cached(pattern, case_fold)?;
+            let (class, fixed) = self.syntax_classes(b);
+            let h = BufferHaystack::new(b, &class, fixed).quitting(&self.quitting).reading(256);
+            let (min, max) = (b.point_min(), b.point_max());
+            // Each line's start and first character, found a chunk of the
+            // text at a time rather than a character at a time.
+            let (mut lines, mut starts) = (Vec::new(), Vec::new());
+            let (mut pos, mut line, mut at_start) = (0usize, 0usize, true);
+            let chars = |bytes: &[u8]| bytes.iter().filter(|&&b| (b as i8) >= -0x40).count();
+            for chunk in b.text().chunks() {
+                let bytes = chunk.as_bytes();
+                let mut i = 0;
+                while i < bytes.len() {
+                    if at_start {
+                        if (min..max).contains(&pos) {
+                            lines.push(line);
+                            starts.push((pos, chunk[i..].chars().next()));
+                        }
+                        at_start = false;
+                    }
+                    match memchr::memchr(b'\n', &bytes[i..]) {
+                        Some(k) => {
+                            pos += chars(&bytes[i..i + k + 1]);
+                            i += k + 1;
+                            line += 1;
+                            at_start = true;
+                        }
+                        None => {
+                            pos += chars(&bytes[i..]);
+                            i = bytes.len();
+                        }
+                    }
+                }
+            }
+            // An empty last line.
+            if at_start && (min..=max).contains(&pos) {
+                lines.push(line);
+                starts.push((pos, None));
+            }
+            let found = re.matching_starts(&h, &starts, max)?;
+            Ok(found.into_iter().map(|k| (lines[k], starts[k].0, b.line_text(lines[k]))).collect())
         })
     }
 

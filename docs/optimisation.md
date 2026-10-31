@@ -32,7 +32,7 @@ Typing `(` then `)` with Electric Pair and Show Paren mode on takes about 1.9 s 
 
 ## Org's headings after each change
 
-Org commands that change the text read every heading again once per change: about 1 ms per thousand lines, most of what RET, `C-c C-t` and `M-<down>` cost in a large file ([performance.md](performance.md)). Keeping the heading index up to date from the change hooks, as Org's element cache does, would make them independent of the file's size.
+Org commands that change the text find every heading again once per change. Since 2026-10-31 that is one pass in the editor (`ember.matchingLines`) and only new or changed headings are parsed, but each heading's object is still made again, as most of them move: RET, `C-c C-t` and `M-<down>` take 23 to 36 ms in the 50,000-line file ([performance.md](performance.md)), where Emacs, whose element cache follows each change, takes a few. Keeping the heading index from the change hooks, shifting the headings after a change rather than making them again, would make them independent of the file's size.
 
 ## Character tables
 

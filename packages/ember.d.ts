@@ -11943,6 +11943,12 @@ declare global {
      */
     function lookingAt(regexp: string, position?: number, options?: { caseFold?: boolean }): boolean;
     /**
+     * Each line of the accessible portion an Emacs regexp matches at the start of, as
+     * [line, start, text], as looking-at at each line's start would find them, in one pass.
+     * Sets no match data.
+     */
+    function matchingLines(regexp: string, options?: { caseFold?: boolean }): [number, number, string][];
+    /**
      * Search forward for an Emacs regexp and move point to the end of the
      * match, as re-search-forward; signals search-failed unless `noerror`.
      * Returns where point went.

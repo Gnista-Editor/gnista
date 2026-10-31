@@ -2066,6 +2066,26 @@ fn install_native_search<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs:
         )?,
     )?;
     native.set(
+        "matchingLines",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, pattern: String, fold: Option<bool>| {
+            with_editor(&ctx, |ed| {
+                let case_fold = fold.unwrap_or_else(|| ed.variable("case-fold-search").is_none_or(|v| v.is_true()));
+                ed.matching_lines(&pattern, case_fold)
+            })
+            .and_then(|lines| {
+                let list = rquickjs::Array::new(ctx.clone())?;
+                for (i, (line, start, text)) in lines.into_iter().enumerate() {
+                    let entry = rquickjs::Array::new(ctx.clone())?;
+                    entry.set(0, line as f64)?;
+                    entry.set(1, start as f64)?;
+                    entry.set(2, text)?;
+                    list.set(i, entry)?;
+                }
+                Ok(list)
+            })
+        })?,
+    )?;
+    native.set(
         "lookingAt",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, pattern: String, pos: Option<usize>, fold: Option<bool>| {
             with_editor(&ctx, |ed| {

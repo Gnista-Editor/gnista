@@ -303,11 +303,18 @@ const TAGS = /[ \t](:[\p{L}\p{N}_@#%:]+:)[ \t]*$/u;
  * headings() does for every heading in the buffer.
  */
 export function parseHeading(line: number, keywords = allKeywords(), text = ember.lineText(line), sorted?: string[]): Heading | undefined {
+  const h = parseHeadingText(text, keywords, sorted);
+  return h && placeHeading(h, line, ember.lineStart(line));
+}
+
+/** A heading parsed from its line's text, its positions counted from the line's start. */
+function parseHeadingText(text: string, keywords: string[], sorted?: string[]): Heading | undefined {
   const stars = /^(\*+) /.exec(text);
   if (!stars) return undefined;
   let i = stars[0].length;
   while (text[i] === " ") i++;
-  const start = ember.lineStart(line);
+  const line = 0;
+  const start = 0;
   const at = (_line: number, text: string, i: number): number => start + charCount(text.slice(0, i));
   const h: Heading = {
     line,
@@ -347,12 +354,29 @@ export function parseHeading(line: number, keywords = allKeywords(), text = embe
   return h;
 }
 
+/** A heading parsed from its text, put at its line and the line's start. */
+function placeHeading(h: Heading, line: number, start: number): Heading {
+  const placed: Heading = { ...h, line, start, end: start + h.end, titleAt: start + h.titleAt, tags: [...h.tags] };
+  if (h.todoAt !== undefined) placed.todoAt = start + h.todoAt;
+  if (h.priorityAt !== undefined) placed.priorityAt = start + h.priorityAt;
+  if (h.tagsAt !== undefined) placed.tagsAt = start + h.tagsAt;
+  return placed;
+}
+
 function isHeadingLine(text: string): boolean {
   return /^\*+ /.test(text);
 }
 
 /** The last buffer's headings and what they were found for. */
 let headingCache: { key: string; headings: readonly Heading[] } | undefined;
+
+/**
+ * Heading lines already parsed, by their text, for the TODO keywords
+ * `parsedFor`: a change leaves most headings as they were, so only new or
+ * changed ones are parsed again.
+ */
+const parsed = new Map<string, Readonly<Heading> | null>();
+let parsedFor = "";
 
 /**
  * The buffer's headings, top to bottom. Kept until the text or the TODO
@@ -365,21 +389,23 @@ export function headings(): Heading[] {
   const [min, max] = [ember.pointMin(), ember.pointMax()];
   const key = `${ember.bufferName()}\n${ember.bufferModifiedTick()}\n${keywords.join(" ")}\n${min}-${max}`;
   if (headingCache?.key === key) return headingCache.headings as Heading[];
-  const found: Heading[] = [];
-  // The whole text at once, counting lines up to each line that starts with
-  // a star, rather than a call per line: much the faster in a large buffer.
-  const text = ember.bufferText(0, ember.bufferSize());
+  const keywordsKey = keywords.join(" ");
+  if (keywordsKey !== parsedFor || parsed.size > 100_000) {
+    parsed.clear();
+    parsedFor = keywordsKey;
+  }
   const sorted = [...keywords].sort((a, b) => b.length - a.length);
-  let line = 0;
-  let counted = 0;
-  for (const m of text.matchAll(/^\*+ .*/gm)) {
-    const at = m.index ?? 0;
-    for (let nl = text.indexOf("\n", counted); nl !== -1 && nl < at; nl = text.indexOf("\n", nl + 1)) {
-      line++;
-      counted = nl + 1;
+  const found: Heading[] = [];
+  // The heading lines in one pass in the editor, rather than a call per
+  // line or the whole text copied here: much the faster in a large buffer.
+  for (const [line, start, text] of ember.matchingLines("^\\*+ ", { caseFold: false })) {
+    if (start < min || start >= max) continue;
+    let h = parsed.get(text);
+    if (h === undefined) {
+      h = parseHeadingText(text, keywords, sorted) ?? null;
+      parsed.set(text, h && Object.freeze(h));
     }
-    const h = parseHeading(line, keywords, m[0], sorted);
-    if (h && h.start >= min && h.start < max) found.push(Object.freeze(h));
+    if (h) found.push(Object.freeze(placeHeading(h, line, start)));
   }
   headingCache = { key, headings: Object.freeze(found) };
   return found;

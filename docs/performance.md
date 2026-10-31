@@ -72,6 +72,7 @@ So the rule in step 4 splits: `S-TAB` is primitives, and a faster engine would n
 
 ## What changed
 
+- **Org finds its headings in one pass in the editor and parses only new ones.** `ember.matchingLines` returns the lines an Emacs regexp matches at the start of, finding line starts a chunk of the text at a time and trying the regexp only where the first character can start it, and Org keeps each heading line's parse by its text, so after an edit only new or changed headings are parsed. In the 50,000-line Org file RET went from 63 to 36 ms, `C-c C-t` from 54 to 23, `M-<down>` from 53 to 24, and TAB on a heading from 19 to 10.
 - **The shipped packages are stripped when Ember is built**, as Emacs byte-compiles its preloaded Lisp: a new editor loads its packages in 42 ms (`startup` in the bench), where stripping them as it started took 60 ms, and 75 with the loop checks of [ADR 0049](adr/0049-quitting.md).
 - **Overlays are found by id and by position without a pass over them all** (above): `S-TAB` in the 50,000-line Org file from 110 to 29 ms.
 - **Org's headings and element tree are kept between keys.** The element parser asked for the buffer's headings hundreds of times per key, and each time every line was read again. `headings()` and the parse are now kept until the text (the buffer's modified tick) or the TODO keywords change.
