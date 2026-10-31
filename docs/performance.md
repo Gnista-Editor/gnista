@@ -49,6 +49,15 @@ These are after ADR 0029's second step, where `C-v` measures the rows it scrolls
 
 On 2026-10-31, after faces gained Emacs's attributes and the GUI its fringes ([ADR 0044](adr/0044-faces-as-emacs-s.md), [ADR 0045](adr/0045-margins-fringes-and-redisplay-primitives.md)), a style resolved from a list of faces is kept until a face changes, as merging faces now copies twice as many fields. With it the numbers are where they were (Org: `C-v` 2.27 ms against 2.24, typing 1.98 against 1.94, RET 61.9 against 62.3; text: `C-v` 0.14 ms). Incremental search had slowed when isearch.ts began searching a string as a quoted regexp; searching it literally again, `C-s` for a word at the end of the 100 MB file takes 39 ms, where it took 984.
 
+Later on 2026-10-31, after images, bidirectional text, the overlay arrow, the fringe indicators and fonts ([ADR 0046](adr/0046-images.md), [ADR 0047](adr/0047-bidirectional-text.md), [ADR 0048](adr/0048-overlay-arrows-fringe-indicators-and-fonts.md)), the Org and text numbers stayed within a few per cent (Org: `C-v` 2.32 ms, typing 2.06, RET 62.8, S-TAB 106, `C-s` 6.1; text: `C-v` 0.14 ms, `C-s` 43). Buffers without right-to-left text skip reordering and frames without images skip images. `gui_layout`'s rows off the grid moved more, by 0.1 to 0.2 ms a key, which [optimisation.md](optimisation.md) records under moving through rows in the GUI:
+
+| Org, 50,000 lines | `C-v` | `C-n` | typing | RET |
+| --- | ---: | ---: | ---: | ---: |
+| Cells, as the terminal | 2.48 ms | 0.46 ms | 2.40 ms | 63 ms |
+| GUI metrics, fixed-pitch text | 2.96 ms | 0.82 ms | 2.64 ms | 63 ms |
+| GUI metrics, `text-scale-adjust` twice | 2.44 ms | 0.93 ms | 2.52 ms | 64 ms |
+| GUI metrics, `variable-pitch-mode` | 3.39 ms | 1.13 ms | 3.00 ms | 65 ms |
+
 ## What changed
 
 - **Org's headings and element tree are kept between keys.** The element parser asked for the buffer's headings hundreds of times per key, and each time every line was read again. `headings()` and the parse are now kept until the text (the buffer's modified tick) or the TODO keywords change.
