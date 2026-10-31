@@ -1,0 +1,68 @@
+//! Undo from scripts, as Emacs Lisp sees it: text property changes recorded
+//! and undone, with-silent-modifications, `buffer-undo-list` bound to t and
+//! read and set, and an `(apply ...)` entry pushed onto it.
+
+use ember_core::Editor;
+use ember_script::Scripting;
+
+fn setup() -> (Editor, Scripting) {
+    let mut ed = Editor::new();
+    let s = Scripting::new(&mut ed).unwrap();
+    ed.type_text("hello world");
+    ed.press("C-a").unwrap();
+    (ed, s)
+}
+
+fn eval(ed: &mut Editor, s: &Scripting, code: &str) -> String {
+    s.eval_expression(ed, code).unwrap()
+}
+
+#[test]
+fn a_property_put_by_a_script_is_undone() {
+    let (mut ed, s) = setup();
+    eval(&mut ed, &s, "ember.setBufferModified(false)");
+    eval(&mut ed, &s, "ember.putTextProperty(0, 5, 'face', 'bold')");
+    assert_eq!(eval(&mut ed, &s, "ember.bufferModified()"), "true", "as put-text-property modifies the buffer");
+    ed.press("C-/").unwrap();
+    assert_eq!(eval(&mut ed, &s, "ember.getTextProperty(2, 'face') === undefined"), "true");
+    assert_eq!(eval(&mut ed, &s, "ember.bufferModified()"), "false");
+}
+
+#[test]
+fn silent_modifications_leave_no_undo_and_no_change() {
+    let (mut ed, s) = setup();
+    eval(&mut ed, &s, "ember.setBufferModified(false)");
+    let before = eval(&mut ed, &s, "JSON.stringify(ember.variable('buffer-undo-list'))");
+    eval(&mut ed, &s, "ember.withSilentModifications(() => ember.putTextProperty(0, 5, 'face', 'bold'))");
+    assert_eq!(eval(&mut ed, &s, "ember.bufferModified()"), "false");
+    assert_eq!(eval(&mut ed, &s, "JSON.stringify(ember.variable('buffer-undo-list'))"), before);
+    assert_eq!(eval(&mut ed, &s, "ember.getTextProperty(2, 'face')"), "\"bold\"");
+}
+
+#[test]
+fn binding_buffer_undo_list_to_t_keeps_changes_out_of_the_history() {
+    let (mut ed, s) = setup();
+    ed.press("C-e").unwrap();
+    ed.type_text("!");
+    // After the change recorded, so its position still holds.
+    eval(&mut ed, &s, "ember.letBind({ 'buffer-undo-list': true }, () => ember.insert(' <<'))");
+    // The insertion is not in the history: undo takes back the "!" typed before.
+    ed.press("C-/").unwrap();
+    assert_eq!(eval(&mut ed, &s, "ember.bufferText(0, ember.bufferSize())"), "\"hello world <<\"");
+}
+
+#[test]
+fn an_apply_entry_pushed_onto_the_list_runs_when_undone() {
+    let (mut ed, s) = setup();
+
+    eval(
+        &mut ed,
+        &s,
+        r#"(() => {
+            const old = ember.variable('buffer-undo-list');
+            ember.setVariable('buffer-undo-list', [[Symbol.for('apply'), (n) => ember.setDefault('undone', n), 3], ...old]);
+        })()"#,
+    );
+    ed.press("C-/").unwrap();
+    assert_eq!(eval(&mut ed, &s, "ember.variable('undone')"), "3");
+}

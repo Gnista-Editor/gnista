@@ -1265,6 +1265,13 @@ const API: &str = r##"
    * prepare-change-group. Returns its handle.
    */
   function prepareChangeGroup(): number;
+  /**
+   * Run `fn` with changes to text properties not recorded for undo and the
+   * buffer left as modified as it was, read-only text and the change hooks
+   * out of the way, as Emacs's with-silent-modifications: for properties
+   * that style text rather than change it.
+   */
+  function withSilentModifications<T>(fn: () => T): T;
   /** Take back the changes made since the group began, as cancel-change-group. */
   function cancelChangeGroup(handle: number): void;
   /** Keep the changes made since the group began, as accept-change-group. */

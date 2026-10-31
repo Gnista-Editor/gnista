@@ -287,6 +287,10 @@ impl Editor {
 
     /// A variable's value as a given buffer sees it.
     pub fn variable_in(&self, b: &Buffer, name: &str) -> Option<Value> {
+        // The undo history, which the buffer keeps itself, as Emacs's BVAR.
+        if name == "buffer-undo-list" {
+            return Some(b.undo_list().unwrap_or(Value::Bool(true)));
+        }
         if let Some(value) = b.locals.get(name) {
             return Some(value.clone());
         }
@@ -306,6 +310,10 @@ impl Editor {
     /// if it has one or the variable is automatically buffer-local,
     /// otherwise the global value. Setting an unknown variable defines it.
     pub fn set_variable(&mut self, name: &str, value: Value) {
+        if name == "buffer-undo-list" {
+            self.buffer_mut().set_undo_list(&value);
+            return;
+        }
         if self.var(name).is_some_and(|v| v.hook) {
             // A hook's value is its functions: setting it replaces them, the
             // buffer's own if it has them.
@@ -362,8 +370,10 @@ impl Editor {
     }
 
     pub fn is_local_variable(&self, name: &str) -> bool {
-        // A hook is local when the buffer has its own functions for it.
-        self.buffer().locals.contains_key(name) || self.buffer().local_hooks.contains_key(name)
+        // A hook is local when the buffer has its own functions for it;
+        // each buffer has its own undo history.
+        name == "buffer-undo-list"
+            || self.buffer().locals.contains_key(name) || self.buffer().local_hooks.contains_key(name)
     }
 
     /// Removes all of the current buffer's own values, local hooks and
@@ -781,6 +791,12 @@ pub(crate) fn install(ed: &mut Editor) {
                 .to_vec(),
             ),
         ),
+        Variable::new(
+            "buffer-undo-list",
+            "The current buffer's undo history, newest first: nil between commands, a number for where point was before one, [beg, end] for text inserted there, [text, pos] for text deleted at pos (negative if point was after it), [nil, prop, value, beg, end] for a text property's old value, [apply, fn, ...args] for a function undo calls, and [t] where the buffer was unmodified. t while changes are not recorded. Setting it sets the history, t to stop recording.",
+            Value::Null,
+        )
+        .local(),
         Variable::new(
             "max-mini-window-height",
             "The most the echo area grows to for a long minibuffer, such as a vertical list of completions: a fraction of the frame's height, or a number of lines.",

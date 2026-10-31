@@ -122,7 +122,15 @@ impl Editor {
             // Marked first, so a function that fails is not called again and again.
             self.buffer_mut().mark_fontified(r.clone());
             let args = [Value::Number(r.start as f64), Value::Number(r.end as f64)];
-            if let Err(e) = self.run_hook_with_args("jit-lock-functions", &args) {
+            // As jit-lock-fontify-now, with silent modifications: faces put on
+            // the text are neither undone nor a change to save.
+            let buffer = self.buffer().id();
+            let silenced = self.buffer_mut().begin_silent();
+            let ran = self.run_hook_with_args("jit-lock-functions", &args);
+            if let Some(index) = self.buffer_with_id(buffer) {
+                self.buffers[index].end_silent(silenced);
+            }
+            if let Err(e) = ran {
                 result = Err(e);
             }
         }

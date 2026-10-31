@@ -79,14 +79,16 @@ const PROMPT_REAR_NONSTICKY = ["field", "inhibit-line-move-field-capture", "read
 /** Marks text as the program's output, the `output` field, as comint--mark-as-output. */
 function markAsOutput(beg: number, end: number): void {
   if (beg >= end) return;
-  for (const [name, value] of [
-    ["field", Symbol.for("output")],
-    ["inhibit-line-move-field-capture", true],
-    ["rear-nonsticky", PROMPT_REAR_NONSTICKY],
-    ["front-sticky", ["field", "inhibit-line-move-field-capture"]],
-  ] as const) {
-    ember.putTextProperty(beg, end, name, value as ember.Value);
-  }
+  ember.withSilentModifications(() => {
+    for (const [name, value] of [
+      ["field", Symbol.for("output")],
+      ["inhibit-line-move-field-capture", true],
+      ["rear-nonsticky", PROMPT_REAR_NONSTICKY],
+      ["front-sticky", ["field", "inhibit-line-move-field-capture"]],
+    ] as const) {
+      ember.putTextProperty(beg, end, name, value as ember.Value);
+    }
+  });
 }
 
 /**
@@ -176,11 +178,13 @@ export function outputFilter(process: string, text: string): void {
         markAsOutput(ember.markerPosition(s.lastOutputStart)!, processMark(process));
         // The prompt: the output on the last line, with no newline after it.
         const promptStart = ember.lineBeginningPosition(processMark(process));
-        if (!nil(ember.variable("comint-prompt-read-only")) && promptStart < processMark(process)) {
-          ember.putTextProperty(promptStart, processMark(process), "read-only", true);
-          ember.putTextProperty(promptStart, processMark(process), "front-sticky", ["read-only"]);
-        }
-        if (promptStart < processMark(process)) ember.addFaceTextProperty(promptStart, processMark(process), "comint-highlight-prompt");
+        ember.withSilentModifications(() => {
+          if (!nil(ember.variable("comint-prompt-read-only")) && promptStart < processMark(process)) {
+            ember.putTextProperty(promptStart, processMark(process), "read-only", true);
+            ember.putTextProperty(promptStart, processMark(process), "front-sticky", ["read-only"]);
+          }
+          if (promptStart < processMark(process)) ember.addFaceTextProperty(promptStart, processMark(process), "comint-highlight-prompt");
+        });
         advanceWindowPoints(buffer, mark, processMark(process));
         ember.deleteMarker(saved);
       }),
@@ -233,12 +237,14 @@ export function sendInput(noNewline = false, artificial = false): void {
   const text = noNewline ? input : `${input}\n`;
   ember.runHooks("comint-input-filter-functions", text);
   const end = noNewline ? ember.point() : ember.point() - 1;
-  if (end > pmark) ember.addFaceTextProperty(pmark, end, "comint-highlight-input");
-  if (!noNewline) {
-    // The newline separates the input from the output after it.
-    ember.putTextProperty(end, end + 1, "rear-nonsticky", PROMPT_REAR_NONSTICKY);
-    ember.putTextProperty(end, end + 1, "field", Symbol.for("boundary"));
-  }
+  ember.withSilentModifications(() => {
+    if (end > pmark) ember.addFaceTextProperty(pmark, end, "comint-highlight-input");
+    if (!noNewline) {
+      // The newline separates the input from the output after it.
+      ember.putTextProperty(end, end + 1, "rear-nonsticky", PROMPT_REAR_NONSTICKY);
+      ember.putTextProperty(end, end + 1, "field", Symbol.for("boundary"));
+    }
+  });
   ember.setMarker(s.lastInputStart, pmark);
   ember.setMarker(s.lastInputEnd, ember.point());
   ember.setMarker(ember.processMark(proc)!, ember.point());

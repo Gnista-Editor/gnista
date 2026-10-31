@@ -414,8 +414,11 @@ function rustSyntaxPropertize(start: number, end: number): void {
   for (const m of text.matchAll(RUST_CHAR)) {
     const at = start + charCount(text.slice(0, m.index));
     const close = at + charCount(m[0]) - 1;
-    ember.putTextProperty(at, at + 1, "syntax-table", '"');
-    ember.putTextProperty(close, close + 1, "syntax-table", '"');
+    // As syntax-propertize puts them, silently.
+    ember.withSilentModifications(() => {
+      ember.putTextProperty(at, at + 1, "syntax-table", '"');
+      ember.putTextProperty(close, close + 1, "syntax-table", '"');
+    });
   }
 }
 

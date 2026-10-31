@@ -2309,7 +2309,7 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
         Function::new(ctx.clone(), |ctx: Ctx<'js>, start: usize, end: usize, name: String, value: Value<'js>| {
             let value = value_from_js(&ctx, value)?;
             with_editor(&ctx, |ed| {
-                ed.buffer_mut().put_text_property(start..end, &name, value);
+                ed.buffer_mut().change_text_property(start..end, &name, Some(value));
                 Ok(())
             })
         })?,
@@ -2318,7 +2318,10 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
         "addFaceTextProperty",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, start: usize, end: usize, face: String, append: bool| {
             with_editor(&ctx, |ed| {
-                ed.buffer_mut().add_face_text_property(start..end, &face, append);
+                // Recorded for undo, as add-face-text-property is.
+                let b = ed.buffer_mut();
+                b.record_property_change(start, end, "face", |_| true);
+                b.add_face_text_property(start..end, &face, append);
                 Ok(())
             })
         })?,
@@ -2327,7 +2330,7 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
         "removeTextProperty",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, start: usize, end: usize, name: String| {
             with_editor(&ctx, |ed| {
-                ed.buffer_mut().remove_text_property(start..end, &name);
+                ed.buffer_mut().change_text_property(start..end, &name, None);
                 Ok(())
             })
         })?,
@@ -2433,6 +2436,23 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
         Function::new(ctx.clone(), |ctx: Ctx<'js>, handle: usize| {
             with_editor(&ctx, |ed| {
                 ed.buffer_mut().cancel_change_group(handle);
+                ed.run_undo_applies()
+            })
+        })?,
+    )?;
+    native.set(
+        "beginSilentModifications",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            with_editor(&ctx, |ed| {
+                Ok(ed.begin_silent_modifications().to_vec())
+            })
+        })?,
+    )?;
+    native.set(
+        "endSilentModifications",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, buffer: u64, state: Vec<bool>| {
+            with_editor(&ctx, |ed| {
+                ed.end_silent_modifications(buffer, [state[0], state[1], state[2]]);
                 Ok(())
             })
         })?,

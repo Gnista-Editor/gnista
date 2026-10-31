@@ -355,6 +355,37 @@ impl Editor {
         result.map(drop)
     }
 
+    /// Starts changes to text properties that are not recorded for undo and
+    /// leave the buffer as modified as it was, as with-silent-modifications
+    /// does. Returns what [`Editor::end_silent_modifications`] puts back.
+    pub fn begin_silent_modifications(&mut self) -> [bool; 3] {
+        let s = self.buffer_mut().begin_silent();
+        [s.modified, s.recording, s.changed]
+    }
+
+    /// Ends silent modifications in the buffer with this id.
+    pub fn end_silent_modifications(&mut self, buffer: u64, [modified, recording, changed]: [bool; 3]) {
+        if let Some(index) = self.buffer_with_id(buffer) {
+            self.buffers[index].end_silent(crate::buffer::Silenced { modified, recording, changed });
+        }
+    }
+
+    /// Calls the functions of the `(apply ...)` entries the last undo came
+    /// to, as primitive-undo does: `(apply FUN . ARGS)`, or `(apply DELTA
+    /// BEG END FUN . ARGS)` for one that says what it changes.
+    pub fn run_undo_applies(&mut self) -> Result<()> {
+        let applies = std::mem::take(&mut self.buffer_mut().pending_applies);
+        for args in applies {
+            let (function, rest) = match args.as_slice() {
+                [Value::Number(_), _, _, f, rest @ ..] => (f, rest),
+                [f, rest @ ..] => (f, rest),
+                [] => continue,
+            };
+            self.funcall(function, rest)?;
+        }
+        Ok(())
+    }
+
     /// Runs `before-change-functions` before an undo step, as primitive-undo's
     /// insertions and deletions run them in Emacs: once, over a stretch
     /// that holds every change the step makes, from its first to the end of

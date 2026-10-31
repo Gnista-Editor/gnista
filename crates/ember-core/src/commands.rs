@@ -986,6 +986,7 @@ fn editing(ed: &mut Editor) {
                     continuing = true;
                 }
             }
+            ed.run_undo_applies()?;
             let message = if redid { "Redo" } else { "Undo" };
             ed.message(if in_region { format!("{message} in region") } else { message.to_string() });
             Ok(())
@@ -1014,6 +1015,7 @@ fn editing(ed: &mut Editor) {
             for _ in 0..args[0].as_int()?.max(1) {
                 ed.before_undo(false, true)?;
                 ed.buffer_mut().undo_redo()?;
+                ed.run_undo_applies()?;
             }
             // So that a following undo carries on from here.
             ed.set_this_command("undo");

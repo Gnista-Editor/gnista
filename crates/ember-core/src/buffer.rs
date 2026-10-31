@@ -22,6 +22,37 @@ struct Edit {
     /// other windows' points were, as Emacs's record_marker_adjustments
     /// keeps them, so undoing the deletion puts them back.
     marks: Vec<(MarkRef, usize)>,
+    /// What else the change was, when it is not text inserted or deleted.
+    extra: Extra,
+}
+
+/// A change undo records besides text inserted and deleted.
+#[derive(Clone, Debug, Default)]
+enum Extra {
+    #[default]
+    None,
+    /// A text property changed, as Emacs's record_property_change records
+    /// it: the property's value before, on each stretch it was the same,
+    /// none where the text had no such property.
+    Property { name: String, old: Vec<(Range<usize>, Option<Value>)> },
+    /// `(apply FUN . ARGS)`, a function undo calls, which code put in the
+    /// history: its arguments as the list has them, the function first, or
+    /// DELTA, BEG and END first when it says what it changes.
+    Apply(Vec<Value>),
+}
+
+impl Edit {
+    fn property(pos: usize, name: &str, old: Vec<(Range<usize>, Option<Value>)>) -> Edit {
+        Edit {
+            pos,
+            deleted: String::new(),
+            deleted_props: Vec::new(),
+            inserted: String::new(),
+            point_before: pos,
+            marks: Vec::new(),
+            extra: Extra::Property { name: name.to_string(), old },
+        }
+    }
 }
 
 /// A marker that undo puts back into text it reinserts.
@@ -97,6 +128,8 @@ enum Selective {
     Point(usize),
     /// The buffer was unmodified, as of this save.
     Unmodified(u64),
+    /// A text property's old values, which undoing puts back.
+    Property { name: String, old: Vec<(Range<usize>, Option<Value>)> },
 }
 
 /// How many positions the mark ring keeps, as Emacs's `mark-ring-max`.
@@ -162,6 +195,12 @@ pub struct Buffer {
     change_log: Vec<Edit>,
     /// Whether changes are being taken back, so not recorded for undo.
     cancelling: bool,
+    /// The `(apply ...)` entries an undo came to, for the editor to call
+    /// once it is done, as primitive-undo calls them.
+    pub(crate) pending_applies: Vec<Vec<Value>>,
+    /// The history while `buffer-undo-list` is t, so setting it back to
+    /// the list it was, as a `let` does, puts the history back exactly.
+    stashed_undo: Option<Box<UndoState>>,
     /// Point at the last undo boundary, before the command now running.
     boundary_point: usize,
     /// The accessible portion when the buffer is narrowed, as Emacs's BEGV
@@ -244,6 +283,14 @@ pub(crate) struct UndoState {
     edited: bool,
 }
 
+/// What [`Buffer::begin_silent`] changed, for [`Buffer::end_silent`] to put back.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct Silenced {
+    pub(crate) modified: bool,
+    pub(crate) recording: bool,
+    pub(crate) changed: bool,
+}
+
 /// What a buffer sharing its text has changed since the editor last made
 /// the same changes in the others, as Emacs's indirect buffers share one
 /// buffer_text.
@@ -294,6 +341,8 @@ impl Buffer {
             change_groups: Vec::new(),
             change_log: Vec::new(),
             cancelling: false,
+            pending_applies: Vec::new(),
+            stashed_undo: None,
             boundary_point: 0,
             edited_since_command: false,
             restriction: None,
@@ -520,6 +569,23 @@ impl Buffer {
                 list.push(Value::Null);
             }
             for e in edits.iter().rev() {
+                match &e.extra {
+                    Extra::Property { name, old } => {
+                        for (range, value) in old.iter().rev() {
+                            let value = value.clone().unwrap_or(Value::Null);
+                            let (beg, end) = (Value::Number(range.start as f64), Value::Number(range.end as f64));
+                            list.push(Value::List(vec![Value::Null, Value::Str(name.clone()), value, beg, end]));
+                        }
+                        continue;
+                    }
+                    Extra::Apply(args) => {
+                        let mut entry = vec![Value::Symbol("apply".into())];
+                        entry.extend(args.iter().cloned());
+                        list.push(Value::List(entry));
+                        continue;
+                    }
+                    Extra::None => {}
+                }
                 if !e.inserted.is_empty() {
                     let end = e.pos + e.inserted.chars().count();
                     list.push(Value::List(vec![Value::Number(e.pos as f64), Value::Number(end as f64)]));
@@ -540,6 +606,146 @@ impl Buffer {
             }
         }
         Some(Value::List(list))
+    }
+
+    /// Sets the undo history, as setting Emacs's `buffer-undo-list` does:
+    /// t stops recording, nil empties it, and a list in the form
+    /// [`Buffer::undo_list`] gives becomes the history. Setting t keeps the
+    /// history aside, so setting the list it was back, as a `let` binding
+    /// t does when it ends, puts it back as it was.
+    pub fn set_undo_list(&mut self, value: &Value) {
+        let off = matches!(value, Value::Bool(true)) || value.as_str() == Some("t");
+        if off {
+            if !self.undo_disabled {
+                self.undo_boundary();
+                self.stashed_undo = Some(Box::new(self.take_undo()));
+                self.undo_disabled = true;
+            }
+            return;
+        }
+        if let Some(stash) = self.stashed_undo.take() {
+            let generation = self.save_generation;
+            let mut state = *stash;
+            state.disabled = false;
+            state.save_generation = generation;
+            let pending = std::mem::take(&mut self.edited_since_command);
+            self.put_undo(state);
+            if self.undo_list().as_ref() == Some(value) {
+                self.edited_since_command |= pending;
+                return;
+            }
+            self.take_undo();
+            self.edited_since_command |= pending;
+        }
+        self.undo_disabled = false;
+        self.stashed_undo = None;
+        self.undo_groups.clear();
+        self.open_group.clear();
+        self.open_point = None;
+        self.open_unmodified_at = None;
+        self.pending_undo = None;
+        self.selective_undo = None;
+        let Value::List(entries) = value else { return };
+        // Newest first, a boundary (nil) before each finished command's changes.
+        let mut segments: Vec<&[Value]> = entries.split(|e| matches!(e, Value::Null)).collect();
+        let open = if segments.is_empty() { &[][..] } else { segments.remove(0) };
+        for (i, segment) in std::iter::once(open).chain(segments).enumerate() {
+            let group = self.group_from_entries(segment);
+            if i == 0 {
+                self.open_group = group.edits;
+                self.open_point = group.point;
+                self.open_unmodified_at = group.unmodified_at;
+            } else if !group.edits.is_empty() || group.point.is_some() {
+                self.undo_groups.insert(0, group);
+            }
+        }
+    }
+
+    /// Stops recording changes for undo and keeps whether the buffer was
+    /// modified, for [`Buffer::end_silent`] to put back, as Emacs's
+    /// with-silent-modifications binds `buffer-undo-list` to t around
+    /// changes to text properties that are not edits, such as fontifying.
+    pub(crate) fn begin_silent(&mut self) -> Silenced {
+        let silenced = Silenced { modified: self.modified, recording: !self.undo_disabled, changed: self.changed };
+        if silenced.recording {
+            self.set_undo_list(&Value::Bool(true));
+        }
+        silenced
+    }
+
+    pub(crate) fn end_silent(&mut self, silenced: Silenced) {
+        if silenced.recording && self.undo_disabled {
+            match self.stashed_undo.take() {
+                Some(stash) => {
+                    let mut state = *stash;
+                    state.disabled = false;
+                    state.save_generation = self.save_generation;
+                    self.put_undo(state);
+                }
+                None => self.undo_disabled = false,
+            }
+        }
+        self.modified = silenced.modified;
+        // Nor do they deactivate the region, as fontifying in redisplay does not.
+        self.changed = silenced.changed;
+    }
+
+    /// One command's changes from undo list entries, newest first.
+    fn group_from_entries(&self, entries: &[Value]) -> Group {
+        let mut group = Group { edits: Vec::new(), kind: GroupKind::Change, unmodified_at: None, point: None };
+        let num = |v: &Value| v.as_number();
+        for entry in entries.iter().rev() {
+            match entry {
+                Value::Number(p) => group.point = Some(p.max(0.0) as usize),
+                Value::List(items) => match items.as_slice() {
+                    [Value::Bool(true), ..] => group.unmodified_at = Some(self.save_generation),
+                    [Value::Symbol(s), ..] if s == "t" => group.unmodified_at = Some(self.save_generation),
+                    [Value::Symbol(s), args @ ..] if s == "apply" => {
+                        group.edits.push(Edit { extra: Extra::Apply(args.to_vec()), ..Edit::property(0, "", Vec::new()) });
+                    }
+                    [Value::Null, name, value, beg, end] if num(beg).is_some() && num(end).is_some() => {
+                        let (beg, end) = (num(beg).unwrap().max(0.0) as usize, num(end).unwrap().max(0.0) as usize);
+                        let value = (!matches!(value, Value::Null)).then(|| value.clone());
+                        group.edits.push(Edit::property(beg, name.as_str().unwrap_or(""), vec![(beg..end, value)]));
+                    }
+                    [beg @ Value::Number(_), end @ Value::Number(_)] => {
+                        let (beg, end) = (num(beg).unwrap().max(0.0) as usize, num(end).unwrap().max(0.0) as usize);
+                        // Undo only takes the inserted text's length out again.
+                        let inserted = if end <= self.len() { self.slice(beg.min(end)..end) } else { " ".repeat(end.saturating_sub(beg)) };
+                        group.edits.push(Edit {
+                            pos: beg,
+                            deleted: String::new(),
+                            deleted_props: Vec::new(),
+                            inserted,
+                            point_before: beg,
+                            marks: Vec::new(),
+                            extra: Extra::None,
+                        });
+                    }
+                    [text @ (Value::Str(_) | Value::Text(_)), pos @ Value::Number(_)] => {
+                        let p = num(pos).unwrap();
+                        let at = p.abs() as usize;
+                        let (string, props) = match text {
+                            Value::Text(t) => (t.string.clone(), t.props.clone()),
+                            other => (other.as_str().unwrap_or("").to_string(), Vec::new()),
+                        };
+                        let point_before = if p.is_sign_negative() { at + string.chars().count() } else { at };
+                        group.edits.push(Edit {
+                            pos: at,
+                            deleted: string,
+                            deleted_props: props,
+                            inserted: String::new(),
+                            point_before,
+                            marks: Vec::new(),
+                            extra: Extra::None,
+                        });
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
+        group
     }
 
     pub(crate) fn mark_saved(&mut self) {
@@ -848,6 +1054,7 @@ impl Buffer {
                 inserted: to.to_string(),
                 point_before: self.point,
                 marks: Vec::new(),
+                extra: Extra::None,
             };
             if !self.change_groups.is_empty() {
                 self.change_log.push(edit.clone());
@@ -912,7 +1119,7 @@ impl Buffer {
         self.change_log.truncate(log);
         let new_end = (end as isize + added) as usize;
         let inserted = self.slice(start..new_end);
-        self.record(Edit { pos: start, deleted: old, deleted_props: old_props, inserted, point_before: point, marks: Vec::new() });
+        self.record(Edit { pos: start, deleted: old, deleted_props: old_props, inserted, point_before: point, marks: Vec::new(), extra: Extra::None });
         // Undoing it all leaves the buffer unmodified if it was before.
         if open == 0 {
             self.open_unmodified_at = unmodified;
@@ -978,6 +1185,7 @@ impl Buffer {
             inserted: s.to_string(),
             point_before,
             marks: Vec::new(),
+            extra: Extra::None,
         });
     }
 
@@ -1041,6 +1249,7 @@ impl Buffer {
             inserted: String::new(),
             point_before,
             marks,
+            extra: Extra::None,
         });
         deleted
     }
@@ -1129,6 +1338,20 @@ impl Buffer {
         self.properties.modify(range.start, end, |p| {
             p.insert(name.to_string(), value.clone());
         });
+    }
+
+    /// Sets a property on a range, or with `None` takes it off, as Lisp's
+    /// `put-text-property` and `remove-text-properties` do: recorded for
+    /// undo, and the buffer modified where anything changes, unlike
+    /// [`Buffer::put_text_property`], which the editor uses for its own marks.
+    pub fn change_text_property(&mut self, range: Range<usize>, name: &str, value: Option<Value>) {
+        if !self.record_property_change(range.start, range.end, name, |old| old != value.as_ref()) {
+            return;
+        }
+        match value {
+            Some(v) => self.put_text_property(range, name, v),
+            None => self.remove_text_property(range, name),
+        }
     }
 
     /// Adds a face to the `face` property of every character in a range,
@@ -1235,6 +1458,9 @@ impl Buffer {
         let edits = self.change_log.split_off(group.log_start);
         self.cancelling = true;
         for edit in edits.iter().rev() {
+            if self.revert_extra(edit) {
+                continue;
+            }
             let inserted = edit.inserted.chars().count();
             if inserted > 0 {
                 self.apply_delete(edit.pos, edit.pos + inserted);
@@ -1596,6 +1822,10 @@ impl Buffer {
             let mut elements = Vec::new();
             for e in group.edits.iter().rev() {
                 let pos = e.pos as isize;
+                if let Extra::Property { name, old } = &e.extra {
+                    elements.push((Selective::Property { name: name.clone(), old: old.clone() }, pos, 0));
+                    continue;
+                }
                 if !e.inserted.is_empty() {
                     elements.push((Selective::Inserted(e.pos, e.pos + e.inserted.chars().count()), pos, -(e.inserted.chars().count() as isize)));
                 }
@@ -1637,6 +1867,16 @@ impl Buffer {
                         (p >= start && p <= end).then_some(Selective::Point(p as usize))
                     }
                     Selective::Unmodified(_) => None,
+                    // Kept if it is inside the region and nothing left out came between its ends.
+                    Selective::Property { name, old } => {
+                        let (beg, stop) = (old.first().map_or(0, |r| r.0.start), old.last().map_or(0, |r| r.0.end));
+                        let (b, e) = (adjust(&deltas, beg as isize, false), adjust(&deltas, stop as isize, true));
+                        let shift = b - beg as isize;
+                        (e - b == (stop - beg) as isize && b >= start && e <= end).then(|| Selective::Property {
+                            name,
+                            old: old.into_iter().map(|(r, v)| ((r.start as isize + shift) as usize..(r.end as isize + shift) as usize, v)).collect(),
+                        })
+                    }
                 };
                 match kept {
                     Some(element) => step.push(element),
@@ -1741,6 +1981,7 @@ impl Buffer {
                         }
                     }
                     Selective::Point(p) => self.point = p.min(self.len()),
+                    Selective::Property { name, old } => self.restore_property(&name, &old),
                     Selective::Unmodified(save) => {
                         if save == self.save_generation {
                             self.modified = false;
@@ -1804,6 +2045,9 @@ impl Buffer {
     fn revert(&mut self, index: usize) {
         let group = self.undo_groups[index].clone();
         for edit in group.edits.iter().rev() {
+            if self.revert_extra(edit) {
+                continue;
+            }
             let inserted = edit.inserted.chars().count();
             if inserted > 0 {
                 // Point goes to the start of the text first, as in Emacs, so
@@ -1837,6 +2081,82 @@ impl Buffer {
         }
     }
 
+    /// Undoes a change that is not text inserted or deleted: puts a text
+    /// property back, or keeps an `(apply ...)` for the editor to call.
+    /// Returns whether the edit was one.
+    fn revert_extra(&mut self, edit: &Edit) -> bool {
+        match &edit.extra {
+            Extra::None => false,
+            Extra::Property { name, old } => {
+                self.restore_property(name, old);
+                true
+            }
+            Extra::Apply(args) => {
+                self.pending_applies.push(args.clone());
+                true
+            }
+        }
+    }
+
+    /// Puts a property's old values back, as primitive-undo does with
+    /// put-text-property, recording the change so it can be undone again.
+    fn restore_property(&mut self, name: &str, old: &[(Range<usize>, Option<Value>)]) {
+        for (range, value) in old {
+            let (start, end) = (range.start.min(self.len()), range.end.min(self.len()));
+            if !self.record_property_change(start, end, name, |v| v != value.as_ref()) {
+                continue;
+            }
+            match value {
+                Some(v) => self.properties.modify(start, end, |p| {
+                    p.insert(name.to_string(), v.clone());
+                }),
+                None => self.properties.modify(start, end, |p| {
+                    p.remove(name);
+                }),
+            }
+        }
+    }
+
+    /// Records that a text property is about to change between `start`
+    /// and `end`, as Emacs's record_property_change does for put-text-property
+    /// and the others: its old value on each stretch where `changes` says
+    /// the change makes a difference, so undo can put them back. The buffer
+    /// is modified, as in Emacs. Returns whether anything is to change.
+    pub fn record_property_change(&mut self, start: usize, end: usize, name: &str, changes: impl Fn(Option<&Value>) -> bool) -> bool {
+        let end = end.min(self.len());
+        if start >= end {
+            return false;
+        }
+        let mut old: Vec<(Range<usize>, Option<Value>)> = Vec::new();
+        let mut push = |range: Range<usize>, value: Option<Value>| {
+            if !changes(value.as_ref()) {
+                return;
+            }
+            match old.last_mut() {
+                Some((last, v)) if last.end == range.start && *v == value => last.end = range.end,
+                _ => old.push((range, value)),
+            }
+        };
+        let mut pos = start;
+        for (range, props) in self.properties.save(start, end) {
+            let (a, b) = (start + range.start, start + range.end);
+            if a > pos {
+                push(pos..a, None);
+            }
+            push(a..b, props.get(name).cloned());
+            pos = b;
+        }
+        if pos < end {
+            push(pos..end, None);
+        }
+        if old.is_empty() {
+            return false;
+        }
+        let first = old[0].0.start;
+        self.record(Edit::property(first, name, old));
+        true
+    }
+
     fn record(&mut self, edit: Edit) {
         // A change another buffer sharing the text made is recorded there.
         if self.cancelling || self.mirroring {
@@ -1848,8 +2168,9 @@ impl Buffer {
         if self.open_group.is_empty() {
             self.open_unmodified_at = (!self.modified).then_some(self.save_generation);
             // As Emacs's record_point: where point was before the command,
-            // if the change starts elsewhere.
-            self.open_point = (self.boundary_point != edit.pos).then_some(self.boundary_point);
+            // if the change starts elsewhere. A property change records none.
+            let text = matches!(edit.extra, Extra::None);
+            self.open_point = (text && self.boundary_point != edit.pos).then_some(self.boundary_point);
         }
         self.changed = true;
         self.edited_since_command = true;
@@ -1860,6 +2181,7 @@ impl Buffer {
         // Typing joins onto the insertion before it, as Emacs records it: one
         // insertion for a run of characters, not one per character.
         if let Some(last) = self.open_group.last_mut()
+            && matches!((&edit.extra, &last.extra), (Extra::None, Extra::None))
             && edit.deleted.is_empty()
             && last.deleted.is_empty()
             && last.pos + last.inserted.chars().count() == edit.pos

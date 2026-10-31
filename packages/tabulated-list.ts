@@ -601,6 +601,8 @@ ember.defineMajorMode({
   } as Record<string, ember.CommandName>,
   setup: () => {
     ember.setVariable("truncate-lines", true);
+    // A list made again and again keeps no undo history, as in Emacs.
+    ember.setVariable("buffer-undo-list", true);
     ember.setVariable("revert-buffer-function", "tabulated-list-revert");
     originalOrder.delete(ember.bufferName());
     ember.call("header-line-indent-mode");

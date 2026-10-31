@@ -1310,6 +1310,17 @@
       return unwindProtect(fn, () => ember.setWindowConfiguration(configuration));
     },
     prepareChangeGroup: () => native.prepareChangeGroup(),
+    // As with-silent-modifications: changes to text properties are not
+    // recorded for undo and leave the buffer as modified as it was, with
+    // read-only text and the change hooks out of the way.
+    withSilentModifications(fn) {
+      const buffer = native.bufferIdOf();
+      const state = native.beginSilentModifications();
+      return unwindProtect(
+        () => ember.letBind({ "inhibit-read-only": true, "inhibit-modification-hooks": true }, fn),
+        () => native.endSilentModifications(buffer, state),
+      );
+    },
     cancelChangeGroup: (handle) => native.cancelChangeGroup(handle),
     acceptChangeGroup: (handle) => native.acceptChangeGroup(handle),
     atomicChangeGroup(fn) {

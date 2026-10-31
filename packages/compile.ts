@@ -174,13 +174,16 @@ function parseNewLines(): void {
       const fileAt = start + chars(text, m.index + m[0].indexOf(file));
       s.messages.push({ start, end: ember.lineEnd(line), file, line: lineNo, col: g.col === undefined ? undefined : Number(g.col), type });
       if (grep) s.matches++;
-      ember.putTextProperty(fileAt, fileAt + chars(file), "face", grep ? "compilation-info" : faceFor(type));
-      const lineText = String(lineNo);
-      const lineAt = text.indexOf(lineText, m.index + m[0].indexOf(file) + file.length);
-      if (lineAt >= 0) {
-        const at = start + chars(text, lineAt);
-        ember.putTextProperty(at, at + lineText.length, "face", "compilation-line-number");
-      }
+      // As compilation-mode's font-lock puts them: silently.
+      ember.withSilentModifications(() => {
+        ember.putTextProperty(fileAt, fileAt + chars(file), "face", grep ? "compilation-info" : faceFor(type));
+        const lineText = String(lineNo);
+        const lineAt = text.indexOf(lineText, m.index + m[0].indexOf(file) + file.length);
+        if (lineAt >= 0) {
+          const at = start + chars(text, lineAt);
+          ember.putTextProperty(at, at + lineText.length, "face", "compilation-line-number");
+        }
+      });
       break;
     }
     line++;
@@ -333,9 +336,12 @@ function compilationSentinel(proc: string, event: string, modeName: string): voi
       const from = ember.point();
       ember.insert(`\n${modeName} ${status.replace(/\n$/, "")} at ${timeString()}, duration ${duration(Date.now() - s.started)}\n`);
       const failed = !event.startsWith("finished") && !(ember.derivedModeP("grep-mode") && /code 1\n/.test(event));
-      ember.putTextProperty(from + 1, from + 1 + modeName.length, "face", "compilation-info");
-      const word = from + 2 + modeName.length;
-      ember.putTextProperty(word, word + status.replace(/\n$/, "").length, "face", failed ? "compilation-error" : "compilation-info");
+      // Emacs inserts these propertized, so they are no change of their own.
+      ember.withSilentModifications(() => {
+        ember.putTextProperty(from + 1, from + 1 + modeName.length, "face", "compilation-info");
+        const word = from + 2 + modeName.length;
+        ember.putTextProperty(word, word + status.replace(/\n$/, "").length, "face", failed ? "compilation-error" : "compilation-info");
+      });
     });
     ember.gotoChar(ember.markerPosition(point)!);
     ember.deleteMarker(point);
