@@ -1,0 +1,181 @@
+[
+  {
+    "name": "pop-global-mark-back",
+    "text": "abcdef",
+    "keys": "C-f C-f C-SPC C-x b o t h e r RET x C-SPC C-x C-SPC C-x C-SPC"
+  },
+  {
+    "name": "pop-global-mark-none",
+    "text": "abc",
+    "keys": "C-x C-SPC"
+  },
+  {
+    "name": "undo-only-skips-undone",
+    "text": "",
+    "keys": "a b c C-/ C-f C-/ C-/"
+  },
+  {
+    "name": "undo-only",
+    "text": "",
+    "keys": "a SPC b SPC c C-/ C-f M-x",
+    "answers": [
+      "undo-only"
+    ]
+  },
+  {
+    "name": "undo-only-twice",
+    "text": "",
+    "keys": "a SPC b SPC c C-/ C-f M-x M-x",
+    "answers": [
+      "undo-only",
+      "undo-only"
+    ]
+  },
+  {
+    "name": "escape-quit-region",
+    "text": "abc",
+    "keys": "C-SPC C-f ESC ESC ESC"
+  },
+  {
+    "name": "esc-still-meta",
+    "text": "one two",
+    "keys": "ESC f ESC b"
+  },
+  {
+    "name": "undo-only-after-change",
+    "text": "",
+    "keys": "a C-/ b C-/ M-x",
+    "answers": [
+      "undo-only"
+    ]
+  },
+  {
+    "name": "undo-only-chain",
+    "text": "x\ny",
+    "keys": "a C-n b C-/ C-/ C-n M-x M-x",
+    "answers": [
+      "undo-only",
+      "undo-only"
+    ]
+  },
+  {
+    "name": "yank-from-kill-ring-by-m-y",
+    "text": "one two three",
+    "keys": "M-d C-f M-d C-e M-y",
+    "answers": [
+      "one"
+    ]
+  },
+  {
+    "name": "yank-from-kill-ring-then-c-y",
+    "text": "one two three",
+    "keys": "M-d C-f M-d C-e M-y C-y",
+    "answers": [
+      "one"
+    ]
+  },
+  {
+    "name": "yank-from-kill-ring-c-u",
+    "text": "one two three",
+    "keys": "M-d C-f M-d C-e C-u M-y",
+    "answers": [
+      "one"
+    ]
+  },
+  {
+    "name": "duplicate-line",
+    "text": "one\ntwo\n",
+    "keys": "C-f M-x",
+    "answers": [
+      "duplicate-line"
+    ]
+  },
+  {
+    "name": "duplicate-line-count",
+    "text": "one\ntwo",
+    "keys": "C-n M-3 M-x",
+    "answers": [
+      "duplicate-line"
+    ]
+  },
+  {
+    "name": "duplicate-line-last",
+    "text": "one\ntwo",
+    "keys": "M-> M-x",
+    "answers": [
+      "duplicate-line"
+    ]
+  },
+  {
+    "name": "duplicate-dwim-region",
+    "text": "abc def",
+    "keys": "C-SPC M-f M-x",
+    "answers": [
+      "duplicate-dwim"
+    ]
+  },
+  {
+    "name": "copy-from-above",
+    "text": "hello world\n\nab",
+    "keys": "M-> M-x",
+    "answers": [
+      "copy-from-above-command"
+    ]
+  },
+  {
+    "name": "copy-from-above-count",
+    "text": "hello world\nab",
+    "keys": "M-> M-3 M-x",
+    "answers": [
+      "copy-from-above-command"
+    ]
+  },
+  {
+    "name": "raise-sexp",
+    "text": "(a (b c) d)",
+    "keys": "C-f C-f C-f C-f M-x",
+    "answers": [
+      "raise-sexp"
+    ]
+  },
+  {
+    "name": "delete-pair",
+    "text": "x (a b) y",
+    "keys": "C-f C-f M-x",
+    "answers": [
+      "delete-pair"
+    ]
+  },
+  {
+    "name": "delete-pair-backward",
+    "text": "x [a b] y",
+    "keys": "C-e C-b C-b M-- M-x",
+    "answers": [
+      "delete-pair"
+    ]
+  },
+  {
+    "name": "upcase-dwim-word",
+    "text": "one two",
+    "keys": "M-x",
+    "answers": [
+      "upcase-dwim"
+    ]
+  },
+  {
+    "name": "upcase-dwim-region",
+    "text": "one two",
+    "keys": "C-f C-SPC C-e M-x",
+    "answers": [
+      "upcase-dwim"
+    ]
+  },
+  {
+    "name": "capitalize-dwim",
+    "text": "one two",
+    "keys": "M-2 M-x",
+    "answers": [
+      "capitalize-dwim"
+    ]
+  }
+]

@@ -695,6 +695,16 @@ pub(crate) fn install(ed: &mut Editor) {
             Value::Bool(false),
         ),
         Variable::new(
+            "deactivate-mark",
+            "Set to nil by a command, after the changes it makes, to keep the region active, which a change otherwise deactivates at the command's end.",
+            Value::Null,
+        ),
+        Variable::new(
+            "global-mark-ring-max",
+            "How many places the global mark ring keeps, one for each buffer the mark was set in, newest first.",
+            Value::Number(16.0),
+        ),
+        Variable::new(
             "inhibit--record-char",
             "Whether keys typed in this buffer are left out of recent-keys, as a password prompt's are.",
             Value::Bool(false),

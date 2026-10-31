@@ -421,3 +421,20 @@ fn c_l_puts_the_line_in_the_middle_then_at_the_top_then_the_bottom() {
     ed.press("C-l").unwrap();
     assert_eq!(top(&ed), 45, "middle again");
 }
+
+#[test]
+fn m_r_moves_to_the_middle_then_the_top_then_the_bottom_line() {
+    let text: String = (0..100).map(|i| format!("line {i}\n")).collect();
+    let (mut ed, _s) = setup(&text);
+    ed.set_viewport_height(10);
+    ed.window_buffer_mut().top_line = 40;
+    let line = |ed: &Editor| ed.window_buffer().line_of(ed.window_buffer().point());
+    ed.press("M-r").unwrap();
+    assert_eq!(line(&ed), 45, "middle");
+    ed.press("M-r").unwrap();
+    assert_eq!(line(&ed), 40, "top");
+    ed.press("M-r").unwrap();
+    assert_eq!(line(&ed), 49, "bottom");
+    ed.press("M-2 M-r").unwrap();
+    assert_eq!(line(&ed), 42, "line 2 of the window");
+}

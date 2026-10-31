@@ -241,6 +241,9 @@ pub struct Editor {
     last_macro: Option<Vec<Key>>,
     /// How many keyboard macros are running, one inside another.
     pub(crate) executing_macro: usize,
+    /// The global mark ring, newest first: a marker at the mark of each
+    /// buffer the mark was last set in, as Emacs's `global-mark-ring`.
+    global_mark_ring: Vec<u64>,
     /// Where `input-decode-map` and `key-translation-map` next look in the
     /// keys being read: the keys before have been translated or matched
     /// nothing, as read_key_sequence's indec and keytran starts.
@@ -369,6 +372,7 @@ impl Editor {
             last_macro: None,
             executing_macro: 0,
             translation_starts: [0; 2],
+            global_mark_ring: Vec::new(),
             last_command: None,
             this_command: None,
             last_key: None,
@@ -1152,8 +1156,14 @@ impl Editor {
         if !succeeded && self.running > 0 {
             return;
         }
+        // A command that set deactivate-mark to nil after its changes keeps
+        // the region, as duplicate-dwim does; it is unset again for the next.
+        let keep = matches!(self.variable("deactivate-mark"), Some(Value::Bool(false)));
+        if self.running == 0 {
+            self.set_default("deactivate-mark", Value::Null);
+        }
         for b in self.buffers.iter_mut() {
-            if b.take_changed() && succeeded {
+            if b.take_changed() && succeeded && !keep {
                 b.deactivate_mark();
             }
         }
@@ -1261,7 +1271,7 @@ impl Editor {
         if self.esc_prefix {
             self.esc_prefix = false;
             key.meta = true;
-        } else if key == Key::new(KeyCode::Esc) {
+        } else if key == Key::new(KeyCode::Esc) && !self.binds_next(key) {
             self.esc_prefix = true;
             self.message = Some("ESC-".into());
             return;
@@ -1365,6 +1375,18 @@ impl Editor {
                 }
             }
         }
+    }
+
+    /// Whether the keys being read go on with `key` in the keymaps: ESC is
+    /// then a key of its own, as in `M-ESC ESC`, rather than Meta for the
+    /// key after it.
+    fn binds_next(&self, key: Key) -> bool {
+        if self.pending_keys.is_empty() {
+            return false;
+        }
+        let mut keys = self.pending_keys.clone();
+        keys.push(key);
+        self.lookup(&keys) != Lookup::Unbound
     }
 
     /// Translates the keys being read by `input-decode-map` and then
@@ -1599,6 +1621,53 @@ impl Editor {
     pub fn delete_marker(&mut self, id: u64) {
         let _ = self.set_marker(id, None, 0);
         self.detached_markers.retain(|m| m.id != id);
+    }
+
+    /// Sets the mark at `pos`, pushing the old one on the buffer's mark
+    /// ring, as Emacs's `push-mark`; the new mark goes on the global mark
+    /// ring too, unless the newest entry there is in this buffer.
+    pub fn push_mark(&mut self, pos: usize, activate: bool) {
+        self.buffer_mut().push_mark(pos, activate);
+        let newest_here = self.global_mark_ring.first().and_then(|&m| self.marker_position(m)).is_some_and(|(name, _)| name == self.buffer().name);
+        if newest_here {
+            return;
+        }
+        let mark = self.buffer().mark().unwrap_or(pos);
+        let marker = self.buffers[self.current].make_marker(mark, false);
+        self.global_mark_ring.insert(0, marker);
+        let max = self.number_in(self.window_buffer(), "global-mark-ring-max", 16.0).max(1.0) as usize;
+        while self.global_mark_ring.len() > max {
+            let old = self.global_mark_ring.pop().expect("longer than max");
+            self.delete_marker(old);
+        }
+    }
+
+    /// Goes to the newest place on the global mark ring, in its buffer,
+    /// and moves it to the end of the ring, as Emacs's `pop-global-mark`.
+    pub fn pop_global_mark(&mut self) -> Result<()> {
+        // Entries whose buffers were killed go.
+        while let Some(&m) = self.global_mark_ring.first() {
+            if self.marker_position(m).is_some() {
+                break;
+            }
+            self.global_mark_ring.remove(0);
+            self.delete_marker(m);
+        }
+        let Some(&marker) = self.global_mark_ring.first() else { return Err(Error::new("No global mark set")) };
+        self.global_mark_ring.rotate_left(1);
+        let (name, pos) = self.marker_position(marker).map(|(n, p)| (n.to_string(), p)).expect("checked above");
+        let index = self.find_buffer(&name).expect("the marker's buffer");
+        let b = &self.buffers[index];
+        if pos < b.point_min() || pos > b.point_max() {
+            if self.variable("widen-automatically").is_none_or(|v| v.is_true()) {
+                self.buffers[index].widen();
+            } else {
+                return Err(Error::new(format!("Global mark position is outside accessible part of buffer {name}")));
+            }
+        }
+        self.buffers[index].set_point(pos);
+        self.switch_to_buffer(&name);
+        Ok(())
     }
 
     pub fn find_buffer(&self, name: &str) -> Option<usize> {
@@ -1974,6 +2043,12 @@ impl Editor {
     /// The kill `n` entries back from the one yanked last, moving the yank
     /// pointer there, as Emacs's `current-kill` does. 0 is the kill yanking
     /// would insert now; M-y asks for 1, the one before it.
+    /// Makes the kill `index` places from the newest the one the next yank
+    /// inserts, as setting `kill-ring-yank-pointer` does.
+    pub fn set_kill_ring_yank_pointer(&mut self, index: usize) {
+        self.yank_pointer = index.min(self.kill_ring.len().saturating_sub(1));
+    }
+
     pub fn current_kill(&mut self, n: i64) -> Result<String> {
         self.current_kill_text(n).map(|t| t.string)
     }

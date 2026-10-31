@@ -266,11 +266,11 @@ fn movement(ed: &mut Editor) {
         |ed, _| {
             let arg = ed.current_prefix_arg();
             let quiet = ed.executing_kbd_macro();
-            let b = ed.buffer_mut();
-            let pushed = !matches!(arg, Some(PrefixArg::Universal(_))) && !b.is_mark_active();
+            let pushed = !matches!(arg, Some(PrefixArg::Universal(_))) && !ed.buffer().is_mark_active();
             if pushed {
-                b.push_mark(b.point(), false);
+                ed.push_mark(ed.buffer().point(), false);
             }
+            let b = ed.buffer_mut();
             match arg {
                 Some(arg @ (PrefixArg::Number(_) | PrefixArg::Minus)) => {
                     let pos = (1 + tenths(b.len(), arg.numeric())).clamp(0, b.len() as i64) as usize;
@@ -292,11 +292,11 @@ fn movement(ed: &mut Editor) {
         |ed, _| {
             let arg = ed.current_prefix_arg();
             let quiet = ed.executing_kbd_macro();
-            let b = ed.buffer_mut();
-            let pushed = !matches!(arg, Some(PrefixArg::Universal(_))) && !b.is_mark_active();
+            let pushed = !matches!(arg, Some(PrefixArg::Universal(_))) && !ed.buffer().is_mark_active();
             if pushed {
-                b.push_mark(b.point(), false);
+                ed.push_mark(ed.buffer().point(), false);
             }
+            let b = ed.buffer_mut();
             match arg {
                 Some(arg @ (PrefixArg::Number(_) | PrefixArg::Minus)) => {
                     let pos = (b.len() as i64 - tenths(b.len(), arg.numeric())).clamp(0, b.len() as i64) as usize;
@@ -390,6 +390,28 @@ fn movement(ed: &mut Editor) {
             };
             let top = ed.move_rows_in(b, point_row, -row).0;
             ed.window_buffer_mut().top_line = top;
+            Ok(())
+        },
+    );
+    def(
+        ed,
+        "move-to-window-line",
+        "Move point to the start of the line in the middle of the window.\n\nWith a numeric prefix argument N, to line N of the window instead, counting from 0 at the top, or from the bottom if N is negative.",
+        |ed, _| {
+            let height = ed.viewport_height() as i64;
+            let arg = ed.current_prefix_arg();
+            let row = match arg {
+                Some(arg @ (PrefixArg::Number(_) | PrefixArg::Minus)) => {
+                    let n = arg.numeric();
+                    if n >= 0 { n.min(height - 1) } else { (height + n).max(0) }
+                }
+                _ => height / 2,
+            };
+            let b = ed.window_buffer();
+            let top = ed.row_line_in(b, b.top_line);
+            let line = ed.move_rows_in(b, top, row).0;
+            let pos = b.line_start(line).clamp(b.point_min(), b.point_max());
+            ed.window_buffer_mut().set_point(pos);
             Ok(())
         },
     );
@@ -969,6 +991,20 @@ fn editing(ed: &mut Editor) {
             Ok(())
         },
     );
+    def(
+        ed,
+        "undo-only",
+        "Undo the last change, or as many as the prefix argument says, passing over the last undo and the change it undid: undo without redoing them.",
+        |ed, _| {
+            let prefix = ed.current_prefix_arg();
+            ed.buffer_mut().undo_no_redo = true;
+            let result = ed.call_with_prefix("undo", Vec::new(), prefix);
+            ed.buffer_mut().undo_no_redo = false;
+            // So that a following undo-only carries on from here.
+            ed.set_this_command("undo");
+            result
+        },
+    );
     def_counted(
         ed,
         "undo-redo",
@@ -1010,7 +1046,8 @@ fn editing(ed: &mut Editor) {
                 b.deactivate_mark();
                 ed.message("Mark deactivated");
             } else {
-                b.push_mark(b.point(), true);
+                let p = b.point();
+                ed.push_mark(p, true);
                 ed.message("Mark set");
             }
             Ok(())
@@ -1047,14 +1084,20 @@ fn editing(ed: &mut Editor) {
             Ok(())
         },
     );
+    def(
+        ed,
+        "pop-global-mark",
+        "Go to the place on the global mark ring set last, in its buffer: each buffer's mark when another buffer's was set after it. Again, the one before.",
+        |ed, _| ed.pop_global_mark(),
+    );
     def(ed, "widen", "Remove the restriction on this buffer, making all of it accessible again.", |ed, _| {
         ed.buffer_mut().widen();
         Ok(())
     });
     def(ed, "mark-whole-buffer", "Put point at the beginning of the buffer and the mark at the end.", |ed, _| {
+        ed.push_mark(ed.buffer().point(), false);
+        ed.push_mark(ed.buffer().point_max(), true);
         let b = ed.buffer_mut();
-        b.push_mark(b.point(), false);
-        b.push_mark(b.point_max(), true);
         b.set_point(b.point_min());
         Ok(())
     });
@@ -1129,8 +1172,7 @@ fn killing(ed: &mut Editor) {
         |ed, _| {
             let arg = ed.current_prefix_arg();
             // Emacs sets the mark before it looks at the kill ring, even if it is empty.
-            let b = ed.buffer_mut();
-            b.push_mark(b.point(), false);
+            ed.push_mark(ed.buffer().point(), false);
             let back = match arg {
                 None | Some(PrefixArg::Universal(_)) => 0,
                 Some(PrefixArg::Minus) => -2,
@@ -1673,6 +1715,8 @@ fn bind_defaults(ed: &mut Editor) {
         ("C-M-c", "exit-recursive-edit"),
         ("M-x", "execute-extended-command"),
         ("C-x C-f", "find-file"),
+        ("C-x C-SPC", "pop-global-mark"),
+        ("C-x C-@", "pop-global-mark"),
         ("C-x b", "switch-to-buffer"),
         ("C-x k", "kill-buffer"),
         ("C-x x r", "rename-buffer"),

@@ -12,6 +12,262 @@ declare global {
     /** Every command, with the arguments it takes in order. */
     interface Commands {
       /**
+       * Show this line's buffer as the only window.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-1-window": [];
+      /**
+       * Move up and take the marks off that line's buffer.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-backup-unmark": [];
+      /**
+       * Put this line's buffer at the end of the buffer list, and its line at the end of this one.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-bury": [];
+      /**
+       * Mark this line's buffer to be killed by x, and move down; with a prefix argument, that many lines.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-delete": [arg?: number];
+      /**
+       * Mark this line's buffer to be killed by x, and move up.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-delete-backwards": [];
+      /**
+       * Save the buffers marked S and kill those marked D.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-execute": [];
+      /**
+       * Mark this line's buffer to be shown by v, and move down.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-mark": [];
+      /**
+       * The mode of *Buffer List*: a line for each buffer. RET or f shows a line's buffer here, o in another window; d marks it to be killed and s to be saved, u unmarks, and x does what is marked. g lists them again, q quits.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-mode": [];
+      /**
+       * Move to the next line.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-next-line": [arg?: number];
+      /**
+       * Mark this line's buffer as not modified, as M-~ does there.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-not-modified": [];
+      /**
+       * Show this line's buffer in another window, and select it.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-other-window": [];
+      /**
+       * Move to the line before.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-previous-line": [arg?: number];
+      /**
+       * Make the list again.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-revert": [];
+      /**
+       * Mark this line's buffer to be saved by x, and move down.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-save": [];
+      /**
+       * Show this line's buffer, and those marked with m in other windows.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-select": [];
+      /**
+       * Show this line's buffer in another window, staying in the list.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-switch-other-window": [];
+      /**
+       * Show this line's buffer in this window.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-this-window": [];
+      /**
+       * Show only buffers visiting files, or all of them again.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-toggle-files-only": [];
+      /**
+       * Make this line's buffer read-only, or editable again.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-toggle-read-only": [];
+      /**
+       * Take the marks off this line's buffer, and move down.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-unmark": [];
+      /**
+       * Take the marks off every buffer.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-unmark-all": [];
+      /**
+       * Go back to the mark, popping it.
+       *
+       * Defined in packages/view.ts.
+       */
+      "View-back-to-mark": [];
+      /**
+       * Leave view mode, staying in the buffer.
+       *
+       * Defined in packages/view.ts.
+       */
+      "View-exit": [];
+      /**
+       * Leave view mode, staying in the buffer, and make it editable.
+       *
+       * Defined in packages/view.ts.
+       */
+      "View-exit-and-edit": [];
+      /**
+       * Go to a line: the prefix argument's, else the first.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/view.ts.
+       */
+      "View-goto-line": [arg?: PrefixArg];
+      /**
+       * Go to the line that percentage of the way through the buffer: the prefix argument's, else the start.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/view.ts.
+       */
+      "View-goto-percent": [arg?: PrefixArg];
+      /**
+       * Leave view mode and kill the buffer.
+       *
+       * Defined in packages/view.ts.
+       */
+      "View-kill-and-leave": [];
+      /**
+       * Leave view mode and the buffer, without killing it.
+       *
+       * Defined in packages/view.ts.
+       */
+      "View-leave": [];
+      /**
+       * Leave view mode and go back to the buffer shown before; a buffer view-file read is killed.
+       *
+       * Defined in packages/view.ts.
+       */
+      "View-quit": [];
+      /**
+       * Leave view mode and go back to the buffer shown before.
+       *
+       * Defined in packages/view.ts.
+       */
+      "View-quit-all": [];
+      /**
+       * Scroll back half a page.
+       *
+       * Defined in packages/view.ts.
+       */
+      "View-scroll-half-page-backward": [];
+      /**
+       * Scroll forward half a page.
+       *
+       * Defined in packages/view.ts.
+       */
+      "View-scroll-half-page-forward": [];
+      /**
+       * Scroll back a line, or as many as the prefix argument says.
+       *
+       * Defined in packages/view.ts.
+       */
+      "View-scroll-line-backward": [];
+      /**
+       * Scroll forward a line, or as many as the prefix argument says.
+       *
+       * Defined in packages/view.ts.
+       */
+      "View-scroll-line-forward": [];
+      /**
+       * Scroll back a page, or as many lines as the prefix argument says.
+       *
+       * Defined in packages/view.ts.
+       */
+      "View-scroll-page-backward": [];
+      /**
+       * Scroll forward a page, or as many lines as the prefix argument says.
+       *
+       * Defined in packages/view.ts.
+       */
+      "View-scroll-page-forward": [];
+      /**
+       * Scroll so the end of the buffer is at the bottom of the window.
+       *
+       * Defined in packages/view.ts.
+       */
+      "View-scroll-to-buffer-end": [];
+      /**
+       * Search back again for the regexp searched for last.
+       *
+       * Defined in packages/view.ts.
+       */
+      "View-search-last-regexp-backward": [];
+      /**
+       * Search forward again for the regexp searched for last.
+       *
+       * Defined in packages/view.ts.
+       */
+      "View-search-last-regexp-forward": [];
+      /**
+       * Search back for a regexp, going to the start of the line it is on.
+       *
+       * Defined in packages/view.ts.
+       */
+      "View-search-regexp-backward": [];
+      /**
+       * Search forward for a regexp, going to the start of the line it is on.
+       *
+       * Defined in packages/view.ts.
+       */
+      "View-search-regexp-forward": [];
+      /**
        * Quit the innermost recursive edit or minibuffer, and what entered it.
        */
       "abort-recursive-edit": [];
@@ -216,6 +472,112 @@ declare global {
        */
       "beginning-of-visual-line": [];
       /**
+       * Mark this line's bookmark to be deleted by x, and move down.
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-bmenu-delete": [];
+      /**
+       * Delete the bookmarks marked with d.
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-bmenu-execute-deletions": [];
+      /**
+       * List the bookmarks in *Bookmark List*: RET goes to one, d marks it to be deleted and x deletes those marked.
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-bmenu-list": [];
+      /**
+       * The mode of *Bookmark List*: RET goes to a bookmark, o in another window, d marks it to be deleted, x deletes, g lists again, q quits.
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-bmenu-mode": [];
+      /**
+       * Move to the next bookmark.
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-bmenu-next-line": [];
+      /**
+       * Go to this line's bookmark in another window.
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-bmenu-other-window": [];
+      /**
+       * Move to the bookmark before.
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-bmenu-previous-line": [];
+      /**
+       * List the bookmarks again.
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-bmenu-revert": [];
+      /**
+       * Go to this line's bookmark in this window.
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-bmenu-this-window": [];
+      /**
+       * Take the mark off this line's bookmark, and move down.
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-bmenu-unmark": [];
+      /**
+       * Forget a bookmark.
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-delete": [];
+      /**
+       * Insert the text of the file a bookmark is in, leaving the mark after it.
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-insert": [];
+      /**
+       * Go to a bookmark's place, in its file.
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-jump": [];
+      /**
+       * Go to a bookmark's place, in its file, in another window.
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-jump-other-window": [];
+      /**
+       * Give a bookmark another name.
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-rename": [];
+      /**
+       * Save the bookmarks to their file.
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-save": [];
+      /**
+       * Name the place point is at in this file, to go back to with C-x r b. The default name is the file's.
+       *
+       * A bookmark of the same name is replaced; with a prefix argument, the new one goes in front of it instead.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-set": [arg?: PrefixArg];
+      /**
        * Show the buffer's text in the face buffer-face-mode-face says, variable-pitch to begin with.
        *
        * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
@@ -224,6 +586,22 @@ declare global {
        */
       "buffer-face-mode": [];
       /**
+       * Show the list of buffers in this window, to choose one or mark them to save or kill. With a prefix argument, only those visiting files.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "buffer-menu": [arg?: PrefixArg];
+      /**
+       * Show the list of buffers in another window and select it.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "buffer-menu-other-window": [arg?: PrefixArg];
+      /**
        * Put a buffer last in the buffer list, the current one by default.
        *
        * Burying the current buffer shown in the selected window also takes it out of the window: a window dedicated to it is deleted, and any other shows the buffer it showed before.
@@ -231,6 +609,14 @@ declare global {
        * Defined in packages/window.ts.
        */
       "bury-buffer": [];
+      /**
+       * Capitalize the region if it is active, else the word after point, as M-c does.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/simple.ts.
+       */
+      "capitalize-dwim": [arg?: PrefixArg];
       /**
        * Capitalize the region: each word's first character in title case or upper case, and the rest in lower case.
        *
@@ -576,6 +962,14 @@ declare global {
        */
       "copy-file": [file: string, newname: string];
       /**
+       * Copy the rest of the line above, from the column point is at, after point; with a prefix argument, only that many characters.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/misc.ts.
+       */
+      "copy-from-above-command": [arg?: PrefixArg];
+      /**
        * Copy the lines after point, or in the region, that have a match for a regexp to the kill ring, together as one kill.
        *
        * Defined in packages/replace.ts.
@@ -787,6 +1181,14 @@ declare global {
        */
       "delete-other-windows": [];
       /**
+       * Delete the pair of characters around the sexp after point, such as parentheses or quotes; with a negative argument, around the one before.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "delete-pair": [arg?: PrefixArg];
+      /**
        * Delete the text in the rectangle between point and the mark; with a prefix argument, lines too short are padded first.
        *
        * @param start region start
@@ -872,6 +1274,70 @@ declare global {
        * Defined in packages/help.ts.
        */
       "describe-variable": [variable: string];
+      /**
+       * Compare two files with diff, showing the differences in *Diff*. The new file is this buffer's by default, the old one its backup.
+       *
+       * Defined in packages/diff.ts.
+       */
+      "diff": [];
+      /**
+       * Compare a file with its newest backup.
+       *
+       * @param file file name
+       *
+       * Defined in packages/diff.ts.
+       */
+      "diff-backup": [file: string];
+      /**
+       * Compare a buffer with the file it visits, to see what saving would change.
+       *
+       * @param buffer buffer name
+       *
+       * Defined in packages/diff.ts.
+       */
+      "diff-buffer-with-file": [buffer: string];
+      /**
+       * Move to the next file's part of the diff.
+       *
+       * Defined in packages/diff.ts.
+       */
+      "diff-file-next": [];
+      /**
+       * Move to the file's part of the diff before.
+       *
+       * Defined in packages/diff.ts.
+       */
+      "diff-file-prev": [];
+      /**
+       * Go to the line of the source this line of the diff is for, in another window; with a prefix argument, in the old file.
+       *
+       * Defined in packages/diff.ts.
+       */
+      "diff-goto-source": [];
+      /**
+       * Move to the next hunk; with a prefix argument, that many.
+       *
+       * Defined in packages/diff.ts.
+       */
+      "diff-hunk-next": [];
+      /**
+       * Move to the hunk before; with a prefix argument, that many back.
+       *
+       * Defined in packages/diff.ts.
+       */
+      "diff-hunk-prev": [];
+      /**
+       * The mode of a diff: n and p go between hunks, N and P between files, RET and o go to the source line, g runs the diff again, q quits.
+       *
+       * Defined in packages/diff.ts.
+       */
+      "diff-mode": [];
+      /**
+       * Run the diff again.
+       *
+       * Defined in packages/diff.ts.
+       */
+      "diff-revert-buffer": [];
       /**
        * Add the digit typed to the prefix argument, as M-5 or the digits after C-u do.
        *
@@ -1248,6 +1714,14 @@ declare global {
        */
       "down-list": [];
       /**
+       * Downcase the region if it is active, else the word after point, as M-l does.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/simple.ts.
+       */
+      "downcase-dwim": [arg?: PrefixArg];
+      /**
        * Convert the region to lower case.
        *
        * @param beg region start
@@ -1262,6 +1736,22 @@ declare global {
        * @param n prefix count
        */
       "downcase-word": [n?: number];
+      /**
+       * Copy the region after itself, keeping it active, or else the line point is on; with a prefix argument, that many copies.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/misc.ts.
+       */
+      "duplicate-dwim": [n?: number];
+      /**
+       * Copy the line point is on below it; with a prefix argument, that many copies.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/misc.ts.
+       */
+      "duplicate-line": [n?: number];
       /**
        * Insert a newline. With electric-indent-mode on, as it is by default, that is all; RET is the key that indents.
        *
@@ -1584,6 +2074,40 @@ declare global {
        * Defined in packages/help.ts.
        */
       "help-mode": [];
+      /**
+       * Highlight text matching regexps, set with M-s h r and the other M-s h keys.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/hi-lock.ts.
+       */
+      "hi-lock-mode": [];
+      /**
+       * Highlight the whole lines that have a match for a regexp, in a face asked for.
+       *
+       * Defined in packages/hi-lock.ts.
+       */
+      "highlight-lines-matching-regexp": [];
+      /**
+       * Highlight a phrase, its spaces matching any run of spaces, tabs and newlines, in a face asked for.
+       *
+       * Defined in packages/hi-lock.ts.
+       */
+      "highlight-phrase": [];
+      /**
+       * Highlight the matches of a regexp in a face, asked for, the next unused one by default; with a prefix argument, only that group of the regexp. With the region active, its text is the default regexp.
+       *
+       * @param subexp raw prefix argument
+       *
+       * Defined in packages/hi-lock.ts.
+       */
+      "highlight-regexp": [subexp?: PrefixArg];
+      /**
+       * Highlight the symbol at point wherever it is in the buffer, in the next unused face.
+       *
+       * Defined in packages/hi-lock.ts.
+       */
+      "highlight-symbol-at-point": [];
       /**
        * Say how many matches for a regexp there are after point, or in the region.
        *
@@ -1921,6 +2445,12 @@ declare global {
        */
       "keep-lines": [];
       /**
+       * Get out of what you are in: deactivate the region, or leave the minibuffer or a recursive edit, or quit the buffer as buffer-quit-function says, or delete the other windows.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "keyboard-escape-quit": [];
+      /**
        * Cancel the current prompt or key sequence, and deactivate the region.
        */
       "keyboard-quit": [];
@@ -1950,6 +2480,24 @@ declare global {
        * With a prefix argument N, kill N whole lines, newlines included; 0 kills back to the start of the line, and a negative N kills lines backward. Consecutive kills join into one kill ring entry.
        */
       "kill-line": [];
+      /**
+       * Kill the buffers whose names match a regexp, asking about each; with a prefix argument, those whose names start with a space too.
+       *
+       * @param regexp text
+       * @param internal raw prefix argument
+       *
+       * Defined in packages/files.ts.
+       */
+      "kill-matching-buffers": [regexp: string, internal?: PrefixArg];
+      /**
+       * Kill the buffers whose names match a regexp, without asking; with a prefix argument, those whose names start with a space too.
+       *
+       * @param regexp text
+       * @param internal raw prefix argument
+       *
+       * Defined in packages/files.ts.
+       */
+      "kill-matching-buffers-no-ask": [regexp: string, internal?: PrefixArg];
       /**
        * Kill the lines after point, or in the region, that have a match for a regexp, together as one kill.
        *
@@ -1996,6 +2544,12 @@ declare global {
        * Defined in packages/lisp.ts.
        */
       "kill-sexp": [];
+      /**
+       * Ask about each buffer whether to kill it, saying whether it has been edited; buffers whose names start with a space are left.
+       *
+       * Defined in packages/files.ts.
+       */
+      "kill-some-buffers": [];
       /**
        * Kill the rest of the screen line, or the newline if point is at the end of a line.
        *
@@ -2070,6 +2624,14 @@ declare global {
        * Defined in packages/kmacro.ts.
        */
       "kmacro-start-macro-or-insert-counter": [];
+      /**
+       * Show a list of the buffers in another window: each one's name, size, mode and file, with . for the current one, % if read-only and * if modified. With a prefix argument, only those visiting files.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "list-buffers": [arg?: PrefixArg];
       /**
        * Run a TypeScript file, such as init.ts after editing it.
        *
@@ -2230,6 +2792,20 @@ declare global {
        * @param n prefix count
        */
       "move-end-of-line": [n?: number];
+      /**
+       * Move point to the start of the line in the middle of the window.
+       *
+       * With a numeric prefix argument N, to line N of the window instead, counting from 0 at the top, or from the bottom if N is negative.
+       */
+      "move-to-window-line": [];
+      /**
+       * Move point to the line in the middle of the window; again, the top line; again, the bottom one, as recenter-positions says. With a prefix argument, to that line of the window, as move-to-window-line does.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/window.ts.
+       */
+      "move-to-window-line-top-bottom": [arg?: PrefixArg];
       /**
        * Scroll the window for the mouse wheel or a trackpad.
        *
@@ -3535,6 +4111,10 @@ declare global {
        */
       "point-to-register": [];
       /**
+       * Go to the place on the global mark ring set last, in its buffer: each buffer's mark when another buffer's was set after it. Again, the one before.
+       */
+      "pop-global-mark": [];
+      /**
        * Show a buffer in some window, as display-buffer does, and select that window.
        *
        * @param buffer buffer name
@@ -3814,6 +4394,14 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "quoted-insert": [arg?: number];
+      /**
+       * Put the sexp after point, or the region, in place of the list around it; with a prefix argument, that many sexps.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/lisp.ts.
+       */
+      "raise-sexp": [n?: number];
       /**
        * Search backward from point for a regular expression, leaving point at the start of the match.
        *
@@ -4469,6 +5057,10 @@ declare global {
        */
       "undo": [];
       /**
+       * Undo the last change, or as many as the prefix argument says, passing over the last undo and the change it undid: undo without redoing them.
+       */
+      "undo-only": [];
+      /**
        * Undo the last undo, or as many as the prefix argument says: redo.
        *
        * Unlike undoing an undo with undo, this leaves no trace in the undo history.
@@ -4476,6 +5068,14 @@ declare global {
        * @param n prefix count
        */
       "undo-redo": [n?: number];
+      /**
+       * Take a highlighting away, the one at point by default; with a prefix argument, all of them.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/hi-lock.ts.
+       */
+      "unhighlight-regexp": [arg?: PrefixArg];
       /**
        * Begin a prefix argument for the next command.
        *
@@ -4515,6 +5115,14 @@ declare global {
        */
       "up-list": [];
       /**
+       * Upcase the region if it is active, else the word after point, as M-u does.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/simple.ts.
+       */
+      "upcase-dwim": [arg?: PrefixArg];
+      /**
        * Upcase the initial of each word in the region, leaving the rest as it is.
        *
        * @param beg region start
@@ -4545,11 +5153,27 @@ declare global {
        */
       "variable-pitch-mode": [arg?: PrefixArg];
       /**
+       * Show a buffer in view mode, read-only; q goes back to the buffer before.
+       *
+       * @param buffer buffer name
+       *
+       * Defined in packages/view.ts.
+       */
+      "view-buffer": [buffer: string];
+      /**
        * Show the *Messages* buffer: the messages shown in the echo area, newest last.
        *
        * Defined in packages/help.ts.
        */
       "view-echo-area-messages": [];
+      /**
+       * Visit a file in view mode, read-only; q kills its buffer again if view-file made it.
+       *
+       * @param file file name
+       *
+       * Defined in packages/view.ts.
+       */
+      "view-file": [file: string];
       /**
        * Show the keys typed lately and the commands they ran, oldest first.
        *
@@ -4558,6 +5182,14 @@ declare global {
        * Defined in packages/help.ts.
        */
       "view-lossage": [];
+      /**
+       * Read a buffer without changing it: SPC and DEL page forward and back, d and u half a page, RET and y a line, < and > go to the ends, s and r search, e leaves view mode and q leaves the buffer too.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/view.ts.
+       */
+      "view-mode": [];
       /**
        * Say what a register holds.
        *
@@ -4592,6 +5224,21 @@ declare global {
        * Defined in packages/page.ts.
        */
       "what-page": [];
+      /**
+       * Fix the whitespace problems whitespace-style names: empty lines at the start and end of the buffer, spaces at the ends of lines, and indentation and spaces around tabs that disagree with indent-tabs-mode. With the region active, only there.
+       *
+       * Defined in packages/whitespace.ts.
+       */
+      "whitespace-cleanup": [];
+      /**
+       * Fix the whitespace problems whitespace-style names in the region, but empty lines at the buffer's start and end.
+       *
+       * @param start region start
+       * @param end region end
+       *
+       * Defined in packages/whitespace.ts.
+       */
+      "whitespace-cleanup-region": [start: number, end: number];
       /**
        * Remove the restriction on this buffer, making all of it accessible again.
        */
@@ -4679,9 +5326,17 @@ declare global {
        */
       "yank": [];
       /**
+       * Insert a kill chosen from the minibuffer, with completion; with C-u, point goes before it.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/simple.ts.
+       */
+      "yank-from-kill-ring": [arg?: PrefixArg];
+      /**
        * Replace the text just yanked with an earlier kill.
        *
-       * Only right after C-y or M-y. Repeat it to go further back through the kill ring; a prefix argument N goes N kills back at once, and a negative one goes forward.
+       * Right after C-y or M-y. Repeat it to go further back through the kill ring; a prefix argument N goes N kills back at once, and a negative one goes forward. After anything else, choose a kill from the minibuffer, as yank-from-kill-ring does.
        *
        * Defined in packages/simple.ts.
        */
@@ -4716,6 +5371,28 @@ declare global {
 
     /** Every variable, with its documentation. */
     interface Variables {
+      /**
+       * Whether the buffer list shows only buffers visiting files.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-files-only": Value;
+      /**
+       * Keymap Buffer-menu-mode-map.
+       */
+      "Buffer-menu-mode-map": Value;
+      /**
+       * The width of the buffer list's mode column.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-mode-width": Value;
+      /**
+       * The width of the buffer list's size column.
+       *
+       * Defined in packages/buff-menu.ts.
+       */
+      "Buffer-menu-size-width": Value;
       /**
        * What the prefix of a paragraph's only line must look like for the lines filling makes to take it too; otherwise they take as many spaces.
        *
@@ -4813,6 +5490,34 @@ declare global {
        */
       "blink-matching-paren-distance": Value;
       /**
+       * Keymap bookmark-bmenu-mode-map.
+       */
+      "bookmark-bmenu-mode-map": Value;
+      /**
+       * The file bookmarks are saved in, or nil for bookmarks under user-emacs-directory.
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-default-file": Value;
+      /**
+       * Bookmark names answered at prompts, newest first.
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-history": Value;
+      /**
+       * When bookmarks are saved: t on quitting, a number after that many changes, nil never.
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-save-flag": Value;
+      /**
+       * How many characters of text on each side a bookmark keeps, to find its place again after edits.
+       *
+       * Defined in packages/bookmark.ts.
+       */
+      "bookmark-search-size": Value;
+      /**
        * Whether Buffer-Face mode is on in this buffer. Use the command buffer-face-mode to change it.
        *
        * Defined in packages/face-remap.ts.
@@ -4850,6 +5555,12 @@ declare global {
        * Buffer names answered in the minibuffer, newest first.
        */
       "buffer-name-history": Value;
+      /**
+       * A function ESC ESC ESC calls to leave the buffer, if nothing else comes first.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "buffer-quit-function": Value;
       /**
        * Whether searches match upper and lower case letters to each other.
        */
@@ -5211,6 +5922,10 @@ declare global {
        */
       "dabbrev-upcase-means-case-search": Value;
       /**
+       * Set to nil by a command, after the changes it makes, to keep the region active, which a change otherwise deactivates at the command's end.
+       */
+      "deactivate-mark": Value;
+      /**
        * Where the buffer looks up relative file names, as a directory name ending in /. Nil means the directory of its file, or else the directory Ember started in. Dired sets it to the directory it lists.
        */
       "default-directory": Value;
@@ -5270,6 +5985,22 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "delete-trailing-lines": Value;
+      /**
+       * The program M-x diff runs.
+       *
+       * Defined in packages/diff.ts.
+       */
+      "diff-command": Value;
+      /**
+       * Keymap diff-mode-map.
+       */
+      "diff-mode-map": Value;
+      /**
+       * The options M-x diff gives diff: a string or a list of strings.
+       *
+       * Defined in packages/diff.ts.
+       */
+      "diff-switches": Value;
       /**
        * The switches this Dired buffer lists with, which s changes.
        *
@@ -5396,6 +6127,18 @@ declare global {
        * Defined in packages/display-line-numbers.ts.
        */
       "display-line-numbers-width-start": Value;
+      /**
+       * Where duplicate-line leaves point: 0 where it was, 1 on the first copy, -1 on the last.
+       *
+       * Defined in packages/misc.ts.
+       */
+      "duplicate-line-final-position": Value;
+      /**
+       * Where duplicate-dwim leaves the region: 0 where it was, 1 around the first copy, -1 around the last.
+       *
+       * Defined in packages/misc.ts.
+       */
+      "duplicate-region-final-position": Value;
       /**
        * Characters that reindent the line when typed, with electric-indent-mode on: newline, and in code modes closing braces and parens.
        *
@@ -5593,6 +6336,10 @@ declare global {
        */
       "global-map": Value;
       /**
+       * How many places the global mark ring keeps, one for each buffer the mark was set in, newest first.
+       */
+      "global-mark-ring-max": Value;
+      /**
        * Line numbers answered to goto-line, newest first.
        *
        * Defined in packages/simple.ts.
@@ -5616,6 +6363,28 @@ declare global {
        * Keymap help-mode-map.
        */
       "help-mode-map": Value;
+      /**
+       * Whether hi-lock takes the next unused face without asking.
+       *
+       * Defined in packages/hi-lock.ts.
+       */
+      "hi-lock-auto-select-face": Value;
+      /**
+       * The faces hi-lock offers, in order.
+       *
+       * Defined in packages/hi-lock.ts.
+       */
+      "hi-lock-face-defaults": Value;
+      /**
+       * Whether Hi-Lock mode is on in this buffer. Use the command hi-lock-mode to change it.
+       *
+       * Defined in packages/hi-lock.ts.
+       */
+      "hi-lock-mode": Value;
+      /**
+       * Keymap hi-lock-mode-map.
+       */
+      "hi-lock-mode-map": Value;
       /**
        * How many earlier answers each minibuffer history keeps.
        */
@@ -6334,6 +7103,12 @@ declare global {
        */
       "read-file-name-completion-ignore-case": Value;
       /**
+       * Kills chosen from the minibuffer, newest first.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "read-from-kill-ring-history": Value;
+      /**
        * The character read-passwd shows in place of each character of a password; * when nil.
        *
        * Defined in packages/subr.ts.
@@ -6844,6 +7619,16 @@ declare global {
        */
       "variable-name-history": Value;
       /**
+       * Whether View mode is on in this buffer. Use the command view-mode to change it.
+       *
+       * Defined in packages/view.ts.
+       */
+      "view-mode": Value;
+      /**
+       * Keymap view-mode-map.
+       */
+      "view-mode-map": Value;
+      /**
        * Whether Visual-Line mode is on in this buffer. Use the command visual-line-mode to change it.
        *
        * Defined in packages/simple.ts.
@@ -6853,6 +7638,12 @@ declare global {
        * Keymap visual-line-mode-map.
        */
       "visual-line-mode-map": Value;
+      /**
+       * The kinds of whitespace problem whitespace-cleanup fixes: empty, indentation, trailing, space-after-tab and space-before-tab, or their ::tab and ::space forms.
+       *
+       * Defined in packages/whitespace.ts.
+       */
+      "whitespace-style": Value;
       /**
        * Whether goto-line widens a narrowed buffer to go to a line outside it.
        *
@@ -6877,6 +7668,12 @@ declare global {
        * The text properties yanking leaves out of what it inserts, or t for all of them, as Emacs's insert-for-yank removes them.
        */
       "yank-excluded-properties": Value;
+      /**
+       * Whether yanking a kill chosen from the minibuffer makes it the one C-y inserts next.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "yank-from-kill-ring-rotate": Value;
     }
 
     /** Every face, with its documentation. */
@@ -7170,6 +7967,54 @@ declare global {
        */
       "default": FaceAttributes;
       /**
+       * Lines a diff adds.
+       *
+       * Defined in packages/diff.ts.
+       */
+      "diff-added": FaceAttributes;
+      /**
+       * Lines a diff leaves as they are.
+       *
+       * Defined in packages/diff.ts.
+       */
+      "diff-context": FaceAttributes;
+      /**
+       * The lines naming the files in diff-mode.
+       *
+       * Defined in packages/diff.ts.
+       */
+      "diff-file-header": FaceAttributes;
+      /**
+       * Hunk headers in diff-mode.
+       *
+       * Defined in packages/diff.ts.
+       */
+      "diff-header": FaceAttributes;
+      /**
+       * The @@ line starting each hunk in diff-mode.
+       *
+       * Defined in packages/diff.ts.
+       */
+      "diff-hunk-header": FaceAttributes;
+      /**
+       * The + starting a line a diff adds.
+       *
+       * Defined in packages/diff.ts.
+       */
+      "diff-indicator-added": FaceAttributes;
+      /**
+       * The - starting a line a diff takes away.
+       *
+       * Defined in packages/diff.ts.
+       */
+      "diff-indicator-removed": FaceAttributes;
+      /**
+       * Lines a diff takes away.
+       *
+       * Defined in packages/diff.ts.
+       */
+      "diff-removed": FaceAttributes;
+      /**
        * The names of directories in a listing.
        *
        * Defined in packages/dired.ts.
@@ -7309,6 +8154,72 @@ declare global {
        * Defined in packages/compile.ts.
        */
       "grep-match": FaceAttributes;
+      /**
+       * A face for highlighting with hi-lock: aquamarine.
+       *
+       * Defined in packages/hi-lock.ts.
+       */
+      "hi-aquamarine": FaceAttributes;
+      /**
+       * A face for highlighting with hi-lock: black bold.
+       *
+       * Defined in packages/hi-lock.ts.
+       */
+      "hi-black-b": FaceAttributes;
+      /**
+       * A face for highlighting with hi-lock: black bold and big.
+       *
+       * Defined in packages/hi-lock.ts.
+       */
+      "hi-black-hb": FaceAttributes;
+      /**
+       * A face for highlighting with hi-lock: blue.
+       *
+       * Defined in packages/hi-lock.ts.
+       */
+      "hi-blue": FaceAttributes;
+      /**
+       * A face for highlighting with hi-lock: blue bold.
+       *
+       * Defined in packages/hi-lock.ts.
+       */
+      "hi-blue-b": FaceAttributes;
+      /**
+       * A face for highlighting with hi-lock: green.
+       *
+       * Defined in packages/hi-lock.ts.
+       */
+      "hi-green": FaceAttributes;
+      /**
+       * A face for highlighting with hi-lock: green bold.
+       *
+       * Defined in packages/hi-lock.ts.
+       */
+      "hi-green-b": FaceAttributes;
+      /**
+       * A face for highlighting with hi-lock: pink.
+       *
+       * Defined in packages/hi-lock.ts.
+       */
+      "hi-pink": FaceAttributes;
+      /**
+       * A face for highlighting with hi-lock: red bold.
+       *
+       * Defined in packages/hi-lock.ts.
+       */
+      "hi-red-b": FaceAttributes;
+      /**
+       * A face for highlighting with hi-lock: salmon.
+       *
+       * Defined in packages/hi-lock.ts.
+       */
+      "hi-salmon": FaceAttributes;
+      /**
+       * A face for highlighting with hi-lock: yellow.
+       *
+       * Defined in packages/hi-lock.ts.
+       */
+      "hi-yellow": FaceAttributes;
       /**
        * Highlighting, such as of what the mouse is over.
        */
@@ -7722,6 +8633,10 @@ declare global {
     /** Every hook, with its documentation. */
     interface Hooks {
       /**
+       * Run after entering Buffer Menu mode, after the hooks of the modes it is built on.
+       */
+      "Buffer-menu-mode-hook": Value;
+      /**
        * Called after each change to the text with where the new text starts and ends and how long the old text was: an insertion has an old length of 0, a deletion starts and ends where the text went. Changes the functions make do not call them again.
        */
       "after-change-functions": Value;
@@ -7774,6 +8689,10 @@ declare global {
        */
       "before-save-hook": Value;
       /**
+       * Run after entering Bookmark Menu mode, after the hooks of the modes it is built on.
+       */
+      "bookmark-bmenu-mode-hook": Value;
+      /**
        * Run after Buffer-Face mode is turned on or off.
        */
       "buffer-face-mode-hook": Value;
@@ -7821,6 +8740,10 @@ declare global {
        * Run after Delete-Selection mode is turned on.
        */
       "delete-selection-mode-on-hook": Value;
+      /**
+       * Run after entering Diff mode, after the hooks of the modes it is built on.
+       */
+      "diff-mode-hook": Value;
       /**
        * Run after Dired-Hide-Details mode is turned on or off.
        */
@@ -7925,6 +8848,18 @@ declare global {
        * Run after entering Help mode, after the hooks of the modes it is built on.
        */
       "help-mode-hook": Value;
+      /**
+       * Run after Hi-Lock mode is turned on or off.
+       */
+      "hi-lock-mode-hook": Value;
+      /**
+       * Run after Hi-Lock mode is turned off.
+       */
+      "hi-lock-mode-off-hook": Value;
+      /**
+       * Run after Hi-Lock mode is turned on.
+       */
+      "hi-lock-mode-on-hook": Value;
       /**
        * Run when icomplete starts on a prompt, in the minibuffer, to set it up for this prompt.
        */
@@ -8153,6 +9088,18 @@ declare global {
        * Run after Text-Scale mode is turned on.
        */
       "text-scale-mode-on-hook": Value;
+      /**
+       * Run after View mode is turned on or off.
+       */
+      "view-mode-hook": Value;
+      /**
+       * Run after View mode is turned off.
+       */
+      "view-mode-off-hook": Value;
+      /**
+       * Run after View mode is turned on.
+       */
+      "view-mode-on-hook": Value;
       /**
        * Run after Visual-Line mode is turned on or off.
        */
@@ -8404,6 +9351,10 @@ declare global {
      * insert now; M-y asks for 1, the kill before it.
      */
     function currentKill(n?: number): string;
+    /** The kills, newest first, as the kill-ring variable lists them. */
+    function killRing(): string[];
+    /** Make the kill `index` places from the newest the one C-y inserts next, as setting kill-ring-yank-pointer does. */
+    function setKillRingYankPointer(index: number): void;
     /** The kill with its text properties, as Emacs's current-kill gives it. */
     function currentKill(n: number, options: { properties: true }): PropertizedString;
     /**

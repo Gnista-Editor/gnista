@@ -122,6 +122,13 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/rect.ts", include_str!("../../../packages/rect.ts")),
     ("packages/register.ts", include_str!("../../../packages/register.ts")),
     ("packages/dabbrev.ts", include_str!("../../../packages/dabbrev.ts")),
+    ("packages/buff-menu.ts", include_str!("../../../packages/buff-menu.ts")),
+    ("packages/hi-lock.ts", include_str!("../../../packages/hi-lock.ts")),
+    ("packages/bookmark.ts", include_str!("../../../packages/bookmark.ts")),
+    ("packages/misc.ts", include_str!("../../../packages/misc.ts")),
+    ("packages/whitespace.ts", include_str!("../../../packages/whitespace.ts")),
+    ("packages/view.ts", include_str!("../../../packages/view.ts")),
+    ("packages/diff.ts", include_str!("../../../packages/diff.ts")),
     ("packages/org-macs.ts", include_str!("../../../packages/org-macs.ts")),
     ("packages/org-table.ts", include_str!("../../../packages/org-table.ts")),
     ("packages/org.ts", include_str!("../../../packages/org.ts")),
@@ -747,6 +754,19 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
         })?,
     )?;
     native.set(
+        "killRing",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.kill_ring().into_iter().rev().collect::<Vec<_>>())))?,
+    )?;
+    native.set(
+        "setKillRingYankPointer",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, index: usize| {
+            with_editor(&ctx, |ed| {
+                ed.set_kill_ring_yank_pointer(index);
+                Ok(())
+            })
+        })?,
+    )?;
+    native.set(
         "currentKillText",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, n: Opt<i64>| -> rquickjs::Result<Value<'js>> {
             let text = with_editor(&ctx, |ed| ed.current_kill_text(n.0.unwrap_or(0)))?;
@@ -804,7 +824,7 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
         "pushMark",
         Function::new(ctx.clone(), |ctx: Ctx<'js>, pos: usize, activate: bool| {
             with_editor(&ctx, |ed| {
-                ed.buffer_mut().push_mark(pos, activate);
+                ed.push_mark(pos, activate);
                 Ok(())
             })
         })?,

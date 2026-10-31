@@ -642,3 +642,32 @@ ember.defineCommand({
   },
 });
 ember.bindKey("C-l", "recenter-top-bottom");
+
+ember.defineCommand({
+  name: "move-to-window-line-top-bottom",
+  doc:
+    "Move point to the line in the middle of the window; again, the top line; again, the bottom one, " +
+    "as recenter-positions says. With a prefix argument, to that line of the window, as move-to-window-line does.",
+  params: [{ name: "arg", kind: "prefix" }],
+  run: (arg: ember.PrefixArg) => {
+    if (arg !== null) {
+      ember.callWithPrefix(arg, "move-to-window-line");
+      return;
+    }
+    // It goes through recenter-positions as C-l does, sharing where it is.
+    const positions = (ember.variable("recenter-positions") ?? ["middle"]) as ember.Value[];
+    if (ember.lastCommand() === "move-to-window-line-top-bottom") {
+      const i = positions.findIndex((p) => JSON.stringify(p) === JSON.stringify(recenterLastOp));
+      recenterLastOp = i >= 0 && i + 1 < positions.length ? positions[i + 1] : positions[0];
+    } else {
+      recenterLastOp = positions[0];
+    }
+    const margin = Math.max(0, Number(ember.variable("scroll-margin") ?? 0));
+    const op = recenterLastOp;
+    if (op === "middle") ember.callWithPrefix(null, "move-to-window-line");
+    else if (op === "top") ember.callWithPrefix(margin, "move-to-window-line");
+    else if (op === "bottom") ember.callWithPrefix(-1 - margin, "move-to-window-line");
+    else if (typeof op === "number" && Number.isInteger(op)) ember.callWithPrefix(op, "move-to-window-line");
+  },
+});
+ember.bindKey("M-r", "move-to-window-line-top-bottom");

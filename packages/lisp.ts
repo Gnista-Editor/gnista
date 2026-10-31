@@ -456,6 +456,58 @@ ember.defineCommand({
   },
 });
 
+ember.defineCommand({
+  name: "raise-sexp",
+  doc: "Put the sexp after point, or the region, in place of the list around it; with a prefix argument, that many sexps.",
+  params: [{ name: "n", kind: "count" }],
+  run: (n: number) => {
+    const mark = ember.mark();
+    const s =
+      ember.regionActive() && mark !== undefined
+        ? ember.bufferSubstring(Math.min(mark, ember.point()), Math.max(mark, ember.point()))
+        : ember.bufferSubstring(ember.point(), sexpEnd(ember.point(), n, "Containing expression ends prematurely"));
+    ember.callWithPrefix(1, "backward-up-list");
+    const start = ember.point();
+    ember.deleteRegion(start, sexpEnd(start, 1, "Containing expression ends prematurely"));
+    ember.saveExcursion(() => ember.insert(s));
+  },
+});
+
+/** The pairs delete-pair knows, as insert-pair-alist gives them. */
+const PAIRS = ["()", "[]", "{}", "<>", '""', "''", "`'"];
+
+ember.defineCommand({
+  name: "delete-pair",
+  doc: "Delete the pair of characters around the sexp after point, such as parentheses or quotes; with a negative argument, around the one before.",
+  params: [{ name: "arg", kind: "prefix" }],
+  run: (argIn: ember.PrefixArg) => {
+    const arg = argIn === null ? 1 : ember.prefixNumericValue(argIn);
+    ember.saveExcursion(() => {
+      if (arg < 0) {
+        ember.skipCharsBackward(" \t");
+        const close = ember.charAfter(ember.point() - 1) ?? "";
+        ember.saveExcursion(() => {
+          ember.callWithPrefix(arg, "forward-sexp");
+          const c = ember.charAfter(ember.point()) ?? "";
+          if (!PAIRS.includes(c + close)) ember.userError("Not after matching pair");
+          ember.deleteRegion(ember.point(), ember.point() + 1);
+        });
+        ember.deleteRegion(ember.point() - 1, ember.point());
+      } else {
+        ember.skipCharsForward(" \t");
+        const open = ember.charAfter(ember.point()) ?? "";
+        ember.saveExcursion(() => {
+          ember.callWithPrefix(arg, "forward-sexp");
+          const c = ember.charAfter(ember.point() - 1) ?? "";
+          if (!PAIRS.includes(open + c)) ember.userError("Not before matching pair");
+          ember.deleteRegion(ember.point() - 1, ember.point());
+        });
+        ember.deleteRegion(ember.point(), ember.point() + 1);
+      }
+    });
+  },
+});
+
 /** Whether the line is only comments and space, as beginning-of-defun--in-emptyish-line-p. */
 function inEmptyishLine(): boolean {
   return ember.saveExcursion(() => {

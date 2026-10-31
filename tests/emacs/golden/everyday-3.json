@@ -1,0 +1,530 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "pop-global-mark-back",
+      "input": {
+        "text": "abcdef",
+        "point": 0,
+        "keys": "C-f C-f C-SPC C-x b o t h e r RET x C-SPC C-x C-SPC C-x C-SPC",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "abother\nxcdef",
+      "visible": "abother\nxcdef",
+      "point": 2,
+      "mark": 9,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": true,
+      "error": "Minibuffer read in batch"
+    },
+    {
+      "name": "pop-global-mark-none",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "C-x C-SPC",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "abc",
+      "visible": "abc",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No global mark set"
+    },
+    {
+      "name": "undo-only-skips-undone",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "a b c C-/ C-f C-/ C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "End of buffer"
+    },
+    {
+      "name": "undo-only",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "a SPC b SPC c C-/ C-f M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "undo-only"
+        ]
+      },
+      "text": "a b c",
+      "visible": "a b c",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "End of buffer"
+    },
+    {
+      "name": "undo-only-twice",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "a SPC b SPC c C-/ C-f M-x M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "undo-only",
+          "undo-only"
+        ]
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "End of buffer"
+    },
+    {
+      "name": "escape-quit-region",
+      "input": {
+        "text": "abc",
+        "point": 0,
+        "keys": "C-SPC C-f ESC ESC ESC",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "abc",
+      "visible": "abc",
+      "point": 1,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "esc-still-meta",
+      "input": {
+        "text": "one two",
+        "point": 0,
+        "keys": "ESC f ESC b",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "one two",
+      "visible": "one two",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "undo-only-after-change",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "a C-/ b C-/ M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "undo-only"
+        ]
+      },
+      "text": "a",
+      "visible": "a",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "undo-only-chain",
+      "input": {
+        "text": "x\ny",
+        "point": 0,
+        "keys": "a C-n b C-/ C-/ C-n M-x M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "undo-only",
+          "undo-only"
+        ]
+      },
+      "text": "x\ny",
+      "visible": "x\ny",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "yank-from-kill-ring-by-m-y",
+      "input": {
+        "text": "one two three",
+        "point": 0,
+        "keys": "M-d C-f M-d C-e M-y",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "one"
+        ]
+      },
+      "text": "  threeone",
+      "visible": "  threeone",
+      "point": 10,
+      "mark": 7,
+      "mark_active": false,
+      "kill_ring": [
+        "two",
+        "one"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "yank-from-kill-ring-then-c-y",
+      "input": {
+        "text": "one two three",
+        "point": 0,
+        "keys": "M-d C-f M-d C-e M-y C-y",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "one"
+        ]
+      },
+      "text": "  threeoneone",
+      "visible": "  threeoneone",
+      "point": 13,
+      "mark": 10,
+      "mark_active": false,
+      "kill_ring": [
+        "two",
+        "one"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "yank-from-kill-ring-c-u",
+      "input": {
+        "text": "one two three",
+        "point": 0,
+        "keys": "M-d C-f M-d C-e C-u M-y",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "one"
+        ]
+      },
+      "text": "  threeone",
+      "visible": "  threeone",
+      "point": 7,
+      "mark": 10,
+      "mark_active": false,
+      "kill_ring": [
+        "two",
+        "one"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "duplicate-line",
+      "input": {
+        "text": "one\ntwo\n",
+        "point": 0,
+        "keys": "C-f M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "duplicate-line"
+        ]
+      },
+      "text": "one\none\ntwo\n",
+      "visible": "one\none\ntwo\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "duplicate-line-count",
+      "input": {
+        "text": "one\ntwo",
+        "point": 0,
+        "keys": "C-n M-3 M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "duplicate-line"
+        ]
+      },
+      "text": "one\ntwo\ntwo\ntwo\ntwo\n",
+      "visible": "one\ntwo\ntwo\ntwo\ntwo\n",
+      "point": 4,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "duplicate-line-last",
+      "input": {
+        "text": "one\ntwo",
+        "point": 0,
+        "keys": "M-> M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "duplicate-line"
+        ]
+      },
+      "text": "one\ntwo\ntwo\n",
+      "visible": "one\ntwo\ntwo\n",
+      "point": 7,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "duplicate-dwim-region",
+      "input": {
+        "text": "abc def",
+        "point": 0,
+        "keys": "C-SPC M-f M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "duplicate-dwim"
+        ]
+      },
+      "text": "abcabc def",
+      "visible": "abcabc def",
+      "point": 3,
+      "mark": 0,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "copy-from-above",
+      "input": {
+        "text": "hello world\n\nab",
+        "point": 0,
+        "keys": "M-> M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "copy-from-above-command"
+        ]
+      },
+      "text": "hello world\n\nabllo world",
+      "visible": "hello world\n\nabllo world",
+      "point": 24,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "copy-from-above-count",
+      "input": {
+        "text": "hello world\nab",
+        "point": 0,
+        "keys": "M-> M-3 M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "copy-from-above-command"
+        ]
+      },
+      "text": "hello world\nabllo",
+      "visible": "hello world\nabllo",
+      "point": 17,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "raise-sexp",
+      "input": {
+        "text": "(a (b c) d)",
+        "point": 0,
+        "keys": "C-f C-f C-f C-f M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "raise-sexp"
+        ]
+      },
+      "text": "(a b d)",
+      "visible": "(a b d)",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-pair",
+      "input": {
+        "text": "x (a b) y",
+        "point": 0,
+        "keys": "C-f C-f M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "delete-pair"
+        ]
+      },
+      "text": "x a b y",
+      "visible": "x a b y",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "delete-pair-backward",
+      "input": {
+        "text": "x [a b] y",
+        "point": 0,
+        "keys": "C-e C-b C-b M-- M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "delete-pair"
+        ]
+      },
+      "text": "x a b y",
+      "visible": "x a b y",
+      "point": 5,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "upcase-dwim-word",
+      "input": {
+        "text": "one two",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "upcase-dwim"
+        ]
+      },
+      "text": "ONE two",
+      "visible": "ONE two",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "upcase-dwim-region",
+      "input": {
+        "text": "one two",
+        "point": 0,
+        "keys": "C-f C-SPC C-e M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "upcase-dwim"
+        ]
+      },
+      "text": "oNE TWO",
+      "visible": "oNE TWO",
+      "point": 7,
+      "mark": 1,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "capitalize-dwim",
+      "input": {
+        "text": "one two",
+        "point": 0,
+        "keys": "M-2 M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "capitalize-dwim"
+        ]
+      },
+      "text": "One Two",
+      "visible": "One Two",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

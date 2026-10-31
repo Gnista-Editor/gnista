@@ -741,3 +741,45 @@ ember.defineCommand({
   ],
   run: (start, end, file) => ember.writeRegion(start, end, file, { append: true }),
 });
+
+// Killing several buffers, after files.el: kill-some-buffers asks about
+// each one, kill-matching-buffers about those whose names match.
+
+/** Kills a buffer if the answer is yes, as kill-buffer-ask. */
+async function killBufferAsk(buffer: string): Promise<void> {
+  const modified = ember.withCurrentBuffer(buffer, () => ember.bufferModified());
+  if (await ember.yesOrNoP(`Buffer ${buffer} ${modified ? "HAS BEEN EDITED" : "is unmodified"}.  Kill? `)) ember.call("kill-buffer", buffer);
+}
+
+ember.defineCommand({
+  name: "kill-some-buffers",
+  doc: "Ask about each buffer whether to kill it, saying whether it has been edited; buffers whose names start with a space are left.",
+  run: async () => {
+    for (const buffer of ember.bufferList()) {
+      if (buffer === "" || buffer.startsWith(" ") || !ember.getBuffer(buffer)) continue;
+      await killBufferAsk(buffer);
+    }
+  },
+});
+
+for (const [name, doc, ask] of [
+  ["kill-matching-buffers", "Kill the buffers whose names match a regexp, asking about each; with a prefix argument, those whose names start with a space too.", true],
+  ["kill-matching-buffers-no-ask", "Kill the buffers whose names match a regexp, without asking; with a prefix argument, those whose names start with a space too.", false],
+] as const) {
+  ember.defineCommand({
+    name,
+    doc,
+    params: [
+      { name: "regexp", kind: "string", prompt: "Kill buffers matching this regular expression: " },
+      { name: "internal", kind: "prefix" },
+    ],
+    run: async (regexp: string, internal: ember.PrefixArg) => {
+      for (const buffer of ember.bufferList()) {
+        if (buffer === "" || (internal === null && buffer.startsWith(" ")) || !ember.getBuffer(buffer)) continue;
+        if (ember.stringMatch(regexp, buffer) === undefined) continue;
+        if (ask) await killBufferAsk(buffer);
+        else ember.call("kill-buffer", buffer);
+      }
+    },
+  });
+}

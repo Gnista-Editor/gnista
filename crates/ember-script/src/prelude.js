@@ -590,6 +590,8 @@
       arg === null ? 1 : arg === "-" ? -1 : Array.isArray(arg) ? arg[0] : arg,
     setPrefixArg: (arg) => native.setPrefixArg(arg ?? null),
     lastKey: () => native.lastKey(),
+    killRing: () => native.killRing(),
+    setKillRingYankPointer: (index) => native.setKillRingYankPointer(Math.max(0, Math.floor(index))),
     currentKill: (n = 0, { properties = false } = {}) => (properties ? native.currentKillText(n) : native.currentKill(n)),
     insertForYank: (text) => native.insertForYank(text instanceof PropertizedString ? text : String(text)),
     popKill: () => native.popKill() ?? undefined,

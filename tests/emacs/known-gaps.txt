@@ -18,3 +18,12 @@ arguments/delete-more-than-there-is  # Emacs reports an internal "Args out of ra
 # use, but not the detection priority list or the coding systems for
 # particular file names that follow them in Emacs.
 mule-diag/describe-current-coding-system  # no coding priority list yet
+
+# After a command that failed (C-f at the end of the buffer), Emacs's
+# undo-equiv-table no longer finds the undo on top, as the failure left an
+# undo boundary, so undo-only redoes; Ember's passes over the undo still.
+everyday-3/undo-only  # undo boundary after a failed command
+# Passing over the only changes there are, Emacs's undo-only reaches the
+# list's first position entry and moves point to it, without an error, and
+# again; Ember's undo history has no such entries, so the second one fails.
+everyday-3/undo-only-chain  # position entries in buffer-undo-list

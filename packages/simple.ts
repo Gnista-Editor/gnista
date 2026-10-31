@@ -103,19 +103,55 @@ for (const keys of ["M--", "C--", "C-M--"]) {
 
 // Yanking older kills: M-y.
 
+ember.defineVariable({ name: "yank-from-kill-ring-rotate", doc: "Whether yanking a kill chosen from the minibuffer makes it the one C-y inserts next.", value: true });
+ember.defineVariable({ name: "read-from-kill-ring-history", doc: "Kills chosen from the minibuffer, newest first.", value: [] });
+
+/** Reads one of the kills with completion, newest first, as read-from-kill-ring. */
+async function readFromKillRing(prompt: string): Promise<string> {
+  return ember.completingRead(prompt, ember.killRing(), { history: "read-from-kill-ring-history" });
+}
+
+/**
+ * Inserts a kill as C-y does, the mark before it, and makes it the one C-y
+ * inserts next, as yank-from-kill-ring; with C-u, point goes before it.
+ */
+function yankFromKillRing(text: string, arg: ember.PrefixArg): void {
+  ember.pushMark(ember.point());
+  ember.insertForYank(text);
+  if (ember.variable("yank-from-kill-ring-rotate") !== false && ember.variable("yank-from-kill-ring-rotate") !== null) {
+    const pos = ember.killRing().indexOf(text);
+    if (pos >= 0) ember.setKillRingYankPointer(pos);
+    else ember.killNew(text);
+  }
+  if (Array.isArray(arg)) {
+    const mark = ember.mark()!;
+    ember.setMark(ember.point());
+    ember.gotoChar(mark);
+  }
+}
+
+ember.defineCommand({
+  name: "yank-from-kill-ring",
+  doc: "Insert a kill chosen from the minibuffer, with completion; with C-u, point goes before it.",
+  params: [{ name: "arg", kind: "prefix" }],
+  run: async (arg: ember.PrefixArg) => yankFromKillRing(await readFromKillRing("Yank from kill-ring: "), arg),
+});
+
 const yankPop = ember.defineCommand({
   name: "yank-pop",
   doc:
     "Replace the text just yanked with an earlier kill.\n\n" +
-    "Only right after C-y or M-y. Repeat it to go further back through the kill ring; " +
-    "a prefix argument N goes N kills back at once, and a negative one goes forward.",
-  run: () => {
-    // Emacs 28 and later read a kill from the minibuffer when the last
-    // command was not a yank; Ember does not do that yet. Like Emacs, it
-    // fails first if there is nothing to choose from.
+    "Right after C-y or M-y. Repeat it to go further back through the kill ring; " +
+    "a prefix argument N goes N kills back at once, and a negative one goes forward. " +
+    "After anything else, choose a kill from the minibuffer, as yank-from-kill-ring does.",
+  run: async () => {
+    // Not after a yank, it reads a kill from the minibuffer, as Emacs 28
+    // and later do, failing first if there is nothing to choose from.
     if (ember.lastCommand() !== "yank") {
       ember.currentKill(0);
-      throw new Error("Previous command was not a yank");
+      const prefix = ember.prefixArg();
+      yankFromKillRing(await readFromKillRing("Yank from kill-ring: "), prefix);
+      return;
     }
     // So that another M-y can follow this one.
     ember.setThisCommand("yank");
@@ -1424,39 +1460,67 @@ ember.defineCommand({
 });
 ember.bindKey("C-M-t", "transpose-sexps");
 
+/** Turns runs of spaces from start to end into tabs where that keeps the columns, as tabify. */
+export function tabifyRegion(start: number, end: number): void {
+  const tabWidth = Number(ember.variable("tab-width") ?? 8);
+  ember.saveExcursion(() =>
+    ember.saveRestriction(() => {
+      // From the start of the line, so columns count right.
+      ember.narrowToRegion(ember.lineBeginningPosition(start), end);
+      ember.gotoChar(start);
+      ember.letBind({ "indent-tabs-mode": true }, () => {
+        while (ember.reSearchForward(String(ember.variable("tabify-regexp") ?? " [ \t]+"), { noerror: true }) !== undefined) {
+          const endCol = ember.currentColumn();
+          const beg = ember.matchBeginning(0)!;
+          const begCol = ember.saveExcursion(() => {
+            ember.gotoChar(beg);
+            ember.skipCharsForward("\t");
+            return ember.currentColumn();
+          });
+          if (Math.floor(endCol / tabWidth) !== Math.floor(begCol / tabWidth)) {
+            ember.deleteRegion(beg, ember.point());
+            ember.gotoChar(beg);
+            ember.indentTo(endCol);
+          }
+        }
+      });
+    }),
+  );
+}
+
+/** Turns the tabs from start to end into spaces, keeping the columns, as untabify. */
+export function untabifyRegion(start: number, end: number): void {
+  const c = ember.currentColumn();
+  ember.saveExcursion(() =>
+    ember.saveRestriction(() => {
+      ember.narrowToRegion(ember.pointMin(), end);
+      ember.gotoChar(start);
+      for (let m = ember.search("\t"); m !== undefined; m = ember.search("\t")) {
+        const tabBeg = m.start;
+        ember.gotoChar(tabBeg);
+        ember.skipCharsForward("\t");
+        const column = ember.currentColumn();
+        ember.deleteRegion(tabBeg, ember.point());
+        ember.gotoChar(tabBeg);
+        ember.letBind({ "indent-tabs-mode": false }, () => ember.indentTo(column));
+      }
+    }),
+  );
+  ember.moveToColumn(c);
+}
+
+/** The region, or the whole buffer with a prefix argument, as tabify's and untabify's interactive specs. */
+function regionOrBuffer(arg: ember.PrefixArg): [number, number] {
+  const mark = ember.mark();
+  if (arg === null && mark === undefined) ember.userError("The mark is not set now, so there is no region");
+  return arg !== null ? [ember.pointMin(), ember.pointMax()] : [Math.min(mark!, ember.point()), Math.max(mark!, ember.point())];
+}
+
 ember.defineCommand({
   name: "tabify",
   doc: "Turn runs of spaces in the region into tabs where that keeps the columns, or in the whole buffer with a prefix argument.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: (arg: ember.PrefixArg) => {
-    const mark = ember.mark();
-    if (arg === null && mark === undefined) ember.userError("The mark is not set now, so there is no region");
-    const [start, end] = arg !== null ? [ember.pointMin(), ember.pointMax()] : [Math.min(mark!, ember.point()), Math.max(mark!, ember.point())];
-    const tabWidth = Number(ember.variable("tab-width") ?? 8);
-    ember.saveExcursion(() =>
-      ember.saveRestriction(() => {
-        // From the start of the line, so columns count right.
-        ember.narrowToRegion(ember.lineBeginningPosition(start), end);
-        ember.gotoChar(start);
-        ember.letBind({ "indent-tabs-mode": true }, () => {
-          while (ember.reSearchForward(String(ember.variable("tabify-regexp") ?? " [ \t]+"), { noerror: true }) !== undefined) {
-            const endCol = ember.currentColumn();
-            const beg = ember.matchBeginning(0)!;
-            const begCol = ember.saveExcursion(() => {
-              ember.gotoChar(beg);
-              ember.skipCharsForward("\t");
-              return ember.currentColumn();
-            });
-            if (Math.floor(endCol / tabWidth) !== Math.floor(begCol / tabWidth)) {
-              ember.deleteRegion(beg, ember.point());
-              ember.gotoChar(beg);
-              ember.indentTo(endCol);
-            }
-          }
-        });
-      }),
-    );
-  },
+  run: (arg: ember.PrefixArg) => tabifyRegion(...regionOrBuffer(arg)),
 });
 ember.defineVariable({ name: "tabify-regexp", doc: "The regexp for the spaces tabify turns into tabs where it can.", value: " [ \t]+" });
 
@@ -1464,28 +1528,7 @@ ember.defineCommand({
   name: "untabify",
   doc: "Turn the tabs in the region into spaces, keeping the columns, or in the whole buffer with a prefix argument.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: (arg: ember.PrefixArg) => {
-    const mark = ember.mark();
-    if (arg === null && mark === undefined) ember.userError("The mark is not set now, so there is no region");
-    const [start, end] = arg !== null ? [ember.pointMin(), ember.pointMax()] : [Math.min(mark!, ember.point()), Math.max(mark!, ember.point())];
-    const c = ember.currentColumn();
-    ember.saveExcursion(() =>
-      ember.saveRestriction(() => {
-        ember.narrowToRegion(ember.pointMin(), end);
-        ember.gotoChar(start);
-        for (let m = ember.search("\t"); m !== undefined; m = ember.search("\t")) {
-          const tabBeg = m.start;
-          ember.gotoChar(tabBeg);
-          ember.skipCharsForward("\t");
-          const column = ember.currentColumn();
-          ember.deleteRegion(tabBeg, ember.point());
-          ember.gotoChar(tabBeg);
-          ember.letBind({ "indent-tabs-mode": false }, () => ember.indentTo(column));
-        }
-      }),
-    );
-    ember.moveToColumn(c);
-  },
+  run: (arg: ember.PrefixArg) => untabifyRegion(...regionOrBuffer(arg)),
 });
 
 /** Inserts the region's text in another buffer, as append-to-buffer and its kin: `how` says where. */
@@ -1540,3 +1583,40 @@ ember.defineCommand({
     ember.pushMark(end);
   },
 });
+
+ember.defineVariable({ name: "buffer-quit-function", doc: "A function ESC ESC ESC calls to leave the buffer, if nothing else comes first.", value: null, local: true });
+
+ember.defineCommand({
+  name: "keyboard-escape-quit",
+  doc:
+    "Get out of what you are in: deactivate the region, or leave the minibuffer or a recursive edit, " +
+    "or quit the buffer as buffer-quit-function says, or delete the other windows.",
+  run: () => {
+    if (ember.lastCommand() === "mode-exited") return;
+    if (ember.regionActive()) ember.deactivateMark();
+    else if (ember.minibufferDepth() > 0) ember.call("abort-recursive-edit");
+    else if (ember.prefixArg() !== null) return;
+    else if (ember.recursionDepth() > 0) ember.call("exit-recursive-edit");
+    else if (typeof ember.variable("buffer-quit-function") === "string") ember.funcall(ember.variable("buffer-quit-function") as string);
+    else if (ember.windowList().length > 1) ember.call("delete-other-windows");
+    else if (ember.bufferName().startsWith(" *")) ember.call("bury-buffer");
+  },
+});
+ember.bindKey("M-ESC ESC", "keyboard-escape-quit");
+
+for (const [name, doc, region, word] of [
+  ["upcase-dwim", "Upcase the region if it is active, else the word after point, as M-u does.", "upcase-region", "upcase-word"],
+  ["downcase-dwim", "Downcase the region if it is active, else the word after point, as M-l does.", "downcase-region", "downcase-word"],
+  ["capitalize-dwim", "Capitalize the region if it is active, else the word after point, as M-c does.", "capitalize-region", "capitalize-word"],
+] as const) {
+  ember.defineCommand({
+    name,
+    doc,
+    params: [{ name: "arg", kind: "prefix" }],
+    run: (arg: ember.PrefixArg) => {
+      const mark = ember.mark();
+      if (ember.regionActive() && mark !== undefined) ember.call(region, Math.min(mark, ember.point()), Math.max(mark, ember.point()));
+      else ember.callWithPrefix(arg ?? 1, word);
+    },
+  });
+}

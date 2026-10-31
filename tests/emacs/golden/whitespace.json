@@ -1,0 +1,163 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "whitespace-cleanup-trailing-and-empty",
+      "input": {
+        "text": "\n\n  \nfoo  \nbar\t\n\n\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "whitespace-cleanup"
+        ]
+      },
+      "text": "foo\nbar\n",
+      "visible": "foo\nbar\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "whitespace-cleanup-indentation-to-tabs",
+      "input": {
+        "text": "a\n        b\n            c\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "whitespace-cleanup"
+        ]
+      },
+      "text": "a\n\tb\n\t    c\n",
+      "visible": "a\n\tb\n\t    c\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "whitespace-cleanup-indentation-to-spaces",
+      "input": {
+        "text": "a\n\tb\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "whitespace-cleanup"
+        ],
+        "vars": {
+          "indent-tabs-mode": false
+        }
+      },
+      "text": "a\n        b\n",
+      "visible": "a\n        b\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "whitespace-cleanup-space-before-tab",
+      "input": {
+        "text": "a  \tb\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "whitespace-cleanup"
+        ]
+      },
+      "text": "a\tb\n",
+      "visible": "a\tb\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "whitespace-cleanup-space-after-tab",
+      "input": {
+        "text": "a\t        b\n",
+        "point": 0,
+        "keys": "M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "whitespace-cleanup"
+        ]
+      },
+      "text": "a\t\tb\n",
+      "visible": "a\t\tb\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "whitespace-cleanup-region",
+      "input": {
+        "text": "x  \ny  \nz  \n",
+        "point": 0,
+        "keys": "C-n C-SPC C-n M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "whitespace-cleanup"
+        ]
+      },
+      "text": "x  \ny\nz  \n",
+      "visible": "x  \ny\nz  \n",
+      "point": 6,
+      "mark": 4,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "tabify-region",
+      "input": {
+        "text": "a        b\n",
+        "point": 0,
+        "keys": "C-x h M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "tabify"
+        ]
+      },
+      "text": "a\t b\n",
+      "visible": "a\t b\n",
+      "point": 0,
+      "mark": 5,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

@@ -254,6 +254,10 @@ const API: &str = r##"
    * insert now; M-y asks for 1, the kill before it.
    */
   function currentKill(n?: number): string;
+  /** The kills, newest first, as the kill-ring variable lists them. */
+  function killRing(): string[];
+  /** Make the kill `index` places from the newest the one C-y inserts next, as setting kill-ring-yank-pointer does. */
+  function setKillRingYankPointer(index: number): void;
   /** The kill with its text properties, as Emacs's current-kill gives it. */
   function currentKill(n: number, options: { properties: true }): PropertizedString;
   /**

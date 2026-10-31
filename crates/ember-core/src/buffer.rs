@@ -175,6 +175,9 @@ pub struct Buffer {
     /// Where a run of consecutive undos continues: the group to undo next,
     /// or `None` once the history is used up.
     pending_undo: Option<usize>,
+    /// Whether the next undo passes over an undo and the change it undid,
+    /// as Emacs's `undo-no-redo` makes `undo-only` do.
+    pub(crate) undo_no_redo: bool,
     /// The steps left to undo in a region, newest first, while a run of
     /// undos in a region goes on: Emacs's `pending-undo-list` when
     /// `undo-in-region` is set.
@@ -296,6 +299,7 @@ impl Buffer {
             restriction: None,
             open_point: None,
             pending_undo: None,
+            undo_no_redo: false,
             selective_undo: None,
             undo_in_region: false,
             locals: BTreeMap::new(),
@@ -1537,7 +1541,27 @@ impl Buffer {
         } else {
             self.undo_groups.len().checked_sub(1)
         };
-        let index = index.ok_or_else(|| Error::new("No further undo information"))?;
+        let mut index = index.ok_or_else(|| Error::new("No further undo information"))?;
+        // Once, and only for the undo on top, as Emacs's undo-equiv-table
+        // finds it and what it undid, but not an undo a boundary separates.
+        let from_top = index + 1 == self.undo_groups.len();
+        if std::mem::take(&mut self.undo_no_redo)
+            && from_top
+            && let GroupKind::Undo { undid } = self.undo_groups[index].kind
+        {
+            match undid.checked_sub(1) {
+                Some(before) => index = before,
+                None => {
+                    // Nothing before it: only point goes back, to where the
+                    // first change was made, as the list's first entry says.
+                    if let Some(p) = self.undo_groups[undid].point {
+                        self.point = p.min(self.len());
+                    }
+                    self.pending_undo = None;
+                    return Ok(false);
+                }
+            }
+        }
         self.check_writable()?;
         let redo = self.undo_groups[index].kind != GroupKind::Change;
         self.revert(index);

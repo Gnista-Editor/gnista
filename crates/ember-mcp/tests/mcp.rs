@@ -10,6 +10,11 @@ use ember_mcp::{handle_message, socket};
 use ember_script::Scripting;
 use serde_json::{Value, json};
 
+/// Held while a test runs the binary: a pipe made for one child while
+/// another starts can leak into that one on macOS, which then keeps the
+/// first child's standard input open, and it never sees end of file.
+static CHILDREN: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 fn setup() -> (Editor, Scripting) {
     let mut ed = Editor::new();
     let scripting = Scripting::new(&mut ed).unwrap();
@@ -165,6 +170,7 @@ fn a_running_editor_answers_through_its_socket() {
 
 #[test]
 fn the_binary_serves_standard_input_and_output() {
+    let _one_at_a_time = CHILDREN.lock().unwrap_or_else(|e| e.into_inner());
     let mut child = Command::new(env!("CARGO_BIN_EXE_ember-mcp"))
         .args(["--headless", "-q"])
         .env("EMBER_CONFIG_DIR", tempfile::tempdir().unwrap().path())
@@ -198,6 +204,7 @@ fn the_binary_passes_messages_to_a_running_editor() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("gui.sock");
     let requests = socket::listen(&path, || {}).unwrap();
+    let _one_at_a_time = CHILDREN.lock().unwrap_or_else(|e| e.into_inner());
     let mut child = Command::new(env!("CARGO_BIN_EXE_ember-mcp"))
         .env("EMBER_SOCKET", &path)
         .stdin(Stdio::piped())

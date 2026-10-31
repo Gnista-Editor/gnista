@@ -17,6 +17,10 @@ Each entry says whether the difference is **deliberate**, which keeps it, or **n
 ## Keys and the command loop
 
 - **`read-key-sequence` and ESC** (not yet): ESC then x reads as `M-x`, where Emacs's gives the two keys `ESC x`. `read-key` takes ESC alone, as Emacs does.
+- **`M-x diff`** (not yet) runs diff to the end before showing `*Diff*`, where Emacs shows its output as it comes, and diff-mode cannot apply, split or refine hunks ([ADR 0040](adr/0040-everyday-editing-commands.md)).
+- **Highlighting by regexp** (not yet) always uses overlays, as Emacs does only in buffers without font-lock rules, so new text is not highlighted as it is typed; `hi-lock-file-patterns`, `hi-lock-write-interactive-patterns` and the big `hi-black-hb` face are missing.
+- **The buffer list** (not yet): its column titles are a line of text, as Emacs shows them with `Buffer-menu-use-header-line` off, the name column is 19 wide whatever the window's width, and `2`, `t`, `V`, `O` and grouping are missing ([ADR 0040](adr/0040-everyday-editing-commands.md)).
+- **`undo-only`** (not yet) passes over the last undo and the change it undid once, as Emacs's does when its `undo-equiv-table` finds them. After a command that failed, Emacs's finds nothing, as the failure leaves an undo boundary, and redoes as `undo` would; Ember's still passes over them.
 - **`zap-to-char`** (not yet) reads its character as a key rather than from the minibuffer, so there is no history to go back through ([ADR 0040](adr/0040-everyday-editing-commands.md)).
 - **`what-cursor-position`** (not yet) with a prefix argument does not describe the character, as `describe-char` is not there, and shows no character names.
 - **`sleep-for`** (not yet): keys typed while a command sleeps run their commands at once, where Emacs keeps them until the command ends.

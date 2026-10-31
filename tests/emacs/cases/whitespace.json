@@ -1,0 +1,61 @@
+[
+  {
+    "name": "whitespace-cleanup-trailing-and-empty",
+    "text": "\n\n  \nfoo  \nbar\t\n\n\n",
+    "keys": "M-x",
+    "answers": [
+      "whitespace-cleanup"
+    ]
+  },
+  {
+    "name": "whitespace-cleanup-indentation-to-tabs",
+    "text": "a\n        b\n            c\n",
+    "keys": "M-x",
+    "answers": [
+      "whitespace-cleanup"
+    ]
+  },
+  {
+    "name": "whitespace-cleanup-indentation-to-spaces",
+    "text": "a\n\tb\n",
+    "keys": "M-x",
+    "answers": [
+      "whitespace-cleanup"
+    ],
+    "vars": {
+      "indent-tabs-mode": false
+    }
+  },
+  {
+    "name": "whitespace-cleanup-space-before-tab",
+    "text": "a  \tb\n",
+    "keys": "M-x",
+    "answers": [
+      "whitespace-cleanup"
+    ]
+  },
+  {
+    "name": "whitespace-cleanup-space-after-tab",
+    "text": "a\t        b\n",
+    "keys": "M-x",
+    "answers": [
+      "whitespace-cleanup"
+    ]
+  },
+  {
+    "name": "whitespace-cleanup-region",
+    "text": "x  \ny  \nz  \n",
+    "keys": "C-n C-SPC C-n M-x",
+    "answers": [
+      "whitespace-cleanup"
+    ]
+  },
+  {
+    "name": "tabify-region",
+    "text": "a        b\n",
+    "keys": "C-x h M-x",
+    "answers": [
+      "tabify"
+    ]
+  }
+]

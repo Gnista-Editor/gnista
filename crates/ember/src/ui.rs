@@ -342,11 +342,11 @@ mod tests {
         assert_eq!(rows[15], format!("1/{total} M-x forw"));
         // Each command with its key, after the longest of those listed.
         let shown: Vec<(&str, &str)> = rows[16..].iter().map(|r| (r.split(' ').next().unwrap(), r.rsplit(' ').next().unwrap())).collect();
-        assert_eq!(shown, [("forward-char", "(C-f)"), ("forward-list", "(C-M-n)"), ("forward-sexp", "(C-M-f)"), ("forward-word", "(M-f)")]);
-        assert_eq!(rows[16].find("(C-f)"), rows[19].find("(M-f)"), "keys line up");
-        ed.press("C-n C-n").unwrap();
+        assert_eq!(shown, [("forward-char", "(C-f)"), ("forward-list", "(C-M-n)"), ("forward-page", "])"), ("forward-sexp", "(C-M-f)")]);
+        assert_eq!(rows[16].find("(C-f)"), rows[19].find("(C-M-f)"), "keys line up");
+        ed.press("C-n C-n C-n").unwrap();
         let rows = render(&mut ed, 60, 20);
-        assert_eq!(rows[15], format!("3/{total} M-x forw"));
+        assert_eq!(rows[15], format!("4/{total} M-x forw"));
         ed.press("RET").unwrap();
         assert_eq!(ed.buffer().point(), 3, "RET ran the selected command, forward-sexp");
     }
