@@ -302,6 +302,7 @@ impl Editor {
                         cursor: false,
                         margin: None,
                         fringe: None,
+                        image: None,
                     }),
                 }
             }

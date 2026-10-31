@@ -16,6 +16,7 @@ mod chartab_data;
 mod colors_data;
 pub mod font;
 mod fringe;
+pub mod image;
 pub mod coding;
 mod command;
 pub mod completion;

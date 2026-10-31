@@ -13,6 +13,7 @@ use egui::{
 };
 
 use crate::fringe;
+use crate::image;
 use crate::keys::{Input, translate};
 use crate::metrics::{EguiMetrics, font_id};
 use crate::theme::{self, LINE_SPACING, TEXT_SIZE, Tokens, color32};
@@ -659,7 +660,8 @@ fn draw_buffer(
             let glyphs = row_glyphs(row, tab_width);
             let advance = |font: &FontId, c: char| painter.ctx().fonts_mut(|f| f.glyph_width(font, c));
             let columns = (!ed.row_on_grid(row)).then(|| ed.glyph_columns(row, &glyphs, tab_width));
-            let job = row_job(row, &glyphs, columns.as_deref(), ed.row_height(b, row) * m.line_height, &default_style, m, t, &advance);
+            let height = image_text_height(ed, b, row, m).unwrap_or(ed.row_height(b, row) * m.line_height);
+            let job = row_job(row, &glyphs, columns.as_deref(), height, &default_style, m, t, &advance);
             (painter.layout_job(job), glyphs)
         })
         .collect();
@@ -727,8 +729,13 @@ fn draw_buffer(
             let top = row_top(i);
             clipped.rect_filled(Rect::from_min_max(pos2(left + from, top), pos2(right, top + heights[i])), 0.0, selection);
         }
-        let y = row_top(i) + (heights[i] - galley.size().y) / 2.0;
+        let y = match ed.row_ascent(b, &rows[i]) {
+            // A row with images sits its text on the row's baseline.
+            Some(ascent) => row_top(i) + ascent - galley_baseline(galley),
+            None => row_top(i) + (heights[i] - galley.size().y) / 2.0,
+        };
         clipped.galley(pos2(area.left() - hscroll, y), galley.clone(), t.ink);
+        draw_row_images(&clipped, ed, b, &rows[i], &laid_out[i].1, pos2(area.left() - hscroll, row_top(i)), m, t);
         draw_decorations(&clipped, &rows[i], &laid_out[i].1, galley, area.left() - hscroll, row_top(i), heights[i], &default_style, t);
         if let Some(bold) = &emboldened[i] {
             clipped.galley(pos2(area.left() - hscroll + FAUX_BOLD_OFFSET, y), bold.clone(), t.ink);
@@ -737,6 +744,10 @@ fn draw_buffer(
         // What the margins show beside the row.
         for (side, margin) in view.margins.iter().enumerate() {
             if rows[i].margins[side].is_empty() || margin.width() <= 0.0 {
+                continue;
+            }
+            if rows[i].margins[side].iter().any(|s| s.image.is_some()) {
+                draw_margin_with_images(&painter.with_clip_rect(*margin), ed, b, &rows[i], side, pos2(margin.left(), top), heights[i], &default_style, m, t);
                 continue;
             }
             let mut job = LayoutJob::default();
@@ -778,6 +789,10 @@ fn draw_buffer(
         // At the end of a line that fills the row, the cursor goes in the
         // right fringe, as Emacs's overflow-newline-into-fringe puts it.
         let cursor_clip = Rect::from_min_max(clipped.clip_rect().min, pos2(view.fringes[1].right(), clipped.clip_rect().bottom()));
+        if let Some(rect) = cursor_on_image(ed, b, &rows[i], &laid_out[i].1, point, pos2(area.left() - hscroll, row_top(i)), m) {
+            painter.with_clip_rect(cursor_clip).rect_stroke(rect, 0.0, Stroke::new(1.0, t.ink), StrokeKind::Outside);
+            return;
+        }
         draw_cursor(&painter.with_clip_rect(cursor_clip), &galley, index, under, pos, heights[i], &font, m, t, style);
     }
 }
@@ -828,7 +843,7 @@ fn row_job(
 ) -> LayoutJob {
     let mut job = LayoutJob::default();
     // Glyphs spaced to a width of their own rather than the font's.
-    let spaced = |g: &Glyph| if columns.is_some() { g.c == '\t' } else { is_wide(g) };
+    let spaced = |g: &Glyph| if columns.is_some() { g.c == '\t' || row.segments[g.segment].image.is_some() } else { is_wide(g) };
     let mut i = 0;
     while i < glyphs.len() {
         let segment = glyphs[i].segment;
@@ -847,11 +862,16 @@ fn row_job(
         if seg.ellipsis {
             format.color = t.faint;
         }
+        if seg.image.is_some() {
+            // Room for the image, which draw_row_images draws over it.
+            text = " ".repeat(text.chars().count());
+            format.color = Color32::TRANSPARENT;
+        }
         if alone {
             let g = &glyphs[i - 1];
             let n = g.text.chars().count().max(1) as f32;
             let want = columns.map_or(g.width as f32, |c| c[i - 1]) * m.char_width;
-            let natural: f32 = g.text.chars().map(|c| advance(&format.font_id, c)).sum();
+            let natural: f32 = text.chars().map(|c| advance(&format.font_id, c)).sum();
             format.extra_letter_spacing = (want - natural) / n;
         }
         // The row's full height, so backgrounds such as the region's meet
@@ -1084,5 +1104,73 @@ fn draw_echo_area(painter: &Painter, ed: &Editor, rect: Rect, m: &Metrics, t: To
     if let Some((galley, index, under, y)) = at_point {
         let cursor_x = galley.pos_from_cursor(CCursor::new(index)).min.x;
         draw_cursor(&painter, &galley, index, under, pos2(origin_x + cursor_x, y), m.line_height, &FontSpec::default_font(), m, t, cursor);
+    }
+}
+
+/// The height a row with images lays its text out at: its tallest text's
+/// line; `None` for a row without images.
+fn image_text_height(ed: &Editor, b: &ember_core::Buffer, row: &Row, m: &Metrics) -> Option<f32> {
+    ed.row_ascent(b, row)?;
+    let scale = row.segments.iter().filter(|s| s.image.is_none() && !s.text.is_empty()).map(|s| s.style.scale).fold(1.0f32, f32::max);
+    Some(m.line_height * scale)
+}
+
+/// How far below a galley's top its first row's baseline is.
+fn galley_baseline(galley: &Galley) -> f32 {
+    galley.rows.first().and_then(|r| r.row.glyphs.first().map(|g| r.pos.y + g.pos.y)).unwrap_or(0.0)
+}
+
+/// Draws the images a row shows over the room its galley left for them,
+/// each on the row's baseline as its ascent says.
+#[allow(clippy::too_many_arguments)]
+fn draw_row_images(painter: &Painter, ed: &Editor, b: &ember_core::Buffer, row: &Row, glyphs: &[Glyph], origin: Pos2, m: &Metrics, t: Tokens) {
+    if !row.segments.iter().any(|s| s.image.is_some()) {
+        return;
+    }
+    // Each glyph's x as the core laid the row out, which the galley's spacing follows.
+    let columns = ed.glyph_columns(row, glyphs, ed.tab_width_in(b));
+    let mut x = 0.0;
+    for (glyph, width) in glyphs.iter().zip(&columns) {
+        let seg = &row.segments[glyph.segment];
+        if let Some(img) = &seg.image {
+            let ink = seg.style.foreground.map(color32).unwrap_or(t.ink);
+            image::draw_image(painter, ed, img, pos2(origin.x + x * m.char_width, origin.y + ed.image_top(b, row, seg)), ink);
+        }
+        x += width;
+    }
+}
+
+/// Where the cursor's box goes when point is on an image: round the
+/// image, as Emacs draws it; `None` when point is not on one.
+fn cursor_on_image(ed: &Editor, b: &ember_core::Buffer, row: &Row, glyphs: &[Glyph], point: usize, origin: Pos2, m: &Metrics) -> Option<Rect> {
+    let index = cursor_index(glyphs, point);
+    let glyph = glyphs.get(index).filter(|g| g.pos == Some(point))?;
+    let seg = &row.segments[glyph.segment];
+    let img = seg.image.as_ref()?;
+    let x: f32 = ed.glyph_columns(row, glyphs, ed.tab_width_in(b))[..index].iter().sum();
+    Some(image::glyph_rect(img, pos2(origin.x + x * m.char_width, origin.y + ed.image_top(b, row, seg))))
+}
+
+/// Draws a margin's segments beside a row when some are images: text and
+/// images one after another, each image on the row's baseline.
+#[allow(clippy::too_many_arguments)]
+fn draw_margin_with_images(painter: &Painter, ed: &Editor, b: &ember_core::Buffer, row: &Row, side: usize, top_left: Pos2, height: f32, default_style: &Style, m: &Metrics, t: Tokens) {
+    let mut x = top_left.x;
+    for seg in &row.margins[side] {
+        match &seg.image {
+            Some(img) => {
+                let ink = seg.style.foreground.map(color32).unwrap_or(t.ink);
+                image::draw_image(painter, ed, img, pos2(x, top_left.y + ed.image_top(b, row, seg)), ink);
+                x += img.advance();
+            }
+            None => {
+                let mut job = LayoutJob::default();
+                job.append(&seg.text, 0.0, face_format(&seg.style, default_style, m, t));
+                let galley = painter.layout_job(job);
+                let width = galley.size().x;
+                painter.galley(pos2(x, top_left.y + (height - galley.size().y) / 2.0), galley, t.ink);
+                x += width;
+            }
+        }
     }
 }

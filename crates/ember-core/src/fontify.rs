@@ -158,6 +158,7 @@ impl Editor {
         self.ensure_point_visible();
         self.fontify_windows();
         self.update_mode_lines();
+        self.flush_image_messages();
     }
 
     /// Fontifies what every frame's windows show.

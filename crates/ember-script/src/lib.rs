@@ -5,6 +5,7 @@
 //! declarations from the command registry.
 
 pub mod config;
+mod images;
 mod strip;
 mod types;
 
@@ -101,6 +102,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/elec-pair.ts", include_str!("../../../packages/elec-pair.ts")),
     ("packages/help.ts", include_str!("../../../packages/help.ts")),
     ("packages/faces.ts", include_str!("../../../packages/faces.ts")),
+    ("packages/image.ts", include_str!("../../../packages/image.ts")),
     ("packages/repeat.ts", include_str!("../../../packages/repeat.ts")),
     ("packages/kmacro.ts", include_str!("../../../packages/kmacro.ts")),
     ("packages/window.ts", include_str!("../../../packages/window.ts")),
@@ -2481,6 +2483,7 @@ fn install_native_text<'js>(ctx: &Ctx<'js>, native: &Object<'js>) -> rquickjs::R
         Function::new(ctx.clone(), |ctx: Ctx<'js>, window: u64, pos: usize| with_editor(&ctx, |ed| ed.set_window_start(window, pos)))?,
     )?;
     char_table_functions(ctx, native)?;
+    images::image_functions(ctx, native)?;
     for (name, case) in [
         ("upcase", ember_core::casefiddle::Case::Up),
         ("downcase", ember_core::casefiddle::Case::Down),

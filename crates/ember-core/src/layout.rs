@@ -89,6 +89,20 @@ pub trait TextMetrics: Send + Sync {
         let _ = (font, c);
         true
     }
+    /// How far a font's glyphs rise above its baseline, which a row with
+    /// an image needs to sit the image on it as Emacs does.
+    fn ascent(&self, font: &FontSpec) -> f32 {
+        (self.line_height(font) * 0.8).round()
+    }
+    /// The default font's size, for image sizes given in `em`.
+    fn font_size(&self) -> f32 {
+        self.char_height()
+    }
+    /// Whether frames show images, as Emacs's graphical frames do. Without,
+    /// as on a terminal, the text an image's display property is on shows.
+    fn images(&self) -> bool {
+        false
+    }
 }
 
 /// An open font, as a front end draws in it: its family's name, and its
@@ -165,7 +179,7 @@ impl Editor {
 
     /// Whether a row lies on the grid, every glyph a column per cell.
     pub fn row_on_grid(&self, row: &Row) -> bool {
-        self.metrics.uniform() || row.segments.iter().all(|s| self.on_grid(&s.style))
+        self.metrics.uniform() || row.segments.iter().all(|s| s.image.is_none() && self.on_grid(&s.style))
     }
 
     /// How many default columns a character of a segment takes, starting
@@ -173,6 +187,9 @@ impl Editor {
     /// every `tab-width` default columns as in Emacs, `^X` for a control
     /// character, and `\NNN` for a raw byte or C1 control.
     pub(crate) fn char_columns(&self, segment: &Segment, c: char, col: f32, tab_width: usize) -> f32 {
+        if let Some(image) = &segment.image {
+            return image.advance() / self.metrics.char_width();
+        }
         if c == '\t' {
             let tab = tab_width.max(1) as f32;
             return (col / tab).floor() * tab + tab - col;
@@ -214,6 +231,9 @@ impl Editor {
     pub fn row_height(&self, b: &Buffer, row: &Row) -> f32 {
         if self.metrics.uniform() {
             return 1.0;
+        }
+        if let Some(height) = self.image_row_height(b, row) {
+            return height;
         }
         let height = self.metrics.char_height();
         let tallest = row

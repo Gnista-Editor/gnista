@@ -2313,6 +2313,48 @@ declare global {
        */
       "ignore": [];
       /**
+       * Decrease the image size at point by a factor of 1 minus N divided by 10, 20% without a prefix argument.
+       *
+       * @param n raw prefix argument
+       *
+       * Defined in packages/image.ts.
+       */
+      "image-decrease-size": [n?: PrefixArg];
+      /**
+       * Horizontally flip the image under point.
+       *
+       * Defined in packages/image.ts.
+       */
+      "image-flip-horizontally": [];
+      /**
+       * Vertically flip the image under point.
+       *
+       * Defined in packages/image.ts.
+       */
+      "image-flip-vertically": [];
+      /**
+       * Increase the image size at point by a factor of 1 plus N divided by 10, 20% without a prefix argument.
+       *
+       * @param n raw prefix argument
+       *
+       * Defined in packages/image.ts.
+       */
+      "image-increase-size": [n?: PrefixArg];
+      /**
+       * Show the image a visited file holds, made smaller to fit the window if it is larger. + and - change its size, r rotates it, h and v flip it, and q quits the window.
+       *
+       * Defined in packages/image.ts.
+       */
+      "image-mode": [];
+      /**
+       * Rotate the image under point by 90 degrees clockwise, or with a prefix argument counter-clockwise.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/image.ts.
+       */
+      "image-rotate": [arg?: PrefixArg];
+      /**
        * Go to a definition in the buffer, chosen by name with completion from the buffer's index.
        *
        * Kinds of definition, such as Fn or Struct, open a list of their own. The mark is pushed first.
@@ -6869,6 +6911,63 @@ declare global {
        */
       "icomplete-vertical-mode-minibuffer-map": Value;
       /**
+       * Maximum time after which images are removed from the cache.
+       * The value can also be nil, meaning the cache is never cleared.
+       *
+       * The function `clear-image-cache' disregards this variable.
+       */
+      "image-cache-eviction-delay": Value;
+      /**
+       * List of locations in which to search for image files.
+       * If an element is a string, it defines a directory to search. If an element is a variable symbol whose value is a string, that value defines a directory to search; whose value is a list, the value is used as a list of directories to search.
+       *
+       * Defined in packages/image.ts.
+       */
+      "image-load-path": Value;
+      /**
+       * Keymap image-map.
+       */
+      "image-map": Value;
+      /**
+       * Keymap image-mode-map.
+       */
+      "image-mode-map": Value;
+      /**
+       * Recompute image map when scaling, rotating, or flipping an image.
+       *
+       * Defined in packages/image.ts.
+       */
+      "image-recompute-map-p": Value;
+      /**
+       * When displaying images, apply this scaling factor before displaying.
+       * The value is either a floating point number (where numbers higher than 1 means to increase the size and lower means to shrink the size), or the symbol `auto', which will compute a scaling factor based on the font pixel size.
+       */
+      "image-scaling-factor": Value;
+      /**
+       * Keymap image-slice-map.
+       */
+      "image-slice-map": Value;
+      /**
+       * Alist of (REGEXP . IMAGE-TYPE) pairs used to identify image files.
+       * When the name of an image file match REGEXP, it is assumed to be of image type IMAGE-TYPE.
+       *
+       * Defined in packages/image.ts.
+       */
+      "image-type-file-name-regexps": Value;
+      /**
+       * Alist of (REGEXP . IMAGE-TYPE) pairs used to auto-detect image types.
+       * When the first bytes of an image file match REGEXP, it is assumed to be of image type IMAGE-TYPE.
+       *
+       * Defined in packages/image.ts.
+       */
+      "image-type-header-regexps": Value;
+      /**
+       * List of potentially supported image types.
+       * Each element of the list is a symbol for an image type, like `jpeg' or `png'.
+       * To check whether it is really supported, use `image-type-available-p'.
+       */
+      "image-types": Value;
+      /**
        * Items chosen with M-x imenu, newest first.
        *
        * Defined in packages/imenu.ts.
@@ -7194,6 +7293,13 @@ declare global {
        * Files in the temporary directory are not backed up.
        */
       "make-backup-files": Value;
+      /**
+       * Maximum size of images.
+       * Emacs will not load an image into memory if its pixel width or pixel height exceeds this limit.
+       *
+       * If the value is an integer, it directly specifies the maximum image height and width, measured in pixels. If it is a floating point number, it specifies the maximum image height and width as a ratio to the frame height and width. If the value is non-numeric, there is no explicit limit on the size of images.
+       */
+      "max-image-size": Value;
       /**
        * The most the echo area grows to for a long minibuffer, such as a vertical list of completions: a fraction of the frame's height, or a number of lines.
        */
@@ -8339,6 +8445,10 @@ declare global {
        * A string shown at the start of each row a long line continues on, unless the text has a wrap-prefix property of its own; it takes room from the row.
        */
       "wrap-prefix": Value;
+      /**
+       * List of directories to search for window system bitmap files.
+       */
+      "x-bitmap-file-path": Value;
       /**
        * Keymap xref--xref-buffer-mode-map.
        */
@@ -9620,6 +9730,10 @@ declare global {
        */
       "icomplete-vertical-mode-on-hook": Value;
       /**
+       * Run after entering Image mode, after the hooks of the modes it is built on.
+       */
+      "image-mode-hook": Value;
+      /**
        * Run as a search ends; isearch-mode-end-hook-quit is true if it was cancelled.
        */
       "isearch-mode-end-hook": Value;
@@ -10099,6 +10213,30 @@ declare global {
      * continue the argument.
      */
     function setTransientMap(bindings: { [keys: string]: CommandName | DefinedCommand } | Keymap): void;
+    /** Whether a value is an image spec Ember can show, as imagep: `(image :type TYPE :file FILE ...)` as a list of symbols and values. */
+    function imagep(spec: Value): boolean;
+    /**
+     * An image's size, its margins included, as image-size: in pixels with
+     * `pixels`, else in the frame's columns and lines. Signals an error on a
+     * frame without images, as on a terminal.
+     */
+    function imageSize(spec: Value, pixels?: boolean): [number, number];
+    /** Whether an image has a mask, as image-mask-p. */
+    function imageMaskP(spec: Value): boolean;
+    /** An image's metadata, as image-metadata: for a GIF of several frames, `[delay, SECONDS, count, FRAMES]`. */
+    function imageMetadata(spec: Value): Value | undefined;
+    /** Forget an image, so it is read again when next shown, as image-flush. */
+    function imageFlush(spec: Value): void;
+    /** Forget every image, or those of a file name, as clear-image-cache. */
+    function clearImageCache(filter?: Value): void;
+    /** The transforms images can have on this frame, as image-transforms-p: `scale` and `rotate90`, or undefined on a terminal. */
+    function imageTransformsP(): symbol[] | undefined;
+    /** How many bytes the decoded images take, as image-cache-size. */
+    function imageCacheSize(): number;
+    /** Whether images of a type can be shown, as init-image-library. */
+    function initImageLibrary(type: string | symbol): boolean;
+    /** Whether this frame shows images, as display-images-p. */
+    function displayImagesP(): boolean;
 
     /**
      * The kill `n` entries back from the one yanked last, moving the yank

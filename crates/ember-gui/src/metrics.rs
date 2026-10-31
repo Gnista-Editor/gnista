@@ -36,12 +36,21 @@ pub struct EguiMetrics {
     advances: Mutex<HashMap<(u32, bool, bool, char), f32>>,
     /// The system's font families and egui's own, found once when asked.
     families: OnceLock<Vec<String>>,
+    /// Ascents already measured, by font.
+    ascents: Mutex<HashMap<(u32, bool, bool, char), f32>>,
 }
 
 impl EguiMetrics {
     /// Metrics for the default font's character width and line height.
     pub fn new(ctx: egui::Context, char_width: f32, line_height: f32) -> EguiMetrics {
-        EguiMetrics { ctx, char_width, line_height, advances: Mutex::new(HashMap::new()), families: OnceLock::new() }
+        EguiMetrics {
+            ctx,
+            char_width,
+            line_height,
+            advances: Mutex::new(HashMap::new()),
+            ascents: Mutex::new(HashMap::new()),
+            families: OnceLock::new(),
+        }
     }
 }
 
@@ -74,13 +83,12 @@ impl TextMetrics for EguiMetrics {
     }
 
     /// The font egui draws a face in: the first of its family's fonts,
-    /// at the face's size. egui keeps no ascent, so the line is split as
-    /// fonts commonly split it, four fifths above the baseline.
+    /// at the face's size, its ascent where egui puts the baseline.
     fn font_metrics(&self, font: &FontSpec) -> Option<FontMetrics> {
         let id = font_id(font);
         let family = self.ctx.fonts(|f| f.definitions().families.get(&id.family).and_then(|names| names.first().cloned()))?;
         let height = self.line_height(font);
-        let ascent = (height * 0.8).round();
+        let ascent = self.ascent(font);
         let (space, average, widest) = self.ctx.fonts_mut(|f| {
             let space = f.glyph_width(&id, ' ');
             let widths: Vec<f32> = ('!'..='~').map(|c| f.glyph_width(&id, c)).collect();
@@ -114,5 +122,27 @@ impl TextMetrics for EguiMetrics {
 
     fn has_glyph(&self, font: &FontSpec, c: char) -> bool {
         self.ctx.fonts_mut(|f| f.has_glyph(&font_id(font), c))
+    }
+
+    fn ascent(&self, font: &FontSpec) -> f32 {
+        let key = (font.scale.to_bits(), font.proportional(), font.bold, '\0');
+        if let Some(&a) = self.ascents.lock().expect("not poisoned").get(&key) {
+            return a;
+        }
+        let id = font_id(font);
+        let galley = self.ctx.fonts_mut(|f| f.layout_no_wrap("M".into(), id, egui::Color32::WHITE));
+        let height = self.line_height(font);
+        // Where egui puts the baseline in a line of the font's height.
+        let a = galley.rows.first().and_then(|r| r.row.glyphs.first()).map_or(height * 0.8, |g| g.pos.y + (height - galley.size().y) / 2.0);
+        self.ascents.lock().expect("not poisoned").insert(key, a);
+        a
+    }
+
+    fn font_size(&self) -> f32 {
+        TEXT_SIZE
+    }
+
+    fn images(&self) -> bool {
+        true
     }
 }

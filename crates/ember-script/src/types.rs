@@ -247,6 +247,30 @@ const API: &str = r##"
    * continue the argument.
    */
   function setTransientMap(bindings: { [keys: string]: CommandName | DefinedCommand } | Keymap): void;
+  /** Whether a value is an image spec Ember can show, as imagep: `(image :type TYPE :file FILE ...)` as a list of symbols and values. */
+  function imagep(spec: Value): boolean;
+  /**
+   * An image's size, its margins included, as image-size: in pixels with
+   * `pixels`, else in the frame's columns and lines. Signals an error on a
+   * frame without images, as on a terminal.
+   */
+  function imageSize(spec: Value, pixels?: boolean): [number, number];
+  /** Whether an image has a mask, as image-mask-p. */
+  function imageMaskP(spec: Value): boolean;
+  /** An image's metadata, as image-metadata: for a GIF of several frames, `[delay, SECONDS, count, FRAMES]`. */
+  function imageMetadata(spec: Value): Value | undefined;
+  /** Forget an image, so it is read again when next shown, as image-flush. */
+  function imageFlush(spec: Value): void;
+  /** Forget every image, or those of a file name, as clear-image-cache. */
+  function clearImageCache(filter?: Value): void;
+  /** The transforms images can have on this frame, as image-transforms-p: `scale` and `rotate90`, or undefined on a terminal. */
+  function imageTransformsP(): symbol[] | undefined;
+  /** How many bytes the decoded images take, as image-cache-size. */
+  function imageCacheSize(): number;
+  /** Whether images of a type can be shown, as init-image-library. */
+  function initImageLibrary(type: string | symbol): boolean;
+  /** Whether this frame shows images, as display-images-p. */
+  function displayImagesP(): boolean;
 
   /**
    * The kill `n` entries back from the one yanked last, moving the yank
