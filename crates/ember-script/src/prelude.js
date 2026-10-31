@@ -1659,6 +1659,25 @@
       });
     },
 
+    // Images, as image.c's primitives (ADR 0046). A spec is a list,
+    // [Symbol.for("image"), Symbol.for(":type"), Symbol.for("png"), ...].
+    imagep: (spec) => native.imagep(spec ?? null),
+    imageSize(spec, pixels) {
+      const [w, h] = native.imageSize(spec ?? null, Boolean(pixels));
+      return [w, h];
+    },
+    imageMaskP: (spec) => native.imageMaskP(spec ?? null),
+    imageMetadata: (spec) => native.imageMetadata(spec ?? null) ?? undefined,
+    imageFlush: (spec) => native.imageFlush(spec ?? null),
+    clearImageCache: (filter) => native.clearImageCache(filter ?? null),
+    imageTransformsP() {
+      const transforms = native.imageTransformsP();
+      return transforms.length ? transforms.map((t) => Symbol.for(t)) : undefined;
+    },
+    imageCacheSize: () => native.imageCacheSize(),
+    initImageLibrary: (type) => native.initImageLibrary(symbolName(type)),
+    displayImagesP: () => native.imagesShown(),
+
     setTransientMap(bindings) {
       if (bindings instanceof Keymap) return native.setTransientMap(bindings);
       const entries = Object.entries(bindings).map(([keys, command]) => [String(keys), String(command)]);

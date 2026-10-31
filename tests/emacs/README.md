@@ -88,6 +88,14 @@ record.el also makes opening a link in a browser or another program an error, so
 EMBER_FUZZ_SEED=1 EMBER_FUZZ_CASES=20000 cargo test --release -p ember-script --test regexp -- --ignored --nocapture
 ```
 
+## Images
+
+Batch Emacs and Emacs on a terminal cannot load images, so `images.el` runs a graphical Emacs for a moment and records what it answers about the test images in `crates/ember-core/tests/images/`: `image-size` with each property, masks, metadata, `imagep`, and the line heights and positions of a buffer of images, into `target/image-answers.el`. The tests in `crates/ember-core/tests/images.rs` and `crates/ember-script/tests/images.rs` hold those answers, with metrics matching the frame's font (Menlo at 12 pixels on macOS):
+
+```bash
+emacs -Q -l $PWD/tests/emacs/images.el
+```
+
 ## Completion in the minibuffer
 
 `icomplete/` holds an oracle of its own for what the minibuffer shows as you type: icomplete's list in its four modes, over a collection or a directory of files. Batch Emacs cannot type into the minibuffer, so `icomplete/record.el` runs an interactive Emacs on a pseudo-terminal, feeds it each case's keys from timers, and records the input and what icomplete shows after each key into `golden.json`:

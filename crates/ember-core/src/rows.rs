@@ -48,6 +48,10 @@ pub struct Segment {
     /// The fringe bitmap a `(left-fringe BITMAP FACE)` display spec puts
     /// beside the row, in place of the text it is on.
     pub fringe: Option<FringeSpec>,
+    /// The image an `(image ...)` display spec shows in place of the text
+    /// it is on or of a string's character; the segment's text is then
+    /// [`crate::image::IMAGE_CHAR`], which front ends draw as the image.
+    pub image: Option<std::sync::Arc<crate::image::ImageGlyph>>,
 }
 
 /// A bitmap a display spec puts in a fringe: which fringe, the bitmap's
@@ -85,6 +89,9 @@ pub enum Margin {
 fn margin_spec(value: &Value) -> Option<(Margin, &Value)> {
     let Value::List(items) = value else { return None };
     let [Value::List(location), string] = items.as_slice() else { return None };
+    if crate::image::is_image(string) {
+        return None;
+    }
     if location.first()?.as_str()? != "margin" {
         return None;
     }
@@ -99,7 +106,7 @@ fn margin_spec(value: &Value) -> Option<(Margin, &Value)> {
 impl Segment {
     /// A segment of buffer text.
     pub fn text(start: usize, text: String, style: Style) -> Segment {
-        Segment { start, text, style, ellipsis: false, string: false, covers: None, breaks: false, cursor: false, margin: None, fringe: None }
+        Segment { start, text, style, ellipsis: false, string: false, covers: None, breaks: false, cursor: false, margin: None, fringe: None, image: None }
     }
 
     /// Whether it is drawn whole, never split by wrapping: an ellipsis or a string.
@@ -763,6 +770,23 @@ impl Editor {
                 Value::Text(t) => t.properties_at(i).and_then(|p| p.get("display")),
                 _ => None,
             };
+            if let Some(d) = display.filter(|d| crate::image::image_display(d).is_some() && self.images_shown()) {
+                if margin_run != Some(d) {
+                    let props = match value {
+                        Value::Text(t) => t.properties_at(i),
+                        _ => None,
+                    };
+                    let style = || {
+                        let mut faces: Vec<String> = props.and_then(|p| p.get("face")).map(face_names).unwrap_or_default();
+                        faces.extend(base.iter().cloned());
+                        dark.map_or_else(Style::default, |dark| styles.entry(faces).or_insert_with_key(|f| self.style_for_in(b, f, dark)).clone())
+                    };
+                    out.extend(self.image_string_segment(pos, d, covers, style));
+                    margin_run = Some(d);
+                    last = None;
+                }
+                continue;
+            }
             if let Some(fringe) = display.and_then(fringe_spec) {
                 if margin_run != display {
                     out.push(Segment { string: true, covers, fringe: Some(fringe), ..Segment::text(pos, String::new(), Style::default()) });
@@ -833,6 +857,9 @@ impl Editor {
         styles: &mut HashMap<Vec<String>, Style>,
     ) -> Option<(usize, Vec<Segment>)> {
         let value = b.char_property(pos, "display")?.clone();
+        if crate::image::image_display(&value).is_some() {
+            return self.image_display_at(b, pos, line_end, &value, self.display_style(b, pos, dark, styles)).flatten();
+        }
         if let Some(fringe) = fringe_spec(&value) {
             // The text is replaced by nothing; the bitmap shows in the fringe.
             let mut end = pos;
@@ -883,6 +910,15 @@ impl Editor {
             _ => Value::Str(text),
         };
         Some((end, self.string_segments(b, pos, &shown, Some(end), &base, dark, styles)))
+    }
+
+    /// The style of the text at a position, for an image shown in its
+    /// place, unstyled when rows are worked out without styles.
+    fn display_style(&self, b: &Buffer, pos: usize, dark: Option<bool>, styles: &mut HashMap<Vec<String>, Style>) -> Style {
+        match dark {
+            Some(dark) => styles.entry(self.faces_at(b, pos)).or_insert_with_key(|f| self.style_for_in(b, f, dark)).clone(),
+            None => Style::default(),
+        }
     }
 
     /// The faces at a position, apart from syntax: overlays' first, highest priority first,

@@ -32,12 +32,14 @@ pub struct EguiMetrics {
     line_height: f32,
     /// Advances already measured, by font and character.
     advances: Mutex<HashMap<(u32, bool, bool, char), f32>>,
+    /// Ascents already measured, by font.
+    ascents: Mutex<HashMap<(u32, bool, bool, char), f32>>,
 }
 
 impl EguiMetrics {
     /// Metrics for the default font's character width and line height.
     pub fn new(ctx: egui::Context, char_width: f32, line_height: f32) -> EguiMetrics {
-        EguiMetrics { ctx, char_width, line_height, advances: Mutex::new(HashMap::new()) }
+        EguiMetrics { ctx, char_width, line_height, advances: Mutex::new(HashMap::new()), ascents: Mutex::new(HashMap::new()) }
     }
 }
 
@@ -67,5 +69,27 @@ impl TextMetrics for EguiMetrics {
 
     fn char_height(&self) -> f32 {
         self.line_height
+    }
+
+    fn ascent(&self, font: &FontSpec) -> f32 {
+        let key = (font.scale.to_bits(), font.proportional(), font.bold, '\0');
+        if let Some(&a) = self.ascents.lock().expect("not poisoned").get(&key) {
+            return a;
+        }
+        let id = font_id(font);
+        let galley = self.ctx.fonts_mut(|f| f.layout_no_wrap("M".into(), id, egui::Color32::WHITE));
+        let height = self.line_height(font);
+        // Where egui puts the baseline in a line of the font's height.
+        let a = galley.rows.first().and_then(|r| r.row.glyphs.first()).map_or(height * 0.8, |g| g.pos.y + (height - galley.size().y) / 2.0);
+        self.ascents.lock().expect("not poisoned").insert(key, a);
+        a
+    }
+
+    fn font_size(&self) -> f32 {
+        TEXT_SIZE
+    }
+
+    fn images(&self) -> bool {
+        true
     }
 }

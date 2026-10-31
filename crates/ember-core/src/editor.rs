@@ -200,6 +200,8 @@ pub struct Editor {
     pub(crate) faces: BTreeMap<String, Face>,
     /// Styles worked out for lists of faces on each background, until a face changes.
     pub(crate) style_cache: std::cell::RefCell<std::collections::HashMap<(Vec<String>, bool), crate::faces::Style>>,
+    /// The images display specs have loaded, as a frame's image cache.
+    pub(crate) images: std::cell::RefCell<crate::image::ImageCache>,
     pub(crate) grammars: BTreeMap<&'static str, crate::syntax::Grammar>,
     /// Tree-sitter queries compiled so far, by language and source.
     pub(crate) treesit_queries: std::collections::HashMap<(String, String), std::rc::Rc<tree_sitter::Query>>,
@@ -379,6 +381,7 @@ impl Editor {
             symbols: BTreeMap::new(),
             faces: BTreeMap::new(),
             style_cache: Default::default(),
+            images: Default::default(),
             grammars: crate::syntax::builtin_grammars().into_iter().collect(),
             treesit_queries: Default::default(),
             next_hook_id: 0,
