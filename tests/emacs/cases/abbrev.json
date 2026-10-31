@@ -1,0 +1,66 @@
+[
+  {
+    "name": "add-global-abbrev-and-expand",
+    "text": "",
+    "keys": "f o o b a r C-x a g C-e RET f b C-x '",
+    "answers": [
+      "fb"
+    ]
+  },
+  {
+    "name": "abbrev-mode-expands-on-space",
+    "text": "",
+    "keys": "h e l l o SPC w o r l d C-u 2 C-x a g M-x RET h w SPC",
+    "answers": [
+      "hw",
+      "abbrev-mode"
+    ]
+  },
+  {
+    "name": "abbrev-capitalized",
+    "text": "",
+    "keys": "f o o b a r C-x a g RET F c SPC M-x RET",
+    "answers": [
+      "fc",
+      "expand-abbrev"
+    ]
+  },
+  {
+    "name": "abbrev-all-caps-several-words",
+    "text": "",
+    "keys": "o n e SPC t w o C-u 2 C-x a g RET C-e RET O T C-x '",
+    "answers": [
+      "ot"
+    ]
+  },
+  {
+    "name": "abbrev-all-caps-one-word",
+    "text": "",
+    "keys": "w o r d C-x a g RET W W C-x '",
+    "answers": [
+      "ww"
+    ]
+  },
+  {
+    "name": "inverse-add-global-abbrev",
+    "text": "",
+    "keys": "t q C-x a i g",
+    "answers": [
+      "thank you"
+    ]
+  },
+  {
+    "name": "expand-abbrev-nothing",
+    "text": "zz",
+    "keys": "C-e C-x '"
+  },
+  {
+    "name": "abbrev-mode-punctuation",
+    "text": "",
+    "keys": "f o o b a r C-x a g M-x RET f d .",
+    "answers": [
+      "fd",
+      "abbrev-mode"
+    ]
+  }
+]

@@ -268,9 +268,33 @@ declare global {
        */
       "View-search-regexp-forward": [];
       /**
+       * Expand abbrevs as they are typed: a character that ends a word expands the word before it if it is an abbrev.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/abbrev.ts.
+       */
+      "abbrev-mode": [];
+      /**
        * Quit the innermost recursive edit or minibuffer, and what entered it.
        */
       "abort-recursive-edit": [];
+      /**
+       * Define a global abbrev for the word before point, or that many words, or the region with 0, asking for its name.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/abbrev.ts.
+       */
+      "add-global-abbrev": [arg?: PrefixArg];
+      /**
+       * Define an abbrev for the major mode for the word before point, or that many words, or the region with 0, asking for its name.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/abbrev.ts.
+       */
+      "add-mode-abbrev": [arg?: PrefixArg];
       /**
        * Make the next kill join onto the last one on the kill ring, as consecutive kills do.
        *
@@ -1069,6 +1093,24 @@ declare global {
        */
       "default-indent-new-line": [];
       /**
+       * Define a global abbrev, asking for its name and expansion.
+       *
+       * @param abbrev text
+       * @param expansion text
+       *
+       * Defined in packages/abbrev.ts.
+       */
+      "define-global-abbrev": [abbrev: string, expansion: string];
+      /**
+       * Define an abbrev for the major mode, asking for its name and expansion.
+       *
+       * @param abbrev text
+       * @param expansion text
+       *
+       * Defined in packages/abbrev.ts.
+       */
+      "define-mode-abbrev": [abbrev: string, expansion: string];
+      /**
        * Delete the spaces, tabs and newlines around point; with a prefix argument, only those before it.
        *
        * @param arg raw prefix argument
@@ -1753,6 +1795,24 @@ declare global {
        */
       "duplicate-line": [n?: number];
       /**
+       * Edit the abbrevs in *Abbrevs*; C-c C-c makes them the abbrevs again.
+       *
+       * Defined in packages/abbrev.ts.
+       */
+      "edit-abbrevs": [];
+      /**
+       * The mode of *Abbrevs*: edit the abbrevs listed, then C-c C-c to make them the abbrevs.
+       *
+       * Defined in packages/abbrev.ts.
+       */
+      "edit-abbrevs-mode": [];
+      /**
+       * Make the abbrevs the ones *Abbrevs* lists now, as edit-abbrevs left them.
+       *
+       * Defined in packages/abbrev.ts.
+       */
+      "edit-abbrevs-redefine": [];
+      /**
        * Insert a newline. With electric-indent-mode on, as it is by default, that is all; RET is the key that indents.
        *
        * Defined in packages/simple.ts.
@@ -1838,6 +1898,12 @@ declare global {
        * Leave the innermost recursive edit or minibuffer, going on with what entered it.
        */
       "exit-recursive-edit": [];
+      /**
+       * Expand the abbrev before point, if there is one.
+       *
+       * Defined in packages/abbrev.ts.
+       */
+      "expand-abbrev": [];
       /**
        * Visit a file, starting from the name of the file at point, as find-file-at-point does.
        *
@@ -2315,6 +2381,22 @@ declare global {
        */
       "insert-register": [arg?: PrefixArg];
       /**
+       * Make the word before point a global abbrev for an expansion asked for, and expand it.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/abbrev.ts.
+       */
+      "inverse-add-global-abbrev": [arg?: number];
+      /**
+       * Make the word before point an abbrev for the major mode for an expansion asked for, and expand it.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/abbrev.ts.
+       */
+      "inverse-add-mode-abbrev": [arg?: number];
+      /**
        * While the search fails, remove what does not match; otherwise end it and go back to where it started.
        *
        * Defined in packages/isearch.ts.
@@ -2454,6 +2536,12 @@ declare global {
        * Cancel the current prompt or key sequence, and deactivate the region.
        */
       "keyboard-quit": [];
+      /**
+       * Forget every abbrev in every table.
+       *
+       * Defined in packages/abbrev.ts.
+       */
+      "kill-all-abbrevs": [];
       /**
        * Close a buffer. Empty input closes the current one.
        *
@@ -2624,6 +2712,12 @@ declare global {
        * Defined in packages/kmacro.ts.
        */
       "kmacro-start-macro-or-insert-counter": [];
+      /**
+       * Show the abbrevs in *Abbrevs*: each table, and each abbrev in it with how often it was used and its expansion.
+       *
+       * Defined in packages/abbrev.ts.
+       */
+      "list-abbrevs": [];
       /**
        * Show a list of the buffers in another window: each one's name, size, mode and file, with . for the current one, % if read-only and * if modified. With a prefix argument, only those visiting files.
        *
@@ -5394,6 +5488,22 @@ declare global {
        */
       "Buffer-menu-size-width": Value;
       /**
+       * Whether an abbrev typed in capitals expands all in capitals, rather than with each word capitalized.
+       *
+       * Defined in packages/abbrev.ts.
+       */
+      "abbrev-all-caps": Value;
+      /**
+       * Whether Abbrev mode is on in this buffer. Use the command abbrev-mode to change it.
+       *
+       * Defined in packages/abbrev.ts.
+       */
+      "abbrev-mode": Value;
+      /**
+       * Keymap abbrev-mode-map.
+       */
+      "abbrev-mode-map": Value;
+      /**
        * What the prefix of a paragraph's only line must look like for the lines filling makes to take it too; otherwise they take as many spaces.
        *
        * Defined in packages/fill.ts.
@@ -6140,6 +6250,10 @@ declare global {
        */
       "duplicate-region-final-position": Value;
       /**
+       * Keymap edit-abbrevs-mode-map.
+       */
+      "edit-abbrevs-mode-map": Value;
+      /**
        * Characters that reindent the line when typed, with electric-indent-mode on: newline, and in code modes closing braces and parens.
        *
        * Defined in packages/simple.ts.
@@ -6719,6 +6833,12 @@ declare global {
        * Keymap occur-mode-map.
        */
       "occur-mode-map": Value;
+      /**
+       * Whether the abbrev commands define only global abbrevs, not ones for the major mode.
+       *
+       * Defined in packages/abbrev.ts.
+       */
+      "only-global-abbrevs": Value;
       /**
        * Whether an open paren in column 0 starts a defun.
        *
@@ -8637,6 +8757,18 @@ declare global {
        */
       "Buffer-menu-mode-hook": Value;
       /**
+       * Run after Abbrev mode is turned on or off.
+       */
+      "abbrev-mode-hook": Value;
+      /**
+       * Run after Abbrev mode is turned off.
+       */
+      "abbrev-mode-off-hook": Value;
+      /**
+       * Run after Abbrev mode is turned on.
+       */
+      "abbrev-mode-on-hook": Value;
+      /**
        * Called after each change to the text with where the new text starts and ends and how long the old text was: an insertion has an old length of 0, a deletion starts and ends where the text went. Changes the functions make do not call them again.
        */
       "after-change-functions": Value;
@@ -8772,6 +8904,10 @@ declare global {
        * Run after Display-Line-Numbers mode is turned on.
        */
       "display-line-numbers-mode-on-hook": Value;
+      /**
+       * Run after entering Edit-Abbrevs mode, after the hooks of the modes it is built on.
+       */
+      "edit-abbrevs-mode-hook": Value;
       /**
        * Run after Electric-Pair mode is turned on or off.
        */

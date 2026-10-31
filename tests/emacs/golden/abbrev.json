@@ -1,0 +1,182 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "add-global-abbrev-and-expand",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "f o o b a r C-x a g C-e RET f b C-x '",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "fb"
+        ]
+      },
+      "text": "foobar\nfoobar",
+      "visible": "foobar\nfoobar",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "abbrev-mode-expands-on-space",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "h e l l o SPC w o r l d C-u 2 C-x a g M-x RET h w SPC",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "hw",
+          "abbrev-mode"
+        ]
+      },
+      "text": "hello world\nhello world ",
+      "visible": "hello world\nhello world ",
+      "point": 24,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "abbrev-capitalized",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "f o o b a r C-x a g RET F c SPC M-x RET",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "fc",
+          "expand-abbrev"
+        ]
+      },
+      "text": "foobar\nFoobar\n",
+      "visible": "foobar\nFoobar\n",
+      "point": 14,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "abbrev-all-caps-several-words",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "o n e SPC t w o C-u 2 C-x a g RET C-e RET O T C-x '",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "ot"
+        ]
+      },
+      "text": "one two\n\nOne Two",
+      "visible": "one two\n\nOne Two",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "abbrev-all-caps-one-word",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "w o r d C-x a g RET W W C-x '",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "ww"
+        ]
+      },
+      "text": "word\nWORD",
+      "visible": "word\nWORD",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "inverse-add-global-abbrev",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "t q C-x a i g",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "thank you"
+        ]
+      },
+      "text": "thank you",
+      "visible": "thank you",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "expand-abbrev-nothing",
+      "input": {
+        "text": "zz",
+        "point": 0,
+        "keys": "C-e C-x '",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "zz",
+      "visible": "zz",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "abbrev-mode-punctuation",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "f o o b a r C-x a g M-x RET f d .",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "fd",
+          "abbrev-mode"
+        ]
+      },
+      "text": "foobar\nfoobar.",
+      "visible": "foobar\nfoobar.",
+      "point": 14,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

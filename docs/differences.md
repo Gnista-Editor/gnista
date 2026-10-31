@@ -17,6 +17,7 @@ Each entry says whether the difference is **deliberate**, which keeps it, or **n
 ## Keys and the command loop
 
 - **`read-key-sequence` and ESC** (not yet): ESC then x reads as `M-x`, where Emacs's gives the two keys `ESC x`. `read-key` takes ESC alone, as Emacs does.
+- **Abbrevs** (not yet) are not saved to `abbrev_defs` between sessions, a mode's table does not inherit its parent mode's, and `list-abbrevs` shows only the tables that have been used, where Emacs shows every mode's ([ADR 0040](adr/0040-everyday-editing-commands.md)).
 - **`M-x diff`** (not yet) runs diff to the end before showing `*Diff*`, where Emacs shows its output as it comes, and diff-mode cannot apply, split or refine hunks ([ADR 0040](adr/0040-everyday-editing-commands.md)).
 - **Highlighting by regexp** (not yet) always uses overlays, as Emacs does only in buffers without font-lock rules, so new text is not highlighted as it is typed; `hi-lock-file-patterns`, `hi-lock-write-interactive-patterns` and the big `hi-black-hb` face are missing.
 - **The buffer list** (not yet): its column titles are a line of text, as Emacs shows them with `Buffer-menu-use-header-line` off, the name column is 19 wide whatever the window's width, and `2`, `t`, `V`, `O` and grouping are missing ([ADR 0040](adr/0040-everyday-editing-commands.md)).
