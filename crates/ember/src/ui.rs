@@ -74,6 +74,7 @@ fn areas_of(
 /// Tells the editor how big each window is on a screen of this size, so
 /// scrolling knows. Call before drawing.
 pub fn layout_windows(ed: &mut Editor, width: u16, height: u16) {
+    ed.set_minibuffer_width(width as usize);
     let echo = ed.mini_window_height(height as usize) as u16;
     ed.set_frame_size(width as usize, height.saturating_sub(echo).max(2) as usize);
     for area in window_areas(ed, width, height) {
@@ -420,12 +421,12 @@ fn draw_header_line(frame: &mut Frame, w: &WindowDescription, area: Rect) {
 /// minibuffer's overlay adds, such as icomplete's list, follows the input,
 /// and each newline in it starts another line of the echo area.
 fn draw_echo_area(frame: &mut Frame, fd: &FrameDescription, area: Rect) -> Option<Position> {
-    let (rows, point) = match &fd.echo {
+    let (rows, point, point_row) = match &fd.echo {
         Echo::Message(message) => {
             frame.render_widget(Paragraph::new(message.as_deref().unwrap_or("")), area);
             return None;
         }
-        Echo::Prompt { rows, point } => (rows, *point),
+        Echo::Prompt { rows, point, point_row } => (rows, *point, *point_row),
     };
     // The minibuffer's rows, as a window's: the prompt and input in their
     // faces, and what overlays add, such as icomplete's list.
@@ -434,7 +435,7 @@ fn draw_echo_area(frame: &mut Frame, fd: &FrameDescription, area: Rect) -> Optio
     let mut lines = Vec::new();
     for (k, r) in rows.iter().take(area.height as usize).enumerate() {
         let (row, glyphs) = (&r.row, &r.glyphs);
-        if cursor.is_none() && row.shows_point(point) {
+        if point_row == Some(k) {
             let x: usize = glyphs[..cursor_glyph(row, glyphs, point)].iter().map(|g| g.width).sum();
             let x = (x as i64 + rtl_offset(row, glyphs, width)).max(0) as usize;
             cursor = Some(Position::new(area.x + x.min(width.saturating_sub(1)) as u16, area.y + k as u16));

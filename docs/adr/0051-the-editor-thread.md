@@ -56,7 +56,7 @@ Option 2, as the plan has it.
   - The terminal was checked on a pseudo-terminal: `C-g` stopped an endless `M-:` loop, and typing, saving and `C-x C-c` worked after it.
 - **Speed.** Per-key cost is unchanged (`key_to_frame`, [ADR 0050](0050-the-frame-description.md)). A frame now shows what the editor published at the end of its last input, at most one frame after the GUI sends sizes.
 - **Not done yet:**
-  - The window does not lay text out again during a long command. A resize shows the old frame, scaled to the new size, until the command ends, as the plan says.
-  - Process output still waits for the loop's next timer, every 30 ms while a process runs, instead of waking it.
+  - Process output wakes the loop: each process's reader thread calls a waker the driver installs (`Editor::set_process_waker`), which sends `Wake`.
+- The window does not lay text out again during a long command. A resize shows the old frame, scaled to the new size, until the command ends, as the plan says.
   - Blocking prompts (step 5) and work below the API (step 6) are next.
 - **Not tried by hand.** The GUI binary was not run here, as another Ember window was open on the machine and the two would contend for the agent's socket.

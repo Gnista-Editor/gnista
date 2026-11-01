@@ -58,7 +58,7 @@ pub enum Echo {
     Message(Option<String>),
     /// The minibuffer while a prompt is open: its rows, as a window's, and
     /// where point is in it.
-    Prompt { rows: Vec<RowDescription>, point: usize },
+    Prompt { rows: Vec<RowDescription>, point: usize, point_row: Option<usize> },
 }
 
 /// One window as a front end draws it.
@@ -221,8 +221,10 @@ impl Editor {
         let selected = frame == self.selected_frame();
         let echo = if selected && self.prompt().is_some() {
             let mb = self.minibuffer();
-            let rows = self.minibuffer_rows(dark).into_iter().map(|row| self.describe_row(mb, None, row, 8)).collect();
-            Echo::Prompt { rows, point: mb.point() }
+            let plain = self.minibuffer_rows(dark);
+            let point_row = crate::display::row_showing(&plain, mb.point(), 8);
+            let rows = plain.into_iter().map(|row| self.describe_row(mb, None, row, 8)).collect();
+            Echo::Prompt { rows, point: mb.point(), point_row }
         } else {
             Echo::Message(if selected { self.echo().map(str::to_string) } else { None })
         };

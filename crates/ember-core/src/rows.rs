@@ -113,6 +113,13 @@ impl Segment {
     fn atomic(&self) -> bool {
         self.ellipsis || self.string
     }
+
+    /// Whether wrapping keeps it whole on one row: an ellipsis, or a
+    /// display string standing for text. An overlay string wraps a
+    /// character at a time, as Emacs's display continues it.
+    fn unbroken(&self) -> bool {
+        self.ellipsis || (self.string && self.covers.is_some())
+    }
 }
 
 /// How lines are numbered, as `display-line-numbers` says.
@@ -1027,7 +1034,7 @@ fn wrap_row(ed: &Editor, row: Row, wrap: Wrap, tab_width: usize, indent: usize) 
         .collect();
     let chars: Vec<Vec<char>> = row.segments.iter().map(|s| s.text.chars().collect()).collect();
     let char_of = |k: usize| chars[items[k].0][items[k].1];
-    let in_ellipsis = |k: usize| row.segments[items[k].0].atomic();
+    let in_ellipsis = |k: usize| row.segments[items[k].0].unbroken();
     let on_grid = ed.row_on_grid(&row);
     let mut scratch = String::new();
     let mut width_of = |k: usize, col: f32| {

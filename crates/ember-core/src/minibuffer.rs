@@ -664,7 +664,12 @@ impl Editor {
     /// minibuffer-message shows it.
     pub fn minibuffer_rows(&self, dark: bool) -> Vec<crate::Row> {
         let mb = self.minibuffer();
-        let mut rows = self.rows_in(mb, 0, 1000, dark, None);
+        // Long input continues on the next line, as a window's lines do, and
+        // the echo area grows to show it, as resize-mini-windows says.
+        let width = self.minibuffer_width.unwrap_or_else(|| self.frame_cells().0);
+        let wrap = (!self.variable_in(mb, "truncate-lines").is_some_and(|v| v.is_true()))
+            .then(|| crate::rows::Wrap { width: width.saturating_sub(usize::from(!self.metrics.fringes())).max(1), words: false });
+        let mut rows = self.rows_in(mb, 0, 1000, dark, wrap);
         if let Some(message) = self.echo() {
             let end = mb.len();
             let style = self.style_for(&["shadow".to_string()], dark);
@@ -675,6 +680,12 @@ impl Editor {
             }
         }
         rows
+    }
+
+    /// Tells the editor how many columns the minibuffer's window is wide,
+    /// where its long lines wrap.
+    pub fn set_minibuffer_width(&mut self, columns: usize) {
+        self.minibuffer_width = Some(columns.max(1));
     }
 
     /// The frame's height in lines with the echo area, as the front end

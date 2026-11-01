@@ -152,6 +152,52 @@ pub fn install_fonts(ctx: &egui::Context, system_fonts: bool) -> Vec<&'static st
     found
 }
 
+/// Loads the font families faces have named since the last frame, from the
+/// system's fonts, each as an egui family of its own that falls back on the
+/// monospace fonts for what it lacks. Returns whether any was loaded, so
+/// the editor measures text in it from the next frame, when egui has it.
+pub fn load_wanted_families(ctx: &egui::Context) -> bool {
+    let wanted: Vec<String> = {
+        let families = crate::metrics::FAMILIES.lock().unwrap_or_else(|e| e.into_inner());
+        families.iter().filter(|(_, s)| **s == crate::metrics::Family::Wanted).map(|(n, _)| n.clone()).collect()
+    };
+    if wanted.is_empty() {
+        return false;
+    }
+    let mut fonts = ctx.fonts(|f| f.definitions().clone());
+    let fallback = fonts.families.get(&FontFamily::Monospace).cloned().unwrap_or_default();
+    let mut loaded = false;
+    SYSTEM_FONTS.with_borrow_mut(|system| {
+        let (collection, cache) = system.get_or_insert_with(|| (Collection::new(CollectionOptions { shared: false, system_fonts: true }), SourceCache::default()));
+        let mut families = crate::metrics::FAMILIES.lock().unwrap_or_else(|e| e.into_inner());
+        for name in wanted {
+            match load_family(collection, cache, &name, FontWeight::NORMAL) {
+                Some(data) => {
+                    let key = format!("family:{name}");
+                    fonts.font_data.insert(key.clone(), Arc::new(data));
+                    let mut chain = vec![key];
+                    chain.extend(fallback.iter().cloned());
+                    fonts.families.insert(FontFamily::Name(name.as_str().into()), chain);
+                    families.insert(name, crate::metrics::Family::Loaded);
+                    loaded = true;
+                }
+                None => {
+                    families.insert(name, crate::metrics::Family::Missing);
+                }
+            }
+        }
+    });
+    if loaded {
+        ctx.set_fonts(fonts);
+    }
+    loaded
+}
+
+thread_local! {
+    /// The system's fonts, found once, for loading families faces name.
+    static SYSTEM_FONTS: std::cell::RefCell<Option<(Collection, SourceCache)>> = const { std::cell::RefCell::new(None) };
+}
+
 /// A face of an installed font family, of the given weight if it has one.
 fn load_family(collection: &mut Collection, cache: &mut SourceCache, name: &str, weight: FontWeight) -> Option<FontData> {
     let family = collection.family_by_name(name)?;

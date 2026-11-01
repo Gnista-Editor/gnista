@@ -173,6 +173,9 @@ pub struct Editor {
     pub(crate) mini_window_lines: usize,
     /// The frame's height with the echo area, as the front end last said.
     pub(crate) frame_lines: Option<usize>,
+    /// How many columns the minibuffer's window is wide, as the front end
+    /// last laid the echo area out.
+    pub(crate) minibuffer_width: Option<usize>,
     pub(crate) pending_call: Option<PendingCall>,
     /// Keys read so far for a command parameter of kind [`ParamKind::Keys`].
     pub(crate) reading_keys: Option<Vec<Key>>,
@@ -366,6 +369,7 @@ impl Editor {
             message_log: Vec::new(),
             mini_window_lines: 1,
             frame_lines: None,
+            minibuffer_width: None,
             prompt: None,
             pending_call: None,
             reading_keys: None,

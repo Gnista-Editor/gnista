@@ -649,3 +649,31 @@ fn scaled_and_proportional_text() {
     let posn = ed.posn_at_point(prose.0 + 5, ed.selected_window()).unwrap();
     assert!(posn.y > ember_gui::theme::TEXT_SIZE * 1.5, "below the taller heading row: {posn:?}");
 }
+
+/// A face naming a font family the system lacks draws in the fallback.
+#[test]
+fn a_family_not_installed_falls_back() {
+    let mut ed = Editor::new();
+    ed.type_text("plain\nin no such family");
+    let face = ember_core::Value::List(vec![ember_core::Value::Symbol(":family".into()), ember_core::Value::Str("No Such Family Anywhere".into())]);
+    let start = ed.buffer().line_start(1);
+    let end = ed.buffer().len();
+    ed.buffer_mut().put_text_property(start..end, "face", face);
+    let mut h = harness(ed, Theme::Dark);
+    h.run_steps(4);
+    assert_eq!(ember_gui::metrics::family_loaded("No Such Family Anywhere"), Some(false));
+}
+
+/// A face naming an installed family draws in it once the window loads it.
+#[test]
+#[ignore = "depends on the fonts installed: Menlo, as on macOS"]
+fn an_installed_family_is_loaded() {
+    let mut ed = Editor::new();
+    ed.type_text("in Menlo");
+    let face = ember_core::Value::List(vec![ember_core::Value::Symbol(":family".into()), ember_core::Value::Str("Menlo".into())]);
+    let end = ed.buffer().len();
+    ed.buffer_mut().put_text_property(0..end, "face", face);
+    let mut h = harness(ed, Theme::Dark);
+    h.run_steps(4);
+    assert_eq!(ember_gui::metrics::family_loaded("Menlo"), Some(true));
+}

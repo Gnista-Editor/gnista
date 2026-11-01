@@ -146,7 +146,15 @@ pub fn cursor_glyph(row: &crate::Row, glyphs: &[Glyph], point: usize) -> usize {
 /// it and a later row has one, as a line reordered for bidirectional text
 /// and then broken into screen rows spreads its characters over them.
 pub fn row_showing(rows: &[crate::Row], pos: usize, tab_width: usize) -> Option<usize> {
-    let k = rows.iter().position(|r| r.shows_point(pos) && !r.in_string)?;
+    // An overlay string at point that wraps onto the next row: point shows
+    // on the row where the string starts, before it, as Emacs puts it.
+    let before_string = |r: &crate::Row| {
+        r.continued && r.end == pos && r.segments.iter().any(|s| s.string && s.covers.is_none() && s.start == pos)
+    };
+    let k = rows
+        .iter()
+        .position(|r| !r.in_string && r.start <= pos && before_string(r))
+        .or_else(|| rows.iter().position(|r| r.shows_point(pos) && !r.in_string))?;
     // Only rows whose ranges overlap the next's, as a reordered line's
     // rows may, need their glyphs looked at.
     let overlaps = rows[k].continued && rows.get(k + 1).is_some_and(|n| n.start < rows[k].end);

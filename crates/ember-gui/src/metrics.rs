@@ -14,10 +14,16 @@ use egui::{FontFamily, FontId};
 
 use crate::theme::{TEXT_SIZE, bold_mono};
 
-/// The font egui draws a face's text in: the bold monospace family for bold
-/// fixed-width text, which is the regular one where there is no bold font,
-/// and Inter for proportional text, each at the face's size.
+/// The font egui draws a face's text in: the family a face names, once the
+/// window has loaded it from the system's fonts; else the bold monospace
+/// family for bold fixed-width text, which is the regular one where there
+/// is no bold font, and Inter for proportional text, each at the face's size.
 pub fn font_id(font: &FontSpec) -> FontId {
+    if let Some(name) = font.family.as_deref().filter(|n| !generic_family(n))
+        && let Some(family) = named_family(name)
+    {
+        return FontId::new(TEXT_SIZE * font.scale, family);
+    }
     let family = if font.proportional() {
         FontFamily::Proportional
     } else if font.bold {
@@ -28,12 +34,65 @@ pub fn font_id(font: &FontSpec) -> FontId {
     FontId::new(TEXT_SIZE * font.scale, family)
 }
 
+/// Family names that stand for egui's own families rather than a font,
+/// as Emacs's `fixed-pitch` and `variable-pitch` faces name them.
+fn generic_family(name: &str) -> bool {
+    matches!(name.to_ascii_lowercase().as_str(), "monospace" | "fixed" | "fixed-pitch" | "sans serif" | "sans" | "serif" | "variable-pitch" | "proportional")
+}
+
+/// Where each family a face named stands: loaded into egui, not installed,
+/// or wanted, for the window to load between frames.
+#[derive(Clone, Copy, PartialEq)]
+pub(crate) enum Family {
+    Loaded,
+    Missing,
+    Wanted,
+}
+
+pub(crate) static FAMILIES: Mutex<std::collections::BTreeMap<String, Family>> = Mutex::new(std::collections::BTreeMap::new());
+
+/// Whether the window loaded a font family a face named: `Some(true)` once
+/// loaded, `Some(false)` if it is not installed, `None` before it tried.
+pub fn family_loaded(name: &str) -> Option<bool> {
+    match FAMILIES.lock().unwrap_or_else(|e| e.into_inner()).get(name) {
+        Some(Family::Loaded) => Some(true),
+        Some(Family::Missing) => Some(false),
+        _ => None,
+    }
+}
+
+/// egui's family for a font family by name, if the window has loaded it;
+/// otherwise asks for it, and the caller uses another meanwhile.
+fn named_family(name: &str) -> Option<FontFamily> {
+    let mut families = FAMILIES.lock().unwrap_or_else(|e| e.into_inner());
+    match families.get(name) {
+        Some(Family::Loaded) => Some(FontFamily::Name(name.into())),
+        Some(_) => None,
+        None => {
+            families.insert(name.to_string(), Family::Wanted);
+            None
+        }
+    }
+}
+
+/// A key for a font in the measures kept: its family's name as a number.
+fn family_key(font: &FontSpec) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    font.family.hash(&mut h);
+    h.finish()
+}
+
+/// A font's size, family, whether proportional and bold, and a character.
+type AdvanceKey = (u32, u64, bool, bool, char);
+
 pub struct EguiMetrics {
     ctx: egui::Context,
     char_width: f32,
     line_height: f32,
-    /// Advances already measured, by font and character.
-    advances: Mutex<HashMap<(u32, bool, bool, char), f32>>,
+    /// Advances already measured, by font (its size, family, whether
+    /// proportional and bold) and character.
+    advances: Mutex<HashMap<AdvanceKey, f32>>,
     /// The system's font families and egui's own, found once when asked.
     families: OnceLock<Vec<String>>,
     /// Ascents already measured, by font.
@@ -60,7 +119,7 @@ impl TextMetrics for EguiMetrics {
     }
 
     fn advance(&self, font: &FontSpec, c: char) -> f32 {
-        let key = (font.scale.to_bits(), font.proportional(), font.bold, c);
+        let key = (font.scale.to_bits(), family_key(font), font.proportional(), font.bold, c);
         if let Some(&w) = self.advances.lock().expect("not poisoned").get(&key) {
             return w;
         }

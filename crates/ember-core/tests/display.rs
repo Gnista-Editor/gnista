@@ -86,7 +86,7 @@ fn space_specs_give_space() {
 }
 
 #[test]
-fn strings_are_not_split_by_wrapping() {
+fn overlay_strings_wrap_a_character_at_a_time() {
     let mut ed = editor("abcdefgh");
     let w = ed.selected_window();
     ed.set_window_size(w, 6, 10);
@@ -95,8 +95,9 @@ fn strings_are_not_split_by_wrapping() {
     b.overlay_put(o, "before-string", Value::Str("XYZ".into())).unwrap();
     let rows = ed.window_rows(3, true);
     let texts: Vec<String> = rows.iter().map(|r| r.segments.iter().map(|s| s.text.as_str()).collect()).collect();
-    // Rows wrap at five columns; the string moves to the next row whole.
-    assert_eq!(texts, ["abc", "XYZde", "fgh"]);
+    // Rows wrap at five columns, the string continuing on the next row, as
+    // Emacs 30.2 on a terminal shows a before-string at the edge.
+    assert_eq!(texts, ["abcXY", "Zdefg", "h"]);
 }
 
 #[test]
@@ -228,4 +229,21 @@ fn killing_the_shown_buffer_during_a_prompt_never_shows_the_minibuffer() {
     ed.press("C-g").unwrap();
     ed.kill_buffer("foo").unwrap();
     assert_eq!(ed.window_buffer().name, "*scratch*", "a new one, as Emacs makes");
+}
+
+#[test]
+fn long_minibuffer_input_wraps_and_the_echo_area_grows() {
+    let mut ed = ember_core::Editor::new();
+    ed.set_frame_size(20, 10);
+    ed.set_minibuffer_width(20);
+    ed.press("M-x").unwrap();
+    ed.type_text("a-command-name-longer-than-the-frame");
+    let rows = ed.minibuffer_rows(true);
+    // "M-x " and 36 characters, 19 to a row with the last column for the mark.
+    assert_eq!(rows.len(), 3);
+    assert!(rows[0].continued && rows[1].continued && !rows[2].continued);
+    // The echo area grows to show them, up to max-mini-window-height's quarter of the frame.
+    assert_eq!(ed.mini_window_height(20), 3);
+    // As resize-mini-windows' default, grow-only, it does not shrink while the prompt is open.
+    assert_eq!(ed.mini_window_height(8), 3);
 }

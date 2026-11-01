@@ -58,6 +58,9 @@ pub struct EmberApp {
     audible_bell: bool,
     /// Whether the primary button is down, so moves are drags.
     button_down: bool,
+    /// Whether font families faces named were loaded last frame, for the
+    /// editor to measure text in them from this one.
+    fonts_loaded: bool,
     /// What each frame's layout last told the editor, so it is told again
     /// only when it changes.
     told: std::collections::HashMap<FrameId, Sizes>,
@@ -174,6 +177,7 @@ impl EmberApp {
             flash_until: None,
             audible_bell: true,
             button_down: false,
+            fonts_loaded: false,
             told: std::collections::HashMap::new(),
         }
     }
@@ -309,6 +313,19 @@ impl EmberApp {
     /// frame here, and each other frame in a native window of its own.
     pub fn show(&mut self, ui: &mut Ui) {
         let ctx = ui.ctx().clone();
+        // Font families faces named load now, and the editor measures in
+        // them from the next frame, once egui has them.
+        if std::mem::take(&mut self.fonts_loaded) {
+            let m = Metrics::of(ui);
+            let (char_width, line_height, fonts) = (m.char_width, m.line_height, ctx.clone());
+            self.backend.run(move |editor, _| {
+                editor.set_text_metrics(Arc::new(EguiMetrics::new(fonts, char_width, line_height)));
+            });
+        }
+        if theme::load_wanted_families(&ctx) {
+            self.fonts_loaded = true;
+            ctx.request_repaint();
+        }
         self.handle_close(&ctx);
         self.answer_agent();
         self.refresh(&ctx, Tokens::get(&ctx).dark);
@@ -670,6 +687,11 @@ impl Metrics {
     }
 }
 
+/// How many columns of text the echo area has, inside its padding.
+fn echo_columns(rect: Rect, m: &Metrics) -> usize {
+    ((rect.width() - 2.0 * PAD_X) / m.char_width).floor().max(1.0) as usize
+}
+
 /// Gives the editor the GUI's fonts' measures, if it lacks them.
 fn set_metrics(ed: &mut Editor, ctx: &egui::Context, char_width: f32, line_height: f32) {
     let known = ed.text_metrics();
@@ -684,6 +706,8 @@ fn set_metrics(ed: &mut Editor, ctx: &egui::Context, char_width: f32, line_heigh
 #[derive(Clone, PartialEq)]
 struct Sizes {
     metrics: (f32, f32),
+    /// How many columns the echo area has for the minibuffer's text.
+    echo_columns: usize,
     frame: Option<((usize, usize), usize)>,
     windows: Vec<(WindowId, usize, usize)>,
 }
@@ -691,6 +715,7 @@ struct Sizes {
 /// Tells the editor its windows' sizes, as a layout gives them.
 fn apply_sizes(ed: &mut Editor, sizes: &Sizes) {
     if let Some(((cols, lines), frame_lines)) = sizes.frame {
+        ed.set_minibuffer_width(sizes.echo_columns);
         ed.mini_window_height(frame_lines);
         ed.set_frame_size(cols, lines);
     }
@@ -741,6 +766,9 @@ impl Layout {
     fn new(ui: &Ui, ed: &mut Editor, frame: FrameId, m: Metrics) -> Layout {
         set_metrics(ed, ui.ctx(), m.char_width, m.line_height);
         let rect = ui.max_rect();
+        if frame == ed.selected_frame() {
+            ed.set_minibuffer_width(echo_columns(rect, &m));
+        }
         let frame_lines = ((rect.height() - 2.0 * BAR_PAD) / m.line_height).floor().max(1.0) as usize;
         // The selected frame's echo area grows for a minibuffer of several
         // lines, such as a vertical list of completions.
@@ -823,6 +851,7 @@ impl Layout {
     fn sizes(&self, selected: bool) -> Sizes {
         Sizes {
             metrics: (self.m.char_width, self.m.line_height),
+            echo_columns: echo_columns(self.rect, &self.m),
             frame: selected.then_some((self.frame_cells, self.frame_lines)),
             windows: self.windows.iter().map(|w| (w.id, ((w.text_rect.width() / self.m.char_width).floor() as usize).max(1), w.rows(&self.m))).collect(),
         }
@@ -1285,7 +1314,7 @@ fn bold_only_job(row: &Row, glyphs: &[Glyph], height: f32, default_style: &Style
 fn face_format(style: &Style, default_style: &Style, m: &Metrics, t: Tokens) -> TextFormat {
     let color = style.foreground.or(default_style.foreground).map(color32).unwrap_or(t.ink);
     let mut format = text_format(m, color);
-    if style.bold || style.scale != 1.0 || style.proportional() {
+    if style.bold || style.scale != 1.0 || style.family.is_some() {
         format.font_id = font_id(&FontSpec::of(style));
     }
     if let Some(bg) = style.background {
@@ -1446,7 +1475,7 @@ fn draw_header_line(painter: &Painter, window: &WindowDescription, rect: Rect, m
 fn draw_echo_area(painter: &Painter, fd: &FrameDescription, rect: Rect, m: &Metrics, t: Tokens, cursor: CursorStyle) {
     let painter = painter.with_clip_rect(rect);
     let origin_x = rect.left() + PAD_X;
-    let (rows, point) = match &fd.echo {
+    let (rows, point, point_row) = match &fd.echo {
         Echo::Message(message) => {
             if let Some(message) = message {
                 let galley = painter.layout_no_wrap(message.to_string(), m.font.clone(), t.muted);
@@ -1454,7 +1483,7 @@ fn draw_echo_area(painter: &Painter, fd: &FrameDescription, rect: Rect, m: &Metr
             }
             return;
         }
-        Echo::Prompt { rows, point } => (rows, *point),
+        Echo::Prompt { rows, point, point_row } => (rows, *point, *point_row),
     };
     // The minibuffer's rows, as a window's: the prompt and input in their
     // faces, and what overlays add, such as icomplete's list, each newline
@@ -1476,7 +1505,7 @@ fn draw_echo_area(painter: &Painter, fd: &FrameDescription, rect: Rect, m: &Metr
         let origin_x = origin_x + offset;
         painter.galley(pos2(origin_x, y + (m.line_height - galley.size().y) / 2.0), galley.clone(), t.ink);
         draw_apart(&painter, row, glyphs, &galley, pos2(origin_x, y + (m.line_height - galley.size().y) / 2.0), default_style, m, t);
-        if at_point.is_none() && row.shows_point(point) {
+        if point_row == Some(k) {
             let index = cursor_glyph(row, glyphs, point);
             let char_index: usize = glyphs[..index].iter().map(|g| g.text.chars().count()).sum();
             let under = glyphs.get(index).and_then(|g| g.text.chars().next());
