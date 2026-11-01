@@ -238,11 +238,19 @@ function todoSetFrom(words: string[]): TodoSet | undefined {
   return names.length === 1 ? { todo: [], done: names } : { todo: names.slice(0, -1), done: names.slice(-1) };
 }
 
+/** The whole buffer's #+KEYWORD: lines, found in one pass. */
+function keywordLines(): [number, number, string][] {
+  return ember.saveRestriction(() => {
+    ember.widen();
+    return ember.matchingLines("^#\\+", { caseFold: true });
+  });
+}
+
 /** The buffer's TODO sequences: from #+TODO: lines, else org-todo-keywords. */
 function readTodoSets(): TodoSet[] {
   const sets: TodoSet[] = [];
-  for (let line = 0; line < ember.lineCount(); line++) {
-    const m = /^#\+(?:TODO|SEQ_TODO|TYP_TODO):(.*)$/i.exec(ember.lineText(line));
+  for (const [, , text] of keywordLines()) {
+    const m = /^#\+(?:TODO|SEQ_TODO|TYP_TODO):(.*)$/i.exec(text);
     const set = m ? todoSetFrom(m[1].trim().split(/\s+/)) : undefined;
     if (set) sets.push(set);
   }
@@ -759,6 +767,38 @@ function ancestors(all: Heading[], i: number): number[] {
  * `state` is the new state, and for "folded" and "children" the lines are
  * those of the subtree point is in.
  */
+/**
+ * Where the blank lines before headings are, as showEmptyLines' search
+ * finds them for one or two separator lines, from the heading index and
+ * the lines matchingLines finds in one pass in the editor: for each, from
+ * the end of the line before the last blank one to the space after the
+ * stars. Undefined where the search must be done on the text, as for
+ * other counts or a range starting partway through a line.
+ */
+function separatorLines(range: [number, number], k: number): [number, number][] | undefined {
+  if ((k !== 1 && k !== 2) || ember.lineStart(lineAt(range[0])) !== range[0]) return undefined;
+  const all = headings();
+  const headingOn = (line: number): Heading | undefined => {
+    let [lo, hi] = [0, all.length];
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (all[mid].line < line) lo = mid + 1;
+      else hi = mid;
+    }
+    return all[lo]?.line === line ? all[lo] : undefined;
+  };
+  const pattern = k === 2 ? "^[ \t]*\n[ \t]*\n\\*+ " : "^[ \t]*\n\\*+ ";
+  const found: [number, number][] = [];
+  for (const [line, start, text] of ember.matchingLines(pattern, { caseFold: false, start: range[0], end: range[1] })) {
+    const h = headingOn(line + k);
+    if (!h) continue;
+    // From the newline before the last blank line: for one separator line, the one before it.
+    const b = k === 2 ? start + charCount(text) : start - 1;
+    if (b >= range[0]) found.push([b, h.start + h.level]);
+  }
+  return found;
+}
+
 function showEmptyLines(state: string, narrowed?: [number, number]): void {
   const n = Number(ember.variable("org-cycle-separator-lines") ?? 2);
   let range: [number, number] | undefined;
@@ -772,16 +812,22 @@ function showEmptyLines(state: string, narrowed?: [number, number]): void {
   }
   if (n !== 0 && range) {
     const k = Math.abs(n);
+    const fast = separatorLines(range, k);
     const re =
       k === 1
         ? /(\n[ \t]*\n\*+) /g
         : k === 2
           ? /^[ \t]*(\n[ \t]*\n\*+) /gm
           : new RegExp(`^(?:[ \\t]*\\n){${k - 2}}[ \\t]*(\\n[ \\t]*\\n\\*+) `, "gm");
-    const text = ember.bufferText(range[0], range[1]);
-    const shown: [number, number][] = [];
-    for (let m = re.exec(text); m; m = re.exec(text)) {
-      const e = range[0] + charCount(text.slice(0, m.index + m[0].length - 1));
+    const text = fast ? "" : ember.bufferText(range[0], range[1]);
+    const shown: [number, number][] = fast?.filter(([, e]) => !ember.invisibleAt(e)) ?? [];
+    // Characters counted on from the last match, not from the start each time.
+    let [counted, chars] = [0, 0];
+    for (let m = fast ? null : re.exec(text); m; m = re.exec(text)) {
+      const at = m.index + m[0].length - 1;
+      chars += charCount(text.slice(counted, at));
+      counted = at;
+      const e = range[0] + chars;
       const b = e - charCount(m[1]);
       if (!ember.invisibleAt(e)) shown.push([b, e]);
     }
@@ -1190,8 +1236,13 @@ function hideDrawersIn(fromLine: number, to: number): void {
 }
 
 function hideAllDrawers(): void {
-  for (let line = 0; line < ember.lineCount(); line++) {
-    const m = DRAWER.exec(ember.lineText(line));
+  // The lines that can open a drawer, found in one pass.
+  const lines = ember.saveRestriction(() => {
+    ember.widen();
+    return ember.matchingLines("^[ \t]*:[-_[:alnum:]]+:[ \t]*$", { caseFold: false });
+  });
+  for (const [line, , text] of lines) {
+    const m = DRAWER.exec(text);
     if (m && m[1].toUpperCase() !== "END") toggleDrawerOrBlock(line, true);
   }
 }
@@ -1199,8 +1250,8 @@ function hideAllDrawers(): void {
 /** Folds the buffer as org-startup-folded or a #+STARTUP: line says. */
 function startupVisibility(): void {
   let how = String(ember.variable("org-startup-folded") ?? "showeverything");
-  for (let line = 0; line < ember.lineCount(); line++) {
-    const m = /^#\+STARTUP:(.*)$/i.exec(ember.lineText(line));
+  for (const [, , text] of keywordLines()) {
+    const m = /^#\+STARTUP:(.*)$/i.exec(text);
     for (const word of m ? m[1].trim().split(/\s+/) : []) {
       if (/^(overview|fold|content|showall|nofold|showeverything|show[2-5]levels)$/.test(word)) how = word;
     }

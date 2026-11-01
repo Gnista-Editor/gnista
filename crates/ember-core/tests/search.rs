@@ -18,3 +18,30 @@ fn matching_lines_finds_the_lines_a_regexp_matches_at_the_start_of() {
     ed.type_text("ünïcödé\n✓ done\n✓ again");
     assert_eq!(ed.matching_lines("^✓ \\(a\\|d\\)", false).unwrap(), vec![(1, 8, "✓ done".to_string()), (2, 15, "✓ again".to_string())]);
 }
+
+/// Scanning balanced expressions to the buffer's end, as electric-pair
+/// checks a balance, gives the same answers when it passes plain text a
+/// run at a time as when it passes it a character at a time.
+#[test]
+fn scanning_far_passes_plain_text_in_runs_with_the_same_answers() {
+    let pieces = ["word ", "(", ")", "\"str (\" ", "x\\(", "é ", ".,", "\n", "  ", "[", "]", "sym-bol "];
+    let mut seed = 9u64;
+    let mut rand = |n: usize| {
+        seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        (seed >> 33) as usize % n
+    };
+    for _ in 0..1000 {
+        let text: String = (0..rand(40)).map(|_| pieces[rand(pieces.len())]).collect();
+        let mut ed = Editor::new();
+        ed.type_text(&text);
+        let len = ed.buffer().len();
+        let from = rand(len + 1);
+        for (count, depth, sexp) in [(1_000_000_000i64, 0, true), (-1_000_000_000, 0, true), (1, 0, true), (-1, 0, true), (1, 0, false), (-1, 0, false), (1, 1, false), (-1, 1, false), (2, 0, false), (1, -1, true)] {
+            let mut slow = ed.scanner();
+            slow.lookup_properties = true;
+            let fast = ed.scanner().scan_lists(from, count, depth, sexp).map_err(|e| (e.to_string(), e.data().to_vec()));
+            let slow = slow.scan_lists(from, count, depth, sexp).map_err(|e| (e.to_string(), e.data().to_vec()));
+            assert_eq!(fast, slow, "{text:?} from {from}, count {count}, depth {depth}, sexp {sexp}");
+        }
+    }
+}

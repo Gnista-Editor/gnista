@@ -314,7 +314,8 @@ fn gui_layout() {
 ///
 /// `EMBER_PROFILE_SECONDS` sets how long (20 by default), `EMBER_PROFILE_SETUP`
 /// a command to run first (such as `variable-pitch-mode`, which also gives
-/// the GUI's metrics), and `EMBER_PROFILE_AT` where point starts: `middle`,
+/// the GUI's metrics), `EMBER_PROFILE_MODE` a mode to turn on, `EMBER_PROFILE_FILE=text`
+/// the 100 MB text file instead, and `EMBER_PROFILE_AT` where point starts: `middle`,
 /// `heading` (a heading near the middle), or `start`. The key `find-file`
 /// visits the file again each time instead.
 #[test]
@@ -326,8 +327,16 @@ fn profile_key() {
     let at = std::env::var("EMBER_PROFILE_AT").unwrap_or_else(|_| "start".into());
     let lines = env_usize("EMBER_BENCH_ORG_LINES", 50_000);
     let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("big.org");
-    std::fs::write(&path, org_text(lines)).unwrap();
+    // EMBER_PROFILE_FILE=text profiles the 100 MB text file instead.
+    let path = if std::env::var("EMBER_PROFILE_FILE").as_deref() == Ok("text") {
+        let path = dir.path().join("big.txt");
+        std::fs::write(&path, text(env_usize("EMBER_BENCH_TEXT_MB", 100))).unwrap();
+        path
+    } else {
+        let path = dir.path().join("big.org");
+        std::fs::write(&path, org_text(lines)).unwrap();
+        path
+    };
     let path = path.to_string_lossy().to_string();
     let mut ed = Editor::new();
     let _scripting = Scripting::new(&mut ed).unwrap();
@@ -339,6 +348,10 @@ fn profile_key() {
     ed.call("find-file", vec![ember_core::Arg::Str(path.clone())]).unwrap();
     if !setup.is_empty() {
         ed.call(&setup, vec![]).unwrap();
+    }
+    // EMBER_PROFILE_MODE turns on a mode first, with the terminal's metrics.
+    if let Ok(mode) = std::env::var("EMBER_PROFILE_MODE") {
+        ed.call(&mode, vec![]).unwrap();
     }
     let middle = ed.window_buffer().line_count() / 2;
     let line = match at.as_str() {
@@ -353,7 +366,8 @@ fn profile_key() {
     let mut n = 0;
     while Instant::now() < until {
         if key == "find-file" {
-            ed.call("kill-buffer", vec![]).ok();
+            let name = ed.window_buffer().name.clone();
+            ed.kill_buffer_unsaved(&name).ok();
             ed.call("find-file", vec![ember_core::Arg::Str(path.clone())]).unwrap();
         } else {
             ed.press(&key).ok();

@@ -717,6 +717,51 @@ impl<'a> Scanner<'a> {
     /// Moves over `count` balanced expressions, or lists if not `sexp`, as
     /// Emacs's scan_lists, starting `depth` levels in. Returns where it
     /// stopped, or none at an end of the buffer with nothing left to scan.
+    /// The ASCII characters a scan passes without anything changing but
+    /// its count: words, symbols, spaces and punctuation, with no flags,
+    /// as the table has them, when no `syntax-table` property can override it.
+    fn plain_ascii(&self) -> Option<[bool; 128]> {
+        if self.lookup_properties {
+            return None;
+        }
+        let mut plain = [false; 128];
+        for (c, e) in self.ascii.iter().enumerate() {
+            plain[c] = e.flags == 0 && matches!(e.class, Class::Whitespace | Class::Punct | Class::Word | Class::Symbol);
+        }
+        Some(plain)
+    }
+
+    /// Where a run of plain ASCII characters from `pos` ends, forward, or
+    /// with `forward` false where it starts, read from the text's chunks a
+    /// byte at a time rather than a character at a time.
+    fn skip_plain(&self, pos: usize, plain: &[bool; 128], forward: bool) -> usize {
+        let text = self.buffer.text();
+        let is_plain = |b: u8| b < 128 && plain[b as usize];
+        let mut p = pos;
+        if forward {
+            while p < self.max {
+                let byte = text.char_to_byte(p);
+                let (chunk, chunk_byte, _, _) = text.chunk_at_byte(byte);
+                let run = chunk.as_bytes()[byte - chunk_byte..].iter().take(self.max - p).take_while(|&&b| is_plain(b)).count();
+                p += run;
+                if run == 0 || byte + run < chunk_byte + chunk.len() {
+                    break;
+                }
+            }
+        } else {
+            while p > self.min {
+                let byte = text.char_to_byte(p);
+                let (chunk, chunk_byte, _, _) = text.chunk_at_byte(byte - 1);
+                let run = chunk.as_bytes()[..byte - chunk_byte].iter().rev().take(p - self.min).take_while(|&&b| is_plain(b)).count();
+                p -= run;
+                if run == 0 || byte - run > chunk_byte {
+                    break;
+                }
+            }
+        }
+        p
+    }
+
     /// Signals `quit` every so many steps if the user asked to quit, as
     /// Emacs's scan_lists checks while it scans.
     fn maybe_quit(&self) -> Result<()> {
@@ -732,9 +777,30 @@ impl<'a> Scanner<'a> {
         let min_depth = depth.min(0);
         let mut pos = from.clamp(self.min, self.max);
         let mut last_good = pos;
+        let plain = self.plain_ascii();
         while count > 0 {
             let mut done = false;
             while pos < self.max {
+                // Plain text changes nothing in a list, nor anything but the
+                // count of expressions at the top, which cannot run out when
+                // there are more to pass than characters left, as
+                // electric-pair asks to check a balance to the buffer's end.
+                if let Some(plain) = &plain
+                    && (!sexp || depth != 0 || count > (self.max - pos) as i64)
+                {
+                    let to = self.skip_plain(pos, plain, true);
+                    if to > pos {
+                        if sexp && depth == 0 {
+                            count -= (to - pos) as i64;
+                        }
+                        // The last character passed, as the scan notes each.
+                        if depth == min_depth {
+                            last_good = to - 1;
+                        }
+                        pos = to;
+                        continue;
+                    }
+                }
                 self.maybe_quit()?;
                 let e = self.entry_at(pos).expect("inside the buffer");
                 if depth == min_depth {
@@ -833,6 +899,21 @@ impl<'a> Scanner<'a> {
         while count < 0 {
             let mut done = false;
             while pos > self.min {
+                if let Some(plain) = &plain
+                    && (!sexp || depth != 0 || -count > (pos - self.min) as i64)
+                {
+                    let to = self.skip_plain(pos, plain, false);
+                    if to < pos {
+                        if sexp && depth == 0 {
+                            count += (pos - to) as i64;
+                        }
+                        if depth == min_depth {
+                            last_good = to;
+                        }
+                        pos = to;
+                        continue;
+                    }
+                }
                 self.maybe_quit()?;
                 pos -= 1;
                 let mut e = self.entry_at(pos).expect("inside the buffer");

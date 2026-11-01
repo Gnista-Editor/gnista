@@ -28,7 +28,7 @@ Everything else stays with the engine. The regexp fuzzer compares the two on eve
 
 ## Electric Pair mode in a large buffer
 
-Typing `(` then `)` with Electric Pair and Show Paren mode on takes about 1.9 s a key in a 100 MB text file (`( and ) with electric-pair and show-paren` in the bench, [performance.md](performance.md)), where it is 21 ms in a 50,000-line Org file. Electric Pair mode checks whether the buffer's parens balance by scanning to its end, as elec-pair.el does. Emacs pays the same; being faster than it means keeping the balance from `syntax-ppss`'s cached states, so a check scans from the nearest kept state rather than the whole buffer.
+Typing `(` then `)` with Electric Pair and Show Paren mode on took about 1.9 s a key in a 100 MB text file, as elec-pair.el scans the buffer to its end to check the balance; since 2026-11-01 the scan passes plain text a run at a time and it takes 270 ms ([performance.md](performance.md)). Being faster still means not scanning: keeping the balance from `syntax-ppss`'s cached states, or summarising each chunk of the text's parens as the rope keeps its line counts.
 
 ## Org's headings after each change
 

@@ -45,7 +45,14 @@ function headingMatch(line: number): string {
 
 function headings(): Heading[] {
   const found: Heading[] = [];
-  for (let line = 0; line < ember.lineCount(); line++) {
+  // Only the lines outline-regexp can match at the start of, found in one
+  // pass, rather than a search at every line.
+  const regexp = `\\(?:${String(ember.variable("outline-regexp"))}\\)`;
+  const lines = ember.saveRestriction(() => {
+    ember.widen();
+    return ember.matchingLines(regexp);
+  });
+  for (const [line] of lines) {
     const match = headingMatch(line);
     if (match.trimEnd().length > 0) {
       // The match's length is the level, not counting a space after the stars, as in org-mode's "\\*+ ".
