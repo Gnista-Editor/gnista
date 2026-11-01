@@ -1468,7 +1468,6 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     // A prompt that returns its answer: the prelude's `answering` takes a
     // token, lets the prompt's callbacks settle it, and waits for that in
     // the command loop (ADR 0053).
-    native.set("canBlock", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.can_wait_for_input())))?)?;
     // Taken before the prompt opens, with where the asker was, to go back to.
     native.set(
         "waitToken",
@@ -1490,7 +1489,7 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
             let deadline = DEADLINE.take();
             let asker = WAITS.with_borrow(|w| w.askers.iter().find(|(t, _)| *t == token).map(|(_, r)| r.clone()));
             let result = match asker {
-                Some(asker) => with_editor(&ctx, |ed| ed.wait_until(&asker, &mut |_| settled(token))),
+                Some(asker) => with_editor(&ctx, |ed| ed.wait_until(&asker, std::rc::Rc::new(move |_| settled(token)))),
                 None => Ok(()),
             };
             DEADLINE.set(deadline.map(|_| Instant::now() + TIME_LIMIT.get()));

@@ -53,6 +53,13 @@ pub(crate) struct Prompt {
 /// current buffer, its prefix argument and its name. The answer runs with
 /// them again, as an Emacs command carries on after `read-from-minibuffer`
 /// returns, its `current-prefix-arg` and `this-command` still bound.
+/// What a command waiting for input waits for, as an answer having come.
+pub type WaitDone = Rc<dyn Fn(&Editor) -> bool>;
+
+/// What a waiting command reads from where no command loop runs; false
+/// when it has nothing more.
+type InputSource = Box<dyn FnMut(&mut Editor) -> bool>;
+
 #[derive(Clone)]
 pub struct Resume {
     buffer: u64,
@@ -195,6 +202,16 @@ pub struct Editor {
     pub(crate) overriding_map: Option<KeymapId>,
     /// Keys to read next, after the current one, as Emacs's `unread-command-events`.
     pub(crate) unread_keys: std::collections::VecDeque<Key>,
+    /// Keys typed ahead, as [`Editor::press`] gives them: a command they
+    /// start that waits for input reads the rest of them first.
+    typeahead: std::collections::VecDeque<Key>,
+    /// What each command waiting for input waits for, innermost last, so
+    /// keys typed ahead stop once one has its answer.
+    waits: Vec<WaitDone>,
+    /// What a command waiting for input reads from once the typeahead is
+    /// used up, where no command loop runs: tests' and the oracle's
+    /// answers. It returns false when it has nothing more.
+    input_source: Option<InputSource>,
     reading_unread: bool,
     /// Every keymap; names for them are variables holding them.
     pub(crate) keymaps: Keymaps,
@@ -431,6 +448,9 @@ impl Editor {
             match_data: None,
             overriding_map: None,
             unread_keys: Default::default(),
+            typeahead: Default::default(),
+            waits: Vec::new(),
+            input_source: None,
             reading_unread: false,
             goal_column: None,
             self_insert_run: 0,
@@ -1098,9 +1118,19 @@ impl Editor {
     fn type_keys(&mut self, keys: &[Key], count: i64) -> Result<()> {
         let mut done = 0;
         while count == 0 || done < count {
-            for &key in keys {
+            // As typeahead, so a command in the macro that waits for input
+            // reads the macro's next keys.
+            let before = self.typeahead.len();
+            for &key in keys.iter().rev() {
+                self.typeahead.push_front(key);
+            }
+            while self.typeahead.len() > before {
+                let Some(key) = self.next_typed_ahead() else { break };
                 self.handle_key(key);
                 if let Some(e) = self.take_error() {
+                    // The rest of the macro goes with it.
+                    let left = self.typeahead.len().saturating_sub(before);
+                    self.typeahead.drain(..left);
                     return Err(e);
                 }
             }
@@ -1167,26 +1197,81 @@ impl Editor {
         }
     }
 
-    /// Whether code can wait for input here, as a prompt answered before it
-    /// returns: true when the editor runs in a driver's command loop.
-    pub fn can_wait_for_input(&self) -> bool {
-        self.command_loop.is_some()
+    /// Gives the editor something to read input from when a command waits
+    /// for it and no keys are typed ahead, where no command loop runs, as
+    /// batch Emacs reads standard input. `source` handles some input, as
+    /// by typing an answer, and returns false when it has none.
+    pub fn set_input_source(&mut self, source: impl FnMut(&mut Editor) -> bool + 'static) {
+        self.input_source = Some(Box::new(source));
     }
 
     /// Runs the command loop inside the command now running until `done`
     /// says, as Emacs's read-from-minibuffer and recursive-edit run one:
     /// keys go to their commands, timers and process output run, and the
-    /// window shows what happens. Afterwards the current buffer, prefix
-    /// argument and command are as at `asker`, taken with
-    /// [`Editor::resume_point`] before the prompt opened. Fails with `quit`
-    /// if the editor is closing, and with an error if no command loop runs here.
-    pub fn wait_until(&mut self, asker: &Resume, done: &mut dyn FnMut(&Editor) -> bool) -> Result<()> {
-        let Some(command_loop) = self.command_loop.clone() else {
-            return Err(Error::new("No command loop to wait for input in"));
-        };
-        let result = command_loop.wait(self, done);
+    /// window shows what happens. Input comes from keys put back, then keys
+    /// typed ahead, then the driver's channel or the input source.
+    /// Afterwards the current buffer, prefix argument and command are as
+    /// at `asker`, taken with [`Editor::resume_point`] before the prompt
+    /// opened. Fails with `quit` if the editor is closing, and with
+    /// `end-of-file` if there is no more input, as batch Emacs does.
+    pub fn wait_until(&mut self, asker: &Resume, done: WaitDone) -> Result<()> {
+        self.waits.push(done.clone());
+        let result = self.wait_for_input(&*done);
+        self.waits.pop();
         self.resume(asker);
         result
+    }
+
+    /// The next key typed ahead, unless a command waiting below has its
+    /// answer, which it takes first, as Emacs reads typeahead in order.
+    pub(crate) fn next_typed_ahead(&mut self) -> Option<Key> {
+        let waits = self.waits.clone();
+        if waits.iter().any(|done| done(self)) {
+            return None;
+        }
+        self.typeahead.pop_front()
+    }
+
+    fn wait_for_input(&mut self, done: &dyn Fn(&Editor) -> bool) -> Result<()> {
+        loop {
+            if done(self) {
+                return Ok(());
+            }
+            if let Some(key) = self.unread_keys.pop_front() {
+                self.dispatch_key(key);
+                continue;
+            }
+            if let Some(key) = self.typeahead.pop_front() {
+                self.handle_key(key);
+                continue;
+            }
+            if let Some(command_loop) = self.command_loop.clone() {
+                return command_loop.wait(self, done);
+            }
+            if let Some(mut source) = self.input_source.take() {
+                let more = source(self);
+                self.input_source.get_or_insert(source);
+                if more {
+                    continue;
+                }
+            }
+            return Err(Error::signal("end-of-file", "Error reading from stdin", vec![]));
+        }
+    }
+
+    /// Reads `keys` as typed ahead: a command they start that waits for
+    /// input reads the rest of them first, as Emacs reads typeahead.
+    fn type_ahead(&mut self, keys: impl IntoIterator<Item = Key>) {
+        let before = self.typeahead.len();
+        let keys: Vec<Key> = keys.into_iter().collect();
+        for key in keys.into_iter().rev() {
+            self.typeahead.push_front(key);
+        }
+        while self.typeahead.len() > before {
+            // Keys after an answer wait for the command that asked.
+            let Some(key) = self.next_typed_ahead() else { break };
+            self.handle_key(key);
+        }
     }
 
     /// Makes the command now running not amalgamating after all, so the next
@@ -1559,22 +1644,17 @@ impl Editor {
     pub fn press(&mut self, seq: &str) -> Result<()> {
         let keys = Key::parse_seq(seq)
             .ok_or_else(|| Error::new(format!("Invalid key sequence: {seq}")))?;
-        for key in keys {
-            self.handle_key(key);
-        }
+        self.type_ahead(keys);
         Ok(())
     }
 
     /// Types text one character at a time; a newline presses RET and a tab presses TAB.
     pub fn type_text(&mut self, text: &str) {
-        for c in text.chars() {
-            let key = match c {
-                '\n' => Key::new(KeyCode::Enter),
-                '\t' => Key::new(KeyCode::Tab),
-                c => Key::char(c),
-            };
-            self.handle_key(key);
-        }
+        self.type_ahead(text.chars().map(|c| match c {
+            '\n' => Key::new(KeyCode::Enter),
+            '\t' => Key::new(KeyCode::Tab),
+            c => Key::char(c),
+        }));
     }
 
     // Buffers

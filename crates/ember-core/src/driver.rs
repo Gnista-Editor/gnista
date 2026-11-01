@@ -23,7 +23,8 @@ use std::cell::{Cell, RefCell};
 use std::panic::AssertUnwindSafe;
 use std::rc::Rc;
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, TryRecvError, channel};
-use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Condvar, Mutex};
 use std::thread::JoinHandle;
 use std::time::Duration;
 
@@ -75,6 +76,25 @@ pub struct Driver {
     quit: QuitHandle,
     published: Arc<Mutex<Published>>,
     thread: Option<JoinHandle<()>>,
+    /// How many inputs this handle has sent.
+    sent: AtomicU64,
+    idle: Arc<Idle>,
+}
+
+/// How many inputs the loop has taken, and whether it is waiting for the
+/// next, at whatever depth of prompt, for callers that wait until it has
+/// settled.
+#[derive(Default)]
+struct Idle {
+    state: Mutex<(u64, bool)>,
+    changed: Condvar,
+}
+
+impl Idle {
+    fn set(&self, f: impl FnOnce(&mut (u64, bool))) {
+        f(&mut self.state.lock().unwrap_or_else(|e| e.into_inner()));
+        self.changed.notify_all();
+    }
 }
 
 /// How big the editor thread's stack is: Lisp-like code recurses deeply,
@@ -97,6 +117,8 @@ impl Driver {
         let published = Arc::new(Mutex::new(Published::default()));
         let (quit_tx, quit_rx) = channel();
         let shared = published.clone();
+        let idle = Arc::new(Idle::default());
+        let loop_idle = idle.clone();
         let waker = input.clone();
         let thread = std::thread::Builder::new()
             .name("editor".into())
@@ -110,16 +132,47 @@ impl Driver {
                 }));
                 let keep = setup(&mut ed);
                 let _ = quit_tx.send(ed.quit_handle());
-                run(ed, keep, rx, describe, wake, shared);
+                run(ed, keep, rx, describe, wake, shared, loop_idle);
             })
             .expect("the editor's thread starts");
         let quit = quit_rx.recv().expect("the editor's thread sends its quit flag");
-        Driver { input, quit, published, thread: Some(thread) }
+        Driver { input, quit, published, thread: Some(thread), sent: AtomicU64::new(0), idle }
     }
 
     /// Sends input to the editor's thread.
     pub fn send(&self, input: Input) {
+        self.sent.fetch_add(1, Ordering::SeqCst);
         let _ = self.input.send(input);
+    }
+
+    /// Types keys, as `C-x C-f`, and waits until the editor has taken them
+    /// and waits for more: done, or waiting in a prompt they opened.
+    pub fn press(&self, keys: &str) {
+        let keys = keys.to_string();
+        self.run(move |ed| {
+            let _ = ed.press(&keys);
+        });
+        self.settle();
+    }
+
+    /// Types text, a newline as RET, as [`Driver::press`] waits.
+    pub fn type_text(&self, text: &str) {
+        let text = text.to_string();
+        self.run(move |ed| ed.type_text(&text));
+        self.settle();
+    }
+
+    /// Waits until the editor has taken everything sent and waits for
+    /// input, at whatever depth of prompt, as tests do between keys.
+    pub fn settle(&self) {
+        let seq = self.sent.load(Ordering::SeqCst);
+        let until = std::time::Instant::now() + Duration::from_secs(30);
+        let mut state = self.idle.state.lock().unwrap_or_else(|e| e.into_inner());
+        while !(state.0 >= seq && state.1) {
+            let left = until.saturating_duration_since(std::time::Instant::now());
+            assert!(!left.is_zero(), "the editor did not settle");
+            state = self.idle.changed.wait_timeout(state, left).unwrap_or_else(|e| e.into_inner()).0;
+        }
     }
 
     /// Sends a typed key. `C-g` also asks the editor to quit, so it stops
@@ -173,7 +226,7 @@ impl Drop for Driver {
 /// condition holds, as a prompt waits for its answer.
 pub trait NestedLoop {
     /// Takes input until `done` says, or fails with `quit` when the editor closes.
-    fn wait(&self, ed: &mut Editor, done: &mut dyn FnMut(&Editor) -> bool) -> Result<()>;
+    fn wait(&self, ed: &mut Editor, done: &dyn Fn(&Editor) -> bool) -> Result<()>;
 }
 
 /// The editor thread's command loop: input in order, timers when due, and
@@ -186,6 +239,7 @@ struct CommandLoop<D> {
     wake: Box<dyn Fn()>,
     published: Arc<Mutex<Published>>,
     closing: Cell<bool>,
+    idle: Arc<Idle>,
 }
 
 impl<D: FnMut(&mut Editor) -> Vec<FrameDescription>> CommandLoop<D> {
@@ -223,7 +277,7 @@ impl<D: FnMut(&mut Editor) -> Vec<FrameDescription>> CommandLoop<D> {
 }
 
 impl<D: FnMut(&mut Editor) -> Vec<FrameDescription>> NestedLoop for CommandLoop<D> {
-    fn wait(&self, ed: &mut Editor, done: &mut dyn FnMut(&Editor) -> bool) -> Result<()> {
+    fn wait(&self, ed: &mut Editor, done: &dyn Fn(&Editor) -> bool) -> Result<()> {
         loop {
             if done(ed) {
                 return Ok(());
@@ -231,10 +285,17 @@ impl<D: FnMut(&mut Editor) -> Vec<FrameDescription>> NestedLoop for CommandLoop<
             if self.closing.get() || ed.should_quit() {
                 return Err(crate::quit::quit_error());
             }
-            // One input at a time, so what comes after an answer waits for
-            // the command that asked, as in Emacs.
+            // Keys typed ahead first, then input one at a time, so what
+            // comes after an answer waits for the command that asked, as in Emacs.
+            if let Some(key) = ed.next_typed_ahead() {
+                guarded(ed, |ed| ed.handle_key(key));
+                continue;
+            }
             let input = match self.rx.try_recv() {
-                Ok(input) => input,
+                Ok(input) => {
+                    self.idle.set(|s| s.0 += 1);
+                    input
+                }
                 Err(TryRecvError::Disconnected) => {
                     self.closing.set(true);
                     continue;
@@ -247,7 +308,13 @@ impl<D: FnMut(&mut Editor) -> Vec<FrameDescription>> NestedLoop for CommandLoop<
                     }
                     self.publish(ed);
                     let timeout = ed.next_timer_in().unwrap_or(Duration::from_secs(3600));
-                    match self.rx.recv_timeout(timeout) {
+                    self.idle.set(|s| s.1 = true);
+                    let input = self.rx.recv_timeout(timeout);
+                    self.idle.set(|s| {
+                        s.1 = false;
+                        s.0 += input.is_ok() as u64;
+                    });
+                    match input {
                         Ok(input) => input,
                         Err(RecvTimeoutError::Timeout) => continue,
                         Err(RecvTimeoutError::Disconnected) => {
@@ -272,6 +339,7 @@ fn run(
     describe: impl FnMut(&mut Editor) -> Vec<FrameDescription> + 'static,
     wake: impl Fn() + 'static,
     published: Arc<Mutex<Published>>,
+    idle: Arc<Idle>,
 ) {
     let command_loop = Rc::new(CommandLoop {
         rx,
@@ -280,9 +348,10 @@ fn run(
         wake: Box::new(wake),
         published,
         closing: Cell::new(false),
+        idle,
     });
     ed.command_loop = Some(command_loop.clone());
-    let _ = command_loop.wait(&mut ed, &mut |ed| ed.should_quit());
+    let _ = command_loop.wait(&mut ed, &|ed| ed.should_quit());
     command_loop.publish(&mut ed);
     // The loop holds what setup kept, as the script runtime, which goes
     // before the editor it was made for.

@@ -268,6 +268,78 @@ fn dired_normalize(text: &str, dir: Option<&tempfile::TempDir>) -> (String, Box<
     (out, Box::new(map))
 }
 
+/// The answers a case gives its prompts, and what answering them did.
+struct Answering {
+    /// The case's keys not yet typed, which a command reading a key reads.
+    keys: std::collections::VecDeque<Key>,
+    answers: std::collections::VecDeque<String>,
+    error: Option<String>,
+    quit_for_answers: bool,
+}
+
+/// Answers the open prompt, or a key read partway through a command, with
+/// the case's next answer, as record.el does; with none left, reading the
+/// minibuffer is an error, as batch Emacs would read it from standard
+/// input. Returns whether there was something to answer.
+fn answer_once(ed: &mut Editor, answering: &std::rc::Rc<std::cell::RefCell<Answering>>) -> bool {
+    let left = answering.borrow().answers.len();
+    // A key read partway through a command, as zap-to-char's character,
+    // takes an answer too while there are any, as record.el gives
+    // read-char-from-minibuffer one; otherwise the case's next key, as
+    // C-q reads it.
+    if ed.prompt().is_none() && !(ed.reading_single_key() && left > 0) {
+        if !ed.reading_key() {
+            return false;
+        }
+        let Some(key) = answering.borrow_mut().keys.pop_front() else { return false };
+        ed.handle_key(key);
+        if let Some(e) = ed.take_error() {
+            answering.borrow_mut().error.get_or_insert(e.to_string());
+        }
+        return true;
+    }
+    let note = |ed: &mut Editor| {
+        if let Some(e) = ed.take_error() {
+            answering.borrow_mut().error.get_or_insert(e.to_string());
+        }
+    };
+    if ed.prompt().is_none() {
+        let answer = answering.borrow_mut().answers.pop_front().expect("checked above");
+        ed.type_text(&answer.chars().take(1).collect::<String>());
+        note(ed);
+        return true;
+    }
+    let Some(answer) = answering.borrow_mut().answers.pop_front() else {
+        {
+            let mut a = answering.borrow_mut();
+            a.error.get_or_insert("Minibuffer read in batch".into());
+            // Batch Emacs errors there, with no Quit.
+            a.quit_for_answers = true;
+        }
+        ed.handle_key(Key::parse("C-g").expect("C-g parses"));
+        ed.take_error();
+        return true;
+    };
+    // A question read by a key takes the answer's first character, as
+    // record.el's read-char does; others take it typed and RET.
+    if ed.prompt_reads_char() {
+        ed.type_text(&answer.chars().take(1).collect::<String>());
+    } else {
+        // record.el's answers replace what a prompt starts with; a
+        // relative file name stays in the directory it shows.
+        let input = ed.minibuffer_input();
+        if !input.is_empty() && !input.ends_with('/') && input.contains('/') {
+            let dir = &input[..input.rfind('/').map_or(0, |i| i + 1)];
+            let absolute = answer.starts_with('/') || answer.starts_with('~');
+            ed.set_minibuffer_input(if absolute { "" } else { dir });
+        }
+        ed.type_text(&answer);
+        ed.handle_key(Key::parse("RET").expect("RET parses"));
+    }
+    note(ed);
+    true
+}
+
 /// Text with the case's directory written as DIR, as record.el writes it.
 fn without_dir(text: &str, dir: Option<&tempfile::TempDir>) -> String {
     match dir {
@@ -405,66 +477,29 @@ pub fn run(case: &Case) -> State {
     } else {
         Key::parse_seq(&case.keys).unwrap_or_else(|| panic!("{}: keys {:?} are not valid Emacs notation", case.name, case.keys))
     };
-    let mut error = None;
     // The messages shown, in order, as *Messages* logs them, with how many
     // times each was shown in a row.
     let mut log: Vec<(String, usize)> = Vec::new();
-    let quit_for_answers = std::cell::Cell::new(false);
-    let mut answers = case.answers.iter();
-    // Prompts take the case's answers in order, as record.el gives them;
-    // with none left, reading the minibuffer is an error, as batch Emacs
-    // would read it from standard input.
-    let mut answer_prompts = |ed: &mut Editor, error: &mut Option<String>| {
-        // A key read partway through a command, as zap-to-char's character,
-        // takes an answer too while there are any, as record.el gives
-        // read-char-from-minibuffer one.
-        while ed.prompt().is_some() || (ed.reading_single_key() && answers.len() > 0) {
-            if ed.prompt().is_none() {
-                let answer = answers.next().expect("checked above");
-                ed.type_text(&answer.chars().take(1).collect::<String>());
-                if let Some(e) = ed.take_error() {
-                    error.get_or_insert(e.to_string());
-                }
-                continue;
-            }
-            let Some(answer) = answers.next() else {
-                ed.handle_key(Key::parse("C-g").expect("C-g parses"));
-                ed.take_error();
-                error.get_or_insert("Minibuffer read in batch".into());
-                // Batch Emacs errors there, with no Quit.
-                quit_for_answers.set(true);
-                ed.take_error();
-                break;
-            };
-            // A question read by a key takes the answer's first character,
-            // as record.el's read-char does; others take it typed and RET.
-            if ed.prompt_reads_char() {
-                ed.type_text(&answer.chars().take(1).collect::<String>());
-            } else {
-                // record.el's answers replace what a prompt starts with; a
-                // relative file name stays in the directory it shows.
-                let input = ed.minibuffer_input();
-                if !input.is_empty() && !input.ends_with('/') && input.contains('/') {
-                    let dir = &input[..input.rfind('/').map_or(0, |i| i + 1)];
-                    let absolute = answer.starts_with('/') || answer.starts_with('~');
-                    ed.set_minibuffer_input(if absolute { "" } else { dir });
-                }
-                ed.type_text(answer);
-                ed.handle_key(Key::parse("RET").expect("RET parses"));
-            }
-            if let Some(e) = ed.take_error() {
-                error.get_or_insert(e.to_string());
-            }
-        }
-    };
+    // Prompts take the case's answers in order, as record.el gives them:
+    // those for a command's arguments after each key, and those a command
+    // opens while it runs as its input, as batch Emacs reads them.
+    let answering = std::rc::Rc::new(std::cell::RefCell::new(Answering {
+        keys: keys.into_iter().collect(),
+        answers: case.answers.iter().cloned().collect(),
+        error: None,
+        quit_for_answers: false,
+    }));
+    let source = answering.clone();
+    ed.set_input_source(move |ed| answer_once(ed, &source));
+    let answer_prompts = |ed: &mut Editor| while answer_once(ed, &answering) {};
     // The messages from here on, as record.el starts each case's.
     ed.clear_messages();
     if let Some((name, args)) = case.call.split_first() {
         let args = args.iter().map(|a| ember_core::Arg::Str(a.clone())).collect();
         if let Err(e) = ed.call(name, args) {
-            error = Some(e.to_string());
+            answering.borrow_mut().error = Some(e.to_string());
         }
-        answer_prompts(&mut ed, &mut error);
+        answer_prompts(&mut ed);
     }
     // <f33> changes the visited file on disk, as another program would: a
     // command, as in record.el, so it takes a prefix argument and becomes
@@ -479,18 +514,19 @@ pub fn run(case: &Case) -> State {
         let map = ed.global_map();
         ed.keymaps_mut().bind(map, &[Key::parse("<f33>").expect("<f33> parses")], ember_core::Binding::Command("ember-oracle--change-disk".into()));
     }
-    for key in keys {
+    loop {
+        let Some(key) = answering.borrow_mut().keys.pop_front() else { break };
         ed.handle_key(key);
         if let Some(e) = ed.take_error() {
-            error.get_or_insert(e.to_string());
+            answering.borrow_mut().error.get_or_insert(e.to_string());
         }
-        answer_prompts(&mut ed, &mut error);
+        answer_prompts(&mut ed);
     }
     // Batch Emacs logs no command's error, and quitting for want of answers
     // is an error there; a message shown again straight after itself, with
     // only errors between, is counted, as "Mark set [2 times]".
     for entry in ed.message_log() {
-        if entry.error || (quit_for_answers.get() && entry.text == "Quit") {
+        if entry.error || (answering.borrow().quit_for_answers && entry.text == "Quit") {
             continue;
         }
         match log.last_mut() {
@@ -533,7 +569,7 @@ pub fn run(case: &Case) -> State {
         windows,
         files: dir.as_ref().map(|d| listing(d.path())),
         message: message.filter(|_| case.message).map(|m| without_dir(&m, dir.as_ref())),
-        error: error.map(|e| without_dir(&e, dir.as_ref())),
+        error: answering.borrow().error.clone().map(|e| without_dir(&e, dir.as_ref())),
     }
 }
 

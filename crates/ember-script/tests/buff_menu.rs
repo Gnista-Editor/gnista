@@ -1,6 +1,9 @@
 //! The buffer list, C-x C-b: its lines as buff-menu.el lays them out in an
 //! 80-column window, and marking buffers to visit, save and kill.
 
+mod driven;
+
+use driven::Driven;
 use ember_core::{Arg, Editor};
 use ember_script::Scripting;
 
@@ -77,19 +80,20 @@ fn marked_buffers_are_killed_and_ret_visits_one() {
 
 #[test]
 fn kill_matching_buffers_asks_about_each_buffer_that_matches() {
-    let (mut ed, s) = setup();
+    // Each question waits in the command loop, so on the editor's own thread.
+    let d = Driven::new("");
     for name in ["foo1", "foo2", "bar"] {
-        ed.call("switch-to-buffer", vec![Arg::Str(name.into())]).unwrap();
-        ed.type_text("x");
+        d.with(move |ed| ed.call("switch-to-buffer", vec![Arg::Str(name.into())]).unwrap());
+        d.type_text("x");
     }
-    ed.call("kill-matching-buffers", vec![Arg::Str("^foo".into()), Arg::Prefix(None)]).unwrap();
+    d.start(|ed| ed.call("kill-matching-buffers", vec![Arg::Str("^foo".into()), Arg::Prefix(None)]).unwrap());
     // Each in the order of the buffer list, the most recent first: foo2, then foo1.
-    assert_eq!(ed.prompt().map(str::to_string), Some("Buffer foo2 HAS BEEN EDITED.  Kill? (yes or no) ".into()));
-    ed.type_text("yes");
-    ed.press("RET").unwrap();
-    assert_eq!(ed.prompt().map(str::to_string), Some("Buffer foo1 HAS BEEN EDITED.  Kill? (yes or no) ".into()));
-    ed.type_text("no");
-    ed.press("RET").unwrap();
-    let live = s.eval_expression(&mut ed, "JSON.stringify(['foo1', 'foo2', 'bar'].map((b) => ember.getBuffer(b) !== undefined))").unwrap();
+    assert_eq!(d.prompt().as_deref(), Some("Buffer foo2 HAS BEEN EDITED.  Kill? (yes or no) "));
+    d.type_text("yes");
+    d.press("RET");
+    assert_eq!(d.prompt().as_deref(), Some("Buffer foo1 HAS BEEN EDITED.  Kill? (yes or no) "));
+    d.type_text("no");
+    d.press("RET");
+    let live = d.eval_expression("JSON.stringify(['foo1', 'foo2', 'bar'].map((b) => ember.getBuffer(b) !== undefined))");
     assert_eq!(live, r#""[true,false,true]""#);
 }

@@ -1,7 +1,12 @@
-//! Commands that await prompts partway through, as Emacs's Lisp reads
-//! input where it needs it: the command carries on with the answer, in the
-//! context it asked in, and C-g unwinds it.
+//! Commands that prompt partway through, as Emacs's Lisp reads input
+//! where it needs it: the command carries on with the answer, in the
+//! context it asked in, and C-g unwinds it. A prompt waits in the command
+//! loop, so these drive the editor on a thread of its own (ADR 0053), and
+//! still await, which works as before.
 
+mod driven;
+
+use driven::Driven;
 use ember_core::Editor;
 use ember_script::Scripting;
 
@@ -12,21 +17,9 @@ fn setup(source: &str) -> (Editor, Scripting) {
     (ed, scripting)
 }
 
-/// Runs a command by name, as M-x NAME RET.
-fn mx(ed: &mut Editor, name: &str) {
-    ed.press("M-x").unwrap();
-    ed.type_text(name);
-    ed.press("RET").unwrap();
-}
-
-fn text(ed: &Editor) -> String {
-    let b = ed.window_buffer();
-    b.slice(0..b.len())
-}
-
 #[test]
 fn an_async_command_carries_on_with_each_answer() {
-    let (mut ed, _s) = setup(
+    let d = Driven::new(
         r#"
         ember.defineCommand({
           name: "greet",
@@ -39,24 +32,56 @@ fn an_async_command_carries_on_with_each_answer() {
         });
         "#,
     );
-    mx(&mut ed, "greet");
-    assert_eq!(ed.prompt(), Some("Name: "));
-    ed.type_text("Ada");
-    ed.press("RET").unwrap();
-    assert_eq!(ed.prompt(), Some("Greet Ada politely? (y or n) "));
-    ed.press("y").unwrap();
-    assert_eq!(ed.prompt(), Some("Where: "));
-    ed.press("w TAB RET").unwrap();
-    assert_eq!(text(&ed), "Good day, Ada, at work");
-    assert_eq!(ed.prompt(), None);
+    d.mx("greet");
+    assert_eq!(d.prompt().as_deref(), Some("Name: "));
+    d.type_text("Ada");
+    d.press("RET");
+    assert_eq!(d.prompt().as_deref(), Some("Greet Ada politely? (y or n) "));
+    d.press("y");
+    assert_eq!(d.prompt().as_deref(), Some("Where: "));
+    d.press("w TAB RET");
+    assert_eq!(d.text(), "Good day, Ada, at work");
+    assert_eq!(d.prompt(), None);
     // The whole command is what ran last, as in Emacs, where the prompts
     // are read inside it.
-    assert_eq!(ed.last_command(), Some("greet"));
+    assert_eq!(d.with(|ed| ed.last_command().map(str::to_string)).as_deref(), Some("greet"));
+}
+
+#[test]
+fn a_prompt_returns_its_answer_without_awaiting() {
+    let d = Driven::new(
+        r#"
+        ember.defineCommand({
+          name: "greet",
+          run: () => {
+            const name = ember.readString("Name: ");
+            ember.insert(ember.yOrNP(`Greet ${name}? `) ? `Hi, ${name}` : "");
+          },
+        });
+        "#,
+    );
+    d.mx("greet");
+    d.type_text("Ada\n");
+    d.press("y");
+    assert_eq!(d.text(), "Hi, Ada");
+}
+
+#[test]
+fn keys_given_at_once_answer_the_prompt_they_open() {
+    // Without a command loop the keys typed ahead answer it, as batch
+    // Emacs reads its input; with none left it is the end of input.
+    let (mut ed, _s) = setup(r#"ember.defineCommand({ name: "say", run: () => { ember.insert(`[${ember.readString("Say: ")}]`); } });"#);
+    ed.press("M-x").unwrap();
+    ed.type_text("say\nhi\nz");
+    assert_eq!(ed.window_buffer().slice(0..ed.window_buffer().len()), "[hi]z");
+    ed.press("M-x").unwrap();
+    ed.type_text("say\n");
+    assert_eq!(ed.take_error().map(|e| e.to_string()).as_deref(), Some("Error reading from stdin"));
 }
 
 #[test]
 fn the_answer_comes_back_to_the_asking_buffer_and_prefix_argument() {
-    let (mut ed, _s) = setup(
+    let d = Driven::new(
         r#"
         ember.defineCommand({
           name: "note-elsewhere",
@@ -70,20 +95,20 @@ fn the_answer_comes_back_to_the_asking_buffer_and_prefix_argument() {
         });
         "#,
     );
-    ed.press("C-u 3").unwrap();
-    mx(&mut ed, "note-elsewhere");
-    ed.type_text("hello");
-    ed.press("RET").unwrap();
-    let notes = ed.buffers().iter().find(|b| b.name == "notes").unwrap();
-    assert_eq!(notes.slice(0..notes.len()), "hello x3");
+    d.press("C-u 3");
+    d.mx("note-elsewhere");
+    d.type_text("hello");
+    d.press("RET");
+    let notes = d.with(|ed| ed.buffers().iter().find(|b| b.name == "notes").map(|b| b.slice(0..b.len())));
+    assert_eq!(notes.as_deref(), Some("hello x3"));
     // withCurrentBuffer put the buffer back once the command was done.
-    assert_eq!(text(&ed), "");
-    assert_eq!(ed.buffer().name, ed.window_buffer().name);
+    assert_eq!(d.text(), "");
+    assert!(d.with(|ed| ed.buffer().name == ed.window_buffer().name));
 }
 
 #[test]
 fn quitting_a_prompt_unwinds_the_command() {
-    let (mut ed, s) = setup(
+    let d = Driven::new(
         r#"
         ember.defineVariable({ name: "test-bound", doc: "", value: "outside" });
         globalThis.log = [];
@@ -105,23 +130,20 @@ fn quitting_a_prompt_unwinds_the_command() {
         });
         "#,
     );
-    mx(&mut ed, "ask-and-quit");
+    d.mx("ask-and-quit");
     // While the prompt waits, the binding is in effect, as a let stays
     // bound in a recursive edit.
-    assert_eq!(s.eval_expression(&mut ed, "ember.variable('test-bound')").unwrap(), "\"inside\"");
-    let _ = ed.press("C-g");
-    assert_eq!(ed.prompt(), None);
-    assert_eq!(ed.echo(), Some("Quit"));
-    assert_eq!(
-        s.eval_expression(&mut ed, "log").unwrap(),
-        r#"["waiting with inside","caught quit","cleaned up"]"#
-    );
-    assert_eq!(s.eval_expression(&mut ed, "ember.variable('test-bound')").unwrap(), "\"outside\"");
+    assert_eq!(d.eval_expression("ember.variable('test-bound')"), "\"inside\"");
+    d.press("C-g");
+    assert_eq!(d.prompt(), None);
+    assert_eq!(d.message().as_deref(), Some("Quit"));
+    assert_eq!(d.eval_expression("log"), r#"["waiting with inside","caught quit","cleaned up"]"#);
+    assert_eq!(d.eval_expression("ember.variable('test-bound')"), "\"outside\"");
 }
 
 #[test]
 fn an_error_after_awaiting_fails_as_the_command_would() {
-    let (mut ed, _s) = setup(
+    let d = Driven::new(
         r#"
         ember.defineCommand({
           name: "fail-later",
@@ -133,18 +155,17 @@ fn an_error_after_awaiting_fails_as_the_command_would() {
         });
         "#,
     );
-    mx(&mut ed, "fail-later");
-    ed.type_text("cake");
-    ed.press("RET").unwrap();
-    let err = ed.take_error().expect("the command failed");
-    assert_eq!(err.to_string(), "No cake here");
-    assert!(err.is("user-error"));
-    assert_eq!(text(&ed), "before ");
+    d.mx("fail-later");
+    d.type_text("cake");
+    d.press("RET");
+    let err = d.with(|ed| ed.take_error().map(|e| (e.to_string(), e.is("user-error"))));
+    assert_eq!(err, Some(("No cake here".to_string(), true)));
+    assert_eq!(d.text(), "before ");
 }
 
 #[test]
-fn condition_case_catches_what_an_awaited_prompt_signals() {
-    let (mut ed, s) = setup(
+fn condition_case_catches_what_a_prompt_signals() {
+    let d = Driven::new(
         r#"
         globalThis.outcome = "";
         ember.defineCommand({
@@ -157,14 +178,14 @@ fn condition_case_catches_what_an_awaited_prompt_signals() {
         });
         "#,
     );
-    mx(&mut ed, "careful");
-    let _ = ed.press("C-g");
-    assert_eq!(s.eval_expression(&mut ed, "outcome").unwrap(), "\"quit handled\"");
+    d.mx("careful");
+    d.press("C-g");
+    assert_eq!(d.eval_expression("outcome"), "\"quit handled\"");
 }
 
 #[test]
 fn a_prompt_inside_the_minibuffer_is_refused_as_emacs_refuses_it() {
-    let (mut ed, s) = setup(
+    let d = Driven::new(
         r#"
         globalThis.refused = "";
         ember.defineCommand({
@@ -186,15 +207,15 @@ fn a_prompt_inside_the_minibuffer_is_refused_as_emacs_refuses_it() {
         ember.bindKey("C-c i", "inner");
         "#,
     );
-    mx(&mut ed, "nested");
-    ed.press("C-c i").unwrap();
-    assert_eq!(s.eval_expression(&mut ed, "refused").unwrap(), "\"Command attempted to use minibuffer while in minibuffer\"");
-    assert_eq!(ed.prompt(), Some("Outer: "));
+    d.mx("nested");
+    d.press("C-c i");
+    assert_eq!(d.eval_expression("refused"), "\"Command attempted to use minibuffer while in minibuffer\"");
+    assert_eq!(d.prompt().as_deref(), Some("Outer: "));
 }
 
 #[test]
-fn a_macro_replays_an_awaiting_command_in_order_with_its_prefix() {
-    let (mut ed, _s) = setup(
+fn a_macro_replays_a_prompting_command_in_order_with_its_prefix() {
+    let d = Driven::new(
         r#"
         ember.defineCommand({
           name: "ask-insert",
@@ -205,18 +226,18 @@ fn a_macro_replays_an_awaiting_command_in_order_with_its_prefix() {
         });
         "#,
     );
-    ed.press("<f3> C-u").unwrap();
-    mx(&mut ed, "ask-insert");
-    ed.type_text("foo");
-    ed.press("RET z <f4>").unwrap();
-    assert_eq!(text(&ed), "[foo:4]z");
-    ed.press("C-x e").unwrap();
-    assert_eq!(text(&ed), "[foo:4]z[foo:4]z");
+    d.press("<f3> C-u");
+    d.mx("ask-insert");
+    d.type_text("foo");
+    d.press("RET z <f4>");
+    assert_eq!(d.text(), "[foo:4]z");
+    d.press("C-x e");
+    assert_eq!(d.text(), "[foo:4]z[foo:4]z");
 }
 
 #[test]
 fn answering_by_key_leaves_no_command_context_behind() {
-    let (mut ed, _s) = setup(
+    let d = Driven::new(
         r#"
         ember.defineCommand({
           name: "ask-yn",
@@ -226,13 +247,16 @@ fn answering_by_key_leaves_no_command_context_behind() {
         });
         "#,
     );
-    ed.press("C-u 7").unwrap();
-    mx(&mut ed, "ask-yn");
-    ed.press("y").unwrap();
-    assert_eq!(text(&ed), "yes 7");
-    assert_eq!(ed.current_prefix_arg(), None);
-    assert_eq!(ed.this_command(), None);
-    assert_eq!(ed.last_command(), Some("ask-yn"));
+    d.press("C-u 7");
+    d.mx("ask-yn");
+    d.press("y");
+    assert_eq!(d.text(), "yes 7");
+    let (prefix, this, last) = d.with(|ed| {
+        (ed.current_prefix_arg().is_none(), ed.this_command().map(str::to_string), ed.last_command().map(str::to_string))
+    });
+    assert!(prefix);
+    assert_eq!(this, None);
+    assert_eq!(last.as_deref(), Some("ask-yn"));
 }
 
 #[test]
@@ -253,26 +277,25 @@ fn timers_run_while_a_prompt_waits() {
 }
 
 #[test]
-fn the_sample_config_loads_and_its_awaiting_command_works() {
-    let mut ed = Editor::new();
-    let s = Scripting::new(&mut ed).unwrap();
-    s.load_file(&mut ed, std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples/init.ts"))).unwrap();
-    ed.press("C-u 2 C-c n").unwrap();
-    assert_eq!(ed.prompt(), Some("Note 1 of 2: "));
-    ed.type_text("one");
-    ed.press("RET").unwrap();
-    ed.type_text("two");
-    ed.press("RET").unwrap();
-    ed.press("y").unwrap();
-    assert_eq!(ed.window_buffer().name, "*notes*");
-    let notes = text(&ed);
+fn the_sample_config_loads_and_its_prompting_command_works() {
+    let d = Driven::new("");
+    d.load_file(concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples/init.ts"));
+    d.press("C-u 2 C-c n");
+    assert_eq!(d.prompt().as_deref(), Some("Note 1 of 2: "));
+    d.type_text("one");
+    d.press("RET");
+    d.type_text("two");
+    d.press("RET");
+    d.press("y");
+    assert_eq!(d.buffer_name(), "*notes*");
+    let notes = d.text();
     assert!(notes.ends_with(" one\n") || notes.contains(" one\n"), "{notes}");
     assert!(notes.ends_with(" two\n"), "{notes}");
 }
 
 #[test]
 fn a_completion_table_can_be_a_function_of_the_input() {
-    let (mut ed, s) = setup(
+    let d = Driven::new(
         r#"
         globalThis.asked = [];
         ember.defineCommand({
@@ -289,22 +312,20 @@ fn a_completion_table_can_be_a_function_of_the_input() {
         });
         "#,
     );
-    ed.press("M-x").unwrap();
-    ed.type_text("pick-path");
-    ed.press("RET").unwrap();
-    ed.type_text("c");
-    ed.press("TAB").unwrap();
-    assert_eq!(ed.minibuffer_input(), "cherry/");
-    ed.type_text("b");
-    ed.press("TAB RET").unwrap();
-    assert_eq!(text(&ed), "cherry/banana");
-    let asked = s.eval_expression(&mut ed, "asked").unwrap();
+    d.mx("pick-path");
+    d.type_text("c");
+    d.press("TAB");
+    assert_eq!(d.minibuffer_input(), "cherry/");
+    d.type_text("b");
+    d.press("TAB RET");
+    assert_eq!(d.text(), "cherry/banana");
+    let asked = d.eval_expression("asked");
     assert!(asked.contains(r#""cherry/b""#), "{asked}");
 }
 
 #[test]
 fn a_dynamic_table_keeps_icompletes_rotation() {
-    let (mut ed, _s) = setup(
+    let d = Driven::new(
         r#"
         ember.defineCommand({
           name: "pick-fruit",
@@ -312,14 +333,13 @@ fn a_dynamic_table_keeps_icompletes_rotation() {
         });
         "#,
     );
-    ed.press("M-x").unwrap();
-    ed.type_text("pick-fruit");
-    ed.press("RET a").unwrap();
-    let shown = |ed: &Editor| ed.minibuffer_strings().1;
-    let before = shown(&ed);
-    ed.press("C-.").unwrap();
-    assert_ne!(shown(&ed), before, "C-. rotates the completions");
+    d.mx("pick-fruit");
+    d.press("a");
+    let shown = || d.with(|ed| ed.minibuffer_strings().1);
+    let before = shown();
+    d.press("C-.");
+    assert_ne!(shown(), before, "C-. rotates the completions");
     // As icomplete-force-complete-and-exit takes the first of them.
-    ed.press("C-j").unwrap();
-    assert_eq!(text(&ed), "apricot");
+    d.press("C-j");
+    assert_eq!(d.text(), "apricot");
 }

@@ -10595,9 +10595,7 @@ declare global {
      * The editor goes on taking keys until the answer comes, which is
      * returned, as in Emacs, so a hook or a sort predicate can ask; C-g
      * throws the "quit" condition, unwinding the command. Every prompt and
-     * question works so. Where no command loop runs, as when a test drives
-     * the editor on its own thread, the answer comes as a promise, so code
-     * that awaits it, in an async command, works in both (ADR 0053). Each
+     * question works so, and awaiting the answer works too (ADR 0053). Each
      * also takes a `then` function, the older form, which C-g leaves uncalled.
      */
     function yesOrNoP(question: string): boolean;

@@ -4,8 +4,33 @@
 
 use std::time::{Duration, Instant};
 
+mod driven;
+
+use driven::Driven;
 use ember_core::{Arg, Editor};
 use ember_script::Scripting;
+
+const SETUP: &str = r#"ember.setDefault("explicit-shell-file-name", "/bin/sh"); ember.setDefault("explicit-sh-args", ["-i"]);
+               ember.setDefault("shell-history-file-name", true);"#;
+
+/// As `setup`, on the editor's own thread, for prompts that wait partway
+/// through (ADR 0053), as a password prompt a process's output opens.
+fn driven() -> Driven {
+    Driven::new(SETUP)
+}
+
+fn driven_shell(d: &Driven) {
+    unsafe { std::env::set_var("PS1", "$ ") };
+    unsafe { std::env::set_var("ENV", "/dev/null") };
+    d.start(|ed| ed.call("shell", vec![Arg::Prefix(None)]).unwrap());
+    assert_eq!(d.buffer_name(), "*shell*");
+    d.until(|t| t.ends_with("$ "));
+}
+
+fn driven_line(d: &Driven, line: &str) {
+    d.type_text(line);
+    d.press("RET");
+}
 
 fn setup() -> (Editor, Scripting) {
     let mut ed = Editor::new();
@@ -16,9 +41,7 @@ fn setup() -> (Editor, Scripting) {
             &mut ed,
             "setup.ts",
             // No history file: the user's own would change what M-p finds.
-            r#"ember.setDefault("explicit-shell-file-name", "/bin/sh"); ember.setDefault("explicit-sh-args", ["-i"]);
-               ember.setDefault("shell-history-file-name", true);"#
-                .into(),
+            SETUP.into(),
         )
         .unwrap();
     (ed, scripting)
@@ -168,57 +191,51 @@ fn echo_area(ed: &Editor) -> String {
 
 #[test]
 fn read_passwd_hides_what_is_typed_and_keeps_no_history() {
-    let (mut ed, s) = setup();
-    s.eval_typescript(
-        &mut ed,
-        "t.ts",
-        r#"import("subr").then(({ readPasswd }) => readPasswd("Password: ").then((p) => ember.setDefault("got", p)));"#.into(),
-    )
-    .unwrap();
-    ed.type_text("hunter2");
-    assert_eq!(echo_area(&ed), "Password: *******");
+    let d = driven();
+    d.start_eval(r#"import("subr").then(({ readPasswd }) => readPasswd("Password: ").then((p) => ember.setDefault("got", p)));"#);
+    d.type_text("hunter2");
+    let echo = || d.with(|ed| echo_area(ed));
+    assert_eq!(echo(), "Password: *******");
     // TAB shows it as typed and hides it again; C-u clears it.
-    ed.press("TAB").unwrap();
-    assert_eq!(echo_area(&ed), "Password: hunter2");
-    ed.press("TAB").unwrap();
-    ed.press("C-u").unwrap();
-    assert_eq!(echo_area(&ed), "Password: ");
-    ed.type_text("s3cret");
-    ed.press("RET").unwrap();
-    assert_eq!(s.eval_expression(&mut ed, "ember.variable('got')").unwrap(), r#""s3cret""#);
+    d.press("TAB");
+    assert_eq!(echo(), "Password: hunter2");
+    d.press("TAB");
+    d.press("C-u");
+    assert_eq!(echo(), "Password: ");
+    d.type_text("s3cret");
+    d.press("RET");
+    assert_eq!(d.eval_expression("ember.variable('got')"), r#""s3cret""#);
     // Nothing typed at the prompt is in recent-keys, and no history kept it.
-    let keys = s.eval_expression(&mut ed, "JSON.stringify(ember.recentKeys())").unwrap();
+    let keys = d.eval_expression("JSON.stringify(ember.recentKeys())");
     assert!(!keys.contains("\\\"s\\\"") && !keys.contains("3"), "{keys}");
-    let history = s.eval_expression(&mut ed, "JSON.stringify([ember.variable('minibuffer-history'), ember.variable('t') ?? null])").unwrap();
+    let history = d.eval_expression("JSON.stringify([ember.variable('minibuffer-history'), ember.variable('t') ?? null])");
     assert!(!history.contains("s3cret"), "{history}");
-    assert_eq!(ed.minibuffer().len(), 0);
+    assert_eq!(d.with(|ed| ed.minibuffer().len()), 0);
 }
 
 #[test]
 fn read_passwd_with_confirm_asks_until_both_agree() {
-    let (mut ed, s) = setup();
-    s.eval_typescript(
-        &mut ed,
-        "t.ts",
-        r#"import("subr").then(({ readPasswd }) => readPasswd("New: ", true).then((p) => ember.setDefault("got", p)));"#.into(),
-    )
-    .unwrap();
+    let d = driven();
+    d.start_eval(r#"import("subr").then(({ readPasswd }) => readPasswd("New: ", true).then((p) => ember.setDefault("got", p)));"#);
+    let echo = || d.with(|ed| echo_area(ed));
     for typed in ["one", "two", "same"] {
-        ed.type_text(typed);
-        ed.press("RET").unwrap();
+        d.type_text(typed);
+        d.press("RET");
         if typed == "two" {
             // The message shows for a second, then it starts over.
-            assert_eq!(ed.echo(), Some("Password not repeated accurately; please start over"));
-            ed.advance_clock(Duration::from_secs(1));
+            assert_eq!(d.message().as_deref(), Some("Password not repeated accurately; please start over"));
+            d.with(|ed| ed.advance_clock(Duration::from_secs(1)));
+            d.0.settle();
         }
         if typed != "same" {
-            assert!(echo_area(&ed).starts_with(if typed == "one" { "Confirm password: " } else { "New: " }), "{}", echo_area(&ed));
+            let shown = echo();
+            assert!(shown.starts_with(if typed == "one" { "Confirm password: " } else { "New: " }), "{shown}");
         }
     }
-    assert_eq!(echo_area(&ed), "Confirm password: ");
-    ed.type_text("same");
-    ed.press("RET").unwrap();
-    assert_eq!(s.eval_expression(&mut ed, "ember.variable('got')").unwrap(), r#""same""#);
+    assert_eq!(echo(), "Confirm password: ");
+    d.type_text("same");
+    d.press("RET");
+    assert_eq!(d.eval_expression("ember.variable('got')"), r#""same""#);
 }
 
 #[test]
@@ -264,22 +281,23 @@ fn the_password_prompt_regexp_matches_as_emacs_does() {
 
 #[test]
 fn a_password_prompt_reads_the_password_without_showing_it() {
-    let (mut ed, _) = setup();
-    start_shell(&mut ed);
-    type_line(&mut ed, r#"stty -echo; printf 'Password: '; read p; stty echo; echo; echo "got ${#p} chars""#);
+    let d = driven();
+    driven_shell(&d);
+    driven_line(&d, r#"stty -echo; printf 'Password: '; read p; stty echo; echo; echo "got ${#p} chars""#);
+    let echo = || d.with(|ed| echo_area(ed));
     let start = Instant::now();
-    while !echo_area(&ed).starts_with("Password:") && start.elapsed() < Duration::from_secs(10) {
-        ed.accept_process_output(Duration::from_millis(20));
+    while !echo().starts_with("Password:") && start.elapsed() < Duration::from_secs(10) {
+        std::thread::sleep(Duration::from_millis(20));
     }
-    assert_eq!(echo_area(&ed), "Password: ");
-    ed.type_text("hunter2");
-    assert_eq!(echo_area(&ed), "Password: *******");
-    ed.press("RET").unwrap();
-    until(&mut ed, |t| t.ends_with("got 7 chars\n$ "));
-    assert!(!text(&ed).contains("hunter2"), "{:?}", text(&ed));
+    d.0.settle();
+    assert_eq!(echo(), "Password: ");
+    d.type_text("hunter2");
+    assert_eq!(echo(), "Password: *******");
+    d.press("RET");
+    d.until(|t| t.ends_with("got 7 chars\n$ "));
+    assert!(!d.text().contains("hunter2"), "{:?}", d.text());
 }
 
-/// The input after the prompt, and where point is in it.
 fn input(ed: &Editor) -> (String, usize) {
     let t = text(ed);
     let start = t.rfind("$ ").unwrap() + 2;
@@ -316,28 +334,29 @@ fn the_history_comes_from_the_shells_history_file_and_goes_back_to_it() {
 
 #[test]
 fn c_c_m_r_finds_inputs_starting_with_what_is_typed() {
-    let (mut ed, _) = setup();
-    start_shell(&mut ed);
+    let d = driven();
+    driven_shell(&d);
     for line in ["echo one", "true", "echo two", "exit_not"] {
-        type_line(&mut ed, line);
-        until(&mut ed, |t| t.ends_with("$ "));
+        driven_line(&d, line);
+        d.until(|t| t.ends_with("$ "));
     }
-    ed.type_text("ec");
-    ed.press("C-c M-r").unwrap();
-    assert_eq!(input(&ed), ("echo two".to_string(), 2), "point stays after what was typed");
-    ed.press("C-c M-r").unwrap();
-    assert_eq!(input(&ed).0, "echo one");
-    ed.press("C-c M-s").unwrap();
-    assert_eq!(input(&ed).0, "echo two");
+    let input = || d.with(|ed| input(ed));
+    d.type_text("ec");
+    d.press("C-c M-r");
+    assert_eq!(input(), ("echo two".to_string(), 2), "point stays after what was typed");
+    d.press("C-c M-r");
+    assert_eq!(input().0, "echo one");
+    d.press("C-c M-s");
+    assert_eq!(input().0, "echo two");
     // Going on past the newest puts back what was typed.
-    ed.press("C-c M-s").unwrap();
-    assert_eq!(input(&ed).0, "ec");
+    d.press("C-c M-s");
+    assert_eq!(input().0, "ec");
     // A regexp, asked for.
-    ed.press("C-c C-u").unwrap();
-    ed.call("comint-previous-matching-input", vec![]).unwrap();
-    ed.type_text("^tr");
-    ed.press("RET").unwrap();
-    assert_eq!(input(&ed).0, "true");
+    d.press("C-c C-u");
+    d.start(|ed| ed.call("comint-previous-matching-input", vec![]).unwrap());
+    d.type_text("^tr");
+    d.press("RET");
+    assert_eq!(input().0, "true");
 }
 
 #[test]

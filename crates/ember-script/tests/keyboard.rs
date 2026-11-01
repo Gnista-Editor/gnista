@@ -1,8 +1,17 @@
 //! The command loop's own primitives: reading keys partway through a
 //! command, the keys that ran it, the keys typed lately, and recursive edits.
 
+mod driven;
+
+use driven::Driven;
 use ember_core::Editor;
 use ember_script::Scripting;
+
+/// The commands below that read, on the editor's own thread, as a key read
+/// partway through a command waits for it (ADR 0053).
+fn driven() -> Driven {
+    Driven::new(COMMANDS)
+}
 
 fn setup() -> (Editor, Scripting) {
     let mut ed = Editor::new();
@@ -12,7 +21,14 @@ fn setup() -> (Editor, Scripting) {
         .eval_typescript(
             &mut ed,
             "test.ts",
-            r#"
+            COMMANDS.into(),
+        )
+        .unwrap();
+    (ed, scripting)
+}
+
+// Commands that read as Emacs's tests below do, each inserting what it read.
+const COMMANDS: &str = r#"
             ember.bindKey("C-c k", ember.defineCommand({ name: "test-read-key", run: async () => ember.insert(`${await ember.readKey("Key: ")}|`) }));
             ember.bindKey("C-c c", ember.defineCommand({ name: "test-read-char", run: async () => ember.insert(`${await ember.readChar("Char: ")}|`) }));
             ember.bindKey("C-c s", ember.defineCommand({
@@ -32,12 +48,7 @@ fn setup() -> (Editor, Scripting) {
                 }
               },
             }));
-            "#
-            .into(),
-        )
-        .unwrap();
-    (ed, scripting)
-}
+            "#;
 
 fn text(ed: &Editor) -> String {
     let b = ed.window_buffer();
@@ -47,25 +58,25 @@ fn text(ed: &Editor) -> String {
 #[test]
 fn keys_read_partway_through_a_command_as_emacs_reads_them() {
     // What Emacs 30.2 inserts for the same keys, run as a keyboard macro.
-    let (mut ed, _s) = setup();
-    ed.press("C-c k").unwrap();
-    assert_eq!(ed.echo(), Some("Key: "));
-    ed.press("<f1> C-c k M-x C-c k ESC x").unwrap();
-    assert_eq!(text(&ed), "<f1>|M-x|ESC|x", "ESC alone, then x typed");
-    let (mut ed, _s) = setup();
-    ed.press("C-c s C-x C-f C-c s C-g C-u 4 C-c t C-c t").unwrap();
-    assert_eq!(text(&ed), "C-x C-f|C-x C-f|C-g|C-g|C-c t|C-c t|", "the prefix argument's keys are not the command's");
+    let d = driven();
+    d.press("C-c k");
+    assert_eq!(d.message().as_deref(), Some("Key: "));
+    d.press("<f1> C-c k M-x C-c k ESC x");
+    assert_eq!(d.text(), "<f1>|M-x|ESC|x", "ESC alone, then x typed");
+    let d = driven();
+    d.press("C-c s C-x C-f C-c s C-g C-u 4 C-c t C-c t");
+    assert_eq!(d.text(), "C-x C-f|C-x C-f|C-g|C-g|C-c t|C-c t|", "the prefix argument's keys are not the command's");
 }
 
 #[test]
 fn quitting_or_a_wrong_key_ends_the_reading() {
-    let (mut ed, _s) = setup();
-    ed.press("C-c k C-g").unwrap();
-    assert_eq!(ed.echo(), Some("Quit"));
-    ed.press("C-c c <f1>").unwrap();
-    assert_eq!(ed.echo(), Some("Non-character input-event"));
-    ed.press("C-c c a").unwrap();
-    assert_eq!(text(&ed), "a|", "only the character read, inserted once");
+    let d = driven();
+    d.press("C-c k C-g");
+    assert_eq!(d.message().as_deref(), Some("Quit"));
+    d.press("C-c c <f1>");
+    assert_eq!(d.message().as_deref(), Some("Non-character input-event"));
+    d.press("C-c c a");
+    assert_eq!(d.text(), "a|", "only the character read, inserted once");
 }
 
 #[test]
@@ -86,36 +97,37 @@ fn recent_keys_and_view_lossage() {
 
 #[test]
 fn recursive_edits_wait_for_c_m_c_or_quit_with_c_bracket() {
-    let (mut ed, s) = setup();
-    ed.press("C-c r").unwrap();
-    assert_eq!(s.eval_expression(&mut ed, "ember.recursionDepth()").unwrap(), "1");
-    ed.redisplay();
-    let line: String = ed.mode_line(ed.selected_window()).iter().map(|seg| seg.text.as_str()).collect();
+    let d = driven();
+    d.press("C-c r");
+    assert_eq!(d.eval_expression("ember.recursionDepth()"), "1");
+    let line = d.with(|ed| {
+        ed.redisplay();
+        ed.mode_line(ed.selected_window()).iter().map(|seg| seg.text.clone()).collect::<String>()
+    });
     assert!(line.contains("[(Fundamental)]"), "{line}");
     // Commands go on meanwhile.
-    ed.type_text("typed ");
-    ed.press("C-M-c").unwrap();
-    assert_eq!(text(&ed), "typed <back>");
-    assert_eq!(s.eval_expression(&mut ed, "ember.recursionDepth()").unwrap(), "0");
-    ed.press("C-c r C-]").unwrap();
-    assert_eq!(text(&ed), "typed <back><quit>");
-    assert_eq!(ed.echo(), Some("Quit"));
-    ed.press("C-]").unwrap();
-    assert_eq!(ed.echo(), Some("No recursive edit is in progress"));
+    d.type_text("typed ");
+    d.press("C-M-c");
+    assert_eq!(d.text(), "typed <back>");
+    assert_eq!(d.eval_expression("ember.recursionDepth()"), "0");
+    d.press("C-c r C-]");
+    assert_eq!(d.text(), "typed <back><quit>");
+    assert_eq!(d.message().as_deref(), Some("Quit"));
+    d.press("C-]");
+    assert_eq!(d.message().as_deref(), Some("No recursive edit is in progress"));
     // top-level leaves every level, minibuffers too.
-    ed.press("C-c r C-c r M-x").unwrap();
-    ed.call("top-level", vec![]).unwrap();
-    assert_eq!(s.eval_expression(&mut ed, "ember.recursionDepth()").unwrap(), "0");
-    assert!(ed.prompt().is_none());
+    d.press("C-c r C-c r M-x");
+    d.with(|ed| ed.call("top-level", vec![]).map_err(|e| e.to_string())).unwrap();
+    d.0.settle();
+    assert_eq!(d.eval_expression("ember.recursionDepth()"), "0");
+    assert_eq!(d.prompt(), None);
 }
 
 #[test]
 fn read_event_gives_up_after_its_seconds_and_sit_for_stops_for_a_key() {
     use std::time::Duration;
-    let (mut ed, s) = setup();
-    s.eval_typescript(
-        &mut ed,
-        "t.ts",
+    let d = driven();
+    d.eval(
         r#"
         ember.bindKey("C-c e", ember.defineCommand({
           name: "test-read-event-timeout",
@@ -132,30 +144,32 @@ fn read_event_gives_up_after_its_seconds_and_sit_for_stops_for_a_key() {
             ember.insert("slept|");
           },
         }));
-        "#
-        .into(),
-    )
-    .unwrap();
+        "#,
+    );
+    let advance = |secs: u64| {
+        d.with(move |ed| ed.advance_clock(Duration::from_secs(secs)));
+        d.0.settle();
+    };
     // A key in time is the answer; none, and it is nil after the seconds.
-    ed.press("C-c e").unwrap();
-    assert_eq!(ed.echo(), Some("Event: "));
-    ed.advance_clock(Duration::from_secs(1));
-    ed.press("a").unwrap();
-    ed.press("C-c e").unwrap();
-    assert!(ed.next_timer_in().is_some_and(|d| d <= Duration::from_secs(2)), "the front end wakes for the timeout");
-    ed.advance_clock(Duration::from_secs(2));
-    assert_eq!(text(&ed), "a|nil|");
-    assert_eq!(ed.echo(), None);
+    d.press("C-c e");
+    assert_eq!(d.message().as_deref(), Some("Event: "));
+    advance(1);
+    d.press("a");
+    d.press("C-c e");
+    assert!(d.with(|ed| ed.next_timer_in().is_some_and(|t| t <= Duration::from_secs(2))), "the front end wakes for the timeout");
+    advance(2);
+    assert_eq!(d.text(), "a|nil|");
+    assert_eq!(d.message(), None);
     // sit-for: true when the time passes; false at a key, which then runs.
-    ed.press("C-c w").unwrap();
-    ed.advance_clock(Duration::from_secs(2));
-    ed.press("C-c w x").unwrap();
-    assert_eq!(text(&ed), "a|nil|true|false|x");
+    d.press("C-c w");
+    advance(2);
+    d.press("C-c w x");
+    assert_eq!(d.text(), "a|nil|true|false|x");
     // sleep-for goes on after its time, in the buffer it started in.
-    ed.press("C-c z").unwrap();
-    assert_eq!(text(&ed), "a|nil|true|false|x");
-    ed.advance_clock(Duration::from_secs(1));
-    assert_eq!(text(&ed), "a|nil|true|false|xslept|");
+    d.press("C-c z");
+    assert_eq!(d.text(), "a|nil|true|false|x");
+    advance(1);
+    assert_eq!(d.text(), "a|nil|true|false|xslept|");
 }
 
 #[test]

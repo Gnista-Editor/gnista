@@ -1,6 +1,9 @@
 //! Highlighting by regexp, M-s h: overlays in the faces Emacs offers, in the
 //! order it offers them, taken away again with M-s h u.
 
+mod driven;
+
+use driven::Driven;
 use ember_core::Editor;
 use ember_script::Scripting;
 
@@ -27,22 +30,33 @@ fn highlights(ed: &mut Editor, s: &Scripting) -> String {
 
 #[test]
 fn m_s_h_r_highlights_in_the_next_face_and_m_s_h_u_takes_it_away() {
-    let (mut ed, s) = setup("foo bar foo\nbaz foo");
-    ed.press("M-s h r").unwrap();
-    ed.type_text("foo");
-    ed.press("RET").unwrap();
+    // M-s h r asks for the face partway through, so on the editor's own thread.
+    let d = Driven::new("");
+    d.type_text("foo bar foo\nbaz foo");
+    d.press("M-<");
+    let highlights = || {
+        let got = d.eval_expression(
+            r#"JSON.stringify(ember.overlaysIn(0, ember.bufferSize())
+                 .filter((o) => ember.overlayGet(o, "hi-lock-overlay"))
+                 .map((o) => `${ember.overlayStart(o)}-${ember.overlayEnd(o)}:${ember.overlayGet(o, "face")}`).sort())"#,
+        );
+        serde_json::from_str::<String>(&got).unwrap()
+    };
+    d.press("M-s h r");
+    d.type_text("foo");
+    d.press("RET");
     // The face is asked for, hi-yellow by default.
-    ed.press("RET").unwrap();
-    assert_eq!(highlights(&mut ed, &s), r#"["0-3:hi-yellow","16-19:hi-yellow","8-11:hi-yellow"]"#);
-    assert_eq!(s.eval_expression(&mut ed, "ember.variable('hi-lock-mode')").unwrap(), "true");
+    d.press("RET");
+    assert_eq!(highlights(), r#"["0-3:hi-yellow","16-19:hi-yellow","8-11:hi-yellow"]"#);
+    assert_eq!(d.eval_expression("ember.variable('hi-lock-mode')"), "true");
     // The next takes the next face.
-    ed.press("M-s h r").unwrap();
-    ed.type_text("ba[rz]");
-    ed.press("RET RET").unwrap();
-    assert!(highlights(&mut ed, &s).contains(r#""4-7:hi-pink""#));
+    d.press("M-s h r");
+    d.type_text("ba[rz]");
+    d.press("RET RET");
+    assert!(highlights().contains(r#""4-7:hi-pink""#));
     // M-s h u takes away the one at point, by default.
-    ed.press("M-s h u RET").unwrap();
-    assert_eq!(highlights(&mut ed, &s), r#"["12-15:hi-pink","4-7:hi-pink"]"#);
+    d.press("M-s h u RET");
+    assert_eq!(highlights(), r#"["12-15:hi-pink","4-7:hi-pink"]"#);
 }
 
 #[test]

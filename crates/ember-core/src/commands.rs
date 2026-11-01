@@ -1409,7 +1409,14 @@ fn files_and_buffers(ed: &mut Editor) {
                 Ok(())
             },
         )
-        .param("buffer", ParamKind::Buffer, "Switch to buffer: "),
+        .param("buffer", ParamKind::Buffer, "Switch to buffer: ")
+        // As Emacs's, naming what empty input chooses.
+        .prompt_with(|ed, _| {
+            Ok(match ed.other_buffer() {
+                Some(other) => format!("Switch to buffer (default {other}): "),
+                None => "Switch to buffer: ".to_string(),
+            })
+        }),
     );
     ed.define_command(
         Command::new(
@@ -1447,7 +1454,8 @@ fn files_and_buffers(ed: &mut Editor) {
                 ed.read_answer(&question, &["yes", "no", "save and then kill"], then)
             },
         )
-        .param("buffer", ParamKind::Buffer, "Kill buffer: "),
+        .param("buffer", ParamKind::Buffer, "Kill buffer: ")
+        .prompt_with(|ed, _| Ok(format!("Kill buffer (default {}): ", ed.window_buffer().name))),
     );
     ed.define_command(
         Command::new(

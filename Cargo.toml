@@ -6,3 +6,9 @@ resolver = "3"
 edition = "2024"
 version = "0.1.0"
 license = "GPL-3.0-or-later"
+
+# Dependencies are optimised even in debug builds, so tests that run egui,
+# QuickJS and tree-sitter run near release speed, while Ember's own crates
+# still build quickly and debug well.
+[profile.dev.package."*"]
+opt-level = 2

@@ -1,0 +1,9 @@
+# cargo-nextest runs the tests: `cargo nextest run`. Each test runs in a
+# process of its own, tests from every binary at once.
+
+[profile.default]
+# A test still running after a minute is reported, and after three it is
+# stopped and fails, so one that hangs does not hold up the rest.
+slow-timeout = { period = "60s", terminate-after = 3 }
+# Every failure is reported, not only the first.
+fail-fast = false
