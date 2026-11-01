@@ -175,6 +175,20 @@ fn find_file_at_point_guesses_the_file_named_there() {
 }
 
 #[test]
+fn find_file_at_point_counts_characters_beyond_the_bmp() {
+    let (mut ed, _scripting) = setup();
+    let dir = dir();
+    fs::write(dir.path().join("notes.org"), "* Notes").unwrap();
+    let readme = dir.path().join("README");
+    fs::write(&readme, "🙂🙂 notes.org").unwrap();
+    visit(&mut ed, &readme);
+    ed.press("C-a C-f C-f C-f").unwrap();
+    ed.press("M-x").unwrap();
+    ed.type_text("ffap\n");
+    assert_eq!(ed.minibuffer_input(), ember_core::abbreviate_path(&dir.path().join("notes.org")));
+}
+
+#[test]
 fn relative_names_are_in_the_buffers_directory() {
     let (mut ed, _scripting) = setup();
     let dir = dir();

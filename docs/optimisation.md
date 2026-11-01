@@ -34,6 +34,10 @@ Typing `(` then `)` with Electric Pair and Show Paren mode on took about 1.9 s a
 
 Org keeps an index of its headings from its after-change hook since 2026-11-01, moving the headings after an edit and looking again only at the lines it touched, so `C-c C-t` and `M-<down>` take 8 to 9 ms in the 50,000-line file ([performance.md](performance.md)). What is left: each heading after an edit still gets a new object, which is most of what a single edit costs; RET takes 20 ms, much of it elsewhere in org-return; and S-TAB, 26 ms, is interpreting Org's folding, half of it QuickJS's regexp matcher.
 
+## Opening a large file
+
+`find-file` of the 100 MB text file takes 65 ms (`large_text_file` in the bench, [performance.md](performance.md)). A profile of it repeated (`EMBER_PROFILE_KEY=find-file EMBER_PROFILE_FILE=text` with `profile_key`) puts most of it in ropey building the rope, copying the text into its leaves. Of the rest, the bytes are checked as UTF-8 twice, once by `coding::detect` and again by `decode_as`, and then copied into a `String` the rope copies again: about 15% of the time. Decoding from the `Vec` the file was read into, `String::from_utf8` taking it without a copy, and detection handing on what it found, would save both; it means passing owned bytes through `decode`'s callers.
+
 ## Character tables
 
 Classes, categories, scripts and case past ASCII are binary searches in sorted runs (`chartab_data.rs`). Two-level tables indexed by code point, as Emacs's char-tables are, would make each lookup a pair of array reads. Worth doing when a profile shows the searches; none has yet.

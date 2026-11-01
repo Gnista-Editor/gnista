@@ -58,6 +58,27 @@ Later on 2026-10-31, after images, bidirectional text, the overlay arrow, the fr
 | GUI metrics, `text-scale-adjust` twice | 2.44 ms | 0.93 ms | 2.52 ms | 64 ms |
 | GUI metrics, `variable-pitch-mode` | 3.39 ms | 1.13 ms | 3.00 ms | 65 ms |
 
+On 2026-11-01, after the work of [multithreading.md](multithreading.md)'s steps 0 to 3 and step 6 ([ADR 0049](adr/0049-quitting.md) to [ADR 0051](adr/0051-the-editor-thread.md)) and the changes below:
+
+| | 2026-10-31 | 2026-11-01 |
+| --- | ---: | ---: |
+| **Org, 50,000 lines** | | |
+| `find-file` and `org-mode` | 93 ms | 23 ms |
+| `C-v`, typing, `DEL` | 2.3, 2.1, 2.0 ms | 2.3, 2.1, 2.0 ms |
+| RET in a paragraph | 63 ms | 21 ms |
+| `C-c C-t` on a heading | 54 ms | 8.7 ms |
+| `M-<down>` on a heading | 53 ms | 7.1 ms |
+| TAB on a heading | 19 ms | 10 ms |
+| `S-TAB` | 110 ms | 24 ms |
+| `(` and `)` with Electric Pair and Show Paren | 19 ms | 22 ms |
+| **Text, 100 MB** | | |
+| `find-file` | 138 ms | 65 ms |
+| `(` and `)` with Electric Pair and Show Paren | 1,963 ms | 262 ms |
+| `C-s` for a word at the end | 43 ms | 35 ms |
+| **Startup**, loading the packages | 60 ms | 41 ms |
+
+`key_to_frame` in the bench times a key and the drawing the window does after it, once through the calls front ends made to the editor while drawing and once through the frame description they draw from now ([ADR 0050](adr/0050-the-frame-description.md)); the two are within 0.1 ms of each other (Org, GUI metrics: `C-v` 3.13 against 3.15 ms, typing 2.49 against 2.59). Running the editor on a thread of its own ([ADR 0051](adr/0051-the-editor-thread.md)) does not make a key faster: the work is the same work, on another thread. What it changes is that the window goes on drawing, and `C-g` stops the command, while a long one runs.
+
 ### Where the slow keys' time goes
 
 Step 0 of [multithreading.md](multithreading.md): the bench's `profile_key` repeats one key in the 50,000-line Org file, and macOS's `sample` took a thousand samples a second of it for 10 seconds. Each sample counts for the nearest of three on its stack: QuickJS (interpreting scripts, its regexps and its memory), `ember-script`'s host functions and conversions, or `ember-core`'s primitives.
@@ -72,6 +93,7 @@ So the rule in step 4 splits: `S-TAB` is primitives, and a faster engine would n
 
 ## What changed
 
+- **Opening a file reads only what it needs.** `normal-mode` took the whole buffer into a script to read its first line for a `-*-` cookie, and checking for a final newline when saving took it all to read the last character; each now reads only those, as Emacs does. Line ends are found by counting every line's end only when the file has a carriage return, which memchr looks for first. `find-file` of the 100 MB text file went from 138 to 65 ms; the 82 ms of 2026-10-28 was already 135 ms by 2026-10-31, before the work of that night.
 - **Balanced-expression scans pass plain text a run at a time.** A run of ASCII words, symbols, spaces and punctuation without syntax flags changes nothing in a list scan, nor anything but the count at the top of a sexp scan, which cannot run out when there are more expressions to pass than characters left, as electric-pair asks to check a balance to the buffer's end. `scan-lists` and `scan-sexps` read such runs from the rope's chunks a byte at a time; a test checks them against the character-at-a-time scan on 1,000 random texts. Typing `(` and `)` with electric-pair in the 100 MB file went from 1,963 to 270 ms.
 - **Org reads only the lines it needs when a file opens.** `#+TODO:` and `#+STARTUP:` lines, drawers and outline's headings came from a loop over every line, a call per line; `ember.matchingLines` finds the lines that can match in one pass. `find-file` of the 50,000-line Org file went from 93 to 22 ms.
 - **Org's heading index follows changes.** Its after-change hook records each edit; the next time Org asks for its headings, those after an edit move by the edit's length, their line numbers found with one lookup per stretch between edits, and only the lines the edits touched are looked at again, as Org's element cache follows changes. Past 16 edits, or when the sizes show an edit ran no hooks, it finds every heading again. `org--headings-verify` checks the index against finding every heading again, which a test does after each of 400 random edits. RET went from 36 to 20 ms, `C-c C-t` from 23 to 9, `M-<down>` from 24 to 8.
@@ -85,4 +107,4 @@ So the rule in step 4 splits: `S-TAB` is primitives, and a faster engine would n
 
 ## What is left
 
-Org commands that change the text still read every heading again once per change, which is most of what RET, `C-c C-t` and `M-<down>` cost in a large file: about 1 ms per thousand lines. If files far larger than 50,000 lines matter, the next step is to keep the heading index up to date from the change hooks, as Org's element cache does, instead of rebuilding it.
+[optimisation.md](optimisation.md) lists where Ember is still slower than it could be: Electric Pair mode's balance check in a large buffer, the objects Org's heading index makes after each edit, building the rope when a large file opens, and rows off the grid in the GUI.

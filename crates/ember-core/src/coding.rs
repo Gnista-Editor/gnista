@@ -627,6 +627,10 @@ pub fn decode_file(bytes: &[u8], coding: Option<Coding>) -> (String, Coding) {
 /// as Emacs decides, keeping stray carriage returns as text.
 fn detect_eol(text: &str) -> Eol {
     let bytes = text.as_bytes();
+    // Most files have no carriage return, which memchr finds out fast.
+    if memchr::memchr(b'\r', bytes).is_none() {
+        return Eol::Unix;
+    }
     let mut lf = 0;
     let mut crlf = 0;
     let mut cr = false;

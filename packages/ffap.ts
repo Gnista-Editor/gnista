@@ -3,18 +3,18 @@
 // there, as the starting input of a find-file prompt. Emacs also guesses
 // from URLs, mail addresses and library names; Ember only from file names.
 
-/** The characters a file name at point may have, as ffap-string-at-point-mode-alist's file entry. */
-const FILE_CHARS = /[-~/A-Za-z0-9_.${}#%,:+@*?<>\[\]]/;
+/** The characters a file name at point may have, as ffap-string-at-point-mode-alist's file entry, for skip-chars. */
+const FILE_CHARS = "-~/A-Za-z0-9_.${}#%,:+@*?<>[]";
 
 /** The text around point that could be a file name, without punctuation around it, as ffap-string-at-point. */
 function stringAtPoint(): string {
-  const text = ember.bufferText();
-  const point = ember.point();
-  let start = point;
-  let end = point;
-  while (start > 0 && FILE_CHARS.test(text[start - 1])) start--;
-  while (end < text.length && FILE_CHARS.test(text[end])) end++;
-  let s = text.slice(start, end);
+  let s = ember.saveExcursion(() => {
+    const point = ember.point();
+    const start = point + ember.skipCharsBackward(FILE_CHARS);
+    ember.gotoChar(point);
+    const end = point + ember.skipCharsForward(FILE_CHARS);
+    return ember.bufferText(start, end);
+  });
   s = s.replace(/^[<@]+/, "").replace(/[@>;.,!:]+$/, "");
   return s;
 }

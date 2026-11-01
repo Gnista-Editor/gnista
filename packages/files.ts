@@ -16,8 +16,10 @@ ember.defineVariable({
  * "-*- mode: text -*-": the name with "-mode" added.
  */
 function modeFromFirstLine(): string | undefined {
-  const text = ember.bufferText();
-  const firstLine = text.slice(0, text.indexOf("\n") === -1 ? text.length : text.indexOf("\n"));
+  const firstLine = ember.saveRestriction(() => {
+    ember.widen();
+    return ember.lineText(0);
+  });
   const inside = /-\*-(.*?)-\*-/.exec(firstLine)?.[1]?.trim();
   if (!inside) {
     return undefined;
@@ -118,7 +120,7 @@ function inBuffer(buffer: string, then: () => void): () => void {
 function addFinalNewline(then: () => void): void {
   const size = ember.bufferSize();
   const require = ember.variable("require-final-newline");
-  if (size === 0 || require === false || require === null || ember.bufferText().endsWith("\n")) {
+  if (size === 0 || require === false || require === null || ember.bufferText(size - 1, size) === "\n") {
     then();
     return;
   }
