@@ -10453,6 +10453,8 @@ declare global {
      * Anything that takes a buffer's name takes one, as its current name.
      */
     interface Buffer {
+      /** A number that stays with it when it is renamed, and no other buffer has. */
+      readonly id: number;
       /** Its name now, or undefined once it is killed. */
       readonly name: string | undefined;
       /** Whether it is still live, as buffer-live-p. */
@@ -11944,10 +11946,10 @@ declare global {
     function lookingAt(regexp: string, position?: number, options?: { caseFold?: boolean }): boolean;
     /**
      * Each line of the accessible portion an Emacs regexp matches at the start of, as
-     * [line, start, text], as looking-at at each line's start would find them, in one pass.
-     * Sets no match data.
+     * [line, start, text], as looking-at at each line's start would find them, in one pass:
+     * those starting from `start` up to `end` if given. Sets no match data.
      */
-    function matchingLines(regexp: string, options?: { caseFold?: boolean }): [number, number, string][];
+    function matchingLines(regexp: string, options?: { caseFold?: boolean; start?: number; end?: number }): [number, number, string][];
     /**
      * Search forward for an Emacs regexp and move point to the end of the
      * match, as re-search-forward; signals search-failed unless `noerror`.

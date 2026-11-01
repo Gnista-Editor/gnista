@@ -367,9 +367,6 @@ function isHeadingLine(text: string): boolean {
   return /^\*+ /.test(text);
 }
 
-/** The last buffer's headings and what they were found for. */
-let headingCache: { key: string; headings: readonly Heading[] } | undefined;
-
 /**
  * Heading lines already parsed, by their text, for the TODO keywords
  * `parsedFor`: a change leaves most headings as they were, so only new or
@@ -379,36 +376,221 @@ const parsed = new Map<string, Readonly<Heading> | null>();
 let parsedFor = "";
 
 /**
- * The buffer's headings, top to bottom. Kept until the text or the TODO
- * keywords change, since the commands and the element parser ask for them
- * many times per key; frozen, as they are shared.
+ * A buffer's headings, the whole buffer's, kept up to date as it changes,
+ * as Org's element cache follows changes: after an edit only the lines it
+ * touched are looked at again and the headings after it move.
  */
-export function headings(): Heading[] {
-  const keywords = allKeywords();
-  // A narrowed buffer's headings are the accessible ones, as Org's searches find them.
-  const [min, max] = [ember.pointMin(), ember.pointMax()];
-  const key = `${ember.bufferName()}\n${ember.bufferModifiedTick()}\n${keywords.join(" ")}\n${min}-${max}`;
-  if (headingCache?.key === key) return headingCache.headings as Heading[];
-  const keywordsKey = keywords.join(" ");
-  if (keywordsKey !== parsedFor || parsed.size > 100_000) {
-    parsed.clear();
-    parsedFor = keywordsKey;
-  }
-  const sorted = [...keywords].sort((a, b) => b.length - a.length);
+interface HeadingIndex {
+  /** The buffer's modified tick and size when the index was last up to date. */
+  tick: number;
+  size: number;
+  keywords: string;
+  all: readonly Heading[];
+  /** The headings in the accessible portion, for a narrowing. */
+  view?: { min: number; max: number; tick: number; headings: readonly Heading[] };
+}
+
+const headingIndexes = new Map<string, HeadingIndex>();
+
+/** The current buffer's index's key: its id, which outlives a rename, and a buffer killed and made again does not share. */
+const indexKey = (): string => String(ember.currentBuffer().id);
+
+/** The changes to each indexed buffer since its index was last brought up to date, as after-change-functions gives them. */
+const headingChanges = new Map<string, [number, number, number][]>();
+
+/** Records a change to an Org buffer, for headings() to follow it. */
+function headingsAfterChange(beg: number, end: number, oldLen: number): void {
+  const name = indexKey();
+  if (!headingIndexes.has(name)) return;
+  const list = headingChanges.get(name);
+  if (list) list.push([beg, end, oldLen]);
+  else headingChanges.set(name, [[beg, end, oldLen]]);
+}
+
+/** The heading lines from `start` up to `end`, parsed, in the whole buffer. */
+function scanHeadings(keywords: string[], sorted: string[], start?: number, end?: number): Heading[] {
   const found: Heading[] = [];
   // The heading lines in one pass in the editor, rather than a call per
   // line or the whole text copied here: much the faster in a large buffer.
-  for (const [line, start, text] of ember.matchingLines("^\\*+ ", { caseFold: false })) {
-    if (start < min || start >= max) continue;
+  const lines = ember.saveRestriction(() => {
+    ember.widen();
+    return ember.matchingLines("^\\*+ ", { caseFold: false, start, end });
+  });
+  for (const [line, lineStart, text] of lines) {
     let h = parsed.get(text);
     if (h === undefined) {
       h = parseHeadingText(text, keywords, sorted) ?? null;
       parsed.set(text, h && Object.freeze(h));
     }
-    if (h) found.push(Object.freeze(placeHeading(h, line, start)));
+    if (h) found.push(Object.freeze(placeHeading(h, line, lineStart)));
   }
-  headingCache = { key, headings: Object.freeze(found) };
   return found;
+}
+
+/** A heading moved by `chars` characters and `lines` lines. */
+function shiftHeading(h: Heading, chars: number, lines: number): Heading {
+  const moved: Heading = {
+    line: h.line + lines,
+    start: h.start + chars,
+    end: h.end + chars,
+    level: h.level,
+    titleAt: h.titleAt + chars,
+    title: h.title,
+    // Each placed heading has tags of its own, so the moved one can share them.
+    tags: h.tags,
+  };
+  if (h.todo !== undefined) {
+    moved.todo = h.todo;
+    moved.todoAt = h.todoAt! + chars;
+  }
+  if (h.priority !== undefined) {
+    moved.priority = h.priority;
+    moved.priorityAt = h.priorityAt! + chars;
+  }
+  if (h.tagsAt !== undefined) moved.tagsAt = h.tagsAt + chars;
+  return Object.freeze(moved);
+}
+
+/**
+ * Brings an index up to date with the changes since, or returns false
+ * when they cannot be followed, as when an edit ran no change hooks.
+ */
+function followChanges(index: HeadingIndex, changes: [number, number, number][], keywords: string[], sorted: string[]): boolean {
+  // Past so many, finding every heading again is the quicker, as each
+  // change passes over the headings after it.
+  if (changes.length > 16) return false;
+  // Changes made without the hooks, which the sizes would not account for.
+  const grown = changes.reduce((sum, [beg, end, oldLen]) => sum + (end - beg) - oldLen, 0);
+  if (index.size + grown !== ember.bufferSize()) return false;
+  // Each heading, and how far the changes so far moved it, counted here
+  // and applied once, as a command's edits are many and headings many.
+  const hs: Heading[] = [...index.all];
+  const moved: number[] = new Array(hs.length).fill(0);
+  // Where each heading's line may have moved from, by the change it follows.
+  const dirty: [number, number][] = [];
+  for (const [beg, end, oldLen] of changes) {
+    const oldEnd = beg + oldLen;
+    const chars = end - beg - oldLen;
+    // Headings whose line the change touched go, to be found again.
+    // The first whose line ends at or after the change, by halving, as
+    // the headings stay in order however far they moved.
+    let [lo, hi] = [0, hs.length];
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (hs[mid].end + moved[mid] < beg) lo = mid + 1;
+      else hi = mid;
+    }
+    const i = lo;
+    let j = i;
+    while (j < hs.length && hs[j].start + moved[j] <= oldEnd) j++;
+    hs.splice(i, j - i);
+    moved.splice(i, j - i);
+    if (chars !== 0) for (let k = i; k < hs.length; k++) moved[k] += chars;
+    for (const r of dirty) {
+      if (r[0] > oldEnd) {
+        r[0] += chars;
+        r[1] += chars;
+      } else if (r[1] >= beg) {
+        r[1] = Math.max(r[0], r[1] >= oldEnd ? r[1] + chars : end, end);
+      }
+    }
+    dirty.push([beg, end]);
+  }
+  // Line numbers, which the changes' positions do not give: the headings
+  // between one change and the next moved by as many lines as the first of
+  // them did, so one lookup does for each such stretch.
+  const lineMoved: number[] = new Array(hs.length).fill(0);
+  const bounds = dirty.map((r) => r[1]).sort((x, y) => x - y);
+  let k = 0;
+  for (const bound of [...bounds, Infinity]) {
+    let to = k;
+    while (to < hs.length && hs[to].start + moved[to] <= bound) to++;
+    if (k < to) {
+      const lines = ember.lineOf(hs[k].start + moved[k]) - hs[k].line;
+      if (lines !== 0) for (let n = k; n < to; n++) lineMoved[n] = lines;
+    }
+    k = to;
+    if (k >= hs.length) break;
+  }
+  const all: Heading[] = hs.map((h, n) => (moved[n] === 0 && lineMoved[n] === 0 ? h : shiftHeading(h, moved[n], lineMoved[n])));
+  // The lines the changes touched, looked at again.
+  for (const [from, to] of mergeRanges(dirty)) {
+    const start = ember.lineStart(ember.lineOf(Math.min(from, ember.bufferSize())));
+    const stop = ember.lineEnd(ember.lineOf(Math.min(to, ember.bufferSize())));
+    const found = scanHeadings(keywords, sorted, start, stop);
+    let i = 0;
+    while (i < all.length && all[i].start < start) i++;
+    let j = i;
+    while (j < all.length && all[j].start <= stop) j++;
+    all.splice(i, j - i, ...found);
+  }
+  index.all = Object.freeze(all);
+  return true;
+}
+
+/** Ranges sorted and joined where they meet or overlap. */
+function mergeRanges(ranges: [number, number][]): [number, number][] {
+  const sorted = ranges.map((r): [number, number] => [r[0], r[1]]).sort((a, b) => a[0] - b[0]);
+  const out: [number, number][] = [];
+  for (const r of sorted) {
+    const last = out[out.length - 1];
+    if (last && r[0] <= last[1] + 1) last[1] = Math.max(last[1], r[1]);
+    else out.push(r);
+  }
+  return out;
+}
+
+/**
+ * Whether the current buffer's heading index, as its changes left it,
+ * agrees with finding every heading again: nil if so, else where they
+ * first differ, as Org's org-element--cache-self-verify checks its cache.
+ */
+ember.defun("org--headings-verify", () => {
+  const kept = headings();
+  const keywords = allKeywords();
+  const fresh = scanHeadings(keywords, [...keywords].sort((a, b) => b.length - a.length)).filter((h) => h.start >= ember.pointMin() && h.start < ember.pointMax());
+  const show = (h?: Heading) => (h === undefined ? "none" : JSON.stringify(h));
+  for (let i = 0; i < Math.max(kept.length, fresh.length); i++) {
+    if (show(kept[i]) !== show(fresh[i])) return `heading ${i}: kept ${show(kept[i])}, found ${show(fresh[i])}`;
+  }
+  return null;
+});
+
+/**
+ * The buffer's headings, top to bottom, in its accessible portion, as Org's
+ * searches find them. Kept up to date as the buffer changes, since the
+ * commands and the element parser ask for them many times per key; frozen,
+ * as they are shared.
+ */
+export function headings(): Heading[] {
+  const keywords = allKeywords();
+  const keywordsKey = keywords.join(" ");
+  if (keywordsKey !== parsedFor || parsed.size > 100_000) {
+    parsed.clear();
+    parsedFor = keywordsKey;
+  }
+  const name = indexKey();
+  const tick = ember.bufferModifiedTick();
+  const sorted = [...keywords].sort((a, b) => b.length - a.length);
+  let index = headingIndexes.get(name);
+  if (!index || index.keywords !== keywordsKey || index.tick !== tick) {
+    const changes = headingChanges.get(name);
+    headingChanges.delete(name);
+    const followed = index !== undefined && index.keywords === keywordsKey && changes !== undefined && followChanges(index, changes, keywords, sorted);
+    if (!followed) {
+      index = { tick, size: ember.bufferSize(), keywords: keywordsKey, all: Object.freeze(scanHeadings(keywords, sorted)) };
+      headingIndexes.set(name, index);
+    }
+    index!.tick = tick;
+    index!.size = ember.bufferSize();
+    index!.view = undefined;
+  }
+  const [min, max] = [ember.pointMin(), ember.pointMax()];
+  if (min === 0 && max === ember.bufferSize()) return index!.all as Heading[];
+  if (index!.view?.min !== min || index!.view.max !== max) {
+    index!.view = { min, max, tick, headings: Object.freeze(index!.all.filter((h) => h.start >= min && h.start < max)) };
+  }
+  return index!.view!.headings as Heading[];
 }
 
 /** The heading whose entry a line is in: the nearest heading at or above it. */
@@ -7252,6 +7434,7 @@ ember.defineMajorMode({
     if (ember.variable("org-startup-truncated") === true) ember.setVariable("truncate-lines", true);
     ember.addHook("jit-lock-functions", fontify, { local: true });
     ember.addHook("after-change-functions", foldsAfterChange, { local: true });
+    ember.addHook("after-change-functions", headingsAfterChange, { local: true });
     startupVisibility();
   },
 });

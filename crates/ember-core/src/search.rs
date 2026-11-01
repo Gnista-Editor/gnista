@@ -351,18 +351,34 @@ impl Editor {
     /// them, as Org finds its headings. Faster than one search per line,
     /// and quit stops it.
     pub fn matching_lines(&self, pattern: &str, case_fold: bool) -> Result<Vec<(usize, usize, String)>> {
+        let b = self.buffer();
+        self.matching_lines_in(pattern, case_fold, b.point_min(), b.point_max())
+    }
+
+    /// As [`Editor::matching_lines`], for the lines starting from `from`
+    /// up to `to`, within the accessible portion.
+    pub fn matching_lines_in(&self, pattern: &str, case_fold: bool, from: usize, to: usize) -> Result<Vec<(usize, usize, String)>> {
         crate::regexp::with_tables(self.search_tables(), || {
             let b = self.buffer();
             let re = Regexp::cached(pattern, case_fold)?;
             let (class, fixed) = self.syntax_classes(b);
             let h = BufferHaystack::new(b, &class, fixed).quitting(&self.quitting).reading(256);
-            let (min, max) = (b.point_min(), b.point_max());
+            let (min, max) = (b.point_min().max(from), b.point_max().min(to));
             // Each line's start and first character, found a chunk of the
             // text at a time rather than a character at a time.
             let (mut lines, mut starts) = (Vec::new(), Vec::new());
-            let (mut pos, mut line, mut at_start) = (0usize, 0usize, true);
+            // From the start of the line `min` is on, rather than the buffer's.
+            let first = b.line_of(min.min(b.len()));
+            let (mut pos, mut line, mut at_start) = (b.line_start(first), first, true);
             let chars = |bytes: &[u8]| bytes.iter().filter(|&&b| (b as i8) >= -0x40).count();
-            for chunk in b.text().chunks() {
+            let byte = b.text().char_to_byte(pos);
+            let (chunks, chunk_byte, _, _) = b.text().chunks_at_byte(byte);
+            let mut skip = byte - chunk_byte;
+            for chunk in chunks {
+                let chunk = &chunk[std::mem::take(&mut skip)..];
+                if pos > max {
+                    break;
+                }
                 let bytes = chunk.as_bytes();
                 let mut i = 0;
                 while i < bytes.len() {

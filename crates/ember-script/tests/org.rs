@@ -311,3 +311,60 @@ fn fontifying_a_large_file_is_quick() {
     assert!(start.elapsed().as_secs_f64() < 2.0, "took {:?}", start.elapsed());
 }
 
+
+/// The heading index follows edits as finding every heading again would:
+/// random insertions, deletions and Org commands, checked after each.
+#[test]
+fn the_heading_index_follows_random_edits() {
+    let mut text = String::new();
+    for i in 0..60 {
+        text.push_str(&format!("{} TODO Heading {i} :tag{}:\nBody of {i}.\n", "*".repeat(1 + i % 3), i % 4));
+    }
+    let (mut ed, s) = org(&text);
+    let mut seed = 42u64;
+    let mut rand = |n: usize| {
+        seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        (seed >> 33) as usize % n.max(1)
+    };
+    let pieces = ["\n* New ", "x", "\n", "** ", "*", " :a:b:", "TODO ", "\n\n", "é", ""];
+    for step in 0..400 {
+        let len = ed.buffer().len();
+        match rand(6) {
+            0 | 1 => {
+                let at = rand(len + 1);
+                ed.buffer_mut().set_point(at);
+                ed.type_text(pieces[rand(pieces.len())]);
+            }
+            2 => {
+                let at = rand(len + 1);
+                let n = rand(12).min(len - at.min(len));
+                ed.buffer_mut().set_point(at);
+                for _ in 0..n {
+                    ed.press("C-d").ok();
+                }
+            }
+            3 => {
+                let line = rand(ed.buffer().line_count());
+                let at = ed.buffer().line_start(line);
+                ed.buffer_mut().set_point(at);
+                ed.press(["C-c C-t", "M-<down>", "M-<up>", "RET", "C-k", "M-RET"][rand(6)]).ok();
+            }
+            4 => {
+                ed.press("C-/").ok();
+            }
+            _ => {
+                // Narrowed, then widened again.
+                let line = rand(ed.buffer().line_count());
+                let at = ed.buffer().line_start(line);
+                ed.buffer_mut().set_point(at);
+                ed.call("org-narrow-to-subtree", vec![]).ok();
+                let verdict = s.eval_expression(&mut ed, "ember.funcall('org--headings-verify')").unwrap();
+                assert_eq!(verdict, "null", "narrowed, step {step}");
+                ed.press("C-x n w").ok();
+            }
+        }
+        ed.take_error();
+        let verdict = s.eval_expression(&mut ed, "ember.funcall('org--headings-verify')").unwrap();
+        assert_eq!(verdict, "null", "step {step}");
+    }
+}
