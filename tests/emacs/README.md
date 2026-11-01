@@ -73,10 +73,13 @@ Turn the ones worth fixing into cases in a `cases/org-fuzz-*.json` file, so they
 - **Hangs.** Org can loop forever, so recording has a time limit. A run that takes too long is split until the case that hangs is left out.
 - **Clock times.** The minute of a logged time can differ because Emacs runs first, so it is ignored.
 - **Malformed timestamps.** A case where Org fails with "Not an Org time string" is left out. Org fails like that in nearly any command in the entry, and Ember only where it parses the timestamp.
+- **Emacs's own failures.** A case where Emacs fails with "Wrong type argument", a bug in its Lisp such as `org-narrow-to-element` on an empty item, is left out.
+- **Long lines.** Batch Emacs does not wrap long lines, so a case that moves with `C-n` or `C-p` over a line 80 columns wide or more is left out.
+- **Leaving the directory.** A case whose result names a place outside its own directory, as after Dired's `^`, is left out, as the directories around it differ between the two runs.
 
 `dired_behaves_like_emacs_on_random_cases` types random Dired keys over random directories. `compares_a_recorded_run`, with `EMBER_FUZZ_RUN=target/dired-fuzz/run`, compares Ember again with a run Emacs recorded, without recording it again.
 
-`plain_editing_behaves_like_emacs_on_random_cases` does the same for editing outside any mode: motion, killing, yanking, the mark, undo, transposing and prefix arguments in random text. Its differences go in `cases/editing-fuzz.json`. `filling_behaves_like_emacs_on_random_cases` fills random paragraphs with prefixes at random fill columns and types with Auto Fill mode on; `electric_pair_behaves_like_emacs_on_random_cases` types parens, quotes and sexp commands with Electric Pair mode on. Batch Emacs does not wrap long lines, so a case that moves with `C-n` over a line wider than 80 columns differs for that reason alone. The fuzzers work in their own directories under `target/`, so run one at a time with its full name, or several at once.
+`plain_editing_behaves_like_emacs_on_random_cases` does the same for editing outside any mode: motion, killing, yanking, the mark, undo, transposing and prefix arguments in random text. Its differences go in `cases/editing-fuzz.json`. `filling_behaves_like_emacs_on_random_cases` fills random paragraphs with prefixes at random fill columns and types with Auto Fill mode on; `electric_pair_behaves_like_emacs_on_random_cases` types parens, quotes and sexp commands with Electric Pair mode on. The fuzzers work in their own directories under `target/`, and each gives record.el its own place for a case's files in `EMBER_ORACLE_FILES`, so run one at a time with its full name, or several at once.
 
 record.el also makes opening a link in a browser or another program an error, so a case cannot start one.
 

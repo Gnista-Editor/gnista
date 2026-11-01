@@ -831,6 +831,84 @@
         "a.txt": "one\n"
       },
       "message": "Modification-flag cleared"
+    },
+    {
+      "name": "undo-in-a-region-with-nothing-to-undo-fails-before-asking-about-the-disk",
+      "input": {
+        "text": "one\n",
+        "point": 4,
+        "keys": "C-t S-<left> C-x x g <f33> C-/",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "yes"
+        ],
+        "find": "a.txt",
+        "disk": "it's"
+      },
+      "text": "one\n",
+      "visible": "one\n",
+      "point": 3,
+      "mark": 2,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No further undo information for region",
+      "files": {
+        "a.txt": "it's"
+      }
+    },
+    {
+      "name": "undoing-after-not-modified-leaves-the-buffer-unmodified",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "1 M-~ C-/",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "find": "a.txt",
+        "disk": "\tone  a.b. it's\nx\n\n42\nit's-one  a.b, Hello two\n"
+      },
+      "text": "",
+      "visible": "",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": ""
+      }
+    },
+    {
+      "name": "undo-moves-point-before-asking-about-a-file-changed-on-disk",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "x <f33> C-x C-x M-~ C-/",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "no"
+        ],
+        "find": "a.txt",
+        "disk": "it's-it's-x foo_bar.\n\n"
+      },
+      "text": "x",
+      "visible": "x",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "No mark set in this buffer",
+      "files": {
+        "a.txt": "it's-it's-x foo_bar.\n\n"
+      }
     }
   ]
 }

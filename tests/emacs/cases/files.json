@@ -29,5 +29,8 @@
   {"name": "recover-without-auto-save", "find": "a.txt", "text": "saved\n", "keys": "M-x", "answers": ["recover-this-file"]},
   {"name": "write-file-new-name", "find": "a.txt", "text": "one\n", "keys": "x C-x C-w", "answers": ["b.txt"]},
   {"name": "write-file-over-existing", "files": {"b.txt": "old\n"}, "find": "a.txt", "text": "one\n", "keys": "C-x C-w", "answers": ["b.txt", "y"]},
-  {"name": "not-modified", "find": "a.txt", "text": "one\n", "keys": "x M-~", "message": true}
+  {"name": "not-modified", "find": "a.txt", "text": "one\n", "keys": "x M-~", "message": true},
+  {"name": "undo-in-a-region-with-nothing-to-undo-fails-before-asking-about-the-disk", "text": "one\n", "keys": "C-t S-<left> C-x x g <f33> C-/", "point": 4, "answers": ["yes"], "find": "a.txt", "disk": "it's"},
+  {"name": "undoing-after-not-modified-leaves-the-buffer-unmodified", "text": "", "keys": "1 M-~ C-/", "find": "a.txt", "disk": "\tone  a.b. it's\nx\n\n42\nit's-one  a.b, Hello two\n"},
+  {"name": "undo-moves-point-before-asking-about-a-file-changed-on-disk", "text": "", "keys": "x <f33> C-x C-x M-~ C-/", "answers": ["no"], "find": "a.txt", "disk": "it's-it's-x foo_bar.\n\n"}
 ]

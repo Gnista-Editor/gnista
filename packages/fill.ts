@@ -193,6 +193,8 @@ function canonicallySpaceRegion(beg: number, endMarker: ember.Marker): void {
   const double = truthy(ember.variable("sentence-end-double-space"));
   const colon = truthy(ember.variable("colon-double-space"));
   const re = new RegExp(`(${sentenceEnd()}) *|  +`, "gmu");
+  const before = ember.bufferText(bolAt(beg), beg);
+  const full = before + text;
   const deletions: [number, number][] = [];
   for (const m of text.matchAll(re)) {
     const start = m.index!;
@@ -208,9 +210,11 @@ function canonicallySpaceRegion(beg: number, endMarker: ember.Marker): void {
         deletions.push([Math.min(end, back + (double ? 2 : 1)), end]);
       }
     } else {
-      let back = start;
-      while (back > 0 && " ]})\"'".includes(text[back - 1])) back--;
-      const prev = back > 0 ? text[back - 1] : "\n";
+      // What comes before the spaces, looking past closing brackets, into
+      // the line before the region if need be.
+      let back = before.length + start;
+      while (back > 0 && " ]})\"'".includes(full[back - 1])) back--;
+      const prev = back > 0 ? full[back - 1] : "\n";
       const keep = double && ".?!".includes(prev) ? 2 : colon && prev === ":" ? 2 : prev === "\n" ? 0 : 1;
       deletions.push([start + keep, end]);
     }

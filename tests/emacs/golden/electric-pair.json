@@ -845,6 +845,31 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "undo-after-a-failed-delete-takes-the-delete-before-it-too",
+      "input": {
+        "text": "{",
+        "point": 1,
+        "keys": "C-x h SPC DEL DEL C-/",
+        "modes": [
+          "text-mode",
+          "electric-pair-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 36
+        }
+      },
+      "text": "{",
+      "visible": "{",
+      "point": 0,
+      "mark": 1,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Beginning of buffer"
     }
   ]
 }

@@ -1162,6 +1162,14 @@ impl Editor {
         }
     }
 
+    /// Makes the command now running not amalgamating after all, so the next
+    /// one starts a new undo step, as Emacs's self-insert-command does by
+    /// setting `undo-auto--this-command-amalgamating` to nil once auto-fill
+    /// has broken the line.
+    pub(crate) fn undo_auto_stop_amalgamating(&mut self) {
+        self.amalgamating_now = false;
+    }
+
     /// Point's column as Emacs's `current-column` counts it: tabs to tab
     /// stops, wide characters as two, and text hidden without an ellipsis as none.
     pub fn current_column(&self) -> usize {
@@ -1980,8 +1988,11 @@ impl Editor {
             }
             let mut buffer = Self::read_visited_file(path, self.coding_for_read())?;
             buffer.name = self.unique_buffer_name(&buffer.name);
-            // As Emacs's after-find-file, a file that cannot be written is read-only.
-            buffer.read_only = fs::metadata(path).is_ok_and(|m| m.permissions().readonly());
+            // As Emacs's after-find-file, a backup file, whose name ends in ~
+            // as backup-file-name-p says, or one that cannot be written is
+            // read-only.
+            buffer.read_only = path.to_string_lossy().ends_with('~')
+                || fs::metadata(path).is_ok_and(|m| m.permissions().readonly());
             self.buffers.push(buffer);
             self.select(self.buffers.len() - 1);
         }

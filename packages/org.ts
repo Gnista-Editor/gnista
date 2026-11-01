@@ -919,7 +919,8 @@ function cycleHeading(all: Heading[], i: number, at = i): void {
 function hideTopDrawers(): void {
   const first = headings()[0];
   const end = first ? first.line : ember.lineCount();
-  for (let line = 0; line < end; line++) {
+  // From the start of the accessible portion, as org-cycle-hide-drawers.
+  for (let line = lineAt(ember.pointMin()); line < end; line++) {
     const m = DRAWER.exec(ember.lineText(line));
     if (m && m[1].toUpperCase() !== "END") toggleDrawerOrBlock(line, true);
   }
@@ -1236,11 +1237,8 @@ function hideDrawersIn(fromLine: number, to: number): void {
 }
 
 function hideAllDrawers(): void {
-  // The lines that can open a drawer, found in one pass.
-  const lines = ember.saveRestriction(() => {
-    ember.widen();
-    return ember.matchingLines("^[ \t]*:[-_[:alnum:]]+:[ \t]*$", { caseFold: false });
-  });
+  // The lines of the accessible portion that can open a drawer, found in one pass.
+  const lines = ember.matchingLines("^[ \t]*:[-_[:alnum:]]+:[ \t]*$", { caseFold: false });
   for (const [line, , text] of lines) {
     const m = DRAWER.exec(text);
     if (m && m[1].toUpperCase() !== "END") toggleDrawerOrBlock(line, true);
@@ -4048,30 +4046,46 @@ function visible(h: Heading): boolean {
   return h.start === 0 || !ember.invisibleAt(h.start - 1);
 }
 
+/**
+ * Moves over headings, as org-next-visible-heading: a heading the search
+ * finds inside a fold counts too, and the search goes on past the fold.
+ * Without enough headings, point goes to the end, or to the start going back.
+ */
+function nextVisibleHeading(arg: number): void {
+  const regexp = "^\\*+ ";
+  const searchFails = (found: number | undefined, to: number): boolean => {
+    if (found === undefined) ember.gotoChar(to);
+    return found === undefined;
+  };
+  ember.gotoChar(arg < 0 ? ember.lineStart(lineAt()) : ember.lineEnd(lineAt()));
+  while (arg < 0 && !searchFails(ember.reSearchBackward(regexp, { noerror: true }), ember.pointMin())) {
+    if (ember.point() > ember.pointMin() && folded(ember.point())) {
+      ember.gotoChar(ember.previousSingleCharPropertyChange(ember.point(), "invisible"));
+      if (!ember.lookingAt(regexp)) searchFails(ember.reSearchBackward(regexp, { noerror: true }), ember.pointMin());
+    }
+    arg++;
+  }
+  while (arg > 0 && !searchFails(ember.reSearchForward(regexp, { noerror: true }), ember.pointMax())) {
+    if (folded(ember.point())) {
+      ember.gotoChar(ember.nextSingleCharPropertyChange(ember.point(), "invisible"));
+      ember.skipCharsForward(" \t\n");
+      ember.gotoChar(ember.lineEnd(lineAt()));
+    }
+    arg--;
+  }
+  ember.gotoChar(arg > 0 ? ember.pointMax() : ember.lineStart(lineAt()));
+}
+
 const nextHeading = ember.defineCommand({
   name: "org-next-visible-heading",
   doc: "Move to the next heading that is not hidden, or to the end of the buffer.",
-  run: () => {
-    for (let n = ember.prefixNumericValue(); n > 0; n--) {
-      const line = lineAt();
-      const next = headings().find((h) => h.line > line && visible(h));
-      ember.gotoChar(next ? next.start : ember.bufferSize());
-    }
-  },
+  run: () => nextVisibleHeading(ember.prefixNumericValue()),
 });
 
 const previousHeading = ember.defineCommand({
   name: "org-previous-visible-heading",
   doc: "Move to the previous heading that is not hidden, or to the start of the buffer.",
-  run: () => {
-    for (let n = ember.prefixNumericValue(); n > 0; n--) {
-      const from = ember.lineStart(lineAt());
-      const prev = headings()
-        .filter((h) => h.start < from && visible(h))
-        .at(-1);
-      ember.gotoChar(prev ? prev.start : 0);
-    }
-  },
+  run: () => nextVisibleHeading(-ember.prefixNumericValue()),
 });
 
 /** The sibling `by` headings on from heading i, skipping deeper ones, if any. */
@@ -4192,14 +4206,15 @@ function blankBeforeHeading(parent: boolean): boolean {
   }
   if (parent) i = ancestors(all, i)[0] ?? i;
   const h = all[i];
-  if (h.start !== 0) return isBlank(ember.lineText(h.line - 1));
+  // Within the accessible portion, as bobp and point-max are.
+  const [min, max] = [ember.pointMin(), ember.pointMax()];
+  if (h.start !== min) return isBlank(ember.lineText(h.line - 1));
   const next = all[i + 1];
   if (next) return isBlank(ember.lineText(next.line - 1));
   // Trailing spaces on the last line are ignored.
-  const size = ember.bufferSize();
-  let q = size;
-  while (q > 0 && /[ \t]/.test(ember.bufferText(q - 1, q))) q--;
-  if (q !== ember.lineStart(lineAt(q)) || q === 0) return false;
+  let q = max;
+  while (q > min && /[ \t]/.test(ember.bufferText(q - 1, q))) q--;
+  if (q !== ember.lineStart(lineAt(q)) || q === min) return false;
   return isBlank(ember.lineText(lineAt(q) - 1));
 }
 
@@ -4248,7 +4263,14 @@ function insertHeading(arg: ember.PrefixArg, invisibleOk = false): void {
   const blank = blankBeforeHeading(parentEnd);
   const all = headings();
   const current = headingIndex(all, lineAt());
-  const stars = "*".repeat(current === undefined ? 1 : all[current].level);
+  // As org-current-level, from the whole buffer, so a heading above a narrowing counts.
+  const level = ember.saveRestriction(() => {
+    ember.widen();
+    const wide = headings();
+    const i = headingIndex(wide, lineAt());
+    return i === undefined ? undefined : wide[i].level;
+  });
+  const stars = "*".repeat(level ?? 1);
   const p = ember.point();
   const respect =
     ember.variable("org-insert-heading-respect-content") === true ||
@@ -4282,7 +4304,7 @@ function insertHeading(arg: ember.PrefixArg, invisibleOk = false): void {
       ember.insert("\n");
       ember.gotoChar(ember.point() - 1);
     }
-    if (current === undefined && ember.point() < ember.bufferSize() && ember.point() > 0) {
+    if (level === undefined && ember.point() < ember.bufferSize() && ember.point() > 0) {
       if (isHeadingLine(ember.lineText(lineAt()))) ember.insert("\n");
       ember.gotoChar(ember.point() - 1);
     }
@@ -6882,6 +6904,20 @@ function hiddenTreeError(): never {
   throw new Error("Hidden subtree, open with TAB or use subtree command M-S-<left>/<right>");
 }
 
+/**
+ * Whether point is in an Org table, as org-at-table-p: its line starts as a
+ * table row does, and the parser, which sees the whole buffer, puts point in a table.
+ */
+function atTableP(): boolean {
+  if (!/^[ \t]*\|/.test(ember.lineText(lineAt()))) return false;
+  const p = ember.point();
+  return ember.saveRestriction(() => {
+    ember.widen();
+    for (let e = elementAt(p); e; e = e.parent) if (e.type === "table") return true;
+    return false;
+  });
+}
+
 const shiftUp = ember.defineCommand({
   name: "org-shiftup",
   doc: "S-<up> in Org: make a timestamp later, raise a heading's priority, or move to the previous item.",
@@ -6889,7 +6925,7 @@ const shiftUp = ember.defineCommand({
     if (timestampHere()) ember.callWithPrefix(ember.prefixArg(), "org-timestamp-up");
     else if (headingHere()) ember.call("org-priority-up");
     else if (itemHere()) ember.call("org-previous-item");
-    else if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-move-cell-up");
+    else if (atTableP()) ember.call("org-table-move-cell-up");
     else shiftSelectError();
   },
 });
@@ -6901,7 +6937,7 @@ const shiftDown = ember.defineCommand({
     if (timestampHere()) ember.callWithPrefix(ember.prefixArg(), "org-timestamp-down");
     else if (headingHere()) ember.call("org-priority-down");
     else if (itemHere()) ember.call("org-next-item");
-    else if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-move-cell-down");
+    else if (atTableP()) ember.call("org-table-move-cell-down");
     else shiftSelectError();
   },
 });
@@ -6917,7 +6953,7 @@ const shiftRight = ember.defineCommand({
     }
     else if (itemLine(lineAt())) cycleListBullet();
     else if (elementAt(ember.point())?.type === "node-property") nextAllowedValue();
-    else if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-move-cell-right");
+    else if (atTableP()) ember.call("org-table-move-cell-right");
     else shiftSelectError();
   },
 });
@@ -6933,7 +6969,7 @@ const shiftLeft = ember.defineCommand({
     }
     else if (itemLine(lineAt())) cycleListBullet("previous");
     else if (elementAt(ember.point())?.type === "node-property") nextAllowedValue();
-    else if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-move-cell-left");
+    else if (atTableP()) ember.call("org-table-move-cell-left");
     else shiftSelectError();
   },
 });

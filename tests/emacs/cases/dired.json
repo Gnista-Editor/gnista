@@ -587,5 +587,52 @@
   "text": "",
   "keys": "C-x C-j ?",
   "message": true
+ },
+ {
+  "name": "unmarking-backward-on-the-header-line-unmarks-every-file",
+  "text": "",
+  "keys": "C-x C-j # M-} DEL DEL",
+  "answers": [
+   "copy.txt"
+  ],
+  "files": {
+   "#a.txt#": "#a.txt#\n",
+   "a.txt": "one\n",
+   "b.txt": "b.txt\n",
+   "data": "data\n",
+   "empty/": ""
+  },
+  "find": "a.txt",
+  "message": true
+ },
+ {
+  "name": "a-backup-file-is-visited-read-only",
+  "text": "",
+  "keys": "C-x C-j SPC RET /",
+  "files": {
+   "a.txt": "one\n",
+   "a.txt~": "a.txt~\n",
+   "empty/": ""
+  },
+  "find": "a.txt",
+  "message": true
+ },
+ {
+  "name": "copying-a-directory-asks-whether-to-copy-it-recursively",
+  "text": "",
+  "keys": "C-x C-j * / C",
+  "answers": [
+   "txt$",
+   "no"
+  ],
+  "files": {
+   "a.txt": "one\n",
+   "a.txt~": "a.txt~\n",
+   "c.org": "c.org\n",
+   "sub/x.txt": "sub/x.txt\n",
+   "sub/y.org": "sub/y.org\n"
+  },
+  "find": "a.txt",
+  "message": true
  }
 ]

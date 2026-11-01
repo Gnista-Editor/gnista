@@ -488,5 +488,58 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "cycling-in-a-narrowed-heading-leaves-drawers-above-it",
+    "text": ":PROPERTIES:\n:END:\n* plan\n",
+    "keys": "C-x n e <backtab>",
+    "point": 26,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "a-heading-inserted-in-a-narrowed-entry-takes-its-level",
+    "text": "** alpha fix :home:x:\ncall <2026-10-18 Wed>",
+    "keys": "C-x n e C-<return>",
+    "point": 25,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "a-bar-in-a-narrowed-item-is-no-table",
+    "text": "- fix\n  - call\n- notes",
+    "keys": "C-x n e C-c C-p | S-<down>",
+    "point": 5,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "next-visible-heading-counts-a-folded-heading-and-stops-on-its-line",
+    "text": "** TODO notes fix [/]\n** TODO [#B] alpha",
+    "keys": "C-c C-p M-<left> C-u TAB C-c C-n 1",
+    "point": 27,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "aligning-a-narrowed-table-row-sees-only-that-row",
+    "text": "| ccc | yy |\n||x|",
+    "keys": "C-x n e TAB",
+    "point": 15,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "a-heading-inserted-in-a-narrowed-heading-adds-no-blank-line",
+    "text": "* beta\n* gamma fix :work:\n",
+    "keys": "C-x n e C-<return>",
+    "modes": [
+      "org-mode"
+    ]
   }
 ]

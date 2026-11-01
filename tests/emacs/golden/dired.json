@@ -1516,6 +1516,118 @@
         "sub/x.txt": "x\n"
       },
       "message": "d-elete, u-ndelete, x-punge, f-ind, o-ther window, R-ename, C-opy, h-elp"
+    },
+    {
+      "name": "unmarking-backward-on-the-header-line-unmarks-every-file",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j # M-} DEL DEL",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "copy.txt"
+        ],
+        "files": {
+          "#a.txt#": "#a.txt#\n",
+          "a.txt": "one\n",
+          "b.txt": "b.txt\n",
+          "data": "data\n",
+          "empty/": ""
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  #a.txt#\n  .\n  ..\n  a.txt\n  b.txt\n  data\n  empty\n",
+      "visible": "  DIR:\n  #a.txt#\n  .\n  ..\n  a.txt\n  b.txt\n  data\n  empty\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "#a.txt#": "#a.txt#\n",
+        "a.txt": "one\n",
+        "b.txt": "b.txt\n",
+        "data": "data\n",
+        "empty/": ""
+      },
+      "message": "(Wraparound for next marked file)"
+    },
+    {
+      "name": "a-backup-file-is-visited-read-only",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j SPC RET /",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "a.txt~": "a.txt~\n",
+          "empty/": ""
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "a.txt~\n",
+      "visible": "a.txt~\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Buffer is read-only: #<buffer a.txt~>",
+      "files": {
+        "a.txt": "one\n",
+        "a.txt~": "a.txt~\n",
+        "empty/": ""
+      },
+      "message": null
+    },
+    {
+      "name": "copying-a-directory-asks-whether-to-copy-it-recursively",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j * / C",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "txt$",
+          "no"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "a.txt~": "a.txt~\n",
+          "c.org": "c.org\n",
+          "sub/x.txt": "sub/x.txt\n",
+          "sub/y.org": "sub/y.org\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  a.txt~\n  c.org\n* sub\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  a.txt~\n  c.org\n* sub\n",
+      "point": 43,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "a.txt~": "a.txt~\n",
+        "c.org": "c.org\n",
+        "sub/": "",
+        "sub/x.txt": "sub/x.txt\n",
+        "sub/y.org": "sub/y.org\n"
+      },
+      "message": "(file-error Non-regular file Is a directory DIR/sub)"
     }
   ]
 }

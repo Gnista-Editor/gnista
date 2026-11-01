@@ -45,9 +45,13 @@
 (setq create-lockfiles nil)
 
 (defconst ember-oracle--files
-  (expand-file-name "../../target/oracle-files/" (file-name-directory load-file-name))
+  (let ((dir (getenv "EMBER_ORACLE_FILES")))
+    (if (and dir (not (string-empty-p dir)))
+        (file-name-as-directory (expand-file-name dir))
+      (expand-file-name "../../target/oracle-files/" (file-name-directory load-file-name))))
   "Where cases with `files' or `find' keep their files: outside the
-temporary directory, which Emacs makes no backups in.")
+temporary directory, which Emacs makes no backups in.  The fuzzers
+give each its own in EMBER_ORACLE_FILES, as they can run at once.")
 
 ;; Batch Emacs does not auto-save; interactive Emacs does, and Ember does.
 (setq auto-save-default t)

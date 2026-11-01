@@ -701,5 +701,11 @@
     "text": "foo_bar\n",
     "point": 5,
     "keys": "M-d C-d C-d 1 C-/"
+  },
+  {
+    "name": "undo-after-a-failed-delete-takes-the-delete-before-it-too",
+    "text": "{",
+    "point": 1,
+    "keys": "C-a SPC DEL DEL C-/"
   }
 ]

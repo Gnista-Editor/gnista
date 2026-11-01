@@ -2413,6 +2413,25 @@
       ],
       "modified": true,
       "error": "End of buffer"
+    },
+    {
+      "name": "undo-after-a-failed-delete-takes-the-delete-before-it-too",
+      "input": {
+        "text": "{",
+        "point": 1,
+        "keys": "C-a SPC DEL DEL C-/",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "{",
+      "visible": "{",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Beginning of buffer"
     }
   ]
 }

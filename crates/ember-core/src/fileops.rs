@@ -258,6 +258,10 @@ impl Editor {
         if !from.exists() {
             return Err(file_error("Opening input file", &io::Error::from(io::ErrorKind::NotFound), &[from]));
         }
+        // As Emacs's copy-file, which copies only regular files.
+        if from.is_dir() {
+            return Err(file_error("Non-regular file", &io::Error::other("Is a directory"), &[from]));
+        }
         if to.exists() && !ok_if_exists {
             return Err(Error::new(format!("File already exists: {}", to.display())));
         }

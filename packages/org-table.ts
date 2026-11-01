@@ -96,7 +96,10 @@ function forwardLine(n: number): void {
 const saveExcursion = <T>(body: () => T): T => ember.saveExcursion(body);
 
 function isTableLine(line: number): boolean {
-  return line >= 0 && line < ember.lineCount() && TABLE_LINE.test(ember.lineText(line));
+  if (line < 0 || line >= ember.lineCount()) return false;
+  // Only lines in the accessible portion, as org-table-begin searches.
+  if (ember.lineEnd(line) < ember.pointMin() || ember.lineStart(line) > ember.pointMax()) return false;
+  return TABLE_LINE.test(ember.lineText(line));
 }
 
 function atTable(pos = ember.point()): boolean {

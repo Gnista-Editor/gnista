@@ -785,12 +785,11 @@ impl Buffer {
         self.modified
     }
 
-    /// Marks the buffer modified or not, as Emacs's `set-buffer-modified-p`:
-    /// unmodified counts as saved, so undoing back to here is unmodified too.
+    /// Marks the buffer modified or not, as Emacs's `set-buffer-modified-p`.
+    /// The file is as it was, so undoing back to a change made to the
+    /// unmodified buffer, before or after this, leaves it unmodified, as
+    /// primitive-undo compares the visited file's time.
     pub fn set_modified(&mut self, modified: bool) {
-        if !modified && self.modified {
-            self.save_generation += 1;
-        }
         self.modified = modified;
     }
 
@@ -1802,7 +1801,16 @@ impl Buffer {
                 }
             }
         }
-        self.check_writable()?;
+        if let Err(e) = self.check_writable() {
+            // Emacs's primitive-undo goes to the change before it makes it,
+            // so point has moved when it asks about a file changed on disk.
+            if self.file.threatened
+                && let Some(edit) = self.undo_groups[index].edits.last()
+            {
+                self.point = edit.pos.min(self.len());
+            }
+            return Err(e);
+        }
         let redo = self.undo_groups[index].kind != GroupKind::Change;
         self.revert(index);
         self.close_group(GroupKind::Undo { undid: index });
@@ -1918,6 +1926,17 @@ impl Buffer {
         self.selective_undo.is_some()
     }
 
+    /// Whether there are edits since the last undo boundary, as when Emacs's
+    /// `buffer-undo-list` does not start with nil.
+    pub fn has_open_undo_group(&self) -> bool {
+        !self.open_group.is_empty()
+    }
+
+    /// Whether a run of undos in a region has steps left to undo.
+    pub fn can_undo_in_region(&self) -> bool {
+        self.selective_undo.as_ref().is_some_and(|s| !s.is_empty())
+    }
+
     /// Whether an undo now carries on the run of undos before it, as
     /// Emacs's undo decides: the last change was an undo, or the history
     /// ran out.
@@ -1943,12 +1962,13 @@ impl Buffer {
     /// [`Buffer::start_undo_in_region`], as Emacs's `primitive-undo` does,
     /// stopping quietly when they run out.
     pub fn undo_in_region(&mut self, count: usize) -> Result<()> {
+        // As undo-more, running out fails before anything is checked or changed.
+        if self.selective_undo.as_ref().is_none_or(|s| s.is_empty()) {
+            return Err(Error::new("No further undo information for region"));
+        }
         self.check_writable()?;
         self.undo_boundary();
-        let steps = self.selective_undo.as_mut().filter(|s| !s.is_empty());
-        let Some(steps) = steps else {
-            return Err(Error::new("No further undo information for region"));
-        };
+        let steps = self.selective_undo.as_mut().expect("checked above");
         let n = count.min(steps.len());
         let taken: Vec<_> = steps.drain(steps.len() - n..).rev().collect();
         let outside = || Error::new("Changes to be undone are outside visible portion of buffer");

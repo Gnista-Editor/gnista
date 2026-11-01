@@ -399,5 +399,26 @@
   "vars": {
    "fill-column": 14
   }
+ },
+ {
+  "name": "typing-after-an-auto-fill-is-a-new-undo-step",
+  "text": "breaking\tplan supercalifragilistic why? why? Mr.  fixes",
+  "keys": "SPC SPC C-/ SPC",
+  "point": 50,
+  "modes": [
+   "auto-fill-mode"
+  ],
+  "vars": {
+   "fill-column": 15
+  }
+ },
+ {
+  "name": "filling-from-the-middle-of-a-line-keeps-a-space-after-a-bracket",
+  "text": "\t(aside)  end. the notes end.\tdone, end.\n",
+  "keys": "C-x h M-f M-q",
+  "point": 41,
+  "vars": {
+   "fill-column": 27
+  }
  }
 ]

@@ -498,7 +498,12 @@ pub fn run(case: &Case) -> State {
             _ => log.push((entry.text.clone(), entry.count)),
         }
     }
-    let message = log.last().map(|(m, n)| if *n == 1 { m.clone() } else { format!("{m} [{n} times]") });
+    // record.el reads *Messages* a line at a time, so a message of several
+    // lines counts as its last.
+    let message = log.last().map(|(m, n)| {
+        let m = m.split('\n').rfind(|l| !l.is_empty()).unwrap_or_default();
+        if *n == 1 { m.to_string() } else { format!("{m} [{n} times]") }
+    });
     ed.font_lock_ensure().unwrap_or_else(|e| panic!("{}: fontifying: {e}", case.name));
     let windows = case.windows.then(|| {
         let sizes = ed.window_total_sizes();

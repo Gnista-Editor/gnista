@@ -857,7 +857,13 @@ fn after_self_insert(ed: &mut Editor, c: char, fill: bool) -> Result<()> {
             let p = ed.buffer().point();
             ed.buffer_mut().set_point(p - 1);
         }
+        let tick = ed.buffer().modified_tick();
         ed.call(&function, Vec::new())?;
+        // As Emacs's self-insert-command, a character that filled the line
+        // ends the run of typing that undo takes as one step.
+        if ed.buffer().modified_tick() != tick {
+            ed.undo_auto_stop_amalgamating();
+        }
         let b = ed.buffer_mut();
         if newline && b.point() < b.len() {
             let p = b.point();
@@ -977,10 +983,17 @@ fn editing(ed: &mut Editor) {
                 return err(if in_region { "No further undo information for region" } else { "No further undo information" });
             }
             if ed.buffer().undoing_in_region() {
-                ed.before_undo(continuing, false)?;
+                if ed.buffer().can_undo_in_region() {
+                    ed.before_undo(continuing, false)?;
+                }
                 ed.buffer_mut().undo_in_region(count.max(0) as usize)?;
             } else {
-                for k in 0..count.max(0) {
+                // Emacs's undo starts with (undo-more 1) to take off the boundary
+                // the command loop put at the head of the list. With edits since
+                // the last boundary, as after a C-d run that amalgamated and then
+                // failed, there is none, and that call undoes those edits too.
+                let unbounded = !continuing && count > 0 && ed.buffer().has_open_undo_group();
+                for k in 0..count.max(0) + i64::from(unbounded) {
                     if ed.buffer().can_undo(continuing) {
                         ed.before_undo(continuing, false)?;
                     }

@@ -1022,6 +1022,52 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "typing-after-an-auto-fill-is-a-new-undo-step",
+      "input": {
+        "text": "breaking\tplan supercalifragilistic why? why? Mr.  fixes",
+        "point": 50,
+        "keys": "SPC SPC C-/ SPC",
+        "modes": [
+          "auto-fill-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 15
+        }
+      },
+      "text": "breaking\nplan\nsupercalifragilistic\nwhy? why? Mr.\n fixes",
+      "visible": "breaking\nplan\nsupercalifragilistic\nwhy? why? Mr.\n fixes",
+      "point": 50,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "filling-from-the-middle-of-a-line-keeps-a-space-after-a-bracket",
+      "input": {
+        "text": "\t(aside)  end. the notes end.\tdone, end.\n",
+        "point": 41,
+        "keys": "C-x h M-f M-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "fill-column": 27
+        }
+      },
+      "text": "\t(aside) end. the\n\tnotes end. done,\n\tend.\n",
+      "visible": "\t(aside) end. the\n\tnotes end. done,\n\tend.\n",
+      "point": 7,
+      "mark": 42,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
     }
   ]
 }

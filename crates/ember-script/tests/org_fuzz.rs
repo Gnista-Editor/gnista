@@ -249,6 +249,7 @@ fn record_within(dir: &Path, cases: &[Case], limit: Duration) -> Option<BTreeMap
         .args(["-Q", "--batch", "-l"])
         .arg(oracle_dir().join("record.el"))
         .env("EMBER_ORACLE_DIR", dir)
+        .env("EMBER_ORACLE_FILES", dir.join("files"))
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::piped())
@@ -278,7 +279,23 @@ fn record_within(dir: &Path, cases: &[Case], limit: Duration) -> Option<BTreeMap
 /// Which of a case's fields differ between Emacs and Ember, or `None` if
 /// the case cannot be compared because it made Emacs prompt.
 fn compare(case: &Case, emacs: &State) -> Option<String> {
-    if emacs.error.as_deref().is_some_and(|e| e.contains("Minibuffer read")) {
+    // Emacs asked more than the answers cover, which Dired catches and shows.
+    if [&emacs.error, &emacs.message].iter().any(|t| t.as_deref().is_some_and(|e| e.contains("Minibuffer read"))) {
+        return None;
+    }
+    // Emacs failing on a wrong type is a bug in its Lisp, as
+    // org-narrow-to-element on an empty item, not behaviour to match.
+    if emacs.error.as_deref().is_some_and(|e| e.starts_with("Wrong type argument")) {
+        return None;
+    }
+    // A case that left its directory, as Dired's ^ does, sees the directories
+    // around it, which differ between Emacs's run and Ember's.
+    if outside_its_directory(emacs) {
+        return None;
+    }
+    // Batch Emacs does not wrap long lines, so C-n and C-p move by whole
+    // lines there where Ember moves by the rows a long line wraps into.
+    if moves_by_lines(&case.keys) && case.text.lines().any(|l| columns(l) >= 80) {
         return None;
     }
     // Org's parser fails on timestamps that only its loose regexp matches,
@@ -292,6 +309,26 @@ fn compare(case: &Case, emacs: &State) -> Option<String> {
         Ok(ember) => Some(differences(&without_clock_times(emacs), &without_clock_times(&ember))),
         Err(_) => Some("    Ember panicked".into()),
     }
+}
+
+/// Whether keys move point by screen lines, as C-n and C-p do.
+fn moves_by_lines(keys: &str) -> bool {
+    keys.split(' ').any(|k| matches!(k, "C-n" | "C-p" | "<down>" | "<up>" | "S-<down>" | "S-<up>"))
+}
+
+/// How many columns a line takes, with tabs to every eighth.
+fn columns(line: &str) -> usize {
+    line.chars().fold(0, |col, c| if c == '\t' { col / 8 * 8 + 8 } else { col + 1 })
+}
+
+/// Whether a state names a place in the repository outside the case's own
+/// directory, which record.el writes as DIR.
+fn outside_its_directory(state: &State) -> bool {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let root = fs::canonicalize(&root).unwrap_or(root);
+    let forms = [root.display().to_string(), ember_core::abbreviate_path(&root)];
+    let texts = [Some(&state.text), state.error.as_ref(), state.message.as_ref()];
+    texts.into_iter().flatten().any(|t| forms.iter().any(|f| t.contains(f.as_str())))
 }
 
 /// A state with the times of inactive timestamps blanked out. Org logs the

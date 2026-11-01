@@ -1202,6 +1202,132 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "cycling-in-a-narrowed-heading-leaves-drawers-above-it",
+      "input": {
+        "text": ":PROPERTIES:\n:END:\n* plan\n",
+        "point": 26,
+        "keys": "C-x n e <backtab>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": ":PROPERTIES:\n:END:\n* plan\n",
+      "visible": ":PROPERTIES:\n:END:\n* plan\n",
+      "point": 26,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "a-heading-inserted-in-a-narrowed-entry-takes-its-level",
+      "input": {
+        "text": "** alpha fix :home:x:\ncall <2026-10-18 Wed>",
+        "point": 25,
+        "keys": "C-x n e C-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "** alpha fix :home:x:\ncall <2026-10-18 Wed>\n** \n",
+      "visible": "** alpha fix :home:x:\ncall <2026-10-18 Wed>\n** \n",
+      "point": 47,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "a-bar-in-a-narrowed-item-is-no-table",
+      "input": {
+        "text": "- fix\n  - call\n- notes",
+        "point": 5,
+        "keys": "C-x n e C-c C-p | S-<down>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "- |fix\n  - call\n- notes",
+      "visible": "- |fix\n  - call\n- notes",
+      "point": 3,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": "To use shift-selection with Org mode, customize ‘org-support-shift-select’"
+    },
+    {
+      "name": "next-visible-heading-counts-a-folded-heading-and-stops-on-its-line",
+      "input": {
+        "text": "** TODO notes fix [/]\n** TODO [#B] alpha",
+        "point": 27,
+        "keys": "C-c C-p M-<left> C-u TAB C-c C-n 1",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* TODO notes fix [/]1\n** TODO [#B] alpha",
+      "visible": "* TODO notes fix [/]1\n** TODO [#B] alpha",
+      "point": 21,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "aligning-a-narrowed-table-row-sees-only-that-row",
+      "input": {
+        "text": "| ccc | yy |\n||x|",
+        "point": 15,
+        "keys": "C-x n e TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "| ccc | yy |\n|   | x |\n|   |   |\n",
+      "visible": "| ccc | yy |\n|   | x |\n|   |   |\n",
+      "point": 25,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "a-heading-inserted-in-a-narrowed-heading-adds-no-blank-line",
+      "input": {
+        "text": "* beta\n* gamma fix :work:\n",
+        "point": 0,
+        "keys": "C-x n e C-<return>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* beta\n* \n* gamma fix :work:\n",
+      "visible": "* beta\n* \n* gamma fix :work:\n",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
     }
   ]
 }

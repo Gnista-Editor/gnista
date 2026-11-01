@@ -362,5 +362,18 @@
   "modes": [
    "electric-pair-mode"
   ]
+ },
+ {
+  "name": "undo-after-a-failed-delete-takes-the-delete-before-it-too",
+  "text": "{",
+  "keys": "C-x h SPC DEL DEL C-/",
+  "point": 1,
+  "modes": [
+   "text-mode",
+   "electric-pair-mode"
+  ],
+  "vars": {
+   "fill-column": 36
+  }
  }
 ]

@@ -634,8 +634,7 @@ const onHeader = (line = currentLine()): boolean => fileLine(line) === undefined
  * Marks lines from point, as dired-mark: the region's files, or on the
  * header every file but . and .., or the next `arg`. `.` and `..` are never flagged.
  */
-function mark(char: string): void {
-  const arg = ember.prefixArg();
+function mark(char: string, n = ember.prefixNumericValue(ember.prefixArg())): void {
   if (!(ember.regionActive() && ember.mark() !== undefined && ember.mark() !== ember.point()) && onHeader()) {
     for (let l = 0; l < ember.lineCount(); l++) {
       const f = fileLine(l);
@@ -656,7 +655,7 @@ function mark(char: string): void {
     ember.gotoChar(point);
     return;
   }
-  repeatOverLines(ember.prefixNumericValue(arg), (l) => {
+  repeatOverLines(n, (l) => {
     const f = fileLine(l);
     if (f && (!isDot(f.name) || f.isLink || char !== DEL_MARKER)) setMark(l, char);
   });
@@ -680,12 +679,8 @@ ember.defineCommand({
 ember.defineCommand({
   name: "dired-unmark-backward",
   doc: "Move up a line and take the mark or flag off the file there.",
-  run: () => {
-    const n = count();
-    repeatOverLines(-n, (l) => {
-      if (fileLine(l)) setMark(l, " ");
-    });
-  },
+  // As dired-unmark with a negative count, so on the header line it unmarks every file.
+  run: () => mark(" ", -count()),
 });
 
 ember.defineCommand({
@@ -951,13 +946,20 @@ function dwimTarget(): string {
   return currentDirectory();
 }
 
-type Creator = (from: string, to: string) => void;
+/** Makes `to` from `from`; `yes` is the answer to the question `ask` gave for it, if any. */
+type Creator = (from: string, to: string, yes?: boolean) => void;
 
 /**
  * Copies or renames the marked files, as dired-do-create-files: asking where
  * to, into a directory for several, and before overwriting each file.
  */
-function createFiles(operation: string, op1: string, creator: Creator, marker: (from: string) => string | undefined): void {
+function createFiles(
+  operation: string,
+  op1: string,
+  creator: Creator,
+  marker: (from: string) => string | undefined,
+  ask?: (from: string) => string | undefined,
+): void {
   requireDired();
   const arg = ember.prefixArg();
   const { files } = markedFiles(arg, MARKER, false, "No files specified");
@@ -972,11 +974,17 @@ function createFiles(operation: string, op1: string, creator: Creator, marker: (
     const to = (from: string) => intoDir ? ember.fileNameAsDirectory(target) + ember.fileNameNondirectory(from) : ember.directoryFileName(target);
     let done = 0;
     const failures: string[] = [];
+    // The last failure, as dired-log writes it.
+    let logged = "";
     let query: string | undefined;
     const next = (k: number): void => {
       if (k >= files.length) {
-        if (failures.length > 0) ember.message(`${operation}: ${failures.length} of ${files.length} file${files.length === 1 ? "" : "s"} failed`);
-        else ember.message(`${operation}: ${done} file${done === 1 ? "" : "s"} done`);
+        // As dired-log-summary: one failure shows what was logged for it.
+        if (failures.length === 1) ember.message(logged);
+        else if (failures.length > 0) {
+          const names = failures.map((f) => ember.fileNameNondirectory(f)).join(" ");
+          ember.message(`${operation}: ${failures.length} of ${files.length} file${files.length === 1 ? "" : "s"} failed--type ? for details (${names})`);
+        } else ember.message(`${operation}: ${done} file${done === 1 ? "" : "s"} done`);
         moveToFilename();
         return;
       }
@@ -995,18 +1003,27 @@ function createFiles(operation: string, op1: string, creator: Creator, marker: (
           throw new Error(`Cannot copy \u2018${from}\u2019 into its subdirectory \u2018${dest}\u2019`);
         }
       }
+      // A question the file creator asks first, as dired-copy-file asks
+      // whether to copy a directory recursively.
       const go = () => {
+        const question = ask?.(from);
+        if (question === undefined) create();
+        else ember.yesOrNoP(question, create);
+      };
+      const create = (yes?: boolean) => {
         try {
           const overwrite = ember.fileExists(dest);
           const mk = marker(from);
-          creator(from, dest);
+          creator(from, dest, yes);
           if (overwrite) removeEntry(dest);
           done++;
           ember.message(`${operation}: ${done} of ${files.length}`);
           addEntry(dest, mk);
         } catch (e) {
           failures.push(from);
-          ember.message(String(e instanceof Error ? e.message : e));
+          const err = e as Partial<ember.SignalledError>;
+          const printed = err.symbol ? `(${[err.symbol, ...(err.data ?? []).map(String)].join(" ")})` : String(err.message ?? e);
+          logged = `${operation}: \u2018${from}\u2019 to \u2018${dest}\u2019 failed:\n${printed}\n`;
         }
         next(k + 1);
       };
@@ -1038,16 +1055,24 @@ ember.defineCommand({
     "Copies are marked C, as dired-keep-marker-copy says, and keep their modification times.",
   run: () => {
     const keep = ember.variable("dired-keep-marker-copy");
-    createFiles("Copy", "Copy", (from, to) => {
-      if (ember.fileAttributes(from)?.type === "directory") {
-        if (ember.variable("dired-recursive-copies") === null || ember.variable("dired-recursive-copies") === false) {
-          throw new Error(`Cannot copy directories: ${from}`);
+    // As dired-copy-file-recursive: a directory is copied with what it holds
+    // if dired-recursive-copies is always, or the answer is yes; otherwise
+    // copy-file refuses it.
+    const recursive = ember.variable("dired-recursive-copies");
+    const isDir = (from: string) => ember.fileAttributes(from)?.type === "directory";
+    createFiles(
+      "Copy",
+      "Copy",
+      (from, to, yes) => {
+        if (isDir(from) && (recursive === "always" || yes === true)) {
+          ember.copyDirectory(from, to, { keepTime: on("dired-copy-preserve-time") });
+        } else {
+          ember.copyFile(from, to, { okIfExists: true, keepTime: on("dired-copy-preserve-time") });
         }
-        ember.copyDirectory(from, to, { keepTime: on("dired-copy-preserve-time") });
-      } else {
-        ember.copyFile(from, to, { okIfExists: true, keepTime: on("dired-copy-preserve-time") });
-      }
-    }, (from) => typeof keep === "string" ? keep : keep === true ? markOf(from) : undefined);
+      },
+      (from) => typeof keep === "string" ? keep : keep === true ? markOf(from) : undefined,
+      (from) => isDir(from) && on("dired-recursive-copies") && recursive !== "always" ? `Copy ${from} recursively? ` : undefined,
+    );
   },
 });
 
