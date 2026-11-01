@@ -171,6 +171,8 @@ pub struct Editor {
     pub(crate) message_log: Vec<LoggedMessage>,
     /// How many lines the echo area has grown to while the prompt is open.
     pub(crate) mini_window_lines: usize,
+    /// How many lines the echo area last took for a message.
+    pub(crate) echo_area_lines: usize,
     /// The frame's height with the echo area, as the front end last said.
     pub(crate) frame_lines: Option<usize>,
     /// How many columns the minibuffer's window is wide, as the front end
@@ -368,6 +370,7 @@ impl Editor {
             outer_prompts: Vec::new(),
             message_log: Vec::new(),
             mini_window_lines: 1,
+            echo_area_lines: 1,
             frame_lines: None,
             minibuffer_width: None,
             prompt: None,

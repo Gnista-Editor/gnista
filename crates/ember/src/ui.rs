@@ -422,8 +422,9 @@ fn draw_header_line(frame: &mut Frame, w: &WindowDescription, area: Rect) {
 /// and each newline in it starts another line of the echo area.
 fn draw_echo_area(frame: &mut Frame, fd: &FrameDescription, area: Rect) -> Option<Position> {
     let (rows, point, point_row) = match &fd.echo {
-        Echo::Message(message) => {
-            frame.render_widget(Paragraph::new(message.as_deref().unwrap_or("")), area);
+        Echo::Message(lines) => {
+            let lines: Vec<Line> = lines.iter().map(|l| Line::from(l.clone())).collect();
+            frame.render_widget(Paragraph::new(lines), area);
             return None;
         }
         Echo::Prompt { rows, point, point_row } => (rows, *point, *point_row),

@@ -247,3 +247,20 @@ fn long_minibuffer_input_wraps_and_the_echo_area_grows() {
     // As resize-mini-windows' default, grow-only, it does not shrink while the prompt is open.
     assert_eq!(ed.mini_window_height(8), 3);
 }
+
+#[test]
+fn a_long_message_wraps_and_the_echo_area_grows_for_it() {
+    let mut ed = ember_core::Editor::new();
+    ed.set_frame_size(20, 20);
+    ed.set_minibuffer_width(20);
+    ed.message("a message longer than the twenty columns the echo area has".to_string());
+    assert_eq!(ed.echo_lines(), ["a message longer tha", "n the twenty columns", " the echo area has"]);
+    assert_eq!(ed.mini_window_height(20), 3);
+    assert_eq!(ed.mini_window_lines(), 3);
+    // Up to max-mini-window-height's quarter of the frame.
+    assert_eq!(ed.mini_window_height(8), 2);
+    // And back to one line once it goes.
+    ed.message(String::new());
+    ed.mini_window_height(20);
+    assert_eq!(ed.mini_window_lines(), 1);
+}

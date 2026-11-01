@@ -706,7 +706,37 @@ impl Editor {
     /// How many lines the echo area takes now, as [`Editor::mini_window_height`]
     /// last worked out.
     pub fn mini_window_lines(&self) -> usize {
-        if self.prompt.is_some() { self.mini_window_lines } else { 1 }
+        if self.prompt.is_some() { self.mini_window_lines } else { self.echo_area_lines.max(1) }
+    }
+
+    /// The echo area's message as the lines it shows: each of its lines,
+    /// broken where it passes the minibuffer's width, as Emacs shows a long
+    /// message on as many lines as it takes.
+    pub fn echo_lines(&self) -> Vec<String> {
+        let Some(message) = self.echo() else { return Vec::new() };
+        let width = self.minibuffer_width.unwrap_or_else(|| self.frame_cells().0).max(1);
+        let mut lines = Vec::new();
+        for text in message.split('\n') {
+            let (mut line, mut col) = (String::new(), 0);
+            let mut scratch = String::new();
+            for c in text.chars() {
+                scratch.clear();
+                let w = crate::display::render_char(c, col, 8, &mut scratch);
+                if col + w > width && col > 0 {
+                    lines.push(std::mem::take(&mut line));
+                    col = 0;
+                    scratch.clear();
+                    let w = crate::display::render_char(c, 0, 8, &mut scratch);
+                    line.push_str(&scratch);
+                    col += w;
+                    continue;
+                }
+                line.push_str(&scratch);
+                col += w;
+            }
+            lines.push(line);
+        }
+        lines
     }
 
     /// How many lines the echo area takes in a frame of `frame_lines` lines,
@@ -715,9 +745,13 @@ impl Editor {
     /// than it has taken, as `resize-mini-windows`' grow-only says.
     pub fn mini_window_height(&mut self, frame_lines: usize) -> usize {
         self.frame_lines = Some(frame_lines);
+        let limit = |ed: &Self, wanted: usize| wanted.min(ed.max_mini_window_lines(frame_lines)).min(frame_lines.saturating_sub(2).max(1));
         if self.prompt.is_none() {
             self.mini_window_lines = 1;
-            return 1;
+            // A long message takes as many lines as it needs, and the echo
+            // area shrinks again once it goes.
+            self.echo_area_lines = limit(self, self.echo_lines().len().max(1));
+            return self.echo_area_lines;
         }
         let wanted = self.minibuffer_rows(true).len().max(1);
         let wanted = wanted.min(self.max_mini_window_lines(frame_lines)).min(frame_lines.saturating_sub(2).max(1));

@@ -1476,10 +1476,12 @@ fn draw_echo_area(painter: &Painter, fd: &FrameDescription, rect: Rect, m: &Metr
     let painter = painter.with_clip_rect(rect);
     let origin_x = rect.left() + PAD_X;
     let (rows, point, point_row) = match &fd.echo {
-        Echo::Message(message) => {
-            if let Some(message) = message {
-                let galley = painter.layout_no_wrap(message.to_string(), m.font.clone(), t.muted);
-                painter.galley(pos2(origin_x, rect.center().y - galley.size().y / 2.0), galley, t.muted);
+        Echo::Message(lines) => {
+            // One line centred in the bar, as before; more from its top.
+            let top = if lines.len() <= 1 { rect.center().y - m.line_height / 2.0 } else { rect.top() + BAR_PAD };
+            for (k, line) in lines.iter().enumerate() {
+                let galley = painter.layout_no_wrap(line.clone(), m.font.clone(), t.muted);
+                painter.galley(pos2(origin_x, top + k as f32 * m.line_height + (m.line_height - galley.size().y) / 2.0), galley, t.muted);
             }
             return;
         }

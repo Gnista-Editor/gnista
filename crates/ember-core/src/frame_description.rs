@@ -54,8 +54,8 @@ pub struct FrameDescription {
 /// What the echo area shows.
 #[derive(Clone, Debug)]
 pub enum Echo {
-    /// A message, or nothing.
-    Message(Option<String>),
+    /// A message's lines, as the echo area shows them, or none.
+    Message(Vec<String>),
     /// The minibuffer while a prompt is open: its rows, as a window's, and
     /// where point is in it.
     Prompt { rows: Vec<RowDescription>, point: usize, point_row: Option<usize> },
@@ -226,7 +226,7 @@ impl Editor {
             let rows = plain.into_iter().map(|row| self.describe_row(mb, None, row, 8)).collect();
             Echo::Prompt { rows, point: mb.point(), point_row }
         } else {
-            Echo::Message(if selected { self.echo().map(str::to_string) } else { None })
+            Echo::Message(if selected { self.echo_lines() } else { Vec::new() })
         };
         let title = windows.iter().find(|w| w.selected).or(windows.first()).map(|w| w.buffer.clone()).unwrap_or_default();
         FrameDescription {
