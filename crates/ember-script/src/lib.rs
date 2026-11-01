@@ -165,6 +165,8 @@ thread_local! {
     static ACTIVE: Cell<Option<NonNull<qjs::JSContext>>> = const { Cell::new(None) };
     /// When the outermost running script must stop.
     static DEADLINE: Cell<Option<Instant>> = const { Cell::new(None) };
+    /// The prompts code waits on, by token, and those answered.
+    static WAITS: RefCell<Waits> = RefCell::default();
     static TIME_LIMIT: Cell<Duration> = const { Cell::new(DEFAULT_TIME_LIMIT) };
     /// The running editor's quit flag, which the interrupt handler reads.
     static QUITTING: RefCell<Option<std::sync::Arc<ember_core::QuitState>>> = const { RefCell::new(None) };
@@ -381,6 +383,9 @@ fn enter<R>(context: &Context, ed: &mut Editor, f: impl for<'js> FnOnce(Ctx<'js>
             // SAFETY: ACTIVE is only set inside `Context::with` below, so the
             // runtime lock is held, and it is this context's runtime.
             let ctx = unsafe { Ctx::from_raw(raw) };
+            // A command run while a prompt waits gets a time limit of its
+            // own, as waiting cleared the asker's.
+            let _deadline = DEADLINE.get().is_none().then(|| Restore::set(&DEADLINE, Some(Instant::now() + TIME_LIMIT.get())));
             let result = f(ctx.clone());
             // A prompt answered from code already running, as keys a macro
             // replays, lets its command carry on here, where Emacs's would,
@@ -460,6 +465,16 @@ fn arg_to_js<'js>(ctx: &Ctx<'js>, arg: &Arg) -> rquickjs::Result<Value<'js>> {
 fn with_editor_ref<T>(f: impl FnOnce(&Editor) -> T) -> Option<T> {
     // SAFETY: as in `with_editor`; only read, before the script runs.
     EDITOR.get().map(|ptr| f(unsafe { ptr.as_ref() }))
+}
+
+/// The prompts scripts wait on: tokens handed out, and those whose prompt
+/// has been answered or quit.
+#[derive(Default)]
+struct Waits {
+    next: u64,
+    settled: Vec<u64>,
+    /// Where each asker was when it asked.
+    askers: Vec<(u64, ember_core::Resume)>,
 }
 
 /// Puts back the quit flag the interrupt handler read before a script ran.
@@ -1450,6 +1465,42 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
         })?,
     )?;
     native.set("recursionDepth", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.recursion_depth())))?)?;
+    // A prompt that returns its answer: the prelude's `answering` takes a
+    // token, lets the prompt's callbacks settle it, and waits for that in
+    // the command loop (ADR 0053).
+    native.set("canBlock", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.can_wait_for_input())))?)?;
+    // Taken before the prompt opens, with where the asker was, to go back to.
+    native.set(
+        "waitToken",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
+            let asker = with_editor(&ctx, |ed| Ok(ed.resume_point()))?;
+            Ok::<_, rquickjs::Error>(WAITS.with_borrow_mut(|w| {
+                w.next += 1;
+                w.askers.push((w.next, asker));
+                w.next
+            }))
+        })?,
+    )?;
+    native.set("settle", Function::new(ctx.clone(), |token: u64| WAITS.with_borrow_mut(|w| w.settled.push(token)))?)?;
+    native.set(
+        "waitFor",
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, token: u64| {
+            let settled = |token| WAITS.with_borrow(|w| w.settled.contains(&token));
+            // Time spent waiting for the person answering is not the script's.
+            let deadline = DEADLINE.take();
+            let asker = WAITS.with_borrow(|w| w.askers.iter().find(|(t, _)| *t == token).map(|(_, r)| r.clone()));
+            let result = match asker {
+                Some(asker) => with_editor(&ctx, |ed| ed.wait_until(&asker, &mut |_| settled(token))),
+                None => Ok(()),
+            };
+            DEADLINE.set(deadline.map(|_| Instant::now() + TIME_LIMIT.get()));
+            WAITS.with_borrow_mut(|w| {
+                w.settled.retain(|&t| t != token);
+                w.askers.retain(|(t, _)| *t != token);
+            });
+            result
+        })?,
+    )?;
     native.set(
         "thisCommandKeys",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.this_command_keys().iter().map(|k| k.to_string()).collect::<Vec<_>>())))?,

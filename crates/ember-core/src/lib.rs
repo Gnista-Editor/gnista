@@ -72,7 +72,7 @@ mod variables;
 
 pub use buffer::Buffer;
 pub use command::{Arg, Command, Param, ParamKind};
-pub use editor::{Editor, LoggedMessage};
+pub use editor::{Editor, LoggedMessage, Resume};
 pub use error::{Error, Result, define_error, error_conditions};
 pub use faces::{
     Background, Color, Decoration, FACE_ATTRIBUTES, Face, FaceAttrs, FaceBox, FaceHeight, Style, anonymous_face, color_distance, color_gray_p,

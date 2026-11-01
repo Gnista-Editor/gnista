@@ -54,7 +54,7 @@ pub(crate) struct Prompt {
 /// them again, as an Emacs command carries on after `read-from-minibuffer`
 /// returns, its `current-prefix-arg` and `this-command` still bound.
 #[derive(Clone)]
-pub(crate) struct Resume {
+pub struct Resume {
     buffer: u64,
     prefix: Option<PrefixArg>,
     command: Option<String>,
@@ -206,6 +206,10 @@ pub struct Editor {
     /// Styles worked out for lists of faces on each background, until a face changes.
     /// Whether quitting was asked for, which other threads may set.
     pub(crate) quitting: std::sync::Arc<crate::quit::QuitState>,
+    /// The command loop the editor runs in, which a primitive waiting for
+    /// input runs again, as Emacs's read-from-minibuffer runs a recursive
+    /// edit, if a driver runs one; see [`Editor::wait_until`].
+    pub(crate) command_loop: Option<std::rc::Rc<dyn crate::driver::NestedLoop>>,
     /// What scripts have bound, to restore as their forms end.
     pub(crate) specpdl: crate::specbind::Specpdl,
     pub(crate) style_cache: std::cell::RefCell<std::collections::HashMap<(Vec<String>, bool), crate::faces::Style>>,
@@ -392,6 +396,7 @@ impl Editor {
             symbols: BTreeMap::new(),
             faces: BTreeMap::new(),
             quitting: Default::default(),
+            command_loop: None,
             specpdl: Default::default(),
             style_cache: Default::default(),
             images: Default::default(),
@@ -813,7 +818,7 @@ impl Editor {
     }
 
     /// The running command's context, for its prompt's answer to run in.
-    pub(crate) fn resume_point(&self) -> Resume {
+    pub fn resume_point(&self) -> Resume {
         Resume {
             buffer: self.buffers[self.current].id,
             prefix: self.current_prefix_arg,
@@ -1160,6 +1165,28 @@ impl Editor {
             self.buffer_mut().amalgamate_undo();
             self.self_insert_run = self.previous_run + 1;
         }
+    }
+
+    /// Whether code can wait for input here, as a prompt answered before it
+    /// returns: true when the editor runs in a driver's command loop.
+    pub fn can_wait_for_input(&self) -> bool {
+        self.command_loop.is_some()
+    }
+
+    /// Runs the command loop inside the command now running until `done`
+    /// says, as Emacs's read-from-minibuffer and recursive-edit run one:
+    /// keys go to their commands, timers and process output run, and the
+    /// window shows what happens. Afterwards the current buffer, prefix
+    /// argument and command are as at `asker`, taken with
+    /// [`Editor::resume_point`] before the prompt opened. Fails with `quit`
+    /// if the editor is closing, and with an error if no command loop runs here.
+    pub fn wait_until(&mut self, asker: &Resume, done: &mut dyn FnMut(&Editor) -> bool) -> Result<()> {
+        let Some(command_loop) = self.command_loop.clone() else {
+            return Err(Error::new("No command loop to wait for input in"));
+        };
+        let result = command_loop.wait(self, done);
+        self.resume(asker);
+        result
     }
 
     /// Makes the command now running not amalgamating after all, so the next

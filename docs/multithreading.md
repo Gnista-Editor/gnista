@@ -277,6 +277,8 @@ With it, a second engine (step 4) or a second platform (the web) is a second gen
 
 **Exit check.** The tests above pass; `Resume` is gone; one package that prompts from a hook works, ported line for line from its Lisp.
 
+**Partly done**, 2026-11-01 ([ADR 0053](adr/0053-prompts-that-return-their-answer.md)). The driver's loop runs inside commands (`Editor::wait_until`), and every prompt a script opens returns its answer where a loop runs, as in both binaries: a hook, a sort predicate or a timer can ask, `C-g` throws `quit` through the asker with its `finally` running, timers run and the window draws while it waits, and nested prompts unwind in order (`crates/ember-script/tests/blocking.rs`). Awaiting still works, and where no loop runs, as in tests that drive an editor on their own thread, the answer is still a promise. Left: moving those tests onto a `Driver`, which lets packages ask without awaiting and removes `Resume` and the callback forms; prompts in the core's Rust commands (interactive arguments, `y-or-n-p` from Rust); `recursion-depth` counting nested loops; and a timeout for an agent's tool call that waits for the person.
+
 ## Step 6: work below the API, where the bench shows a cost
 
 **What it is.** The editor thread hands work to a thread pool and either waits for the answer, checking the quit flag, or lets it arrive later. Script code sees an ordinary primitive. A job takes plain data: a rope clone, a compiled regexp, a syntax table, a parser's language.

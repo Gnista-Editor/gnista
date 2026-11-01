@@ -552,42 +552,45 @@ const API: &str = r##"
   function bufferList(): string[];
   /**
    * Ask a question answered by typing "yes" or "no", as Emacs's yes-or-no-p.
-   * The answer is a promise to await, in an async command: C-g rejects it
-   * with the "quit" condition, unwinding the command. Every prompt and
-   * question works so; each also takes a `then` function in place of
-   * awaiting, the older form, which C-g leaves uncalled.
+   * The editor goes on taking keys until the answer comes, which is
+   * returned, as in Emacs, so a hook or a sort predicate can ask; C-g
+   * throws the "quit" condition, unwinding the command. Every prompt and
+   * question works so. Where no command loop runs, as when a test drives
+   * the editor on its own thread, the answer comes as a promise, so code
+   * that awaits it, in an async command, works in both (ADR 0053). Each
+   * also takes a `then` function, the older form, which C-g leaves uncalled.
    */
-  function yesOrNoP(question: string): Promise<boolean>;
+  function yesOrNoP(question: string): boolean;
   function yesOrNoP(question: string, then: (yes: boolean) => void): void;
   /** Ask a question answered by typing y or n, as Emacs's y-or-n-p. */
-  function yOrNP(question: string): Promise<boolean>;
+  function yOrNP(question: string): boolean;
   function yOrNP(question: string, then: (yes: boolean) => void): void;
   /** Ask a question answered by typing one of `answers` and RET, as Emacs's read-answer; the prompt lists them. */
-  function readAnswer(question: string, answers: string[]): Promise<string>;
+  function readAnswer(question: string, answers: string[]): string;
   function readAnswer(question: string, answers: string[], then: (answer: string) => void): void;
   /**
    * Ask a question answered by one of the characters in `chars`, typed
    * alone, as Emacs's read-char-choice; the prompt says what they mean.
    */
-  function readCharChoice(prompt: string, chars: string): Promise<string>;
+  function readCharChoice(prompt: string, chars: string): string;
   function readCharChoice(prompt: string, chars: string, then: (char: string) => void): void;
   /**
    * Read a key, showing `prompt` in the echo area, as Emacs's read-key:
    * its description, such as "x", "C-x" or "<f1>". C-g quits.
    */
-  function readKey(prompt?: string): Promise<string>;
+  function readKey(prompt?: string): string;
   function readKey(prompt: string | undefined, then: (key: string) => void): void;
   /**
    * Read an event, a key or a mouse event, as Emacs's read-event; the last
    * mouse event's place is lastMouseEvent(). With `seconds`, give up after
    * that long with undefined, as read-event's SECONDS.
    */
-  function readEvent(prompt?: string): Promise<string>;
-  function readEvent(prompt: string | undefined, options: { seconds: number }): Promise<string | undefined>;
+  function readEvent(prompt?: string): string;
+  function readEvent(prompt: string | undefined, options: { seconds: number }): string | undefined;
   function readEvent(prompt: string | undefined, then: (key: string) => void): void;
   /** Read a character, as Emacs's read-char: anything else, such as <f1>, is an error. With `seconds`, undefined if none comes in that long. */
-  function readChar(prompt?: string): Promise<string>;
-  function readChar(prompt: string | undefined, options: { seconds: number }): Promise<string | undefined>;
+  function readChar(prompt?: string): string;
+  function readChar(prompt: string | undefined, options: { seconds: number }): string | undefined;
   function readChar(prompt: string | undefined, then: (char: string) => void): void;
   /**
    * Wait `seconds`, as Emacs's sit-for: true if the time passed, false as
@@ -595,13 +598,13 @@ const API: &str = r##"
    */
   function sitFor(seconds: number): Promise<boolean>;
   /** Wait `seconds` before going on, as Emacs's sleep-for. Keys typed meanwhile run their commands. */
-  function sleepFor(seconds: number): Promise<void>;
+  function sleepFor(seconds: number): void;
   function sleepFor(seconds: number, then: () => void): void;
   /**
    * Read a whole key sequence, as the command loop reads one, by the keymaps
    * active now, as Emacs's read-key-sequence: "C-x C-f". C-g is a key in it.
    */
-  function readKeySequence(prompt?: string): Promise<string>;
+  function readKeySequence(prompt?: string): string;
   function readKeySequence(prompt: string | undefined, then: (keys: string) => void): void;
   /**
    * Edit recursively, as Emacs's recursive-edit: the editor goes on taking
@@ -609,7 +612,7 @@ const API: &str = r##"
    * (exit-recursive-edit) resolves this, or C-] (abort-recursive-edit)
    * quits it.
    */
-  function recursiveEdit(): Promise<void>;
+  function recursiveEdit(): void;
   function recursiveEdit(then: () => void): void;
   /** How deep in recursive edits and minibuffers the editor is, as recursion-depth. */
   function recursionDepth(): number;
@@ -645,7 +648,7 @@ const API: &str = r##"
     kind?: string;
   }
   /** Read one of `collection` in the minibuffer, with completion, as Emacs's completing-read. */
-  function completingRead(prompt: string, collection: CompletionTable, options?: CompletingReadOptions): Promise<string>;
+  function completingRead(prompt: string, collection: CompletionTable, options?: CompletingReadOptions): string;
   function completingRead(prompt: string, collection: CompletionTable, then: (answer: string) => void, options?: CompletingReadOptions): void;
   /**
    * What completingRead completes against: names, or a function of the
@@ -665,7 +668,7 @@ const API: &str = r##"
     history?: string;
   }
   /** Read a file name in the minibuffer, with completion, as Emacs's read-file-name; the answer is the name as typed. */
-  function readFileName(prompt: string, options?: ReadFileNameOptions): Promise<string>;
+  function readFileName(prompt: string, options?: ReadFileNameOptions): string;
   function readFileName(prompt: string, then: (file: string) => void, options?: ReadFileNameOptions): void;
   interface ReadStringOptions {
     initial?: string;
@@ -673,7 +676,7 @@ const API: &str = r##"
     history?: string;
   }
   /** Read text in the minibuffer, as Emacs's read-string. */
-  function readString(prompt: string, options?: ReadStringOptions): Promise<string>;
+  function readString(prompt: string, options?: ReadStringOptions): string;
   function readString(prompt: string, then: (text: string) => void, options?: ReadStringOptions): void;
   interface MinibufferInfo {
     /** The prompt, such as "Find file: ". */

@@ -304,23 +304,44 @@
     );
   }
 
+  function quitError() {
+    const e = new Error("Quit");
+    e.symbol = "quit";
+    e.data = [];
+    e.conditions = ["quit"];
+    return e;
+  }
+
   /**
    * Opens a prompt or question with `open(answer, quit)`. With a `then`
-   * function, it gets the answer, as the callback form; otherwise the
-   * answer comes as a promise, which C-g rejects with `quit`, as quitting
-   * read-from-minibuffer signals it in Emacs.
+   * function, it gets the answer, as the callback form. Otherwise, where
+   * the editor runs in a command loop, the loop runs until the answer
+   * comes, which is returned, as Emacs's read-from-minibuffer returns it,
+   * and C-g throws `quit`; where none runs, as when a test drives the
+   * editor on its own thread, the answer comes as a promise, which C-g
+   * rejects. Awaiting covers both (ADR 0053).
    */
   function answering(then, open) {
     if (typeof then === "function") return open(then, undefined);
-    return new Promise((resolve, reject) => {
-      open(resolve, () => {
-        const e = new Error("Quit");
-        e.symbol = "quit";
-        e.data = [];
-        e.conditions = ["quit"];
-        reject(e);
-      });
-    });
+    if (native.canBlock()) {
+      const token = native.waitToken();
+      let answer;
+      let quit = false;
+      open(
+        (value) => {
+          answer = value;
+          native.settle(token);
+        },
+        () => {
+          quit = true;
+          native.settle(token);
+        },
+      );
+      native.waitFor(token);
+      if (quit) throw quitError();
+      return answer;
+    }
+    return new Promise((resolve, reject) => open(resolve, () => reject(quitError())));
   }
 
   /**

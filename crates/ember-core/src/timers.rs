@@ -36,6 +36,9 @@ pub(crate) struct Timers {
     keys_since_auto_save: usize,
     /// Whether this idle spell auto-saved already.
     idle_auto_saved: bool,
+    /// The timers whose functions are running, which a prompt they open
+    /// does not run again while it waits.
+    running: Vec<u64>,
 }
 
 impl Default for Timers {
@@ -47,6 +50,7 @@ impl Default for Timers {
             last_input: Instant::now(),
             keys_since_auto_save: 0,
             idle_auto_saved: false,
+            running: Vec::new(),
         }
     }
 }
@@ -139,9 +143,11 @@ impl Editor {
         // Code reading a key whose time is up gets nil.
         self.key_read_timed_out();
         let mut due = Vec::new();
+        let running = std::mem::take(&mut self.timers.running);
         self.timers.list.retain_mut(|timer| match &mut timer.kind {
+            _ if running.contains(&timer.id) => true,
             TimerKind::At { due: at, repeat } if *at <= now => {
-                due.push(timer.f.clone());
+                due.push((timer.id, timer.f.clone()));
                 match repeat {
                     Some(every) => {
                         // A timer that fell behind runs once, not once per missed period.
@@ -154,14 +160,18 @@ impl Editor {
                 }
             }
             TimerKind::Idle { after, repeat, fired } if !*fired && idle >= *after => {
-                due.push(timer.f.clone());
+                due.push((timer.id, timer.f.clone()));
                 *fired = true;
                 *repeat
             }
             _ => true,
         });
-        for f in due {
-            if let Err(e) = f(self, &[]) {
+        self.timers.running = running;
+        for (id, f) in due {
+            self.timers.running.push(id);
+            let result = f(self, &[]);
+            self.timers.running.retain(|&r| r != id);
+            if let Err(e) = result {
                 self.message(format!("Error running timer: {e}"));
             }
         }

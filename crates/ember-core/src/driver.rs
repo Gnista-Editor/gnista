@@ -12,21 +12,29 @@
 //! Anything else a front end, a test or the agent needs from the editor
 //! goes as a closure to run on its thread ([`Input::Run`]), in turn with
 //! the keys; [`Driver::with`] waits for one's answer.
+//!
+//! The loop also runs inside commands, as Emacs's does inside
+//! read-from-minibuffer: a prompt waits for its answer with
+//! [`Editor::wait_until`], which takes input from the same channel, one
+//! at a time, until the answer comes (step 5, ADR 0053).
 
 use std::any::Any;
+use std::cell::{Cell, RefCell};
 use std::panic::AssertUnwindSafe;
-use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel};
+use std::rc::Rc;
+use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, TryRecvError, channel};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use std::time::Duration;
 
+use crate::Result;
 use crate::editor::Editor;
 use crate::frame_description::FrameDescription;
 use crate::key::{Key, KeyCode};
 use crate::quit::QuitHandle;
 
 /// Code a front end sends to run with the editor and what its setup kept.
-pub type Job = Box<dyn FnOnce(&mut Editor, &mut dyn Any) + Send>;
+pub type Job = Box<dyn FnOnce(&mut Editor, &dyn Any) + Send>;
 
 /// What the editor's thread takes, in order.
 pub enum Input {
@@ -161,70 +169,125 @@ impl Drop for Driver {
     }
 }
 
-/// The command loop: input in order, timers when due, and a redisplay and
-/// publication once nothing waits, as Emacs redisplays only when no input
-/// is pending.
-fn run(
-    mut ed: Editor,
-    mut keep: Box<dyn Any>,
+/// A command loop code can run again from inside a command until a
+/// condition holds, as a prompt waits for its answer.
+pub trait NestedLoop {
+    /// Takes input until `done` says, or fails with `quit` when the editor closes.
+    fn wait(&self, ed: &mut Editor, done: &mut dyn FnMut(&Editor) -> bool) -> Result<()>;
+}
+
+/// The editor thread's command loop: input in order, timers when due, and
+/// a redisplay and publication once nothing waits, as Emacs redisplays
+/// only when no input is pending.
+struct CommandLoop<D> {
     rx: Receiver<Input>,
-    mut describe: impl FnMut(&mut Editor) -> Vec<FrameDescription>,
-    wake: impl Fn(),
+    keep: Box<dyn Any>,
+    describe: RefCell<D>,
+    wake: Box<dyn Fn()>,
     published: Arc<Mutex<Published>>,
-) {
-    let mut first = true;
-    loop {
-        if !first {
-            let timeout = ed.next_timer_in().unwrap_or(Duration::from_secs(3600));
-            match rx.recv_timeout(timeout) {
-                Ok(input) => {
-                    if !handle(&mut ed, &mut *keep, input) {
-                        return;
-                    }
-                }
-                Err(RecvTimeoutError::Timeout) => {}
-                Err(RecvTimeoutError::Disconnected) => return,
-            }
-            while let Ok(input) = rx.try_recv() {
-                if !handle(&mut ed, &mut *keep, input) {
-                    return;
-                }
-            }
-        }
-        first = false;
-        guarded(&mut ed, |ed| ed.run_timers());
-        let frames = std::panic::catch_unwind(AssertUnwindSafe(|| describe(&mut ed))).unwrap_or_default();
+    closing: Cell<bool>,
+}
+
+impl<D: FnMut(&mut Editor) -> Vec<FrameDescription>> CommandLoop<D> {
+    /// Redisplays and publishes what each frame shows, and tells the front end.
+    fn publish(&self, ed: &mut Editor) {
+        let frames = std::panic::catch_unwind(AssertUnwindSafe(|| (self.describe.borrow_mut())(ed))).unwrap_or_default();
         {
-            let mut p = published.lock().unwrap_or_else(|e| e.into_inner());
+            let mut p = self.published.lock().unwrap_or_else(|e| e.into_inner());
             p.generation += 1;
             p.frames = frames;
             p.bell |= ed.take_bell();
             p.visible_bell = ed.variable("visible-bell").is_some_and(|v| v.is_true());
             p.exit = ed.should_quit();
         }
-        wake();
-        if ed.should_quit() {
-            return;
+        (self.wake)();
+    }
+
+    /// Handles one input; false when the front end is closing.
+    fn handle(&self, ed: &mut Editor, input: Input) -> bool {
+        match input {
+            Input::Key(key) => guarded(ed, |ed| ed.handle_key(key)),
+            // Taken by a command it stopped, or still waiting to be read.
+            Input::Quit => {
+                if ed.quit_state().requested() {
+                    ed.quit_state().clear();
+                    guarded(ed, |ed| ed.handle_key(Key { code: KeyCode::Char('g'), ctrl: true, meta: false, shift: false }));
+                }
+            }
+            Input::Run(f) => guarded(ed, |ed| f(ed, &*self.keep)),
+            Input::Wake => {}
+            Input::Close => return false,
+        }
+        true
+    }
+}
+
+impl<D: FnMut(&mut Editor) -> Vec<FrameDescription>> NestedLoop for CommandLoop<D> {
+    fn wait(&self, ed: &mut Editor, done: &mut dyn FnMut(&Editor) -> bool) -> Result<()> {
+        loop {
+            if done(ed) {
+                return Ok(());
+            }
+            if self.closing.get() || ed.should_quit() {
+                return Err(crate::quit::quit_error());
+            }
+            // One input at a time, so what comes after an answer waits for
+            // the command that asked, as in Emacs.
+            let input = match self.rx.try_recv() {
+                Ok(input) => input,
+                Err(TryRecvError::Disconnected) => {
+                    self.closing.set(true);
+                    continue;
+                }
+                Err(TryRecvError::Empty) => {
+                    // Nothing waiting: timers, then show where things are, then wait.
+                    guarded(ed, |ed| ed.run_timers());
+                    if done(ed) {
+                        return Ok(());
+                    }
+                    self.publish(ed);
+                    let timeout = ed.next_timer_in().unwrap_or(Duration::from_secs(3600));
+                    match self.rx.recv_timeout(timeout) {
+                        Ok(input) => input,
+                        Err(RecvTimeoutError::Timeout) => continue,
+                        Err(RecvTimeoutError::Disconnected) => {
+                            self.closing.set(true);
+                            continue;
+                        }
+                    }
+                }
+            };
+            if !self.handle(ed, input) {
+                self.closing.set(true);
+            }
         }
     }
 }
 
-/// Handles one input; false when the front end is closing.
-fn handle(ed: &mut Editor, keep: &mut dyn Any, input: Input) -> bool {
-    match input {
-        Input::Key(key) => guarded(ed, |ed| ed.handle_key(key)),
-        // Taken by a command it stopped, or still waiting to be read.
-        Input::Quit => {
-            if ed.quit_state().requested() {
-                ed.quit_state().clear();
-                guarded(ed, |ed| ed.handle_key(Key { code: KeyCode::Char('g'), ctrl: true, meta: false, shift: false }));
-            }
-        }
-        Input::Run(f) => guarded(ed, |ed| f(ed, keep)),
-        Input::Wake => {}
-        Input::Close => return false,
-    }
-    true
+/// Runs the command loop until the editor exits or the front end closes.
+fn run(
+    mut ed: Editor,
+    keep: Box<dyn Any>,
+    rx: Receiver<Input>,
+    describe: impl FnMut(&mut Editor) -> Vec<FrameDescription> + 'static,
+    wake: impl Fn() + 'static,
+    published: Arc<Mutex<Published>>,
+) {
+    let command_loop = Rc::new(CommandLoop {
+        rx,
+        keep,
+        describe: RefCell::new(describe),
+        wake: Box::new(wake),
+        published,
+        closing: Cell::new(false),
+    });
+    ed.command_loop = Some(command_loop.clone());
+    let _ = command_loop.wait(&mut ed, &mut |ed| ed.should_quit());
+    command_loop.publish(&mut ed);
+    // The loop holds what setup kept, as the script runtime, which goes
+    // before the editor it was made for.
+    ed.command_loop = None;
+    drop(command_loop);
 }
 
 /// Runs editor code so a panic in it reports in the echo area and the

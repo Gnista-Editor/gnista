@@ -79,9 +79,9 @@ enum Backend {
 impl Backend {
     /// Runs `f` with the editor and what its setup kept: now, or in turn
     /// on the editor's thread.
-    fn run(&mut self, f: impl FnOnce(&mut Editor, &mut dyn Any) + Send + 'static) {
+    fn run(&mut self, f: impl FnOnce(&mut Editor, &dyn Any) + Send + 'static) {
         match self {
-            Backend::Inline { editor, keep } => f(editor, &mut **keep),
+            Backend::Inline { editor, keep } => f(editor, &**keep),
             Backend::Thread { driver, .. } => driver.send(DriverInput::Run(Box::new(f))),
         }
     }
