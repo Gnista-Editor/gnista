@@ -788,6 +788,10 @@ impl<'a> Scanner<'a> {
                 if let Some(plain) = &plain
                     && (!sexp || depth != 0 || count > (self.max - pos) as i64)
                 {
+                    // A run may be long, so each checks for a quit.
+                    if let Some(q) = self.quit {
+                        q.check()?;
+                    }
                     let to = self.skip_plain(pos, plain, true);
                     if to > pos {
                         if sexp && depth == 0 {
@@ -902,6 +906,9 @@ impl<'a> Scanner<'a> {
                 if let Some(plain) = &plain
                     && (!sexp || depth != 0 || -count > (pos - self.min) as i64)
                 {
+                    if let Some(q) = self.quit {
+                        q.check()?;
+                    }
                     let to = self.skip_plain(pos, plain, false);
                     if to < pos {
                         if sexp && depth == 0 {
