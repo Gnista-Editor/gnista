@@ -107,8 +107,8 @@ fn an_agent_needs_approval_to_delete_from_dired() {
     let dir = sample();
     dired(&mut ed, dir.path());
     ed.set_agent_acting(true);
-    ed.press("D").unwrap();
-    ed.type_text("yes\n");
+    // D and its answer at once: the question waits for the keys typed ahead.
+    ed.press("D y e s RET").unwrap();
     assert!(dir.path().join("a.txt").exists(), "refused without approval");
     assert!(ed.permission_requested());
 }

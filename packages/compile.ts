@@ -355,14 +355,13 @@ function compilationSentinel(proc: string, event: string, modeName: string): voi
 /** The directory a buffer's commands run in, ending in a slash. */
 const currentDirectory = (): string => ember.fileNameAsDirectory(ember.expandFileName("."));
 
-/** Saves modified buffers, asking as compilation-ask-about-save says, then runs `then`. */
-function saveThen(then: () => void): void {
+/** Saves modified buffers, asking as compilation-ask-about-save says. */
+function saveSomeBuffers(): void {
   if (truthy(ember.variable("compilation-ask-about-save"))) {
     ember.call("save-some-buffers");
   } else {
     ember.callWithPrefix([4], "save-some-buffers");
   }
-  ember.afterPrompts(then);
 }
 
 ember.defineCommand({
@@ -378,7 +377,8 @@ ember.defineCommand({
       command = await ember.readString("Compile command: ", { initial: command, history: "compile-history" });
     }
     ember.setDefault("compile-command", command);
-    saveThen(() => compilationStart(command, "compilation-mode", directory));
+    saveSomeBuffers();
+    compilationStart(command, "compilation-mode", directory);
   },
 });
 
@@ -391,7 +391,8 @@ ember.defineCommand({
     const mode = Array.isArray(args) && typeof args[1] === "string" ? args[1] : "compilation-mode";
     const dir = ember.variable("compilation-directory");
     const directory = typeof dir === "string" ? dir : currentDirectory();
-    saveThen(() => compilationStart(command, mode, directory));
+    saveSomeBuffers();
+    compilationStart(command, mode, directory);
   },
 });
 

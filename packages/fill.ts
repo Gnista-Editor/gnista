@@ -553,12 +553,11 @@ ember.defineCommand({
     if (arg !== null) return set(Array.isArray(arg) ? ember.currentColumn() : arg === "-" ? NaN : arg);
     // As read-number with the current column as its default.
     const column = ember.currentColumn();
-    ember.readString(`Change fill-column from ${fillColumn()} to (default ${column}): `, (text) => {
-      if (text.trim() === "") return set(column);
-      const n = Number(text.trim());
-      if (Number.isNaN(n)) throw new Error("Please enter a number.");
-      set(n);
-    });
+    const text = ember.readString(`Change fill-column from ${fillColumn()} to (default ${column}): `).trim();
+    if (text === "") return set(column);
+    const n = Number(text);
+    if (Number.isNaN(n)) throw new Error("Please enter a number.");
+    set(n);
   },
 });
 

@@ -840,71 +840,52 @@ function addEntry(file: string, marker?: string): void {
 }
 
 /** Deletes files, asking first, as dired-internal-do-deletions: directories with files in them ask again. */
-function doDeletions(files: string[], lines: number[], arg: ember.PrefixArg | null, marker: string): void {
+function doDeletions(files: string[], arg: ember.PrefixArg | null, marker: string): void {
   const trashing = on("delete-by-moving-to-trash");
-  const prompt = `${trashing ? "Trash" : "Delete"} ${markPrompt(arg, files, marker)} `;
-  ember.yesOrNoP(prompt, (yes) => {
-    if (!yes) {
-      ember.message("(No deletions performed)");
-      return;
-    }
-    // Point stays with its line, or goes to the next if that line goes, as
-    // Emacs's save-excursion keeps it.
-    const pointLine = currentLine();
-    const pointName = fileLine(pointLine)?.name;
-    const linesBefore = files.filter((f) => {
-      const l = findLine(ember.fileNameNondirectory(f));
-      return l !== undefined && l < pointLine;
-    });
-    let done = 0;
-    const failures: string[] = [];
-    let recursive = ember.variable("dired-recursive-deletes");
-    const next = (k: number): void => {
-      if (k >= files.length) {
-        if (failures.length > 0) {
-          ember.message(`${failures.length} of ${files.length} deletion${files.length === 1 ? "" : "s"} failed`);
-        } else {
-          ember.message(`${trashing ? "Trashing" : "Deleting"}...done`);
-        }
-        const kept = pointName === undefined ? undefined : findLine(pointName);
-        const gone = linesBefore.filter((f) => !failures.includes(f)).length;
-        const line = kept ?? Math.max(0, pointLine - gone);
-        ember.gotoChar(ember.lineStart(Math.min(line, ember.lineCount() - 1)));
-        moveToFilename();
-        return;
-      }
-      const file = files[k];
-      const remove = (rec: boolean) => {
-        try {
-          if (ember.fileAttributes(file)?.type === "directory") ember.deleteDirectory(file, { recursive: rec, trash: true });
-          else ember.deleteFile(file, { trash: true });
-          done++;
-          removeEntry(file);
-        } catch (e) {
-          failures.push(file);
-          void e;
-        }
-        next(k + 1);
-      };
-      const attrs = ember.fileAttributes(file);
-      const full = attrs?.type === "directory" && ember.directoryFiles(file).length > 2;
-      if (!full) return remove(false);
-      if (recursive === null || recursive === false) return remove(false);
-      if (recursive === "always") return remove(true);
-      ember.readAnswer(`Recursively ${trashing ? "trash" : "delete"} ${ember.fileNameNondirectory(file)}? `, ["yes", "no", "all", "quit"], (answer) => {
-        if (answer === "all") {
-          recursive = "always";
-          return remove(true);
-        }
-        if (answer === "yes") return remove(true);
-        if (answer === "no") return remove(false);
-        throw new Error("Quit");
-      });
-    };
-    void done;
-    void lines;
-    next(0);
+  if (!ember.yesOrNoP(`${trashing ? "Trash" : "Delete"} ${markPrompt(arg, files, marker)} `)) {
+    ember.message("(No deletions performed)");
+    return;
+  }
+  // Point stays with its line, or goes to the next if that line goes, as
+  // Emacs's save-excursion keeps it.
+  const pointLine = currentLine();
+  const pointName = fileLine(pointLine)?.name;
+  const linesBefore = files.filter((f) => {
+    const l = findLine(ember.fileNameNondirectory(f));
+    return l !== undefined && l < pointLine;
   });
+  const failures: string[] = [];
+  let recursive = ember.variable("dired-recursive-deletes");
+  for (const file of files) {
+    // As dired-delete-file: a directory with files in it is deleted with
+    // them only as dired-recursive-deletes, or the answer, says.
+    let rec = false;
+    const full = ember.fileAttributes(file)?.type === "directory" && ember.directoryFiles(file).length > 2;
+    if (full && recursive === "always") rec = true;
+    else if (full && recursive !== null && recursive !== false) {
+      const answer = ember.readAnswer(`Recursively ${trashing ? "trash" : "delete"} ${ember.fileNameNondirectory(file)}? `, ["yes", "no", "all", "quit"]);
+      if (answer === "quit") throw new Error("Quit");
+      if (answer === "all") recursive = "always";
+      rec = answer !== "no";
+    }
+    try {
+      if (ember.fileAttributes(file)?.type === "directory") ember.deleteDirectory(file, { recursive: rec, trash: true });
+      else ember.deleteFile(file, { trash: true });
+      removeEntry(file);
+    } catch {
+      failures.push(file);
+    }
+  }
+  if (failures.length > 0) {
+    ember.message(`${failures.length} of ${files.length} deletion${files.length === 1 ? "" : "s"} failed`);
+  } else {
+    ember.message(`${trashing ? "Trashing" : "Deleting"}...done`);
+  }
+  const kept = pointName === undefined ? undefined : findLine(pointName);
+  const gone = linesBefore.filter((f) => !failures.includes(f)).length;
+  const line = kept ?? Math.max(0, pointLine - gone);
+  ember.gotoChar(ember.lineStart(Math.min(line, ember.lineCount() - 1)));
+  moveToFilename();
 }
 
 ember.defineCommand({
@@ -917,7 +898,7 @@ ember.defineCommand({
       ember.message("(No deletions requested)");
       return;
     }
-    doDeletions(lines.map((l) => filenameAt(l)!), lines, null, DEL_MARKER);
+    doDeletions(lines.map((l) => filenameAt(l)!), null, DEL_MARKER);
   },
 });
 ember.defineCommand({
@@ -928,7 +909,7 @@ ember.defineCommand({
     const arg = ember.prefixArg();
     const { files, lines } = markedFiles(arg, MARKER, true);
     if (files.some((f) => isDot(ember.fileNameNondirectory(f)))) throw new Error("Cannot operate on \u2018.\u2019 or \u2018..\u2019");
-    doDeletions(files, lines, arg, MARKER);
+    doDeletions(files, arg, MARKER);
   },
 });
 
@@ -946,20 +927,13 @@ function dwimTarget(): string {
   return currentDirectory();
 }
 
-/** Makes `to` from `from`; `yes` is the answer to the question `ask` gave for it, if any. */
-type Creator = (from: string, to: string, yes?: boolean) => void;
+type Creator = (from: string, to: string) => void;
 
 /**
  * Copies or renames the marked files, as dired-do-create-files: asking where
  * to, into a directory for several, and before overwriting each file.
  */
-function createFiles(
-  operation: string,
-  op1: string,
-  creator: Creator,
-  marker: (from: string) => string | undefined,
-  ask?: (from: string) => string | undefined,
-): void {
+function createFiles(operation: string, op1: string, creator: Creator, marker: (from: string) => string | undefined): void {
   requireDired();
   const arg = ember.prefixArg();
   const { files } = markedFiles(arg, MARKER, false, "No files specified");
@@ -967,80 +941,62 @@ function createFiles(
   const targetDir = dwimTarget();
   const prompt = `${one ? op1 : operation} ${markPrompt(arg, files)} to: `;
   const dflt = one && !on("dired-dwim-target") ? targetDir + ember.fileNameNondirectory(files[0]) : undefined;
-  ember.readFileName(prompt, (answer) => {
-    const target = ember.expandFileName(answer);
-    const intoDir = ember.fileDirectoryP(target);
-    if (!one && !intoDir) throw new Error(`Marked ${operation}: target must be a directory: ${target}`);
-    const to = (from: string) => intoDir ? ember.fileNameAsDirectory(target) + ember.fileNameNondirectory(from) : ember.directoryFileName(target);
-    let done = 0;
-    const failures: string[] = [];
-    // The last failure, as dired-log writes it.
-    let logged = "";
-    let query: string | undefined;
-    const next = (k: number): void => {
-      if (k >= files.length) {
-        // As dired-log-summary: one failure shows what was logged for it.
-        if (failures.length === 1) ember.message(logged);
-        else if (failures.length > 0) {
-          const names = failures.map((f) => ember.fileNameNondirectory(f)).join(" ");
-          ember.message(`${operation}: ${failures.length} of ${files.length} file${files.length === 1 ? "" : "s"} failed--type ? for details (${names})`);
-        } else ember.message(`${operation}: ${done} file${done === 1 ? "" : "s"} done`);
-        moveToFilename();
-        return;
+  const target = ember.expandFileName(ember.readFileName(prompt, { dir: targetDir, default: dflt }));
+  const intoDir = ember.fileDirectoryP(target);
+  if (!one && !intoDir) throw new Error(`Marked ${operation}: target must be a directory: ${target}`);
+  const to = (from: string) => intoDir ? ember.fileNameAsDirectory(target) + ember.fileNameNondirectory(from) : ember.directoryFileName(target);
+  let done = 0;
+  const failures: string[] = [];
+  // The last failure, as dired-log writes it.
+  let logged = "";
+  let query: string | undefined;
+  for (const from of files) {
+    gotoFile(from);
+    const dest = to(from);
+    if (dest === from) {
+      failures.push(from);
+      continue;
+    }
+    // As dired-create-files, before trying: a directory cannot be copied into itself.
+    const destDir = ember.fileNameDirectory(dest) ?? "/";
+    if (operation === "Copy" && ember.fileDirectoryP(from)) {
+      const real = ember.fileNameAsDirectory(ember.expandFileName(from));
+      if (ember.fileNameAsDirectory(ember.expandFileName(destDir)).startsWith(real)) {
+        throw new Error(`Cannot copy \u2018${from}\u2019 into its subdirectory \u2018${dest}\u2019`);
       }
-      const from = files[k];
-      gotoFile(from);
-      const dest = to(from);
-      if (dest === from) {
+    }
+    const overwrite = ember.fileExists(dest);
+    if (overwrite && query !== "!") {
+      if (query !== "q") query = ember.readCharChoice(`Overwrite \u2018${dest}\u2019? [Type y, n, q or !] `, "yn!q");
+      if (query !== "y" && query !== "!") {
         failures.push(from);
-        return next(k + 1);
+        continue;
       }
-      // As dired-create-files, before trying: a directory cannot be copied into itself.
-      const destDir = ember.fileNameDirectory(dest) ?? "/";
-      if (operation === "Copy" && ember.fileDirectoryP(from)) {
-        const real = ember.fileNameAsDirectory(ember.expandFileName(from));
-        if (ember.fileNameAsDirectory(ember.expandFileName(destDir)).startsWith(real)) {
-          throw new Error(`Cannot copy \u2018${from}\u2019 into its subdirectory \u2018${dest}\u2019`);
-        }
-      }
-      // A question the file creator asks first, as dired-copy-file asks
-      // whether to copy a directory recursively.
-      const go = () => {
-        const question = ask?.(from);
-        if (question === undefined) create();
-        else ember.yesOrNoP(question, create);
-      };
-      const create = (yes?: boolean) => {
-        try {
-          const overwrite = ember.fileExists(dest);
-          const mk = marker(from);
-          creator(from, dest, yes);
-          if (overwrite) removeEntry(dest);
-          done++;
-          ember.message(`${operation}: ${done} of ${files.length}`);
-          addEntry(dest, mk);
-        } catch (e) {
-          failures.push(from);
-          const err = e as Partial<ember.SignalledError>;
-          const printed = err.symbol ? `(${[err.symbol, ...(err.data ?? []).map(String)].join(" ")})` : String(err.message ?? e);
-          logged = `${operation}: \u2018${from}\u2019 to \u2018${dest}\u2019 failed:\n${printed}\n`;
-        }
-        next(k + 1);
-      };
-      if (!ember.fileExists(dest) || query === "!") return go();
-      if (query === "q") {
-        failures.push(from);
-        return next(k + 1);
-      }
-      ember.readCharChoice(`Overwrite \u2018${dest}\u2019? [Type y, n, q or !] `, "yn!q", (c) => {
-        query = c;
-        if (c === "y" || c === "!") return go();
-        failures.push(from);
-        next(k + 1);
-      });
-    };
-    next(0);
-  }, { dir: targetDir, default: dflt });
+    }
+    // As dired-create-files, a file error is a failure to log; anything
+    // else, as quitting a question the creator asks, goes on up.
+    try {
+      const mk = marker(from);
+      creator(from, dest);
+      if (overwrite) removeEntry(dest);
+      done++;
+      ember.message(`${operation}: ${done} of ${files.length}`);
+      addEntry(dest, mk);
+    } catch (e) {
+      if (!ember.errorConditions(e).includes("file-error")) throw e;
+      failures.push(from);
+      const err = e as Partial<ember.SignalledError>;
+      const printed = err.symbol ? `(${[err.symbol, ...(err.data ?? []).map(String)].join(" ")})` : String(err.message ?? e);
+      logged = `${operation}: \u2018${from}\u2019 to \u2018${dest}\u2019 failed:\n${printed}\n`;
+    }
+  }
+  // As dired-log-summary: one failure shows what was logged for it.
+  if (failures.length === 1) ember.message(logged);
+  else if (failures.length > 0) {
+    const names = failures.map((f) => ember.fileNameNondirectory(f)).join(" ");
+    ember.message(`${operation}: ${failures.length} of ${files.length} file${files.length === 1 ? "" : "s"} failed--type ? for details (${names})`);
+  } else ember.message(`${operation}: ${done} file${done === 1 ? "" : "s"} done`);
+  moveToFilename();
 }
 
 const markOf = (file: string): string => {
@@ -1055,23 +1011,22 @@ ember.defineCommand({
     "Copies are marked C, as dired-keep-marker-copy says, and keep their modification times.",
   run: () => {
     const keep = ember.variable("dired-keep-marker-copy");
-    // As dired-copy-file-recursive: a directory is copied with what it holds
-    // if dired-recursive-copies is always, or the answer is yes; otherwise
+    // As dired-copy-file-recursive: a directory is copied with what it
+    // holds if dired-recursive-copies is always, or you say so; otherwise
     // copy-file refuses it.
     const recursive = ember.variable("dired-recursive-copies");
-    const isDir = (from: string) => ember.fileAttributes(from)?.type === "directory";
     createFiles(
       "Copy",
       "Copy",
-      (from, to, yes) => {
-        if (isDir(from) && (recursive === "always" || yes === true)) {
+      (from, to) => {
+        const directory = ember.fileAttributes(from)?.type === "directory";
+        if (directory && on("dired-recursive-copies") && (recursive === "always" || ember.yesOrNoP(`Copy ${from} recursively? `))) {
           ember.copyDirectory(from, to, { keepTime: on("dired-copy-preserve-time") });
         } else {
           ember.copyFile(from, to, { okIfExists: true, keepTime: on("dired-copy-preserve-time") });
         }
       },
       (from) => typeof keep === "string" ? keep : keep === true ? markOf(from) : undefined,
-      (from) => isDir(from) && on("dired-recursive-copies") && recursive !== "always" ? `Copy ${from} recursively? ` : undefined,
     );
   },
 });

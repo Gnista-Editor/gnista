@@ -142,6 +142,9 @@ pub struct Editor {
     pub(crate) has_indirect_buffers: bool,
     /// What waits for the prompts and questions now open to be answered.
     prompt_waiters: Vec<variables::HookFn>,
+    /// How many commands have started, so code waiting for one it called
+    /// interactively knows whether it ran or its arguments were quit.
+    executed: u64,
     /// How many commands are running, one inside another.
     pub(crate) running: usize,
     /// The command keys named, while the command it is remapped to runs.
@@ -372,6 +375,7 @@ impl Editor {
             syntax_tables: Default::default(),
             processes: Default::default(),
             prompt_waiters: Vec::new(),
+            executed: 0,
             detached_markers: Vec::new(),
             has_indirect_buffers: false,
             running: 0,
@@ -886,6 +890,7 @@ impl Editor {
     }
 
     fn execute(&mut self, command: Rc<Command>, args: Vec<Arg>, prefix: Option<PrefixArg>) {
+        self.executed += 1;
         // As Emacs's command loop, a command starts with no quit pending.
         if self.running == 0 {
             self.quitting.clear();
@@ -1195,6 +1200,23 @@ impl Editor {
             self.buffer_mut().amalgamate_undo();
             self.self_insert_run = self.previous_run + 1;
         }
+    }
+
+    /// Runs a command interactively from code, as Emacs's call-interactively:
+    /// its arguments are read in the minibuffer, waiting for them, and it
+    /// has run when this returns. Quitting the reading is `quit`.
+    pub fn call_interactively(&mut self, name: &str) -> Result<()> {
+        let asker = self.resume_point();
+        let before = self.executed;
+        self.run_interactive(name);
+        if self.pending_call.is_none() {
+            return Ok(());
+        }
+        self.wait_until(&asker, Rc::new(|ed| ed.pending_call.is_none()))?;
+        if self.executed == before {
+            return Err(crate::quit::quit_error());
+        }
+        Ok(())
     }
 
     /// Gives the editor something to read input from when a command waits

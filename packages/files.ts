@@ -104,44 +104,17 @@ function nondirectory(file: string): string {
   return file.slice(file.lastIndexOf("/") + 1);
 }
 
-/** Calls `then` in the buffer named `buffer`, current again after a question. */
-function inBuffer(buffer: string, then: () => void): () => void {
-  return () => {
-    // Already current, as after most questions; then may rename it.
-    if (ember.bufferName() === buffer) then();
-    else if (ember.bufferList().includes(buffer)) ember.withCurrentBuffer(buffer, then);
-  };
-}
-
-/**
- * Adds the newline require-final-newline asks for, then calls `then`, as
- * basic-save-buffer does before writing.
- */
-function addFinalNewline(then: () => void): void {
+/** Adds the newline require-final-newline asks for, as basic-save-buffer does before writing. */
+function addFinalNewline(): void {
   const size = ember.bufferSize();
   const require = ember.variable("require-final-newline");
-  if (size === 0 || require === false || require === null || ember.bufferText(size - 1, size) === "\n") {
-    then();
-    return;
-  }
-  const add = () => {
+  if (size === 0 || require === false || require === null || ember.bufferText(size - 1, size) === "\n") return;
+  if (require === true || require === "visit-save" || ember.yOrNP(`Buffer ${ember.bufferName()} does not end in newline.  Add one? `)) {
     const point = ember.point();
     ember.gotoChar(ember.pointMax());
     ember.insert("\n");
     ember.gotoChar(point);
-  };
-  if (require === true || require === "visit-save") {
-    add();
-    then();
-    return;
   }
-  const buffer = ember.bufferName();
-  ember.yOrNP(`Buffer ${buffer} does not end in newline.  Add one? `, (yes) => {
-    inBuffer(buffer, () => {
-      if (yes) add();
-      then();
-    })();
-  });
 }
 
 /** Writes the buffer, says so and runs the save hooks, as basic-save-buffer does once it may. */
@@ -153,15 +126,14 @@ function writeBuffer(file: string): void {
 }
 
 /**
- * Saves the current buffer if it is modified, as Emacs's basic-save-buffer,
- * then calls `then`. A file changed on disk since it was visited or saved
- * is overwritten only if you say so.
+ * Saves the current buffer if it is modified, as Emacs's basic-save-buffer.
+ * A file changed on disk since it was visited or saved is overwritten
+ * only if you say so.
  */
-function basicSaveBuffer(then: () => void = () => {}): void {
+function basicSaveBuffer(): void {
   const file = ember.bufferFileName();
   if (!ember.bufferModified()) {
     if (ember.calledInteractively()) ember.message("(No changes need to be saved)");
-    then();
     return;
   }
   if (file === undefined) {
@@ -169,19 +141,12 @@ function basicSaveBuffer(then: () => void = () => {}): void {
     ember.callInteractively("write-file");
     return;
   }
-  const buffer = ember.bufferName();
-  const save = inBuffer(buffer, () => addFinalNewline(() => selectSafeCodingSystem(() => {
-    writeBuffer(file);
-    then();
-  })));
-  if (ember.visitedFileChanged()) {
-    ember.yesOrNoP(`${nondirectory(file)} has changed since visited or saved.  Save anyway? `, (yes) => {
-      if (!yes) throw new Error("Save not confirmed");
-      save();
-    });
-    return;
+  if (ember.visitedFileChanged() && !ember.yesOrNoP(`${nondirectory(file)} has changed since visited or saved.  Save anyway? `)) {
+    throw new Error("Save not confirmed");
   }
-  save();
+  addFinalNewline();
+  selectSafeCodingSystem();
+  writeBuffer(file);
 }
 
 ember.defineCommand({
@@ -202,20 +167,12 @@ ember.defineCommand({
   run: (input: string) => {
     let file = ember.expandFileName(input);
     if (input.endsWith("/")) file = `${file.replace(/\/$/, "")}/${ember.bufferName()}`;
-    const write = () => {
-      ember.setVisitedFileName(file);
-      ember.setBufferModified(true);
-      basicSaveBuffer();
-    };
     if (ember.calledInteractively() && ember.fileExists(file) && file !== ember.bufferFileName()) {
-      const buffer = ember.bufferName();
-      ember.yOrNP(`File ‘${file}’ exists; overwrite? `, (yes) => {
-        if (!yes) throw new Error("Canceled");
-        inBuffer(buffer, write)();
-      });
-      return;
+      if (!ember.yOrNP(`File ‘${file}’ exists; overwrite? `)) throw new Error("Canceled");
     }
-    write();
+    ember.setVisitedFileName(file);
+    ember.setBufferModified(true);
+    basicSaveBuffer();
   },
 });
 
@@ -237,23 +194,22 @@ function revertNow(): void {
   ember.runHooks("after-revert-hook");
 }
 
-/**
- * Reverts the buffer, asking first unless `noconfirm`, or the buffer is
- * unmodified and its file matches revert-without-query. Calls `then` once
- * reverted.
- */
+
 ember.defineVariable({
   name: "revert-buffer-function",
   doc: "The command revert-buffer runs instead of rereading the file, in buffers that set it, such as Dired's. Nil for the usual.",
   value: null,
 });
 
-function revertBuffer(noconfirm: boolean, then: () => void = () => {}): void {
+/**
+ * Reverts the buffer, asking first unless `noconfirm`, or the buffer is
+ * unmodified and its file matches revert-without-query.
+ */
+function revertBuffer(noconfirm: boolean): void {
   // A buffer such as Dired's reverts itself, as its revert-buffer-function says.
   const own = ember.variable("revert-buffer-function");
   if (typeof own === "string" && ember.commandExists(own)) {
     ember.call(own as ember.CommandName);
-    then();
     return;
   }
   const file = visitedFile();
@@ -261,19 +217,8 @@ function revertBuffer(noconfirm: boolean, then: () => void = () => {}): void {
   const modified = ember.bufferModified();
   const patterns = ember.variable("revert-without-query");
   const unasked = !modified && Array.isArray(patterns) && patterns.some((p) => typeof p === "string" && ember.stringMatch(p, file) !== undefined);
-  if (noconfirm || unasked) {
-    revertNow();
-    then();
-    return;
-  }
   const question = modified ? `Discard edits and reread from ${file}? ` : `Revert buffer from file ${file}? `;
-  const buffer = ember.bufferName();
-  ember.yesOrNoP(question, (yes) => {
-    if (yes) inBuffer(buffer, () => {
-      revertNow();
-      then();
-    })();
-  });
+  if (noconfirm || unasked || ember.yesOrNoP(question)) revertNow();
 }
 
 ember.defineCommand({
@@ -315,20 +260,17 @@ ember.defineCommand({
     const auto = ember.autoSaveFileName(file);
     if (ember.fileExists(file) && !ember.fileExists(auto)) throw new Error(`Auto save file ${abbreviate(auto)} does not exist`);
     if (!ember.hasNewerAutoSave(file)) throw new Error(`Auto-save file ${abbreviate(auto)} not current`);
-    const ask = () =>
-      ember.readAnswer(`Recover auto save file ${auto}? `, ["yes", "no", "diff"], (answer) => {
-        if (answer === "diff") {
-          ember.message("Ember cannot show the differences yet");
-          ask();
-        } else if (answer === "yes") {
-          const buffer = ember.findFileNoselect(file);
-          ember.call("switch-to-buffer", buffer);
-          ember.recoverFromAutoSave();
-        } else {
-          throw new Error("Recover-file canceled");
-        }
-      });
-    ask();
+    for (;;) {
+      const answer = ember.readAnswer(`Recover auto save file ${auto}? `, ["yes", "no", "diff"]);
+      if (answer === "diff") {
+        ember.message("Ember cannot show the differences yet");
+        continue;
+      }
+      if (answer !== "yes") throw new Error("Recover-file canceled");
+      ember.call("switch-to-buffer", ember.findFileNoselect(file));
+      ember.recoverFromAutoSave();
+      return;
+    }
   },
 });
 
@@ -363,38 +305,29 @@ function buffersNeedingSave(): string[] {
  * Asks about saving each modified file buffer in turn, as Emacs's
  * save-some-buffers with map-y-or-n-p: y saves it, n skips it, ! saves the
  * rest, . saves it and stops, q stops. With `all`, saves them all without
- * asking. Calls `then` once done, unless the questions were quit.
+ * asking.
  */
-function saveSomeBuffers(all: boolean, interactive: boolean, then: () => void = () => {}): void {
+function saveSomeBuffers(all: boolean, interactive: boolean): void {
   const buffers = buffersNeedingSave();
   if (buffers.length === 0) {
     if (interactive) ember.message("(No files need saving)");
-    then();
     return;
   }
-  const saveAll = (rest: string[], done: () => void) => {
-    const [first, ...later] = rest;
-    if (first === undefined) return done();
-    ember.withCurrentBuffer(first, () => basicSaveBuffer(() => saveAll(later, done)));
-  };
+  const save = (buffer: string) => ember.withCurrentBuffer(buffer, () => basicSaveBuffer());
   if (all) {
-    saveAll(buffers, then);
+    buffers.forEach(save);
     return;
   }
-  const ask = (rest: string[]) => {
-    const [buffer, ...later] = rest;
-    if (buffer === undefined) return then();
+  for (let k = 0; k < buffers.length; k++) {
+    const buffer = buffers[k];
     const file = ember.withCurrentBuffer(buffer, () => ember.bufferFileName() ?? "");
     const what = buffer === nondirectory(file) || buffer.startsWith(`${nondirectory(file)}<`) ? `file ${file}` : `file ${file} (buffer ${buffer})`;
-    ember.readCharChoice(`Save ${what}? (y, n, !, ., q, C-r, C-f, d or C-h) `, "yn!.q ", (c) => {
-      if (c === "y" || c === " ") saveAll([buffer], () => ask(later));
-      else if (c === "n") ask(later);
-      else if (c === "!") saveAll(rest, then);
-      else if (c === ".") saveAll([buffer], then);
-      else then();
-    });
-  };
-  ask(buffers);
+    const c = ember.readCharChoice(`Save ${what}? (y, n, !, ., q, C-r, C-f, d or C-h) `, "yn!.q ");
+    if (c === "y" || c === " ") save(buffer);
+    else if (c === "!") return buffers.slice(k).forEach(save);
+    else if (c === ".") return save(buffer);
+    else if (c !== "n") return;
+  }
 }
 
 ember.defineCommand({
@@ -411,25 +344,15 @@ ember.defineCommand({
     "Offer to save each modified file buffer, then exit.\n\n" +
     "If any are left unsaved, you are asked whether to exit anyway. With a prefix argument, save them all without asking.",
   run: () => {
+    saveSomeBuffers(ember.prefixArg() !== null, false);
+    if (buffersNeedingSave().length > 0 && !ember.yesOrNoP("Modified buffers exist; exit anyway? ")) return;
     // Then, as save-buffers-kill-emacs does, about processes still running.
-    const killEmacs = () => {
-      const running = ember.processList().filter((p) => ember.processStatus(p) === "run" && ember.processQueryOnExitFlag(p));
-      if (running.length === 0) return ember.killEmacs();
-      ember.yesOrNoP("Active processes exist; kill them and exit anyway? ", (yes) => {
-        if (!yes) return;
-        for (const p of running) ember.deleteProcess(p);
-        ember.killEmacs();
-      });
-    };
-    saveSomeBuffers(ember.prefixArg() !== null, false, () => {
-      if (buffersNeedingSave().length === 0) {
-        killEmacs();
-        return;
-      }
-      ember.yesOrNoP("Modified buffers exist; exit anyway? ", (yes) => {
-        if (yes) killEmacs();
-      });
-    });
+    const running = ember.processList().filter((p) => ember.processStatus(p) === "run" && ember.processQueryOnExitFlag(p));
+    if (running.length > 0) {
+      if (!ember.yesOrNoP("Active processes exist; kill them and exit anyway? ")) return;
+      for (const p of running) ember.deleteProcess(p);
+    }
+    ember.killEmacs();
   },
 });
 
@@ -495,13 +418,11 @@ ember.defineMinorMode({
 // Managing files, after the commands of files.el and fileio.c.
 
 /** Whether to go ahead where `file` exists: asked when typed, refused from code, as `ok-if-already-exists` 0 does. */
-function confirmOverwrite(file: string, verb: string, then: () => void): void {
-  if (!ember.fileExists(file)) return then();
-  if (!ember.calledInteractively()) throw new Error(`File already exists: ${ember.expandFileName(file)}`);
-  ember.yesOrNoP(`File ${ember.abbreviateFileName(ember.expandFileName(file))} already exists; ${verb} to it anyway? `, (yes) => {
-    if (!yes) throw new Error(`File already exists: ${ember.expandFileName(file)}`);
-    then();
-  });
+function confirmOverwrite(file: string, verb: string): void {
+  if (!ember.fileExists(file)) return;
+  const exists = `File already exists: ${ember.expandFileName(file)}`;
+  if (!ember.calledInteractively()) throw new Error(exists);
+  if (!ember.yesOrNoP(`File ${ember.abbreviateFileName(ember.expandFileName(file))} already exists; ${verb} to it anyway? `)) throw new Error(exists);
 }
 
 /** Where a copy or rename of `from` to `to` lands: inside `to` if it ends in a slash. */
@@ -525,9 +446,8 @@ ember.defineCommand({
   ],
   run: (file: string, newname: string) => {
     const keepTime = ember.prefixArg() !== null;
-    confirmOverwrite(targetName(file, newname), "copy", () => {
-      ember.copyFile(file, newname, { okIfExists: true, keepTime });
-    });
+    confirmOverwrite(targetName(file, newname), "copy");
+    ember.copyFile(file, newname, { okIfExists: true, keepTime });
   },
 });
 
@@ -541,9 +461,8 @@ ember.defineCommand({
     { name: "newname", kind: "file", prompt: (file) => `Rename ${ember.abbreviateFileName(file)} to file: ` },
   ],
   run: (file: string, newname: string) => {
-    confirmOverwrite(targetName(file, newname), "rename", () => {
-      ember.renameFile(file, newname, { okIfExists: true });
-    });
+    confirmOverwrite(targetName(file, newname), "rename");
+    ember.renameFile(file, newname, { okIfExists: true });
   },
 });
 
@@ -584,9 +503,8 @@ ember.defineCommand({
     if (!ember.calledInteractively()) return ember.deleteDirectory(dir, { trash });
     const verb = trash ? "trash" : "delete";
     // As in Emacs, no still tries, and fails as the directory is not empty.
-    ember.yOrNP(`Directory ${ember.abbreviateFileName(ember.directoryFileName(ember.expandFileName(dir)))} is not empty, really ${verb}? `, (yes) => {
-      ember.deleteDirectory(dir, { recursive: yes, trash });
-    });
+    const yes = ember.yOrNP(`Directory ${ember.abbreviateFileName(ember.directoryFileName(ember.expandFileName(dir)))} is not empty, really ${verb}? `);
+    ember.deleteDirectory(dir, { recursive: yes, trash });
   },
 });
 
@@ -654,11 +572,7 @@ ember.defineCommand({
     };
     if (ember.bufferModified() && ember.bufferFileName() !== undefined) {
       if (!ember.calledInteractively()) throw new Error(`Buffer ${old} modified`);
-      ember.yesOrNoP(`Buffer \u2018${old}\u2019 modified; kill anyway? `, (yes) => {
-        if (!yes) throw new Error("Aborted");
-        replace();
-      });
-      return;
+      if (!ember.yesOrNoP(`Buffer \u2018${old}\u2019 modified; kill anyway? `)) throw new Error("Aborted");
     }
     replace();
   },

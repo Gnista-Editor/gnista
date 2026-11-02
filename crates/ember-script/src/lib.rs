@@ -674,8 +674,7 @@ fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()
                 if ed.command(&name).is_none() {
                     return Err(Error::new(format!("No such command: {name}")));
                 }
-                ed.run_interactive(&name);
-                Ok(())
+                ed.call_interactively(&name)
             })
         })?,
     )?;

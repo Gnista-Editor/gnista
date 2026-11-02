@@ -52,9 +52,8 @@ ember.defineCommand({
 });
 
 /**
- * Runs `fn` with `coding-system-for-read` and `-for-write` set to `coding`
- * until the questions it opens are answered, as a let around a command
- * that reads from the minibuffer keeps its binding.
+ * Runs `fn` with `coding-system-for-read` and `-for-write` set to `coding`,
+ * through the questions it asks, as a let around a command keeps its binding.
  */
 function withCoding(variables: string[], coding: string, fn: () => void): void {
   const old = variables.map((v) => [v, ember.variable(v)] as const);
@@ -65,7 +64,7 @@ function withCoding(variables: string[], coding: string, fn: () => void): void {
   try {
     fn();
   } finally {
-    ember.afterPrompts(restore);
+    restore();
   }
 }
 
@@ -150,29 +149,16 @@ ember.defineCommand({
 /**
  * Before a buffer is written: if its coding system cannot write all of
  * its text, asks for one that can, as select-safe-coding-system does, and
- * makes it the buffer's, then calls `then`.
+ * makes it the buffer's.
  */
-export function selectSafeCodingSystem(then: () => void): void {
+export function selectSafeCodingSystem(): void {
   const coding = (ember.variable("coding-system-for-write") as string | null) ?? bufferCoding();
-  if (coding === undefined || ember.unencodableCharPosition(0, ember.bufferSize(), coding) === undefined) {
-    then();
-    return;
-  }
+  if (coding === undefined || ember.unencodableCharPosition(0, ember.bufferSize(), coding) === undefined) return;
   const safe = ember.findCodingSystemsRegion(0, ember.bufferSize());
   const fallback = safe[0] ?? "utf-8";
-  const buffer = ember.bufferName();
-  ember.completingRead(
-    `Select coding system (default ${fallback}): `,
-    ember.codingSystemList(),
-    (answer) => {
-      const chosen = ember.checkCodingSystem(answer === "" ? fallback : answer) as string;
-      ember.withCurrentBuffer(buffer, () => {
-        ember.setVariable("buffer-file-coding-system", mergeCodingSystems(chosen, coding));
-        then();
-      });
-    },
-    { history: "coding-system-history" },
-  );
+  const answer = ember.completingRead(`Select coding system (default ${fallback}): `, ember.codingSystemList(), { history: "coding-system-history" });
+  const chosen = ember.checkCodingSystem(answer === "" ? fallback : answer) as string;
+  ember.setVariable("buffer-file-coding-system", mergeCodingSystems(chosen, coding));
 }
 
 ember.bindKey("C-x RET f", "set-buffer-file-coding-system");

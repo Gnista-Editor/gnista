@@ -5,8 +5,23 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
+mod driven;
+
+use driven::Driven;
 use ember_core::{Arg, Editor};
 use ember_script::Scripting;
+
+/// Visits a file on a driven editor, whose questions wait for their answers.
+fn visit_driven(d: &Driven, path: &Path) {
+    let path = path.display().to_string();
+    d.with(move |ed| ed.call("find-file", vec![Arg::Str(path)]).unwrap());
+}
+
+/// Answers the open question on a driven editor.
+fn answer_driven(d: &Driven, keys: &str) {
+    assert!(d.prompt().is_some(), "a question is open");
+    d.press(keys);
+}
 
 fn setup() -> (Editor, Scripting) {
     let mut ed = Editor::new();
@@ -178,22 +193,22 @@ fn text_files_get_a_final_newline() {
 
 #[test]
 fn saving_over_a_file_changed_on_disk_asks_first() {
-    let (mut ed, _s) = setup();
+    let d = Driven::new("");
     let dir = dir();
     let path = dir.path().join("a.txt");
     fs::write(&path, "mine\n").unwrap();
-    visit(&mut ed, &path);
-    ed.type_text("edited ");
+    visit_driven(&d, &path);
+    d.type_text("edited ");
     change_on_disk(&path, "theirs\n");
-    ed.press("C-x C-s").unwrap();
-    assert_eq!(ed.prompt(), Some("a.txt has changed since visited or saved.  Save anyway? (yes or no) "));
-    ed.type_text("no\n");
-    assert_eq!(ed.echo(), Some("Save not confirmed"));
+    d.press("C-x C-s");
+    assert_eq!(d.prompt().as_deref(), Some("a.txt has changed since visited or saved.  Save anyway? (yes or no) "));
+    d.type_text("no\n");
+    assert_eq!(d.message().as_deref(), Some("Save not confirmed"));
     assert_eq!(fs::read_to_string(&path).unwrap(), "theirs\n");
-    ed.press("C-x C-s").unwrap();
-    ed.type_text("maybe\n");
-    assert_eq!(ed.echo(), Some("Please answer yes or no."));
-    ed.type_text("yes\n");
+    d.press("C-x C-s");
+    d.type_text("maybe\n");
+    assert_eq!(d.message().as_deref(), Some("Please answer yes or no."));
+    d.type_text("yes\n");
     assert_eq!(fs::read_to_string(&path).unwrap(), "edited mine\n");
 }
 
@@ -244,28 +259,28 @@ fn r_reverts_a_buffer_whose_file_changed() {
 
 #[test]
 fn reverting_keeps_point_where_it_can() {
-    let (mut ed, _s) = setup();
+    let d = Driven::new("");
     let dir = dir();
     let path = dir.path().join("a.txt");
     fs::write(&path, "one\ntwo\nthree\n").unwrap();
-    visit(&mut ed, &path);
-    ed.window_buffer_mut().set_point(10);
+    visit_driven(&d, &path);
+    d.with(|ed| ed.window_buffer_mut().set_point(10));
     change_on_disk(&path, "one\nTWO\nthree\nfour\n");
-    ed.press("C-x x g").unwrap();
-    assert_eq!(ed.echo(), Some("Reverted buffer"));
-    assert_eq!(text(&ed), "one\nTWO\nthree\nfour\n");
+    d.press("C-x x g");
+    assert_eq!(d.message().as_deref(), Some("Reverted buffer"));
+    assert_eq!(d.text(), "one\nTWO\nthree\nfour\n");
     // Emacs's proportional place in what changed.
-    assert_eq!(ed.window_buffer().point(), 13);
-    assert!(!ed.window_buffer().is_modified());
+    assert_eq!(d.point(), 13);
+    assert!(!d.with(|ed| ed.window_buffer().is_modified()));
     // A modified buffer asks first.
-    ed.type_text("!");
-    ed.press("C-x x g").unwrap();
-    assert_eq!(ed.prompt(), Some(format!("Discard edits and reread from {}? (yes or no) ", path.display()).as_str()));
-    ed.type_text("yes\n");
-    assert_eq!(text(&ed), "one\nTWO\nthree\nfour\n");
+    d.type_text("!");
+    d.press("C-x x g");
+    assert_eq!(d.prompt(), Some(format!("Discard edits and reread from {}? (yes or no) ", path.display())));
+    d.type_text("yes\n");
+    assert_eq!(d.text(), "one\nTWO\nthree\nfour\n");
     // And reverting can be undone.
-    ed.press("C-/").unwrap();
-    assert_eq!(text(&ed), "one\nTWO\nthree!\nfour\n");
+    d.press("C-/");
+    assert_eq!(d.text(), "one\nTWO\nthree!\nfour\n");
 }
 
 #[test]
@@ -306,19 +321,21 @@ fn an_auto_save_file_can_be_recovered() {
         ed.type_text("lost work ");
         ed.call("do-auto-save", vec![]).unwrap();
     }
-    let (mut ed, _s) = setup();
-    visit(&mut ed, &path);
-    assert_eq!(ed.echo(), Some("a.txt has auto save data; consider M-x recover-this-file"));
-    ed.call("recover-this-file", vec![]).unwrap();
+    let d = Driven::new("");
+    visit_driven(&d, &path);
+    assert_eq!(d.message().as_deref(), Some("a.txt has auto save data; consider M-x recover-this-file"));
+    d.start(|ed| {
+        let _ = ed.call("recover-this-file", vec![]);
+    });
     let auto = dir.path().join("#a.txt#");
-    assert_eq!(ed.prompt(), Some(format!("Recover auto save file {}? (yes, no, diff) ", auto.display()).as_str()));
-    ed.type_text("yes\n");
-    assert_eq!(text(&ed), "lost work saved\n");
-    assert!(ed.window_buffer().is_modified());
-    ed.press("C-x C-s").unwrap();
+    assert_eq!(d.prompt(), Some(format!("Recover auto save file {}? (yes, no, diff) ", auto.display())));
+    d.type_text("yes\n");
+    assert_eq!(d.text(), "lost work saved\n");
+    assert!(d.with(|ed| ed.window_buffer().is_modified()));
+    d.press("C-x C-s");
     assert!(!auto.exists());
-    let failed = ed.call("recover-this-file", vec![]);
-    assert_eq!(failed.unwrap_err().to_string(), format!("Auto save file {} does not exist", ember_core::abbreviate_path(&auto)));
+    let failed = d.with(|ed| ed.call("recover-this-file", vec![]).map_err(|e| e.to_string()));
+    assert_eq!(failed.unwrap_err(), format!("Auto save file {} does not exist", ember_core::abbreviate_path(&auto)));
 }
 
 #[test]
@@ -350,64 +367,71 @@ fn killing_a_modified_buffer_asks() {
 
 #[test]
 fn quitting_offers_to_save_each_file() {
-    let (mut ed, _s) = setup();
+    let d = Driven::new("");
     let dir = dir();
     let (a, b) = (dir.path().join("a.txt"), dir.path().join("b.txt"));
-    visit(&mut ed, &a);
-    ed.type_text("A");
-    visit(&mut ed, &b);
-    ed.type_text("B");
-    ed.press("C-x C-c").unwrap();
+    visit_driven(&d, &a);
+    d.type_text("A");
+    visit_driven(&d, &b);
+    d.type_text("B");
+    d.press("C-x C-c");
     // The buffer list's order, most recently selected first, as Emacs asks.
-    assert_eq!(ed.prompt(), Some(format!("Save file {}? (y, n, !, ., q, C-r, C-f, d or C-h) ", b.display()).as_str()));
-    answer(&mut ed, "n");
-    answer(&mut ed, "y");
+    assert_eq!(d.prompt(), Some(format!("Save file {}? (y, n, !, ., q, C-r, C-f, d or C-h) ", b.display())));
+    answer_driven(&d, "n");
+    answer_driven(&d, "y");
     assert_eq!(fs::read_to_string(&a).unwrap(), "A\n");
     assert!(!b.exists());
-    assert_eq!(ed.prompt(), Some("Modified buffers exist; exit anyway? (yes or no) "));
-    ed.type_text("no\n");
-    assert!(!ed.should_quit());
-    ed.press("C-x C-c").unwrap();
-    answer(&mut ed, "!");
+    assert_eq!(d.prompt().as_deref(), Some("Modified buffers exist; exit anyway? (yes or no) "));
+    d.type_text("no\n");
+    assert!(!d.with(|ed| ed.should_quit()));
+    d.press("C-x C-c");
+    // The answer ends the editor's loop, which says so as it stops.
+    d.0.run(|ed| {
+        let _ = ed.press("!");
+    });
+    let until = std::time::Instant::now() + Duration::from_secs(10);
+    while !d.0.published().exit {
+        assert!(std::time::Instant::now() < until, "the editor exits");
+        std::thread::sleep(Duration::from_millis(20));
+    }
     assert_eq!(fs::read_to_string(&b).unwrap(), "B\n");
-    assert!(ed.should_quit());
 }
 
 #[test]
 fn save_some_buffers_saves_as_told() {
-    let (mut ed, _s) = setup();
+    let d = Driven::new("");
     let dir = dir();
     let files: Vec<PathBuf> = ["a.txt", "b.txt", "c.txt"].iter().map(|n| dir.path().join(n)).collect();
     for f in &files {
-        visit(&mut ed, f);
-        ed.type_text("x");
+        visit_driven(&d, f);
+        d.type_text("x");
     }
-    ed.press("C-x s").unwrap();
-    answer(&mut ed, "n");
-    answer(&mut ed, ".");
-    assert!(ed.prompt().is_none());
+    d.press("C-x s");
+    answer_driven(&d, "n");
+    answer_driven(&d, ".");
+    assert!(d.prompt().is_none());
     assert_eq!(files.iter().map(|f| f.exists()).collect::<Vec<_>>(), [false, true, false]);
-    ed.press("C-u C-x s").unwrap();
+    d.press("C-u C-x s");
     assert!(files.iter().all(|f| f.exists()));
-    ed.press("C-x s").unwrap();
-    assert_eq!(ed.echo(), Some("(No files need saving)"));
+    d.press("C-x s");
+    assert_eq!(d.message().as_deref(), Some("(No files need saving)"));
 }
 
 #[test]
 fn write_file_visits_the_new_file_and_asks_before_overwriting() {
-    let (mut ed, _s) = setup();
+    let d = Driven::new("");
     let dir = dir();
     let (a, b) = (dir.path().join("a.txt"), dir.path().join("b.txt"));
     fs::write(&b, "existing\n").unwrap();
-    visit(&mut ed, &a);
-    ed.type_text("text");
-    ed.press("C-x C-w").unwrap();
-    ed.press("C-a C-k").unwrap();
-    ed.type_text(&format!("{}\n", b.display()));
-    assert_eq!(ed.prompt(), Some(format!("File \u{2018}{}\u{2019} exists; overwrite? (y or n) ", b.display()).as_str()));
-    answer(&mut ed, "y");
+    visit_driven(&d, &a);
+    d.type_text("text");
+    d.press("C-x C-w");
+    d.press("C-a C-k");
+    d.type_text(&format!("{}\n", b.display()));
+    assert_eq!(d.prompt(), Some(format!("File \u{2018}{}\u{2019} exists; overwrite? (y or n) ", b.display())));
+    answer_driven(&d, "y");
     assert_eq!(fs::read_to_string(&b).unwrap(), "text\n");
-    assert_eq!(ed.window_buffer().name, "b.txt");
+    assert_eq!(d.buffer_name(), "b.txt");
     assert!(!a.exists());
 }
 

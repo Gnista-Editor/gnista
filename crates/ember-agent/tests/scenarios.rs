@@ -124,6 +124,19 @@ impl Setup {
         self.work();
     }
 
+    /// Answers the questions a tool call's command asks, in turn, as the
+    /// user would while it waits (ADR 0053).
+    fn user_answers(&mut self, answers: &[&str]) {
+        let mut answers: VecDeque<String> = answers.iter().map(|a| a.to_string()).collect();
+        self.ed.set_input_source(move |ed| match answers.pop_front() {
+            Some(answer) if ed.prompt().is_some() => {
+                ed.type_text(&answer);
+                true
+            }
+            _ => false,
+        });
+    }
+
     fn work(&mut self) {
         for _ in 0..50 {
             self.ed.advance_clock(Duration::from_millis(60));
@@ -288,13 +301,13 @@ fn unsaved_work_stays_unless_the_user_says() {
         vec![
             reply(&[call("t1", "kill-buffer", &["notes.txt"])], "tool_use"),
             reply(&[call("t2", "save-buffers-kill-terminal", &[])], "tool_use"),
-            // Answering the save question for the user only reaches the
-            // save, which asks the user.
-            reply(&[tool("t3", "type_text", json!({"text": "y"}))], "tool_use"),
             reply(&[text("Done.")], "end_turn"),
         ],
     );
     let (_dir, path) = visiting(&mut s);
+    // A question a tool call's command asks waits for the user, who says
+    // to save; the save then needs the user's leave to write.
+    s.user_answers(&["y"]);
     s.ask("close everything");
     // Called from code, kill-buffer refuses to lose unsaved work.
     assert!(s.results(1)[0]["content"].as_str().unwrap().contains("is modified; save it first"));
