@@ -108,3 +108,18 @@ So the rule in step 4 splits: `S-TAB` is primitives, and a faster engine would n
 ## What is left
 
 [optimisation.md](optimisation.md) lists where Ember is still slower than it could be: Electric Pair mode's balance check in a large buffer, the objects Org's heading index makes after each edit, building the rope when a large file opens, and rows off the grid in the GUI.
+
+## Running the tests
+
+Measured on 2026-11-02, on the same M1. Under `cargo test` the whole suite had run past 50 minutes without finishing, a binary at a time. With cargo-nextest, a hung test stopped after three minutes, dependencies optimised in debug builds, and ember-core's and ember-script's tests one binary each:
+
+| | Time |
+| --- | ---: |
+| Building every test after a change to the test crates | 11½ min, nearly all compiling ember-core and ember-script |
+| Listing and running the 642 tests (`cargo nextest run --workspace`) | 28 s |
+| The GUI's snapshot tests (`cargo test -p ember-gui --test window --test images`) | 2½ min |
+
+**macOS checks every new program before it first runs.** Before Developer Tools was turned on for the app running the commands (System Settings, Privacy & Security, Developer Tools), each newly linked test binary waited at `_dyld_start` for `syspolicyd`, and listing the tests after a change took 20 to 30 minutes. With it on, 28 seconds. Merging the test files into one binary a crate cut the new programs per change from about seventy to about fifteen, which matters less once the check is off.
+
+**The snapshot tests stay with `cargo test`.** Each process spends about a minute getting the GPU's adapters from Metal (`wgpu`'s `enumerate_adapters`) before its first render, with Developer Tools on or off; one test alone takes 116 s. In one process the 33 snapshot tests share that minute, so nextest's default set leaves them out (`.config/nextest.toml`).
+

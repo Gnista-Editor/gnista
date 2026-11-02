@@ -32,7 +32,7 @@ cargo nextest run
 cargo clippy --all-targets
 ```
 
-- Tests run with cargo-nextest (`cargo install cargo-nextest --locked`): each test in a process of its own, tests from every binary at once, and a test still running after three minutes is stopped and fails (`.config/nextest.toml`). `cargo test` works too, a binary at a time. Dependencies are optimised in debug builds (`Cargo.toml`), so the tests that run egui, QuickJS and tree-sitter run near release speed.
+- Tests run with cargo-nextest (`cargo install cargo-nextest --locked`): each test in a process of its own, tests from every binary at once, and a test still running after three minutes is stopped and fails (`.config/nextest.toml`). The GUI's snapshot tests are left out of its default set and run with `cargo test -p ember-gui --test window --test images`, as each process spends a minute getting the GPU from Metal. `cargo test` works for everything, a binary at a time. Dependencies are optimised in debug builds (`Cargo.toml`), so the tests that run egui, QuickJS and tree-sitter run near release speed. On macOS, turn on Developer Tools for the app that runs the builds (System Settings, Privacy & Security), or each newly built test binary waits for `syspolicyd` before it runs: listing the tests after a change took 20 to 30 minutes without it and seconds with it ([docs/performance.md](docs/performance.md)).
 
 - Ember loads `init.ts` from `$EMBER_CONFIG_DIR`, else `$XDG_CONFIG_HOME/ember`, else `~/.config/ember`. `-q` skips it. At startup Ember writes `ember.d.ts` there, and `tsconfig.json` if missing, so `tsc -p ~/.config/ember` type-checks the config.
 - `cargo run -p ember -- --print-types` prints the generated declarations.
