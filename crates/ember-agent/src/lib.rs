@@ -513,28 +513,15 @@ impl Agent {
         self.request(ed, name);
     }
 
-    /// Asks the user whether the agent may have an effect, and goes on with
-    /// the answer. Only the user's keys can answer: tools wait meanwhile.
+    /// Asks the user whether the agent may have an effect, waiting for the
+    /// answer. Only the user's keys can answer: tools wait meanwhile. A
+    /// prompt the agent left open is in the way, and quitting the question
+    /// is no too.
     fn ask_approval(self: &Rc<Self>, ed: &mut Editor, name: &str, effect: String, text: String) {
-        let agent = self.clone();
-        let session = name.to_string();
-        let asked = effect.clone();
-        let refused = text.clone();
-        let then: HookFn = Rc::new(move |ed, answer| {
-            let yes = matches!(answer.first(), Some(EditorValue::Bool(true)));
-            agent.with_session(&session, |s| {
-                if let State::Tools(run) = &mut s.state {
-                    run.approval = Some((asked.clone(), Some(yes), refused.clone()));
-                }
-            });
-            agent.run_tools(ed, &session);
-            Ok(())
-        });
-        // A prompt the agent left open is in the way: that counts as no.
-        let asked_now = ed.y_or_n_p(&format!("Let the agent {effect}? "), then).is_ok();
+        let yes = ed.y_or_n_p(&format!("Let the agent {effect}? ")).unwrap_or(false);
         self.with_session(name, |s| {
             if let State::Tools(run) = &mut s.state {
-                run.approval = Some((effect, if asked_now { None } else { Some(false) }, text));
+                run.approval = Some((effect, Some(yes), text));
             }
         });
     }

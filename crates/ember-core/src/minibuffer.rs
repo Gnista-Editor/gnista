@@ -15,7 +15,7 @@ use crate::completion;
 use crate::editor::{Editor, Prompt};
 use crate::error::{Error, Result};
 use crate::files::{abbreviate_dir, expand_file_name};
-use crate::variables::{HookFn, Value};
+use crate::variables::Value;
 
 /// What a prompt opened partway through a command reads, and how.
 #[derive(Clone, Debug)]
@@ -108,9 +108,7 @@ impl Prompt {
             default: None,
             initial: String::new(),
             collection_fn: None,
-            then: None,
-            quit: None,
-            resume: None,
+            answer: None,
             sorted: None,
         }
     }
@@ -193,23 +191,14 @@ impl Editor {
     pub(crate) fn finish_prompt(&mut self, value: String) -> Result<()> {
         let prompt = self.close_prompt().ok_or_else(|| Error::new("Not in the minibuffer"))?;
         self.add_to_history(&prompt.history, &value);
-        let result = match prompt.then {
-            Some(then) => match &prompt.resume {
-                Some(resume) => self.run_resumed(resume, |ed| then(ed, &[Value::Str(value)])),
-                None => then(self, &[Value::Str(value)]),
-            },
-            None => {
-                self.supply_arg(Arg::Str(value));
-                Ok(())
+        match prompt.answer {
+            Some(answer) => {
+                answer.borrow_mut().get_or_insert(Ok(Value::Str(value)));
             }
-        };
-        if result.is_ok() {
-            self.run_prompt_waiters();
-        } else {
-            self.prompt_waiters_clear();
+            None => self.supply_arg(Arg::Str(value)),
         }
         self.resume_outer_minibuffer();
-        result
+        Ok(())
     }
 
     /// Lets a prompt open while one is, in a minibuffer inside the open
@@ -296,10 +285,11 @@ impl Editor {
         }
     }
 
-    /// Reads an answer in the minibuffer and calls `then` with it, as
-    /// Emacs's `read-from-minibuffer`, `completing-read` and
-    /// `read-file-name` return it.
-    pub fn read_from_minibuffer(&mut self, reading: Reading, then: HookFn) -> Result<()> {
+    /// Reads an answer in the minibuffer and returns it, as Emacs's
+    /// `read-from-minibuffer`, `completing-read` and `read-file-name` do,
+    /// the command loop running meanwhile (ADR 0053).
+    pub fn read_from_minibuffer(&mut self, reading: Reading) -> Result<Value> {
+        let asker = self.resume_point();
         self.enter_recursive_minibuffer()?;
         let history = reading.history.clone().unwrap_or_else(|| reading.kind.history().to_string());
         let mut prompt = Prompt::new(&reading.prompt, reading.kind, &history);
@@ -308,8 +298,8 @@ impl Editor {
         prompt.collection_fn = reading.collection_fn;
         prompt.category = reading.category;
         prompt.default = reading.default;
-        prompt.then = Some(then);
-        prompt.resume = Some(self.resume_point());
+        let answer = crate::editor::AnswerSlot::default();
+        prompt.answer = Some(answer.clone());
         let input = match (reading.initial, reading.kind) {
             (Some(initial), _) => initial,
             (None, ParamKind::File) => match &reading.dir {
@@ -320,7 +310,7 @@ impl Editor {
         };
         self.open_prompt(prompt, &input);
         self.refresh_dynamic_collection();
-        Ok(())
+        self.wait_for_answer(&asker, &answer)
     }
 
     /// What the open prompt reads, or `None` if none is open.

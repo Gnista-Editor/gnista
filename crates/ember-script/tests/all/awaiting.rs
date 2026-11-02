@@ -4,9 +4,7 @@
 //! loop, so these drive the editor on a thread of its own (ADR 0053), and
 //! still await, which works as before.
 
-mod driven;
-
-use driven::Driven;
+use crate::driven::Driven;
 use ember_core::Editor;
 use ember_script::Scripting;
 

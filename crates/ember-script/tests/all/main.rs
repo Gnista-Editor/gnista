@@ -1,0 +1,57 @@
+//! ember-script's tests, built as one binary with each file a module, so a
+//! change links one test program rather than one a file, and macOS checks
+//! one new program before it first runs rather than dozens. `bench`,
+//! `emacs`, `org_fuzz`, `regexp`, `icomplete` and `bidi` stay binaries of
+//! their own, as the commands that run them name them.
+
+#[path = "../driven/mod.rs"]
+mod driven;
+
+mod abbrev;
+mod awaiting;
+mod blocking;
+mod bookmark;
+mod buff_menu;
+mod changes;
+mod chartab;
+mod codings;
+mod comint;
+mod commands;
+mod compile;
+mod dabbrev;
+mod diff;
+mod dired;
+mod face_attributes;
+mod faces;
+mod file_management;
+mod file_primitives;
+mod files;
+mod fonts;
+mod hi_lock;
+mod images;
+mod indirect;
+mod keyboard;
+mod keymaps;
+mod layout;
+mod line_numbers;
+mod minibuffer;
+mod modes;
+mod mouse;
+mod org;
+mod parens;
+mod processes;
+mod project;
+mod quit;
+mod redisplay;
+mod registers;
+mod scripts;
+mod search;
+mod sessions;
+mod symbols;
+mod tabulated_list;
+mod textprop;
+mod treesit;
+mod undo_list;
+mod view;
+mod windows;
+mod wrapping;

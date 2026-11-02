@@ -124,17 +124,21 @@ impl Setup {
         self.work();
     }
 
-    /// Answers the questions a tool call's command asks, in turn, as the
-    /// user would while it waits (ADR 0053).
-    fn user_answers(&mut self, answers: &[&str]) {
+    /// Answers the questions the agent's work asks, in turn, as the user
+    /// would while it waits (ADR 0053), and gives back what each asked.
+    fn user_answers(&mut self, answers: &[&str]) -> Rc<RefCell<Vec<String>>> {
         let mut answers: VecDeque<String> = answers.iter().map(|a| a.to_string()).collect();
-        self.ed.set_input_source(move |ed| match answers.pop_front() {
-            Some(answer) if ed.prompt().is_some() => {
+        let asked = Rc::new(RefCell::new(Vec::new()));
+        let seen = asked.clone();
+        self.ed.set_input_source(move |ed| match (ed.prompt().map(str::to_string), answers.pop_front()) {
+            (Some(prompt), Some(answer)) => {
+                seen.borrow_mut().push(prompt);
                 ed.type_text(&answer);
                 true
             }
             _ => false,
         });
+        asked
     }
 
     fn work(&mut self) {
@@ -246,12 +250,24 @@ fn saving_asks_the_user_first() {
         ],
     );
     let (_dir, path) = visiting(&mut s);
+    // What the file and the model had when the user was asked.
+    let at_question = Rc::new(RefCell::new(None));
+    let (seen, model, file_path) = (at_question.clone(), s.model.clone(), path.clone());
+    s.ed.set_input_source(move |ed| {
+        let Some(prompt) = ed.prompt().map(str::to_string) else { return false };
+        if seen.borrow().is_some() {
+            return false;
+        }
+        *seen.borrow_mut() = Some((prompt, fs::read_to_string(&file_path).unwrap(), model.requests.borrow().len()));
+        ed.type_text("y");
+        true
+    });
     s.ask("save it");
     let file = ember_core::abbreviate_path(&path);
-    assert_eq!(s.ed.prompt(), Some(format!("Let the agent write {file}? (y or n) ").as_str()));
-    assert_eq!(fs::read_to_string(&path).unwrap(), "saved\n", "nothing is written before the answer");
-    assert_eq!(s.model.requests.borrow().len(), 1, "the agent waits");
-    s.ed.press("y").unwrap();
+    let (prompt, text_then, requests_then) = at_question.borrow_mut().take().expect("the user was asked");
+    assert_eq!(prompt, format!("Let the agent write {file}? (y or n) "));
+    assert_eq!(text_then, "saved\n", "nothing is written before the answer");
+    assert_eq!(requests_then, 1, "the agent waits");
     s.work();
     // The model hears it may, and saves again; this time it goes ahead,
     // without asking twice.
@@ -284,13 +300,14 @@ fn the_agent_cannot_answer_for_the_user() {
         vec![reply(&[tool("t1", "press_keys", json!({"keys": "C-x C-s y"}))], "tool_use"), reply(&[text("Stopped.")], "end_turn")],
     );
     let (_dir, path) = visiting(&mut s);
+    let asked = s.user_answers(&["n"]);
     s.ask("save it");
-    // The keys stopped at the save: the question is the user's, and the
-    // agent's "y" was never typed.
-    assert!(s.ed.prompt().unwrap().starts_with("Let the agent write"), "{:?}", s.ed.prompt());
-    assert_eq!(s.text_of("notes.txt"), "edited saved\n");
-    s.ed.press("n").unwrap();
     s.work();
+    // The keys stopped at the save: the question is the user's, asked once
+    // the tool call is over, and the agent's "y" was never typed.
+    assert_eq!(asked.borrow().len(), 1);
+    assert!(asked.borrow()[0].starts_with("Let the agent write"), "{:?}", asked.borrow());
+    assert_eq!(s.text_of("notes.txt"), "edited saved\n");
     assert_eq!(fs::read_to_string(&path).unwrap(), "saved\n");
 }
 
@@ -306,14 +323,15 @@ fn unsaved_work_stays_unless_the_user_says() {
     );
     let (_dir, path) = visiting(&mut s);
     // A question a tool call's command asks waits for the user, who says
-    // to save; the save then needs the user's leave to write.
-    s.user_answers(&["y"]);
+    // to save; the save then needs the user's leave to write, which they
+    // refuse.
+    let asked = s.user_answers(&["y", "n"]);
     s.ask("close everything");
+    s.work();
     // Called from code, kill-buffer refuses to lose unsaved work.
     assert!(s.results(1)[0]["content"].as_str().unwrap().contains("is modified; save it first"));
-    assert!(s.ed.prompt().unwrap().starts_with("Let the agent write"), "{:?}", s.ed.prompt());
-    s.ed.press("n").unwrap();
-    s.work();
+    assert!(asked.borrow()[0].starts_with("Save file "), "{:?}", asked.borrow());
+    assert!(asked.borrow()[1].starts_with("Let the agent write"), "{:?}", asked.borrow());
     assert_eq!(fs::read_to_string(&path).unwrap(), "saved\n");
     assert!(!s.ed.should_quit());
 }
@@ -321,10 +339,10 @@ fn unsaved_work_stays_unless_the_user_says() {
 #[test]
 fn quitting_needs_approval() {
     let mut s = setup("", vec![reply(&[call("t1", "save-buffers-kill-terminal", &[])], "tool_use"), reply(&[text("Staying.")], "end_turn")]);
+    let asked = s.user_answers(&["n"]);
     s.ask("quit");
-    assert_eq!(s.ed.prompt(), Some("Let the agent quit Ember? (y or n) "));
-    s.ed.press("n").unwrap();
     s.work();
+    assert_eq!(*asked.borrow(), ["Let the agent quit Ember? (y or n) "]);
     assert!(!s.ed.should_quit());
     assert!(s.agent_text().contains("Staying."));
 }

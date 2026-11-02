@@ -5,9 +5,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
-mod driven;
-
-use driven::Driven;
+use crate::driven::Driven;
 use ember_core::{Arg, Editor};
 use ember_script::Scripting;
 
@@ -49,11 +47,6 @@ fn change_on_disk(path: &Path, text: &str) {
     fs::write(path, text).unwrap();
     let later = SystemTime::now() + Duration::from_secs(5);
     fs::File::options().write(true).open(path).unwrap().set_modified(later).unwrap();
-}
-
-fn answer(ed: &mut Editor, keys: &str) {
-    assert!(ed.prompt().is_some(), "a question is open");
-    ed.press(keys).unwrap();
 }
 
 #[test]
@@ -214,47 +207,47 @@ fn saving_over_a_file_changed_on_disk_asks_first() {
 
 #[test]
 fn editing_a_buffer_whose_file_changed_asks_first() {
-    let (mut ed, _s) = setup();
+    let d = Driven::new("");
     let dir = dir();
     let path = dir.path().join("a.txt");
     fs::write(&path, "mine\n").unwrap();
-    visit(&mut ed, &path);
+    visit_driven(&d, &path);
     change_on_disk(&path, "theirs\n");
-    ed.type_text("x");
-    assert_eq!(ed.prompt(), Some("a.txt changed on disk; really edit the buffer? (y, n, r or C-h) "));
-    assert!(ed.prompt_reads_char());
-    answer(&mut ed, "n");
-    assert_eq!(ed.echo(), Some(format!("File changed on disk: {}", ember_core::abbreviate_path(&path)).as_str()));
-    assert_eq!(text(&ed), "mine\n", "the edit was not made");
+    d.type_text("x");
+    assert_eq!(d.prompt().as_deref(), Some("a.txt changed on disk; really edit the buffer? (y, n, r or C-h) "));
+    assert!(d.with(|ed| ed.prompt_reads_char()));
+    answer_driven(&d, "n");
+    assert_eq!(d.message(), Some(format!("File changed on disk: {}", ember_core::abbreviate_path(&path))));
+    assert_eq!(d.text(), "mine\n", "the edit was not made");
     // Keys other than the answers ask again.
-    ed.type_text("x");
-    answer(&mut ed, "z");
-    assert!(ed.prompt().is_some());
-    answer(&mut ed, "y");
-    assert_eq!(text(&ed), "xmine\n", "the edit was made after all");
-    assert_eq!(ed.echo(), Some("File on disk now will become a backup file if you save these changes."));
+    d.type_text("x");
+    answer_driven(&d, "z");
+    assert!(d.prompt().is_some());
+    answer_driven(&d, "y");
+    assert_eq!(d.text(), "xmine\n", "the edit was made after all");
+    assert_eq!(d.message().as_deref(), Some("File on disk now will become a backup file if you save these changes."));
     // Once modified, further edits go ahead.
-    ed.type_text("y");
-    assert_eq!(text(&ed), "xymine\n");
-    assert!(ed.prompt().is_none());
+    d.type_text("y");
+    assert_eq!(d.text(), "xymine\n");
+    assert!(d.prompt().is_none());
 }
 
 #[test]
 fn r_reverts_a_buffer_whose_file_changed() {
-    let (mut ed, _s) = setup();
+    let d = Driven::new("");
     let dir = dir();
     let path = dir.path().join("a.txt");
     fs::write(&path, "mine\n").unwrap();
-    visit(&mut ed, &path);
+    visit_driven(&d, &path);
     change_on_disk(&path, "theirs\n");
-    ed.type_text("x");
-    answer(&mut ed, "r");
-    assert_eq!(text(&ed), "theirs\n");
-    assert_eq!(ed.echo(), Some(format!("File reverted: {}", ember_core::abbreviate_path(&path)).as_str()));
+    d.type_text("x");
+    answer_driven(&d, "r");
+    assert_eq!(d.text(), "theirs\n");
+    assert_eq!(d.message(), Some(format!("File reverted: {}", ember_core::abbreviate_path(&path))));
     // A file changed to the same text is no threat.
     change_on_disk(&path, "theirs\n");
-    ed.type_text("y");
-    assert_eq!(text(&ed), "ytheirs\n");
+    d.type_text("y");
+    assert_eq!(d.text(), "ytheirs\n");
 }
 
 #[test]
@@ -340,29 +333,29 @@ fn an_auto_save_file_can_be_recovered() {
 
 #[test]
 fn killing_a_modified_buffer_asks() {
-    let (mut ed, _s) = setup();
+    let d = Driven::new("");
     let dir = dir();
     let path = dir.path().join("a.txt");
-    visit(&mut ed, &path);
-    ed.type_text("unsaved");
-    ed.press("C-x k RET").unwrap();
-    assert_eq!(ed.prompt(), Some("Buffer a.txt modified; kill anyway? (yes, no, save and then kill) "));
-    ed.type_text("no\n");
-    assert_eq!(ed.window_buffer().name, "a.txt");
-    ed.press("C-x k RET").unwrap();
-    ed.type_text("save and then kill\n");
+    visit_driven(&d, &path);
+    d.type_text("unsaved");
+    d.press("C-x k RET");
+    assert_eq!(d.prompt().as_deref(), Some("Buffer a.txt modified; kill anyway? (yes, no, save and then kill) "));
+    d.type_text("no\n");
+    assert_eq!(d.buffer_name(), "a.txt");
+    d.press("C-x k RET");
+    d.type_text("save and then kill\n");
     assert_eq!(fs::read_to_string(&path).unwrap(), "unsaved\n");
-    assert!(ed.find_buffer("a.txt").is_none());
-    visit(&mut ed, &path);
-    ed.type_text("more ");
-    ed.press("C-x k RET").unwrap();
-    ed.type_text("yes\n");
-    assert!(ed.find_buffer("a.txt").is_none());
+    assert!(d.with(|ed| ed.find_buffer("a.txt").is_none()));
+    visit_driven(&d, &path);
+    d.type_text("more ");
+    d.press("C-x k RET");
+    d.type_text("yes\n");
+    assert!(d.with(|ed| ed.find_buffer("a.txt").is_none()));
     assert_eq!(fs::read_to_string(&path).unwrap(), "unsaved\n");
     // Code does not kill unsaved work.
-    visit(&mut ed, &path);
-    ed.type_text("x");
-    assert!(ed.call("kill-buffer", vec![Arg::Str("a.txt".into())]).is_err());
+    visit_driven(&d, &path);
+    d.type_text("x");
+    assert!(d.with(|ed| ed.call("kill-buffer", vec![Arg::Str("a.txt".into())]).is_err()));
 }
 
 #[test]
@@ -456,40 +449,38 @@ fn auto_revert_mode_follows_the_file() {
 
 #[test]
 fn scripts_can_ask_and_set_timers() {
-    let (mut ed, scripting) = setup();
+    let d = Driven::new(
+        r#"
+        ember.defineCommand({ name: "ask-me", run: () => ember.insert(ember.yOrNP("Really? ") ? "yes" : "no") });
+        ember.runWithTimer(2, null, () => ember.insert("[timer]"));
+        ember.runWithIdleTimer(5, true, () => ember.insert("[idle]"));
+        "#,
+    );
     // Show Paren mode's idle timer would come first.
-    ed.call_with_prefix("show-paren-mode", vec![], Some(ember_core::PrefixArg::Number(-1))).unwrap();
-    scripting
-        .eval_typescript(
-            &mut ed,
-            "test.ts",
-            r#"
-            ember.defineCommand({ name: "ask-me", run: () => ember.yOrNP("Really? ", (yes) => ember.insert(yes ? "yes" : "no")) });
-            ember.runWithTimer(2, null, () => ember.insert("[timer]"));
-            ember.runWithIdleTimer(5, true, () => ember.insert("[idle]"));
-            "#
-            .into(),
-        )
-        .unwrap();
-    ed.call("ask-me", vec![]).unwrap();
-    assert_eq!(ed.prompt(), Some("Really? (y or n) "));
-    answer(&mut ed, "q");
-    assert_eq!(ed.prompt(), Some("Please answer y or n.  Really? (y or n) "));
-    answer(&mut ed, "y");
-    assert_eq!(text(&ed), "yes");
-    assert_eq!(ed.next_timer_in().map(|d| d.as_secs_f64().round()), Some(2.0));
-    ed.advance_clock(Duration::from_secs(3));
-    assert_eq!(text(&ed), "yes[timer]");
-    ed.advance_clock(Duration::from_secs(3));
-    assert_eq!(text(&ed), "yes[timer][idle]");
+    d.with(|ed| ed.call_with_prefix("show-paren-mode", vec![], Some(ember_core::PrefixArg::Number(-1))).unwrap());
+    d.mx("ask-me");
+    assert_eq!(d.prompt().as_deref(), Some("Really? (y or n) "));
+    answer_driven(&d, "q");
+    assert_eq!(d.prompt().as_deref(), Some("Please answer y or n.  Really? (y or n) "));
+    answer_driven(&d, "y");
+    assert_eq!(d.text(), "yes");
+    assert_eq!(d.with(|ed| ed.next_timer_in().map(|t| t.as_secs_f64().round())), Some(2.0));
+    let advance = |secs: u64| {
+        d.with(move |ed| ed.advance_clock(Duration::from_secs(secs)));
+        d.0.settle();
+    };
+    advance(3);
+    assert_eq!(d.text(), "yes[timer]");
+    advance(3);
+    assert_eq!(d.text(), "yes[timer][idle]");
     // An idle timer runs once in each idle spell.
-    ed.advance_clock(Duration::from_secs(10));
-    assert_eq!(text(&ed), "yes[timer][idle]");
-    ed.press("C-e").unwrap();
-    ed.advance_clock(Duration::from_secs(6));
-    assert_eq!(text(&ed), "yes[timer][idle][idle]");
+    advance(10);
+    assert_eq!(d.text(), "yes[timer][idle]");
+    d.press("C-e");
+    advance(6);
+    assert_eq!(d.text(), "yes[timer][idle][idle]");
     // C-g quits a question.
-    ed.call("ask-me", vec![]).unwrap();
-    ed.press("C-g").unwrap();
-    assert!(ed.prompt().is_none());
+    d.mx("ask-me");
+    d.press("C-g");
+    assert!(d.prompt().is_none());
 }

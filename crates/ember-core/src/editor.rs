@@ -39,27 +39,30 @@ pub(crate) struct Prompt {
     pub(crate) default: Option<String>,
     /// The input the prompt opened with.
     pub(crate) initial: String,
-    /// Called with the answer, for a prompt opened partway through a command.
-    pub(crate) then: Option<variables::HookFn>,
-    /// Called if the prompt is quit rather than answered.
-    pub(crate) quit: Option<variables::HookFn>,
-    /// The asking command's context, given back for `then`.
-    pub(crate) resume: Option<Resume>,
+    /// Where the answer goes, for a prompt opened partway through a command
+    /// that waits for it; a command's arguments have none.
+    pub(crate) answer: Option<AnswerSlot>,
     /// The sorted completions and their base, for the input they were made for.
     pub(crate) sorted: Option<(String, String, Vec<String>)>,
 }
 
-/// What a command had when it asked a question or opened a prompt: the
-/// current buffer, its prefix argument and its name. The answer runs with
-/// them again, as an Emacs command carries on after `read-from-minibuffer`
-/// returns, its `current-prefix-arg` and `this-command` still bound.
 /// What a command waiting for input waits for, as an answer having come.
 pub type WaitDone = Rc<dyn Fn(&Editor) -> bool>;
+
+/// Where a prompt, question, key read or recursive edit puts its outcome
+/// for the command waiting on it: the answer, or the error that ended it,
+/// `quit` when it was quit.
+pub(crate) type AnswerSlot = Rc<std::cell::RefCell<Option<Result<Value>>>>;
 
 /// What a waiting command reads from where no command loop runs; false
 /// when it has nothing more.
 type InputSource = Box<dyn FnMut(&mut Editor) -> bool>;
 
+/// What a command had when it asked a question or opened a prompt: the
+/// current buffer, its prefix argument and its name, which are its again
+/// once the wait is over, as an Emacs command carries on after
+/// `read-from-minibuffer` returns, its `current-prefix-arg` and
+/// `this-command` still bound.
 #[derive(Clone)]
 pub struct Resume {
     buffer: u64,
@@ -141,7 +144,6 @@ pub struct Editor {
     /// Whether any buffer has shared its text, so changes must be passed on.
     pub(crate) has_indirect_buffers: bool,
     /// What waits for the prompts and questions now open to be answered.
-    prompt_waiters: Vec<variables::HookFn>,
     /// How many commands have started, so code waiting for one it called
     /// interactively knows whether it ran or its arguments were quit.
     executed: u64,
@@ -374,7 +376,6 @@ impl Editor {
             current: 0,
             syntax_tables: Default::default(),
             processes: Default::default(),
-            prompt_waiters: Vec::new(),
             executed: 0,
             detached_markers: Vec::new(),
             has_indirect_buffers: false,
@@ -785,63 +786,50 @@ impl Editor {
         })
     }
 
-    /// Runs `f` once no prompt or question is open: now if none is, or
-    /// once those a command opened are all answered, as code after
-    /// save-some-buffers runs in Emacs. Quitting a prompt drops it.
-    pub fn after_prompts(&mut self, f: variables::HookFn) -> Result<()> {
-        if self.prompt.is_none() && self.question.is_none() {
-            return f(self, &[]);
-        }
-        self.prompt_waiters.push(f);
-        Ok(())
-    }
-
-    /// Forgets what waits for the prompts, as an error in answering one ends the command.
-    pub(crate) fn prompt_waiters_clear(&mut self) {
-        self.prompt_waiters.clear();
-    }
-
-    /// Runs what waits for the prompts, once none is open.
-    pub(crate) fn run_prompt_waiters(&mut self) {
-        while self.prompt.is_none() && self.question.is_none() && !self.prompt_waiters.is_empty() {
-            let f = self.prompt_waiters.remove(0);
-            if let Err(e) = f(self, &[]) {
-                self.fail(e);
-            }
-        }
-    }
-
     /// Cancels any prompt and pending command, as `C-g` does. Code waiting
-    /// for the prompt's answer is told it was quit.
+    /// for the prompt's answer is told it was quit, as are those sleeping.
     pub(crate) fn abort(&mut self) {
-        self.prompt_waiters.clear();
-        let prompt_quit = self.close_prompt().and_then(|p| p.quit);
-        let question_quit = self.drop_question().and_then(|q| q.quit);
+        let prompt = self.close_prompt().and_then(|p| p.answer);
+        let question = self.drop_question().map(|q| q.answer);
         self.pending_call = None;
         self.reading_keys = None;
         self.pending_keys.clear();
         self.transient_map = None;
         self.prefix_arg = None;
-        for quit in question_quit.into_iter().chain(prompt_quit) {
-            match quit(self, &[]) {
-                Err(e) if !e.is("quit") => self.fail(e),
-                _ => {}
-            }
+        let sleeping = std::mem::take(&mut self.keyboard.sleeping);
+        for slot in prompt.into_iter().chain(question).chain(sleeping) {
+            slot.borrow_mut().get_or_insert(Err(crate::quit::quit_error()));
         }
     }
 
-    /// Runs `f` if the prompt or question just opened is quit rather than
-    /// answered, so code waiting for the answer can unwind, as `quit`
-    /// signalled from `read-from-minibuffer` unwinds the command in Emacs.
-    pub fn on_prompt_quit(&mut self, f: variables::HookFn) {
-        if let Some(question) = &mut self.question {
-            question.quit = Some(f);
-        } else if let Some(prompt) = &mut self.prompt {
-            prompt.quit = Some(f);
+    /// Waits for what a prompt, question, key read or recursive edit puts in
+    /// `slot`, as Emacs's `read-from-minibuffer` returns it, with the
+    /// current buffer and prefix argument the asker's again, as at `asker`.
+    pub(crate) fn wait_for_answer(&mut self, asker: &Resume, slot: &AnswerSlot) -> Result<Value> {
+        let waiting = slot.clone();
+        if let Err(e) = self.wait_until(asker, Rc::new(move |_| waiting.borrow().is_some())) {
+            self.abandon(slot);
+            return Err(e);
+        }
+        slot.borrow_mut().take().expect("waited for it")
+    }
+
+    /// Closes the prompt or question whose answer goes to `slot`, as when
+    /// the input ran out or the editor is closing, so nothing is left open
+    /// that no one waits on.
+    fn abandon(&mut self, slot: &AnswerSlot) {
+        let ours = |a: Option<&AnswerSlot>| a.is_some_and(|a| Rc::ptr_eq(a, slot));
+        if ours(self.question.as_ref().map(|q| &q.answer)) {
+            self.drop_question();
+            self.close_prompt();
+            self.resume_outer_minibuffer();
+        } else if ours(self.prompt.as_ref().and_then(|p| p.answer.as_ref())) {
+            self.close_prompt();
+            self.resume_outer_minibuffer();
         }
     }
 
-    /// The running command's context, for its prompt's answer to run in.
+    /// The running command's context, which waiting for input puts back.
     pub fn resume_point(&self) -> Resume {
         Resume {
             buffer: self.buffers[self.current].id,
@@ -851,33 +839,7 @@ impl Editor {
         }
     }
 
-    /// Runs what answers a prompt in the context of the command that asked.
-    /// Inside a command, such as exit-minibuffer, that command's end puts
-    /// things back; answered by a key outside any, as y-or-n-p is, they are
-    /// put back here, and the asking command becomes the last command, as
-    /// it would have been had it waited for the answer.
-    pub(crate) fn run_resumed<T>(&mut self, resume: &Resume, f: impl FnOnce(&mut Editor) -> T) -> T {
-        if self.running > 0 {
-            self.resume(resume);
-            return f(self);
-        }
-        let saved = (self.buffers[self.current].id, self.current_prefix_arg, self.this_command.clone());
-        self.resume(resume);
-        let value = f(self);
-        if let Some(index) = self.buffers.iter().position(|b| b.id == saved.0) {
-            self.current = index;
-        }
-        self.current_prefix_arg = saved.1;
-        if let Some(command) = &resume.command {
-            self.last_command = Some(command.clone());
-        }
-        self.this_command = saved.2;
-        value
-    }
-
-    /// Gives an answer the context of the command that asked: its buffer,
-    /// if still live, its prefix argument, and its name, which becomes the
-    /// last command once the answer is done.
+    /// Puts back what [`Editor::resume_point`] took, once a wait is over.
     pub(crate) fn resume(&mut self, resume: &Resume) {
         if let Some(index) = self.buffers.iter().position(|b| b.id == resume.buffer) {
             self.current = index;
@@ -952,11 +914,12 @@ impl Editor {
             owner.clone()
         };
         let prompt = format!("{} locked by {short_owner}: (s, q, p, ?)? ", short(&file, 22));
-        let then: crate::variables::HookFn = Rc::new(move |ed, answer| {
+        let answered = move |ed: &mut Editor, answer: Result<String>| -> Result<()> {
+            let answer = answer?;
             let Some(index) = ed.buffers.iter().position(|b| b.id == buffer) else { return Ok(()) };
-            match answer.first() {
-                Some(Value::Str(a)) if a == "s" || a == "p" => {
-                    if a == "s" {
+            match answer.as_str() {
+                "s" | "p" => {
+                    if answer == "s" {
                         ed.steal_lock(buffer);
                     } else {
                         ed.buffers[index].file.lock_ignored = true;
@@ -968,8 +931,9 @@ impl Editor {
                 }
                 _ => Err(Error::signal("file-locked", format!("File is locked: {file}, {owner}"), vec![Value::Str(file.clone()), Value::Str(owner.clone())])),
             }
-        });
-        if let Err(e) = self.read_char_choice(&prompt, &['s', 'q', 'p'], then) {
+        };
+        let answer = self.read_char_choice(&prompt, &['s', 'q', 'p']);
+        if let Err(e) = answered(self, answer) {
             self.fail(e);
         }
     }
@@ -997,10 +961,11 @@ impl Editor {
     ) {
         let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
         let prompt = format!("{name} changed on disk; really edit the buffer? (y, n, r or C-h) ");
-        let then: crate::variables::HookFn = Rc::new(move |ed, answer| {
+        let answered = move |ed: &mut Editor, answer: Result<String>| -> Result<()> {
+            let answer = answer?;
             let Some(index) = ed.buffers.iter().position(|b| b.id == buffer) else { return Ok(()) };
-            match answer.first() {
-                Some(Value::Str(a)) if a == "y" => {
+            match answer.as_str() {
+                "y" => {
                     let b = &mut ed.buffers[index];
                     b.file.allow_supersession = true;
                     b.file.backed_up = false;
@@ -1013,7 +978,7 @@ impl Editor {
                     ed.message("File on disk now will become a backup file if you save these changes.");
                     Ok(())
                 }
-                Some(Value::Str(a)) if a == "r" => {
+                "r" => {
                     let old = ed.set_current_buffer(&ed.buffers[index].name.clone())?;
                     let reverted = ed.revert_to_visited_file().and_then(|()| match ed.command("normal-mode") {
                         Some(_) => ed.call("normal-mode", Vec::new()),
@@ -1025,8 +990,9 @@ impl Editor {
                 }
                 _ => Err(Error::new(format!("File changed on disk: {}", crate::files::abbreviate_path(&path)))),
             }
-        });
-        if let Err(e) = self.read_char_choice(&prompt, &['y', 'n', 'r'], then) {
+        };
+        let answer = self.read_char_choice(&prompt, &['y', 'n', 'r']);
+        if let Err(e) = answered(self, answer) {
             self.fail(e);
         }
     }

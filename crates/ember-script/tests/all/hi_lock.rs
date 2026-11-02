@@ -1,9 +1,7 @@
 //! Highlighting by regexp, M-s h: overlays in the faces Emacs offers, in the
 //! order it offers them, taken away again with M-s h u.
 
-mod driven;
-
-use driven::Driven;
+use crate::driven::Driven;
 use ember_core::Editor;
 use ember_script::Scripting;
 

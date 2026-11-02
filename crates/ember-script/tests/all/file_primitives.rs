@@ -1,6 +1,7 @@
 //! The file primitives scripts call: handlers in file-name-handler-alist,
 //! lock files, and the predicates and names Emacs gives Lisp.
 
+use crate::driven::Driven;
 use ember_core::{Arg, Editor};
 use ember_script::Scripting;
 
@@ -75,35 +76,39 @@ fn a_handler_serves_names_of_its_own() {
 
 #[test]
 fn a_lock_another_holds_is_asked_about() {
-    let (mut ed, s, dir) = setup();
+    // The question waits for its answer, so on the editor's own thread.
+    let d = Driven::new("");
+    let dir = tempfile::tempdir_in(env!("CARGO_TARGET_TMPDIR")).unwrap();
     let file = dir.path().join("a.txt");
     std::fs::write(&file, "one\n").unwrap();
     let lock = dir.path().join(".#a.txt");
     // Held by a process on another machine, which Ember cannot tell is gone.
     std::os::unix::fs::symlink("someone@elsewhere.1:0", &lock).unwrap();
-    ed.call("find-file", vec![Arg::Str(file.display().to_string())]).unwrap();
-    ed.type_text("x");
-    let prompt = ed.prompt().unwrap_or_default().to_string();
+    let visit = file.display().to_string();
+    d.with(move |ed| ed.call("find-file", vec![Arg::Str(visit)]).unwrap());
+    d.type_text("x");
+    let prompt = d.prompt().unwrap_or_default();
     assert!(prompt.ends_with("a.txt locked by someone@elsewhere (pid 1): (s, q, p, ?)? "), "{prompt}");
-    assert_eq!(text(&ed), "one\n", "nothing typed yet");
+    assert_eq!(d.text(), "one\n", "nothing typed yet");
     // q leaves the file alone.
-    ed.type_text("q");
-    assert!(ed.echo().unwrap_or_default().starts_with("File is locked: "), "{:?}", ed.echo());
-    assert_eq!(text(&ed), "one\n");
+    d.type_text("q");
+    let echo = d.message().unwrap_or_default();
+    assert!(echo.starts_with("File is locked: "), "{echo:?}");
+    assert_eq!(d.text(), "one\n");
     // p edits without the lock, s takes it.
-    ed.type_text("x");
-    ed.type_text("p");
-    assert_eq!(text(&ed), "xone\n");
+    d.type_text("x");
+    d.type_text("p");
+    assert_eq!(d.text(), "xone\n");
     assert_eq!(std::fs::read_link(&lock).unwrap().display().to_string(), "someone@elsewhere.1:0");
-    ed.press("C-/").unwrap();
-    ed.type_text("x");
-    ed.type_text("s");
-    assert_eq!(text(&ed), "xone\n");
+    d.press("C-/");
+    d.type_text("x");
+    d.type_text("s");
+    assert_eq!(d.text(), "xone\n");
     let mine = std::fs::read_link(&lock).unwrap().display().to_string();
     assert!(mine.contains(&format!(".{}", std::process::id())), "{mine}");
-    assert_eq!(eval(&mut ed, &s, &format!("ember.fileLockedP({:?})", file.display().to_string())), "true");
+    assert_eq!(d.eval_expression(&format!("ember.fileLockedP({:?})", file.display().to_string())), "true");
     // Saving gives it up.
-    ed.call("save-buffer", vec![]).unwrap();
+    d.with(|ed| ed.call("save-buffer", vec![]).unwrap());
     assert!(std::fs::symlink_metadata(&lock).is_err());
 }
 

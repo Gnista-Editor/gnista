@@ -4,20 +4,19 @@
 //! (`this-command-keys`), the keys typed lately and the commands they ran
 //! (`recent-keys`, which `C-h l` shows), and recursive edits.
 //!
-//! Emacs's Lisp waits for the key; here the reading command returns, and
-//! the key, when it comes, runs a function given with the request, in the
-//! context the command read in, as questions are answered
-//! (`questions.rs`). A recursive edit is the same: it is entered, the
-//! editor goes on taking commands, and `exit-recursive-edit` runs what
-//! waited, or `abort-recursive-edit` quits it.
+//! As in Emacs, the reading command waits for the key, which is returned:
+//! the editor runs its command loop meanwhile (ADR 0053), as questions do
+//! (`questions.rs`). A recursive edit is the same: the editor goes on
+//! taking commands until `exit-recursive-edit` returns from it, or
+//! `abort-recursive-edit` quits it.
 
 use std::collections::VecDeque;
 
-use crate::editor::{Editor, Resume};
+use crate::editor::{AnswerSlot, Editor};
 use crate::error::{Error, Result};
 use crate::key::{Key, KeyCode, format_keys};
 use crate::keymap::Lookup;
-use crate::variables::{HookFn, Value};
+use crate::variables::Value;
 
 /// What is being read: one key, as `read-key` and `read-event` give it, a
 /// character, as `read-char`, or a whole key sequence, as the command loop
@@ -34,20 +33,18 @@ pub(crate) struct KeyReader {
     kind: ReadKind,
     prompt: String,
     keys: Vec<Key>,
-    then: HookFn,
-    quit: Option<HookFn>,
-    resume: Resume,
+    /// Where the key goes, for the command waiting on it.
+    answer: AnswerSlot,
     /// When to stop waiting and answer nil, as `read-event`'s SECONDS.
     deadline: Option<std::time::Instant>,
 }
 
 pub(crate) struct RecursiveEdit {
-    then: HookFn,
-    quit: Option<HookFn>,
+    /// Where leaving it, or quitting it, goes, for the command in it.
+    answer: AnswerSlot,
     /// How many minibuffers were open when it was entered, so a minibuffer
     /// opened in it is left first.
     minibuffers: usize,
-    resume: Resume,
 }
 
 /// One entry of the keys typed lately: a key, or the command the keys
@@ -69,6 +66,8 @@ pub(crate) struct Keyboard {
     pub(crate) lossage_size: usize,
     /// The keys of the command running, or that ran last.
     pub(crate) this_command_keys: Vec<Key>,
+    /// What `sleep-for` calls wait on, which `C-g` quits.
+    pub(crate) sleeping: Vec<AnswerSlot>,
 }
 
 impl Default for Keyboard {
@@ -79,30 +78,37 @@ impl Default for Keyboard {
             lossage: VecDeque::new(),
             lossage_size: LOSSAGE_SIZE,
             this_command_keys: Vec::new(),
+            sleeping: Vec::new(),
         }
     }
 }
 
 impl Editor {
     /// Reads a key partway through a command, showing `prompt` in the echo
-    /// area, and calls `then` with it, as Emacs's `read-key`,
-    /// `read-event`, `read-char` and `read-key-sequence` return it: a key's
-    /// description, such as "C-x" or "<f1>", or a key sequence's, "C-x C-f".
-    /// `C-g` quits, but for a key sequence, where it is a key like others.
-    /// With a `timeout`, `then` gets nil if no key comes in that time, as
-    /// `read-event` and `read-char` with SECONDS.
-    pub fn read_key_event(&mut self, kind: ReadKind, prompt: &str, timeout: Option<std::time::Duration>, then: HookFn, quit: Option<HookFn>) -> Result<()> {
+    /// area, and returns it, as Emacs's `read-key`, `read-event`,
+    /// `read-char` and `read-key-sequence` do: a key's description, such as
+    /// "C-x" or "<f1>", or a key sequence's, "C-x C-f". `C-g` quits, but
+    /// for a key sequence, where it is a key like others. With a `timeout`,
+    /// it is `None` if no key comes in that time, as `read-event` and
+    /// `read-char` with SECONDS.
+    pub fn read_key_event(&mut self, kind: ReadKind, prompt: &str, timeout: Option<std::time::Duration>) -> Result<Option<String>> {
         if self.keyboard.reader.is_some() {
             return Err(Error::new("Already reading a key"));
         }
-        let resume = self.resume_point();
+        let asker = self.resume_point();
         let deadline = timeout.map(|t| self.now() + t);
-        self.keyboard.reader = Some(KeyReader { kind, prompt: prompt.to_string(), keys: Vec::new(), then, quit, resume, deadline });
+        let answer = AnswerSlot::default();
+        self.keyboard.reader = Some(KeyReader { kind, prompt: prompt.to_string(), keys: Vec::new(), answer: answer.clone(), deadline });
         // With no prompt, what the echo area shows stays, as sit-for's message does.
         if !prompt.is_empty() {
             self.message = Some(prompt.to_string());
         }
-        Ok(())
+        let result = self.wait_for_answer(&asker, &answer);
+        // Gone however the wait ended, as when the editor closes.
+        if self.keyboard.reader.as_ref().is_some_and(|r| std::rc::Rc::ptr_eq(&r.answer, &answer)) {
+            self.keyboard.reader = None;
+        }
+        Ok(result?.as_str().map(str::to_string))
     }
 
     /// When code reading a key with a timeout stops waiting, if it does.
@@ -121,33 +127,28 @@ impl Editor {
         if !reader.prompt.is_empty() {
             self.message = None;
         }
-        let then = reader.then.clone();
-        if let Err(e) = self.run_resumed(&reader.resume, |ed| then(ed, &[Value::Null])) {
-            self.prompt_waiters_clear();
-            self.fail(e);
-            return;
-        }
-        self.run_prompt_waiters();
+        reader.answer.borrow_mut().get_or_insert(Ok(Value::Null));
     }
 
-    /// Runs `then` after `secs` seconds in the context of the command that
-    /// asked, as code after Emacs's `sleep-for` runs. Keys typed meanwhile
-    /// run their commands rather than waiting for it.
-    pub fn sleep_for(&mut self, secs: f64, then: HookFn) {
-        let resume = self.resume_point();
-        self.run_with_timer(
+    /// Waits `secs` seconds, as Emacs's `sleep-for`. Keys typed meanwhile
+    /// run their commands, and `C-g` quits it.
+    pub fn sleep_for(&mut self, secs: f64) -> Result<()> {
+        let asker = self.resume_point();
+        let answer = AnswerSlot::default();
+        let done = answer.clone();
+        let timer = self.run_with_timer(
             secs,
             None,
-            std::rc::Rc::new(move |ed: &mut Editor, _: &[Value]| {
-                let result = ed.run_resumed(&resume, |ed| then(ed, &[]));
-                if result.is_ok() {
-                    ed.run_prompt_waiters();
-                } else {
-                    ed.prompt_waiters_clear();
-                }
-                result
+            std::rc::Rc::new(move |_: &mut Editor, _: &[Value]| {
+                done.borrow_mut().get_or_insert(Ok(Value::Null));
+                Ok(())
             }),
         );
+        self.keyboard.sleeping.push(answer.clone());
+        let result = self.wait_for_answer(&asker, &answer);
+        self.keyboard.sleeping.retain(|s| !std::rc::Rc::ptr_eq(s, &answer));
+        self.cancel_timer(timer);
+        result.map(|_| ())
     }
 
     /// Whether code is waiting for a key, which the next key goes to.
@@ -161,13 +162,7 @@ impl Editor {
         let quit = key == Key::parse("C-g").expect("C-g parses");
         if quit && reader.kind != ReadKind::KeySequence {
             self.message = None;
-            if let Some(quit) = reader.quit {
-                match self.run_resumed(&reader.resume, |ed| quit(ed, &[])) {
-                    Err(e) if !e.is("quit") => self.fail(e),
-                    _ => {}
-                }
-            }
-            self.fail(Error::signal("quit", "Quit", Vec::new()));
+            reader.answer.borrow_mut().get_or_insert(Err(Error::signal("quit", "Quit", Vec::new())));
             return true;
         }
         reader.keys.push(key);
@@ -188,19 +183,7 @@ impl Editor {
             ReadKind::Key | ReadKind::Event => Ok(key.to_string()),
         };
         self.message = None;
-        let result = match answer {
-            Ok(answer) => {
-                let then = reader.then.clone();
-                self.run_resumed(&reader.resume, |ed| then(ed, &[Value::Str(answer)]))
-            }
-            Err(e) => Err(e),
-        };
-        if let Err(e) = result {
-            self.prompt_waiters_clear();
-            self.fail(e);
-            return true;
-        }
-        self.run_prompt_waiters();
+        reader.answer.borrow_mut().get_or_insert(answer.map(Value::Str));
         true
     }
 
@@ -291,15 +274,21 @@ impl Editor {
         self.unread_keys.clear();
     }
 
-    /// Enters a recursive edit, as Emacs's `recursive-edit`: the editor
-    /// goes on taking commands, the mode line shows `[` `]` around the
-    /// modes for each level, and `exit-recursive-edit` (`C-M-c`) calls
-    /// `then`, or `abort-recursive-edit` (`C-]`) quits it, calling `quit`.
-    pub fn recursive_edit(&mut self, then: HookFn, quit: Option<HookFn>) {
-        let resume = self.resume_point();
+    /// Edits recursively, as Emacs's `recursive-edit`: the editor goes on
+    /// taking commands, the mode line shows `[` `]` around the modes for
+    /// each level, until `exit-recursive-edit` (`C-M-c`) returns from it, or
+    /// `abort-recursive-edit` (`C-]`) quits it.
+    pub fn recursive_edit(&mut self) -> Result<()> {
+        let asker = self.resume_point();
         let minibuffers = self.minibuffer_depth();
-        self.keyboard.recursive_edits.push(RecursiveEdit { then, quit, minibuffers, resume });
+        let answer = AnswerSlot::default();
+        self.keyboard.recursive_edits.push(RecursiveEdit { answer: answer.clone(), minibuffers });
         self.update_mode_lines();
+        let result = self.wait_for_answer(&asker, &answer);
+        // Gone however the wait ended, as when the editor closes.
+        self.keyboard.recursive_edits.retain(|e| !std::rc::Rc::ptr_eq(&e.answer, &answer));
+        self.update_mode_lines();
+        result.map(|_| ())
     }
 
     /// How deep in recursive edits and minibuffers the editor is, as
@@ -333,10 +322,8 @@ impl Editor {
             return Err(Error::user("No recursive edit is in progress"));
         };
         self.update_mode_lines();
-        let then = edit.then.clone();
-        let result = self.run_resumed(&edit.resume, |ed| then(ed, &[]));
-        self.run_prompt_waiters();
-        result.map(|_| ())
+        edit.answer.borrow_mut().get_or_insert(Ok(Value::Null));
+        Ok(())
     }
 
     /// Quits the innermost recursive edit or minibuffer, as Emacs's
@@ -350,12 +337,7 @@ impl Editor {
             return Err(Error::user("No recursive edit is in progress"));
         };
         self.update_mode_lines();
-        if let Some(quit) = edit.quit {
-            match self.run_resumed(&edit.resume, |ed| quit(ed, &[])) {
-                Err(e) if !e.is("quit") => self.fail(e),
-                _ => {}
-            }
-        }
+        edit.answer.borrow_mut().get_or_insert(Err(Error::signal("quit", "Quit", Vec::new())));
         Err(Error::signal("quit", "Quit", Vec::new()))
     }
 
@@ -366,14 +348,11 @@ impl Editor {
             self.abort();
         }
         while let Some(edit) = self.keyboard.recursive_edits.pop() {
-            if let Some(quit) = edit.quit {
-                match self.run_resumed(&edit.resume, |ed| quit(ed, &[])) {
-                    Err(e) if !e.is("quit") => self.fail(e),
-                    _ => {}
-                }
-            }
+            edit.answer.borrow_mut().get_or_insert(Err(Error::signal("quit", "Quit", Vec::new())));
         }
-        self.keyboard.reader = None;
+        if let Some(reader) = self.keyboard.reader.take() {
+            reader.answer.borrow_mut().get_or_insert(Err(Error::signal("quit", "Quit", Vec::new())));
+        }
         self.update_mode_lines();
         self.message("Back to top level");
     }

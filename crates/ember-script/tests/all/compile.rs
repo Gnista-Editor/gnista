@@ -3,13 +3,11 @@
 //! reads its command partway through, which waits in the command loop, so
 //! these run the editor on its own thread (ADR 0053).
 
-mod driven;
-
 use std::fs;
 use std::path::Path;
 use std::time::Duration;
 
-use driven::Driven;
+use crate::driven::Driven;
 use ember_core::{Arg, Editor, Value};
 
 fn setup(dir: &Path) -> Driven {

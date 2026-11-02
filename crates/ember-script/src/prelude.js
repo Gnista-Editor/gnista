@@ -304,41 +304,6 @@
     );
   }
 
-  function quitError() {
-    const e = new Error("Quit");
-    e.symbol = "quit";
-    e.data = [];
-    e.conditions = ["quit"];
-    return e;
-  }
-
-  /**
-   * Opens a prompt or question with `open(answer, quit)` and runs the
-   * command loop until the answer comes, which is returned, as Emacs's
-   * read-from-minibuffer returns it; C-g throws `quit`, and running out of
-   * input, as a test's keys can, throws `end-of-file` (ADR 0053). With a
-   * `then` function, it gets the answer instead, the older form.
-   */
-  function answering(then, open) {
-    if (typeof then === "function") return open(then, undefined);
-    const token = native.waitToken();
-    let answer;
-    let quit = false;
-    open(
-      (value) => {
-        answer = value;
-        native.settle(token);
-      },
-      () => {
-        quit = true;
-        native.settle(token);
-      },
-    );
-    native.waitFor(token);
-    if (quit) throw quitError();
-    return answer;
-  }
-
   /**
    * Moves over the characters in `set`, as skip-chars-forward reads it: a
    * leading ^ for those not in it, a-z for ranges, \\ quoting. Returns how
@@ -667,36 +632,26 @@
     showHelp: (text) => native.showHelp(String(text)),
     bufferFileName: () => native.bufferFileName(),
     bufferList: () => native.bufferList(),
-    yesOrNoP: (question, then) => answering(then, (answer, quit) => native.ask("yes-or-no", String(question), [], answer, quit)),
-    yOrNP: (question, then) => answering(then, (answer, quit) => native.ask("y-or-n", String(question), [], answer, quit)),
-    readAnswer: (question, answers, then) =>
-      answering(then, (answer, quit) => native.ask("answer", String(question), answers.map(String), answer, quit)),
-    readKey: (prompt, then) => answering(then, (answer, quit) => native.readKeyEvent("key", String(prompt ?? ""), null, answer, quit)),
-    readEvent(prompt, then, options) {
-      if (typeof then !== "function") [then, options] = [undefined, then];
-      const seconds = options?.seconds ?? null;
-      return answering(then, (answer, quit) =>
-        native.readKeyEvent("event", String(prompt ?? ""), seconds, (key) => answer(key ?? undefined), quit));
-    },
-    readChar(prompt, then, options) {
-      if (typeof then !== "function") [then, options] = [undefined, then];
-      const seconds = options?.seconds ?? null;
-      return answering(then, (answer, quit) =>
-        native.readKeyEvent("char", String(prompt ?? ""), seconds, (key) => answer(key ?? undefined), quit));
-    },
-    readKeySequence: (prompt, then) => answering(then, (answer, quit) => native.readKeyEvent("sequence", String(prompt ?? ""), null, answer, quit)),
-    sleepFor: (seconds, then) => answering(then, (done) => native.sleepFor(Number(seconds), () => done(undefined))),
-    async sitFor(seconds) {
+    // Each waits for its answer and returns it, as Emacs's does (ADR 0053).
+    yesOrNoP: (question) => native.ask("yes-or-no", String(question), []),
+    yOrNP: (question) => native.ask("y-or-n", String(question), []),
+    readAnswer: (question, answers) => native.ask("answer", String(question), answers.map(String)),
+    readKey: (prompt) => native.readKeyEvent("key", String(prompt ?? ""), null),
+    readEvent: (prompt, options) => native.readKeyEvent("event", String(prompt ?? ""), options?.seconds ?? null) ?? undefined,
+    readChar: (prompt, options) => native.readKeyEvent("char", String(prompt ?? ""), options?.seconds ?? null) ?? undefined,
+    readKeySequence: (prompt) => native.readKeyEvent("sequence", String(prompt ?? ""), null),
+    sleepFor: (seconds) => native.sleepFor(Number(seconds)),
+    sitFor(seconds) {
       // As subr.el's sit-for: input already waiting ends it at once, and
       // input that comes is put back to be read as a command.
       if (native.inputPendingP()) return false;
       if (seconds <= 0) return true;
-      const key = await ember.readEvent(undefined, { seconds });
+      const key = ember.readEvent(undefined, { seconds });
       if (key === undefined) return true;
       ember.unreadKeys(key);
       return false;
     },
-    recursiveEdit: (then) => answering(then, (done, quit) => native.recursiveEdit(() => done(undefined), quit)),
+    recursiveEdit: () => native.recursiveEdit(),
     recursionDepth: () => native.recursionDepth(),
     thisCommandKeys: () => native.thisCommandKeys().join(" "),
     thisCommandKeysVector: () => native.thisCommandKeys(),
@@ -704,45 +659,32 @@
     lossageSize: (size) => (size === undefined ? native.lossageSize() : native.lossageSize(size)),
     inputPendingP: () => native.inputPendingP() || undefined,
     discardInput: () => native.discardInput(),
-    readCharChoice: (prompt, chars, then) =>
-      answering(then, (answer, quit) => native.ask("char", String(prompt), [...String(chars)], answer, quit)),
-    completingRead(prompt, collection, then, options) {
-      if (typeof then !== "function") [then, options] = [undefined, then];
-      options ??= {};
-      return answering(then, (answer, quit) =>
-        native.read(options.kind ?? "string", String(prompt), {
-          collection: options.kind || typeof collection === "function" ? undefined : [...collection].map(String),
-          // A function of the input, as completion-table-dynamic makes a table.
-          collectionFunction: typeof collection === "function" ? (input) => [...collection(input)].map(String) : undefined,
-          category: options.category,
-          requireMatch: Boolean(options.requireMatch),
-          initial: options.initial,
-          default: options.default,
-          history: options.history,
-        }, answer, quit));
-    },
-    readFileName(prompt, then, options) {
-      if (typeof then !== "function") [then, options] = [undefined, then];
-      options ??= {};
-      return answering(then, (answer, quit) =>
-        native.read("file", String(prompt), {
-          dir: options.dir,
-          default: options.default,
-          initial: options.initial,
-          requireMatch: Boolean(options.mustMatch),
-          history: options.history,
-        }, answer, quit));
-    },
-    readString(prompt, then, options) {
-      if (typeof then !== "function") [then, options] = [undefined, then];
-      options ??= {};
-      return answering(then, (answer, quit) =>
-        native.read("string", String(prompt), {
-          initial: options.initial,
-          default: options.default,
-          history: options.history,
-        }, answer, quit));
-    },
+    readCharChoice: (prompt, chars) => native.ask("char", String(prompt), [...String(chars)]),
+    completingRead: (prompt, collection, options = {}) =>
+      native.read(options.kind ?? "string", String(prompt), {
+        collection: options.kind || typeof collection === "function" ? undefined : [...collection].map(String),
+        // A function of the input, as completion-table-dynamic makes a table.
+        collectionFunction: typeof collection === "function" ? (input) => [...collection(input)].map(String) : undefined,
+        category: options.category,
+        requireMatch: Boolean(options.requireMatch),
+        initial: options.initial,
+        default: options.default,
+        history: options.history,
+      }),
+    readFileName: (prompt, options = {}) =>
+      native.read("file", String(prompt), {
+        dir: options.dir,
+        default: options.default,
+        initial: options.initial,
+        requireMatch: Boolean(options.mustMatch),
+        history: options.history,
+      }),
+    readString: (prompt, options = {}) =>
+      native.read("string", String(prompt), {
+        initial: options.initial,
+        default: options.default,
+        history: options.history,
+      }),
     minibufferInfo: () => native.minibufferInfo() ?? undefined,
     completionAllSortedCompletions: (options = {}) => native.completionAllSortedCompletions(Boolean(options.atEnd)) ?? undefined,
     completionTryCompletion: (input, names) =>
@@ -1207,7 +1149,6 @@
       const id = native.recordExcursion();
       return unwindProtect(fn, () => native.unbind(id));
     },
-    afterPrompts: (fn) => native.afterPrompts(fn),
     makeProcess({ name, buffer, command, directory, env, filter, sentinel, stderr = true, connectionType, coding }) {
       if (!Array.isArray(command) || command.length === 0) throw new TypeError("makeProcess needs a command: [program, ...args]");
       const pairs = env === undefined ? undefined : Object.entries(env).map(([k, v]) => [String(k), String(v)]);

@@ -4,6 +4,7 @@
 
 use std::time::Duration;
 
+use crate::driven::Driven;
 use ember_core::Editor;
 use ember_script::Scripting;
 
@@ -134,14 +135,22 @@ fn output_goes_in_at_the_mark_whatever_the_narrowing() {
 
 #[test]
 fn killing_a_buffer_with_a_running_process_asks() {
-    let (mut ed, s) = setup();
-    eval(&mut ed, &s, r#"ember.makeProcess({ name: "s", buffer: "*s*", command: ["sleep", "30"] });"#);
-    ed.press("C-x k").unwrap();
-    ed.type_text("*s*\n");
-    assert_eq!(ed.prompt(), Some("Buffer \"*s*\" has a running process; kill it? (yes or no) "));
-    ed.type_text("yes\n");
-    assert!(ed.find_buffer("*s*").is_none());
-    assert!(ed.process_list().is_empty());
+    // process-kill-buffer-query-function asks, from kill-buffer-query-functions,
+    // and the question waits for its answer, so on the editor's own thread.
+    let d = Driven::new(r#"ember.makeProcess({ name: "s", buffer: "*s*", command: ["sleep", "30"] });"#);
+    d.press("C-x k");
+    d.type_text("*s*\n");
+    assert_eq!(d.prompt().as_deref(), Some("Buffer \"*s*\" has a running process; kill it? (yes or no) "));
+    d.type_text("no\n");
+    assert!(d.with(|ed| ed.find_buffer("*s*").is_some()), "no keeps it");
+    // From code too, as in Emacs.
+    d.start(|ed| {
+        let _ = ed.call("kill-buffer", vec![ember_core::Arg::Str("*s*".into())]);
+    });
+    assert_eq!(d.prompt().as_deref(), Some("Buffer \"*s*\" has a running process; kill it? (yes or no) "));
+    d.type_text("yes\n");
+    assert!(d.with(|ed| ed.find_buffer("*s*").is_none()));
+    assert!(d.with(|ed| ed.process_list().is_empty()));
 }
 
 /// Runs `ed`'s processes until `done` says so, or a few seconds pass.

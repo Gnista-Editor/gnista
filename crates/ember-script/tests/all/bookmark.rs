@@ -1,9 +1,7 @@
 //! Bookmarks: set in a file, found again after the text before them changed,
 //! and saved in Emacs's own format, which a new editor reads back.
 
-mod driven;
-
-use driven::Driven;
+use crate::driven::Driven;
 use ember_core::{Arg, Editor};
 use ember_script::Scripting;
 

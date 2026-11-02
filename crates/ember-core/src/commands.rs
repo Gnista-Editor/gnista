@@ -105,10 +105,7 @@ fn recursive_editing(ed: &mut Editor) {
         ed,
         "recursive-edit",
         "Edit recursively: go on with commands, with [ ] around the modes in the mode line, until C-M-c goes back to what entered the edit or C-] quits it.",
-        |ed, _| {
-            ed.recursive_edit(std::rc::Rc::new(|_, _| Ok(())), None);
-            Ok(())
-        },
+        |ed, _| ed.recursive_edit(),
     );
     def(ed, "exit-recursive-edit", "Leave the innermost recursive edit or minibuffer, going on with what entered it.", |ed, _| {
         ed.exit_recursive_edit()
@@ -1427,31 +1424,42 @@ fn files_and_buffers(ed: &mut Editor) {
                     "" => ed.window_buffer().name.clone(),
                     name => name.to_string(),
                 };
-                // As Emacs's kill-buffer asks, through kill-buffer--possibly-save.
-                let modified = ed.find_buffer(&name).map(|i| &ed.buffers()[i]).is_some_and(|b| b.path.is_some() && b.is_modified());
+                if ed.find_buffer(&name).is_none() {
+                    return ed.kill_buffer(&name);
+                }
+                // As Emacs's kill-buffer: first kill-buffer-query-functions, with
+                // the buffer current, any of which can keep it, as
+                // process-kill-buffer-query-function does for a running process.
+                let old = ed.set_current_buffer(&name)?;
+                let kill = ed.run_hook_with_args_until_failure("kill-buffer-query-functions", &[]);
+                if ed.find_buffer(&old).is_some() {
+                    ed.set_current_buffer(&old)?;
+                }
+                if !kill? {
+                    return Ok(());
+                }
                 if !ed.called_interactively() {
                     return ed.kill_buffer(&name);
                 }
+                // Then, typed, about unsaved changes, as kill-buffer--possibly-save asks.
+                let modified = ed.find_buffer(&name).map(|i| &ed.buffers()[i]).is_some_and(|b| b.path.is_some() && b.is_modified());
                 if !modified {
-                    return kill_asking_about_process(ed, name, false);
+                    return ed.kill_buffer(&name);
                 }
                 let question = format!("Buffer {name} modified; kill anyway? ");
-                let then: crate::variables::HookFn = std::rc::Rc::new(move |ed, answer| {
-                    match answer.first().and_then(|a| if let crate::Value::Str(a) = a { Some(a.as_str()) } else { None }) {
-                        Some("yes") => kill_asking_about_process(ed, name.clone(), true),
-                        Some("save and then kill") => {
-                            let old = ed.set_current_buffer(&name)?;
-                            let saved = ed.call("save-buffer", Vec::new());
-                            if ed.find_buffer(&old).is_some() {
-                                ed.set_current_buffer(&old)?;
-                            }
-                            saved?;
-                            kill_asking_about_process(ed, name.clone(), false)
+                match ed.read_answer(&question, &["yes", "no", "save and then kill"])?.as_str() {
+                    "yes" => ed.kill_buffer_unsaved(&name),
+                    "save and then kill" => {
+                        let old = ed.set_current_buffer(&name)?;
+                        let saved = ed.call("save-buffer", Vec::new());
+                        if ed.find_buffer(&old).is_some() {
+                            ed.set_current_buffer(&old)?;
                         }
-                        _ => Ok(()),
+                        saved?;
+                        ed.kill_buffer(&name)
                     }
-                });
-                ed.read_answer(&question, &["yes", "no", "save and then kill"], then)
+                    _ => Ok(()),
+                }
             },
         )
         .param("buffer", ParamKind::Buffer, "Kill buffer: ")
@@ -1487,23 +1495,6 @@ fn files_and_buffers(ed: &mut Editor) {
         .history("buffer-name-history")
         .param("unique", ParamKind::Prefix, ""),
     );
-}
-
-/// Kills a buffer, asking first if a process still runs in it, as
-/// process-kill-buffer-query-function does on kill-buffer-query-functions.
-fn kill_asking_about_process(ed: &mut Editor, name: String, unsaved: bool) -> Result<()> {
-    let kill = move |ed: &mut Editor, name: &str| if unsaved { ed.kill_buffer_unsaved(name) } else { ed.kill_buffer(name) };
-    let running = ed
-        .buffer_process(&name)
-        .filter(|p| ed.process_status(p) == Some(crate::process::Status::Run) && ed.process_query_on_exit(p));
-    if running.is_none() {
-        return kill(ed, &name);
-    }
-    let question = format!("Buffer \"{name}\" has a running process; kill it? ");
-    let then: crate::variables::HookFn = std::rc::Rc::new(move |ed, answer| {
-        if answer.first().is_some_and(|a| a.is_true()) { kill(ed, &name) } else { Ok(()) }
-    });
-    ed.yes_or_no_p(&question, then)
 }
 
 fn minibuffer(ed: &mut Editor) {

@@ -17,8 +17,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-use ember_core::{Editor, Value};
-use ember_script::Scripting;
+mod driven;
+
+use driven::Driven;
+use ember_core::Value;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -59,12 +61,15 @@ fn icomplete_dir() -> PathBuf {
 
 /// Runs a case through Ember: what the minibuffer shows after <f5> and after
 /// each key, until the prompt closes.
+/// The prompt waits for its answer in the command loop, so the editor runs
+/// on its own thread, the minibuffer read between keys.
 fn run(case: &Case) -> Vec<Step> {
-    let mut ed = Editor::new();
-    let scripting = Scripting::new(&mut ed).unwrap();
+    let d = Driven::new("");
     // As Emacs's terminal frame: 80 columns, 24 lines with the echo area.
-    ed.set_frame_size(80, 23);
-    ed.set_variable("max-mini-window-height", Value::from(6.0));
+    d.with(|ed| {
+        ed.set_frame_size(80, 23);
+        ed.set_variable("max-mini-window-height", Value::from(6.0));
+    });
     // Where record.el makes them, so paths are as long as Emacs's, which
     // decides how many completions fit in a line.
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/icomplete-files").join(&case.name);
@@ -81,10 +86,10 @@ fn run(case: &Case) -> Vec<Step> {
         }
     }
     let read = if case.reader == "file" {
-        format!("ember.readFileName(\"File: \", done, {{ dir: {root:?} }})")
+        format!("done(ember.readFileName(\"File: \", {{ dir: {root:?} }}))")
     } else {
         format!(
-            "ember.completingRead(\"Pick: \", {}, done, {{ requireMatch: {} }})",
+            "done(ember.completingRead(\"Pick: \", {}, {{ requireMatch: {} }}))",
             serde_json::to_string(&case.collection).unwrap(),
             case.require_match
         )
@@ -101,23 +106,21 @@ fn run(case: &Case) -> Vec<Step> {
         ember.callWithPrefix(1, "{}-mode");"#,
         case.mode
     );
-    scripting.eval_typescript(&mut ed, "case.ts", source).unwrap();
+    d.eval(&source);
     let short = ember_core::abbreviate_dir(Path::new(&root));
     let without_dir = |text: &str| text.replace(&root, "DIR/").replace(&short, "DIR/");
     let mut states = Vec::new();
     for keys in std::iter::once("<f5>").chain(case.keys.iter().map(String::as_str)) {
-        ed.press(keys).unwrap();
-        let Some(_) = ed.prompt() else {
-            let answer = ed.variable("ic-answer").and_then(|v| v.as_str().map(without_dir));
-            states.push(Step::Exited { exited: true, answer });
-            break;
-        };
-        let (before, after) = ed.minibuffer_strings();
-        states.push(Step::Open {
-            input: without_dir(&ed.minibuffer_input()),
-            before,
-            after: without_dir(&after),
+        d.press(keys);
+        let (open, answer, input, (before, after)) = d.with(|ed| {
+            let answer = ed.variable("ic-answer").and_then(|v| v.as_str().map(str::to_string));
+            (ed.prompt().is_some(), answer, ed.minibuffer_input(), ed.minibuffer_strings())
         });
+        if !open {
+            states.push(Step::Exited { exited: true, answer: answer.as_deref().map(without_dir) });
+            break;
+        }
+        states.push(Step::Open { input: without_dir(&input), before, after: without_dir(&after) });
     }
     states
 }

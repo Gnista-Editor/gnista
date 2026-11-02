@@ -165,8 +165,6 @@ thread_local! {
     static ACTIVE: Cell<Option<NonNull<qjs::JSContext>>> = const { Cell::new(None) };
     /// When the outermost running script must stop.
     static DEADLINE: Cell<Option<Instant>> = const { Cell::new(None) };
-    /// The prompts code waits on, by token, and those answered.
-    static WAITS: RefCell<Waits> = RefCell::default();
     static TIME_LIMIT: Cell<Duration> = const { Cell::new(DEFAULT_TIME_LIMIT) };
     /// The running editor's quit flag, which the interrupt handler reads.
     static QUITTING: RefCell<Option<std::sync::Arc<ember_core::QuitState>>> = const { RefCell::new(None) };
@@ -467,14 +465,13 @@ fn with_editor_ref<T>(f: impl FnOnce(&Editor) -> T) -> Option<T> {
     EDITOR.get().map(|ptr| f(unsafe { ptr.as_ref() }))
 }
 
-/// The prompts scripts wait on: tokens handed out, and those whose prompt
-/// has been answered or quit.
-#[derive(Default)]
-struct Waits {
-    next: u64,
-    settled: Vec<u64>,
-    /// Where each asker was when it asked.
-    askers: Vec<(u64, ember_core::Resume)>,
+/// Runs `f`, which waits for input, with the script's time limit stopped:
+/// the time the person takes to answer is not the script's (ADR 0053).
+fn waiting<T>(f: impl FnOnce() -> T) -> T {
+    let deadline = DEADLINE.take();
+    let result = f();
+    DEADLINE.set(deadline.map(|_| Instant::now() + TIME_LIMIT.get()));
+    result
 }
 
 /// Puts back the quit flag the interrupt handler read before a script ran.
@@ -1395,110 +1392,45 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
             with_editor(&ctx, |ed| Ok(ed.buffer().path.as_ref().map(|p| p.display().to_string())))
         })?,
     )?;
-    // Questions and timers take a function to call later, as hooks do.
-    let ask_context = context.clone();
+    // Questions, reading keys and recursive edits wait for their answer, as
+    // Emacs's do, the command loop running meanwhile (ADR 0053).
     native.set(
         "ask",
-        Function::new(
-            ctx.clone(),
-            move |ctx: Ctx<'js>, kind: String, question: String, choices: Vec<String>, run: Function<'js>, quit: Opt<Option<Function<'js>>>| {
-                let then = ScriptFunction { run: Persistent::save(&ctx, run), context: ask_context.clone() }.into_hook();
-                let quit = quit.0.flatten().map(|f| ScriptFunction { run: Persistent::save(&ctx, f), context: ask_context.clone() }.into_hook());
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, kind: String, question: String, choices: Vec<String>| -> rquickjs::Result<Value<'js>> {
+            let answer = waiting(|| {
                 with_editor(&ctx, |ed| {
-                    match kind.as_str() {
-                        "yes-or-no" => ed.yes_or_no_p(&question, then),
-                        "y-or-n" => ed.y_or_n_p(&question, then),
-                        "answer" => ed.read_answer(&question, &choices.iter().map(String::as_str).collect::<Vec<_>>(), then),
-                        _ => ed.read_char_choice(&question, &choices.iter().filter_map(|c| c.chars().next()).collect::<Vec<_>>(), then),
-                    }?;
-                    if let Some(quit) = quit {
-                        ed.on_prompt_quit(quit);
-                    }
-                    Ok(())
+                    Ok(match kind.as_str() {
+                        "yes-or-no" => EditorValue::Bool(ed.yes_or_no_p(&question)?),
+                        "y-or-n" => EditorValue::Bool(ed.y_or_n_p(&question)?),
+                        "answer" => EditorValue::Str(ed.read_answer(&question, &choices.iter().map(String::as_str).collect::<Vec<_>>())?),
+                        _ => EditorValue::Str(ed.read_char_choice(&question, &choices.iter().filter_map(|c| c.chars().next()).collect::<Vec<_>>())?),
+                    })
                 })
-            },
-        )?,
+            })?;
+            value_to_js(&ctx, &answer)
+        })?,
     )?;
     // Reading a key partway through a command, as Emacs's read-key,
     // read-event, read-char and read-key-sequence, and recursive edits.
-    let key_context = context.clone();
     native.set(
         "readKeyEvent",
-        Function::new(
-            ctx.clone(),
-            move |ctx: Ctx<'js>, kind: String, prompt: String, seconds: Option<f64>, run: Function<'js>, quit: Opt<Option<Function<'js>>>| {
-                let then = ScriptFunction { run: Persistent::save(&ctx, run), context: key_context.clone() }.into_hook();
-                let quit = quit.0.flatten().map(|f| ScriptFunction { run: Persistent::save(&ctx, f), context: key_context.clone() }.into_hook());
-                let kind = match kind.as_str() {
-                    "key" => ember_core::keyboard::ReadKind::Key,
-                    "event" => ember_core::keyboard::ReadKind::Event,
-                    "char" => ember_core::keyboard::ReadKind::Char,
-                    _ => ember_core::keyboard::ReadKind::KeySequence,
-                };
-                let timeout = seconds.map(|s| std::time::Duration::from_secs_f64(s.max(0.0)));
-                with_editor(&ctx, |ed| ed.read_key_event(kind, &prompt, timeout, then, quit))
-            },
-        )?,
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, kind: String, prompt: String, seconds: Option<f64>| {
+            let kind = match kind.as_str() {
+                "key" => ember_core::keyboard::ReadKind::Key,
+                "event" => ember_core::keyboard::ReadKind::Event,
+                "char" => ember_core::keyboard::ReadKind::Char,
+                _ => ember_core::keyboard::ReadKind::KeySequence,
+            };
+            let timeout = seconds.map(|s| std::time::Duration::from_secs_f64(s.max(0.0)));
+            waiting(|| with_editor(&ctx, |ed| ed.read_key_event(kind, &prompt, timeout)))
+        })?,
     )?;
-    let sleep_context = context.clone();
     native.set(
         "sleepFor",
-        Function::new(ctx.clone(), move |ctx: Ctx<'js>, seconds: f64, run: Function<'js>| {
-            let then = ScriptFunction { run: Persistent::save(&ctx, run), context: sleep_context.clone() }.into_hook();
-            with_editor(&ctx, |ed| {
-                ed.sleep_for(seconds, then);
-                Ok(())
-            })
-        })?,
+        Function::new(ctx.clone(), |ctx: Ctx<'js>, seconds: f64| waiting(|| with_editor(&ctx, |ed| ed.sleep_for(seconds))))?,
     )?;
-    let edit_context = context.clone();
-    native.set(
-        "recursiveEdit",
-        Function::new(ctx.clone(), move |ctx: Ctx<'js>, run: Function<'js>, quit: Opt<Option<Function<'js>>>| {
-            let then = ScriptFunction { run: Persistent::save(&ctx, run), context: edit_context.clone() }.into_hook();
-            let quit = quit.0.flatten().map(|f| ScriptFunction { run: Persistent::save(&ctx, f), context: edit_context.clone() }.into_hook());
-            with_editor(&ctx, |ed| {
-                ed.recursive_edit(std::rc::Rc::new(move |ed, _| then(ed, &[]).map(|_| ())), quit);
-                Ok(())
-            })
-        })?,
-    )?;
+    native.set("recursiveEdit", Function::new(ctx.clone(), |ctx: Ctx<'js>| waiting(|| with_editor(&ctx, |ed| ed.recursive_edit())))?)?;
     native.set("recursionDepth", Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.recursion_depth())))?)?;
-    // A prompt that returns its answer: the prelude's `answering` takes a
-    // token, lets the prompt's callbacks settle it, and waits for that in
-    // the command loop (ADR 0053).
-    // Taken before the prompt opens, with where the asker was, to go back to.
-    native.set(
-        "waitToken",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>| {
-            let asker = with_editor(&ctx, |ed| Ok(ed.resume_point()))?;
-            Ok::<_, rquickjs::Error>(WAITS.with_borrow_mut(|w| {
-                w.next += 1;
-                w.askers.push((w.next, asker));
-                w.next
-            }))
-        })?,
-    )?;
-    native.set("settle", Function::new(ctx.clone(), |token: u64| WAITS.with_borrow_mut(|w| w.settled.push(token)))?)?;
-    native.set(
-        "waitFor",
-        Function::new(ctx.clone(), |ctx: Ctx<'js>, token: u64| {
-            let settled = |token| WAITS.with_borrow(|w| w.settled.contains(&token));
-            // Time spent waiting for the person answering is not the script's.
-            let deadline = DEADLINE.take();
-            let asker = WAITS.with_borrow(|w| w.askers.iter().find(|(t, _)| *t == token).map(|(_, r)| r.clone()));
-            let result = match asker {
-                Some(asker) => with_editor(&ctx, |ed| ed.wait_until(&asker, std::rc::Rc::new(move |_| settled(token)))),
-                None => Ok(()),
-            };
-            DEADLINE.set(deadline.map(|_| Instant::now() + TIME_LIMIT.get()));
-            WAITS.with_borrow_mut(|w| {
-                w.settled.retain(|&t| t != token);
-                w.askers.retain(|(t, _)| *t != token);
-            });
-            result
-        })?,
-    )?;
     native.set(
         "thisCommandKeys",
         Function::new(ctx.clone(), |ctx: Ctx<'js>| with_editor(&ctx, |ed| Ok(ed.this_command_keys().iter().map(|k| k.to_string()).collect::<Vec<_>>())))?,
@@ -1543,14 +1475,11 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
     )?;
     // Reading from the minibuffer partway through a command, as Emacs's
     // read-from-minibuffer, completing-read and read-file-name.
-    let read_context = context.clone();
     native.set(
         "read",
         Function::new(
             ctx.clone(),
-            move |ctx: Ctx<'js>, kind: String, prompt: String, options: Object<'js>, run: Function<'js>, quit: Opt<Option<Function<'js>>>| {
-                let then = ScriptFunction { run: Persistent::save(&ctx, run), context: read_context.clone() }.into_hook();
-                let quit = quit.0.flatten().map(|f| ScriptFunction { run: Persistent::save(&ctx, f), context: read_context.clone() }.into_hook());
+            |ctx: Ctx<'js>, kind: String, prompt: String, options: Object<'js>| -> rquickjs::Result<Value<'js>> {
                 let Some(kind) = ParamKind::from_name(&kind) else {
                     return Err(Exception::throw_type(&ctx, &format!("Unknown kind of reading {kind:?}")));
                 };
@@ -1566,13 +1495,8 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
                 reading.default = options.get("default")?;
                 reading.history = options.get("history")?;
                 reading.dir = options.get("dir")?;
-                with_editor(&ctx, |ed| {
-                    ed.read_from_minibuffer(reading, then)?;
-                    if let Some(quit) = quit {
-                        ed.on_prompt_quit(quit);
-                    }
-                    Ok(())
-                })
+                let answer = waiting(|| with_editor(&ctx, |ed| ed.read_from_minibuffer(reading)))?;
+                value_to_js(&ctx, &answer)
             },
         )?,
     )?;
@@ -1803,14 +1727,6 @@ fn install_native_variables<'js>(ctx: &Ctx<'js>, native: &Object<'js>, context: 
                 Ok(object)
             },
         )?,
-    )?;
-    let waiter_context = context.clone();
-    native.set(
-        "afterPrompts",
-        Function::new(ctx.clone(), move |ctx: Ctx<'js>, run: Function<'js>| {
-            let f = ScriptFunction { run: Persistent::save(&ctx, run), context: waiter_context.clone() }.into_hook();
-            with_editor(&ctx, |ed| ed.after_prompts(f))
-        })?,
     )?;
     let timer_context = context.clone();
     native.set(

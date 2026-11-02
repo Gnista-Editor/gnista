@@ -1,9 +1,7 @@
 //! M-x diff and diff-mode: diff's output in *Diff* between the command and
 //! the line saying it finished, hunks to move between, and RET to the source.
 
-mod driven;
-
-use driven::Driven;
+use crate::driven::Driven;
 use ember_core::{Arg, Editor};
 use ember_script::Scripting;
 

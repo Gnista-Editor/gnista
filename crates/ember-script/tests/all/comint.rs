@@ -4,9 +4,7 @@
 
 use std::time::{Duration, Instant};
 
-mod driven;
-
-use driven::Driven;
+use crate::driven::Driven;
 use ember_core::{Arg, Editor};
 use ember_script::Scripting;
 

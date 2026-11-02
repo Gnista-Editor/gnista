@@ -229,14 +229,24 @@ fn the_binary_passes_messages_to_a_running_editor() {
 }
 
 #[test]
-fn questions_say_how_they_are_answered() {
+fn a_tool_call_that_asks_waits_for_the_users_answer() {
     let (mut ed, scripting) = setup();
     scripting
-        .eval_typescript(&mut ed, "ask.ts", r#"ember.defineCommand({ name: "ask-me", run: () => ember.yOrNP("Go? ", (yes) => ember.insert(yes ? "went" : "stayed")) });"#.into())
+        .eval_typescript(&mut ed, "ask.ts", r#"ember.defineCommand({ name: "ask-me", run: () => ember.insert(ember.yOrNP("Go? ") ? "went" : "stayed") });"#.into())
         .unwrap();
-    let (out, _) = tool(&mut ed, &scripting, "call_command", json!({ "name": "ask-me" }));
-    assert!(out.contains("Prompt open: Go? (y or n) "), "{out}");
-    assert!(out.contains("single key"), "{out}");
-    tool(&mut ed, &scripting, "type_text", json!({ "text": "y" }));
+    // The user's answer, as the question waits for it (ADR 0053).
+    let asked = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+    let seen = asked.clone();
+    ed.set_input_source(move |ed| match ed.prompt().map(str::to_string) {
+        Some(prompt) if seen.borrow().is_empty() => {
+            seen.borrow_mut().push(prompt);
+            ed.type_text("y");
+            true
+        }
+        _ => false,
+    });
+    let (out, failed) = tool(&mut ed, &scripting, "call_command", json!({ "name": "ask-me" }));
+    assert!(!failed, "{out}");
+    assert_eq!(*asked.borrow(), ["Go? (y or n) "]);
     assert_eq!(text(&ed), "went");
 }

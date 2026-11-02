@@ -1,9 +1,7 @@
 //! The command loop's own primitives: reading keys partway through a
 //! command, the keys that ran it, the keys typed lately, and recursive edits.
 
-mod driven;
-
-use driven::Driven;
+use crate::driven::Driven;
 use ember_core::Editor;
 use ember_script::Scripting;
 

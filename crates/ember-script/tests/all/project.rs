@@ -5,9 +5,7 @@ use std::fs;
 use std::path::Path;
 use std::process::Command;
 
-mod driven;
-
-use driven::Driven;
+use crate::driven::Driven;
 use ember_core::{Arg, Editor, Value};
 use ember_script::Scripting;
 
@@ -112,13 +110,14 @@ fn switching_project_chooses_what_to_do_there() {
 #[test]
 fn outside_a_project_it_asks_which() {
     let config = tempfile::tempdir().unwrap();
-    let (mut ed, _scripting) = setup(config.path());
+    let d = driven(config.path());
     let plain = tempfile::tempdir().unwrap();
     fs::write(plain.path().join("note.txt"), "\n").unwrap();
-    visit(&mut ed, &plain.path().join("note.txt"));
-    ed.press("C-x p f").unwrap();
-    assert_eq!(ed.prompt(), Some("Select project: "));
-    ed.press("C-g").unwrap();
+    visit_driven(&d, &plain.path().join("note.txt"));
+    d.press("C-x p f");
+    assert_eq!(d.prompt().as_deref(), Some("Select project: "));
+    d.press("C-g");
+    assert_eq!(d.prompt(), None);
 }
 
 #[test]

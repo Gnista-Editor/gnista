@@ -9836,6 +9836,10 @@ declare global {
        */
       "kill-buffer-hook": Value;
       /**
+       * Functions kill-buffer calls, with the buffer to kill current, before killing it; if any returns nil, the buffer is kept.
+       */
+      "kill-buffer-query-functions": Value;
+      /**
        * Run when Ember exits, as C-x C-c does.
        */
       "kill-emacs-hook": Value;
@@ -10595,29 +10599,23 @@ declare global {
      * The editor goes on taking keys until the answer comes, which is
      * returned, as in Emacs, so a hook or a sort predicate can ask; C-g
      * throws the "quit" condition, unwinding the command. Every prompt and
-     * question works so, and awaiting the answer works too (ADR 0053). Each
-     * also takes a `then` function, the older form, which C-g leaves uncalled.
+     * question works so (ADR 0053).
      */
     function yesOrNoP(question: string): boolean;
-    function yesOrNoP(question: string, then: (yes: boolean) => void): void;
     /** Ask a question answered by typing y or n, as Emacs's y-or-n-p. */
     function yOrNP(question: string): boolean;
-    function yOrNP(question: string, then: (yes: boolean) => void): void;
     /** Ask a question answered by typing one of `answers` and RET, as Emacs's read-answer; the prompt lists them. */
     function readAnswer(question: string, answers: string[]): string;
-    function readAnswer(question: string, answers: string[], then: (answer: string) => void): void;
     /**
      * Ask a question answered by one of the characters in `chars`, typed
      * alone, as Emacs's read-char-choice; the prompt says what they mean.
      */
     function readCharChoice(prompt: string, chars: string): string;
-    function readCharChoice(prompt: string, chars: string, then: (char: string) => void): void;
     /**
      * Read a key, showing `prompt` in the echo area, as Emacs's read-key:
      * its description, such as "x", "C-x" or "<f1>". C-g quits.
      */
     function readKey(prompt?: string): string;
-    function readKey(prompt: string | undefined, then: (key: string) => void): void;
     /**
      * Read an event, a key or a mouse event, as Emacs's read-event; the last
      * mouse event's place is lastMouseEvent(). With `seconds`, give up after
@@ -10625,33 +10623,28 @@ declare global {
      */
     function readEvent(prompt?: string): string;
     function readEvent(prompt: string | undefined, options: { seconds: number }): string | undefined;
-    function readEvent(prompt: string | undefined, then: (key: string) => void): void;
     /** Read a character, as Emacs's read-char: anything else, such as <f1>, is an error. With `seconds`, undefined if none comes in that long. */
     function readChar(prompt?: string): string;
     function readChar(prompt: string | undefined, options: { seconds: number }): string | undefined;
-    function readChar(prompt: string | undefined, then: (char: string) => void): void;
     /**
      * Wait `seconds`, as Emacs's sit-for: true if the time passed, false as
      * soon as a key is typed, which is then read as a command.
      */
-    function sitFor(seconds: number): Promise<boolean>;
+    function sitFor(seconds: number): boolean;
     /** Wait `seconds` before going on, as Emacs's sleep-for. Keys typed meanwhile run their commands. */
     function sleepFor(seconds: number): void;
-    function sleepFor(seconds: number, then: () => void): void;
     /**
      * Read a whole key sequence, as the command loop reads one, by the keymaps
      * active now, as Emacs's read-key-sequence: "C-x C-f". C-g is a key in it.
      */
     function readKeySequence(prompt?: string): string;
-    function readKeySequence(prompt: string | undefined, then: (keys: string) => void): void;
     /**
      * Edit recursively, as Emacs's recursive-edit: the editor goes on taking
      * commands, with [ ] around the modes in the mode line, until C-M-c
-     * (exit-recursive-edit) resolves this, or C-] (abort-recursive-edit)
+     * (exit-recursive-edit) returns from it, or C-] (abort-recursive-edit)
      * quits it.
      */
     function recursiveEdit(): void;
-    function recursiveEdit(then: () => void): void;
     /** How deep in recursive edits and minibuffers the editor is, as recursion-depth. */
     function recursionDepth(): number;
     /** The keys that ran the command running, its prefix argument's included, as this-command-keys: "C-u C-n". */
@@ -10687,7 +10680,6 @@ declare global {
     }
     /** Read one of `collection` in the minibuffer, with completion, as Emacs's completing-read. */
     function completingRead(prompt: string, collection: CompletionTable, options?: CompletingReadOptions): string;
-    function completingRead(prompt: string, collection: CompletionTable, then: (answer: string) => void, options?: CompletingReadOptions): void;
     /**
      * What completingRead completes against: names, or a function of the
      * input so far that gives them, called as the prompt opens and after
@@ -10707,7 +10699,6 @@ declare global {
     }
     /** Read a file name in the minibuffer, with completion, as Emacs's read-file-name; the answer is the name as typed. */
     function readFileName(prompt: string, options?: ReadFileNameOptions): string;
-    function readFileName(prompt: string, then: (file: string) => void, options?: ReadFileNameOptions): void;
     interface ReadStringOptions {
       initial?: string;
       default?: string;
@@ -10715,7 +10706,6 @@ declare global {
     }
     /** Read text in the minibuffer, as Emacs's read-string. */
     function readString(prompt: string, options?: ReadStringOptions): string;
-    function readString(prompt: string, then: (text: string) => void, options?: ReadStringOptions): void;
     interface MinibufferInfo {
       /** The prompt, such as "Find file: ". */
       prompt: string;
@@ -11463,12 +11453,6 @@ declare global {
     function acceptChangeGroup(handle: number): void;
     /** Run `fn`, taking back its changes if it throws, as Emacs's atomic-change-group. */
     function atomicChangeGroup<T>(fn: () => T): T;
-    /**
-     * Call `fn` once no prompt or question is open: now if none is, or once the
-     * ones open are all answered, as code after save-some-buffers runs in
-     * Emacs. Quitting a prompt with C-g drops it.
-     */
-    function afterPrompts(fn: () => void): void;
     /** What starts a process: its name, program and arguments, and where its output goes. */
     interface ProcessDefinition {
       /** Its name, made unique with "<1>" and so on if taken. */

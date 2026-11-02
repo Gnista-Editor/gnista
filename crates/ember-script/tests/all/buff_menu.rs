@@ -1,9 +1,7 @@
 //! The buffer list, C-x C-b: its lines as buff-menu.el lays them out in an
 //! 80-column window, and marking buffers to visit, save and kill.
 
-mod driven;
-
-use driven::Driven;
+use crate::driven::Driven;
 use ember_core::{Arg, Editor};
 use ember_script::Scripting;
 

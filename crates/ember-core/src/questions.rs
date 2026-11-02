@@ -1,18 +1,16 @@
 //! Questions a command asks partway through, as Emacs's `yes-or-no-p`,
 //! `y-or-n-p` and `read-char-choice`.
 //!
-//! Emacs's Lisp waits for the answer; Ember's commands return first, and
-//! the answer runs a function given with the question, in the context the
-//! command asked in, which is how a script's `await ember.yOrNP(...)`
-//! carries on. The question opens the minibuffer as a prompt does, so
-//! front ends show it, `C-g` quits it, and the agent and tests see an open
-//! prompt to answer.
+//! As in Emacs, the command waits for the answer, which the question
+//! returns: the editor runs its command loop meanwhile (ADR 0053). The
+//! question opens the minibuffer as a prompt does, so front ends show it,
+//! `C-g` quits it, and the agent and tests see an open prompt to answer.
 
 use crate::command::ParamKind;
-use crate::editor::{Editor, Prompt, Resume};
+use crate::editor::{AnswerSlot, Editor, Prompt};
 use crate::error::Result;
 use crate::key::{Key, KeyCode};
-use crate::variables::{HookFn, Value};
+use crate::variables::Value;
 
 pub(crate) struct Question {
     /// The question without what it says about answering.
@@ -23,51 +21,40 @@ pub(crate) struct Question {
     answers: Vec<String>,
     /// What the full prompt adds after the question, such as `(y or n) `.
     choices: String,
-    then: HookFn,
-    /// Called if the question is quit rather than answered.
-    pub(crate) quit: Option<HookFn>,
-    /// The asking command's context, given back for `then`.
-    resume: Option<Resume>,
+    /// Where the answer goes, for the command waiting on it.
+    pub(crate) answer: AnswerSlot,
 }
 
 impl Editor {
     /// Asks a question answered by typing "yes" or "no" and RET, as Emacs's
-    /// `yes-or-no-p`. `then` is called with true or false.
-    pub fn yes_or_no_p(&mut self, question: &str, then: HookFn) -> Result<()> {
-        let to_bool: HookFn = std::rc::Rc::new(move |ed, args| {
-            let yes = matches!(args.first(), Some(Value::Str(a)) if a == "yes");
-            then(ed, &[Value::Bool(yes)])
-        });
-        self.read_answer(question, &["yes", "no"], to_bool)
+    /// `yes-or-no-p`, and returns whether the answer was yes.
+    pub fn yes_or_no_p(&mut self, question: &str) -> Result<bool> {
+        Ok(self.read_answer(question, &["yes", "no"])? == "yes")
     }
 
     /// Asks a question answered by typing one of `answers` and RET, as
-    /// Emacs's `read-answer` and the long form of `read-multiple-choice`.
-    /// `then` is called with the answer.
-    pub fn read_answer(&mut self, question: &str, answers: &[&str], then: HookFn) -> Result<()> {
+    /// Emacs's `read-answer` and the long form of `read-multiple-choice`,
+    /// and returns the answer.
+    pub fn read_answer(&mut self, question: &str, answers: &[&str]) -> Result<String> {
         let choices = match answers {
             [a, b] => format!("({a} or {b}) "),
             _ => format!("({}) ", answers.join(", ")),
         };
         let answers = answers.iter().map(|a| a.to_string()).collect();
-        self.ask(Question { text: question.to_string(), chars: None, answers, choices, then, quit: None, resume: None })
+        self.ask(question, None, answers, choices)
     }
 
-    /// Asks a question answered by typing y or n, as Emacs's `y-or-n-p`.
-    /// `then` is called with true or false.
-    pub fn y_or_n_p(&mut self, question: &str, then: HookFn) -> Result<()> {
-        let to_bool: HookFn = std::rc::Rc::new(move |ed, args| {
-            let yes = matches!(args.first(), Some(Value::Str(c)) if c == "y");
-            then(ed, &[Value::Bool(yes)])
-        });
-        self.ask(Question { text: question.to_string(), chars: Some(vec!['y', 'n']), answers: Vec::new(), choices: "(y or n) ".into(), then: to_bool, quit: None, resume: None })
+    /// Asks a question answered by typing y or n, as Emacs's `y-or-n-p`,
+    /// and returns whether the answer was y.
+    pub fn y_or_n_p(&mut self, question: &str) -> Result<bool> {
+        Ok(self.ask(question, Some(vec!['y', 'n']), Vec::new(), "(y or n) ".into())? == "y")
     }
 
     /// Asks a question answered by one of `chars`, as Emacs's
-    /// `read-char-choice`; the prompt says what the choices are. `then` is
-    /// called with the character typed, as a string.
-    pub fn read_char_choice(&mut self, prompt: &str, chars: &[char], then: HookFn) -> Result<()> {
-        self.ask(Question { text: prompt.to_string(), chars: Some(chars.to_vec()), answers: Vec::new(), choices: String::new(), then, quit: None, resume: None })
+    /// `read-char-choice`; the prompt says what the choices are. Returns
+    /// the character typed, as a string.
+    pub fn read_char_choice(&mut self, prompt: &str, chars: &[char]) -> Result<String> {
+        self.ask(prompt, Some(chars.to_vec()), Vec::new(), String::new())
     }
 
     /// Whether the open prompt is a question answered by a single key.
@@ -75,11 +62,14 @@ impl Editor {
         self.question.as_ref().is_some_and(|q| q.chars.is_some())
     }
 
-    fn ask(&mut self, mut question: Question) -> Result<()> {
+    /// Asks a question and waits for its answer.
+    fn ask(&mut self, text: &str, chars: Option<Vec<char>>, answers: Vec<String>, choices: String) -> Result<String> {
+        let asker = self.resume_point();
         self.enter_recursive_minibuffer()?;
-        question.resume = Some(self.resume_point());
-        self.open_question(question, "");
-        Ok(())
+        let answer = AnswerSlot::default();
+        self.open_question(Question { text: text.to_string(), chars, answers, choices, answer: answer.clone() }, "");
+        let value = self.wait_for_answer(&asker, &answer)?;
+        Ok(value.as_str().unwrap_or_default().to_string())
     }
 
     fn open_question(&mut self, question: Question, preface: &str) {
@@ -135,19 +125,9 @@ impl Editor {
         true
     }
 
-    /// Runs what answers a question, showing its error as a command's.
+    /// Gives the waiting command a question's answer.
     fn run_answer(&mut self, question: &Question, answer: Value) {
-        let then = question.then.clone();
-        let result = match &question.resume {
-            Some(resume) => self.run_resumed(resume, |ed| then(ed, &[answer])),
-            None => then(self, &[answer]),
-        };
-        if let Err(e) = result {
-            self.prompt_waiters_clear();
-            self.fail(e);
-            return;
-        }
-        self.run_prompt_waiters();
+        question.answer.borrow_mut().get_or_insert(Ok(answer));
     }
 
     /// Forgets any open question, as `C-g` does, and returns it.

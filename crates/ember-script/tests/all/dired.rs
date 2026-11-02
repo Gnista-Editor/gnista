@@ -95,9 +95,19 @@ fn deleting_says_it_trashes() {
     ed.set_variable("delete-by-moving-to-trash", Value::Bool(true));
     let dir = sample();
     dired(&mut ed, dir.path());
+    // The question waits: say what it asks, and quit it.
+    let asked = std::rc::Rc::new(std::cell::RefCell::new(None));
+    let seen = asked.clone();
+    ed.set_input_source(move |ed| match ed.prompt().map(str::to_string) {
+        Some(prompt) if seen.borrow().is_none() => {
+            *seen.borrow_mut() = Some(prompt);
+            ed.handle_key(ember_core::Key::parse("C-g").unwrap());
+            true
+        }
+        _ => false,
+    });
     ed.press("D").unwrap();
-    assert_eq!(ed.prompt(), Some("Trash a.txt (yes or no) "));
-    ed.press("C-g").unwrap();
+    assert_eq!(asked.borrow().as_deref(), Some("Trash a.txt (yes or no) "));
     assert!(dir.path().join("a.txt").exists());
 }
 
