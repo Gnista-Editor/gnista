@@ -251,6 +251,23 @@ With it, a second engine (step 4) or a second platform (the web) is a second gen
 
 **Exit check.** Every test passes on V8 with no change to a package; the slow Org keys are faster than on QuickJS and than Emacs; startup is no slower.
 
+**The spike, 2026-11-02.** `spikes/v8` runs the same JavaScript on rquickjs 0.14, as Ember embeds it, and on the `v8` crate 152.2, with the same host functions, on the bench's 50,000-line Org file: org.ts's heading parser over every line, the regexps of its fontifier over 2,000 lines, the index's pass moving 8,334 headings ten times, 20,000 searches for the heading a line is under and its subtree, and reading the 50,000 lines through a host call each. Medians of seven runs, and the first, cold one:
+
+| Workload | QuickJS | V8 | V8, first run |
+| --- | ---: | ---: | ---: |
+| parsing the headings | 44.3 ms | 3.7 ms | 8.2 ms |
+| fontifying 2,000 lines | 7.8 ms | 0.46 ms | 1.6 ms |
+| moving the headings | 11.6 ms | 0.42 ms | 4.1 ms |
+| searching | 26.8 ms | 2.4 ms | 3.5 ms |
+| 50,000 host calls returning a line | 7.2 ms | 2.1 ms | 3.1 ms |
+
+- **Speed.** 12 to 28 times QuickJS once compiled, 2 to 8 times on the first run. Host calls cost V8 less than rquickjs, not more: 43 ns a call against 144, so the worry above about V8's host calls does not hold for calls like these; its fast-call path was not needed.
+- **What it would move.** After Org's heading index stopped moving every heading after each edit ([performance.md](performance.md)), interpreting is 57% of RET at a heading (2.5 ms), 65% of `C-c C-t` (3.4 ms), 55% of `S-TAB` (26 ms) and 34% of `find-file` (22 ms). At ten times faster, RET would take about 1.2 ms against Emacs's 1.9, the only one of those Ember is still slower at, and `S-TAB` about 13 ms against Emacs's 124. The rule above allows the step: interpreting is half or more of three of the four.
+- **Termination.** `TerminateExecution` from another thread stopped `for (;;) {}` within a few milliseconds of being asked, and ran neither the `catch` nor either `finally` around it, as assumed in step 1: the binding stack in Rust stays the only cleanup that is sure to run.
+- **The build.** The crate's build script downloads a prebuilt `librusty_v8.a` (158 MB) into the target directory; with `.cargo/config.toml`'s linker for Nix, the scratch crate built in 47 s from nothing. A clean target downloads it again; `RUSTY_V8_ARCHIVE` points the build at a copy instead, for offline and Nix builds.
+- **Size.** The spike's binary, both engines and nothing else, is 60 MB; `ember-gui` is 41 MB.
+- **Not measured:** memory per isolate, startup with Ember's packages (V8's initialising took 0.5 to 2 ms, an isolate with the bench loaded 1.4 to 1.9 ms, QuickJS's 0.6 to 1.3), and the time a port takes, which step 0b's generated bindings decide.
+
 ## Step 5: blocking primitives
 
 [ADR 0030](adr/0030-the-command-loops-primitives.md) chose not to block because blocking needs the editor to run its own command loop, which the front ends and key-at-a-time tests could not allow. Step 3 removes the obstacle, so this step reverses that choice and needs an ADR that says so.
@@ -324,11 +341,11 @@ Also needed: cross-origin isolation headers for `SharedArrayBuffer`; tree-sitter
 
 Things to check at the start of the step that needs them, with how:
 
-- **Does V8 run `finally` blocks on `TerminateExecution`?** Likely not; the API describes the exception as uncatchable. Test with a ten-line rusty_v8 program before step 1's emergency path is designed around it. The binding stack in Rust is the mitigation either way.
+- **Does V8 run `finally` blocks on `TerminateExecution`?** No: the spike in step 4 found that neither `catch` nor `finally` runs. The binding stack in Rust is the mitigation, as step 1 assumed.
 - **Do egui's fonts measure the same from another thread?** Write the comparison test in step 3 first; the `ab_glyph` fallback is named above.
 - **Is `arboard` safe off the main thread on X11 and Wayland?** Try it in step 3; the UI-thread fallback is named above.
-- **What does `librusty_v8` do under Nix here?** Try a `cargo build` with the `v8` crate in a scratch crate before step 4.
-- **Where the slow keys' time goes.** Step 0a answers it; nothing in step 4 proceeds without it.
+- **What does `librusty_v8` do under Nix here?** It builds: the prebuilt archive downloads, and links with `.cargo/config.toml`'s `/usr/bin/cc` (step 4's spike).
+- **Where the slow keys' time goes.** Answered by step 0a, and again on 2026-11-02 after Org's heading index ([performance.md](performance.md)).
 
 ## Sources
 
