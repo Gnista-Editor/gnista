@@ -91,6 +91,17 @@ Step 0 of [multithreading.md](multithreading.md): the bench's `profile_key` repe
 
 So the rule in step 4 splits: `S-TAB` is primitives, and a faster engine would not move it; RET and `C-c C-t` are interpretation, and mostly the work [optimisation.md](optimisation.md) already names, Org reading every heading again after each change, which an index kept up to date from the change hooks removes whatever the engine. Overlays are now found by id with a binary search, deleting one marks it rather than moving the rest, and redisplay and `overlays-in` find them by position through an index of their edges and of which cover each stretch between them. The index is built when first asked after a change and takes overlays made since by a pass over them, so folding, which asks between making each, does not build it each time. `S-TAB` went from 110 ms to 76 with the first two and to 29 with the index; what is left of it is interpreting Org's folding, half of it QuickJS's regexp matcher.
 
+Again on 2026-11-02, after the heading index and the overlay index, with the same Org file timed in GNU Emacs 30.2 (`emacs -nw -Q` in a 120 by 52 tmux, `execute-kbd-macro` and `(redisplay t)` after each key, the undo included as in `profile_key`):
+
+| Key | Ember | Interpreting | Host calls | Primitives | Emacs 30.2 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `S-TAB`, from the start, repeated | 27.7 ms | 57% | 0% | 42% | 124 ms |
+| RET at a heading, then undo | 19.7 ms | 92% | 0% | 8% | 1.9 ms |
+| `C-c C-t` at a heading, then undo | 21.6 ms | 93% | 0% | 7% | 5.5 ms |
+| `find-file` of the file again | 23.0 ms | 36% | 0% | 64% | 89 ms |
+
+TAB on a heading takes 2.1 ms in Emacs and 10 in Ember. Of RET's and `C-c C-t`'s interpreting, a third is calls inside QuickJS and a fifth making objects and their properties (`JS_DefineProperty`, `add_shape_property`, `find_own_property`), most likely the new object Org's heading index makes for each heading after an edit, as [optimisation.md](optimisation.md) says. Host calls no longer show at all.
+
 ## What changed
 
 - **Opening a file reads only what it needs.** `normal-mode` took the whole buffer into a script to read its first line for a `-*-` cookie, and checking for a final newline when saving took it all to read the last character; each now reads only those, as Emacs does. Line ends are found by counting every line's end only when the file has a carriage return, which memchr looks for first. `find-file` of the 100 MB text file went from 138 to 65 ms; the 82 ms of 2026-10-28 was already 135 ms by 2026-10-31, before the work of that night.
