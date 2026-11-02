@@ -313,7 +313,8 @@ fn fontifying_a_large_file_is_quick() {
 
 
 /// The heading index follows edits as finding every heading again would:
-/// random insertions, deletions and Org commands, checked after each.
+/// random insertions, deletions and Org commands, checked after each, a
+/// heading at a time or all of them.
 #[test]
 fn the_heading_index_follows_random_edits() {
     let mut text = String::new();
@@ -364,7 +365,12 @@ fn the_heading_index_follows_random_edits() {
             }
         }
         ed.take_error();
-        let verdict = s.eval_expression(&mut ed, "ember.funcall('org--headings-verify')").unwrap();
+        // Mostly one heading, read as the element parser reads it, so the
+        // shifts for the rest stay pending across steps; now and then all.
+        let check = if step % 5 == 4 { String::new() } else { rand(1000).to_string() };
+        let verdict = s.eval_expression(&mut ed, &format!("ember.funcall('org--headings-verify', {check})")).unwrap();
         assert_eq!(verdict, "null", "step {step}");
     }
+    let verdict = s.eval_expression(&mut ed, "ember.funcall('org--headings-verify')").unwrap();
+    assert_eq!(verdict, "null", "at the end");
 }

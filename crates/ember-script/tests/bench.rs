@@ -317,7 +317,9 @@ fn gui_layout() {
 /// the GUI's metrics), `EMBER_PROFILE_MODE` a mode to turn on, `EMBER_PROFILE_FILE=text`
 /// the 100 MB text file instead, and `EMBER_PROFILE_AT` where point starts: `middle`,
 /// `heading` (a heading near the middle), or `start`. The key `find-file`
-/// visits the file again each time instead.
+/// visits the file again each time instead. `EMBER_PROFILE_EVAL` is an
+/// expression to print the value of at the end, such as a count a package
+/// kept while it was being measured.
 #[test]
 #[ignore]
 fn profile_key() {
@@ -380,6 +382,9 @@ fn profile_key() {
         n += 1;
     }
     println!("{key}: {n} times, {:.2} ms each", seconds as f64 * 1000.0 / n as f64);
+    if let Ok(expr) = std::env::var("EMBER_PROFILE_EVAL") {
+        println!("{expr}: {:?}", _scripting.eval_expression(&mut ed, &expr));
+    }
 }
 
 /// How long a new editor takes to load its packages, as at startup.

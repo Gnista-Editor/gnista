@@ -32,7 +32,7 @@ Typing `(` then `)` with Electric Pair and Show Paren mode on took about 1.9 s a
 
 ## Org's headings after each change
 
-Org keeps an index of its headings from its after-change hook since 2026-11-01, moving the headings after an edit and looking again only at the lines it touched, so `C-c C-t` and `M-<down>` take 8 to 9 ms in the 50,000-line file ([performance.md](performance.md)). What is left: each heading after an edit still gets a new object, which is most of what a single edit costs; RET takes 20 ms, much of it elsewhere in org-return; and S-TAB, 26 ms, is interpreting Org's folding, half of it QuickJS's regexp matcher.
+Org keeps an index of its headings from its after-change hook since 2026-11-01, and since 2026-11-02 moves the headings after an edit only when they are read, as Org's element cache does ([performance.md](performance.md)): RET at a heading takes 2.3 ms in the 50,000-line file, against Emacs's 1.9, and `C-c C-t` 3.1, against 5.5. What is left: a command that asks for every heading, through `headings()` or `backToHeading`, moves every heading after the last edit, a pass over thousands; most commands want only those around point, and could read them as the element parser does (`headingsAsRead`) once each is checked not to hold the list across its own edits. S-TAB, 25 ms, is interpreting Org's folding, half of it QuickJS's regexp matcher.
 
 ## Opening a large file
 

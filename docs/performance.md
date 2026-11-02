@@ -102,8 +102,20 @@ Again on 2026-11-02, after the heading index and the overlay index, with the sam
 
 TAB on a heading takes 2.1 ms in Emacs and 10 in Ember. Of RET's and `C-c C-t`'s interpreting, a third is calls inside QuickJS and a fifth making objects and their properties (`JS_DefineProperty`, `add_shape_property`, `find_own_property`), most likely the new object Org's heading index makes for each heading after an edit, as [optimisation.md](optimisation.md) says. Host calls no longer show at all.
 
+Later on 2026-11-02, after Org's heading index stopped moving every heading after each edit (below), the same keys:
+
+| Key | Ember before | Ember after | Emacs 30.2 |
+| --- | ---: | ---: | ---: |
+| RET at a heading, then undo | 18.2 ms | 2.3 ms | 1.9 ms |
+| `C-c C-t` at a heading, then undo | 20.7 ms | 3.1 ms | 5.5 ms |
+| TAB on a heading, repeated | 3.2 ms | 0.9 ms | 2.1 ms |
+| `S-TAB`, from the start, repeated | 26 ms | 25 ms | 124 ms |
+
+And in the bench's Org table: RET in a paragraph from 22.0 to 11.4 ms, `C-c C-t` on a heading from 10.0 to 3.0, `M-<down>` on a heading (where it fails, as in Emacs, the heading being its parent's only child) from 8.1 to 2.0, TAB on a heading from 10.5 to 8.1, TAB in a table from 3.2 to 1.0, `C-v` from 2.6 to 1.8.
+
 ## What changed
 
+- **Org's heading index moves headings only when they are read**, as Org's element cache shifts its elements lazily. An edit used to give every heading after it a new, frozen object; now it records a shift for the headings from an index on, and a heading is moved in place when it is read: the element parser reads the few around point through `headingsAsRead`, and `headings()` moves them all in one pass. Finding the heading a line is under, a heading's ancestors and the next heading at a level halve or stop early instead of passing over every heading, and copying the headings after one to search them (`all.slice(i + 1).find(...)`) became loops. `matchAll`, which compiles its regexp again on each call in QuickJS, became an `exec` loop in Org (`allMatches` in org-macs.ts). RET at a heading went from 18.2 to 2.3 ms, `C-c C-t` from 20.7 to 3.1, TAB on a heading from 3.2 to 0.9: Emacs 30.2 takes 1.9, 5.5 and 2.1.
 - **Opening a file reads only what it needs.** `normal-mode` took the whole buffer into a script to read its first line for a `-*-` cookie, and checking for a final newline when saving took it all to read the last character; each now reads only those, as Emacs does. Line ends are found by counting every line's end only when the file has a carriage return, which memchr looks for first. `find-file` of the 100 MB text file went from 138 to 65 ms; the 82 ms of 2026-10-28 was already 135 ms by 2026-10-31, before the work of that night.
 - **Balanced-expression scans pass plain text a run at a time.** A run of ASCII words, symbols, spaces and punctuation without syntax flags changes nothing in a list scan, nor anything but the count at the top of a sexp scan, which cannot run out when there are more expressions to pass than characters left, as electric-pair asks to check a balance to the buffer's end. `scan-lists` and `scan-sexps` read such runs from the rope's chunks a byte at a time; a test checks them against the character-at-a-time scan on 1,000 random texts. Typing `(` and `)` with electric-pair in the 100 MB file went from 1,963 to 270 ms.
 - **Org reads only the lines it needs when a file opens.** `#+TODO:` and `#+STARTUP:` lines, drawers and outline's headings came from a loop over every line, a call per line; `ember.matchingLines` finds the lines that can match in one pass. `find-file` of the 50,000-line Org file went from 93 to 22 ms.

@@ -13,7 +13,7 @@
 // "org-hide-block" for blocks. A link's brackets and target are hidden by
 // an "org-link" text property, so [[https://gnu.org][GNU]] shows as GNU.
 
-import { type Marker, dropMarker, edDelete, edInsert, marker, markers, placeMarkers } from "org-macs";
+import { type Marker, allMatches, dropMarker, edDelete, edInsert, marker, markers, placeMarkers } from "org-macs";
 import { charCount } from "subr";
 
 // Variables
@@ -286,6 +286,8 @@ export function isDone(keyword: string | undefined): boolean {
 // Headings
 
 export interface Heading {
+  /** The index's epoch its positions are up to date with, for the index's own use. */
+  synced?: number;
   line: number;
   start: number;
   /** The end of the heading line, before its newline. */
@@ -386,17 +388,39 @@ let parsedFor = "";
 /**
  * A buffer's headings, the whole buffer's, kept up to date as it changes,
  * as Org's element cache follows changes: after an edit only the lines it
- * touched are looked at again and the headings after it move.
+ * touched are looked at again, and the headings after it move only when
+ * asked for, as Org's cache shifts its elements lazily
+ * (org-element--cache-shift-positions). Each change leaves a shift for
+ * the headings from an index on; a heading read through the index is moved
+ * by the shifts newer than it, in place, as a cached element is, and
+ * headings() moves them all.
  */
 interface HeadingIndex {
   /** The buffer's modified tick and size when the index was last up to date. */
   tick: number;
   size: number;
   keywords: string;
-  all: readonly Heading[];
+  all: Heading[];
+  /** The shifts not yet applied to every heading they cover, oldest first. */
+  pending: Shift[];
+  /** Counts the changes followed: a shift, and a heading made or moved, carries the epoch it is from. */
+  epoch: number;
+  /** Whether headings() has given out `all`, which is then copied before it changes. */
+  shared: boolean;
   /** The headings in the accessible portion, for a narrowing. */
   view?: { min: number; max: number; tick: number; headings: readonly Heading[] };
 }
+
+/** Moves the headings from index `from` on by `chars` characters and `lines` lines, those older than `epoch`. */
+interface Shift {
+  from: number;
+  chars: number;
+  lines: number;
+  epoch: number;
+}
+
+/** Past so many shifts, they are applied to every heading, as each read looks at them all. */
+const MAX_PENDING = 32;
 
 const headingIndexes = new Map<string, HeadingIndex>();
 
@@ -415,8 +439,8 @@ function headingsAfterChange(beg: number, end: number, oldLen: number): void {
   else headingChanges.set(name, [[beg, end, oldLen]]);
 }
 
-/** The heading lines from `start` up to `end`, parsed, in the whole buffer. */
-function scanHeadings(keywords: string[], sorted: string[], start?: number, end?: number): Heading[] {
+/** The heading lines from `start` up to `end`, parsed, in the whole buffer, up to date at `epoch`. */
+function scanHeadings(keywords: string[], sorted: string[], start?: number, end?: number, epoch = 0): Heading[] {
   const found: Heading[] = [];
   // The heading lines in one pass in the editor, rather than a call per
   // line or the whole text copied here: much the faster in a large buffer.
@@ -428,35 +452,95 @@ function scanHeadings(keywords: string[], sorted: string[], start?: number, end?
     let h = parsed.get(text);
     if (h === undefined) {
       h = parseHeadingText(text, keywords, sorted) ?? null;
-      parsed.set(text, h && Object.freeze(h));
+      parsed.set(text, h);
     }
-    if (h) found.push(Object.freeze(placeHeading(h, line, lineStart)));
+    if (h) {
+      const placed = placeHeading(h, line, lineStart);
+      placed.synced = epoch;
+      found.push(placed);
+    }
   }
   return found;
 }
 
-/** A heading moved by `chars` characters and `lines` lines. */
-function shiftHeading(h: Heading, chars: number, lines: number): Heading {
-  const moved: Heading = {
-    line: h.line + lines,
-    start: h.start + chars,
-    end: h.end + chars,
-    level: h.level,
-    titleAt: h.titleAt + chars,
-    title: h.title,
-    // Each placed heading has tags of its own, so the moved one can share them.
-    tags: h.tags,
-  };
-  if (h.todo !== undefined) {
-    moved.todo = h.todo;
-    moved.todoAt = h.todoAt! + chars;
+/** Moves a heading by `chars` characters and `lines` lines, in place. */
+function shiftHeading(h: Heading, chars: number, lines: number): void {
+  h.line += lines;
+  if (chars === 0) return;
+  h.start += chars;
+  h.end += chars;
+  h.titleAt += chars;
+  if (h.todoAt !== undefined) h.todoAt += chars;
+  if (h.priorityAt !== undefined) h.priorityAt += chars;
+  if (h.tagsAt !== undefined) h.tagsAt += chars;
+}
+
+/** How far the pending shifts move heading `k` of `index`: characters, then lines. */
+function pendingAt(index: HeadingIndex, k: number): [number, number] {
+  const synced = index.all[k].synced ?? 0;
+  let chars = 0;
+  let lines = 0;
+  for (const s of index.pending) {
+    if (s.from <= k && s.epoch > synced) {
+      chars += s.chars;
+      lines += s.lines;
+    }
   }
-  if (h.priority !== undefined) {
-    moved.priority = h.priority;
-    moved.priorityAt = h.priorityAt! + chars;
+  return [chars, lines];
+}
+
+/** Where heading `k` of `index` starts, its pending shifts counted. */
+function startAt(index: HeadingIndex, k: number): number {
+  return index.all[k].start + pendingAt(index, k)[0];
+}
+
+/** Heading `k` of `index`, moved by the shifts pending for it. */
+function syncHeading(index: HeadingIndex, k: number): Heading {
+  const h = index.all[k];
+  if (index.pending.length === 0 || (h.synced ?? 0) >= index.epoch) return h;
+  const [chars, lines] = pendingAt(index, k);
+  if (chars !== 0 || lines !== 0) shiftHeading(h, chars, lines);
+  h.synced = index.epoch;
+  return h;
+}
+
+/** Applies every pending shift, in one pass over the headings they cover. */
+function syncAll(index: HeadingIndex): void {
+  const pending = index.pending;
+  if (pending.length === 0) return;
+  const sorted = [...pending].sort((x, y) => x.from - y.from);
+  // A heading older than every shift is moved by all of those at or before
+  // it, summed as the pass goes; the few read since are counted alone.
+  const oldest = Math.min(...pending.map((s) => s.epoch));
+  const hs = index.all;
+  let chars = 0;
+  let lines = 0;
+  let s = 0;
+  for (let k = sorted[0].from; k < hs.length; k++) {
+    while (s < sorted.length && sorted[s].from <= k) {
+      chars += sorted[s].chars;
+      lines += sorted[s++].lines;
+    }
+    const h = hs[k];
+    if ((h.synced ?? 0) < oldest) {
+      if (chars !== 0 || lines !== 0) shiftHeading(h, chars, lines);
+    } else if ((h.synced ?? 0) < index.epoch) {
+      const [c, l] = pendingAt(index, k);
+      if (c !== 0 || l !== 0) shiftHeading(h, c, l);
+    }
   }
-  if (h.tagsAt !== undefined) moved.tagsAt = h.tagsAt + chars;
-  return Object.freeze(moved);
+  // Each shift to come is newer than every heading, so none needs its epoch set.
+  index.pending = [];
+}
+
+/**
+ * Removes headings `i` up to `j` from the index and puts `found` in their
+ * place, keeping each shift on the headings it covered.
+ */
+function replaceHeadings(index: HeadingIndex, i: number, j: number, found: Heading[]): void {
+  if (j === i && found.length === 0) return;
+  index.all.splice(i, j - i, ...found);
+  for (const s of index.pending) if (s.from >= i) s.from = Math.max(i, s.from - (j - i)) + found.length;
 }
 
 /**
@@ -464,36 +548,40 @@ function shiftHeading(h: Heading, chars: number, lines: number): Heading {
  * when they cannot be followed, as when an edit ran no change hooks.
  */
 function followChanges(index: HeadingIndex, changes: [number, number, number][], keywords: string[], sorted: string[]): boolean {
-  // Past so many, finding every heading again is the quicker, as each
-  // change passes over the headings after it.
+  // Past so many, finding every heading again is the quicker.
   if (changes.length > 16) return false;
   // Changes made without the hooks, which the sizes would not account for.
   const grown = changes.reduce((sum, [beg, end, oldLen]) => sum + (end - beg) - oldLen, 0);
   if (index.size + grown !== ember.bufferSize()) return false;
-  // Each heading, and how far the changes so far moved it, counted here
-  // and applied once, as a command's edits are many and headings many.
-  const hs: Heading[] = [...index.all];
-  const moved: number[] = new Array(hs.length).fill(0);
+  // A caller may still hold the array.
+  if (index.shared) {
+    index.all = index.all.slice();
+    index.shared = false;
+  }
+  const epoch = ++index.epoch;
+  const hs = index.all;
+  // The first heading whose line ends at or after `pos`, by halving, as the
+  // headings stay in order however far they moved.
+  const firstEndingFrom = (pos: number): number => {
+    let [lo, hi] = [0, hs.length];
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (hs[mid].end + pendingAt(index, mid)[0] < pos) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo;
+  };
   // Where each heading's line may have moved from, by the change it follows.
   const dirty: [number, number][] = [];
   for (const [beg, end, oldLen] of changes) {
     const oldEnd = beg + oldLen;
     const chars = end - beg - oldLen;
     // Headings whose line the change touched go, to be found again.
-    // The first whose line ends at or after the change, by halving, as
-    // the headings stay in order however far they moved.
-    let [lo, hi] = [0, hs.length];
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (hs[mid].end + moved[mid] < beg) lo = mid + 1;
-      else hi = mid;
-    }
-    const i = lo;
+    const i = firstEndingFrom(beg);
     let j = i;
-    while (j < hs.length && hs[j].start + moved[j] <= oldEnd) j++;
-    hs.splice(i, j - i);
-    moved.splice(i, j - i);
-    if (chars !== 0) for (let k = i; k < hs.length; k++) moved[k] += chars;
+    while (j < hs.length && startAt(index, j) <= oldEnd) j++;
+    replaceHeadings(index, i, j, []);
+    if (chars !== 0 && i < hs.length) index.pending.push({ from: i, chars, lines: 0, epoch });
     for (const r of dirty) {
       if (r[0] > oldEnd) {
         r[0] += chars;
@@ -506,33 +594,46 @@ function followChanges(index: HeadingIndex, changes: [number, number, number][],
   }
   // Line numbers, which the changes' positions do not give: the headings
   // between one change and the next moved by as many lines as the first of
-  // them did, so one lookup does for each such stretch.
-  const lineMoved: number[] = new Array(hs.length).fill(0);
+  // them did, so one lookup does for each such stretch, and a shift holds
+  // the difference from the stretch before.
   const bounds = dirty.map((r) => r[1]).sort((x, y) => x - y);
-  let k = 0;
+  const stretches: [number, number][] = [];
+  let k = firstEndingFrom(Math.min(...dirty.map((r) => r[0])));
   for (const bound of [...bounds, Infinity]) {
-    let to = k;
-    while (to < hs.length && hs[to].start + moved[to] <= bound) to++;
-    if (k < to) {
-      const lines = ember.lineOf(hs[k].start + moved[k]) - hs[k].line;
-      if (lines !== 0) for (let n = k; n < to; n++) lineMoved[n] = lines;
-    }
-    k = to;
     if (k >= hs.length) break;
+    if (startAt(index, k) > bound) continue;
+    const [chars, lines] = pendingAt(index, k);
+    stretches.push([k, ember.lineOf(hs[k].start + chars) - (hs[k].line + lines)]);
+    // The first heading past this bound starts the next stretch.
+    let [lo, hi] = [k, hs.length];
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (startAt(index, mid) <= bound) lo = mid + 1;
+      else hi = mid;
+    }
+    k = lo;
   }
-  const all: Heading[] = hs.map((h, n) => (moved[n] === 0 && lineMoved[n] === 0 ? h : shiftHeading(h, moved[n], lineMoved[n])));
+  let before = 0;
+  for (const [from, lines] of stretches) {
+    if (lines !== before) index.pending.push({ from, chars: 0, lines: lines - before, epoch });
+    before = lines;
+  }
   // The lines the changes touched, looked at again.
   for (const [from, to] of mergeRanges(dirty)) {
     const start = ember.lineStart(ember.lineOf(Math.min(from, ember.bufferSize())));
     const stop = ember.lineEnd(ember.lineOf(Math.min(to, ember.bufferSize())));
-    const found = scanHeadings(keywords, sorted, start, stop);
-    let i = 0;
-    while (i < all.length && all[i].start < start) i++;
-    let j = i;
-    while (j < all.length && all[j].start <= stop) j++;
-    all.splice(i, j - i, ...found);
+    const found = scanHeadings(keywords, sorted, start, stop, epoch);
+    let [lo, hi] = [0, hs.length];
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (startAt(index, mid) < start) lo = mid + 1;
+      else hi = mid;
+    }
+    let j = lo;
+    while (j < hs.length && startAt(index, j) <= stop) j++;
+    replaceHeadings(index, lo, j, found);
   }
-  index.all = Object.freeze(all);
+  if (index.pending.length > MAX_PENDING) syncAll(index);
   return true;
 }
 
@@ -553,24 +654,26 @@ function mergeRanges(ranges: [number, number][]): [number, number][] {
  * agrees with finding every heading again: nil if so, else where they
  * first differ, as Org's org-element--cache-self-verify checks its cache.
  */
-ember.defun("org--headings-verify", () => {
-  const kept = headings();
+ember.defun("org--headings-verify", (only?: number) => {
+  // With an index, only that heading, read as the element parser reads
+  // one, leaving the shifts pending for the rest.
+  const kept = typeof only === "number" ? headingsAsRead() : headings();
   const keywords = allKeywords();
   const fresh = scanHeadings(keywords, [...keywords].sort((a, b) => b.length - a.length)).filter((h) => h.start >= ember.pointMin() && h.start < ember.pointMax());
-  const show = (h?: Heading) => (h === undefined ? "none" : JSON.stringify(h));
+  const show = (h?: Heading) => (h === undefined ? "none" : JSON.stringify(h, (key, value) => (key === "synced" ? undefined : value)));
+  if (typeof only === "number") {
+    if (kept.length !== fresh.length) return `${kept.length} headings kept, ${fresh.length} found`;
+    const i = only % Math.max(1, fresh.length);
+    return show(kept[i]) === show(fresh[i]) ? null : `heading ${i}: kept ${show(kept[i])}, found ${show(fresh[i])}`;
+  }
   for (let i = 0; i < Math.max(kept.length, fresh.length); i++) {
     if (show(kept[i]) !== show(fresh[i])) return `heading ${i}: kept ${show(kept[i])}, found ${show(fresh[i])}`;
   }
   return null;
 });
 
-/**
- * The buffer's headings, top to bottom, in its accessible portion, as Org's
- * searches find them. Kept up to date as the buffer changes, since the
- * commands and the element parser ask for them many times per key; frozen,
- * as they are shared.
- */
-export function headings(): Heading[] {
+/** The current buffer's index, brought up to date with its changes, its shifts perhaps still pending. */
+function currentIndex(): HeadingIndex {
   const keywords = allKeywords();
   const keywordsKey = keywords.join(" ");
   if (keywordsKey !== parsedFor || parsed.size > 100_000) {
@@ -579,33 +682,74 @@ export function headings(): Heading[] {
   }
   const name = indexKey();
   const tick = ember.bufferModifiedTick();
-  const sorted = [...keywords].sort((a, b) => b.length - a.length);
   let index = headingIndexes.get(name);
   if (!index || index.keywords !== keywordsKey || index.tick !== tick) {
+    const sorted = [...keywords].sort((a, b) => b.length - a.length);
     const changes = headingChanges.get(name);
     headingChanges.delete(name);
     const followed = index !== undefined && index.keywords === keywordsKey && changes !== undefined && followChanges(index, changes, keywords, sorted);
     if (!followed) {
-      index = { tick, size: ember.bufferSize(), keywords: keywordsKey, all: Object.freeze(scanHeadings(keywords, sorted)) };
+      index = { tick, size: ember.bufferSize(), keywords: keywordsKey, all: scanHeadings(keywords, sorted), pending: [], epoch: 0, shared: false };
       headingIndexes.set(name, index);
     }
     index!.tick = tick;
     index!.size = ember.bufferSize();
     index!.view = undefined;
   }
+  return index!;
+}
+
+/**
+ * The buffer's headings, top to bottom, in its accessible portion, as Org's
+ * searches find them. Kept up to date as the buffer changes, since the
+ * commands and the element parser ask for them many times per key; shared,
+ * so not to be changed, and moved in place by later edits once asked for
+ * again, as Org's cached elements are.
+ */
+export function headings(): Heading[] {
+  const index = currentIndex();
+  syncAll(index);
+  index.shared = true;
   const [min, max] = [ember.pointMin(), ember.pointMax()];
-  if (min === 0 && max === ember.bufferSize()) return index!.all as Heading[];
-  if (index!.view?.min !== min || index!.view.max !== max) {
-    index!.view = { min, max, tick, headings: Object.freeze(index!.all.filter((h) => h.start >= min && h.start < max)) };
+  if (min === 0 && max === ember.bufferSize()) return index.all;
+  if (index.view?.min !== min || index.view.max !== max) {
+    index.view = { min, max, tick: index.tick, headings: index.all.filter((h) => h.start >= min && h.start < max) };
   }
-  return index!.view!.headings as Heading[];
+  return index.view.headings as Heading[];
+}
+
+/**
+ * The headings as headings() gives them, for a caller that reads only a
+ * few, as the element parser does: each is moved by the shifts pending for
+ * it as it is read, rather than all of them first. Narrowed, it is
+ * headings() itself.
+ */
+function headingsAsRead(): Heading[] {
+  const index = currentIndex();
+  if (ember.pointMin() !== 0 || ember.pointMax() !== ember.bufferSize()) return headings();
+  // Not marked shared: the parser reads it and lets it go before any edit.
+  if (index.pending.length === 0) return index.all;
+  return new Proxy(index.all, {
+    get(target, key, receiver) {
+      if (typeof key === "string") {
+        const k = Number(key);
+        if (Number.isInteger(k) && k >= 0 && k < target.length) return syncHeading(index, k);
+      }
+      return Reflect.get(target, key, receiver);
+    },
+  });
 }
 
 /** The heading whose entry a line is in: the nearest heading at or above it. */
 function headingIndex(all: Heading[], line: number): number | undefined {
-  let found: number | undefined;
-  for (let i = 0; i < all.length && all[i].line <= line; i++) found = i;
-  return found;
+  // By halving, as the headings are in order.
+  let [lo, hi] = [0, all.length];
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (all[mid].line <= line) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo > 0 ? lo - 1 : undefined;
 }
 
 /**
@@ -645,8 +789,33 @@ function headingHere(): [Heading[], number] | undefined {
 }
 
 /** The next heading after `i` at its level or higher, if any. */
+/** The index of the first heading starting at or after `pos`, by halving. */
+function firstHeadingFrom(all: Heading[], pos: number): number {
+  let [lo, hi] = [0, all.length];
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (all[mid].start < pos) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+/** The index of the heading starting at `pos`, or -1, by halving. */
+function headingStartingAt(all: Heading[], pos: number): number {
+  const i = firstHeadingFrom(all, pos);
+  return all[i]?.start === pos ? i : -1;
+}
+
+/** The first heading from index `from` on that `test` accepts, without copying those after it. */
+function findFrom(all: Heading[], from: number, test: (h: Heading) => boolean): Heading | undefined {
+  for (let k = from; k < all.length; k++) if (test(all[k])) return all[k];
+  return undefined;
+}
+
 function nextSameOrHigher(all: Heading[], i: number): Heading | undefined {
-  return all.slice(i + 1).find((h) => h.level <= all[i].level);
+  const level = all[i].level;
+  for (let j = i + 1; j < all.length; j++) if (all[j].level <= level) return all[j];
+  return undefined;
 }
 
 /**
@@ -735,7 +904,8 @@ function showChildren(all: Heading[], i: number): boolean {
   let min = Infinity;
   let max = Infinity;
   let any = false;
-  for (const h of all.slice(i + 1)) {
+  for (let k = i + 1; k < all.length; k++) {
+    const h = all[k];
     if (h.start >= end) break;
     if (h.level > max) continue;
     if (h.level < min) {
@@ -752,7 +922,8 @@ function showChildren(all: Heading[], i: number): boolean {
 function ancestors(all: Heading[], i: number): number[] {
   const found: number[] = [];
   let level = all[i].level;
-  for (let j = i - 1; j >= 0; j--) {
+  // No heading is above a top-level one.
+  for (let j = i - 1; j >= 0 && level > 1; j--) {
     if (all[j].level < level) {
       found.push(j);
       level = all[j].level;
@@ -843,9 +1014,9 @@ function showEmptyLines(state: string, narrowed?: [number, number]): void {
   }
   // Never hide empty lines at the end of the file.
   const size = narrowed ? narrowed[1] : ember.bufferSize();
-  const last = headings()
-    .filter((h) => h.start < size && h.start >= (narrowed?.[0] ?? 0))
-    .at(-1);
+  const all = headings();
+  const lastAt = firstHeadingFrom(all, size) - 1;
+  const last = lastAt >= 0 && all[lastAt].start >= (narrowed?.[0] ?? 0) ? all[lastAt] : undefined;
   const eoh = last ? last.end : ember.lineEnd(lineAt(narrowed?.[0] ?? 0));
   if (eoh < size && /^[ \t\n]+$/.test(ember.bufferText(eoh, size))) flag(eoh, size, false);
 }
@@ -878,7 +1049,7 @@ function cycleHeading(all: Heading[], i: number, at = i): void {
   let skipped = false;
   /** Shows the heading after the subtree if it is hidden. */
   const showFollowing = (): void => {
-    const next = all.slice(i + 1).find((x) => x.start > eos);
+    const next = findFrom(all, i + 1, (x) => x.start > eos);
     if (next && ember.invisibleAt(next.start)) showHeadingLine(next);
   };
   if (eos === eoh) {
@@ -898,7 +1069,7 @@ function cycleHeading(all: Heading[], i: number, at = i): void {
       showChildren(all, a);
     }
     ember.message("CHILDREN");
-    const next = all.slice(i + 1).find((x) => x.start > eos);
+    const next = findFrom(all, i + 1, (x) => x.start > eos);
     if (next && next.start < ember.bufferSize() && ember.invisibleAt(next.start)) showHeadingLine(next);
     ember.setVariable("org-cycle-subtree-status", "children");
     showEmptyLines("children");
@@ -3043,7 +3214,7 @@ function updateCheckboxCount(): void {
     };
     for (let l = lineAt(start); l < ember.lineCount() && ember.lineStart(l) < end; l++) {
       const text = ember.lineText(l);
-      for (const m of text.matchAll(COOKIE)) {
+      for (const m of allMatches(COOKIE, text)) {
         const cs = ember.lineStart(l) + charCount(text.slice(0, m.index ?? 0));
         if (cs < start || cs >= end) continue;
         const container = inItem(l);
@@ -3081,10 +3252,10 @@ function writeCookies(line: number, done: number, total: number): void {
   // the new text inserted before it and the old deleted after, so point
   // inside it ends up after the new one.
   const pt = marker(ember.point());
-  const count = [...ember.lineText(line).matchAll(COOKIE)].length;
+  const count = allMatches(COOKIE, ember.lineText(line)).length;
   for (let k = 0; k < count; k++) {
     const text = ember.lineText(line);
-    const m = [...text.matchAll(COOKIE)][k];
+    const m = allMatches(COOKIE, text)[k];
     if (!m) break;
     const percent = m[1].endsWith("%");
     const value = percent ? `[${total === 0 ? 0 : Math.floor((100 * done) / total)}%]` : `[${done}/${total}]`;
@@ -3121,11 +3292,12 @@ function updateHeadingCookies(all: Heading[], i: number): void {
   const next = all[i + 1];
   if (next && next.level > h.level) {
     const sub = subtreeRegion(all, i)[1];
-    const states = all.slice(i + 1).filter((x) => x.start < sub && x.level === next.level && x.todo !== undefined);
+    const states: Heading[] = [];
+    for (let k = i + 1; k < all.length && all[k].start < sub; k++) if (all[k].level === next.level && all[k].todo !== undefined) states.push(all[k]);
     writeCookies(h.line, states.filter((x) => isDone(x.todo)).length, states.length);
   } else {
     const text = ember.lineText(h.line);
-    for (const m of [...text.matchAll(COOKIE)].reverse()) {
+    for (const m of allMatches(COOKIE, text).reverse()) {
       const start = at(h.line, text, m.index ?? 0);
       replaceText(start, start + charCount(m[0]), m[1].endsWith("%") ? "[100%]" : "[0/0]");
     }
@@ -3226,7 +3398,7 @@ function fontifyObjects(line: number, text: string, from: number, to = text.leng
   const pos = (i: number) => at(line, text, i + from);
   const taken: [number, number][] = [];
   const overlaps = (a: number, b: number) => taken.some(([s, e]) => a < e && b > s);
-  for (const m of part.matchAll(LINK)) {
+  for (const m of allMatches(LINK, part)) {
     const i = m.index ?? 0;
     const end = i + m[0].length;
     taken.push([i, end]);
@@ -3243,7 +3415,7 @@ function fontifyObjects(line: number, text: string, from: number, to = text.leng
     }
   }
   for (const re of [ANGLE_LINK, PLAIN_LINK]) {
-    for (const m of part.matchAll(re)) {
+    for (const m of allMatches(re, part)) {
       const i = m.index ?? 0;
       const end = i + m[0].length;
       if (overlaps(i, end)) continue;
@@ -3251,24 +3423,24 @@ function fontifyObjects(line: number, text: string, from: number, to = text.leng
       face(pos(i), pos(end), "org-link");
     }
   }
-  for (const m of part.matchAll(TIMESTAMP)) {
+  for (const m of allMatches(TIMESTAMP, part)) {
     const i = m.index ?? 0;
     if (!overlaps(i, i + m[0].length)) face(pos(i), pos(i + m[0].length), "org-date");
   }
-  for (const m of part.matchAll(COOKIE)) {
+  for (const m of allMatches(COOKIE, part)) {
     const i = m.index ?? 0;
     const [a, b] = m[1].endsWith("%") ? [m[1] === "100%" ? 1 : 0, 1] : m[1].split("/").map(Number);
     face(pos(i), pos(i + m[0].length), b > 0 && a === b ? "org-checkbox-statistics-done" : "org-checkbox-statistics-todo");
   }
-  for (const m of part.matchAll(/\[fn:[^\]\s]*\]/g)) {
+  for (const m of allMatches(/\[fn:[^\]\s]*\]/g, part)) {
     const i = m.index ?? 0;
     face(pos(i), pos(i + m[0].length), "org-footnote");
   }
-  for (const m of part.matchAll(/<<[^<>\n]+>>/g)) {
+  for (const m of allMatches(/<<[^<>\n]+>>/g, part)) {
     const i = m.index ?? 0;
     if (!overlaps(i, i + m[0].length)) face(pos(i), pos(i + m[0].length), "org-target");
   }
-  for (const m of part.matchAll(EMPHASIS)) {
+  for (const m of allMatches(EMPHASIS, part)) {
     const i = (m.index ?? 0) + m[1].length;
     const end = i + m[2].length;
     if (overlaps(i, end)) continue;
@@ -3373,7 +3545,7 @@ function fontify(start: number, end: number): void {
       face(keyEnd, le, "org-property-value");
       continue;
     }
-    for (const m of text.matchAll(/(?:^|[ \t])((?:SCHEDULED|DEADLINE|CLOSED):)/g)) {
+    for (const m of allMatches(/(?:^|[ \t])((?:SCHEDULED|DEADLINE|CLOSED):)/g, text)) {
       const i = (m.index ?? 0) + m[0].length - m[1].length;
       face(at(line, text, i), at(line, text, i + m[1].length), "org-special-keyword");
     }
@@ -3407,7 +3579,7 @@ function fontifyLinksAcrossLines(start: number, end: number): void {
   const text = ember.bufferText(from, to);
   if (!text.includes("\n")) return;
   const linkRe = /\[\[((?:[^\][\\]|\\.)+)\](?:\[([^]+?)\])?\]/g;
-  for (const m of text.matchAll(linkRe)) {
+  for (const m of allMatches(linkRe, text)) {
     if (!m[0].includes("\n")) continue;
     const linkStart = from + charCount(text.slice(0, m.index ?? 0));
     if (linkStart >= end || linkStart + charCount(m[0]) <= start) continue;
@@ -4116,8 +4288,9 @@ function forwardHeadingSameLevel(arg: number): void {
   const { level } = all[current];
   let result = backward ? all[current].start : all[current].end;
   let count = Math.abs(arg);
-  const order = backward ? all.slice(0, current).reverse() : all.slice(current + 1);
-  for (const h of order) {
+  const step = backward ? -1 : 1;
+  for (let k = current + step; k >= 0 && k < all.length; k += step) {
+    const h = all[k];
     if (count === 0) break;
     if (h.level < level) break;
     if (h.level === level && visible(h)) {
@@ -4571,7 +4744,7 @@ function moveText(start: number, end: number, to: number, refold?: (start: numbe
 
 /** The next heading at the level of the one at pos, if no higher one comes first, as org-get-next-sibling finds it. */
 function nextSiblingStart(all: Heading[], pos: number): number | undefined {
-  const i = all.findIndex((h) => h.start === pos);
+  const i = headingStartingAt(all, pos);
   const level = all[i].level;
   let k = i + 1;
   while (k < all.length && all[k].level > level) k++;
@@ -4584,7 +4757,7 @@ function nextSiblingStart(all: Heading[], pos: number): number | undefined {
  * counts.
  */
 function previousSiblingStart(all: Heading[], pos: number): number | undefined {
-  const i = all.findIndex((h) => h.start === pos);
+  const i = headingStartingAt(all, pos);
   const level = all[i].level;
   let k = i - 1;
   if (k < 0) return undefined;
@@ -4619,7 +4792,7 @@ function moveSubtree(arg: number): void {
   }
   let ins = at;
   if (arg > 0) {
-    ins = subtreeRegion(all, all.findIndex((h) => h.start === at))[1];
+    ins = subtreeRegion(all, firstHeadingFrom(all, at))[1];
     // Over any empty lines back to the end of the text, which gets a newline if it has none.
     let q = ins;
     while (q > 0 && /[ \t\n\r]/.test(ember.bufferText(q - 1, q))) q--;
@@ -4664,18 +4837,24 @@ function moveSubtree(arg: number): void {
 function cleanVisibilityAfterMove(all: Heading[], k: number): void {
   // As org-get-previous-sibling and org-get-next-sibling do, a search that
   // fails still leaves point where it stopped.
-  const levelAt = (pos: number): number => all.find((h) => h.start === pos)?.level ?? 0;
+  // Each by halving, as the headings are in order.
+  const levelAt = (pos: number): number => {
+    const h = all[firstHeadingFrom(all, pos)];
+    return h?.start === pos ? h.level : 0;
+  };
+  const before = (pos: number): number => all[firstHeadingFrom(all, pos) - 1]?.start ?? 0;
+  const after = (pos: number): number => all[firstHeadingFrom(all, pos + 1)]?.start ?? ember.bufferSize();
   const previous = (pos: number): [number, boolean] => {
     const level = levelAt(pos);
-    let p = all.filter((h) => h.start < pos).at(-1)?.start ?? 0;
+    let p = before(pos);
     if (p === pos || levelAt(p) === 0) return [p, false];
-    while (levelAt(p) > level && p !== 0) p = all.filter((h) => h.start < p).at(-1)?.start ?? 0;
+    while (levelAt(p) > level && p !== 0) p = before(p);
     return [p, levelAt(p) >= level];
   };
   const next = (pos: number): [number, boolean] => {
     const level = levelAt(pos);
-    let p = all.find((h) => h.start > pos)?.start ?? ember.bufferSize();
-    while (p !== ember.bufferSize() && levelAt(p) > level) p = all.find((h) => h.start > p)?.start ?? ember.bufferSize();
+    let p = after(pos);
+    while (p !== ember.bufferSize() && levelAt(p) > level) p = after(p);
     return [p, p !== ember.bufferSize() && levelAt(p) >= level];
   };
   let [from, ok] = previous(all[k].start);
@@ -4913,7 +5092,7 @@ let parseCache: { key: string; root: Elem } | undefined;
  * TODO keywords or that heading change.
  */
 function parseFor(pos: number): Elem {
-  const all = headings();
+  const all = headingsAsRead();
   const branch = headingIndex(all, lineAt(pos));
   const key = `${ember.bufferName()}\n${ember.bufferModifiedTick()}\n${allKeywords().join(" ")}\n${branch ?? -1}\n${ember.pointMin()}-${ember.pointMax()}`;
   if (parseCache?.key !== key) parseCache = { key, root: parseBranch(all, branch) };
@@ -4953,7 +5132,7 @@ function parseBranch(all: Heading[], branch: number | undefined): Elem {
  */
 function checkPlanningTimestamps(line: number): void {
   const text = ember.lineText(line);
-  for (const m of text.matchAll(/(?:SCHEDULED|DEADLINE|CLOSED):[ \t]*/g)) {
+  for (const m of allMatches(/(?:SCHEDULED|DEADLINE|CLOSED):[ \t]*/g, text)) {
     const rest = text.slice((m.index ?? 0) + m[0].length);
     if (/^[<[]\d{4}-\d{2}-\d{2}(?: .*?)?[\]>]/.test(rest)) continue;
     if (!/^<[0-9]+-[0-9]+-[0-9]+[^>\n]+?\+[0-9]+[dwmy]>/.test(rest)) continue;
@@ -5244,7 +5423,7 @@ function killIsSubtree(text: string): boolean {
   const first = /^(?:[ \t\n\r]*?\n)?(\*+) /.exec(text);
   if (!first) return false;
   const level = first[1].length;
-  return [...text.matchAll(/^(\*+) /gm)].every((m) => m[1].length >= level);
+  return allMatches(/^(\*+) /gm, text).every((m) => m[1].length >= level);
 }
 
 /** The level of the heading on point's line, or 0 if it is not one. */
@@ -5559,7 +5738,7 @@ function todo(direction: number, state?: string): void {
  */
 function autoRepeat(line: number, last: string | undefined, done: string): [string, string] | undefined {
   const h = parseHeading(line) as Heading;
-  const all = headings();
+  const all = headingsAsRead();
   const end = entryEnd(all, headingIndex(all, line) as number);
   const repeating = /<[0-9]{4}-[0-9][0-9]-[0-9][0-9] [^>\n]*?([.+]?\+([0-9]+)[hdwmy](?:\/[0-9]+[hdwmy])?)/;
   let found = false;
@@ -5594,7 +5773,7 @@ function autoRepeat(line: number, last: string | undefined, done: string): [stri
  * children at the heading's level with a state, and those done.
  */
 function updateParentTodoStatistics(line: number): void {
-  const all = headings();
+  const all = headingsAsRead();
   const i = headingIndex(all, line);
   if (i === undefined) return;
   const parent = ancestors(all, i)[0];
@@ -5602,7 +5781,8 @@ function updateParentTodoStatistics(line: number): void {
   if (mapRegionStart && all[parent].start < mapRegionStart.pos) return;
   const level = all[i].level;
   const end = subtreeRegion(all, parent)[1];
-  const children = all.filter((h, k) => k > parent && h.start < end && h.level === level);
+  const children: Heading[] = [];
+  for (let k = parent + 1; k < all.length && all[k].start < end; k++) if (all[k].level === level) children.push(all[k]);
   const p = marker(ember.point());
   withoutFoldChecks(() => {
     writeCookies(all[parent].line, children.filter((h) => isDone(h.todo)).length, children.filter((h) => h.todo !== undefined).length);
@@ -5895,7 +6075,7 @@ const TS = /([<[])(\d{4})-(\d{2})-(\d{2})((?: +[^\]+0-9>\r\n -]+)?)((?: +(\d{1,2
 function timestampsOn(line: number): Timestamp[] {
   const text = ember.lineText(line);
   const found: Timestamp[] = [];
-  for (const m of text.matchAll(TS)) {
+  for (const m of allMatches(TS, text)) {
     const i = m.index ?? 0;
     const date: DateTime = { year: Number(m[2]), month: Number(m[3]), day: Number(m[4]) };
     const ts: Timestamp = {
@@ -5951,7 +6131,7 @@ function tsMatches(line: number): TsMatch[] {
   const re =
     /[[<](\d{4})-(\d{2})-(\d{2})(?:( *)([^\]+0-9>\r\n -]+))?(?:( )(\d{1,2}):(\d{2}))?[^\]>\n]{0,16}[\]>]/g;
   const out: TsMatch[] = [];
-  for (const m of text.matchAll(re)) {
+  for (const m of allMatches(re, text)) {
     const i = m.index ?? 0;
     const pos = (k: number): number => at(line, text, k);
     const ts: TsMatch = {
@@ -6329,13 +6509,13 @@ function linkHere(): Link | undefined {
   const line = lineAt();
   const text = ember.lineText(line);
   const p = ember.point();
-  for (const m of text.matchAll(LINK)) {
+  for (const m of allMatches(LINK, text)) {
     const start = at(line, text, m.index ?? 0);
     const end = at(line, text, (m.index ?? 0) + m[0].length);
     if (start <= p && p < end) return { start, end, path: m[1].replace(/\\([[\]\\])/g, "$1"), description: m[2] };
   }
   for (const re of [ANGLE_LINK, PLAIN_LINK]) {
-    for (const m of text.matchAll(re)) {
+    for (const m of allMatches(re, text)) {
       const start = at(line, text, m.index ?? 0);
       const end = at(line, text, (m.index ?? 0) + m[0].length);
       if (start <= p && p < end) return { start, end, path: m[0].replace(/^<|>$/g, "") };
@@ -6518,7 +6698,7 @@ function linksIn(from: number, to: number): { links: string[]; last: number } {
   for (let l = lineAt(from); l < ember.lineCount() && ember.lineStart(l) < to; l++) {
     const text = ember.lineText(l);
     const found = [LINK, ANGLE_LINK, PLAIN_LINK]
-      .flatMap((re) => [...text.matchAll(re)].map((m) => ({ index: m.index ?? 0, text: m[0] })))
+      .flatMap((re) => allMatches(re, text).map((m) => ({ index: m.index ?? 0, text: m[0] })))
       .sort((a, b) => a.index - b.index);
     let after = 0;
     for (const m of found) {
@@ -6983,7 +7163,7 @@ function cookieHere(): boolean {
   const line = lineAt();
   const text = ember.lineText(line);
   const p = ember.point();
-  return [...text.matchAll(COOKIE)].some((m) => {
+  return allMatches(COOKIE, text).some((m) => {
     const start = at(line, text, m.index ?? 0);
     return start <= p && p <= start + charCount(m[0]);
   });

@@ -48,3 +48,20 @@ export function edDelete(from: number, to: number): string {
   if (to <= from) return "";
   return ember.deleteRegion(from, to);
 }
+
+/**
+ * The matches of a global regexp in a string, as `text.matchAll(re)` gives
+ * them, without the copy of the regexp that matchAll makes on each call,
+ * which QuickJS builds by compiling it again.
+ */
+export function allMatches(re: RegExp, text: string): RegExpExecArray[] {
+  const found: RegExpExecArray[] = [];
+  const from = re.lastIndex;
+  re.lastIndex = 0;
+  for (let m = re.exec(text); m !== null; m = re.exec(text)) {
+    found.push(m);
+    if (m[0] === "") re.lastIndex += re.unicode && (text.codePointAt(re.lastIndex) ?? 0) > 0xffff ? 2 : 1;
+  }
+  re.lastIndex = from;
+  return found;
+}
