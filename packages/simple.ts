@@ -1644,3 +1644,27 @@ for (const [name, doc, region, word] of [
     },
   });
 }
+
+// Asking before killing a buffer, after simple.el: kill-buffer runs
+// kill-buffer-query-functions, with the buffer current, and keeps it if any
+// says no, as process-kill-buffer-query-function does for a buffer whose
+// process still runs.
+
+ember.defineHook(
+  "kill-buffer-query-functions",
+  "Functions kill-buffer calls, with the buffer to kill current, before killing it; if any returns nil, the buffer is kept.",
+);
+
+/** Asks before killing a buffer whose process still runs, as simple.el's process-kill-buffer-query-function. */
+function processKillBufferQueryFunction(): boolean {
+  const process = ember.getBufferProcess(ember.bufferName());
+  return (
+    process === undefined ||
+    !["run", "stop", "open", "listen"].includes(ember.processStatus(process) ?? "") ||
+    !ember.processQueryOnExitFlag(process) ||
+    ember.yesOrNoP(`Buffer ${JSON.stringify(ember.bufferName())} has a running process; kill it? `)
+  );
+}
+
+ember.defun("process-kill-buffer-query-function", processKillBufferQueryFunction);
+ember.addHook("kill-buffer-query-functions", processKillBufferQueryFunction);
