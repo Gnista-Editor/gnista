@@ -607,6 +607,35 @@ natives! {
         Ok(list.unwrap_or(EditorValue::Bool(true)))
     }
 
+    /// The current buffer's undo steps, oldest first, as a tree of states:
+    /// for an undo, the step it took back, after which the buffer is as it
+    /// was before that step; and where the buffer was unmodified before a
+    /// step, which save that was, counting up. Emacs's vundo reads these
+    /// from buffer-undo-list and undo-equiv-table.
+    #[ts = "(): { undid?: number; undo: boolean; saved?: number }[]"]
+    pub fn undoHistory(ed) -> Vec<Record> {
+        let current = ed.buffer_with_id(ed.buffer().id()).expect("current");
+        ed.claim_undo(current);
+        Ok(ed.buffer_mut().undo_history().into_iter().map(|s| {
+            Record::new().with("undid", s.undid).with("undo", s.undo).with("saved", s.saved.map(|n| n as f64))
+        }).collect())
+    }
+
+    /// Undoes the step of undoHistory at INDEX, as vundo has primitive-undo
+    /// take back one modification: the undo is a step of its own.
+    pub fn undoStep(ed, index: usize) {
+        ed.undo_step(index)
+    }
+
+    /// Forgets the undo steps after the first KEEP, as vundo sets
+    /// buffer-undo-list to a tail of itself.
+    pub fn truncateUndo(ed, keep: usize) {
+        let current = ed.buffer_with_id(ed.buffer().id()).expect("current");
+        ed.claim_undo(current);
+        ed.buffer_mut().truncate_undo(keep);
+        Ok(())
+    }
+
     /// The binding stack, as Emacs's specpdl: letBind, withCurrentBuffer,
     /// saveExcursion and saveRestriction push entries and unbind them.
     fn specbind(ed, name: String, value: EditorValue) -> f64 {

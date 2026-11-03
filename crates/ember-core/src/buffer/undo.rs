@@ -33,6 +33,52 @@ impl Buffer {
         self.pending_undo = None;
     }
 
+    /// The undo steps, oldest first, as vundo reads them from
+    /// `buffer-undo-list` and `undo-equiv-table`. Closes the step being
+    /// made, as a boundary would.
+    pub fn undo_history(&mut self) -> Vec<UndoStep> {
+        self.undo_boundary();
+        self.undo_groups
+            .iter()
+            .map(|g| UndoStep {
+                undid: match g.kind {
+                    GroupKind::Undo { undid } => Some(undid),
+                    _ => None,
+                },
+                undo: g.kind != GroupKind::Change,
+                saved: g.unmodified_at,
+            })
+            .collect()
+    }
+
+    /// Undoes the step at `index`, as vundo has primitive-undo take back
+    /// one modification: the undo is a step of its own, recording which
+    /// step it undid.
+    pub fn undo_step(&mut self, index: usize) -> Result<()> {
+        self.undo_boundary();
+        if index >= self.undo_groups.len() {
+            return Err(Error::new("No such undo step"));
+        }
+        self.check_writable()?;
+        self.revert(index)?;
+        self.close_group(GroupKind::Undo { undid: index });
+        self.pending_undo = None;
+        Ok(())
+    }
+
+    /// Where the changes of the step at `index` start, for the hooks run before it is undone.
+    pub(crate) fn undo_step_start(&self, index: usize) -> Option<usize> {
+        self.undo_groups.get(index)?.edits.iter().map(|e| e.pos).min()
+    }
+
+    /// Forgets the undo steps after the first `keep`, as vundo sets
+    /// `buffer-undo-list` back to a tail of itself once they lead nowhere new.
+    pub fn truncate_undo(&mut self, keep: usize) {
+        self.undo_boundary();
+        self.undo_groups.truncate(keep);
+        self.pending_undo = self.pending_undo.filter(|&i| i < keep);
+    }
+
     /// Forgets the buffer's undo history, as visiting a file starts it afresh.
     pub(crate) fn clear_undo(&mut self) {
         self.undo_groups.clear();
@@ -404,7 +450,11 @@ impl Buffer {
         let from_top = index + 1 == self.undo_groups.len();
         if std::mem::take(&mut self.undo_no_redo)
             && from_top
-            && let GroupKind::Undo { undid } = self.undo_groups[index].kind
+            && let Some(undid) = match self.undo_groups[index].kind {
+                GroupKind::Undo { undid } => Some(undid),
+                GroupKind::RegionUndo => Some(0),
+                GroupKind::Change => None,
+            }
         {
             match undid.checked_sub(1) {
                 Some(before) => index = before,
@@ -643,7 +693,7 @@ impl Buffer {
             }
         }
         // Undoing these changes is a redo, which has no history of its own to continue.
-        self.close_group(GroupKind::Undo { undid: 0 });
+        self.close_group(GroupKind::RegionUndo);
         self.pending_undo = None;
         result
     }
@@ -653,7 +703,7 @@ impl Buffer {
     pub fn undo_redo(&mut self) -> Result<()> {
         self.undo_boundary();
         let index = match self.undo_groups.last() {
-            Some(Group { kind: GroupKind::Undo { .. }, .. }) => self.undo_groups.len() - 1,
+            Some(Group { kind: GroupKind::Undo { .. } | GroupKind::RegionUndo, .. }) => self.undo_groups.len() - 1,
             _ => return Err(Error::new("No undone changes to redo")),
         };
         self.check_writable()?;
@@ -674,7 +724,8 @@ impl Buffer {
     pub(crate) fn next_undo_start(&mut self, continuing: bool, redo: bool) -> Option<usize> {
         self.undo_boundary();
         let index = if redo {
-            matches!(self.undo_groups.last(), Some(Group { kind: GroupKind::Undo { .. }, .. })).then(|| self.undo_groups.len() - 1)?
+            matches!(self.undo_groups.last(), Some(Group { kind: GroupKind::Undo { .. } | GroupKind::RegionUndo, .. }))
+                .then(|| self.undo_groups.len() - 1)?
         } else {
             let top_is_undo = matches!(self.undo_groups.last(), Some(g) if g.kind != GroupKind::Change);
             if continuing && top_is_undo { self.pending_undo? } else { self.undo_groups.len().checked_sub(1)? }

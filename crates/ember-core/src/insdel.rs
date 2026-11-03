@@ -414,6 +414,20 @@ impl Editor {
         }
     }
 
+    /// Undoes the step of the current buffer's history at `index`, as vundo
+    /// has primitive-undo take back one modification, running the change
+    /// hooks as undo does.
+    pub fn undo_step(&mut self, index: usize) -> Result<()> {
+        self.claim_undo(self.current);
+        self.buffer_mut().undo_boundary();
+        if let Some(start) = self.buffer().undo_step_start(index) {
+            let end = self.buffer().len();
+            self.run_before_change_functions(start.min(end), end)?;
+        }
+        self.buffer_mut().undo_step(index)?;
+        self.run_undo_applies()
+    }
+
     /// Whether `inhibit-modification-hooks` is set, so no change hooks run.
     pub(crate) fn modification_hooks_inhibited(&self) -> bool {
         self.variable("inhibit-modification-hooks").is_some_and(|v| v.is_true())

@@ -99,6 +99,24 @@ enum GroupKind {
     Change,
     /// The changes an undo made, reverting the group at index `undid`.
     Undo { undid: usize },
+    /// The changes an undo in the region made: an undo, but to a state of
+    /// the buffer that may not have been before, as Emacs's undo-equiv-table
+    /// marks it `undo-in-region`.
+    RegionUndo,
+}
+
+/// One undo step as [`Buffer::undo_history`] tells it, for code that
+/// follows the history as a tree, as vundo does.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct UndoStep {
+    /// For an undo, the step it took back: the buffer is then as it was
+    /// before that step.
+    pub undid: Option<usize>,
+    /// Whether the step was an undo, in the region too.
+    pub undo: bool,
+    /// If the buffer was unmodified when the step began, which save that
+    /// was, counting up: the state before the step was saved.
+    pub saved: Option<u64>,
 }
 
 /// One undo step: the edits of one command.

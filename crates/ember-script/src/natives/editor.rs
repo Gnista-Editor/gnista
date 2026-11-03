@@ -236,7 +236,7 @@ natives! {
     }
 
     /// Run a command with its arguments. Throws if the command fails.
-    #[ts = "<N extends CommandName | DefinedCommand>(name: N, ...args: N extends CommandName ? Commands[N] : string[]): void"]
+    #[ts = "<N extends CommandName | DefinedCommand>(name: N, ...args: N extends CommandName ? Commands[N] : Value[]): void"]
     pub fn call(ed, name: String, args: Rest<ArgText>) {
         let args = command_args(ed, &name, args.0)?;
         ed.call(&name, args)
@@ -244,7 +244,7 @@ natives! {
 
     /// Run a command with a prefix argument and its arguments, as if typed
     /// after C-u or M-5. Pass prefixArg() to hand on the running command's.
-    #[ts = "<N extends CommandName | DefinedCommand>(prefix: PrefixArg, name: N, ...args: N extends CommandName ? Commands[N] : string[]): void"]
+    #[ts = "<N extends CommandName | DefinedCommand>(prefix: PrefixArg, name: N, ...args: N extends CommandName ? Commands[N] : Value[]): void"]
     pub fn callWithPrefix(ed, prefix: Prefix, name: String, args: Rest<ArgText>) {
         let args = command_args(ed, &name, args.0)?;
         ed.call_with_prefix(&name, args, prefix.0)

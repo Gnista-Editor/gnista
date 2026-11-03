@@ -42,7 +42,7 @@ const shellQuote = (s: string): string => (/^[\w@%+=:,./-]+$/.test(s) ? s : `'${
  * the first line, then diff's output, then whether they differed. `labels`
  * names files that stand for something else, as --label does.
  */
-function diffNoSelect(oldFile: string, newFile: string, labels?: [string, string], buffer = "*Diff*"): string {
+export function diffNoSelect(oldFile: string, newFile: string, labels?: [string, string], buffer = "*Diff*"): string {
   const switchesValue = ember.variable("diff-switches");
   const switches = Array.isArray(switchesValue) ? switchesValue.map(String) : typeof switchesValue === "string" ? switchesValue.split(/\s+/).filter(Boolean) : [];
   const args = [...switches, ...(labels ? ["--label", labels[0], "--label", labels[1]] : []), oldFile, newFile];

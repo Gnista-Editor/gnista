@@ -84,3 +84,11 @@ What works today, in a terminal (`ember`) or a window (`ember-gui`). Where it di
 - The minibuffer (a buffer with its prompt as read-only text, `C-x o` out of it and back, and recursive minibuffers with `enable-recursive-minibuffers`).
 - `C-h f`, `C-h k` and `C-h b`.
 - TypeScript extensions: `init.ts` defines commands and key bindings, `M-x load-file` reloads it, and `M-:` evaluates an expression.
+
+## Packages that do not ship
+
+Ports of packages from outside Emacs, in `examples/packages/`, for a config to copy into `~/.config/ember/packages` and load with `ember.require`, as a config loads them from ELPA or MELPA in Emacs:
+
+- `nord-theme`: the Nord theme (`ember.call("load-theme", "nord", true)`).
+- `vundo`: the undo history as a tree (`M-x vundo`: `f`, `b`, `n`, `p`, `a`, `w`, `e`, `l`, `r`, `m`, `u`, `d` for a diff, `RET`, `q`), after vundo 2.4.
+- `persistent-scratch`: the scratch buffers kept across sessions (`persistent-scratch-save`, `persistent-scratch-restore`, `persistent-scratch-autosave-mode`, `persistent-scratch-setup-default`, backups), in the file format persistent-scratch.el writes.

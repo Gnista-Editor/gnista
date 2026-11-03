@@ -11493,12 +11493,12 @@ declare global {
      */
     function repeatLastCommand(arg?: PrefixArg): void;
     /** Run a command with its arguments. Throws if the command fails. */
-    function call<N extends CommandName | DefinedCommand>(name: N, ...args: N extends CommandName ? Commands[N] : string[]): void;
+    function call<N extends CommandName | DefinedCommand>(name: N, ...args: N extends CommandName ? Commands[N] : Value[]): void;
     /**
      * Run a command with a prefix argument and its arguments, as if typed
      * after C-u or M-5. Pass prefixArg() to hand on the running command's.
      */
-    function callWithPrefix<N extends CommandName | DefinedCommand>(prefix: PrefixArg, name: N, ...args: N extends CommandName ? Commands[N] : string[]): void;
+    function callWithPrefix<N extends CommandName | DefinedCommand>(prefix: PrefixArg, name: N, ...args: N extends CommandName ? Commands[N] : Value[]): void;
     /** Give the current buffer its own value, starting from the one it sees now. */
     function makeLocalVariable(name: VariableName | (string & {})): void;
     /** Remove the current buffer's own value, so it sees the global one again. */
@@ -11735,6 +11735,24 @@ declare global {
      * and undo leaves point at the change.
      */
     function substCharInRegion(start: number, end: number, from: string, to: string): void;
+    /**
+     * The current buffer's undo steps, oldest first, as a tree of states:
+     * for an undo, the step it took back, after which the buffer is as it
+     * was before that step; and where the buffer was unmodified before a
+     * step, which save that was, counting up. Emacs's vundo reads these
+     * from buffer-undo-list and undo-equiv-table.
+     */
+    function undoHistory(): { undid?: number; undo: boolean; saved?: number }[];
+    /**
+     * Undoes the step of undoHistory at INDEX, as vundo has primitive-undo
+     * take back one modification: the undo is a step of its own.
+     */
+    function undoStep(index: number): void;
+    /**
+     * Forgets the undo steps after the first KEEP, as vundo sets
+     * buffer-undo-list to a tail of itself.
+     */
+    function truncateUndo(keep: number): void;
     /** The text properties of the character at a position. */
     function textPropertiesAt(position: number): { [name: string]: Value };
     function overlayGet(overlay: number, name: string): Value | undefined;
