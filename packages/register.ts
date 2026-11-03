@@ -5,7 +5,7 @@ import { keyChar } from "simple";
 import { insertRectangle, lastKilledRectangle } from "rect";
 
 /** What a register holds. */
-type RegisterValue =
+export type RegisterValue =
   | { kind: "position"; marker: ember.Marker }
   | { kind: "text"; text: string | ember.PropertizedString }
   | { kind: "number"; value: number }
@@ -14,6 +14,11 @@ type RegisterValue =
 
 /** The registers, by name, as register-alist. */
 const registers = new Map<string, RegisterValue>();
+
+/** The registers and what each holds, as register-alist, for packages such as consult to list. */
+export function registerAlist(): [string, RegisterValue][] {
+  return [...registers].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+}
 
 /** Reads a register's name, a character typed after the prompt, as register-read-with-preview does traditionally. */
 async function readRegister(prompt: string): Promise<string> {

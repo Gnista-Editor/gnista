@@ -20,6 +20,7 @@ import { jumpTo as bookmarkJumpTo } from "bookmark";
 import { makeIndex, type IndexItem } from "imenu";
 import { completingReadWithMetadata, type CompletionMetadata } from "minibuffer";
 import { current as projectCurrent } from "project";
+import { registerAlist, type RegisterValue } from "register";
 import { truthy } from "subr";
 
 ember.defineVariable({ name: "consult-narrow-key", doc: 'The prefix key for narrowing, such as "<": "< b" narrows consult-buffer to buffers. Typing a narrowing key and SPC on empty input narrows too.', value: null });
@@ -1381,3 +1382,235 @@ export function consultXref(xrefs: { file: string; line: number; col: number; su
 }
 ember.defun("consult-xref", consultXref);
 ember.defineVariable({ name: "consult-xref--history", doc: "Places consult-xref went to.", value: [] });
+
+// consult-global-mark.
+
+ember.defineCommand({
+  name: "consult-global-mark",
+  doc: "Jump to a mark of the global mark ring, in any buffer, previewing each.",
+  run: () => {
+    const marks = ember.globalMarkRing();
+    if (marks.length === 0) ember.userError("No marks");
+    const locs = new Map<string, Location>();
+    const cands = marks.map(([buffer, pos], i) => {
+      const line = ember.withCurrentBuffer(buffer, () => ember.lineText(ember.lineOf(pos)));
+      const cand = `${line}${tofu(i)}`;
+      locs.set(cand, { buffer, pos });
+      return cand;
+    });
+    consultRead({
+      command: "consult-global-mark",
+      prompt: "Go to global mark: ",
+      candidates: cands,
+      sort: false,
+      requireMatch: true,
+      category: "consult-location",
+      group: (c, transform) => (transform ? c : (locs.get(c)?.buffer ?? "")),
+      lookup: (c) => locs.get(c),
+      state: jumpState(),
+    });
+  },
+});
+
+// consult-line-multi and consult-imenu-multi: across the project's buffers.
+
+/** The buffers of the project, or every buffer with a prefix argument, as consult--buffer-query. */
+function projectBuffers(all: boolean, mode?: string): string[] {
+  const root = all ? undefined : projectRoot();
+  return ember.bufferList().filter((b) => {
+    if (bufferFiltered(b)) return false;
+    if (mode && ember.bufferLocalValue("major-mode", b) !== mode) return false;
+    if (!root) return all || b === ember.bufferName();
+    const file = ember.withCurrentBuffer(b, () => ember.bufferFileName() ?? String(ember.variable("default-directory") ?? ""));
+    return inProject(file, root);
+  });
+}
+
+ember.defineCommand({
+  name: "consult-line-multi",
+  doc: "Search for a matching line in the project's buffers, or every buffer with a prefix argument, previewing each.",
+  params: [{ name: "query", kind: "prefix" }],
+  run: (query: ember.Value) => {
+    const buffers = projectBuffers(query !== null && query !== undefined);
+    const locs = new Map<string, Location>();
+    const lines = new Map<string, number>();
+    const cands: string[] = [];
+    for (const b of buffers) {
+      ember.withCurrentBuffer(b, () => {
+        const last = ember.lineOf(ember.pointMax());
+        for (let line = 0; line <= last; line++) {
+          const text = ember.lineText(line);
+          if (/^\s*$/.test(text)) continue;
+          const cand = text + tofu(cands.length);
+          cands.push(cand);
+          locs.set(cand, { buffer: b, pos: ember.lineStart(line) });
+          lines.set(cand, line + 1);
+        }
+      });
+    }
+    if (cands.length === 0) ember.userError("No lines");
+    consultRead({
+      command: "consult-line-multi",
+      prompt: "Go to line: ",
+      candidates: cands,
+      affixate: linePrefix(lines, 0),
+      sort: false,
+      requireMatch: true,
+      category: "consult-location",
+      history: "consult--line-multi-history",
+      group: (c, transform) => (transform ? c : (locs.get(c)?.buffer ?? "")),
+      lookup: (c, input) => lineMatch(locs.get(c), c, input),
+      state: jumpState(),
+    });
+  },
+});
+ember.defineVariable({ name: "consult--line-multi-history", doc: "Input consult-line-multi was given.", value: [] });
+
+ember.defineCommand({
+  name: "consult-imenu-multi",
+  doc: "Jump to an imenu item of the project's buffers in this major mode, or every buffer with a prefix argument, grouped by buffer.",
+  params: [{ name: "query", kind: "prefix" }],
+  run: (query: ember.Value) => {
+    const mode = String(ember.variable("major-mode"));
+    const buffers = projectBuffers(query !== null && query !== undefined, mode);
+    const locs = new Map<string, Location>();
+    const cands: string[] = [];
+    for (const b of buffers) {
+      const items = ember.withCurrentBuffer(b, () => imenuItems(makeIndex()));
+      for (const [name, pos] of items) {
+        const cand = name + tofu(cands.length);
+        cands.push(cand);
+        locs.set(cand, { buffer: b, pos });
+      }
+    }
+    if (cands.length === 0) ember.userError("No imenu items");
+    consultRead({
+      command: "consult-imenu-multi",
+      prompt: "Go to item: ",
+      candidates: cands,
+      sort: false,
+      requireMatch: true,
+      category: "imenu",
+      history: "consult-imenu--history",
+      group: (c, transform) => (transform ? c : (locs.get(c)?.buffer ?? "")),
+      lookup: (c) => locs.get(c),
+      state: jumpState(),
+    });
+  },
+});
+
+// consult-isearch-history: in isearch, M-e.
+
+ember.defineCommand({
+  name: "consult-isearch-history",
+  doc: "Read a string searched for before and search for it again: in isearch, it becomes the search string.",
+  run: () => {
+    const regexp = truthy(ember.variable("isearch-regexp"));
+    const ring = ember.variable(regexp ? "regexp-search-ring" : "search-ring");
+    const items = Array.isArray(ring) ? [...new Set(ring.map(String))] : [];
+    if (items.length === 0) ember.userError("History is empty");
+    const searching = truthy(ember.variable("isearch-mode"));
+    const r = ember.letBind({ "enable-recursive-minibuffers": true }, () =>
+      consultRead({ command: "consult-isearch-history", prompt: "I-search: ", candidates: items, sort: false, category: "consult-isearch" }),
+    );
+    if (!r) return;
+    // The string goes in as typed, as isearch reads the keys after M-e.
+    if (searching) {
+      ember.setVariable("isearch-string", "");
+      ember.setVariable("isearch-message", "");
+    } else {
+      ember.call("isearch-forward");
+    }
+    for (const ch of r.cand) ember.unreadKeys(ch === " " ? "SPC" : ch);
+  },
+});
+
+// Registers, after consult-register.el.
+
+/** What a register holds, for the list, as consult-register-format: a line, its text's start, or what it is. */
+function registerDescription(value: RegisterValue): { text: string; kind: string; loc?: Location } {
+  switch (value.kind) {
+    case "position": {
+      const buffer = ember.markerBuffer(value.marker);
+      const pos = ember.markerPosition(value.marker);
+      if (buffer === undefined || pos === undefined) return { text: "(killed buffer)", kind: "p" };
+      const line = ember.withCurrentBuffer(buffer, () => ember.lineText(ember.lineOf(pos)));
+      return { text: `${buffer}: ${line}`, kind: "p", loc: { buffer, pos } };
+    }
+    case "window":
+      return { text: "Window configuration", kind: "w" };
+    case "number":
+      return { text: String(value.value), kind: "n" };
+    case "rectangle":
+      return { text: `Rectangle: ${value.lines.join("↲")}`, kind: "t" };
+    default:
+      return { text: String(value.text).replace(/\n/g, "↲"), kind: "t" };
+  }
+}
+
+/** Uses the register R as its kind says: goes to a place, restores windows, or inserts the rest, as consult-register-load. */
+function loadRegister(r: string, value: RegisterValue): void {
+  ember.unreadKeys(r === " " ? "SPC" : r);
+  ember.call(value.kind === "position" || value.kind === "window" ? "jump-to-register" : ("insert-register" as ember.CommandName));
+}
+
+ember.defineCommand({
+  name: "consult-register",
+  doc: "Load a register chosen from a list of them, previewing places; n, p, t and w narrow to numbers, positions, text and windows.",
+  run: () => {
+    const regs = registerAlist();
+    if (regs.length === 0) ember.userError("All registers are empty");
+    const byCand = new Map<string, [string, RegisterValue, ReturnType<typeof registerDescription>]>();
+    const cands = regs.map(([r, v]) => {
+      const d = registerDescription(v);
+      const cand = `${ember.propertize(r === " " ? "SPC" : r, { face: "consult-key" })} ${d.text}`;
+      byCand.set(String(cand), [r, v, d]);
+      return String(cand);
+    });
+    const jump = jumpState();
+    const result = consultRead({
+      command: "consult-register",
+      prompt: "Register: ",
+      candidates: cands,
+      sort: false,
+      requireMatch: true,
+      category: "multi-category",
+      narrow: { keys: [["n", "Number"], ["p", "Position"], ["t", "Text"], ["w", "Window"]], predicate: (c, k) => byCand.get(c)?.[2].kind === k },
+      lookup: (c) => byCand.get(c),
+      state: (action, cand) => {
+        const entry = cand as [string, RegisterValue, ReturnType<typeof registerDescription>] | undefined;
+        if (action === "preview") jump("preview", entry?.[2].loc);
+        else if (action === "exit") jump("exit", undefined);
+      },
+    });
+    if (result?.value) {
+      const [r, v] = result.value as [string, RegisterValue];
+      loadRegister(r, v);
+    }
+  },
+});
+
+ember.defineCommand({
+  name: "consult-register-load",
+  doc: "Load a register: go to its place or restore its windows, or insert its text or number.",
+  run: () => {
+    const key = ember.readKey("Load register: ");
+    const r = key === "SPC" ? " " : key;
+    const value = new Map(registerAlist()).get(r);
+    if (!value) ember.userError(`Register ${key} is empty`);
+    loadRegister(r, value);
+  },
+});
+
+ember.defineCommand({
+  name: "consult-register-store",
+  doc: "Store in a register: the region's text if it is active, else point; with a numeric prefix argument, the number.",
+  params: [{ name: "arg", kind: "prefix" }],
+  run: (arg: ember.Value) => {
+    const key = ember.readKey("Store register: ");
+    ember.unreadKeys(key);
+    if (typeof arg === "number") ember.callWithPrefix(arg, "number-to-register" as ember.CommandName);
+    else if (ember.regionActive()) ember.call("copy-to-register" as ember.CommandName);
+    else ember.call("point-to-register" as ember.CommandName);
+  },
+});

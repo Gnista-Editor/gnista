@@ -9643,6 +9643,18 @@ declare global {
        */
       "xref-history-max": Value;
       /**
+       * The function that shows several definitions, called with them, as xref-show-xrefs-function shows references.
+       *
+       * Defined in packages/xref.ts.
+       */
+      "xref-show-definitions-function": Value;
+      /**
+       * The function that shows the places references are found, called with them: xref-show-xrefs lists them in *xref*; consult-xref reads one.
+       *
+       * Defined in packages/xref.ts.
+       */
+      "xref-show-xrefs-function": Value;
+      /**
        * The text properties yanking leaves out of what it inserts, or t for all of them, as Emacs's insert-for-yank removes them.
        */
       "yank-excluded-properties": Value;
@@ -11661,6 +11673,11 @@ declare global {
     function refreshCompletionTable(): void;
     /** The names of all commands, as all-completions over obarray with commandp. */
     function commandNames(): string[];
+    /**
+     * The places the mark was set in other buffers, the newest first, as
+     * global-mark-ring's markers: each [buffer, position].
+     */
+    function globalMarkRing(): [string, number][];
     /** The current buffer's mark ring, the newest first, as mark-ring's markers. */
     function markRing(): number[];
     /** Whether `input` is an answer the open prompt takes, as test-completion. */

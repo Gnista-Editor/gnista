@@ -168,3 +168,43 @@ fn consult_xref_reads_a_place_for_xref() {
     let (name, pt) = d.with(|ed| (ed.buffer().name.clone(), ed.buffer().point()));
     assert_eq!((name.as_str(), pt), ("x.rs", "fn a() {}\nfn b() { a(); }\n".len() + 9));
 }
+
+#[test]
+fn consult_register_lists_registers_and_loads_one() {
+    let d = setup("first line\nsecond line\n");
+    d.with(|ed| ed.buffer_mut().set_point(13));
+    d.press("C-x r SPC a");
+    d.eval(r#"ember.setMark(0); ember.gotoChar(5); ember.activateMark();"#);
+    d.press("C-x r s b");
+    d.with(|ed| ed.buffer_mut().set_point(0));
+    d.start(|ed| ed.call("consult-register", vec![]).unwrap());
+    assert_eq!(after(&d), " \na notes: second line\nb first\n");
+    d.press("t SPC");
+    assert_eq!(after(&d), " \nb first\n");
+    d.press("DEL C-p RET");
+    assert_eq!(point(&d), 13);
+}
+
+#[test]
+fn consult_register_store_and_load_take_a_key() {
+    let d = setup("hello there\n");
+    d.with(|ed| ed.buffer_mut().set_point(6));
+    d.start(|ed| ed.call("consult-register-store", vec![]).unwrap());
+    d.press("x");
+    d.with(|ed| ed.buffer_mut().set_point(0));
+    d.start(|ed| ed.call("consult-register-load", vec![]).unwrap());
+    d.press("x");
+    assert_eq!(point(&d), 6);
+}
+
+#[test]
+fn consult_line_multi_searches_every_buffer() {
+    let d = setup("apple in notes\n");
+    d.eval(r#"ember.withCurrentBuffer(ember.getBufferCreate("other"), () => ember.insert("apple elsewhere\npear\n"));"#);
+    d.start(|ed| ed.call_with_prefix("consult-line-multi", vec![], Some(ember_core::PrefixArg::Universal(4))).unwrap());
+    d.press("a p p");
+    let shown = after(&d);
+    assert!(shown.contains("notes") && shown.contains("apple in notes") && shown.contains("other") && shown.contains("apple elsewhere") && !shown.contains("pear"), "{shown:?}");
+    d.press("SPC e l s RET");
+    assert_eq!(d.with(|ed| ed.buffer().name.clone()), "other");
+}

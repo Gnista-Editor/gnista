@@ -691,6 +691,18 @@ natives! {
         Ok(ed.command_names().map(str::to_string).collect())
     }
 
+    /// The places the mark was set in other buffers, the newest first, as
+    /// global-mark-ring's markers: each [buffer, position].
+    #[ts = "(): [string, number][]"]
+    pub fn globalMarkRing(ed) -> EditorValue {
+        Ok(EditorValue::List(
+            ed.global_mark_ring()
+                .into_iter()
+                .map(|(b, p)| EditorValue::List(vec![EditorValue::Str(b), EditorValue::Number(p as f64)]))
+                .collect(),
+        ))
+    }
+
     /// The current buffer's mark ring, the newest first, as mark-ring's markers.
     pub fn markRing(ed) -> Vec<usize> {
         Ok(ed.buffer().mark_ring().to_vec())

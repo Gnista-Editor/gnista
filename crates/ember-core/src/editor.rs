@@ -1779,6 +1779,12 @@ impl Editor {
 
     /// A marker's buffer and position, wherever it is; none once it points
     /// nowhere, as a marker whose buffer was killed.
+    /// The places of the global mark ring that still exist, the newest
+    /// first, as buffer names and positions.
+    pub fn global_mark_ring(&self) -> Vec<(String, usize)> {
+        self.global_mark_ring.iter().filter_map(|&m| self.marker_position(m).map(|(b, p)| (b.to_string(), p))).collect()
+    }
+
     pub fn marker_position(&self, id: u64) -> Option<(&str, usize)> {
         self.buffers.iter().find_map(|b| b.marker(id).map(|p| (b.name.as_str(), p)))
     }
