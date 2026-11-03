@@ -3,6 +3,9 @@
 (() => {
   const native = globalThis.__ember;
   delete globalThis.__ember;
+  // The natives that are ember's functions as they are, from their table.
+  const api = globalThis.__emberApi;
+  delete globalThis.__emberApi;
 
   // Hook ids by function, so a function can be removed by passing it again.
 
@@ -409,6 +412,7 @@
   const functions = new Map();
 
   globalThis.ember = Object.freeze({
+    ...api,
     defineCommand(definition) {
       if (typeof definition !== "object" || definition === null) {
         throw new TypeError("defineCommand takes an object: { name, doc, params, run }");
@@ -446,10 +450,6 @@
     keymapParent: (keymap) => native.keymapParent(keymapArg(keymap)),
     setKeymapParent: (keymap, parent) => native.setKeymapParent(keymapArg(keymap), parent === undefined || parent === null ? null : keymapArg(parent)),
     lookupKey: (keymap, keys) => native.lookupKey(keymapArg(keymap), String(keys)),
-    currentActiveMaps: () => native.currentActiveMaps(),
-    call: (name, ...args) => native.call(String(name), ...args),
-    callInteractively: (name) => native.callInteractively(String(name)),
-    callWithPrefix: (prefix, name, ...args) => native.callWithPrefix(prefix ?? null, String(name), ...args),
     message: (text, { log = true } = {}) => native.message(String(text), Boolean(log)),
     insert: (text) => (text instanceof PropertizedString ? native.insertText(text) : native.insert(String(text))),
     PropertizedString,
@@ -473,7 +473,6 @@
       }
       return new PropertizedString(string, runs);
     },
-    bufferSubstring: (start, end) => native.bufferSubstring(start, end),
     bufferSubstringNoProperties: (start, end) => native.bufferText(start, end),
     deleteAndExtractRegion(start, end) {
       const text = native.bufferSubstring(start, end);
@@ -521,7 +520,6 @@
       const id = native.bufferBaseBuffer(buffer === undefined ? native.bufferName() : nameOf(buffer));
       return id === null || id === undefined ? undefined : globalThis.__emberBuffer(id);
     },
-    generateNewBufferName: (name) => native.generateNewBufferName(String(name)),
     codingSystemP: (cs) => typeof cs === "string" && coding("coding-system-p", cs),
     checkCodingSystem: (cs) => (cs === null || cs === undefined ? undefined : coding("check-coding-system", String(cs))),
     codingSystemList: (baseOnly = false) => coding("coding-system-list", Boolean(baseOnly)),
@@ -559,17 +557,12 @@
       buffer === undefined ? native.setUndoEnabled(false) : ember.withCurrentBuffer(buffer, () => native.setUndoEnabled(false)),
     insertBeforeMarkers: (text) => native.insertBeforeMarkers(text instanceof PropertizedString ? text : String(text)),
     insertAndInherit: (text) => native.insertAndInherit(text instanceof PropertizedString ? text : String(text)),
-    currentColumn: () => native.currentColumn(),
-    undoAutoAmalgamate: () => native.undoAutoAmalgamate(),
     moveToColumn: (column) => native.moveToColumn(Math.max(0, Math.floor(Number(column)))),
-    point: () => native.point(),
-    gotoChar: (position) => native.gotoChar(position),
     // Omitted arguments must not reach the native function as undefined.
     bufferText: (start, end) =>
       end === undefined
         ? start === undefined ? native.bufferText() : native.bufferText(start)
         : native.bufferText(start ?? 0, end),
-    deleteRegion: (start, end) => native.deleteRegion(start, end),
     bufferName: (buffer) => (buffer === undefined ? native.bufferName() : ember.getBuffer(buffer)?.name),
     currentBuffer: () => globalThis.__emberBuffer(native.bufferIdOf()),
     getBuffer(buffer) {
@@ -578,41 +571,16 @@
       return id === null || id === undefined ? undefined : globalThis.__emberBuffer(id);
     },
     bufferLiveP: (buffer) => buffer instanceof Buffer && buffer.live,
-    mark: () => native.mark(),
-    prefixArg: () => native.prefixArg(),
     prefixNumericValue: (arg = native.prefixArg()) =>
       arg === null ? 1 : arg === "-" ? -1 : Array.isArray(arg) ? arg[0] : arg,
-    setPrefixArg: (arg) => native.setPrefixArg(arg ?? null),
-    lastKey: () => native.lastKey(),
-    killRing: () => native.killRing(),
     setKillRingYankPointer: (index) => native.setKillRingYankPointer(Math.max(0, Math.floor(index))),
     currentKill: (n = 0, { properties = false } = {}) => (properties ? native.currentKillText(n) : native.currentKill(n)),
     insertForYank: (text) => native.insertForYank(text instanceof PropertizedString ? text : String(text)),
-    popKill: () => native.popKill() ?? undefined,
-    lastCommand: () => native.lastCommand(),
-    setThisCommand: (name) => native.setThisCommand(String(name)),
     setLastCommand: (name) => native.setLastCommand(name === null || name === undefined ? null : String(name)),
-    setMark: (position) => native.setMark(position ?? undefined),
-    repeatLastCommand: (arg) => native.repeatLastCommand(arg ?? null),
-    startKbdMacro: () => native.startKbdMacro(),
-    endKbdMacro: () => native.endKbdMacro(),
     callLastKbdMacro: (count = 1) => native.callLastKbdMacro(count),
-    definingKbdMacro: () => native.definingKbdMacro(),
-    executingKbdMacro: () => native.executingKbdMacro(),
     defineVariable({ name, doc = "", value = null, local = false }) {
       native.defineVariable(String(name), String(doc), value, Boolean(local));
     },
-    variable: (name) => native.variable(String(name)),
-    setVariable: (name, value) => native.setVariable(String(name), value ?? null),
-    defaultValue: (name) => native.defaultValue(String(name)),
-    setDefault: (name, value) => native.setDefault(String(name), value ?? null),
-    makeLocalVariable: (name) => native.makeLocalVariable(String(name)),
-    killLocalVariable: (name) => native.killLocalVariable(String(name)),
-    isLocalVariable: (name) => native.isLocalVariable(String(name)),
-    variableDocumentation: (name) => native.variableDocumentation(String(name)),
-    variableSource: (name) => native.variableSource(String(name)),
-    isHook: (name) => native.isHook(String(name)),
-    killAllLocalVariables: () => native.killAllLocalVariables(),
     defineHook: (name, doc = "") => native.defineHook(String(name), String(doc)),
     addHook(hook, run, { local = false, depth, append = false } = {}) {
       if (typeof run !== "function") throw new TypeError("addHook takes a function");
@@ -626,12 +594,6 @@
     runHookWithArgsUntilFailure: (hook, ...args) => native.runHookUntil(String(hook), args, false),
     defineKeymap: (name, parent = null) => native.defineKeymap(symbolName(name), parent === null ? null : symbolName(parent)),
     useLocalMap: (keymap) => native.useLocalMap(keymap === null || keymap === undefined ? null : keymapArg(keymap)),
-    enabledMinorModes: () => native.enabledMinorModes(),
-    documentation: (name) => native.documentation(String(name)),
-    commandSource: (name) => native.commandSource(String(name)),
-    showHelp: (text) => native.showHelp(String(text)),
-    bufferFileName: () => native.bufferFileName(),
-    bufferList: () => native.bufferList(),
     // Each waits for its answer and returns it, as Emacs's does (ADR 0053).
     yesOrNoP: (question) => native.ask("yes-or-no", String(question), []),
     yOrNP: (question) => native.ask("y-or-n", String(question), []),
@@ -651,14 +613,10 @@
       ember.unreadKeys(key);
       return false;
     },
-    recursiveEdit: () => native.recursiveEdit(),
-    recursionDepth: () => native.recursionDepth(),
     thisCommandKeys: () => native.thisCommandKeys().join(" "),
     thisCommandKeysVector: () => native.thisCommandKeys(),
-    recentKeys: (includeCmds) => native.recentKeys(Boolean(includeCmds)),
     lossageSize: (size) => (size === undefined ? native.lossageSize() : native.lossageSize(size)),
     inputPendingP: () => native.inputPendingP() || undefined,
-    discardInput: () => native.discardInput(),
     readCharChoice: (prompt, chars) => native.ask("char", String(prompt), [...String(chars)]),
     completingRead: (prompt, collection, options = {}) =>
       native.read(options.kind ?? "string", String(prompt), {
@@ -685,30 +643,14 @@
         default: options.default,
         history: options.history,
       }),
-    minibufferInfo: () => native.minibufferInfo() ?? undefined,
     completionAllSortedCompletions: (options = {}) => native.completionAllSortedCompletions(Boolean(options.atEnd)) ?? undefined,
     completionTryCompletion: (input, names) =>
       native.completionTryCompletion(String(input), names === undefined ? undefined : [...names].map(String)) ?? undefined,
     cacheAllSortedCompletions: (completions) => native.cacheAllSortedCompletions(completions.map(String)),
     composeLocalMap: (keymap) => native.composeLocalMap(keymapArg(keymap)),
-    fileDirectoryP: (file) => native.fileDirectoryP(String(file)),
-    fileAttributes: (file) => native.fileAttributes(String(file)) ?? undefined,
     directoryFiles: (dir, { full, match, nosort, count } = {}) =>
       native.directoryFiles(String(dir), Boolean(full), match ?? null, Boolean(nosort), count ?? null),
-    fileExistsP: (file) => native.fileExistsP(String(file)),
-    fileReadableP: (file) => native.fileReadableP(String(file)),
-    fileWritableP: (file) => native.fileWritableP(String(file)),
-    fileExecutableP: (file) => native.fileExecutableP(String(file)),
-    fileRegularP: (file) => native.fileRegularP(String(file)),
-    fileAccessibleDirectoryP: (file) => native.fileAccessibleDirectoryP(String(file)),
-    fileSymlinkP: (file) => native.fileSymlinkP(String(file)) ?? undefined,
-    fileNewerThanFileP: (a, b) => native.fileNewerThanFileP(String(a), String(b)),
-    fileNameAbsoluteP: (file) => native.fileNameAbsoluteP(String(file)),
     fileModes: (file, { nofollow } = {}) => native.fileModes(String(file), Boolean(nofollow)) ?? undefined,
-    setFileModes: (file, mode) => native.setFileModes(String(file), mode),
-    setFileTimes: (file, time) => native.setFileTimes(String(file), time ?? null),
-    fileTruename: (file) => native.fileTruename(String(file)),
-    substituteInFileName: (file) => native.substituteInFileName(String(file)),
     fileNameConcat: (...parts) => native.fileNameConcat(parts.filter((p) => p !== undefined && p !== null).map(String)),
     makeTempFile: (prefix, { dir, suffix, text } = {}) => native.makeTempFile(String(prefix), Boolean(dir), String(suffix ?? ""), text ?? null),
     findFileNameHandler: (file, operation) => native.findFileNameHandler(String(file), symbolName(operation)) ?? undefined,
@@ -721,7 +663,6 @@
         quiet: Boolean(quiet),
         mustbenew: Boolean(mustbenew),
       }),
-    fileLockedP: (file) => native.fileLockedP(String(file)),
     copyFile: (from, to, { okIfExists = false, keepTime = false } = {}) =>
       native.copyFile(String(from), String(to), Boolean(okIfExists), Boolean(keepTime)),
     copyDirectory: (from, to, { keepTime = false } = {}) => native.copyDirectory(String(from), String(to), Boolean(keepTime)),
@@ -730,10 +671,6 @@
     makeDirectory: (dir, { parents = false } = {}) => native.makeDirectory(String(dir), Boolean(parents)),
     deleteDirectory: (dir, { recursive = false, trash = false } = {}) =>
       native.deleteDirectory(String(dir), Boolean(recursive), Boolean(trash)),
-    abbreviateFileName: (file) => native.abbreviateFileName(String(file)),
-    readTextFile: (file) => native.readTextFile(String(file)),
-    killNew: (text) => native.killNew(String(text)),
-    messages: () => native.messages(),
     projectFiles: (root, { ignores = [] } = {}) => native.projectFiles(String(root), ignores.map(String)),
     stringMatch: (regexp, text, { caseFold = false, start = 0 } = {}) => native.stringMatch(String(regexp), String(text), Boolean(caseFold), start) ?? undefined,
     writeTextFile: (file, text, { mode } = {}) => native.writeTextFile(String(file), String(text), mode ?? undefined),
@@ -744,35 +681,17 @@
     fileNameNondirectory: (file) => String(file).slice(String(file).lastIndexOf("/") + 1),
     fileNameAsDirectory: (file) => (String(file) === "" ? "./" : String(file).endsWith("/") ? String(file) : `${file}/`),
     directoryFileName: (file) => (String(file).length > 1 ? String(file).replace(/\/+$/, "") || "/" : String(file)),
-    whereIs: (command) => native.whereIs(String(command)) ?? undefined,
     frameSize: () => {
       const [columns, lines, maxMiniWindowLines] = native.frameSize();
       return { columns, lines, maxMiniWindowLines };
     },
     runWithTimer: (secs, repeat, fn) => native.runWithTimer(Number(secs), repeat ?? null, false, fn),
     runWithIdleTimer: (secs, repeat, fn) => native.runWithTimer(Number(secs), repeat ? 1 : null, true, fn),
-    cancelTimer: (id) => native.cancelTimer(id),
-    writeVisitedFile: () => native.writeVisitedFile(),
-    revertToVisitedFile: () => native.revertToVisitedFile(),
-    recoverFromAutoSave: () => native.recoverFromAutoSave(),
-    visitedFileChanged: () => native.visitedFileChanged(),
     setVisitedFileName: (file, { alongWithFile = false } = {}) =>
       native.setVisitedFileName(file === null || file === undefined ? null : String(file), Boolean(alongWithFile)),
     expandFileName: (file, dir) => (dir === undefined || dir === null ? native.expandFileName(String(file)) : native.expandFileName(String(file), String(dir))),
-    getenv: (name) => native.getenv(String(name)) ?? undefined,
-    fileExists: (file) => native.fileExists(String(file)),
-    autoSaveFileName: (file) => native.autoSaveFileName(String(file)),
-    hasNewerAutoSave: (file) => native.hasNewerAutoSave(String(file)),
     doAutoSave: ({ quiet = false } = {}) => native.doAutoSave(Boolean(quiet)),
-    setAutoSave: (on) => native.setAutoSave(Boolean(on)),
-    autoSaving: () => native.autoSaving(),
-    killEmacs: () => native.killEmacs(),
-    commandExists: (name) => native.commandExists(String(name)),
-    thisCommand: () => native.thisCommand(),
-    calledInteractively: () => native.calledInteractively(),
     pushMark: (position, options = {}) => native.pushMark(position, Boolean(options.activate)),
-    activateMark: () => native.activateMark(),
-    deactivateMark: () => native.deactivateMark(),
     keepMarkActive: (fn) => {
       const changed = native.takeChanged();
       try {
@@ -782,32 +701,20 @@
         native.setChanged(changed);
       }
     },
-    regionActive: () => native.regionActive(),
 
     splitWindow: (window, side = "below", size) => native.splitWindow(window ?? null, side === "right", size ?? null),
-    deleteWindow: (window) => native.deleteWindow(window ?? null),
-    selectWindow: (window) => native.selectWindow(window),
-    selectedWindow: () => native.selectedWindow(),
-    windowList: () => native.windowList(),
     lastMouseEvent() {
       const event = native.lastMouseEvent();
       if (event === null || event === undefined) return undefined;
       const start = event.start && { window: event.start.window, position: event.start.position ?? undefined };
       return { window: event.window, position: event.position ?? undefined, start };
     },
-    screenLine: (position) => native.screenLine(position),
     windowBuffer: (window) => native.windowBuffer(window ?? native.selectedWindow()) ?? undefined,
     makeFrame: (buffer) => native.makeFrame(buffer === undefined || buffer === null ? null : nameOf(buffer)),
-    deleteFrame: (frame) => native.deleteFrame(frame ?? null),
-    selectFrame: (frame) => native.selectFrame(frame),
-    selectedFrame: () => native.selectedFrame(),
-    frameList: () => native.frameList(),
     getBufferCreate(name) {
       native.getBufferCreate(nameOf(name));
       return ember.getBuffer(nameOf(name));
     },
-    setReadOnly: (on) => native.setReadOnly(Boolean(on)),
-    bufferReadOnly: () => native.bufferReadOnly(),
     withCurrentBuffer: (name, fn) => {
       const id = native.recordCurrentBuffer();
       try {
@@ -818,7 +725,6 @@
       }
       return unwindProtect(fn, () => native.unbind(id));
     },
-    findFileNoselect: (file) => native.findFileNoselect(file),
     setWindowBuffer: (window, buffer) => native.setWindowBuffer(window ?? native.selectedWindow(), nameOf(buffer)),
     windowSize: (window) => {
       const size = native.windowSize(window ?? native.selectedWindow());
@@ -829,26 +735,20 @@
     windowUseTime: (window) => native.windowUseTime(window ?? native.selectedWindow()) ?? undefined,
     resizeWindow: (window, delta, horizontal = false, apply = true) =>
       native.resizeWindow(window ?? null, delta, horizontal, apply),
-    balanceWindows: () => native.balanceWindows(),
 
     search(pattern, options = {}) {
       const { from, regexp = false, backward = false, bound, caseFold } = options;
       return native.search(String(pattern), from ?? null, Boolean(regexp), Boolean(backward), bound ?? null, caseFold ?? null) ?? undefined;
     },
-    matchData: () => native.matchData() ?? undefined,
     replaceMatch(replacement, options = {}) {
       const [start, end] = native.replaceMatch(String(replacement), Boolean(options.literal), Boolean(options.fixedCase));
       return { start, end };
     },
-    foldCaseFor: (pattern, interactive = false) => native.foldCaseFor(String(pattern), Boolean(interactive)),
     setOverridingMap: (keymap) => native.setOverridingMap(keymap === null || keymap === undefined ? null : keymapArg(keymap)),
     overridingMap: () => native.overridingMap() ?? undefined,
     setKeymapDefault: (keymap, command) => native.setKeymapDefault(keymapArg(keymap), command ?? null),
     remapCommand: (keymap, from, to) => native.remapCommand(keymapArg(keymap), String(from), to === null ? null : String(to)),
-    stringWidth: (text) => native.stringWidth(String(text)),
-    unreadKeys: (keys) => native.unreadKeys(String(keys)),
 
-    treesitLanguages: () => native.treesitLanguages(),
     treesitLanguageAvailable: (language) => native.treesitLanguages().includes(String(language)),
     treesitLanguageAvailableP: (language) => treesit("treesit-language-available-p", String(language)),
     treesitAvailableP: () => true,
@@ -885,15 +785,10 @@
     treesitQueryCompile: (language, query) => treesit("treesit-query-compile", String(language), String(query)),
     treesitQueryCapture: (node, query, beg, end, nodeOnly = false, grouped = false) =>
       treesit("treesit-query-capture", node, String(query), beg ?? null, end ?? null, Boolean(nodeOnly), Boolean(grouped)),
-    treesitLanguage: () => native.treesitLanguage() ?? undefined,
 
-    putTextProperty: (start, end, name, value) => native.putTextProperty(start, end, String(name), value ?? null),
-    removeTextProperty: (start, end, name) => native.removeTextProperty(start, end, String(name)),
     addFaceTextProperty: (start, end, face, { append = false } = {}) =>
       native.addFaceTextProperty(start, end, String(face), Boolean(append)),
-    textPropertiesAt: (pos) => native.textPropertiesAt(pos),
     getTextProperty: (pos, name) => native.textPropertiesAt(pos)[String(name)],
-    charProperty: (pos, name) => native.charProperty(pos, String(name)),
     nextPropertyChange: (pos, limit) => native.propertyChange("next", pos, null, limit ?? null) ?? undefined,
     previousPropertyChange: (pos, limit) => native.propertyChange("previous", pos, null, limit ?? null) ?? undefined,
     nextSinglePropertyChange: (pos, prop, limit) =>
@@ -941,7 +836,6 @@
       for (const [name, value] of Object.entries(properties)) native.overlayPut(id, name, value ?? null);
       return id;
     },
-    killRegion: (beg, end) => native.killRegion(beg, end),
     letBind(bindings, fn) {
       // As let: a variable local in the current buffer is bound there, any
       // other in its default value; each is restored where it was bound,
@@ -1059,10 +953,7 @@
     },
     adviceRemove: (symbol, fn) => native.adviceRemove(symbolName(symbol), typeof fn === "function" ? fn : symbolName(fn)),
     adviceMemberP: (fn, symbol) => native.adviceMemberP(typeof fn === "function" ? fn : symbolName(fn), symbolName(symbol)),
-    minibufferPromptEnd: () => native.minibufferPromptEnd(),
-    minibufferDepth: () => native.minibufferDepth(),
     minibufferWindow: () => 0,
-    minibufferContents: () => native.minibufferContents(),
     formatModeLine: (format) => native.formatModeLine(format === undefined ? Symbol.for("mode-line-format") : format),
     fboundp: (name) => native.fboundp(symbolName(name)),
     intern: (name) => Symbol.for(String(name)),
@@ -1198,23 +1089,14 @@
     processCommand: (name) => native.processInfo(String(name))?.command,
     processId: (name) => native.processInfo(String(name))?.pid ?? undefined,
     processQueryOnExitFlag: (name) => native.processInfo(String(name))?.queryOnExit ?? false,
-    setProcessQueryOnExitFlag: (name, query) => native.setProcessQueryOnExitFlag(String(name), Boolean(query)),
-    processList: () => native.processList(),
     getBufferProcess: (buffer) => native.getBufferProcess(nameOf(buffer)) ?? undefined,
-    processSendString: (name, text) => native.processSendString(String(name), String(text)),
-    processSendEof: (name) => native.processSendEof(String(name)),
     interruptProcess: (name, currentGroup = false) => native.processPrimitive("signal-process", String(name), "INT", Boolean(currentGroup)),
     killProcess: (name, currentGroup = false) => native.processPrimitive("signal-process", String(name), "KILL", Boolean(currentGroup)),
     signalProcess: (name, signal) => native.processPrimitive("signal-process", String(name), signal, false),
-    deleteProcess: (name) => native.deleteProcess(String(name)),
     callProcess: (command, { directory, input } = {}) =>
       native.callProcess(command.map(String), directory ?? undefined, input === undefined ? undefined : String(input)),
     windowStart: (window) => native.windowStart(window ?? native.selectedWindow()),
     setWindowStart: (window, pos) => native.setWindowStart(window ?? native.selectedWindow(), pos),
-    upcase: (s) => native.upcase(String(s)),
-    downcase: (s) => native.downcase(String(s)),
-    capitalize: (s) => native.capitalize(String(s)),
-    upcaseInitials: (s) => native.upcaseInitials(String(s)),
     windowEnd: (window) => native.windowEnd(window ?? native.selectedWindow()),
     posVisibleInWindowP: (pos, window, partially) =>
       native.posVisibleInWindowP(pos ?? native.point(), window ?? native.selectedWindow(), Boolean(partially)) || undefined,
@@ -1224,7 +1106,6 @@
       const w = window ?? native.selectedWindow();
       return native.windowTextPixelSize(w, from ?? native.windowStart(w), to ?? native.windowEnd(w));
     },
-    linePixelHeight: () => native.linePixelHeight(),
     bufferTextPixelSize: (buffer) => native.bufferTextPixelSize(ember.getBuffer(buffer ?? native.bufferName())?.id ?? native.bufferIdOf()),
     stringPixelWidth(string) {
       if (String(string) === "") return 0;
@@ -1260,10 +1141,7 @@
     },
     currentBidiParagraphDirection: (buffer) =>
       buffer === undefined || buffer === null ? native.currentBidiParagraphDirection() : ember.withCurrentBuffer(buffer, () => native.currentBidiParagraphDirection()),
-    movePointVisually: (direction) => native.movePointVisually(direction),
-    ding: () => native.ding(),
     beep: () => native.ding(),
-    redisplay: () => native.redisplay(),
     redrawDisplay: () => native.redisplay(),
     redrawFrame: () => native.redisplay(),
     // Bidirectional text, as xdisp.c's primitives and get-char-code-property
@@ -1316,8 +1194,6 @@
       const got = native.fringeBitmapsAtPos(pos ?? native.point(), window ?? native.selectedWindow());
       return got ? [got[0] || undefined, got[1] || undefined] : undefined;
     },
-    defaultFontWidth: () => native.defaultFontWidth(),
-    defaultFontHeight: () => native.defaultFontHeight(),
     windowPoint: (window) => native.windowPoint(window ?? native.selectedWindow()),
     setWindowPoint: (window, pos) => native.setWindowPoint(window ?? native.selectedWindow(), pos),
     switchToPrevBuffer: (window, buryOrKill) => {
@@ -1325,7 +1201,6 @@
       return (buryOrKill === undefined ? native.switchToPrevBuffer(w) : native.switchToPrevBuffer(w, String(buryOrKill))) ?? undefined;
     },
     switchToNextBuffer: (window) => native.switchToNextBuffer(window ?? native.selectedWindow()) ?? undefined,
-    buryBufferInternal: (buffer) => native.buryBufferInternal(String(buffer)),
     windowParameter: (window, name) => native.windowParameter(window ?? native.selectedWindow(), symbolName(name)),
     setWindowParameter: (window, name, value) => native.setWindowParameter(window ?? native.selectedWindow(), symbolName(name), value ?? null),
     windowParameters: (window) => {
@@ -1349,7 +1224,6 @@
       const configuration = ember.currentWindowConfiguration();
       return unwindProtect(fn, () => ember.setWindowConfiguration(configuration));
     },
-    prepareChangeGroup: () => native.prepareChangeGroup(),
     // As with-silent-modifications: changes to text properties are not
     // recorded for undo and leave the buffer as modified as it was, with
     // read-only text and the change hooks out of the way.
@@ -1361,8 +1235,6 @@
         () => native.endSilentModifications(buffer, state),
       );
     },
-    cancelChangeGroup: (handle) => native.cancelChangeGroup(handle),
-    acceptChangeGroup: (handle) => native.acceptChangeGroup(handle),
     atomicChangeGroup(fn) {
       const handle = native.prepareChangeGroup();
       try {
@@ -1377,23 +1249,16 @@
     makeSyntaxTable: (name, parent) => native.makeSyntaxTable(String(name), parent === undefined ? undefined : String(parent)),
     makeCharTable: (subtype, init) => native.makeCharTable(symbolName(subtype), init ?? null),
     charTableP: (value) => value instanceof CharTable && native.charTableP(value),
-    charTableSubtype: (table) => native.charTableSubtype(table),
     charTableParent: (table) => native.charTableParent(table) ?? undefined,
     setCharTableParent: (table, parent) => native.setCharTableParent(table, parent ?? null),
     charTableExtraSlot: (table, n) => native.charTableExtraSlot(table, n) ?? undefined,
-    setCharTableExtraSlot: (table, n, value) => native.setCharTableExtraSlot(table, n, value ?? null),
     charTableRange: (table, range) => native.charTableRange(table, range ?? null) ?? undefined,
-    setCharTableRange: (table, range, value) => native.setCharTableRange(table, range ?? null, value ?? null),
     aref: (table, c) => native.charTableRange(table, c) ?? undefined,
     aset: (table, c, value) => native.setCharTableRange(table, c, value ?? null),
     mapCharTable: (fn, table) => {
       for (const [key, value] of native.mapCharTable(table)) fn(key, value);
     },
     copySequence: (value) => (value instanceof CharTable ? native.copyCharTable(value) : [...value]),
-    standardCaseTable: () => native.standardCaseTable(),
-    currentCaseTable: () => native.currentCaseTable(),
-    setCaseTable: (table) => native.setCaseTable(table),
-    setStandardCaseTable: (table) => native.setStandardCaseTable(table),
     caseTableP: (value) => value instanceof CharTable && native.caseTableP(value),
     // As subr.el's with-case-table: the case table back as it was however fn ends.
     withCaseTable(table, fn) {
@@ -1402,22 +1267,14 @@
       native.setCaseTable(table);
       return unwindProtect(fn, () => ember.withCurrentBuffer(buffer, () => native.setCaseTable(old)));
     },
-    standardCategoryTable: () => native.standardCategoryTable(),
-    categoryTable: () => native.categoryTable(),
     categoryTableP: (value) => value instanceof CharTable && native.categoryTableP(value),
-    makeCategoryTable: () => native.makeCategoryTable(),
     copyCategoryTable: (table) => native.copyCategoryTable(table ?? null),
-    setCategoryTable: (table) => native.setCategoryTable(table),
     defineCategory: (category, doc, table) => native.defineCategory(String(category), String(doc), table ?? null),
     categoryDocstring: (category, table) => native.categoryDocstring(String(category), table ?? null) ?? undefined,
     getUnusedCategory: (table) => native.getUnusedCategory(table ?? null) ?? undefined,
-    charCategorySet: (c) => native.charCategorySet(c),
     modifyCategoryEntry: (range, category, table, reset) => native.modifyCategoryEntry(range, String(category), table ?? null, Boolean(reset)),
     modifySyntaxEntry: (chars, descriptor, table) =>
       native.modifySyntaxEntry(String(chars), String(descriptor), table === undefined ? undefined : String(table)),
-    syntaxTable: () => native.syntaxTable(),
-    setSyntaxTable: (name) => native.setSyntaxTable(String(name)),
-    syntaxEntry: (c) => native.syntaxEntry(String(c)) ?? undefined,
     charSyntax: (c) => (native.syntaxEntry(String(c)) ?? " ")[0],
     matchingParen: (c) => {
       const d = native.syntaxEntry(String(c)) ?? "";
@@ -1426,7 +1283,6 @@
     scanLists: (from, count, depth) => native.scanLists(from, count, depth, false) ?? null,
     scanSexps: (from, count) => native.scanLists(from, count, 0, true) ?? null,
     forwardComment: (count = 1) => native.forwardComment(count),
-    backwardPrefixChars: () => native.backwardPrefixChars(),
     parsePartialSexp: (from, to) => {
       const st = native.parsePartialSexp(from, to);
       for (const k of ["innermostStart", "lastComplete", "inString", "inComment", "start"]) st[k] ??= null;
@@ -1465,7 +1321,6 @@
       native.gotoChar(p);
       return start - p;
     },
-    substCharInRegion: (start, end, from, to) => native.substCharInRegion(start, end, String(from), String(to)),
     makeMarker(pos, { buffer, advances = false } = {}) {
       const id = native.makeMarker(pos ?? native.point(), buffer === undefined ? undefined : nameOf(buffer), Boolean(advances));
       const m = new Marker(id);
@@ -1481,28 +1336,9 @@
     markerBuffer: (m) => native.markerBuffer(markerId(m)) ?? undefined,
     setMarker: (m, pos, buffer) =>
       native.setMarker(markerId(m), pos === null || pos === undefined ? undefined : pos, buffer === undefined ? undefined : nameOf(buffer)),
-    overlayPut: (id, name, value) => native.overlayPut(id, String(name), value ?? null),
-    overlayGet: (id, name) => native.overlayGet(id, String(name)),
     overlayStart: (id) => native.overlayRange(id)?.[0],
     overlayEnd: (id) => native.overlayRange(id)?.[1],
-    moveOverlay: (id, start, end) => native.moveOverlay(id, start, end),
-    deleteOverlay: (id) => native.deleteOverlay(id),
-    overlaysIn: (start, end) => native.overlaysIn(start, end),
     overlaysAt: (pos) => native.overlaysIn(pos, pos + 1).filter((id) => native.overlayRange(id)[0] <= pos && pos < native.overlayRange(id)[1]),
-    invisibleAt: (pos) => native.invisibleAt(pos),
-    lineCount: () => native.lineCount(),
-    lineOf: (pos) => native.lineOf(pos),
-    lineStart: (line) => native.lineStart(line),
-    lineEnd: (line) => native.lineEnd(line),
-    lineText: (line) => native.lineText(line),
-    bufferSize: () => native.bufferSize(),
-    pointMin: () => native.pointMin(),
-    pointMax: () => native.pointMax(),
-    narrowToRegion: (start, end) => native.narrowToRegion(start, end),
-    widen: () => native.widen(),
-    bufferModifiedTick: () => native.bufferModifiedTick(),
-    bufferModified: () => native.bufferModified(),
-    setBufferModified: (modified) => native.setBufferModified(Boolean(modified)),
     // As Emacs's add-to-invisibility-spec: a spec of true becomes a list
     // that still hides text whose invisible property is true.
     addToInvisibilitySpec(name, { ellipsis = false } = {}) {
@@ -1527,9 +1363,6 @@
         String(background),
       ),
     faceAttributes: (name, { dark = true } = {}) => native.faceAttributes(String(name), Boolean(dark)),
-    faceInfo: (name) => native.faceInfo(String(name)) ?? undefined,
-    faceAttribute: (face, attribute, inherit = false) => native.faceAttribute(String(face), String(attribute), Boolean(inherit)),
-    faceList: () => native.faceList(),
     facep: (face) => native.faceInfo(String(face)) != null,
     makeFace: (name) => {
       native.makeFace(String(name));
@@ -1543,8 +1376,6 @@
       globalThis.__emberQuit = 1024;
       native.maybeQuit();
     },
-    quitFlag: () => native.quitFlag(),
-    setQuitFlag: (on) => native.setQuitFlag(Boolean(on)),
     withLocalQuit(fn) {
       // As with-local-quit: inhibit-quit off for the body, and a quit
       // deferred before it signalled once the body is done.
@@ -1561,22 +1392,15 @@
       return value;
     },
     fontp: (object, kind) => object instanceof Font && (kind === undefined || object.__emberFontKind === kind),
-    fontXlfdName: (font, fold) => native.fontXlfdName(font, Boolean(fold)),
-    fontFamilyList: () => native.fontFamilyList(),
     faceFont: (face) => native.faceFont(symbolName(face)) ?? undefined,
     fontAt: (pos) => native.fontAt(pos) ?? undefined,
     findFont: (spec) => native.listFonts(spec, 1)[0],
-    listFonts: (spec, max) => native.listFonts(spec, max ?? undefined),
-    xListFonts: (pattern, max) => native.xListFonts(String(pattern), max ?? undefined),
     fontInfo: (name) => native.fontInfo(String(name)) ?? undefined,
     queryFont: (font) => native.queryFont(font) ?? undefined,
     fontHasCharP: (font, c) => native.fontHasCharP(font, typeof c === "number" ? String.fromCodePoint(c) : String(c)),
     charDisplayableP: (c) => native.charDisplayableP(typeof c === "number" ? String.fromCodePoint(c) : String(c)),
-    colorValues: (color) => native.colorValues(String(color)) ?? undefined,
-    colorValuesFromColorSpec: (spec) => native.colorValuesFromColorSpec(String(spec)) ?? undefined,
     colorDefinedP: (color) => native.colorValues(String(color)) != null,
     colorSupportedP: (color) => native.colorValues(String(color)) != null,
-    definedColors: () => native.definedColors(),
     colorDistance(color1, color2) {
       const d = native.colorDistance(String(color1), String(color2));
       if (d == null) ember.signal("error", `Invalid color: ${native.colorValues(String(color1)) == null ? color1 : color2}`);
@@ -1648,20 +1472,15 @@
 
     // Images, as image.c's primitives (ADR 0046). A spec is a list,
     // [Symbol.for("image"), Symbol.for(":type"), Symbol.for("png"), ...].
-    imagep: (spec) => native.imagep(spec ?? null),
     imageSize(spec, pixels) {
       const [w, h] = native.imageSize(spec ?? null, Boolean(pixels));
       return [w, h];
     },
-    imageMaskP: (spec) => native.imageMaskP(spec ?? null),
     imageMetadata: (spec) => native.imageMetadata(spec ?? null) ?? undefined,
-    imageFlush: (spec) => native.imageFlush(spec ?? null),
-    clearImageCache: (filter) => native.clearImageCache(filter ?? null),
     imageTransformsP() {
       const transforms = native.imageTransformsP();
       return transforms.length ? transforms.map((t) => Symbol.for(t)) : undefined;
     },
-    imageCacheSize: () => native.imageCacheSize(),
     initImageLibrary: (type) => native.initImageLibrary(symbolName(type)),
     displayImagesP: () => native.imagesShown(),
 

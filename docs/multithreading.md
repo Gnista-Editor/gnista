@@ -122,6 +122,33 @@ With it, a second engine (step 4) or a second platform (the web) is a second gen
 
 **Exit check.** The profile's three-way split is in `performance.md` for each slow key. The generated bindings are byte-for-byte what the hand-written ones were, or the differences are reviewed, and every test passes.
 
+**0b, done 2026-11-03.** `crates/ember-script/src/natives.rs` defines the `natives!` macro, and the tables are in `natives/`, a file per area (`editor`, `variables`, `text`, `bidi`, `treesit`, `windows`, `search`, `files`, `chartab`, `images`). An entry is a Rust function of the editor and its arguments, with nothing of QuickJS in it:
+
+```rust
+/// Point, as a character offset from the start of the buffer, counting from 0.
+pub fn point(ed) -> usize {
+    Ok(ed.buffer().point())
+}
+```
+
+The macro writes three things from it: the function itself, a `Native` record (name, parameters and their types, result type, documentation, whether it is public) for the generator, and the QuickJS binding, which converts each argument through the `Param` and `Conv` traits, runs the body inside `with_editor`, and converts the result through `Ret`. Those three traits, implemented for the Rust types the entries use (text, numbers, `Option`, `Vec`, editor values, propertized text, prefix arguments, script functions as editor functions, options objects as `Fields`, objects returned as `Record`), are the whole QuickJS back end; V8's is another implementation of them and another arm of the macro. An entry marked `pub` is `ember.NAME` itself, with no wrapper in prelude.js, and its declaration in `ember.d.ts` is written from its documentation and types, or from a `#[ts = "..."]` signature where the hand-written TypeScript was more precise than the Rust types.
+
+- 402 natives are in the tables: every native but `defineCommand`, which keeps a script's functions for a command's prompts and collections as `ScriptFunction`s and stays written by hand in lib.rs. The four case functions, seven file predicates and nine case and category table functions that lib.rs set in loops are entries of their own.
+- 185 are public: every wrapper in prelude.js that only passed its arguments on, coerced with `String` or `Boolean` or defaulted with `?? null`, is gone, with its declaration in types.rs. The other 104 wrappers do more (defaults, `keymapArg`, the prelude's objects) and stay.
+- `ember.d.ts` declares the same 570 functions with the same documentation and signatures, compared ignoring order; the public natives' declarations now come first, and four one-line comments written as blocks are on one line.
+- lib.rs went from 4,288 lines to about 1,300; images.rs and bidi.rs became tables.
+
+Differences, reviewed:
+
+- **Coercion.** Every native's text and boolean parameters are coerced as `String(x)` and `Boolean(x)` are, where rquickjs refused other types before. The wrappers coerced the same way, so a call through `ember` behaves as before; a call straight to `native` is more lenient.
+- **Safe points.** Every native is now a safe point for quitting, as step 1 asked, including the few that did not touch the editor (`getenv`, `stringWidth`, the colour and file-name helpers). `unbind`, `quitFlag` and `setQuitFlag` are marked `#[safe_point = false]`, as unbinding must run while a quit unwinds.
+- **Errors.** Where a native threw rquickjs's conversion error or a plain `TypeError` of its own (`insertText`, `adviceAdd`, `read`'s kind, `substCharInRegion`, char-table and font arguments, a process's coding systems), it signals `wrong-type-argument` with its message, which `conditionCase` can catch.
+- **Options objects** (`read`, `makeProcess`, `makeNetworkProcess`, `insertFileContents`, `writeRegion`) are read as editor values, so a property of the wrong type is ignored rather than an error; a network process with no name is still an error.
+- **Callbacks.** Process filters and sentinels and timers hold the script's function as an editor function value, as hooks and advice already did, instead of a `ScriptFunction` of their own.
+- **`call` and `callWithPrefix`** turn each argument into text in the engine back end (`ArgText`) exactly as `command_args` did.
+
+The test that the prelude's functions are the ones declared still passes, now over the public natives too.
+
 ## Step 1: quitting
 
 **What Emacs does.** `C-g` sets `quit-flag`. Running code checks it at safe points (`maybe_quit`) and signals `quit`, unless `inhibit-quit` is set, in which case the flag stays set and fires when `inhibit-quit` is unbound. The command loop clears the flag before each command. The bytecode interpreter checks the flag on every backward jump, so a Lisp loop is always interruptible. `C-g` while Emacs waits for input is just the `C-g` key, which keymaps bind (`keyboard-quit`, `abort-recursive-edit`).

@@ -141,32 +141,6 @@ const API: &str = r##"
    */
   function lookupKey(keymap: string | Keymap, keys: string): string | Keymap | string[] | undefined;
   /**
-   * The keymaps active now, in the order keys are looked up, as
-   * current-active-maps: a transient map, an overriding one, the
-   * minibuffer's while a prompt is open, text's at point, the minor modes',
-   * the major mode's, and the global map.
-   */
-  function currentActiveMaps(): Keymap[];
-  /**
-   * Run a command as keys would (Emacs's call-interactively): prompting in
-   * the minibuffer for its arguments, which it gets once they are read.
-   */
-  function callInteractively(name: CommandName | DefinedCommand): void;
-  /**
-   * Run a command with a prefix argument and its arguments, as if typed
-   * after C-u or M-5. Pass prefixArg() to hand on the running command's.
-   */
-  function callWithPrefix<N extends CommandName | DefinedCommand>(
-    prefix: PrefixArg,
-    name: N,
-    ...args: N extends CommandName ? Commands[N] : string[]
-  ): void;
-  /** Run a command with its arguments. Throws if the command fails. */
-  function call<N extends CommandName | DefinedCommand>(
-    name: N,
-    ...args: N extends CommandName ? Commands[N] : string[]
-  ): void;
-  /**
    * Show a message in the echo area, and log it in *Messages*, unless `log`
    * is false, as for a prefix argument typed so far.
    */
@@ -185,28 +159,10 @@ const API: &str = r##"
    * character after that its front-sticky names.
    */
   function insertAndInherit(text: string | PropertizedString): void;
-  /**
-   * Point's column as Emacs's current-column counts it: tabs to tab stops,
-   * wide characters as two, and text hidden without an ellipsis as none.
-   */
-  function currentColumn(): number;
-  /**
-   * Join the running command's undo step to the one before, as Emacs's
-   * undo-auto-amalgamate does when self-insert-command runs, if the command
-   * before was this one and did the same. For commands that insert newlines
-   * as newline does.
-   */
-  function undoAutoAmalgamate(): void;
   /** Move point to a column of its line, as Emacs's move-to-column does, and return the column reached. */
   function moveToColumn(column: number): number;
-  /** Point, as a character offset from the start of the buffer, counting from 0. */
-  function point(): number;
-  /** Move point to a character offset. */
-  function gotoChar(position: number): void;
   /** The text of the current buffer, or of the range from start up to end. */
   function bufferText(start?: number, end?: number): string;
-  /** Delete the text from start up to end and return it. */
-  function deleteRegion(start: number, end: number): string;
   /** The name of the current buffer. */
   function bufferName(): string;
   /** A buffer's name now, or undefined if it is killed, as buffer-name. */
@@ -217,8 +173,6 @@ const API: &str = r##"
   function getBuffer(buffer: BufferLike): Buffer | undefined;
   /** Whether a value is a buffer object of a live buffer, as buffer-live-p. */
   function bufferLiveP(value: unknown): boolean;
-  /** The mark, or undefined if it is not set. */
-  function mark(): number | undefined;
 
   /**
    * A prefix argument, in the forms Emacs uses: null when none was given, a
@@ -226,8 +180,6 @@ const API: &str = r##"
    * or a one-element array for plain C-u: [4], or [16] for C-u C-u.
    */
   type PrefixArg = null | number | "-" | [number];
-  /** The prefix argument the running command was given (Emacs's current-prefix-arg). */
-  function prefixArg(): PrefixArg;
   /**
    * A prefix argument as a count, as Emacs's prefix-numeric-value gives it:
    * 1 for none, -1 for "-", and n for n or [n]. Defaults to the running
@@ -235,38 +187,21 @@ const API: &str = r##"
    */
   function prefixNumericValue(arg?: PrefixArg): number;
   /**
-   * Give the next command a prefix argument, as C-u does (Emacs's prefix-arg).
-   * A command that leaves one does not count as the last command.
-   */
-  function setPrefixArg(arg: PrefixArg): void;
-  /** The key that ran the current command, in Emacs notation such as "M-5" (Emacs's last-command-event). */
-  function lastKey(): string | undefined;
-  /**
    * Bind keys for the next key sequence only, ahead of every other keymap
    * (Emacs's set-transient-map). Prefix commands use it so that more digits
    * continue the argument.
    */
   function setTransientMap(bindings: { [keys: string]: CommandName | DefinedCommand } | Keymap): void;
-  /** Whether a value is an image spec Ember can show, as imagep: `(image :type TYPE :file FILE ...)` as a list of symbols and values. */
-  function imagep(spec: Value): boolean;
   /**
    * An image's size, its margins included, as image-size: in pixels with
    * `pixels`, else in the frame's columns and lines. Signals an error on a
    * frame without images, as on a terminal.
    */
   function imageSize(spec: Value, pixels?: boolean): [number, number];
-  /** Whether an image has a mask, as image-mask-p. */
-  function imageMaskP(spec: Value): boolean;
   /** An image's metadata, as image-metadata: for a GIF of several frames, `[delay, SECONDS, count, FRAMES]`. */
   function imageMetadata(spec: Value): Value | undefined;
-  /** Forget an image, so it is read again when next shown, as image-flush. */
-  function imageFlush(spec: Value): void;
-  /** Forget every image, or those of a file name, as clear-image-cache. */
-  function clearImageCache(filter?: Value): void;
   /** The transforms images can have on this frame, as image-transforms-p: `scale` and `rotate90`, or undefined on a terminal. */
   function imageTransformsP(): symbol[] | undefined;
-  /** How many bytes the decoded images take, as image-cache-size. */
-  function imageCacheSize(): number;
   /** Whether images of a type can be shown, as init-image-library. */
   function initImageLibrary(type: string | symbol): boolean;
   /** Whether this frame shows images, as display-images-p. */
@@ -278,8 +213,6 @@ const API: &str = r##"
    * insert now; M-y asks for 1, the kill before it.
    */
   function currentKill(n?: number): string;
-  /** The kills, newest first, as the kill-ring variable lists them. */
-  function killRing(): string[];
   /** Make the kill `index` places from the newest the one C-y inserts next, as setting kill-ring-yank-pointer does. */
   function setKillRingYankPointer(index: number): void;
   /** The kill with its text properties, as Emacs's current-kill gives it. */
@@ -290,37 +223,13 @@ const API: &str = r##"
    * rear-nonsticky, so what is typed after it does not take them on.
    */
   function insertForYank(text: string | PropertizedString): void;
-  /** Take the newest kill off the kill ring and return it, as (pop kill-ring) does. */
-  function popKill(): string | undefined;
-  /** The command that ran before this one (Emacs's last-command). */
-  function lastCommand(): string | undefined;
-  /**
-   * Make the running command count as another one afterwards (Emacs's
-   * this-command). yank-pop sets "yank", so that M-y can follow M-y.
-   */
-  function setThisCommand(name: CommandName | DefinedCommand): void;
   /** Make the next command, and the next kill, see `name` as the last command, as setting Emacs's last-command does. */
   function setLastCommand(name: CommandName | DefinedCommand | null): void;
-  /** Put the mark at a position without activating the region, or remove it with null. */
-  function setMark(position: number | null): void;
-  /**
-   * Run the last command again, with the same arguments and key, and with
-   * `arg` as its prefix argument if given (Emacs's last-repeatable-command).
-   */
-  function repeatLastCommand(arg?: PrefixArg): void;
-  /** Start recording typed keys into a keyboard macro (Emacs's start-kbd-macro). */
-  function startKbdMacro(): void;
-  /** Finish the keyboard macro, leaving out the keys that ended it (Emacs's end-kbd-macro). */
-  function endKbdMacro(): void;
   /**
    * Type the last keyboard macro `count` times, 1 by default, or until an
    * error if `count` is 0. The first error stops it and is thrown.
    */
   function callLastKbdMacro(count?: number): void;
-  /** Whether a keyboard macro is being recorded. */
-  function definingKbdMacro(): boolean;
-  /** Whether a keyboard macro is running. */
-  function executingKbdMacro(): boolean;
 
   /** A variable's value: what a variable can hold. */
   /**
@@ -383,8 +292,6 @@ const API: &str = r##"
   }
   /** A string with properties on all of it, as Emacs's propertize: propertize("TODO", { face: "org-todo" }). */
   function propertize(string: string, properties?: { [name: string]: Value }): PropertizedString;
-  /** The text from start to end with its properties, as Emacs's buffer-substring. */
-  function bufferSubstring(start: number, end: number): PropertizedString;
   /** The text from start to end, as buffer-substring-no-properties. */
   function bufferSubstringNoProperties(start: number, end: number): string;
   /** Deletes the text from start to end and gives it back with its properties, as delete-and-extract-region. */
@@ -438,30 +345,6 @@ const API: &str = r##"
 
   /** Define a documented variable (Emacs's defvar). */
   function defineVariable(definition: VariableDefinition): void;
-  /** The value in the current buffer, or undefined if the variable is not defined. */
-  function variable(name: VariableName | (string & {})): Value | undefined;
-  /**
-   * Set a variable (Emacs's setq): the current buffer's own value if it has
-   * one or the variable is buffer-local, otherwise the global value.
-   */
-  function setVariable(name: VariableName | (string & {}), value: Value): void;
-  /** The global value, which buffers without their own value see. */
-  function defaultValue(name: VariableName | (string & {})): Value | undefined;
-  /** Set the global value. */
-  function setDefault(name: VariableName | (string & {}), value: Value): void;
-  /** Give the current buffer its own value, starting from the one it sees now. */
-  function makeLocalVariable(name: VariableName | (string & {})): void;
-  /** Remove the current buffer's own value, so it sees the global one again. */
-  function killLocalVariable(name: VariableName | (string & {})): void;
-  /** Whether the current buffer has its own value. */
-  function isLocalVariable(name: VariableName | (string & {})): boolean;
-  function variableDocumentation(name: VariableName | (string & {})): string | undefined;
-  /** The file that defined a variable, if a script did. */
-  function variableSource(name: VariableName | (string & {})): string | undefined;
-  /** Whether a variable is a hook. A hook's value is the names of its functions. */
-  function isHook(name: string): boolean;
-  /** Remove all of the current buffer's own values, hooks and keymap, as a new major mode does first. */
-  function killAllLocalVariables(): void;
 
   /** Define a documented hook. */
   function defineHook(name: string, doc?: string): void;
@@ -537,19 +420,7 @@ const API: &str = r##"
 
   /** Define a minor mode (Emacs's define-minor-mode). */
   function defineMinorMode(definition: MinorModeDefinition): DefinedCommand;
-  /** The minor modes on in the current buffer. */
-  function enabledMinorModes(): string[];
 
-  /** A command's documentation, or undefined if there is no such command. */
-  function documentation(name: CommandName | DefinedCommand | (string & {})): string | undefined;
-  /** The file that defined a command, if a script did. */
-  function commandSource(name: CommandName | DefinedCommand | (string & {})): string | undefined;
-  /** Show text in the read-only *Help* buffer. */
-  function showHelp(text: string): void;
-  /** The file the current buffer visits, if any. */
-  function bufferFileName(): string | undefined;
-  /** The names of all buffers, in the order Emacs's buffer-list gives them. */
-  function bufferList(): string[];
   /**
    * Ask a question answered by typing "yes" or "no", as Emacs's yes-or-no-p.
    * The editor goes on taking keys until the answer comes, which is
@@ -594,31 +465,14 @@ const API: &str = r##"
    * active now, as Emacs's read-key-sequence: "C-x C-f". C-g is a key in it.
    */
   function readKeySequence(prompt?: string): string;
-  /**
-   * Edit recursively, as Emacs's recursive-edit: the editor goes on taking
-   * commands, with [ ] around the modes in the mode line, until C-M-c
-   * (exit-recursive-edit) returns from it, or C-] (abort-recursive-edit)
-   * quits it.
-   */
-  function recursiveEdit(): void;
-  /** How deep in recursive edits and minibuffers the editor is, as recursion-depth. */
-  function recursionDepth(): number;
   /** The keys that ran the command running, its prefix argument's included, as this-command-keys: "C-u C-n". */
   function thisCommandKeys(): string;
   /** The same keys one by one, as this-command-keys-vector. */
   function thisCommandKeysVector(): string[];
-  /**
-   * The keys typed lately, oldest first, as recent-keys; with
-   * `includeCmds`, each command after the keys that ran it. Keys a
-   * keyboard macro replays are not among them.
-   */
-  function recentKeys(includeCmds?: boolean): (string | { command: string })[];
   /** How many keys recentKeys keeps, 300 to begin with, setting it to `size` if given, as lossage-size. */
   function lossageSize(size?: number): number;
   /** Whether keys are waiting to be read, as input-pending-p: keys given back with unreadKeys. */
   function inputPendingP(): true | undefined;
-  /** Forget keys waiting to be read, as discard-input. */
-  function discardInput(): void;
 
   interface CompletingReadOptions {
     /** Whether the answer must be one of the completions. */
@@ -680,8 +534,6 @@ const API: &str = r##"
     /** The variable the answer goes into, as minibuffer-history-variable. */
     history: string;
   }
-  /** What the open prompt reads, or undefined if none is open. */
-  function minibufferInfo(): MinibufferInfo | undefined;
   /**
    * The open prompt's completions, in the order they are offered, as Emacs's
    * completion-all-sorted-completions, with `base`, the part of the input
@@ -706,11 +558,6 @@ const API: &str = r##"
   /** Put a keymap in front of the current buffer's local map, as Emacs's use-local-map of make-composed-keymap. */
   function composeLocalMap(keymap: string | Keymap): void;
   /**
-   * The first key sequence that runs a command in the selected window's
-   * buffer, as Emacs's where-is-internal with FIRSTONLY, such as "C-x C-f".
-   */
-  function whereIs(command: string): string | undefined;
-  /**
    * The frame's size: its columns, its lines with the echo area, and the
    * most lines the minibuffer may take, as max-mini-window-height says.
    */
@@ -725,21 +572,6 @@ const API: &str = r##"
    * run-with-idle-timer; with `repeat`, in every idle spell that long.
    */
   function runWithIdleTimer(secs: number, repeat: boolean, fn: () => void): number;
-  /** Stop a timer, as Emacs's cancel-timer. */
-  function cancelTimer(id: number): void;
-  /**
-   * Write the current buffer to its file, as Emacs's basic-save-buffer-2:
-   * the first save keeps the old file as name~, the text is written in
-   * buffer-file-coding-system, and the buffer is then unmodified and its
-   * auto-save file deleted. Asks nothing; save-buffer does the asking.
-   */
-  function writeVisitedFile(): void;
-  /** Replace the current buffer's text with its file's, keeping point where it can, and mark it unmodified. */
-  function revertToVisitedFile(): void;
-  /** Replace the current buffer's text with its auto-save file's, leaving it modified. */
-  function recoverFromAutoSave(): void;
-  /** Whether the visited file changed on disk since it was visited or saved, as not verify-visited-file-modtime. */
-  function visitedFileChanged(): boolean;
   /**
    * Make the current buffer visit another file, as Emacs's
    * set-visited-file-name, or none with null. `alongWithFile` says the
@@ -748,11 +580,6 @@ const API: &str = r##"
   function setVisitedFileName(file: string | null, options?: { alongWithFile?: boolean }): void;
   /** A file name made absolute, from dir or default-directory, with ~ for the home directory, as Emacs's expand-file-name. */
   function expandFileName(file: string, dir?: string): string;
-  /** An environment variable's value, as Emacs's getenv. */
-  function getenv(name: string): string | undefined;
-  function fileExists(file: string): boolean;
-  /** Whether a file name names a directory, as Emacs's file-directory-p. */
-  function fileDirectoryP(file: string): boolean;
   /** A file's attributes, as Emacs's file-attributes, for the file itself rather than what a link points to. */
   interface FileAttributes {
     type: "file" | "directory" | "symlink";
@@ -771,42 +598,14 @@ const API: &str = r##"
     modes: string;
     inode: number;
   }
-  /** A file's attributes, or undefined if there is no such file. */
-  function fileAttributes(file: string): FileAttributes | undefined;
   /**
    * The names in a directory, with "." and "..", sorted, as Emacs's
    * directory-files: with `full`, absolute; only those the Emacs regexp
    * `match` matches; at most `count`.
    */
   function directoryFiles(dir: string, options?: { full?: boolean; match?: string; nosort?: boolean; count?: number }): string[];
-  /** Whether a file exists, through symbolic links, as file-exists-p. A file name handler may answer. */
-  function fileExistsP(file: string): boolean;
-  /** Whether Ember can read a file, as file-readable-p. */
-  function fileReadableP(file: string): boolean;
-  /** Whether Ember could write a file: the file if it exists, else its directory, as file-writable-p. */
-  function fileWritableP(file: string): boolean;
-  /** Whether a file can be run, or a directory entered, as file-executable-p. */
-  function fileExecutableP(file: string): boolean;
-  /** Whether a file is a regular file, through symbolic links, as file-regular-p. */
-  function fileRegularP(file: string): boolean;
-  /** Whether a directory can be listed and entered, as file-accessible-directory-p. */
-  function fileAccessibleDirectoryP(file: string): boolean;
-  /** What a symbolic link points to, as file-symlink-p, or undefined if the file is not one. */
-  function fileSymlinkP(file: string): string | undefined;
-  /** Whether `a` was modified after `b`, or exists where `b` does not, as file-newer-than-file-p. */
-  function fileNewerThanFileP(a: string, b: string): boolean;
-  /** Whether a file name is absolute, starting with / or ~, as file-name-absolute-p. */
-  function fileNameAbsoluteP(file: string): boolean;
   /** A file's mode bits, 0o644 as 420, as file-modes; with `nofollow`, a symbolic link's own. */
   function fileModes(file: string, options?: { nofollow?: boolean }): number | undefined;
-  /** Set a file's mode bits, as set-file-modes. */
-  function setFileModes(file: string, mode: number): void;
-  /** Set when a file was last modified and read, in milliseconds since 1970, or to now, as set-file-times. */
-  function setFileTimes(file: string, time?: number): void;
-  /** A file's name with the symbolic links in it followed, as file-truename. */
-  function fileTruename(file: string): string;
-  /** A file name with $VAR and ${VAR} from the environment, and starting again after // or /~, as substitute-in-file-name. */
-  function substituteInFileName(file: string): string;
   /** A directory and file names joined with one slash between each, as file-name-concat. */
   function fileNameConcat(...parts: (string | undefined | null)[]): string;
   /**
@@ -833,8 +632,6 @@ const API: &str = r##"
    * unless `quiet`.
    */
   function writeRegion(start: number | string | null, end: number | null, file: string, options?: { append?: boolean; visit?: true | string; quiet?: boolean; mustbenew?: boolean }): void;
-  /** Whose lock a file has, as file-locked-p: true for Ember's own, the other process's user@host (pid N), or undefined. */
-  function fileLockedP(file: string): true | string | undefined;
   /**
    * Copy a file, as Emacs's copy-file: into `to` if it ends in a slash. A
    * file already there is replaced only with `okIfExists`. Returns the copy's name.
@@ -863,16 +660,8 @@ const API: &str = r##"
    * under `root`, leaving out version control's directories and `ignores`.
    */
   function projectFiles(root: string, options?: { ignores?: string[] }): string[];
-  /** The messages shown, oldest first, as *Messages* logs them: one shown again straight after itself as "Mark set [2 times]". */
-  function messages(): string[];
-  /** Put text in the kill ring as a kill of its own, as Emacs's kill-new. */
-  function killNew(text: string): void;
-  /** A file's text, read as UTF-8. */
-  function readTextFile(file: string): string;
   /** Write text to a file, replacing what it held, as Emacs's write-region does for saved state. */
   function writeTextFile(file: string, text: string, options?: { mode?: number }): void;
-  /** A file name with the home directory written as ~, as Emacs's abbreviate-file-name. */
-  function abbreviateFileName(file: string): string;
   /** The directory part of a file name, up to its last slash, or undefined if it has none. */
   function fileNameDirectory(file: string): string | undefined;
   /** A file name without its directory part. */
@@ -881,38 +670,15 @@ const API: &str = r##"
   function fileNameAsDirectory(file: string): string;
   /** A directory's name without a slash at the end, as Emacs's directory-file-name. */
   function directoryFileName(file: string): string;
-  /** Where a file is auto-saved: #name# beside it. */
-  function autoSaveFileName(file: string): string;
-  /** Whether a file's auto-save file is newer than the file. */
-  function hasNewerAutoSave(file: string): boolean;
   /** Auto-save every buffer with changes not auto-saved yet, as do-auto-save; returns whether any was. */
   function doAutoSave(options?: { quiet?: boolean }): boolean;
-  /** Turn auto-saving on or off for the current buffer, which must visit a file. */
-  function setAutoSave(on: boolean): void;
-  function autoSaving(): boolean;
-  /** Ask the front end to exit, as Emacs's kill-emacs. */
-  function killEmacs(): void;
-  function commandExists(name: string): boolean;
-  /**
-   * The command that is running (Emacs's this-command). In pre-command-hook,
-   * the command about to run; setThisCommand changes which one runs.
-   */
-  function thisCommand(): string | undefined;
   /** Set the mark, saving the old one on the mark ring (Emacs's push-mark), and activate the region if asked. */
   function pushMark(position: number, options?: { activate?: boolean }): void;
-  /** Activate the region between the mark and point, if there is a mark. */
-  function activateMark(): void;
-  /** Hide the region, leaving the mark where it is. */
-  function deactivateMark(): void;
   /**
    * Run fn without its edits deactivating the region after the command, as
    * binding Emacs's deactivate-mark to nil around them does.
    */
   function keepMarkActive<T>(fn: () => T): T;
-  /** Whether the running command was started by keys or M-x rather than called from code. */
-  function calledInteractively(): boolean;
-  /** Whether the region is active: shown, and what region commands act on (Emacs's region-active-p). */
-  function regionActive(): boolean;
 
   type FaceName = keyof Faces;
   /** A line under, over or through text: true, a colour, or a colour and a style. */
@@ -990,41 +756,18 @@ const API: &str = r##"
   ): void;
   /** A face's attributes with what it inherits filled in, for a dark background unless told otherwise. */
   function faceAttributes(name: FaceName | (string & {}), options?: { dark?: boolean }): FaceAttributes;
-  /** A face's documentation and own attributes, or undefined if there is no such face. */
-  function faceInfo(name: FaceName | (string & {})):
-    | { doc: string; source?: string; attributes: FaceAttributes; dark: FaceAttributes; light: FaceAttributes }
-    | undefined;
-  /**
-   * One of a face's attributes, as Emacs's face-attribute: by its Emacs
-   * name (":weight") or a script's ("weight"), on the frame's background;
-   * with `inherit`, what the face inherits counts too. "unspecified" if
-   * nothing sets it.
-   */
-  function faceAttribute(face: FaceName | (string & {}), attribute: string, inherit?: boolean): Value;
-  /** The names of all faces, sorted, as face-list. */
-  function faceList(): string[];
   /** Whether a face of this name exists, as facep. */
   function facep(face: string): boolean;
   /** Make a face with no attributes if there is none of this name, as make-face. Returns its name. */
   function makeFace(name: string): string;
   /** Make a face with another's attributes, as copy-face. Returns its name. */
   function copyFace(oldFace: FaceName | (string & {}), newFace: string): string;
-  /** A colour's red, green and blue from 0 to 65535, as color-values, or undefined if it is no colour. */
-  function colorValues(color: string): [number, number, number] | undefined;
-  /** The values of a colour spec ("#rgb", "rgb:R/G/B", "rgbi:R/G/B"), not a name, as color-values-from-color-spec. */
-  function colorValuesFromColorSpec(spec: string): [number, number, number] | undefined;
   /** Whether a colour is one Ember can show, as color-defined-p. */
   function colorDefinedP(color: string): boolean;
   /** Whether a colour can be shown, as color-supported-p: every colour can. */
   function colorSupportedP(color: string): boolean;
-  /** The names of the colours Emacs knows, as defined-colors. */
-  function definedColors(): string[];
   /** Signal quit if C-g was typed and inhibit-quit is nil, as maybe_quit. Loops check it themselves every 1024 iterations, and every call into the editor does. */
   function maybeQuit(): void;
-  /** Whether C-g was typed and not yet answered, as quit-flag. */
-  function quitFlag(): boolean;
-  /** Set or clear quit-flag, as setting the variable does. */
-  function setQuitFlag(on: boolean): void;
   /** Run fn with inhibit-quit nil, so C-g quits it even where quitting is inhibited, as with-local-quit. */
   function withLocalQuit<T>(fn: () => T): T;
   /**
@@ -1041,20 +784,12 @@ const API: &str = r##"
   function fontPut(font: Font, property: FontProperty, value: Value): Value;
   /** Whether a value is a font, or one of a kind, as fontp. */
   function fontp(object: unknown, kind?: "font-spec" | "font-entity" | "font-object"): boolean;
-  /** A font's XLFD name, runs of wildcards folded into one if `foldWildcards`, as font-xlfd-name. */
-  function fontXlfdName(font: Font, foldWildcards?: boolean): string;
-  /** The font families the frame can show, sorted, as font-family-list: none on a terminal. */
-  function fontFamilyList(): string[];
   /** The name of the font a face is drawn in, as face-font, or undefined on a terminal. */
   function faceFont(face: FaceName | (string & {})): string | undefined;
   /** The open font the text at a position is drawn in, as font-at, or undefined on a terminal. */
   function fontAt(pos: number): Font | undefined;
   /** The font that best matches a spec, as find-font. */
   function findFont(spec: Font): Font | undefined;
-  /** The fonts matching a spec, at most `max`, as list-fonts. */
-  function listFonts(spec: Font, max?: number): Font[];
-  /** The XLFD names of the fonts matching a pattern with `*` and `?`, at most `max`, as x-list-fonts. */
-  function xListFonts(pattern: string, max?: number): string[];
   /** What font-info says of a font by name: [name, full name, size, height, baseline offset, relative compose, default ascent, max width, ascent, descent, space width, average width, file, capability]. */
   function fontInfo(name: string): Value[] | undefined;
   /** An open font's [name, file, pixel size, max width, ascent, descent, space width, average width, capability], as query-font. */
@@ -1076,13 +811,6 @@ const API: &str = r##"
    * split-window's SIZE. Returns the new window.
    */
   function splitWindow(window?: number, side?: "below" | "right", size?: number): number;
-  /** Delete a window, the selected one by default, giving its space to its neighbour. */
-  function deleteWindow(window?: number): void;
-  /** Make a window the selected one, whose buffer commands act on. */
-  function selectWindow(window: number): void;
-  function selectedWindow(): number;
-  /** The windows in cyclic order, left to right and top to bottom, as other-window visits them. */
-  function windowList(): number[];
   /**
    * Where the last mouse event happened: its window, the buffer position
    * under the mouse if there is text there, and for a drag where it started.
@@ -1092,13 +820,6 @@ const API: &str = r##"
   function lastMouseEvent():
     | { window: number; position?: number; start?: { window: number; position?: number } }
     | undefined;
-  /**
-   * The screen line a position shows on in the selected window, where long
-   * lines are continued: where it starts and ends, and whether its line of
-   * text goes on in the next screen line. Where lines are not continued,
-   * the line of text itself.
-   */
-  function screenLine(position: number): { start: number; end: number; continued: boolean };
   /** The name of the buffer a window shows, the selected one by default. */
   function windowBuffer(window?: number): string | undefined;
   /**
@@ -1113,21 +834,8 @@ const API: &str = r##"
    * each frame in a window of its own; a terminal shows the selected one.
    */
   function makeFrame(buffer?: BufferLike): number;
-  /** Delete a frame, the selected one by default, and its windows, as delete-frame does. */
-  function deleteFrame(frame?: number): void;
-  /** Make a frame the selected one, as select-frame does. */
-  function selectFrame(frame: number): void;
-  function selectedFrame(): number;
-  /** The frames, newest first, as frame-list orders them. */
-  function frameList(): number[];
-  /** Make the current buffer read-only, or writable again, as setting buffer-read-only does. */
-  function setReadOnly(on: boolean): void;
-  /** Whether the current buffer is read-only, as Emacs's buffer-read-only. */
-  function bufferReadOnly(): boolean;
   /** The buffer of this name, made if there is none, without showing it, as get-buffer-create. */
   function getBufferCreate(name: BufferLike): Buffer;
-  /** Visit a file without showing it, as find-file-noselect, and return its buffer's name. */
-  function findFileNoselect(file: string): string;
   /**
    * Show a buffer in a window, as Emacs's set-window-buffer: in the selected
    * window it becomes the current buffer; another shows it from its top.
@@ -1150,8 +858,6 @@ const API: &str = r##"
    * only says how far it could go, as window-resizable does.
    */
   function resizeWindow(window: number | undefined, delta: number, horizontal?: boolean, apply?: boolean): number;
-  /** Make windows the same size as their neighbours, as balance-windows does. */
-  function balanceWindows(): void;
 
   /** A search match: where it starts and ends, and each group's range, group 0 being the whole match. */
   interface Match {
@@ -1171,8 +877,6 @@ const API: &str = r##"
     pattern: string,
     options?: { from?: number; regexp?: boolean; backward?: boolean; bound?: number; caseFold?: boolean },
   ): Match | undefined;
-  /** The last successful search's match. */
-  function matchData(): Match | undefined;
   /**
    * Replace the text of the last match (Emacs's replace-match). In the
    * replacement, \\& is the whole match and \\N group N, unless `literal`.
@@ -1180,12 +884,6 @@ const API: &str = r##"
    * after the replacement, whose range is returned.
    */
   function replaceMatch(replacement: string, options?: { literal?: boolean; fixedCase?: boolean }): { start: number; end: number };
-  /**
-   * Whether a search for a string should fold case: case-fold-search, unless
-   * the search is interactive, search-upper-case is on and the string has a
-   * capital letter.
-   */
-  function foldCaseFor(pattern: string, interactive?: boolean): boolean;
   /**
    * Put a named keymap ahead of all others but a transient map, until
    * called with null (Emacs's overriding-terminal-local-map). Incremental
@@ -1205,13 +903,7 @@ const API: &str = r##"
     from: CommandName | DefinedCommand,
     to: CommandName | DefinedCommand | null,
   ): void;
-  /** How many columns text takes on screen, counting wide characters as two (Emacs's string-width). */
-  function stringWidth(text: string): number;
-  /** Read these keys next, after the running command, as if typed again (Emacs's unread-command-events). */
-  function unreadKeys(keys: string): void;
 
-  /** The languages Ember has tree-sitter grammars for. */
-  function treesitLanguages(): string[];
   function treesitLanguageAvailable(language: string): boolean;
   /** Whether Ember has a grammar for a language, as treesit-language-available-p. */
   function treesitLanguageAvailableP(language: string): boolean;
@@ -1296,16 +988,7 @@ const API: &str = r##"
     nodeOnly: true,
     grouped?: boolean,
   ): TreesitNode[];
-  /** The current buffer's tree-sitter language, if it has one. */
-  function treesitLanguage(): string | undefined;
 
-  /**
-   * Set a text property on the characters from start up to end (Emacs's
-   * put-text-property). "face" names a face or a list of faces, earlier ones
-   * winning; "invisible" hides text, as buffer-invisibility-spec says.
-   */
-  function putTextProperty(start: number, end: number, name: string, value: Value): void;
-  function removeTextProperty(start: number, end: number, name: string): void;
   /**
    * Add a face to the face property of the text from start to end, keeping
    * the faces already there (Emacs's add-face-text-property). The new face
@@ -1317,11 +1000,7 @@ const API: &str = r##"
     face: FaceName | (string & {}),
     options?: { append?: boolean },
   ): void;
-  /** The text properties of the character at a position. */
-  function textPropertiesAt(position: number): { [name: string]: Value };
   function getTextProperty(position: number, name: string): Value | undefined;
-  /** A property from the highest priority overlay that has it, otherwise from the text (Emacs's get-char-property). */
-  function charProperty(position: number, name: string): Value | undefined;
   /** The next position after position where text properties change, as next-property-change: limit, or undefined, if none does before it or the end. */
   function nextPropertyChange(position: number, limit?: number): number | undefined;
   /** The last position before position where text properties change, as previous-property-change. */
@@ -1391,22 +1070,12 @@ const API: &str = r##"
   /** Call the functions on a hook in turn until one returns null or false, as run-hook-with-args-until-failure; true if none did. */
   function runHookWithArgsUntilFailure(hook: string, ...args: Value[]): boolean;
   /**
-   * Start a group of changes to the current buffer that can be taken back as
-   * if never made, leaving no trace in the undo history, as Emacs's
-   * prepare-change-group. Returns its handle.
-   */
-  function prepareChangeGroup(): number;
-  /**
    * Run `fn` with changes to text properties not recorded for undo and the
    * buffer left as modified as it was, read-only text and the change hooks
    * out of the way, as Emacs's with-silent-modifications: for properties
    * that style text rather than change it.
    */
   function withSilentModifications<T>(fn: () => T): T;
-  /** Take back the changes made since the group began, as cancel-change-group. */
-  function cancelChangeGroup(handle: number): void;
-  /** Keep the changes made since the group began, as accept-change-group. */
-  function acceptChangeGroup(handle: number): void;
   /** Run `fn`, taking back its changes if it throws, as Emacs's atomic-change-group. */
   function atomicChangeGroup<T>(fn: () => T): T;
   /** What starts a process: its name, program and arguments, and where its output goes. */
@@ -1497,23 +1166,14 @@ const API: &str = r##"
   function processId(process: string): number | undefined;
   /** Whether exiting Ember asks before killing it, as process-query-on-exit-flag. */
   function processQueryOnExitFlag(process: string): boolean;
-  function setProcessQueryOnExitFlag(process: string, query: boolean): void;
-  /** The processes running, as process-list. */
-  function processList(): string[];
   /** The process writing to a buffer, as get-buffer-process. */
   function getBufferProcess(buffer: BufferLike): string | undefined;
-  /** Write to a process's input, encoded in its coding, as process-send-string. */
-  function processSendString(process: string, text: string): void;
-  /** Make a process see the end of its input, as process-send-eof: C-d on a terminal, else its input closed. */
-  function processSendEof(process: string): void;
   /** Interrupt a process and what it started, as C-c does in a terminal; with currentGroup, the job in the foreground on its terminal. */
   function interruptProcess(process: string, currentGroup?: boolean): void;
   /** Kill a process and what it started. */
   function killProcess(process: string, currentGroup?: boolean): void;
   /** Send a signal, by number or name ("SIGINT", "TERM"), as signal-process. */
   function signalProcess(process: string, signal: number | string): void;
-  /** Kill a process and forget it, as delete-process. */
-  function deleteProcess(process: string): void;
   /**
    * Run a program and wait for it, as Emacs's call-process: its exit code
    * and what it wrote. Asks the agent's permission first.
@@ -1534,18 +1194,13 @@ const API: &str = r##"
    */
   function makeCharTable(subtype: string | symbol, init?: Value): CharTable;
   function charTableP(value: unknown): value is CharTable;
-  /** What a char-table is for, as char-table-subtype: "case-table", "category-table" or what make-char-table was given. */
-  function charTableSubtype(table: CharTable): string;
   /** The table a char-table takes values from where its own are nil, as char-table-parent. */
   function charTableParent(table: CharTable): CharTable | undefined;
   function setCharTableParent(table: CharTable, parent: CharTable | null): void;
   /** A char-table's extra slot, as char-table-extra-slot: a case table keeps its upper cases in 0. */
   function charTableExtraSlot(table: CharTable, n: number): Value | undefined;
-  function setCharTableExtraSlot(table: CharTable, n: number, value: Value): void;
   /** The value for a range, as char-table-range: the default for null, else its first character's. */
   function charTableRange(table: CharTable, range: CharRange): Value | undefined;
-  /** Set the value for a range, as set-char-table-range: the default for null, else every character in it. */
-  function setCharTableRange(table: CharTable, range: CharRange, value: Value): void;
   /** A character's value in a char-table, its default and parent's counted, as aref. */
   function aref(table: CharTable, c: CharCode): Value | undefined;
   /** Set a character's value in a char-table, as aset. */
@@ -1557,36 +1212,17 @@ const API: &str = r##"
   function mapCharTable(fn: (key: number | [number, number], value: Value) => void, table: CharTable): void;
   /** A copy of a char-table, its extra slots shared, as copy-sequence; or of an array. */
   function copySequence<T extends CharTable | unknown[]>(value: T): T;
-  /** The standard case table, which buffers without their own use, as standard-case-table. */
-  function standardCaseTable(): CharTable;
-  /** The current buffer's case table, as current-case-table. */
-  function currentCaseTable(): CharTable;
-  /**
-   * Make a case table the current buffer's, as set-case-table: changing
-   * case and folding case in searches follow it.
-   */
-  function setCaseTable(table: CharTable): void;
-  function setStandardCaseTable(table: CharTable): void;
   function caseTableP(value: unknown): value is CharTable;
   /** Run `fn` with a case table current, then the buffer's back, however it ends, as with-case-table. */
   function withCaseTable<T>(table: CharTable, fn: () => T): T;
-  /** The standard category table, as standard-category-table. */
-  function standardCategoryTable(): CharTable;
-  /** The current buffer's category table, as category-table, which \cX in regexps follows. */
-  function categoryTable(): CharTable;
   function categoryTableP(value: unknown): value is CharTable;
-  /** A category table with no categories, as make-category-table. */
-  function makeCategoryTable(): CharTable;
   /** A copy of a category table, the current buffer's by default, as copy-category-table. */
   function copyCategoryTable(table?: CharTable): CharTable;
-  function setCategoryTable(table: CharTable): void;
   /** Define a category, named by a printing ASCII character, as define-category. */
   function defineCategory(category: string, doc: string, table?: CharTable): void;
   function categoryDocstring(category: string, table?: CharTable): string | undefined;
   /** The first category no category is defined as, as get-unused-category. */
   function getUnusedCategory(table?: CharTable): string | undefined;
-  /** A character's categories in the current buffer, as char-category-set and category-set-mnemonics give them: ".Lalr" for a. */
-  function charCategorySet(c: CharCode): string;
   /** Put characters in a category, or with `reset` take them out of it, as modify-category-entry. */
   function modifyCategoryEntry(range: CharCode | [CharCode, CharCode], category: string, table?: CharTable, reset?: boolean): void;
   /**
@@ -1603,22 +1239,6 @@ const API: &str = r##"
     col: number;
     row: number;
   }
-  /**
-   * A string in upper case, as Emacs's upcase: the case table's upper case
-   * of each character, ß becoming SS and the other characters Unicode
-   * cases into several doing so.
-   */
-  function upcase(s: string): string;
-  /** A string in lower case, as downcase: a capital sigma ending a word becomes final sigma. */
-  function downcase(s: string): string;
-  /**
-   * A string capitalized, as capitalize: each word's first character in
-   * title case and the rest in lower case, words being runs of word
-   * constituents in the current buffer's syntax table.
-   */
-  function capitalize(s: string): string;
-  /** A string with each word's first character in title case and the rest as it is, as upcase-initials. */
-  function upcaseInitials(s: string): string;
   /** Where a window's text ends, as window-end: the position after the last character it shows, its last row counted even if partly in sight. */
   function windowEnd(window?: number): number;
   /** Whether a position, point by default, shows in a window, as pos-visible-in-window-p; with `partially`, a row partly in sight counts. */
@@ -1629,8 +1249,6 @@ const API: &str = r##"
   function posnAtXY(x: number, y: number, window?: number): Posn | undefined;
   /** The width and height of text as a window shows it, as window-text-pixel-size: what it shows, by default. */
   function windowTextPixelSize(window?: number, from?: number, to?: number): [number, number];
-  /** How tall the row point is on shows in the selected window, as line-pixel-height. */
-  function linePixelHeight(): number;
   /** The width and height of a buffer's text, its lines unwrapped, as buffer-text-pixel-size. */
   function bufferTextPixelSize(buffer?: string): [number, number];
   /** How wide a string shows, in its faces, as string-pixel-width. */
@@ -1651,19 +1269,8 @@ const API: &str = r##"
    * if set, else its first strong character's, or the paragraph's before.
    */
   function currentBidiParagraphDirection(buffer?: BufferLike): "left-to-right" | "right-to-left";
-  /**
-   * Move point to the character on its right on display, or its left for a
-   * negative direction, wherever that is in the buffer, as
-   * move-point-visually; signals beginning-of-buffer or end-of-buffer.
-   * Returns the new point.
-   */
-  function movePointVisually(direction: number): number;
-  /** Ring the bell, as ding: ring-bell-function if set, else the front end sounds it or, with visible-bell, flashes. */
-  function ding(): void;
   /** Ring the bell, as beep. */
   function beep(): void;
-  /** Redisplay now, as redisplay. */
-  function redisplay(): void;
   /** Draw the frame again, as redraw-display. */
   function redrawDisplay(): void;
   /** Draw a frame again, as redraw-frame. */
@@ -1720,10 +1327,6 @@ const API: &str = r##"
   function fringeBitmapP(bitmap: string): boolean;
   /** The bitmaps in the left and right fringes beside a position, as fringe-bitmaps-at-pos; undefined if it does not show. */
   function fringeBitmapsAtPos(pos?: number, window?: number): [string | undefined, string | undefined] | undefined;
-  /** The width of a character of the current buffer's default font, its remapping counted, as default-font-width. */
-  function defaultFontWidth(): number;
-  /** The height of a line of the current buffer's default font, as default-font-height. */
-  function defaultFontHeight(): number;
   /** A window's point, the selected window's by default, as window-point: in the selected window, its buffer's point. */
   function windowPoint(window?: number): number;
   /** Move a window's point, as set-window-point. */
@@ -1738,8 +1341,6 @@ const API: &str = r##"
   function switchToPrevBuffer(window?: number, buryOrKill?: "bury" | "kill" | "append"): string | undefined;
   /** Show in a window the buffer previous-buffer left, as switch-to-next-buffer. Returns it, or undefined. */
   function switchToNextBuffer(window?: number): string | undefined;
-  /** Put a buffer last in the buffer list, as bury-buffer-internal. */
-  function buryBufferInternal(buffer: string): void;
   /** A window's parameter, as window-parameter, such as "quit-restore". */
   function windowParameter(window: number | undefined, name: string | symbol): Value | undefined;
   /** Set a window's parameter, or with null take it away, as set-window-parameter. */
@@ -1821,21 +1422,11 @@ const API: &str = r##"
   /** Whether a function, or advice of that name, advises a name's function, as advice-member-p. */
   function adviceMemberP(fn: ((...args: any[]) => any) | string | symbol, symbol: string | symbol): boolean;
   /**
-   * Where the minibuffer's prompt ends and its input starts, as
-   * minibuffer-prompt-end: the prompt is read-only text at the start of
-   * the minibuffer, and point is kept after it.
-   */
-  function minibufferPromptEnd(): number;
-  /** How many minibuffers are open, one inside another, as minibuffer-depth. */
-  function minibufferDepth(): number;
-  /**
    * The minibuffer's window, as minibuffer-window: in windowList, last,
    * while a prompt is open, and selectedWindow while it is selected, as it
    * is when a prompt opens, until other-window selects another.
    */
   function minibufferWindow(): number;
-  /** The minibuffer's input, after its prompt, as minibuffer-contents. */
-  function minibufferContents(): string;
   /**
    * The text a mode line construct shows for the current buffer and the
    * selected window, as format-mode-line; `mode-line-format`'s by default.
@@ -1975,11 +1566,6 @@ const API: &str = r##"
    * with the text as a marker would be, as save-excursion.
    */
   function saveExcursion<T>(fn: () => T): T;
-  /**
-   * Kill the text from `beg` to `end`, as Emacs's kill-region: after another
-   * kill it joins that one, before it if `end` comes first.
-   */
-  function killRegion(beg: number, end: number): void;
   /** Where a position is among parens, strings and comments, as Emacs's parse-partial-sexp returns it. */
   interface ParseState {
     /** How deep in parens. */
@@ -2016,11 +1602,6 @@ const API: &str = r##"
    * then flags such as "12" or "34" for two-character comment delimiters.
    */
   function modifySyntaxEntry(chars: string, descriptor: string, table?: string): void;
-  /** The current buffer's syntax table. */
-  function syntaxTable(): string;
-  function setSyntaxTable(name: string): void;
-  /** A character's entry in the current syntax table, as modify-syntax-entry writes it. */
-  function syntaxEntry(char: string): string | undefined;
   /** A character's syntax class, as Emacs's char-syntax: "w", "_", "(", and so on. */
   function charSyntax(char: string): string;
   /** The character a paren matches, as its syntax entry says. */
@@ -2036,8 +1617,6 @@ const API: &str = r##"
   function scanSexps(from: number, count: number): number | null;
   /** Move over comments and whitespace, as Emacs's forward-comment; true if it went over `count` comments. */
   function forwardComment(count?: number): boolean;
-  /** Move back over expression prefixes, as Emacs's backward-prefix-chars. */
-  function backwardPrefixChars(): void;
   /** Parse from `from` to `to`, as Emacs's parse-partial-sexp. */
   function parsePartialSexp(from: number, to: number): ParseState;
   /** Where a position, point by default, is, parsing from the start, as Emacs's syntax-ppss. */
@@ -2046,12 +1625,6 @@ const API: &str = r##"
   function skipSyntaxForward(syntaxes: string, limit?: number): number;
   function skipSyntaxBackward(syntaxes: string, limit?: number): number;
 
-  /**
-   * Replace each `from` character between start and end with `to`, in place,
-   * as Emacs's subst-char-in-region: point and markers stay where they are,
-   * and undo leaves point at the change.
-   */
-  function substCharInRegion(start: number, end: number, from: string, to: string): void;
   /**
    * Make a marker: a position that moves with the text as it is edited, as
    * Emacs's copy-marker. It starts at `position`, point by default, in the
@@ -2096,44 +1669,11 @@ const API: &str = r##"
     properties?: { [name: string]: Value },
     options?: { frontAdvance?: boolean; rearAdvance?: boolean },
   ): number;
-  function overlayPut(overlay: number, name: string, value: Value): void;
-  function overlayGet(overlay: number, name: string): Value | undefined;
   function overlayStart(overlay: number): number | undefined;
   function overlayEnd(overlay: number): number | undefined;
-  function moveOverlay(overlay: number, start: number, end: number): void;
-  function deleteOverlay(overlay: number): void;
-  /** Overlays overlapping the range, and empty ones inside it. */
-  function overlaysIn(start: number, end: number): number[];
   /** Overlays covering the character at a position. */
   function overlaysAt(position: number): number[];
 
-  /** Whether the character at a position is hidden. */
-  function invisibleAt(position: number): boolean;
-  /** How many lines the buffer has, counting the empty line after a final newline. */
-  function lineCount(): number;
-  /** The line, counting from 0, that a position is on. */
-  function lineOf(position: number): number;
-  /** The position where a line starts. */
-  function lineStart(line: number): number;
-  /** The position where a line ends, before its newline. */
-  function lineEnd(line: number): number;
-  /** A line's text, without its newline. */
-  function lineText(line: number): string;
-  /**
-   * How many characters the buffer has. Positions count characters, while
-   * JavaScript string indices count UTF-16 units, which differ for emoji and
-   * other characters outside the Basic Multilingual Plane; work with lines
-   * and positions from these functions rather than indices into bufferText().
-   */
-  function bufferSize(): number;
-  /** Where the accessible portion starts: 0 unless the buffer is narrowed, as point-min. */
-  function pointMin(): number;
-  /** Where the accessible portion ends: the buffer's size unless it is narrowed, as point-max. */
-  function pointMax(): number;
-  /** Restrict editing and display to a range, as narrow-to-region. */
-  function narrowToRegion(start: number, end: number): void;
-  /** Make the whole buffer accessible again, as widen. */
-  function widen(): void;
   /** Whether the current buffer is narrowed, as buffer-narrowed-p. */
   function bufferNarrowedP(): boolean;
   /**
@@ -2163,8 +1703,6 @@ const API: &str = r##"
   function makeIndirectBuffer(base: string | Buffer, name: string, clone?: boolean): Buffer;
   /** The buffer whose text an indirect buffer shares, the current one's by default, as buffer-base-buffer. */
   function bufferBaseBuffer(buffer?: string | Buffer): Buffer | undefined;
-  /** name, or the first of name<2>, name<3> and on that no buffer has, as generate-new-buffer-name. */
-  function generateNewBufferName(name: string): string;
   /**
    * A coding system's name, as utf-8-unix, iso-latin-1 or
    * japanese-shift-jis-dos: how characters are written as bytes, and how
@@ -2252,15 +1790,6 @@ const API: &str = r##"
   /** Stops recording changes for undo and forgets them, as buffer-disable-undo. */
   function bufferDisableUndo(buffer?: string | Buffer): void;
   /**
-   * A count of the changes to the current buffer's text, as Emacs's
-   * buffer-modified-tick: it is larger after any edit.
-   */
-  function bufferModifiedTick(): number;
-  /** Whether the current buffer changed since it was visited or saved (Emacs's buffer-modified-p). */
-  function bufferModified(): boolean;
-  /** Mark the current buffer modified or not, as Emacs's set-buffer-modified-p. */
-  function setBufferModified(modified: boolean): void;
-  /**
    * Make text whose invisible property is `name` hidden in this buffer
    * (Emacs's add-to-invisibility-spec); with `ellipsis`, shown as "...".
    */
@@ -2321,6 +1850,11 @@ pub fn type_definitions(ed: &Editor) -> String {
         out += &format!("    \"{}\": Value;\n", escape(&var.name));
     }
     out += "  }\n";
+    let natives = crate::natives::declarations();
+    if !natives.is_empty() {
+        out += "\n";
+        out += &natives;
+    }
     out += API;
     // Everything above sits inside `declare global`.
     let mut file = String::from(HEADER);
@@ -2379,6 +1913,27 @@ fn variable_comment(doc: &str, source: Option<&str>, indent: &str) -> String {
         }
     }
     out + &format!("{indent} */\n")
+}
+
+/// A JSDoc comment for a native's documentation, written with `///`: on
+/// one line when it is one line, as the hand-written declarations are.
+pub(crate) fn js_doc(doc: &str, indent: &str) -> String {
+    let lines: Vec<String> = doc.lines().map(|l| l.strip_prefix(' ').unwrap_or(l).replace("*/", "*\\/")).collect();
+    match lines.as_slice() {
+        [] => String::new(),
+        [line] => format!("{indent}/** {line} */\n"),
+        _ => {
+            let mut out = format!("{indent}/**\n");
+            for line in lines {
+                if line.is_empty() {
+                    out += &format!("{indent} *\n");
+                } else {
+                    out += &format!("{indent} * {line}\n");
+                }
+            }
+            out + &format!("{indent} */\n")
+        }
+    }
 }
 
 /// A tuple label for a parameter: the name in camelCase if that is a valid
