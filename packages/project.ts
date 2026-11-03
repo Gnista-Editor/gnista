@@ -83,7 +83,7 @@ function remember(root: string): void {
 }
 
 /** The current project's root, remembered; undefined if the buffer is in none. */
-function current(): string | undefined {
+export function current(): string | undefined {
   const root = override ?? findRoot(".");
   if (root !== undefined) remember(root);
   return root;

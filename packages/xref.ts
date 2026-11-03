@@ -9,7 +9,7 @@ ember.defineFace({ name: "xref-line-number", doc: "Line numbers in *xref*.", att
 ember.defineFace({ name: "xref-match", doc: "What matched, in *xref*.", attributes: { inherit: "match" } });
 
 /** A place found: its file, line and column, and the text shown for it. */
-type Xref = { file: string; line: number; col: number; length: number; summary: string; group: string };
+export type Xref = { file: string; line: number; col: number; length: number; summary: string; group: string };
 
 /** What each *xref* buffer shows, kept by buffer so renaming it keeps it. */
 const shown = new Map<ember.Buffer, { byLine: Map<number, Xref>; current?: number }>();
@@ -196,3 +196,127 @@ ember.defineMajorMode({
     ember.setVariable("next-error-function", "xref--next-error-function");
   },
 });
+
+// --- Finding definitions and references, as xref.el's xref-find-definitions --
+
+/**
+ * What a backend does, as xref's generic functions: the identifier at
+ * point, and the places that define it or refer to it. eglot is one.
+ */
+export interface XrefBackend {
+  identifierAtPoint(): string | undefined;
+  definitions(identifier: string): Xref[];
+  references(identifier: string): Xref[];
+}
+
+const backends = new Map<string, XrefBackend>();
+
+/** Names a backend, which a function on xref-backend-functions gives by name, as cl-defmethod defines one. */
+export function defineXrefBackend(name: string, backend: XrefBackend): void {
+  backends.set(name, backend);
+}
+
+ember.defineHook(
+  "xref-backend-functions",
+  "Functions that give the name of the xref backend for the current buffer, tried in turn, as defineXrefBackend names them.",
+);
+
+/** The symbol at point, by the syntax table, as the default backend's identifier. */
+function symbolAtPoint(): string | undefined {
+  return ember.saveExcursion(() => {
+    ember.skipSyntaxBackward("w_");
+    const start = ember.point();
+    ember.skipSyntaxForward("w_");
+    return ember.point() > start ? ember.bufferText(start, ember.point()) : undefined;
+  });
+}
+
+/** The backend for the current buffer, as xref-find-backend asks xref-backend-functions. */
+function findBackend(): XrefBackend {
+  const name = ember.runHookWithArgsUntilSuccess("xref-backend-functions");
+  const backend = typeof name === "string" ? backends.get(name) : undefined;
+  return backend ?? { identifierAtPoint: symbolAtPoint, definitions: () => [], references: () => [] };
+}
+
+/** Where M-. was typed, for M-, to go back to, and where M-, came from, for C-M-, as xref--history. */
+const history: { back: ember.Marker[]; forward: ember.Marker[] } = { back: [], forward: [] };
+
+function pushMarker(stack: ember.Marker[]): void {
+  stack.unshift(ember.makeMarker(ember.point()));
+  const max = Number(ember.variable("xref-history-max") ?? 16);
+  for (const m of stack.splice(max)) ember.deleteMarker(m);
+}
+
+ember.defineVariable({ name: "xref-history-max", doc: "How many places M-, can go back to.", value: 16 });
+
+/** Goes to one place, or lists several, as xref--show-xrefs does for definitions. */
+function showOrGo(xrefs: Xref[], kind: string, identifier: string): void {
+  if (xrefs.length === 0) ember.userError(`No ${kind} found for: ${identifier}`);
+  pushMarker(history.back);
+  for (const m of history.forward.splice(0)) ember.deleteMarker(m);
+  if (xrefs.length === 1) {
+    ember.call("switch-to-buffer", ember.findFileNoselect(xrefs[0].file));
+    gotoXref(xrefs[0]);
+  } else showXrefs(xrefs);
+}
+
+/** Reads the identifier, asking with a prompt when there is none at point or with a prefix argument, as xref--read-identifier. */
+function readIdentifier(prompt: string, ask: boolean): string {
+  const at = findBackend().identifierAtPoint();
+  if (at !== undefined && !ask) return at;
+  const answer = ember.readString(at ? `${prompt} (default ${at}): ` : `${prompt}: `, { default: at });
+  if (answer === "") ember.userError("There is no default identifier");
+  return answer;
+}
+
+ember.defineCommand({
+  name: "xref-find-definitions",
+  doc: "Go to where the identifier at point is defined, or list the places if there are several. With a prefix argument, ask for it.",
+  params: [{ name: "arg", kind: "prefix" }],
+  run: (arg) => {
+    const id = readIdentifier("Find definitions of", arg !== null && arg !== undefined);
+    showOrGo(findBackend().definitions(id), "definitions", id);
+  },
+});
+
+ember.defineCommand({
+  name: "xref-find-references",
+  doc: "List the places that refer to the identifier at point. With a prefix argument, ask for it.",
+  params: [{ name: "arg", kind: "prefix" }],
+  run: (arg) => {
+    const id = readIdentifier("Find references to", arg !== null && arg !== undefined);
+    const xrefs = findBackend().references(id);
+    if (xrefs.length === 0) ember.userError(`No references found for: ${id}`);
+    pushMarker(history.back);
+    showXrefs(xrefs);
+  },
+});
+
+/** Goes to a marker of a history stack, keeping where point was on the other, as xref-go-back and xref-go-forward. */
+function goAlong(from: ember.Marker[], to: ember.Marker[], none: string): void {
+  const m = from.shift();
+  if (!m) ember.userError(none);
+  pushMarker(to);
+  const buffer = ember.markerBuffer(m);
+  if (buffer) {
+    ember.call("switch-to-buffer", buffer);
+    ember.gotoChar(ember.markerPosition(m)!);
+  }
+  ember.deleteMarker(m);
+}
+
+ember.defineCommand({
+  name: "xref-go-back",
+  doc: "Go back to where M-. or M-? was typed.",
+  run: () => goAlong(history.back, history.forward, "At start of xref history"),
+});
+ember.defineCommand({
+  name: "xref-go-forward",
+  doc: "Go forward again to where M-, came from.",
+  run: () => goAlong(history.forward, history.back, "At end of xref history"),
+});
+
+ember.bindKey("M-.", "xref-find-definitions");
+ember.bindKey("M-?", "xref-find-references");
+ember.bindKey("M-,", "xref-go-back");
+ember.bindKey("C-M-,", "xref-go-forward");

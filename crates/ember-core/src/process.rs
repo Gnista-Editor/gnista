@@ -260,13 +260,17 @@ pub(crate) struct Processes {
     /// Events taken off the queue while waiting for a process to end,
     /// which belong to others, to handle first next time.
     held: std::collections::VecDeque<Event>,
+    /// Counts output given to processes while accept-process-output waits
+    /// for that of `watching`, or of any process.
+    outputs_seen: u64,
+    watching: Option<u64>,
 }
 
 impl Default for Processes {
     fn default() -> Processes {
         let (tx, rx) = sync_channel(QUEUED_CHUNKS);
         let tx = EventSender { tx, wake: Arc::new(Mutex::new(None)) };
-        Processes { list: Vec::new(), tx, rx, next_id: 1, held: Default::default() }
+        Processes { list: Vec::new(), tx, rx, next_id: 1, held: Default::default(), outputs_seen: 0, watching: None }
     }
 }
 
@@ -1106,7 +1110,40 @@ impl Editor {
         p.coding.0.decode(&chunk).0
     }
 
+    /// Waits for output from a process, or from any with `None`, for up to
+    /// `secs` seconds, or until it comes, as Emacs's `accept-process-output`:
+    /// what comes meanwhile goes to the processes' filters, and timers run,
+    /// but keys wait. `C-g` quits it. Whether output came.
+    pub fn wait_for_process_output(&mut self, process: Option<&str>, secs: Option<f64>) -> Result<bool> {
+        let id = match process {
+            Some(name) => Some(self.process(name)?.id),
+            None => None,
+        };
+        let deadline = secs.map(|s| std::time::Instant::now() + Duration::from_secs_f64(s.max(0.0)));
+        loop {
+            let before = self.processes.outputs_seen;
+            self.processes.watching = id;
+            self.run_timers();
+            self.processes.watching = None;
+            if self.processes.outputs_seen != before {
+                return Ok(true);
+            }
+            if id.is_some_and(|id| !self.processes.list.iter().any(|p| p.id == id && matches!(p.status, Status::Run))) {
+                return Ok(false);
+            }
+            if deadline.is_some_and(|d| std::time::Instant::now() >= d) {
+                return Ok(false);
+            }
+            self.maybe_quit()?;
+            std::thread::sleep(Duration::from_millis(2));
+        }
+    }
+
     fn process_output(&mut self, name: &str, text: &str) {
+        let Ok(id) = self.process(name).map(|p| p.id) else { return };
+        if self.processes.watching.is_none_or(|w| w == id) {
+            self.processes.outputs_seen += 1;
+        }
         let Ok(p) = self.process(name) else { return };
         match p.filter.clone() {
             Some(f) => {

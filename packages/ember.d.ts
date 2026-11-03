@@ -996,6 +996,12 @@ declare global {
        */
       "compile-goto-error": [];
       /**
+       * Complete the text at point, from what completion-at-point-functions give: one completion goes in, or the part they share; with several, the minibuffer asks which.
+       *
+       * Defined in packages/minibuffer.ts.
+       */
+      "completion-at-point": [];
+      /**
        * Copy a directory and what it holds: into the new name if that is a directory already, else as it.
        *
        * @param directory file name
@@ -1922,6 +1928,58 @@ declare global {
        */
       "editorconfig-mode": [];
       /**
+       * Start the language server eglot-server-programs names for this buffer's mode, in its project, and manage its buffers of that mode.
+       *
+       * Defined in packages/eglot.ts.
+       */
+      "eglot": [];
+      /**
+       * Eglot manages this buffer: a language server hears of its text and answers M-., M-?, C-M-i and the eglot commands.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/eglot.ts.
+       */
+      "eglot--managed-mode": [];
+      /**
+       * Choose one of the changes the server offers for point, or the region, and make it.
+       *
+       * Defined in packages/eglot.ts.
+       */
+      "eglot-code-actions": [];
+      /**
+       * Have the server format the whole buffer.
+       *
+       * Defined in packages/eglot.ts.
+       */
+      "eglot-format-buffer": [];
+      /**
+       * Stop the current buffer's language server and start it again.
+       *
+       * Defined in packages/eglot.ts.
+       */
+      "eglot-reconnect": [];
+      /**
+       * Rename the thing at point everywhere the server knows of it.
+       *
+       * @param newname text
+       *
+       * Defined in packages/eglot.ts.
+       */
+      "eglot-rename": [newname: string];
+      /**
+       * Stop the current buffer's language server, and manage its buffers no more.
+       *
+       * Defined in packages/eglot.ts.
+       */
+      "eglot-shutdown": [];
+      /**
+       * Stop every language server.
+       *
+       * Defined in packages/eglot.ts.
+       */
+      "eglot-shutdown-all": [];
+      /**
        * Insert a newline. With electric-indent-mode on, as it is by default, that is all; RET is the key that indents.
        *
        * Defined in packages/simple.ts.
@@ -2137,6 +2195,18 @@ declare global {
        * Defined in packages/replace.ts.
        */
       "flush-lines": [];
+      /**
+       * Go to the next diagnostic and show its message.
+       *
+       * Defined in packages/eglot.ts.
+       */
+      "flymake-goto-next-error": [];
+      /**
+       * Go to the diagnostic before point and show its message.
+       *
+       * Defined in packages/eglot.ts.
+       */
+      "flymake-goto-prev-error": [];
       /**
        * Fontify the whole buffer now, rather than as it comes into view.
        */
@@ -6127,6 +6197,34 @@ declare global {
        */
       "xref--xref-buffer-mode": [];
       /**
+       * Go to where the identifier at point is defined, or list the places if there are several. With a prefix argument, ask for it.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/xref.ts.
+       */
+      "xref-find-definitions": [arg?: PrefixArg];
+      /**
+       * List the places that refer to the identifier at point. With a prefix argument, ask for it.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/xref.ts.
+       */
+      "xref-find-references": [arg?: PrefixArg];
+      /**
+       * Go back to where M-. or M-? was typed.
+       *
+       * Defined in packages/xref.ts.
+       */
+      "xref-go-back": [];
+      /**
+       * Go forward again to where M-, came from.
+       *
+       * Defined in packages/xref.ts.
+       */
+      "xref-go-forward": [];
+      /**
        * Visit the place at point in another window.
        *
        * Defined in packages/xref.ts.
@@ -7192,6 +7290,56 @@ declare global {
        * Keymap editorconfig-mode-map.
        */
       "editorconfig-mode-map": Value;
+      /**
+       * Whether Eglot--Managed mode is on in this buffer. Use the command eglot--managed-mode to change it.
+       *
+       * Defined in packages/eglot.ts.
+       */
+      "eglot--managed-mode": Value;
+      /**
+       * Keymap eglot--managed-mode-map.
+       */
+      "eglot--managed-mode-map": Value;
+      /**
+       * Whether a server stops when the last buffer it manages is killed.
+       *
+       * Defined in packages/eglot.ts.
+       */
+      "eglot-autoshutdown": Value;
+      /**
+       * Capabilities not to use even when a server has them, such as ":hoverProvider".
+       *
+       * Defined in packages/eglot.ts.
+       */
+      "eglot-ignored-server-capabilities": Value;
+      /**
+       * Keymap eglot-mode-map.
+       */
+      "eglot-mode-map": Value;
+      /**
+       * Seconds idle after which the server hears of edits, if it has not already.
+       *
+       * Defined in packages/eglot.ts.
+       */
+      "eglot-send-changes-idle-time": Value;
+      /**
+       * How to start a language server for each major mode: a list of [modes, program], modes a mode or a list of them, program the command and its arguments, or ["eglot-alternatives", ...commands] to use the first that is installed, as eglot-alternatives makes them.
+       *
+       * Defined in packages/eglot.ts.
+       */
+      "eglot-server-programs": Value;
+      /**
+       * Seconds to wait for a server's answer before giving up.
+       *
+       * Defined in packages/eglot.ts.
+       */
+      "eglot-sync-request-timeout": Value;
+      /**
+       * Settings given to servers that ask for them, as an object of sections, such as { gopls: { ... } }.
+       *
+       * Defined in packages/eglot.ts.
+       */
+      "eglot-workspace-configuration": Value;
       /**
        * Characters that reindent the line when typed, with electric-indent-mode on: newline, and in code modes closing braces and parens.
        *
@@ -9446,6 +9594,12 @@ declare global {
        */
       "xref--xref-buffer-mode-map": Value;
       /**
+       * How many places M-, can go back to.
+       *
+       * Defined in packages/xref.ts.
+       */
+      "xref-history-max": Value;
+      /**
        * The text properties yanking leaves out of what it inserts, or t for all of them, as Emacs's insert-for-yank removes them.
        */
       "yank-excluded-properties": Value;
@@ -9851,6 +10005,24 @@ declare global {
        * Text in a fixed-width font.
        */
       "fixed-pitch": FaceAttributes;
+      /**
+       * A diagnostic of an error.
+       *
+       * Defined in packages/eglot.ts.
+       */
+      "flymake-error": FaceAttributes;
+      /**
+       * A diagnostic of a note.
+       *
+       * Defined in packages/eglot.ts.
+       */
+      "flymake-note": FaceAttributes;
+      /**
+       * A diagnostic of a warning.
+       *
+       * Defined in packages/eglot.ts.
+       */
+      "flymake-warning": FaceAttributes;
       /**
        * Brackets.
        */
@@ -10598,6 +10770,10 @@ declare global {
        */
       "compilation-start-hook": Value;
       /**
+       * Functions that say what completes the text at point: each gives [start, end, completions] or nil, the first that gives one winning.
+       */
+      "completion-at-point-functions": Value;
+      /**
        * Run after Delete-Selection mode is turned on or off.
        */
       "delete-selection-mode-hook": Value;
@@ -10689,6 +10865,26 @@ declare global {
        * Run after Editorconfig mode is turned on.
        */
       "editorconfig-mode-on-hook": Value;
+      /**
+       * Run after Eglot--Managed mode is turned on or off.
+       */
+      "eglot--managed-mode-hook": Value;
+      /**
+       * Run after Eglot--Managed mode is turned off.
+       */
+      "eglot--managed-mode-off-hook": Value;
+      /**
+       * Run after Eglot--Managed mode is turned on.
+       */
+      "eglot--managed-mode-on-hook": Value;
+      /**
+       * Run when eglot starts or stops managing a buffer.
+       */
+      "eglot-managed-mode-hook": Value;
+      /**
+       * Run with a server's name when it has started.
+       */
+      "eglot-server-initialized-hook": Value;
       /**
        * Run after Electric-Pair mode is turned on or off.
        */
@@ -11181,6 +11377,10 @@ declare global {
        * Run after entering XREF mode, after the hooks of the modes it is built on.
        */
       "xref--xref-buffer-mode-hook": Value;
+      /**
+       * Functions that give the name of the xref backend for the current buffer, tried in turn, as defineXrefBackend names them.
+       */
+      "xref-backend-functions": Value;
     }
 
     /**
@@ -11563,6 +11763,12 @@ declare global {
     function windowTree(): WindowTreeNode;
     /** The buffer-local minor modes on in the current buffer, as local-minor-modes. */
     function localMinorModes(): string[];
+    /**
+     * Wait for output from a process, or any with none named, for up to
+     * `seconds`, or until some comes, as accept-process-output: it goes to
+     * the filters meanwhile, and timers run, but keys wait. Whether output came.
+     */
+    function acceptProcessOutput(process?: string, seconds?: number): boolean;
     /** Ember's process id, as emacs-pid. */
     function emacsPid(): number;
     /** Whether a process of this machine is running, as process-attributes finds it. */

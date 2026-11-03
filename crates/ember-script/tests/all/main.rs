@@ -23,6 +23,7 @@ mod desktop;
 mod diff;
 mod dired;
 mod editorconfig;
+mod eglot;
 mod face_attributes;
 mod faces;
 mod file_management;
