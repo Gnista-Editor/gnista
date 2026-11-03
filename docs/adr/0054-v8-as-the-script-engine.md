@@ -19,11 +19,11 @@ V8 is the default engine, through the `v8` crate; QuickJS stays as the `quickjs`
 ## Consequences
 
 - Scripts run 1.4 to 2.9 times faster on the slow Org keys, and Ember is faster than Emacs at every key measured against it.
-- Release binaries are about 56 MB larger, and each newly linked test binary about 100 MB, which macOS's check of new programs took minutes over on the development machine even with Developer Tools on.
+- Release binaries are about 56 MB larger, and each debug test program about 100 MB. (The minutes macOS's check of new programs took over them were the folder they were in, not their size: see `make tidy`.)
 - A clean build downloads `librusty_v8.a`; `RUSTY_V8_ARCHIVE` points the build at a copy, for offline and Nix builds.
 - Tests must not depend on one engine's ways: two did (the order a sort calls its predicate, and QuickJS freeing unreferenced objects at once), and now do not. `ember.garbageCollect` collects on either.
-- Run the tests on QuickJS too before a release, so it keeps working: `cargo nextest run --workspace --no-default-features --features quickjs`.
-- Revisit if memory per isolate, not yet measured, turns out large, or if the binary's size starts to matter for distribution.
+- Run the tests on QuickJS too, so it keeps working: `make check` runs both engines, QuickJS in a target directory of its own.
+- Memory is modest: the first editor with its packages takes 29 MB on V8 against QuickJS's 15, each further isolate 10 MB against 7. Revisit if that grows, or if the binary's size starts to matter for distribution.
 
 ## Dependencies introduced
 

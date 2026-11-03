@@ -39,6 +39,8 @@ Ember was built in about a week, 27 October to 3 November 2026, in one long Clau
 ## Tests on this Mac
 
 - **cargo-nextest**, one test binary per crate, and dependencies optimised in debug builds: the whole suite runs in about half a minute.
-- **Developer Tools must be on for the app running the builds** (System Settings, Privacy & Security, Developer Tools): Claude.app for the session's builds, Terminal.app for your own. Without it macOS checks each newly built program before it first runs, and listing the tests after a change took 10 to 30 minutes; with it, the whole suite ran in 28 seconds. When listing is slow again, check this first; on 2026-11-03 newly built V8 test binaries were still scanned with it on ([performance.md](performance.md)).
+- **Developer Tools must be on for the app running the builds** (System Settings, Privacy & Security, Developer Tools): Claude.app for the session's builds, Terminal.app for your own.
+- **When new test programs are slow to start, count the files in `target/debug/deps`.** macOS's check of a new program looks through its folder, and cargo leaves every debug build's object files there: at a million files each new program waited 45 s. `make tidy` deletes those over a day old; `make check` runs it first.
+- **Run `make check` before pushing a change to the engines, the natives or the packages**: every test and clippy on V8 and on QuickJS, which builds in `target/quickjs` so switching engines does not rebuild the workspace.
 - **Check a fix with a change that makes a new program**: relinking a file that was only touched can give the same binary, which macOS has already let run.
 - **The GUI's snapshot tests are run on their own** (`cargo test -p ember-gui --test window --test images`), when drawing changes: each process spends a minute getting the GPU from Metal.

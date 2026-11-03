@@ -387,6 +387,36 @@ fn profile_key() {
     }
 }
 
+/// How much memory an editor with its packages takes: the process's
+/// resident size after one editor, and what each of four more adds, each
+/// with an engine of its own (an isolate on V8, a runtime on QuickJS).
+#[test]
+#[ignore]
+fn memory() {
+    let resident_mb = || {
+        let out = std::process::Command::new("ps").args(["-o", "rss=", "-p", &std::process::id().to_string()]).output().unwrap();
+        String::from_utf8_lossy(&out.stdout).trim().parse::<f64>().unwrap() / 1024.0
+    };
+    let before = resident_mb();
+    let mut editors = Vec::new();
+    let mut open = || {
+        let mut ed = Editor::new();
+        let scripting = Scripting::new(&mut ed).unwrap();
+        editors.push((ed, scripting));
+    };
+    open();
+    let one = resident_mb();
+    for _ in 0..4 {
+        open();
+    }
+    let five = resident_mb();
+    println!(
+        "memory: {before:.0} MB before, {:.0} MB for the first editor, {:.0} MB for each more",
+        one - before,
+        (five - one) / 4.0
+    );
+}
+
 /// How long a new editor takes to load its packages, as at startup.
 #[test]
 #[ignore]
