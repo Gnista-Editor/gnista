@@ -4,6 +4,7 @@
 // to the start; Shift selects as they move.
 
 import { transposeSubr } from "simple";
+import { forwardLine } from "subr";
 
 const blank = (line: number): boolean => /^[ \t\f]*$/.test(ember.lineText(line));
 /** A line where a paragraph starts or one is separated, as paragraph-start matches it. */
@@ -11,14 +12,6 @@ const starter = (line: number): boolean => /^[ \t]*(\f|$)/.test(ember.lineText(l
 
 const bol = (): number => ember.lineStart(ember.lineOf(ember.point()));
 const eob = (): boolean => ember.point() >= ember.pointMax();
-/** As forward-line: to the start of the next line, or the end of the buffer. */
-function forwardLine(n: number): void {
-  const line = ember.lineOf(ember.point()) + n;
-  if (line < 0) ember.gotoChar(ember.pointMin());
-  else if (line >= ember.lineCount()) ember.gotoChar(ember.pointMax());
-  else ember.gotoChar(Math.max(ember.pointMin(), Math.min(ember.pointMax(), ember.lineStart(line))));
-}
-
 /** Moves over `arg` paragraphs, back if negative, as forward-paragraph. */
 function forwardParagraph(arg: number): void {
   while (arg < 0 && ember.point() > ember.pointMin()) {

@@ -72,7 +72,6 @@ import {
   itemLine,
   itemParts,
   type ItemParts,
-  lineStartOrEnd,
   type ListItem,
   listStruct,
   parentsAlist,
@@ -84,10 +83,22 @@ import {
   toggleCheckbox,
   writeStruct,
 } from "org-list";
-import { allMatches, dropMarker, edDelete, edInsert, marker, type Marker, markers, placeMarkers } from "org-macs";
+import {
+  charAt,
+  dropMarker,
+  edDelete,
+  edInsert,
+  lineAt,
+  lineStartOrEnd,
+  marker,
+  type Marker,
+  markers,
+  orgRegionActive,
+  placeMarkers,
+} from "org-macs";
 import { refileCommand, refileCopyCommand } from "org-refile";
-import { atTable, beforeOnLine, blankField, charAt, markAligned, needsAlign, restOfLine } from "org-table";
-import { charCount } from "subr";
+import { atTable, beforeOnLine, blankField, markAligned, needsAlign, restOfLine } from "org-table";
+import { allMatches, charCount, escapeRegExp, forwardLine } from "subr";
 export { PLANNING } from "org-element";
 
 // Variables
@@ -218,16 +229,6 @@ for (let i = 1; i <= 8; i++) {
 // UTF-16 units, which differ for emoji.
 
 
-/**
- * Whether the region is active and not empty, as org-region-active-p says
- * after use-region-p: an empty region does not count.
- */
-export function orgRegionActive(): boolean {
-  const mark = ember.mark();
-  return ember.regionActive() && mark !== undefined && mark !== ember.point();
-}
-
-
 /** The position of index `i` of a line's text. */
 export function at(line: number, text: string, i: number): number {
   return ember.lineStart(line) + charCount(text.slice(0, i));
@@ -238,32 +239,6 @@ function indexOf(line: number, text: string, pos: number): number {
   const n = pos - ember.lineStart(line);
   if (!/[\uD800-\uDFFF]/.test(text)) return n;
   return Array.from(text).slice(0, n).join("").length;
-}
-
-/**
- * Moves point `n` lines, as Emacs's forward-line does, and returns how many
- * lines it fell short. A non-empty last line counts as one moved over.
- */
-function forwardLine(n: number): number {
-  const start = ember.point();
-  const line = ember.lineOf(start);
-  const last = ember.lineCount() - 1;
-  if (n <= 0) {
-    ember.gotoChar(ember.lineStart(Math.max(0, line + n)));
-    return Math.min(0, line + n);
-  }
-  if (line + n <= last) {
-    ember.gotoChar(ember.lineStart(line + n));
-    return 0;
-  }
-  ember.gotoChar(ember.bufferSize());
-  let shortfall = n - (last - line);
-  if (ember.point() !== start && ember.bufferText(ember.point() - 1, ember.point()) !== "\n") shortfall--;
-  return shortfall;
-}
-
-export function lineAt(pos = ember.point()): number {
-  return ember.lineOf(pos);
 }
 
 export function isBlank(text: string): boolean {
@@ -1761,7 +1736,7 @@ function atBlock(): boolean {
   const line = lineAt();
   const m = /^[ \t]*#\+begin_?([^ \n]+)/i.exec(ember.lineText(line));
   if (!m) return false;
-  const close = new RegExp(`^[ \\t]*#\\+end_?${m[1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[ \\t]*$`, "i");
+  const close = new RegExp(`^[ \\t]*#\\+end_?${escapeRegExp(m[1])}[ \\t]*$`, "i");
   for (let l = line + 1; l < ember.lineCount(); l++) if (close.test(ember.lineText(l))) return true;
   return false;
 }
@@ -1928,7 +1903,7 @@ export function cycleLevel(): boolean {
   const h = parseHeading(line);
   if (!h || !/^[ \t]*$/.test(ember.bufferText(ember.point(), h.end))) return false;
   const rest = ember.lineText(line).slice(h.level);
-  const keywords = allKeywords().map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  const keywords = allKeywords().map((k) => escapeRegExp(k)).join("|");
   const m = new RegExp(`^(?: +(?:${keywords}))?(?: +(.*?))?[ \t]*$`).exec(rest);
   if (!m || m[1] !== "") return false;
   ember.setThisCommand("org-cycle-level");
@@ -3094,7 +3069,7 @@ export function setTodo(h: Heading, state: string | undefined): void {
 function replaceTodoKeyword(h: Heading, state: string | undefined): void {
   const from = h.start + h.level;
   const rest = ember.bufferText(from, h.end);
-  const kw = h.todo === undefined ? undefined : new RegExp(`^ +${h.todo.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?: +|[ \t]*$)`).exec(rest);
+  const kw = h.todo === undefined ? undefined : new RegExp(`^ +${escapeRegExp(h.todo)}(?: +|[ \t]*$)`).exec(rest);
   const old = kw ? kw[0] : (/^ */.exec(rest)?.[0] ?? "");
   const p = marker(ember.point());
   withoutFoldChecks(() => {

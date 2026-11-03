@@ -1,3 +1,4 @@
+import { allMatches } from "subr";
 // Jumping to a definition by name, after Emacs's imenu.el: M-x imenu reads
 // an item of the buffer's index with completion, a submenu's name opening
 // its items, and goes there. A mode makes the index with
@@ -81,7 +82,7 @@ function symbolAtPoint(): string | undefined {
   const line = ember.lineText(ember.lineOf(ember.point()));
   const col = ember.point() - ember.lineBeginningPosition();
   const re = /[\w$-]+/g;
-  for (const m of line.matchAll(re)) {
+  for (const m of allMatches(re, line)) {
     if (m.index! <= col && col <= m.index! + m[0].length) return m[0];
   }
   return undefined;

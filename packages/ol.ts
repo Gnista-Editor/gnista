@@ -1,9 +1,10 @@
 // Links, after ol.el: the link point is on, and where an internal link's
 // target is in the buffer, for org-open-at-point to follow.
 
-import { ANGLE_LINK, at, COOKIE, entryEnd, type Heading, headingIndex, headings, lineAt, LINK, PLAIN_LINK } from "org";
+import { ANGLE_LINK, at, COOKIE, entryEnd, type Heading, headingIndex, headings, LINK, PLAIN_LINK } from "org";
 import { flag, folded } from "org-fold";
-import { allMatches } from "org-macs";
+import { lineAt } from "org-macs";
+import { allMatches, regexpQuote } from "subr";
 
 export interface Link {
   start: number;
@@ -51,7 +52,7 @@ export function searchInBuffer(path: string): number {
   }
   if (path.startsWith("#")) {
     const id = path.slice(1);
-    const found = ember.search(`^[ \\t]*:CUSTOM_ID:[ \\t]+${id.replace(/[.*+?^$[\]\\]/g, "\\$&")}[ \\t]*$`, { from: 0, regexp: true });
+    const found = ember.search(`^[ \\t]*:CUSTOM_ID:[ \\t]+${regexpQuote(id)}[ \\t]*$`, { from: 0, regexp: true });
     if (!found) throw new Error(`No match for custom ID: ${id}`);
     const all = headings();
     const i = headingIndex(all, lineAt(found.start));

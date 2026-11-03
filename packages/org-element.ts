@@ -10,7 +10,6 @@ import {
   indentation,
   isBlank,
   isHeadingLine,
-  lineAt,
   moveSubtree,
   subtreeRegion,
 } from "org";
@@ -26,7 +25,6 @@ import {
   itemEndBeforeBlank,
   itemLine,
   itemParts,
-  lineStartOrEnd,
   listStruct,
   moveItemDown,
   moveItemUp,
@@ -38,7 +36,8 @@ import {
   structAtItem,
   writeStruct,
 } from "org-list";
-import { allMatches } from "org-macs";
+import { lineAt, lineStartOrEnd } from "org-macs";
+import { allMatches, escapeRegExp } from "subr";
 
 export interface Elem {
   type: string;
@@ -80,7 +79,7 @@ export function drawerEnd(line: number, limit: number): number | undefined {
 function blockAt(line: number, limit: number): { type: string; close: number } | undefined {
   const m = /^[ \t]*#\+begin_(\S+)/i.exec(ember.lineText(line));
   if (!m) return undefined;
-  const close = new RegExp(`^[ \\t]*#\\+end_${m[1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[ \\t]*$`, "i");
+  const close = new RegExp(`^[ \\t]*#\\+end_${escapeRegExp(m[1])}[ \\t]*$`, "i");
   for (let l = line + 1; l < ember.lineCount() && ember.lineStart(l) < limit; l++) {
     if (close.test(ember.lineText(l))) {
       const name = m[1].toLowerCase();

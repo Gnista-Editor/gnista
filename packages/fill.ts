@@ -7,7 +7,7 @@
 // fill-column. Two spaces after a period end a sentence, as
 // sentence-end-double-space says, and filling keeps them.
 
-import { truthy, regexpQuote, forwardLine } from "subr";
+import { allMatches, escapeRegExp, forwardLine, regexpQuote, truthy } from "subr";
 
 ember.defineVariable({
   name: "fill-column",
@@ -155,7 +155,7 @@ function fillContextPrefix(from: number, to: number): string | undefined {
 function fillDeletePrefix(from: number, to: ember.Marker, prefix: string | undefined): number {
   const words = prefix !== undefined && !/^[ \t]*$/.test(prefix);
   const fpre = words
-    ? new RegExp(`^[ \\t]*(?:${prefix!.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/[ \t]+/g, "[ \\t]*")})?[ \\t]*`)
+    ? new RegExp(`^[ \\t]*(?:${escapeRegExp(prefix!).replace(/[ \t]+/g, "[ \\t]*")})?[ \\t]*`)
     : /^[ \t]*/;
   ember.gotoChar(from);
   forwardLine(1);
@@ -196,7 +196,7 @@ function canonicallySpaceRegion(beg: number, endMarker: ember.Marker): void {
   const before = ember.bufferText(bolAt(beg), beg);
   const full = before + text;
   const deletions: [number, number][] = [];
-  for (const m of text.matchAll(re)) {
+  for (const m of allMatches(re, text)) {
     const start = m.index!;
     const end = start + m[0].length;
     if (m[1] !== undefined) {
@@ -337,7 +337,7 @@ function justifyCurrentLine(how: string | undefined, eop: boolean, prefix: strin
     const ncols = fc - ember.currentColumn();
     const text = ember.bufferText(beg, end);
     // In characters, as the buffer counts them, not UTF-16 units.
-    const gaps = [...text.matchAll(/ +/g)].map((m) => beg + [...text.slice(0, m.index! + m[0].length)].length);
+    const gaps = allMatches(/ +/g, text).map((m) => beg + [...text.slice(0, m.index! + m[0].length)].length);
     const nspaces = gaps.length;
     if (ncols <= 0 || nspaces === 0 || eop) return;
     let frac = ncols + Math.floor(nspaces / 2);

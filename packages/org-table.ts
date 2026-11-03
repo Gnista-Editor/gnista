@@ -6,8 +6,20 @@
 // of a column's fields are numbers. org-mode's TAB, S-TAB, RET and the
 // M-arrow and S-arrow keys call these commands when point is in a table.
 
-import { type Marker, dropMarker, edDelete, edInsert, marker, markers, placeMarkers } from "org-macs";
-import { charCount } from "subr";
+import {
+  charAt,
+  dropMarker,
+  edDelete,
+  edInsert,
+  lineAt,
+  lineStartOrEnd,
+  marker,
+  type Marker,
+  markers,
+  orgRegionActive,
+  placeMarkers,
+} from "org-macs";
+import { allMatches, charCount, forwardLine } from "subr";
 
 ember.defineVariable({
   name: "org-table-auto-blank-field",
@@ -50,28 +62,6 @@ const NUMBER =
 
 /** How many characters a string has, which differs from its length for emoji. */
 
-/**
- * Whether the region is active and not empty, as org-region-active-p says
- * after use-region-p: an empty region does not count.
- */
-function orgRegionActive(): boolean {
-  const mark = ember.mark();
-  return ember.regionActive() && mark !== undefined && mark !== ember.point();
-}
-
-
-function lineAt(pos = ember.point()): number {
-  return ember.lineOf(pos);
-}
-
-function lineStartOrEnd(line: number): number {
-  return line < ember.lineCount() ? ember.lineStart(line) : ember.bufferSize();
-}
-
-export function charAt(pos: number): string {
-  return pos >= 0 && pos < ember.bufferSize() ? ember.bufferText(pos, pos + 1) : "";
-}
-
 export function restOfLine(pos = ember.point()): string {
   return ember.bufferText(pos, ember.lineEnd(lineAt(pos)));
 }
@@ -83,14 +73,6 @@ export function beforeOnLine(pos = ember.point()): string {
 function atBol(): boolean {
   return ember.point() === ember.lineStart(lineAt());
 }
-
-/** Moves point n lines, as Emacs's forward-line does: to a line's start, or the buffer's end. */
-function forwardLine(n: number): void {
-  const line = lineAt();
-  if (n <= 0) ember.gotoChar(ember.lineStart(Math.max(0, line + n)));
-  else ember.gotoChar(line + n < ember.lineCount() ? ember.lineStart(line + n) : ember.bufferSize());
-}
-
 
 /** Runs body and puts point back where it was, moved as a marker, as save-excursion does. */
 const saveExcursion = <T>(body: () => T): T => ember.saveExcursion(body);
@@ -544,7 +526,7 @@ function columnCount(): number {
  * the very start or end makes no empty piece, so a row of just "|" has none.
  */
 function orgSplitString(text: string, separator: RegExp): string[] {
-  const matches = [...text.matchAll(separator)].filter((m) => m[0] !== "");
+  const matches = allMatches(separator, text).filter((m) => m[0] !== "");
   if (matches.length === 0) return [text];
   const out: string[] = [];
   let i = 0;

@@ -10,12 +10,12 @@ import {
   isBlank,
   isHeadingLine,
   keywordLines,
-  lineAt,
   nextSameOrHigher,
   subtreeEnd,
 } from "org";
-import { DRAWER_RE, ITEM_RE, lineStartOrEnd } from "org-list";
-import { charCount } from "subr";
+import { DRAWER_RE, ITEM_RE } from "org-list";
+import { lineAt, lineStartOrEnd } from "org-macs";
+import { charCount, escapeRegExp } from "subr";
 
 export function hideOverlay(start: number, end: number, spec: string): void {
   // Text inserted at either end goes outside, as with org-fold-core's
@@ -496,7 +496,7 @@ function checkFold(id: number): void {
     const close =
       spec === "org-hide-drawer"
         ? /^[ \t]*:END:[ \t]*$/i
-        : new RegExp(`^[ \\t]*#\\+end${block?.[1] ? `_${block[1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[ \\t]*$` : ":?[ \\t]*$"}`, "i");
+        : new RegExp(`^[ \\t]*#\\+end${block?.[1] ? `_${escapeRegExp(block[1])}[ \\t]*$` : ":?[ \\t]*$"}`, "i");
     valid = start > 0 && (spec === "org-hide-drawer" ? DRAWER_RE.test(opener) : block !== null) && close.test(ember.lineText(lastLine));
     for (let l = before + 1; valid && l < lastLine; l++) {
       if (close.test(ember.lineText(l)) || isHeadingLine(ember.lineText(l))) valid = false;

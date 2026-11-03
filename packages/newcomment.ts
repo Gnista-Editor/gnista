@@ -5,7 +5,7 @@
 // comments go to. Each major mode says what its comments look like with
 // comment-start and comment-end, and its syntax table finds them.
 
-import { truthy, numberValue as num } from "subr";
+import { escapeRegExp, numberValue as num, truthy } from "subr";
 
 const defvar = (name: string, value: ember.Value, doc: string, local = false) => ember.defineVariable({ name, value, doc, local });
 defvar("comment-start", null, "What starts a comment in this mode, with the space after it: \"// \" or \"# \". nil if the mode has no comments.", true);
@@ -55,8 +55,6 @@ function padLeft(s: string): string {
   const padding = str("comment-padding") ?? " ";
   return padding.slice(Math.min(lead, padding.length)) + s.slice(0, lead) + core;
 }
-
-const quote = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /** Whether a comment starts at `p`, as the syntax table says, and how long its starter is. */
 function commentStartAt(p: number): number | undefined {
@@ -215,7 +213,7 @@ function uncommentRegion(beg: number, end: number, arg?: number): void {
     if (ce !== "") {
       const lineEnd = ember.lineEnd(l);
       const text = ember.bufferText(q, lineEnd);
-      const m = new RegExp(`[ \\t]*${quote(ce)}[ \\t]*$`).exec(text);
+      const m = new RegExp(`[ \\t]*${escapeRegExp(ce)}[ \\t]*$`).exec(text);
       if (m !== null) ember.deleteRegion(q + m.index, lineEnd);
     }
     ember.deleteRegion(start, q);

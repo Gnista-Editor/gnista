@@ -1,3 +1,4 @@
+import { allMatches, forwardLine } from "subr";
 // Basic editing commands that Emacs writes in Lisp, after its simple.el.
 // Ember loads this file at startup, before init.ts.
 
@@ -300,30 +301,6 @@ ember.defineMinorMode({
 });
 
 // Transposing, after simple.el's transpose-subr.
-
-/**
- * Moves point `n` lines, as Emacs's forward-line does, and returns how many
- * lines it fell short. A non-empty last line counts as one moved over.
- */
-function forwardLine(n: number): number {
-  const start = ember.point();
-  const line = ember.lineOf(start);
-  // The accessible lines, when the buffer is narrowed.
-  const first = ember.lineOf(ember.pointMin());
-  const last = ember.lineOf(ember.pointMax());
-  if (n <= 0) {
-    ember.gotoChar(ember.lineStart(Math.max(first, line + n)));
-    return Math.min(0, line + n - first);
-  }
-  if (line + n <= last) {
-    ember.gotoChar(ember.lineStart(line + n));
-    return 0;
-  }
-  ember.gotoChar(ember.pointMax());
-  let shortfall = n - (last - line);
-  if (ember.point() !== start && ember.bufferText(ember.point() - 1, ember.point()) !== "\n") shortfall--;
-  return shortfall;
-}
 
 /**
  * Swaps the text between two pairs of positions, as transpose-subr-1 does,
@@ -1131,7 +1108,7 @@ ember.defineVariable({ name: "widen-automatically", doc: "Whether goto-line wide
 function numberAtPoint(): number | undefined {
   const line = ember.bufferSubstringNoProperties(ember.lineBeginningPosition(), ember.lineEndPosition());
   const col = ember.point() - ember.lineBeginningPosition();
-  for (const m of line.matchAll(/-?[0-9]+(?:\.[0-9]+)?/g)) {
+  for (const m of allMatches(/-?[0-9]+(?:\.[0-9]+)?/g, line)) {
     if (m.index! <= col && col <= m.index! + m[0].length) return Number(m[0]);
   }
   return undefined;

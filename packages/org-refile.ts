@@ -1,8 +1,8 @@
 // Refiling, as org-refile.el does with its default targets.
 
-import { copySubtree, type Heading, headings, lineAt, pasteSubtree, subtreeRegion } from "org";
+import { copySubtree, type Heading, headings, pasteSubtree, subtreeRegion } from "org";
 import { entryHeading } from "org-list";
-import { edDelete } from "org-macs";
+import { edDelete, lineAt } from "org-macs";
 
 /**
  * Where org-refile can file a subtree: as org-refile-targets of nil gives

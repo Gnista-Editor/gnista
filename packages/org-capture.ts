@@ -3,7 +3,8 @@
 // files it or C-c C-k takes it away. Emacs captures in an indirect buffer;
 // Ember narrows the target buffer itself.
 
-import { type Heading, alignTags, formatTimestamp, headings, lineAt, parseHeading, subtreeRegion, today } from "org";
+import { alignTags, formatTimestamp, type Heading, headings, parseHeading, subtreeRegion, today } from "org";
+import { lineAt } from "org-macs";
 import { charCount } from "subr";
 
 ember.defineVariable({

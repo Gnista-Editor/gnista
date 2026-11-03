@@ -3,8 +3,7 @@
 // items, in the *Org Agenda* buffer, whose keys act on the entries they show.
 
 import { type DateTime, type Heading, PLANNING, allKeywords, at, entryEnd, headings, isDone, today } from "org";
-import { allMatches } from "org-macs";
-import { charCount } from "subr";
+import { allMatches, charCount } from "subr";
 
 ember.defineVariable({
   name: "org-agenda-files",

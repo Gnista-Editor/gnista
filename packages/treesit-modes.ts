@@ -2,7 +2,7 @@
 // rust-ts-mode.el, js.el, json-ts-mode.el and python.el. Each is built on
 // prog-mode and asks for its grammar with treesit-parser-create.
 
-import { charCount } from "subr";
+import { allMatches, charCount, regexpQuote } from "subr";
 import { bufferRootNode, defunName, induceSparseTree, majorModeSetup, nodeText, nodeTopLevel, searchSubtree } from "treesit";
 
 /** C's comments and operators, as c-mode's and js-mode's syntax tables have them. */
@@ -346,7 +346,7 @@ const jsonDefunName = (node: ember.TreesitNode): string | null =>
 
 /** What each language's mode sets for treesit.el, as its mode's body does. */
 /** Any of these names as a whole symbol, as js--regexp-opt-symbol makes a regexp of them. */
-const symbolRegexp = (names: string[]): string => `\\_<\\(${names.map((n) => n.replace(/[.*+?^$\\[\]]/g, "\\$&")).join("\\|")}\\)\\_>`;
+const symbolRegexp = (names: string[]): string => `\\_<\\(${names.map(regexpQuote).join("\\|")}\\)\\_>`;
 
 /** js--treesit-valid-imenu-entry, as Emacs has it. */
 const jsValidImenuEntry = (node: ember.TreesitNode): unknown =>
@@ -411,7 +411,7 @@ const RUST_CHAR = /'(?:\\(?:u\{[0-9a-fA-F]{1,6}\}|x[0-9a-fA-F]{2}|.)|[^\\'\n])'/
  */
 function rustSyntaxPropertize(start: number, end: number): void {
   const text = ember.bufferText(start, end);
-  for (const m of text.matchAll(RUST_CHAR)) {
+  for (const m of allMatches(RUST_CHAR, text)) {
     const at = start + charCount(text.slice(0, m.index));
     const close = at + charCount(m[0]) - 1;
     // As syntax-propertize puts them, silently.

@@ -15,6 +15,26 @@ export function numberValue(name: string, fallback: number): number {
 /** A regexp matching `s` itself, as Emacs's regexp-quote. */
 export const regexpQuote = (s: string): string => s.replace(/[[*.\\?+^$]/g, "\\$&");
 
+/** A JavaScript regexp's source matching `s` itself, for a package's own regexps; regexpQuote is for Emacs's. */
+export const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * The matches of a global regexp in a string, as `text.matchAll(re)` gives
+ * them, without the copy of the regexp that matchAll makes on each call,
+ * which QuickJS builds by compiling it again.
+ */
+export function allMatches(re: RegExp, text: string): RegExpExecArray[] {
+  const found: RegExpExecArray[] = [];
+  const from = re.lastIndex;
+  re.lastIndex = 0;
+  for (let m = re.exec(text); m !== null; m = re.exec(text)) {
+    found.push(m);
+    if (m[0] === "") re.lastIndex += re.unicode && (text.codePointAt(re.lastIndex) ?? 0) > 0xffff ? 2 : 1;
+  }
+  re.lastIndex = from;
+  return found;
+}
+
 /** How many characters a string has, as buffer positions count them, not UTF-16 units. */
 export function charCount(s: string): number {
   return /[\uD800-\uDFFF]/.test(s) ? Array.from(s).length : s.length;

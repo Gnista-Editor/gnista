@@ -12,17 +12,27 @@ import {
   headings,
   isBlank,
   isHeadingLine,
-  lineAt,
   moveToColumn,
-  orgRegionActive,
   parseHeading,
   setTodo,
   updateCheckboxCount,
 } from "org";
 import { drawerEnd, PLANNING } from "org-element";
 import { fixFoldsAround, flag, FOLD_SPECS, foldChecksOff, hideOverlay, withoutFoldChecks } from "org-fold";
-import { dropMarker, edDelete, edInsert, lastingMarker, marker, type Marker, markers, placeMarkers } from "org-macs";
-import { charCount } from "subr";
+import {
+  dropMarker,
+  edDelete,
+  edInsert,
+  lastingMarker,
+  lineAt,
+  lineStartOrEnd,
+  marker,
+  type Marker,
+  markers,
+  orgRegionActive,
+  placeMarkers,
+} from "org-macs";
+import { charCount, escapeRegExp } from "subr";
 
 export interface ListItem {
   /** Where the item's line starts. */
@@ -72,11 +82,6 @@ export function indentString(col: number, from = 0): string {
   }
   return " ".repeat(Math.max(0, col - from));
 }
-
-export function lineStartOrEnd(line: number): number {
-  return line < ember.lineCount() ? ember.lineStart(line) : ember.bufferSize();
-}
-
 
 /**
  * Replaces text as replace-match does: markers inside it go to its start,
@@ -1334,7 +1339,7 @@ export function entryPut(headingLine: number, property: string, value: string): 
       line = lineAt(begin);
     }
     const close = propertyDrawerEnd(line) as number;
-    const re = new RegExp(`^[ \\t]*:${property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:`, "i");
+    const re = new RegExp(`^[ \\t]*:${escapeRegExp(property)}:`, "i");
     let at: number | undefined;
     for (let l = line + 1; l < close; l++) {
       if (re.test(ember.lineText(l))) {
@@ -1359,7 +1364,7 @@ function entryGet(headingLine: number, property: string): string | undefined {
   if (line < ember.lineCount() && PLANNING.test(ember.lineText(line))) line++;
   const close = propertyDrawerEnd(line);
   if (close === undefined) return undefined;
-  const re = new RegExp(`^[ \\t]*:${property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:(?:[ \\t]+(.*?))?[ \\t]*$`, "i");
+  const re = new RegExp(`^[ \\t]*:${escapeRegExp(property)}:(?:[ \\t]+(.*?))?[ \\t]*$`, "i");
   for (let l = line + 1; l < close; l++) {
     const m = re.exec(ember.lineText(l));
     if (m) return m[1] ?? "";
@@ -1421,7 +1426,7 @@ ember.defineCommand({
     }
     const p = marker(ember.point());
     // The property and its accumulated form, PROPERTY+, as org-entry-delete removes them.
-    const re = new RegExp(`^[ \\t]*:${property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\+?:`, "i");
+    const re = new RegExp(`^[ \\t]*:${escapeRegExp(property)}\\+?:`, "i");
     let end = close;
     for (let l = line + 1; l < end; ) {
       if (re.test(ember.lineText(l))) {

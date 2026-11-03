@@ -3,7 +3,7 @@
 // with its file, and diff-mode colours the hunks, moves between them with
 // n and p, and goes to the source with RET.
 
-import { PerBuffer } from "subr";
+import { escapeRegExp, PerBuffer } from "subr";
 
 for (const [name, doc, value] of [
   ["diff-command", "The program M-x diff runs.", "diff"],
@@ -75,7 +75,7 @@ const diffBuffers = new PerBuffer<{ oldFile: string; newFile: string; labels?: [
 function latestBackup(file: string): string | undefined {
   const dir = file.replace(/[^/]*$/, "");
   const base = file.replace(/.*\//, "");
-  const names = ember.directoryFiles(dir).filter((n) => n === `${base}~` || new RegExp(`^${base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\.~\\d+~$`).test(n));
+  const names = ember.directoryFiles(dir).filter((n) => n === `${base}~` || new RegExp(`^${escapeRegExp(base)}\\.~\\d+~$`).test(n));
   if (names.length === 0) return undefined;
   const version = (n: string) => Number(/\.~(\d+)~$/.exec(n)?.[1] ?? 0);
   names.sort((a, b) => version(b) - version(a));

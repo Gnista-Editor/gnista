@@ -54,6 +54,27 @@ ember.addHook("post-command-hook", () => {
   for (const m of [...markers]) if (!lasting.has(m)) dropMarker(m);
 });
 
+/** Whether the region is active and not empty, as org-region-active-p asks. */
+export function orgRegionActive(): boolean {
+  const mark = ember.mark();
+  return ember.regionActive() && mark !== undefined && mark !== ember.point();
+}
+
+/** The line a position is on, point's by default. */
+export function lineAt(pos = ember.point()): number {
+  return ember.lineOf(pos);
+}
+
+/** Where a line starts, or the end of the buffer past the last line. */
+export function lineStartOrEnd(line: number): number {
+  return line < ember.lineCount() ? ember.lineStart(line) : ember.bufferSize();
+}
+
+/** The character at a position, or "" outside the buffer. */
+export function charAt(pos: number): string {
+  return pos >= 0 && pos < ember.bufferSize() ? ember.bufferText(pos, pos + 1) : "";
+}
+
 /** Puts this package's markers in the current buffer where `moved` says, after an edit that moved them its own way. */
 export function placeMarkers(saved: [Marker, number][]): void {
   const here = ember.bufferName();
@@ -72,19 +93,3 @@ export function edDelete(from: number, to: number): string {
   return ember.deleteRegion(from, to);
 }
 
-/**
- * The matches of a global regexp in a string, as `text.matchAll(re)` gives
- * them, without the copy of the regexp that matchAll makes on each call,
- * which QuickJS builds by compiling it again.
- */
-export function allMatches(re: RegExp, text: string): RegExpExecArray[] {
-  const found: RegExpExecArray[] = [];
-  const from = re.lastIndex;
-  re.lastIndex = 0;
-  for (let m = re.exec(text); m !== null; m = re.exec(text)) {
-    found.push(m);
-    if (m[0] === "") re.lastIndex += re.unicode && (text.codePointAt(re.lastIndex) ?? 0) > 0xffff ? 2 : 1;
-  }
-  re.lastIndex = from;
-  return found;
-}

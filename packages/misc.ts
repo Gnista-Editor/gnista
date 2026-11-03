@@ -1,3 +1,4 @@
+import { forwardLine } from "subr";
 // Small editing commands, after Emacs's misc.el: duplicating lines and the
 // region, and copying the line above.
 
@@ -11,12 +12,6 @@ ember.defineVariable({
   doc: "Where duplicate-dwim leaves the region: 0 where it was, 1 around the first copy, -1 around the last.",
   value: 0,
 });
-
-/** Moves `n` lines, as forward-line, to the start of a line. */
-function forwardLine(n: number): void {
-  const line = ember.lineOf(ember.point()) + n;
-  ember.gotoChar(line < 0 ? ember.pointMin() : line >= ember.lineCount() ? ember.pointMax() : ember.lineStart(line));
-}
 
 /** Copies the line point is on `n` times below it, as duplicate-line. */
 function duplicateLine(n: number): void {
