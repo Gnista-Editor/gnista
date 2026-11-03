@@ -291,3 +291,19 @@ fn loading_magit_runs_no_git() {
     d.eval(r#"ember.require("magit");"#);
     assert_eq!(d.with(|ed| ed.echo().map(str::to_string)), None);
 }
+
+#[test]
+fn staging_the_lines_of_a_region() {
+    let dir = repo();
+    let p = dir.path();
+    let d = setup(p);
+    d.start(|ed| ed.call("magit-status", vec![]).unwrap());
+    // Into a.txt's hunk: "-two" and "+TWO" are its 2nd and 3rd lines, "+four" its 5th.
+    d.eval(r#"ember.gotoChar(ember.bufferSubstringNoProperties(ember.pointMin(), ember.pointMax()).indexOf("modified   a.txt"));"#);
+    d.press("TAB n");
+    d.eval(r#"(() => { const t = ember.bufferSubstringNoProperties(ember.pointMin(), ember.pointMax()); ember.gotoChar(t.indexOf("-two")); ember.setMark(ember.point()); ember.gotoChar(t.indexOf("+TWO") + 4); ember.activateMark(); })()"#);
+    d.press("s");
+    // Only TWO staged, four left unstaged.
+    assert_eq!(git(p, &["diff", "--cached", "--", "a.txt"]).lines().filter(|l| l.starts_with('+') || l.starts_with('-')).collect::<Vec<_>>(), ["--- a/a.txt", "+++ b/a.txt", "-two", "+TWO"]);
+    assert_eq!(git(p, &["diff", "--", "a.txt"]).lines().filter(|l| l.starts_with('+') || l.starts_with('-')).collect::<Vec<_>>(), ["--- a/a.txt", "+++ b/a.txt", "+four"]);
+}

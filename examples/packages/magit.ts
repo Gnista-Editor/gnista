@@ -460,15 +460,56 @@ function hunkPatch(v: FileValue): string {
   return [...header, v.hunk!.heading, ...v.hunk!.lines, ""].join("\n");
 }
 
+/**
+ * The patch for the lines of a hunk the region covers, as
+ * magit-diff-hunk-region-patch makes it: the other lines changed are left
+ * as they are, a removal kept as context and an addition dropped, the other
+ * way round for a patch applied in REVERSE, and the counts made again.
+ */
+function regionPatch(v: FileValue, from: number, to: number, reverse: boolean): string {
+  const header = v.diff!.header.filter((l) => /^(diff --git|--- |\+\+\+ |new file mode|deleted file mode|old mode|new mode|index )/.test(l));
+  const [drop, keep] = reverse ? ["-", "+"] : ["+", "-"];
+  const lines: string[] = [];
+  v.hunk!.lines.forEach((l, i) => {
+    const inside = i >= from && i <= to;
+    if (inside || l.startsWith(" ") || l.startsWith("\\")) lines.push(l);
+    else if (l.startsWith(keep)) lines.push(` ${l.slice(1)}`);
+    else if (l.startsWith(drop)) return;
+    else lines.push(l);
+  });
+  const old = lines.filter((l) => l.startsWith(" ") || l.startsWith("-")).length;
+  const now = lines.filter((l) => l.startsWith(" ") || l.startsWith("+")).length;
+  const m = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@(.*)$/.exec(v.hunk!.heading);
+  const start = m ? Number(m[1]) : 1;
+  return [...header, `@@ -${start},${old} +${reverse ? Number(m?.[2] ?? start) : start},${now} @@${m?.[3] ?? ""}`, ...lines, ""].join("\n");
+}
+
+/** The lines of the hunk at point the active region covers, as indices of its lines, or undefined without a region in a hunk. */
+function regionLines(s: Section): [number, number] | undefined {
+  const mark = ember.mark();
+  if (s.type !== "hunk" || !ember.regionActive() || mark === undefined) return undefined;
+  const [a, b] = [Math.min(mark, ember.point()), Math.max(mark, ember.point())];
+  const first = ember.lineOf(s.content);
+  const from = Math.max(0, ember.lineOf(a) - first);
+  // A region ending at the start of a line leaves that line out.
+  const end = b > a && b === ember.lineBeginningPosition(b) ? b - 1 : b;
+  const to = ember.lineOf(end) - first;
+  return to >= 0 ? [from, to] : undefined;
+}
+
 export const magitStage = ember.defineCommand({
   name: "magit-stage",
   doc: "Add the change at point to the staging area: an untracked or changed file, or a hunk.",
   run: () => {
     const t = targets();
     if (!t || t.values.length === 0) ember.userError("Nothing to stage");
+    const lines = regionLines(t.section);
     for (const v of t.values) {
       if (v.kind === "staged") ember.userError("Already staged");
-      if (v.hunk) runGit(["apply", "--cached", "-p0", "--ignore-space-change", "-"], hunkPatch(v));
+      if (v.hunk && lines) {
+        runGit(["apply", "--cached", "-p0", "--recount", "-"], regionPatch(v, lines[0], lines[1], false));
+        ember.deactivateMark();
+      } else if (v.hunk) runGit(["apply", "--cached", "-p0", "--ignore-space-change", "-"], hunkPatch(v));
       else runGit(["add", "--", v.file]);
     }
   },
@@ -480,9 +521,13 @@ export const magitUnstage = ember.defineCommand({
   run: () => {
     const t = targets();
     if (!t || t.values.length === 0) ember.userError("Nothing to unstage");
+    const lines = regionLines(t.section);
     for (const v of t.values) {
       if (v.kind !== "staged") ember.userError("Already unstaged");
-      if (v.hunk) runGit(["apply", "--cached", "--reverse", "-p0", "-"], hunkPatch(v));
+      if (v.hunk && lines) {
+        runGit(["apply", "--cached", "--reverse", "-p0", "--recount", "-"], regionPatch(v, lines[0], lines[1], true));
+        ember.deactivateMark();
+      } else if (v.hunk) runGit(["apply", "--cached", "--reverse", "-p0", "-"], hunkPatch(v));
       else if (hasCommits()) runGit(["reset", "-q", "--", v.file]);
       else runGit(["rm", "--cached", "-q", "--", v.file]);
     }
