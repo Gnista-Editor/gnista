@@ -371,7 +371,7 @@ ember.defineCommand({
   doc: "Comment out each line of the region. With a prefix argument N, use N comment starts; negative, uncomment instead.",
   run: () => {
     barf();
-    if (ember.mark() === undefined) throw new Error("The mark is not set now, so there is no region");
+    if (ember.mark() === undefined) ember.userError("The mark is not set now, so there is no region");
     commentRegion(...region(), ember.prefixNumericValue(ember.prefixArg()));
   },
 });
@@ -382,7 +382,7 @@ ember.defineCommand({
   run: () => {
     barf();
     commentStart();
-    if (ember.mark() === undefined) throw new Error("The mark is not set now, so there is no region");
+    if (ember.mark() === undefined) ember.userError("The mark is not set now, so there is no region");
     const arg = ember.prefixArg();
     uncommentRegion(...region(), arg === null ? undefined : ember.prefixNumericValue(arg));
   },
@@ -394,7 +394,7 @@ ember.defineCommand({
   run: () => {
     barf();
     commentStart();
-    if (ember.mark() === undefined) throw new Error("The mark is not set now, so there is no region");
+    if (ember.mark() === undefined) ember.userError("The mark is not set now, so there is no region");
     commentOrUncommentRegion(...region(), ember.prefixArg());
   },
 });

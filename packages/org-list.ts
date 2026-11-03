@@ -977,7 +977,7 @@ function structIndent(start: number, end: number, struct: Struct, parents: Alist
     else if (item >= end) out.set(item, parent !== undefined && acc.has(parent) ? acc.get(parent) : parent);
     else {
       const prev = prevItem(item, prevs);
-      if (prev === undefined && (parent === undefined || parent < start)) throw new Error("Cannot indent the first item of a list");
+      if (prev === undefined && (parent === undefined || parent < start)) ember.userError("Cannot indent the first item of a list");
       let now: number | undefined;
       if (prev === undefined) now = parent;
       else if (prev < start) now = prev;
@@ -1010,7 +1010,7 @@ function indentItemGeneric(arg: number, noSubtree: boolean, struct: Struct): voi
   const bol = ember.lineStart(lineAt());
   let special = false;
   if (!region && top === bol) {
-    if (noSubtree) throw new Error("At first item: use S-M-<left/right> to move the whole list");
+    if (noSubtree) ember.userError("At first item: use S-M-<left/right> to move the whole list");
     special = true;
   }
   const shiftMeta = ["org-shiftmetaright", "org-shiftmetaleft"];
@@ -1113,7 +1113,7 @@ export function cycleItemIndentation(): boolean {
   else if (nextItem(item, prevs) === undefined && parents.get(item) !== undefined) indentItemGeneric(-1, true, struct);
   else {
     ember.setThisCommand("identity" as ember.CommandName);
-    throw new Error("Cannot move item");
+    ember.userError("Cannot move item");
   }
   return true;
 }
@@ -1180,7 +1180,7 @@ export function moveItemDown(): void {
   const item = ember.lineStart(lineAt());
   let struct = listStruct(lineAt());
   const next = nextItem(item, prevsAlist(struct));
-  if (next === undefined) throw new Error("Cannot move this item further down");
+  if (next === undefined) ember.userError("Cannot move this item further down");
   struct = swapItems(item, next, struct);
   ember.gotoChar(nextItem(item, prevsAlist(struct)) ?? item);
   writeStruct(struct, parentsAlist(struct));
@@ -1193,7 +1193,7 @@ export function moveItemUp(): void {
   const item = ember.lineStart(lineAt());
   let struct = listStruct(lineAt());
   const prev = prevItem(item, prevsAlist(struct));
-  if (prev === undefined) throw new Error("Cannot move this item further up");
+  if (prev === undefined) ember.userError("Cannot move this item further up");
   struct = swapItems(prev, item, struct);
   writeStruct(struct, parentsAlist(struct));
   moveToColumn(col);
@@ -1447,7 +1447,7 @@ ember.defineCommand({
   doc: "Insert a drawer of the name given at point, with point inside it, as org-insert-drawer does without a prefix argument.",
   params: [{ name: "drawer", kind: "string", prompt: "Drawer: " }],
   run: (drawer) => {
-    if (!/^[\w-]+$/.test(drawer)) throw new Error("Invalid drawer name");
+    if (!/^[\w-]+$/.test(drawer)) ember.userError("Invalid drawer name");
     if (ember.point() !== ember.lineStart(lineAt())) ember.insert("\n");
     ember.insert(`:${drawer}:\n\n:END:\n`);
     ember.gotoChar(ember.lineStart(lineAt() - 2));

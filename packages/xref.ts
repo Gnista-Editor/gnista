@@ -95,7 +95,7 @@ function moveToItem(n: number): Xref {
 
 const itemAtPoint = (): Xref => {
   const x = items().byLine.get(ember.lineOf(ember.point()));
-  if (x === undefined) throw new Error("No reference at point");
+  if (x === undefined) ember.userError("No reference at point");
   return x;
 };
 

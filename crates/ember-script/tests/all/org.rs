@@ -459,3 +459,17 @@ fn indenting_a_long_section_keeps_its_parse() {
     assert!(indented.contains("\nparagraph 1999\n") && !indented.contains("   paragraph"), "{}", &indented[..200]);
     assert!(took < std::time::Duration::from_secs(10), "took {took:?}");
 }
+
+/// Org's errors in what the user did are `user-error`, as Emacs signals
+/// them, so code catches them by condition.
+#[test]
+fn orgs_mistakes_are_user_errors() {
+    // Before the first heading, where no entry has links to choose from.
+    let (mut ed, s) = org("plain text\n* Heading\n");
+    let caught = |ed: &mut Editor, command: &str| {
+        let code = format!(r#"ember.conditionCase(() => {{ ember.call("{command}"); return "ran"; }}, {{ "user-error": (e) => "user-error: " + e.message, error: (e) => "error: " + e.message }})"#);
+        s.eval_expression(ed, &code).unwrap()
+    };
+    assert_eq!(caught(&mut ed, "org-open-at-point"), "\"user-error: No link found\"");
+    assert_eq!(caught(&mut ed, "org-table-align"), "\"user-error: Not at a table\"");
+}

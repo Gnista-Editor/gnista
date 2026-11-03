@@ -147,7 +147,7 @@ ember.defineCommand({
     const running = ember.getBufferProcess(buffer);
     if (running !== undefined && ember.processLiveP(running)) {
       // As async-shell-command-buffer's confirm-new-buffer.
-      if (!(await ember.yesOrNoP("A command is running in the default buffer.  Use a new buffer? "))) throw new Error("Shell command in progress");
+      if (!(await ember.yesOrNoP("A command is running in the default buffer.  Use a new buffer? "))) ember.userError("Shell command in progress");
       buffer = ember.generateNewBufferName(name);
     }
     const directory = ember.expandFileName(".");

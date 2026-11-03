@@ -821,7 +821,7 @@ function backToHeading(move = false): [Heading[], number] {
   if (i === undefined) {
     const bol = ember.lineStart(lineAt());
     if (move) ember.gotoChar(bol);
-    throw new Error(`Before first headline at position ${bol + 1} in buffer ${ember.bufferName()}`);
+    ember.userError(`Before first headline at position ${bol + 1} in buffer ${ember.bufferName()}`);
   }
   return [all, i];
 }
@@ -1017,7 +1017,7 @@ const narrowToElement = ember.defineCommand({
   doc: "Narrow the buffer to the element at point: a heading's subtree, a greater element's contents, or the element.",
   run: () => {
     const e = elementAt(ember.point());
-    if (!e) throw new Error("No element at point");
+    if (!e) ember.userError("No element at point");
     if (e.type !== "headline" && GREATER_ELEMENTS.includes(e.type) && e.contentsBegin !== undefined) {
       ember.narrowToRegion(e.contentsBegin, e.contentsEnd ?? e.end);
     } else {
@@ -1031,7 +1031,7 @@ const narrowToBlock = ember.defineCommand({
   doc: "Narrow the buffer to the block at point.",
   run: () => {
     const e = elementAt(ember.point());
-    if (!e || !e.type.includes("block")) throw new Error("Not in a block");
+    if (!e || !e.type.includes("block")) ember.userError("Not in a block");
     ember.call("org-narrow-to-element");
   },
 });
@@ -1746,7 +1746,7 @@ ember.defineCommand({
   doc: "Indent the block at point.\nSignal an error when not at a block.",
   run: () => {
     const el = elementAt(ember.point());
-    if (!el || !BLOCK_TYPES.includes(el.type)) throw new Error("Not at a block");
+    if (!el || !BLOCK_TYPES.includes(el.type)) ember.userError("Not at a block");
     const pt = marker(ember.point());
     orgIndentRegion(el.begin, el.end);
     ember.gotoChar(pt.pos);
@@ -1760,7 +1760,7 @@ ember.defineCommand({
   doc: "Indent the drawer at point.\nSignal an error when not at a drawer.",
   run: () => {
     const el = elementAt(ember.point());
-    if (el?.type !== "drawer" && el?.type !== "property-drawer") throw new Error("Not at a drawer");
+    if (el?.type !== "drawer" && el?.type !== "property-drawer") ember.userError("Not at a drawer");
     const pt = marker(ember.point());
     orgIndentRegion(el.begin, el.end);
     ember.gotoChar(pt.pos);
@@ -2248,7 +2248,7 @@ const markSubtree = ember.defineCommand({
   run: () => {
     const line = lineAt();
     if (parseHeading(line)) ember.gotoChar(ember.lineStart(line));
-    else if (headingIndex(headings(), line) === undefined) throw new Error("Not in a subtree");
+    else if (headingIndex(headings(), line) === undefined) ember.userError("Not in a subtree");
     else ember.call("org-previous-visible-heading");
     markElement();
   },
@@ -2366,7 +2366,7 @@ function insertHeading(arg: ember.PrefixArg, invisibleOk = false): void {
         if (shown === undefined) {
           const last = all[lineage[lineage.length - 1]].start;
           ember.gotoChar(last);
-          throw new Error(`Before first headline at position ${last + 1} in buffer ${ember.bufferName()}`);
+          ember.userError(`Before first headline at position ${last + 1} in buffer ${ember.bufferName()}`);
         }
         i = shown;
       }
@@ -2522,7 +2522,7 @@ ember.defineCommand({
  * line's start, as save-excursion leaves it.
  */
 function changeLevel(h: Heading, by: number): void {
-  if (h.level + by < 1) throw new Error("Cannot promote to level 0.  UNDO to recover if necessary");
+  if (h.level + by < 1) ember.userError("Cannot promote to level 0.  UNDO to recover if necessary");
   // Org checks folds after promoting, but not after demoting.
   const change = (): void => {
     replaceKeepingPoint(h.start, h.start + h.level + 1, `${"*".repeat(h.level + by)} `);
@@ -2548,7 +2548,7 @@ function changeSubtreeLevel(by: number): void {
   const [all, i] = backToHeading();
   const end = subtreeRegion(all, i)[1];
   const inside = all.filter((h, k) => k >= i && h.start < end);
-  if (inside.some((h) => h.level + by < 1)) throw new Error("Cannot promote to level 0.  UNDO to recover if necessary");
+  if (inside.some((h) => h.level + by < 1)) ember.userError("Cannot promote to level 0.  UNDO to recover if necessary");
   for (const h of [...inside].reverse()) changeLevel(parseHeading(h.line) ?? h, by);
   fixPositionAfterPromote();
 }
@@ -2688,7 +2688,7 @@ export function moveSubtree(arg: number): void {
     const next = arg > 0 ? nextSiblingStart(all, at) : previousSiblingStart(all, at);
     if (next === undefined) {
       ember.gotoChar(beg);
-      throw new Error("Cannot move past superior level or buffer limit");
+      ember.userError("Cannot move past superior level or buffer limit");
     }
     at = next;
   }
@@ -3299,7 +3299,7 @@ function priority(direction: number): void {
     }
   } else if (remove) {
     dropMarker(p);
-    throw new Error("No priority cookie found in line");
+    ember.userError("No priority cookie found in line");
   } else if (h.todoAt !== undefined) {
     edInsert(h.todoAt + charCount(h.todo ?? ""), ` [#${String.fromCharCode(next)}]`);
   } else {
@@ -3662,7 +3662,7 @@ function modifyTsExtra(extra: string, pos: number, n: number, step: number): str
 function changeTimestamp(n: number, what?: string, updown = true): void {
   const origin = ember.point();
   const ts = tsMatches(lineAt()).find((t) => t.start <= origin && origin <= t.end);
-  if (!ts) throw new Error("Not at a timestamp");
+  if (!ts) ember.userError("Not at a timestamp");
   const category = timestampCategory(ts, origin);
   if (what === undefined && category === "bracket") {
     const swap: { [c: string]: string } = { "[": "<", "]": ">", "<": "[", ">": "]" };
@@ -3997,7 +3997,7 @@ function openAtPoint_(): void {
   }
   const all = headings();
   const i = headingIndex(all, lineAt());
-  if (i === undefined) throw new Error("No link found");
+  if (i === undefined) ember.userError("No link found");
   const h = all[i];
   const p = ember.point();
   if (lineAt() === h.line && h.tagsAt !== undefined && p >= h.tagsAt && p < h.end) {
@@ -4248,7 +4248,7 @@ function metaRegion(up: boolean): boolean {
         const before = all.filter((h) => h.level === level && h.start < ember.lineStart(lineAt(rb))).at(-1);
         if ((level > 1 && higher(rb === ember.lineStart(lineAt(rb)) ? rb : lineStartOrEnd(lineAt(rb) + 1), end.pos)) || !before) {
           dropMarker(end);
-          throw new Error("Cannot move past superior level or buffer limit");
+          ember.userError("Cannot move past superior level or buffer limit");
         }
         ember.gotoChar(before.start);
         while (ember.point() < end.pos) ember.keepMarkActive(() => moveSubtree(1));
@@ -4258,7 +4258,7 @@ function metaRegion(up: boolean): boolean {
         const after = all.find((h) => h.level === level && h.start >= re && h.start + h.level + 1 > re);
         if ((level > 1 && higher(rb === ember.lineStart(lineAt(rb)) ? rb : lineStartOrEnd(lineAt(rb) + 1), re)) || !after) {
           dropMarker(beg);
-          throw new Error("Cannot move past superior level or buffer limit");
+          ember.userError("Cannot move past superior level or buffer limit");
         }
         ember.gotoChar(after.start);
         while (ember.point() > beg.pos) ember.keepMarkActive(() => moveSubtree(-1));
@@ -4347,7 +4347,7 @@ const shiftMetaLeft = ember.defineCommand({
     if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-delete-column");
     else if (headingHere()) ember.call("org-promote-subtree");
     else if (itemHere()) ember.call("org-outdent-item-tree");
-    else throw new Error("This command is active in special context like tables, headlines or items");
+    else ember.userError("This command is active in special context like tables, headlines or items");
   },
 });
 
@@ -4358,7 +4358,7 @@ const shiftMetaRight = ember.defineCommand({
     if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-insert-column");
     else if (headingHere()) ember.call("org-demote-subtree");
     else if (itemHere()) ember.call("org-indent-item-tree");
-    else throw new Error("This command is active in special context like tables, headlines or items");
+    else ember.userError("This command is active in special context like tables, headlines or items");
   },
 });
 
@@ -4511,7 +4511,7 @@ function hiddenBelow(what: "headlines" | "items"): boolean {
 }
 
 function hiddenTreeError(): never {
-  throw new Error("Hidden subtree, open with TAB or use subtree command M-S-<left>/<right>");
+  ember.userError("Hidden subtree, open with TAB or use subtree command M-S-<left>/<right>");
 }
 
 /**
@@ -4617,7 +4617,7 @@ function ctrlCCtrlCItem(line: number, arg: ember.PrefixArg): void {
   fixBox(struct, parents);
   if (box && sameStruct(struct, old)) {
     if (c16) ember.message("Checkboxes already reset");
-    else throw new Error(`Cannot toggle this checkbox: ${box === "[X]" ? "all subitems checked" : "unchecked subitems"}`);
+    else ember.userError(`Cannot toggle this checkbox: ${box === "[X]" ? "all subitems checked" : "unchecked subitems"}`);
     return;
   }
   applyStruct(struct, old);

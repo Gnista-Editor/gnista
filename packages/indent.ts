@@ -109,7 +109,7 @@ ember.defineCommand({
 /** The lines from the region's start to its end, the end's own line left out if the end is at its start. */
 function regionLines(): [number, number] {
   const mark = ember.mark();
-  if (mark === undefined) throw new Error("The mark is not set now, so there is no region");
+  if (mark === undefined) ember.userError("The mark is not set now, so there is no region");
   const [a, b] = [Math.min(ember.point(), mark), Math.max(ember.point(), mark)];
   let last = ember.lineOf(b);
   if (b === ember.lineStart(last) && last > ember.lineOf(a)) last--;

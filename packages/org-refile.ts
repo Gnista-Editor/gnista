@@ -24,9 +24,9 @@ function refileTargets(): { name: string; heading: Heading }[] {
  */
 function refile(target: string, keep: boolean): void {
   const h = entryHeading();
-  if (!h) throw new Error(`Before first headline at position ${ember.lineStart(lineAt()) + 1} in buffer ${ember.bufferName()}`);
+  if (!h) ember.userError(`Before first headline at position ${ember.lineStart(lineAt()) + 1} in buffer ${ember.bufferName()}`);
   const t = refileTargets().find((x) => x.name === target);
-  if (!t) throw new Error("Invalid target location");
+  if (!t) ember.userError("Invalid target location");
   const all = headings();
   const i = all.findIndex((x) => x.start === h.start);
   const [start, end] = subtreeRegion(all, i);
@@ -72,7 +72,7 @@ ember.defineCommand({
   params: [{ name: "target", kind: "string", prompt: "Goto: " }],
   run: (target) => {
     const t = refileTargets().find((x) => x.name === target);
-    if (!t) throw new Error("Invalid target location");
+    if (!t) ember.userError("Invalid target location");
     ember.gotoChar(t.heading.start);
   },
 });
@@ -85,7 +85,7 @@ export const refileCommand = ember.defineCommand({
   run: () => {
     const goto = Array.isArray(ember.prefixArg());
     if (!goto && !entryHeading()) {
-      throw new Error(`Before first headline at position ${ember.lineStart(lineAt()) + 1} in buffer ${ember.bufferName()}`);
+      ember.userError(`Before first headline at position ${ember.lineStart(lineAt()) + 1} in buffer ${ember.bufferName()}`);
     }
     ember.callInteractively(goto ? "org--refile-goto" : "org--refile-to");
   },
@@ -96,7 +96,7 @@ export const refileCopyCommand = ember.defineCommand({
   doc: "Copy the subtree at point under another heading, asking which, as org-refile does but keeping the original.",
   run: () => {
     if (!entryHeading()) {
-      throw new Error(`Before first headline at position ${ember.lineStart(lineAt()) + 1} in buffer ${ember.bufferName()}`);
+      ember.userError(`Before first headline at position ${ember.lineStart(lineAt()) + 1} in buffer ${ember.bufferName()}`);
     }
     ember.callInteractively("org--refile-copy-to");
   },

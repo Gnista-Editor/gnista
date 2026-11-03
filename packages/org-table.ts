@@ -93,7 +93,7 @@ function atHline(pos = ember.point()): boolean {
 }
 
 function tableHere(): void {
-  if (!atTable()) throw new Error("Not at a table");
+  if (!atTable()) ember.userError("Not at a table");
 }
 
 function firstLine(line = lineAt()): number {
@@ -284,7 +284,7 @@ function alignIfNeeded(): void {
 /** Errors unless point is in a field of a table row, as org-table-check-inside-data-field does. */
 function checkInsideDataField(assumeTable = false): void {
   if ((assumeTable || atTable()) && /[^ \t]/.test(beforeOnLine()) && !atHline() && !/^[ \t]*$/.test(restOfLine())) return;
-  throw new Error("Not in table data field");
+  ember.userError("Not in table data field");
 }
 
 /** The table line as bars and spaces, as org-table-clean-line makes it. */
@@ -317,7 +317,7 @@ function findDataline(): void {
   if (lineStartOrEnd(line) >= end) {
     // Org has moved down a line at a time by then.
     ember.gotoChar(lineStartOrEnd(line));
-    throw new Error("Cannot find data row for column operation");
+    ember.userError("Cannot find data row for column operation");
   }
   ember.gotoChar(ember.lineStart(line));
   moveToColumn(col);
@@ -409,7 +409,7 @@ ember.defineCommand({
       ember.gotoChar(p);
     } catch {
       ember.gotoChar(origin);
-      throw new Error("Cannot move to previous table field");
+      ember.userError("Cannot move to previous table field");
     }
     const m = /^\| ?/.exec(restOfLine());
     if (m) ember.gotoChar(ember.point() + m[0].length);
@@ -546,7 +546,7 @@ function moveCell(dRow: number, dCol: number): void {
   const column = currentColumn();
   const [targetRow, targetColumn] = [row + dRow, column + dCol];
   if (targetColumn < 1 || targetRow < 1 || targetColumn > columnCount() || targetRow > dataLines().length) {
-    throw new Error("Cannot move cell further");
+    ember.userError("Cannot move cell further");
   }
   const get = (r: number, c: number): string =>
     saveExcursion(() => {
@@ -614,8 +614,8 @@ function moveColumn(left: boolean): void {
   const col = currentColumn();
   const col1 = left ? col - 1 : col;
   const colpos = left ? col - 1 : col + 1;
-  if (left && col === 1) throw new Error("Cannot move column further left");
-  if (!left && /^[^|\n]*\|[^|\n]*$/.test(restOfLine())) throw new Error("Cannot move column further right");
+  if (left && col === 1) ember.userError("Cannot move column further left");
+  if (!left && /^[^|\n]*\|[^|\n]*$/.test(restOfLine())) ember.userError("Cannot move column further right");
   eachDataRow(() => {
     gotoColumn(col1, true);
     const m = /^\|([^|\n]+)\|([^|\n]+)\|/.exec(restOfLine());
@@ -653,11 +653,11 @@ ember.defineCommand({
 function moveRow(up: boolean): void {
   const col = currentColumnOfPoint();
   const pos = ember.point();
-  if (up && ember.lineStart(lineAt()) === 0) throw new Error("Cannot move row further");
+  if (up && ember.lineStart(lineAt()) === 0) ember.userError("Cannot move row further");
   forwardLine(up ? -1 : 1);
   if ((!up && ember.point() === ember.bufferSize()) || !atTable()) {
     ember.gotoChar(pos);
-    throw new Error("Cannot move row further");
+    ember.userError("Cannot move row further");
   }
   ember.gotoChar(pos);
   const bol = ember.lineStart(lineAt());
@@ -843,7 +843,7 @@ ember.defineCommand({
   name: "org-table-paste-rectangle",
   doc: "Paste the fields last cut or copied from a table, starting at the field at point.",
   run: () => {
-    if (tableClip.length === 0) throw new Error("First cut/copy a region to paste!");
+    if (tableClip.length === 0) ember.userError("First cut/copy a region to paste!");
     checkInsideDataField();
     const column = currentColumn();
     const realign = ember.variable("org-table-automatic-realign");

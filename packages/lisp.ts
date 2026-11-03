@@ -21,9 +21,7 @@ const scanMessage = (e: ScanError): string => e.data[0];
 const scanPositions = (e: ScanError): [number, number] => [e.data[1] - 1, e.data[2] - 1];
 const bufferEnd = (arg: number): number => (arg > 0 ? ember.pointMax() : ember.pointMin());
 const count = (): number => ember.prefixNumericValue(ember.prefixArg());
-const userError = (message: string): never => {
-  throw new Error(message);
-};
+const userError = (message: string): never => ember.userError(message);
 
 ember.defineVariable({
   name: "forward-sexp-function",

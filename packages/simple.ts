@@ -159,7 +159,7 @@ const yankPop = ember.defineCommand({
     const point = ember.point();
     const mark = ember.mark();
     if (mark === undefined) {
-      throw new Error("The mark is not set now, so there is no region");
+      ember.userError("The mark is not set now, so there is no region");
     }
     const pointWasFirst = point < mark;
     const start = Math.min(point, mark);

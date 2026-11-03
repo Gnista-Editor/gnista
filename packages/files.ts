@@ -142,7 +142,7 @@ function basicSaveBuffer(): void {
     return;
   }
   if (ember.visitedFileChanged() && !ember.yesOrNoP(`${nondirectory(file)} has changed since visited or saved.  Save anyway? `)) {
-    throw new Error("Save not confirmed");
+    ember.userError("Save not confirmed");
   }
   addFinalNewline();
   selectSafeCodingSystem();
@@ -259,14 +259,14 @@ ember.defineCommand({
     if (/^#.*#$/.test(nondirectory(file))) throw new Error(`${abbreviate(file)} is an auto-save file`);
     const auto = ember.autoSaveFileName(file);
     if (ember.fileExists(file) && !ember.fileExists(auto)) throw new Error(`Auto save file ${abbreviate(auto)} does not exist`);
-    if (!ember.hasNewerAutoSave(file)) throw new Error(`Auto-save file ${abbreviate(auto)} not current`);
+    if (!ember.hasNewerAutoSave(file)) ember.userError(`Auto-save file ${abbreviate(auto)} not current`);
     for (;;) {
       const answer = ember.readAnswer(`Recover auto save file ${auto}? `, ["yes", "no", "diff"]);
       if (answer === "diff") {
         ember.message("Ember cannot show the differences yet");
         continue;
       }
-      if (answer !== "yes") throw new Error("Recover-file canceled");
+      if (answer !== "yes") ember.userError("Recover-file canceled");
       ember.call("switch-to-buffer", ember.findFileNoselect(file));
       ember.recoverFromAutoSave();
       return;

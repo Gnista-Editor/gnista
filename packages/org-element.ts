@@ -474,7 +474,7 @@ ember.defineCommand({
   doc: "Move the element at point, such as a paragraph or a list, before the one above it.",
   run: () => {
     const e = elementAt(ember.point());
-    if (!e) throw new Error("No element at point");
+    if (!e) ember.userError("No element at point");
     if (e.type === "headline") {
       // Point stays where it was in the subtree, even on blank lines below its heading.
       let q = ember.point();
@@ -495,7 +495,7 @@ ember.defineCommand({
       prev = elementAt(q);
       for (let up = prev?.parent; prev && up && up.end <= e.begin; up = up.parent) prev = up;
     }
-    if (!prev || nested(e, prev)) throw new Error("Cannot drag element backward");
+    if (!prev || nested(e, prev)) ember.userError("Cannot drag element backward");
     const pos = ember.point();
     swapElements(prev, e);
     ember.gotoChar(prev.begin + (pos - e.begin));
@@ -508,12 +508,12 @@ ember.defineCommand({
   run: () => {
     const pos = ember.point();
     const e = elementAt(pos);
-    if (!e) throw new Error("No element at point");
-    if (e.end === ember.bufferSize()) throw new Error("Cannot drag element forward");
+    if (!e) ember.userError("No element at point");
+    if (e.end === ember.bufferSize()) ember.userError("Cannot drag element forward");
     const next = elementAt(e.end);
     if (!next || nested(e, next) || (next.type === "headline" && e.type !== "headline")) {
       ember.gotoChar(pos);
-      throw new Error("Cannot drag element forward");
+      ember.userError("Cannot drag element forward");
     }
     let q = endBeforeBlank(next);
     q = lineStartOrEnd(lineAt(q) + 1);

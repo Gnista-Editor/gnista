@@ -337,7 +337,7 @@ ember.defineCommand({
       { directory: dir, input: names.join("\0") },
     );
     // grep says 1 for no matches; more is a failure, as of the regexp.
-    if (result.exit > 1 && !/\0\d+:/.test(result.output)) throw new Error(`Search failed with status ${result.exit}: ${result.output.trim()}`);
+    if (result.exit > 1 && !/\0\d+:/.test(result.output)) ember.userError(`Search failed with status ${result.exit}: ${result.output.trim()}`);
     let js: RegExp | undefined;
     try {
       js = new RegExp(toExtended(regexp).replace(/\\</g, "\\b").replace(/\\>/g, "\\b"), fold ? "iu" : "u");
@@ -355,7 +355,7 @@ ember.defineCommand({
         const length = hit ? [...hit[0]].length : 0;
         return { file: dir + m[1], line: Number(m[2]), col, length, summary: m[3], group: m[1] };
       });
-    if (xrefs.length === 0) throw new Error(`No matches for: ${regexp}`);
+    if (xrefs.length === 0) ember.userError(`No matches for: ${regexp}`);
     ember.funcall("xref-show-xrefs", xrefs);
   },
 });

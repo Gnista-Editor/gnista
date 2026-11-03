@@ -510,7 +510,7 @@ ember.defineCommand({
   run: () => {
     barfIfReadOnly();
     const mark = ember.mark();
-    if (mark === undefined) throw new Error("The mark is not set now, so there is no region");
+    if (mark === undefined) ember.userError("The mark is not set now, so there is no region");
     fillRegion(Math.min(ember.point(), mark), Math.max(ember.point(), mark), justifyArg());
   },
 });
@@ -521,7 +521,7 @@ ember.defineCommand({
   run: () => {
     barfIfReadOnly();
     const mark = ember.mark();
-    if (mark === undefined) throw new Error("The mark is not set now, so there is no region");
+    if (mark === undefined) ember.userError("The mark is not set now, so there is no region");
     fillRegionAsParagraph(Math.min(ember.point(), mark), Math.max(ember.point(), mark), justifyArg());
   },
 });

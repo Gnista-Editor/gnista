@@ -380,7 +380,7 @@ ember.defineCommand({
 /** The entry the agenda line at point shows, or Org's error if it shows none. */
 function agendaItemHere(): AgendaItem {
   const item = agendaLines[ember.lineOf(ember.point())];
-  if (!item) throw new Error("Command not allowed in this line");
+  if (!item) ember.userError("Command not allowed in this line");
   return item;
 }
 

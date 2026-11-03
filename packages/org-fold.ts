@@ -359,12 +359,12 @@ function checkBeforeInvisibleEdit(kind: string): void {
   const atPoint = folded(p);
   const beforePoint = p > 0 && folded(p - 1);
   if (!atPoint && !beforePoint) return;
-  if (mode === "error") throw new Error("Editing in invisible areas is prohibited, make them visible first");
+  if (mode === "error") ember.userError("Editing in invisible areas is prohibited, make them visible first");
   showAround(p);
   if (beforePoint) showAround(p - 1);
   const predictable = atPoint && !beforePoint && (kind === "insert" || kind === "delete-backward");
   if (mode === "show" || (mode === "smart" && predictable)) ember.message("Unfolding invisible region around point before editing");
-  else throw new Error("Edit in invisible region aborted, repeat to confirm with text visible");
+  else ember.userError("Edit in invisible region aborted, repeat to confirm with text visible");
 }
 
 /** The commands checked before they edit next to folded text, as in org-fold-catch-invisible-edits-commands. */
