@@ -699,3 +699,17 @@ for (const [name, doc, ask] of [
     },
   });
 }
+
+/**
+ * A file's name relative to a directory, default-directory unless given,
+ * going up with ".." where it must, as file-relative-name.
+ */
+export function fileRelativeName(file: string, directory?: string): string {
+  const dir = ember.expandFileName(directory ?? String(ember.variable("default-directory") ?? "."));
+  const parts = (path: string) => path.split("/").filter((p) => p !== "");
+  const [from, to] = [parts(dir), parts(ember.expandFileName(file))];
+  let common = 0;
+  while (common < from.length && common < to.length && from[common] === to[common]) common++;
+  const rel = [...from.slice(common).map(() => ".."), ...to.slice(common)].join("/");
+  return rel === "" ? "." : rel;
+}

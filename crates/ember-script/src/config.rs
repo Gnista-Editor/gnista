@@ -47,6 +47,7 @@ pub fn setup_with(
         }
     };
     ed.set_variable("user-emacs-directory", ember_core::Value::Str(format!("{}/", dir.display())));
+    ed.set_variable("load-path", ember_core::Value::List(vec![ember_core::Value::Str(dir.join("packages").display().to_string())]));
     if let Err(e) = extensions(ed, &scripting) {
         ed.message(format!("An extension failed to load: {e}"));
     }

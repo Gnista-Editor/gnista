@@ -715,6 +715,11 @@ pub(crate) fn install(ed: &mut Editor) {
             Value::Bool(false),
         ),
         Variable::new(
+            "load-path",
+            "The directories `ember.require` looks in for a package that does not ship with Ember, NAME.ts for the feature NAME, as Emacs's require looks along load-path: the packages directory of user-emacs-directory.",
+            Value::List(Vec::new()),
+        ),
+        Variable::new(
             "deactivate-mark",
             "Set to nil by a command, after the changes it makes, to keep the region active, which a change otherwise deactivates at the command's end.",
             Value::Null,

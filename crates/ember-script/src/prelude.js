@@ -903,6 +903,12 @@
       throw e;
     },
     userError: (message) => ember.signal("user-error", message),
+    require(feature) {
+      if (!native.require(String(feature))) {
+        ember.signal("file-missing", `Cannot open load file: No such file or directory, ${feature}`, ["Cannot open load file", "No such file or directory", String(feature)]);
+      }
+      return String(feature);
+    },
     defineError: (symbol, parent = "error") => native.defineError(String(symbol), String(parent)),
     errorConditions: (e) =>
       e instanceof Error && Array.isArray(e.conditions) ? e.conditions : e instanceof Error && typeof e.symbol === "string" ? native.errorConditions(e.symbol) : ["error"],

@@ -2219,6 +2219,62 @@ declare global {
        */
       "how-many": [];
       /**
+       * Hide every top-level block, leaving its first line showing, and with hs-hide-comments-when-hiding-all its comments too.
+       *
+       * Defined in packages/hideshow.ts.
+       */
+      "hs-hide-all": [];
+      /**
+       * Hide the block or comment point is in, leaving its first line. With a prefix argument, leave point after it.
+       *
+       * @param end raw prefix argument
+       *
+       * Defined in packages/hideshow.ts.
+       */
+      "hs-hide-block": [end?: PrefixArg];
+      /**
+       * Hide the comment at the start of the file, if it has more than one line.
+       *
+       * Defined in packages/hideshow.ts.
+       */
+      "hs-hide-initial-comment-block": [];
+      /**
+       * Hide the blocks a level in from the block point is in, or as many levels as the prefix argument says.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/hideshow.ts.
+       */
+      "hs-hide-level": [arg?: number];
+      /**
+       * Hide and show blocks of code and comments: C-c @ C-h hides the block point is in, C-c @ C-s shows it, C-c @ C-c toggles it, C-c @ C-M-h hides all top-level blocks, C-c @ C-M-s shows them all and C-c @ C-l hides a level in.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/hideshow.ts.
+       */
+      "hs-minor-mode": [];
+      /**
+       * Show every block hideshow hid.
+       *
+       * Defined in packages/hideshow.ts.
+       */
+      "hs-show-all": [];
+      /**
+       * Show the block or comment point is in. With a prefix argument, leave point after it.
+       *
+       * @param end raw prefix argument
+       *
+       * Defined in packages/hideshow.ts.
+       */
+      "hs-show-block": [end?: PrefixArg];
+      /**
+       * Hide the block point is in if it shows, else show it.
+       *
+       * Defined in packages/hideshow.ts.
+       */
+      "hs-toggle-hiding": [];
+      /**
        * Step back through the completions icomplete shows: the last becomes the first, which C-j takes.
        *
        * Defined in packages/icomplete.ts.
@@ -3665,6 +3721,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-insert-link": [link: string, description: string];
+      /**
+       * Insert a block, #+begin_TYPE and #+end_TYPE, around the region if it is active. Asks for its type by the key org-structure-template-alist gives it: TAB, RET or SPC ends a key that starts longer ones, and TAB first types the name.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-insert-structure-template": [];
       /**
        * Insert a heading with the first TODO state, as M-RET does; in a list, an item with a checkbox.
        *
@@ -6903,6 +6965,40 @@ declare global {
        */
       "history-length": Value;
       /**
+       * Whether showing a block keeps the blocks inside it that were hidden hidden.
+       *
+       * Defined in packages/hideshow.ts.
+       */
+      "hs-allow-nesting": Value;
+      /**
+       * Whether hs-hide-all hides comments of more than one line too.
+       *
+       * Defined in packages/hideshow.ts.
+       */
+      "hs-hide-comments-when-hiding-all": Value;
+      /**
+       * Whether Hs-Minor mode is on in this buffer. Use the command hs-minor-mode to change it.
+       *
+       * Defined in packages/hideshow.ts.
+       */
+      "hs-minor-mode": Value;
+      /**
+       * Keymap hs-minor-mode-map.
+       */
+      "hs-minor-mode-map": Value;
+      /**
+       * A function called with each overlay hideshow makes to hide text, which can give it a display of its own.
+       *
+       * Defined in packages/hideshow.ts.
+       */
+      "hs-set-up-overlay": Value;
+      /**
+       * How hideshow finds blocks in a major mode: a list of [MODE, START, END, COMMENT-START, FORWARD-SEXP-FUNC, ADJUST-BEG-FUNC, FIND-BLOCK-BEGINNING-FUNC, FIND-NEXT-BLOCK-FUNC, LOOKING-AT-BLOCK-START-P-FUNC]. START, END and COMMENT-START are regexps; START can be [REGEXP, N] to start the block at the Nth group. What is left out or nil is guessed: parens for blocks, comment-start for comments, forward-sexp to go over a block.
+       *
+       * Defined in packages/hideshow.ts.
+       */
+      "hs-special-modes-alist": Value;
+      /**
        * Keymap icomplete-fido-mode-map.
        */
       "icomplete-fido-mode-map": Value;
@@ -7352,6 +7448,10 @@ declare global {
        */
       "list-matching-lines-prefix-face": Value;
       /**
+       * The directories `ember.require` looks in for a package that does not ship with Ember, NAME.ts for the feature NAME, as Emacs's require looks along load-path: the packages directory of user-emacs-directory.
+       */
+      "load-path": Value;
+      /**
        * The current buffer's major mode, as the name of the command that turns it on.
        */
       "major-mode": Value;
@@ -7658,6 +7758,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-startup-truncated": Value;
+      /**
+       * The kinds of block C-c C-, offers, each a key and a block type: ["s", "src"] makes #+begin_src and #+end_src. A type in capital letters is inserted in capitals. With org-tempo required, <s and TAB at the start of a line inserts it too.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-structure-template-alist": Value;
       /**
        * The last subtree org-cut-subtree or org-copy-subtree put on the kill ring.
        *
@@ -9776,6 +9882,26 @@ declare global {
        */
       "hi-lock-mode-on-hook": Value;
       /**
+       * Run at the end of the commands that hide blocks.
+       */
+      "hs-hide-hook": Value;
+      /**
+       * Run after Hs-Minor mode is turned on or off.
+       */
+      "hs-minor-mode-hook": Value;
+      /**
+       * Run after Hs-Minor mode is turned off.
+       */
+      "hs-minor-mode-off-hook": Value;
+      /**
+       * Run after Hs-Minor mode is turned on.
+       */
+      "hs-minor-mode-on-hook": Value;
+      /**
+       * Run at the end of the commands that show blocks.
+       */
+      "hs-show-hook": Value;
+      /**
        * Run when icomplete starts on a prompt, in the minibuffer, to set it up for this prompt.
        */
       "icomplete-minibuffer-setup-hook": Value;
@@ -9876,9 +10002,17 @@ declare global {
        */
       "org-capture-mode-on-hook": Value;
       /**
+       * Functions TAB in Org tries first, each until one gives true, which then is all TAB does. Emacs also calls it org-tab-first-hook.
+       */
+      "org-cycle-tab-first-hook": Value;
+      /**
        * Run after entering Org mode, after the hooks of the modes it is built on.
        */
       "org-mode-hook": Value;
+      /**
+       * Functions TAB in Org tries where it would indent, not being on a heading, an item, a table or a block, each until one gives true.
+       */
+      "org-tab-before-tab-emulation-hook": Value;
       /**
        * Run after Outline-Minor mode is turned on or off.
        */
@@ -12025,6 +12159,13 @@ declare global {
     function signal(symbol: string, message: string, data?: Value[]): never;
     /** Signal an error in what the user did, as user-error. */
     function userError(message: string): never;
+    /**
+     * Load a package unless it is loaded, as Emacs's require: one that ships
+     * with Ember but is not preloaded, such as "org-tempo", or NAME.ts in a
+     * directory of load-path, ~/.config/ember/packages by default. Signals
+     * file-missing if there is none. Gives the feature's name.
+     */
+    function require(feature: string): string;
     /** Define an error condition under a parent, "error" by default, as define-error. */
     function defineError(symbol: string, parent?: string): void;
     /** The conditions a caught error belongs to, its own first, as its error-conditions list them. */

@@ -103,6 +103,151 @@ ember.defun("python-imenu-treesit-create-index", () => {
   return pythonImenu1(tree) as unknown as ember.Value;
 });
 
+// --- Python's blocks for hideshow, as python.el's python-nav functions -------
+
+/** python-rx's block-start: a keyword that starts a block. */
+const PY_BLOCK_START =
+  "\\_<\\(?:def\\|class\\|if\\|elif\\|else\\|try\\|except\\|finally\\|for\\|while\\|with\\|match\\|case\\|async[[:space:]]+\\(?:def\\|for\\|with\\)\\)\\_>";
+/** python-nav-beginning-of-block-regexp: a line that starts a block. */
+const PY_BLOCK_START_LINE = `^[[:space:]]*${PY_BLOCK_START}`;
+
+const pyInStringOrComment = (pos = ember.point()): boolean => ember.syntaxPpss(pos).start !== null;
+const pyLineText = (pos = ember.point()): string => ember.bufferText(ember.lineBeginningPosition(pos), ember.lineEndPosition(pos));
+const pyCommentOrEmptyLine = (): boolean => /^\s*(#.*)?$/.test(pyLineText());
+
+/** Goes to the start of the statement point is in, as python-nav-beginning-of-statement. */
+function pyBeginningOfStatement(): void {
+  for (;;) {
+    ember.gotoChar(ember.lineBeginningPosition());
+    if (ember.point() === ember.pointMin()) break;
+    const ppss = ember.syntaxPpss();
+    const context = ppss.openParens.length > 0 ? ppss.openParens[0] : ppss.inString !== null ? ppss.start : null;
+    if (context !== null) ember.gotoChar(context);
+    else if (pyLineText(ember.point() - 1).endsWith("\\")) ember.gotoChar(ember.point() - 1);
+    else break;
+  }
+  ember.gotoChar(ember.lineBeginningPosition());
+  ember.skipCharsForward(" \t");
+}
+
+/** Goes to the end of the statement point is in, as python-nav-end-of-statement: past brackets, strings and backslashes. */
+function pyEndOfStatement(): void {
+  for (;;) {
+    ember.gotoChar(ember.lineEndPosition());
+    if (ember.point() >= ember.pointMax()) return;
+    const ppss = ember.syntaxPpss();
+    if (ppss.depth > 0 || ppss.inString !== null || pyLineText().endsWith("\\")) ember.gotoChar(ember.point() + 1);
+    else return;
+  }
+}
+
+/** Goes to the next or previous line that starts a block, as python-nav-forward-block: whether it did. */
+function pyForwardBlock(arg: number): boolean {
+  const start = ember.point();
+  if (arg > 0) {
+    pyEndOfStatement();
+    while (ember.reSearchForward(PY_BLOCK_START_LINE, { noerror: true }) != null && pyInStringOrComment());
+  } else {
+    pyBeginningOfStatement();
+    while (ember.reSearchBackward(PY_BLOCK_START_LINE, { noerror: true }) != null && pyInStringOrComment());
+  }
+  pyBeginningOfStatement();
+  if ((arg > 0 && ember.point() < start) || !ember.lookingAt(PY_BLOCK_START)) {
+    ember.gotoChar(start);
+    return false;
+  }
+  return ember.point() !== start;
+}
+
+/** Goes to the start of the block point is in, as python-nav-beginning-of-block: where, or undefined. */
+function pyBeginningOfBlock(): number | undefined {
+  const start = ember.point();
+  while (ember.point() > ember.pointMin()) {
+    pyBeginningOfStatement();
+    if (!pyCommentOrEmptyLine()) break;
+    ember.gotoChar(ember.lineBeginningPosition() - 1);
+  }
+  pyBeginningOfStatement();
+  if (ember.lookingAt(PY_BLOCK_START)) return ember.point();
+  const indent = ember.currentIndentation() - Number(ember.variable("python-indent-offset") ?? 4);
+  while (pyForwardBlock(-1) && ember.currentIndentation() > indent);
+  if (ember.lookingAt(PY_BLOCK_START) && ember.currentIndentation() === indent) return ember.point();
+  ember.gotoChar(start);
+  return undefined;
+}
+
+/** Goes to the end of the block point is in, as python-nav-end-of-block. */
+function pyEndOfBlock(): number | undefined {
+  if (pyBeginningOfBlock() === undefined) return undefined;
+  const indent = ember.currentIndentation();
+  pyEndOfStatement();
+  for (;;) {
+    const eol = ember.lineEndPosition();
+    if (eol >= ember.pointMax()) break;
+    ember.gotoChar(eol + 1);
+    if (ember.point() >= ember.pointMax()) break;
+    if (!pyCommentOrEmptyLine() && ember.currentIndentation() > indent) pyEndOfStatement();
+    else if (!pyCommentOrEmptyLine()) break;
+  }
+  // Back over the comments and blank lines after it, as python-util-forward-comment.
+  ember.forwardComment(-ember.bufferSize());
+  return ember.point();
+}
+
+/** Whether point is at the start of a block, as python-info-looking-at-beginning-of-block. */
+function pyLookingAtBeginningOfBlock(): boolean {
+  const pos = ember.point();
+  return ember.saveExcursion(() => {
+    pyBeginningOfStatement();
+    ember.gotoChar(ember.lineBeginningPosition());
+    return ember.point() <= pos && pos <= ember.point() + ember.currentIndentation() && ember.lookingAt(PY_BLOCK_START_LINE);
+  });
+}
+
+ember.defun("python-nav-beginning-of-block", () => pyBeginningOfBlock());
+ember.defun("python-info-looking-at-beginning-of-block", () => pyLookingAtBeginningOfBlock());
+ember.defun("python-hideshow-forward-sexp-function", () => {
+  pyEndOfBlock();
+  ember.gotoChar(ember.lineEndPosition());
+});
+ember.defun("python-hideshow-find-next-block", (regexp: string, maxp: number, comments: ember.Value) => {
+  const nextBlock = ember.saveExcursion(() => {
+    if (pyLookingAtBeginningOfBlock() && ember.reSearchForward(PY_BLOCK_START, { bound: maxp, noerror: true }) != null) return ember.point();
+    if (pyForwardBlock(1) && ember.point() < maxp && ember.reSearchForward(PY_BLOCK_START, { bound: maxp, noerror: true }) != null) {
+      return ember.point();
+    }
+    return maxp + 1;
+  });
+  const nextComment =
+    comments !== null && comments !== false && comments !== undefined
+      ? ember.saveExcursion(() => {
+          while (ember.reSearchForward("#", { bound: maxp, noerror: true }) != null) if (ember.syntaxPpss().inComment !== null) return ember.point();
+          return maxp + 1;
+        })
+      : maxp + 1;
+  const next = Math.min(nextBlock, nextComment);
+  if (next > maxp) return false;
+  ember.gotoChar(next);
+  return ember.saveExcursion(() => ember.lookingAt(regexp, ember.lineBeginningPosition()));
+});
+
+{
+  const alist = ember.variable("hs-special-modes-alist");
+  const entries = (mode: string) => [
+    mode,
+    PY_BLOCK_START_LINE,
+    // Empty, so it does not default to "\\s)" and the parens closing a block are hidden too.
+    "",
+    "#",
+    "python-hideshow-forward-sexp-function",
+    null,
+    "python-nav-beginning-of-block",
+    "python-hideshow-find-next-block",
+    "python-info-looking-at-beginning-of-block",
+  ];
+  if (Array.isArray(alist)) ember.setDefault("hs-special-modes-alist", [entries("python-ts-mode"), entries("python-mode"), ...alist]);
+}
+
 // --- Indentation -------------------------------------------------------------
 
 for (const [name, value, doc] of [

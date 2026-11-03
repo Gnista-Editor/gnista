@@ -174,6 +174,15 @@ const variables: [string, string, ember.Value][] = [
 ];
 for (const [name, doc, value] of variables) ember.defineVariable({ name, doc, value });
 
+ember.defineHook(
+  "org-cycle-tab-first-hook",
+  "Functions TAB in Org tries first, each until one gives true, which then is all TAB does. Emacs also calls it org-tab-first-hook.",
+);
+ember.defineHook(
+  "org-tab-before-tab-emulation-hook",
+  "Functions TAB in Org tries where it would indent, not being on a heading, an item, a table or a block, each until one gives true.",
+);
+
 for (const [name, doc] of [
   ["org-cycle-subtree-status", "What TAB last did to a heading: \"folded\", \"children\" or \"subtree\"."],
   ["org-cycle-global-status", "What S-TAB last did: \"overview\", \"contents\" or \"all\"."],
@@ -1785,6 +1794,7 @@ const cycle = ember.defineCommand({
 /** TAB in Org, as org-cycle does with prefix argument arg. */
 function orgCycle(arg: ember.PrefixArg): void {
   {
+    if (ember.runHookWithArgsUntilSuccess("org-cycle-tab-first-hook")) return;
     if (cycleLevel() || cycleItemIndentation()) return;
     if (Array.isArray(arg) && arg[0] === 4) {
       globalCycle();
@@ -1835,6 +1845,8 @@ function orgCycle(arg: ember.PrefixArg): void {
       cycleItem(line);
       return;
     }
+    // From there TAB emulation, after what else wants TAB, as org-tempo's templates.
+    if (ember.runHookWithArgsUntilSuccess("org-tab-before-tab-emulation-hook")) return;
     // TAB as indent-for-tab-command does: the region if it is active, then
     // the mark goes, as indent-region sets deactivate-mark.
     if (orgRegionActive()) {
@@ -5043,9 +5055,126 @@ function listToSubtree(pos: number, limit: number): number {
   return pos + charCount(text) + 1;
 }
 
+// Structure templates, as org-insert-structure-template
+
+ember.defineVariable({
+  name: "org-structure-template-alist",
+  doc:
+    'The kinds of block C-c C-, offers, each a key and a block type: ["s", "src"] makes #+begin_src and #+end_src. ' +
+    "A type in capital letters is inserted in capitals. With org-tempo required, <s and TAB at the start of a line inserts it too.",
+  value: [
+    ["a", "export ascii"],
+    ["c", "center"],
+    ["C", "comment"],
+    ["e", "example"],
+    ["E", "export"],
+    ["h", "export html"],
+    ["l", "export latex"],
+    ["q", "quote"],
+    ["s", "src"],
+    ["v", "verse"],
+  ],
+});
+
+/** org-structure-template-alist, as pairs of a key and a block type. */
+export function structureTemplates(): [string, string][] {
+  const alist = ember.variable("org-structure-template-alist");
+  if (!Array.isArray(alist)) return [];
+  return alist.filter((e): e is [string, string] => Array.isArray(e) && typeof e[0] === "string" && typeof e[1] === "string");
+}
+
+/** Whether a block type's first word is in capitals, so its #+BEGIN and #+END are too. */
+export function upcaseBlock(type: string): boolean {
+  const first = type.split(/\s+/).find((w) => w !== "") ?? "";
+  return first === first.toUpperCase();
+}
+
+/**
+ * Asks for a block type by its key in org-structure-template-alist, as
+ * org--insert-structure-template-mks does: a key that starts longer ones
+ * is ended with TAB, RET or SPC, and TAB first asks for the type by name.
+ */
+function readStructureType(): string {
+  const templates = structureTemplates();
+  const menu = templates.map(([key, type]) => `[${key}] ${type}`).join("  ");
+  let typed = "";
+  for (;;) {
+    const key = ember.readKey(`${menu}  [TAB] write the type\nKey: ${typed}`);
+    if (typed === "" && key === "TAB") {
+      const type = ember.readString("Structure type: ");
+      if (type === "") ember.userError("Empty structure type");
+      return type;
+    }
+    const exact = templates.find(([k]) => k === typed);
+    if (exact && (key === "TAB" || key === "RET" || key === "SPC")) return exact[1];
+    if ([...key].length !== 1) ember.userError("No such template");
+    typed += key;
+    const starting = templates.filter(([k]) => k.startsWith(typed));
+    if (starting.length === 0) ember.userError("No such template");
+    if (starting.length === 1 && starting[0][0] === typed) return starting[0][1];
+  }
+}
+
+/** Puts a block around the region, or an empty one at point, as org-insert-structure-template. */
+export function insertStructureTemplate(type: string): void {
+  if (type === "") throw ember.signal("error", `Invalid structure type: "${type}"`);
+  const region = orgRegionActive();
+  const regionStart = region ? Math.min(ember.point(), ember.mark() as number) : 0;
+  const regionEnd = region ? marker(Math.max(ember.point(), ember.mark() as number)) : undefined;
+  const extended = /^(src|export)$/i.test(type);
+  const verbatim = /^(example|export|src|comment)/i.test(type);
+  const up = upcaseBlock(type);
+  const first = type.split(/\s+/).find((w) => w !== "") ?? "";
+  if (region) ember.gotoChar(regionStart);
+  const column = ember.currentIndentation();
+  const bol = ember.lineStart(lineAt());
+  if (/^[ \t]*$/.test(ember.bufferText(bol, ember.point()))) ember.gotoChar(bol);
+  else ember.insert("\n");
+  const start = ember.point();
+  ember.indentTo(column);
+  ember.insert(`#+${up ? "BEGIN" : "begin"}_${type}${extended ? " " : ""}\n`);
+  if (regionEnd) {
+    // As org-escape-code-in-region: a comma before lines Org would read as its own.
+    if (verbatim) {
+      let line = lineAt();
+      while (ember.lineStart(line) < regionEnd.pos && line < ember.lineCount()) {
+        const text = ember.lineText(line);
+        const m = /^[ \t]*(?=,*(?:\*|#\+))/.exec(text);
+        if (m) edInsert(ember.lineStart(line) + charCount(m[0]), ",");
+        line++;
+      }
+    }
+    ember.gotoChar(regionEnd.pos);
+    dropMarker(regionEnd);
+    ember.skipCharsBackward(" \r\t\n");
+    ember.gotoChar(ember.lineEnd(lineAt()));
+  }
+  if (ember.point() !== ember.lineStart(lineAt())) ember.insert("\n");
+  ember.indentTo(column);
+  ember.insert(`#+${up ? "END" : "end"}_${first}`);
+  if (ember.lookingAt("[ \t]*$")) ember.deleteRegion(ember.point(), ember.matchEnd(0)!);
+  else ember.insert("\n");
+  if (ember.point() === ember.bufferSize() && ember.point() !== ember.lineStart(lineAt())) ember.insert("\n");
+  ember.gotoChar(start);
+  if (extended) ember.gotoChar(ember.lineEnd(lineAt()));
+  else {
+    forwardLine(1);
+    ember.skipCharsForward(" \t");
+  }
+}
+
+const insertStructureTemplateCommand = ember.defineCommand({
+  name: "org-insert-structure-template",
+  doc:
+    "Insert a block, #+begin_TYPE and #+end_TYPE, around the region if it is active. Asks for its type by the key " +
+    "org-structure-template-alist gives it: TAB, RET or SPC ends a key that starts longer ones, and TAB first types the name.",
+  run: () => insertStructureTemplate(readStructureType()),
+});
+
 // The mode
 
 const keys: { [keys: string]: ember.CommandName | ember.DefinedCommand } = {
+  "C-c C-,": insertStructureTemplateCommand,
   TAB: cycle,
   "S-TAB": shiftTab,
   RET: orgReturn,

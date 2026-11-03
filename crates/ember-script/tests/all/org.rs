@@ -473,3 +473,66 @@ fn orgs_mistakes_are_user_errors() {
     assert_eq!(caught(&mut ed, "org-open-at-point"), "\"user-error: No link found\"");
     assert_eq!(caught(&mut ed, "org-table-align"), "\"user-error: Not at a table\"");
 }
+
+/// The buffer after typing `line` on the second of three lines and pressing `keys`, `|` at point.
+fn typed(setup: &str, line: &str, keys: &str) -> String {
+    let mut ed = Editor::new();
+    let s = Scripting::new(&mut ed).unwrap();
+    if !setup.is_empty() {
+        s.eval_expression(&mut ed, setup).unwrap();
+    }
+    ed.window_buffer_mut().set_text(&format!("a\n{line}\nb\n"));
+    ed.call("org-mode", vec![]).unwrap();
+    let end = 2 + line.chars().count();
+    ed.window_buffer_mut().set_point(end);
+    ed.press(keys).unwrap();
+    let mut t = text(&ed);
+    let at = t.char_indices().nth(ed.window_buffer().point()).map_or(t.len(), |(i, _)| i);
+    t.insert(at, '|');
+    t
+}
+
+#[test]
+fn org_tempo_expands_templates_once_required() {
+    let tempo = r#"(ember.require("org-tempo"), ember.setVariable("org-structure-template-alist", [...ember.variable("org-structure-template-alist"), ["el", "src emacs-lisp"]]))"#;
+    // As Emacs 30's org-tempo leaves them.
+    assert_eq!(typed(tempo, "<s", "TAB"), "a\n#+begin_src |\n\n#+end_src\nb\n");
+    assert_eq!(typed(tempo, "<q", "TAB"), "a\n#+begin_quote\n|\n#+end_quote\nb\n");
+    assert_eq!(typed(tempo, "  <q", "TAB"), "a\n#+begin_quote\n|\n#+end_quote\nb\n");
+    assert_eq!(typed(tempo, "<el", "TAB"), "a\n#+begin_src emacs-lisp\n|\n#+end_src\nb\n");
+    assert_eq!(typed(tempo, "<L", "TAB"), "a\n#+latex: |\nb\n");
+    assert_eq!(typed(tempo, "x <s", "TAB"), "a\nx <s|\nb\n");
+    // Without it, TAB only indents, as in Emacs -Q.
+    assert_eq!(typed("", "<s", "TAB"), "a\n<s|\nb\n");
+}
+
+#[test]
+fn org_insert_structure_template_asks_by_key() {
+    // As Emacs 30's C-c C-, leaves them.
+    assert_eq!(typed("", "", "C-c C-, q"), "a\n#+begin_quote\n|#+end_quote\nb\n");
+    assert_eq!(typed("", "", "C-c C-, s"), "a\n#+begin_src |\n#+end_src\nb\n");
+    assert_eq!(typed("", "foo", "C-c C-, q"), "a\nfoo\n#+begin_quote\n|#+end_quote\nb\n");
+    assert_eq!(typed("", "  x", "C-c C-, TAB Q U O T E RET"), "a\n  x\n  #+BEGIN_QUOTE\n  |#+END_QUOTE\nb\n");
+    assert_eq!(typed("", "", "C-c C-, TAB s r c SPC e m a c s - l i s p RET"), "a\n#+begin_src emacs-lisp\n|#+end_src\nb\n");
+    // Around the region, escaping what Org would read as its own.
+    let (mut ed, _s) = org("x\n* h\n#+k\ny\n");
+    ed.window_buffer_mut().set_point(2);
+    ed.press("C-SPC M-> C-c C-, e").unwrap();
+    assert_eq!(text(&ed), "x\n#+begin_example\n,* h\n,#+k\ny\n#+end_example\n");
+}
+
+#[test]
+fn require_loads_a_package_once_from_load_path() {
+    let dir = std::env::temp_dir().join(format!("ember-require-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("my-thing.ts"), "import { charCount } from \"subr\";\nember.setVariable(\"my-thing-loads\", Number(ember.variable(\"my-thing-loads\") ?? 0) + charCount(\"x\"));\n").unwrap();
+    let (mut ed, s) = org("");
+    ed.set_variable("load-path", Value::List(vec![Value::Str(dir.display().to_string())]));
+    s.eval_expression(&mut ed, r#"(ember.require("my-thing"), ember.require("my-thing"))"#).unwrap();
+    assert_eq!(ed.variable("my-thing-loads"), Some(Value::Number(1.0)));
+    let missing = s
+        .eval_expression(&mut ed, r#"ember.conditionCase(() => ember.require("no-such-thing"), { "file-missing": (e) => e.message })"#)
+        .unwrap();
+    assert_eq!(missing, "\"Cannot open load file: No such file or directory, no-such-thing\"");
+    std::fs::remove_dir_all(&dir).unwrap();
+}

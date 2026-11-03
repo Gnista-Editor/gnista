@@ -37,7 +37,7 @@ export function forwardSexpDefault(arg = 1): void {
 }
 
 /** Moves over `arg` sexps, back if negative, as forward-sexp from code, through forward-sexp-function if set. Throws scan errors. */
-function forwardSexp(arg = 1): void {
+export function forwardSexp(arg = 1): void {
   const fn = ember.variable("forward-sexp-function");
   if (typeof fn === "string" || typeof fn === "function") ember.funcall(fn as string, arg);
   else forwardSexpDefault(arg);

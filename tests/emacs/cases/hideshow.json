@@ -1,0 +1,146 @@
+[
+  {
+    "name": "hs-hide-block-in-a-js-function",
+    "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+    "keys": "C-n C-n C-c @ C-h",
+    "modes": [
+      "js-mode",
+      "hs-minor-mode"
+    ]
+  },
+  {
+    "name": "hs-hide-block-then-show-it",
+    "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+    "keys": "C-n C-n C-c @ C-h C-c @ C-s",
+    "modes": [
+      "js-mode",
+      "hs-minor-mode"
+    ]
+  },
+  {
+    "name": "hs-toggle-hiding-twice",
+    "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+    "keys": "C-n C-c @ C-c C-c @ C-c",
+    "modes": [
+      "js-mode",
+      "hs-minor-mode"
+    ]
+  },
+  {
+    "name": "hs-hide-all-in-js",
+    "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+    "keys": "C-c @ C-M-h",
+    "modes": [
+      "js-mode",
+      "hs-minor-mode"
+    ]
+  },
+  {
+    "name": "hs-hide-all-then-move-down",
+    "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+    "keys": "C-c @ C-M-h C-n C-n",
+    "modes": [
+      "js-mode",
+      "hs-minor-mode"
+    ]
+  },
+  {
+    "name": "hs-hide-all-then-show-all",
+    "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+    "keys": "C-c @ C-M-h C-c @ C-M-s",
+    "modes": [
+      "js-mode",
+      "hs-minor-mode"
+    ]
+  },
+  {
+    "name": "hs-hide-level-in-js",
+    "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+    "keys": "C-c @ C-l",
+    "modes": [
+      "js-mode",
+      "hs-minor-mode"
+    ]
+  },
+  {
+    "name": "hs-hide-a-comment-block",
+    "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+    "keys": "M-< C-s f i r C-c @ C-h",
+    "modes": [
+      "js-mode",
+      "hs-minor-mode"
+    ]
+  },
+  {
+    "name": "hs-hide-block-with-prefix-goes-to-its-end",
+    "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+    "keys": "C-n C-u C-c @ C-h",
+    "modes": [
+      "js-mode",
+      "hs-minor-mode"
+    ]
+  },
+  {
+    "name": "hs-hide-block-in-a-python-def",
+    "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+    "keys": "C-n C-c @ C-h",
+    "modes": [
+      "python-mode",
+      "hs-minor-mode"
+    ]
+  },
+  {
+    "name": "hs-hide-the-if-block-in-python",
+    "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+    "keys": "C-n C-n C-c @ C-h",
+    "modes": [
+      "python-mode",
+      "hs-minor-mode"
+    ]
+  },
+  {
+    "name": "hs-hide-all-in-python",
+    "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+    "keys": "C-c @ C-M-h",
+    "modes": [
+      "python-mode",
+      "hs-minor-mode"
+    ]
+  },
+  {
+    "name": "hs-hide-all-in-python-then-show-one",
+    "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+    "keys": "C-c @ C-M-h C-n C-n C-n C-c @ C-s",
+    "modes": [
+      "python-mode",
+      "hs-minor-mode"
+    ]
+  },
+  {
+    "name": "hs-hide-level-in-python",
+    "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+    "keys": "C-c @ C-l",
+    "modes": [
+      "python-mode",
+      "hs-minor-mode"
+    ]
+  },
+  {
+    "name": "hs-toggle-in-python-on-a-nested-def",
+    "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+    "keys": "M-> C-p C-p C-c @ C-c",
+    "modes": [
+      "python-mode",
+      "hs-minor-mode"
+    ]
+  },
+  {
+    "name": "hs-hide-block-in-the-else-clause",
+    "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+    "keys": "C-n C-n C-n C-n C-n C-c @ C-h",
+    "modes": [
+      "python-mode",
+      "hs-minor-mode"
+    ]
+  }
+]

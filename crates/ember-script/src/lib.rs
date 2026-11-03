@@ -31,7 +31,8 @@ pub use types::type_definitions;
 
 use std::cell::{Cell, RefCell};
 use std::fs;
-use std::path::Path;
+use std::borrow::Cow;
+use std::path::{Path, PathBuf};
 use std::ptr::NonNull;
 use std::thread::LocalKey;
 use std::time::{Duration, Instant};
@@ -45,11 +46,42 @@ use ember_core::{
 
 const PRELUDE: &str = include_str!("prelude.js");
 
-/// The source of the package a module name names: "subr", or as the
-/// loader names it, "packages/subr.ts".
-fn package_source(name: &str) -> Option<(&'static str, &'static str)> {
+/// The file and source of the package a module name names: "subr", or as
+/// the loader names it, "packages/subr.ts"; else NAME.ts in a directory of
+/// `load-path`, a package of the user's, named by its path.
+fn package_source(name: &str) -> Option<(String, Cow<'static, str>)> {
     let feature = name.trim_start_matches("packages/").trim_end_matches(".ts");
-    PACKAGES.iter().find(|(file, _)| file.trim_start_matches("packages/").trim_end_matches(".ts") == feature).copied()
+    if let Some((file, source)) =
+        PACKAGES.iter().chain(LIBRARY).find(|(file, _)| file.trim_start_matches("packages/").trim_end_matches(".ts") == feature)
+    {
+        return Some((file.to_string(), Cow::Borrowed(source)));
+    }
+    let path = if Path::new(name).is_absolute() {
+        Some(PathBuf::from(name))
+    } else {
+        LOAD_PATH.with_borrow(|dirs| dirs.iter().map(|d| d.join(format!("{feature}.ts"))).find(|p| p.is_file()))
+    }?;
+    let source = fs::read_to_string(&path).ok()?;
+    Some((path.display().to_string(), Cow::Owned(source)))
+}
+
+thread_local! {
+    /// The directories of `load-path` as `require` last read them, for the
+    /// loaders to find a package of the user's in.
+    static LOAD_PATH: RefCell<Vec<PathBuf>> = const { RefCell::new(Vec::new()) };
+}
+
+/// Reads `load-path` before `require` imports a feature, and whether there
+/// is a package by that name, shipped or the user's.
+fn prepare_require(ed: &Editor, feature: &str) -> bool {
+    let dirs = match ed.variable("load-path") {
+        Some(EditorValue::List(dirs)) => {
+            dirs.iter().filter_map(|d| d.as_str().map(|d| expand_file_name(d))).collect()
+        }
+        _ => Vec::new(),
+    };
+    LOAD_PATH.set(dirs);
+    package_source(feature).is_some()
 }
 
 include!(concat!(env!("OUT_DIR"), "/stripped.rs"));
@@ -80,6 +112,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/prog-mode.ts", include_str!("../../../packages/prog-mode.ts")),
     ("packages/imenu.ts", include_str!("../../../packages/imenu.ts")),
     ("packages/treesit.ts", include_str!("../../../packages/treesit.ts")),
+    ("packages/hideshow.ts", include_str!("../../../packages/hideshow.ts")),
     ("packages/treesit-modes.ts", include_str!("../../../packages/treesit-modes.ts")),
     ("packages/delsel.ts", include_str!("../../../packages/delsel.ts")),
     ("packages/elec-pair.ts", include_str!("../../../packages/elec-pair.ts")),
@@ -128,6 +161,11 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/org-agenda.ts", include_str!("../../../packages/org-agenda.ts")),
     ("packages/org-capture.ts", include_str!("../../../packages/org-capture.ts")),
 ];
+
+/// The packages that ship with Ember but load only when a configuration
+/// requires them (`ember.require("org-tempo")`), as Emacs's Lisp that is
+/// not preloaded and that loading turns on.
+const LIBRARY: &[(&str, &str)] = &[("packages/org-tempo.ts", include_str!("../../../packages/org-tempo.ts"))];
 
 /// How long a script may run before it is stopped, unless changed with
 /// [`Scripting::set_time_limit`]: a backstop for a script that ignores

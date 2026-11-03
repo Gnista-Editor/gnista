@@ -58,8 +58,8 @@ What works today, in a terminal (`ember`) or a window (`ember-gui`). Where it di
 - Faces of other sizes and proportional fonts (`:height`, `:family`, `face-remapping-alist`, `C-x C-+`, `C-x C--` and `C-x C-0` for `text-scale-adjust`, `variable-pitch-mode`).
 - With the layout's positions for scripts (`posn-at-point`, `pos-visible-in-window-p`, `window-end`, `window-text-pixel-size`).
 - Bidirectional text (Hebrew, Arabic and mixed lines reordered as Emacs's bidi.c does, with paired brackets and mirroring, right-to-left paragraphs from the window's right edge, `bidi-paragraph-direction`, `current-bidi-paragraph-direction`, `bidi-resolved-levels`, `move-point-visually`, and `<left>` and `<right>` as `left-char` and `right-char`, by the paragraph's direction or with `visual-order-cursor-movement`).
-- Invisible text and folding (`outline-mode`, `outline-minor-mode`).
-- Org mode (`org-mode`: folding, structure editing, TODO states, tags, checkboxes, timestamps, links, tables, properties (`C-c C-x p`), refiling (`C-c C-w`), narrowing (`C-x n s`), the week agenda and TODO list (`org-agenda`), and capture (`org-capture`)).
+- Invisible text and folding (`outline-mode`, `outline-minor-mode`), and hiding blocks of code and comments (`hs-minor-mode`: `C-c @ C-h`, `C-c @ C-s`, `C-c @ C-c`, `C-c @ C-M-h`, `C-c @ C-l`).
+- Org mode (`org-mode`: folding, structure editing, TODO states, tags, checkboxes, timestamps, links, tables, properties (`C-c C-x p`), refiling (`C-c C-w`), narrowing (`C-x n s`), blocks (`C-c C-,`, and `<s TAB` once `ember.require("org-tempo")`), the week agenda and TODO list (`org-agenda`), and capture (`org-capture`)).
 - Narrowing (`C-x n n`, `C-x n w`).
 - Indirect buffers (`C-x 4 c`, and Org's `C-c C-x b` for a subtree).
 - Fields (C-a and the word commands stop at a prompt's edge).

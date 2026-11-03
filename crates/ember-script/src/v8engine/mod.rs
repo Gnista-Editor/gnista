@@ -26,7 +26,7 @@ use std::time::Duration;
 use ember_core::{Arg, Editor, Error, FaceAttrs, PrefixArg, Result, Value as EditorValue};
 
 use crate::{
-    EDITOR, Failure, Outermost, PRELUDE, Restore, editor_call, natives, nested_deadline, package_source, should_stop, strip_module_types,
+    EDITOR, Failure, Outermost, PRELUDE, Restore, editor_call, natives, nested_deadline, package_source, prepare_require, should_stop, strip_module_types,
     stripped, values,
 };
 
@@ -327,20 +327,20 @@ fn compile_module<'s>(scope: &mut v8::PinScope<'s, '_>, name: &str) -> std::resu
         return Err(Failure::thrown("Error", format!("No package named {name}"), None, None, Vec::new()));
     };
     let engine = current();
-    if let Some(module) = engine.modules.borrow().get(file) {
+    if let Some(module) = engine.modules.borrow().get(&file) {
         return Ok(v8::Local::new(scope, module));
     }
-    let js = match stripped(file) {
+    let js = match stripped(&file) {
         Some(js) => js.to_string(),
-        None => strip_module_types(file, source.to_string())
+        None => strip_module_types(&file, source.into_owned())
             .map_err(|e| Failure::thrown("SyntaxError", e.message().to_string(), None, None, Vec::new()))?,
     };
     let text = string(scope, &js);
-    let origin = origin(scope, file, true);
+    let origin = origin(scope, &file, true);
     let mut source = v8::script_compiler::Source::new(text, Some(&origin));
     v8::tc_scope!(let tc, scope);
     let Some(module) = v8::script_compiler::compile_module(tc, &mut source) else { return Err(failure(tc)) };
-    engine.modules.borrow_mut().insert(file.to_string(), v8::Global::new(tc, module));
+    engine.modules.borrow_mut().insert(file, v8::Global::new(tc, module));
     // SAFETY: as in `escape`.
     Ok(unsafe { std::mem::transmute::<v8::Local<'_, v8::Module>, v8::Local<'s, v8::Module>>(module) })
 }
@@ -662,7 +662,24 @@ fn install_native(scope: &mut v8::PinScope<'_, '_>) {
     // script's functions for its prompts, collections and starting input.
     let define = v8::Function::new(scope, define_command).expect("defineCommand is made");
     set(scope, native, "defineCommand", define.into());
+    // And one that imports a package while a script runs.
+    let require = v8::Function::new(scope, require).expect("require is made");
+    set(scope, native, "require", require.into());
     set(scope, global, "__ember", native.into());
+}
+
+/// `native.require(feature)`: imports the package, if it has not been, and
+/// whether there is one by that name.
+fn require<'s>(scope: &mut v8::PinScope<'s, '_>, args: v8::FunctionCallbackArguments<'s>, mut rv: v8::ReturnValue<'s, v8::Value>) {
+    catching(scope, |scope| {
+        let feature = args.get(0).to_rust_string_lossy(scope);
+        let Ok(found) = with_editor(scope, true, |ed| Ok(prepare_require(ed, &feature))) else { return };
+        if found && let Err(f) = import(scope, &feature) {
+            throw(scope, &f.into_error());
+            return;
+        }
+        rv.set_bool(found);
+    });
 }
 
 /// `native.defineCommand(name, doc, params, run, shiftSelect)`.

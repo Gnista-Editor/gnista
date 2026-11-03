@@ -1279,7 +1279,7 @@ function countWordsFormat(what: string, start: number, end: number): string {
 }
 
 /** How many lines there are from start to end, as count-lines: a last line without a newline counts. */
-function countLines(start: number, end: number): number {
+export function countLines(start: number, end: number): number {
   const text = ember.bufferSubstringNoProperties(start, end);
   const newlines = text.split("\n").length - 1;
   return text === "" || text.endsWith("\n") ? newlines : newlines + 1;

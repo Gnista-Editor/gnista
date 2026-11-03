@@ -1513,6 +1513,13 @@ const API: &str = r##"
   function signal(symbol: string, message: string, data?: Value[]): never;
   /** Signal an error in what the user did, as user-error. */
   function userError(message: string): never;
+  /**
+   * Load a package unless it is loaded, as Emacs's require: one that ships
+   * with Ember but is not preloaded, such as "org-tempo", or NAME.ts in a
+   * directory of load-path, ~/.config/ember/packages by default. Signals
+   * file-missing if there is none. Gives the feature's name.
+   */
+  function require(feature: string): string;
   /** Define an error condition under a parent, "error" by default, as define-error. */
   function defineError(symbol: string, parent?: string): void;
   /** The conditions a caught error belongs to, its own first, as its error-conditions list them. */

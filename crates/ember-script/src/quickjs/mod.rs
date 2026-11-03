@@ -15,7 +15,7 @@ use rquickjs::function::{Opt, Rest};
 use rquickjs::{Coerced, Context, Ctx, Exception, FromJs, Function, Object, Persistent, Runtime, Value, qjs};
 
 use crate::{
-    EDITOR, Failure, Outermost, PRELUDE, Restore, editor_call, natives, nested_deadline, package_source, should_stop, strip_module_types,
+    EDITOR, Failure, Outermost, PRELUDE, Restore, editor_call, natives, nested_deadline, package_source, prepare_require, should_stop, strip_module_types,
     stripped, values,
 };
 
@@ -101,7 +101,7 @@ impl rquickjs::loader::Resolver for PackageResolver {
         name: &str,
         _attributes: Option<rquickjs::loader::ImportAttributes<'js>>,
     ) -> rquickjs::Result<String> {
-        package_source(name).map(|(file, _)| file.to_string()).ok_or_else(|| rquickjs::Error::new_resolving(base, name))
+        package_source(name).map(|(file, _)| file).ok_or_else(|| rquickjs::Error::new_resolving(base, name))
     }
 }
 
@@ -116,9 +116,9 @@ impl rquickjs::loader::Loader for PackageLoader {
         _attributes: Option<rquickjs::loader::ImportAttributes<'js>>,
     ) -> rquickjs::Result<rquickjs::Module<'js, rquickjs::module::Declared>> {
         let (file, source) = package_source(name).ok_or_else(|| rquickjs::Error::new_loading(name))?;
-        let js = match stripped(file) {
+        let js = match stripped(&file) {
             Some(js) => js.to_string(),
-            None => strip_module_types(file, source.to_string()).map_err(|e| rquickjs::Error::new_loading_message(name, e.to_string()))?,
+            None => strip_module_types(&file, source.into_owned()).map_err(|e| rquickjs::Error::new_loading_message(name, e.to_string()))?,
         };
         rquickjs::Module::declare(ctx.clone(), file, js)
     }
@@ -323,6 +323,18 @@ fn install_native<'js>(ctx: &Ctx<'js>) -> rquickjs::Result<()> {
                 ed.define_command(command);
                 Ok(())
             })
+        })?,
+    )?;
+    // And one that imports a package while a script runs, and says
+    // whether there is one by that name.
+    native.set(
+        "require",
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, feature: String| {
+            if !with_editor(&ctx, |ed| Ok(prepare_require(ed, &feature)))? {
+                return Ok(false);
+            }
+            rquickjs::Module::import(&ctx, feature.as_str())?.finish::<Value>()?;
+            Ok::<_, rquickjs::Error>(true)
         })?,
     )?;
     ctx.globals().set("__ember", native)

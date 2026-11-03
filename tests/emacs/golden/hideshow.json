@@ -1,0 +1,358 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "hs-hide-block-in-a-js-function",
+      "input": {
+        "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+        "point": 0,
+        "keys": "C-n C-n C-c @ C-h",
+        "modes": [
+          "js-mode",
+          "hs-minor-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+      "visible": "function a() {\n  if (x) {}\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+      "point": 25,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "hs-hide-block-then-show-it",
+      "input": {
+        "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+        "point": 0,
+        "keys": "C-n C-n C-c @ C-h C-c @ C-s",
+        "modes": [
+          "js-mode",
+          "hs-minor-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+      "visible": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+      "point": 25,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "hs-toggle-hiding-twice",
+      "input": {
+        "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+        "point": 0,
+        "keys": "C-n C-c @ C-c C-c @ C-c",
+        "modes": [
+          "js-mode",
+          "hs-minor-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+      "visible": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+      "point": 14,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "hs-hide-all-in-js",
+      "input": {
+        "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+        "point": 0,
+        "keys": "C-c @ C-M-h",
+        "modes": [
+          "js-mode",
+          "hs-minor-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+      "visible": "function a() {}\n\n// first\nfunction b() {}\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "hs-hide-all-then-move-down",
+      "input": {
+        "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+        "point": 0,
+        "keys": "C-c @ C-M-h C-n C-n",
+        "modes": [
+          "js-mode",
+          "hs-minor-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+      "visible": "function a() {}\n\n// first\nfunction b() {}\n",
+      "point": 67,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "hs-hide-all-then-show-all",
+      "input": {
+        "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+        "point": 0,
+        "keys": "C-c @ C-M-h C-c @ C-M-s",
+        "modes": [
+          "js-mode",
+          "hs-minor-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+      "visible": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "hs-hide-level-in-js",
+      "input": {
+        "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+        "point": 0,
+        "keys": "C-c @ C-l",
+        "modes": [
+          "js-mode",
+          "hs-minor-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+      "visible": "function a() {}\n\n// first\n// second\nfunction b() {}\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "hs-hide-a-comment-block",
+      "input": {
+        "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+        "point": 0,
+        "keys": "M-< C-s f i r C-c @ C-h",
+        "modes": [
+          "js-mode",
+          "hs-minor-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+      "visible": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\nfunction b() {\n  three();\n}\n",
+      "point": 73,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "hs-hide-block-with-prefix-goes-to-its-end",
+      "input": {
+        "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+        "point": 0,
+        "keys": "C-n C-u C-c @ C-h",
+        "modes": [
+          "js-mode",
+          "hs-minor-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "function a() {\n  if (x) {\n    one();\n    two();\n  }\n  return 1;\n}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+      "visible": "function a() {}\n\n// first\n// second\nfunction b() {\n  three();\n}\n",
+      "point": 64,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "hs-hide-block-in-a-python-def",
+      "input": {
+        "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+        "point": 0,
+        "keys": "C-n C-c @ C-h",
+        "modes": [
+          "python-mode",
+          "hs-minor-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+      "visible": "def a(x):\n    if x:\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "hs-hide-the-if-block-in-python",
+      "input": {
+        "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+        "point": 0,
+        "keys": "C-n C-n C-c @ C-h",
+        "modes": [
+          "python-mode",
+          "hs-minor-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+      "visible": "def a(x):\n    if x:\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "hs-hide-all-in-python",
+      "input": {
+        "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+        "point": 0,
+        "keys": "C-c @ C-M-h",
+        "modes": [
+          "python-mode",
+          "hs-minor-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+      "visible": "def a(x):\n\n\nclass B:\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "hs-hide-all-in-python-then-show-one",
+      "input": {
+        "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+        "point": 0,
+        "keys": "C-c @ C-M-h C-n C-n C-n C-c @ C-s",
+        "modes": [
+          "python-mode",
+          "hs-minor-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+      "visible": "def a(x):\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+      "point": 94,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "hs-hide-level-in-python",
+      "input": {
+        "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+        "point": 0,
+        "keys": "C-c @ C-l",
+        "modes": [
+          "python-mode",
+          "hs-minor-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+      "visible": "def a(x):\n    if x:\n    else:\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "hs-toggle-in-python-on-a-nested-def",
+      "input": {
+        "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+        "point": 0,
+        "keys": "M-> C-p C-p C-c @ C-c",
+        "modes": [
+          "python-mode",
+          "hs-minor-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+      "visible": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n",
+      "point": 136,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "hs-hide-block-in-the-else-clause",
+      "input": {
+        "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+        "point": 0,
+        "keys": "C-n C-n C-n C-n C-n C-c @ C-h",
+        "modes": [
+          "python-mode",
+          "hs-minor-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n        three()\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+      "visible": "def a(x):\n    if x:\n        one()\n        two()\n    else:\n    return 1\n\n\nclass B:\n    def m(self):\n        pass\n\n    def n(self):\n        return [\n            1,\n        ]\n",
+      "point": 56,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    }
+  ]
+}
