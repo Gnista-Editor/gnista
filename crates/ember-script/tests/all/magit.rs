@@ -1,0 +1,190 @@
+//! magit, a package that does not ship with Ember
+//! (examples/packages/magit.ts): the status buffer shows a repository as
+//! Magit 4 shows it in Emacs 30, its sections open and close as there, and
+//! staging, unstaging, discarding and committing change the repository.
+
+use std::path::Path;
+use std::process::Command;
+
+use crate::driven::Driven;
+use ember_core::Value;
+
+const EXAMPLES: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples/packages");
+
+fn git(dir: &Path, args: &[&str]) -> String {
+    let out = Command::new("git").args(args).current_dir(dir).output().unwrap();
+    String::from_utf8_lossy(&out.stdout).into_owned()
+}
+
+/// The repository Emacs's Magit was shown: one commit, a change to a.txt
+/// unstaged, one to b.txt staged, and c.txt untracked.
+fn repo() -> tempfile::TempDir {
+    let dir = tempfile::tempdir().unwrap();
+    let p = dir.path();
+    git(p, &["init", "-q", "-b", "main"]);
+    git(p, &["config", "user.email", "t@example.com"]);
+    git(p, &["config", "user.name", "Tester"]);
+    std::fs::write(p.join("a.txt"), "one\ntwo\nthree\n").unwrap();
+    std::fs::write(p.join("b.txt"), "keep\n").unwrap();
+    git(p, &["add", "."]);
+    git(p, &["commit", "-q", "-m", "First commit"]);
+    std::fs::write(p.join("a.txt"), "one\nTWO\nthree\nfour\n").unwrap();
+    std::fs::write(p.join("c.txt"), "new\n").unwrap();
+    std::fs::write(p.join("b.txt"), "keep\nmore\n").unwrap();
+    git(p, &["add", "b.txt"]);
+    dir
+}
+
+fn setup(dir: &Path) -> Driven {
+    let d = Driven::new("");
+    let root = format!("{}/", dir.canonicalize().unwrap().display());
+    d.with(move |ed| {
+        ed.set_frame_size(100, 40);
+        ed.set_variable("load-path", Value::List(vec![Value::Str(EXAMPLES.into())]));
+        ed.set_variable("default-directory", Value::Str(root));
+    });
+    d.eval(r#"ember.require("magit");"#);
+    d
+}
+
+/// The status buffer's text as it shows, hidden sections left out, and point's line counting from 1.
+fn visible(d: &Driven) -> (String, usize) {
+    let text = d.eval_expression(
+        r#"(() => {
+          const hidden = ember.overlaysIn(ember.pointMin(), ember.pointMax()).filter((o) => ember.overlayGet(o, "invisible") === true);
+          let out = "";
+          for (let p = ember.pointMin(); p < ember.pointMax(); p++) {
+            if (!hidden.some((o) => ember.overlayStart(o) <= p && p < ember.overlayEnd(o))) out += ember.charAfter(p);
+          }
+          return out;
+        })()"#,
+    );
+    let line = d.with(|ed| ed.buffer().line_of(ed.buffer().point()) + 1);
+    (serde_json::from_str(&text).unwrap(), line)
+}
+
+const START: &str = "Head:     main First commit
+
+Untracked files (1)
+Unstaged changes (1)
+modified   a.txt
+
+Staged changes (1)
+modified   b.txt
+
+Recent commits
+";
+
+#[test]
+fn the_status_buffer_shows_what_magit_shows() {
+    let dir = repo();
+    let d = setup(dir.path());
+    d.start(|ed| ed.call("magit-status", vec![]).unwrap());
+    assert_eq!(d.with(|ed| ed.buffer().name.clone()), format!("magit: {}", dir.path().file_name().unwrap().to_string_lossy()));
+    assert_eq!(visible(&d), (START.to_string(), 3));
+    // As Emacs's Magit, key by key: TAB, n, TAB, n, n, TAB.
+    d.press("TAB");
+    let untracked = START.replace("Untracked files (1)\n", "Untracked files (1)\nc.txt\n\n");
+    assert_eq!(visible(&d), (untracked.clone(), 3));
+    d.press("n");
+    assert_eq!(visible(&d), (untracked.clone(), 4));
+    d.press("TAB");
+    assert_eq!(visible(&d), (untracked.clone(), 4));
+    d.press("n");
+    assert_eq!(visible(&d).1, 6);
+    d.press("n");
+    assert_eq!(visible(&d).1, 7);
+    d.press("TAB");
+    let expanded = untracked.replace("modified   a.txt\n", "modified   a.txt\n@@ -1,3 +1,4 @@\n one\n-two\n+TWO\n three\n+four\n");
+    assert_eq!(visible(&d), (expanded, 7));
+}
+
+#[test]
+fn staging_and_unstaging_files_and_hunks() {
+    let dir = repo();
+    let d = setup(dir.path());
+    d.start(|ed| ed.call("magit-status", vec![]).unwrap());
+    // s on the untracked file stages it.
+    d.press("TAB n s");
+    assert!(git(dir.path(), &["diff", "--cached", "--name-only"]).contains("c.txt"));
+    // s on a hunk stages just it.
+    let (text, _) = visible(&d);
+    assert!(text.contains("Staged changes (2)"), "{text}");
+    d.eval(r#"ember.gotoChar(ember.bufferSubstringNoProperties(ember.pointMin(), ember.pointMax()).indexOf("modified   a.txt"));"#);
+    d.press("TAB n s");
+    assert_eq!(git(dir.path(), &["diff", "--name-only"]), "");
+    assert!(git(dir.path(), &["diff", "--cached"]).contains("+TWO"));
+    // u on the staged changes heading unstages them all.
+    d.eval(r#"ember.gotoChar(ember.bufferSubstringNoProperties(ember.pointMin(), ember.pointMax()).indexOf("Staged changes"));"#);
+    d.press("u");
+    assert_eq!(git(dir.path(), &["diff", "--cached", "--name-only"]), "");
+}
+
+#[test]
+fn committing_writes_the_message_in_a_buffer() {
+    let dir = repo();
+    let d = setup(dir.path());
+    d.start(|ed| ed.call("magit-status", vec![]).unwrap());
+    d.press("c c");
+    assert_eq!(d.with(|ed| ed.buffer().name.clone()), "COMMIT_EDITMSG");
+    let template = d.with(|ed| { let b = ed.buffer(); b.slice(0..b.len()) });
+    assert!(template.starts_with("\n# Please enter the commit message for your changes."), "{template}");
+    assert!(template.contains("#\tmodified:   b.txt"), "{template}");
+    d.press("M o r e SPC b RET");
+    d.press("C-c C-c");
+    assert_eq!(git(dir.path(), &["log", "-1", "--format=%s"]), "More b\n");
+    assert!(d.with(|ed| ed.buffer().name.starts_with("magit: ")));
+    assert!(!visible(&d).0.contains("Staged changes"));
+}
+
+#[test]
+fn discarding_asks_and_puts_the_file_back() {
+    let dir = repo();
+    let d = setup(dir.path());
+    d.start(|ed| ed.call("magit-status", vec![]).unwrap());
+    d.eval(r#"ember.gotoChar(ember.bufferSubstringNoProperties(ember.pointMin(), ember.pointMax()).indexOf("modified   a.txt"));"#);
+    d.press("k");
+    d.press("y");
+    assert_eq!(std::fs::read_to_string(dir.path().join("a.txt")).unwrap(), "one\ntwo\nthree\n");
+}
+
+#[test]
+fn the_log_lists_the_commits() {
+    let dir = repo();
+    let d = setup(dir.path());
+    d.start(|ed| ed.call("magit-status", vec![]).unwrap());
+    d.press("l l");
+    let (text, _) = visible(&d);
+    assert!(text.contains(" main First commit  Tester "), "{text}");
+    d.press("RET");
+    let (rev, _) = visible(&d);
+    assert!(rev.contains("Author:     Tester <t@example.com>") && rev.contains("new file   a.txt"), "{rev}");
+}
+
+#[test]
+fn the_upstream_stashes_and_unpushed_commits_show_as_in_magit() {
+    let origin = tempfile::tempdir().unwrap();
+    git(origin.path(), &["init", "-q", "--bare", "-b", "main"]);
+    let dir = tempfile::tempdir().unwrap();
+    let p = dir.path();
+    git(p, &["clone", "-q", &origin.path().display().to_string(), "."]);
+    git(p, &["config", "user.email", "t@example.com"]);
+    git(p, &["config", "user.name", "Tester"]);
+    std::fs::write(p.join("a.txt"), "one\n").unwrap();
+    git(p, &["add", "."]);
+    git(p, &["commit", "-q", "-m", "Initial"]);
+    git(p, &["push", "-q", "origin", "main"]);
+    git(p, &["branch", "-q", "--set-upstream-to=origin/main"]);
+    std::fs::write(p.join("a.txt"), "one\ntwo\n").unwrap();
+    git(p, &["commit", "-qam", "Second"]);
+    std::fs::write(p.join("a.txt"), "one\ntwo\nstashed\n").unwrap();
+    git(p, &["stash", "-q"]);
+    std::fs::write(p.join("a.txt"), "x\n").unwrap();
+    let hash = git(p, &["rev-parse", "--short", "HEAD"]).trim().to_string();
+    let d = setup(p);
+    d.start(|ed| ed.call("magit-status", vec![]).unwrap());
+    let want = format!(
+        "Head:     main Second\nMerge:    origin/main Initial\n\nUnstaged changes (1)\nmodified   a.txt\n\nStashes (1)\nUnmerged into origin/main (1)\n{hash} main Second\n\n"
+    );
+    assert_eq!(visible(&d), (want, 4));
+}

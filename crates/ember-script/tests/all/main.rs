@@ -39,6 +39,7 @@ mod keyboard;
 mod keymaps;
 mod layout;
 mod line_numbers;
+mod magit;
 mod marginalia;
 mod minibuffer;
 mod modes;
