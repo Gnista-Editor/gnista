@@ -113,6 +113,21 @@ Later on 2026-11-02, after Org's heading index stopped moving every heading afte
 
 And in the bench's Org table: RET in a paragraph from 22.0 to 11.4 ms, `C-c C-t` on a heading from 10.0 to 3.0, `M-<down>` on a heading (where it fails, as in Emacs, the heading being its parent's only child) from 8.1 to 2.0, TAB on a heading from 10.5 to 8.1, TAB in a table from 3.2 to 1.0, `C-v` from 2.6 to 1.8.
 
+### QuickJS and V8
+
+On 2026-11-03, with the V8 engine of [multithreading.md](multithreading.md)'s step 4, the same keys by `profile_key` (6 s each) and the bench's `startup`, QuickJS and then V8, one after the other in release builds of the same source. The machine was busy (load 21 to 34 for QuickJS, 14 to 21 for V8); QuickJS's numbers match the day before's.
+
+| Key | QuickJS | V8 | Emacs 30.2 |
+| --- | ---: | ---: | ---: |
+| RET at a heading, then undo | 2.28 ms | 1.05 ms | 1.9 ms |
+| `C-c C-t` at a heading, then undo | 3.03 ms | 1.13 ms | 5.5 ms |
+| TAB on a heading, repeated | 0.90 ms | 0.63 ms | 2.1 ms |
+| `S-TAB`, from the start, repeated | 24.5 ms | 13.9 ms | 124 ms |
+| `find-file` of the file again | 21.1 ms | 15.2 ms | 89 ms |
+| startup, loading the packages | 40.9 ms | 25.6 ms | |
+
+In the bench's Org table, V8 against QuickJS: RET in a paragraph 4.97 against 11.92 ms, TAB on a heading 5.01 against 8.19, `C-c C-t` on a heading 2.07 against 3.10, `S-TAB` 14.0 against 22.6, `C-v` 1.46 against 1.73, typing 1.56 against 1.78; `(` and `)` with electric-pair (22.5 ms), `C-s` (6 ms) and `C-n` (0.5 ms) are the same on both, their time being in the editor's primitives. On V8 Ember is faster than Emacs 30.2 at every key measured against it, RET at a heading included.
+
 ## What changed
 
 - **Org's heading index moves headings only when they are read**, as Org's element cache shifts its elements lazily. An edit used to give every heading after it a new, frozen object; now it records a shift for the headings from an index on, and a heading is moved in place when it is read: the element parser reads the few around point through `headingsAsRead`, and `headings()` moves them all in one pass. Finding the heading a line is under, a heading's ancestors and the next heading at a level halve or stop early instead of passing over every heading, and copying the headings after one to search them (`all.slice(i + 1).find(...)`) became loops. `matchAll`, which compiles its regexp again on each call in QuickJS, became an `exec` loop in Org (`allMatches` in org-macs.ts). RET at a heading went from 18.2 to 2.3 ms, `C-c C-t` from 20.7 to 3.1, TAB on a heading from 3.2 to 0.9: Emacs 30.2 takes 1.9, 5.5 and 2.1.
