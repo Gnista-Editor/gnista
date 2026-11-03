@@ -1,6 +1,6 @@
 # 0003. Extensions in TypeScript on QuickJS
 
-Status: accepted · 2026-10-27
+Status: accepted · 2026-10-27; its engine superseded by [0054](0054-v8-as-the-script-engine.md), V8 by default
 
 ## Context
 

@@ -55,3 +55,4 @@ One record per decision, in the order they were made; a later one can change an 
 - [0051](0051-the-editor-thread.md) The editor thread
 - [0052](0052-faces-in-installed-fonts.md) Faces in installed fonts
 - [0053](0053-prompts-that-return-their-answer.md) Prompts that return their answer
+- [0054](0054-v8-as-the-script-engine.md) V8 as the script engine

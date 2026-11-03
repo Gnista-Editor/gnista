@@ -15,8 +15,8 @@ swc_ecma_visit = "29"
 swc_ts_fast_strip = "59"
 
 [features]
-default = ["quickjs"]
-# The script engine: QuickJS (rquickjs) or V8 (the v8 crate), exactly one.
+default = ["v8"]
+# The script engine: V8 (the v8 crate) or QuickJS (rquickjs), exactly one (ADR 0054).
 quickjs = ["dep:rquickjs"]
 v8 = ["dep:v8"]
 

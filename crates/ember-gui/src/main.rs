@@ -9,6 +9,13 @@ use ember_gui::{EmberApp, theme};
 use ember_script::config;
 
 fn main() -> eframe::Result {
+    // Opened from Finder, an app starts in /; Emacs.app starts in the home
+    // directory instead, and so does Ember.app.
+    if env::current_dir().is_ok_and(|dir| dir == std::path::Path::new("/"))
+        && let Some(home) = env::var_os("HOME")
+    {
+        let _ = env::set_current_dir(home);
+    }
     let (mut no_init, mut files) = (false, Vec::new());
     for arg in env::args().skip(1) {
         match arg.as_str() {

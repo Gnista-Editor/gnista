@@ -5,7 +5,7 @@ version.workspace = true
 license.workspace = true
 
 [features]
-default = ["quickjs"]
+default = ["v8"]
 # The script engine, as ember-script's features choose it.
 quickjs = ["ember-script/quickjs"]
 v8 = ["ember-script/v8"]

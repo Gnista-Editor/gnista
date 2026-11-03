@@ -94,7 +94,7 @@ Every step keeps these. A change that breaks one is wrong, however convenient.
 | 1 | Quitting: the flag, the protocol, the binding stack, the loop checks | nothing | done ([ADR 0049](adr/0049-quitting.md)) |
 | 2 | The frame description: front ends draw only from data the core builds | nothing; before more display work | done ([ADR 0050](adr/0050-the-frame-description.md)) |
 | 3 | The editor thread: a command loop in the core, the terminal first, then the GUI | 1, 2 | done ([ADR 0051](adr/0051-the-editor-thread.md)) |
-| 4 | V8 instead of QuickJS, if step 0's profile says so | 0 | V8 runs every test and is faster than QuickJS and Emacs; QuickJS is still the default |
+| 4 | V8 instead of QuickJS, if step 0's profile says so | 0 | done: V8 the default, QuickJS a feature ([ADR 0054](adr/0054-v8-as-the-script-engine.md)) |
 | 5 | Blocking primitives: prompts and `recursive-edit` as nested command loops | 3 | done ([ADR 0053](adr/0053-prompts-that-return-their-answer.md)) |
 | 6 | Work below the API, where the bench shows a cost | 3; each item its own measurement | under way: Org's heading index (2026-11-02); the rest in [optimisation.md](optimisation.md) |
 
@@ -312,7 +312,7 @@ The test that the prelude's functions are the ones declared still passes, now ov
 - **The slow Org keys are faster than on QuickJS and than Emacs** ([performance.md](performance.md)): RET at a heading 1.05 ms (QuickJS 2.28, Emacs 1.9), `C-c C-t` 1.13 (3.03, 5.5), TAB on a heading 0.63 (0.90, 2.1), `S-TAB` 13.9 (24.5, 124), `find-file` 15.2 (21.1, 89).
 - **Startup is faster**: loading the packages takes 25.6 ms against QuickJS's 40.9.
 - **The costs.** Release binaries are about 56 MB larger: `ember` 84 MB against 28, `ember-gui` 97 against 41. A clean build downloads the 158 MB `librusty_v8.a` once (`RUSTY_V8_ARCHIVE` points at a copy). Each newly linked V8 test binary is about 100 MB, and macOS's check of new programs took about 7 minutes for each on this machine even with Developer Tools on ([performance.md](performance.md)); the test run itself takes 21 s against QuickJS's 28. Memory per isolate is not measured yet.
-- **What is left**: making V8 the default engine, and deciding whether QuickJS stays as the other feature, for a smaller build and the web.
+- **Decided** ([ADR 0054](adr/0054-v8-as-the-script-engine.md)): V8 is the default; QuickJS stays as the `quickjs` feature, for smaller builds, the web and anywhere a JIT is not allowed, and the tests pass on both.
 
 ## Step 5: blocking primitives
 

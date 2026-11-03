@@ -57,7 +57,7 @@ What we found in October 2026, at second hand and not from Apple's own text. Rea
 
 - **GPL code on the App Store.** The FSF holds that Apple's terms add restrictions the GPL forbids. VLC was withdrawn in 2011 after a GPL complaint. A binary that contains GPL code is therefore a risk. A GPL exception for the App Store would only be possible for code we own, not for code derived from the FSF's.
 - **Guideline 2.5.2** bars apps from downloading or running code that adds or changes features.
-- **The developer agreement (3.3.2)** reportedly allows downloaded interpreted code if it does not change the app's primary purpose, does not create a storefront for other code, and does not bypass OS security. QuickJS is an interpreter with no JIT, which fits.
+- **The developer agreement (3.3.2)** reportedly allows downloaded interpreted code if it does not change the app's primary purpose, does not create a storefront for other code, and does not bypass OS security. QuickJS is an interpreter with no JIT, which fits; Ember runs on V8 by default, but builds with the `quickjs` feature for this ([ADR 0054](adr/0054-v8-as-the-script-engine.md)).
 - **Guideline 4.7** was revised to cover mini apps and plug-ins not embedded in the binary.
 - **Enforcement is inconsistent.** In March 2026 Apple removed one app that ran generated code and approved a similar one the same week.
 

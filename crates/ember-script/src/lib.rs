@@ -18,7 +18,7 @@ mod v8engine;
 use v8engine as engine;
 
 #[cfg(all(feature = "quickjs", feature = "v8"))]
-compile_error!("ember-script runs one engine: turn off the default feature \"quickjs\" to use \"v8\"");
+compile_error!("ember-script runs one engine: with the feature \"quickjs\", turn off the default features, which choose \"v8\"");
 #[cfg(not(any(feature = "quickjs", feature = "v8")))]
 compile_error!("ember-script needs an engine: the feature \"quickjs\" or \"v8\"");
 mod strip;
