@@ -125,3 +125,5 @@ Kept for completeness, as they cannot be seen:
 
 - **vundo** (not yet): `l` and `r` say a node was saved but not when, as Ember counts saves rather than keeping their times; there is no `vundo-popup-mode`. Ember's undo history is steps, which vundo reads with `ember.undoHistory` rather than from `buffer-undo-list` and `undo-equiv-table`.
 - **persistent-scratch** (not yet): `text-properties` in `persistent-scratch-what-to-save` saves the text without its properties, and a file Emacs wrote with them is read without them.
+- **transient** (not yet): no help (`?`, `C-h`), saving or setting a prefix's value (`C-x s`, `C-x C-s`) or history (`C-M-p`), levels, edit mode, moving about the menu with the mouse or keys, `transient-switches` with choices to cycle, or `C-z` to suspend. Prefixes and their groups are defined with `transientDefinePrefix` and objects, not Lisp's vectors and lists.
+- **casual** (not yet): the Dired menu shows every suffix Casual's does, but many run Dired commands Ember does not have yet (`dired-do-shell-command`, `wdired`, `dired-do-chmod`, the regexp and link commands, `dired-sort-other`), which say so when run.

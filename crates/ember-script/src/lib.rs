@@ -173,7 +173,10 @@ const PACKAGES: &[(&str, &str)] = &[
 /// The packages that ship with Ember but load only when a configuration
 /// requires them (`ember.require("org-tempo")`), as Emacs's Lisp that is
 /// not preloaded and that loading turns on.
-const LIBRARY: &[(&str, &str)] = &[("packages/org-tempo.ts", include_str!("../../../packages/org-tempo.ts"))];
+const LIBRARY: &[(&str, &str)] = &[
+    ("packages/org-tempo.ts", include_str!("../../../packages/org-tempo.ts")),
+    ("packages/transient.ts", include_str!("../../../packages/transient.ts")),
+];
 
 /// How long a script may run before it is stopped, unless changed with
 /// [`Scripting::set_time_limit`]: a backstop for a script that ignores

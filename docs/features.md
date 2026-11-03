@@ -63,6 +63,7 @@ What works today, in a terminal (`ember`) or a window (`ember-gui`). Where it di
 - Narrowing (`C-x n n`, `C-x n w`).
 - Tabs (`tab-bar-mode`: `C-x t 2`, `C-x t o`, `C-<tab>`, `C-x t 0`, `C-x t u`, `C-x t r`, `C-x t m`, `C-x t RET`, `C-x t b`, `C-x t f`, `C-x t d`, `tab-list`, clicks on the tab bar, and `tab-bar-history-mode` with `C-c <left>` and `C-c <right>`).
 - Sessions (`desktop-save-mode`: buffers, their modes and places, `file-name-history` and the windows saved on exit and while idle, and read back at start; `desktop-save`, `desktop-read`, `desktop-clear`, `desktop-revert`, with a lock file as Emacs's).
+- Transient menus for packages (`transient.ts`: `transientDefinePrefix`, suffixes that stay or leave, switches and options read with `transientArgs`, menus within menus, `C-g` and `C-q`).
 - Keys that can follow a prefix (`which-key-mode`), and `.editorconfig` files (`editorconfig-mode`).
 - Splitting the frame's root window (`C-x w 2`, `C-x w 3`).
 - Ember.app opened from Finder takes its PATH from the login shell, as exec-path-from-shell gives Emacs.app.
@@ -92,3 +93,4 @@ Ports of packages from outside Emacs, in `examples/packages/`, for a config to c
 - `nord-theme`: the Nord theme (`ember.call("load-theme", "nord", true)`).
 - `vundo`: the undo history as a tree (`M-x vundo`: `f`, `b`, `n`, `p`, `a`, `w`, `e`, `l`, `r`, `m`, `u`, `d` for a diff, `RET`, `q`), after vundo 2.4.
 - `persistent-scratch`: the scratch buffers kept across sessions (`persistent-scratch-save`, `persistent-scratch-restore`, `persistent-scratch-autosave-mode`, `persistent-scratch-setup-default`, backups), in the file format persistent-scratch.el writes.
+- `casual`: Casual's Dired menu (`casual-dired-tmenu`, usually on `?` in Dired), with its menus for sorting, links, changing files, marking by regexp, utilities, searching and settings, after Casual 2.

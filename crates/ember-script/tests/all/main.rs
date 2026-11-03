@@ -12,6 +12,7 @@ mod awaiting;
 mod blocking;
 mod bookmark;
 mod buff_menu;
+mod casual;
 mod changes;
 mod chartab;
 mod codings;
