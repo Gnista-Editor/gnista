@@ -110,6 +110,7 @@ impl Prompt {
             collection_fn: None,
             answer: None,
             sorted: None,
+            serial: 0,
         }
     }
 
@@ -132,6 +133,8 @@ impl Editor {
     /// `minibuffer-local-must-match-map`, and `minibuffer-setup-hook` runs.
     pub(crate) fn open_prompt(&mut self, mut prompt: Prompt, input: &str) {
         prompt.initial = input.to_string();
+        self.input_serial += 1;
+        prompt.serial = self.input_serial;
         let must_match = prompt.require_match;
         self.prompt = Some(prompt);
         self.current = self.minibuffer_index();

@@ -493,6 +493,15 @@ pub(crate) fn collect_garbage() {
     }
 }
 
+/// Runs a native's body so that a panic in it, in the native or in the
+/// core under it, is an error the script sees: unwinding out of V8's
+/// callback, an `extern "C"` function, would abort the editor.
+pub(crate) fn catching<'s, 'i>(scope: &mut v8::PinScope<'s, 'i>, f: impl FnOnce(&mut v8::PinScope<'s, 'i>)) {
+    if let Err(panic) = crate::catch_native(|| f(&mut *scope)) {
+        throw(scope, &Error::new(format!("Internal error: {}", crate::panic_message(&*panic))));
+    }
+}
+
 /// Gives a native the editor, throwing its error to the script. See [`editor_call`].
 pub(crate) fn with_editor<T>(scope: &mut v8::PinScope<'_, '_>, safe_point: bool, f: impl FnOnce(&mut Editor) -> Result<T>) -> std::result::Result<T, Thrown> {
     editor_call(safe_point, f).map_err(|e| throw(scope, &e))
@@ -647,7 +656,9 @@ fn install_native(scope: &mut v8::PinScope<'_, '_>) {
 
 /// `native.defineCommand(name, doc, params, run, shiftSelect)`.
 fn define_command<'s>(scope: &mut v8::PinScope<'s, '_>, args: v8::FunctionCallbackArguments<'s>, _rv: v8::ReturnValue<'s, v8::Value>) {
-    let _ = define_command_with(scope, &args);
+    catching(scope, |scope| {
+        let _ = define_command_with(scope, &args);
+    });
 }
 
 fn define_command_with<'s>(scope: &mut v8::PinScope<'s, '_>, args: &v8::FunctionCallbackArguments<'s>) -> std::result::Result<(), Thrown> {
@@ -956,17 +967,19 @@ fn function_to_js<'s>(scope: &mut v8::PinScope<'s, '_>, function: &ember_core::F
 
 /// The function a script gets for an editor function.
 fn call_editor_function<'s>(scope: &mut v8::PinScope<'s, '_>, args: v8::FunctionCallbackArguments<'s>, mut rv: v8::ReturnValue<'s, v8::Value>) {
-    let id = args.data().number_value(scope).unwrap_or(-1.0) as u64;
-    let Some(function) = current().functions.borrow().get(&id).cloned() else { return };
-    let mut values = Vec::with_capacity(args.length() as usize);
-    for i in 0..args.length() {
-        let Ok(v) = value_from_js(scope, args.get(i)) else { return };
-        values.push(v);
-    }
-    let Ok(result) = with_editor(scope, true, |ed| function.call(ed, &values)) else { return };
-    if let Ok(value) = value_to_js(scope, &result) {
-        rv.set(value);
-    }
+    catching(scope, |scope| {
+        let id = args.data().number_value(scope).unwrap_or(-1.0) as u64;
+        let Some(function) = current().functions.borrow().get(&id).cloned() else { return };
+        let mut values = Vec::with_capacity(args.length() as usize);
+        for i in 0..args.length() {
+            let Ok(v) = value_from_js(scope, args.get(i)) else { return };
+            values.push(v);
+        }
+        let Ok(result) = with_editor(scope, true, |ed| function.call(ed, &values)) else { return };
+        if let Ok(value) = value_to_js(scope, &result) {
+            rv.set(value);
+        }
+    });
 }
 
 /// A script's function as an editor value, keeping the identity it had

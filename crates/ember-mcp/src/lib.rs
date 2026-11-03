@@ -23,6 +23,34 @@ const MAX_LINES: usize = 400;
 /// Answers one MCP message, a line of JSON. Returns the reply to send, or
 /// `None` for a notification, which has none.
 pub fn handle_message(ed: &mut Editor, scripting: Option<&Scripting>, line: &str) -> Option<String> {
+    handle(ed, scripting, line, false)
+}
+
+/// What the editor remembers of a client of the editor a user has open,
+/// for [`handle_client_message`].
+#[derive(Debug, Default)]
+pub struct Client {
+    /// What waited for input when the client's last request finished, a
+    /// prompt its own keys opened, which its next request may answer.
+    left_open: Option<u64>,
+}
+
+/// As [`handle_message`], for a client of the editor a user has open, as
+/// the GUI's socket serves: while something waits for input that the
+/// client's own keys did not open, a question the user, a command of
+/// theirs or Ember's own agent asked, the client may only read, so it
+/// cannot answer for the user.
+pub fn handle_client_message(ed: &mut Editor, scripting: Option<&Scripting>, line: &str, client: &mut Client) -> Option<String> {
+    let waiting = ed.waiting_for_input();
+    let reply = handle(ed, scripting, line, waiting.is_some() && waiting != client.left_open);
+    client.left_open = ed.waiting_for_input();
+    reply
+}
+
+/// The tools that only read, which run whatever waits for input.
+const READING_TOOLS: &[&str] = &["list_commands", "describe_command", "read_buffer", "screen", "list_buffers"];
+
+fn handle(ed: &mut Editor, scripting: Option<&Scripting>, line: &str, only_reading: bool) -> Option<String> {
     let message: Value = match serde_json::from_str(line) {
         Ok(v) => v,
         Err(e) => return Some(error_reply(Value::Null, -32700, &format!("Parse error: {e}")).to_string()),
@@ -34,7 +62,7 @@ pub fn handle_message(ed: &mut Editor, scripting: Option<&Scripting>, line: &str
         "initialize" => Ok(initialize(&params)),
         "ping" => Ok(json!({})),
         "tools/list" => Ok(json!({ "tools": tools() })),
-        "tools/call" => Ok(call_tool(ed, scripting, &params)),
+        "tools/call" => Ok(call_tool(ed, scripting, &params, only_reading)),
         _ => Err((-32601, format!("Method not found: {method}"))),
     };
     Some(match result {
@@ -148,10 +176,15 @@ pub fn tools() -> Value {
 
 /// Runs a tool call. Failures are tool results with `isError`, as MCP has
 /// them, so the agent sees what went wrong.
-fn call_tool(ed: &mut Editor, scripting: Option<&Scripting>, params: &Value) -> Value {
+fn call_tool(ed: &mut Editor, scripting: Option<&Scripting>, params: &Value, only_reading: bool) -> Value {
     let name = params.get("name").and_then(Value::as_str).unwrap_or_default();
     let args = params.get("arguments").cloned().unwrap_or_else(|| json!({}));
-    let (text, failed) = run_tool(ed, scripting, name, &args);
+    let (text, failed) = if only_reading && !READING_TOOLS.contains(&name) {
+        let asked = ed.prompt().unwrap_or("something").trim().to_string();
+        (format!("Ember is waiting for its user to answer {asked:?}; only the reading tools run until it is answered."), true)
+    } else {
+        run_tool(ed, scripting, name, &args)
+    };
     json!({ "content": [{ "type": "text", "text": text }], "isError": failed })
 }
 

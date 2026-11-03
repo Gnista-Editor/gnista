@@ -26,6 +26,9 @@ pub struct QuitState {
     /// `inhibit-quit`'s value, kept here as the variable changes so checks
     /// need no lookup.
     inhibit: AtomicBool,
+    /// How many quits have stopped code, so a `C-g` waiting its turn as a
+    /// key can tell whether it already stopped a command.
+    taken: AtomicU32,
 }
 
 impl QuitState {
@@ -39,15 +42,30 @@ impl QuitState {
     pub fn check(&self) -> Result<()> {
         if self.flag.load(Ordering::Relaxed) && !self.inhibit.load(Ordering::Relaxed) {
             self.clear();
+            self.taken.fetch_add(1, Ordering::Relaxed);
             return Err(quit_error());
         }
         Ok(())
+    }
+
+    /// Answers the flag without quitting, as code setting `quit-flag` to
+    /// nil does: the `C-g` that set it is not then run as a key too.
+    pub fn discard(&self) {
+        if self.flag.load(Ordering::Relaxed) {
+            self.taken.fetch_add(1, Ordering::Relaxed);
+        }
+        self.clear();
     }
 
     /// Answers the flag without quitting.
     pub fn clear(&self) {
         self.flag.store(false, Ordering::Relaxed);
         self.presses.store(0, Ordering::Relaxed);
+    }
+
+    /// How many quits have stopped code so far.
+    pub fn taken(&self) -> u32 {
+        self.taken.load(Ordering::Relaxed)
     }
 
     /// How many times quitting was asked for while the flag went unanswered.
@@ -69,10 +87,13 @@ impl QuitState {
 pub struct QuitHandle(Arc<QuitState>);
 
 impl QuitHandle {
-    /// Asks the editor to quit, as `C-g` sets `quit-flag`.
-    pub fn request(&self) {
+    /// Asks the editor to quit, as `C-g` sets `quit-flag`, and gives how
+    /// many quits had stopped code when it was asked.
+    pub fn request(&self) -> u32 {
+        let taken = self.0.taken.load(Ordering::Relaxed);
         self.0.flag.store(true, Ordering::Relaxed);
         self.0.presses.fetch_add(1, Ordering::Relaxed);
+        taken
     }
 
     pub fn state(&self) -> &QuitState {

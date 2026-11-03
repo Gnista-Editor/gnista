@@ -94,12 +94,42 @@ fn c_g_stops_a_long_command_while_the_last_frame_stays() {
 }
 
 #[test]
+fn c_g_after_a_queued_key_is_still_keyboard_quit() {
+    let d = driver();
+    // The editor is busy until both keys are queued, so `x` runs first and
+    // its command starts by clearing the quit flag the C-g set.
+    let (release, wait) = std::sync::mpsc::channel::<()>();
+    d.run(move |_| {
+        let _ = wait.recv();
+    });
+    d.key(key("x"));
+    d.key(key("C-g"));
+    release.send(()).unwrap();
+    assert_eq!(d.with(|ed| ed.echo().map(str::to_string)).as_deref(), Some("Quit"));
+    assert_eq!(d.with(|ed| ed.buffer().slice(0..ed.buffer().len())), "x");
+}
+
+#[test]
 fn a_panic_in_a_command_is_reported_and_the_editor_goes_on() {
     let d = driver();
     d.run(|_| panic!("something broke"));
     assert_eq!(d.with(|ed| ed.echo().map(str::to_string)).as_deref(), Some("Internal error: something broke"));
     d.key(key("x"));
     assert_eq!(d.with(|ed| ed.buffer().slice(0..ed.buffer().len())), "x");
+    // A panic inside a command leaves later commands as they were: each
+    // still its own undo step, as one that thought itself nested would not be.
+    d.with(|ed| {
+        ed.define_command(ember_core::Command::new("break", "Panics partway.", |_, _| panic!("partway")));
+        ed.define_command(ember_core::Command::new("put-a", "Inserts a.", |ed, _| ed.insert("a")));
+        ed.define_command(ember_core::Command::new("put-b", "Inserts b.", |ed, _| ed.insert("b")));
+    });
+    d.run(|ed| {
+        let _ = ed.call("break", vec![]);
+    });
+    d.run(|ed| ed.call("put-a", vec![]).unwrap());
+    d.run(|ed| ed.call("put-b", vec![]).unwrap());
+    d.key(key("C-/"));
+    assert_eq!(d.with(|ed| ed.buffer().slice(0..ed.buffer().len())), "xa", "undo takes back the last call alone");
 }
 
 #[test]

@@ -44,6 +44,8 @@ pub(crate) struct Prompt {
     pub(crate) answer: Option<AnswerSlot>,
     /// The sorted completions and their base, for the input they were made for.
     pub(crate) sorted: Option<(String, String, Vec<String>)>,
+    /// Which prompt this is, of all opened: see [`Editor::waiting_for_input`].
+    pub(crate) serial: u64,
 }
 
 /// What a command waiting for input waits for, as an answer having come.
@@ -131,6 +133,15 @@ pub(crate) struct PendingCall {
 
 /// All editor state. A front end feeds it keys with [`Editor::handle_key`]
 /// and reads it back to draw.
+/// What [`Editor::loop_state`] notes.
+pub struct LoopState {
+    running: usize,
+    in_change_hooks: bool,
+    specpdl: usize,
+    prefix: Option<PrefixArg>,
+    interactive: bool,
+}
+
 pub struct Editor {
     pub(crate) buffers: Vec<Buffer>,
     pub(crate) current: usize,
@@ -210,6 +221,10 @@ pub struct Editor {
     /// Keys typed ahead, as [`Editor::press`] gives them: a command they
     /// start that waits for input reads the rest of them first.
     typeahead: std::collections::VecDeque<Key>,
+    /// The last number given a prompt or a wait, and those of the waits
+    /// open, for [`Editor::waiting_for_input`].
+    pub(crate) input_serial: u64,
+    wait_serials: Vec<u64>,
     /// What each command waiting for input waits for, innermost last, so
     /// keys typed ahead stop once one has its answer.
     waits: Vec<WaitDone>,
@@ -454,6 +469,8 @@ impl Editor {
             overriding_map: None,
             unread_keys: Default::default(),
             typeahead: Default::default(),
+            input_serial: 0,
+            wait_serials: Vec::new(),
             waits: Vec::new(),
             input_source: None,
             reading_unread: false,
@@ -1204,7 +1221,10 @@ impl Editor {
     /// `end-of-file` if there is no more input, as batch Emacs does.
     pub fn wait_until(&mut self, asker: &Resume, done: WaitDone) -> Result<()> {
         self.waits.push(done.clone());
+        self.input_serial += 1;
+        self.wait_serials.push(self.input_serial);
         let result = self.wait_for_input(&*done);
+        self.wait_serials.pop();
         self.waits.pop();
         self.resume(asker);
         result
@@ -1294,6 +1314,28 @@ impl Editor {
     /// undefined key is not an error, as in Emacs: it only shows a message.
     pub fn take_error(&mut self) -> Option<Error> {
         self.last_error.take()
+    }
+
+    /// The command loop's own state, which every command puts back as it
+    /// returns: noted before code that may panic, and put back if it does,
+    /// so one internal error does not leave every later command looking
+    /// nested, with no undo boundaries and change hooks off.
+    pub fn loop_state(&self) -> LoopState {
+        LoopState {
+            running: self.running,
+            in_change_hooks: self.in_change_hooks,
+            specpdl: self.specpdl_depth(),
+            prefix: self.current_prefix_arg,
+            interactive: self.interactive,
+        }
+    }
+
+    pub fn restore_loop_state(&mut self, state: LoopState) {
+        self.running = state.running;
+        self.in_change_hooks = state.in_change_hooks;
+        self.unbind_to(state.specpdl);
+        self.current_prefix_arg = state.prefix;
+        self.interactive = state.interactive;
     }
 
     fn invoke(&mut self, command: Rc<Command>, args: Vec<Arg>) -> Result<()> {
@@ -2270,6 +2312,24 @@ impl Editor {
     }
 
     // Minibuffer
+
+    /// What waits for input now, the innermost of the prompt open and the
+    /// commands waiting (for a key, a recursive edit's end), as a number
+    /// no other prompt or wait has had, or `None` when nothing waits. Who
+    /// types keys for someone else, as an agent does, checks it is not
+    /// typing into a question someone else opened.
+    pub fn waiting_for_input(&self) -> Option<u64> {
+        let prompt = self.prompt.as_ref().map(|p| p.serial);
+        prompt.max(self.wait_serials.last().copied())
+    }
+
+    /// Throws away keys typed ahead that nothing read, giving how many: an
+    /// agent's keys must not run later as the user's.
+    pub fn discard_typeahead(&mut self) -> usize {
+        let n = self.typeahead.len();
+        self.typeahead.clear();
+        n
+    }
 
     /// The open prompt's text, such as `Find file: `.
     pub fn prompt(&self) -> Option<&str> {

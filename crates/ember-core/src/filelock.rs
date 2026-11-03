@@ -158,11 +158,16 @@ impl Editor {
             return Ok(());
         }
         let lock = lock_file_name(&path);
+        // A stale lock is deleted and the lock made again; one that can be
+        // neither read nor deleted, such as a directory of the name, would
+        // come back each time, so after a few tries editing goes on without one.
+        let mut tries = 0;
         loop {
             match create_lock(&lock, false) {
                 Ok(()) => break,
                 Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => match current_lock_owner(&lock) {
-                    LockOwner::None => continue,
+                    LockOwner::None if tries < 3 => tries += 1,
+                    LockOwner::None => return Ok(()),
                     LockOwner::Me => break,
                     LockOwner::Other(owner) => {
                         self.buffer_mut().file.lock_threat = Some(owner.clone());

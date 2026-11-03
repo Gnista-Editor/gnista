@@ -293,6 +293,30 @@ fn a_refusal_tells_the_model_and_writes_nothing() {
     assert!(s.agent_text().contains("I left it unsaved."));
 }
 
+/// The agent's tools wait while the user has a prompt of their own open,
+/// as its pump is a timer, and timers run while a prompt waits: its keys
+/// would otherwise go into the user's question.
+#[test]
+fn the_agent_waits_while_the_user_has_a_prompt_open() {
+    let mut s = setup(
+        "notes\n",
+        vec![reply(&[tool("t1", "type_text", json!({"text": "hello "}))], "tool_use"), reply(&[text("Done.")], "end_turn")],
+    );
+    s.ed.call("agent", vec![]).unwrap();
+    s.ed.press("M->").unwrap();
+    s.ed.type_text("say hello");
+    s.ed.press("C-c RET").unwrap();
+    // The user opens a prompt of their own before the agent's tool runs.
+    s.ed.press("M-x").unwrap();
+    s.work();
+    assert_eq!(s.text_of("*scratch*"), "notes\n");
+    assert!(!s.ed.minibuffer().slice(0..s.ed.minibuffer().len()).contains("hello"), "nothing typed into the user's prompt");
+    // Once it is closed, the agent goes on.
+    s.ed.press("C-g").unwrap();
+    s.work();
+    assert_eq!(s.text_of("*scratch*"), "hello notes\n");
+}
+
 #[test]
 fn the_agent_cannot_answer_for_the_user() {
     let mut s = setup(

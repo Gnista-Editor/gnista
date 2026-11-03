@@ -131,6 +131,18 @@ fn a_stale_lock_is_taken_over() {
 }
 
 #[test]
+fn a_lock_that_cannot_be_read_or_deleted_does_not_hang_editing() {
+    let (mut ed, _s, dir) = setup();
+    let file = dir.path().join("a.txt");
+    std::fs::write(&file, "one\n").unwrap();
+    // Neither a link nor a file to read, and not deleted as a stale lock is.
+    std::fs::create_dir(dir.path().join(".#a.txt")).unwrap();
+    ed.call("find-file", vec![Arg::Str(file.display().to_string())]).unwrap();
+    ed.type_text("x");
+    assert_eq!(text(&ed), "xone\n");
+}
+
+#[test]
 fn names_and_predicates_as_emacs_gives_them() {
     // What Emacs 30.2 gives for the same names.
     let (mut ed, s, dir) = setup();

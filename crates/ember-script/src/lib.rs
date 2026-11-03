@@ -317,6 +317,26 @@ fn editor_call<T>(safe_point: bool, f: impl FnOnce(&mut Editor) -> Result<T>) ->
     result
 }
 
+/// Runs a native's body, catching a panic in it so the engine can throw
+/// it to the script, with the command loop's state put back as it was
+/// before the body, as the editor's own catch does.
+fn catch_native<T>(f: impl FnOnce() -> T) -> std::thread::Result<T> {
+    let state = with_editor_ref(|ed| ed.loop_state());
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(f));
+    if result.is_err()
+        && let (Some(state), Some(ptr)) = (state, EDITOR.get())
+    {
+        // SAFETY: as in `editor_call`; the body that held the editor has unwound.
+        unsafe { &mut *ptr.as_ptr() }.restore_loop_state(state);
+    }
+    result
+}
+
+/// What a panic says.
+fn panic_message(panic: &(dyn std::any::Any + Send)) -> String {
+    panic.downcast_ref::<&str>().map(|s| s.to_string()).or_else(|| panic.downcast_ref::<String>().cloned()).unwrap_or_default()
+}
+
 /// What the outermost entry into scripts sets up, and puts back when
 /// dropped: the time limit, the quit flag the engine's stopper reads, and
 /// the height of the binding stack, to unwind to if the script is stopped.

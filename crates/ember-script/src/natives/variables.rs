@@ -296,6 +296,9 @@ natives! {
 
     fn projectFiles(ed, root: String, ignores: Vec<String>) -> Vec<String> {
         let root = ed.expand_file_name(&root);
+        // Asking Git runs a program, which waits for the user's approval
+        // while an agent acts, as every program does.
+        ed.check_permission("run git ls-files")?;
         let files = ember_core::fileops::vc_files(&root).unwrap_or_else(|| ember_core::fileops::files_in_directory(&root, &ignores));
         Ok(files.iter().map(|p| p.display().to_string()).collect::<Vec<_>>())
     }

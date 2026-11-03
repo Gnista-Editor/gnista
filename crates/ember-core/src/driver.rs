@@ -41,10 +41,10 @@ pub type Job = Box<dyn FnOnce(&mut Editor, &dyn Any) + Send>;
 pub enum Input {
     /// A key typed.
     Key(Key),
-    /// `C-g`, which the front end also sent as a request to quit: it runs
-    /// as a key only if no command took the quit, as Emacs reads the quit
-    /// character once.
-    Quit,
+    /// `C-g`, which the front end also sent as a request to quit, with how
+    /// many quits had stopped code when it was pressed: it runs as a key
+    /// only if no command took the quit, as Emacs reads the quit character once.
+    Quit(u32),
     /// Code to run with the editor, as a mouse event, a resize, a test's
     /// question or the agent's request, given what the setup kept alive,
     /// such as the script runtime.
@@ -179,8 +179,8 @@ impl Driver {
     /// a command that is running, as Emacs's quit character does.
     pub fn key(&self, key: Key) {
         if key.ctrl && !key.meta && key.code == KeyCode::Char('g') {
-            self.quit.request();
-            self.send(Input::Quit);
+            let taken = self.quit.request();
+            self.send(Input::Quit(taken));
         } else {
             self.send(Input::Key(key));
         }
@@ -262,8 +262,12 @@ impl<D: FnMut(&mut Editor) -> Vec<FrameDescription>> CommandLoop<D> {
         match input {
             Input::Key(key) => guarded(ed, |ed| ed.handle_key(key)),
             // Taken by a command it stopped, or still waiting to be read.
-            Input::Quit => {
-                if ed.quit_state().requested() {
+            // Unless a quit stopped code since this C-g was pressed, which
+            // was this C-g answered, it is a key: the flag alone cannot say,
+            // as each command starts by clearing it, so a key queued before
+            // the C-g would lose it.
+            Input::Quit(taken) => {
+                if ed.quit_state().taken() == taken {
                     ed.quit_state().clear();
                     guarded(ed, |ed| ed.handle_key(Key { code: KeyCode::Char('g'), ctrl: true, meta: false, shift: false }));
                 }
@@ -362,7 +366,9 @@ fn run(
 /// Runs editor code so a panic in it reports in the echo area and the
 /// loop goes on, as Emacs carries on after an error.
 fn guarded(ed: &mut Editor, f: impl FnOnce(&mut Editor)) {
+    let state = ed.loop_state();
     if let Err(panic) = std::panic::catch_unwind(AssertUnwindSafe(|| f(ed))) {
+        ed.restore_loop_state(state);
         let what = panic.downcast_ref::<&str>().map(|s| s.to_string()).or_else(|| panic.downcast_ref::<String>().cloned()).unwrap_or_default();
         ed.message(format!("Internal error: {what}"));
     }

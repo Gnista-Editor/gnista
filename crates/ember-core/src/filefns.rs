@@ -310,6 +310,10 @@ impl Editor {
             None => std::env::temp_dir(),
         };
         let base = if Path::new(prefix).is_absolute() { PathBuf::new() } else { base };
+        // Making a file is writing one, which waits for the user's approval
+        // while an agent acts, wherever it is.
+        let place = base.join(prefix);
+        self.check_permission(&format!("make a temporary file at {}", place.display()))?;
         const LETTERS: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         let mut seed = SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_nanos() as u64) ^ ((std::process::id() as u64) << 32);
         for _ in 0..100 {

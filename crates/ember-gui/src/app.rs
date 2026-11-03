@@ -46,6 +46,9 @@ pub struct EmberApp {
     mouse: Arc<Mutex<Mouse>>,
     /// Messages from an agent through ember-mcp, answered between frames.
     agent: Option<std::sync::mpsc::Receiver<ember_mcp::socket::Request>>,
+    /// What the editor remembers of the socket's client, so it cannot answer
+    /// a question it did not ask.
+    agent_client: std::sync::Arc<std::sync::Mutex<ember_mcp::Client>>,
     /// The frame this native window shows; the others get windows of their own.
     main_frame: FrameId,
     /// Each frame's last title, and the frame last selected, to focus its
@@ -171,6 +174,7 @@ impl EmberApp {
             scroll: Default::default(),
             mouse: Default::default(),
             agent: None,
+            agent_client: Default::default(),
             main_frame: 1,
             titles: std::collections::HashMap::new(),
             focused_frame: 1,
@@ -260,9 +264,11 @@ impl EmberApp {
         let Some(requests) = &self.agent else { return };
         let waiting: Vec<_> = requests.try_iter().collect();
         for request in waiting {
+            let client = self.agent_client.clone();
             self.backend.run(move |editor, keep| {
                 let scripting = keep.downcast_ref::<Option<ember_script::Scripting>>().and_then(Option::as_ref);
-                let reply = ember_mcp::handle_message(editor, scripting, &request.line);
+                let mut client = client.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                let reply = ember_mcp::handle_client_message(editor, scripting, &request.line, &mut client);
                 let _ = request.reply.send(reply);
             });
         }

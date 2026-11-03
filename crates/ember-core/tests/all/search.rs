@@ -45,3 +45,22 @@ fn scanning_far_passes_plain_text_in_runs_with_the_same_answers() {
         }
     }
 }
+
+/// A backward literal search far from its match tries only the starts
+/// that can overlap the last match, rather than every start against the
+/// rest of the text: with a megabyte between, the search is immediate.
+#[test]
+fn a_backward_literal_search_far_from_its_match_is_quick() {
+    let mut ed = Editor::new();
+    let text = format!("foo foofoo{}", "x".repeat(1 << 20));
+    ed.buffer_mut().set_text(&text);
+    let backward = ember_core::SearchOptions { regexp: false, backward: true, case_fold: false, bound: None };
+    let start = std::time::Instant::now();
+    let found = ed.search("foo", text.len(), &backward).unwrap().unwrap();
+    assert_eq!((found.start, found.end), (7, 10), "the match that starts last");
+    // Overlapping matches: the later of "aa" in "aaa" starts at 1.
+    ed.buffer_mut().set_text("aaa");
+    let found = ed.search("aa", 3, &backward).unwrap().unwrap();
+    assert_eq!((found.start, found.end), (1, 3));
+    assert!(start.elapsed() < std::time::Duration::from_secs(5), "took {:?}", start.elapsed());
+}

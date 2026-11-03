@@ -107,13 +107,15 @@ macro_rules! natives {
                     |ctx: rquickjs::Ctx<'js>
                      $(, $arg: <$ty as $crate::engine::Param>::Js<'js>)*|
                      -> rquickjs::Result<rquickjs::Value<'js>> {
-                        $(let $arg = <$ty as $crate::engine::Param>::take(&ctx, $arg)?;)*
-                        let value = if true $(&& $safe_point)? {
-                            $crate::engine::with_editor(&ctx, |ed| body::$name(ed $(, $arg)*))?
-                        } else {
-                            $crate::engine::with_editor_unchecked(&ctx, |ed| body::$name(ed $(, $arg)*))?
-                        };
-                        $crate::engine::Ret::give(value, &ctx)
+                        $crate::engine::catching(&ctx, || {
+                            $(let $arg = <$ty as $crate::engine::Param>::take(&ctx, $arg)?;)*
+                            let value = if true $(&& $safe_point)? {
+                                $crate::engine::with_editor(&ctx, |ed| body::$name(ed $(, $arg)*))?
+                            } else {
+                                $crate::engine::with_editor_unchecked(&ctx, |ed| body::$name(ed $(, $arg)*))?
+                            };
+                            $crate::engine::Ret::give(value, &ctx)
+                        })
                     },
                 )?;
                 if !stringify!($vis).is_empty() {
@@ -135,13 +137,15 @@ macro_rules! natives {
                 {
                     #[allow(unused_mut, unused_variables)]
                     fn callback<'s>(scope: &mut v8::PinScope<'s, '_>, args: v8::FunctionCallbackArguments<'s>, mut rv: v8::ReturnValue<'s, v8::Value>) {
-                        let mut at = 0;
-                        $(let Ok($arg) = <$ty as $crate::engine::Param>::take(scope, &args, &mut at) else { return };)*
-                        let safe_point = true $(&& $safe_point)?;
-                        let Ok(value) = $crate::engine::with_editor(scope, safe_point, |ed| body::$name(ed $(, $arg)*)) else { return };
-                        if let Ok(value) = $crate::engine::Ret::give(value, scope) {
-                            rv.set(value);
-                        }
+                        $crate::engine::catching(scope, |scope| {
+                            let mut at = 0;
+                            $(let Ok($arg) = <$ty as $crate::engine::Param>::take(scope, &args, &mut at) else { return };)*
+                            let safe_point = true $(&& $safe_point)?;
+                            let Ok(value) = $crate::engine::with_editor(scope, safe_point, |ed| body::$name(ed $(, $arg)*)) else { return };
+                            if let Ok(value) = $crate::engine::Ret::give(value, scope) {
+                                rv.set(value);
+                            }
+                        });
                     }
                     $crate::engine::define(scope, native, api, stringify!($name), !stringify!($vis).is_empty(), callback);
                 }

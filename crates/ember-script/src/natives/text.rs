@@ -736,7 +736,7 @@ natives! {
         if on {
             ed.request_quit();
         } else {
-            ed.quit_state().clear();
+            ed.quit_state().discard();
         }
         Ok(())
     }

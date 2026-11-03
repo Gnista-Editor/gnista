@@ -533,6 +533,29 @@ fn a_cancelled_change_group_leaves_no_trace_across_undo_boundaries() {
     assert_eq!(text(&ed), "", "undo goes to before the typing, without panicking");
 }
 
+/// A panic in a native, or in the core under it, is an error the script
+/// sees, on either engine, rather than an abort (V8's callbacks cannot
+/// unwind) or a panic escaping the script.
+#[test]
+fn a_panic_in_a_native_is_an_error_the_script_sees() {
+    let (mut ed, scripting) = setup();
+    ed.define_command(ember_core::Command::new("break", "Panics partway.", |_, _| panic!("partway")));
+    let got = scripting
+        .eval_expression(&mut ed, r#"(() => { try { ember.call("break"); return "ran on"; } catch (e) { return e.message; } })()"#)
+        .unwrap();
+    assert_eq!(got, r#""Internal error: partway""#);
+    // The editor goes on, its command loop as it was: two calls from
+    // outside are still an undo step each, as they would not be if it
+    // still thought the broken command was running.
+    assert_eq!(scripting.eval_expression(&mut ed, "1 + 1").unwrap(), "2");
+    ed.define_command(ember_core::Command::new("put-a", "Inserts a.", |ed, _| ed.insert("a")));
+    ed.define_command(ember_core::Command::new("put-b", "Inserts b.", |ed, _| ed.insert("b")));
+    ed.call("put-a", vec![]).unwrap();
+    ed.call("put-b", vec![]).unwrap();
+    ed.press("C-/").unwrap();
+    assert_eq!(ed.buffer().slice(0..ed.buffer().len()), "a");
+}
+
 #[test]
 fn errors_carry_their_conditions_both_ways() {
     let (mut ed, scripting) = setup();

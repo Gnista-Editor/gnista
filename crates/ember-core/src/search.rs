@@ -188,9 +188,21 @@ fn search_literal(b: &Buffer, pattern: &str, from: usize, options: &SearchOption
     // The match that starts last and ends by `from`, as Emacs's backward
     // search finds: the last of the non-overlapping matches gives the
     // lowest place it can start.
-    let Some(lowest) = re.find_iter(&text).last().map(|m| m.start()) else { return Ok(None) };
-    let last = (lowest..=text.len()).rev().filter(|&start| text.is_char_boundary(start)).find_map(|start| re.find_at(&text, start).filter(|m| m.start() == start));
-    Ok(last.map(found))
+    let Some(lowest) = re.find_iter(&text).last() else { return Ok(None) };
+    // A match starting later overlaps that one, so it starts before it
+    // ends and is no longer than a match of the pattern can be (four bytes
+    // a character): only those few starts are tried, each against that
+    // much text, rather than every start against the rest of the text.
+    let mut limit = (lowest.end() + 4 * pattern.chars().count()).min(text.len());
+    while !text.is_char_boundary(limit) {
+        limit += 1;
+    }
+    let window = &text[..limit];
+    let later = (lowest.start() + 1..lowest.end())
+        .rev()
+        .filter(|&start| window.is_char_boundary(start))
+        .find_map(|start| re.find_at(window, start).filter(|m| m.start() == start));
+    Ok(Some(found(later.unwrap_or(lowest))))
 }
 
 /// Whether search case should be folded for a string, as Emacs decides with

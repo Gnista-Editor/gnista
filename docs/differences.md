@@ -33,6 +33,7 @@ Each entry says whether the difference is **deliberate**, which keeps it, or **n
 
 ## Text and search
 
+- **Explicitly numbered groups** (deliberate): `\(?N:...\)` takes N up to 65,535 and says "Regular expression too big" above, where Emacs takes N up to 2³¹ − 1; Ember's matcher keeps a slot for every group up to the highest.
 - **Literal searches** (not yet) fold case by the standard case table, not by a buffer's own; regexp searches follow the buffer's.
 - **Case equivalence tables** (not yet): a case table's third extra slot is not worked out.
 - **Putting text properties** (not yet) records no undo, does not mark the buffer modified and runs no change hooks, as if Emacs's `with-silent-modifications` were around every call. Ember's packages fontify and fold this way, as Emacs's font-lock does inside that macro, so a package that relies on properties being undone does not work yet ([ADR 0034](adr/0034-buffer-and-text-property-primitives.md)).

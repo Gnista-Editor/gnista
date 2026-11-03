@@ -200,6 +200,15 @@ pub(crate) fn collect_garbage() {
     }
 }
 
+/// Runs a native's body so that a panic in it, in the native or in the
+/// core under it, is an error the script sees, as on V8.
+pub(crate) fn catching<'js, T>(ctx: &Ctx<'js>, f: impl FnOnce() -> rquickjs::Result<T>) -> rquickjs::Result<T> {
+    match crate::catch_native(f) {
+        Ok(result) => result,
+        Err(panic) => Err(throw_error(ctx, &Error::new(format!("Internal error: {}", crate::panic_message(&*panic))))),
+    }
+}
+
 /// Gives a native the editor, throwing its error to the script. See [`editor_call`].
 pub(crate) fn with_editor<T>(ctx: &Ctx<'_>, f: impl FnOnce(&mut Editor) -> Result<T>) -> rquickjs::Result<T> {
     editor_call(true, f).map_err(|e| throw_error(ctx, &e))

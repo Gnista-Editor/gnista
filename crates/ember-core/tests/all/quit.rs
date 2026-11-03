@@ -34,6 +34,22 @@ fn a_slow_regexp_search_is_quit_from_another_thread() {
 }
 
 #[test]
+fn call_process_is_quit_and_its_program_killed() {
+    let mut ed = Editor::new();
+    let asker = quit_after(&ed, Duration::from_millis(200));
+    let start = Instant::now();
+    // A program that would run for half a minute, as one waiting for input that never comes.
+    let result = ed.call_process(&["sleep".to_string(), "30".to_string()], None, None);
+    asker.join().unwrap();
+    let err = result.expect_err("quit");
+    assert!(err.is("quit"), "{err}");
+    assert!(start.elapsed() < Duration::from_secs(5), "quit promptly: {:?}", start.elapsed());
+    // And a program that finishes gives its output and code, as before.
+    let (code, out) = ed.call_process(&["sh".to_string(), "-c".to_string(), "echo hi; exit 3".to_string()], None, None).unwrap();
+    assert_eq!((code, out.as_str()), (3, "hi\n"));
+}
+
+#[test]
 fn scanning_balanced_expressions_stops_at_a_quit() {
     let mut ed = Editor::new();
     ed.type_text(&format!("({}", "x ".repeat(50_000)));

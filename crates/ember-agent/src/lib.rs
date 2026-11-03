@@ -65,7 +65,7 @@ pub fn install_with(ed: &mut Editor, scripting: &Scripting, model: Rc<dyn Model>
     ] {
         ed.define_variable(var);
     }
-    let agent = Rc::new(Agent { model, sessions: RefCell::new(Vec::new()), timer: RefCell::new(None) });
+    let agent = Rc::new(Agent { model, sessions: RefCell::new(Vec::new()), timer: RefCell::new(None), left_open: std::cell::Cell::new(None) });
     let a = agent.clone();
     ed.define_command(Command::new(
         "agent",
@@ -90,6 +90,10 @@ struct Agent {
     sessions: RefCell<Vec<Session>>,
     /// The timer taking events while any session works.
     timer: RefCell<Option<u64>>,
+    /// What waited for input when the agent's last tool finished: a prompt
+    /// its own keys opened, which its next keys may answer, where any other
+    /// is the user's, and tools wait until it is answered.
+    left_open: std::cell::Cell<Option<u64>>,
 }
 
 /// One conversation, in one agent buffer.
@@ -288,9 +292,14 @@ impl Agent {
             self.take_events(ed, &name);
         }
         // Tools run only while no session waits for the user's approval,
-        // so no agent's keys can answer that question.
+        // so no agent's keys can answer that question; and not while the
+        // user has a prompt open, a question of theirs or of a command they
+        // ran, as the timer runs inside it, and the agent's keys would go
+        // into it: only into one its own keys left open.
         let asking = self.sessions.borrow().iter().any(|s| matches!(&s.state, State::Tools(r) if r.approval.is_some()));
-        if !asking {
+        let waiting = ed.waiting_for_input();
+        let users = waiting.is_some() && waiting != self.left_open.get();
+        if !asking && !users {
             let ready: Vec<String> = self
                 .sessions
                 .borrow()
@@ -478,10 +487,17 @@ impl Agent {
                                 ed.allow_effect(effect);
                             }
                             ed.set_agent_acting(true);
-                            let result = ember_mcp::run_tool(ed, None, &tool, &call["input"]);
+                            let (mut text, failed) = ember_mcp::run_tool(ed, None, &tool, &call["input"]);
+                            // Keys nothing read yet would run later, as the
+                            // user's and past the permission check.
+                            let unused = ed.discard_typeahead();
                             ed.set_agent_acting(false);
-                            result
+                            if unused > 0 {
+                                text.push_str(&format!("\n{unused} of the keys were not used: nothing was reading them."));
+                            }
+                            (text, failed)
                         });
+                        self.left_open.set(ed.waiting_for_input());
                         self.with_session(name, |s| s.target = target);
                         let requested = ed.take_permission_request();
                         ed.clear_permissions();

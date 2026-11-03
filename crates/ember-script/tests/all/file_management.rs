@@ -68,6 +68,14 @@ fn an_agent_needs_approval_to_change_files() {
     let refused = ed.call("delete-file", vec![Arg::Str(a.display().to_string())]).unwrap_err();
     assert!(refused.to_string().starts_with("Needs the user's approval: delete "), "{refused}");
     assert!(a.exists());
+    // Temporary files are files too, wherever they go, and listing a
+    // project's files asks Git, which is running a program.
+    let prefix = dir.path().join("tmp").display().to_string();
+    let refused = ed.make_temp_file(&prefix, false, "", Some("x")).unwrap_err();
+    assert!(refused.to_string().starts_with("Needs the user's approval: make a temporary file at "), "{refused}");
+    assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1, "nothing made");
+    let refused = _scripting.eval_expression(&mut ed, &format!("ember.projectFiles({:?})", dir.path().display().to_string())).unwrap_err().to_string();
+    assert!(refused.contains("Needs the user's approval: run git ls-files"), "{refused}");
 }
 
 #[test]

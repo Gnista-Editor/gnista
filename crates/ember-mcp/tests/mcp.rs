@@ -41,6 +41,40 @@ fn text(ed: &Editor) -> String {
     b.slice(0..b.len())
 }
 
+/// Calls a tool as a client of the editor a user has open, as the GUI's socket does.
+fn client_tool(ed: &mut Editor, scripting: &Scripting, client: &mut ember_mcp::Client, name: &str, arguments: Value) -> (String, bool) {
+    let message = json!({ "jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": { "name": name, "arguments": arguments } });
+    let reply = ember_mcp::handle_client_message(ed, Some(scripting), &message.to_string(), client).expect("a reply");
+    let reply: Value = serde_json::from_str(&reply).unwrap();
+    (reply["result"]["content"][0]["text"].as_str().unwrap().to_string(), reply["result"]["isError"].as_bool().unwrap())
+}
+
+/// A client of the editor the user sees cannot answer a question it did
+/// not ask, such as one the user's own command opened or Ember's agent's
+/// approval question: while it waits the client may only read. A prompt
+/// the client's own keys opened, it goes on typing into.
+#[test]
+fn a_client_cannot_answer_a_question_it_did_not_ask() {
+    let (mut ed, scripting) = setup();
+    let mut client = ember_mcp::Client::default();
+    ed.press("C-x C-f").unwrap();
+    let (said, failed) = client_tool(&mut ed, &scripting, &mut client, "type_text", json!({ "text": "/etc/passwd\n" }));
+    assert!(failed, "{said}");
+    assert!(said.contains("waiting for its user to answer"), "{said}");
+    assert!(!ed.minibuffer().slice(0..ed.minibuffer().len()).contains("passwd"), "nothing typed into the user's prompt");
+    assert!(ed.prompt().is_some(), "the user's prompt is still open");
+    let (_, failed) = client_tool(&mut ed, &scripting, &mut client, "screen", json!({}));
+    assert!(!failed, "reading still works");
+    // Once the user has answered, or quit, the client acts again.
+    ed.press("C-g").unwrap();
+    ed.take_error();
+    let (said, failed) = client_tool(&mut ed, &scripting, &mut client, "press_keys", json!({ "keys": "M-x" }));
+    assert!(!failed, "{said}");
+    let (said, failed) = client_tool(&mut ed, &scripting, &mut client, "type_text", json!({ "text": "move-beginning-of-line\n" }));
+    assert!(!failed, "its own prompt: {said}");
+    assert!(ed.prompt().is_none());
+}
+
 #[test]
 fn it_speaks_mcp() {
     let (mut ed, scripting) = setup();

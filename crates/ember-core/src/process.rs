@@ -1173,8 +1173,41 @@ impl Editor {
                 let _ = stdin.write_all(text.as_bytes());
             });
         }
+        // The output is read on a thread of its own, so the editor can
+        // quit while the program runs: C-g kills it, as in Emacs.
+        let (chunks, read) = std::sync::mpsc::channel::<std::io::Result<Vec<u8>>>();
+        std::thread::spawn(move || {
+            let mut buf = [0u8; 65536];
+            loop {
+                match std::io::Read::read(&mut output, &mut buf) {
+                    Ok(0) => return,
+                    Ok(n) => {
+                        if chunks.send(Ok(buf[..n].to_vec())).is_err() {
+                            return;
+                        }
+                    }
+                    Err(e) if e.kind() == std::io::ErrorKind::Interrupted => {}
+                    Err(e) => {
+                        let _ = chunks.send(Err(e));
+                        return;
+                    }
+                }
+            }
+        });
         let mut bytes = Vec::new();
-        std::io::Read::read_to_end(&mut output, &mut bytes).map_err(|e| Error::new(format!("Running {program}: {e}")))?;
+        loop {
+            match read.recv_timeout(Duration::from_millis(20)) {
+                Ok(Ok(chunk)) => bytes.extend(chunk),
+                Ok(Err(e)) => return Err(Error::new(format!("Running {program}: {e}"))),
+                Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break,
+                Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
+            }
+            if let Err(quit) = self.maybe_quit() {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err(quit);
+            }
+        }
         let status = child.wait().map_err(|e| Error::new(format!("Running {program}: {e}")))?;
         let text = String::from_utf8_lossy(&bytes).into_owned();
         let code = match exit_status(status) {

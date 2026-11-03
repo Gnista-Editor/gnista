@@ -535,9 +535,15 @@ impl Parser<'_> {
                     if digits.is_empty() {
                         None
                     } else {
-                        let n: usize = digits.parse().map_err(|_| invalid("Invalid regular expression"))?;
+                        // Emacs takes numbers up to 2^31 - 1; the matcher keeps
+                        // a slot for every group up to the highest, so a bound
+                        // far above any real pattern keeps that small.
+                        let n: usize = digits.parse().map_err(|_| invalid("Regular expression too big"))?;
                         if n == 0 {
                             return Err(invalid("Invalid regular expression"));
+                        }
+                        if n > MAX_GROUP {
+                            return Err(invalid("Regular expression too big"));
                         }
                         self.groups = self.groups.max(n);
                         Some(n)
@@ -734,6 +740,9 @@ fn leading(node: &Node) -> Option<&Node> {
         other => Some(other),
     }
 }
+
+/// The highest group number an explicitly numbered group may have.
+const MAX_GROUP: usize = 65_535;
 
 impl Compiler {
     fn push(&mut self, inst: Inst) -> Result<usize> {
@@ -1367,6 +1376,10 @@ mod tests {
         assert_eq!(message("\\_"), "Invalid regexp: \"Premature end of regular expression\"");
         assert_eq!(message("\\_x"), "Invalid regexp: \"Invalid regular expression\"");
         assert!(Regexp::new("\\(?01:a\\)", false).is_err());
+        // A group number too big to keep slots for is refused, not allocated.
+        assert_eq!(message("\\(?4000000000:x\\)"), "Invalid regexp: \"Regular expression too big\"");
+        assert_eq!(message("\\(?99999999999999999999999:x\\)"), "Invalid regexp: \"Regular expression too big\"");
+        assert!(Regexp::new("\\(?300:x\\)", false).is_ok());
     }
 
     #[test]
