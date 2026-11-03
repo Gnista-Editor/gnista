@@ -88,15 +88,15 @@ Every step keeps these. A change that breaks one is wrong, however convenient.
 
 ## The steps
 
-| Step | What | Needs |
-| --- | --- | --- |
-| 0 | Measure, and generate the script bindings from one table | nothing |
-| 1 | Quitting: the flag, the protocol, the binding stack, the loop checks | nothing |
-| 2 | The frame description: front ends draw only from data the core builds | nothing; before more display work |
-| 3 | The editor thread: a command loop in the core, the terminal first, then the GUI | 1, 2 |
-| 4 | V8 instead of QuickJS, if step 0's profile says so | 0 |
-| 5 | Blocking primitives: prompts and `recursive-edit` as nested command loops | 3 |
-| 6 | Work below the API, where the bench shows a cost | 3; each item its own measurement |
+| Step | What | Needs | State |
+| --- | --- | --- | --- |
+| 0 | Measure, and generate the script bindings from one table | nothing | done: the profile 2026-11-02, the table 2026-11-03 |
+| 1 | Quitting: the flag, the protocol, the binding stack, the loop checks | nothing | done ([ADR 0049](adr/0049-quitting.md)) |
+| 2 | The frame description: front ends draw only from data the core builds | nothing; before more display work | done ([ADR 0050](adr/0050-the-frame-description.md)) |
+| 3 | The editor thread: a command loop in the core, the terminal first, then the GUI | 1, 2 | done ([ADR 0051](adr/0051-the-editor-thread.md)) |
+| 4 | V8 instead of QuickJS, if step 0's profile says so | 0 | next: the profile allows it, and the spike is in `spikes/v8` |
+| 5 | Blocking primitives: prompts and `recursive-edit` as nested command loops | 3 | done ([ADR 0053](adr/0053-prompts-that-return-their-answer.md)) |
+| 6 | Work below the API, where the bench shows a cost | 3; each item its own measurement | under way: Org's heading index (2026-11-02); the rest in [optimisation.md](optimisation.md) |
 
 Steps 0, 1, 2 and 4 are independent. Step 2 should start as soon as the redisplay work in flight (overlay arrows, fringes, fonts) has merged, since it rewrites the drawing code that work touches, and every display feature added before it is another call to migrate.
 

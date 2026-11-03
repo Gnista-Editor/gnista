@@ -1,0 +1,79 @@
+# What Ember does
+
+What works today, in a terminal (`ember`) or a window (`ember-gui`). Where it differs from Emacs is in [differences.md](differences.md), and what is still to come in [plan.md](plan.md).
+
+- Buffers.
+- Windows (`C-x 2`, `C-x 3`, `C-x o`, `C-x 0`, `C-x 1`, resizing with `C-x ^`, `C-x }`, `C-x {`, `C-x +` and the mouse, `display-buffer` and the `C-x 4` commands, `C-M-v`, `C-x <left>` and `C-x <right>` through the buffers a window showed, window parameters, dedicated windows, and window configurations with `save-window-excursion`).
+- Frames (`C-x 5 2`, `C-x 5 o`, `C-x 5 0` and the other `C-x 5` commands, each frame a native window in the GUI).
+- Files (backups, auto-saving and `recover-this-file`, `revert-buffer` and `C-x x g`, `auto-revert-mode`, asking before editing or saving a file changed on disk, DOS and Mac line ends, files in other codings (UTF-16, the ISO 8859 and Windows sets, Shift_JIS, EUC-JP, ISO-2022-JP, GBK, Big5, EUC-KR, found from cookies and the bytes), `C-x RET f`, `C-x RET r` and `C-x RET c`, `describe-coding-system` on `C-h C`, `prefer-coding-system`, `save-some-buffers` and asking about each file on `C-x C-c`, `copy-file`, `rename-file`, `delete-file` to the trash, `make-directory`, `read-only-mode` on `C-x C-q`, `find-alternate-file` on `C-x C-v`, `rename-visited-file`, recent files with `recentf-mode` and `recentf-open`, and `find-file-at-point`, `insert-file` on `C-x i`, `write-region`, `append-to-file`, and lock files).
+- Dired (`C-x d`, `C-x C-j`: visiting, marking, copying, renaming and deleting files, `g`, `s`, hiding details).
+- Projects (`C-x p f` to find a file in the Git tree, `C-x p p`, `C-x p D`, `C-x p b`, `C-x p k`).
+- Questions (`yes-or-no-p`, `y-or-n-p`) and timers.
+- An agent (`M-x agent`: talk to Claude in an Org buffer while it calls commands as tools, asking before it writes files or quits, each turn one undo step).
+- Emacs movement and editing keys (`M-m`, `M-\`, `M-SPC`, `M-^`, `C-x C-o`, `M-z`, `C-q`, `C-S-DEL`, `M-g g`, `C-x =`, `M-=`, `M-@`, `M-h`, `C-M-o`, sentences with `M-a`, `M-e` and `M-k`, `sort-lines`, `reverse-region`, `delete-duplicate-lines`, `keep-lines`, `flush-lines` and `how-many`, registers (`C-x r SPC`, `C-x r j`, `C-x r s`, `C-x r i`) and rectangles (`C-x r k`, `C-x r y`, `C-x r t`), `M-/` (`dabbrev-expand`), abbrevs (`abbrev-mode`, `C-x a g`, `C-x '`), `M-s o` (`occur`), pages (`C-x ]`, `C-x [`, `C-x l`), `C-M-t`, `C-M-h`, `C-x n d`, `C-l` and `M-r` cycling as `recenter-top-bottom` and `move-to-window-line-top-bottom`, the global mark ring (`C-x C-SPC`), `undo-only`, `ESC ESC ESC`, the buffer list (`C-x C-b`, a tabulated list sorted with `S`, titled in the header line), `kill-some-buffers` and `kill-matching-buffers`, highlighting by regexp (`M-s h r`, `M-s h .`), bookmarks (`C-x r m`, `C-x r b`, `C-x r l`, in Emacs's file format), `whitespace-cleanup`, `view-mode` and `view-file`, `M-x diff`, `diff-buffer-with-file` and `diff-mode`, `tabify`, `center-line` and `append-to-buffer`, changing case with `M-u`, `M-l`, `M-c`, `C-x C-u` and `C-x C-l`, paragraphs with `M-{` and `M-}`, defuns with `C-M-a` and `C-M-e` (by the syntax tree in tree-sitter modes), balanced expressions with `C-M-f`, `C-M-b`, `C-M-n`, `C-M-p`, `C-M-u`, `C-M-d`, `C-M-k`, `C-M-SPC` and `M-(`, as each mode's syntax table says).
+- Filling (`M-q`, `C-u M-q` to justify, `fill-region`, `C-x f`, `C-x .`, `auto-fill-mode`).
+- Matching parens shown (`show-paren-mode`, on by default) and typed in pairs (`electric-pair-mode`).
+- Line numbers (`display-line-numbers-mode`, `global-display-line-numbers-mode`).
+- History and places kept between sessions (`savehist-mode`, `save-place-mode`).
+- A shell in a buffer (`M-x shell`, on comint: `M-p`, `M-n`, `M-r` searching the history with isearch, `C-c M-r`, the shell's history file, `C-c C-c`, `C-c C-o`, the directory followed, passwords read hidden with `read-passwd`).
+- Shell commands (`M-!`, `M-|`, `M-&`).
+- Going to a definition by name (`M-x imenu`, from the syntax tree in tree-sitter modes, Python's included, and the headings in Org).
+- Compiling and grepping in the background (`M-x compile`, `M-x grep`, `recompile`, `C-x p c`) and visiting each message's place (`next-error` on `M-g n`, `M-g p`).
+- Finding a regexp in a project (`C-x p g`, into `*xref*`).
+- Comments (`M-;`, `C-x C-;`, `C-x ;`, `M-j`).
+- Indentation (TAB as the mode says, `C-M-\`, `C-x TAB`, RET and closing braces reindenting in code modes).
+- The message log (`C-h e` shows `*Messages*`).
+- The active region with shift selection (transient-mark-mode and shift-select-mode, both on).
+- Prefix arguments (`C-u`, `M-<digit>`, `C--`).
+- Mouse wheel and trackpad scrolling of the window under the pointer.
+- Clicks.
+- Drags.
+- Double and triple clicks and shift-click as Emacs mouse keys (`<mouse-1>`, `<drag-mouse-1>`, `<double-mouse-1>`).
+- Long lines continued by default.
+- `truncate-lines` and `visual-line-mode`.
+- The kill ring with `M-y` (choosing a kill from the minibuffer when not after a yank).
+- The mark ring (`C-u C-SPC`).
+- Undo as in Emacs (undoable, with `undo-redo`, text property changes undone, `buffer-undo-list` read, set and bound, `with-silent-modifications`).
+- Keyboard macros (`F3`, `F4`, `C-x (`, `C-x )`, `C-x e`).
+- Recursive edits (`C-M-c`, `C-]`, `top-level`).
+- The keys typed lately (`C-h l`).
+- Characters typed with `C-x 8` through `key-translation-map`.
+- Keys bound to keys as keyboard macros.
+- `sit-for` and `read-event` with a timeout.
+- Repeat (`C-x z`).
+- Documented variables with buffer-local values (`C-h v`).
+- Hooks.
+- Major and minor modes with their own keymaps (`C-h m`).
+- Choosing the major mode from the file name.
+- `text-mode`.
+- `overwrite-mode` and `delete-selection-mode`.
+- Header lines (`header-line-format`).
+- Margins (`left-margin-width`, `(margin left-margin)` display specs) and fringes in the GUI (continuation arrows, `(left-fringe BITMAP)` specs, `define-fringe-bitmap`, `indicate-empty-lines`, `indicate-buffer-boundaries`, `fringe-indicator-alist`).
+- The overlay arrow (`overlay-arrow-position`, a triangle in the fringe or `=>` on a terminal, marking `next-error`'s message).
+- Fonts as values (`font-spec`, `font-get`, `font-xlfd-name`, `face-font`, `font-at`, `font-family-list`, `list-fonts`, `x-list-fonts`, `char-displayable-p`).
+- Images (`(image ...)` display specs on text, overlays, strings and in the margins, PNG, JPEG, GIF and SVG, `create-image`, `insert-image`, `put-image`, `insert-sliced-image`, `image-size`, `image-increase-size` and `image-rotate` on `i +` and `i r`, and `image-mode` for visited image files: drawn in the GUI, rows as tall as their images, and shown as their text in the terminal, as Emacs's terminals show them).
+- The bell (`ding`, `visible-bell`, the system beep on macOS).
+- Text properties.
+- Overlays and faces with Emacs's attributes and colour names (`describe-face`, `list-faces-display`, `list-colors-display`, anonymous faces in `face` properties).
+- Faces of other sizes and proportional fonts (`:height`, `:family`, `face-remapping-alist`, `C-x C-+`, `C-x C--` and `C-x C-0` for `text-scale-adjust`, `variable-pitch-mode`).
+- With the layout's positions for scripts (`posn-at-point`, `pos-visible-in-window-p`, `window-end`, `window-text-pixel-size`).
+- Bidirectional text (Hebrew, Arabic and mixed lines reordered as Emacs's bidi.c does, with paired brackets and mirroring, right-to-left paragraphs from the window's right edge, `bidi-paragraph-direction`, `current-bidi-paragraph-direction`, `bidi-resolved-levels`, `move-point-visually`, and `<left>` and `<right>` as `left-char` and `right-char`, by the paragraph's direction or with `visual-order-cursor-movement`).
+- Invisible text and folding (`outline-mode`, `outline-minor-mode`).
+- Org mode (`org-mode`: folding, structure editing, TODO states, tags, checkboxes, timestamps, links, tables, properties (`C-c C-x p`), refiling (`C-c C-w`), narrowing (`C-x n s`), the week agenda and TODO list (`org-agenda`), and capture (`org-capture`)).
+- Narrowing (`C-x n n`, `C-x n w`).
+- Indirect buffers (`C-x 4 c`, and Org's `C-c C-x b` for a subtree).
+- Fields (C-a and the word commands stop at a prompt's edge).
+- Tree-sitter highlighting (`rust-ts-mode`, `js-ts-mode`, `json-ts-mode`, `python-ts-mode`).
+- Indentation by Emacs's tree-sitter rules.
+- The tree for scripts (parsers, nodes, queries).
+- Incremental search (`C-s`, `C-r`, `C-M-s`).
+- `query-replace` (`M-%`, `C-M-%`).
+- `replace-string`.
+- `replace-regexp` and the search commands.
+- Regular expressions in Emacs's syntax.
+- M-x with completion styles (`f-f` completes to `find-file`).
+- Icomplete's list of completions as you type (`icomplete-mode`, on by default, `fido-mode`, `icomplete-vertical-mode`, `fido-vertical-mode`).
+- Minibuffer history (`M-p`, `M-n`).
+- The minibuffer (a buffer with its prompt as read-only text, `C-x o` out of it and back, and recursive minibuffers with `enable-recursive-minibuffers`).
+- `C-h f`, `C-h k` and `C-h b`.
+- TypeScript extensions: `init.ts` defines commands and key bindings, `M-x load-file` reloads it, and `M-:` evaluates an expression.

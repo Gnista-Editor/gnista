@@ -1,0 +1,57 @@
+# Decisions
+
+One record per decision, in the order they were made; a later one can change an earlier one, and says so. New ones start from [the template](0000-template.md).
+
+- [0001](0001-record-architecture-decisions.md) Record architecture decisions
+- [0002](0002-start-simple.md) Start simple and iterate
+- [0003](0003-typescript-on-quickjs.md) Extensions in TypeScript on QuickJS
+- [0004](0004-egui-front-end.md) A graphical front end on egui, with ArtCraft's look
+- [0005](0005-rust-core-typescript-commands.md) Rust for Emacs's C core, TypeScript for its Lisp, and Emacs as the oracle
+- [0006](0006-variables-hooks-and-modes.md) Variables, hooks and modes
+- [0007](0007-text-properties-faces-and-display-rows.md) Text properties, faces and display rows
+- [0008](0008-tree-sitter-highlighting.md) Tree-sitter highlighting
+- [0009](0009-windows.md) Windows
+- [0010](0010-mouse-and-line-wrapping.md) The mouse and line wrapping
+- [0011](0011-search-and-the-minibuffer.md) Search, replace and the minibuffer
+- [0012](0012-org-mode.md) Org mode as TypeScript packages
+- [0013](0013-following-org-closely.md) Following Org's Lisp closely
+- [0014](0014-gpl.md) Ember is GPL
+- [0015](0015-mcp-server.md) Ember as an MCP server
+- [0016](0016-org-agenda-and-capture.md) The Org agenda and capture
+- [0017](0017-frames.md) Frames
+- [0018](0018-files-and-saving.md) Files and saving
+- [0019](0019-agent-buffer.md) An agent inside Ember
+- [0020](0020-completion-and-icomplete.md) Completion and icomplete
+- [0021](0021-managing-files.md) Managing files
+- [0022](0022-dired-and-projects.md) Dired and projects
+- [0023](0023-filling-parens-and-everyday-modes.md) Filling, parens and the everyday modes
+- [0024](0024-processes-compiling-comments-and-indentation.md) Processes, compiling, comments and indentation
+- [0025](0025-foundations-for-emacs-parity.md) Foundations for Emacs parity
+- [0026](0026-the-next-foundations.md) The next foundations
+- [0027](0027-emacs-regexps.md) An engine for Emacs's regular expressions
+- [0028](0028-windows-as-objects.md) Windows as objects
+- [0029](0029-redisplay-beyond-rows.md) Redisplay beyond rows of characters
+- [0030](0030-the-command-loops-primitives.md) The command loop's primitives
+- [0031](0031-the-system-clipboard.md) The system clipboard
+- [0032](0032-character-tables.md) Character tables
+- [0033](0033-file-primitives.md) File primitives for Lisp
+- [0034](0034-buffer-and-text-property-primitives.md) Buffer and text property primitives
+- [0035](0035-coding-systems-and-charsets.md) Coding systems and charsets
+- [0036](0036-tree-sitter-for-scripts.md) Tree-sitter for scripts
+- [0037](0037-terminals-sockets-and-process-codings.md) Pseudo-terminals, network processes and process codings
+- [0038](0038-comint-and-shell.md) Comint and M-x shell
+- [0039](0039-imenu.md) Imenu
+- [0040](0040-everyday-editing-commands.md) Everyday editing commands
+- [0041](0041-header-line-and-tabulated-lists.md) The header line and tabulated lists
+- [0042](0042-isearch-state-and-comint-history-search.md) Isearch's state and hooks, and searching comint's history
+- [0043](0043-the-undo-list-and-property-changes.md) The undo list as Lisp sees it, and text property changes undone
+- [0044](0044-faces-as-emacs-s.md) Faces as Emacs's
+- [0045](0045-margins-fringes-and-redisplay-primitives.md) Margins, fringes and redisplay's primitives
+- [0046](0046-images.md) Images
+- [0047](0047-bidirectional-text.md) Bidirectional text
+- [0048](0048-overlay-arrows-fringe-indicators-and-fonts.md) Overlay arrows, fringe indicators and fonts
+- [0049](0049-quitting.md) Quitting
+- [0050](0050-the-frame-description.md) The frame description
+- [0051](0051-the-editor-thread.md) The editor thread
+- [0052](0052-faces-in-installed-fonts.md) Faces in installed fonts
+- [0053](0053-prompts-that-return-their-answer.md) Prompts that return their answer
