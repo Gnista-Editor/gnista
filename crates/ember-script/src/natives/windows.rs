@@ -1,5 +1,6 @@
 //! Windows and frames.
 
+use crate::EditorValue;
 use crate::natives::{natives, Record};
 
 natives! {
@@ -78,6 +79,39 @@ natives! {
         Ok(ed.selected_frame())
     }
 
+    /// A frame's parameter, the selected frame's by default, as frame-parameter:
+    /// one set with setFrameParameter, or tab-bar-lines.
+    #[ts = "(frame: number | undefined, name: string): Value | undefined"]
+    pub fn frameParameter(ed, frame: Option<u64>, name: String) -> Option<EditorValue> {
+        Ok(ed.frame_parameter(frame.unwrap_or(ed.selected_frame()), &name))
+    }
+
+    /// Set a frame's parameter, the selected frame's by default, as
+    /// set-frame-parameter. tab-bar-lines, 0 or 1, hides or shows its tab bar,
+    /// which shows tab-bar-line, a mode line construct.
+    #[ts = "(frame: number | undefined, name: string, value: Value): void"]
+    pub fn setFrameParameter(ed, frame: Option<u64>, name: String, value: EditorValue) {
+        ed.set_frame_parameter(frame.unwrap_or(ed.selected_frame()), &name, value)
+    }
+
+    /// Whether the display shows images and fonts of many sizes, as a graphical
+    /// one does, rather than a terminal's cells, as display-graphic-p.
+    pub fn displayGraphicP(ed) -> bool {
+        Ok(ed.text_metrics().images())
+    }
+
+    /// The width of a character of the frame's default font, in the front
+    /// end's units: pixels, or 1 on a terminal, as frame-char-width.
+    pub fn frameCharWidth(ed) -> f64 {
+        Ok(ed.text_metrics().char_width() as f64)
+    }
+
+    /// A frame's width in columns, the selected frame's by default, as frame-width.
+    #[ts = "(frame?: number): number"]
+    pub fn frameWidth(ed, frame: Option<u64>) -> usize {
+        Ok(ed.frame_width(frame.unwrap_or(ed.selected_frame())))
+    }
+
     /// The frames, newest first, as frame-list orders them.
     pub fn frameList(ed) -> Vec<u64> {
         Ok(ed.frame_list())
@@ -120,7 +154,7 @@ natives! {
     /// `{ window, position }`, with `start` for a drag's start.
     fn lastMouseEvent(ed) -> Option<Record> {
         Ok(ed.last_mouse_event().map(|event| {
-            let record = Record::new().with("window", event.window).with("position", event.position);
+            let record = Record::new().with("window", event.window).with("position", event.position).with("tabBar", ed.last_mouse_tab_bar_column());
             match event.start {
                 Some((window, position)) => record.with("start", Record::new().with("window", window).with("position", position)),
                 None => record,

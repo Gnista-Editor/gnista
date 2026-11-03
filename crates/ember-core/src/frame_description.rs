@@ -42,6 +42,8 @@ pub struct FrameDescription {
     pub minibuffer_selected: bool,
     pub windows: Vec<WindowDescription>,
     pub echo: Echo,
+    /// The tab bar along its top, if it shows one, as the mode line is drawn.
+    pub tab_bar: Option<Vec<(ModeLineSegment, Style)>>,
     /// The `default` face, which text without faces of its own shows in.
     pub default_style: Style,
     /// Fringe bitmaps `define-fringe-bitmap` defined, by name, for drawing
@@ -239,6 +241,8 @@ impl Editor {
             minibuffer_selected: self.minibuffer_window_selected(),
             windows,
             echo,
+            tab_bar: (self.tab_bar_lines(frame) > 0)
+                .then(|| self.tab_bar(frame).unwrap_or(&[]).iter().map(|s| (s.clone(), self.style_for(&s.faces, dark))).collect()),
             default_style: style(&["default"]),
             fringe_bitmaps: bitmaps,
             images,

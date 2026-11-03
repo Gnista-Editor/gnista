@@ -331,6 +331,12 @@ pub struct Editor {
     pub(crate) fringe_bitmaps: crate::fringe::FringeBitmaps,
     /// Whether `ding` rang the bell since a front end last looked.
     bell: bool,
+    /// Each frame's parameters, as Emacs's `frame-parameter` reads them.
+    pub(crate) frame_parameters: std::collections::HashMap<crate::window::FrameId, std::collections::BTreeMap<String, Value>>,
+    /// Each frame's tab bar, as the last redisplay formatted it, for frames that show one.
+    pub(crate) tab_bars: std::collections::HashMap<crate::window::FrameId, Vec<crate::modeline::ModeLineSegment>>,
+    /// The column of the tab bar the last mouse event was on, if it was on the tab bar.
+    pub(crate) tab_bar_column: Option<usize>,
     /// Window configurations kept for code to put back, by id.
     pub(crate) window_configurations: std::collections::HashMap<u64, crate::window::WindowConfiguration>,
     pub(crate) next_window_configuration: u64,
@@ -466,6 +472,9 @@ impl Editor {
             header_lines: Default::default(),
             fringe_bitmaps: Default::default(),
             bell: false,
+            frame_parameters: Default::default(),
+            tab_bars: Default::default(),
+            tab_bar_column: None,
             window_configurations: Default::default(),
             next_window_configuration: 0,
         };

@@ -214,6 +214,14 @@ impl Default for Mouse {
 
 impl Mouse {
     fn handle(&mut self, ed: &mut Editor, event: ratatui::crossterm::event::MouseEvent, width: u16, height: u16) {
+        // A press on the tab bar is a click on it, at its column.
+        if event.row < ed.tab_bar_lines(ed.selected_frame()) as u16 && !self.clicks.is_down() {
+            if event.kind == MouseEventKind::Down(MouseButton::Left) {
+                let frame = ed.selected_frame();
+                ed.tab_bar_mouse(frame, event.column as usize, Key::new(ember_core::KeyCode::Mouse(ember_core::MouseKind::Click, 1)));
+            }
+            return;
+        }
         let target = ui::mouse_target(ed, width, height, event.column, event.row);
         let shift = event.modifiers.contains(KeyModifiers::SHIFT);
         match event.kind {

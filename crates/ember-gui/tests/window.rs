@@ -116,6 +116,16 @@ fn header_line() {
     harness(ed, Theme::Dark).snapshot("header_line_dark");
 }
 
+#[test]
+fn tab_bar() {
+    let mut ed = sample();
+    let _scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    ed.press("C-x t 2").unwrap();
+    ed.call("switch-to-buffer", vec![ember_core::Arg::Str("notes.txt".into())]).unwrap();
+    ed.type_text("Some notes");
+    harness(ed, Theme::Dark).snapshot("tab_bar_dark");
+}
+
 /// Emacs's face attributes drawn: a coloured wavy underline, an overline,
 /// a box, a coloured strike-through, inverse video, colour names, and a
 /// background that extends to the window's edge.

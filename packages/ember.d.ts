@@ -1648,6 +1648,14 @@ declare global {
        */
       "dired-other-frame": [dirname: string];
       /**
+       * Show a directory in Dired in a new tab.
+       *
+       * @param directory file name
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "dired-other-tab": [directory: string];
+      /**
        * List a directory in another window, as dired does.
        *
        * @param dirname file name
@@ -2017,6 +2025,14 @@ declare global {
        */
       "find-file-other-frame": [file: string];
       /**
+       * Visit a file in a new tab.
+       *
+       * @param file file name
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "find-file-other-tab": [file: string];
+      /**
        * Visit a file in another window and select it.
        *
        * @param file file name
@@ -2024,6 +2040,14 @@ declare global {
        * Defined in packages/window.ts.
        */
       "find-file-other-window": [file: string];
+      /**
+       * Visit a file in a new tab, read-only.
+       *
+       * @param file file name
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "find-file-read-only-other-tab": [file: string];
       /**
        * Visit the place of the first error message.
        *
@@ -5306,6 +5330,14 @@ declare global {
        */
       "switch-to-buffer-other-frame": [buffer: string];
       /**
+       * Show a buffer in a new tab, creating the buffer if there is none.
+       *
+       * @param buffer buffer name
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "switch-to-buffer-other-tab": [buffer: string];
+      /**
        * Show a buffer in another window and select it, creating the buffer if there is none.
        *
        * @param buffer buffer name
@@ -5313,6 +5345,243 @@ declare global {
        * Defined in packages/window.ts.
        */
       "switch-to-buffer-other-window": [buffer: string];
+      /**
+       * Close every tab of the frame but the current one.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-close-other-tabs": [];
+      /**
+       * Close the current tab, or the tab a prefix argument numbers, selecting the one tab-bar-close-tab-select says.
+       *
+       * @param n raw prefix argument
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-close-tab": [n?: PrefixArg];
+      /**
+       * Close the tab of a name.
+       *
+       * @param name text
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-close-tab-by-name": [name: string];
+      /**
+       * Make a new tab showing the same windows as the current one.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-duplicate-tab": [arg?: PrefixArg];
+      /**
+       * Put back the windows the current tab had before, going back in its history.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-history-back": [];
+      /**
+       * Undo going back in the current tab's history.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-history-forward": [];
+      /**
+       * Keep each tab's earlier window configurations: C-c <left> goes back to them and C-c <right> forward again.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-history-mode": [];
+      /**
+       * Show a tab bar across the top of each frame: a row of tabs, each a window configuration, that a click selects. Its "x" closes a tab and "+" opens one. C-<tab> and C-S-<tab> go to the next and previous tabs.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-mode": [];
+      /**
+       * On the tab bar: select the tab clicked, close it if its close button was, or run the button clicked.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-mouse-1": [];
+      /**
+       * Move the current tab one place right, or that many with a prefix argument, left if negative.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-move-tab": [arg?: number];
+      /**
+       * Move the current tab one place left, or that many with a prefix argument.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-move-tab-backward": [arg?: number];
+      /**
+       * Move the current tab to a position on the tab bar, from 1, which a prefix argument gives; negative counts from the end.
+       *
+       * @param to prefix count
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-move-tab-to": [to?: number];
+      /**
+       * Make a new tab, showing what tab-bar-new-tab-choice says, where tab-bar-new-tab-to says; with a prefix argument, that many places right of the current tab, or left if negative.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-new-tab": [arg?: PrefixArg];
+      /**
+       * Make a new tab at a position on the tab bar, from 1, which a prefix argument gives; negative counts from the end.
+       *
+       * @param n raw prefix argument
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-new-tab-to": [n?: PrefixArg];
+      /**
+       * Name the current tab, or the tab a prefix argument numbers. An empty name gives it back its automatic name.
+       *
+       * @param name text
+       * @param n raw prefix argument
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-rename-tab": [name: string, n?: PrefixArg];
+      /**
+       * Select a tab by its number on the tab bar, from 1; negative counts from the end. Bound to a digit, the digit says.
+       *
+       * @param n raw prefix argument
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-select-tab": [n?: PrefixArg];
+      /**
+       * Select the last tab, or the one that many from the end with a prefix argument.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-switch-to-last-tab": [arg?: number];
+      /**
+       * Select the next tab, or the one that many on with a prefix argument, round to the first after the last.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-switch-to-next-tab": [arg?: number];
+      /**
+       * Select the previous tab, or the one that many back with a prefix argument.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-switch-to-prev-tab": [arg?: number];
+      /**
+       * Select the tab used most recently before this one, or the one that many back in recency with a prefix argument.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-switch-to-recent-tab": [arg?: number];
+      /**
+       * Select the tab of a name, the most recent ones offered first; a name no tab has makes a new tab of that name.
+       *
+       * @param name text
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-switch-to-tab": [name: string];
+      /**
+       * Open again the tab closed last.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-undo-close-tab": [];
+      /**
+       * List the tabs other than the current one, most recent first, in a tab of its own, to select or close them.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-switcher": [];
+      /**
+       * Move up a line and take the mark off its tab.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-switcher-backup-unmark": [];
+      /**
+       * Mark the line's tab to be closed by x, and move down; a prefix argument marks that many, up if negative.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-switcher-delete": [arg?: number];
+      /**
+       * Mark the line's tab to be closed by x, and move up.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-switcher-delete-backwards": [arg?: number];
+      /**
+       * Close the tabs marked with d.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-switcher-execute": [];
+      /**
+       * The tabs other than the current one, most recent first: RET selects the tab on the line, d marks it to close and x closes those marked, u unmarks, q goes back.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-switcher-mode": [];
+      /**
+       * Move to the next tab's line.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-switcher-next-line": [arg?: number];
+      /**
+       * Move to the previous tab's line.
+       *
+       * @param arg prefix count
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-switcher-prev-line": [arg?: number];
+      /**
+       * Select the line's tab, closing the switcher's own.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-switcher-select": [];
+      /**
+       * Take the mark off the line's tab, and move down, or up with a prefix argument.
+       *
+       * @param backup raw prefix argument
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-switcher-unmark": [backup?: PrefixArg];
       /**
        * Insert whitespace up to the next tab stop, every tab-width columns.
        *
@@ -8398,6 +8667,148 @@ declare global {
        */
       "tab-always-indent": Value;
       /**
+       * Whether tabs are made one width, wide enough to fill the tab bar within tab-bar-auto-width-max.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-auto-width": Value;
+      /**
+       * The widest tabs auto-width makes: in pixels on a graphical display, the first, and in columns on a terminal.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-auto-width-max": Value;
+      /**
+       * The narrowest tabs auto-width makes, as tab-bar-auto-width-max.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-auto-width-min": Value;
+      /**
+       * The button that goes back in the tab's history.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-back-button": Value;
+      /**
+       * The button that closes a tab.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-close-button": Value;
+      /**
+       * Which tabs show their close button "x": t all, "selected", "non-selected", or nil none.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-close-button-show": Value;
+      /**
+       * What closing the last tab does: nil nothing, "delete-frame", or "tab-bar-mode-disable".
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-close-last-tab-choice": Value;
+      /**
+       * Which tab is selected after closing the current one: "left", "right" or "recent".
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-close-tab-select": Value;
+      /**
+       * What the tab bar shows, in order: functions giving its items, such as tab-bar-format-tabs.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-format": Value;
+      /**
+       * The button that goes forward in the tab's history.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-forward-button": Value;
+      /**
+       * How many window configurations tab-bar-history-mode keeps for each tab.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-history-limit": Value;
+      /**
+       * Whether Tab-Bar-History mode is on. Use the command tab-bar-history-mode to change it.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-history-mode": Value;
+      /**
+       * Keymap tab-bar-history-mode-map.
+       */
+      "tab-bar-history-mode-map": Value;
+      /**
+       * Whether Tab-Bar mode is on. Use the command tab-bar-mode to change it.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-mode": Value;
+      /**
+       * Keymap tab-bar-mode-map.
+       */
+      "tab-bar-mode-map": Value;
+      /**
+       * The button that opens a new tab.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-new-button": Value;
+      /**
+       * What a new tab shows: t the current buffer, "window" the selected window, "clone" a copy of the current tab, a buffer name or file, or a function giving a buffer.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-new-tab-choice": Value;
+      /**
+       * Where a new tab goes: "leftmost", "left", "right" or "rightmost".
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-new-tab-to": Value;
+      /**
+       * What goes between tabs: nil for a space, or a bar on a terminal.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-separator": Value;
+      /**
+       * When the tab bar shows: t always, once tab-bar-mode is on; a number, when there are more tabs than that; nil never.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-show": Value;
+      /**
+       * Whether each tab shows its number before its name, to select it by.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-tab-hints": Value;
+      /**
+       * The function that names a tab whose name was not given, called with no arguments.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-tab-name-function": Value;
+      /**
+       * How long tab-bar-tab-name-truncated lets a name be.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-tab-name-truncated-max": Value;
+      /**
+       * Keymap tab-prefix-map.
+       */
+      "tab-prefix-map": Value;
+      /**
+       * Keymap tab-switcher-mode-map.
+       */
+      "tab-switcher-mode-map": Value;
+      /**
        * How many columns apart tab stops are, for showing tab characters.
        */
       "tab-width": Value;
@@ -9586,6 +9997,24 @@ declare global {
        */
       "success": FaceAttributes;
       /**
+       * The tab bar, across the top of a frame.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar": FaceAttributes;
+      /**
+       * The selected tab on the tab bar.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-tab": FaceAttributes;
+      /**
+       * The tabs on the tab bar that are not selected.
+       *
+       * Defined in packages/tab-bar.ts.
+       */
+      "tab-bar-tab-inactive": FaceAttributes;
+      /**
        * The column titles of a tabulated list shown as its first line.
        *
        * Defined in packages/tabulated-list.ts.
@@ -10146,6 +10575,46 @@ declare global {
        */
       "special-mode-hook": Value;
       /**
+       * Run after Tab-Bar-History mode is turned on or off.
+       */
+      "tab-bar-history-mode-hook": Value;
+      /**
+       * Run after Tab-Bar-History mode is turned off.
+       */
+      "tab-bar-history-mode-off-hook": Value;
+      /**
+       * Run after Tab-Bar-History mode is turned on.
+       */
+      "tab-bar-history-mode-on-hook": Value;
+      /**
+       * Run after Tab-Bar mode is turned on or off.
+       */
+      "tab-bar-mode-hook": Value;
+      /**
+       * Run after Tab-Bar mode is turned off.
+       */
+      "tab-bar-mode-off-hook": Value;
+      /**
+       * Run after Tab-Bar mode is turned on.
+       */
+      "tab-bar-mode-on-hook": Value;
+      /**
+       * Functions called with the new tab's name after a tab is made.
+       */
+      "tab-bar-tab-post-open-functions": Value;
+      /**
+       * Functions called after selecting a tab, with the names of the tab left and the tab selected.
+       */
+      "tab-bar-tab-post-select-functions": Value;
+      /**
+       * Functions called with the name of a tab about to be closed, and whether it is the frame's only one.
+       */
+      "tab-bar-tab-pre-close-functions": Value;
+      /**
+       * Run after entering Window Configurations mode, after the hooks of the modes it is built on.
+       */
+      "tab-switcher-mode-hook": Value;
+      /**
        * Run after entering Tabulated mode, after the hooks of the modes it is built on.
        */
       "tabulated-list-mode-hook": Value;
@@ -10577,6 +11046,29 @@ declare global {
     /** Make a frame the selected one, as select-frame does. */
     function selectFrame(frame: number): void;
     function selectedFrame(): number;
+    /**
+     * A frame's parameter, the selected frame's by default, as frame-parameter:
+     * one set with setFrameParameter, or tab-bar-lines.
+     */
+    function frameParameter(frame: number | undefined, name: string): Value | undefined;
+    /**
+     * Set a frame's parameter, the selected frame's by default, as
+     * set-frame-parameter. tab-bar-lines, 0 or 1, hides or shows its tab bar,
+     * which shows tab-bar-line, a mode line construct.
+     */
+    function setFrameParameter(frame: number | undefined, name: string, value: Value): void;
+    /**
+     * Whether the display shows images and fonts of many sizes, as a graphical
+     * one does, rather than a terminal's cells, as display-graphic-p.
+     */
+    function displayGraphicP(): boolean;
+    /**
+     * The width of a character of the frame's default font, in the front
+     * end's units: pixels, or 1 on a terminal, as frame-char-width.
+     */
+    function frameCharWidth(): number;
+    /** A frame's width in columns, the selected frame's by default, as frame-width. */
+    function frameWidth(frame?: number): number;
     /** The frames, newest first, as frame-list orders them. */
     function frameList(): number[];
     /** Make windows the same size as their neighbours, as balance-windows does. */
@@ -11464,7 +11956,7 @@ declare global {
      * commands read their event.
      */
     function lastMouseEvent():
-      | { window: number; position?: number; start?: { window: number; position?: number } }
+      | { window: number; position?: number; start?: { window: number; position?: number }; tabBar?: number }
       | undefined;
     /** The name of the buffer a window shows, the selected one by default. */
     function windowBuffer(window?: number): string | undefined;

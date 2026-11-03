@@ -24,6 +24,9 @@ pub enum KeyCode {
     WheelUp,
     /// The mouse wheel or a trackpad scrolling towards the end of the buffer.
     WheelDown,
+    /// What a click on the tab bar comes after, as Emacs's `tab-bar`
+    /// pseudo-event: `<tab-bar> <mouse-1>`.
+    TabBar,
     /// A mouse button, 1 to 5, as Emacs names its events: `<down-mouse-1>`
     /// when pressed, `<mouse-1>` when released where it was pressed,
     /// `<drag-mouse-1>` after moving, and `<double-mouse-1>` and
@@ -156,6 +159,7 @@ impl Key {
             "<prior>" => KeyCode::PageUp,
             "<next>" => KeyCode::PageDown,
             "<wheel-up>" => KeyCode::WheelUp,
+            "<tab-bar>" => KeyCode::TabBar,
             "<wheel-down>" => KeyCode::WheelDown,
             _ if function_key(rest).is_some() => KeyCode::F(function_key(rest).unwrap_or_default()),
             _ if mouse_event(rest).is_some() => mouse_event(rest)?,
@@ -209,6 +213,7 @@ impl fmt::Display for Key {
             KeyCode::F(n) => return write!(f, "<f{n}>"),
             KeyCode::Mouse(kind, n) => return write!(f, "<{}mouse-{n}>", kind.prefix()),
             KeyCode::WheelUp => "<wheel-up>",
+            KeyCode::TabBar => "<tab-bar>",
             KeyCode::WheelDown => "<wheel-down>",
         };
         f.write_str(name)
@@ -232,7 +237,7 @@ mod tests {
 
     #[test]
     fn parses_and_prints_emacs_notation() {
-        for s in ["a", "C-x", "M-f", "C-M-f", "RET", "SPC", "M-<", "M->", "C--", "<left>", "M-DEL", "S-<right>", "C-S-f", "C-M-S-<up>", "<wheel-down>", "C-<wheel-up>", "<f3>", "S-<f12>", "<mouse-1>", "<down-mouse-1>", "<drag-mouse-1>", "S-<mouse-1>", "<double-mouse-3>", "<triple-mouse-1>"] {
+        for s in ["a", "C-x", "M-f", "C-M-f", "RET", "SPC", "M-<", "M->", "C--", "<left>", "M-DEL", "S-<right>", "C-S-f", "C-M-S-<up>", "<wheel-down>", "C-<wheel-up>", "<f3>", "S-<f12>", "<mouse-1>", "<down-mouse-1>", "<drag-mouse-1>", "S-<mouse-1>", "<double-mouse-3>", "<triple-mouse-1>", "<tab-bar>"] {
             let key = Key::parse(s).unwrap_or_else(|| panic!("failed to parse {s}"));
             assert_eq!(key.to_string(), s);
         }

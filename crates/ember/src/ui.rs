@@ -27,7 +27,8 @@ struct WindowArea {
 /// Divides the screen above the echo area among the windows, as the editor
 /// says they divide it.
 fn window_areas(ed: &Editor, width: u16, height: u16) -> Vec<WindowArea> {
-    areas_of(ed.window_tree(), ed.mini_window_lines(), &|id, h| ed.window_wants_header_line(id, h), &|id| ed.window_margins(id), width, height)
+    let tab_lines = ed.tab_bar_lines(ed.selected_frame()) as u16;
+    areas_of(ed.window_tree(), tab_lines, ed.mini_window_lines(), &|id, h| ed.window_wants_header_line(id, h), &|id| ed.window_margins(id), width, height)
 }
 
 /// As [`window_areas`], as a frame description says.
@@ -35,20 +36,22 @@ fn described_areas(fd: &FrameDescription, width: u16, height: u16) -> Vec<Window
     let window = |id: WindowId| fd.windows.iter().find(|w| w.id == id);
     let header = |id, h: usize| h > 2 && window(id).is_some_and(|w| w.header_line.is_some());
     let margins = |id| window(id).map_or((0, 0), |w| w.margins);
-    areas_of(&fd.tree, fd.echo_lines, &header, &margins, width, height)
+    areas_of(&fd.tree, u16::from(fd.tab_bar.is_some()), fd.echo_lines, &header, &margins, width, height)
 }
 
 fn areas_of(
     tree: &WindowTree,
+    tab_lines: u16,
     echo_lines: usize,
     wants_header: &dyn Fn(WindowId, usize) -> bool,
     margins_of: &dyn Fn(WindowId) -> (usize, usize),
     width: u16,
     height: u16,
 ) -> Vec<WindowArea> {
-    let height = height.saturating_sub(echo_lines as u16).max(2);
+    // The tab bar takes the top lines, the echo area the bottom ones.
+    let height = height.saturating_sub(echo_lines as u16 + tab_lines).max(2);
     tree
-        .rects(0.0, 0.0, width as f32, height as f32, (1.0, 1.0))
+        .rects(0.0, tab_lines as f32, width as f32, height as f32, (1.0, 1.0))
         .into_iter()
         .map(|r| {
             let (x, y, w, h) = (r.x as u16, r.y as u16, (r.width as u16).max(1), (r.height as u16).max(2));
@@ -76,7 +79,8 @@ fn areas_of(
 pub fn layout_windows(ed: &mut Editor, width: u16, height: u16) {
     ed.set_minibuffer_width(width as usize);
     let echo = ed.mini_window_height(height as usize) as u16;
-    ed.set_frame_size(width as usize, height.saturating_sub(echo).max(2) as usize);
+    let tab_lines = ed.tab_bar_lines(ed.selected_frame()) as u16;
+    ed.set_frame_size(width as usize, height.saturating_sub(echo + tab_lines).max(2) as usize);
     for area in window_areas(ed, width, height) {
         ed.set_window_size(area.id, area.text.width as usize, area.text.height as usize);
     }
@@ -88,6 +92,9 @@ pub fn draw(frame: &mut Frame, fd: &FrameDescription) {
     let echo = (fd.echo_lines as u16).min(screen.height);
     let echo_area = Rect::new(screen.x, screen.bottom().saturating_sub(echo), screen.width, echo);
     let areas = described_areas(fd, screen.width, screen.height);
+    if let Some(tab_bar) = &fd.tab_bar {
+        draw_tab_bar(frame, tab_bar, Rect::new(screen.x, screen.y, screen.width, 1.min(screen.height)));
+    }
     let mut window_cursor = Position::new(0, 0);
     let mut cursor_shown = false;
     for w in &fd.windows {
@@ -399,6 +406,28 @@ fn draw_mode_line(frame: &mut Frame, w: &WindowDescription, area: Rect) {
     frame.render_widget(Paragraph::new(text).style(style), area);
 }
 
+/// Draws a frame's tab bar, as the core formatted its `tab-bar-line`: in
+/// reverse video, as Emacs's tab-bar face is on a terminal, the current tab
+/// (tab-bar-tab) standing out in bold and plain video.
+fn draw_tab_bar(frame: &mut Frame, tab_bar: &[(ember_core::ModeLineSegment, ember_core::Style)], area: Rect) {
+    let base = Style::new().add_modifier(Modifier::REVERSED);
+    let spans: Vec<Span> = tab_bar
+        .iter()
+        .map(|(segment, _)| {
+            let faces: Vec<&str> = segment.faces.iter().map(String::as_str).collect();
+            let style = if faces.contains(&"tab-bar-tab") {
+                Style::new().add_modifier(Modifier::BOLD)
+            } else if faces.contains(&"shadow") {
+                base.add_modifier(Modifier::DIM)
+            } else {
+                base
+            };
+            Span::styled(segment.text.clone(), style)
+        })
+        .collect();
+    frame.render_widget(Paragraph::new(Line::from(spans)).style(base), area);
+}
+
 /// Draws a window's header line, as the core formatted `header-line-format`:
 /// in reverse video, as Emacs's header-line face is on a terminal, its bold
 /// faces bold.
@@ -605,6 +634,23 @@ mod tests {
         assert_eq!(ed.viewport_height(), 3, "the header line and mode line take two of the five lines");
         // A click on the header line is over no text.
         assert_eq!(mouse_target(&ed, 30, 6, 2, 0).map(|t| t.1), Some(None));
+        assert_eq!(mouse_target(&ed, 30, 6, 1, 1).map(|t| t.1), Some(Some(1)));
+    }
+
+    #[test]
+    fn a_tab_bar_takes_the_top_line_of_the_frame() {
+        let mut ed = Editor::new();
+        ed.type_text("one\ntwo");
+        let frame = ed.selected_frame();
+        ed.set_frame_parameter(frame, "tab-bar-lines", ember_core::Value::Number(1.0)).unwrap();
+        ed.set_frame_parameter(frame, "tab-bar-line", ember_core::Value::Str("|*scratch* x| + ".into())).unwrap();
+        let rows = render(&mut ed, 30, 6);
+        assert_eq!(rows[0], "|*scratch* x| +");
+        assert_eq!(rows[1], "one");
+        assert!(rows[4].starts_with("U:**-  *scratch*"), "{}", rows[4]);
+        assert_eq!(ed.viewport_height(), 3, "the tab bar and mode line take two of the five lines");
+        // The tab bar is no window's.
+        assert_eq!(mouse_target(&ed, 30, 6, 2, 0), None);
         assert_eq!(mouse_target(&ed, 30, 6, 1, 1).map(|t| t.1), Some(Some(1)));
     }
 

@@ -61,6 +61,7 @@ What works today, in a terminal (`ember`) or a window (`ember-gui`). Where it di
 - Invisible text and folding (`outline-mode`, `outline-minor-mode`), and hiding blocks of code and comments (`hs-minor-mode`: `C-c @ C-h`, `C-c @ C-s`, `C-c @ C-c`, `C-c @ C-M-h`, `C-c @ C-l`).
 - Org mode (`org-mode`: folding, structure editing, TODO states, tags, checkboxes, timestamps, links, tables, properties (`C-c C-x p`), refiling (`C-c C-w`), narrowing (`C-x n s`), blocks (`C-c C-,`, and `<s TAB` once `ember.require("org-tempo")`), the week agenda and TODO list (`org-agenda`), and capture (`org-capture`)).
 - Narrowing (`C-x n n`, `C-x n w`).
+- Tabs (`tab-bar-mode`: `C-x t 2`, `C-x t o`, `C-<tab>`, `C-x t 0`, `C-x t u`, `C-x t r`, `C-x t m`, `C-x t RET`, `C-x t b`, `C-x t f`, `C-x t d`, `tab-list`, clicks on the tab bar, and `tab-bar-history-mode` with `C-c <left>` and `C-c <right>`).
 - Indirect buffers (`C-x 4 c`, and Org's `C-c C-x b` for a subtree).
 - Fields (C-a and the word commands stop at a prompt's edge).
 - Tree-sitter highlighting (`rust-ts-mode`, `js-ts-mode`, `json-ts-mode`, `python-ts-mode`).

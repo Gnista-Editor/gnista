@@ -119,6 +119,21 @@ impl Editor {
         }
         self.mode_lines = lines;
         self.header_lines = headers;
+        // Each frame's tab bar, formatted for its selected window.
+        let mut bars = HashMap::new();
+        for frame in self.frame_list() {
+            if self.tab_bar_lines(frame) == 0 {
+                continue;
+            }
+            let (Some(format), Some(id)) = (self.frame_parameter(frame, "tab-bar-line"), self.frame_selected_window(frame)) else { continue };
+            let Some(view) = self.frame_windows(frame).into_iter().find(|v| v.id == id).map(|v| (v.buffer.id(), v.point, v.top_line)) else { continue };
+            let Some(index) = self.buffer_with_id(view.0) else { continue };
+            let mut f = self.formatting(id, view.1, view.2);
+            f.width = self.frame_width(frame);
+            self.with_current_buffer(index, |ed| ed.mode_line_element(&mut f, &format, &[], 0, false));
+            bars.insert(frame, f.out);
+        }
+        self.tab_bars = bars;
     }
 
     /// What formatting a window's mode line starts from. %- fills the

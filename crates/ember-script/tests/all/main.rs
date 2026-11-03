@@ -48,6 +48,7 @@ mod scripts;
 mod search;
 mod sessions;
 mod symbols;
+mod tab_bar;
 mod tabulated_list;
 mod textprop;
 mod treesit;

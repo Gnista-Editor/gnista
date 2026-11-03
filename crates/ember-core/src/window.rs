@@ -501,6 +501,8 @@ impl Editor {
             self.forget_window(window);
         }
         self.frame_order.retain(|f| *f != id);
+        self.frame_parameters.remove(&id);
+        self.tab_bars.remove(&id);
         Ok(())
     }
 
@@ -1417,7 +1419,74 @@ impl Editor {
     /// to, which reads the event with [`Editor::last_mouse_event`].
     pub fn mouse(&mut self, key: crate::key::Key, event: MouseEvent) {
         self.last_mouse = Some(event);
+        self.tab_bar_column = None;
         self.handle_key(key);
+    }
+
+    /// Feeds a click of a mouse button, such as `<mouse-1>`, on a frame's
+    /// tab bar `column` columns from its left, as Emacs's
+    /// `<tab-bar> <mouse-1>`: the frame is selected, and the command bound
+    /// to it reads the column as the last mouse event's `tab_bar`.
+    pub fn tab_bar_mouse(&mut self, frame: FrameId, column: usize, key: crate::key::Key) {
+        if self.select_frame(frame).is_err() {
+            return;
+        }
+        self.last_mouse = Some(MouseEvent { window: self.selected_window, position: None, start: None });
+        self.tab_bar_column = Some(column);
+        self.handle_key(crate::key::Key::new(crate::key::KeyCode::TabBar));
+        self.handle_key(key);
+    }
+
+    /// The tab bar column the last mouse event was on, if it was on a tab bar.
+    pub fn last_mouse_tab_bar_column(&self) -> Option<usize> {
+        self.tab_bar_column
+    }
+
+    /// A frame's parameter, as Emacs's `frame-parameter`: one code set, or
+    /// `tab-bar-lines`, 0 unless set.
+    pub fn frame_parameter(&self, frame: FrameId, name: &str) -> Option<Value> {
+        self.frame_parameters.get(&frame).and_then(|p| p.get(name)).cloned()
+    }
+
+    /// Sets a frame's parameter, as Emacs's `set-frame-parameter`. Setting
+    /// `tab-bar-lines` shows or hides the frame's tab bar, which takes
+    /// lines from its windows.
+    pub fn set_frame_parameter(&mut self, frame: FrameId, name: &str, value: Value) -> Result<()> {
+        if !self.frame_order.contains(&frame) {
+            return Err(Error::new("No such frame"));
+        }
+        self.frame_parameters.entry(frame).or_default().insert(name.to_string(), value);
+        Ok(())
+    }
+
+    /// How many lines a frame's tab bar takes: its `tab-bar-lines`, 0 or 1.
+    pub fn tab_bar_lines(&self, frame: FrameId) -> usize {
+        match self.frame_parameter(frame, "tab-bar-lines") {
+            Some(Value::Number(n)) if n >= 1.0 => 1,
+            _ => 0,
+        }
+    }
+
+    /// A frame's tab bar as the last redisplay formatted it, from its
+    /// `tab-bar-line` parameter, a mode line construct, if it shows one.
+    pub fn tab_bar(&self, frame: FrameId) -> Option<&[crate::modeline::ModeLineSegment]> {
+        self.tab_bars.get(&frame).map(Vec::as_slice)
+    }
+
+    /// A frame's selected window.
+    pub fn frame_selected_window(&self, frame: FrameId) -> Option<WindowId> {
+        if frame == self.selected_frame {
+            return Some(self.selected_window);
+        }
+        self.other_frames.iter().find(|f| f.id == frame).map(|f| f.selected_window)
+    }
+
+    /// A frame's width in columns, as Emacs's `frame-width`.
+    pub fn frame_width(&self, frame: FrameId) -> usize {
+        if frame == self.selected_frame {
+            return self.frame_cells().0;
+        }
+        self.other_frames.iter().find(|f| f.id == frame).and_then(|f| f.frame_size).map_or(self.frame_cells().0, |s| s.0)
     }
 
     pub fn last_mouse_event(&self) -> Option<MouseEvent> {

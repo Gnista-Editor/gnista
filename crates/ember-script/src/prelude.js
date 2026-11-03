@@ -711,7 +711,7 @@
       const event = native.lastMouseEvent();
       if (event === null || event === undefined) return undefined;
       const start = event.start && { window: event.start.window, position: event.start.position ?? undefined };
-      return { window: event.window, position: event.position ?? undefined, start };
+      return { window: event.window, position: event.position ?? undefined, start, tabBar: event.tabBar ?? undefined };
     },
     windowBuffer: (window) => native.windowBuffer(window ?? native.selectedWindow()) ?? undefined,
     makeFrame: (buffer) => native.makeFrame(buffer === undefined || buffer === null ? null : nameOf(buffer)),

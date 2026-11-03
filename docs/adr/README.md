@@ -56,3 +56,4 @@ One record per decision, in the order they were made; a later one can change an 
 - [0052](0052-faces-in-installed-fonts.md) Faces in installed fonts
 - [0053](0053-prompts-that-return-their-answer.md) Prompts that return their answer
 - [0054](0054-v8-as-the-script-engine.md) V8 as the script engine
+- [0055](0055-require-frame-parameters-and-the-tab-bar.md) Require, frame parameters and the tab bar

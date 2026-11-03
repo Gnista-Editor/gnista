@@ -9,7 +9,7 @@ use ember_core::display::{Glyph, cursor_glyph};
 use ember_core::driver::{Driver, Input as DriverInput};
 use ember_core::frame_description::{Echo, FrameDescription, RowDescription, WindowDescription};
 use ember_core::layout::FontSpec;
-use ember_core::{Editor, FrameId, Key, Row, Style, WindowId};
+use ember_core::{Editor, FrameId, Key, ModeLineSegment, Row, Style, WindowId};
 use egui::text::{CCursor, LayoutJob, TextFormat};
 use egui::{
     Color32, FontFamily, FontId, Galley, Painter, PointerButton, Pos2, Rect, Stroke, StrokeKind, Ui,
@@ -581,6 +581,16 @@ impl EmberApp {
 /// with the editor: see [`EmberApp::pointer`].
 #[allow(clippy::too_many_arguments)]
 fn pointer(ed: &mut Editor, mouse: &mut Mouse, pos: Pos2, pressed: Option<bool>, shift: bool, layout: &Layout, time: f64, offset: (WindowId, f32)) {
+    // A press on the tab bar is a click on it, at the column under it.
+    if let Some(rect) = layout.tab_rect.filter(|r| r.contains(pos))
+        && !mouse.clicks.is_down()
+    {
+        if pressed == Some(true) {
+            let column = ((pos.x - rect.left() - PAD_X) / layout.m.char_width).max(0.0) as usize;
+            ed.tab_bar_mouse(layout.frame, column, ember_core::Key::new(ember_core::KeyCode::Mouse(ember_core::MouseKind::Click, 1)));
+        }
+        return;
+    }
     if resize_drag(ed, mouse, pos, pressed, layout) {
         return;
     }
@@ -700,7 +710,10 @@ fn apply_sizes(ed: &mut Editor, sizes: &Sizes) {
 /// with its mode line, and the echo area across the bottom.
 #[derive(Clone)]
 struct Layout {
+    frame: FrameId,
     rect: Rect,
+    /// The tab bar across the top, when the frame shows one.
+    tab_rect: Option<Rect>,
     windows: Vec<WindowLayout>,
     echo_rect: Rect,
     m: Metrics,
@@ -746,7 +759,8 @@ impl Layout {
         // lines, such as a vertical list of completions.
         let echo_lines = if frame == ed.selected_frame() { ed.mini_window_height(frame_lines) } else { 1 };
         let tree = ed.frame_tree(frame).cloned().unwrap_or(ember_core::WindowTree::Leaf(0));
-        let layout = Layout::compute(rect, m, &tree, echo_lines, frame_lines, &|id, lines| ed.window_wants_header_line(id, lines), &|id| ed.window_margins(id));
+        let tab_bar = ed.tab_bar_lines(frame) > 0;
+        let layout = Layout::compute(frame, rect, m, &tree, tab_bar, echo_lines, frame_lines, &|id, lines| ed.window_wants_header_line(id, lines), &|id| ed.window_margins(id));
         // The frame in cells, which resized windows' sizes count in.
         if frame == ed.selected_frame() {
             ed.set_frame_size(layout.frame_cells.0, layout.frame_cells.1);
@@ -764,9 +778,11 @@ impl Layout {
         let window = |id: WindowId| fd.windows.iter().find(|w| w.id == id);
         let echo_lines = if fd.selected { fd.echo_lines.min(frame_lines.saturating_sub(2).max(1)) } else { 1 };
         Layout::compute(
+            fd.frame,
             rect,
             m,
             &fd.tree,
+            fd.tab_bar.is_some(),
             echo_lines,
             frame_lines,
             &|id, lines| lines > 2 && window(id).is_some_and(|w| w.header_line.is_some()),
@@ -776,9 +792,11 @@ impl Layout {
 
     #[allow(clippy::too_many_arguments)]
     fn compute(
+        frame: FrameId,
         rect: Rect,
         m: Metrics,
         tree: &ember_core::WindowTree,
+        tab_bar: bool,
         echo_lines: usize,
         frame_lines: usize,
         wants_header: &dyn Fn(WindowId, usize) -> bool,
@@ -787,9 +805,12 @@ impl Layout {
         let bar_height = m.line_height + 2.0 * BAR_PAD;
         let echo_height = bar_height + (echo_lines - 1) as f32 * m.line_height;
         let echo_rect = Rect::from_min_max(pos2(rect.left(), rect.bottom() - echo_height), rect.max);
-        let frame_height = echo_rect.top() - rect.top();
+        // The tab bar takes a bar's height from the top, as the mode line does at a window's foot.
+        let tab_rect = tab_bar.then(|| Rect::from_min_size(rect.min, vec2(rect.width(), bar_height)));
+        let windows_top = tab_rect.map_or(rect.top(), |r| r.bottom());
+        let frame_height = echo_rect.top() - windows_top;
         let windows: Vec<WindowLayout> = tree
-            .rects(rect.left(), rect.top(), rect.width(), frame_height, (m.char_width, m.line_height))
+            .rects(rect.left(), windows_top, rect.width(), frame_height, (m.char_width, m.line_height))
             .into_iter()
             .map(|r| {
                 let rect = Rect::from_min_size(pos2(r.x, r.y), vec2(r.width, r.height));
@@ -816,7 +837,7 @@ impl Layout {
             })
             .collect();
         let frame_cells = ((rect.width() / m.char_width) as usize, (frame_height / m.line_height) as usize);
-        Layout { rect, windows, echo_rect, m, frame_cells, frame_lines }
+        Layout { frame, rect, tab_rect, windows, echo_rect, m, frame_cells, frame_lines }
     }
 
     /// What it tells the editor, the frame's size too if it is selected.
@@ -836,6 +857,9 @@ fn draw(ui: &Ui, fd: &FrameDescription, layout: &Layout, t: Tokens, focused: boo
     painter.rect_filled(layout.rect, 0.0, t.bg);
     let m = &layout.m;
     let in_minibuffer = fd.minibuffer_selected;
+    if let (Some(rect), Some(tab_bar)) = (layout.tab_rect, &fd.tab_bar) {
+        draw_tab_bar(&painter, tab_bar, rect, m, t);
+    }
     for window in &fd.windows {
         let Some(w) = layout.windows.iter().find(|w| w.id == window.id) else { continue };
         // Other windows show a hollow cursor, as Emacs's do.
@@ -1414,6 +1438,32 @@ fn draw_mode_line(painter: &Painter, window: &WindowDescription, rect: Rect, m: 
             Some("mode-line-emphasis") => text_format(m, t.accent_ink),
             Some("shadow") => text_format(m, t.faint),
             Some(_) => face_format(style, &default_style, m, t),
+        };
+        job.append(&segment.text, 0.0, format);
+    }
+    let galley = painter.layout_job(job);
+    let y = rect.center().y - galley.size().y / 2.0;
+    painter.with_clip_rect(rect).galley(pos2(rect.left() + PAD_X, y), galley, t.ink);
+}
+
+/// Draws a frame's tab bar, as the core formatted its `tab-bar-line`: a bar
+/// like the header line's, the current tab a well in strong ink, the others
+/// in muted ink, as tab-bar-tab and tab-bar-tab-inactive set them apart.
+fn draw_tab_bar(painter: &Painter, tab_bar: &[(ModeLineSegment, Style)], rect: Rect, m: &Metrics, t: Tokens) {
+    painter.rect_filled(rect, 0.0, t.bg);
+    painter.hline(rect.x_range(), rect.bottom() - 0.5, Stroke::new(1.0, t.line));
+    let default_style = Style::default();
+    let mut job = LayoutJob::default();
+    for (segment, style) in tab_bar {
+        let faces: Vec<&str> = segment.faces.iter().map(String::as_str).collect();
+        let format = if faces.contains(&"shadow") {
+            text_format(m, t.faint)
+        } else if faces.contains(&"tab-bar-tab") {
+            TextFormat { background: t.sunken, ..text_format(m, t.ink_strong) }
+        } else if faces.contains(&"tab-bar-tab-inactive") || faces.is_empty() || faces == ["tab-bar"] {
+            text_format(m, t.muted)
+        } else {
+            face_format(style, &default_style, m, t)
         };
         job.append(&segment.text, 0.0, format);
     }

@@ -76,7 +76,7 @@ thread_local! {
 fn prepare_require(ed: &Editor, feature: &str) -> bool {
     let dirs = match ed.variable("load-path") {
         Some(EditorValue::List(dirs)) => {
-            dirs.iter().filter_map(|d| d.as_str().map(|d| expand_file_name(d))).collect()
+            dirs.iter().filter_map(|d| d.as_str().map(expand_file_name)).collect()
         }
         _ => Vec::new(),
     };
@@ -122,6 +122,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/repeat.ts", include_str!("../../../packages/repeat.ts")),
     ("packages/kmacro.ts", include_str!("../../../packages/kmacro.ts")),
     ("packages/window.ts", include_str!("../../../packages/window.ts")),
+    ("packages/tab-bar.ts", include_str!("../../../packages/tab-bar.ts")),
     ("packages/mouse.ts", include_str!("../../../packages/mouse.ts")),
     ("packages/isearch.ts", include_str!("../../../packages/isearch.ts")),
     ("packages/icomplete.ts", include_str!("../../../packages/icomplete.ts")),

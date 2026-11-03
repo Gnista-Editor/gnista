@@ -818,7 +818,7 @@ const API: &str = r##"
    * commands read their event.
    */
   function lastMouseEvent():
-    | { window: number; position?: number; start?: { window: number; position?: number } }
+    | { window: number; position?: number; start?: { window: number; position?: number }; tabBar?: number }
     | undefined;
   /** The name of the buffer a window shows, the selected one by default. */
   function windowBuffer(window?: number): string | undefined;
