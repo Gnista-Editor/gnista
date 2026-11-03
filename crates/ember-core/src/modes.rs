@@ -137,6 +137,27 @@ impl Editor {
         maps
     }
 
+    /// The keys that can follow `prefix` in the active keymaps, each with
+    /// the command it runs or `None` for another prefix, the first map's
+    /// binding of a key winning, in key order: what which-key lists.
+    pub fn prefix_bindings(&self, prefix: &[Key]) -> Vec<(Key, Option<String>)> {
+        let mut out: std::collections::BTreeMap<Key, Option<String>> = std::collections::BTreeMap::new();
+        for map in self.current_active_maps() {
+            let Some(crate::keymap::Binding::Keymap(sub)) = self.keymaps.binding_of(map, prefix) else { continue };
+            for (key, binding) in self.keymaps.direct_bindings(sub) {
+                let shown = match binding {
+                    crate::keymap::Binding::Command(c) => Some(Some(c)),
+                    crate::keymap::Binding::Keys(_) => Some(Some("Keyboard Macro".to_string())),
+                    crate::keymap::Binding::Keymap(_) => Some(None),
+                    crate::keymap::Binding::Nil => None,
+                };
+                // nil in an earlier map hides the key from later ones too.
+                out.entry(key).or_insert_with(|| shown.clone().unwrap_or(Some(String::new())));
+            }
+        }
+        out.into_iter().filter(|(_, c)| c.as_deref() != Some("")).collect()
+    }
+
     /// The command that runs when keys run `command`: the first remapping of
     /// it in the active keymaps, in the order keys are looked up, or `None`.
     pub fn command_remapping(&self, command: &str) -> Option<String> {

@@ -78,7 +78,9 @@ fn lock_info() -> String {
 }
 
 /// Whether a process is running here.
-fn alive(pid: i64) -> bool {
+/// Whether a process of this machine is running, as Emacs's
+/// `process-attributes` finds one.
+pub fn alive(pid: i64) -> bool {
     #[cfg(unix)]
     {
         let Ok(pid) = libc::pid_t::try_from(pid) else { return false };

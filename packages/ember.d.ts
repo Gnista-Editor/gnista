@@ -1347,6 +1347,63 @@ declare global {
        */
       "describe-variable": [variable: string];
       /**
+       * Save the desktop where it is, if desktop-save-mode would, then read the one in another directory.
+       *
+       * @param dirname file name
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-change-dir": [dirname: string];
+      /**
+       * Kill the buffers the desktop holds and empty its histories, leaving *scratch* and *Messages*.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-clear": [];
+      /**
+       * Read the desktop from the first directory of desktop-path that has one, or with a prefix argument from one asked for.
+       *
+       * @param ask raw prefix argument
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-read": [ask?: PrefixArg];
+      /**
+       * Delete the desktop file and stop saving the desktop until one is saved again.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-remove": [];
+      /**
+       * Put the desktop back as it was last read or saved.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-revert": [];
+      /**
+       * Save the desktop in a directory, which then is where it is saved again; with a prefix argument, release its lock too.
+       *
+       * @param dirname file name
+       * @param release raw prefix argument
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-save": [dirname: string, release?: PrefixArg];
+      /**
+       * Save the desktop in desktop-dirname, or ask for a directory if it has none.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-save-in-desktop-dir": [];
+      /**
+       * Save the desktop, the buffers visiting files with their modes and places, some global variables and the windows, when Ember exits and while it is idle, and read it back when Ember starts. M-x desktop-save saves it now, asking where the first time; M-x desktop-read reads it.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-save-mode": [];
+      /**
        * Compare two files with diff, showing the differences in *Diff*. The new file is this buffer's by default, the old one its backup.
        *
        * Defined in packages/diff.ts.
@@ -1850,6 +1907,20 @@ declare global {
        * Defined in packages/abbrev.ts.
        */
       "edit-abbrevs-redefine": [];
+      /**
+       * Show the EditorConfig properties of the visited file.
+       *
+       * Defined in packages/editorconfig.ts.
+       */
+      "editorconfig-display-current-properties": [];
+      /**
+       * Set how files indent and save from their .editorconfig files: indent_style, indent_size, tab_width, max_line_length, insert_final_newline and trim_trailing_whitespace.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/editorconfig.ts.
+       */
+      "editorconfig-mode": [];
       /**
        * Insert a newline. With electric-indent-mode on, as it is by default, that is all; RET is the key that indents.
        *
@@ -5289,6 +5360,18 @@ declare global {
        */
       "split-line": [arg?: PrefixArg];
       /**
+       * Split the frame's root window in two, the new window below taking the frame's whole width. A prefix argument gives the windows above that many lines, or the new one if it is negative.
+       *
+       * Defined in packages/window.ts.
+       */
+      "split-root-window-below": [];
+      /**
+       * Split the frame's root window in two, the new window on the right taking the frame's whole height. A prefix argument gives the windows on the left that many columns, or the new one if it is negative.
+       *
+       * Defined in packages/window.ts.
+       */
+      "split-root-window-right": [];
+      /**
        * Split the selected window into two, one above the other.
        *
        * The selected window stays on top and the new one below shows the same buffer at the same place. A prefix argument gives the selected window that many lines, or the new one if it is negative.
@@ -5952,6 +6035,14 @@ declare global {
        * Defined in packages/page.ts.
        */
       "what-page": [];
+      /**
+       * After a prefix key such as C-x and a pause of which-key-idle-delay seconds, show in a window along the bottom of the frame each key that can follow it, with the command it runs.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-mode": [];
       /**
        * Fix the whitespace problems whitespace-style names: empty lines at the start and end of the buffer, spaces at the ends of lines, and indentation and spaces around tabs that disagree with indent-tabs-mode. With the region active, only there.
        *
@@ -6798,6 +6889,106 @@ declare global {
        */
       "delete-trailing-lines": Value;
       /**
+       * Seconds idle after which the desktop is saved, if it has changed; nil or 0 for never.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-auto-save-timeout": Value;
+      /**
+       * The desktop file's name, in desktop-dirname.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-base-file-name": Value;
+      /**
+       * The lock file's name, which holds the process id of the Ember using the desktop.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-base-lock-name": Value;
+      /**
+       * A regexp for the names of buffers not visiting files that are not saved.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-buffers-not-to-save": Value;
+      /**
+       * The directory the desktop was last read from or saved in, where it is saved again.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-dirname": Value;
+      /**
+       * The permissions the desktop file gets: only you can read it, as it lists your files.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-file-modes": Value;
+      /**
+       * A regexp for the names of files whose buffers are not saved: remote ones.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-files-not-to-save": Value;
+      /**
+       * The global variables saved in the desktop.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-globals-to-save": Value;
+      /**
+       * What to do with a desktop another Ember has locked: t load it, nil do not, "ask", or "check-pid" load it if that Ember is not running.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-load-locked-desktop": Value;
+      /**
+       * The buffer-local variables saved for each buffer, where the buffer has its own value.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-locals-to-save": Value;
+      /**
+       * Whether a desktop buffer whose file is gone is made anyway, with a warning.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-missing-file-warning": Value;
+      /**
+       * Major modes whose buffers are not saved.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-modes-not-to-save": Value;
+      /**
+       * The directories desktop-read looks for a desktop file in, in order: user-emacs-directory and ~ when empty.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-path": Value;
+      /**
+       * Whether the desktop saves and restores the selected frame's windows.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-restore-frames": Value;
+      /**
+       * Whether quitting saves the desktop: t always, "ask-if-new" asking if there is no desktop file yet, "ask", "if-exists", "ask-if-exists", or nil never.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-save": Value;
+      /**
+       * Whether Desktop-Save mode is on. Use the command desktop-save-mode to change it.
+       *
+       * Defined in packages/desktop.ts.
+       */
+      "desktop-save-mode": Value;
+      /**
+       * Keymap desktop-save-mode-map.
+       */
+      "desktop-save-mode-map": Value;
+      /**
        * The program M-x diff runs.
        *
        * Defined in packages/diff.ts.
@@ -6955,6 +7146,22 @@ declare global {
        * Keymap edit-abbrevs-mode-map.
        */
       "edit-abbrevs-mode-map": Value;
+      /**
+       * For each major mode, the variables indent_size sets, as [mode, ...variables].
+       *
+       * Defined in packages/editorconfig.ts.
+       */
+      "editorconfig-indentation-alist": Value;
+      /**
+       * Whether Editorconfig mode is on. Use the command editorconfig-mode to change it.
+       *
+       * Defined in packages/editorconfig.ts.
+       */
+      "editorconfig-mode": Value;
+      /**
+       * Keymap editorconfig-mode-map.
+       */
+      "editorconfig-mode-map": Value;
       /**
        * Characters that reindent the line when typed, with electric-indent-mode on: newline, and in code modes closing braces and parens.
        *
@@ -9015,6 +9222,112 @@ declare global {
        */
       "visual-order-cursor-movement": Value;
       /**
+       * Spaces added before each column's keys.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-add-column-padding": Value;
+      /**
+       * What a cut description ends in.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-ellipsis": Value;
+      /**
+       * Seconds to wait after a prefix key before showing what can follow it.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-idle-delay": Value;
+      /**
+       * Whether showing is turned off for now.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-inhibit": Value;
+      /**
+       * How long a description may be before it is cut, ending in which-key-ellipsis.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-max-description-length": Value;
+      /**
+       * The most columns shown, or nil for as many as fit.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-max-display-columns": Value;
+      /**
+       * The narrowest a column's descriptions are.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-min-column-description-width": Value;
+      /**
+       * Whether Which-Key mode is on. Use the command which-key-mode to change it.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-mode": Value;
+      /**
+       * Keymap which-key-mode-map.
+       */
+      "which-key-mode-map": Value;
+      /**
+       * Where the keys show: "side-window", a window along the bottom of the frame.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-popup-type": Value;
+      /**
+       * What goes before the description of a key that is a prefix.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-prefix-prefix": Value;
+      /**
+       * What goes between a key and its description.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-separator": Value;
+      /**
+       * Where the prefix typed shows: "echo" in the echo area, "left" before the first column, "top" above them, or nil.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-show-prefix": Value;
+      /**
+       * Whether the mode line says how many keys did not fit.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-show-remaining-keys": Value;
+      /**
+       * Which side of the frame the window goes on: only the bottom for now.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-side-window-location": Value;
+      /**
+       * The tallest the window gets: lines, or a fraction of the frame's height.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-side-window-max-height": Value;
+      /**
+       * Whether a capital letter sorts before its small letter.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-sort-uppercase-first": Value;
+      /**
+       * Columns left free at the window's right edge.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-unicode-correction": Value;
+      /**
        * The kinds of whitespace problem whitespace-cleanup fixes: empty, indentation, trailing, space-after-tab and space-before-tab, or their ::tab and ::space forms.
        *
        * Defined in packages/whitespace.ts.
@@ -10033,6 +10346,36 @@ declare global {
        */
       "warning": FaceAttributes;
       /**
+       * A command's name in which-key's list.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-command-description-face": FaceAttributes;
+      /**
+       * The description of a key that is a prefix.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-group-description-face": FaceAttributes;
+      /**
+       * The keys which-key lists.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-key-face": FaceAttributes;
+      /**
+       * Notes, such as page numbers.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-note-face": FaceAttributes;
+      /**
+       * Between a key and its description.
+       *
+       * Defined in packages/which-key.ts.
+       */
+      "which-key-separator-face": FaceAttributes;
+      /**
        * The file names heading *xref*'s groups.
        *
        * Defined in packages/xref.ts.
@@ -10078,6 +10421,10 @@ declare global {
        * Run after a major mode and its hooks have run.
        */
       "after-change-major-mode-hook": Value;
+      /**
+       * Run once Ember has started and loaded init.ts, before it visits the files it was given.
+       */
+      "after-init-hook": Value;
       /**
        * Run after revert-buffer has reread the file.
        */
@@ -10175,6 +10522,34 @@ declare global {
        */
       "delete-selection-mode-on-hook": Value;
       /**
+       * Run after the desktop is read.
+       */
+      "desktop-after-read-hook": Value;
+      /**
+       * Run when desktop-read finds no desktop file, in the directory it looked in.
+       */
+      "desktop-no-desktop-file-hook": Value;
+      /**
+       * Run when a desktop locked by another Ember is not loaded.
+       */
+      "desktop-not-loaded-hook": Value;
+      /**
+       * Run before the desktop is saved.
+       */
+      "desktop-save-hook": Value;
+      /**
+       * Run after Desktop-Save mode is turned on or off.
+       */
+      "desktop-save-mode-hook": Value;
+      /**
+       * Run after Desktop-Save mode is turned off.
+       */
+      "desktop-save-mode-off-hook": Value;
+      /**
+       * Run after Desktop-Save mode is turned on.
+       */
+      "desktop-save-mode-on-hook": Value;
+      /**
        * Run after entering Diff mode, after the hooks of the modes it is built on.
        */
       "diff-mode-hook": Value;
@@ -10211,6 +10586,22 @@ declare global {
        */
       "edit-abbrevs-mode-hook": Value;
       /**
+       * Functions called with a file's EditorConfig properties, as an object, after they are applied.
+       */
+      "editorconfig-after-apply-functions": Value;
+      /**
+       * Run after Editorconfig mode is turned on or off.
+       */
+      "editorconfig-mode-hook": Value;
+      /**
+       * Run after Editorconfig mode is turned off.
+       */
+      "editorconfig-mode-off-hook": Value;
+      /**
+       * Run after Editorconfig mode is turned on.
+       */
+      "editorconfig-mode-on-hook": Value;
+      /**
        * Run after Electric-Pair mode is turned on or off.
        */
       "electric-pair-mode-hook": Value;
@@ -10222,6 +10613,10 @@ declare global {
        * Run after Electric-Pair mode is turned on.
        */
       "electric-pair-mode-on-hook": Value;
+      /**
+       * Run after after-init-hook, once Ember has started and loaded init.ts.
+       */
+      "emacs-startup-hook": Value;
       /**
        * Run after Fido mode is turned on or off.
        */
@@ -10282,6 +10677,10 @@ declare global {
        * Run after entering Grep mode, after the hooks of the modes it is built on.
        */
       "grep-mode-hook": Value;
+      /**
+       * Run after normal-mode chooses a buffer's major mode, as where Emacs applies its local variables.
+       */
+      "hack-local-variables-hook": Value;
       /**
        * Run after Header-Line-Indent mode is turned on or off.
        */
@@ -10663,6 +11062,18 @@ declare global {
        */
       "visual-line-mode-on-hook": Value;
       /**
+       * Run after Which-Key mode is turned on or off.
+       */
+      "which-key-mode-hook": Value;
+      /**
+       * Run after Which-Key mode is turned off.
+       */
+      "which-key-mode-off-hook": Value;
+      /**
+       * Run after Which-Key mode is turned on.
+       */
+      "which-key-mode-on-hook": Value;
+      /**
        * Run after entering XREF mode, after the hooks of the modes it is built on.
        */
       "xref--xref-buffer-mode-hook": Value;
@@ -11028,6 +11439,36 @@ declare global {
     function treesitLanguages(): string[];
     /** The current buffer's tree-sitter language, if it has one. */
     function treesitLanguage(): string | undefined;
+    /**
+     * Split the frame's root window, as split-root-window-below and -right:
+     * the new window takes the whole bottom of the frame, or its right side.
+     * `size` is as splitWindow's. Returns the new window.
+     */
+    function splitRootWindow(side?: "below" | "right", size?: number): number;
+    /**
+     * The keys that can follow a prefix, such as "C-x", in the keymaps active
+     * now, in key order: each with the command it runs, or undefined for
+     * another prefix. What which-key lists.
+     */
+    function prefixBindings(prefix: string): [string, string | undefined][];
+    /**
+     * How the selected frame's windows divide it: a window, or for a split
+     * [sideBySide, firstSize, first, second], firstSize the first part's
+     * lines or columns if a resize set it, as window-tree describes them.
+     */
+    function windowTree(): WindowTreeNode;
+    /** The buffer-local minor modes on in the current buffer, as local-minor-modes. */
+    function localMinorModes(): string[];
+    /** Ember's process id, as emacs-pid. */
+    function emacsPid(): number;
+    /** Whether a process of this machine is running, as process-attributes finds it. */
+    function processAliveP(pid: number): boolean;
+    /**
+     * The keys read so far while a prefix key waits for more, as
+     * this-single-command-keys gives them to a timer then, such as "C-x 4";
+     * else the keys of the command running.
+     */
+    function thisSingleCommandKeys(): string;
     /** Delete a window, the selected one by default, giving its space to its neighbour. */
     function deleteWindow(window?: number): void;
     /** Make a window the selected one, whose buffer commands act on. */
@@ -11067,6 +11508,11 @@ declare global {
      * end's units: pixels, or 1 on a terminal, as frame-char-width.
      */
     function frameCharWidth(): number;
+    /**
+     * The selected frame's height in lines, its windows' with their mode
+     * lines but not the echo area, as frame-height.
+     */
+    function frameHeight(): number;
     /** A frame's width in columns, the selected frame's by default, as frame-width. */
     function frameWidth(frame?: number): number;
     /** The frames, newest first, as frame-list orders them. */
@@ -11541,6 +11987,8 @@ declare global {
     function defineMajorMode(definition: MajorModeDefinition): DefinedCommand;
     /** Whether the current buffer's major mode is one of these, or built on one, as Emacs's derived-mode-p. */
     function derivedModeP(...modes: string[]): boolean;
+    /** A major mode, the buffer's by default, and the modes it is built on, nearest first, as derived-mode-all-parents. */
+    function derivedModeAllParents(mode?: string): string[];
 
     interface MinorModeDefinition {
       /** The command that turns it on and off, and the variable that says whether it is on. */
@@ -12637,6 +13085,8 @@ declare global {
      * the buffer, or in `string` after stringMatch matched it.
      */
     function matchString(n?: number, string?: string): string | undefined;
+    /** How windows divide a frame: a window, or a split of two parts, side by side or one above the other, as windowTree gives it. */
+    type WindowTreeNode = number | [sideBySide: boolean, firstSize: number | null, first: WindowTreeNode, second: WindowTreeNode];
     /** An error as a handler of conditionCase sees it: its condition, its data, and its message. */
     interface SignalledError {
       symbol: string;

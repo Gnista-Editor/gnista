@@ -72,10 +72,14 @@ fn prompts_keep_separate_histories() {
 fn partial_completion_completes_word_by_word() {
     let (mut ed, _scripting) = setup();
     ed.press("M-x").unwrap();
+    // split-root-window-below matches s-w-be too, as in Emacs 29.
     ed.type_text("s-w-be");
-    assert_eq!(ed.minibuffer_completions(), ["split-window-below"]);
+    assert_eq!(ed.minibuffer_completions(), ["split-root-window-below", "split-window-below"]);
+    ed.press("C-g M-x").unwrap();
+    ed.type_text("sw-t-b-o-w");
+    assert_eq!(ed.minibuffer_completions(), ["switch-to-buffer-other-window"]);
     ed.press("TAB").unwrap();
-    assert_eq!(input(&ed), "split-window-below");
+    assert_eq!(input(&ed), "switch-to-buffer-other-window");
     ed.press("C-g").unwrap();
     // RET runs the only command the input matches.
     ed.window_buffer_mut().set_text("abc");
@@ -94,7 +98,7 @@ fn completion_styles_can_change() {
     let styles = ["basic", "substring"].map(|s| Value::Str(s.into())).to_vec();
     ed.set_variable("completion-styles", Value::List(styles));
     ed.press("M-x").unwrap();
-    ed.type_text("window-below");
+    ed.type_text("it-window-below");
     assert_eq!(ed.minibuffer_completions(), ["split-window-below"]);
     ed.press("TAB").unwrap();
     assert_eq!(input(&ed), "split-window-below");

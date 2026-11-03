@@ -288,6 +288,13 @@ impl Editor {
         &self.keyboard.this_command_keys
     }
 
+    /// The keys of a key sequence read so far, while a prefix waits for
+    /// more, as Emacs's `this-single-command-keys` gives them to a timer
+    /// that runs then; else the keys of the command running.
+    pub fn this_single_command_keys(&self) -> &[Key] {
+        if self.keyboard.pending_keys.is_empty() { &self.keyboard.this_command_keys } else { &self.keyboard.pending_keys }
+    }
+
     /// Keeps the keys of a command about to run.
     pub(crate) fn note_command_keys(&mut self, keys: &[Key]) {
         self.keyboard.this_command_keys = keys.to_vec();

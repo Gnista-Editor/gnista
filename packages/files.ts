@@ -55,8 +55,12 @@ ember.defineCommand({
       (mode) => mode !== undefined && ember.commandExists(mode),
     );
     ember.call((mode ?? "fundamental-mode") as ember.CommandName);
+    // As hack-local-variables ends, once the mode is set; editorconfig applies its settings here.
+    ember.runHooks("hack-local-variables-hook");
   },
 });
+
+ember.defineHook("hack-local-variables-hook", "Run after normal-mode chooses a buffer's major mode, as where Emacs applies its local variables.");
 
 // Saving, reverting and recovering files, after files.el. What touches the
 // disk is native, as Emacs's fileio.c is: writing with a backup, reading

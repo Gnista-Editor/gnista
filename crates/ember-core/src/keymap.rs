@@ -186,6 +186,18 @@ impl Keymaps {
         None
     }
 
+    /// The keys a keymap and its parents bind directly, each to what it
+    /// runs: the keymap's own binding of a key winning over its parents'.
+    pub fn direct_bindings(&self, map: KeymapId) -> Vec<(Key, Binding)> {
+        let mut out: BTreeMap<Key, Binding> = BTreeMap::new();
+        for m in self.chain(map) {
+            for (key, binding) in &m.bindings {
+                out.entry(*key).or_insert_with(|| binding.clone());
+            }
+        }
+        out.into_iter().collect()
+    }
+
     pub fn lookup(&self, map: KeymapId, keys: &[Key]) -> Lookup {
         match self.binding_of(map, keys) {
             Some(Binding::Command(c)) => Lookup::Command(c),

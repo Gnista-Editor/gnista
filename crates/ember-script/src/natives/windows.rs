@@ -8,6 +8,65 @@ natives! {
         ed.split_window_sized(window, side_by_side, size)
     }
 
+    /// Split the frame's root window, as split-root-window-below and -right:
+    /// the new window takes the whole bottom of the frame, or its right side.
+    /// `size` is as splitWindow's. Returns the new window.
+    #[ts = "(side?: \"below\" | \"right\", size?: number): number"]
+    pub fn splitRootWindow(ed, side: Option<String>, size: Option<i64>) -> u64 {
+        ed.split_root_window(side.as_deref() == Some("right"), size)
+    }
+
+    /// The keys that can follow a prefix, such as "C-x", in the keymaps active
+    /// now, in key order: each with the command it runs, or undefined for
+    /// another prefix. What which-key lists.
+    #[ts = "(prefix: string): [string, string | undefined][]"]
+    pub fn prefixBindings(ed, prefix: String) -> Vec<Vec<Option<String>>> {
+        let keys = ember_core::Key::parse_seq(&prefix).ok_or_else(|| ember_core::Error::new(format!("Invalid key sequence: {prefix}")))?;
+        Ok(ed.prefix_bindings(&keys).into_iter().map(|(k, c)| vec![Some(k.to_string()), c]).collect())
+    }
+
+    /// How the selected frame's windows divide it: a window, or for a split
+    /// [sideBySide, firstSize, first, second], firstSize the first part's
+    /// lines or columns if a resize set it, as window-tree describes them.
+    #[ts = "(): WindowTreeNode"]
+    pub fn windowTree(ed) -> EditorValue {
+        fn node(t: &ember_core::WindowTree) -> EditorValue {
+            match t {
+                ember_core::WindowTree::Leaf(id) => EditorValue::Number(*id as f64),
+                ember_core::WindowTree::Split { side_by_side, first, second, first_size } => EditorValue::List(vec![
+                    EditorValue::Bool(*side_by_side),
+                    first_size.map_or(EditorValue::Null, |n| EditorValue::Number(n as f64)),
+                    node(first),
+                    node(second),
+                ]),
+            }
+        }
+        Ok(node(ed.window_tree()))
+    }
+
+    /// The buffer-local minor modes on in the current buffer, as local-minor-modes.
+    pub fn localMinorModes(ed) -> Vec<String> {
+        let global: Vec<&str> = ed.minor_modes().iter().filter(|m| m.global).map(|m| m.name.as_str()).collect();
+        Ok(ed.enabled_minor_modes().into_iter().filter(|m| !global.contains(&m.as_str())).collect())
+    }
+
+    /// Ember's process id, as emacs-pid.
+    pub fn emacsPid(ed) -> u32 {
+        Ok(std::process::id())
+    }
+
+    /// Whether a process of this machine is running, as process-attributes finds it.
+    pub fn processAliveP(ed, pid: i64) -> bool {
+        Ok(ember_core::filelock::alive(pid))
+    }
+
+    /// The keys read so far while a prefix key waits for more, as
+    /// this-single-command-keys gives them to a timer then, such as "C-x 4";
+    /// else the keys of the command running.
+    pub fn thisSingleCommandKeys(ed) -> String {
+        Ok(ember_core::format_keys(ed.this_single_command_keys()))
+    }
+
     /// Delete a window, the selected one by default, giving its space to its neighbour.
     #[ts = "(window?: number): void"]
     pub fn deleteWindow(ed, window: Option<u64>) {
@@ -104,6 +163,12 @@ natives! {
     /// end's units: pixels, or 1 on a terminal, as frame-char-width.
     pub fn frameCharWidth(ed) -> f64 {
         Ok(ed.text_metrics().char_width() as f64)
+    }
+
+    /// The selected frame's height in lines, its windows' with their mode
+    /// lines but not the echo area, as frame-height.
+    pub fn frameHeight(ed) -> usize {
+        Ok(ed.frame_cells().1)
     }
 
     /// A frame's width in columns, the selected frame's by default, as frame-width.

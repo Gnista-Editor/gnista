@@ -54,6 +54,12 @@ pub fn setup_with(
     if load_init {
         self::load_init(ed, &scripting, &dir);
     }
+    // As Emacs runs them once its init file is loaded, with -q too.
+    for hook in ["after-init-hook", "emacs-startup-hook"] {
+        if let Err(e) = ed.run_hooks(hook) {
+            ed.message(format!("Error in {hook}: {e}"));
+        }
+    }
     if let Err(e) = write_type_files(ed, &dir) {
         ed.message(format!("Could not write ember.d.ts: {e}"));
     }

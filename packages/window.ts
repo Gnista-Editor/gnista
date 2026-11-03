@@ -586,6 +586,28 @@ ember.bindKey("C-x 5 C-o", displayBufferOtherFrame);
 
 ember.bindKey("C-x <left>", previousBuffer);
 ember.bindKey("C-x <right>", nextBuffer);
+const splitRootBelow = ember.defineCommand({
+  name: "split-root-window-below",
+  doc:
+    "Split the frame's root window in two, the new window below taking the frame's whole width. " +
+    "A prefix argument gives the windows above that many lines, or the new one if it is negative.",
+  run: () => {
+    ember.splitRootWindow("below", splitSize());
+  },
+});
+
+const splitRootRight = ember.defineCommand({
+  name: "split-root-window-right",
+  doc:
+    "Split the frame's root window in two, the new window on the right taking the frame's whole height. " +
+    "A prefix argument gives the windows on the left that many columns, or the new one if it is negative.",
+  run: () => {
+    ember.splitRootWindow("right", splitSize());
+  },
+});
+
+ember.bindKey("C-x w 2", splitRootBelow);
+ember.bindKey("C-x w 3", splitRootRight);
 ember.bindKey("C-x 2", splitBelow);
 ember.bindKey("C-x 3", splitRight);
 ember.bindKey("C-x o", otherWindow);
@@ -671,3 +693,64 @@ ember.defineCommand({
   },
 });
 ember.bindKey("M-r", "move-to-window-line-top-bottom");
+
+// --- Window states, as window.el's window-state-get and window-state-put ----
+
+/** One window's part of a window state: its buffer, by name and file, and where it starts and its point. */
+interface WindowLeafState {
+  buffer: string;
+  file?: string;
+  point: number;
+  start: number;
+  selected: boolean;
+}
+/** The selected frame's windows as data, which can be written out and read back, as window-state-get with WRITABLE. */
+export type WindowState = WindowLeafState | { sideBySide: boolean; firstSize: number | null; first: WindowState; second: WindowState };
+
+export function windowStateGet(): WindowState {
+  const selected = ember.selectedWindow();
+  const node = (t: ember.WindowTreeNode): WindowState => {
+    if (typeof t === "number") {
+      const buffer = ember.windowBuffer(t) ?? "*scratch*";
+      const file = ember.withCurrentBuffer(buffer, () => ember.bufferFileName());
+      return { buffer, ...(file ? { file } : {}), point: ember.windowPoint(t), start: ember.windowStart(t), selected: t === selected };
+    }
+    const [sideBySide, firstSize, first, second] = t;
+    return { sideBySide, firstSize, first: node(first), second: node(second) };
+  };
+  return node(ember.windowTree());
+}
+
+/**
+ * Makes the selected frame's windows as a state says, as window-state-put:
+ * each shows its buffer, or the buffer visiting its file, or else the
+ * current buffer, at its point.
+ */
+export function windowStatePut(state: WindowState): void {
+  ember.call("delete-other-windows");
+  let toSelect: number | undefined;
+  const fill = (window: number, s: WindowState): void => {
+    if ("buffer" in s) {
+      const visiting = (file: string) => ember.bufferList().find((b) => ember.withCurrentBuffer(b, () => ember.bufferFileName()) === file);
+      const byFile = s.file ? visiting(s.file) : undefined;
+      const live = ember.getBuffer(byFile ?? s.buffer);
+      if (live) {
+        ember.setWindowBuffer(window, live.name!);
+        ember.setWindowStart(window, Math.min(s.start, ember.withCurrentBuffer(live, () => ember.bufferSize())));
+        ember.setWindowPoint(window, Math.min(s.point, ember.withCurrentBuffer(live, () => ember.bufferSize())));
+      }
+      if (s.selected) toSelect = window;
+      return;
+    }
+    let other: number;
+    try {
+      other = ember.splitWindow(window, s.sideBySide ? "right" : "below", s.firstSize ?? undefined);
+    } catch {
+      other = ember.splitWindow(window, s.sideBySide ? "right" : "below");
+    }
+    fill(window, s.first);
+    fill(other, s.second);
+  };
+  fill(ember.selectedWindow(), state);
+  if (toSelect !== undefined) ember.selectWindow(toSelect);
+}

@@ -782,6 +782,46 @@ impl Editor {
         Ok(new)
     }
 
+    /// Splits the frame's root window, as Emacs's `split-root-window-below`
+    /// and `-right`: the new window, showing the selected window's buffer,
+    /// takes the whole bottom or right of the frame. `size` is as
+    /// split-window's: the old part's lines or columns, or the new window's
+    /// if negative.
+    pub fn split_root_window(&mut self, side_by_side: bool, size: Option<i64>) -> Result<WindowId> {
+        let (cols, lines) = self.frame_cells();
+        let total = if side_by_side { cols } else { lines } as i64;
+        let first_size = match size {
+            None if total < 2 * if side_by_side { WINDOW_MIN_WIDTH } else { WINDOW_MIN_HEIGHT } as i64 => {
+                return Err(Error::new("Root window too small for splitting"));
+            }
+            None => None,
+            Some(size) => {
+                let (old, new) = if size >= 0 { (size, total - size) } else { (total + size, -size) };
+                if new < 2 {
+                    return Err(Error::new("Size of new window too small"));
+                }
+                if old < 2 {
+                    return Err(Error::new("Size of window too small"));
+                }
+                Some(old as usize)
+            }
+        };
+        let selected = self.selected_window;
+        let view = self.windows().into_iter().find(|v| v.id == selected).map(|v| (v.point, v.top_line, v.buffer.id)).ok_or_else(|| Error::new("No such window"))?;
+        self.next_window_id += 1;
+        let new = self.next_window_id;
+        self.windows.push(Window::new(new, view.2, cols, 1));
+        let index = self.buffer_index(view.2);
+        let b = &mut self.buffers[index];
+        b.set_window_point(new, view.0);
+        let start = b.line_start(view.1.min(b.line_count() - 1));
+        b.set_window_start(new, start);
+        let tree = std::mem::replace(&mut self.window_tree, WindowTree::Leaf(new));
+        self.window_tree = WindowTree::Split { side_by_side, first: Box::new(tree), second: Box::new(WindowTree::Leaf(new)), first_size };
+        self.relayout();
+        Ok(new)
+    }
+
     /// Deletes a window, giving its space to its neighbour, as Emacs's
     /// `delete-window`. If it was selected, the most recently used window
     /// left is selected.

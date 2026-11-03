@@ -403,6 +403,8 @@ const API: &str = r##"
   function defineMajorMode(definition: MajorModeDefinition): DefinedCommand;
   /** Whether the current buffer's major mode is one of these, or built on one, as Emacs's derived-mode-p. */
   function derivedModeP(...modes: string[]): boolean;
+  /** A major mode, the buffer's by default, and the modes it is built on, nearest first, as derived-mode-all-parents. */
+  function derivedModeAllParents(mode?: string): string[];
 
   interface MinorModeDefinition {
     /** The command that turns it on and off, and the variable that says whether it is on. */
@@ -1499,6 +1501,8 @@ const API: &str = r##"
    * the buffer, or in `string` after stringMatch matched it.
    */
   function matchString(n?: number, string?: string): string | undefined;
+  /** How windows divide a frame: a window, or a split of two parts, side by side or one above the other, as windowTree gives it. */
+  type WindowTreeNode = number | [sideBySide: boolean, firstSize: number | null, first: WindowTreeNode, second: WindowTreeNode];
   /** An error as a handler of conditionCase sees it: its condition, its data, and its message. */
   interface SignalledError {
     symbol: string;

@@ -1018,6 +1018,8 @@ pub(crate) fn install(ed: &mut Editor) {
         ("find-file-hook", "Run after visiting a file, once its major mode is chosen."),
         ("kill-buffer-hook", "Run in a buffer just before it is killed."),
         ("kill-emacs-hook", "Run when Ember exits, as C-x C-c does."),
+        ("after-init-hook", "Run once Ember has started and loaded init.ts, before it visits the files it was given."),
+        ("emacs-startup-hook", "Run after after-init-hook, once Ember has started and loaded init.ts."),
         ("before-save-hook", "Run before saving a buffer to its file."),
         ("after-save-hook", "Run after saving a buffer to its file."),
         ("change-major-mode-hook", "Run before a major mode clears the buffer's own variables."),

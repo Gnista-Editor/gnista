@@ -1427,6 +1427,11 @@
       }
       return false;
     },
+    derivedModeAllParents(name = native.variable("major-mode")) {
+      const out = [];
+      for (let mode = majorModes.get(name); mode; mode = mode.parent === null ? undefined : majorModes.get(mode.parent)) out.push(mode.name);
+      return out.length > 0 ? out : [String(name)];
+    },
 
     defineMajorMode({ name, modeName, parent = null, doc = "", bindings, setup, syntax }) {
       if (parent !== null && !majorModes.has(parent)) {
