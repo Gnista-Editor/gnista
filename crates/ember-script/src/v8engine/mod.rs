@@ -23,11 +23,11 @@ use std::rc::Rc;
 use std::sync::{Arc, Condvar, Mutex, OnceLock};
 use std::time::Duration;
 
-use ember_core::{Arg, Command, Editor, Error, FaceAttrs, ParamKind, PrefixArg, Result, Value as EditorValue};
+use ember_core::{Arg, Editor, Error, FaceAttrs, PrefixArg, Result, Value as EditorValue};
 
 use crate::{
-    EDITOR, Failure, LOADING, Outermost, PRELUDE, Restore, camel_key, editor_call, face_attribute_key, natives, nested_deadline,
-    package_source, should_stop, strip_module_types, stripped,
+    EDITOR, Failure, Outermost, PRELUDE, Restore, editor_call, natives, nested_deadline, package_source, should_stop, strip_module_types,
+    stripped, values,
 };
 
 /// A JavaScript exception is pending in the isolate: the native returns and
@@ -568,7 +568,7 @@ fn number<'s>(scope: &mut v8::PinScope<'s, '_>, n: f64) -> v8::Local<'s, v8::Val
 }
 
 /// A script function the editor holds on to, as a command or a hook function.
-struct ScriptFunction {
+pub(crate) struct ScriptFunction {
     // Declared before `engine` so the handle is freed while the isolate lives.
     run: v8::Global<v8::Function>,
     engine: Rc<Inner>,
@@ -604,10 +604,6 @@ impl ScriptFunction {
     /// Runs the function as a command, with its arguments as scripts take them.
     fn call(&self, ed: &mut Editor, args: &[Arg]) -> Result<()> {
         self.invoke(ed, |scope| args.iter().map(|a| arg_to_js(scope, a)).collect(), |_, _| Ok(()))
-    }
-
-    fn into_command(self) -> impl Fn(&mut Editor, &[Arg]) -> Result<()> {
-        move |ed, args| self.call(ed, args)
     }
 
     /// Calls the function with editor values and returns what it returns,
@@ -651,7 +647,7 @@ impl ScriptFunction {
 fn arg_to_js<'s>(scope: &mut v8::PinScope<'s, '_>, arg: &Arg) -> Js<'s> {
     match arg {
         Arg::Int(n) => Ok(number(scope, *n as f64)),
-        Arg::Prefix(prefix) => Ok(prefix_to_js(scope, *prefix)),
+        Arg::Prefix(prefix) => prefix_to_js(scope, *prefix),
         other => Ok(string(scope, &other.to_string()).into()),
     }
 }
@@ -677,106 +673,39 @@ fn define_command<'s>(scope: &mut v8::PinScope<'s, '_>, args: v8::FunctionCallba
 }
 
 fn define_command_with<'s>(scope: &mut v8::PinScope<'s, '_>, args: &v8::FunctionCallbackArguments<'s>) -> std::result::Result<(), Thrown> {
-    let name = args.get(0).to_rust_string_lossy(scope);
-    let doc = args.get(1).to_rust_string_lossy(scope);
-    let params = v8::Local::<v8::Array>::try_from(args.get(2)).map_err(|_| throw(scope, &Error::new("A command's params are a list")))?;
-    let run = v8::Local::<v8::Function>::try_from(args.get(3)).map_err(|_| throw(scope, &Error::new("A command needs a run function")))?;
-    let shift_select = args.get(4).boolean_value(scope);
-    let mut command = Command::new(&name, &doc, ScriptFunction::new(scope, run).into_command());
-    command.shift_select = shift_select;
-    command.source = LOADING.with_borrow(|files| files.last().cloned());
-    for i in 0..params.length() {
-        let param = params.get_index(scope, i).ok_or(Thrown)?;
-        let param = v8::Local::<v8::Object>::try_from(param).map_err(|_| throw(scope, &Error::new("A parameter is an object")))?;
-        let field = |scope: &mut v8::PinScope<'s, '_>, key: &str| get(scope, param, key).filter(|v| !v.is_null_or_undefined());
-        let param_name = field(scope, "name").map(|v| v.to_rust_string_lossy(scope)).unwrap_or_default();
-        let kind = field(scope, "kind").map(|v| v.to_rust_string_lossy(scope)).unwrap_or_default();
-        let prompt_value = field(scope, "prompt");
-        let prompt_fn = prompt_value.and_then(|v| v8::Local::<v8::Function>::try_from(v).ok()).map(|f| ScriptFunction::new(scope, f));
-        let prompt = match (&prompt_fn, prompt_value) {
-            (None, Some(v)) => v.to_rust_string_lossy(scope),
-            _ => String::new(),
-        };
-        let Some(kind) = ParamKind::from_name(&kind) else {
-            let kinds: Vec<&str> = ParamKind::ALL.iter().map(ParamKind::name).collect();
-            let message = format!("Unknown parameter kind {kind:?}; use one of {}", kinds.join(", "));
-            let message = string(scope, &message);
-            let error = v8::Exception::type_error(scope, message);
-            scope.throw_exception(error);
-            return Err(Thrown);
-        };
-        command = command.param(&param_name, kind, &prompt);
-        if let Some(f) = prompt_fn {
-            command = command.prompt_with(move |ed, args| f.call_for_text(ed, args));
-        }
-        if let Some(f) = field(scope, "collection").and_then(|v| v8::Local::<v8::Function>::try_from(v).ok()) {
-            let f = ScriptFunction::new(scope, f);
-            let require_match = field(scope, "requireMatch").is_some_and(|v| v.boolean_value(scope));
-            command = command.collection(require_match, move |ed, args| f.call_for_names(ed, args));
-        }
-        match field(scope, "initial") {
-            Some(v) if v.is_function() => {
-                let f = ScriptFunction::new(scope, v8::Local::<v8::Function>::try_from(v).map_err(|_| Thrown)?);
-                command = command.initial_with(move |ed, args| f.call_for_text(ed, args));
-            }
-            Some(v) if v.is_string() => {
-                let text = v.to_rust_string_lossy(scope);
-                command = command.initial_with(move |_, _| Ok(text.clone()));
-            }
-            _ => {}
-        }
-        if let Some(history) = field(scope, "history") {
-            let history = history.to_rust_string_lossy(scope);
-            command = command.history(&history);
-        }
-    }
+    let command = values::command_from_js(scope, [args.get(0), args.get(1), args.get(2), args.get(3), args.get(4)])?;
     with_editor(scope, true, |ed| {
         ed.define_command(command);
         Ok(())
     })
 }
 
+impl values::Held for ScriptFunction {
+    fn call(&self, ed: &mut Editor, args: &[Arg]) -> Result<()> {
+        ScriptFunction::call(self, ed, args)
+    }
+
+    fn call_for_names(&self, ed: &mut Editor, args: &[Arg]) -> Result<Vec<String>> {
+        ScriptFunction::call_for_names(self, ed, args)
+    }
+
+    fn call_for_text(&self, ed: &mut Editor, args: &[Arg]) -> Result<String> {
+        ScriptFunction::call_for_text(self, ed, args)
+    }
+}
+
 /// A match as a script sees it: `{ start, end, groups }`.
-fn match_to_js<'s>(scope: &mut v8::PinScope<'s, '_>, m: &ember_core::Match) -> v8::Local<'s, v8::Value> {
-    let object = v8::Object::new(scope);
-    let start = number(scope, m.start as f64);
-    set(scope, object, "start", start);
-    let end = number(scope, m.end as f64);
-    set(scope, object, "end", end);
-    let groups: Vec<v8::Local<v8::Value>> = m
-        .groups
-        .iter()
-        .map(|g| match g {
-            Some((s, e)) => {
-                let pair = [number(scope, *s as f64), number(scope, *e as f64)];
-                v8::Array::new_with_elements(scope, &pair).into()
-            }
-            None => v8::undefined(scope).into(),
-        })
-        .collect();
-    let groups = v8::Array::new_with_elements(scope, &groups);
-    set(scope, object, "groups", groups.into());
-    object.into()
+fn match_to_js<'s>(scope: &mut v8::PinScope<'s, '_>, m: &ember_core::Match) -> Js<'s> {
+    values::match_to_js(scope, m)
 }
 
 fn props_to_js<'s>(scope: &mut v8::PinScope<'s, '_>, props: &ember_core::Props) -> Js<'s> {
-    let object = v8::Object::new(scope);
-    for (name, value) in props {
-        let value = value_to_js(scope, value)?;
-        set(scope, object, name, value);
-    }
-    Ok(object.into())
+    values::props_to_js(scope, props)
 }
 
-/// Face attributes from an object such as `{ foreground: "accent", weight:
-/// "bold", underline: { color: "red", style: "wave" } }`, each value as
-/// Emacs gives it, an object standing for a plist.
+/// Face attributes from an object, as [`values::face_attrs_from_js`] reads them.
 fn face_attrs_from_js<'s>(scope: &mut v8::PinScope<'s, '_>, object: v8::Local<'s, v8::Object>) -> std::result::Result<FaceAttrs, Thrown> {
-    let mut attrs = FaceAttrs::default();
-    for (key, value) in face_attr_values_from_js(scope, object)? {
-        attrs.set(&key, &value);
-    }
-    Ok(attrs)
+    values::face_attrs_from_js(scope, &object.into())
 }
 
 /// An object's own enumerable keys.
@@ -790,173 +719,27 @@ fn face_attr_values_from_js<'s>(
     scope: &mut v8::PinScope<'s, '_>,
     object: v8::Local<'s, v8::Object>,
 ) -> std::result::Result<Vec<(String, EditorValue)>, Thrown> {
-    let mut values = Vec::new();
-    for key in keys(scope, object) {
-        let value = get(scope, object, &key).ok_or(Thrown)?;
-        if value.is_undefined() {
-            continue;
-        }
-        let value = match v8::Local::<v8::Object>::try_from(value) {
-            Ok(inner) if !value.is_array() && !value.is_function() && !value.is_string() && !value.is_string_object() => {
-                let mut plist = Vec::new();
-                for k in keys(scope, inner) {
-                    let v = get(scope, inner, &k).ok_or(Thrown)?;
-                    plist.push(EditorValue::Symbol(face_attribute_key(&k)));
-                    plist.push(value_from_js(scope, v)?);
-                }
-                EditorValue::List(plist)
-            }
-            _ => value_from_js(scope, value)?,
-        };
-        values.push((face_attribute_key(&key), value));
-    }
-    Ok(values)
+    values::face_attr_values_from_js(scope, &object.into())
 }
 
-/// A place in a window as scripts see it, as Emacs's posn: the window,
-/// the buffer position, x and y from the top left of the text area, and
-/// the column and row in default characters; undefined for none.
-fn posn_to_js<'s>(scope: &mut v8::PinScope<'s, '_>, posn: Option<ember_core::layout::Posn>) -> v8::Local<'s, v8::Value> {
-    let Some(posn) = posn else { return v8::undefined(scope).into() };
-    let object = v8::Object::new(scope);
-    let fields = [
-        ("window", posn.window as f64),
-        ("point", posn.point as f64),
-        ("x", posn.x as f64),
-        ("y", posn.y as f64),
-        ("col", posn.col as f64),
-        ("row", posn.row as f64),
-    ];
-    for (key, n) in fields {
-        let n = number(scope, n);
-        set(scope, object, key, n);
-    }
-    object.into()
+fn posn_to_js<'s>(scope: &mut v8::PinScope<'s, '_>, posn: Option<ember_core::layout::Posn>) -> Js<'s> {
+    values::posn_to_js(scope, posn)
 }
 
-/// Face attributes as scripts see them: an object of the attributes that
-/// are set, keyed as scripts give them (`weight`, `inverseVideo`), each
-/// value as Emacs's `face-attribute` gives it, with `bold` and `italic`
-/// added where the weight and slant say so.
 fn face_attrs_to_js<'s>(scope: &mut v8::PinScope<'s, '_>, attrs: &FaceAttrs) -> Js<'s> {
-    let object = v8::Object::new(scope);
-    let plist = attrs.to_plist();
-    for pair in plist.chunks(2) {
-        let [key, value] = pair else { break };
-        let Some(key) = key.as_str() else { continue };
-        let value = plist_or_value_to_js(scope, value)?;
-        set(scope, object, &camel_key(key), value);
-    }
-    if attrs.is_bold() {
-        let t = v8::Boolean::new(scope, true).into();
-        set(scope, object, "bold", t);
-    }
-    if attrs.is_italic() {
-        let t = v8::Boolean::new(scope, true).into();
-        set(scope, object, "italic", t);
-    }
-    Ok(object.into())
+    values::face_attrs_to_js(scope, attrs)
 }
 
-/// A face attribute's value as scripts see it: a plist such as an
-/// underline's `(:color "red" :style wave)` as an object, `{ color: "red",
-/// style: "wave" }`, anything else as it is.
 fn plist_or_value_to_js<'s>(scope: &mut v8::PinScope<'s, '_>, value: &EditorValue) -> Js<'s> {
-    let EditorValue::List(items) = value else { return value_to_js(scope, value) };
-    if !items.first().and_then(EditorValue::as_str).is_some_and(|k| k.starts_with(':')) {
-        return value_to_js(scope, value);
-    }
-    let object = v8::Object::new(scope);
-    for pair in items.chunks(2) {
-        let [key, v] = pair else { break };
-        let Some(key) = key.as_str() else { continue };
-        let v = value_to_js(scope, v)?;
-        set(scope, object, &camel_key(key), v);
-    }
-    Ok(object.into())
+    values::plist_or_value_to_js(scope, value)
 }
 
-/// A variable's value as scripts see it: null, a boolean, a number, a string or an array.
 fn value_to_js<'s>(scope: &mut v8::PinScope<'s, '_>, value: &EditorValue) -> Js<'s> {
-    Ok(match value {
-        EditorValue::Null => v8::null(scope).into(),
-        EditorValue::Bool(b) => v8::Boolean::new(scope, *b).into(),
-        EditorValue::Number(n) => number(scope, *n),
-        EditorValue::Str(s) => string(scope, s).into(),
-        EditorValue::List(items) => {
-            let items = items.iter().map(|item| value_to_js(scope, item)).collect::<std::result::Result<Vec<_>, _>>()?;
-            v8::Array::new_with_elements(scope, &items).into()
-        }
-        EditorValue::Function(function) => function_to_js(scope, function)?,
-        // The prelude's object for the buffer, the same one each time.
-        EditorValue::Buffer(id) => {
-            let id = number(scope, *id as f64);
-            call_global(scope, "__emberBuffer", &[id])?
-        }
-        // The prelude's object for the keymap, the same one each time.
-        EditorValue::Keymap(id) => {
-            let id = number(scope, *id as f64);
-            call_global(scope, "__emberKeymap", &[id])?
-        }
-        // And for the char-table.
-        EditorValue::CharTable(id) => {
-            let id = number(scope, *id as f64);
-            call_global(scope, "__emberCharTable", &[id])?
-        }
-        // The prelude's objects for tree-sitter parsers and nodes.
-        EditorValue::Treesit(object) => {
-            let (kind, raw): (&str, Vec<f64>) = match object {
-                ember_core::treesitfns::TsObject::Parser { buffer, parser } => ("parser", vec![*buffer as f64, *parser as f64]),
-                ember_core::treesitfns::TsObject::Node(r) => {
-                    ("node", [r.buffer as f64, r.parser as f64, r.generation as f64].into_iter().chain(r.path.iter().map(|&i| i as f64)).collect())
-                }
-            };
-            let kind = string(scope, kind).into();
-            let raw: Vec<v8::Local<v8::Value>> = raw.into_iter().map(|n| number(scope, n)).collect();
-            let raw = v8::Array::new_with_elements(scope, &raw).into();
-            call_global(scope, "__emberTreesit", &[kind, raw])?
-        }
-        // The prelude's Font, holding its kind and its properties.
-        EditorValue::Font(font) => {
-            let plist = value_to_js(scope, &EditorValue::List(font.to_plist()))?;
-            let kind = string(scope, font.kind.name()).into();
-            call_global(scope, "__emberFont", &[kind, plist])?
-        }
-        // The prelude's Marker for the id, the one the value was made from.
-        EditorValue::Marker(id) => {
-            let id = number(scope, *id as f64);
-            call_global(scope, "__emberMarker", &[id])?
-        }
-        // A symbol is JavaScript's registered symbol of its name, interned as Emacs's are.
-        EditorValue::Symbol(name) => {
-            let name = string(scope, name);
-            v8::Symbol::for_key(scope, name).into()
-        }
-        // The prelude's PropertizedString, with its runs as [start, end, properties].
-        EditorValue::Text(text) => {
-            let mut runs = Vec::with_capacity(text.props.len());
-            for (range, props) in &text.props {
-                let object = v8::Object::new(scope);
-                for (name, value) in props {
-                    let value = value_to_js(scope, value)?;
-                    set(scope, object, name, value);
-                }
-                let run = [number(scope, range.start as f64), number(scope, range.end as f64), object.into()];
-                runs.push(v8::Array::new_with_elements(scope, &run).into());
-            }
-            let runs = v8::Array::new_with_elements(scope, &runs).into();
-            let s = string(scope, &text.string).into();
-            call_global(scope, "__emberText", &[s, runs])?
-        }
-    })
+    values::value_to_js(scope, value)
 }
 
-/// A string or propertized string from a script, as text to insert.
 fn text_from_js<'s>(scope: &mut v8::PinScope<'s, '_>, value: v8::Local<'s, v8::Value>) -> std::result::Result<ember_core::Text, Thrown> {
-    Ok(match value_from_js(scope, value)? {
-        EditorValue::Text(text) => text,
-        other => ember_core::Text { string: other.as_str().map(str::to_string).unwrap_or_else(|| other.to_string()), props: Vec::new() },
-    })
+    values::text_from_js(scope, value)
 }
 
 /// The property a script function keeps its editor identity in, so the
@@ -1018,15 +801,7 @@ fn function_from_js<'s>(scope: &mut v8::PinScope<'s, '_>, f: v8::Local<'s, v8::F
 }
 
 pub(crate) fn value_from_js<'s>(scope: &mut v8::PinScope<'s, '_>, value: v8::Local<'s, v8::Value>) -> std::result::Result<EditorValue, Thrown> {
-    match convert_from_js(scope, value)? {
-        Some(value) => Ok(value),
-        None => {
-            let message = string(scope, "A variable holds null, a boolean, a number, a string, a function, or an array of these");
-            let error = v8::Exception::type_error(scope, message);
-            scope.throw_exception(error);
-            Err(Thrown)
-        }
-    }
+    values::value_from_js(scope, value)
 }
 
 /// A number a property holds, if it holds one.
@@ -1034,153 +809,141 @@ fn number_property<'s>(scope: &mut v8::PinScope<'s, '_>, object: v8::Local<'s, v
     get(scope, object, key).filter(|v| v.is_number()).and_then(|v| v.number_value(scope))
 }
 
-/// The numbers an array property holds, if it holds an array.
-fn numbers_property<'s>(scope: &mut v8::PinScope<'s, '_>, object: v8::Local<'s, v8::Object>, key: &str) -> Option<Vec<f64>> {
-    let list = v8::Local::<v8::Array>::try_from(get(scope, object, key)?).ok()?;
-    (0..list.length()).map(|i| list.get_index(scope, i).and_then(|v| v.number_value(scope))).collect()
-}
-
-/// A script value as an editor value, or `None` if it is not one, such as an object.
 pub(crate) fn convert_from_js<'s>(
     scope: &mut v8::PinScope<'s, '_>,
     value: v8::Local<'s, v8::Value>,
 ) -> std::result::Result<Option<EditorValue>, Thrown> {
-    if value.is_null_or_undefined() {
-        return Ok(Some(EditorValue::Null));
-    }
-    if value.is_boolean() {
-        return Ok(Some(EditorValue::Bool(value.is_true())));
-    }
-    if value.is_number() {
-        return Ok(Some(EditorValue::Number(value.number_value(scope).unwrap_or(f64::NAN))));
-    }
-    if value.is_string() {
-        return Ok(Some(EditorValue::Str(value.to_rust_string_lossy(scope))));
-    }
-    if let Ok(list) = v8::Local::<v8::Array>::try_from(value) {
-        let mut items = Vec::with_capacity(list.length() as usize);
-        for i in 0..list.length() {
-            let item = list.get_index(scope, i).ok_or(Thrown)?;
-            match convert_from_js(scope, item)? {
-                Some(item) => items.push(item),
-                None => return Ok(None),
-            }
-        }
-        return Ok(Some(EditorValue::List(items)));
-    }
-    if let Ok(f) = v8::Local::<v8::Function>::try_from(value) {
-        return function_from_js(scope, f).map(Some);
-    }
-    if let Ok(symbol) = v8::Local::<v8::Symbol>::try_from(value) {
-        let description = symbol.description(scope);
-        return Ok((!description.is_undefined()).then(|| EditorValue::Symbol(description.to_rust_string_lossy(scope))));
-    }
-    let Ok(object) = v8::Local::<v8::Object>::try_from(value) else { return Ok(None) };
-    if let Some(id) = number_property(scope, object, "__emberBufferId") {
-        return Ok(Some(EditorValue::Buffer(id as u64)));
-    }
-    if let Some(id) = number_property(scope, object, "__emberKeymapId") {
-        return Ok(Some(EditorValue::Keymap(id as usize)));
-    }
-    if let Some(raw) = numbers_property(scope, object, "__emberTreesitParser")
-        && raw.len() == 2
-    {
-        return Ok(Some(EditorValue::Treesit(ember_core::treesitfns::TsObject::Parser { buffer: raw[0] as u64, parser: raw[1] as u64 })));
-    }
-    if let Some(raw) = numbers_property(scope, object, "__emberTreesitNode")
-        && raw.len() >= 3
-    {
-        let r = ember_core::treesitfns::NodeRef {
-            buffer: raw[0] as u64,
-            parser: raw[1] as u64,
-            generation: raw[2] as u64,
-            path: raw[3..].iter().map(|&i| i as u32).collect(),
-        };
-        return Ok(Some(EditorValue::Treesit(ember_core::treesitfns::TsObject::Node(r))));
-    }
-    if let Some(kind) = get(scope, object, "__emberFontKind").filter(|v| v.is_string()).map(|v| v.to_rust_string_lossy(scope))
-        && let Some(kind) = ember_core::FontKind::from_name(&kind)
-    {
-        let plist = get(scope, object, "__emberFontPlist").ok_or(Thrown)?;
-        let plist = match convert_from_js(scope, plist)? {
-            Some(EditorValue::List(items)) => items,
-            _ => Vec::new(),
-        };
-        let font = ember_core::Font::from_plist(kind, &plist).map_err(|e| throw(scope, &e))?;
-        return Ok(Some(EditorValue::Font(Box::new(font))));
-    }
-    // A marker the editor now holds, which collecting the script's object
-    // must no longer delete, as a Lisp marker lives while a variable has it.
-    if let Some(id) = number_property(scope, object, "__emberMarkerId") {
-        call_global(scope, "__emberKeepMarker", &[object.into()])?;
-        return Ok(Some(EditorValue::Marker(id as u64)));
-    }
-    if let Some(id) = number_property(scope, object, "__emberCharTableId") {
-        return Ok(Some(EditorValue::CharTable(id as u64)));
-    }
-    if get(scope, object, "__emberText").is_some_and(|v| v.is_true()) {
-        let string = get(scope, object, "string").ok_or(Thrown)?.to_rust_string_lossy(scope);
-        let runs = get(scope, object, "properties").ok_or(Thrown)?;
-        let runs = v8::Local::<v8::Array>::try_from(runs).map_err(|_| throw(scope, &Error::new("A propertized string's properties are a list")))?;
-        let mut props = Vec::new();
-        for i in 0..runs.length() {
-            let run = runs.get_index(scope, i).ok_or(Thrown)?;
-            let Ok(run) = v8::Local::<v8::Array>::try_from(run) else { continue };
-            let start = run.get_index(scope, 0).and_then(|v| v.number_value(scope)).unwrap_or(0.0);
-            let end = run.get_index(scope, 1).and_then(|v| v.number_value(scope)).unwrap_or(0.0);
-            let Some(names) = run.get_index(scope, 2).and_then(|v| v8::Local::<v8::Object>::try_from(v).ok()) else { continue };
-            let mut map = ember_core::Props::new();
-            for key in keys(scope, names) {
-                let v = get(scope, names, &key).ok_or(Thrown)?;
-                match convert_from_js(scope, v)? {
-                    Some(v) => {
-                        map.insert(key, v);
-                    }
-                    None => return Ok(None),
-                }
-            }
-            // Counted in characters, and within the string.
-            let n = string.chars().count();
-            let (start, end) = ((start.max(0.0) as usize).min(n), (end.max(0.0) as usize).min(n));
-            if end > start && !map.is_empty() {
-                props.push((start..end, map));
-            }
-        }
-        return Ok(Some(EditorValue::Text(ember_core::Text { string, props })));
-    }
-    Ok(None)
+    values::convert_from_js(scope, value)
 }
 
-fn prefix_to_js<'s>(scope: &mut v8::PinScope<'s, '_>, arg: Option<PrefixArg>) -> v8::Local<'s, v8::Value> {
-    match arg {
-        None => v8::null(scope).into(),
-        Some(PrefixArg::Number(n)) => number(scope, n as f64),
-        Some(PrefixArg::Minus) => string(scope, "-").into(),
-        Some(PrefixArg::Universal(n)) => {
-            let n = [number(scope, n as f64)];
-            v8::Array::new_with_elements(scope, &n).into()
+/// What the shared value layer needs of V8, on a handle scope.
+impl<'s> values::Scope for v8::PinScope<'s, '_> {
+    type Value = v8::Local<'s, v8::Value>;
+    type Error = Thrown;
+    type Held = ScriptFunction;
+
+    fn hold(&mut self, value: &v8::Local<'s, v8::Value>) -> Option<ScriptFunction> {
+        let f = v8::Local::<v8::Function>::try_from(*value).ok()?;
+        Some(ScriptFunction::new(self, f))
+    }
+
+    fn null(&mut self) -> v8::Local<'s, v8::Value> {
+        v8::null(self).into()
+    }
+
+    fn undefined(&mut self) -> v8::Local<'s, v8::Value> {
+        v8::undefined(self).into()
+    }
+
+    fn boolean(&mut self, b: bool) -> v8::Local<'s, v8::Value> {
+        v8::Boolean::new(self, b).into()
+    }
+
+    fn number(&mut self, n: f64) -> v8::Local<'s, v8::Value> {
+        number(self, n)
+    }
+
+    fn string(&mut self, s: &str) -> Js<'s> {
+        Ok(string(self, s).into())
+    }
+
+    fn array(&mut self, items: Vec<v8::Local<'s, v8::Value>>) -> Js<'s> {
+        Ok(v8::Array::new_with_elements(self, &items).into())
+    }
+
+    fn object(&mut self) -> Js<'s> {
+        Ok(v8::Object::new(self).into())
+    }
+
+    fn set(&mut self, object: &v8::Local<'s, v8::Value>, key: &str, value: v8::Local<'s, v8::Value>) -> std::result::Result<(), Thrown> {
+        let object = v8::Local::<v8::Object>::try_from(*object).map_err(|_| throw(self, &Error::new("Not an object")))?;
+        set(self, object, key, value);
+        Ok(())
+    }
+
+    fn symbol_for(&mut self, name: &str) -> Js<'s> {
+        let name = string(self, name);
+        Ok(v8::Symbol::for_key(self, name).into())
+    }
+
+    fn call_global(&mut self, name: &str, args: Vec<v8::Local<'s, v8::Value>>) -> Js<'s> {
+        call_global(self, name, &args)
+    }
+
+    fn function_to_js(&mut self, function: &ember_core::Function) -> Js<'s> {
+        function_to_js(self, function)
+    }
+
+    fn is_nullish(&mut self, value: &v8::Local<'s, v8::Value>) -> bool {
+        value.is_null_or_undefined()
+    }
+
+    fn as_bool(&mut self, value: &v8::Local<'s, v8::Value>) -> Option<bool> {
+        value.is_boolean().then(|| value.is_true())
+    }
+
+    fn as_number(&mut self, value: &v8::Local<'s, v8::Value>) -> Option<f64> {
+        value.is_number().then(|| value.number_value(self).unwrap_or(f64::NAN))
+    }
+
+    fn as_string(&mut self, value: &v8::Local<'s, v8::Value>) -> Option<String> {
+        value.is_string().then(|| value.to_rust_string_lossy(self))
+    }
+
+    fn array_items(&mut self, value: &v8::Local<'s, v8::Value>) -> std::result::Result<Option<Vec<v8::Local<'s, v8::Value>>>, Thrown> {
+        let Ok(list) = v8::Local::<v8::Array>::try_from(*value) else { return Ok(None) };
+        (0..list.length()).map(|i| list.get_index(self, i).ok_or(Thrown)).collect::<std::result::Result<Vec<_>, _>>().map(Some)
+    }
+
+    fn function_from_js(&mut self, value: &v8::Local<'s, v8::Value>) -> std::result::Result<Option<EditorValue>, Thrown> {
+        match v8::Local::<v8::Function>::try_from(*value) {
+            Ok(f) => function_from_js(self, f).map(Some),
+            Err(_) => Ok(None),
         }
     }
+
+    fn symbol_description(&mut self, value: &v8::Local<'s, v8::Value>) -> Option<Option<String>> {
+        let symbol = v8::Local::<v8::Symbol>::try_from(*value).ok()?;
+        let description = symbol.description(self);
+        Some((!description.is_undefined()).then(|| description.to_rust_string_lossy(self)))
+    }
+
+    fn is_object(&mut self, value: &v8::Local<'s, v8::Value>) -> bool {
+        value.is_object()
+    }
+
+    fn is_plain_object(&mut self, value: &v8::Local<'s, v8::Value>) -> bool {
+        value.is_object() && !value.is_array() && !value.is_function() && !value.is_string() && !value.is_string_object()
+    }
+
+    fn get(&mut self, object: &v8::Local<'s, v8::Value>, key: &str) -> std::result::Result<Option<v8::Local<'s, v8::Value>>, Thrown> {
+        let Ok(object) = v8::Local::<v8::Object>::try_from(*object) else { return Ok(None) };
+        // None only when getting it threw.
+        let value = get(self, object, key).ok_or(Thrown)?;
+        Ok((!value.is_undefined()).then_some(value))
+    }
+
+    fn keys(&mut self, object: &v8::Local<'s, v8::Value>) -> std::result::Result<Vec<String>, Thrown> {
+        let Ok(object) = v8::Local::<v8::Object>::try_from(*object) else { return Ok(Vec::new()) };
+        Ok(keys(self, object))
+    }
+
+    fn throw(&mut self, e: &Error) -> Thrown {
+        throw(self, e)
+    }
+
+    fn throw_type(&mut self, message: &str) -> Thrown {
+        let message = string(self, message);
+        let error = v8::Exception::type_error(self, message);
+        self.throw_exception(error);
+        Thrown
+    }
+}
+
+fn prefix_to_js<'s>(scope: &mut v8::PinScope<'s, '_>, arg: Option<PrefixArg>) -> Js<'s> {
+    values::prefix_to_js(scope, arg)
 }
 
 fn prefix_from_js<'s>(scope: &mut v8::PinScope<'s, '_>, value: v8::Local<'s, v8::Value>) -> std::result::Result<Option<PrefixArg>, Thrown> {
-    if value.is_null_or_undefined() {
-        return Ok(None);
-    }
-    if value.is_number() {
-        return Ok(Some(PrefixArg::Number(value.number_value(scope).unwrap_or(0.0) as i64)));
-    }
-    if value.is_string() && value.to_rust_string_lossy(scope) == "-" {
-        return Ok(Some(PrefixArg::Minus));
-    }
-    if let Ok(list) = v8::Local::<v8::Array>::try_from(value)
-        && list.length() == 1
-        && let Some(n) = list.get_index(scope, 0).filter(|v| v.is_number()).and_then(|v| v.number_value(scope))
-    {
-        return Ok(Some(PrefixArg::Universal(n as i64)));
-    }
-    let message = string(scope, "A prefix argument is null, a number, \"-\" or [n]");
-    let error = v8::Exception::type_error(scope, message);
-    scope.throw_exception(error);
-    Err(Thrown)
+    values::prefix_from_js(scope, value)
 }

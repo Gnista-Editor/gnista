@@ -348,13 +348,13 @@ impl Ret for PlistOrValue {
 
 impl Ret for Posn {
     fn give<'s>(self, scope: &mut Scope<'s, '_>) -> Js<'s> {
-        Ok(super::posn_to_js(scope, self.0))
+        super::posn_to_js(scope, self.0)
     }
 }
 
 impl Ret for ember_core::Match {
     fn give<'s>(self, scope: &mut Scope<'s, '_>) -> Js<'s> {
-        Ok(super::match_to_js(scope, &self))
+        super::match_to_js(scope, &self)
     }
 }
 
@@ -367,6 +367,6 @@ impl Ret for ember_core::Props {
 
 impl Ret for Prefix {
     fn give<'s>(self, scope: &mut Scope<'s, '_>) -> Js<'s> {
-        Ok(super::prefix_to_js(scope, self.0))
+        super::prefix_to_js(scope, self.0)
     }
 }

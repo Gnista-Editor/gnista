@@ -250,7 +250,7 @@ impl<T: Ret> Ret for Box<T> {
 
 impl Ret for ember_core::FaceAttrs {
     fn give<'js>(self, ctx: &Ctx<'js>) -> rquickjs::Result<Value<'js>> {
-        super::face_attrs_to_js(ctx, &self).map(rquickjs::Object::into_value)
+        super::face_attrs_to_js(ctx, &self)
     }
 }
 
@@ -268,14 +268,14 @@ impl Ret for Posn {
 
 impl Ret for ember_core::Match {
     fn give<'js>(self, ctx: &Ctx<'js>) -> rquickjs::Result<Value<'js>> {
-        super::match_to_js(ctx, &self).map(rquickjs::Object::into_value)
+        super::match_to_js(ctx, &self)
     }
 }
 
 /// Text properties, as an object of each property's value.
 impl Ret for ember_core::Props {
     fn give<'js>(self, ctx: &Ctx<'js>) -> rquickjs::Result<Value<'js>> {
-        super::props_to_js(ctx, &self).map(rquickjs::Object::into_value)
+        super::props_to_js(ctx, &self)
     }
 }
 

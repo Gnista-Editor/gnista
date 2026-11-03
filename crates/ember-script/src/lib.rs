@@ -24,6 +24,7 @@ compile_error!("ember-script needs an engine: the feature \"quickjs\" or \"v8\""
 mod strip;
 mod strip_js;
 mod types;
+mod values;
 
 pub use strip::{strip_module_types, strip_types};
 pub use types::type_definitions;

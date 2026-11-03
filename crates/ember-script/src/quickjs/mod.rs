@@ -9,14 +9,14 @@ use std::cell::{Cell, RefCell};
 use std::ptr::NonNull;
 use std::rc::Rc;
 
-use ember_core::{Arg, Command, Editor, Error, FaceAttrs, ParamKind, PrefixArg, Result, Value as EditorValue};
+use ember_core::{Arg, Editor, Error, FaceAttrs, PrefixArg, Result, Value as EditorValue};
 use rquickjs::context::EvalOptions;
 use rquickjs::function::{Opt, Rest};
 use rquickjs::{Coerced, Context, Ctx, Exception, FromJs, Function, Object, Persistent, Runtime, Value, qjs};
 
 use crate::{
-    EDITOR, Failure, LOADING, Outermost, PRELUDE, Restore, camel_key, editor_call, face_attribute_key, natives, nested_deadline,
-    package_source, should_stop, strip_module_types, stripped,
+    EDITOR, Failure, Outermost, PRELUDE, Restore, editor_call, natives, nested_deadline, package_source, should_stop, strip_module_types,
+    stripped, values,
 };
 
 thread_local! {
@@ -54,7 +54,7 @@ impl Engine {
         let context = Context::full(&runtime).map_err(|e| Error::new(e.to_string()))?;
         let engine = Engine { context };
         enter(&engine.context, ed, |ctx| {
-            install_native(&ctx, &engine.context).map_err(|e| js_error(&ctx, e))?;
+            install_native(&ctx).map_err(|e| js_error(&ctx, e))?;
             ctx.eval_with_options::<(), _>(PRELUDE, eval_options("ember:prelude")).map_err(|e| js_error(&ctx, e))
         })?;
         Ok(engine)
@@ -238,7 +238,7 @@ fn throw_error(ctx: &Ctx<'_>, e: &Error) -> rquickjs::Error {
 }
 
 /// A script function the editor holds on to, as a command or a hook function.
-struct ScriptFunction {
+pub(crate) struct ScriptFunction {
     // Declared before `context` so the function is freed before the runtime can be.
     run: Persistent<Function<'static>>,
     context: Context,
@@ -254,10 +254,6 @@ impl ScriptFunction {
                 .map(drop)
                 .map_err(|e| js_error(&ctx, e))
         })
-    }
-
-    fn into_command(self) -> impl Fn(&mut Editor, &[Arg]) -> Result<()> {
-        move |ed, args| self.call(ed, args)
     }
 
     /// Calls the function with editor values and returns what it returns,
@@ -297,263 +293,78 @@ impl ScriptFunction {
     }
 }
 
-fn install_native<'js>(ctx: &Ctx<'js>, context: &Context) -> rquickjs::Result<()> {
+impl values::Held for ScriptFunction {
+    fn call(&self, ed: &mut Editor, args: &[Arg]) -> Result<()> {
+        ScriptFunction::call(self, ed, args)
+    }
+
+    fn call_for_names(&self, ed: &mut Editor, args: &[Arg]) -> Result<Vec<String>> {
+        ScriptFunction::call_for_names(self, ed, args)
+    }
+
+    fn call_for_text(&self, ed: &mut Editor, args: &[Arg]) -> Result<String> {
+        ScriptFunction::call_for_text(self, ed, args)
+    }
+}
+
+fn install_native<'js>(ctx: &Ctx<'js>) -> rquickjs::Result<()> {
     let native = Object::new(ctx.clone())?;
     let api = Object::new(ctx.clone())?;
     natives::install(ctx, &native, &api)?;
     ctx.globals().set("__emberApi", api)?;
     // The one native that needs the engine itself: a command keeps the
     // script's functions for its prompts, collections and starting input.
-    let context = context.clone();
     native.set(
         "defineCommand",
-        Function::new(
-            ctx.clone(),
-            move |ctx: Ctx<'js>, name: String, doc: String, params: Vec<Object<'js>>, run: Function<'js>, shift_select: Opt<bool>| {
-                let script = ScriptFunction { run: Persistent::save(&ctx, run), context: context.clone() };
-                let mut command = Command::new(&name, &doc, script.into_command());
-                command.shift_select = shift_select.0 == Some(true);
-                command.source = LOADING.with_borrow(|files| files.last().cloned());
-                for param in params {
-                    let param_name: String = param.get("name")?;
-                    let kind: String = param.get("kind")?;
-                    let prompt_value: Value = param.get("prompt")?;
-                    let prompt_fn = prompt_value.as_function().map(|f| ScriptFunction { run: Persistent::save(&ctx, f.clone()), context: context.clone() });
-                    let prompt: String = if prompt_fn.is_some() { String::new() } else { param.get("prompt")? };
-                    let Some(kind) = ParamKind::from_name(&kind) else {
-                        let kinds: Vec<&str> = ParamKind::ALL.iter().map(ParamKind::name).collect();
-                        let message = format!("Unknown parameter kind {kind:?}; use one of {}", kinds.join(", "));
-                        return Err(Exception::throw_type(&ctx, &message));
-                    };
-                    command = command.param(&param_name, kind, &prompt);
-                    if let Some(f) = prompt_fn {
-                        command = command.prompt_with(move |ed, args| f.call_for_text(ed, args));
-                    }
-                    let collection: Value = param.get("collection")?;
-                    if let Some(f) = collection.as_function() {
-                        let f = ScriptFunction { run: Persistent::save(&ctx, f.clone()), context: context.clone() };
-                        let require_match = param.get::<_, Option<bool>>("requireMatch")?.unwrap_or(false);
-                        command = command.collection(require_match, move |ed, args| f.call_for_names(ed, args));
-                    }
-                    let initial: Value = param.get("initial")?;
-                    if let Some(f) = initial.as_function() {
-                        let f = ScriptFunction { run: Persistent::save(&ctx, f.clone()), context: context.clone() };
-                        command = command.initial_with(move |ed, args| f.call_for_text(ed, args));
-                    } else if let Some(text) = initial.as_string() {
-                        let text = text.to_string()?;
-                        command = command.initial_with(move |_, _| Ok(text.clone()));
-                    }
-                    if let Some(history) = param.get::<_, Option<String>>("history")? {
-                        command = command.history(&history);
-                    }
-                }
-                with_editor(&ctx, |ed| {
-                    ed.define_command(command);
-                    Ok(())
-                })
-            },
-        )?,
+        Function::new(ctx.clone(), move |ctx: Ctx<'js>, name: Value<'js>, doc: Value<'js>, params: Value<'js>, run: Value<'js>, shift_select: Opt<Value<'js>>| {
+            let shift_select = shift_select.0.unwrap_or_else(|| Value::new_undefined(ctx.clone()));
+            let command = values::command_from_js(&mut ctx.clone(), [name, doc, params, run, shift_select])?;
+            with_editor(&ctx, |ed| {
+                ed.define_command(command);
+                Ok(())
+            })
+        })?,
     )?;
     ctx.globals().set("__ember", native)
 }
 
 /// A match as a script sees it: `{ start, end, groups }`.
-fn match_to_js<'js>(ctx: &Ctx<'js>, m: &ember_core::Match) -> rquickjs::Result<Object<'js>> {
-    let object = Object::new(ctx.clone())?;
-    object.set("start", m.start)?;
-    object.set("end", m.end)?;
-    let groups: Vec<Option<Vec<usize>>> = m.groups.iter().map(|g| g.map(|(s, e)| vec![s, e])).collect();
-    object.set("groups", groups)?;
-    Ok(object)
+fn match_to_js<'js>(ctx: &Ctx<'js>, m: &ember_core::Match) -> rquickjs::Result<Value<'js>> {
+    values::match_to_js(&mut ctx.clone(), m)
 }
 
-fn props_to_js<'js>(ctx: &Ctx<'js>, props: &ember_core::Props) -> rquickjs::Result<Object<'js>> {
-    let object = Object::new(ctx.clone())?;
-    for (name, value) in props {
-        object.set(name.as_str(), value_to_js(ctx, value)?)?;
-    }
-    Ok(object)
+fn props_to_js<'js>(ctx: &Ctx<'js>, props: &ember_core::Props) -> rquickjs::Result<Value<'js>> {
+    values::props_to_js(&mut ctx.clone(), props)
 }
 
-/// Face attributes from an object such as `{ foreground: "accent", weight:
-/// "bold", underline: { color: "red", style: "wave" } }`, each value as
-/// Emacs gives it, an object standing for a plist.
+/// Face attributes from an object, as [`values::face_attrs_from_js`] reads them.
 fn face_attrs_from_js<'js>(object: &Object<'js>) -> rquickjs::Result<FaceAttrs> {
-    let mut attrs = FaceAttrs::default();
-    for (key, value) in face_attr_values_from_js(object)? {
-        attrs.set(&key, &value);
-    }
-    Ok(attrs)
+    values::face_attrs_from_js(&mut object.ctx().clone(), &object.clone().into_value())
 }
 
 /// Each attribute in such an object, as its Emacs name and value.
 fn face_attr_values_from_js<'js>(object: &Object<'js>) -> rquickjs::Result<Vec<(String, EditorValue)>> {
-    let ctx = object.ctx().clone();
-    let mut values = Vec::new();
-    for key in object.keys::<String>() {
-        let key = key?;
-        let value: Value<'js> = object.get(&key)?;
-        if value.is_undefined() {
-            continue;
-        }
-        let value = match value.as_object() {
-            Some(inner) if !value.is_array() && !value.is_function() && value.as_string().is_none() => {
-                let mut plist = Vec::new();
-                for k in inner.keys::<String>() {
-                    let k = k?;
-                    let v: Value<'js> = inner.get(&k)?;
-                    plist.push(EditorValue::Symbol(face_attribute_key(&k)));
-                    plist.push(value_from_js(&ctx, v)?);
-                }
-                EditorValue::List(plist)
-            }
-            _ => value_from_js(&ctx, value)?,
-        };
-        values.push((face_attribute_key(&key), value));
-    }
-    Ok(values)
+    values::face_attr_values_from_js(&mut object.ctx().clone(), &object.clone().into_value())
 }
 
-/// A place in a window as scripts see it, as Emacs's posn: the window,
-/// the buffer position, x and y from the top left of the text area, and
-/// the column and row in default characters; undefined for none.
 fn posn_to_js<'js>(ctx: &Ctx<'js>, posn: Option<ember_core::layout::Posn>) -> rquickjs::Result<Value<'js>> {
-    let Some(posn) = posn else { return Ok(Value::new_undefined(ctx.clone())) };
-    let object = Object::new(ctx.clone())?;
-    object.set("window", posn.window)?;
-    object.set("point", posn.point)?;
-    object.set("x", posn.x as f64)?;
-    object.set("y", posn.y as f64)?;
-    object.set("col", posn.col as f64)?;
-    object.set("row", posn.row)?;
-    Ok(object.into_value())
+    values::posn_to_js(&mut ctx.clone(), posn)
 }
 
-/// Face attributes as scripts see them: an object of the attributes that
-/// are set, keyed as scripts give them (`weight`, `inverseVideo`), each
-/// value as Emacs's `face-attribute` gives it, with `bold` and `italic`
-/// added where the weight and slant say so.
-fn face_attrs_to_js<'js>(ctx: &Ctx<'js>, attrs: &FaceAttrs) -> rquickjs::Result<Object<'js>> {
-    let object = Object::new(ctx.clone())?;
-    let plist = attrs.to_plist();
-    for pair in plist.chunks(2) {
-        let [key, value] = pair else { break };
-        let Some(key) = key.as_str() else { continue };
-        object.set(camel_key(key).as_str(), plist_or_value_to_js(ctx, value)?)?;
-    }
-    if attrs.is_bold() {
-        object.set("bold", true)?;
-    }
-    if attrs.is_italic() {
-        object.set("italic", true)?;
-    }
-    Ok(object)
+fn face_attrs_to_js<'js>(ctx: &Ctx<'js>, attrs: &FaceAttrs) -> rquickjs::Result<Value<'js>> {
+    values::face_attrs_to_js(&mut ctx.clone(), attrs)
 }
 
-/// A face attribute's value as scripts see it: a plist such as an
-/// underline's `(:color "red" :style wave)` as an object, `{ color: "red",
-/// style: "wave" }`, anything else as it is.
 fn plist_or_value_to_js<'js>(ctx: &Ctx<'js>, value: &EditorValue) -> rquickjs::Result<Value<'js>> {
-    let EditorValue::List(items) = value else { return value_to_js(ctx, value) };
-    if !items.first().and_then(EditorValue::as_str).is_some_and(|k| k.starts_with(':')) {
-        return value_to_js(ctx, value);
-    }
-    let object = Object::new(ctx.clone())?;
-    for pair in items.chunks(2) {
-        let [key, v] = pair else { break };
-        let Some(key) = key.as_str() else { continue };
-        object.set(camel_key(key).as_str(), value_to_js(ctx, v)?)?;
-    }
-    Ok(object.into_value())
+    values::plist_or_value_to_js(&mut ctx.clone(), value)
 }
 
-/// A variable's value as scripts see it: null, a boolean, a number, a string or an array.
 fn value_to_js<'js>(ctx: &Ctx<'js>, value: &EditorValue) -> rquickjs::Result<Value<'js>> {
-    Ok(match value {
-        EditorValue::Null => Value::new_null(ctx.clone()),
-        EditorValue::Bool(b) => Value::new_bool(ctx.clone(), *b),
-        EditorValue::Number(n) => Value::new_number(ctx.clone(), *n),
-        EditorValue::Str(s) => rquickjs::String::from_str(ctx.clone(), s)?.into_value(),
-        EditorValue::List(items) => {
-            let list = rquickjs::Array::new(ctx.clone())?;
-            for (i, item) in items.iter().enumerate() {
-                list.set(i, value_to_js(ctx, item)?)?;
-            }
-            list.into_value()
-        }
-        EditorValue::Function(function) => function_to_js(ctx, function)?,
-        // The prelude's object for the buffer, the same one each time.
-        EditorValue::Buffer(id) => {
-            let make: Function = ctx.globals().get("__emberBuffer")?;
-            make.call((*id as f64,))?
-        }
-        // The prelude's object for the keymap, the same one each time.
-        EditorValue::Keymap(id) => {
-            let make: Function = ctx.globals().get("__emberKeymap")?;
-            make.call((*id as f64,))?
-        }
-        // And for the char-table.
-        EditorValue::CharTable(id) => {
-            let make: Function = ctx.globals().get("__emberCharTable")?;
-            make.call((*id as f64,))?
-        }
-        // The prelude's objects for tree-sitter parsers and nodes.
-        EditorValue::Treesit(object) => {
-            let make: Function = ctx.globals().get("__emberTreesit")?;
-            let (kind, raw): (&str, Vec<f64>) = match object {
-                ember_core::treesitfns::TsObject::Parser { buffer, parser } => ("parser", vec![*buffer as f64, *parser as f64]),
-                ember_core::treesitfns::TsObject::Node(r) => {
-                    ("node", [r.buffer as f64, r.parser as f64, r.generation as f64].into_iter().chain(r.path.iter().map(|&i| i as f64)).collect())
-                }
-            };
-            make.call((kind, raw))?
-        }
-        // The prelude's Font, holding its kind and its properties.
-        EditorValue::Font(font) => {
-            let make: Function = ctx.globals().get("__emberFont")?;
-            let plist = value_to_js(ctx, &EditorValue::List(font.to_plist()))?;
-            make.call((font.kind.name(), plist))?
-        }
-        // The prelude's Marker for the id, the one the value was made from.
-        EditorValue::Marker(id) => {
-            let make: Function = ctx.globals().get("__emberMarker")?;
-            make.call((*id as f64,))?
-        }
-        // A symbol is JavaScript's registered symbol of its name, interned as Emacs's are.
-        EditorValue::Symbol(name) => {
-            let symbol: Object = ctx.globals().get("Symbol")?;
-            let make: Function = symbol.get("for")?;
-            make.call((name.as_str(),))?
-        }
-        // The prelude's PropertizedString, with its runs as [start, end, properties].
-        EditorValue::Text(text) => {
-            let runs = rquickjs::Array::new(ctx.clone())?;
-            for (i, (range, props)) in text.props.iter().enumerate() {
-                let object = Object::new(ctx.clone())?;
-                for (name, value) in props {
-                    object.set(name.as_str(), value_to_js(ctx, value)?)?;
-                }
-                let run = rquickjs::Array::new(ctx.clone())?;
-                run.set(0, range.start as f64)?;
-                run.set(1, range.end as f64)?;
-                run.set(2, object)?;
-                runs.set(i, run)?;
-            }
-            let make: Function = ctx.globals().get("__emberText")?;
-            make.call((text.string.as_str(), runs))?
-        }
-    })
+    values::value_to_js(&mut ctx.clone(), value)
 }
 
-/// The property a buffer object keeps its buffer's id in.
-const BUFFER_ID: &str = "__emberBufferId";
-
-/// A string or propertized string from a script, as text to insert.
 fn text_from_js<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> rquickjs::Result<ember_core::Text> {
-    Ok(match value_from_js(ctx, value)? {
-        EditorValue::Text(text) => text,
-        other => ember_core::Text { string: other.as_str().map(str::to_string).unwrap_or_else(|| other.to_string()), props: Vec::new() },
-    })
+    values::text_from_js(&mut ctx.clone(), value)
 }
 
 /// The property a script function keeps its editor identity in, so the
@@ -606,164 +417,143 @@ fn function_from_js<'js>(ctx: &Ctx<'js>, f: Function<'js>) -> rquickjs::Result<E
 }
 
 fn value_from_js<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> rquickjs::Result<EditorValue> {
-    match convert_from_js(ctx, value)? {
-        Some(value) => Ok(value),
-        None => Err(Exception::throw_type(
-            ctx,
-            "A variable holds null, a boolean, a number, a string, a function, or an array of these",
-        )),
-    }
+    values::value_from_js(&mut ctx.clone(), value)
 }
 
-/// A script value as an editor value, or `None` if it is not one, such as an object.
 fn convert_from_js<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> rquickjs::Result<Option<EditorValue>> {
-    if value.is_null() || value.is_undefined() {
-        return Ok(Some(EditorValue::Null));
-    }
-    if let Some(b) = value.as_bool() {
-        return Ok(Some(EditorValue::Bool(b)));
-    }
-    if let Some(n) = value.as_number() {
-        return Ok(Some(EditorValue::Number(n)));
-    }
-    if let Some(s) = value.as_string() {
-        return Ok(Some(EditorValue::Str(s.to_string()?)));
-    }
-    if let Some(list) = value.as_array() {
-        let mut items = Vec::with_capacity(list.len());
-        for i in 0..list.len() {
-            match convert_from_js(ctx, list.get(i)?)? {
-                Some(item) => items.push(item),
-                None => return Ok(None),
-            }
-        }
-        return Ok(Some(EditorValue::List(items)));
-    }
-    if let Some(f) = value.as_function() {
-        return function_from_js(ctx, f.clone()).map(Some);
-    }
-    if let Some(symbol) = value.as_symbol() {
-        let name: Option<String> = symbol.description()?.as_string().map(|s| s.to_string()).transpose()?;
-        return Ok(name.map(EditorValue::Symbol));
-    }
-    if let Some(object) = value.as_object()
-        && let Some(id) = object.get::<_, Option<f64>>(BUFFER_ID)?
-    {
-        return Ok(Some(EditorValue::Buffer(id as u64)));
-    }
-    if let Some(object) = value.as_object()
-        && let Some(id) = object.get::<_, Option<f64>>("__emberKeymapId")?
-    {
-        return Ok(Some(EditorValue::Keymap(id as usize)));
-    }
-    if let Some(object) = value.as_object()
-        && let Some(raw) = object.get::<_, Option<Vec<f64>>>("__emberTreesitParser")?
-        && raw.len() == 2
-    {
-        return Ok(Some(EditorValue::Treesit(ember_core::treesitfns::TsObject::Parser { buffer: raw[0] as u64, parser: raw[1] as u64 })));
-    }
-    if let Some(object) = value.as_object()
-        && let Some(raw) = object.get::<_, Option<Vec<f64>>>("__emberTreesitNode")?
-        && raw.len() >= 3
-    {
-        let r = ember_core::treesitfns::NodeRef {
-            buffer: raw[0] as u64,
-            parser: raw[1] as u64,
-            generation: raw[2] as u64,
-            path: raw[3..].iter().map(|&i| i as u32).collect(),
-        };
-        return Ok(Some(EditorValue::Treesit(ember_core::treesitfns::TsObject::Node(r))));
-    }
-    if let Some(object) = value.as_object()
-        && let Some(kind) = object.get::<_, Option<String>>("__emberFontKind")?
-        && let Some(kind) = ember_core::FontKind::from_name(&kind)
-    {
-        let plist = match convert_from_js(ctx, object.get("__emberFontPlist")?)? {
-            Some(EditorValue::List(items)) => items,
-            _ => Vec::new(),
-        };
-        let font = ember_core::Font::from_plist(kind, &plist).map_err(|e| rquickjs::Error::new_from_js_message("value", "font", e.to_string()))?;
-        return Ok(Some(EditorValue::Font(Box::new(font))));
-    }
-    // A marker the editor now holds, which collecting the script's object
-    // must no longer delete, as a Lisp marker lives while a variable has it.
-    if let Some(object) = value.as_object()
-        && let Some(id) = object.get::<_, Option<f64>>("__emberMarkerId")?
-    {
-        let keep: Function = ctx.globals().get("__emberKeepMarker")?;
-        keep.call::<_, ()>((object.clone(),))?;
-        return Ok(Some(EditorValue::Marker(id as u64)));
-    }
-    if let Some(object) = value.as_object()
-        && let Some(id) = object.get::<_, Option<f64>>("__emberCharTableId")?
-    {
-        return Ok(Some(EditorValue::CharTable(id as u64)));
-    }
-    if let Some(object) = value.as_object()
-        && object.get::<_, Option<bool>>("__emberText")? == Some(true)
-    {
-        let string: String = object.get("string")?;
-        let runs: Vec<rquickjs::Array> = object.get("properties")?;
-        let mut props = Vec::new();
-        for run in runs {
-            let (start, end): (f64, f64) = (run.get(0)?, run.get(1)?);
-            let names: Object = run.get(2)?;
-            let mut map = ember_core::Props::new();
-            for key in names.keys::<String>() {
-                let key = key?;
-                match convert_from_js(ctx, names.get(key.as_str())?)? {
-                    Some(v) => {
-                        map.insert(key, v);
-                    }
-                    None => return Ok(None),
-                }
-            }
-            // Counted in characters, and within the string.
-            let n = string.chars().count();
-            let (start, end) = ((start.max(0.0) as usize).min(n), (end.max(0.0) as usize).min(n));
-            if end > start && !map.is_empty() {
-                props.push((start..end, map));
-            }
-        }
-        return Ok(Some(EditorValue::Text(ember_core::Text { string, props })));
-    }
-    Ok(None)
+    values::convert_from_js(&mut ctx.clone(), value)
 }
 
-/// A prefix argument as scripts see it, in Emacs's forms: null, a number,
-/// "-", or a one-element array such as [4] for C-u.
-fn prefix_to_js<'js>(ctx: &Ctx<'js>, arg: Option<PrefixArg>) -> rquickjs::Result<Value<'js>> {
-    Ok(match arg {
-        None => Value::new_null(ctx.clone()),
-        Some(PrefixArg::Number(n)) => Value::new_number(ctx.clone(), n as f64),
-        Some(PrefixArg::Minus) => rquickjs::String::from_str(ctx.clone(), "-")?.into_value(),
-        Some(PrefixArg::Universal(n)) => {
-            let list = rquickjs::Array::new(ctx.clone())?;
-            list.set(0, n as f64)?;
-            list.into_value()
+/// What the shared value layer needs of QuickJS, on a context.
+impl<'js> values::Scope for Ctx<'js> {
+    type Value = Value<'js>;
+    type Error = rquickjs::Error;
+    type Held = ScriptFunction;
+
+    fn hold(&mut self, value: &Value<'js>) -> Option<ScriptFunction> {
+        let f = value.as_function()?;
+        let context = CONTEXTS.with_borrow(|c| c.last().cloned())?;
+        Some(ScriptFunction { run: Persistent::save(self, f.clone()), context })
+    }
+
+    fn null(&mut self) -> Value<'js> {
+        Value::new_null(self.clone())
+    }
+
+    fn undefined(&mut self) -> Value<'js> {
+        Value::new_undefined(self.clone())
+    }
+
+    fn boolean(&mut self, b: bool) -> Value<'js> {
+        Value::new_bool(self.clone(), b)
+    }
+
+    fn number(&mut self, n: f64) -> Value<'js> {
+        Value::new_number(self.clone(), n)
+    }
+
+    fn string(&mut self, s: &str) -> rquickjs::Result<Value<'js>> {
+        Ok(rquickjs::String::from_str(self.clone(), s)?.into_value())
+    }
+
+    fn array(&mut self, items: Vec<Value<'js>>) -> rquickjs::Result<Value<'js>> {
+        let list = rquickjs::Array::new(self.clone())?;
+        for (i, item) in items.into_iter().enumerate() {
+            list.set(i, item)?;
         }
-    })
+        Ok(list.into_value())
+    }
+
+    fn object(&mut self) -> rquickjs::Result<Value<'js>> {
+        Ok(Object::new(self.clone())?.into_value())
+    }
+
+    fn set(&mut self, object: &Value<'js>, key: &str, value: Value<'js>) -> rquickjs::Result<()> {
+        object.as_object().ok_or_else(|| Exception::throw_type(self, "Not an object"))?.set(key, value)
+    }
+
+    fn symbol_for(&mut self, name: &str) -> rquickjs::Result<Value<'js>> {
+        let symbol: Object = self.globals().get("Symbol")?;
+        let make: Function = symbol.get("for")?;
+        make.call((name,))
+    }
+
+    fn call_global(&mut self, name: &str, args: Vec<Value<'js>>) -> rquickjs::Result<Value<'js>> {
+        let f: Function = self.globals().get(name)?;
+        f.call((Rest(args),))
+    }
+
+    fn function_to_js(&mut self, function: &ember_core::Function) -> rquickjs::Result<Value<'js>> {
+        function_to_js(self, function)
+    }
+
+    fn is_nullish(&mut self, value: &Value<'js>) -> bool {
+        value.is_null() || value.is_undefined()
+    }
+
+    fn as_bool(&mut self, value: &Value<'js>) -> Option<bool> {
+        value.as_bool()
+    }
+
+    fn as_number(&mut self, value: &Value<'js>) -> Option<f64> {
+        value.as_number()
+    }
+
+    fn as_string(&mut self, value: &Value<'js>) -> Option<String> {
+        value.as_string().and_then(|s| s.to_string().ok())
+    }
+
+    fn array_items(&mut self, value: &Value<'js>) -> rquickjs::Result<Option<Vec<Value<'js>>>> {
+        let Some(list) = value.as_array() else { return Ok(None) };
+        (0..list.len()).map(|i| list.get(i)).collect::<rquickjs::Result<Vec<_>>>().map(Some)
+    }
+
+    fn function_from_js(&mut self, value: &Value<'js>) -> rquickjs::Result<Option<EditorValue>> {
+        match value.as_function() {
+            Some(f) => function_from_js(self, f.clone()).map(Some),
+            None => Ok(None),
+        }
+    }
+
+    fn symbol_description(&mut self, value: &Value<'js>) -> Option<Option<String>> {
+        let symbol = value.as_symbol()?;
+        Some(symbol.description().ok().and_then(|d| d.as_string().and_then(|s| s.to_string().ok())))
+    }
+
+    fn is_object(&mut self, value: &Value<'js>) -> bool {
+        value.as_object().is_some()
+    }
+
+    fn is_plain_object(&mut self, value: &Value<'js>) -> bool {
+        value.as_object().is_some() && !value.is_array() && !value.is_function() && value.as_string().is_none()
+    }
+
+    fn get(&mut self, object: &Value<'js>, key: &str) -> rquickjs::Result<Option<Value<'js>>> {
+        let Some(object) = object.as_object() else { return Ok(None) };
+        let value: Value<'js> = object.get(key)?;
+        Ok((!value.is_undefined()).then_some(value))
+    }
+
+    fn keys(&mut self, object: &Value<'js>) -> rquickjs::Result<Vec<String>> {
+        let Some(object) = object.as_object() else { return Ok(Vec::new()) };
+        object.keys::<String>().collect()
+    }
+
+    fn throw(&mut self, e: &Error) -> rquickjs::Error {
+        throw_error(self, e)
+    }
+
+    fn throw_type(&mut self, message: &str) -> rquickjs::Error {
+        Exception::throw_type(self, message)
+    }
+}
+
+fn prefix_to_js<'js>(ctx: &Ctx<'js>, arg: Option<PrefixArg>) -> rquickjs::Result<Value<'js>> {
+    values::prefix_to_js(&mut ctx.clone(), arg)
 }
 
 fn prefix_from_js<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> rquickjs::Result<Option<PrefixArg>> {
-    if value.is_null() || value.is_undefined() {
-        return Ok(None);
-    }
-    if let Some(n) = value.as_number() {
-        return Ok(Some(PrefixArg::Number(n as i64)));
-    }
-    if let Some(s) = value.as_string()
-        && s.to_string()? == "-"
-    {
-        return Ok(Some(PrefixArg::Minus));
-    }
-    if let Some(list) = value.as_array()
-        && list.len() == 1
-        && let Ok(n) = list.get::<f64>(0)
-    {
-        return Ok(Some(PrefixArg::Universal(n as i64)));
-    }
-    Err(Exception::throw_type(ctx, "A prefix argument is null, a number, \"-\" or [n]"))
+    values::prefix_from_js(&mut ctx.clone(), value)
 }
 
 /// What a failed script threw.
