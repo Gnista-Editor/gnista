@@ -7,6 +7,7 @@ license.workspace = true
 [dependencies]
 ember-core = { version = "0.1.0", path = "../ember-core" }
 rquickjs = { version = "0.14", features = ["loader"], optional = true }
+v8 = { version = "152.2", optional = true }
 swc_common = "26"
 swc_ecma_ast = "29"
 swc_ecma_parser = "46"
@@ -17,6 +18,7 @@ swc_ts_fast_strip = "59"
 default = ["quickjs"]
 # The script engine: QuickJS (rquickjs) or V8 (the v8 crate), exactly one.
 quickjs = ["dep:rquickjs"]
+v8 = ["dep:v8"]
 
 [build-dependencies]
 swc_common = "26"

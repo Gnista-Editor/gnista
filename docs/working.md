@@ -6,6 +6,7 @@ Ember was built in about a week, 27 October to 3 November 2026, in one long Clau
 
 - **The work stays in one session.** Mark follows and steers it over Remote Control from his phone. A sub-agent or another session needs the laptop to watch or answer, so the work is done here, in order, unless he asks for something else.
 - **Long commands run in the background**: the full test suite, release builds, the fuzzers, the bench, recording oracle cases. The session waits for them to finish rather than polling, and says what it is doing when it has been quiet for a while.
+- **Wait on a file or a process id, never on `pgrep -f` with the command's text**: the waiting loop's own command line holds that text, so it matches itself and never ends. Stop waits that are no longer needed, so the app does not list them for hours.
 - **Each turn ends with a message that stands on its own**: what changed, what was checked and how, what is not done or not verified. It is read on a phone, perhaps hours later, without the transcript.
 - **Each finished piece is committed and pushed**, so its progress shows away from the laptop and a stopped session loses nothing. Files are staged by name; `test.org` and other personal files are never committed.
 
@@ -38,5 +39,6 @@ Ember was built in about a week, 27 October to 3 November 2026, in one long Clau
 ## Tests on this Mac
 
 - **cargo-nextest**, one test binary per crate, and dependencies optimised in debug builds: the whole suite runs in about half a minute.
-- **Developer Tools must be on for the app running the builds** (System Settings, Privacy & Security, Developer Tools): Claude.app for the session's builds, Terminal.app for your own. Without it macOS checks each newly built program before it first runs, and listing the tests after a change took 10 to 30 minutes; with it, about a second. When listing is slow again, check this first.
+- **Developer Tools must be on for the app running the builds** (System Settings, Privacy & Security, Developer Tools): Claude.app for the session's builds, Terminal.app for your own. Without it macOS checks each newly built program before it first runs, and listing the tests after a change took 10 to 30 minutes; with it, the whole suite ran in 28 seconds. When listing is slow again, check this first; on 2026-11-03 newly built V8 test binaries were still scanned with it on ([performance.md](performance.md)).
+- **Check a fix with a change that makes a new program**: relinking a file that was only touched can give the same binary, which macOS has already let run.
 - **The GUI's snapshot tests are run on their own** (`cargo test -p ember-gui --test window --test images`), when drawing changes: each process spends a minute getting the GPU from Metal.

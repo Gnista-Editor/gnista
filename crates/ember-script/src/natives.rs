@@ -123,6 +123,30 @@ macro_rules! natives {
             )*
             Ok(())
         }
+
+        /// Puts this module's natives on `native`, and the public ones on `api`.
+        #[cfg(feature = "v8")]
+        pub(crate) fn install<'s>(
+            scope: &mut v8::PinScope<'s, '_>,
+            native: v8::Local<'s, v8::Object>,
+            api: v8::Local<'s, v8::Object>,
+        ) {
+            $(
+                {
+                    #[allow(unused_mut, unused_variables)]
+                    fn callback<'s>(scope: &mut v8::PinScope<'s, '_>, args: v8::FunctionCallbackArguments<'s>, mut rv: v8::ReturnValue<'s, v8::Value>) {
+                        let mut at = 0;
+                        $(let Ok($arg) = <$ty as $crate::engine::Param>::take(scope, &args, &mut at) else { return };)*
+                        let safe_point = true $(&& $safe_point)?;
+                        let Ok(value) = $crate::engine::with_editor(scope, safe_point, |ed| body::$name(ed $(, $arg)*)) else { return };
+                        if let Ok(value) = $crate::engine::Ret::give(value, scope) {
+                            rv.set(value);
+                        }
+                    }
+                    $crate::engine::define(scope, native, api, stringify!($name), !stringify!($vis).is_empty(), callback);
+                }
+            )*
+        }
     };
 }
 pub(crate) use natives;
@@ -295,6 +319,21 @@ pub(crate) fn install<'js>(ctx: &rquickjs::Ctx<'js>, native: &rquickjs::Object<'
     chartab::install(ctx, native, api)?;
     images::install(ctx, native, api)?;
     Ok(())
+}
+
+/// Puts every native in the tables on `native`, and the public ones on `api`.
+#[cfg(feature = "v8")]
+pub(crate) fn install<'s>(scope: &mut v8::PinScope<'s, '_>, native: v8::Local<'s, v8::Object>, api: v8::Local<'s, v8::Object>) {
+    editor::install(scope, native, api);
+    variables::install(scope, native, api);
+    text::install(scope, native, api);
+    bidi::install(scope, native, api);
+    treesit::install(scope, native, api);
+    windows::install(scope, native, api);
+    search::install(scope, native, api);
+    files::install(scope, native, api);
+    chartab::install(scope, native, api);
+    images::install(scope, native, api);
 }
 
 /// The declarations in `ember.d.ts` of the public natives.

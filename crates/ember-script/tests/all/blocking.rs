@@ -106,7 +106,10 @@ fn a_sort_predicate_can_ask() {
     let asked = prompt(&d).unwrap();
     assert!(asked.ends_with(" first? (y or n) "), "{asked}");
     keys(&d, "n");
-    assert_eq!(text(&d), "ab");
+    // Which pair the sort compares first is the engine's choice; the one
+    // asked about goes second.
+    let expected = if asked.starts_with("b first?") { "ab" } else { "ba" };
+    assert_eq!(text(&d), expected);
 }
 
 #[test]

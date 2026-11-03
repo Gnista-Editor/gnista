@@ -427,6 +427,7 @@ fn yanking_keeps_properties_but_those_yank_excludes() {
 fn markers_nothing_refers_to_are_freed() {
     let (mut ed, s) = setup();
     eval(&mut ed, &s, r#"(ember.insert("hello"), globalThis.kept = ember.makeMarker(3), globalThis.ids = Array.from({ length: 50 }, () => ember.makeMarker(2).id), 0)"#);
+    eval(&mut ed, &s, "ember.garbageCollect()");
     let result = eval(&mut ed, &s, r#"[ids.filter((id) => ember.markerPosition(id) !== undefined).length, ember.markerPosition(kept), kept.position, kept + 1]"#);
     // As Emacs's collector unchains markers nothing refers to; markers act as their positions in arithmetic.
     assert_eq!(result, "[0,3,3,4]");

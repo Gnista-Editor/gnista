@@ -315,6 +315,13 @@ natives! {
         Ok(b.make_marker(pos, advances) as f64)
     }
 
+    /// Collect garbage now, as Emacs's garbage-collect: markers nothing
+    /// refers to any more are freed by the time the code running finishes.
+    pub fn garbageCollect(ed) {
+        crate::engine::collect_garbage();
+        Ok(())
+    }
+
     fn deleteMarker(ed, id: f64) {
         ed.delete_marker(id as u64);
         Ok(())

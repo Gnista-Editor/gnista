@@ -10304,6 +10304,11 @@ declare global {
     function syntaxEntry(char: string): string | undefined;
     /** Move back over expression prefixes, as Emacs's backward-prefix-chars. */
     function backwardPrefixChars(): void;
+    /**
+     * Collect garbage now, as Emacs's garbage-collect: markers nothing
+     * refers to any more are freed by the time the code running finishes.
+     */
+    function garbageCollect(): void;
     function moveOverlay(overlay: number, start: number, end: number): void;
     function deleteOverlay(overlay: number): void;
     /** Overlays overlapping the range, and empty ones inside it. */

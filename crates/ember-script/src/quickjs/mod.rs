@@ -192,6 +192,14 @@ fn arg_to_js<'js>(ctx: &Ctx<'js>, arg: &Arg) -> rquickjs::Result<Value<'js>> {
     }
 }
 
+/// Collects garbage in the running script's runtime.
+pub(crate) fn collect_garbage() {
+    if let Some(raw) = ACTIVE.get() {
+        // SAFETY: ACTIVE is the context of the script running, whose runtime lock is held.
+        unsafe { Ctx::from_raw(raw) }.run_gc();
+    }
+}
+
 /// Gives a native the editor, throwing its error to the script. See [`editor_call`].
 pub(crate) fn with_editor<T>(ctx: &Ctx<'_>, f: impl FnOnce(&mut Editor) -> Result<T>) -> rquickjs::Result<T> {
     editor_call(true, f).map_err(|e| throw_error(ctx, &e))

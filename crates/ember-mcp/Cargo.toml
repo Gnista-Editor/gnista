@@ -4,9 +4,15 @@ edition.workspace = true
 version.workspace = true
 license.workspace = true
 
+[features]
+default = ["quickjs"]
+# The script engine, as ember-script's features choose it.
+quickjs = ["ember-script/quickjs"]
+v8 = ["ember-script/v8"]
+
 [dependencies]
 ember-core = { version = "0.1.0", path = "../ember-core" }
-ember-script = { version = "0.1.0", path = "../ember-script" }
+ember-script = { version = "0.1.0", path = "../ember-script", default-features = false }
 serde_json = "1"
 
 [dev-dependencies]

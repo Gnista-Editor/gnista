@@ -12,6 +12,15 @@ mod natives;
 mod quickjs;
 #[cfg(feature = "quickjs")]
 use quickjs as engine;
+#[cfg(feature = "v8")]
+mod v8engine;
+#[cfg(feature = "v8")]
+use v8engine as engine;
+
+#[cfg(all(feature = "quickjs", feature = "v8"))]
+compile_error!("ember-script runs one engine: turn off the default feature \"quickjs\" to use \"v8\"");
+#[cfg(not(any(feature = "quickjs", feature = "v8")))]
+compile_error!("ember-script needs an engine: the feature \"quickjs\" or \"v8\"");
 mod strip;
 mod strip_js;
 mod types;

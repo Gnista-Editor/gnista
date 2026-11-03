@@ -295,6 +295,17 @@ The test that the prelude's functions are the ones declared still passes, now ov
 - **Size.** The spike's binary, both engines and nothing else, is 60 MB; `ember-gui` is 41 MB.
 - **Not measured:** memory per isolate, startup with Ember's packages (V8's initialising took 0.5 to 2 ms, an isolate with the bench loaded 1.4 to 1.9 ms, QuickJS's 0.6 to 1.3), and the time a port takes, which step 0b's generated bindings decide.
 
+**The port, 2026-11-03.** Both engines are built from the same source, one at a time:
+
+- `crates/ember-script/src/lib.rs` keeps what is the same on both: the packages, `editor_call` (the editor for a native, and the quit check), `Outermost` (the time limit, the quit flag and the binding stack's height at the outermost entry), `should_stop`, and how a failure reads (`Failure`).
+- `src/quickjs/` and `src/v8engine/` each hold an `Engine` with four entry points (`new`, `import`, `run`, `eval_json`), the value conversions, `ScriptFunction`, `defineCommand`, and the natives' binding: the `Conv`, `Param` and `Ret` traits for the types the tables use. The `natives!` macro has an arm for each.
+- The engine is a cargo feature: `quickjs`, the default for now, or `v8`, which every crate above ember-script passes on. `cargo nextest run --workspace --no-default-features --features v8` runs everything on V8.
+- **Re-entry.** Each entry from the editor opens a handle scope on the isolate, nested in whatever scope the call it came from had open; the isolate is boxed, since `v8::Isolate` is a handle inside `OwnedIsolate`.
+- **Stopping.** A watchdog thread, armed while the outermost script runs, asks the isolate every 10 ms (`request_interrupt`) to check `should_stop`, which calls `TerminateExecution`; the outermost entry cancels it and unwinds the binding stack, as with QuickJS's interrupt handler.
+- **Modules** are compiled when first imported or resolved, cached by file name, and `import("treesit")` goes through the same loader. Scripts run in strict mode, as QuickJS's global eval did, with `"use strict";` put before line 1.
+- **Microtasks** run explicitly at each exit, as `execute_pending_job` loops did; `FinalizationRegistry` cleanup runs when the outermost entry pumps the platform's message loop.
+- **Two tests assumed QuickJS.** A sort predicate's questions came in QuickJS's order, which V8's sort does not follow; and unreferenced markers were freed at once by QuickJS's reference counting, where V8 frees them when it collects. The test now calls the new `ember.garbageCollect`, Emacs's `garbage-collect`.
+
 ## Step 5: blocking primitives
 
 [ADR 0030](adr/0030-the-command-loops-primitives.md) chose not to block because blocking needs the editor to run its own command loop, which the front ends and key-at-a-time tests could not allow. Step 3 removes the obstacle, so this step reverses that choice and needs an ADR that says so.
