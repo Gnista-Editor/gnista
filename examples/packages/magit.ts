@@ -1261,9 +1261,11 @@ const pullElsewhere = ember.defineCommand({
 });
 
 /** A git config variable a suffix cycles through CHOICES, shown as Magit shows one: name [a|b|default:x]. */
+let configVariables = 0;
 function configVariable(key: string, variable: () => string, choices: () => string[], fallback?: string): [string, () => ember.PropertizedString, ember.DefinedCommand] {
+  // Named without asking git which variable it is: that waits for the menu.
   const command = ember.defineCommand({
-    name: `magit:${variable().replace(/\./g, "-")}:${key}`,
+    name: `magit:config-variable:${key}:${configVariables++}`,
     doc: "Cycle a git variable through its values.",
     run: () => {
       const name = variable();

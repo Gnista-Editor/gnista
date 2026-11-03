@@ -279,3 +279,15 @@ fn an_instant_fixup_goes_into_the_commit() {
     assert_eq!(git(p, &["log", "--format=%s"]), "Second\nFirst commit\n");
     assert_eq!(git(p, &["show", "HEAD~:c.txt"]), "new\n");
 }
+
+#[test]
+fn loading_magit_runs_no_git() {
+    // Outside a repository and with no git to run, as at startup anywhere.
+    let d = Driven::new("");
+    d.with(|ed| {
+        ed.set_variable("load-path", Value::List(vec![Value::Str(EXAMPLES.into())]));
+        ed.set_variable("magit-git-executable", Value::Str("no-such-git".into()));
+    });
+    d.eval(r#"ember.require("magit");"#);
+    assert_eq!(d.with(|ed| ed.echo().map(str::to_string)), None);
+}
