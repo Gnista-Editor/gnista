@@ -1497,6 +1497,7 @@ version = "0.1.0"
 dependencies = [
  "ember-agent",
  "ember-core",
+ "ember-mcp",
  "ember-script",
  "ratatui",
 ]

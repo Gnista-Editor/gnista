@@ -7,11 +7,12 @@ license.workspace = true
 [features]
 default = ["v8"]
 # The script engine, as ember-script's features choose it.
-quickjs = ["ember-script/quickjs", "ember-agent/quickjs"]
-v8 = ["ember-script/v8", "ember-agent/v8"]
+quickjs = ["ember-script/quickjs", "ember-agent/quickjs", "ember-mcp/quickjs"]
+v8 = ["ember-script/v8", "ember-agent/v8", "ember-mcp/v8"]
 
 [dependencies]
 ember-agent = { version = "0.1.0", path = "../ember-agent", default-features = false }
 ember-core = { version = "0.1.0", path = "../ember-core" }
+ember-mcp = { version = "0.1.0", path = "../ember-mcp", default-features = false }
 ember-script = { version = "0.1.0", path = "../ember-script", default-features = false }
 ratatui = "0.30"

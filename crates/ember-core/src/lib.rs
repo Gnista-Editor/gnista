@@ -13,6 +13,7 @@ mod buffer;
 pub mod casefiddle;
 pub mod charset;
 pub mod chartab;
+pub mod clicks;
 mod casetab;
 mod category;
 // Written by tests/emacs/unicode.el; not every table is read yet.

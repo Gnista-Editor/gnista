@@ -8,7 +8,7 @@ use ember_core::display::{Glyph, cursor_glyph};
 use ember_core::driver::{Driver, Input as DriverInput};
 use ember_core::frame_description::{Echo, FrameDescription, RowDescription, WindowDescription};
 use ember_core::layout::FontSpec;
-use ember_core::{Editor, FrameId, Key, KeyCode, MouseEvent, MouseKind, Row, Style, WindowId};
+use ember_core::{Editor, FrameId, Key, Row, Style, WindowId};
 use egui::text::{CCursor, LayoutJob, TextFormat};
 use egui::{
     Color32, FontFamily, FontId, Galley, Painter, PointerButton, Pos2, Rect, Stroke, StrokeKind, Ui,
@@ -109,19 +109,12 @@ struct Scroll {
     anchor: (WindowId, String, usize),
 }
 
-/// How long a second click may follow the first to count as a double click, in seconds.
-const DOUBLE_CLICK: f64 = 0.4;
-
 /// The state of the primary button, for turning presses and moves into
 /// Emacs's mouse keys.
 #[derive(Default)]
 struct Mouse {
-    /// Where the button went down, while it is down.
-    pressed: Option<(WindowId, Option<usize>)>,
-    dragged: bool,
-    /// When and where the last press was, and how many clicks it made.
-    last_press: Option<(f64, Pos2, u8)>,
-    clicks: u8,
+    /// Clicks over the text, as both front ends count them.
+    clicks: ember_core::clicks::Clicks<Pos2>,
     /// A mode line or divider being dragged: its window, whether it is a
     /// divider, and where along the drag the edge last moved to.
     resizing: Option<(WindowId, bool, f32)>,
@@ -515,7 +508,7 @@ impl EmberApp {
         let (mouse, scroll, layout) = (self.mouse.clone(), self.scroll.clone(), layout.clone());
         self.backend.run(move |ed, _| {
             let mut mouse = mouse.lock().unwrap_or_else(|e| e.into_inner());
-            if pressed.is_none() && mouse.pressed.is_none() && mouse.resizing.is_none() {
+            if pressed.is_none() && !mouse.clicks.is_down() && mouse.resizing.is_none() {
                 return;
             }
             let offset = {
@@ -591,41 +584,13 @@ fn pointer(ed: &mut Editor, mouse: &mut Mouse, pos: Pos2, pressed: Option<bool>,
         return;
     }
     let target = hit(ed, layout, pos, offset);
-    let key = |kind| Key { code: KeyCode::Mouse(kind, 1), ctrl: false, meta: false, shift };
     match pressed {
         Some(true) => {
-            let Some((window, position)) = target else { return };
-            mouse.clicks = match mouse.last_press {
-                Some((t, p, n)) if time - t < DOUBLE_CLICK && p.distance(pos) < 4.0 => n % 3 + 1,
-                _ => 1,
-            };
-            mouse.last_press = Some((time, pos, mouse.clicks));
-            mouse.pressed = Some((window, position));
-            mouse.dragged = false;
-            if mouse.clicks == 1 {
-                ed.mouse(key(MouseKind::Down), MouseEvent { window, position, start: None });
-            }
+            let Some(target) = target else { return };
+            mouse.clicks.press(ed, time, pos, |a, b| a.distance(b) < 4.0, target, shift);
         }
-        Some(false) => {
-            let Some(start) = mouse.pressed.take() else { return };
-            if mouse.dragged {
-                return;
-            }
-            let kind = match mouse.clicks {
-                2 => MouseKind::Double,
-                3 => MouseKind::Triple,
-                _ => MouseKind::Click,
-            };
-            let (window, position) = target.unwrap_or(start);
-            ed.mouse(key(kind), MouseEvent { window, position, start: None });
-        }
-        None => {
-            let (Some(start), Some((window, position))) = (mouse.pressed, target) else { return };
-            if mouse.dragged || start != (window, position) {
-                mouse.dragged = true;
-                ed.mouse(key(MouseKind::Drag), MouseEvent { window, position, start: Some(start) });
-            }
-        }
+        Some(false) => mouse.clicks.release(ed, target, shift),
+        None => mouse.clicks.moved(ed, target, shift),
     }
 }
 

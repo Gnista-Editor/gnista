@@ -9,13 +9,14 @@
 mod ui;
 
 use std::io::Write;
+use std::sync::mpsc::{Receiver, channel};
 use std::sync::{Arc, Mutex};
+use std::time::Instant;
 use std::{env, io};
 
-use std::time::{Duration, Instant};
-
+use ember_core::clicks::Clicks;
 use ember_core::driver::{Driver, Input};
-use ember_core::{Arg, Editor, Key, KeyCode, MouseEvent, MouseKind, WindowId, expand_file_name};
+use ember_core::{Arg, Editor, Key, KeyCode, expand_file_name};
 use ember_script::{config, type_definitions};
 use ratatui::DefaultTerminal;
 use ratatui::crossterm::event::{
@@ -49,6 +50,10 @@ fn main() -> io::Result<()> {
     let size = terminal.size()?;
     let size = Arc::new(Mutex::new((size.width, size.height)));
     let laid_out = size.clone();
+    // One channel brings this thread what it waits for: the terminal's
+    // input, a new frame, and an agent's request, so it waits without polling.
+    let (wake, woken) = channel();
+    let published = wake.clone();
     let driver = Driver::spawn(
         move |editor| {
             let scripting = config::setup_with(editor, !no_init, ember_agent::install);
@@ -65,21 +70,58 @@ fn main() -> io::Result<()> {
             editor.redisplay();
             vec![ui::describe(editor)]
         },
-        || {},
+        move || {
+            let _ = published.send(Wake::Frame);
+        },
     );
-    let result = run(&mut terminal, &driver, &size);
+    let input = wake.clone();
+    std::thread::spawn(move || {
+        while let Ok(event) = event::read() {
+            if input.send(Wake::Terminal(event)).is_err() {
+                return;
+            }
+        }
+    });
+    // An agent reaches this editor through ember-mcp, by a socket only this
+    // user can open, as it reaches the GUI's.
+    let requests = {
+        let wake = wake.clone();
+        ember_mcp::socket::listen(&ember_mcp::socket::default_path(), move || {
+            let _ = wake.send(Wake::Request);
+        })
+    };
+    let requests = match requests {
+        Ok(requests) => Some(requests),
+        Err(e) => {
+            driver.run(move |editor| editor.message(format!("No agent socket: {e}")));
+            None
+        }
+    };
+    let result = run(&mut terminal, &driver, &size, &woken, requests.as_ref());
     drop(driver);
     execute!(io::stdout(), DisableMouseCapture)?;
     ratatui::restore();
     result
 }
 
-/// How often the screen looks for a new frame from the editor while no
-/// input comes.
-const FRAME_POLL: Duration = Duration::from_millis(16);
+/// What the terminal's thread waits for.
+enum Wake {
+    Terminal(Event),
+    /// The editor published a frame.
+    Frame,
+    /// An agent's request waits on the socket.
+    Request,
+}
 
-fn run(terminal: &mut DefaultTerminal, driver: &Driver, size: &Mutex<(u16, u16)>) -> io::Result<()> {
+fn run(
+    terminal: &mut DefaultTerminal,
+    driver: &Driver,
+    size: &Mutex<(u16, u16)>,
+    woken: &Receiver<Wake>,
+    requests: Option<&Receiver<ember_mcp::socket::Request>>,
+) -> io::Result<()> {
     let mouse = Arc::new(Mutex::new(Mouse::default()));
+    let client = Arc::new(Mutex::new(ember_mcp::Client::default()));
     let mut drawn = 0;
     loop {
         // What the editor last published, whatever it is doing now.
@@ -99,10 +141,25 @@ fn run(terminal: &mut DefaultTerminal, driver: &Driver, size: &Mutex<(u16, u16)>
         if let Some(visible) = bell {
             ring_bell(visible)?;
         }
-        if !event::poll(FRAME_POLL)? {
-            continue;
-        }
-        match event::read()? {
+        let Ok(wake) = woken.recv() else { return Ok(()) };
+        let event = match wake {
+            Wake::Terminal(event) => event,
+            Wake::Frame => continue,
+            Wake::Request => {
+                // Each answered on the editor's thread, with its scripts.
+                for request in requests.into_iter().flat_map(|r| r.try_iter()) {
+                    let client = client.clone();
+                    driver.send(Input::Run(Box::new(move |editor, keep| {
+                        let scripting = keep.downcast_ref::<Option<ember_script::Scripting>>().and_then(Option::as_ref);
+                        let mut client = client.lock().unwrap_or_else(|e| e.into_inner());
+                        let reply = ember_mcp::handle_client_message(editor, scripting, &request.line, &mut client);
+                        let _ = request.reply.send(reply);
+                    })));
+                }
+                continue;
+            }
+        };
+        match event {
             Event::Key(key) if key.kind == KeyEventKind::Press => {
                 if let Some(key) = convert_key(key) {
                     driver.key(key);
@@ -140,60 +197,35 @@ fn ring_bell(visible: bool) -> io::Result<()> {
 
 /// Lines a wheel notch scrolls in a terminal.
 const WHEEL_LINES: isize = 3;
-/// How soon a second click counts as a double click.
-const DOUBLE_CLICK: Duration = Duration::from_millis(400);
 
 /// Turns the terminal's mouse reports into Emacs's mouse keys.
-#[derive(Default)]
 struct Mouse {
-    /// Where the left button went down, while it is down.
-    pressed: Option<(WindowId, Option<usize>)>,
-    dragged: bool,
-    /// The last click, for counting double and triple clicks.
-    last_click: Option<(Instant, u16, u16, u8)>,
-    clicks: u8,
+    /// Clicks over the text, as both front ends count them, by cell.
+    clicks: Clicks<(u16, u16)>,
+    /// What the clicks' times count from.
+    started: Instant,
+}
+
+impl Default for Mouse {
+    fn default() -> Mouse {
+        Mouse { clicks: Clicks::default(), started: Instant::now() }
+    }
 }
 
 impl Mouse {
     fn handle(&mut self, ed: &mut Editor, event: ratatui::crossterm::event::MouseEvent, width: u16, height: u16) {
-        let Some((window, position)) = ui::mouse_target(ed, width, height, event.column, event.row) else { return };
+        let target = ui::mouse_target(ed, width, height, event.column, event.row);
         let shift = event.modifiers.contains(KeyModifiers::SHIFT);
-        let key = |kind| Key { code: KeyCode::Mouse(kind, 1), ctrl: false, meta: false, shift };
-        let at = MouseEvent { window, position, start: None };
         match event.kind {
             MouseEventKind::Down(MouseButton::Left) => {
-                let now = Instant::now();
-                self.clicks = match self.last_click {
-                    Some((t, x, y, n)) if now - t < DOUBLE_CLICK && (x, y) == (event.column, event.row) => n % 3 + 1,
-                    _ => 1,
-                };
-                self.last_click = Some((now, event.column, event.row, self.clicks));
-                self.pressed = Some((window, position));
-                self.dragged = false;
-                if self.clicks == 1 {
-                    ed.mouse(key(MouseKind::Down), at);
-                }
+                let Some(target) = target else { return };
+                let time = self.started.elapsed().as_secs_f64();
+                self.clicks.press(ed, time, (event.column, event.row), |a, b| a == b, target, shift);
             }
-            MouseEventKind::Drag(MouseButton::Left) => {
-                if let Some(start) = self.pressed
-                    && (self.dragged || start != (window, position))
-                {
-                    self.dragged = true;
-                    ed.mouse(key(MouseKind::Drag), MouseEvent { start: Some(start), ..at });
-                }
-            }
-            MouseEventKind::Up(MouseButton::Left) => {
-                if self.pressed.take().is_some() && !self.dragged {
-                    let kind = match self.clicks {
-                        2 => MouseKind::Double,
-                        3 => MouseKind::Triple,
-                        _ => MouseKind::Click,
-                    };
-                    ed.mouse(key(kind), at);
-                }
-            }
-            MouseEventKind::ScrollDown => ed.wheel_in(Some(window), WHEEL_LINES),
-            MouseEventKind::ScrollUp => ed.wheel_in(Some(window), -WHEEL_LINES),
+            MouseEventKind::Drag(MouseButton::Left) => self.clicks.moved(ed, target, shift),
+            MouseEventKind::Up(MouseButton::Left) => self.clicks.release(ed, target, shift),
+            MouseEventKind::ScrollDown => ed.wheel_in(target.map(|t| t.0), WHEEL_LINES),
+            MouseEventKind::ScrollUp => ed.wheel_in(target.map(|t| t.0), -WHEEL_LINES),
             _ => {}
         }
     }
