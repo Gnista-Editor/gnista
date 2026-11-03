@@ -3875,6 +3875,28 @@ declare global {
        */
       "org-global-cycle": [];
       /**
+       * Copy the ID of the entry at point, making one if there is none, to the kill ring.
+       *
+       * Defined in packages/org-id.ts.
+       */
+      "org-id-copy": [];
+      /**
+       * Make an ID for the entry at point, or the file before its first heading, if it has none, and copy it to the kill ring.
+       *
+       * @param force raw prefix argument
+       *
+       * Defined in packages/org-id.ts.
+       */
+      "org-id-get-create": [force?: PrefixArg | boolean];
+      /**
+       * Go to the entry with an ID read.
+       *
+       * @param id text
+       *
+       * Defined in packages/org-id.ts.
+       */
+      "org-id-goto": [id: string];
+      /**
        * Indent the block at point.
        * Signal an error when not at a block.
        *
@@ -8389,6 +8411,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-fontify-done-headline": Value;
+      /**
+       * Files besides the agenda files that org-id-find looks in for IDs.
+       *
+       * Defined in packages/org-id.ts.
+       */
+      "org-id-extra-files": Value;
       /**
        * How deep in the outline M-x imenu lists headings.
        *
