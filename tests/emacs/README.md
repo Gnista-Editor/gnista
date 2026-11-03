@@ -128,3 +128,13 @@ TERM=xterm-256color script -q /dev/null emacs -Q -nw -l tests/emacs/completion/r
 ```
 
 `vertico::vertico_and_orderless_show_what_emacs_shows` in `crates/ember-script/tests/all/vertico.rs` replays the cases in Ember.
+
+## magit
+
+`tests/emacs/magit/record.el` records the menus Magit's prefix keys show in a repository it makes, the one `crates/ember-script/tests/all/magit.rs` makes, into `menus.json`, loading Magit and its dependencies from `EMBER_ELPA_BUILDS` (else `~/.emacs.d/elpaca/builds`):
+
+```bash
+emacs -Q --batch -l tests/emacs/magit/record.el
+```
+
+`magit::the_menus_show_as_magits_do` compares Ember's with them.

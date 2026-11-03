@@ -717,35 +717,6 @@ const commitReword = ember.defineCommand({
   run: () => editCommit(["--amend", "--only", ...commitArgs()], gitString(["log", "-1", "--format=%B"]) ?? "", true),
 });
 
-const commitMenu = transientDefinePrefix("magit-commit", {
-  doc: "Create a new commit or replace an existing commit.",
-  groups: [
-    {
-      description: "Arguments",
-      items: [
-        ["-a", "Stage all modified and deleted files", "--all"],
-        ["-e", "Allow empty commit", "--allow-empty"],
-        ["-v", "Show diff of changes to be committed", "--verbose"],
-        ["-n", "Disable hooks", "--no-verify"],
-        ["-R", "Claim authorship and reset author date", "--reset-author"],
-        ["-s", "Add Signed-off-by line", "--signoff"],
-      ],
-    },
-    {
-      items: [
-        { description: "Create", items: [["c", "Commit", commitCreate]] },
-        {
-          description: "Edit HEAD",
-          items: [
-            ["e", "Extend", commitExtend],
-            ["w", "Reword", commitReword],
-            ["a", "Amend", commitAmend],
-          ],
-        },
-      ],
-    },
-  ],
-});
 
 // Branches, after magit-branch.el.
 
@@ -813,18 +784,6 @@ const branchRename = ember.defineCommand({
   },
 });
 
-const branchMenu = transientDefinePrefix("magit-branch", {
-  doc: "Add, configure or remove a branch.",
-  groups: [
-    {
-      items: [
-        { description: "Checkout", items: [["b", "branch/revision", branchCheckout], ["c", "new branch", branchCreateCheckout]] },
-        { description: "Create", items: [["n", "new branch", branchCreate]] },
-        { description: "Do", items: [["m", "rename", branchRename], ["k", "delete", branchDelete]] },
-      ],
-    },
-  ],
-});
 
 // Pushing, pulling and fetching, after magit-push.el, magit-pull.el and magit-fetch.el.
 
@@ -868,32 +827,6 @@ const pushPushRemote = ember.defineCommand({
   },
 });
 
-const pushMenu = transientDefinePrefix("magit-push", {
-  doc: "Push to another repository.",
-  groups: [
-    {
-      description: "Arguments",
-      items: [
-        ["-f", "Force with lease", "--force-with-lease"],
-        ["-F", "Force", "--force"],
-        ["-h", "Disable hooks", "--no-verify"],
-        ["-n", "Dry run", "--dry-run"],
-        ["-t", "Include all tags", "--tags"],
-      ],
-    },
-    {
-      items: [
-        {
-          description: () => `Push ${currentBranch() ?? "HEAD"} to`,
-          items: [
-            ["p", "pushRemote", pushPushRemote],
-            ["u", () => upstreamOf(currentBranch()) ?? "@{upstream}, setting it", pushUpstream],
-          ],
-        },
-      ],
-    },
-  ],
-});
 
 const pullUpstream = ember.defineCommand({
   name: "magit-pull-from-upstream",
@@ -905,13 +838,6 @@ const pullUpstream = ember.defineCommand({
   },
 });
 
-const pullMenu = transientDefinePrefix("magit-pull", {
-  doc: "Pull from another repository.",
-  groups: [
-    { description: "Arguments", items: [["-f", "Fast-forward only", "--ff-only"], ["-r", "Rebase local commits", "--rebase"], ["-A", "Autostash", "--autostash"]] },
-    { items: [{ description: () => `Pull into ${currentBranch() ?? "HEAD"} from`, items: [["p", "pushRemote", pullUpstream], ["u", () => upstreamOf(currentBranch()) ?? "@{upstream}, setting it", pullUpstream]] }] },
-  ],
-});
 
 const fetchAll = ember.defineCommand({ name: "magit-fetch-all", doc: "Fetch from all remotes.", run: () => runGitAsync(["fetch", "--all", ...transientArgs("magit-fetch")], "Fetching all remotes") });
 const fetchUpstream = ember.defineCommand({
@@ -924,13 +850,6 @@ const fetchUpstream = ember.defineCommand({
   },
 });
 
-const fetchMenu = transientDefinePrefix("magit-fetch", {
-  doc: "Fetch from another repository.",
-  groups: [
-    { description: "Arguments", items: [["-p", "Prune deleted branches", "--prune"], ["-t", "Fetch all tags", "--tags"]] },
-    { items: [{ description: "Fetch from", items: [["p", "pushRemote", fetchUpstream], ["u", "upstream", fetchUpstream], ["a", "all remotes", fetchAll]] }] },
-  ],
-});
 
 // Merging, resetting and stashing.
 
@@ -938,13 +857,6 @@ const mergeCommand = ember.defineCommand({
   name: "magit-merge-plain",
   doc: "Merge a branch into the current one.",
   run: () => void runGit(["merge", ...transientArgs("magit-merge"), readBranch("Merge", [...localBranches().filter((b) => b !== currentBranch()), ...remoteBranches()])]),
-});
-const mergeMenu = transientDefinePrefix("magit-merge", {
-  doc: "Merge branches.",
-  groups: [
-    { description: "Arguments", items: [["-f", "Fast-forward only", "--ff-only"], ["-n", "No fast-forward", "--no-ff"]] },
-    { description: "Actions", items: [["m", "Merge", mergeCommand]] },
-  ],
 });
 
 const resetCommand = (mode: string, doc: string) =>
@@ -957,19 +869,6 @@ const resetCommand = (mode: string, doc: string) =>
       runGit(["reset", `--${mode}`, readBranch(`${mode[0].toUpperCase()}${mode.slice(1)} reset ${currentBranch() ?? "HEAD"} to`, [...localBranches(), ...remoteBranches()], def)]);
     },
   });
-const resetMenu = transientDefinePrefix("magit-reset", {
-  doc: "Reset the current branch.",
-  groups: [
-    {
-      description: "Reset",
-      items: [
-        ["m", "mixed    (HEAD and index)", resetCommand("mixed", "Reset HEAD and the index to a commit, keeping the working tree.")],
-        ["s", "soft     (HEAD only)", resetCommand("soft", "Reset HEAD to a commit, keeping the index and working tree.")],
-        ["h", "hard     (HEAD, index and files)", resetCommand("hard", "Reset HEAD, the index and the working tree to a commit.")],
-      ],
-    },
-  ],
-});
 
 /** The stash at point, or one read. */
 function stashAt(prompt: string): string {
@@ -998,18 +897,6 @@ const stashDrop = ember.defineCommand({
     if (ember.yOrNP(`Drop ${s}? `)) runGit(["stash", "drop", s]);
   },
 });
-const stashMenu = transientDefinePrefix("magit-stash", {
-  doc: "Stash uncommitted changes.",
-  groups: [
-    { description: "Arguments", items: [["-u", "Also save untracked files", "--include-untracked"], ["-a", "Also save untracked and ignored files", "--all"]] },
-    {
-      items: [
-        { description: "Stash", items: [["z", "both", stashBoth]] },
-        { description: "Use", items: [["a", "Apply", stashApply], ["p", "Pop", stashPop], ["k", "Drop", stashDrop]] },
-      ],
-    },
-  ],
-});
 
 // The log and commits, after magit-log.el and magit-diff.el.
 
@@ -1031,7 +918,7 @@ const logCurrent = ember.defineCommand({
   doc: "Show the log of the current branch.",
   run: () => {
     const dir = repo();
-    const args = transientArgs("magit-log");
+    const args = logArgs();
     setupBuffer(`magit-log: ${repoName(dir)}`, magitLogMode, "log", () => insertLog([...args, "HEAD"]));
     ember.gotoChar(0);
   },
@@ -1042,7 +929,7 @@ const logAll = ember.defineCommand({
   doc: "Show the log of all references and HEAD.",
   run: () => {
     const dir = repo();
-    const args = transientArgs("magit-log");
+    const args = logArgs();
     setupBuffer(`magit-log: ${repoName(dir)}`, magitLogMode, "log", () => insertLog([...args, "--all"]));
     ember.gotoChar(0);
   },
@@ -1054,22 +941,12 @@ const logOther = ember.defineCommand({
   run: () => {
     const dir = repo();
     const rev = readBranch("Log rev,s", [...localBranches(), ...remoteBranches()], currentBranch());
-    const args = transientArgs("magit-log");
+    const args = logArgs();
     setupBuffer(`magit-log: ${repoName(dir)}`, magitLogMode, "log", () => insertLog([...args, rev]));
     ember.gotoChar(0);
   },
 });
 
-const logMenu = transientDefinePrefix("magit-log", {
-  doc: "Show a commit or reference log.",
-  groups: [
-    {
-      description: "Commit limiting",
-      items: [["-n", "Limit number of commits", "-n", { class: "option", prompt: "Limit to N commits: " }], ["-m", "Omit merges", "--no-merges"], ["=a", "Author", "--author=", { prompt: "Author: " }]],
-    },
-    { items: [{ description: "Log", items: [["l", "current", logCurrent], ["o", "other", logOther], ["a", "all references", logAll]] }] },
-  ],
-});
 
 /** Shows a commit: its header and diff, as magit-show-commit and magit-revision-mode. */
 export function showCommit(rev: string): void {
@@ -1124,12 +1001,6 @@ const diffUnstaged = ember.defineCommand({
     ember.gotoChar(0);
   },
 });
-const diffMenu = transientDefinePrefix("magit-diff", {
-  doc: "Show changes between different versions.",
-  groups: [
-    { description: "Actions", items: [["d", "Dwim", diffDwim], ["s", "Staged", diffStaged], ["u", "Unstaged", diffUnstaged]] },
-  ],
-});
 
 // The process buffer.
 
@@ -1158,6 +1029,972 @@ const processBuffer = ember.defineCommand({
 
 // The dispatch menu and the keys.
 
+// The menus, after Magit's transient-define-prefix forms, laid out as
+// Magit 4 lays them out, and the commands behind their suffixes.
+
+/** A command that runs git with the arguments ARGS gives, as Magit's many small commands do. */
+const gitCommand = (name: string, doc: string, args: () => string[] | undefined) =>
+  ember.defineCommand({
+    name,
+    doc,
+    run: () => {
+      const a = args();
+      if (a) runGit(a);
+    },
+  });
+
+/** A command Ember's Magit does not have yet, which says so. */
+const notYet = (name: string, what: string) =>
+  ember.defineCommand({ name, doc: `${what}: not in Ember's Magit yet.`, run: () => ember.userError(`${what} is not in Ember's Magit yet`) });
+
+/** The commit at point, or one read from the log, as magit-read-branch-or-commit. */
+function readCommit(prompt: string): string {
+  const s = currentSection();
+  const def = s?.type === "commit" ? String(s.value) : undefined;
+  const log = gitLines(["log", "--format=%h %s", "-n100"]);
+  const answer = ember.completingRead(def ? `${prompt} (default ${def}): ` : `${prompt}: `, log, { default: def, history: "magit-revision-history" });
+  if (answer === "") ember.userError("Nothing selected");
+  return answer.split(" ")[0];
+}
+
+/** A commit fixing up or squashing into a commit read, then rebasing them together if INSTANT, as magit-commit-fixup and its kin. */
+function fixupCommand(name: string, doc: string, option: (rev: string) => string, edit: boolean, instant = false) {
+  return ember.defineCommand({
+    name,
+    doc,
+    run: () => {
+      const rev = readCommit(doc.replace(/\.$/, ""));
+      if (edit) {
+        editCommit([option(rev), ...commitArgs()], "", false);
+        return;
+      }
+      if (!runGit(["commit", "--no-edit", option(rev), ...commitArgs()])) return;
+      // Onto the commit's parent, or from the root for the first commit, as magit-rebase-autosquash does.
+      const onto = gitOutput(["rev-parse", "--verify", "-q", `${rev}^`]).exit === 0 ? `${rev}^` : "--root";
+      if (instant) runGit(["-c", "sequence.editor=:", "rebase", "-i", "--autosquash", "--autostash", "--keep-empty", onto]);
+    },
+  });
+}
+
+const commitFixup = fixupCommand("magit-commit-fixup", "Create a fixup commit.", (r) => `--fixup=${r}`, false);
+const commitSquash = fixupCommand("magit-commit-squash", "Create a squash commit.", (r) => `--squash=${r}`, false);
+const commitAlter = fixupCommand("magit-commit-alter", "Create a commit changing a commit and its message.", (r) => `--fixup=amend:${r}`, true);
+const commitAugment = fixupCommand("magit-commit-augment", "Create a squash commit, writing its message.", (r) => `--squash=${r}`, true);
+const commitRevise = fixupCommand("magit-commit-revise", "Create a commit rewording a commit.", (r) => `--fixup=reword:${r}`, true);
+const commitInstantFixup = fixupCommand("magit-commit-instant-fixup", "Create a fixup commit and rebase it into place at once.", (r) => `--fixup=${r}`, false, true);
+const commitInstantSquash = fixupCommand("magit-commit-instant-squash", "Create a squash commit and rebase it into place at once.", (r) => `--squash=${r}`, false, true);
+
+const commitMenu = transientDefinePrefix("magit-commit", {
+  doc: "Create a new commit or replace an existing commit.",
+  groups: [
+    {
+      description: "Arguments",
+      items: [
+        ["-a", "Stage all modified and deleted files", "--all"],
+        ["-e", "Allow empty commit", "--allow-empty"],
+        ["-v", "Show diff of changes to be committed", "--verbose"],
+        ["-n", "Disable hooks", "--no-verify"],
+        ["-R", "Claim authorship and reset author date", "--reset-author"],
+        ["-A", "Override the author", "--author=", { prompt: "Author: " }],
+        ["-C", "Reuse commit message", "--reuse-message=", { reader: (p) => readCommit(p) }],
+      ],
+    },
+    {
+      items: [
+        { description: "Create", items: [["c", "Commit", commitCreate]] },
+        { description: "Edit HEAD", items: [["e", "Extend", commitExtend], "", ["a", "Amend", commitAmend], "", ["w", "Reword", commitReword]] },
+        { description: "Edit", items: [["f", "Fixup", commitFixup], ["s", "Squash", commitSquash], ["A", "Alter", commitAlter], ["n", "Augment", commitAugment], ["W", "Revise", commitRevise]] },
+        { description: "Edit and rebase", items: [["F", "Instant fixup", commitInstantFixup], ["S", "Instant squash", commitInstantSquash], "", ""] },
+        { description: "Spread across commits", items: [] },
+      ],
+    },
+  ],
+});
+
+// Push.
+
+const branchOrHead = (): string => currentBranch() ?? "HEAD";
+const pushRemoteOf = (branch?: string): string | undefined =>
+  branch ? (gitString(["config", `branch.${branch}.pushRemote`]) ?? gitString(["config", "remote.pushDefault"])) : undefined;
+
+/** Reads a remote, setting it as the branch's push remote, as magit-push-current-to-pushremote with no push remote does. */
+function ensurePushRemote(): string {
+  const branch = currentBranch();
+  if (!branch) ember.userError("No branch is checked out");
+  const remote = pushRemoteOf(branch);
+  if (remote) return remote;
+  const all = remotes();
+  if (all.length === 0) ember.userError("No remote to push to");
+  const chosen = ember.completingRead(`Set push-remote of ${branch} and push there: `, all, { requireMatch: true, default: all[0] });
+  gitOutput(["config", `branch.${branch}.pushRemote`, chosen]);
+  return chosen;
+}
+
+const pushPushRemoteSetting = ember.defineCommand({
+  name: "magit-push-current-to-pushremote",
+  doc: "Push the current branch to its push remote, setting one first if there is none.",
+  run: () => {
+    const branch = currentBranch()!;
+    const remote = ensurePushRemote();
+    runGitAsync(["push", "-v", ...pushArgs(), remote, `${branch}:refs/heads/${branch}`], `Pushing to ${remote}/${branch}`);
+  },
+});
+
+const pushElsewhere = ember.defineCommand({
+  name: "magit-push-current",
+  doc: "Push the current branch to a branch read.",
+  run: () => {
+    const branch = currentBranch()!;
+    const target = readBranch(`Push ${branch} to`, remoteBranches(), upstreamOf(branch));
+    const [remote, ...rest] = target.split("/");
+    runGitAsync(["push", "-v", ...pushArgs(), remote, `${branch}:refs/heads/${rest.join("/")}`], `Pushing to ${target}`);
+  },
+});
+
+const pushOther = ember.defineCommand({
+  name: "magit-push-other",
+  doc: "Push a branch or commit to a remote branch, both read.",
+  run: () => {
+    const source = readBranch("Push", localBranches(), currentBranch());
+    const target = readBranch(`Push ${source} to`, remoteBranches());
+    const [remote, ...rest] = target.split("/");
+    runGitAsync(["push", "-v", ...pushArgs(), remote, `${source}:refs/heads/${rest.join("/")}`], `Pushing to ${target}`);
+  },
+});
+
+const pushRefspecs = ember.defineCommand({
+  name: "magit-push-refspecs",
+  doc: "Push refspecs read to a remote read.",
+  run: () => {
+    const remote = ember.completingRead("Push to remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
+    const specs = ember.readString(`Push refspec,s to ${remote}: `);
+    runGitAsync(["push", "-v", ...pushArgs(), remote, ...specs.split(/[ ,]+/).filter(Boolean)], `Pushing to ${remote}`);
+  },
+});
+
+const pushMatching = ember.defineCommand({
+  name: "magit-push-matching",
+  doc: "Push all branches that have a branch of the same name on a remote.",
+  run: () => {
+    const remote = ember.completingRead("Push matching branches to: ", remotes(), { requireMatch: true, default: remotes()[0] });
+    runGitAsync(["push", "-v", ...pushArgs(), remote, ":"], `Pushing to ${remote}`);
+  },
+});
+
+const pushTag = ember.defineCommand({
+  name: "magit-push-tag",
+  doc: "Push a tag to a remote.",
+  run: () => {
+    const tag = ember.completingRead("Push tag: ", gitLines(["tag"]), { requireMatch: true });
+    const remote = ember.completingRead(`Push ${tag} to remote: `, remotes(), { requireMatch: true, default: remotes()[0] });
+    runGitAsync(["push", ...pushArgs(), remote, tag], `Pushing ${tag}`);
+  },
+});
+
+const pushTags = ember.defineCommand({
+  name: "magit-push-tags",
+  doc: "Push all tags to a remote.",
+  run: () => {
+    const remote = ember.completingRead("Push tags to remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
+    runGitAsync(["push", ...pushArgs(), remote, "--tags"], `Pushing tags to ${remote}`);
+  },
+});
+
+const setVariables = ember.defineCommand({
+  name: "magit-branch-configure",
+  doc: "Configure the current branch's upstream, push remote and rebasing.",
+  run: () => ember.call(branchMenu),
+});
+
+const pushMenu = transientDefinePrefix("magit-push", {
+  doc: "Push to another repository.",
+  groups: [
+    {
+      description: "Arguments",
+      items: [
+        ["-f", "Force with lease", "--force-with-lease"],
+        ["-F", "Force", "--force"],
+        ["-h", "Disable hooks", "--no-verify"],
+        ["-n", "Dry run", "--dry-run"],
+        ["-T", "Include all tags", "--tags"],
+        ["-t", "Include related annotated tags", "--follow-tags"],
+      ],
+    },
+    {
+      description: () => `Push ${branchOrHead()} to`,
+      items: [
+        ["p", () => { const r = pushRemoteOf(currentBranch()); return r ? `${r}/${branchOrHead()}` : "pushRemote, setting that"; }, pushPushRemoteSetting],
+        ["u", () => upstreamOf(currentBranch()) ?? "@{upstream}, creating it", pushUpstream],
+        ["e", "elsewhere", pushElsewhere],
+      ],
+    },
+    {
+      description: "Push",
+      items: [
+        { items: [["o", "another branch", pushOther], ["r", "explicit refspecs", pushRefspecs], ["m", "matching branches", pushMatching]] },
+        { items: [["T", "a tag", pushTag], ["t", "all tags", pushTags]] },
+      ],
+    },
+    { description: "Configure", items: [["C", "Set variables...", setVariables]] },
+  ],
+});
+
+// Pull and fetch.
+
+const pullPushRemote = ember.defineCommand({
+  name: "magit-pull-from-pushremote",
+  doc: "Pull from the push remote of the current branch, setting one first if there is none.",
+  run: () => {
+    const remote = ensurePushRemote();
+    runGitAsync(["pull", ...transientArgs("magit-pull"), remote, branchOrHead()], `Pulling from ${remote}`);
+  },
+});
+
+const pullElsewhere = ember.defineCommand({
+  name: "magit-pull-branch",
+  doc: "Pull a branch read into the current one.",
+  run: () => {
+    const target = readBranch("Pull", remoteBranches());
+    const [remote, ...rest] = target.split("/");
+    runGitAsync(["pull", ...transientArgs("magit-pull"), remote, rest.join("/")], `Pulling from ${target}`);
+  },
+});
+
+/** A git config variable a suffix cycles through CHOICES, shown as Magit shows one: name [a|b|default:x]. */
+function configVariable(key: string, variable: () => string, choices: () => string[], fallback?: string): [string, () => ember.PropertizedString, ember.DefinedCommand] {
+  const command = ember.defineCommand({
+    name: `magit:${variable().replace(/\./g, "-")}:${key}`,
+    doc: "Cycle a git variable through its values.",
+    run: () => {
+      const name = variable();
+      const now = gitString(["config", name]);
+      const all = choices();
+      const at = now === undefined ? -1 : all.indexOf(now);
+      if (at + 1 < all.length) gitOutput(["config", name, all[at + 1]]);
+      else gitOutput(["config", "--unset", name]);
+      refreshAll();
+    },
+  });
+  const describe = () => {
+    const name = variable();
+    const now = gitString(["config", name]);
+    const parts = choices().flatMap((c, i) => [...(i > 0 ? [face("|", "transient-delimiter")] : []), face(c, c === now ? "transient-value" : "transient-inactive-value")]);
+    const def = fallback !== undefined ? [face("|", "transient-delimiter"), face(`default:${fallback}`, now === undefined ? "transient-value" : "transient-inactive-value")] : [];
+    return ember.concat(face(name, "transient-argument"), " ", face("[", "transient-delimiter"), ...parts, ...def, face("]", "transient-delimiter"));
+  };
+  return [key, describe, command];
+}
+
+const pullMenu = transientDefinePrefix("magit-pull", {
+  doc: "Pull from another repository.",
+  groups: [
+    { description: "Arguments", items: [["-f", "Fast-forward only", "--ff-only"], ["-r", "Rebase local commits", "--rebase"], ["-F", "Force", "--force"]] },
+    {
+      description: () => `Pull into ${branchOrHead()} from`,
+      items: [
+        ["p", () => { const r = pushRemoteOf(currentBranch()); return r ? `${r}/${branchOrHead()}` : "pushRemote, setting that"; }, pullPushRemote],
+        ["u", () => upstreamOf(currentBranch()) ?? "@{upstream}, setting that", pullUpstream],
+        ["e", "elsewhere", pullElsewhere],
+      ],
+    },
+    {
+      description: "Configure",
+      items: [configVariable("r", () => `branch.${branchOrHead()}.rebase`, () => ["true", "false"], "false"), ["C", "variables...", setVariables]],
+    },
+  ],
+});
+
+const fetchPushRemote = ember.defineCommand({
+  name: "magit-fetch-from-pushremote",
+  doc: "Fetch from the push remote of the current branch, setting one first if there is none.",
+  run: () => {
+    const remote = ensurePushRemote();
+    runGitAsync(["fetch", ...transientArgs("magit-fetch"), remote], `Fetching ${remote}`);
+  },
+});
+const fetchElsewhere = ember.defineCommand({
+  name: "magit-fetch-other",
+  doc: "Fetch from a remote read.",
+  run: () => {
+    const remote = ember.completingRead("Fetch remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
+    runGitAsync(["fetch", ...transientArgs("magit-fetch"), remote], `Fetching ${remote}`);
+  },
+});
+const fetchBranch = ember.defineCommand({
+  name: "magit-fetch-branch",
+  doc: "Fetch a branch from a remote.",
+  run: () => {
+    const remote = ember.completingRead("Fetch from remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
+    const branch = ember.readString(`Fetch branch from ${remote}: `);
+    runGitAsync(["fetch", ...transientArgs("magit-fetch"), remote, branch], `Fetching ${remote} ${branch}`);
+  },
+});
+const fetchRefspec = ember.defineCommand({
+  name: "magit-fetch-refspec",
+  doc: "Fetch a refspec read from a remote read.",
+  run: () => {
+    const remote = ember.completingRead("Fetch from remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
+    const spec = ember.readString(`Fetch using refspec from ${remote}: `);
+    runGitAsync(["fetch", ...transientArgs("magit-fetch"), remote, spec], `Fetching ${remote}`);
+  },
+});
+const fetchModules = gitCommand("magit-fetch-modules", "Fetch all submodules.", () => ["fetch", "--recurse-submodules"]);
+
+const fetchMenu = transientDefinePrefix("magit-fetch", {
+  doc: "Fetch from another repository.",
+  groups: [
+    { description: "Arguments", items: [["-p", "Prune deleted branches", "--prune"], ["-t", "Fetch all tags", "--tags"], ["-F", "Force", "--force"]] },
+    {
+      description: "Fetch from",
+      items: [
+        ["p", () => pushRemoteOf(currentBranch()) ?? "pushRemote, setting that", fetchPushRemote],
+        ["u", () => upstreamOf(currentBranch())?.split("/")[0] ?? "", fetchUpstream, { if: () => upstreamOf(currentBranch()) !== undefined }],
+        ["e", "elsewhere", fetchElsewhere],
+        ["a", "all remotes", fetchAll],
+      ],
+    },
+    { description: "Fetch", items: [["o", "another branch", fetchBranch], ["r", "explicit refspec", fetchRefspec], ["m", "submodules", fetchModules]] },
+    { description: "Configure", items: [["C", "variables...", setVariables]] },
+  ],
+});
+
+// Branch.
+
+/** A branch variable read and set, shown as Magit shows it: branch.main.description unset. */
+function branchVariable(key: string, name: () => string, read: () => string | undefined): [string, () => ember.PropertizedString, ember.DefinedCommand] {
+  const command = ember.defineCommand({
+    name: `magit:branch-variable:${key}`,
+    doc: "Set a variable of the current branch.",
+    run: () => {
+      const value = read();
+      if (value === undefined || value === "") gitOutput(["config", "--unset", name()]);
+      else gitOutput(["config", name(), value]);
+      refreshAll();
+    },
+  });
+  const describe = () => {
+    const now = gitString(["config", name()]);
+    return ember.concat(face(name(), "transient-argument"), " ", now === undefined ? face("unset", "transient-inactive-value") : face(now, "transient-value"));
+  };
+  return [key, describe, command];
+}
+
+const branchLocal = ember.defineCommand({
+  name: "magit-branch-checkout",
+  doc: "Check out a local branch, or create one from a remote branch.",
+  run: () => runGit(["checkout", readBranch("Checkout branch", localBranches().filter((b) => b !== currentBranch()))]) as unknown as void,
+});
+
+const branchSpinoff = ember.defineCommand({
+  name: "magit-branch-spinoff",
+  doc: "Create a branch from the current one and check it out, taking the current one back to its upstream.",
+  run: () => {
+    const name = ember.readString("Spin off branch: ");
+    if (name === "") ember.userError("No name given");
+    const from = currentBranch();
+    const upstream = upstreamOf(from);
+    if (!runGit(["checkout", "-b", name])) return;
+    if (from && upstream) runGit(["update-ref", `refs/heads/${from}`, gitString(["merge-base", from, upstream]) ?? upstream]);
+  },
+});
+
+const branchSpinout = ember.defineCommand({
+  name: "magit-branch-spinout",
+  doc: "Create a branch from the current one, taking the current one back to its upstream, without checking the new one out.",
+  run: () => {
+    const name = ember.readString("Spin out branch: ");
+    if (name === "") ember.userError("No name given");
+    const from = currentBranch();
+    const upstream = upstreamOf(from);
+    if (!runGit(["branch", name])) return;
+    if (from && upstream) runGit(["reset", "--keep", gitString(["merge-base", from, upstream]) ?? upstream]);
+  },
+});
+
+const branchReset = ember.defineCommand({
+  name: "magit-branch-reset",
+  doc: "Reset a branch to a commit read.",
+  run: () => {
+    const branch = readBranch("Reset branch", localBranches(), currentBranch());
+    const to = readBranch(`Reset ${branch} to`, [...localBranches(), ...remoteBranches()], upstreamOf(branch));
+    if (branch === currentBranch()) runGit(["reset", "--hard", to]);
+    else runGit(["update-ref", `refs/heads/${branch}`, to]);
+  },
+});
+
+const updateDefaultBranch = gitCommand("magit-update-default-branch", "Update the default branch from the remote's HEAD.", () => {
+  const remote = remotes()[0];
+  return remote ? ["remote", "set-head", remote, "--auto"] : undefined;
+});
+
+const branchMenu = transientDefinePrefix("magit-branch", {
+  doc: "Add, configure or remove a branch.",
+  groups: [
+    {
+      description: () => `Configure ${branchOrHead()}`,
+      items: [
+        branchVariable("d", () => `branch.${branchOrHead()}.description`, () => ember.readString("Description: ")),
+        branchVariable("u", () => `branch.${branchOrHead()}.merge`, () => {
+          const up = readBranch("Upstream", remoteBranches());
+          const [remote, ...rest] = up.split("/");
+          gitOutput(["config", `branch.${branchOrHead()}.remote`, remote]);
+          return `refs/heads/${rest.join("/")}`;
+        }),
+        [" ", { info: () => ember.concat(face(`branch.${branchOrHead()}.remote`, "transient-argument"), " ", ((r) => (r === undefined ? face("unset", "transient-inactive-value") : face(r, "transient-value")))(gitString(["config", `branch.${branchOrHead()}.remote`]))) }],
+        configVariable("r", () => `branch.${branchOrHead()}.rebase`, () => ["true", "false"], "false"),
+        configVariable("p", () => `branch.${branchOrHead()}.pushRemote`, () => remotes()),
+      ],
+    },
+    {
+      description: "Configure repository defaults",
+      items: [configVariable("R", () => "pull.rebase", () => ["true", "false"], "false"), configVariable("P", () => "remote.pushDefault", () => remotes()), ["B", "Update default branch", updateDefaultBranch]],
+    },
+    { description: "Arguments", items: [] },
+    {
+      items: [
+        { description: "Checkout", items: [["b", "branch/revision", branchCheckout], ["l", "local branch", branchLocal]] },
+        { description: "", items: [["c", "new branch", branchCreateCheckout], ["s", "new spin-off", branchSpinoff]] },
+        { description: "Create", items: [["n", "new branch", branchCreate], ["S", "new spin-out", branchSpinout]] },
+        { description: "Do", items: [["C", "configure...", setVariables], ["m", "rename", branchRename], ["x", "reset", branchReset], ["k", "delete", branchDelete]] },
+        { description: "", items: [] },
+      ],
+    },
+  ],
+});
+
+// Log.
+
+const logRelated = ember.defineCommand({
+  name: "magit-log-related",
+  doc: "Show the log of the current branch, its upstream and its push target.",
+  run: () => {
+    const dir = repo();
+    const branch = currentBranch();
+    const revs = ["HEAD", ...[upstreamOf(branch)].filter((r): r is string => r !== undefined)];
+    const args = logArgs();
+    setupBuffer(`magit-log: ${repoName(dir)}`, magitLogMode, "log", () => insertLog([...args, ...revs]));
+    ember.gotoChar(0);
+  },
+});
+
+const logBranches = (name: string, doc: string, refs: string[]) =>
+  ember.defineCommand({
+    name,
+    doc,
+    run: () => {
+      const dir = repo();
+      const args = logArgs();
+      setupBuffer(`magit-log: ${repoName(dir)}`, magitLogMode, "log", () => insertLog([...args, ...refs]));
+      ember.gotoChar(0);
+    },
+  });
+
+/** Shows a reflog, as magit-reflog-current. */
+const reflog = (name: string, doc: string, ref: () => string) =>
+  ember.defineCommand({
+    name,
+    doc,
+    run: () => {
+      const dir = repo();
+      const r = ref();
+      setupBuffer(`magit-reflog: ${repoName(dir)}`, magitLogMode, "reflog", () =>
+        insertRoot("reflogbuf", () => {
+          for (const line of gitLines(["reflog", "show", "--format=%h%x00%gs", "-n256", r])) {
+            const [hash, subject] = line.split("\0");
+            insertSection("commit", hash, false, () => insertHeading(face(hash, "magit-hash"), " ", subject, "\n"));
+          }
+        }),
+      );
+      ember.gotoChar(0);
+    },
+  });
+
+const shortlog = ember.defineCommand({
+  name: "magit-shortlog",
+  doc: "Show the commits by author, as git shortlog.",
+  run: () => {
+    const dir = repo();
+    const out = gitOutput(["shortlog", "HEAD"]).output;
+    setupBuffer(`magit-shortlog: ${repoName(dir)}`, magitLogMode, "shortlog", () => insertRoot("shortlog", () => ember.insert(out)));
+    ember.gotoChar(0);
+  },
+});
+
+/** The log arguments, those that change what git log lists rather than how it draws it. */
+const logArgs = (): string[] => transientArgs("magit-log").filter((a) => !["--graph", "--color", "--decorate", "++header", "--show-signature"].includes(a));
+
+const logMenu = transientDefinePrefix("magit-log", {
+  doc: "Show a commit or reference log.",
+  value: ["-n256", "--graph", "--decorate"],
+  groups: [
+    {
+      description: "Commit limiting",
+      items: [
+        ["-n", "Limit number of commits", "-n", { class: "option", prompt: "Limit number of commits: " }],
+        ["-A", "Limit to author", "--author=", { prompt: "Limit to author: " }],
+        ["-F", "Search messages", "--grep=", { prompt: "Search messages: " }],
+        ["-G", "Search changes", "-G", { class: "option", prompt: "Search changes: " }],
+        ["-S", "Search occurrences", "-S", { class: "option", prompt: "Search occurrences: " }],
+        ["-L", "Trace line evolution", "-L", { class: "option", prompt: "Trace line evolution: " }],
+      ],
+    },
+    {
+      description: "History simplification",
+      items: [
+        ["-D", "Simplify by decoration", "--simplify-by-decoration"],
+        ["--", "Limit to files", "--", { class: "option", prompt: "Limit to files: " }],
+        ["-f", "Follow renames when showing single-file log", "--follow"],
+      ],
+    },
+    {
+      description: "Commit ordering",
+      items: [
+        ["-o", "Order commits by", "--", { class: "switches", argumentFormat: "--%s-order", choices: ["topo", "author-date", "date"] }],
+        ["-r", "Reverse order", "--reverse"],
+      ],
+    },
+    {
+      description: "Formatting",
+      items: [
+        ["-g", "Show graph", "--graph"],
+        ["-c", "Show graph in color", "--color"],
+        ["-d", "Show refnames", "--decorate"],
+        ["=S", "Show signatures", "--show-signature"],
+        ["-h", "Show header", "++header", { class: "switch" }],
+        ["-p", "Show diffs", "--patch"],
+        ["-s", "Show diffstats", "--stat"],
+      ],
+    },
+    {
+      items: [
+        { description: "Log", items: [["l", "current", logCurrent], ["o", "other", logOther], ["u", "related", logRelated]] },
+        {
+          description: "",
+          items: [
+            ["L", "local branches", logBranches("magit-log-branches", "Show the log of all local branches and HEAD.", ["--branches", "HEAD"])],
+            ["b", "all branches", logBranches("magit-log-all-branches", "Show the log of all local and remote branches and HEAD.", ["--branches", "--remotes", "HEAD"])],
+            ["a", "all references", logAll],
+          ],
+        },
+        {
+          description: "Reflog",
+          items: [
+            ["r", "current", reflog("magit-reflog-current", "Show the reflog of the current branch.", () => branchOrHead())],
+            ["O", "other", reflog("magit-reflog-other", "Show the reflog of a branch read.", () => readBranch("Show reflog for", localBranches(), currentBranch()))],
+            ["H", "HEAD", reflog("magit-reflog-head", "Show the HEAD reflog.", () => "HEAD")],
+          ],
+        },
+        { description: "Other", items: [["s", "shortlog", shortlog]] },
+      ],
+    },
+  ],
+});
+
+// Merge.
+
+const mergeWith = (name: string, doc: string, extra: string[]) =>
+  ember.defineCommand({
+    name,
+    doc,
+    run: () => {
+      const branch = readBranch("Merge", [...localBranches().filter((b) => b !== currentBranch()), ...remoteBranches()]);
+      runGit(["merge", ...transientArgs("magit-merge"), ...extra, branch]);
+    },
+  });
+const mergePlain = mergeWith("magit-merge-plain", "Merge a branch into the current one.", ["--no-edit"]);
+const mergeEdit = ember.defineCommand({
+  name: "magit-merge-editmsg",
+  doc: "Merge a branch into the current one, writing the merge commit's message.",
+  run: () => {
+    const branch = readBranch("Merge", [...localBranches().filter((b) => b !== currentBranch()), ...remoteBranches()]);
+    if (!runGit(["merge", "--no-commit", ...transientArgs("magit-merge"), branch])) return;
+    const gitDir = gitString(["rev-parse", "--absolute-git-dir"]) ?? `${repo()}.git`;
+    editCommit([], ember.readTextFile(`${gitDir}/MERGE_MSG`));
+  },
+});
+const mergeNocommit = mergeWith("magit-merge-nocommit", "Merge a branch into the current one, without committing.", ["--no-commit", "--no-ff"]);
+const mergeSquash = mergeWith("magit-merge-squash", "Squash the changes of a branch into the index, without committing.", ["--squash"]);
+const mergeAbsorb = ember.defineCommand({
+  name: "magit-merge-absorb",
+  doc: "Merge a branch into the current one and delete it.",
+  run: () => {
+    const branch = readBranch("Absorb branch", localBranches().filter((b) => b !== currentBranch()));
+    if (runGit(["merge", "--no-edit", ...transientArgs("magit-merge"), branch])) runGit(["branch", "-D", branch]);
+  },
+});
+const mergeDissolve = ember.defineCommand({
+  name: "magit-merge-into",
+  doc: "Merge the current branch into another and delete the current one.",
+  run: () => {
+    const from = currentBranch();
+    if (!from) ember.userError("No branch is checked out");
+    const into = readBranch(`Merge ${from} into`, localBranches().filter((b) => b !== from), upstreamOf(from)?.replace(/^[^/]+\//, ""));
+    if (runGit(["checkout", into]) && runGit(["merge", "--no-edit", ...transientArgs("magit-merge"), from])) runGit(["branch", "-D", from]);
+  },
+});
+const mergePreview = ember.defineCommand({
+  name: "magit-merge-preview",
+  doc: "Show the changes merging a branch would make.",
+  run: () => {
+    const branch = readBranch("Preview merge", [...localBranches().filter((b) => b !== currentBranch()), ...remoteBranches()]);
+    const dir = repo();
+    const base = gitString(["merge-base", "HEAD", branch]) ?? "HEAD";
+    const out = gitOutput(["diff", "--no-prefix", "-p", base, branch]).output;
+    setupBuffer(`magit-merge-preview: ${repoName(dir)}`, magitDiffMode, "diff", () => insertRoot("diff", () => insertFiles(parseDiff(out), "commit")));
+    ember.gotoChar(0);
+  },
+});
+
+const mergeMenu = transientDefinePrefix("magit-merge", {
+  doc: "Merge branches.",
+  groups: [
+    { description: "Arguments", items: [["-f", "Fast-forward only", "--ff-only"], ["-n", "No fast-forward", "--no-ff"], ["-s", "Strategy", "--strategy=", { choices: ["resolve", "recursive", "octopus", "ours", "subtree", "ort"] }]] },
+    {
+      description: "Actions",
+      items: [
+        { items: [["m", "Merge", mergePlain], ["e", "Merge and edit message", mergeEdit], ["n", "Merge but don't commit", mergeNocommit], ["a", "Absorb", mergeAbsorb]] },
+        { items: [["p", "Preview merge", mergePreview], "", ["s", "Squash merge", mergeSquash], ["d", "Dissolve", mergeDissolve]] },
+      ],
+    },
+  ],
+});
+
+// Reset.
+
+const resetFile = ember.defineCommand({
+  name: "magit-file-checkout",
+  doc: "Reset a file in the index and the working tree to a commit.",
+  run: () => {
+    const rev = readBranch("Checkout from revision", [...localBranches(), ...remoteBranches()], "HEAD");
+    const file = ember.completingRead(`Checkout file from ${rev}: `, gitLines(["ls-files"]), { requireMatch: true });
+    runGit(["checkout", rev, "--", file]);
+  },
+});
+
+const resetMenu = transientDefinePrefix("magit-reset", {
+  doc: "Reset the current branch.",
+  groups: [
+    {
+      items: [
+        { description: "Reset", items: [["b", "branch", branchReset], ["f", "file", resetFile]] },
+        {
+          description: "Reset this",
+          items: [
+            ["m", "mixed    (HEAD and index)", resetCommand("mixed", "Reset HEAD and the index to a commit, keeping the working tree.")],
+            ["s", "soft     (HEAD only)", resetCommand("soft", "Reset HEAD to a commit, keeping the index and working tree.")],
+            ["h", "hard     (HEAD, index and worktree)", resetCommand("hard", "Reset HEAD, the index and the working tree to a commit.")],
+            ["k", "keep     (HEAD and index, keeping uncommitted)", resetCommand("keep", "Reset HEAD and the index to a commit, keeping uncommitted changes.")],
+            ["i", "index    (only)", gitCommand("magit-reset-index", "Reset the index to a commit, keeping HEAD and the working tree.", () => ["reset", readBranch("Reset index to", [...localBranches(), ...remoteBranches()], "HEAD"), "--", "."])],
+            ["w", "worktree (only)", gitCommand("magit-reset-worktree", "Reset the working tree to a commit, keeping HEAD and the index.", () => ["checkout", readBranch("Reset worktree to", [...localBranches(), ...remoteBranches()], "HEAD"), "--", "."])],
+          ],
+        },
+      ],
+    },
+  ],
+});
+
+// Diff.
+
+const diffArgs = (): string[] => transientArgs("magit-diff").filter((a) => a !== "--stat" && !a.startsWith("--show-signature"));
+const diffBuffer = (args: string[]) => {
+  const dir = repo();
+  const out = gitOutput(["diff", "--no-prefix", "-p", ...diffArgs(), ...args]).output;
+  setupBuffer(`magit-diff: ${repoName(dir)}`, magitDiffMode, "diff", () => insertRoot("diff", () => insertFiles(parseDiff(out), "commit")));
+  ember.gotoChar(0);
+};
+const diffRange = ember.defineCommand({ name: "magit-diff-range", doc: "Show the differences between two commits, as A..B read.", run: () => diffBuffer([ember.readString("Diff for range: ", { default: "HEAD~..HEAD" }) || "HEAD~..HEAD"]) });
+const diffPaths = ember.defineCommand({
+  name: "magit-diff-paths",
+  doc: "Show the changes between two files.",
+  run: () => diffBuffer(["--no-index", ember.readFileName("First file: "), ember.readFileName("Second file: ")]),
+});
+const diffWorktree = ember.defineCommand({ name: "magit-diff-working-tree", doc: "Show the changes between the working tree and HEAD.", run: () => diffBuffer(["HEAD"]) });
+const showCommitCommand = ember.defineCommand({ name: "magit-show-commit", doc: "Show a commit read, or the one at point.", run: () => showCommit(readCommit("Show commit")) });
+const showStash = ember.defineCommand({ name: "magit-stash-show", doc: "Show a stash.", run: () => showCommit(stashAt("Show stash")) });
+
+const diffMenu = transientDefinePrefix("magit-diff", {
+  doc: "Show changes between different versions.",
+  groups: [
+    {
+      description: "Limit arguments",
+      items: [
+        ["--", "Limit to files", "--", { class: "option", prompt: "Limit to files: " }],
+        ["-i", "Ignore submodules", "--ignore-submodules=", { choices: ["untracked", "dirty", "all"] }],
+        ["-b", "Ignore whitespace changes", "--ignore-space-change"],
+        ["-w", "Ignore all whitespace", "--ignore-all-space"],
+      ],
+    },
+    { description: "Context arguments", items: [["-U", "Context lines", "-U", { class: "option", prompt: "Context lines: " }], ["-W", "Show surrounding functions", "--function-context"]] },
+    {
+      description: "Tune arguments",
+      items: [
+        ["-A", "Diff algorithm", "--diff-algorithm=", { choices: ["default", "minimal", "patience", "histogram"] }],
+        ["-X", "Diff merges", "--diff-merges=", { choices: ["off", "on", "first-parent", "separate", "combined", "dense-combined", "remerge"] }],
+        ["-M", "Detect renames", "-M", { class: "option", prompt: "Detect renames: " }],
+        ["-C", "Detect copies", "-C", { class: "option", prompt: "Detect copies: " }],
+        ["-x", "Disallow external diff drivers", "--no-ext-diff"],
+        ["-s", "Show stats", "--stat"],
+        ["=g", "Show signature", "--show-signature"],
+      ],
+    },
+    {
+      description: "Actions",
+      items: [
+        { items: [["d", "Dwim", diffDwim], ["r", "Diff range", diffRange], ["p", "Diff paths", diffPaths]] },
+        { items: [["u", "Diff unstaged", diffUnstaged], ["s", "Diff staged", diffStaged], ["w", "Diff worktree", diffWorktree]] },
+        { items: [["c", "Show commit", showCommitCommand], ["t", "Show stash", showStash]] },
+      ],
+    },
+  ],
+});
+
+// Stash.
+
+const stashIndex = gitCommand("magit-stash-index", "Stash the changes in the index only.", () => ["stash", "push", "--staged", ...transientArgs("magit-stash")]);
+const stashWorktree = gitCommand("magit-stash-worktree", "Stash the changes in the working tree only, keeping the index.", () => ["stash", "push", "--keep-index", ...transientArgs("magit-stash")]);
+const stashKeepIndex = gitCommand("magit-stash-keep-index", "Stash the changes in the index and the working tree, keeping the index.", () => ["stash", "push", "--keep-index", ...transientArgs("magit-stash")]);
+const snapshot = (name: string, doc: string, extra: string[]) =>
+  ember.defineCommand({
+    name,
+    doc,
+    run: () => {
+      const r = gitOutput(["stash", "create", ...extra]);
+      const hash = r.output.trim();
+      if (hash === "") ember.userError("No local changes to save");
+      runGit(["stash", "store", "-m", `Snapshot of ${branchOrHead()}`, hash]);
+    },
+  });
+const stashToWip = ember.defineCommand({
+  name: "magit-wip-commit",
+  doc: "Commit the working tree's changes to a work-in-progress ref, refs/wip/wtree/refs/heads/BRANCH.",
+  run: () => {
+    const hash = gitOutput(["stash", "create"]).output.trim();
+    if (hash === "") ember.userError("No local changes to save");
+    runGit(["update-ref", `refs/wip/wtree/refs/heads/${branchOrHead()}`, hash]);
+  },
+});
+const stashList = ember.defineCommand({
+  name: "magit-stash-list",
+  doc: "List the stashes.",
+  run: () => {
+    const dir = repo();
+    setupBuffer(`magit-stashes: ${repoName(dir)}`, magitLogMode, "stashes", () =>
+      insertRoot("stashesbuf", () => {
+        for (const s of gitLines(["stash", "list", "--format=%gd%x00%gs"])) {
+          const [ref, subject] = s.split("\0");
+          insertSection("stash", ref, false, () => insertHeading(face(ref, "magit-hash"), ` ${subject}`, "\n"));
+        }
+      }),
+    );
+    ember.gotoChar(0);
+  },
+});
+const stashBranch = ember.defineCommand({
+  name: "magit-stash-branch",
+  doc: "Create a branch from a stash's commit, apply the stash to it and drop the stash.",
+  run: () => {
+    const s = stashAt("Branch from stash");
+    const name = ember.readString("Branch name: ");
+    runGit(["stash", "branch", name, s]);
+  },
+});
+const stashBranchHere = ember.defineCommand({
+  name: "magit-stash-branch-here",
+  doc: "Create a branch at HEAD, check it out, apply a stash to it and drop the stash.",
+  run: () => {
+    const s = stashAt("Branch from stash");
+    const name = ember.readString("Branch name: ");
+    if (runGit(["checkout", "-b", name]) && runGit(["stash", "apply", s])) runGit(["stash", "drop", s]);
+  },
+});
+const stashFormatPatch = ember.defineCommand({
+  name: "magit-stash-format-patch",
+  doc: "Write a stash as a patch file.",
+  run: () => {
+    const s = stashAt("Format patch from stash");
+    const out = gitOutput(["stash", "show", "-p", s]).output;
+    const file = ember.expandFileName(`${s.replace(/[@{}]/g, "")}.patch`, repo());
+    ember.writeTextFile(file, out);
+    ember.message(`Wrote ${file}`);
+  },
+});
+
+const stashMenu = transientDefinePrefix("magit-stash", {
+  doc: "Stash uncommitted changes.",
+  groups: [
+    { description: "Arguments", items: [["-u", "Also save untracked files", "--include-untracked"], ["-a", "Also save untracked and ignored files", "--all"]] },
+    {
+      items: [
+        { description: "Stash", items: [["z", "both", stashBoth], ["i", "index", stashIndex], ["w", "worktree", stashWorktree], ["x", "keeping index", stashKeepIndex]] },
+        {
+          description: "Snapshot",
+          items: [
+            ["Z", "both", snapshot("magit-snapshot-both", "Save a stash of the index and working tree, keeping them.", [])],
+            ["I", "index", snapshot("magit-snapshot-index", "Save a stash of the index, keeping it.", [])],
+            ["W", "worktree", snapshot("magit-snapshot-worktree", "Save a stash of the working tree, keeping it.", [])],
+            ["r", "to wip ref", stashToWip],
+          ],
+        },
+        { description: "Use", items: [["a", "Apply", stashApply], ["p", "Pop", stashPop], ["k", "Drop", stashDrop]] },
+        { description: "Inspect", items: [["l", "List", stashList], ["v", "Show", showStash]] },
+        { description: "Transform", items: [["b", "Branch", stashBranch], ["B", "Branch here", stashBranchHere], ["f", "Format patch", stashFormatPatch]] },
+      ],
+    },
+  ],
+});
+
+// The other menus and commands the dispatch menu names.
+
+const cherryPick = ember.defineCommand({
+  name: "magit-cherry-pick",
+  doc: "Apply the commit at point, or one read, to the current branch, as git cherry-pick.",
+  run: () => runGit(["cherry-pick", readCommit("Cherry-pick")]) as unknown as void,
+});
+const revertCommit = ember.defineCommand({
+  name: "magit-revert-and-commit",
+  doc: "Revert the commit at point, or one read, committing the reversion.",
+  run: () => runGit(["revert", "--no-edit", readCommit("Revert commit")]) as unknown as void,
+});
+const tagCreate = ember.defineCommand({
+  name: "magit-tag-create",
+  doc: "Create a tag at the commit at point, or one read.",
+  run: () => {
+    const name = ember.readString("Tag name: ");
+    if (name === "") ember.userError("No name given");
+    runGit(["tag", name, readCommit(`Place ${name} on`)]);
+  },
+});
+const rebaseOnto = ember.defineCommand({
+  name: "magit-rebase-branch",
+  doc: "Rebase the current branch onto a branch read, without editing.",
+  run: () => runGit(["rebase", readBranch(`Rebase ${branchOrHead()} onto`, [...localBranches(), ...remoteBranches()], upstreamOf(currentBranch()))]) as unknown as void,
+});
+const gitignore = ember.defineCommand({
+  name: "magit-gitignore-in-topdir",
+  doc: "Add a file or pattern to the .gitignore at the top of the repository.",
+  run: () => {
+    const s = currentSection();
+    const def = s?.type === "file" ? (s.value as FileValue).file : undefined;
+    const pattern = ember.readString(def ? `File or pattern to ignore (default ${def}): ` : "File or pattern to ignore: ", { default: def });
+    if (pattern === "") ember.userError("Nothing to ignore");
+    const file = `${repo()}.gitignore`;
+    const old = ember.fileExists(file) ? ember.readTextFile(file) : "";
+    ember.writeTextFile(file, `${old}${old && !old.endsWith("\n") ? "\n" : ""}${pattern}\n`);
+    refreshAll();
+  },
+});
+const gitInit = ember.defineCommand({
+  name: "magit-init",
+  doc: "Create a Git repository in a directory read.",
+  run: () => {
+    const dir = ember.readFileName("Create repository in: ", { dir: String(ember.variable("default-directory")) });
+    ember.callProcess([git(), "init", ember.expandFileName(dir)]);
+    ember.letBind({ "default-directory": ember.fileNameAsDirectory(ember.expandFileName(dir)) }, () => ember.call(magitStatus));
+  },
+});
+const gitClone = ember.defineCommand({
+  name: "magit-clone",
+  doc: "Clone a repository from a URL read into a directory read.",
+  run: () => {
+    const url = ember.readString("Clone repository: ");
+    const dir = ember.readFileName("Clone to: ", { dir: String(ember.variable("default-directory")), initial: url.replace(/\.git$/, "").replace(/.*[/:]/, "") });
+    const r = ember.callProcess([git(), "clone", url, ember.expandFileName(dir)]);
+    if (r.exit !== 0) ember.userError(r.output.trim());
+    ember.letBind({ "default-directory": ember.fileNameAsDirectory(ember.expandFileName(dir)) }, () => ember.call(magitStatus));
+  },
+});
+const gitRun = ember.defineCommand({
+  name: "magit-git-command",
+  doc: "Run git with arguments read, as ! ! does.",
+  run: () => {
+    const args = ember.readString("Run git: ");
+    runGit(args.split(/\s+/).filter(Boolean));
+  },
+});
+const showRefs = ember.defineCommand({
+  name: "magit-show-refs",
+  doc: "List the branches and tags, with their commits.",
+  run: () => {
+    const dir = repo();
+    setupBuffer(`magit-refs: ${repoName(dir)}`, magitLogMode, "refs", () =>
+      insertRoot("refbuf", () => {
+        for (const [title, pattern] of [
+          ["Branches", "refs/heads"],
+          ["Remote branches", "refs/remotes"],
+          ["Tags", "refs/tags"],
+        ] as const) {
+          const refs = gitLines(["for-each-ref", "--format=%(refname:short)%00%(objectname:short)%00%(subject)", pattern]);
+          if (refs.length === 0) continue;
+          insertSection("refs", title, false, () => {
+            insertHeading(face(title, "magit-section-heading"), "\n");
+            for (const r of refs) {
+              const [name, hash, subject] = r.split("\0");
+              insertSection("commit", hash, false, () => insertHeading("  ", face(name.padEnd(20), pattern === "refs/remotes" ? "magit-branch-remote" : pattern === "refs/tags" ? "magit-tag" : "magit-branch-local"), " ", face(hash, "magit-hash"), " ", subject, "\n"));
+            }
+            ember.insert("\n");
+          });
+        }
+      }),
+    );
+    ember.gotoChar(0);
+  },
+});
+const cherries = ember.defineCommand({
+  name: "magit-cherry",
+  doc: "Show the commits of the current branch not in its upstream, as git cherry.",
+  run: () => {
+    const dir = repo();
+    const up = upstreamOf(currentBranch()) ?? readBranch("Cherry upstream", remoteBranches());
+    setupBuffer(`magit-cherry: ${repoName(dir)}`, magitLogMode, "cherry", () => insertRoot("cherry", () => insertCommits([`${up}..HEAD`])));
+    ember.gotoChar(0);
+  },
+});
+const remoteAdd = ember.defineCommand({
+  name: "magit-remote-add",
+  doc: "Add a remote, by a name and URL read.",
+  run: () => {
+    const name = ember.readString("Remote name: ");
+    const url = ember.readString("Remote url: ");
+    runGit(["remote", "add", name, url]);
+  },
+});
+const formatPatches = ember.defineCommand({
+  name: "magit-format-patch",
+  doc: "Write the commit at point, or one read, as a patch file.",
+  run: () => runGit(["format-patch", "-1", readCommit("Format patch for")]) as unknown as void,
+});
+const jumpToSection = ember.defineCommand({
+  name: "magit-status-jump",
+  doc: "Jump to a section of the status buffer, chosen by its heading.",
+  run: () => {
+    const top = sections()?.root.children ?? [];
+    const names = top.map((s) => ember.bufferSubstringNoProperties(s.start, ember.lineEndPosition(s.start)));
+    const chosen = ember.completingRead("Jump to section: ", names, { requireMatch: true });
+    const s = top[names.indexOf(chosen)];
+    if (s) ember.gotoChar(s.start);
+  },
+});
+const displayRepositoryBuffer = ember.defineCommand({
+  name: "magit-display-repository-buffer",
+  doc: "Show one of the repository's Magit buffers.",
+  run: () => {
+    const names = ember.bufferList().filter((b) => /^magit[-a-z]*: /.test(b));
+    ember.call("switch-to-buffer", ember.completingRead("Display buffer: ", names, { requireMatch: true }));
+  },
+});
+const sectionInfo = ember.defineCommand({
+  name: "magit-describe-section",
+  doc: "Say what the section at point is.",
+  run: () => {
+    const s = currentSection();
+    if (!s) ember.userError("No section at point");
+    const chain: string[] = [];
+    for (let x: Section | undefined = s; x && x.parent; x = x.parent) chain.push(x.type);
+    ember.message(`(${chain.join(" ")}) [${s.start}-${s.end}]`);
+  },
+});
+const help = ember.defineCommand({ name: "magit-info", doc: "Show what Magit's keys do.", run: () => ember.call("describe-mode") });
+
 const dispatch = transientDefinePrefix("magit-dispatch", {
   doc: "Invoke a Magit command from a list of available commands.",
   groups: [
@@ -1166,48 +2003,79 @@ const dispatch = transientDefinePrefix("magit-dispatch", {
       items: [
         {
           items: [
-            ["b", "Branch", "magit-branch"],
-            ["c", "Commit", "magit-commit"],
-            ["d", "Diff", "magit-diff"],
-            ["f", "Fetch", "magit-fetch"],
-            ["F", "Pull", "magit-pull"],
+            ["A", "Apply", cherryPick],
+            ["b", "Branch", branchMenu],
+            ["B", "Bisect", notYet("magit-bisect", "Bisecting")],
+            ["c", "Commit", commitMenu],
+            ["C", "Clone", gitClone],
+            ["d", "Diff", diffMenu],
+            ["D", "Diff (change)", diffMenu],
+            ["e", "Ediff (dwim)", notYet("magit-ediff-dwim", "Ediff")],
+            ["E", "Ediff", notYet("magit-ediff", "Ediff")],
+            ["f", "Fetch", fetchMenu],
+            ["F", "Pull", pullMenu],
+            ["h", "Help", help],
+            ["H", "Section info", sectionInfo],
           ],
         },
         {
           items: [
-            ["l", "Log", "magit-log"],
-            ["m", "Merge", "magit-merge"],
-            ["P", "Push", "magit-push"],
-            ["X", "Reset", "magit-reset"],
-            ["z", "Stash", "magit-stash"],
+            ["i", "Ignore", gitignore],
+            ["I", "Init", gitInit],
+            ["j", "Jump to section", jumpToSection],
+            ["J", "Display buffer", displayRepositoryBuffer],
+            ["l", "Log", logMenu],
+            ["L", "Log (change)", logMenu],
+            ["m", "Merge", mergeMenu],
+            ["M", "Remote", remoteAdd],
+            ["o", "Submodule", notYet("magit-submodule", "Submodules")],
+            ["O", "Subtree", notYet("magit-subtree", "Subtrees")],
+            ["P", "Push", pushMenu],
+            ["Q", "Command", gitRun],
+          ],
+        },
+        {
+          items: [
+            ["r", "Rebase", rebaseOnto],
+            ["t", "Tag", tagCreate],
+            ["T", "Note", notYet("magit-notes", "Notes")],
+            ["V", "Revert", revertCommit],
+            ["w", "Apply patches", notYet("magit-am", "Applying patches")],
+            ["W", "Format patches", formatPatches],
+            ["X", "Reset", resetMenu],
+            ["y", "Show Refs", showRefs],
+            ["Y", "Cherries", cherries],
+            ["z", "Stash", stashMenu],
+            ["Z", "Worktree", notYet("magit-worktree", "Worktrees")],
+            ["!", "Run", gitRun],
           ],
         },
       ],
     },
     {
+      description: "Applying changes",
       items: [
-        {
-          description: "Applying changes",
-          items: [
-            ["s", "Stage", magitStage],
-            ["u", "Unstage", magitUnstage],
-            ["k", "Discard", magitDiscard],
-            ["S", "Stage all", stageModified],
-            ["U", "Unstage all", unstageAll],
-          ],
-        },
-        {
-          description: "Essential commands",
-          padKeys: 4,
-          items: [
-            ["g", "       refresh current buffer", refreshCommand],
-            ["q", "       quit window", "quit-window"],
-            ["$", "       show process buffer", processBuffer],
-          ],
-        },
+        { items: [["a", "Apply", notYet("magit-apply", "Applying a change from elsewhere")], ["v", "Reverse", notYet("magit-reverse", "Reversing a change")], ["k", "Discard", magitDiscard]] },
+        { items: [["s", "Stage", magitStage], ["u", "Unstage", magitUnstage]] },
+        { items: [["S", "Stage all", stageModified], ["U", "Unstage all", unstageAll]] },
       ],
     },
-  ] as Group[],
+    {
+      description: "Essential commands",
+      items: [
+        {
+          padKeys: true,
+          items: [
+            ["g", "Refresh current buffer", refreshCommand],
+            ["q", "Bury current buffer", "quit-window"],
+            ["<tab>", "Toggle section at point", "magit-section-toggle"],
+            ["<return>", "Visit thing at point", magitVisitThing],
+          ],
+        },
+        { items: [["C-x m", "Show all key bindings", "describe-mode"], ["C-x i", "Show Info manual", help]] },
+      ],
+    },
+  ],
 });
 
 const bindings: [string, ember.DefinedCommand | string][] = [
@@ -1227,7 +2095,6 @@ const bindings: [string, ember.DefinedCommand | string][] = [
   ["f", fetchMenu],
   ["m", mergeMenu],
   ["X", resetMenu],
-  ["x", resetMenu],
   ["z", stashMenu],
   ["l", logMenu],
   ["d", diffMenu],

@@ -188,3 +188,94 @@ fn the_upstream_stashes_and_unpushed_commits_show_as_in_magit() {
     );
     assert_eq!(visible(&d), (want, 4));
 }
+
+#[test]
+fn the_menus_show_as_magits_do() {
+    let recorded: serde_json::Map<String, serde_json::Value> =
+        serde_json::from_str(&std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests/emacs/magit/menus.json")).unwrap()).unwrap();
+    let dir = repo();
+    let d = setup(dir.path());
+    d.start(|ed| ed.call("magit-status", vec![]).unwrap());
+    let mut failures = Vec::new();
+    for (key, want) in &recorded {
+        d.press(key);
+        let shown = d.with(|ed| {
+            let i = ed.find_buffer(" *transient*")?;
+            let b = &ed.buffers()[i];
+            Some(b.slice(0..b.len()))
+        });
+        d.press("C-g");
+        if shown.as_deref() != want.as_str() {
+            failures.push(format!("{key}:\n--- Emacs\n{}\n--- Ember\n{}", want.as_str().unwrap(), shown.unwrap_or_default()));
+        }
+    }
+    assert!(failures.is_empty(), "{} menus differ:\n{}", failures.len(), failures.join("\n"));
+}
+
+/// Waits for a push, pull or fetch Magit runs without waiting, as its process ends.
+fn settle(d: &Driven, done: impl Fn() -> bool) {
+    let start = std::time::Instant::now();
+    while !done() && start.elapsed() < std::time::Duration::from_secs(20) {
+        d.with(|ed| ed.accept_process_output(std::time::Duration::from_millis(50)));
+    }
+}
+
+#[test]
+fn pushing_sets_the_upstream_and_pulling_fetches() {
+    let origin = tempfile::tempdir().unwrap();
+    git(origin.path(), &["init", "-q", "--bare", "-b", "main"]);
+    let dir = repo();
+    let p = dir.path();
+    git(p, &["remote", "add", "origin", &origin.path().display().to_string()]);
+    let d = setup(p);
+    d.start(|ed| ed.call("magit-status", vec![]).unwrap());
+    // P u asks for the upstream to set, as there is none.
+    d.press("P u");
+    d.press("o r i g i n / m a i n RET");
+    settle(&d, || !git(origin.path(), &["log", "--oneline", "main"]).is_empty());
+    assert_eq!(git(origin.path(), &["log", "-1", "--format=%s", "main"]), "First commit\n");
+    settle(&d, || git(p, &["rev-parse", "--abbrev-ref", "main@{upstream}"]) == "origin/main\n");
+    assert_eq!(git(p, &["rev-parse", "--abbrev-ref", "main@{upstream}"]), "origin/main\n");
+    // The status shows the upstream once the push is done.
+    settle(&d, || visible(&d).0.contains("Merge:    origin/main"));
+    assert!(visible(&d).0.contains("Merge:    origin/main First commit"), "{}", visible(&d).0);
+}
+
+#[test]
+fn branching_and_stashing() {
+    let dir = repo();
+    let p = dir.path();
+    let d = setup(p);
+    d.start(|ed| ed.call("magit-status", vec![]).unwrap());
+    d.press("b c");
+    d.press("RET");
+    d.press("t o p i c RET");
+    assert_eq!(git(p, &["branch", "--show-current"]), "topic\n");
+    assert!(visible(&d).0.starts_with("Head:     topic First commit"));
+    d.press("z z");
+    d.press("RET");
+    assert_eq!(git(p, &["stash", "list"]).lines().count(), 1);
+    assert_eq!(git(p, &["status", "--porcelain", "--untracked-files=no"]), "");
+    assert!(visible(&d).0.contains("Stashes (1)"));
+    d.press("z p");
+    d.press("RET");
+    assert_eq!(git(p, &["stash", "list"]), "");
+    assert!(git(p, &["status", "--porcelain"]).contains(" M a.txt"));
+}
+
+#[test]
+fn an_instant_fixup_goes_into_the_commit() {
+    let dir = repo();
+    let p = dir.path();
+    git(p, &["commit", "-q", "-m", "Second"]);
+    let d = setup(p);
+    d.start(|ed| ed.call("magit-status", vec![]).unwrap());
+    let first = git(p, &["rev-parse", "--short", "HEAD~"]).trim().to_string();
+    d.press("s");
+    d.press("c F");
+    d.press(&format!("{} RET", first.chars().map(|c| c.to_string()).collect::<Vec<_>>().join(" ")));
+    // s staged the untracked c.txt, point's section; the fixup is folded
+    // into the first commit: two commits still, c.txt in the first.
+    assert_eq!(git(p, &["log", "--format=%s"]), "Second\nFirst commit\n");
+    assert_eq!(git(p, &["show", "HEAD~:c.txt"]), "new\n");
+}

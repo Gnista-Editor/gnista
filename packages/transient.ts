@@ -80,7 +80,9 @@ export interface SuffixOptions {
   reader?: (prompt: string, initial: string | undefined) => string;
   prompt?: string;
   /** What it is, if not worked out: "switch", "option", "suffix", "information". */
-  class?: "switch" | "option" | "suffix" | "information";
+  class?: "switch" | "option" | "switches" | "suffix" | "information";
+  /** For switches, how the argument is made from a choice, %s for it: "--%s-order". */
+  argumentFormat?: string;
   /** Shows the description only, as :info. */
   info?: Description;
   format?: string;
@@ -122,7 +124,7 @@ interface Suffix {
   command: string;
   kind: "suffix" | "prefix" | "infix" | "information";
   argument?: string;
-  infixClass?: "switch" | "option";
+  infixClass?: "switch" | "option" | "switches";
   options: SuffixOptions;
   /** For an infix: its value, true for a switch that is on, the string for an option. */
   value?: string | boolean;
@@ -213,7 +215,8 @@ function makeSuffix(prefix: string, spec: SuffixSpec): Suffix | undefined {
   }
   if (options.description !== undefined) description = options.description;
   if (!shows(options)) return undefined;
-  const isArgument = typeof target === "string" && /^-/.test(target) && options.class !== "suffix";
+  const isArgument =
+    typeof target === "string" && (/^-/.test(target) || options.class === "switch" || options.class === "option" || options.class === "switches") && options.class !== "suffix";
   const suffix: Suffix = isArgument
     ? {
         key,
@@ -221,7 +224,12 @@ function makeSuffix(prefix: string, spec: SuffixSpec): Suffix | undefined {
         command: `transient:${prefix}:${target}`,
         kind: "infix",
         argument: target as string,
-        infixClass: options.class === "switch" || options.class === "option" ? options.class : (target as string).endsWith("=") || options.choices || options.reader ? "option" : "switch",
+        infixClass:
+          options.class === "switch" || options.class === "option" || options.class === "switches"
+            ? options.class
+            : (target as string).endsWith("=") || options.choices || options.reader
+              ? "option"
+              : "switch",
         options,
       }
     : { key, description, command: commandName(prefix, key, target!), kind: prefixes.has(target as string) ? "prefix" : "suffix", options };
@@ -238,6 +246,9 @@ function makeLayout(prefix: string, group: Group): Layout | undefined {
     if (typeof item === "object" && !Array.isArray(item)) {
       const sub = makeLayout(prefix, item);
       if (sub) children.push(sub);
+    } else if (typeof item === "string" && !definedSuffixes.has(item) && !prefixes.has(item)) {
+      // Text, as a string in a Lisp group is: "" leaves a cell blank.
+      children.push(item);
     } else {
       const suffix = makeSuffix(prefix, item);
       if (suffix) children.push(suffix);
@@ -274,6 +285,9 @@ function initValues(suffixes: Suffix[], value: string[]): Map<string, string | b
     const arg = s.argument!;
     if (s.infixClass === "switch") {
       map.set(s.command, value.includes(arg) ? true : undefined);
+    } else if (s.infixClass === "switches") {
+      const format = s.options.argumentFormat ?? `${arg}%s`;
+      map.set(s.command, value.find((a) => (s.options.choices ?? []).some((c) => format.replace("%s", c) === a)));
     } else {
       const found = value.find((a) => a.startsWith(arg));
       map.set(s.command, found === undefined ? undefined : found.slice(arg.length));
@@ -314,6 +328,14 @@ function describe(d: Description | undefined): Text | undefined {
 function formatValue(s: Suffix): Text {
   const value = values.get(s.command);
   if (s.infixClass === "switch") return face(s.argument!, value ? (s.inapt ? "transient-inapt-argument" : "transient-argument") : "transient-inactive-argument");
+  if (s.infixClass === "switches") {
+    // --[topo|author-date|date]-order, the chosen one lit, as transient-switches show.
+    const format = s.options.argumentFormat ?? `${s.argument}%s`;
+    const [before, after] = format.split("%s");
+    const choices = (s.options.choices ?? []).flatMap((c, i) => [...(i > 0 ? [face("|", "transient-delimiter")] : []), face(c, format.replace("%s", c) === value ? "transient-value" : "transient-inactive-value")]);
+    const f = value ? "transient-argument" : "transient-inactive-argument";
+    return ember.concat(face(before, f), face("[", "transient-delimiter"), ...choices, face("]", "transient-delimiter"), face(after ?? "", f));
+  }
   if (value === undefined) return face(s.argument!, "transient-inactive-argument");
   return ember.concat(face(s.argument!, s.inapt ? "transient-inapt-argument" : "transient-argument"), face(String(value), s.inapt ? "transient-inapt-argument" : "transient-value"));
 }
@@ -512,7 +534,7 @@ function currentArgs(): string[] {
     if (s.kind !== "infix") continue;
     const value = values.get(s.command);
     if (value === undefined || value === false) continue;
-    args.push(s.infixClass === "switch" ? s.argument! : `${s.argument}${value}`);
+    args.push(s.infixClass === "switch" ? s.argument! : s.infixClass === "switches" ? String(value) : `${s.argument}${value}`);
   }
   return args;
 }
@@ -611,6 +633,14 @@ function readInfix(s: Suffix): void {
   const now = values.get(s.command);
   if (s.infixClass === "switch") {
     values.set(s.command, now ? undefined : true);
+    return;
+  }
+  if (s.infixClass === "switches") {
+    // Each press takes the next choice, then none, as transient-switches do.
+    const format = s.options.argumentFormat ?? `${s.argument}%s`;
+    const args = (s.options.choices ?? []).map((c) => format.replace("%s", c));
+    const at = now === undefined ? -1 : args.indexOf(String(now));
+    values.set(s.command, at + 1 < args.length ? args[at + 1] : undefined);
     return;
   }
   if (now !== undefined) {
