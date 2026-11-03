@@ -126,13 +126,17 @@ fn committing_writes_the_message_in_a_buffer() {
     let d = setup(dir.path());
     d.start(|ed| ed.call("magit-status", vec![]).unwrap());
     d.press("c c");
+    // git writes the template and waits for its editor, Ember.
+    settle(&d, || d.with(|ed| ed.buffer().name == "COMMIT_EDITMSG"));
     assert_eq!(d.with(|ed| ed.buffer().name.clone()), "COMMIT_EDITMSG");
     let template = d.with(|ed| { let b = ed.buffer(); b.slice(0..b.len()) });
     assert!(template.starts_with("\n# Please enter the commit message for your changes."), "{template}");
     assert!(template.contains("#\tmodified:   b.txt"), "{template}");
-    d.press("M o r e SPC b RET");
+    d.press("M o r e SPC b");
     d.press("C-c C-c");
+    settle(&d, || git(dir.path(), &["log", "-1", "--format=%s"]) == "More b\n");
     assert_eq!(git(dir.path(), &["log", "-1", "--format=%s"]), "More b\n");
+    settle(&d, || !visible(&d).0.contains("Staged changes"));
     assert!(d.with(|ed| ed.buffer().name.starts_with("magit: ")));
     assert!(!visible(&d).0.contains("Staged changes"));
 }
@@ -306,4 +310,56 @@ fn staging_the_lines_of_a_region() {
     // Only TWO staged, four left unstaged.
     assert_eq!(git(p, &["diff", "--cached", "--", "a.txt"]).lines().filter(|l| l.starts_with('+') || l.starts_with('-')).collect::<Vec<_>>(), ["--- a/a.txt", "+++ b/a.txt", "-two", "+TWO"]);
     assert_eq!(git(p, &["diff", "--", "a.txt"]).lines().filter(|l| l.starts_with('+') || l.starts_with('-')).collect::<Vec<_>>(), ["--- a/a.txt", "+++ b/a.txt", "+four"]);
+}
+
+/// A repository of three commits, each changing a file of its own.
+fn history() -> tempfile::TempDir {
+    let dir = tempfile::tempdir().unwrap();
+    let p = dir.path();
+    git(p, &["init", "-q", "-b", "main"]);
+    git(p, &["config", "user.email", "t@example.com"]);
+    git(p, &["config", "user.name", "Tester"]);
+    for (file, msg) in [("one.txt", "One"), ("two.txt", "Two"), ("three.txt", "Three")] {
+        std::fs::write(p.join(file), msg).unwrap();
+        git(p, &["add", file]);
+        git(p, &["commit", "-q", "-m", msg]);
+    }
+    dir
+}
+
+#[test]
+fn an_interactive_rebase_edits_the_todo_list_in_ember() {
+    let dir = history();
+    let p = dir.path();
+    let d = setup(p);
+    d.start(|ed| ed.call("magit-status", vec![]).unwrap());
+    let first = git(p, &["rev-parse", "--short", "HEAD~2"]).trim().to_string();
+    d.press("r i");
+    d.press(&format!("{} RET", first.chars().map(|c| c.to_string()).collect::<Vec<_>>().join(" ")));
+    settle(&d, || d.with(|ed| ed.buffer().name == "git-rebase-todo"));
+    let todo = d.with(|ed| { let b = ed.buffer(); b.slice(0..b.len()) });
+    // Newer git writes the subjects as comments: pick 1234567 # One.
+    assert!(todo.starts_with(&format!("pick {first} ")) && todo.lines().next().unwrap().ends_with("One") && todo.contains(" Three\n"), "{todo}");
+    // Fold Two into One, and leave Three out.
+    d.press("n f d");
+    d.press("C-c C-c");
+    settle(&d, || git(p, &["log", "--format=%s"]) == "One\n");
+    assert_eq!(git(p, &["log", "--format=%s"]), "One\n");
+    assert_eq!(git(p, &["show", "--name-only", "--format=", "HEAD"]), "one.txt\ntwo.txt\n");
+}
+
+#[test]
+fn rewording_a_commit_writes_its_message_again() {
+    let dir = history();
+    let p = dir.path();
+    let d = setup(p);
+    d.start(|ed| ed.call("magit-status", vec![]).unwrap());
+    let second = git(p, &["rev-parse", "--short", "HEAD~"]).trim().to_string();
+    d.press("r w");
+    d.press(&format!("{} RET", second.chars().map(|c| c.to_string()).collect::<Vec<_>>().join(" ")));
+    settle(&d, || d.with(|ed| ed.buffer().name == "COMMIT_EDITMSG"));
+    d.press("C-k S e c o n d");
+    d.press("C-c C-c");
+    settle(&d, || git(p, &["log", "--format=%s"]) == "Three\nSecond\nOne\n");
+    assert_eq!(git(p, &["log", "--format=%s"]), "Three\nSecond\nOne\n");
 }

@@ -36,7 +36,7 @@
                       mr-menus)))
   (magit-status-setup-buffer repo)
   (with-current-buffer (magit-get-mode-buffer 'magit-status-mode)
-    (dolist (key '("c" "P" "F" "f" "b" "l" "m" "X" "d" "z" "h"))
+    (dolist (key (quote ("c" "P" "F" "f" "b" "l" "m" "X" "d" "z" "h" "r")))
       (setq mr-key key)
       (execute-kbd-macro (kbd (concat key " C-g")))))
   (delete-directory repo t))

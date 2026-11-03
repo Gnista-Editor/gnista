@@ -22,7 +22,8 @@
 
 import { currentSection, insertHeading, insertRoot, insertSection, magitSectionMode, sectionAt, sections, show, type Section } from "magit-section";
 import { transientArgs, transientDefinePrefix, type Group } from "transient";
-import { PerBuffer, truthy } from "subr";
+import { forwardLine, PerBuffer, truthy } from "subr";
+import { withEditorEnv, withEditorFilter } from "with-editor";
 
 // Faces.
 
@@ -101,21 +102,23 @@ export function runGit(args: string[], input?: string): boolean {
 }
 
 /** Runs git without waiting, as push and pull do, logging its output and refreshing when it ends, as magit-run-git-async. */
-export function runGitAsync(args: string[], what: string): void {
+export function runGitAsync(args: string[], what: string, editor = false, env: { [name: string]: string } = {}): void {
   saveRepositoryBuffers();
   const dir = repo();
   const entry = { args, exit: -1, output: "", dir };
   processLog.push(entry);
   ember.message(`Running git ${args.join(" ")}`);
+  const collect = (_p: string, output: string) => {
+    entry.output += output;
+  };
   ember.makeProcess({
     name: "magit-git",
     command: [git(), "--no-pager", "-c", "color.ui=false", ...args],
     directory: dir,
-    env: { GIT_TERMINAL_PROMPT: "0" },
+    // With an editor, git asks Ember to edit its messages and lists, as magit-run-git-with-editor.
+    env: { GIT_TERMINAL_PROMPT: "0", ...(editor ? withEditorEnv() : {}), ...env },
     connectionType: "pipe",
-    filter: (_p, output) => {
-      entry.output += output;
-    },
+    filter: editor ? withEditorFilter(collect) : collect,
     sentinel: (_p, event) => {
       entry.exit = event.startsWith("finished") ? 0 : Number(/code (\d+)/.exec(event)?.[1] ?? 1);
       ember.withCurrentBuffer(ember.currentBuffer(), () => refreshAll(dir));
@@ -611,93 +614,45 @@ ember.defineFace({ name: "git-commit-summary", doc: "Face used for the summary i
 ember.defineFace({ name: "git-commit-comment-heading", doc: "Face used for headings in commit message comments.", attributes: { inherit: "git-commit-keyword" } });
 ember.defineFace({ name: "git-commit-keyword", doc: "Face used for keywords in commit messages.", attributes: { inherit: "font-lock-string-face" } });
 
-/** What the commit buffer is for: the git commit arguments and the buffers to go back to. */
-const commitBuffers = new PerBuffer<{ args: string[]; dir: string; window: number; diffBuffer?: string }>();
+/** The diff a commit makes, shown beside its message, as magit-commit-diff; the buffer, to take away when done. */
+let commitDiff: string | undefined;
+/** Whether the commit being written amends the last one, for the diff to show. */
+let amending = false;
 
-/** The comments under a commit message, as git's own template has them. */
-function commitTemplate(amend: boolean): string {
-  const status = gitOutput(["status"]).output.split("\n").filter((l) => !l.startsWith("  (use"));
-  const lines = [
-    "",
-    "# Please enter the commit message for your changes. Lines starting",
-    "# with '#' will be ignored, and an empty message aborts the commit.",
-    "#",
-    ...(amend ? ["# Date:      " + (gitString(["log", "-1", "--format=%ad"]) ?? ""), "#"] : []),
-    ...status.map((l) => (l === "" ? "#" : l.startsWith("\t") ? `#${l}` : `# ${l}`)),
-  ];
-  return `${lines.join("\n").replace(/(#\n)+$/, "#\n")}`;
+/** Runs git commit with ARGS, its message written in COMMIT_EDITMSG through with-editor, as magit-commit-create. */
+function editCommit(args: string[], amend = false): void {
+  amending = amend;
+  runGitAsync(["commit", ...args], "Committing", true);
 }
 
-/** Opens COMMIT_EDITMSG for a commit with ARGS, with MESSAGE to start, and shows what it commits, as magit-commit-create does through with-editor. */
-function editCommit(args: string[], message = "", amend = false): void {
-  const dir = repo();
+/** Shows what the commit makes beside its message, as magit-commit-diff does when COMMIT_EDITMSG is visited. */
+function showCommitDiff(): void {
+  if (!/\/COMMIT_EDITMSG$/.test(ember.bufferFileName() ?? "")) return;
   const window = ember.selectedWindow();
-  const gitDir = gitString(["rev-parse", "--absolute-git-dir"]) ?? `${dir}.git`;
-  const file = `${gitDir}/COMMIT_EDITMSG`;
-  ember.writeTextFile(file, `${message}${commitTemplate(amend)}`);
-  // The diff to commit, beside, as magit-commit-diff shows it.
-  let diffBuffer: string | undefined;
-  const staged = amend ? gitOutput(["diff", "--no-prefix", "-p", "HEAD^", ...(args.includes("--only") ? ["HEAD"] : [])]) : gitOutput(["diff", "--cached", "--no-prefix", "-p"]);
-  if (staged.output.trim()) {
-    diffBuffer = setupBuffer(`magit-diff: ${repoName(dir)}`, magitDiffMode, "diff", () => insertRoot("diff", () => insertFiles(parseDiff(staged.output), "commit")), false);
-  }
-  ember.call("find-file", file);
-  ember.call(gitCommitMode);
-  commitBuffers.set(ember.currentBuffer(), { args, dir, window, diffBuffer });
-  ember.gotoChar(0);
-  if (diffBuffer) ember.call("display-buffer", diffBuffer);
-  ember.message("Type C-c C-c to finish, or C-c C-k to cancel");
+  const staged = amending ? gitOutput(["diff", "--no-prefix", "-p", "HEAD^", "--cached"]) : gitOutput(["diff", "--cached", "--no-prefix", "-p"]);
+  if (!staged.output.trim()) return;
+  commitDiff = setupBuffer(`magit-diff: ${repoName(repo())}`, magitDiffMode, "diff", () => insertRoot("diff", () => insertFiles(parseDiff(staged.output), "commit")), false);
+  ember.call("display-buffer", commitDiff);
+  ember.selectWindow(window);
 }
 
-/** Commits with the message the buffer has, as with-editor-finish and git commit do. */
-const commitFinish = ember.defineCommand({
-  name: "with-editor-finish",
-  doc: "Finish the commit with the message in this buffer.",
-  run: () => {
-    const info = commitBuffers.get(ember.currentBuffer());
-    if (!info) ember.userError("Not a commit message buffer");
-    ember.call("save-buffer");
-    const file = ember.bufferFileName()!;
-    const message = ember.bufferSubstringNoProperties(ember.pointMin(), ember.pointMax());
-    const body = message.split("\n").filter((l) => !l.startsWith("#")).join("\n").trim();
-    if (body === "" && !info.args.includes("--allow-empty-message")) {
-      ember.message("Aborting commit due to empty commit message.");
-      return;
-    }
-    const r = ember.letBind({ "default-directory": info.dir }, () => {
-      processLog.push({ args: ["commit", ...info.args], exit: 0, output: "", dir: info.dir });
-      return gitOutput(["commit", "--cleanup=strip", "-F", file, ...info.args], undefined, info.dir);
-    });
-    processLog[processLog.length - 1].exit = r.exit;
-    processLog[processLog.length - 1].output = r.output;
-    closeCommit(info);
-    if (r.exit !== 0) ember.message((r.output.split("\n").find((l) => l.trim()) ?? "Commit failed").replace(/^(error|fatal): /, ""));
-    else ember.message(r.output.split("\n")[0]);
-    ember.letBind({ "default-directory": info.dir }, () => refreshAll(info.dir));
-  },
-});
-
-const commitCancel = ember.defineCommand({
-  name: "with-editor-cancel",
-  doc: "Cancel the commit, keeping its message for next time.",
-  run: () => {
-    const info = commitBuffers.get(ember.currentBuffer());
-    if (!info) ember.userError("Not a commit message buffer");
-    closeCommit(info);
-    ember.message("Canceled by user");
-  },
-});
-
-function closeCommit(info: { window: number; diffBuffer?: string }): void {
-  ember.setBufferModified(false);
-  ember.call("kill-buffer", ember.bufferName());
-  if (info.diffBuffer && ember.bufferLiveP(ember.getBuffer(info.diffBuffer))) {
-    const w = ember.windowList().find((x) => ember.windowBuffer(x) === info.diffBuffer);
-    if (w !== undefined && ember.windowList().length > 1) ember.deleteWindow(w);
-    ember.call("kill-buffer", info.diffBuffer);
-  }
-  if (ember.windowList().includes(info.window)) ember.selectWindow(info.window);
+/** Takes the commit's diff away once the message is done with. */
+function hideCommitDiff(): void {
+  if (!commitDiff || !ember.bufferLiveP(ember.getBuffer(commitDiff))) return;
+  const w = ember.windowList().find((x) => ember.windowBuffer(x) === commitDiff);
+  if (w !== undefined && ember.windowList().length > 1) ember.deleteWindow(w);
+  ember.call("kill-buffer", commitDiff);
+  commitDiff = undefined;
 }
+
+ember.addHook("with-editor-filter-visit-hook", showCommitDiff);
+ember.addHook("with-editor-post-finish-hook", hideCommitDiff);
+ember.addHook("with-editor-post-cancel-hook", hideCommitDiff);
+ember.setDefault("with-editor-file-modes", [
+  ...((ember.variable("with-editor-file-modes") as string[][] | null) ?? []),
+  ["/\\(?:COMMIT\\|MERGE\\|TAG\\)_EDITMSG\\'", "git-commit-mode"],
+  ["/git-rebase-todo\\'", "git-rebase-mode"],
+]);
 
 /** Highlights the summary line and comments, as git-commit-mode's font-lock keywords. */
 function fontifyCommit(start: number, end: number): void {
@@ -721,7 +676,6 @@ export const gitCommitMode = ember.defineMajorMode({
   modeName: "Git-Commit",
   parent: "text-mode",
   doc: "Major mode for editing git commit messages: C-c C-c commits, C-c C-k cancels.",
-  bindings: { "C-c C-c": commitFinish, "C-c C-k": commitCancel },
   setup: () => {
     ember.makeLocalVariable("fill-column");
     ember.setVariable("fill-column", 72);
@@ -747,7 +701,7 @@ const commitCreate = ember.defineCommand({
 const commitAmend = ember.defineCommand({
   name: "magit-commit-amend",
   doc: "Amend the last commit, with the staged changes and an edited message.",
-  run: () => editCommit(["--amend", ...commitArgs()], gitString(["log", "-1", "--format=%B"]) ?? "", true),
+  run: () => editCommit(["--amend", ...commitArgs()], true),
 });
 
 const commitExtend = ember.defineCommand({
@@ -759,7 +713,7 @@ const commitExtend = ember.defineCommand({
 const commitReword = ember.defineCommand({
   name: "magit-commit-reword",
   doc: "Reword the last commit, ignoring the staged changes.",
-  run: () => editCommit(["--amend", "--only", ...commitArgs()], gitString(["log", "-1", "--format=%B"]) ?? "", true),
+  run: () => editCommit(["--amend", "--only", ...commitArgs()], true),
 });
 
 
@@ -1110,7 +1064,7 @@ function fixupCommand(name: string, doc: string, option: (rev: string) => string
     run: () => {
       const rev = readCommit(doc.replace(/\.$/, ""));
       if (edit) {
-        editCommit([option(rev), ...commitArgs()], "", false);
+        editCommit([option(rev), ...commitArgs()]);
         return;
       }
       if (!runGit(["commit", "--no-edit", option(rev), ...commitArgs()])) return;
@@ -1405,6 +1359,258 @@ const fetchMenu = transientDefinePrefix("magit-fetch", {
   ],
 });
 
+// Rebase, after magit-sequence.el and git-rebase.el.
+
+/** Whether a rebase is going on, stopped for something, as magit-rebase-in-progress-p. */
+function rebaseInProgress(): boolean {
+  const gitDir = gitString(["rev-parse", "--absolute-git-dir"]);
+  return gitDir !== undefined && (ember.fileExists(`${gitDir}/rebase-merge`) || ember.fileExists(`${gitDir}/rebase-apply`));
+}
+
+const rebaseArgs = (): string[] => transientArgs("magit-rebase");
+
+/** The commit to rebase from, its parent or --root for the first, as magit-rebase-interactive-1 works it out. */
+const ontoParent = (rev: string): string => (gitOutput(["rev-parse", "--verify", "-q", `${rev}^`]).exit === 0 ? `${rev}^` : "--root");
+
+/** Rebases interactively from REV, with the todo list edited by SEQUENCE, a shell command, or in Ember if none. */
+function rebaseInteractive(rev: string, what: string, sequence?: string): void {
+  const args = ["rebase", "-i", ...rebaseArgs().filter((a) => a !== "--interactive"), ontoParent(rev)];
+  // A sequence editor of its own wins over Ember's, which still edits the messages.
+  runGitAsync(args, what, true, sequence ? { GIT_SEQUENCE_EDITOR: sequence } : {});
+}
+
+/** A sequence editor that changes the first line's action, as magit-rebase-edit-commit and its kin have git do. */
+const firstLineTo = (action: string): string => `perl -i -p -e 's/^pick/${action}/ if $. == 1'`;
+
+const rebaseOntoUpstream = ember.defineCommand({
+  name: "magit-rebase-onto-upstream",
+  doc: "Rebase the current branch onto its upstream, setting one first if there is none.",
+  run: () => {
+    const [remote, target, set] = ensureUpstream("rebase");
+    if (set) gitOutput(["branch", `--set-upstream-to=${remote}/${target}`]);
+    runGitAsync(["rebase", ...rebaseArgs(), `${remote}/${target}`], "Rebasing", true);
+  },
+});
+const rebaseOntoPushRemote = ember.defineCommand({
+  name: "magit-rebase-onto-pushremote",
+  doc: "Rebase the current branch onto its push remote's branch, setting one first if there is none.",
+  run: () => {
+    const remote = ensurePushRemote();
+    runGitAsync(["rebase", ...rebaseArgs(), `${remote}/${branchOrHead()}`], "Rebasing", true);
+  },
+});
+const rebaseElsewhere = ember.defineCommand({
+  name: "magit-rebase-branch",
+  doc: "Rebase the current branch onto a branch read.",
+  run: () => runGitAsync(["rebase", ...rebaseArgs(), readBranch(`Rebase ${branchOrHead()} onto`, [...localBranches(), ...remoteBranches()])], "Rebasing", true),
+});
+const rebaseInteractively = ember.defineCommand({
+  name: "magit-rebase-interactive",
+  doc: "Rebase the commits from one read interactively, editing the todo list in git-rebase-mode.",
+  run: () => rebaseInteractive(readCommit("Interactively rebase from"), "Rebasing"),
+});
+const rebaseSubset = ember.defineCommand({
+  name: "magit-rebase-subset",
+  doc: "Rebase the commits from one read onto a new base read.",
+  run: () => {
+    const start = readCommit("Rebase subset starting at");
+    const onto = readBranch("Rebase subset onto", [...localBranches(), ...remoteBranches()]);
+    runGitAsync(["rebase", ...rebaseArgs(), "--onto", onto, ontoParent(start)], "Rebasing", true);
+  },
+});
+const rebaseEditCommit = ember.defineCommand({
+  name: "magit-rebase-edit-commit",
+  doc: "Stop at a commit read, to change it, then go on with r r.",
+  run: () => rebaseInteractive(readCommit("Edit commit"), "Rebasing", firstLineTo("edit")),
+});
+const rebaseRewordCommit = ember.defineCommand({
+  name: "magit-rebase-reword-commit",
+  doc: "Write a commit's message again.",
+  run: () => rebaseInteractive(readCommit("Reword commit"), "Rebasing", firstLineTo("reword")),
+});
+const rebaseRemoveCommit = ember.defineCommand({
+  name: "magit-rebase-remove-commit",
+  doc: "Take a commit out of the history.",
+  run: () => {
+    const rev = readCommit("Remove commit");
+    if (ember.yOrNP(`Remove ${rev}? `)) rebaseInteractive(rev, "Rebasing", firstLineTo("drop"));
+  },
+});
+const rebaseAutosquash = ember.defineCommand({
+  name: "magit-rebase-autosquash",
+  doc: "Squash the fixup and squash commits into the commits they name.",
+  run: () => {
+    const upstream = upstreamOf(currentBranch());
+    const base = upstream ? gitString(["merge-base", "HEAD", upstream]) : undefined;
+    runGitAsync(["rebase", "-i", "--autosquash", "--autostash", "--keep-empty", ...(base ? [base] : ["--root"])], "Autosquashing", true, { GIT_SEQUENCE_EDITOR: ":" });
+  },
+});
+const rebaseContinue = ember.defineCommand({ name: "magit-rebase-continue", doc: "Go on with the rebase.", run: () => runGitAsync(["rebase", "--continue"], "Rebasing", true) });
+const rebaseSkip = ember.defineCommand({ name: "magit-rebase-skip", doc: "Skip the commit the rebase stopped at.", run: () => runGitAsync(["rebase", "--skip"], "Rebasing", true) });
+const rebaseEditTodo = ember.defineCommand({ name: "magit-rebase-edit", doc: "Edit the rest of the rebase's todo list.", run: () => runGitAsync(["rebase", "--edit-todo"], "Editing", true) });
+const rebaseAbort = ember.defineCommand({
+  name: "magit-rebase-abort",
+  doc: "Abort the rebase, going back to where it started.",
+  run: () => {
+    if (ember.yOrNP("Abort this rebase? ")) runGit(["rebase", "--abort"]);
+  },
+});
+
+const rebaseMenu = transientDefinePrefix("magit-rebase", {
+  doc: "Transplant commits and/or modify existing commits.",
+  groups: [
+    {
+      description: "Arguments",
+      if: () => !rebaseInProgress(),
+      items: [
+        ["-k", "Keep empty commits", "--keep-empty"],
+        ["-r", "Rebase merges", "--rebase-merges=", { choices: ["no-rebase-cousins", "rebase-cousins"] }],
+        ["-u", "Update branches", "--update-refs"],
+        ["-d", "Use author date as committer date", "--committer-date-is-author-date"],
+        ["-t", "Use current time as author date", "--ignore-date"],
+        ["-a", "Autosquash", "--autosquash"],
+        ["-A", "Autostash", "--autostash"],
+        ["-i", "Interactive", "--interactive"],
+        ["-h", "Disable hooks", "--no-verify"],
+      ],
+    },
+    {
+      description: () => `Rebase ${branchOrHead()} onto`,
+      if: () => !rebaseInProgress(),
+      items: [
+        ["p", () => { const r = pushRemoteOf(currentBranch()); return r ? `${r}/${branchOrHead()}` : "pushRemote, setting that"; }, rebaseOntoPushRemote],
+        ["u", () => upstreamOf(currentBranch()) ?? "@{upstream}, setting that", rebaseOntoUpstream],
+        ["e", "elsewhere", rebaseElsewhere],
+      ],
+    },
+    {
+      description: "Rebase",
+      if: () => !rebaseInProgress(),
+      items: [
+        { items: [["i", "interactively", rebaseInteractively], ["s", "a subset", rebaseSubset]] },
+        { items: [["m", "to modify a commit", rebaseEditCommit], ["w", "to reword a commit", rebaseRewordCommit], ["k", "to remove a commit", rebaseRemoveCommit]] },
+        { items: [["f", "to autosquash", rebaseAutosquash]] },
+      ],
+    },
+    {
+      description: "Actions",
+      if: () => rebaseInProgress(),
+      items: [["r", "Continue", rebaseContinue], ["s", "Skip", rebaseSkip], ["e", "Edit", rebaseEditTodo], ["a", "Abort", rebaseAbort]],
+    },
+  ],
+});
+
+/** The actions a todo line can have, as git-rebase-command-re matches them. */
+const TODO_LINE = /^(pick|p|reword|r|edit|e|squash|s|fixup|f|drop|d|exec|x|break|b|label|l|reset|t|merge|m|update-ref|u)(\s|$)/;
+
+/** Gives the todo line at point ACTION, and goes to the next, as git-rebase-set-action. */
+function setAction(action: string): void {
+  const line = ember.lineOf(ember.point());
+  const text = ember.lineText(line);
+  const m = TODO_LINE.exec(text);
+  if (!m || ["exec", "x", "break", "b", "label", "l", "reset", "t", "merge", "m", "update-ref", "u"].includes(m[1])) {
+    forwardLine(1);
+    return;
+  }
+  ember.letBind({ "inhibit-read-only": true }, () => {
+    const start = ember.lineStart(line);
+    ember.deleteRegion(start, start + m[1].length);
+    ember.gotoChar(start);
+    ember.insert(action);
+  });
+  forwardLine(1);
+}
+
+/** Moves the todo line at point by N lines, as git-rebase-move-line-down. */
+function moveLine(n: number): void {
+  const line = ember.lineOf(ember.point());
+  const target = line + n;
+  if (target < 0 || !TODO_LINE.test(ember.lineText(line)) || !TODO_LINE.test(ember.lineText(target))) return;
+  ember.letBind({ "inhibit-read-only": true }, () => {
+    const [a, b] = [ember.lineText(line), ember.lineText(target)];
+    for (const [l, t] of [[line, b], [target, a]] as const) {
+      ember.deleteRegion(ember.lineStart(l), ember.lineEnd(l));
+      ember.gotoChar(ember.lineStart(l));
+      ember.insert(t);
+    }
+  });
+  ember.gotoChar(ember.lineStart(target));
+}
+
+const todoCommand = (name: string, action: string, doc: string) => ember.defineCommand({ name, doc, run: () => setAction(action) });
+
+/** Highlights the todo list's actions, hashes and comments, as git-rebase-mode's font-lock keywords. */
+function fontifyTodo(start: number, end: number): void {
+  ember.withSilentModifications(() => {
+    for (let line = ember.lineOf(start); line <= ember.lineOf(Math.max(start, end - 1)); line++) {
+      const ls = ember.lineStart(line);
+      const text = ember.lineText(line);
+      if (text.startsWith("#")) {
+        ember.putTextProperty(ls, ember.lineEnd(line), "face", "font-lock-comment-face");
+        continue;
+      }
+      const m = /^(\S+)(\s+)([0-9a-f]{4,40})?/.exec(text);
+      if (!m || !TODO_LINE.test(text)) continue;
+      ember.putTextProperty(ls, ls + m[1].length, "face", "font-lock-keyword-face");
+      if (m[3]) ember.putTextProperty(ls + m[1].length + m[2].length, ls + m[1].length + m[2].length + m[3].length, "face", "magit-hash");
+    }
+  });
+}
+
+export const gitRebaseMode = ember.defineMajorMode({
+  name: "git-rebase-mode",
+  modeName: "Git Rebase",
+  parent: "text-mode",
+  doc: "Major mode for editing a rebase's todo list: c, r, e, s, f and d set a line's action, M-p and M-n move it, x adds a command to run, C-c C-c starts the rebase.",
+  bindings: {
+    c: todoCommand("git-rebase-pick", "pick", "Use the commit as it is."),
+    r: todoCommand("git-rebase-reword", "reword", "Use the commit, writing its message again."),
+    w: todoCommand("git-rebase-reword-w", "reword", "Use the commit, writing its message again."),
+    e: todoCommand("git-rebase-edit", "edit", "Use the commit, stopping to change it."),
+    m: todoCommand("git-rebase-edit-m", "edit", "Use the commit, stopping to change it."),
+    s: todoCommand("git-rebase-squash", "squash", "Meld the commit into the one before, writing their message."),
+    f: todoCommand("git-rebase-fixup", "fixup", "Meld the commit into the one before, keeping its message."),
+    d: todoCommand("git-rebase-drop", "drop", "Leave the commit out."),
+    k: todoCommand("git-rebase-kill-line", "drop", "Leave the commit out."),
+    "C-k": todoCommand("git-rebase-kill-line-k", "drop", "Leave the commit out."),
+    p: ember.defineCommand({ name: "git-rebase-backward-line", doc: "Go to the line before.", run: () => void forwardLine(-1) }),
+    n: ember.defineCommand({ name: "git-rebase-forward-line", doc: "Go to the next line.", run: () => void forwardLine(1) }),
+    "M-p": ember.defineCommand({ name: "git-rebase-move-line-up", doc: "Move the line up.", run: () => moveLine(-1) }),
+    "M-n": ember.defineCommand({ name: "git-rebase-move-line-down", doc: "Move the line down.", run: () => moveLine(1) }),
+    "M-<up>": "git-rebase-move-line-up" as ember.CommandName,
+    "M-<down>": "git-rebase-move-line-down" as ember.CommandName,
+    x: ember.defineCommand({
+      name: "git-rebase-exec",
+      doc: "Add a shell command to run at this point of the rebase.",
+      run: () => {
+        const cmd = ember.readString("Execute: ");
+        if (cmd === "") return;
+        ember.gotoChar(ember.lineStart(ember.lineOf(ember.point())));
+        ember.insert(`exec ${cmd}\n`);
+      },
+    }),
+    b: ember.defineCommand({
+      name: "git-rebase-break",
+      doc: "Stop the rebase at this point.",
+      run: () => {
+        ember.gotoChar(ember.lineStart(ember.lineOf(ember.point())));
+        ember.insert("break\n");
+      },
+    }),
+    RET: ember.defineCommand({
+      name: "git-rebase-show-commit",
+      doc: "Show the commit of the line at point.",
+      run: () => {
+        const m = /^\S+\s+([0-9a-f]{4,40})/.exec(ember.lineText(ember.lineOf(ember.point())));
+        if (m) showCommit(m[1]);
+      },
+    }),
+  },
+  setup: () => {
+    ember.addHook("jit-lock-functions", fontifyTodo, { local: true });
+  },
+});
+
 // Branch.
 
 /** A branch variable read and set, shown as Magit shows it: branch.main.description unset. */
@@ -1654,9 +1860,7 @@ const mergeEdit = ember.defineCommand({
   doc: "Merge a branch into the current one, writing the merge commit's message.",
   run: () => {
     const branch = readBranch("Merge", [...localBranches().filter((b) => b !== currentBranch()), ...remoteBranches()]);
-    if (!runGit(["merge", "--no-commit", ...transientArgs("magit-merge"), branch])) return;
-    const gitDir = gitString(["rev-parse", "--absolute-git-dir"]) ?? `${repo()}.git`;
-    editCommit([], ember.readTextFile(`${gitDir}/MERGE_MSG`));
+    runGitAsync(["merge", "--edit", ...transientArgs("magit-merge"), branch], "Merging", true);
   },
 });
 const mergeNocommit = mergeWith("magit-merge-nocommit", "Merge a branch into the current one, without committing.", ["--no-commit", "--no-ff"]);
@@ -1911,11 +2115,6 @@ const tagCreate = ember.defineCommand({
     runGit(["tag", name, readCommit(`Place ${name} on`)]);
   },
 });
-const rebaseOnto = ember.defineCommand({
-  name: "magit-rebase-branch",
-  doc: "Rebase the current branch onto a branch read, without editing.",
-  run: () => runGit(["rebase", readBranch(`Rebase ${branchOrHead()} onto`, [...localBranches(), ...remoteBranches()], upstreamOf(currentBranch()))]) as unknown as void,
-});
 const gitignore = ember.defineCommand({
   name: "magit-gitignore-in-topdir",
   doc: "Add a file or pattern to the .gitignore at the top of the repository.",
@@ -2083,7 +2282,7 @@ const dispatch = transientDefinePrefix("magit-dispatch", {
         },
         {
           items: [
-            ["r", "Rebase", rebaseOnto],
+            ["r", "Rebase", rebaseMenu],
             ["t", "Tag", tagCreate],
             ["T", "Note", notYet("magit-notes", "Notes")],
             ["V", "Revert", revertCommit],
@@ -2143,6 +2342,7 @@ const bindings: [string, ember.DefinedCommand | string][] = [
   ["m", mergeMenu],
   ["X", resetMenu],
   ["z", stashMenu],
+  ["r", rebaseMenu],
   ["l", logMenu],
   ["d", diffMenu],
   ["h", dispatch],
