@@ -165,6 +165,9 @@ impl Editor {
             }
         }
         b.set_point(b.len());
+        // A table that is a function gives its names before the setup hook
+        // runs, so what the hook shows, as vertico's list, has them.
+        self.refresh_dynamic_collection();
         if let Err(e) = self.run_hooks("minibuffer-setup-hook") {
             self.message(format!("Error in minibuffer-setup-hook: {e}"));
         }
@@ -269,7 +272,7 @@ impl Editor {
 
     /// Asks the open prompt's completion function for the names its input
     /// completes against now, if it has one.
-    pub(crate) fn refresh_dynamic_collection(&mut self) {
+    pub fn refresh_dynamic_collection(&mut self) {
         let Some(f) = self.prompt.as_ref().and_then(|p| p.collection_fn.clone()) else { return };
         let input = self.minibuffer_input();
         match f.call(self, &[Value::Str(input)]) {
@@ -312,7 +315,6 @@ impl Editor {
             (None, _) => String::new(),
         };
         self.open_prompt(prompt, &input);
-        self.refresh_dynamic_collection();
         self.wait_for_answer(&asker, &answer)
     }
 

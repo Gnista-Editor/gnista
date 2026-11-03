@@ -678,6 +678,24 @@ natives! {
         Ok(ember_core::completion::all_in_style(&style, &before, &after, &names, ignore_case.unwrap_or(false)))
     }
 
+    /// Asks the open prompt's completion function, a completingRead table
+    /// that is a function, for its names again, as when output a process
+    /// gave changes them between commands, as consult's async tables do.
+    pub fn refreshCompletionTable(ed) {
+        ed.refresh_dynamic_collection();
+        Ok(())
+    }
+
+    /// The names of all commands, as all-completions over obarray with commandp.
+    pub fn commandNames(ed) -> Vec<String> {
+        Ok(ed.command_names().map(str::to_string).collect())
+    }
+
+    /// The current buffer's mark ring, the newest first, as mark-ring's markers.
+    pub fn markRing(ed) -> Vec<usize> {
+        Ok(ed.buffer().mark_ring().to_vec())
+    }
+
     /// Whether `input` is an answer the open prompt takes, as test-completion.
     pub fn testCompletion(ed, input: String) -> bool {
         Ok(ed.test_completion(&input))

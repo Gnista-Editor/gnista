@@ -11653,6 +11653,16 @@ declare global {
      * completion-styles-alist.
      */
     function completionAllInStyle(style: string, before: string, after: string, names: string[], ignore_case: boolean | undefined): string[] | undefined;
+    /**
+     * Asks the open prompt's completion function, a completingRead table
+     * that is a function, for its names again, as when output a process
+     * gave changes them between commands, as consult's async tables do.
+     */
+    function refreshCompletionTable(): void;
+    /** The names of all commands, as all-completions over obarray with commandp. */
+    function commandNames(): string[];
+    /** The current buffer's mark ring, the newest first, as mark-ring's markers. */
+    function markRing(): number[];
     /** Whether `input` is an answer the open prompt takes, as test-completion. */
     function testCompletion(input: string): boolean;
     /** An environment variable's value, as Emacs's getenv. */

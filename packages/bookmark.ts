@@ -209,7 +209,7 @@ ember.defineCommand({
 });
 
 /** Goes to a bookmark's place: its file, at its context or else its position, as bookmark-default-handler. */
-function jumpTo(name: string, how: "switch-to-buffer" | "switch-to-buffer-other-window"): void {
+export function jumpTo(name: string, how: "switch-to-buffer" | "switch-to-buffer-other-window"): void {
   const b = find(name);
   if (b.filename === undefined || !ember.fileReadableP(ember.expandFileName(b.filename))) {
     ember.signal("bookmark-error-no-filename", `Bookmark ${name} has no file it can read`, [b.filename ?? null]);

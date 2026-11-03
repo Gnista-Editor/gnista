@@ -136,6 +136,8 @@ export interface CompletionMetadata {
   /** How to order the candidates for showing them. */
   displaySortFunction?: (candidates: string[]) => string[];
   cycleSortFunction?: (candidates: string[]) => string[];
+  /** How much of the input completion leaves alone, as a table's completion-boundaries: the rest is matched against the candidates. */
+  boundaries?: (input: string) => number;
 }
 
 /** The metadata each open prompt's caller gave, by minibuffer depth. */
@@ -192,8 +194,15 @@ function builtinHilit(style: string, field: CompletionField, ignoreCase: boolean
  * highlight them; undefined with no prompt that completes.
  */
 export function completionAllCompletions(point?: number): (StyleMatches & { base: string; style?: string; field: CompletionField }) | undefined {
-  const field = ember.minibufferCompletionField(point);
+  let field = ember.minibufferCompletionField(point);
   if (!field) return undefined;
+  const boundaries = completionMetadataGet("boundaries");
+  if (boundaries) {
+    const whole = field.before + field.after;
+    const n = Math.min(boundaries(whole), whole.length);
+    const cut = Math.min(n, field.before.length);
+    field = { ...field, base: field.base + whole.slice(0, n), before: field.before.slice(cut), after: n > field.before.length ? field.after.slice(n - field.before.length) : field.after };
+  }
   const ignoreCase = ember.minibufferInfo()?.ignoreCase ?? false;
   for (const style of ember.completionStyles()) {
     const own = scriptStyles.get(style);
@@ -206,4 +215,10 @@ export function completionAllCompletions(point?: number): (StyleMatches & { base
     if (found && found.completions.length > 0) return { ...found, base: field.base, style, field };
   }
   return { completions: [], base: field.base, field };
+}
+
+/** Whether INPUT is an answer the open prompt takes, as test-completion: the part after the table's boundaries one of its names. */
+export function testCompletion(input: string): boolean {
+  const boundaries = completionMetadataGet("boundaries");
+  return ember.testCompletion(boundaries ? input.slice(Math.min(boundaries(input), input.length)) : input);
 }

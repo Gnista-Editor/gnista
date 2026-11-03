@@ -13,7 +13,7 @@
 // Free Software Foundation, either version 3 of the License, or (at your
 // option) any later version.
 
-import { completionAllCompletions, completionMetadataGet, type CompletionMetadata } from "minibuffer";
+import { completionAllCompletions, completionMetadataGet, testCompletion, type CompletionMetadata } from "minibuffer";
 import { truthy } from "subr";
 
 ember.defineVariable({ name: "vertico-count-format", doc: 'Format string used for the candidate count, as [outer, inner], or nil for none.', value: ["%-6s ", "%s/%s"] });
@@ -201,7 +201,7 @@ function recompute(s: State, pt: number, content: string): void {
   s.index =
     lock ??
     (defMissing || preselect === "prompt" || all.length === 0 ||
-    (completingFile && preselect === "directory" && found.base.length === content.length && ember.testCompletion(content))
+    (completingFile && preselect === "directory" && found.base.length === content.length && testCompletion(content))
       ? -1
       : 0);
 }
@@ -420,9 +420,17 @@ export function candidate(): string | undefined {
 }
 ember.defun("vertico--candidate", () => candidate());
 
+/** Works the candidates out again and shows them, as when a table's names changed between commands, as consult--vertico-refresh does. */
+ember.defun("vertico--refresh", () => {
+  const s = state();
+  if (!s) return;
+  s.input = true;
+  exhibit();
+});
+
 /** Whether INPUT may be the answer, as vertico--match-p. */
 function matchP(input: string): boolean {
-  if (!ember.minibufferInfo()?.requireMatch || input === "" || ember.testCompletion(input)) return true;
+  if (!ember.minibufferInfo()?.requireMatch || input === "" || testCompletion(input)) return true;
   ember.message("Match required");
   return false;
 }

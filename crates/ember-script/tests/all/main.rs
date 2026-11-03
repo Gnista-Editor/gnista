@@ -19,6 +19,7 @@ mod codings;
 mod comint;
 mod commands;
 mod compile;
+mod consult;
 mod dabbrev;
 mod desktop;
 mod diff;
