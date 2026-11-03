@@ -68,6 +68,31 @@ pub(crate) struct Keyboard {
     pub(crate) this_command_keys: Vec<Key>,
     /// What `sleep-for` calls wait on, which `C-g` quits.
     pub(crate) sleeping: Vec<AnswerSlot>,
+    /// Keys read so far for a command parameter of kind [`crate::ParamKind::Keys`].
+    pub(crate) reading_keys: Option<Vec<Key>>,
+    /// Keys typed so far of a multi-key binding such as `C-x C-f`.
+    pub(crate) pending_keys: Vec<Key>,
+    pub(crate) esc_prefix: bool,
+    /// Whether the key that ran the current command had Shift removed to find
+    /// its binding. Shift selection uses it.
+    pub(crate) shift_translated: bool,
+    /// Keys to read next, after the current one, as Emacs's `unread-command-events`.
+    pub(crate) unread_keys: VecDeque<Key>,
+    /// Keys typed ahead, as [`Editor::press`] gives them: a command they
+    /// start that waits for input reads the rest of them first.
+    pub(crate) typeahead: VecDeque<Key>,
+    /// The last number given a prompt or a wait, and those of the waits
+    /// open, for [`Editor::waiting_for_input`].
+    pub(crate) input_serial: u64,
+    pub(crate) wait_serials: Vec<u64>,
+    /// What each command waiting for input waits for, innermost last, so
+    /// keys typed ahead stop once one has its answer.
+    pub(crate) waits: Vec<crate::editor::WaitDone>,
+    /// What a command waiting for input reads from once the typeahead is
+    /// used up, where no command loop runs: tests' and the oracle's
+    /// answers. It returns false when it has nothing more.
+    pub(crate) input_source: Option<crate::editor::InputSource>,
+    pub(crate) reading_unread: bool,
 }
 
 impl Default for Keyboard {
@@ -79,6 +104,17 @@ impl Default for Keyboard {
             lossage_size: LOSSAGE_SIZE,
             this_command_keys: Vec::new(),
             sleeping: Vec::new(),
+            reading_keys: None,
+            pending_keys: Vec::new(),
+            esc_prefix: false,
+            shift_translated: false,
+            unread_keys: VecDeque::new(),
+            typeahead: VecDeque::new(),
+            input_serial: 0,
+            wait_serials: Vec::new(),
+            waits: Vec::new(),
+            input_source: None,
+            reading_unread: false,
         }
     }
 }
@@ -266,12 +302,12 @@ impl Editor {
     /// Whether keys are waiting to be read, as Emacs's `input-pending-p`:
     /// keys a command gave back with `unread-command-events`.
     pub fn input_pending_p(&self) -> bool {
-        !self.unread_keys.is_empty()
+        !self.keyboard.unread_keys.is_empty()
     }
 
     /// Forgets keys waiting to be read, as `discard-input`.
     pub fn discard_input(&mut self) {
-        self.unread_keys.clear();
+        self.keyboard.unread_keys.clear();
     }
 
     /// Edits recursively, as Emacs's `recursive-edit`: the editor goes on

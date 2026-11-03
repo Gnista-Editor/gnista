@@ -58,7 +58,7 @@ pub(crate) type AnswerSlot = Rc<std::cell::RefCell<Option<Result<Value>>>>;
 
 /// What a waiting command reads from where no command loop runs; false
 /// when it has nothing more.
-type InputSource = Box<dyn FnMut(&mut Editor) -> bool>;
+pub(crate) type InputSource = Box<dyn FnMut(&mut Editor) -> bool>;
 
 /// What a command had when it asked a question or opened a prompt: the
 /// current buffer, its prefix argument and its name, which are its again
@@ -184,6 +184,8 @@ pub struct Editor {
     pub(crate) category_maps_cache: std::cell::RefCell<Option<crate::category::CategoryMapsCache>>,
     /// What the command loop keeps of the keyboard: keys being read, recursive edits, recent keys.
     pub(crate) keyboard: crate::keyboard::Keyboard,
+    /// Kills, the yank pointer and the system clipboard.
+    pub(crate) kill_ring: crate::kill_ring::KillRing,
     /// How big characters and lines are in the front end's fonts.
     pub(crate) metrics: std::sync::Arc<dyn crate::layout::TextMetrics>,
     /// Buffers put at the end of the buffer list, the last buried last.
@@ -212,37 +214,12 @@ pub struct Editor {
     /// How many commands that read their arguments in the minibuffer have
     /// gone on to run, for `call_interactively` to tell one run from one quit.
     pending_calls_run: u64,
-    /// Keys read so far for a command parameter of kind [`ParamKind::Keys`].
-    pub(crate) reading_keys: Option<Vec<Key>>,
-    /// Keys typed so far of a multi-key binding such as `C-x C-f`.
-    pending_keys: Vec<Key>,
-    esc_prefix: bool,
-    /// Whether the key that ran the current command had Shift removed to find
-    /// its binding. Shift selection uses it.
-    shift_translated: bool,
     pub(crate) global_map: KeymapId,
     pub(crate) minibuffer_map: KeymapId,
     /// Bindings for the next key sequence only, ahead of every other keymap.
     pub(crate) transient_map: Option<KeymapId>,
     /// A named keymap ahead of all but the transient map, while set.
     pub(crate) overriding_map: Option<KeymapId>,
-    /// Keys to read next, after the current one, as Emacs's `unread-command-events`.
-    pub(crate) unread_keys: std::collections::VecDeque<Key>,
-    /// Keys typed ahead, as [`Editor::press`] gives them: a command they
-    /// start that waits for input reads the rest of them first.
-    typeahead: std::collections::VecDeque<Key>,
-    /// The last number given a prompt or a wait, and those of the waits
-    /// open, for [`Editor::waiting_for_input`].
-    pub(crate) input_serial: u64,
-    wait_serials: Vec<u64>,
-    /// What each command waiting for input waits for, innermost last, so
-    /// keys typed ahead stop once one has its answer.
-    waits: Vec<WaitDone>,
-    /// What a command waiting for input reads from once the typeahead is
-    /// used up, where no command loop runs: tests' and the oracle's
-    /// answers. It returns false when it has nothing more.
-    input_source: Option<InputSource>,
-    reading_unread: bool,
     /// Every keymap; names for them are variables holding them.
     pub(crate) keymaps: Keymaps,
     /// Most recently registered first, which is the order keys are looked up in.
@@ -288,15 +265,6 @@ pub struct Editor {
     this_command_set: bool,
     /// Whether `after-change-functions` are running.
     pub(crate) in_change_hooks: bool,
-    /// Kills, oldest first, with their text properties, as Emacs keeps them.
-    pub(crate) kill_ring: Vec<crate::properties::Text>,
-    /// The system clipboard, if the front end has one, and the text the
-    /// editor last put there or took in from it.
-    pub(crate) clipboard: Option<Box<dyn crate::select::Clipboard>>,
-    pub(crate) last_selected_text: Option<String>,
-    /// Which kill yanking takes next, counting back from the newest (Emacs's
-    /// `kill-ring-yank-pointer`).
-    yank_pointer: usize,
     last_repeatable: Option<Repeatable>,
     /// Counts recorded repeatable commands, so that when one command runs
     /// another, as M-x does, the innermost is the one repeated.
@@ -412,6 +380,7 @@ impl Editor {
             remapped_from: None,
             buffer_order: Vec::new(),
             keyboard: Default::default(),
+            kill_ring: Default::default(),
             char_tables: Default::default(),
             next_char_table: 0,
             standard_case_table: None,
@@ -431,10 +400,6 @@ impl Editor {
             prompt: None,
             pending_call: None,
             pending_calls_run: 0,
-            reading_keys: None,
-            pending_keys: Vec::new(),
-            esc_prefix: false,
-            shift_translated: false,
             global_map: 0,
             minibuffer_map: 1,
             transient_map: None,
@@ -464,10 +429,6 @@ impl Editor {
             command_failed: false,
             this_command_set: false,
             in_change_hooks: false,
-            kill_ring: Vec::new(),
-            clipboard: None,
-            last_selected_text: None,
-            yank_pointer: 0,
             last_repeatable: None,
             repeatable_count: 0,
             defining_macro: None,
@@ -483,13 +444,6 @@ impl Editor {
             last_mouse: None,
             match_data: None,
             overriding_map: None,
-            unread_keys: Default::default(),
-            typeahead: Default::default(),
-            input_serial: 0,
-            wait_serials: Vec::new(),
-            waits: Vec::new(),
-            input_source: None,
-            reading_unread: false,
             goal_column: None,
             self_insert_run: 0,
             previous_run: 0,
@@ -651,14 +605,14 @@ impl Editor {
     /// Runs a command the way a key binding does: prompting in the minibuffer
     /// for any parameters, and showing errors in the echo area.
     pub fn run_interactive(&mut self, name: &str) {
-        let shifted = std::mem::take(&mut self.shift_translated);
+        let shifted = std::mem::take(&mut self.keyboard.shift_translated);
         let prefix = self.prefix_arg.take();
         let Some(command) = self.command(name) else {
             self.message(format!("No such command: {name}"));
             return;
         };
         let prompts = command.params.iter().any(|p| !p.kind.from_state());
-        if prompts && self.reading_keys.is_some() {
+        if prompts && self.keyboard.reading_keys.is_some() {
             self.message("Command attempted to use minibuffer while in minibuffer");
             return;
         }
@@ -738,7 +692,7 @@ impl Editor {
         let Some(call) = &self.pending_call else { return };
         if let Some(param) = call.command.params.get(call.args.len()) {
             if param.kind == ParamKind::Keys {
-                self.reading_keys = Some(Vec::new());
+                self.keyboard.reading_keys = Some(Vec::new());
                 self.message = Some(param.prompt.clone());
             } else {
                 let mut initial = self.initial_input(param.kind);
@@ -826,8 +780,8 @@ impl Editor {
         let prompt = self.close_prompt().and_then(|p| p.answer);
         let question = self.drop_question().map(|q| q.answer);
         self.pending_call = None;
-        self.reading_keys = None;
-        self.pending_keys.clear();
+        self.keyboard.reading_keys = None;
+        self.keyboard.pending_keys.clear();
         self.transient_map = None;
         self.prefix_arg = None;
         let sleeping = std::mem::take(&mut self.keyboard.sleeping);
@@ -1125,17 +1079,17 @@ impl Editor {
         while count == 0 || done < count {
             // As typeahead, so a command in the macro that waits for input
             // reads the macro's next keys.
-            let before = self.typeahead.len();
+            let before = self.keyboard.typeahead.len();
             for &key in keys.iter().rev() {
-                self.typeahead.push_front(key);
+                self.keyboard.typeahead.push_front(key);
             }
-            while self.typeahead.len() > before {
+            while self.keyboard.typeahead.len() > before {
                 let Some(key) = self.next_typed_ahead() else { break };
                 self.handle_key(key);
                 if let Some(e) = self.take_error() {
                     // The rest of the macro goes with it.
-                    let left = self.typeahead.len().saturating_sub(before);
-                    self.typeahead.drain(..left);
+                    let left = self.keyboard.typeahead.len().saturating_sub(before);
+                    self.keyboard.typeahead.drain(..left);
                     return Err(e);
                 }
             }
@@ -1227,7 +1181,7 @@ impl Editor {
     /// batch Emacs reads standard input. `source` handles some input, as
     /// by typing an answer, and returns false when it has none.
     pub fn set_input_source(&mut self, source: impl FnMut(&mut Editor) -> bool + 'static) {
-        self.input_source = Some(Box::new(source));
+        self.keyboard.input_source = Some(Box::new(source));
     }
 
     /// Runs the command loop inside the command now running until `done`
@@ -1242,16 +1196,16 @@ impl Editor {
     pub fn wait_until(&mut self, asker: &Resume, done: WaitDone) -> Result<()> {
         // Each wait is a command loop on the stack: past this many, refuse,
         // as Emacs signals rather than overflow its stack.
-        if self.waits.len() >= MAX_WAITS {
-            let depth = self.waits.len() as i64 + 1;
+        if self.keyboard.waits.len() >= MAX_WAITS {
+            let depth = self.keyboard.waits.len() as i64 + 1;
             return Err(Error::signal("excessive-lisp-nesting", format!("Lisp nesting exceeds ‘max-lisp-eval-depth’: {depth}"), vec![Value::Number(depth as f64)]));
         }
-        self.waits.push(done.clone());
-        self.input_serial += 1;
-        self.wait_serials.push(self.input_serial);
+        self.keyboard.waits.push(done.clone());
+        self.keyboard.input_serial += 1;
+        self.keyboard.wait_serials.push(self.keyboard.input_serial);
         let result = self.wait_for_input(&*done);
-        self.wait_serials.pop();
-        self.waits.pop();
+        self.keyboard.wait_serials.pop();
+        self.keyboard.waits.pop();
         self.resume(asker);
         result
     }
@@ -1259,11 +1213,11 @@ impl Editor {
     /// The next key typed ahead, unless a command waiting below has its
     /// answer, which it takes first, as Emacs reads typeahead in order.
     pub(crate) fn next_typed_ahead(&mut self) -> Option<Key> {
-        let waits = self.waits.clone();
+        let waits = self.keyboard.waits.clone();
         if waits.iter().any(|done| done(self)) {
             return None;
         }
-        self.typeahead.pop_front()
+        self.keyboard.typeahead.pop_front()
     }
 
     fn wait_for_input(&mut self, done: &dyn Fn(&Editor) -> bool) -> Result<()> {
@@ -1271,20 +1225,20 @@ impl Editor {
             if done(self) {
                 return Ok(());
             }
-            if let Some(key) = self.unread_keys.pop_front() {
+            if let Some(key) = self.keyboard.unread_keys.pop_front() {
                 self.dispatch_key(key);
                 continue;
             }
-            if let Some(key) = self.typeahead.pop_front() {
+            if let Some(key) = self.keyboard.typeahead.pop_front() {
                 self.handle_key(key);
                 continue;
             }
             if let Some(command_loop) = self.command_loop.clone() {
                 return command_loop.wait(self, done);
             }
-            if let Some(mut source) = self.input_source.take() {
+            if let Some(mut source) = self.keyboard.input_source.take() {
                 let more = source(self);
-                self.input_source.get_or_insert(source);
+                self.keyboard.input_source.get_or_insert(source);
                 if more {
                     continue;
                 }
@@ -1296,12 +1250,12 @@ impl Editor {
     /// Reads `keys` as typed ahead: a command they start that waits for
     /// input reads the rest of them first, as Emacs reads typeahead.
     fn type_ahead(&mut self, keys: impl IntoIterator<Item = Key>) {
-        let before = self.typeahead.len();
+        let before = self.keyboard.typeahead.len();
         let keys: Vec<Key> = keys.into_iter().collect();
         for key in keys.into_iter().rev() {
-            self.typeahead.push_front(key);
+            self.keyboard.typeahead.push_front(key);
         }
-        while self.typeahead.len() > before {
+        while self.keyboard.typeahead.len() > before {
             // Keys after an answer wait for the command that asked.
             let Some(key) = self.next_typed_ahead() else { break };
             self.handle_key(key);
@@ -1461,7 +1415,7 @@ impl Editor {
             && let Some(keys) = &mut self.defining_macro
         {
             let starts_sequence =
-                self.pending_keys.is_empty() && !self.esc_prefix && self.reading_keys.is_none();
+                self.keyboard.pending_keys.is_empty() && !self.keyboard.esc_prefix && self.keyboard.reading_keys.is_none();
             if starts_sequence {
                 self.macro_sequence_start = keys.len();
             }
@@ -1478,12 +1432,12 @@ impl Editor {
         }
         self.resume_outer_minibuffer();
         // Keys a command gave back are read next, but not recorded again.
-        if !self.reading_unread {
-            self.reading_unread = true;
-            while let Some(key) = self.unread_keys.pop_front() {
+        if !self.keyboard.reading_unread {
+            self.keyboard.reading_unread = true;
+            while let Some(key) = self.keyboard.unread_keys.pop_front() {
                 self.dispatch_key(key);
             }
-            self.reading_unread = false;
+            self.keyboard.reading_unread = false;
         }
     }
 
@@ -1491,19 +1445,19 @@ impl Editor {
     /// pushing onto Emacs's `unread-command-events` does.
     pub fn unread_keys(&mut self, keys: &[Key]) {
         for key in keys.iter().rev() {
-            self.unread_keys.push_front(*key);
+            self.keyboard.unread_keys.push_front(*key);
         }
     }
 
     fn dispatch_key(&mut self, mut key: Key) {
-        if self.reading_single_key() && !self.esc_prefix && self.key_read(key) {
+        if self.reading_single_key() && !self.keyboard.esc_prefix && self.key_read(key) {
             return;
         }
-        if self.esc_prefix {
-            self.esc_prefix = false;
+        if self.keyboard.esc_prefix {
+            self.keyboard.esc_prefix = false;
             key.meta = true;
         } else if key == Key::new(KeyCode::Esc) && !self.binds_next(key) {
-            self.esc_prefix = true;
+            self.keyboard.esc_prefix = true;
             self.message = Some("ESC-".into());
             return;
         }
@@ -1515,40 +1469,40 @@ impl Editor {
             return;
         }
 
-        if let Some(keys) = &mut self.reading_keys {
+        if let Some(keys) = &mut self.keyboard.reading_keys {
             keys.push(key);
             if self.keymaps.lookup(self.global_map, keys) == Lookup::Prefix {
                 self.message = Some(format!("{}-", format_keys(keys)));
                 return;
             }
-            let keys = self.reading_keys.take().expect("checked above");
+            let keys = self.keyboard.reading_keys.take().expect("checked above");
             self.message = None;
             self.supply_arg(Arg::Keys(keys));
             return;
         }
 
         self.message = None;
-        if self.pending_keys.is_empty() {
+        if self.keyboard.pending_keys.is_empty() {
             self.translation_starts = [0; 2];
         }
-        self.pending_keys.push(key);
+        self.keyboard.pending_keys.push(key);
         let translating = self.translate_pending_keys();
-        let key = *self.pending_keys.last().unwrap_or(&key);
-        let found = self.lookup(&self.pending_keys);
+        let key = *self.keyboard.pending_keys.last().unwrap_or(&key);
+        let found = self.lookup(&self.keyboard.pending_keys);
         // A translation map's prefix keeps reading only keys the keymaps
         // do not bind, as read_key_sequence's loop has it, so C-x C-x runs
         // although C-x starts C-x 8 in key-translation-map.
         if translating && found == Lookup::Unbound {
-            self.message = Some(format!("{}-", format_keys(&self.pending_keys)));
+            self.message = Some(format!("{}-", format_keys(&self.keyboard.pending_keys)));
             return;
         }
         match found {
             Lookup::Prefix => {
-                self.shift_translated = false;
-                self.message = Some(format!("{}-", format_keys(&self.pending_keys)));
+                self.keyboard.shift_translated = false;
+                self.message = Some(format!("{}-", format_keys(&self.keyboard.pending_keys)));
             }
             Lookup::Command(name) => {
-                let keys = std::mem::take(&mut self.pending_keys);
+                let keys = std::mem::take(&mut self.keyboard.pending_keys);
                 self.transient_map = None;
                 self.last_key = Some(key);
                 self.note_command_keys(&keys);
@@ -1557,7 +1511,7 @@ impl Editor {
             // Keys bound to keys are a keyboard macro, as a string or
             // vector binding is in Emacs.
             Lookup::Keys(to) => {
-                let keys = std::mem::take(&mut self.pending_keys);
+                let keys = std::mem::take(&mut self.keyboard.pending_keys);
                 self.transient_map = None;
                 self.note_command_keys(&keys);
                 self.executing_macro += 1;
@@ -1571,14 +1525,14 @@ impl Editor {
             // its own acts as the key without Shift, so S-<right> runs
             // forward-char and Shift selection applies.
             Lookup::Unbound if key.shift => {
-                self.pending_keys.pop();
-                self.shift_translated = true;
+                self.keyboard.pending_keys.pop();
+                self.keyboard.shift_translated = true;
                 self.dispatch_key(key.unshifted());
             }
             // As in Emacs, an unbound button press is dropped, and an unbound
             // drag or repeated click acts as a plain click.
-            Lookup::Unbound if self.pending_keys.len() == 1 && matches!(key.code, KeyCode::Mouse(..)) => {
-                self.pending_keys.clear();
+            Lookup::Unbound if self.keyboard.pending_keys.len() == 1 && matches!(key.code, KeyCode::Mouse(..)) => {
+                self.keyboard.pending_keys.clear();
                 match key.code {
                     KeyCode::Mouse(MouseKind::Down | MouseKind::Click, _) => {
                         if matches!(key.code, KeyCode::Mouse(MouseKind::Click, _)) {
@@ -1590,9 +1544,9 @@ impl Editor {
                 }
             }
             Lookup::Unbound => {
-                self.shift_translated = false;
+                self.keyboard.shift_translated = false;
                 self.transient_map = None;
-                let keys = std::mem::take(&mut self.pending_keys);
+                let keys = std::mem::take(&mut self.keyboard.pending_keys);
                 self.note_command_keys(&keys);
                 if keys.len() == 1 && key.printable().is_some() {
                     self.last_key = Some(key);
@@ -1612,10 +1566,10 @@ impl Editor {
     /// then a key of its own, as in `M-ESC ESC`, rather than Meta for the
     /// key after it.
     fn binds_next(&self, key: Key) -> bool {
-        if self.pending_keys.is_empty() {
+        if self.keyboard.pending_keys.is_empty() {
             return false;
         }
-        let mut keys = self.pending_keys.clone();
+        let mut keys = self.keyboard.pending_keys.clone();
         keys.push(key);
         self.lookup(&keys) != Lookup::Unbound
     }
@@ -1631,9 +1585,9 @@ impl Editor {
         let mut waiting = false;
         for (i, name) in ["input-decode-map", "key-translation-map"].into_iter().enumerate() {
             let Some(map) = self.keymap_named(name) else { continue };
-            while self.translation_starts[i] < self.pending_keys.len() {
+            while self.translation_starts[i] < self.keyboard.pending_keys.len() {
                 let start = self.translation_starts[i];
-                let to = match self.keymaps.lookup(map, &self.pending_keys[start..]) {
+                let to = match self.keymaps.lookup(map, &self.keyboard.pending_keys[start..]) {
                     Lookup::Prefix => {
                         waiting = true;
                         break;
@@ -1653,9 +1607,9 @@ impl Editor {
                         }
                     },
                 };
-                self.pending_keys.truncate(start);
-                self.pending_keys.extend(to);
-                self.translation_starts[i] = self.pending_keys.len();
+                self.keyboard.pending_keys.truncate(start);
+                self.keyboard.pending_keys.extend(to);
+                self.translation_starts[i] = self.keyboard.pending_keys.len();
             }
         }
         waiting
@@ -2241,79 +2195,6 @@ impl Editor {
             .unwrap_or_default()
     }
 
-    // Kill ring
-
-    /// Adds killed text to the kill ring. Kills made by consecutive kill
-    /// commands join into one entry, as in Emacs.
-    pub(crate) fn kill(&mut self, text: crate::properties::Text, prepend: bool) {
-        let continuing = self
-            .last_command()
-            .is_some_and(|c| commands::KILL_COMMANDS.contains(&c));
-        self.yank_pointer = 0;
-        match self.kill_ring.last_mut() {
-            Some(last) if continuing => {
-                let (front, back) = if prepend { (text, std::mem::take(last)) } else { (std::mem::take(last), text) };
-                *last = front.concat(back);
-            }
-            _ => self.kill_ring.push(text),
-        }
-        // The whole kill goes to the clipboard, as kill-append gives it there.
-        let newest = self.kill_ring.last().map(|t| t.string.clone()).unwrap_or_default();
-        self.interprogram_cut(&newest);
-    }
-
-    /// Puts text in the kill ring as a kill of its own, as Emacs's
-    /// `kill-new`, and on the system clipboard.
-    pub fn kill_new(&mut self, text: &str) {
-        self.yank_pointer = 0;
-        self.kill_ring.push(crate::properties::Text { string: text.to_string(), props: Vec::new() });
-        self.interprogram_cut(text);
-    }
-
-    /// The kill `n` entries back from the one yanked last, moving the yank
-    /// pointer there, as Emacs's `current-kill` does. 0 is the kill yanking
-    /// would insert now; M-y asks for 1, the one before it.
-    /// Makes the kill `index` places from the newest the one the next yank
-    /// inserts, as setting `kill-ring-yank-pointer` does.
-    pub fn set_kill_ring_yank_pointer(&mut self, index: usize) {
-        self.yank_pointer = index.min(self.kill_ring.len().saturating_sub(1));
-    }
-
-    pub fn current_kill(&mut self, n: i64) -> Result<String> {
-        self.current_kill_text(n).map(|t| t.string)
-    }
-
-    /// As [`Editor::current_kill`], with the kill's text properties.
-    pub fn current_kill_text(&mut self, n: i64) -> Result<crate::properties::Text> {
-        // Text another program put on the clipboard since is the newest
-        // kill, as current-kill takes it in through interprogram-paste-function.
-        if n == 0
-            && let Some(text) = self.interprogram_paste()
-        {
-            self.yank_pointer = 0;
-            self.kill_ring.push(crate::properties::Text { string: text, props: Vec::new() });
-        }
-        if self.kill_ring.is_empty() {
-            return Err(Error::new("Kill ring is empty"));
-        }
-        let len = self.kill_ring.len() as i64;
-        self.yank_pointer = (self.yank_pointer as i64 + n).rem_euclid(len) as usize;
-        Ok(self.kill_ring[(len - 1) as usize - self.yank_pointer].clone())
-    }
-
-    /// The kills' text, oldest first.
-    pub fn kill_ring(&self) -> Vec<String> {
-        self.kill_ring.iter().map(|t| t.string.clone()).collect()
-    }
-
-    /// Takes the newest kill off the kill ring, as `(pop kill-ring)` does in
-    /// Lisp, and returns it.
-    pub fn pop_kill(&mut self) -> Option<String> {
-        let kill = self.kill_ring.pop();
-        self.yank_pointer = self.yank_pointer.min(self.kill_ring.len().saturating_sub(1));
-        kill.map(|t| t.string)
-    }
-
     /// Inserts a kill at point as Emacs's `insert-for-yank` does: without
     /// the properties `yank-excluded-properties` names, all of them if it is t.
     pub fn insert_for_yank(&mut self, mut text: crate::properties::Text) -> Result<()> {
@@ -2346,14 +2227,14 @@ impl Editor {
     /// typing into a question someone else opened.
     pub fn waiting_for_input(&self) -> Option<u64> {
         let prompt = self.prompt.as_ref().map(|p| p.serial);
-        prompt.max(self.wait_serials.last().copied())
+        prompt.max(self.keyboard.wait_serials.last().copied())
     }
 
     /// Throws away keys typed ahead that nothing read, giving how many: an
     /// agent's keys must not run later as the user's.
     pub fn discard_typeahead(&mut self) -> usize {
-        let n = self.typeahead.len();
-        self.typeahead.clear();
+        let n = self.keyboard.typeahead.len();
+        self.keyboard.typeahead.clear();
         n
     }
 

@@ -18,7 +18,7 @@ pub trait Clipboard: Send {
 impl Editor {
     /// Gives the editor the system clipboard.
     pub fn set_clipboard(&mut self, clipboard: Box<dyn Clipboard>) {
-        self.clipboard = Some(clipboard);
+        self.kill_ring.clipboard = Some(clipboard);
     }
 
     fn clipboard_enabled(&self) -> bool {
@@ -30,9 +30,9 @@ impl Editor {
         if !self.clipboard_enabled() {
             return;
         }
-        if let Some(clipboard) = &mut self.clipboard {
+        if let Some(clipboard) = &mut self.kill_ring.clipboard {
             clipboard.set_text(text);
-            self.last_selected_text = Some(text.to_string());
+            self.kill_ring.last_selected_text = Some(text.to_string());
         }
     }
 
@@ -43,11 +43,11 @@ impl Editor {
         if !self.clipboard_enabled() {
             return None;
         }
-        let text = self.clipboard.as_mut()?.get_text().filter(|t| !t.is_empty())?;
-        if self.last_selected_text.as_ref() == Some(&text) {
+        let text = self.kill_ring.clipboard.as_mut()?.get_text().filter(|t| !t.is_empty())?;
+        if self.kill_ring.last_selected_text.as_ref() == Some(&text) {
             return None;
         }
-        self.last_selected_text = Some(text.clone());
+        self.kill_ring.last_selected_text = Some(text.clone());
         Some(text)
     }
 }

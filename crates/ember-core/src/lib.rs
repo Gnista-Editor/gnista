@@ -46,6 +46,7 @@ mod insdel;
 pub use insdel::Insertion;
 mod key;
 pub mod keyboard;
+mod kill_ring;
 mod keymap;
 pub mod layout;
 mod minibuffer;

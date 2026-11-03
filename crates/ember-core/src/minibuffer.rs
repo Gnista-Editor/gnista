@@ -133,8 +133,8 @@ impl Editor {
     /// `minibuffer-local-must-match-map`, and `minibuffer-setup-hook` runs.
     pub(crate) fn open_prompt(&mut self, mut prompt: Prompt, input: &str) {
         prompt.initial = input.to_string();
-        self.input_serial += 1;
-        prompt.serial = self.input_serial;
+        self.keyboard.input_serial += 1;
+        prompt.serial = self.keyboard.input_serial;
         let must_match = prompt.require_match;
         self.prompt = Some(prompt);
         self.current = self.minibuffer_index();
@@ -231,7 +231,7 @@ impl Editor {
     /// Puts back the prompt a recursive minibuffer opened inside, once the
     /// inner one is answered or quit and nothing more is being read for it.
     pub(crate) fn resume_outer_minibuffer(&mut self) {
-        if self.prompt.is_some() || self.question.is_some() || self.pending_call.is_some() || self.reading_keys.is_some() {
+        if self.prompt.is_some() || self.question.is_some() || self.pending_call.is_some() || self.keyboard.reading_keys.is_some() {
             return;
         }
         let Some(outer) = self.outer_prompts.pop() else { return };
