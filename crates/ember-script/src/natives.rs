@@ -45,7 +45,6 @@ mod variables;
 mod windows;
 
 use ember_core::{PrefixArg, Value as EditorValue};
-use rquickjs::{Coerced, Ctx, FromJs, IntoJs, Value};
 
 /// A native function, as its entry in a table describes it.
 pub(crate) struct Native {
@@ -96,6 +95,7 @@ macro_rules! natives {
         )*];
 
         /// Puts this module's natives on `native`, and the public ones on `api`.
+        #[cfg(feature = "quickjs")]
         pub(crate) fn install<'js>(
             ctx: &rquickjs::Ctx<'js>,
             native: &rquickjs::Object<'js>,
@@ -105,15 +105,15 @@ macro_rules! natives {
                 let function = rquickjs::Function::new(
                     ctx.clone(),
                     |ctx: rquickjs::Ctx<'js>
-                     $(, $arg: <$ty as $crate::natives::Param>::Js<'js>)*|
+                     $(, $arg: <$ty as $crate::engine::Param>::Js<'js>)*|
                      -> rquickjs::Result<rquickjs::Value<'js>> {
-                        $(let $arg = <$ty as $crate::natives::Param>::take(&ctx, $arg)?;)*
+                        $(let $arg = <$ty as $crate::engine::Param>::take(&ctx, $arg)?;)*
                         let value = if true $(&& $safe_point)? {
-                            $crate::with_editor(&ctx, |ed| body::$name(ed $(, $arg)*))?
+                            $crate::engine::with_editor(&ctx, |ed| body::$name(ed $(, $arg)*))?
                         } else {
-                            $crate::with_editor_unchecked(&ctx, |ed| body::$name(ed $(, $arg)*))?
+                            $crate::engine::with_editor_unchecked(&ctx, |ed| body::$name(ed $(, $arg)*))?
                         };
-                        $crate::natives::Ret::give(value, &ctx)
+                        $crate::engine::Ret::give(value, &ctx)
                     },
                 )?;
                 if !stringify!($vis).is_empty() {
@@ -186,7 +186,7 @@ pub(crate) struct Posn(pub Option<ember_core::layout::Posn>);
 
 /// An object a native returns, as plain data: its properties in order.
 #[derive(Default)]
-pub(crate) struct Record(Vec<(&'static str, Field)>);
+pub(crate) struct Record(pub Vec<(&'static str, Field)>);
 
 impl Record {
     pub fn new() -> Self {
@@ -262,285 +262,6 @@ macro_rules! field_from_number {
 }
 field_from_number!(f64, f32, i64, i32, u64, u32, u8, usize);
 
-/// A value a native takes, converted from the script's.
-pub(crate) trait Conv: Sized {
-    type Js<'js>: FromJs<'js>;
-    fn conv<'js>(ctx: &Ctx<'js>, js: Self::Js<'js>) -> rquickjs::Result<Self>;
-}
-
-/// A parameter of a native: a value, or an optional or rest argument.
-pub(crate) trait Param: Sized {
-    type Js<'js>: rquickjs::function::FromParam<'js>;
-    fn take<'js>(ctx: &Ctx<'js>, js: Self::Js<'js>) -> rquickjs::Result<Self>;
-}
-
-/// An argument left out is undefined, as JavaScript passes it to a
-/// function of its own, rather than an error.
-impl<T: Conv> Param for T {
-    type Js<'js> = rquickjs::function::Opt<Value<'js>>;
-    fn take<'js>(ctx: &Ctx<'js>, js: Self::Js<'js>) -> rquickjs::Result<Self> {
-        let value = js.0.unwrap_or_else(|| Value::new_undefined(ctx.clone()));
-        T::conv(ctx, T::Js::from_js(ctx, value)?)
-    }
-}
-
-impl<T: Conv> Param for Opt<T> {
-    type Js<'js> = rquickjs::function::Opt<T::Js<'js>>;
-    fn take<'js>(ctx: &Ctx<'js>, js: Self::Js<'js>) -> rquickjs::Result<Self> {
-        js.0.map(|v| T::conv(ctx, v)).transpose().map(Opt)
-    }
-}
-
-impl<T: Conv> Param for Rest<T> {
-    type Js<'js> = rquickjs::function::Rest<T::Js<'js>>;
-    fn take<'js>(ctx: &Ctx<'js>, js: Self::Js<'js>) -> rquickjs::Result<Self> {
-        js.0.into_iter().map(|v| T::conv(ctx, v)).collect::<rquickjs::Result<_>>().map(Rest)
-    }
-}
-
-/// Text is coerced, as `String(x)` does; so is a boolean, as `Boolean(x)`.
-impl Conv for String {
-    type Js<'js> = Coerced<String>;
-    fn conv<'js>(_: &Ctx<'js>, js: Self::Js<'js>) -> rquickjs::Result<Self> {
-        Ok(js.0)
-    }
-}
-
-impl Conv for bool {
-    type Js<'js> = Coerced<bool>;
-    fn conv<'js>(_: &Ctx<'js>, js: Self::Js<'js>) -> rquickjs::Result<Self> {
-        Ok(js.0)
-    }
-}
-
-macro_rules! conv_as_is {
-    ($($t:ty),*) => {$(
-        impl Conv for $t {
-            type Js<'js> = $t;
-            fn conv<'js>(_: &Ctx<'js>, js: Self::Js<'js>) -> rquickjs::Result<Self> {
-                Ok(js)
-            }
-        }
-    )*};
-}
-conv_as_is!(f64, i64, i32, u64, u32, u8, usize);
-
-/// Null or undefined is `None`.
-impl<T: Conv> Conv for Option<T> {
-    type Js<'js> = Option<T::Js<'js>>;
-    fn conv<'js>(ctx: &Ctx<'js>, js: Self::Js<'js>) -> rquickjs::Result<Self> {
-        js.map(|v| T::conv(ctx, v)).transpose()
-    }
-}
-
-impl<T: Conv> Conv for Vec<T> {
-    type Js<'js> = Vec<T::Js<'js>>;
-    fn conv<'js>(ctx: &Ctx<'js>, js: Self::Js<'js>) -> rquickjs::Result<Self> {
-        js.into_iter().map(|v| T::conv(ctx, v)).collect()
-    }
-}
-
-impl Conv for EditorValue {
-    type Js<'js> = Value<'js>;
-    fn conv<'js>(ctx: &Ctx<'js>, js: Self::Js<'js>) -> rquickjs::Result<Self> {
-        crate::value_from_js(ctx, js)
-    }
-}
-
-/// A string or propertized string.
-impl Conv for ember_core::Text {
-    type Js<'js> = Value<'js>;
-    fn conv<'js>(ctx: &Ctx<'js>, js: Self::Js<'js>) -> rquickjs::Result<Self> {
-        crate::text_from_js(ctx, js)
-    }
-}
-
-/// A script's function, as the editor holds one: the same function each time.
-impl Conv for ember_core::Function {
-    type Js<'js> = rquickjs::Function<'js>;
-    fn conv<'js>(ctx: &Ctx<'js>, js: Self::Js<'js>) -> rquickjs::Result<Self> {
-        match crate::function_from_js(ctx, js)? {
-            EditorValue::Function(function) => Ok(function),
-            _ => unreachable!("a function converts to one"),
-        }
-    }
-}
-
-impl Conv for Any {
-    type Js<'js> = Value<'js>;
-    fn conv<'js>(ctx: &Ctx<'js>, js: Self::Js<'js>) -> rquickjs::Result<Self> {
-        Ok(Any(crate::value_from_js(ctx, js).ok()))
-    }
-}
-
-impl Conv for ArgText {
-    type Js<'js> = Value<'js>;
-    fn conv<'js>(_: &Ctx<'js>, value: Self::Js<'js>) -> rquickjs::Result<Self> {
-        Ok(ArgText(if value.is_null() || value.is_undefined() {
-            String::new()
-        } else if let Some(list) = value.as_array() {
-            format!("({})", list.get::<Coerced<String>>(0)?.0)
-        } else {
-            value.get::<Coerced<String>>()?.0
-        }))
-    }
-}
-
-/// Each own property that is an editor value; others, such as objects, are left out.
-impl Conv for Fields {
-    type Js<'js> = rquickjs::Object<'js>;
-    fn conv<'js>(ctx: &Ctx<'js>, object: Self::Js<'js>) -> rquickjs::Result<Self> {
-        let mut fields = Vec::new();
-        for entry in object.props::<String, Value>() {
-            let (name, value) = entry?;
-            if let Some(value) = crate::convert_from_js(ctx, value)? {
-                fields.push((name, value));
-            }
-        }
-        Ok(Fields(fields))
-    }
-}
-
-impl Conv for FaceAttrValues {
-    type Js<'js> = rquickjs::Object<'js>;
-    fn conv<'js>(_: &Ctx<'js>, object: Self::Js<'js>) -> rquickjs::Result<Self> {
-        crate::face_attr_values_from_js(&object).map(FaceAttrValues)
-    }
-}
-
-impl Conv for ember_core::FaceAttrs {
-    type Js<'js> = rquickjs::Object<'js>;
-    fn conv<'js>(_: &Ctx<'js>, object: Self::Js<'js>) -> rquickjs::Result<Self> {
-        crate::face_attrs_from_js(&object)
-    }
-}
-
-impl Conv for Prefix {
-    type Js<'js> = Value<'js>;
-    fn conv<'js>(ctx: &Ctx<'js>, js: Self::Js<'js>) -> rquickjs::Result<Self> {
-        crate::prefix_from_js(ctx, js).map(Prefix)
-    }
-}
-
-/// What a native returns, converted to the script's value.
-pub(crate) trait Ret {
-    fn give<'js>(self, ctx: &Ctx<'js>) -> rquickjs::Result<Value<'js>>;
-}
-
-macro_rules! ret_as_is {
-    ($($t:ty),*) => {$(
-        impl Ret for $t {
-            fn give<'js>(self, ctx: &Ctx<'js>) -> rquickjs::Result<Value<'js>> {
-                self.into_js(ctx)
-            }
-        }
-    )*};
-}
-ret_as_is!((), bool, String, &'static str, f64, i64, i32, u64, u32, u8, usize, char);
-
-/// `None` is undefined, as Emacs's nil is to scripts.
-impl<T: Ret> Ret for Option<T> {
-    fn give<'js>(self, ctx: &Ctx<'js>) -> rquickjs::Result<Value<'js>> {
-        match self {
-            Some(v) => v.give(ctx),
-            None => Ok(Value::new_undefined(ctx.clone())),
-        }
-    }
-}
-
-impl<T: Ret> Ret for Vec<T> {
-    fn give<'js>(self, ctx: &Ctx<'js>) -> rquickjs::Result<Value<'js>> {
-        let list = rquickjs::Array::new(ctx.clone())?;
-        for (i, item) in self.into_iter().enumerate() {
-            list.set(i, item.give(ctx)?)?;
-        }
-        Ok(list.into_value())
-    }
-}
-
-impl<A: Ret, B: Ret> Ret for (A, B) {
-    fn give<'js>(self, ctx: &Ctx<'js>) -> rquickjs::Result<Value<'js>> {
-        vec![self.0.give(ctx)?, self.1.give(ctx)?].into_js(ctx)
-    }
-}
-
-impl<A: Ret, B: Ret, C: Ret> Ret for (A, B, C) {
-    fn give<'js>(self, ctx: &Ctx<'js>) -> rquickjs::Result<Value<'js>> {
-        vec![self.0.give(ctx)?, self.1.give(ctx)?, self.2.give(ctx)?].into_js(ctx)
-    }
-}
-
-impl Ret for EditorValue {
-    fn give<'js>(self, ctx: &Ctx<'js>) -> rquickjs::Result<Value<'js>> {
-        crate::value_to_js(ctx, &self)
-    }
-}
-
-impl Ret for Record {
-    fn give<'js>(self, ctx: &Ctx<'js>) -> rquickjs::Result<Value<'js>> {
-        let object = rquickjs::Object::new(ctx.clone())?;
-        for (name, field) in self.0 {
-            object.set(name, field.give(ctx)?)?;
-        }
-        Ok(object.into_value())
-    }
-}
-
-impl Ret for Field {
-    fn give<'js>(self, ctx: &Ctx<'js>) -> rquickjs::Result<Value<'js>> {
-        match self {
-            Field::Undefined => Ok(Value::new_undefined(ctx.clone())),
-            Field::Value(v) => v.give(ctx),
-            Field::Record(r) => r.give(ctx),
-            Field::List(items) => items.give(ctx),
-            Field::FaceAttrs(attrs) => attrs.give(ctx),
-        }
-    }
-}
-
-impl<T: Ret> Ret for Box<T> {
-    fn give<'js>(self, ctx: &Ctx<'js>) -> rquickjs::Result<Value<'js>> {
-        (*self).give(ctx)
-    }
-}
-
-impl Ret for ember_core::FaceAttrs {
-    fn give<'js>(self, ctx: &Ctx<'js>) -> rquickjs::Result<Value<'js>> {
-        crate::face_attrs_to_js(ctx, &self).map(rquickjs::Object::into_value)
-    }
-}
-
-impl Ret for PlistOrValue {
-    fn give<'js>(self, ctx: &Ctx<'js>) -> rquickjs::Result<Value<'js>> {
-        crate::plist_or_value_to_js(ctx, &self.0)
-    }
-}
-
-impl Ret for Posn {
-    fn give<'js>(self, ctx: &Ctx<'js>) -> rquickjs::Result<Value<'js>> {
-        crate::posn_to_js(ctx, self.0)
-    }
-}
-
-impl Ret for ember_core::Match {
-    fn give<'js>(self, ctx: &Ctx<'js>) -> rquickjs::Result<Value<'js>> {
-        crate::match_to_js(ctx, &self).map(rquickjs::Object::into_value)
-    }
-}
-
-/// Text properties, as an object of each property's value.
-impl Ret for ember_core::Props {
-    fn give<'js>(self, ctx: &Ctx<'js>) -> rquickjs::Result<Value<'js>> {
-        crate::props_to_js(ctx, &self).map(rquickjs::Object::into_value)
-    }
-}
-
-impl Ret for Prefix {
-    fn give<'js>(self, ctx: &Ctx<'js>) -> rquickjs::Result<Value<'js>> {
-        crate::prefix_to_js(ctx, self.0)
-    }
-}
-
 /// Every table, in the order they are installed.
 const TABLES: &[&[Native]] = &[
     editor::TABLE,
@@ -561,7 +282,8 @@ pub(crate) fn tables() -> impl Iterator<Item = &'static Native> {
 }
 
 /// Puts every native in the tables on `native`, and the public ones on `api`.
-pub(crate) fn install<'js>(ctx: &Ctx<'js>, native: &rquickjs::Object<'js>, api: &rquickjs::Object<'js>) -> rquickjs::Result<()> {
+#[cfg(feature = "quickjs")]
+pub(crate) fn install<'js>(ctx: &rquickjs::Ctx<'js>, native: &rquickjs::Object<'js>, api: &rquickjs::Object<'js>) -> rquickjs::Result<()> {
     editor::install(ctx, native, api)?;
     variables::install(ctx, native, api)?;
     text::install(ctx, native, api)?;
