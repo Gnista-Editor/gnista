@@ -59,19 +59,19 @@ Each of these is work that grows with the buffer, the number of overlays or text
 
 | | Where | What | State |
 | --- | --- | --- | --- |
-| 3.1 | `ember-core/src/properties.rs:75-178` | **Text properties are a flat list rebuilt on every edit**, and restoring saved properties (undo, yank) is runs × saved runs: undoing `C-x h C-w` in a fully fontified 50,000-line Org file hangs. Find the affected window by halving and splice. | open |
-| 3.2 | `ember-core/src/search.rs:178` | Forward literal search copies the rest of the buffer for each search. | open |
-| 3.3 | `ember-core/src/buffer.rs:2221` | Typing amalgamation counts the whole run's characters on every insertion: quadratic for process output (`cat` of a large file in `*shell*`). | open |
-| 3.4 | `ember-core/src/insdel.rs:104` | `subst-char-in-region` runs `after-change-functions` once per character. | open |
-| 3.5 | `ember-core/src/rows.rs:356` | With lines truncated, every row on the way to point scans every overlay. | open |
-| 3.6 | `ember-core/src/faces.rs:831` | The style cache is bypassed whenever `face-remapping-alist` is set (text scaling, `variable-pitch-mode`). | open |
-| 3.7 | `ember-core/src/fontify.rs:156`, `frame_description.rs:171` | Each window's rows are built three or four times per frame. | open |
-| 3.8 | `ember-core/src/textprop.rs:79-220`, `insdel.rs:240` | Overlay searches backward and the modification-hook scan pass over every overlay. | open |
-| 3.9 | `ember-core/src/coding.rs:723-812` | Encoding non-ASCII text takes a lock per character, a new encoder per character, and a second pass. | open |
-| 3.10 | `ember-core/src/fileio.rs:272`, `filefns.rs:398` | Reverting a buffer keeps four copies of the text, in two copies of the same code. | open |
-| 3.11 | `packages/org-agenda.ts:88,149` | The agenda reads every line of every file once a day of the week, with `matchAll`. | open |
-| 3.12 | `packages/org.ts:3744` | `org-indent-region` parses the section again after every line it indents. | open |
-| 3.13 | `ember-core/src/buffer.rs:565` | Reading `buffer-undo-list` copies the whole history. | open |
+| 3.1 | `ember-core/src/properties.rs:75-178` | **Text properties are a flat list rebuilt on every edit**, and restoring saved properties (undo, yank) is runs × saved runs: undoing `C-x h C-w` in a fully fontified 50,000-line Org file hangs. Find the affected window by halving and splice. | fixed: the runs a change touches are found by halving and spliced, and restoring is one pass |
+| 3.2 | `ember-core/src/search.rs:178` | Forward literal search copies the rest of the buffer for each search. | fixed: a window at a time, each twice the last |
+| 3.3 | `ember-core/src/buffer.rs:2221` | Typing amalgamation counts the whole run's characters on every insertion: quadratic for process output (`cat` of a large file in `*shell*`). | fixed |
+| 3.4 | `ember-core/src/insdel.rs:104` | `subst-char-in-region` runs `after-change-functions` once per character. | fixed: one change, as Emacs reports it |
+| 3.5 | `ember-core/src/rows.rs:356` | With lines truncated, every row on the way to point scans every overlay. | fixed |
+| 3.6 | `ember-core/src/faces.rs:831` | The style cache is bypassed whenever `face-remapping-alist` is set (text scaling, `variable-pitch-mode`). | fixed: styles are kept for each remapping |
+| 3.7 | `ember-core/src/fontify.rs:156`, `frame_description.rs:171` | Each window's rows are built three or four times per frame. | partly: the second fontifying pass skips a window that keeping point in view did not scroll; describing the frame still builds its rows again |
+| 3.8 | `ember-core/src/textprop.rs:79-220`, `insdel.rs:240` | Overlay searches backward and the modification-hook scan pass over every overlay. | fixed: backward searches use the index, and edits look for hooks only once an overlay has had one; each edit still moves every overlay after it |
+| 3.9 | `ember-core/src/coding.rs:723-812` | Encoding non-ASCII text takes a lock per character, a new encoder per character, and a second pass. | fixed, and saving encodes in one pass |
+| 3.10 | `ember-core/src/fileio.rs:272`, `filefns.rs:398` | Reverting a buffer keeps four copies of the text, in two copies of the same code. | fixed: no copies, one `Difference` for both |
+| 3.11 | `packages/org-agenda.ts:88,149` | The agenda reads every line of every file once a day of the week, with `matchAll`. | fixed: each file is read once for the week |
+| 3.12 | `packages/org.ts:3744` | `org-indent-region` parses the section again after every line it indents. | fixed: the parse is kept and moved by each change, as Org's element cache is, but parsed again after a change in or next to a list or footnote |
+| 3.13 | `ember-core/src/buffer.rs:565` | Reading `buffer-undo-list` copies the whole history. | fixed for binding it, as `let` does, which keeps the history aside; reading it still copies it, as it must give data |
 
 ## 4. Architecture and upkeep
 

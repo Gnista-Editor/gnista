@@ -354,9 +354,15 @@ impl Editor {
 
     /// How many screen rows the row of text starting at a line takes.
     pub(crate) fn screen_height_in(&self, b: &Buffer, row_line: usize, wrap: Option<Wrap>) -> usize {
-        // A truncated line takes one row, unless an overlay string adds more.
+        // A truncated line takes one row, unless an overlay string on it
+        // adds more: only the overlays at the row's text are looked at.
         let strings_with_newlines = || {
-            b.overlays().any(|o| ["before-string", "after-string"].iter().any(|n| o.props.get(*n).and_then(Value::as_str).is_some_and(|s| s.contains('\n'))))
+            let start = b.line_start(row_line);
+            let (next, step) = self.move_rows_in(b, row_line, 1);
+            let end = if step == 0 { b.len() } else { b.line_start(next) };
+            b.overlays_in(start.saturating_sub(1), (end + 1).min(b.len()))
+                .iter()
+                .any(|o| ["before-string", "after-string"].iter().any(|n| o.props.get(*n).and_then(Value::as_str).is_some_and(|s| s.contains('\n'))))
         };
         if wrap.is_none() && !strings_with_newlines() { 1 } else { self.screen_rows_of(b, row_line, wrap).len().max(1) }
     }

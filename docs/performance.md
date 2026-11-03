@@ -130,6 +130,21 @@ In the bench's Org table, V8 against QuickJS: RET in a paragraph 4.97 against 11
 
 ## What changed
 
+- **The code review's large-buffer costs, 2026-11-03** ([review.md](review.md), group 3). Each has a test that times the case it names; on the same M1, in the test build, before and after:
+
+  | | Before | After |
+  | --- | ---: | ---: |
+  | Undoing a kill of 100,000 property runs | over 180 s | 0.7 s |
+  | 8,000 literal searches forward through 32 MB | 36 s | 0.3 s |
+  | 300,000 insertions joining one undo entry | 16 s | 0.9 s |
+  | 2,000 `C-n` with truncated lines and 50,000 overlays | over 180 s | 0.9 s |
+  | 1,000 insertions and 20,000 searches back among 100,000 overlays | 73 s | 0.9 s |
+  | The week's agenda of a 10,000-entry file | 4.9 s | 1.0 s |
+  | `org-indent-region` over 2,000 paragraphs | over 60 s | 1.1 s |
+  | 2,000 bindings of `buffer-undo-list` over 20,000 steps | 21 s | 0.1 s |
+
+  Text properties are spliced where they change rather than rebuilt; a literal search copies a window at a time; a joined insertion's length is counted once; a truncated row looks only at its own overlays; edits look for overlay hooks only once one has been put, and backward overlay searches use the index; the agenda reads each file once for the week; `org-indent-region` keeps its parse through the indentation it changes, as Org's element cache does, except next to lists and footnotes; binding `buffer-undo-list` keeps the history aside. Smaller ones have no timing of their own: `subst-char-in-region` is one change for the hooks, remapped faces are cached by their remapping, redisplay fontifies a window a second time only if keeping point in view scrolled it, encoding finds a coding's table once a text and keeps one encoder, and reverting compares the texts without copying them.
+
 - **Org's heading index moves headings only when they are read**, as Org's element cache shifts its elements lazily. An edit used to give every heading after it a new, frozen object; now it records a shift for the headings from an index on, and a heading is moved in place when it is read: the element parser reads the few around point through `headingsAsRead`, and `headings()` moves them all in one pass. Finding the heading a line is under, a heading's ancestors and the next heading at a level halve or stop early instead of passing over every heading, and copying the headings after one to search them (`all.slice(i + 1).find(...)`) became loops. `matchAll`, which compiles its regexp again on each call in QuickJS, became an `exec` loop in Org (`allMatches` in org-macs.ts). RET at a heading went from 18.2 to 2.3 ms, `C-c C-t` from 20.7 to 3.1, TAB on a heading from 3.2 to 0.9: Emacs 30.2 takes 1.9, 5.5 and 2.1.
 - **Opening a file reads only what it needs.** `normal-mode` took the whole buffer into a script to read its first line for a `-*-` cookie, and checking for a final newline when saving took it all to read the last character; each now reads only those, as Emacs does. Line ends are found by counting every line's end only when the file has a carriage return, which memchr looks for first. `find-file` of the 100 MB text file went from 138 to 65 ms; the 82 ms of 2026-10-28 was already 135 ms by 2026-10-31, before the work of that night.
 - **Balanced-expression scans pass plain text a run at a time.** A run of ASCII words, symbols, spaces and punctuation without syntax flags changes nothing in a list scan, nor anything but the count at the top of a sexp scan, which cannot run out when there are more expressions to pass than characters left, as electric-pair asks to check a balance to the buffer's end. `scan-lists` and `scan-sexps` read such runs from the rope's chunks a byte at a time; a test checks them against the character-at-a-time scan on 1,000 random texts. Typing `(` and `)` with electric-pair in the 100 MB file went from 1,963 to 270 ms.

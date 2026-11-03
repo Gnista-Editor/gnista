@@ -77,6 +77,45 @@ fn backup_enabled(path: &Path) -> bool {
 /// Reads a file and decodes it, in `coding` if given, as
 /// `coding-system-for-read` gives one, else as the file says it is or its
 /// bytes look, as Emacs's `set-auto-coding` and detection decide.
+/// Where new text differs from old, as replacing one with the other keeps
+/// what is the same at the start and the end, in characters: the same
+/// `prefix`, then what differs, to `old_end` in the old text and `new_end`
+/// in the new. Found walking both texts from each end, with no copy of
+/// either.
+pub(crate) struct Difference {
+    pub(crate) prefix: usize,
+    pub(crate) old_end: usize,
+    pub(crate) new_end: usize,
+}
+
+impl Difference {
+    pub(crate) fn between(old: ropey::RopeSlice, new: &str) -> Difference {
+        let (old_len, new_len) = (old.len_chars(), new.chars().count());
+        let prefix = old.chars().zip(new.chars()).take_while(|(a, b)| a == b).count();
+        let room = old_len.min(new_len) - prefix;
+        let suffix = old.chars_at(old_len).reversed().zip(new.chars().rev()).take(room).take_while(|(a, b)| a == b).count();
+        Difference { prefix, old_end: old_len - suffix, new_end: new_len - suffix }
+    }
+
+    /// What of the new text replaces the old.
+    pub(crate) fn middle<'a>(&self, new: &'a str) -> &'a str {
+        let byte = |k: usize| new.char_indices().nth(k).map_or(new.len(), |(i, _)| i);
+        &new[byte(self.prefix)..byte(self.new_end)]
+    }
+
+    /// Where a position in the old text goes: the same in the start kept,
+    /// moved with the end kept, and in proportion within what changes.
+    pub(crate) fn keep(&self, pos: usize) -> usize {
+        if pos <= self.prefix {
+            pos
+        } else if pos >= self.old_end {
+            pos + self.new_end - self.old_end
+        } else {
+            self.prefix + (pos - self.prefix) * (self.new_end - self.prefix) / (self.old_end - self.prefix)
+        }
+    }
+}
+
 pub(crate) fn read_file(path: &Path, coding: Option<Coding>) -> Result<(String, Coding)> {
     let bytes = fs::read(path).map_err(|e| crate::fileops::file_error("Opening input file", &e, &[path]))?;
     Ok(crate::coding::decode_file(&bytes, coding))
@@ -273,27 +312,11 @@ impl Editor {
         let (new, coding) = read_file(path, self.coding_for_read())?;
         let b = &mut self.buffers[self.current];
         b.widen();
-        let old = b.text().to_string();
-        let old_chars: Vec<char> = old.chars().collect();
-        let new_chars: Vec<char> = new.chars().collect();
-        let prefix = old_chars.iter().zip(&new_chars).take_while(|(a, b)| a == b).count();
-        let room = old_chars.len().min(new_chars.len()) - prefix;
-        let suffix = old_chars.iter().rev().zip(new_chars.iter().rev()).take(room).take_while(|(a, b)| a == b).count();
-        let (old_end, new_end) = (old_chars.len() - suffix, new_chars.len() - suffix);
-        let point = b.point();
-        let point = if point <= prefix {
-            point
-        } else if point >= old_end {
-            point + new_end - old_end
-        } else {
-            prefix + (point - prefix) * (new_end - prefix) / (old_end - prefix)
-        };
+        let change = Difference::between(b.text().slice(..), &new);
+        let point = change.keep(b.point());
         let read_only = std::mem::replace(&mut b.read_only, false);
         b.file.allow_supersession = true;
-        let replaced = b.delete(prefix..old_end).and_then(|_| {
-            let middle: String = new_chars[prefix..new_end].iter().collect();
-            b.insert_at(prefix, &middle)
-        });
+        let replaced = b.delete(change.prefix..change.old_end).and_then(|_| b.insert_at(change.prefix, change.middle(&new)));
         b.file.allow_supersession = false;
         b.read_only = read_only;
         replaced?;
@@ -481,5 +504,21 @@ mod tests {
         let path = Path::new("/notes/today.org");
         assert_eq!(auto_save_file_name(path), Path::new("/notes/#today.org#"));
         assert_eq!(backup_file_name(path), Path::new("/notes/today.org~"));
+    }
+
+    #[test]
+    fn a_difference_keeps_what_is_the_same_at_each_end() {
+        let differ = |old: &str, new: &str| {
+            let rope = ropey::Rope::from_str(old);
+            let d = Difference::between(rope.slice(..), new);
+            (d.prefix, d.old_end, d.new_end, d.middle(new).to_string())
+        };
+        assert_eq!(differ("héllo wörld", "héllo brave wörld"), (6, 6, 12, "brave ".into()));
+        assert_eq!(differ("aaa", "aaaa"), (3, 3, 4, "a".into()));
+        assert_eq!(differ("same", "same"), (4, 4, 4, String::new()));
+        assert_eq!(differ("", "new"), (0, 0, 3, "new".into()));
+        assert_eq!(differ("ünchanged ends", "ünc-h-anged ends"), (3, 4, 6, "-h-".into()));
+        let d = Difference { prefix: 2, old_end: 6, new_end: 4 };
+        assert_eq!((d.keep(1), d.keep(4), d.keep(8)), (1, 3, 6));
     }
 }

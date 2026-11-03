@@ -804,15 +804,23 @@ impl Editor {
     /// The style of text with these faces, earlier ones winning. Kept until
     /// a face changes, as redisplay asks for the same few again and again.
     pub fn style_for(&self, faces: &[String], dark: bool) -> Style {
-        let key = (faces.to_vec(), dark);
+        self.cached_style(faces, dark, 0, || {
+            let attrs = faces
+                .iter()
+                .rev()
+                .fold(FaceAttrs::default(), |acc, name| acc.with(&self.face_attrs(name, dark)));
+            self.style_from(&attrs, dark)
+        })
+    }
+
+    /// A style from the cache, by the faces, the background and the
+    /// remapping in force (0 for none), or made and kept.
+    fn cached_style(&self, faces: &[String], dark: bool, remap: usize, make: impl FnOnce() -> Style) -> Style {
+        let key = (faces.to_vec(), dark, remap);
         if let Some(style) = self.style_cache.borrow().get(&key) {
             return style.clone();
         }
-        let attrs = faces
-            .iter()
-            .rev()
-            .fold(FaceAttrs::default(), |acc, name| acc.with(&self.face_attrs(name, dark)));
-        let style = self.style_from(&attrs, dark);
+        let style = make();
         let mut cache = self.style_cache.borrow_mut();
         // Anonymous faces could otherwise grow it without end.
         if cache.len() > 4096 {
@@ -820,6 +828,23 @@ impl Editor {
         }
         cache.insert(key, style.clone());
         style
+    }
+
+    /// The number the style cache keys a `face-remapping-alist` value by,
+    /// the same for equal values, as each buffer's text scaling sets one.
+    fn remap_key(&self, remaps: &[Value]) -> usize {
+        let mut known = self.style_remaps.borrow_mut();
+        if let Some(i) = known.iter().position(|r| r.as_slice() == remaps) {
+            return i + 1;
+        }
+        // Each remapping set afresh, as every step of text scaling is,
+        // could otherwise grow it without end.
+        if known.len() >= 64 {
+            known.clear();
+            self.style_cache.borrow_mut().retain(|k, _| k.2 == 0);
+        }
+        known.push(remaps.to_vec());
+        known.len()
     }
 
     /// The style of text with these faces in a buffer, whose
@@ -854,12 +879,14 @@ impl Editor {
             }
             specs.iter().rev().fold(FaceAttrs::default(), |acc, spec| acc.with(&one(spec)))
         };
-        let mut names: Vec<&str> = faces.iter().map(String::as_str).collect();
-        if remap_of("default").is_some() {
-            names.push("default");
-        }
-        let attrs = names.iter().rev().fold(FaceAttrs::default(), |acc, name| acc.with(&remapped(name)));
-        self.style_from(&attrs, dark)
+        self.cached_style(faces, dark, self.remap_key(&remaps), || {
+            let mut names: Vec<&str> = faces.iter().map(String::as_str).collect();
+            if remap_of("default").is_some() {
+                names.push("default");
+            }
+            let attrs = names.iter().rev().fold(FaceAttrs::default(), |acc, name| acc.with(&remapped(name)));
+            self.style_from(&attrs, dark)
+        })
     }
 
     /// Attributes with the faces they inherit from filled in under them.

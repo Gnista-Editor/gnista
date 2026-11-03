@@ -110,7 +110,14 @@ impl Editor {
         let first = (start..end).find(|&p| b.char_at(p) == Some(from));
         let Some(first) = first else { return Ok(()) };
         let last = (first..end).rev().find(|&p| b.char_at(p) == Some(from)).unwrap_or(first);
-        self.modify(first, last + 1, |b, start, end| b.subst_char(start, end, from, to))
+        // One change for the hooks, however many characters it replaces.
+        self.modify(first, last + 1, |b, start, end| {
+            let pending = b.pending_changes.len();
+            b.subst_char(start, end, from, to)?;
+            b.pending_changes.truncate(pending);
+            b.pending_changes.push((start, end, end - start));
+            Ok(())
+        })
     }
 
     /// Replaces the text between `start` and `end` with `text`, as one
@@ -236,8 +243,10 @@ impl Editor {
         self.run_before_change_functions(start, end)?;
         // An overlay's hooks: insert-in-front-hooks for an insertion at its
         // start, insert-behind-hooks at its end, modification-hooks for a
-        // change inside it, as report_overlay_modification calls them.
-        for o in self.buffer().overlays() {
+        // change inside it, as report_overlay_modification calls them;
+        // none to look for unless an overlay has had one.
+        let hooked = self.buffer().overlays_may_have_hooks();
+        for o in self.buffer().overlays().take_while(|_| hooked) {
             let names: &[&str] = if start == end {
                 match (o.start == start, o.end == start) {
                     (true, true) => &["insert-in-front-hooks", "insert-behind-hooks"],

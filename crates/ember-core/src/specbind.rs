@@ -26,6 +26,8 @@ enum Entry {
     Excursion { buffer: u64, marker: u64 },
     /// A buffer's narrowing, by markers at its edges, or none.
     Restriction { buffer: u64, edges: Option<(u64, u64)> },
+    /// A buffer's undo history, `buffer-undo-list`, kept as it is.
+    Undo { buffer: u64, binding: crate::buffer::UndoBinding },
 }
 
 #[derive(Debug, Default)]
@@ -46,7 +48,15 @@ impl Editor {
     /// local in the current buffer, there, and otherwise its default
     /// value. Returns the entry to [`unbind`](Editor::unbind) after.
     pub fn specbind(&mut self, name: &str, value: Value) -> u64 {
-        let entry = if self.is_local_variable(name) {
+        let entry = if name == "buffer-undo-list" {
+            // Its history kept aside, not copied out as a list.
+            let current = self.buffer_with_id(self.buffer().id()).expect("current");
+            self.claim_undo(current);
+            let buffer = self.buffer().id();
+            let binding = self.buffer_mut().bind_undo();
+            self.set_variable(name, value);
+            Entry::Undo { buffer, binding }
+        } else if self.is_local_variable(name) {
             let old = self.variable(name).unwrap_or(Value::Null);
             let buffer = self.buffer().id();
             self.set_variable(name, value);
@@ -129,6 +139,11 @@ impl Editor {
                 self.back_to(back);
             }
             Entry::Default { name, old } => self.set_default(&name, old),
+            Entry::Undo { buffer, binding } => {
+                let Some(index) = self.buffer_with_id(buffer) else { return };
+                self.claim_undo(index);
+                self.buffers[index].unbind_undo(binding);
+            }
             Entry::Current(buffer) => self.back_to(buffer),
             Entry::Excursion { buffer, marker } => {
                 let at = self.marker_position(marker).map(|(_, p)| p);

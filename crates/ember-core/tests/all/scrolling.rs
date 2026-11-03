@@ -114,3 +114,27 @@ fn scroll_line_commands() {
     let err = ed.call("scroll-down-line", vec![]).unwrap_err();
     assert_eq!(err.to_string(), "Beginning of buffer");
 }
+
+/// With lines truncated, keeping point in view looks at the overlays on
+/// the rows it passes, not every overlay in the buffer for each row: with
+/// 50,000 overlays, moving down 2,000 lines is quick.
+#[test]
+fn truncated_rows_look_only_at_their_own_overlays() {
+    let mut ed = Editor::new();
+    let text: Vec<String> = (0..50_000).map(|n| format!("line {n}")).collect();
+    ed.buffer_mut().set_text(&text.join("\n"));
+    for line in 0..50_000 {
+        let start = ed.buffer().line_start(line);
+        let id = ed.buffer_mut().make_overlay(start..start + 4);
+        ed.buffer_mut().overlay_put(id, "face", ember_core::Value::Str("bold".into())).unwrap();
+    }
+    ed.set_variable("truncate-lines", ember_core::Value::Bool(true));
+    ed.set_viewport_height(24);
+    let started = std::time::Instant::now();
+    for _ in 0..2_000 {
+        ed.press("C-n").unwrap();
+        ed.ensure_point_visible();
+    }
+    assert!(started.elapsed() < std::time::Duration::from_secs(5), "took {:?}", started.elapsed());
+    assert_eq!(ed.buffer().line_of(ed.buffer().point()), 2_000);
+}

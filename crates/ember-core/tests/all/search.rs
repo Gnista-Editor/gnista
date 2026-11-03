@@ -64,3 +64,39 @@ fn a_backward_literal_search_far_from_its_match_is_quick() {
     assert_eq!((found.start, found.end), (1, 3));
     assert!(start.elapsed() < std::time::Duration::from_secs(5), "took {:?}", start.elapsed());
 }
+
+/// A literal search copies out a window near where it starts, then larger
+/// ones further on, rather than the rest of the buffer: a search for each
+/// of 8,000 matches through 32 MB is quick, and a match across two windows
+/// is found whole, forward and backward.
+#[test]
+fn literal_searches_copy_only_windows_of_the_text() {
+    let mut ed = Editor::new();
+    let chunk = format!("{}needle", "x".repeat(4090));
+    let text = chunk.repeat(8_000);
+    ed.buffer_mut().set_text(&text);
+    let forward = ember_core::SearchOptions { regexp: false, backward: false, case_fold: false, bound: None };
+    let started = std::time::Instant::now();
+    let (mut from, mut found) = (0, 0);
+    while let Some(m) = ed.search("needle", from, &forward).unwrap() {
+        assert_eq!(m.start, (found + 1) * 4096 - 6);
+        (from, found) = (m.end, found + 1);
+    }
+    assert_eq!(found, 8_000);
+    assert!(started.elapsed() < std::time::Duration::from_secs(5), "took {:?}", started.elapsed());
+    // Across the first window's end, and the second's, in both directions,
+    // with case folded and characters of more than one byte.
+    for at in [(1 << 14) - 3, (1 << 14) + (1 << 15) - 2] {
+        let mut text = "é".repeat(at);
+        text.push_str("NeEdLe");
+        text.push_str(&"é".repeat(1 << 16));
+        ed.buffer_mut().set_text(&text);
+        let folded = ember_core::SearchOptions { case_fold: true, ..forward.clone() };
+        let m = ed.search("needle", 0, &folded).unwrap().unwrap();
+        assert_eq!((m.start, m.end), (at, at + 6));
+        let back = ember_core::SearchOptions { backward: true, ..folded };
+        let m = ed.search("needle", ed.buffer().len(), &back).unwrap().unwrap();
+        assert_eq!((m.start, m.end), (at, at + 6));
+        assert!(ed.search("needles", 0, &forward).unwrap().is_none());
+    }
+}

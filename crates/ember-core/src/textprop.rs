@@ -75,15 +75,8 @@ impl Buffer {
     /// start of the accessible text.
     pub fn previous_char_property_change(&self, pos: usize, limit: Option<usize>) -> usize {
         let floor = limit.unwrap_or(self.point_min());
-        let mut previous = self.previous_property_change(pos).filter(|&q| q < pos).unwrap_or(0);
-        for o in self.overlays() {
-            for edge in [o.start, o.end] {
-                if edge < pos && edge > previous {
-                    previous = edge;
-                }
-            }
-        }
-        previous.max(floor).min(pos)
+        let previous = self.previous_property_change(pos).filter(|&q| q < pos).unwrap_or(0);
+        previous.max(self.previous_overlay_edge(pos).unwrap_or(0)).max(floor).min(pos)
     }
 
     /// Where `prop`, from overlays or the text, next changes after `pos`, as
@@ -131,15 +124,13 @@ impl Buffer {
     /// The next position after `pos` where an overlay starts or ends, as
     /// `next-overlay-change`, or the end of the accessible text.
     pub fn next_overlay_change(&self, pos: usize) -> usize {
-        let edges = self.overlays().flat_map(|o| [o.start, o.end]);
-        edges.filter(|&e| e > pos).fold(self.point_max(), usize::min)
+        self.next_overlay_edge(pos).map_or(self.point_max(), |e| e.min(self.point_max()))
     }
 
     /// The last position before `pos` where an overlay starts or ends, as
     /// `previous-overlay-change`, or the start of the accessible text.
     pub fn previous_overlay_change(&self, pos: usize) -> usize {
-        let edges = self.overlays().flat_map(|o| [o.start, o.end]);
-        edges.filter(|&e| e < pos).fold(self.point_min(), usize::max)
+        self.previous_overlay_edge(pos).map_or(self.point_min(), |e| e.max(self.point_min()))
     }
 
     /// The first position from `start` to `end` whose text property `prop`

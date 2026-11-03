@@ -424,3 +424,38 @@ fn a_fold_broken_from_another_buffer_is_shown_in_its_own() {
     ed.redisplay();
     assert!(rows(&ed).iter().any(|r| r.contains("body")), "shown: {:?}", rows(&ed));
 }
+
+/// The week's agenda reads each file once, not once a day: 10,000 entries
+/// with timestamps make their week quickly, each on its day.
+#[test]
+fn the_week_agenda_reads_each_file_once() {
+    let (mut ed, s) = org("");
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("big.org");
+    let entries: String = (0..10_000)
+        .map(|i| format!("* TODO Task {i}\nSCHEDULED: <2026-11-{:02} Tue>\nBody with <2026-11-{:02} Wed> in it.\n", 2 + i % 7, 2 + (i + 3) % 7))
+        .collect();
+    std::fs::write(&path, entries).unwrap();
+    s.eval_typescript(&mut ed, "files.ts", format!("ember.setVariable(\"org-agenda-files\", [{:?}]);", path.to_str().unwrap())).unwrap();
+    let started = std::time::Instant::now();
+    s.eval_typescript(&mut ed, "week.ts", "ember.call(\"org-agenda-list\");".to_string()).unwrap();
+    let took = started.elapsed();
+    let agenda = text(&ed);
+    assert!(agenda.contains("Task 9999"), "{}", &agenda[..agenda.len().min(400)]);
+    assert!(took < std::time::Duration::from_secs(10), "took {took:?}");
+}
+
+/// Indenting a region keeps its parse through the indentation it changes,
+/// rather than parsing the section again after each line: a section of
+/// 2,000 paragraphs indents quickly, each line to the column it belongs.
+#[test]
+fn indenting_a_long_section_keeps_its_parse() {
+    let body: String = (0..2_000).map(|i| format!("   paragraph {i}\n\n")).collect();
+    let (mut ed, _s) = org(&format!("* Heading\n{body}"));
+    let started = std::time::Instant::now();
+    ed.press("M-< C-SPC M-> TAB").unwrap();
+    let took = started.elapsed();
+    let indented = text(&ed);
+    assert!(indented.contains("\nparagraph 1999\n") && !indented.contains("   paragraph"), "{}", &indented[..200]);
+    assert!(took < std::time::Duration::from_secs(10), "took {took:?}");
+}

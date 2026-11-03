@@ -402,22 +402,9 @@ impl Editor {
     pub(crate) fn replace_accessible_text(&mut self, text: &str) -> Result<()> {
         let b = self.buffer();
         let (min, max) = (b.point_min(), b.point_max());
-        let old: Vec<char> = b.slice(min..max).chars().collect();
-        let new: Vec<char> = text.chars().collect();
-        let prefix = old.iter().zip(&new).take_while(|(a, b)| a == b).count();
-        let room = old.len().min(new.len()) - prefix;
-        let suffix = old.iter().rev().zip(new.iter().rev()).take(room).take_while(|(a, b)| a == b).count();
-        let (old_end, new_end) = (old.len() - suffix, new.len() - suffix);
-        let point = b.point() - min;
-        let point = if point <= prefix {
-            point
-        } else if point >= old_end {
-            point + new_end - old_end
-        } else {
-            prefix + (point - prefix) * (new_end - prefix) / (old_end - prefix)
-        };
-        let middle: String = new[prefix..new_end].iter().collect();
-        self.replace_range(min + prefix, min + old_end, &middle)?;
+        let change = crate::fileio::Difference::between(b.text().slice(min..max), text);
+        let point = change.keep(b.point() - min);
+        self.replace_range(min + change.prefix, min + change.old_end, change.middle(text))?;
         self.buffer_mut().set_point(min + point);
         Ok(())
     }

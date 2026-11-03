@@ -1051,6 +1051,72 @@
       "kill_ring": [],
       "modified": false,
       "error": null
+    },
+    {
+      "name": "indent-region-over-lists-and-paragraphs",
+      "input": {
+        "text": "* Heading\nText under it\n   drifted text\n- item one\ncontinued\n  - nested\n      deep line\n- item two\n\nAfter the list\n",
+        "point": 0,
+        "keys": "M-< C-SPC M-> TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* Heading\nText under it\ndrifted text\n- item one\ncontinued\n  - nested\n    deep line\n  - item two\n\n  After the list\n",
+      "visible": "* Heading\nText under it\ndrifted text\n- item one\ncontinued\n  - nested\n    deep line\n  - item two\n\n  After the list\n",
+      "point": 114,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "indent-region-over-a-drawer-and-blocks",
+      "input": {
+        "text": "* H\n:PROPERTIES:\n:ID:     abc\n   :CUSTOM: value\n:END:\n#+begin_quote\n   quoted\n#+end_quote\n#+begin_src sh\n  echo hi\n#+end_src\n    trailing paragraph\n",
+        "point": 0,
+        "keys": "M-< C-SPC M-> TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* H\n:PROPERTIES:\n:ID:       abc\n:CUSTOM:   value\n:END:\n#+begin_quote\nquoted\n#+end_quote\n#+begin_src sh\n  echo hi\n#+end_src\ntrailing paragraph\n",
+      "visible": "* H\n:PROPERTIES:\n:ID:       abc\n:CUSTOM:   value\n:END:\n#+begin_quote\nquoted\n#+end_quote\n#+begin_src sh\n  echo hi\n#+end_src\ntrailing paragraph\n",
+      "point": 142,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "indent-region-with-adapted-indentation",
+      "input": {
+        "text": "* H\nbody\n- a\n  b\n** Sub\nmore body\n   - item\n     text\n",
+        "point": 0,
+        "keys": "M-< C-SPC M-> TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "org-adapt-indentation": true
+        }
+      },
+      "text": "* H\n  body\n  - a\n    b\n** Sub\n   more body\n   - item\n     text\n",
+      "visible": "* H\n  body\n  - a\n    b\n** Sub\n   more body\n   - item\n     text\n",
+      "point": 63,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
     }
   ]
 }

@@ -120,6 +120,10 @@ const AMALGAMATING: &[&str] = &[
 /// it is stopped, in case nothing ever fails.
 const MACRO_REPEAT_LIMIT: usize = 100_000;
 
+/// What a cached style is kept by: its faces, whether the background is
+/// dark, and the number of the `face-remapping-alist` in force, 0 for none.
+pub(crate) type StyleKey = (Vec<String>, bool, usize);
+
 /// How many prompts and recursive edits may wait inside each other.
 const MAX_WAITS: usize = 1_000;
 
@@ -255,7 +259,11 @@ pub struct Editor {
     pub(crate) command_loop: Option<std::rc::Rc<dyn crate::driver::NestedLoop>>,
     /// What scripts have bound, to restore as their forms end.
     pub(crate) specpdl: crate::specbind::Specpdl,
-    pub(crate) style_cache: std::cell::RefCell<std::collections::HashMap<(Vec<String>, bool), crate::faces::Style>>,
+    /// Styles by their faces, the background and the remapping in force.
+    pub(crate) style_cache: std::cell::RefCell<std::collections::HashMap<StyleKey, crate::faces::Style>>,
+    /// The `face-remapping-alist` values styles were cached for, by the
+    /// number the cache keys them with, one more than their index.
+    pub(crate) style_remaps: std::cell::RefCell<Vec<Vec<Value>>>,
     /// The images display specs have loaded, as a frame's image cache.
     pub(crate) images: std::cell::RefCell<crate::image::ImageCache>,
     pub(crate) grammars: BTreeMap<&'static str, crate::syntax::Grammar>,
@@ -443,6 +451,7 @@ impl Editor {
             command_loop: None,
             specpdl: Default::default(),
             style_cache: Default::default(),
+            style_remaps: Default::default(),
             images: Default::default(),
             grammars: crate::syntax::builtin_grammars().into_iter().collect(),
             treesit_queries: Default::default(),

@@ -437,8 +437,9 @@ ember.addHook("kill-buffer-hook", () => {
   headingChanges.delete(indexKey());
 });
 
-/** Records a change to an Org buffer, for headings() to follow it. */
+/** Records a change to an Org buffer, for headings() to follow it, and for the parse org-indent-region keeps. */
 function headingsAfterChange(beg: number, end: number, oldLen: number): void {
+  if (parseShifts && ember.currentBuffer().id === parseShifts.buffer) parseShifts.changes.push([beg, end, oldLen]);
   const name = indexKey();
   if (!headingIndexes.has(name)) return;
   const list = headingChanges.get(name);
@@ -3751,6 +3752,17 @@ function indentRigidly(start: number, end: number, offset: number): void {
 
 /** Indents the non-blank lines from start to end, each element as a whole, as org-indent-region does. */
 function orgIndentRegion(start: number, end: number): void {
+  if (parseShifts) return indentRegionElements(start, end);
+  parseShifts = { buffer: ember.currentBuffer().id, changes: [] };
+  try {
+    indentRegionElements(start, end);
+  } finally {
+    parseShifts = undefined;
+    parseCache = undefined;
+  }
+}
+
+function indentRegionElements(start: number, end: number): void {
   const endM = marker(end);
   const size = (): number => ember.bufferSize();
   let p = start;
@@ -5089,9 +5101,61 @@ function parseElements(
   }
 }
 
-/** Parses the buffer into its elements: headlines, sections and what they hold. */
-/** The last parse and what it was made for, as headings are kept. */
-let parseCache: { key: string; root: Elem } | undefined;
+/**
+ * The last parse and what it was made for, as headings are kept: its
+ * buffer, keywords and branch in `key`, the buffer's change count and
+ * accessible portion, and how many of `parseShifts` it has moved by.
+ */
+let parseCache: { key: string; tick: number; min: number; max: number; shifted: number; root: Elem } | undefined;
+
+/**
+ * The changes made while org-indent-region runs, as after-change-functions
+ * gives them: it changes only indentation and spacing, as its parse says,
+ * so the parse is kept, its positions moved by each change, as Org's
+ * element cache moves by its changes, rather than made again a line at a
+ * time.
+ */
+let parseShifts: { buffer: number; changes: [number, number, number][] } | undefined;
+
+/** Whether a change at `pos` is in a list or a footnote definition, or on the line after one ends, whose extent the indentation decides. */
+function indentationSensitive(root: Elem, pos: number): boolean {
+  const fragile = ["plain-list", "item", "footnote-definition"];
+  let node = root;
+  for (;;) {
+    if (node.children.some((c) => fragile.includes(c.type) && c.end <= pos && pos <= lineStartOrEnd(lineAt(c.end) + 1))) return true;
+    const child = node.children.find((c) => c.begin <= pos && pos < c.end);
+    if (!child) return false;
+    if (fragile.includes(child.type)) return true;
+    node = child;
+  }
+}
+
+/** Moves the parse's positions by changes, each as after-change-functions gave it. */
+function shiftParse(root: Elem, changes: [number, number, number][]): void {
+  const from = changes.reduce((low, c) => Math.min(low, c[0]), Infinity);
+  const move = (x: number): number => {
+    for (const [beg, end, oldLen] of changes) {
+      if (x <= beg) continue;
+      x = x >= beg + oldLen ? x + (end - beg) - oldLen : beg;
+    }
+    return x;
+  };
+  const walk = (e: Elem): void => {
+    e.begin = move(e.begin);
+    e.end = move(e.end);
+    if (e.contentsBegin !== undefined) e.contentsBegin = move(e.contentsBegin);
+    if (e.contentsEnd !== undefined) e.contentsEnd = move(e.contentsEnd);
+    // Those wholly before every change stay where they are.
+    let k = 0;
+    for (let lo = 0, hi = e.children.length; lo < hi; ) {
+      const mid = (lo + hi) >> 1;
+      if (e.children[mid].end <= from) lo = k = mid + 1;
+      else hi = mid;
+    }
+    for (; k < e.children.length; k++) walk(e.children[k]);
+  };
+  walk(root);
+}
 
 /**
  * The buffer's elements as far as the element at `pos` needs them: the
@@ -5103,8 +5167,28 @@ let parseCache: { key: string; root: Elem } | undefined;
 function parseFor(pos: number): Elem {
   const all = headingsAsRead();
   const branch = headingIndex(all, lineAt(pos));
-  const key = `${ember.bufferName()}\n${ember.bufferModifiedTick()}\n${allKeywords().join(" ")}\n${branch ?? -1}\n${ember.pointMin()}-${ember.pointMax()}`;
-  if (parseCache?.key !== key) parseCache = { key, root: parseBranch(all, branch) };
+  const key = `${ember.bufferName()}\n${allKeywords().join(" ")}\n${branch ?? -1}`;
+  const tick = ember.bufferModifiedTick();
+  const [min, max] = [ember.pointMin(), ember.pointMax()];
+  if (parseCache?.key === key && parseCache.tick !== tick && parseShifts && parseCache.shifted <= parseShifts.changes.length) {
+    const cache = parseCache;
+    const changes = parseShifts.changes.slice(cache.shifted);
+    // A change in or just after a list or a footnote definition can move
+    // where it ends, as the indentation of the lines after a bullet says
+    // what is the item's: those the parse is made again for.
+    const kept = changes.every((change) => {
+      if (indentationSensitive(cache.root, change[0])) return false;
+      shiftParse(cache.root, [change]);
+      const moved = { begin: cache.min, end: cache.max, children: [] } as unknown as Elem;
+      shiftParse(moved, [change]);
+      [cache.min, cache.max] = [moved.begin, moved.end];
+      return true;
+    });
+    if (kept) [cache.tick, cache.shifted] = [tick, parseShifts.changes.length];
+    else parseCache = undefined;
+  }
+  if (parseCache?.key !== key || parseCache.tick !== tick || parseCache.min !== min || parseCache.max !== max)
+    parseCache = { key, tick, min, max, shifted: parseShifts?.changes.length ?? 0, root: parseBranch(all, branch) };
   return parseCache.root;
 }
 

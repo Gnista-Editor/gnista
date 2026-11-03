@@ -189,6 +189,10 @@ pub struct Buffer {
     save_generation: u64,
     undo_groups: Vec<Group>,
     open_group: Vec<Edit>,
+    /// How many characters the open group's last insertion is, by its
+    /// index, position and length in bytes, so typing that joins onto it
+    /// does not count them all again: `(index, pos, bytes, chars)`.
+    typed_run: (usize, usize, usize, usize),
     open_unmodified_at: Option<u64>,
     /// Whether edits go unrecorded, as when Emacs's `buffer-undo-list` is t.
     undo_disabled: bool,
@@ -275,6 +279,19 @@ pub struct Buffer {
 }
 
 /// A buffer's undo history, moving between the buffers sharing its text.
+/// A buffer's undo history while `buffer-undo-list` is bound: the history
+/// and what it kept aside while undo was off.
+pub(crate) struct UndoBinding {
+    state: Box<UndoState>,
+    stash: Option<Box<UndoState>>,
+}
+
+impl std::fmt::Debug for UndoBinding {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "UndoBinding({} steps)", self.state.groups.len())
+    }
+}
+
 pub(crate) struct UndoState {
     groups: Vec<Group>,
     open: Vec<Edit>,
@@ -342,6 +359,7 @@ impl Buffer {
             save_generation: 0,
             undo_groups: Vec::new(),
             open_group: Vec::new(),
+            typed_run: Default::default(),
             undo_disabled: false,
             open_unmodified_at: None,
             change_groups: Vec::new(),
@@ -540,6 +558,25 @@ impl Buffer {
         self.selective_undo = state.selective;
         self.undo_in_region = state.in_region;
         self.edited_since_command |= state.edited;
+    }
+
+    /// The undo history, taken aside while `buffer-undo-list` is bound, as
+    /// a `let` keeps the old value, rather than copied out as data and
+    /// compared back in: [`Buffer::unbind_undo`] puts it back as it was.
+    pub(crate) fn bind_undo(&mut self) -> UndoBinding {
+        UndoBinding { state: Box::new(self.take_undo()), stash: self.stashed_undo.take() }
+    }
+
+    /// Puts back the history a binding of `buffer-undo-list` took aside,
+    /// forgetting what was recorded meanwhile, as the old value's coming
+    /// back does in Emacs; saves meanwhile still count.
+    pub(crate) fn unbind_undo(&mut self, binding: UndoBinding) {
+        let meanwhile = self.take_undo();
+        let mut state = *binding.state;
+        state.save_generation = meanwhile.save_generation;
+        state.edited |= meanwhile.edited;
+        self.put_undo(state);
+        self.stashed_undo = binding.stash;
     }
 
     /// Whether edits are recorded for undo, as they are unless Emacs's
@@ -1583,6 +1620,7 @@ impl Buffer {
     }
 
     pub fn overlay_put(&mut self, id: u64, name: &str, value: Value) -> Result<()> {
+        self.overlays.hooks |= ["modification-hooks", "insert-in-front-hooks", "insert-behind-hooks"].contains(&name);
         self.overlays.props_mut(id).ok_or_else(|| Error::new(format!("No such overlay: {id}")))?.insert(name.to_string(), value);
         Ok(())
     }
@@ -1630,6 +1668,23 @@ impl Buffer {
             .into_iter()
             .find_map(|o| o.props.get(name))
             .or_else(|| self.text_property(pos, name))
+    }
+
+    /// Whether an overlay may have hooks an edit calls, as
+    /// `modification-hooks`: none has had one put since the overlays
+    /// were last cleared.
+    pub(crate) fn overlays_may_have_hooks(&self) -> bool {
+        self.overlays.hooks
+    }
+
+    /// The next position after `pos` where an overlay starts or ends.
+    pub fn next_overlay_edge(&self, pos: usize) -> Option<usize> {
+        self.overlays.next_edge(pos)
+    }
+
+    /// The last position before `pos` where an overlay starts or ends.
+    pub fn previous_overlay_edge(&self, pos: usize) -> Option<usize> {
+        self.overlays.previous_edge(pos)
     }
 
     /// The next position after `pos` where text properties or overlays change.
@@ -2239,14 +2294,26 @@ impl Buffer {
         }
         // Typing joins onto the insertion before it, as Emacs records it: one
         // insertion for a run of characters, not one per character.
+        let index = self.open_group.len().wrapping_sub(1);
+        let typed_run = self.typed_run;
         if let Some(last) = self.open_group.last_mut()
             && matches!((&edit.extra, &last.extra), (Extra::None, Extra::None))
             && edit.deleted.is_empty()
             && last.deleted.is_empty()
-            && last.pos + last.inserted.chars().count() == edit.pos
         {
-            last.inserted.push_str(&edit.inserted);
-            return;
+            // Counted once, then as each piece joins.
+            let chars = match typed_run {
+                (i, pos, bytes, chars) if (i, pos, bytes) == (index, last.pos, last.inserted.len()) => chars,
+                _ => last.inserted.chars().count(),
+            };
+            if last.pos + chars == edit.pos {
+                last.inserted.push_str(&edit.inserted);
+                self.typed_run = (index, last.pos, last.inserted.len(), chars + edit.inserted.chars().count());
+                return;
+            }
+        }
+        if edit.deleted.is_empty() && matches!(edit.extra, Extra::None) {
+            self.typed_run = (index.wrapping_add(1), edit.pos, edit.inserted.len(), edit.inserted.chars().count());
         }
         self.open_group.push(edit);
     }

@@ -157,10 +157,12 @@ fn to_match(groups: Groups) -> Match {
 }
 
 /// Searches literally in a buffer from `from`, positions counted in
-/// characters, copying out only the text a match could lie in.
+/// characters, copying out only the text a match could lie in: a window
+/// near `from` first, then windows twice as large further on, each
+/// overlapping the last by a match's length less one, so a match across
+/// two is found whole.
 fn search_literal(b: &Buffer, pattern: &str, from: usize, options: &SearchOptions) -> Result<Option<Match>> {
     let re = compile_literal(pattern, options.case_fold)?;
-    let rope = b.text();
     // A narrowed buffer is searched only where it is accessible, as in Emacs.
     let (min, max) = (b.point_min(), b.point_max());
     let from = from.clamp(min, max);
@@ -175,20 +177,55 @@ fn search_literal(b: &Buffer, pattern: &str, from: usize, options: &SearchOption
     if lo > hi {
         return Ok(None);
     }
-    let text = b.slice(lo..hi);
-    let base = rope.char_to_byte(lo);
-    let to_char = |byte: usize| rope.byte_to_char(base + byte);
-    let found = |m: regex::Match| {
-        let (start, end) = (to_char(m.start()), to_char(m.end()));
-        Match { start, end, groups: vec![Some((start, end))] }
-    };
-    if !options.backward {
-        return Ok(re.find(&text).map(found));
+    // A match is as many characters as the pattern, folded case or not.
+    let overlap = pattern.chars().count().saturating_sub(1);
+    let mut size = FIRST_WINDOW;
+    let (mut start, mut end) = if options.backward { (hi.saturating_sub(size).max(lo), hi) } else { (lo, (lo + size).min(hi)) };
+    loop {
+        let found = if options.backward { last_in(b, &re, pattern, start, end) } else { first_in(b, &re, start, end) };
+        if found.is_some() {
+            return Ok(found);
+        }
+        if (options.backward && start == lo) || (!options.backward && end == hi) {
+            return Ok(None);
+        }
+        size = (size * 2).min(LAST_WINDOW);
+        if options.backward {
+            end = (start + overlap).min(end);
+            start = end.saturating_sub(size).max(lo);
+        } else {
+            start = end.saturating_sub(overlap).max(start);
+            end = (start + size).min(hi);
+        }
     }
-    // The match that starts last and ends by `from`, as Emacs's backward
-    // search finds: the last of the non-overlapping matches gives the
-    // lowest place it can start.
-    let Some(lowest) = re.find_iter(&text).last() else { return Ok(None) };
+}
+
+/// How many characters the first window of a literal search copies, and
+/// the most any later one does.
+const FIRST_WINDOW: usize = 1 << 14;
+const LAST_WINDOW: usize = 1 << 22;
+
+/// A match `regex` found in text copied from the buffer at byte `base`.
+fn window_match(b: &Buffer, m: regex::Match, base: usize) -> Match {
+    let to_char = |byte: usize| b.text().byte_to_char(base + byte);
+    let (start, end) = (to_char(m.start()), to_char(m.end()));
+    Match { start, end, groups: vec![Some((start, end))] }
+}
+
+/// The first match wholly in `lo..hi`.
+fn first_in(b: &Buffer, re: &regex::Regex, lo: usize, hi: usize) -> Option<Match> {
+    let text = b.slice(lo..hi);
+    let base = b.text().char_to_byte(lo);
+    re.find(&text).map(|m| window_match(b, m, base))
+}
+
+/// The match that starts last and ends by `hi`, wholly in `lo..hi`, as
+/// Emacs's backward search finds: the last of the non-overlapping matches
+/// gives the lowest place it can start.
+fn last_in(b: &Buffer, re: &regex::Regex, pattern: &str, lo: usize, hi: usize) -> Option<Match> {
+    let text = b.slice(lo..hi);
+    let base = b.text().char_to_byte(lo);
+    let lowest = re.find_iter(&text).last()?;
     // A match starting later overlaps that one, so it starts before it
     // ends and is no longer than a match of the pattern can be (four bytes
     // a character): only those few starts are tried, each against that
@@ -202,7 +239,7 @@ fn search_literal(b: &Buffer, pattern: &str, from: usize, options: &SearchOption
         .rev()
         .filter(|&start| window.is_char_boundary(start))
         .find_map(|start| re.find_at(window, start).filter(|m| m.start() == start));
-    Ok(Some(found(later.unwrap_or(lowest))))
+    Some(window_match(b, later.unwrap_or(lowest), base))
 }
 
 /// Whether search case should be folded for a string, as Emacs decides with

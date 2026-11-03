@@ -113,3 +113,28 @@ fn a_face_that_extends_marks_its_row() {
     assert_eq!(rows[0].extend.as_ref().and_then(|s| s.background), ember_core::Color::parse("blue", true));
     assert_eq!(rows[1].extend, None);
 }
+
+/// Styles under a buffer's `face-remapping-alist` (a fractional height is
+/// relative, as in Emacs) are kept as other styles are, apart for each remapping: two buffers scaled differently each get
+/// their own, and a buffer whose remapping changes gets the new one.
+#[test]
+fn remapped_styles_are_kept_for_each_remapping() {
+    let mut ed = Editor::new();
+    let remap = |height: f64| Value::List(vec![Value::List(vec![s("default"), Value::Symbol(":height".into()), Value::Number(height)])]);
+    let scale_in = |ed: &mut Editor, name: &str| {
+        let i = ed.find_buffer(name).unwrap();
+        ed.style_for_in(&ed.buffers()[i], &[], true).scale
+    };
+    for (name, height) in [("one", 1.5), ("two", 2.5)] {
+        ed.call("switch-to-buffer", vec![ember_core::Arg::Str(name.into())]).unwrap();
+        ed.make_local_variable("face-remapping-alist");
+        ed.set_variable("face-remapping-alist", remap(height));
+    }
+    for _ in 0..2 {
+        assert_eq!(scale_in(&mut ed, "one"), 1.5);
+        assert_eq!(scale_in(&mut ed, "two"), 2.5);
+    }
+    ed.set_variable("face-remapping-alist", remap(1.25));
+    assert_eq!(scale_in(&mut ed, "two"), 1.25);
+    assert_eq!(scale_in(&mut ed, "one"), 1.5);
+}

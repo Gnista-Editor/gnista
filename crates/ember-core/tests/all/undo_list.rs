@@ -124,3 +124,70 @@ fn changing_case_after_an_insertion_undoes_cleanly() {
     ed.press("C-/").unwrap();
     assert_eq!(ed.buffer().slice(0..ed.buffer().len()), "aßb");
 }
+
+/// Undoing a kill of a whole fontified buffer puts every run of faces back
+/// in one pass over the runs there, rather than one rebuild of all the
+/// buffer's runs for each run saved: 100,000 runs come back at once.
+#[test]
+fn undoing_a_kill_of_many_property_runs_is_quick() {
+    let mut ed = Editor::new();
+    let line = "* heading :tag:\n";
+    ed.buffer_mut().set_text(&line.repeat(50_000));
+    for i in 0..50_000 {
+        let start = i * line.len();
+        ed.buffer_mut().put_text_property(start..start + 9, "face", Value::Str("bold".into()));
+        ed.buffer_mut().put_text_property(start + 10..start + 15, "face", Value::Str("italic".into()));
+    }
+    let len = ed.buffer().len();
+    let started = std::time::Instant::now();
+    ed.delete_region(0, len).unwrap();
+    ed.buffer_mut().undo_boundary();
+    ed.call("undo", vec![]).unwrap();
+    assert!(started.elapsed() < std::time::Duration::from_secs(5), "took {:?}", started.elapsed());
+    assert_eq!(ed.buffer().len(), len);
+    assert_eq!(ed.buffer().text_property(line.len() * 49_999 + 11, "face"), Some(&Value::Str("italic".into())));
+}
+
+/// Output inserted a piece at a time joins one insertion for undo, and
+/// counts each piece as it joins rather than the whole run again, as
+/// `cat` of a large file in a shell buffer inserts it.
+#[test]
+fn insertions_joining_one_run_are_counted_once() {
+    let mut ed = Editor::new();
+    let started = std::time::Instant::now();
+    for _ in 0..300_000 {
+        ed.insert("line é\n").unwrap();
+    }
+    assert!(started.elapsed() < std::time::Duration::from_secs(5), "took {:?}", started.elapsed());
+    ed.buffer_mut().undo_boundary();
+    ed.call("undo", vec![]).unwrap();
+    assert_eq!(ed.buffer().len(), 0, "one undo takes the run back");
+}
+
+/// Binding `buffer-undo-list`, as `(let ((buffer-undo-list t)) ...)` does,
+/// keeps the history aside rather than copying it out and comparing it back:
+/// with 20,000 steps, 2,000 bindings are quick, and the history comes back
+/// as it was, edits made while it was t forgotten.
+#[test]
+fn binding_the_undo_list_keeps_the_history_as_it_is() {
+    let mut ed = Editor::new();
+    for i in 0..20_000 {
+        ed.insert(&format!("{i} ")).unwrap();
+        ed.buffer_mut().undo_boundary();
+    }
+    let before = ed.variable("buffer-undo-list");
+    let started = std::time::Instant::now();
+    for _ in 0..2_000 {
+        let id = ed.specbind("buffer-undo-list", Value::Bool(true));
+        ed.insert("x").unwrap();
+        ed.unbind(id);
+    }
+    assert!(started.elapsed() < std::time::Duration::from_secs(5), "took {:?}", started.elapsed());
+    assert_eq!(ed.variable("buffer-undo-list"), before);
+    // Bound to nil, recording starts afresh, and the history comes back after.
+    let id = ed.specbind("buffer-undo-list", Value::Null);
+    ed.insert("y").unwrap();
+    assert_ne!(ed.variable("buffer-undo-list"), before);
+    ed.unbind(id);
+    assert_eq!(ed.variable("buffer-undo-list"), before);
+}

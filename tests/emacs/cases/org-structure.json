@@ -427,5 +427,32 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "indent-region-over-lists-and-paragraphs",
+    "text": "* Heading\nText under it\n   drifted text\n- item one\ncontinued\n  - nested\n      deep line\n- item two\n\nAfter the list\n",
+    "keys": "M-< C-SPC M-> TAB",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "indent-region-over-a-drawer-and-blocks",
+    "text": "* H\n:PROPERTIES:\n:ID:     abc\n   :CUSTOM: value\n:END:\n#+begin_quote\n   quoted\n#+end_quote\n#+begin_src sh\n  echo hi\n#+end_src\n    trailing paragraph\n",
+    "keys": "M-< C-SPC M-> TAB",
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "indent-region-with-adapted-indentation",
+    "text": "* H\nbody\n- a\n  b\n** Sub\nmore body\n   - item\n     text\n",
+    "keys": "M-< C-SPC M-> TAB",
+    "modes": [
+      "org-mode"
+    ],
+    "vars": {
+      "org-adapt-indentation": true
+    }
   }
 ]

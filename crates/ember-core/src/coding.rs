@@ -391,6 +391,13 @@ impl Coding {
     /// coding writes UTF-8 if the text is not ASCII. Returns the bytes and
     /// the coding used.
     pub fn encode_lossy(&self, text: &str) -> (Vec<u8>, Coding) {
+        self.encode_text(text, false).expect("lossy encoding always encodes")
+    }
+
+    /// Encodes text as [`Coding::encode_lossy`] does, or with `strict`
+    /// gives `None` as soon as a character the coding cannot hold comes,
+    /// in the same pass.
+    fn encode_text(&self, text: &str, strict: bool) -> Option<(Vec<u8>, Coding)> {
         let mut coding = *self;
         if matches!(self.system().kind, Kind::Undecided) {
             let base = if text.chars().all(|c| c.is_ascii() || char_raw_byte(c).is_some()) { self.system } else { 2 };
@@ -403,37 +410,54 @@ impl Coding {
         };
         let default = coding.default_char();
         let mut out = Vec::with_capacity(text.len());
-        match coding.system().kind {
-            Kind::Undecided | Kind::Utf8(Bom::No | Bom::Detect) | Kind::RawText => encode_utf8(&text, &mut out),
+        // Each character the coding holds as its byte, else as a raw byte,
+        // else the default, or, when strict, the end of trying.
+        let bytewise = |out: &mut Vec<u8>, byte: &dyn Fn(char) -> Option<u8>| {
+            for c in text.chars() {
+                match byte(c).or_else(|| char_raw_byte(c)) {
+                    Some(b) => out.push(b),
+                    None if strict => return false,
+                    None => out.push(default),
+                }
+            }
+            true
+        };
+        let encoded = match coding.system().kind {
+            Kind::Undecided | Kind::Utf8(Bom::No | Bom::Detect) | Kind::RawText => {
+                encode_utf8(&text, &mut out);
+                true
+            }
             Kind::Utf8(Bom::Yes) => {
                 out.extend_from_slice(UTF8_SIGNATURE);
                 encode_utf8(&text, &mut out);
+                true
             }
-            Kind::Utf16 { big_endian, bom } => encode_utf16(&text, big_endian, bom != Bom::No, &mut out),
-            Kind::Ascii => out.extend(text.chars().map(|c| if c.is_ascii() { c as u8 } else { char_raw_byte(c).unwrap_or(default) })),
-            Kind::Latin1 => out.extend(text.chars().map(|c| if (c as u32) < 0x100 { c as u8 } else { char_raw_byte(c).unwrap_or(default) })),
-            Kind::Single(table, c1) => out.extend(text.chars().map(|c| {
-                if c.is_ascii() {
-                    c as u8
-                } else {
-                    single_encode(table, c1, c).or_else(|| char_raw_byte(c)).unwrap_or(default)
-                }
-            })),
-            Kind::Multi(encoding, variant) => encode_multi(encoding, variant, &text, default, &mut out),
-            Kind::Iso2022Seven => encode_iso2022_seven(&text, default, &mut out),
-        }
-        (out, coding)
+            Kind::Utf16 { big_endian, bom } => {
+                encode_utf16(&text, big_endian, bom != Bom::No, &mut out);
+                true
+            }
+            Kind::Ascii => bytewise(&mut out, &|c| c.is_ascii().then_some(c as u8)),
+            Kind::Latin1 => bytewise(&mut out, &|c| ((c as u32) < 0x100).then_some(c as u8)),
+            Kind::Single(table, c1) => {
+                // The table once for the text, not once a character.
+                let table = single_coding(table, c1);
+                bytewise(&mut out, &|c| if c.is_ascii() { Some(c as u8) } else { table.encode.get(&c).copied() })
+            }
+            Kind::Multi(encoding, variant) => encode_multi(encoding, variant, &text, default, strict, &mut out),
+            Kind::Iso2022Seven if strict && !text.chars().all(|c| self.can_encode(c)) => false,
+            Kind::Iso2022Seven => {
+                encode_iso2022_seven(&text, default, &mut out);
+                true
+            }
+        };
+        encoded.then_some((out, coding))
     }
 
     /// Encodes text for saving. Text this coding cannot hold, such as a
     /// character beyond Latin-1, is saved as UTF-8 instead, and the coding
     /// that was used is returned with the bytes.
     pub fn encode(&self, text: &str) -> (Vec<u8>, Coding) {
-        if text.chars().all(|c| self.can_encode(c)) {
-            self.encode_lossy(text)
-        } else {
-            Coding { system: 2, eol: self.eol }.encode_lossy(text)
-        }
+        self.encode_text(text, true).unwrap_or_else(|| Coding { system: 2, eol: self.eol }.encode_lossy(text))
     }
 }
 
@@ -717,10 +741,21 @@ fn encode_utf16(text: &str, big_endian: bool, bom: bool, out: &mut Vec<u8>) {
 
 type SingleTable = [Option<char>; 256];
 
+/// A single-byte coding's table both ways: each byte's character, and
+/// each character's byte, the lowest where two bytes read as one.
+struct SingleCoding {
+    decode: SingleTable,
+    encode: std::collections::HashMap<char, u8>,
+}
+
 /// The tables made so far, by encoding and whether 80 to 9F are C1 controls.
-type SingleTables = std::sync::Mutex<Vec<(&'static str, bool, &'static SingleTable)>>;
+type SingleTables = std::sync::Mutex<Vec<(&'static str, bool, &'static SingleCoding)>>;
 
 fn single_table(encoding: &'static Encoding, c1: bool) -> &'static SingleTable {
+    &single_coding(encoding, c1).decode
+}
+
+fn single_coding(encoding: &'static Encoding, c1: bool) -> &'static SingleCoding {
     static TABLES: OnceLock<SingleTables> = OnceLock::new();
     let tables = TABLES.get_or_init(Default::default);
     let mut tables = tables.lock().expect("not poisoned");
@@ -735,13 +770,19 @@ fn single_table(encoding: &'static Encoding, c1: bool) -> &'static SingleTable {
             encoding.decode_without_bom_handling_and_without_replacement(&[b as u8]).and_then(|s| s.chars().next())
         };
     }
-    let table: &'static SingleTable = Box::leak(Box::new(table));
-    tables.push((encoding.name(), c1, table));
-    table
+    let mut encode = std::collections::HashMap::new();
+    for (b, c) in table.iter().enumerate() {
+        if let Some(c) = c {
+            encode.entry(*c).or_insert(b as u8);
+        }
+    }
+    let coding: &'static SingleCoding = Box::leak(Box::new(SingleCoding { decode: table, encode }));
+    tables.push((encoding.name(), c1, coding));
+    coding
 }
 
 fn single_encode(encoding: &'static Encoding, c1: bool, c: char) -> Option<u8> {
-    single_table(encoding, c1).iter().position(|&d| d == Some(c)).map(|b| b as u8)
+    single_coding(encoding, c1).encode.get(&c).copied()
 }
 
 // Multibyte codings, on encoding_rs.
@@ -786,55 +827,75 @@ fn jis_forms(encoding: &'static Encoding, variant: Variant) -> bool {
 
 /// The bytes one character encodes to, if the coding has it.
 fn multi_encode_char(encoding: &'static Encoding, variant: Variant, c: char) -> Option<Vec<u8>> {
+    let mut out = Vec::with_capacity(8);
+    multi_encode_into(&mut encoding.new_encoder(), encoding, variant, c, &mut out).then_some(out)
+}
+
+/// Appends the bytes `c` encodes to with `encoder`, one of `encoding`'s
+/// kept for a whole text, as the codings this is for keep no state between
+/// characters; false, appending nothing, if the coding does not have it.
+fn multi_encode_into(encoder: &mut encoding_rs::Encoder, encoding: &'static Encoding, variant: Variant, c: char, out: &mut Vec<u8>) -> bool {
     // The table takes Microsoft's forms, and for Shift_JIS reads yen and
     // overline as ASCII's backslash and tilde, as Emacs's JIS codings do not.
     let c = if jis_forms(encoding, variant) {
         if CP932_FORMS.iter().any(|(_, ms)| *ms == c) || c == '\u{A5}' || c == '\u{203E}' {
-            return None;
+            return false;
         }
         CP932_FORMS.iter().find(|(jis, _)| *jis == c).map_or(c, |(_, ms)| *ms)
     } else if variant == Variant::Cp932 && CP932_FORMS.iter().any(|(jis, _)| *jis == c) {
-        return None;
+        return false;
     } else {
         c
     };
     let mut buf = [0; 4];
-    let mut encoder = encoding.new_encoder();
-    let mut out = Vec::with_capacity(8);
-    let (result, _) = encoder.encode_from_utf8_to_vec_without_replacement(c.encode_utf8(&mut buf), &mut out, true);
-    if !matches!(result, encoding_rs::EncoderResult::InputEmpty) {
-        return None;
+    let before = out.len();
+    out.reserve(8);
+    let (result, _) = encoder.encode_from_utf8_to_vec_without_replacement(c.encode_utf8(&mut buf), out, false);
+    let bytes = &out[before..];
+    let fits = matches!(result, encoding_rs::EncoderResult::InputEmpty)
+        && (variant != Variant::Euc94 || c.is_ascii() || (bytes.len() == 2 && bytes.iter().all(|b| (0xA1..=0xFE).contains(b))));
+    if !fits {
+        out.truncate(before);
     }
-    if variant == Variant::Euc94 && !(out.len() == 2 && out.iter().all(|b| (0xA1..=0xFE).contains(b))) && !c.is_ascii() {
-        return None;
-    }
-    Some(out)
+    fits
 }
 
-fn encode_multi(encoding: &'static Encoding, variant: Variant, text: &str, default: u8, out: &mut Vec<u8>) {
+/// Encodes `text` in a multibyte coding; with `strict`, false as soon as
+/// a character the coding cannot hold comes, rather than its default.
+fn encode_multi(encoding: &'static Encoding, variant: Variant, text: &str, default: u8, strict: bool, out: &mut Vec<u8>) -> bool {
     if encoding == e::ISO_2022_JP {
         // Stateful: the encoder chooses the escape sequences, and a
         // character it cannot hold goes as the default character, in ASCII.
         let mut encoder = encoding.new_encoder();
+        let (mut check, mut scratch) = (encoding.new_encoder(), Vec::new());
         let mut buf = [0; 4];
         for c in text.chars() {
-            let piece = if multi_encode_char(encoding, variant, c).is_some() { c } else { default as char };
+            scratch.clear();
+            let fits = multi_encode_into(&mut check, encoding, variant, c, &mut scratch);
+            if strict && !fits && char_raw_byte(c).is_none() {
+                return false;
+            }
+            let piece = if fits { c } else { default as char };
             out.reserve(16);
             let _ = encoder.encode_from_utf8_to_vec_without_replacement(piece.encode_utf8(&mut buf), out, false);
         }
         out.reserve(16);
         let _ = encoder.encode_from_utf8_to_vec_without_replacement("", out, true);
-        return;
+        return true;
     }
+    let mut encoder = encoding.new_encoder();
     for c in text.chars() {
         if c.is_ascii() {
             out.push(c as u8);
-        } else if let Some(bytes) = multi_encode_char(encoding, variant, c) {
-            out.extend(bytes);
-        } else {
-            out.push(char_raw_byte(c).unwrap_or(default));
+        } else if !multi_encode_into(&mut encoder, encoding, variant, c, out) {
+            match char_raw_byte(c) {
+                Some(b) => out.push(b),
+                None if strict => return false,
+                None => out.push(default),
+            }
         }
     }
+    true
 }
 
 // ISO 2022 in 7 bits, as Emacs's iso-2022-7bit writes it.
@@ -1079,6 +1140,30 @@ mod tests {
         assert_eq!(enc("〜～", "japanese-shift-jis"), b"\x81\x60 ");
         assert_eq!(enc("〜～", "japanese-cp932"), b" \x81\x60");
         assert_eq!(enc("\\¥", "japanese-shift-jis"), b"\\ ");
+    }
+
+    /// Saving encodes in one pass, falling back to UTF-8 when a character
+    /// does not fit, and a large text in a single-byte or multibyte coding
+    /// encodes quickly: the table is found once for the text, and one
+    /// encoder serves it all.
+    #[test]
+    fn saving_encodes_in_one_pass_and_quickly() {
+        let save = |text: &str, name: &str| {
+            let (bytes, coding) = Coding::named(name).encode(text);
+            (bytes, coding.name())
+        };
+        assert_eq!(save("aą", "iso-latin-2"), (b"a\xB1".to_vec(), "iso-latin-2".to_string()));
+        assert_eq!(save("aあ", "iso-latin-2"), ("aあ".as_bytes().to_vec(), "utf-8".to_string()));
+        assert_eq!(save("aあ", "japanese-shift-jis"), (b"a\x82\xA0".to_vec(), "japanese-shift-jis".to_string()));
+        assert_eq!(save("a€", "japanese-shift-jis").1, "utf-8");
+        assert_eq!(save("あ€", "iso-2022-jp").1, "utf-8");
+        assert_eq!(save("é", "us-ascii").1, "utf-8");
+        let started = std::time::Instant::now();
+        let polish = "zażółć gęślą jaźń\n".repeat(50_000);
+        assert_eq!(Coding::named("iso-latin-2").encode(&polish).1.name(), "iso-latin-2");
+        let japanese = "日本語のテキスト\n".repeat(50_000);
+        assert_eq!(Coding::named("japanese-shift-jis").encode(&japanese).1.name(), "japanese-shift-jis");
+        assert!(started.elapsed() < std::time::Duration::from_secs(3), "took {:?}", started.elapsed());
     }
 
     #[test]

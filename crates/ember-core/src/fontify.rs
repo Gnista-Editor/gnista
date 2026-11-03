@@ -154,15 +154,20 @@ impl Editor {
     /// window to keep point visible. Front ends call this before drawing,
     /// once they have told the editor how big the windows are.
     pub fn redisplay(&mut self) {
-        self.fontify_windows();
+        let settled = self.fontify_windows(&[]);
         self.ensure_point_visible();
-        self.fontify_windows();
+        // Again only where keeping point visible scrolled.
+        self.fontify_windows(&settled);
         self.update_mode_lines();
         self.flush_image_messages();
     }
 
-    /// Fontifies what every frame's windows show.
-    fn fontify_windows(&mut self) {
+    /// Fontifies what every frame's windows show, but those `settled`
+    /// says were wholly fontified as they are now. Returns the windows
+    /// left wholly fontified: each with its buffer, its start and the
+    /// buffer's change count then.
+    fn fontify_windows(&mut self, settled: &[(crate::window::WindowId, u64, usize, u64)]) -> Vec<(crate::window::WindowId, u64, usize, u64)> {
+        let mut done = Vec::new();
         let windows: Vec<(crate::window::FrameId, crate::window::WindowId)> = self
             .frame_list()
             .into_iter()
@@ -172,6 +177,11 @@ impl Editor {
             for _ in 0..PASSES {
                 let Some(view) = self.frame_windows(frame).into_iter().find(|v| v.id == id) else { break };
                 if !self.has_fontifiers(view.buffer) {
+                    break;
+                }
+                let now = (id, view.buffer.id, view.top_line, view.buffer.modified_tick());
+                if settled.contains(&now) {
+                    done.push(now);
                     break;
                 }
                 let index = self.buffers.iter().position(|b| b.id == view.buffer.id).unwrap_or(0);
@@ -186,7 +196,10 @@ impl Editor {
                 self.sync_shared_text();
                 match fontified {
                     Ok(true) => continue,
-                    Ok(false) => break,
+                    Ok(false) => {
+                        done.push(now);
+                        break;
+                    }
                     Err(e) => {
                         self.message(format!("Error during redisplay: {e}"));
                         break;
@@ -194,6 +207,7 @@ impl Editor {
                 }
             }
         }
+        done
     }
 }
 

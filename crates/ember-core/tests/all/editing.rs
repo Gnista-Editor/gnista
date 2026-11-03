@@ -236,3 +236,53 @@ fn a_count_is_a_parameter_code_can_pass_or_leave_out() {
     ed.call("search-forward", vec![Arg::Str("g".into()), Arg::Int(1)]).unwrap();
     assert_eq!(ed.window_buffer().point(), 5);
 }
+
+/// `subst-char-in-region` is one change for the hooks, from the first
+/// character it replaces to the last, however many it replaces.
+#[test]
+fn subst_char_in_region_is_one_change() {
+    let mut ed = Editor::new();
+    ed.insert("a-b-c-d").unwrap();
+    let f = ember_core::Function::new(None, |ed, args| {
+        let mut seen = match ed.variable("seen") {
+            Some(ember_core::Value::List(v)) => v,
+            _ => Vec::new(),
+        };
+        seen.push(ember_core::Value::List(args.to_vec()));
+        ed.set_variable("seen", ember_core::Value::List(seen));
+        Ok(ember_core::Value::Null)
+    });
+    ed.add_hook_function("after-change-functions", f, 0.0, false);
+    ed.subst_char_in_region(0, 7, '-', '+').unwrap();
+    assert_eq!(ed.buffer().slice(0..7), "a+b+c+d");
+    let n = |x: f64| ember_core::Value::Number(x);
+    assert_eq!(ed.variable("seen"), Some(ember_core::Value::List(vec![ember_core::Value::List(vec![n(1.0), n(6.0), n(5.0)])])));
+}
+
+/// With 100,000 overlays none of which has a hook, an edit looks at none
+/// of them for modification hooks, and a backward search for a property
+/// change finds the overlay edge before it by the overlay index: typing
+/// 1,000 characters and 20,000 searches back are quick. (Each insertion
+/// still moves every overlay after it.)
+#[test]
+fn edits_and_searches_among_many_overlays_are_quick() {
+    let mut ed = Editor::new();
+    ed.buffer_mut().set_text(&"word ".repeat(100_000));
+    for i in 0..100_000 {
+        ed.buffer_mut().make_overlay(i * 5..i * 5 + 4);
+    }
+    let started = std::time::Instant::now();
+    ed.buffer_mut().set_point(250_000);
+    for _ in 0..1_000 {
+        ed.insert("x").unwrap();
+    }
+    let mut pos = ed.buffer().len();
+    for _ in 0..20_000 {
+        let previous = ed.buffer().previous_char_property_change(pos, None);
+        assert!(previous < pos);
+        pos = previous;
+    }
+    assert!(started.elapsed() < std::time::Duration::from_secs(5), "took {:?}", started.elapsed());
+    assert_eq!(ed.buffer().previous_overlay_change(14), 10);
+    assert_eq!(ed.buffer().next_overlay_change(14), 15);
+}

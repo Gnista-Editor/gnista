@@ -15,7 +15,7 @@ pub type Props = BTreeMap<String, Value>;
 
 /// A stretch of text with the same properties. Runs never overlap, are kept
 /// in order, and never have empty properties; text between runs has none.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 struct Run {
     start: usize,
     end: usize,
@@ -73,19 +73,23 @@ impl TextProperties {
     /// Makes room for `n` inserted characters at `pos`. Inserted text has no
     /// properties, as with Emacs's `insert`, so a run it lands inside is split.
     pub(crate) fn insert(&mut self, pos: usize, n: usize) {
-        self.generation += 1;
-        let mut out = Vec::with_capacity(self.runs.len() + 1);
-        for run in self.runs.drain(..) {
-            if run.end <= pos {
-                out.push(run);
-            } else if run.start >= pos {
-                out.push(Run { start: run.start + n, end: run.end + n, props: run.props });
-            } else {
-                out.push(Run { start: run.start, end: pos, props: run.props.clone() });
-                out.push(Run { start: pos + n, end: run.end + n, props: run.props });
-            }
+        if n == 0 {
+            return;
         }
-        self.runs = out;
+        self.generation += 1;
+        let mut i = self.runs.partition_point(|r| r.end <= pos);
+        if let Some(run) = self.runs.get_mut(i)
+            && run.start < pos
+        {
+            let tail = Run { start: pos, end: run.end, props: run.props.clone() };
+            run.end = pos;
+            self.runs.insert(i + 1, tail);
+            i += 1;
+        }
+        for run in &mut self.runs[i..] {
+            run.start += n;
+            run.end += n;
+        }
     }
 
     /// Removes the properties of deleted text and closes the gap. Returns
@@ -93,23 +97,34 @@ impl TextProperties {
     pub(crate) fn delete(&mut self, start: usize, end: usize) -> SavedProps {
         self.generation += 1;
         let n = end - start;
+        // Only the runs the deletion touches change; those after it move.
+        let lo = self.runs.partition_point(|r| r.end <= start);
+        let hi = self.runs.partition_point(|r| r.start < end);
         let mut saved = Vec::new();
-        let mut out = Vec::with_capacity(self.runs.len());
-        for run in self.runs.drain(..) {
+        let mut kept = Vec::new();
+        for run in &self.runs[lo..hi] {
             let (cut_start, cut_end) = (run.start.max(start), run.end.min(end));
             if cut_start < cut_end {
                 saved.push((cut_start - start..cut_end - start, run.props.clone()));
             }
             let before = run.start.min(start)..run.end.min(start);
             let after = run.start.max(end)..run.end.max(end);
-            let kept = before.len() + after.len();
-            if kept > 0 {
+            let left = before.len() + after.len();
+            if left > 0 {
                 let new_start = if run.start < start { run.start } else { run.start.max(end) - n };
-                out.push(Run { start: new_start, end: new_start + kept, props: run.props });
+                kept.push(Run { start: new_start, end: new_start + left, props: run.props.clone() });
             }
         }
-        self.runs = out;
-        self.normalize();
+        for run in &mut self.runs[hi..] {
+            run.start -= n;
+            run.end -= n;
+        }
+        // What is left, between its neighbours, which it may join.
+        let (from, to) = (lo.saturating_sub(1), (hi + 1).min(self.runs.len()));
+        let mut window: Vec<Run> = self.runs[from..lo].iter_mut().map(std::mem::take).collect();
+        window.extend(kept);
+        window.extend(self.runs[hi..to].iter_mut().map(std::mem::take));
+        self.runs.splice(from..to, joined(window));
         saved
     }
 
@@ -126,55 +141,82 @@ impl TextProperties {
     }
 
     /// Puts back properties saved by [`TextProperties::delete`], for text
-    /// re-inserted at `pos`.
+    /// re-inserted at `pos`, in one pass over the runs there however many
+    /// were saved.
     pub(crate) fn restore(&mut self, pos: usize, saved: &SavedProps) {
-        for (range, props) in saved {
-            let (start, end) = (pos + range.start, pos + range.end);
-            self.modify(start, end, |p| p.extend(props.clone()));
+        let in_order = saved.windows(2).all(|w| w[0].0.end <= w[1].0.start);
+        if in_order {
+            let edits: Vec<_> = saved
+                .iter()
+                .map(|(range, props)| (pos + range.start, pos + range.end, move |p: &mut Props| p.extend(props.clone())))
+                .collect();
+            self.apply(&edits);
+        } else {
+            for (range, props) in saved {
+                self.modify(pos + range.start, pos + range.end, |p| p.extend(props.clone()));
+            }
         }
     }
 
     /// Changes the properties of every character in a range.
     pub(crate) fn modify(&mut self, start: usize, end: usize, f: impl Fn(&mut Props)) {
-        if start >= end {
-            return;
-        }
+        self.apply(&[(start, end, f)]);
+    }
+
+    /// Changes the properties of each range with its function: the ranges
+    /// in order and apart. Only the runs from the first range to the last
+    /// are built again, and spliced in.
+    fn apply<F: Fn(&mut Props)>(&mut self, edits: &[(usize, usize, F)]) {
+        let edits: Vec<&(usize, usize, F)> = edits.iter().filter(|e| e.0 < e.1).collect();
+        let (Some(first), Some(last)) = (edits.first(), edits.last()) else { return };
         self.generation += 1;
-        let mut out = Vec::with_capacity(self.runs.len() + 2);
-        let mut pos = start;
-        let mut pending = std::mem::take(&mut self.runs).into_iter().peekable();
-        // Runs wholly before the range are kept as they are.
-        while let Some(run) = pending.next_if(|r| r.end <= start) {
-            out.push(run);
-        }
-        while pos < end {
-            match pending.peek() {
-                Some(run) if run.start < end => {
-                    let run = pending.next().expect("peeked");
-                    if run.start > pos {
-                        // A gap without properties.
-                        Self::push_changed(&mut out, pos, run.start, Props::new(), &f);
-                        pos = run.start;
-                    }
-                    if run.start < start {
-                        out.push(Run { start: run.start, end: start, props: run.props.clone() });
-                    }
-                    let piece_end = run.end.min(end);
-                    Self::push_changed(&mut out, pos.max(run.start), piece_end, run.props.clone(), &f);
-                    if run.end > end {
-                        out.push(Run { start: end, end: run.end, props: run.props });
-                    }
-                    pos = piece_end;
+        // With a neighbour on each side, which may join what is built.
+        let lo = self.runs.partition_point(|r| r.end <= first.0).saturating_sub(1);
+        let hi = (self.runs.partition_point(|r| r.start < last.1) + 1).min(self.runs.len());
+        let mut old = self.runs[lo..hi].iter_mut().map(std::mem::take).collect::<Vec<_>>().into_iter();
+        let mut out = Vec::with_capacity(hi - lo + 2 * edits.len());
+        let mut cur = old.next();
+        for &&(start, end, ref f) in &edits {
+            // Runs, and the part of one, before the range stay as they are.
+            while let Some(run) = cur.take() {
+                if run.end <= start {
+                    out.push(run);
+                    cur = old.next();
+                    continue;
                 }
-                _ => {
-                    Self::push_changed(&mut out, pos, end, Props::new(), &f);
-                    pos = end;
+                if run.start < start {
+                    out.push(Run { start: run.start, end: start, props: run.props.clone() });
+                    cur = Some(Run { start, ..run });
+                } else {
+                    cur = Some(run);
+                }
+                break;
+            }
+            let mut pos = start;
+            while pos < end {
+                match cur.take() {
+                    Some(run) if run.start < end => {
+                        if run.start > pos {
+                            // A gap without properties.
+                            Self::push_changed(&mut out, pos, run.start, Props::new(), f);
+                            pos = run.start;
+                        }
+                        let piece_end = run.end.min(end);
+                        Self::push_changed(&mut out, pos, piece_end, run.props.clone(), f);
+                        cur = if run.end > end { Some(Run { start: end, ..run }) } else { old.next() };
+                        pos = piece_end;
+                    }
+                    other => {
+                        cur = other;
+                        Self::push_changed(&mut out, pos, end, Props::new(), f);
+                        pos = end;
+                    }
                 }
             }
         }
-        out.extend(pending);
-        self.runs = out;
-        self.normalize();
+        out.extend(cur);
+        out.extend(old);
+        self.runs.splice(lo..hi, joined(out));
     }
 
     fn push_changed(out: &mut Vec<Run>, start: usize, end: usize, mut props: Props, f: &impl Fn(&mut Props)) {
@@ -184,20 +226,6 @@ impl TextProperties {
         }
     }
 
-    /// Drops runs with no properties and joins neighbours with the same ones.
-    fn normalize(&mut self) {
-        let mut out: Vec<Run> = Vec::with_capacity(self.runs.len());
-        for run in self.runs.drain(..) {
-            if run.props.is_empty() || run.start >= run.end {
-                continue;
-            }
-            match out.last_mut() {
-                Some(last) if last.end == run.start && last.props == run.props => last.end = run.end,
-                _ => out.push(run),
-            }
-        }
-        self.runs = out;
-    }
 
     /// The properties of the character at `pos`.
     pub(crate) fn at(&self, pos: usize) -> Option<&Props> {
@@ -218,6 +246,23 @@ impl TextProperties {
         let run = self.runs[..i].last()?;
         Some(if run.end < pos { run.end } else { run.start })
     }
+}
+
+
+/// The runs without those with no properties, and neighbours with the same
+/// properties joined.
+fn joined(runs: Vec<Run>) -> Vec<Run> {
+    let mut out: Vec<Run> = Vec::with_capacity(runs.len());
+    for run in runs {
+        if run.props.is_empty() || run.start >= run.end {
+            continue;
+        }
+        match out.last_mut() {
+            Some(last) if last.end == run.start && last.props == run.props => last.end = run.end,
+            _ => out.push(run),
+        }
+    }
+    out
 }
 
 /// A range laid over the text with properties of its own.
@@ -245,6 +290,9 @@ pub struct Overlay {
 pub(crate) struct OverlayList {
     items: Vec<Overlay>,
     deleted: usize,
+    /// Whether an overlay has had a hook property put, so an edit must
+    /// look for hooks to call: most overlays, as Org's folds, have none.
+    pub(crate) hooks: bool,
     /// Where overlays are, built when first asked after a change.
     index: std::cell::RefCell<Option<std::rc::Rc<OverlayIndex>>>,
 }
@@ -426,6 +474,15 @@ impl OverlayList {
         }
     }
 
+    /// The last position before `pos` where an overlay starts or ends.
+    pub(crate) fn previous_edge(&self, pos: usize) -> Option<usize> {
+        let index = self.spatial();
+        let to = index.edges.partition_point(|e| e.0 < pos);
+        let indexed = index.edges[..to].iter().rev().find(|e| !self.items[e.1 as usize].deleted).map(|e| e.0);
+        let newer = self.newer(&index).flat_map(|(_, o)| [o.start, o.end]).filter(|&e| e < pos).max();
+        indexed.max(newer)
+    }
+
     fn index(&self, id: u64) -> Option<usize> {
         self.items.binary_search_by_key(&id, |o| o.id).ok().filter(|&i| !self.items[i].deleted)
     }
@@ -477,6 +534,7 @@ impl OverlayList {
         self.changed();
         self.items.clear();
         self.deleted = 0;
+        self.hooks = false;
     }
 }
 
@@ -572,6 +630,73 @@ mod tests {
         assert_eq!(t.previous_change(7), Some(5));
     }
 
+    /// The runs agree with a list of each character's properties, after
+    /// random insertions, deletions, changes and restorations, and stay
+    /// in order, apart, never empty and never alike side by side.
+    #[test]
+    fn runs_agree_with_a_property_list_per_character() {
+        let mut seed = 11u64;
+        let mut rand = |n: usize| {
+            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            (seed >> 33) as usize % n.max(1)
+        };
+        let faces = ["a", "b", "c"];
+        let mut t = TextProperties::default();
+        let mut model: Vec<Props> = vec![Props::new(); 50];
+        for _ in 0..3000 {
+            let len = model.len();
+            let (x, y) = (rand(len + 1), rand(len + 1));
+            let (start, end) = (x.min(y), x.max(y));
+            match rand(5) {
+                0 => {
+                    let n = rand(5) + 1;
+                    t.insert(start, n);
+                    model.splice(start..start, std::iter::repeat_n(Props::new(), n));
+                }
+                1 => {
+                    let saved = t.delete(start, end);
+                    let gone: Vec<Props> = model.drain(start..end).collect();
+                    // Undoing the deletion puts it back with its properties.
+                    if rand(2) == 0 {
+                        t.insert(start, end - start);
+                        t.restore(start, &saved);
+                        model.splice(start..start, gone);
+                    }
+                }
+                2 => {
+                    let f = face(faces[rand(3)]);
+                    t.modify(start, end, &f);
+                    model[start..end].iter_mut().for_each(&f);
+                }
+                3 => {
+                    t.modify(start, end, |p| {
+                        p.remove("face");
+                    });
+                    model[start..end].iter_mut().for_each(|p| {
+                        p.remove("face");
+                    });
+                }
+                _ => {
+                    // Restoring over text with properties merges them.
+                    let saved = t.save(start, end);
+                    let to = rand(len.saturating_sub(end - start) + 1);
+                    t.restore(to, &saved);
+                    let copied: Vec<Props> = model[start..end].to_vec();
+                    for (k, p) in copied.into_iter().enumerate() {
+                        model[to + k].extend(p);
+                    }
+                }
+            }
+            for (pos, props) in model.iter().enumerate() {
+                assert_eq!(t.at(pos).cloned().unwrap_or_default(), *props, "at {pos}");
+            }
+            for w in t.runs.windows(2) {
+                assert!(w[0].end <= w[1].start && !(w[0].end == w[1].start && w[0].props == w[1].props), "{:?}", t.runs);
+            }
+            assert!(t.runs.iter().all(|r| r.start < r.end && !r.props.is_empty() && r.end <= model.len()));
+        }
+    }
+
     #[test]
     fn overlays_follow_edits() {
         let mut o = Overlay::new(1, 2, 5);
@@ -624,6 +749,8 @@ mod overlay_index_tests {
                 assert_eq!(ids(list.at_edge(pos)), ids(list.iter().filter(|o| o.start == pos || o.end == pos).collect()));
                 let next = list.iter().flat_map(|o| [o.start, o.end]).filter(|&e| e > pos).min();
                 assert_eq!(list.next_edge(pos), next);
+                let previous = list.iter().flat_map(|o| [o.start, o.end]).filter(|&e| e < pos).max();
+                assert_eq!(list.previous_edge(pos), previous);
                 let end = pos + rand(20);
                 let overlapping = list.iter().filter(|o| (o.start < end && o.end > pos) || (o.start == o.end && o.start >= pos && o.start <= end)).collect();
                 assert_eq!(ids(list.overlapping(pos, end)), ids(overlapping));

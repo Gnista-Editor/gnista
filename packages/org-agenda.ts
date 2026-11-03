@@ -3,6 +3,7 @@
 // items, in the *Org Agenda* buffer, whose keys act on the entries they show.
 
 import { type DateTime, type Heading, PLANNING, allKeywords, at, entryEnd, headings, isDone, today } from "org";
+import { allMatches } from "org-macs";
 import { charCount } from "subr";
 
 ember.defineVariable({
@@ -158,18 +159,45 @@ function planningOf(h: Heading): {
   return out;
 }
 
-/** The items for a day from the current buffer, as org-agenda-get-day-entries collects them. */
-function dayItems(day: number, today: number, buffer: string): AgendaItem[] {
-  const cat = category();
+/** A heading as the agenda reads it, once for every day it shows: its planning, its priority and its entry's active timestamps. */
+interface Scanned {
+  h: Heading;
+  done: boolean;
+  plan: ReturnType<typeof planningOf>;
+  priority: number;
+  /** The entry's active timestamps but its planning line's, in order: where each is, and whether it is in the heading. */
+  stamps: { ts: { day: number; repeat?: [number, string] }; pos: number; inHeading: boolean }[];
+}
+
+/** The current buffer's headings as the agenda reads them, and its category. */
+function scanBuffer(): { cat: string; entries: Scanned[] } {
+  const all = headings();
+  const stamp = /<\d{4}-\d{2}-\d{2}[^>\n]*>/g;
+  const entries = all.map((h, i): Scanned => {
+    const stamps: Scanned["stamps"] = [];
+    const end = entryEnd(all, i);
+    for (let l = h.line; l < ember.lineCount() && ember.lineStart(l) < end; l++) {
+      if (l === h.line + 1 && PLANNING.test(ember.lineText(l))) continue;
+      const text = ember.lineText(l);
+      if (!text.includes("<")) continue;
+      for (const m of allMatches(stamp, text)) {
+        const ts = activeTimestamp(m[0]);
+        if (ts) stamps.push({ ts, pos: at(l, text, m.index), inHeading: l === h.line });
+      }
+    }
+    return { h, done: isDone(h.todo), plan: planningOf(h), priority: priorityValue(h), stamps };
+  });
+  return { cat: category(), entries };
+}
+
+/** The items for a day from the current buffer, scanned once, as org-agenda-get-day-entries collects them. */
+function dayItems(scan: { cat: string; entries: Scanned[] }, day: number, today: number, buffer: string): AgendaItem[] {
+  const cat = scan.cat;
   const warning = Number(ember.variable("org-deadline-warning-days") ?? 14);
   const deadlines: AgendaItem[] = [];
   const scheduled: AgendaItem[] = [];
   const stamps: AgendaItem[] = [];
-  const all = headings();
-  for (const [i, h] of all.entries()) {
-    const done = isDone(h.todo);
-    const plan = planningOf(h);
-    const priority = priorityValue(h);
+  for (const { h, done, plan, priority, stamps: found } of scan.entries) {
     if (plan.deadline !== undefined) {
       const diff = plan.deadline - day;
       let leader: string | undefined;
@@ -194,23 +222,11 @@ function dayItems(day: number, today: number, buffer: string): AgendaItem[] {
         scheduled.push({ ...item, text: agendaLine(h, cat, leader, false), urgency: 99 + (past ? diff : 0) + priority });
       }
     }
-    // Active timestamps in the heading and its entry, not its planning line.
-    const end = entryEnd(all, i);
-    for (let l = h.line; l < ember.lineCount() && ember.lineStart(l) < end; l++) {
-      if (l === h.line + 1 && PLANNING.test(ember.lineText(l))) continue;
-      const text = ember.lineText(l);
-      let found = false;
-      for (const m of text.matchAll(/<\d{4}-\d{2}-\d{2}[^>\n]*>/g)) {
-        const ts = activeTimestamp(m[0]);
-        if (ts && occursOn(ts, day)) {
-          const removeTimestamp = l === h.line;
-          const item = { cat, leader: "", removeTimestamp, buffer, pos: at(l, text, m.index ?? 0), heading: h.start };
-          stamps.push({ ...item, text: agendaLine(h, cat, "", removeTimestamp), urgency: priority });
-          found = true;
-          break;
-        }
-      }
-      if (found) break;
+    // The first active timestamp in the heading and its entry on the day.
+    const stamp = found.find((s) => occursOn(s.ts, day));
+    if (stamp) {
+      const item = { cat, leader: "", removeTimestamp: stamp.inHeading, buffer, pos: stamp.pos, heading: h.start };
+      stamps.push({ ...item, text: agendaLine(h, cat, "", stamp.inHeading), urgency: priority });
     }
   }
   return [...deadlines, ...scheduled, ...stamps];
@@ -280,6 +296,8 @@ function weekAgenda(start: number): void {
   const buffers = agendaBuffers();
   const lines: { text: string; item?: AgendaItem }[] = [{ text: `Week-agenda (W${String(isoWeekOf(start)).padStart(2, "0")}):` }];
   let pointLine = 0;
+  // Each file read once for the week, not once a day.
+  const scans = new Map(buffers.map((buffer) => [buffer, ember.withCurrentBuffer(buffer, scanBuffer)]));
   for (let day = start; day < start + 7; day++) {
     const d = dayFromNumber(day);
     const wd = new Date(day * 86400000).getUTCDay();
@@ -287,7 +305,7 @@ function weekAgenda(start: number): void {
     const week = wd === 1 ? ` W${String(isoWeekOf(day)).padStart(2, "0")}` : "";
     lines.push({ text: `${AGENDA_DAYS[wd].padEnd(10)} ${String(d.day).padStart(2)} ${AGENDA_MONTHS[d.month - 1]} ${d.year}${week}` });
     const items: AgendaItem[] = [];
-    for (const buffer of buffers) items.push(...ember.withCurrentBuffer(buffer, () => dayItems(day, today, buffer)));
+    for (const buffer of buffers) items.push(...ember.withCurrentBuffer(buffer, () => dayItems(scans.get(buffer)!, day, today, buffer)));
     for (const item of byUrgency(items)) lines.push({ text: item.text, item });
   }
   agendaView = { kind: "week", start };
