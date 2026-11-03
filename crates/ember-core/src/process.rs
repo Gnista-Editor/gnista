@@ -4,9 +4,9 @@
 //! clients or servers, over TCP or a local socket.
 //!
 //! A process is started with [`Editor::make_process`]. Threads read its
-//! output and send it to the editor, which has no thread of its own: front
-//! ends call [`Editor::run_timers`], which takes the output in, while
-//! [`Editor::next_timer_in`] asks to be woken often while one runs. Output
+//! output and send it to the editor, waking its command loop (driver.rs),
+//! which takes the output in with [`Editor::run_timers`]; an editor without
+//! one is asked to wake often by [`Editor::next_timer_in`] while one runs. Output
 //! goes to the process's filter, or by default into its buffer at its
 //! mark; when it exits its sentinel runs, or by default a line saying so
 //! goes into its buffer. Starting a program asks the agent's permission,

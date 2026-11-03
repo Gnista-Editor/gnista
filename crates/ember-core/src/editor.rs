@@ -138,8 +138,6 @@ pub(crate) struct PendingCall {
     last_command: Option<String>,
 }
 
-/// All editor state. A front end feeds it keys with [`Editor::handle_key`]
-/// and reads it back to draw.
 /// What [`Editor::loop_state`] notes.
 pub struct LoopState {
     running: usize,
@@ -149,6 +147,8 @@ pub struct LoopState {
     interactive: bool,
 }
 
+/// All editor state. A front end feeds it keys with [`Editor::handle_key`]
+/// and draws from the frame description it publishes.
 pub struct Editor {
     pub(crate) buffers: Vec<Buffer>,
     pub(crate) current: usize,
@@ -161,7 +161,6 @@ pub struct Editor {
     detached_markers: Vec<crate::buffer::Marker>,
     /// Whether any buffer has shared its text, so changes must be passed on.
     pub(crate) has_indirect_buffers: bool,
-    /// What waits for the prompts and questions now open to be answered.
     /// How many commands have started, so code waiting for one it called
     /// interactively knows whether it ran or its arguments were quit.
     executed: u64,
@@ -227,7 +226,6 @@ pub struct Editor {
     /// Every symbol's value, function, properties and advice.
     pub(crate) symbols: BTreeMap<String, crate::symbols::Symbol>,
     pub(crate) faces: BTreeMap<String, Face>,
-    /// Styles worked out for lists of faces on each background, until a face changes.
     /// Whether quitting was asked for, which other threads may set.
     pub(crate) quitting: std::sync::Arc<crate::quit::QuitState>,
     /// The command loop the editor runs in, which a primitive waiting for
@@ -236,7 +234,8 @@ pub struct Editor {
     pub(crate) command_loop: Option<std::rc::Rc<dyn crate::driver::NestedLoop>>,
     /// What scripts have bound, to restore as their forms end.
     pub(crate) specpdl: crate::specbind::Specpdl,
-    /// Styles by their faces, the background and the remapping in force.
+    /// Styles worked out for lists of faces, on each background and under
+    /// each remapping, until a face changes.
     pub(crate) style_cache: std::cell::RefCell<std::collections::HashMap<StyleKey, crate::faces::Style>>,
     /// The `face-remapping-alist` values styles were cached for, by the
     /// number the cache keys them with, one more than their index.
@@ -1354,9 +1353,6 @@ impl Editor {
         }
     }
 
-    /// Runs a command for a key, as Emacs's command loop does: first
-    /// `pre-command-hook`, which can change this-command, and that command
-    /// runs instead; then `post-command-hook`.
     /// Runs a command as the command loop runs one bound to a key, as
     /// Emacs's `command-execute` does: for what a front end gives as a
     /// command rather than a key, such as the Mac's ⌘C, ⌘X and ⌘V.
@@ -1369,6 +1365,9 @@ impl Editor {
         self.resume_outer_minibuffer();
     }
 
+    /// Runs a command for a key, as Emacs's command loop does: first
+    /// `pre-command-hook`, which can change this-command, and that command
+    /// runs instead; then `post-command-hook`.
     fn command_loop_run(&mut self, name: &str) {
         self.record_lossage_command(name);
         self.this_command = Some(name.to_string());

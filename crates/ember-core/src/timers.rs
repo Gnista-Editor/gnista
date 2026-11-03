@@ -2,9 +2,11 @@
 //! auto-saving after a while idle or a number of keys, as Emacs's
 //! keyboard loop does.
 //!
-//! The editor has no thread of its own: front ends call
-//! [`Editor::run_timers`] when [`Editor::next_timer_in`] says one is due,
-//! and after each key. Tests move the clock with [`Editor::advance_clock`].
+//! The editor's command loop (driver.rs), on the editor's thread, calls
+//! [`Editor::run_timers`] whenever no input waits, waking when
+//! [`Editor::next_timer_in`] says one is due; an editor without one, as in
+//! tests, runs them when told. Tests move the clock with
+//! [`Editor::advance_clock`].
 
 use std::time::{Duration, Instant};
 

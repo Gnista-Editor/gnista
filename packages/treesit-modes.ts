@@ -344,7 +344,6 @@ const jsDefunName = (node: ember.TreesitNode): string | null => {
 const jsonDefunName = (node: ember.TreesitNode): string | null =>
   ["pair", "object"].includes(ember.treesitNodeType(node) ?? "") ? fieldText(node, "key").replace(/^"/, "").replace(/"$/, "") : null;
 
-/** What each language's mode sets for treesit.el, as its mode's body does. */
 /** Any of these names as a whole symbol, as js--regexp-opt-symbol makes a regexp of them. */
 const symbolRegexp = (names: string[]): string => `\\_<\\(${names.map(regexpQuote).join("\\|")}\\)\\_>`;
 
@@ -352,6 +351,7 @@ const symbolRegexp = (names: string[]): string => `\\_<\\(${names.map(regexpQuot
 const jsValidImenuEntry = (node: ember.TreesitNode): unknown =>
   ember.treesitNodeType(node) === "lexical_declaration" ? nodeTopLevel(node) : true;
 
+/** What each language's mode sets for treesit.el, as its mode's body does. */
 const TREESIT_SETTINGS: Record<
   string,
   { rules: () => unknown[]; defun: string; name: (node: ember.TreesitNode) => string | null; electric: string; imenu: unknown[]; things?: unknown[] }

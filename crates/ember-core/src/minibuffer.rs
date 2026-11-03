@@ -4,8 +4,8 @@
 //! keeps them; and what the minibuffer shows besides its input, which
 //! icomplete fills.
 //!
-//! As with questions, the command does not wait: it opens the prompt and
-//! returns, and the answer runs the function given with it.
+//! As with questions, the command waits for the answer, which the prompt
+//! returns, the command loop running meanwhile (ADR 0053).
 
 use std::fs;
 use std::path::Path;

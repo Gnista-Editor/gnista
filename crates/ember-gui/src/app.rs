@@ -1,5 +1,6 @@
 //! The editor window: the buffer, the mode line and the echo area, drawn
-//! from editor state each frame, as the terminal front end does.
+//! each frame from the frame description the editor last published, never
+//! asking the editor while it draws, as the terminal front end does.
 
 use std::any::Any;
 use std::sync::{Arc, Mutex};

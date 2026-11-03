@@ -31,7 +31,7 @@
 //!
 //! Natives that need the engine itself (`defineCommand`, which keeps a
 //! script's functions as its prompts and collections) are written by hand
-//! in lib.rs.
+//! in each engine's module, on what values.rs shares.
 
 mod bidi;
 mod chartab;

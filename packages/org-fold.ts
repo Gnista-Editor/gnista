@@ -106,12 +106,6 @@ export function ancestors(all: Heading[], i: number): number[] {
 }
 
 /**
- * Shows blank lines before headings and at the end of the buffer after a
- * change of folding, as org-cycle-show-empty-lines does from org-cycle-hook.
- * `state` is the new state, and for "folded" and "children" the lines are
- * those of the subtree point is in.
- */
-/**
  * Where the blank lines before headings are, as showEmptyLines' search
  * finds them for one or two separator lines, from the heading index and
  * the lines matchingLines finds in one pass in the editor: for each, from
@@ -143,6 +137,12 @@ function separatorLines(range: [number, number], k: number): [number, number][] 
   return found;
 }
 
+/**
+ * Shows blank lines before headings and at the end of the buffer after a
+ * change of folding, as org-cycle-show-empty-lines does from org-cycle-hook.
+ * `state` is the new state, and for "folded" and "children" the lines are
+ * those of the subtree point is in.
+ */
 export function showEmptyLines(state: string, narrowed?: [number, number]): void {
   const n = Number(ember.variable("org-cycle-separator-lines") ?? 2);
   let range: [number, number] | undefined;
@@ -205,7 +205,6 @@ export function endOfHidden(line: number): number {
   return p;
 }
 
-/** Cycles a heading's subtree, as org-cycle-internal-local does. */
 /**
  * Cycles heading i's subtree, as org-cycle-internal-local does. Org works
  * out the subtree from the heading that shows, but shows the children view
@@ -421,7 +420,6 @@ export function fixFoldsAround(from: number, to: number): void {
   for (const id of ember.overlaysIn(a, b)) checkFold(id);
 }
 
-/** Unfolds a fold that no longer matches what it hides. */
 /**
  * Shows a line from the newline before it, as org-fold--reveal-headline-at-point
  * does. Blank lines after it would show too, but Org compares their end
@@ -446,6 +444,7 @@ function revealHeadlineAt(line: number): void {
   flag(Math.max(0, ember.lineStart(line) - 1), q + 1 === skipped ? q : endl, false);
 }
 
+/** Unfolds a fold that no longer matches what it hides. */
 function checkFold(id: number): void {
   const spec = String(ember.overlayGet(id, "invisible"));
   if (!FOLD_SPECS.includes(spec)) return;

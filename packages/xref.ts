@@ -11,7 +11,6 @@ ember.defineFace({ name: "xref-match", doc: "What matched, in *xref*.", attribut
 /** A place found: its file, line and column, and the text shown for it. */
 type Xref = { file: string; line: number; col: number; length: number; summary: string; group: string };
 
-/** Each *xref* buffer's places, by the buffer line each is on. */
 /** What each *xref* buffer shows, kept by buffer so renaming it keeps it. */
 const shown = new Map<ember.Buffer, { byLine: Map<number, Xref>; current?: number }>();
 ember.addHook("kill-buffer-hook", () => shown.delete(ember.currentBuffer()));

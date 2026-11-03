@@ -60,8 +60,6 @@ const DATALINE = /^[ \t]*\|(?!-)/;
 const NUMBER =
   /^(?:[<>]?[-+^.0-9]*[0-9][-+^.0-9eEdDx()%:]*|[<>]?[-+]?0[xX][0-9a-fA-F.]+|[<>]?[-+]?[0-9]+#[0-9a-zA-Z.]+|nan|[-+u]?inf)$/;
 
-/** How many characters a string has, which differs from its length for emoji. */
-
 export function restOfLine(pos = ember.point()): string {
   return ember.bufferText(pos, ember.lineEnd(lineAt(pos)));
 }

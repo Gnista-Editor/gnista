@@ -845,7 +845,6 @@ function headingHere(): [Heading[], number] | undefined {
   return i === undefined ? undefined : [all, i];
 }
 
-/** The next heading after `i` at its level or higher, if any. */
 /** The index of the first heading starting at or after `pos`, by halving. */
 export function firstHeadingFrom(all: Heading[], pos: number): number {
   let [lo, hi] = [0, all.length];
@@ -869,6 +868,7 @@ export function findFrom(all: Heading[], from: number, test: (h: Heading) => boo
   return undefined;
 }
 
+/** The next heading after `i` at its level or higher, if any. */
 export function nextSameOrHigher(all: Heading[], i: number): Heading | undefined {
   const level = all[i].level;
   for (let j = i + 1; j < all.length; j++) if (all[j].level <= level) return all[j];
@@ -2320,11 +2320,6 @@ function maybeAddBlankAfter(blank: boolean): void {
 }
 
 /**
- * Inserts a heading as org-insert-heading does, leaving point after its
- * stars. `arg` is the raw prefix argument: C-u inserts after the subtree,
- * C-u C-u after the parent's.
- */
-/**
  * Inserts strings one after another, as Emacs's insert does with several
  * arguments: each is a change of its own, so Org's fold checks see the
  * text between them.
@@ -2333,6 +2328,11 @@ function insertPieces(...pieces: string[]): void {
   for (const piece of pieces) if (piece !== "") ember.insert(piece);
 }
 
+/**
+ * Inserts a heading as org-insert-heading does, leaving point after its
+ * stars. `arg` is the raw prefix argument: C-u inserts after the subtree,
+ * C-u C-u after the parent's.
+ */
 function insertHeading(arg: ember.PrefixArg, invisibleOk = false): void {
   const parentEnd = Array.isArray(arg) && arg[0] === 16;
   const blank = blankBeforeHeading(parentEnd);
@@ -2779,11 +2779,8 @@ function cleanVisibilityAfterMove(all: Heading[], k: number): void {
 
 /**
  * Kills or copies the subtree point is in, and the n - 1 after it, as
- * org-copy-subtree does. Point and the mark stay where they were, moving
- * as markers do when the text goes.
- */
-/**
- * Kills or copies the subtree point is in, as org-copy-subtree does. Called
+ * org-copy-subtree does; point and the mark stay where they were, moving
+ * as markers do when the text goes. Called
  * interactively it takes what looks like the subtree, the nearest heading
  * that shows; otherwise, as org-cut-subtree calls it, what is really there.
  */
@@ -3054,7 +3051,6 @@ ember.defineCommand({
 
 // Commands: TODO states, priorities and tags
 
-/** Changes a heading's TODO state, keeping point in place relative to the text around it. */
 /**
  * Sets a heading's TODO state, or removes it, as org-todo does: the old
  * keyword and the spaces around it are replaced, so point there moves
@@ -3214,16 +3210,16 @@ const todoCommand = ember.defineCommand({
 });
 
 /**
- * Runs body at each visible heading in the active region, as org-map-entries
- * does for commands when org-loop-over-headlines-in-active-region is on.
- * Returns whether it applied.
- */
-/**
  * Where org-map-entries has narrowed to the region it loops over, if it is
  * looping: headings above it are out of reach, so their cookies stay.
  */
 let mapRegionStart: Marker | undefined;
 
+/**
+ * Runs body at each visible heading in the active region, as org-map-entries
+ * does for commands when org-loop-over-headlines-in-active-region is on.
+ * Returns whether it applied.
+ */
 function forEachHeadingInRegion(body: () => void, todoQuirk = false): boolean {
   const mark = ember.mark();
   if (!orgRegionActive() || mark === undefined || ember.variable("org-loop-over-headlines-in-active-region") !== true) return false;
@@ -3507,7 +3503,6 @@ function timestampsOn(line: number): Timestamp[] {
   return found;
 }
 
-/** The timestamp point is on or just after, if any. */
 /** Whether point is in or just after a timestamp, as org-at-timestamp-p with lax says. */
 function timestampHere(): boolean {
   const p = ember.point();
@@ -4380,7 +4375,6 @@ const shiftMetaDown = ember.defineCommand({
   },
 });
 
-/** Drags the line at point `n` lines down, or up if `n` is negative, as org-drag-line-forward does. */
 /**
  * Swaps the line before point's with point's, as transpose-lines does,
  * with the insertions and deletions of transpose-subr-1, so folds move as
@@ -4453,6 +4447,7 @@ function transposeLinesWithFolds(): void {
   }
 }
 
+/** Drags the line at point `n` lines down, or up if `n` is negative, as org-drag-line-forward does. */
 function dragLine(n: number): void {
   for (let i = 0; i < Math.abs(n); i++) {
     // As Org does with current-column and org-move-to-column: hidden link text takes no columns.

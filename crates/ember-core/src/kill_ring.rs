@@ -48,15 +48,15 @@ impl Editor {
         self.interprogram_cut(text);
     }
 
-    /// The kill `n` entries back from the one yanked last, moving the yank
-    /// pointer there, as Emacs's `current-kill` does. 0 is the kill yanking
-    /// would insert now; M-y asks for 1, the one before it.
     /// Makes the kill `index` places from the newest the one the next yank
     /// inserts, as setting `kill-ring-yank-pointer` does.
     pub fn set_kill_ring_yank_pointer(&mut self, index: usize) {
         self.kill_ring.yank_pointer = index.min(self.kill_ring.kills.len().saturating_sub(1));
     }
 
+    /// The kill `n` entries back from the one yanked last, moving the yank
+    /// pointer there, as Emacs's `current-kill` does. 0 is the kill yanking
+    /// would insert now; M-y asks for 1, the one before it.
     pub fn current_kill(&mut self, n: i64) -> Result<String> {
         self.current_kill_text(n).map(|t| t.string)
     }
