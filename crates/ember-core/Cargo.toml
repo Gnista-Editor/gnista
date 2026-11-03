@@ -16,6 +16,9 @@ tree-sitter-javascript = "0.25"
 tree-sitter-json = "0.24"
 tree-sitter-python = "0.25"
 tree-sitter-rust = "0.24"
+# Loading grammars built as shared libraries, as Emacs's treesit-language-available-p finds them (ADR 0056).
+libloading = "0.8"
+tree-sitter-language = "0.1"
 unicode-width = "0.2"
 # Moving deleted files to the system's trash, as Finder or a desktop's file manager does.
 trash = "5"

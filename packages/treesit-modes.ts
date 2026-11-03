@@ -1,9 +1,12 @@
 // Major modes that highlight with tree-sitter grammars, after Emacs's
-// rust-ts-mode.el, js.el, json-ts-mode.el and python.el. Each is built on
-// prog-mode and asks for its grammar with treesit-parser-create.
+// rust-ts-mode.el, js.el, json-ts-mode.el, python.el and go-ts-mode.el.
+// Each is built on prog-mode and asks for its grammar with
+// treesit-parser-create. Go's grammar does not ship with Ember: it is
+// loaded from libtree-sitter-go.dylib, as Emacs loads its grammars, and
+// highlighted by the mode's own font-lock rules.
 
 import { allMatches, charCount, regexpQuote } from "subr";
-import { bufferRootNode, defunName, induceSparseTree, majorModeSetup, nodeText, nodeTopLevel, searchSubtree } from "treesit";
+import { bufferRootNode, defunName, fontLockRules, induceSparseTree, majorModeSetup, nodeText, nodeTopLevel, searchSubtree } from "treesit";
 
 /** C's comments and operators, as c-mode's and js-mode's syntax tables have them. */
 const C_SYNTAX: { [chars: string]: string } = {
@@ -21,6 +24,16 @@ const PYTHON_SYNTAX: { [chars: string]: string } = {
   "\n": ">",
   "'": '"',
   "`": "$",
+};
+
+/** Go's, as go-ts-mode--syntax-table: C's comments, ' quotes a rune, \\ escapes. */
+const GO_SYNTAX: { [chars: string]: string } = {
+  "+-=%&|^!<>": ".",
+  "\\": "\\",
+  "'": '"',
+  "/": ". 124b",
+  "*": ". 23",
+  "\n": "> b",
 };
 
 type ModeSpec = {
@@ -59,6 +72,17 @@ const modes: ModeSpec[] = [
     alias: "js-mode",
   },
   { name: "json-ts-mode", modeName: "JSON", language: "json", pattern: "\\.json\\'", what: "JSON" },
+  {
+    name: "go-ts-mode",
+    modeName: "Go",
+    language: "go",
+    pattern: "\\.go\\'",
+    what: "Go",
+    syntax: GO_SYNTAX,
+    comment: { start: "// ", skip: "\\(?://+\\|/\\*+\\)\\s *" },
+    alias: "go-mode",
+    tabs: true,
+  },
   {
     name: "python-ts-mode",
     modeName: "Python",
@@ -251,6 +275,7 @@ ember.defun("python-hideshow-find-next-block", (regexp: string, maxp: number, co
 // --- Indentation -------------------------------------------------------------
 
 for (const [name, value, doc] of [
+  ["go-ts-mode-indent-offset", 8, "How far Go indents each level."],
   ["js-indent-level", 4, "How far JavaScript indents each level."],
   ["rust-ts-mode-indent-offset", 4, "How far Rust indents each level."],
   ["json-ts-mode-indent-offset", 2, "How far JSON indents each level."],
@@ -496,11 +521,151 @@ const symbolRegexp = (names: string[]): string => `\\_<\\(${names.map(regexpQuot
 const jsValidImenuEntry = (node: ember.TreesitNode): unknown =>
   ember.treesitNodeType(node) === "lexical_declaration" ? nodeTopLevel(node) : true;
 
+// --- Go, as go-ts-mode.el ------------------------------------------------------
+
+/** go-ts-mode--indent-rules. */
+const GO_RULES = [
+  [["parent-is", "source_file"], "column-0", 0],
+  [["node-is", ")"], "parent-bol", 0],
+  [["node-is", "]"], "parent-bol", 0],
+  [["node-is", "}"], "parent-bol", 0],
+  [["node-is", "labeled_statement"], "no-indent", 0],
+  [["parent-is", "raw_string_literal"], "no-indent", 0],
+  ...["argument_list", "block", "communication_case", "const_declaration", "default_case", "expression_case", "selector_expression"].map((t) =>
+    ruleFor(t, "go-ts-mode-indent-offset"),
+  ),
+  [["parent-is", "expression_switch_statement"], "parent-bol", 0],
+  ...[
+    "field_declaration_list", "import_spec_list", "interface_type", "labeled_statement", "literal_value", "parameter_list",
+  ].map((t) => ruleFor(t, "go-ts-mode-indent-offset")),
+  [["parent-is", "select_statement"], "parent-bol", 0],
+  ...["type_case", "type_declaration", "type_spec"].map((t) => ruleFor(t, "go-ts-mode-indent-offset")),
+  [["parent-is", "type_switch_statement"], "parent-bol", 0],
+  ...["var_declaration", "var_spec_list"].map((t) => ruleFor(t, "go-ts-mode-indent-offset")),
+  ["no-node", "parent-bol", 0],
+];
+
+const GO_KEYWORDS = [
+  "break", "case", "chan", "const", "continue", "default", "defer", "else", "fallthrough", "for", "func", "go", "goto", "if",
+  "import", "interface", "map", "package", "range", "return", "select", "struct", "switch", "type", "var",
+];
+const GO_OPERATORS = [
+  "+", "&", "+=", "&=", "&&", "==", "!=", "-", "|", "-=", "|=", "||", "<", "<=", "*", "^", "*=", "^=", "<-", ">", ">=", "/",
+  "<<", "/=", "<<=", "++", "=", ":=", "%", ">>", "%=", ">>=", "--", "!", "...", "&^", "&^=", "~",
+];
+const GO_BUILTINS = [
+  "append", "cap", "clear", "close", "complex", "copy", "delete", "imag", "len", "make", "max", "min", "new", "panic", "print",
+  "println", "real", "recover",
+];
+
+/** Whether the grammar has a node type, as go-ts-mode--iota-query-supported-p asks. */
+const goHas = (type: string): boolean =>
+  ember.conditionCase(() => (ember.treesitQueryCompile("go", `(${type}) @cap`), true), { error: () => false });
+
+const quoted = (names: string[]) => names.map((n) => JSON.stringify(n)).join(" ");
+
+/** go-ts-mode--font-lock-settings, its queries in tree-sitter's syntax. */
+function goFontLockSettings() {
+  return fontLockRules(
+    ":language", "go", ":feature", "bracket", `["(" ")" "[" "]" "{" "}"] @font-lock-bracket-face`,
+    ":language", "go", ":feature", "comment", "(comment) @font-lock-comment-face",
+    ":language", "go", ":feature", "builtin",
+    `(call_expression function: ((identifier) @font-lock-builtin-face (#match? @font-lock-builtin-face "^(${GO_BUILTINS.join("|")})$")))`,
+    ":language", "go", ":feature", "constant",
+    `[(false) (nil) (true)] @font-lock-constant-face ${goHas("iota") ? "(iota) @font-lock-constant-face" : ""}
+     (const_declaration (const_spec name: (identifier) @font-lock-constant-face ("," name: (identifier) @font-lock-constant-face)*))`,
+    ":language", "go", ":feature", "delimiter", `["," "." ";" ":"] @font-lock-delimiter-face`,
+    ":language", "go", ":feature", "operator", `[${quoted(GO_OPERATORS)}] @font-lock-operator-face`,
+    ":language", "go", ":feature", "definition",
+    `(function_declaration name: (identifier) @font-lock-function-name-face)
+     (method_declaration name: (field_identifier) @font-lock-function-name-face)
+     (${goHas("method_elem") ? "method_elem" : "method_spec"} name: (field_identifier) @font-lock-function-name-face)
+     (field_declaration name: (field_identifier) @font-lock-property-name-face)
+     (parameter_declaration name: (identifier) @font-lock-variable-name-face)
+     (variadic_parameter_declaration name: (identifier) @font-lock-variable-name-face)
+     (short_var_declaration left: (expression_list (identifier) @font-lock-variable-name-face ("," (identifier) @font-lock-variable-name-face)*))
+     (var_spec name: (identifier) @font-lock-variable-name-face ("," name: (identifier) @font-lock-variable-name-face)*)
+     (range_clause left: (expression_list (identifier) @font-lock-variable-name-face))`,
+    ":language", "go", ":feature", "function",
+    `(call_expression function: (identifier) @font-lock-function-call-face)
+     (call_expression function: (selector_expression field: (field_identifier) @font-lock-function-call-face))`,
+    ":language", "go", ":feature", "keyword", `[${quoted(GO_KEYWORDS)}] @font-lock-keyword-face`,
+    ":language", "go", ":feature", "label", "(label_name) @font-lock-constant-face",
+    ":language", "go", ":feature", "number", "[(float_literal) (imaginary_literal) (int_literal)] @font-lock-number-face",
+    ":language", "go", ":feature", "string", "[(interpreted_string_literal) (raw_string_literal) (rune_literal)] @font-lock-string-face",
+    ":language", "go", ":feature", "type", "[(package_identifier) (type_identifier)] @font-lock-type-face",
+    ":language", "go", ":feature", "property",
+    `(selector_expression field: (field_identifier) @font-lock-property-use-face)
+     (keyed_element (_ (identifier) @font-lock-property-use-face))`,
+    ":language", "go", ":feature", "variable", "(identifier) @font-lock-variable-use-face",
+    ":language", "go", ":feature", "escape-sequence", ":override", "t", "(escape_sequence) @font-lock-escape-face",
+    ":language", "go", ":feature", "error", ":override", "t", "(ERROR) @font-lock-warning-face",
+  );
+}
+
+const GO_FEATURES = [
+  ["comment", "definition"],
+  ["keyword", "string", "type"],
+  ["builtin", "constant", "escape-sequence", "label", "number"],
+  ["bracket", "delimiter", "error", "function", "operator", "property", "variable"],
+];
+
+/** go-ts-mode--defun-name: a method's name with its receiver's type, as (T).name. */
+function goDefunName(node: ember.TreesitNode): string | null {
+  switch (ember.treesitNodeType(node)) {
+    case "function_declaration":
+      return (nodeText(ember.treesitNodeChildByFieldName(node, "name"), true) as string | undefined) ?? null;
+    case "method_declaration": {
+      const field = ember.treesitNodeChildByFieldName(node, "receiver");
+      const receiver = field && searchSubtree(field, "type_identifier");
+      const method = nodeText(ember.treesitNodeChildByFieldName(node, "name"));
+      return `(${nodeText(receiver) ?? ""}).${method ?? ""}`;
+    }
+    case "type_declaration": {
+      const spec = ember.treesitNodeChild(node, 0, true);
+      return (nodeText(spec && ember.treesitNodeChildByFieldName(spec, "name"), true) as string | undefined) ?? null;
+    }
+    default:
+      return null;
+  }
+}
+
+/** Whether a type declaration is of a kind, as go-ts-mode--struct-node-p and its fellows ask. */
+const goTypeOf = (node: ember.TreesitNode, type: string, depth: number): boolean =>
+  ember.treesitNodeType(node) === "type_declaration" && searchSubtree(node, type, false, false, depth) !== undefined;
+const goStruct = (node: ember.TreesitNode) => goTypeOf(node, "struct_type", 2);
+const goInterface = (node: ember.TreesitNode) => goTypeOf(node, "interface_type", 2);
+const goAlias = (node: ember.TreesitNode) => goTypeOf(node, "type_alias", 1);
+
 /** What each language's mode sets for treesit.el, as its mode's body does. */
 const TREESIT_SETTINGS: Record<
   string,
-  { rules: () => unknown[]; defun: string; name: (node: ember.TreesitNode) => string | null; electric: string; imenu: unknown[]; things?: unknown[] }
+  {
+    rules: () => unknown[];
+    defun: string;
+    name: (node: ember.TreesitNode) => string | null;
+    electric: string;
+    imenu: unknown[];
+    things?: unknown[];
+    /** The mode's font-lock rules and their features by level, for a grammar with no highlighting query of its own. */
+    fontLock?: () => { settings: unknown[]; features: string[][] };
+  }
 > = {
+  go: {
+    rules: () => GO_RULES,
+    defun: "\\(?:function_declaration\\|method_declaration\\|type_declaration\\)",
+    name: goDefunName,
+    electric: "{}()",
+    imenu: [
+      ["Function", "\\`function_declaration\\'", null, null],
+      ["Method", "\\`method_declaration\\'", null, null],
+      ["Struct", "\\`type_declaration\\'", goStruct, null],
+      ["Interface", "\\`type_declaration\\'", goInterface, null],
+      ["Type", "\\`type_declaration\\'", (n: ember.TreesitNode) => !goStruct(n) && !goInterface(n) && !goAlias(n), null],
+      ["Alias", "\\`type_declaration\\'", goAlias, null],
+    ],
+    fontLock: () => ({ settings: goFontLockSettings(), features: GO_FEATURES }),
+  },
   rust: {
     imenu: [
       ["Module", "\\`mod_item\\'", null, null],
@@ -577,6 +742,11 @@ for (const mode of modes) {
       `Files matching ${mode.pattern} use it; see auto-mode-alist.`,
     syntax: mode.syntax,
     setup: () => {
+      // As treesit-ready-p: without the grammar, the mode is prog-mode with a warning.
+      if (!ember.treesitLanguageAvailableP(mode.language)) {
+        ember.message(`Cannot activate tree-sitter, because language grammar for ${mode.language} is unavailable`);
+        return;
+      }
       ember.treesitSetPrimaryLanguage(mode.language);
       if (mode.comment !== undefined) {
         ember.setVariable("comment-start", mode.comment.start);
@@ -603,6 +773,11 @@ for (const mode of modes) {
         ember.setVariable("treesit-defun-name-function", ember.defun(`${mode.name}--defun-name`, settings.name));
         ember.setVariable("treesit-simple-imenu-settings", settings.imenu as unknown as ember.Value);
         if (settings.things) ember.setVariable("treesit-thing-settings", [[mode.language, settings.things]] as unknown as ember.Value);
+        if (settings.fontLock) {
+          const { settings: rules, features } = settings.fontLock();
+          ember.setVariable("treesit-font-lock-settings", rules as unknown as ember.Value);
+          ember.setVariable("treesit-font-lock-feature-list", features);
+        }
         majorModeSetup(`${mode.name}-map`);
       }
       if (mode.language === "rust") {

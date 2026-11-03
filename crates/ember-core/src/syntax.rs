@@ -11,6 +11,7 @@ use ropey::Rope;
 use tree_sitter::{InputEdit, Language, Parser, Point, Query, QueryCursor, StreamingIterator, Tree};
 
 use crate::error::{Error, Result};
+use crate::variables::Value;
 
 /// A language Ember can parse: a grammar and its highlighting query.
 pub(crate) struct Grammar {
@@ -18,11 +19,33 @@ pub(crate) struct Grammar {
     highlights_source: &'static str,
     /// Compiled on first use, since compiling takes a while.
     highlights: OnceCell<Rc<Query>>,
+    /// The shared library a grammar loaded at run time is in, kept open
+    /// while the language is used.
+    _library: Option<libloading::Library>,
 }
 
 impl Grammar {
     fn new(language: Language, highlights_source: &'static str) -> Grammar {
-        Grammar { language, highlights_source, highlights: OnceCell::new() }
+        Grammar { language, highlights_source, highlights: OnceCell::new(), _library: None }
+    }
+
+    /// The grammar in a shared library built from a grammar's sources, such
+    /// as libtree-sitter-go.dylib, by the function `symbol` that gives its
+    /// language, as Emacs's treesit loads one. It has no highlighting query
+    /// of its own: a mode gives its font-lock rules.
+    pub(crate) fn load(path: &std::path::Path, symbol: &str) -> std::result::Result<Grammar, String> {
+        // SAFETY: as Emacs does, the library is trusted to be a tree-sitter
+        // grammar whose function returns its language; the library stays
+        // open as long as the language can be used.
+        unsafe {
+            let library = libloading::Library::new(path).map_err(|e| e.to_string())?;
+            let language: libloading::Symbol<unsafe extern "C" fn() -> *const ()> = library.get(symbol.as_bytes()).map_err(|e| e.to_string())?;
+            let language = Language::new(tree_sitter_language::LanguageFn::from_raw(*language));
+            if !(tree_sitter::MIN_COMPATIBLE_LANGUAGE_VERSION..=tree_sitter::LANGUAGE_VERSION).contains(&language.abi_version()) {
+                return Err(format!("its ABI version {} is not one tree-sitter here reads", language.abi_version()));
+            }
+            Ok(Grammar { language, highlights_source: "", highlights: OnceCell::new(), _library: Some(library) })
+        }
     }
 
     fn highlights(&self) -> Result<Rc<Query>> {
@@ -33,6 +56,50 @@ impl Grammar {
             .map_err(|e| Error::new(format!("The highlighting query does not compile: {e}")))?;
         Ok(self.highlights.get_or_init(|| Rc::new(query)).clone())
     }
+}
+
+/// How a font-lock rule's faces go over those rules before it gave, as
+/// treesit-font-lock-rules' `:override`: not over any (nil), over all (t),
+/// after them (append), before them (prepend), or only where there are
+/// none (keep). A character here has one face, so append and keep fill
+/// in, and prepend and t replace.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) enum Override {
+    Nil,
+    T,
+    Append,
+    Prepend,
+    Keep,
+}
+
+impl Override {
+    pub(crate) fn of(value: &crate::variables::Value) -> Override {
+        match value.as_str() {
+            Some("t") => Override::T,
+            Some("append") => Override::Append,
+            Some("prepend") => Override::Prepend,
+            Some("keep") => Override::Keep,
+            _ if matches!(value, crate::variables::Value::Bool(true)) => Override::T,
+            _ => Override::Nil,
+        }
+    }
+}
+
+/// A mode's font-lock rules as the core runs them: each query, compiled,
+/// with its override, in order.
+pub(crate) type Rules = Vec<(Rc<Query>, Override)>;
+
+/// A face named by a capture, as a name that lives as long as the program:
+/// each name is kept once.
+fn interned(name: &str) -> &'static str {
+    static NAMES: std::sync::Mutex<Vec<&'static str>> = std::sync::Mutex::new(Vec::new());
+    let mut names = NAMES.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some(n) = names.iter().find(|n| **n == name) {
+        return n;
+    }
+    let n: &'static str = Box::leak(name.to_string().into_boxed_str());
+    names.push(n);
+    n
 }
 
 /// The grammars that ship with Ember, by the names Emacs uses for them.
@@ -63,6 +130,10 @@ pub(crate) struct SyntaxTree {
     /// Whether edits since the last parse are waiting to be parsed.
     stale: Cell<bool>,
     query: Rc<Query>,
+    /// The mode's font-lock rules, which highlight in place of the
+    /// grammar's query once a mode gives them, as Emacs's
+    /// treesit-font-lock-settings do.
+    rules: RefCell<Option<Rules>>,
 }
 
 impl SyntaxTree {
@@ -82,6 +153,7 @@ impl SyntaxTree {
             tree: RefCell::new(None),
             stale: Cell::new(true),
             query: grammar.highlights()?,
+            rules: RefCell::new(None),
         })
     }
 
@@ -124,12 +196,58 @@ impl SyntaxTree {
         self.tree.borrow().clone()
     }
 
+    /// Highlights with a mode's font-lock rules, in order, in place of the
+    /// grammar's query, or with the grammar's again for `None`.
+    pub(crate) fn set_rules(&self, rules: Option<Rules>) {
+        *self.rules.borrow_mut() = rules;
+    }
+
+    /// The faces the mode's font-lock rules give, as Emacs's
+    /// treesit-font-lock-fontify-region does: each rule in turn, its
+    /// captures in the order of the text, each face over the capture's
+    /// node as the rule's override says.
+    fn faces_by_rules(&self, rules: &Rules, tree: &Tree, text: &Rope, start: usize, end: usize) -> Vec<Option<&'static str>> {
+        let mut faces: Vec<Option<&'static str>> = vec![None; end.saturating_sub(start)];
+        let (start_byte, end_byte) = (text.char_to_byte(start), text.char_to_byte(end));
+        let source = |node: tree_sitter::Node| text.byte_slice(node.byte_range()).chunks().map(str::as_bytes);
+        for (query, over) in rules {
+            let mut cursor = QueryCursor::new();
+            cursor.set_byte_range(start_byte..end_byte);
+            let names = query.capture_names();
+            let mut captures = cursor.captures(query, tree.root_node(), source);
+            while let Some((m, i)) = captures.next() {
+                let capture = m.captures()[*i];
+                let name = names[capture.index as usize];
+                // Captures a rule uses for its predicates, as @_name, give no face.
+                if name.starts_with('_') {
+                    continue;
+                }
+                let face = interned(name);
+                let range = capture.node.byte_range();
+                let from = text.byte_to_char(range.start.max(start_byte)).max(start) - start;
+                let to = text.byte_to_char(range.end.min(end_byte)).min(end) - start;
+                let Some(slots) = faces.get_mut(from..to) else { continue };
+                match over {
+                    Override::Nil if slots.iter().all(Option::is_none) => slots.fill(Some(face)),
+                    Override::Nil => {}
+                    Override::T | Override::Prepend => slots.fill(Some(face)),
+                    Override::Append | Override::Keep => slots.iter_mut().filter(|s| s.is_none()).for_each(|s| *s = Some(face)),
+                }
+            }
+        }
+        faces
+    }
+
     /// The faces of the characters from `start` up to `end`, one for each,
-    /// from the highlighting query. Where captures overlap, the innermost
-    /// wins, and among captures of the same text the query's first.
+    /// from the mode's font-lock rules, else the highlighting query. With
+    /// the query, where captures overlap, the innermost wins, and among
+    /// captures of the same text the query's first.
     pub(crate) fn faces(&self, text: &Rope, start: usize, end: usize) -> Vec<Option<&'static str>> {
         let mut faces = vec![None; end.saturating_sub(start)];
         let Some(tree) = self.parsed(text) else { return faces };
+        if let Some(rules) = self.rules.borrow().as_ref() {
+            return self.faces_by_rules(rules, &tree, text, start, end);
+        }
         let (start_byte, end_byte) = (text.char_to_byte(start), text.char_to_byte(end));
         let mut cursor = QueryCursor::new();
         cursor.set_byte_range(start_byte..end_byte);
@@ -204,9 +322,70 @@ impl crate::editor::Editor {
         self.grammars.keys().copied().collect()
     }
 
+    /// Makes sure a language's grammar is there, loading one that does not
+    /// ship with Ember as Emacs's treesit does: libtree-sitter-LANG.dylib,
+    /// or .so, in a directory of `treesit-extra-load-path` or the
+    /// tree-sitter directory of `user-emacs-directory`, by its function
+    /// tree_sitter_LANG, unless `treesit-load-name-override-list` names
+    /// others. The reason there is none, if there is none.
+    pub(crate) fn ensure_grammar(&mut self, language: &str) -> std::result::Result<(), String> {
+        if self.grammars.contains_key(language) {
+            return Ok(());
+        }
+        let strings = |v: Option<Value>| match v {
+            Some(Value::List(items)) => items,
+            _ => Vec::new(),
+        };
+        let (mut library, mut symbol) = (format!("libtree-sitter-{language}"), format!("tree_sitter_{}", language.replace('-', "_")));
+        for entry in strings(self.variable("treesit-load-name-override-list")) {
+            if let Value::List(parts) = entry
+                && parts.first().and_then(Value::as_str) == Some(language)
+            {
+                library = parts.get(1).and_then(Value::as_str).unwrap_or(&library).to_string();
+                symbol = parts.get(2).and_then(Value::as_str).unwrap_or(&symbol).to_string();
+            }
+        }
+        let mut dirs: Vec<std::path::PathBuf> =
+            strings(self.variable("treesit-extra-load-path")).iter().filter_map(|d| d.as_str().map(crate::files::expand_file_name)).collect();
+        if let Some(dir) = self.variable("user-emacs-directory").and_then(|d| d.as_str().map(str::to_string)) {
+            dirs.push(crate::files::expand_file_name(&dir).join("tree-sitter"));
+        }
+        let mut reason = format!("No grammar for {language}");
+        for dir in dirs {
+            for ext in ["dylib", "so"] {
+                let path = dir.join(format!("{library}.{ext}"));
+                if !path.is_file() {
+                    continue;
+                }
+                match Grammar::load(&path, &symbol) {
+                    Ok(grammar) => {
+                        // Languages are few and loaded once, so their names can live on.
+                        self.grammars.insert(Box::leak(language.to_string().into_boxed_str()), grammar);
+                        return Ok(());
+                    }
+                    Err(e) => reason = format!("{}: {e}", path.display()),
+                }
+            }
+        }
+        Err(reason)
+    }
+
+    /// Gives the primary parsers of a language in the current buffer a
+    /// mode's font-lock rules, each a query and its override, in order, as
+    /// treesit-font-lock-settings enabled them; they highlight in place of
+    /// the grammar's own query.
+    pub(crate) fn set_font_lock_rules(&mut self, language: &str, rules: Rules) {
+        for parser in self.buffer().parsers.iter().filter(|p| p.primary && p.language == language) {
+            parser.set_rules(Some(rules.clone()));
+        }
+    }
+
     /// Gives the current buffer a syntax tree in a language, as a major mode
     /// does with Emacs's `treesit-parser-create`. `None` removes it.
     pub fn set_buffer_language(&mut self, language: Option<&str>) -> Result<()> {
+        if let Some(name) = language {
+            self.ensure_grammar(name).map_err(Error::new)?;
+        }
         let syntax = match language {
             Some(name) => {
                 let grammar = self

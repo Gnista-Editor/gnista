@@ -200,9 +200,9 @@ impl Editor {
         {
             return Ok(Value::Treesit(TsObject::Parser { buffer: id, parser: p.id }));
         }
-        let grammar = self.grammars.get(language).ok_or_else(|| {
-            Error::signal("treesit-load-language-error", format!("No grammar for {language}"), vec![Value::Str(language.to_string())])
-        })?;
+        self.ensure_grammar(language)
+            .map_err(|why| Error::signal("treesit-load-language-error", why, vec![Value::Str(language.to_string())]))?;
+        let grammar = self.grammars.get(language).expect("just ensured");
         let parser = SyntaxTree::new(language, grammar, tag, false)?;
         let pid = parser.id;
         self.buffers[buffer].parsers.insert(0, parser);
@@ -240,7 +240,28 @@ impl Editor {
         };
         let char_pos = |b: &Buffer, byte: usize| num(b.text().byte_to_char(byte.min(b.text().len_bytes())));
         Ok(match name {
-            "treesit-language-available-p" => Value::Bool(self.grammars.contains_key(text(0)?.as_str())),
+            "treesit-language-available-p" => {
+                let language = text(0)?;
+                match self.ensure_grammar(&language) {
+                    Ok(()) => Value::Bool(true),
+                    // With DETAIL, why not, as Emacs gives it.
+                    Err(why) if flag(1) => Value::List(vec![Value::Null, Value::Str(why)]),
+                    Err(_) => Value::Null,
+                }
+            }
+            "treesit--set-font-lock-rules" => {
+                let language = text(0)?;
+                let Some(Value::List(rules)) = arg(1).cloned() else { return Err(wrong_type("listp", arg(1))) };
+                let mut compiled = Vec::new();
+                for rule in rules {
+                    let Value::List(parts) = rule else { continue };
+                    let Some(source) = parts.first().and_then(Value::as_str) else { continue };
+                    let query = self.compiled_query(&language, source)?;
+                    compiled.push((query, crate::syntax::Override::of(parts.get(1).unwrap_or(&Value::Null))));
+                }
+                self.set_font_lock_rules(&language, compiled);
+                Value::Null
+            }
             "treesit-parser-create" => {
                 let b = self.ts_buffer(arg(1))?;
                 let tag = arg(3).and_then(Value::as_str).map(str::to_string);
@@ -388,7 +409,8 @@ impl Editor {
         if let Some(q) = self.treesit_queries.get(&key) {
             return Ok(q.clone());
         }
-        let grammar = self.grammars.get(language).ok_or_else(|| error("treesit-load-language-error", format!("No grammar for {language}")))?;
+        self.ensure_grammar(language).map_err(|why| error("treesit-load-language-error", why))?;
+        let grammar = self.grammars.get(language).expect("just ensured");
         let query = Query::new(&grammar.language, &tree_sitter_source(source)).map_err(|e| error("treesit-query-error", format!("{e}")))?;
         for pattern in 0..query.pattern_count() {
             predicates(&query, pattern)?;

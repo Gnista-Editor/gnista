@@ -757,6 +757,7 @@
     treesitLanguageAvailableP: (language) => treesit("treesit-language-available-p", String(language)),
     treesitAvailableP: () => true,
     treesitSetPrimaryLanguage: (language) => native.treesitSetLanguage(language === null || language === undefined ? null : String(language)),
+    treesitSetFontLockRules: (language, rules) => treesit("treesit--set-font-lock-rules", String(language), rules.map(([query, override]) => [String(query), override ?? null])),
     TreesitParser,
     TreesitNode,
     treesitParserP: (x) => x instanceof TreesitParser,

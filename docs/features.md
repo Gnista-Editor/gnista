@@ -65,9 +65,10 @@ What works today, in a terminal (`ember`) or a window (`ember-gui`). Where it di
 - Sessions (`desktop-save-mode`: buffers, their modes and places, `file-name-history` and the windows saved on exit and while idle, and read back at start; `desktop-save`, `desktop-read`, `desktop-clear`, `desktop-revert`, with a lock file as Emacs's).
 - Keys that can follow a prefix (`which-key-mode`), and `.editorconfig` files (`editorconfig-mode`).
 - Splitting the frame's root window (`C-x w 2`, `C-x w 3`).
+- Ember.app opened from Finder takes its PATH from the login shell, as exec-path-from-shell gives Emacs.app.
 - Indirect buffers (`C-x 4 c`, and Org's `C-c C-x b` for a subtree).
 - Fields (C-a and the word commands stop at a prompt's edge).
-- Tree-sitter highlighting (`rust-ts-mode`, `js-ts-mode`, `json-ts-mode`, `python-ts-mode`).
+- Tree-sitter highlighting (`rust-ts-mode`, `js-ts-mode`, `json-ts-mode`, `python-ts-mode`, and `go-ts-mode` with a grammar library), loading the grammars Emacs builds (`libtree-sitter-LANG.dylib` along `treesit-extra-load-path` or in `~/.config/ember/tree-sitter`), and modes' `treesit-font-lock-rules` by `treesit-font-lock-level`.
 - Indentation by Emacs's tree-sitter rules.
 - The tree for scripts (parsers, nodes, queries).
 - Incremental search (`C-s`, `C-r`, `C-M-s`).

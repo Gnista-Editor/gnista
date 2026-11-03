@@ -704,7 +704,71 @@ export const simpleImenu = ember.defun("treesit-simple-imenu", () => {
  * M-x imenu by treesit-simple-imenu-settings, and C-M-a and C-M-e by
  * treesit-defun-type-regexp or a defun thing.
  */
+// --- Font-lock rules, as treesit-font-lock-rules ----------------------------
+
+for (const [name, doc, value, local] of [
+  ["treesit-font-lock-settings", "The current mode's font-lock rules, as treesit-font-lock-rules makes them.", null, true],
+  ["treesit-font-lock-feature-list", "The features of the mode's rules by level: a list of lists, the first level's first.", null, true],
+  ["treesit-font-lock-level", "How many levels of treesit-font-lock-feature-list highlight: 1 to 4.", 3, false],
+  ["treesit-extra-load-path", "More directories to look for grammars in, as libtree-sitter-LANG.dylib, before the tree-sitter directory of user-emacs-directory.", [], false],
+  ["treesit-load-name-override-list", "Grammars whose library or function is not named after their language, each [language, library, function].", [], false],
+] as const) {
+  ember.defineVariable({ name, doc, value: value as ember.Value, local });
+}
+
+/** A font-lock rule: its query, whether it is enabled, its feature, its override and language, as Emacs's settings hold them. */
+export type FontLockSetting = [query: string, enabled: boolean, feature: string, override: string | boolean | null, language: string];
+
+/**
+ * Font-lock rules from Emacs's keyword form, as treesit-font-lock-rules:
+ * ":language", ":feature" and ":override" set what the queries after them
+ * have, each query a string of tree-sitter's syntax whose captures name faces.
+ */
+export function fontLockRules(...args: string[]): FontLockSetting[] {
+  const out: FontLockSetting[] = [];
+  let language = "";
+  let feature = "";
+  let override: string | boolean | null = null;
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a === ":language") language = args[++i];
+    else if (a === ":feature") feature = args[++i];
+    else if (a === ":override") override = args[++i] === "nil" ? null : args[i];
+    else if (a === ":default-language") language ||= args[++i];
+    else {
+      if (!language) ember.signal("treesit-font-lock-error", "Language unspecified");
+      out.push([a, true, feature, override, language]);
+      feature = "";
+      override = null;
+    }
+  }
+  return out;
+}
+
+/**
+ * Enables the rules whose features the first treesit-font-lock-level levels
+ * of treesit-font-lock-feature-list name, and gives them to the parsers to
+ * highlight with, as treesit-font-lock-recompute-features.
+ */
+export function fontLockRecomputeFeatures(): void {
+  const settings = ember.variable("treesit-font-lock-settings") as unknown as FontLockSetting[] | null;
+  if (!Array.isArray(settings) || settings.length === 0) return;
+  const levels = ember.variable("treesit-font-lock-feature-list");
+  const level = Number(ember.variable("treesit-font-lock-level") ?? 3);
+  const enabled = new Set(Array.isArray(levels) ? (levels as ember.Value[][]).slice(0, level).flat().map(String) : settings.map((s) => s[2]));
+  const updated = settings.map(([q, , feature, over, lang]): FontLockSetting => [q, enabled.has(feature), feature, over, lang]);
+  ember.setVariable("treesit-font-lock-settings", updated as unknown as ember.Value);
+  for (const language of new Set(updated.map((s) => s[4]))) {
+    ember.treesitSetFontLockRules(
+      language,
+      updated.filter((s) => s[1] && s[4] === language).map((s) => [s[0], s[3]]),
+    );
+  }
+}
+ember.defun("treesit-font-lock-recompute-features", () => fontLockRecomputeFeatures());
+
 export function majorModeSetup(keymap: string): void {
+  fontLockRecomputeFeatures();
   if (nil(ember.variable("treesit-defun-skipper"))) ember.setVariable("treesit-defun-skipper", defaultDefunSkipper);
   if (!nil(ember.variable("treesit-simple-indent-rules")) || !nil(ember.variable("treesit-indent-function"))) {
     ember.setVariable("indent-line-function", treesitIndent);

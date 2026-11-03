@@ -2228,6 +2228,20 @@ declare global {
        */
       "global-display-line-numbers-mode": [];
       /**
+       * Edit Go, in go-ts-mode: Ember's mode for it, as major-mode-remap-alist would have Emacs use.
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "go-mode": [];
+      /**
+       * The major mode for editing Go, highlighted from a tree-sitter syntax tree.
+       *
+       * Files matching \.go\' use it; see auto-mode-alist.
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "go-ts-mode": [];
+      /**
        * Go to a position in the buffer, counting characters from 1: the prefix argument's, else one asked for.
        *
        * @param arg raw prefix argument
@@ -7367,6 +7381,16 @@ declare global {
        */
       "global-mark-ring-max": Value;
       /**
+       * How far Go indents each level.
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "go-ts-mode-indent-offset": Value;
+      /**
+       * Keymap go-ts-mode-map.
+       */
+      "go-ts-mode-map": Value;
+      /**
        * Line numbers answered to goto-line, newest first.
        *
        * Defined in packages/simple.ts.
@@ -9148,11 +9172,41 @@ declare global {
        */
       "treesit-defun-type-regexp": Value;
       /**
+       * More directories to look for grammars in, as libtree-sitter-LANG.dylib, before the tree-sitter directory of user-emacs-directory.
+       *
+       * Defined in packages/treesit.ts.
+       */
+      "treesit-extra-load-path": Value;
+      /**
+       * The features of the mode's rules by level: a list of lists, the first level's first.
+       *
+       * Defined in packages/treesit.ts.
+       */
+      "treesit-font-lock-feature-list": Value;
+      /**
+       * How many levels of treesit-font-lock-feature-list highlight: 1 to 4.
+       *
+       * Defined in packages/treesit.ts.
+       */
+      "treesit-font-lock-level": Value;
+      /**
+       * The current mode's font-lock rules, as treesit-font-lock-rules makes them.
+       *
+       * Defined in packages/treesit.ts.
+       */
+      "treesit-font-lock-settings": Value;
+      /**
        * The function treesit-indent asks for [anchor, offset], given the node, its parent and the line's start.
        *
        * Defined in packages/treesit.ts.
        */
       "treesit-indent-function": Value;
+      /**
+       * Grammars whose library or function is not named after their language, each [language, library, function].
+       *
+       * Defined in packages/treesit.ts.
+       */
+      "treesit-load-name-override-list": Value;
       /**
        * What M-x imenu lists in a tree-sitter mode: a list of [category, regexp, pred, name-fn], nodes whose type matches regexp, grouped under category.
        *
@@ -10673,6 +10727,10 @@ declare global {
        * Run after Global-Display-Line-Numbers mode is turned on.
        */
       "global-display-line-numbers-mode-on-hook": Value;
+      /**
+       * Run after entering Go mode, after the hooks of the modes it is built on.
+       */
+      "go-ts-mode-hook": Value;
       /**
        * Run after entering Grep mode, after the hooks of the modes it is built on.
        */
@@ -12493,6 +12551,14 @@ declare global {
     function treesitLanguageAvailable(language: string): boolean;
     /** Whether Ember has a grammar for a language, as treesit-language-available-p. */
     function treesitLanguageAvailableP(language: string): boolean;
+    /**
+     * Highlight the current buffer's primary parser of a language with
+     * font-lock rules, each a query whose captures name faces and how its
+     * faces go over earlier rules' (null, "t", "append", "prepend", "keep"),
+     * in order, in place of the grammar's own query, as the enabled
+     * treesit-font-lock-settings highlight. treesit.ts's majorModeSetup calls it.
+     */
+    function treesitSetFontLockRules(language: string, rules: [query: string, override: string | boolean | null][]): void;
     /** Whether tree-sitter is there, as treesit-available-p: always. */
     function treesitAvailableP(): boolean;
     /**

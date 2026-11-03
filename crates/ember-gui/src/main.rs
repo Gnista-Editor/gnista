@@ -9,6 +9,16 @@ use ember_gui::{EmberApp, theme};
 use ember_script::config;
 
 fn main() -> eframe::Result {
+    // Opened from Finder, an app has launchd's PATH; it takes the login
+    // shell's, as Emacs.app users have exec-path-from-shell do, before any
+    // thread starts that could read the environment meanwhile.
+    #[cfg(unix)]
+    if ember_gui::shell_path::opened_as_app()
+        && let Some(path) = ember_gui::shell_path::login_shell_path(&env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".into()), std::time::Duration::from_secs(3))
+    {
+        // SAFETY: no other thread has started yet.
+        unsafe { env::set_var("PATH", path) };
+    }
     // Opened from Finder, an app starts in /; Emacs.app starts in the home
     // directory instead, and so does Ember.app.
     if env::current_dir().is_ok_and(|dir| dir == std::path::Path::new("/"))

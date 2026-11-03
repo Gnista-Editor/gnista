@@ -210,3 +210,85 @@ fn parsers_and_nodes_out_of_date() {
     // Emacs: (1 t nil 2 2 3 1 rust nil) (nil t "function_item" "line_comment")
     assert_eq!(got, r#"[1,true,false,2,2,3,1,"rust",null,false,true,"function_item","line_comment",true,"outdated",false,2]"#);
 }
+
+/// Each run of the same style in the first rows, with its text.
+fn face_runs(ed: &mut Editor) -> Vec<(String, ember_core::Style)> {
+    ed.redisplay();
+    ed.window_rows(20, true).iter().flat_map(|r| r.segments.iter()).map(|s| (s.text.clone(), s.style.clone())).collect()
+}
+
+/// The style a face draws in.
+fn style(ed: &Editor, face: &str) -> ember_core::Style {
+    ed.style_for(&[face.to_string()], true)
+}
+
+#[test]
+fn font_lock_rules_highlight_in_place_of_the_grammars_query() {
+    let (mut ed, s) = setup();
+    ed.window_buffer_mut().set_text("{\"a\": 1, \"b\": true}");
+    ed.call("json-ts-mode", vec![]).unwrap();
+    // The rules' order and overrides decide, as treesit-font-lock-fontify-region's do:
+    // the first rule's face stays where nil overrides, the third's goes over it with t.
+    s.eval_expression(
+        &mut ed,
+        r#"ember.treesitSetFontLockRules("json", [
+            ["(pair key: (_) @font-lock-keyword-face)", null],
+            ["(pair) @font-lock-warning-face", null],
+            ["(true) @font-lock-builtin-face", "t"],
+            ["(number) @font-lock-type-face", null]])"#,
+    )
+    .unwrap();
+    let runs = face_runs(&mut ed);
+    let style_of = |text: &str| runs.iter().find(|(t, _)| t == text).map(|(_, f)| f.clone()).unwrap_or_else(|| panic!("no {text:?} in {runs:?}"));
+    assert_eq!(style_of("\"a\""), style(&ed, "font-lock-keyword-face"));
+    // A pair whose key has a face already keeps it, rather than taking the second rule's.
+    assert!(!runs.iter().any(|(_, f)| *f == style(&ed, "font-lock-warning-face")), "{runs:?}");
+    assert_eq!(style_of("true"), style(&ed, "font-lock-builtin-face"));
+    assert_eq!(style_of("1"), style(&ed, "font-lock-type-face"));
+}
+
+#[test]
+fn a_mode_without_its_grammar_warns_and_stays_plain() {
+    let (mut ed, _s) = setup();
+    let dir = tempfile::tempdir().unwrap();
+    ed.set_variable("user-emacs-directory", ember_core::Value::Str(format!("{}/", dir.path().display())));
+    ed.call("go-ts-mode", vec![]).unwrap();
+    assert_eq!(ed.echo(), Some("Cannot activate tree-sitter, because language grammar for go is unavailable"));
+    assert_eq!(ed.buffer_language(), None);
+}
+
+/// Go's grammar as Emacs's treesit-install-language-grammar builds it, if
+/// this machine has one: Ember does not ship it.
+fn go_grammar() -> Option<std::path::PathBuf> {
+    let dir = std::path::PathBuf::from(std::env::var_os("HOME")?).join(".emacs.d/tree-sitter");
+    dir.join("libtree-sitter-go.dylib").exists().then_some(dir)
+}
+
+#[test]
+fn go_ts_mode_loads_its_grammar_and_highlights_with_its_rules() {
+    let Some(grammars) = go_grammar() else {
+        eprintln!("No libtree-sitter-go in ~/.emacs.d/tree-sitter: skipped");
+        return;
+    };
+    let (mut ed, _s) = setup();
+    ed.set_variable("treesit-extra-load-path", ember_core::Value::List(vec![ember_core::Value::Str(grammars.display().to_string())]));
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("main.go");
+    std::fs::write(&file, "package main\n\nfunc main() {\n\tx := len(\"hi\")\n}\n").unwrap();
+    ed.visit_file(&file).unwrap();
+    assert_eq!(ed.mode_name(), "Go");
+    assert_eq!(ed.buffer_language(), Some("go"));
+    assert_eq!(ed.variable("indent-tabs-mode"), Some(ember_core::Value::Bool(true)));
+    let runs = face_runs(&mut ed);
+    let style_of = |text: &str| runs.iter().find(|(t, _)| t == text).map(|(_, f)| f.clone()).unwrap_or_else(|| panic!("no {text:?} in {runs:?}"));
+    assert_eq!(style_of("package"), style(&ed, "font-lock-keyword-face"));
+    assert_eq!(style_of("\"hi\""), style(&ed, "font-lock-string-face"));
+    assert_eq!(style_of("len"), style(&ed, "font-lock-builtin-face"));
+    assert_eq!(style_of("func"), style(&ed, "font-lock-keyword-face"));
+    // Indenting by Emacs's rules: a block's statements one tab in.
+    ed.press("M-< C-n C-n C-n TAB").unwrap();
+    assert_eq!(ed.window_buffer().line_text(3), "\tx := len(\"hi\")");
+    // Imenu from treesit-simple-imenu-settings, and C-M-a by defuns.
+    ed.press("C-M-a").unwrap();
+    assert_eq!(ed.window_buffer().point(), 14);
+}

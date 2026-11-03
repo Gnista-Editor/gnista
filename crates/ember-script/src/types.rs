@@ -909,6 +909,14 @@ const API: &str = r##"
   function treesitLanguageAvailable(language: string): boolean;
   /** Whether Ember has a grammar for a language, as treesit-language-available-p. */
   function treesitLanguageAvailableP(language: string): boolean;
+  /**
+   * Highlight the current buffer's primary parser of a language with
+   * font-lock rules, each a query whose captures name faces and how its
+   * faces go over earlier rules' (null, "t", "append", "prepend", "keep"),
+   * in order, in place of the grammar's own query, as the enabled
+   * treesit-font-lock-settings highlight. treesit.ts's majorModeSetup calls it.
+   */
+  function treesitSetFontLockRules(language: string, rules: [query: string, override: string | boolean | null][]): void;
   /** Whether tree-sitter is there, as treesit-available-p: always. */
   function treesitAvailableP(): boolean;
   /**
