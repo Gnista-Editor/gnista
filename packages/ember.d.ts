@@ -6892,6 +6892,12 @@ declare global {
        */
       "completion-styles": Value;
       /**
+       * The completion styles there are, as [name, doc] pairs: those Ember has built in and those packages add with defineCompletionStyle.
+       *
+       * Defined in packages/minibuffer.ts.
+       */
+      "completion-styles-alist": Value;
+      /**
        * Whether editing a file makes a lock file beside it, .#name, so another Emacs or Ember editing it is warned.
        */
       "create-lockfiles": Value;
@@ -11624,6 +11630,31 @@ declare global {
     function recentKeys(includeCmds?: boolean): (string | { command: string })[];
     /** What the open prompt reads, or undefined if none is open. */
     function minibufferInfo(): MinibufferInfo | undefined;
+    /**
+     * What the open prompt's input completes against, with point at
+     * `point` (where it is by default), as Emacs's completion-boundaries
+     * split it against minibuffer-completion-table: `base`, the part
+     * completion leaves alone, such as a file name's directory; `before`
+     * and `after`, the part before and after point that completes;
+     * `suffix`, what follows that; and the names it could complete to.
+     */
+    function minibufferCompletionField(point?: number): { base: string; before: string; after: string; suffix: string; names: string[] } | undefined;
+    /**
+     * The completion styles for the open prompt, in order: its category's
+     * first, from completion-category-overrides or -defaults, then
+     * completion-styles, as Emacs's completion--styles.
+     */
+    function completionStyles(): string[];
+    /**
+     * The names that BEFORE and AFTER, the input either side of point,
+     * match in one of the completion styles Ember has built in: basic,
+     * partial-completion, substring, flex, emacs22 or initials. Undefined
+     * for a style it does not have, as one a package adds to
+     * completion-styles-alist.
+     */
+    function completionAllInStyle(style: string, before: string, after: string, names: string[], ignore_case: boolean | undefined): string[] | undefined;
+    /** Whether `input` is an answer the open prompt takes, as test-completion. */
+    function testCompletion(input: string): boolean;
     /** An environment variable's value, as Emacs's getenv. */
     function getenv(name: string): string | undefined;
     /** A file's attributes, or undefined if there is no such file. */

@@ -2290,7 +2290,7 @@ impl Editor {
     }
 
     /// The styles in `completion-styles`, in order.
-    pub(crate) fn completion_styles(&self) -> Vec<String> {
+    pub fn completion_styles(&self) -> Vec<String> {
         let strings = |v: &Value| match v {
             Value::List(items) => items.iter().filter_map(|v| v.as_str().map(str::to_string)).collect(),
             _ => Vec::new(),

@@ -1,0 +1,492 @@
+{
+  "cases": [
+    {
+      "name": "vertico-prefix",
+      "states": [
+        {
+          "input": "",
+          "before": "1/5    ",
+          "after": " \napple\nbanana\ncherry\napricot\navocado\n"
+        },
+        {
+          "input": "a",
+          "before": "1/3    ",
+          "after": " \napple\napricot\navocado\n"
+        },
+        {
+          "input": "ap",
+          "before": "1/2    ",
+          "after": " \napple\napricot\n"
+        },
+        {
+          "input": "ap",
+          "before": "2/2    ",
+          "after": " \napple\napricot\n"
+        },
+        {
+          "input": "ap",
+          "before": "2/2    ",
+          "after": " \napple\napricot\n"
+        },
+        {
+          "input": "ap",
+          "before": "1/2    ",
+          "after": " \napple\napricot\n"
+        },
+        {
+          "input": "a",
+          "before": "1/3    ",
+          "after": " \napple\napricot\navocado\n"
+        },
+        {
+          "input": "a",
+          "before": "2/3    ",
+          "after": " \napple\napricot\navocado\n"
+        },
+        {
+          "input": "apricot",
+          "before": "1/1    ",
+          "after": " \napricot\n"
+        },
+        {
+          "exited": true,
+          "answer": "apricot"
+        }
+      ]
+    },
+    {
+      "name": "vertico-empty-input",
+      "states": [
+        {
+          "input": "",
+          "before": "1/4    ",
+          "after": " \nfig\napple\nbanana\ncherry\n"
+        },
+        {
+          "input": "",
+          "before": "2/4    ",
+          "after": " \nfig\napple\nbanana\ncherry\n"
+        },
+        {
+          "input": "",
+          "before": "3/4    ",
+          "after": " \nfig\napple\nbanana\ncherry\n"
+        },
+        {
+          "input": "",
+          "before": "2/4    ",
+          "after": " \nfig\napple\nbanana\ncherry\n"
+        },
+        {
+          "exited": true,
+          "answer": "apple"
+        }
+      ]
+    },
+    {
+      "name": "vertico-scroll",
+      "states": [
+        {
+          "input": "",
+          "before": "1/7    ",
+          "after": " \na1\na2\na3\n"
+        },
+        {
+          "input": "",
+          "before": "2/7    ",
+          "after": " \na1\na2\na3\n"
+        },
+        {
+          "input": "",
+          "before": "3/7    ",
+          "after": " \na2\na3\na4\n"
+        },
+        {
+          "input": "",
+          "before": "4/7    ",
+          "after": " \na3\na4\na5\n"
+        },
+        {
+          "input": "",
+          "before": "5/7    ",
+          "after": " \na4\na5\na6\n"
+        },
+        {
+          "input": "",
+          "before": "6/7    ",
+          "after": " \na5\na6\na7\n"
+        },
+        {
+          "input": "",
+          "before": "7/7    ",
+          "after": " \na5\na6\na7\n"
+        },
+        {
+          "input": "",
+          "before": "7/7    ",
+          "after": " \na5\na6\na7\n"
+        },
+        {
+          "input": "",
+          "before": "1/7    ",
+          "after": " \na1\na2\na3\n"
+        },
+        {
+          "input": "",
+          "before": "7/7    ",
+          "after": " \na5\na6\na7\n"
+        },
+        {
+          "exited": true,
+          "answer": "a7"
+        }
+      ]
+    },
+    {
+      "name": "vertico-cycle",
+      "states": [
+        {
+          "input": "",
+          "before": "1/3    ",
+          "after": " \none\ntwo\nthree\n"
+        },
+        {
+          "input": "",
+          "before": "*/3    ",
+          "after": " \none\ntwo\nthree\n"
+        },
+        {
+          "input": "",
+          "before": "3/3    ",
+          "after": " \none\ntwo\nthree\n"
+        },
+        {
+          "input": "",
+          "before": "*/3    ",
+          "after": " \none\ntwo\nthree\n"
+        },
+        {
+          "input": "",
+          "before": "1/3    ",
+          "after": " \none\ntwo\nthree\n"
+        },
+        {
+          "input": "",
+          "before": "2/3    ",
+          "after": " \none\ntwo\nthree\n"
+        },
+        {
+          "exited": true,
+          "answer": "two"
+        }
+      ]
+    },
+    {
+      "name": "vertico-require-match",
+      "states": [
+        {
+          "input": "",
+          "before": "1/3    ",
+          "after": " \nred\nblue\ngreen\n"
+        },
+        {
+          "input": "x",
+          "before": "!/0    ",
+          "after": " "
+        },
+        {
+          "input": "x",
+          "before": "!/0    ",
+          "after": " "
+        },
+        {
+          "input": "",
+          "before": "1/3    ",
+          "after": " \nred\nblue\ngreen\n"
+        },
+        {
+          "input": "g",
+          "before": "1/1    ",
+          "after": " \ngreen\n"
+        },
+        {
+          "exited": true,
+          "answer": "green"
+        }
+      ]
+    },
+    {
+      "name": "vertico-no-match-input",
+      "states": [
+        {
+          "input": "",
+          "before": "1/3    ",
+          "after": " \nred\nblue\ngreen\n"
+        },
+        {
+          "input": "x",
+          "before": "*/0    ",
+          "after": " "
+        },
+        {
+          "input": "xy",
+          "before": "*/0    ",
+          "after": " "
+        },
+        {
+          "exited": true,
+          "answer": "xy"
+        }
+      ]
+    },
+    {
+      "name": "vertico-exit-input",
+      "states": [
+        {
+          "input": "",
+          "before": "1/2    ",
+          "after": " \nalpha\nalphabet\n"
+        },
+        {
+          "input": "a",
+          "before": "1/2    ",
+          "after": " \nalpha\nalphabet\n"
+        },
+        {
+          "input": "al",
+          "before": "1/2    ",
+          "after": " \nalpha\nalphabet\n"
+        },
+        {
+          "exited": true,
+          "answer": "al"
+        }
+      ]
+    },
+    {
+      "name": "vertico-history",
+      "states": [
+        {
+          "input": "",
+          "before": "1/5    ",
+          "after": " \ncherry\nfig\nbanana\ndate\napple\n"
+        },
+        {
+          "input": "",
+          "before": "2/5    ",
+          "after": " \ncherry\nfig\nbanana\ndate\napple\n"
+        },
+        {
+          "exited": true,
+          "answer": "fig"
+        }
+      ]
+    },
+    {
+      "name": "vertico-default",
+      "states": [
+        {
+          "input": "",
+          "before": "1/4    ",
+          "after": " \ndate\napple\nbanana\ncherry\n"
+        },
+        {
+          "input": "a",
+          "before": "1/1    ",
+          "after": " \napple\n"
+        },
+        {
+          "input": "",
+          "before": "1/4    ",
+          "after": " \ndate\napple\nbanana\ncherry\n"
+        },
+        {
+          "exited": true,
+          "answer": "date"
+        }
+      ]
+    },
+    {
+      "name": "orderless-components",
+      "states": [
+        {
+          "input": "",
+          "before": "1/6    ",
+          "after": " \nfind-file\nbuffer-menu\nkill-buffer\nswitch-to-buffer\nfile-cache-add-file\nfind-file-other-window\n"
+        },
+        {
+          "input": "f",
+          "before": "1/6    ",
+          "after": " \nfind-file\nbuffer-menu\nkill-buffer\nswitch-to-buffer\nfile-cache-add-file\nfind-file-other-window\n"
+        },
+        {
+          "input": "fi",
+          "before": "1/3    ",
+          "after": " \nfind-file\nfile-cache-add-file\nfind-file-other-window\n"
+        },
+        {
+          "input": "fil",
+          "before": "1/3    ",
+          "after": " \nfind-file\nfile-cache-add-file\nfind-file-other-window\n"
+        },
+        {
+          "input": "fil ",
+          "before": "1/3    ",
+          "after": " \nfind-file\nfile-cache-add-file\nfind-file-other-window\n"
+        },
+        {
+          "input": "fil o",
+          "before": "1/1    ",
+          "after": " \nfind-file-other-window\n"
+        },
+        {
+          "input": "fil ot",
+          "before": "1/1    ",
+          "after": " \nfind-file-other-window\n"
+        },
+        {
+          "input": "fil o",
+          "before": "1/1    ",
+          "after": " \nfind-file-other-window\n"
+        },
+        {
+          "input": "fil ",
+          "before": "1/3    ",
+          "after": " \nfind-file\nfile-cache-add-file\nfind-file-other-window\n"
+        },
+        {
+          "input": "fil",
+          "before": "1/3    ",
+          "after": " \nfind-file\nfile-cache-add-file\nfind-file-other-window\n"
+        },
+        {
+          "input": "filb",
+          "before": "*/0    ",
+          "after": " "
+        },
+        {
+          "input": "filbu",
+          "before": "*/0    ",
+          "after": " "
+        },
+        {
+          "input": "filbuf",
+          "before": "*/0    ",
+          "after": " "
+        },
+        {
+          "input": "filbuf",
+          "before": "*/0    ",
+          "after": " "
+        },
+        {
+          "exited": true,
+          "answer": "filbuf"
+        }
+      ]
+    },
+    {
+      "name": "orderless-regexp",
+      "states": [
+        {
+          "input": "",
+          "before": "1/4    ",
+          "after": " \ngamma\nalphabet\nalpha-beta\nbeta-alpha\n"
+        },
+        {
+          "input": "^",
+          "before": "1/4    ",
+          "after": " \ngamma\nalphabet\nalpha-beta\nbeta-alpha\n"
+        },
+        {
+          "input": "^a",
+          "before": "1/2    ",
+          "after": " \nalphabet\nalpha-beta\n"
+        },
+        {
+          "input": "^al",
+          "before": "1/2    ",
+          "after": " \nalphabet\nalpha-beta\n"
+        },
+        {
+          "input": "^al ",
+          "before": "1/2    ",
+          "after": " \nalphabet\nalpha-beta\n"
+        },
+        {
+          "input": "^al b",
+          "before": "1/2    ",
+          "after": " \nalphabet\nalpha-beta\n"
+        },
+        {
+          "input": "^al be",
+          "before": "1/2    ",
+          "after": " \nalphabet\nalpha-beta\n"
+        },
+        {
+          "input": "^al bet",
+          "before": "1/2    ",
+          "after": " \nalphabet\nalpha-beta\n"
+        },
+        {
+          "input": "^al bet$",
+          "before": "1/1    ",
+          "after": " \nalphabet\n"
+        },
+        {
+          "exited": true,
+          "answer": "alphabet"
+        }
+      ]
+    },
+    {
+      "name": "orderless-smart-case",
+      "states": [
+        {
+          "input": "",
+          "before": "1/4    ",
+          "after": " \nREADME\nMakefile\nreadme.org\nmakefile.am\n"
+        },
+        {
+          "input": "m",
+          "before": "1/4    ",
+          "after": " \nREADME\nMakefile\nreadme.org\nmakefile.am\n"
+        },
+        {
+          "input": "ma",
+          "before": "1/2    ",
+          "after": " \nMakefile\nmakefile.am\n"
+        },
+        {
+          "input": "mak",
+          "before": "1/2    ",
+          "after": " \nMakefile\nmakefile.am\n"
+        },
+        {
+          "input": "ma",
+          "before": "1/2    ",
+          "after": " \nMakefile\nmakefile.am\n"
+        },
+        {
+          "input": "m",
+          "before": "1/4    ",
+          "after": " \nREADME\nMakefile\nreadme.org\nmakefile.am\n"
+        },
+        {
+          "input": "",
+          "before": "1/4    ",
+          "after": " \nREADME\nMakefile\nreadme.org\nmakefile.am\n"
+        },
+        {
+          "input": "M",
+          "before": "1/2    ",
+          "after": " \nREADME\nMakefile\n"
+        },
+        {
+          "exited": true,
+          "answer": "README"
+        }
+      ]
+    }
+  ]
+}

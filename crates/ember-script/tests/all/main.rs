@@ -59,6 +59,7 @@ mod textprop;
 mod themes;
 mod treesit;
 mod undo_list;
+mod vertico;
 mod view;
 mod vundo;
 mod which_key;

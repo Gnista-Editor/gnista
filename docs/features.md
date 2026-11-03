@@ -80,6 +80,7 @@ What works today, in a terminal (`ember`) or a window (`ember-gui`). Where it di
 - `replace-regexp` and the search commands.
 - Regular expressions in Emacs's syntax.
 - M-x with completion styles (`f-f` completes to `find-file`).
+- Completion styles and metadata for packages (`minibuffer.ts`: `defineCompletionStyle` adds to `completion-styles-alist`, `completionAllCompletions` matches the open prompt in its styles, `completingReadWithMetadata` and `completion-metadata-get` carry annotations, groups and sorts).
 - Icomplete's list of completions as you type (`icomplete-mode`, on by default, `fido-mode`, `icomplete-vertical-mode`, `fido-vertical-mode`).
 - Minibuffer history (`M-p`, `M-n`).
 - The minibuffer (a buffer with its prompt as read-only text, `C-x o` out of it and back, and recursive minibuffers with `enable-recursive-minibuffers`).
@@ -94,3 +95,5 @@ Ports of packages from outside Emacs, in `examples/packages/`, for a config to c
 - `vundo`: the undo history as a tree (`M-x vundo`: `f`, `b`, `n`, `p`, `a`, `w`, `e`, `l`, `r`, `m`, `u`, `d` for a diff, `RET`, `q`), after vundo 2.4.
 - `persistent-scratch`: the scratch buffers kept across sessions (`persistent-scratch-save`, `persistent-scratch-restore`, `persistent-scratch-autosave-mode`, `persistent-scratch-setup-default`, backups), in the file format persistent-scratch.el writes.
 - `casual`: Casual's Dired menu (`casual-dired-tmenu`, usually on `?` in Dired), with its menus for sorting, links, changing files, marking by regexp, utilities, searching and settings, after Casual 2.
+- `vertico`: every prompt that completes lists its candidates down the minibuffer (`vertico-mode`: `C-n`, `C-p`, `<down>`, `<up>`, `M-<`, `M->`, `TAB`, `RET`, `M-RET`, groups with `M-{` and `M-}`, `vertico-count`, `vertico-cycle`, `vertico-preselect`, sorting by history, length and name), after vertico 2.5.
+- `orderless`: the completion style that matches space-separated components in any order, as literals or regexps, with orderless's affix characters and smart case (`completion-styles` `("orderless" "basic")`).

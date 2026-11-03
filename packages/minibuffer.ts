@@ -74,3 +74,136 @@ ember.defineCommand({
 ember.defalias("complete-symbol", "completion-at-point");
 ember.bindKey("C-M-i", "completion-at-point");
 
+
+// Completion for scripts that show it their own way, as vertico does: the
+// open prompt's completions in each style, styles that packages add, as
+// orderless does to completion-styles-alist, and the prompt's metadata,
+// as completion-metadata gives it.
+
+ember.defineVariable({
+  name: "completion-styles-alist",
+  doc: "The completion styles there are, as [name, doc] pairs: those Ember has built in and those packages add with defineCompletionStyle.",
+  value: [
+    ["basic", "Completion of the prefix before point and the suffix after point."],
+    ["partial-completion", "Completion of multiple words, each one taken as a prefix."],
+    ["substring", "Completion of the string taken as a substring."],
+    ["flex", "Completion of an in-order subset of characters."],
+    ["emacs22", "Prefix completion that only operates on the text before point."],
+  ],
+});
+
+/** The open prompt's input, split as completion-boundaries splits it, with what it completes against. */
+export interface CompletionField {
+  base: string;
+  before: string;
+  after: string;
+  suffix: string;
+  names: string[];
+}
+
+/** What a completion style finds: the matches, and how to highlight one, as completion-lazy-hilit-fn. */
+export interface StyleMatches {
+  completions: string[];
+  hilit?: (candidate: string) => string | ember.PropertizedString;
+}
+
+/** A completion style a package adds, as an entry of completion-styles-alist. */
+export interface CompletionStyle {
+  doc: string;
+  /** The names the field matches, as the style's all-completions function. */
+  all: (field: CompletionField, ignoreCase: boolean) => StyleMatches | undefined;
+}
+
+const scriptStyles = new Map<string, CompletionStyle>();
+
+/** Adds a completion style, for completion-styles to name, as an entry of completion-styles-alist. */
+export function defineCompletionStyle(name: string, style: CompletionStyle): void {
+  scriptStyles.set(name, style);
+  const alist = ember.variable("completion-styles-alist");
+  const entries = Array.isArray(alist) ? (alist as ember.Value[][]).filter((e) => e[0] !== name) : [];
+  ember.setDefault("completion-styles-alist", [...entries, [name, style.doc]]);
+}
+
+/** The metadata of a completion table, as Emacs's completion metadata: what kind of things it completes and how to show them. */
+export interface CompletionMetadata {
+  category?: string;
+  /** Text to show after a candidate. */
+  annotationFunction?: (candidate: string) => string | ember.PropertizedString | undefined;
+  /** Each candidate with text to show before and after it, as [candidate, prefix, suffix]. */
+  affixationFunction?: (candidates: string[]) => [string, string | ember.PropertizedString, string | ember.PropertizedString][];
+  /** A candidate's group title, or with `transform` the candidate as shown in its group. */
+  groupFunction?: (candidate: string, transform: boolean) => string | undefined;
+  /** How to order the candidates for showing them. */
+  displaySortFunction?: (candidates: string[]) => string[];
+  cycleSortFunction?: (candidates: string[]) => string[];
+}
+
+/** The metadata each open prompt's caller gave, by minibuffer depth. */
+const metadataByDepth = new Map<number, CompletionMetadata>();
+
+/**
+ * Reads with completion, as completingRead does, the table's metadata
+ * given too, as a completion table gives Emacs's completing-read its
+ * metadata: annotations, groups, a sort.
+ */
+export function completingReadWithMetadata(
+  prompt: string,
+  collection: ember.CompletionTable,
+  options: ember.CompletingReadOptions & { metadata?: CompletionMetadata } = {},
+): string {
+  const { metadata, ...rest } = options;
+  const depth = ember.minibufferDepth() + 1;
+  const old = metadataByDepth.get(depth);
+  if (metadata) metadataByDepth.set(depth, { ...metadata, category: metadata.category ?? rest.category });
+  try {
+    return ember.completingRead(prompt, collection, { ...rest, category: rest.category ?? metadata?.category });
+  } finally {
+    if (old) metadataByDepth.set(depth, old);
+    else metadataByDepth.delete(depth);
+  }
+}
+
+/** A property of the open prompt's metadata, as completion-metadata-get: marginalia advises it to give annotations by category. */
+export function completionMetadataGet<K extends keyof CompletionMetadata>(prop: K): CompletionMetadata[K] | undefined {
+  return ember.funcall("completion-metadata-get", prop) as CompletionMetadata[K] | undefined;
+}
+
+ember.defun("completion-metadata-get", (prop: string) => {
+  const own = metadataByDepth.get(ember.minibufferDepth());
+  if (prop === "category") return own?.category ?? ember.minibufferInfo()?.category ?? undefined;
+  return own?.[prop as keyof CompletionMetadata];
+});
+
+/** Highlights the part of CANDIDATE a built-in style matched, in completions-common-part, as completion-hilit-commonality does. */
+function builtinHilit(style: string, field: CompletionField, ignoreCase: boolean): ((candidate: string) => string | ember.PropertizedString) | undefined {
+  const typed = field.before;
+  if (typed === "") return undefined;
+  const fold = (s: string) => (ignoreCase ? s.toLowerCase() : s);
+  return (candidate) => {
+    const at = style === "substring" ? fold(candidate).indexOf(fold(typed)) : fold(candidate).startsWith(fold(typed)) ? 0 : -1;
+    if (at < 0) return candidate;
+    return ember.concat(candidate.slice(0, at), ember.propertize(candidate.slice(at, at + typed.length), { face: "completions-common-part" }), candidate.slice(at + typed.length));
+  };
+}
+
+/**
+ * The open prompt's completions in the first of its styles that finds any,
+ * as completion-all-completions, with the base they go after and how to
+ * highlight them; undefined with no prompt that completes.
+ */
+export function completionAllCompletions(point?: number): (StyleMatches & { base: string; style?: string; field: CompletionField }) | undefined {
+  const field = ember.minibufferCompletionField(point);
+  if (!field) return undefined;
+  const ignoreCase = ember.minibufferInfo()?.ignoreCase ?? false;
+  for (const style of ember.completionStyles()) {
+    const own = scriptStyles.get(style);
+    const found: StyleMatches | undefined = own
+      ? own.all(field, ignoreCase)
+      : (() => {
+          const completions = ember.completionAllInStyle(style, field.before, field.after, field.names, ignoreCase);
+          return completions ? { completions, hilit: builtinHilit(style, field, ignoreCase) } : undefined;
+        })();
+    if (found && found.completions.length > 0) return { ...found, base: field.base, style, field };
+  }
+  return { completions: [], base: field.base, field };
+}

@@ -428,6 +428,22 @@ impl Editor {
         Field { base: String::new(), before: before.to_string(), after: after.to_string(), suffix: String::new(), names }
     }
 
+    /// What the open prompt's input completes against with point at
+    /// `point`, as scripts that complete for themselves, such as vertico,
+    /// need it: the part completion leaves alone, the part before and after
+    /// point that completes, what follows that, and the names.
+    pub fn minibuffer_completion_field(&self, point: usize) -> Option<(String, String, String, String, Vec<String>)> {
+        let prompt = self.prompt.as_ref().filter(|p| p.completing())?;
+        let f = self.completion_table(prompt, &self.minibuffer_input(), point);
+        Some((f.base, f.before, f.after, f.suffix, f.names))
+    }
+
+    /// Whether `input` is an answer the open prompt takes, as Emacs's
+    /// `test-completion`.
+    pub fn test_completion(&self, input: &str) -> bool {
+        self.is_completion_match(input)
+    }
+
     /// Whether completion ignores case, as Emacs binds `completion-ignore-case`
     /// for file and buffer names to `read-file-name-completion-ignore-case`
     /// and `read-buffer-completion-ignore-case`.

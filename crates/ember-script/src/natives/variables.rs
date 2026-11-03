@@ -647,6 +647,42 @@ natives! {
             .map(|(base, comps, fresh)| Record::new().with("base", base).with("completions", comps).with("fresh", fresh)))
     }
 
+    /// What the open prompt's input completes against, with point at
+    /// `point` (where it is by default), as Emacs's completion-boundaries
+    /// split it against minibuffer-completion-table: `base`, the part
+    /// completion leaves alone, such as a file name's directory; `before`
+    /// and `after`, the part before and after point that completes;
+    /// `suffix`, what follows that; and the names it could complete to.
+    #[ts = "(point?: number): { base: string; before: string; after: string; suffix: string; names: string[] } | undefined"]
+    pub fn minibufferCompletionField(ed, point: Option<usize>) -> Option<Record> {
+        let point = point.unwrap_or_else(|| ed.minibuffer_input_point());
+        Ok(ed.minibuffer_completion_field(point).map(|(base, before, after, suffix, names)| {
+            Record::new().with("base", base).with("before", before).with("after", after).with("suffix", suffix).with("names", names)
+        }))
+    }
+
+    /// The completion styles for the open prompt, in order: its category's
+    /// first, from completion-category-overrides or -defaults, then
+    /// completion-styles, as Emacs's completion--styles.
+    pub fn completionStyles(ed) -> Vec<String> {
+        Ok(ed.completion_styles())
+    }
+
+    /// The names that BEFORE and AFTER, the input either side of point,
+    /// match in one of the completion styles Ember has built in: basic,
+    /// partial-completion, substring, flex, emacs22 or initials. Undefined
+    /// for a style it does not have, as one a package adds to
+    /// completion-styles-alist.
+    pub fn completionAllInStyle(ed, style: String, before: String, after: String, names: Vec<String>, ignore_case: Option<bool>) -> Option<Vec<String>> {
+        let _ = ed;
+        Ok(ember_core::completion::all_in_style(&style, &before, &after, &names, ignore_case.unwrap_or(false)))
+    }
+
+    /// Whether `input` is an answer the open prompt takes, as test-completion.
+    pub fn testCompletion(ed, input: String) -> bool {
+        Ok(ed.test_completion(&input))
+    }
+
     /// Null for no completion, true for the only one, and `{ text, point }` otherwise.
     fn completionTryCompletion(ed, input: String, names: Option<Vec<String>>) -> Field {
         Ok(match ed.completion_try_with(&input, input.chars().count(), names) {

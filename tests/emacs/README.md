@@ -118,3 +118,13 @@ cd tests/emacs/icomplete && script -q /dev/null emacs -Q -nw -l $PWD/record.el
 ```
 
 `cargo test -p ember-script --test icomplete` compares Ember with it, and `icomplete_behaves_like_emacs_on_random_cases`, ignored by default, makes random cases with `EMBER_FUZZ_SEED` and `EMBER_FUZZ_CASES`, records them and prints where Ember differs, writing them to `target/tmp/icomplete-fuzz/differences.json`.
+
+## vertico, orderless and marginalia
+
+`tests/emacs/completion/` holds an oracle for packages that do not ship with Ember, from `examples/packages/`: `record.el` drives an interactive Emacs on a terminal, as the icomplete oracle does, loading vertico, orderless and marginalia from `EMBER_ELPA` (else `~/.emacs.d/elpaca/repos`), and records what each case of `cases.json` shows into `golden.json`:
+
+```bash
+TERM=xterm-256color script -q /dev/null emacs -Q -nw -l tests/emacs/completion/record.el
+```
+
+`vertico::vertico_and_orderless_show_what_emacs_shows` in `crates/ember-script/tests/all/vertico.rs` replays the cases in Ember.
