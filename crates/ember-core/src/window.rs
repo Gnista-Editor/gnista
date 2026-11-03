@@ -1173,9 +1173,13 @@ impl Editor {
         before != (left, right)
     }
 
-    /// Whether a window's cursor is drawn, as Emacs's `internal-show-cursor-p`.
+    /// Whether a window's cursor is drawn, as Emacs's `internal-show-cursor-p`,
+    /// and not hidden by its buffer's `cursor-type` being nil, as transient's
+    /// and vundo's buffers have it.
     pub fn window_cursor_shown(&self, id: WindowId) -> bool {
-        self.window(id).is_none_or(|w| w.cursor_shown)
+        let Some(w) = self.window(id) else { return true };
+        let hidden = self.buffers.iter().find(|b| b.id() == w.buffer).is_some_and(|b| matches!(self.variable_in(b, "cursor-type"), Some(Value::Null | Value::Bool(false))));
+        w.cursor_shown && !hidden
     }
 
     /// Shows or hides a window's cursor, as `internal-show-cursor`.

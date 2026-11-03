@@ -34,3 +34,17 @@ fn another_window_s_start_moves_with_edits_above_it() {
     ed.type_text("new\nnew\nnew\n");
     assert_eq!(first(&ed), shown, "the lower window still starts at the same text");
 }
+
+#[test]
+fn cursor_type_nil_hides_the_cursor_in_the_buffers_windows() {
+    let mut ed = Editor::new();
+    ed.press("C-x 2").unwrap();
+    ed.make_local_variable("cursor-type");
+    ed.set_variable("cursor-type", ember_core::Value::Null);
+    let frame = ed.selected_frame();
+    let fd = ed.describe_frame(frame, true, 1.0);
+    assert!(fd.windows.iter().all(|w| !w.cursor_shown), "both windows show the buffer, so neither has a cursor");
+    ed.set_variable("cursor-type", ember_core::Value::Bool(true));
+    let fd = ed.describe_frame(frame, true, 1.0);
+    assert!(fd.windows.iter().all(|w| w.cursor_shown));
+}

@@ -701,3 +701,54 @@ fn an_installed_family_is_loaded() {
     h.run_steps(4);
     assert_eq!(ember_gui::metrics::family_loaded("Menlo"), Some(true));
 }
+
+/// Packages that do not ship, from examples/packages: vertico's list down
+/// the minibuffer with marginalia's annotations beside it, matched by
+/// orderless.
+#[test]
+fn vertico_with_marginalia() {
+    let mut ed = sample();
+    let scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    let examples = concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples/packages");
+    ed.set_variable("load-path", ember_core::Value::List(vec![ember_core::Value::Str(examples.into())]));
+    scripting
+        .eval_expression(
+            &mut ed,
+            r#"(ember.require("vertico"), ember.require("orderless"), ember.require("marginalia"), ember.call("vertico-mode"), ember.call("marginalia-mode"), ember.setVariable("completion-styles", ["orderless", "basic"]))"#,
+        )
+        .unwrap();
+    ed.press("M-x").unwrap();
+    ed.type_text("fi fil");
+    ed.press("C-n").unwrap();
+    harness(ed, Theme::Dark).snapshot("vertico_marginalia_dark");
+}
+
+/// Magit's status buffer, a file's diff expanded, and its commit menu over it.
+#[test]
+fn magit_status_and_commit_menu() {
+    let dir = tempfile::tempdir().unwrap();
+    let p = dir.path();
+    let git = |args: &[&str]| {
+        std::process::Command::new("git").args(args).current_dir(p).output().unwrap();
+    };
+    git(&["init", "-q", "-b", "main"]);
+    git(&["config", "user.email", "t@example.com"]);
+    git(&["config", "user.name", "Tester"]);
+    std::fs::write(p.join("a.txt"), "one\ntwo\nthree\n").unwrap();
+    std::fs::write(p.join("b.txt"), "keep\n").unwrap();
+    git(&["add", "."]);
+    git(&["commit", "-q", "-m", "First commit"]);
+    std::fs::write(p.join("a.txt"), "one\nTWO\nthree\nfour\n").unwrap();
+    std::fs::write(p.join("c.txt"), "new\n").unwrap();
+    std::fs::write(p.join("b.txt"), "keep\nmore\n").unwrap();
+    git(&["add", "b.txt"]);
+    let mut ed = Editor::new();
+    let scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    let examples = concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples/packages");
+    ed.set_variable("load-path", ember_core::Value::List(vec![ember_core::Value::Str(examples.into())]));
+    ed.set_variable("default-directory", ember_core::Value::Str(format!("{}/", p.canonicalize().unwrap().display())));
+    scripting.eval_expression(&mut ed, r#"ember.require("magit")"#).unwrap();
+    ed.call("magit-status", vec![]).unwrap();
+    ed.press("n n TAB c").unwrap();
+    harness(ed, Theme::Dark).snapshot("magit_status_commit_menu_dark");
+}

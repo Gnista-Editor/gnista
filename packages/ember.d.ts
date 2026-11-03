@@ -6940,6 +6940,10 @@ declare global {
        */
       "ctl-x-x-map": Value;
       /**
+       * How the cursor shows in the buffer's windows: t as the frame draws it, nil not at all, as menus and trees such as transient's and vundo's set it.
+       */
+      "cursor-type": Value;
+      /**
        * The themes enabled, the one enabled last first, whose faces win.
        *
        * Defined in packages/custom.ts.

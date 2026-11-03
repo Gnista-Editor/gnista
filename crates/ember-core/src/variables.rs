@@ -665,6 +665,12 @@ pub(crate) fn install(ed: &mut Editor) {
         )
         .local(),
         Variable::new(
+            "cursor-type",
+            "How the cursor shows in the buffer's windows: t as the frame draws it, nil not at all, as menus and trees such as transient's and vundo's set it.",
+            true,
+        )
+        .local(),
+        Variable::new(
             "truncate-lines",
             "Whether long lines are cut off at the window's edge rather than continued on the next screen line.\n\nWhen on, the window scrolls sideways to keep point in view. The command toggle-truncate-lines changes it.",
             false,

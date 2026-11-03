@@ -324,7 +324,10 @@ function updateHighlight(): void {
   highlight = undefined;
   const s = currentSection();
   if (!s) return;
-  const overlay = ember.makeOverlay(s.start, Math.max(s.content, s.hidden ? s.content : s.end), { face: "magit-section-highlight", priority: -1, "magit-section": true });
+  // A diff's lines keep their own colours, as Magit gives them highlight
+  // variants rather than the section's face: only other sections' bodies light up.
+  const diff = s.type === "file" || s.type === "hunk";
+  const overlay = ember.makeOverlay(s.start, diff || s.hidden ? s.content : Math.max(s.content, s.end), { face: "magit-section-highlight", priority: -1, "magit-section": true });
   highlight = { buffer: ember.currentBuffer(), overlay };
 }
 
