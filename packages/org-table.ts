@@ -68,15 +68,15 @@ function lineStartOrEnd(line: number): number {
   return line < ember.lineCount() ? ember.lineStart(line) : ember.bufferSize();
 }
 
-function charAt(pos: number): string {
+export function charAt(pos: number): string {
   return pos >= 0 && pos < ember.bufferSize() ? ember.bufferText(pos, pos + 1) : "";
 }
 
-function restOfLine(pos = ember.point()): string {
+export function restOfLine(pos = ember.point()): string {
   return ember.bufferText(pos, ember.lineEnd(lineAt(pos)));
 }
 
-function beforeOnLine(pos = ember.point()): string {
+export function beforeOnLine(pos = ember.point()): string {
   return ember.bufferText(ember.lineStart(lineAt(pos)), pos);
 }
 
@@ -102,7 +102,7 @@ function isTableLine(line: number): boolean {
   return TABLE_LINE.test(ember.lineText(line));
 }
 
-function atTable(pos = ember.point()): boolean {
+export function atTable(pos = ember.point()): boolean {
   return isTableLine(lineAt(pos));
 }
 
@@ -202,13 +202,13 @@ function tableToLisp(line = lineAt()): Row[] {
   return rows;
 }
 
-function needsAlign(): boolean {
+export function needsAlign(): boolean {
   const state = ember.variable("org-table--aligned");
   return !Array.isArray(state) || state[0] !== ember.bufferModifiedTick();
 }
 
 /** Records that the table at point is aligned, as setting org-table-may-need-update to nil does. */
-function markAligned(line = lineAt()): void {
+export function markAligned(line = lineAt()): void {
   ember.setVariable("org-table--aligned", [ember.bufferModifiedTick(), ember.lineStart(firstLine(line)), lineStartOrEnd(lastLine(line) + 1)]);
 }
 
@@ -455,7 +455,7 @@ ember.defineCommand({
 });
 
 /** Blanks the field at point, keeping its width, and moves to its start, as org-table-blank-field does. */
-function blankField(): void {
+export function blankField(): void {
   checkInsideDataField();
   const before = beforeOnLine();
   const bar = ember.lineStart(lineAt()) + charCount(before.slice(0, before.lastIndexOf("|")));
@@ -975,104 +975,5 @@ ember.defineCommand({
     ember.insert(`${formatRows(indent, rows).join("\n")}\n`);
     ember.gotoChar(start);
     gotoColumn(1);
-  },
-});
-
-// Typing and deleting in a table keep fields as wide as they were, as
-// org-self-insert-command, org-delete-char and org-delete-backward-char do.
-// org-mode remaps the typing and deleting commands to these.
-
-/** The commands after which typing blanks a field, as org-self-insert-command checks. */
-const BLANKING_COMMANDS = ["org-cycle", "org-return", "org-shifttab", "org-ctrl-c-ctrl-c"];
-
-function fixTagsOnTheFly(): void {
-  ember.call("org-fix-tags-on-the-fly");
-}
-
-/** Deletes n characters forward, or back if n is negative, as delete-char does from Lisp: without killing them. */
-function deleteChars(n: number, backward = false): void {
-  const command = (n < 0) !== backward ? "delete-backward-char" : "delete-char";
-  for (let i = 0; i < Math.abs(n); i++) ember.call(command);
-}
-
-ember.defineCommand({
-  name: "org-self-insert-command",
-  doc:
-    "Insert the character typed, as self-insert-command does, keeping a table aligned.\n\n" +
-    "In a table field with spaces to spare, a space before the next bar goes as the character goes in. " +
-    "Typing right after TAB, S-TAB, RET or C-c C-c moved into a field first blanks it (org-table-auto-blank-field). " +
-    "On a heading, the tags are aligned again.",
-  run: () => {
-    ember.call("org-fold-check-before-invisible-edit-maybe");
-    if (ember.prefixNumericValue() === 1 && !orgRegionActive() && atTable()) {
-      if (ember.variable("org-table-auto-blank-field") === true && BLANKING_COMMANDS.includes(ember.lastCommand() ?? "")) {
-        blankField();
-      }
-      if (/^[^|\n]*  \|/.test(restOfLine())) {
-        ember.call("self-insert-command");
-        const rest = restOfLine();
-        const bar = ember.point() + charCount(rest.slice(0, rest.indexOf("|")));
-        saveExcursion(() => edDelete(bar - 2, bar - 1));
-        return;
-      }
-    }
-    ember.callWithPrefix(ember.prefixArg(), "self-insert-command");
-    fixTagsOnTheFly();
-  },
-});
-
-/** Deletes the character after point, putting a space back before the field's bar in a table, as org-delete-char does. */
-function orgDeleteChar(n: number): void {
-  if (n !== 1 || charAt(ember.point()) === "|" || /^[ \t]*$/.test(beforeOnLine()) || !atTable()) {
-    deleteChars(n);
-    fixTagsOnTheFly();
-    return;
-  }
-  const m = /^.(.*?)\|/.exec(restOfLine());
-  if (m) {
-    const update = needsAlign();
-    const noalign = /^.*?  \|/.test(restOfLine());
-    const p = ember.point();
-    const end = p + charCount(m[0]);
-    edDelete(p, p + 1);
-    // Org goes back two characters from the match's end as it was. Org's
-    // after-change functions save and restore the match data as markers,
-    // though, which cannot be past the end of the buffer.
-    saveExcursion(() => edInsert(Math.min(end, ember.bufferSize()) - 2, " "));
-    if (noalign && !update) markAligned();
-  } else deleteChars(n);
-}
-
-ember.defineCommand({
-  name: "org-delete-backward-char",
-  doc: "Delete the character before point, as delete-backward-char does, keeping a table's field as wide as it was.",
-  run: () => {
-    ember.call("org-fold-check-before-invisible-edit-maybe");
-    const p = ember.point();
-    if (
-      ember.prefixNumericValue() === 1 &&
-      ember.variable("overwrite-mode") !== true &&
-      !orgRegionActive() &&
-      p > 0 &&
-      charAt(p - 1) !== "|" &&
-      /[^ \t]/.test(beforeOnLine()) &&
-      restOfLine().includes("|") &&
-      atTable()
-    ) {
-      ember.gotoChar(p - 1);
-      orgDeleteChar(1);
-      return;
-    }
-    deleteChars(ember.prefixNumericValue(), true);
-    fixTagsOnTheFly();
-  },
-});
-
-ember.defineCommand({
-  name: "org-delete-char",
-  doc: "Delete the character after point, as delete-char does, keeping a table's field as wide as it was.",
-  run: () => {
-    ember.call("org-fold-check-before-invisible-edit-maybe");
-    orgDeleteChar(ember.prefixNumericValue());
   },
 });

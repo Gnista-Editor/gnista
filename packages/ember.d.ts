@@ -3497,13 +3497,13 @@ declare global {
       /**
        * Delete the character before point, as delete-backward-char does, keeping a table's field as wide as it was.
        *
-       * Defined in packages/org-table.ts.
+       * Defined in packages/org.ts.
        */
       "org-delete-backward-char": [];
       /**
        * Delete the character after point, as delete-char does, keeping a table's field as wide as it was.
        *
-       * Defined in packages/org-table.ts.
+       * Defined in packages/org.ts.
        */
       "org-delete-char": [];
       /**
@@ -3916,7 +3916,7 @@ declare global {
        *
        * In a table field with spaces to spare, a space before the next bar goes as the character goes in. Typing right after TAB, S-TAB, RET or C-c C-c moved into a field first blanks it (org-table-auto-blank-field). On a heading, the tags are aligned again.
        *
-       * Defined in packages/org-table.ts.
+       * Defined in packages/org.ts.
        */
       "org-self-insert-command": [];
       /**

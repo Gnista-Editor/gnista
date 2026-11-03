@@ -1,0 +1,1484 @@
+// Plain lists, after org-list.el. A list is read into a structure, an
+// array of its items with their indentation, bullet, counter, checkbox,
+// description tag and end, which commands change and then write back,
+// fixing bullets, indentation and checkboxes across the whole list as
+// org-list-write-struct does.
+
+import {
+  alignNodeProperty,
+  allKeywords,
+  type Heading,
+  headingIndex,
+  headings,
+  isBlank,
+  isHeadingLine,
+  lineAt,
+  moveToColumn,
+  orgRegionActive,
+  parseHeading,
+  setTodo,
+  updateCheckboxCount,
+} from "org";
+import { drawerEnd, PLANNING } from "org-element";
+import { fixFoldsAround, flag, FOLD_SPECS, foldChecksOff, hideOverlay, withoutFoldChecks } from "org-fold";
+import { dropMarker, edDelete, edInsert, lastingMarker, marker, type Marker, markers, placeMarkers } from "org-macs";
+import { charCount } from "subr";
+
+export interface ListItem {
+  /** Where the item's line starts. */
+  pos: number;
+  ind: number;
+  /** The bullet with the spaces after it, such as "- " or "1. ". */
+  bullet: string;
+  counter?: string;
+  checkbox?: string;
+  tag?: string;
+  /** Where the item ends: the start of the line after its last, or of the next item. */
+  end: number;
+}
+
+export type Struct = ListItem[];
+export type Alist = Map<number, number | undefined>;
+
+/** org-item-re, at the start of a line. */
+export const ITEM_RE = /^(?:[ \t]*(?:[-+]|\d+[.)])|[ \t]+\*)(?:[ \t]+|$)/;
+export const DRAWER_RE = /^[ \t]*:((?:\w|[-_])+):[ \t]*$/;
+const LIST_FORBIDDEN_BLOCKS = ["example", "verse", "src", "export"];
+
+/** The column a line's text starts at, counting tabs to tab stops, as org-current-text-indentation does. */
+export function textIndentation(text: string): number {
+  let col = 0;
+  for (const ch of text) {
+    if (ch === " ") col++;
+    else if (ch === "\t") col = (Math.floor(col / 8) + 1) * 8;
+    else break;
+  }
+  return col;
+}
+
+/** The whitespace that indents to a column, with tabs if indent-tabs-mode is on. */
+export function indentString(col: number, from = 0): string {
+  // As indent-to does, a column at or before where it starts adds nothing.
+  if (col <= from) return "";
+  if (ember.variable("indent-tabs-mode") === true) {
+    const width = Number(ember.variable("tab-width") ?? 8);
+    let s = "";
+    let c = from;
+    while (Math.floor(c / width) < Math.floor(col / width)) {
+      s += "\t";
+      c = (Math.floor(c / width) + 1) * width;
+    }
+    return s + " ".repeat(col - c);
+  }
+  return " ".repeat(Math.max(0, col - from));
+}
+
+export function lineStartOrEnd(line: number): number {
+  return line < ember.lineCount() ? ember.lineStart(line) : ember.bufferSize();
+}
+
+
+/**
+ * Replaces text as replace-match does: markers inside it go to its start,
+ * and those at its end or after move with the text after it.
+ */
+export function edReplace(from: number, to: number, text: string): void {
+  const n = charCount(text);
+  const delta = n - (to - from);
+  const mark = ember.mark();
+  const saved: [Marker, number][] = markers.map((m) => [m, m.pos]);
+  // One change, as replace-match is, so folds are checked once, after it.
+  const checks = !foldChecksOff;
+  withoutFoldChecks(() => {
+    ember.deleteRegion(from, to);
+    ember.gotoChar(from);
+    ember.insert(text);
+  });
+  const moved = (x: number): number => (x >= to ? x + delta : x > from ? from : x);
+  placeMarkers(saved.map(([m, p]) => [m, moved(p)]));
+  if (mark !== undefined) ember.setMark(moved(mark));
+  if (checks) fixFoldsAround(from, from + n);
+}
+
+/** Sets a line's indentation, as indent-line-to does: only the difference is inserted or deleted. */
+export function indentLineTo(line: number, col: number): void {
+  const ls = ember.lineStart(line);
+  const ws = /^[ \t]*/.exec(ember.lineText(line))?.[0] ?? "";
+  const end = ls + charCount(ws);
+  const cur = textIndentation(ws);
+  const width = Number(ember.variable("tab-width") ?? 8);
+  if (cur < col) {
+    let from = cur;
+    let at = end;
+    if (col - Math.floor(cur / width) * width >= width) {
+      const spaces = / *$/.exec(ws)?.[0].length ?? 0;
+      edDelete(end - spaces, end);
+      at = end - spaces;
+      from = textIndentation(ws.slice(0, ws.length - spaces));
+    }
+    edInsert(at, indentString(col, from));
+  } else if (cur > col) {
+    // move-to-column with force: a tab it lands inside becomes spaces.
+    let c = 0;
+    let i = 0;
+    while (i < ws.length) {
+      const next = ws[i] === "\t" ? (Math.floor(c / 8) + 1) * 8 : c + 1;
+      if (next > col) {
+        if (c < col) {
+          edDelete(ls + i, ls + i + 1);
+          edInsert(ls + i, " ".repeat(next - c));
+          edDelete(ls + i + (col - c), ls + charCount(/^[ \t]*/.exec(ember.lineText(line))?.[0] ?? ""));
+          return;
+        }
+        break;
+      }
+      c = next;
+      i++;
+    }
+    edDelete(ls + i, end);
+  }
+}
+
+/**
+ * The region lists are read in around a line, and what it is, as
+ * org-list-context finds it: the section between headings, or a drawer or
+ * block inside it. Lists are not recognized in example, verse, source and
+ * export blocks.
+ */
+function listContext(line: number): { up: number; down: number; type?: string } {
+  const pos = ember.lineStart(line);
+  const all = headings();
+  const h = headingIndex(all, line);
+  let up = h === undefined ? 0 : all[h].start;
+  let down = all.find((x) => x.start > pos)?.start ?? ember.bufferSize();
+  let type: string | undefined;
+  const text = ember.lineText(line);
+  const upLine = lineAt(up);
+  const downLine = lineAt(down);
+  if (!DRAWER_RE.test(text) && !/^[ \t]*:END:/i.test(text)) {
+    let beg: number | undefined;
+    for (let l = line - 1; l >= upLine && ember.lineStart(l) >= up; l--) {
+      if (DRAWER_RE.test(ember.lineText(l))) {
+        beg = l;
+        break;
+      }
+    }
+    if (beg !== undefined) {
+      let end = down;
+      for (let l = beg; l <= downLine && l < ember.lineCount(); l++) {
+        if (ember.lineStart(l) >= down) break;
+        if (/^[ \t]*:END:/i.test(ember.lineText(l))) {
+          end = ember.lineStart(l) - 1;
+          break;
+        }
+      }
+      if (end >= pos) [up, down, type] = [ember.lineStart(beg + 1), end, "drawer"];
+    }
+  }
+  const BLOCK = /^[ \t]*#\+(begin|end)_/i;
+  if (!BLOCK.test(ember.lineText(line))) {
+    let beg: number | undefined;
+    for (let l = line - 1; l >= 0 && ember.lineStart(l) >= up; l--) {
+      if (BLOCK.test(ember.lineText(l))) {
+        beg = l;
+        break;
+      }
+    }
+    const open = beg === undefined ? null : /^[ \t]*#\+begin_(\S+)/i.exec(ember.lineText(beg));
+    if (beg !== undefined && open) {
+      let end = down;
+      let closes = false;
+      for (let l = beg + 1; l < ember.lineCount() && ember.lineStart(l) < down; l++) {
+        const m = BLOCK.exec(ember.lineText(l));
+        if (m) {
+          end = ember.lineStart(l) - 1;
+          closes = m[1].toLowerCase() === "end";
+          break;
+        }
+      }
+      if (end >= pos && closes) {
+        [up, down] = [ember.lineStart(beg + 1), end];
+        type = LIST_FORBIDDEN_BLOCKS.includes(open[1].toLowerCase()) ? "invalid" : "block";
+      }
+    }
+  }
+  return { up, down, type };
+}
+
+/** Whether a line and the one after it are blank, which ends a list (org-list-end-re). */
+function atListEnd(line: number): boolean {
+  return line + 1 < ember.lineCount() && isBlank(ember.lineText(line)) && isBlank(ember.lineText(line + 1));
+}
+
+/** Whether a line starts an item: org-at-item-p for that line. */
+export function itemLine(line: number): boolean {
+  if (line < 0 || line >= ember.lineCount()) return false;
+  if (!ITEM_RE.test(ember.lineText(line))) return false;
+  return listContext(line).type !== "invalid";
+}
+
+/** The start of the item a line is in, if any, as org-in-item-p finds it. */
+export function inItem(line: number): number | undefined {
+  const ctx = listContext(line);
+  if (ctx.type === "invalid") return undefined;
+  if (ITEM_RE.test(ember.lineText(line))) return ember.lineStart(line);
+  let indRef = isBlank(ember.lineText(line)) ? 10000 : textIndentation(ember.lineText(line));
+  let l = line;
+  // Between the two blank lines that end a list, start from the first.
+  if (l > 0 && atListEnd(l - 1)) l -= 2;
+  else if (atListEnd(l)) l -= 1;
+  for (;;) {
+    if (l < 0) return undefined;
+    const text = ember.lineText(l);
+    const ind = textIndentation(text);
+    if (ITEM_RE.test(text) && ind < indRef) return ember.lineStart(l);
+    if (ember.lineStart(l) <= ctx.up) return undefined;
+    if (atListEnd(l)) return undefined;
+    if (/^[ \t]*#\+end_/i.test(text)) {
+      let k = l - 1;
+      while (k >= 0 && ember.lineStart(k) >= ctx.up && !/^[ \t]*#\+begin_/i.test(ember.lineText(k))) k--;
+      if (k >= 0 && ember.lineStart(k) >= ctx.up) {
+        l = k;
+        continue;
+      }
+    }
+    if (/^[ \t]*:END:/i.test(text)) {
+      let k = l - 1;
+      while (k >= 0 && ember.lineStart(k) >= ctx.up && !DRAWER_RE.test(ember.lineText(k))) k--;
+      if (k >= 0 && ember.lineStart(k) >= ctx.up) {
+        l = k;
+        continue;
+      }
+    }
+    if (isBlank(text)) {
+      l--;
+      continue;
+    }
+    if (ind === 0) return undefined;
+    if (ind < indRef) indRef = ind;
+    l--;
+  }
+}
+
+/** Where the parts of an item's first line are, as org-list-full-item-re's groups find them. */
+export interface ItemParts {
+  bulletAt: number;
+  bullet: string;
+  counter?: string;
+  /** Just after the counter's closing bracket. */
+  counterEnd?: number;
+  checkbox?: string;
+  boxAt?: number;
+  tag?: string;
+  tagAt?: number;
+  tagEnd?: number;
+  /** Where the whole match ends: after the bullet, counter, checkbox and tag. */
+  matchEnd: number;
+}
+
+export function itemParts(line: number): ItemParts | undefined {
+  const text = ember.lineText(line);
+  const base = ember.lineStart(line);
+  const pos = (i: number): number => base + charCount(text.slice(0, i));
+  const ws = /^[ \t]*/.exec(text)?.[0] ?? "";
+  let i = ws.length;
+  const b = /^(?:[-+*]|(?:\d+|[A-Za-z])[.)])(?:[ \t]+|$)/.exec(text.slice(i));
+  if (!b) return undefined;
+  const parts: ItemParts = { bulletAt: pos(i), bullet: b[0], matchEnd: 0 };
+  i += b[0].length;
+  const c = /^\[@(?:start:)?(\d+|[A-Za-z])\][ \t]*/.exec(text.slice(i));
+  if (c) {
+    parts.counter = c[1];
+    parts.counterEnd = pos(i + c[0].indexOf("]") + 1);
+    i += c[0].length;
+  }
+  const x = /^(\[[ X-]\])(?:[ \t]+|$)/.exec(text.slice(i));
+  if (x) {
+    parts.checkbox = x[1];
+    parts.boxAt = pos(i);
+    i += x[0].length;
+  }
+  const d = /^(.*)[ \t]+::(?:[ \t]+|$)/.exec(text.slice(i));
+  if (d) {
+    parts.tag = d[1];
+    parts.tagAt = pos(i);
+    parts.tagEnd = pos(i + d[1].length);
+    i += d[0].length;
+  }
+  parts.matchEnd = pos(i);
+  return parts;
+}
+
+function readItem(line: number, ind: number): ListItem {
+  const m = itemParts(line);
+  const bullet = m?.bullet ?? "";
+  return {
+    pos: ember.lineStart(line),
+    ind,
+    bullet,
+    counter: m?.counter,
+    checkbox: m?.checkbox,
+    tag: /[-+*]/.test(bullet) ? m?.tag : undefined,
+    end: 0,
+  };
+}
+
+/** The structure of the list the item on a line is in, as org-list-struct reads it. */
+export function listStruct(line: number, ctx: { up: number; down: number; type?: string } = listContext(line)): Struct {
+  let textMinInd = 10000;
+  let begCell: [number, number] = [ember.lineStart(line), textIndentation(ember.lineText(line))];
+  let itmLst: Struct = [];
+  const endLst: [number, number][] = [];
+  const fromBeg = (): Struct => {
+    const k = itmLst.findIndex((e) => e.pos === begCell[0]);
+    return k < 0 ? [] : itmLst.slice(k);
+  };
+  // 1. Up from the item to the start of the list.
+  for (let l = line; ; ) {
+    const pos = ember.lineStart(l);
+    const text = ember.lineText(l);
+    const ind = textIndentation(text);
+    if (pos <= ctx.up) {
+      if (!ITEM_RE.test(text)) itmLst = fromBeg();
+      else {
+        begCell = [pos, ind];
+        itmLst.unshift(readItem(l, ind));
+      }
+      break;
+    }
+    if (atListEnd(l)) {
+      itmLst = fromBeg();
+      break;
+    }
+    if (ITEM_RE.test(text)) {
+      itmLst.unshift(readItem(l, ind));
+      endLst.unshift([ind, pos]);
+      if (ind < textMinInd) begCell = [pos, ind];
+      l--;
+      continue;
+    }
+    if (/^[ \t]*#\+end_/i.test(text)) {
+      let k = l - 1;
+      while (k >= 0 && ember.lineStart(k) >= ctx.up && !/^[ \t]*#\+begin_/i.test(ember.lineText(k))) k--;
+      if (k >= 0 && ember.lineStart(k) >= ctx.up) {
+        l = k;
+        continue;
+      }
+    }
+    if (/^[ \t]*:END:/i.test(text)) {
+      let k = l - 1;
+      while (k >= 0 && ember.lineStart(k) >= ctx.up && !DRAWER_RE.test(ember.lineText(k))) k--;
+      if (k >= 0 && ember.lineStart(k) >= ctx.up) {
+        l = k;
+        continue;
+      }
+    }
+    if (isBlank(text)) {
+      l--;
+      continue;
+    }
+    if (ind === 0) {
+      itmLst = fromBeg();
+      break;
+    }
+    if (ind < textMinInd) textMinInd = ind;
+    endLst.unshift([ind, pos]);
+    l--;
+  }
+  // 2. Down from the item to the end of the list.
+  const itmLst2: Struct = [];
+  const endLst2: [number, number][] = [];
+  const endBeforeBlank = (pos: number): number => {
+    let q = pos;
+    while (q > 0 && /[ \r\t\n]/.test(ember.bufferText(q - 1, q))) q--;
+    return Math.min(ember.lineEnd(lineAt(q)) + 1, ctx.down);
+  };
+  for (let l = line; ; ) {
+    const pos = lineStartOrEnd(l);
+    if (pos >= ctx.down) {
+      endLst2.unshift([0, endBeforeBlank(pos)]);
+      break;
+    }
+    const text = ember.lineText(l);
+    const ind = textIndentation(text);
+    if (atListEnd(l)) {
+      endLst2.unshift([0, pos]);
+      break;
+    }
+    if (ITEM_RE.test(text)) {
+      itmLst2.unshift(readItem(l, ind));
+      endLst2.unshift([ind, pos]);
+      l++;
+      continue;
+    }
+    if (isBlank(text)) {
+      l++;
+      continue;
+    }
+    if (ind <= begCell[1]) {
+      endLst2.unshift([0, endBeforeBlank(pos)]);
+      break;
+    }
+    if (itmLst2.length > 0 && ind <= itmLst2[0].ind) endLst2.unshift([ind, pos]);
+    if (/^[ \t]*#\+begin_/i.test(text)) {
+      let k = l + 1;
+      while (k < ember.lineCount() && lineStartOrEnd(k) < ctx.down && !/^[ \t]*#\+end_/i.test(ember.lineText(k))) k++;
+      if (k < ember.lineCount() && lineStartOrEnd(k) < ctx.down) l = k;
+    } else if (DRAWER_RE.test(text)) {
+      let k = l + 1;
+      while (k < ember.lineCount() && lineStartOrEnd(k) < ctx.down && !/^[ \t]*:END:/i.test(ember.lineText(k))) k++;
+      if (k < ember.lineCount() && lineStartOrEnd(k) < ctx.down) l = k;
+    }
+    l++;
+  }
+  const struct = [...itmLst, ...itmLst2.reverse().slice(1)];
+  assocEnd(struct, [...endLst, ...endLst2.reverse().slice(1)]);
+  return struct;
+}
+
+/** Gives each item its end from candidate (indentation, position) ends, as org-list-struct-assoc-end does. */
+function assocEnd(struct: Struct, endList: [number, number][]): void {
+  let endings = endList;
+  for (const e of struct) {
+    while (endings.length > 0 && endings[0][1] <= e.pos) endings = endings.slice(1);
+    e.end = endings.find(([ind]) => ind <= e.ind)?.[1] ?? e.end;
+  }
+}
+
+export function getItem(struct: Struct, pos: number): ListItem {
+  const e = struct.find((x) => x.pos === pos);
+  if (!e) throw new Error(`No item at ${pos}`);
+  return e;
+}
+
+export function prevsAlist(struct: Struct): Alist {
+  // The first entry for a position wins, as assq finds it.
+  const out: Alist = new Map();
+  for (const e of struct) if (!out.has(e.pos)) out.set(e.pos, struct.find((x) => x.end === e.pos)?.pos);
+  return out;
+}
+
+export function parentsAlist(struct: Struct): Alist {
+  let indToOri: [number, number | undefined][] = [[struct[0].ind, undefined]];
+  const prevPos = [struct[0].pos];
+  // A structure Org has just edited can hold two items at one position;
+  // assq finds the first, so the first one's entry is kept here too.
+  const out: Alist = new Map([[struct[0].pos, undefined]]);
+  const set = out.set.bind(out);
+  out.set = (key: number, value: number | undefined) => (out.has(key) ? out : set(key, value));
+  for (const item of struct.slice(1)) {
+    const prevInd = indToOri[0][0];
+    prevPos.unshift(item.pos);
+    if (prevInd > item.ind) {
+      let k = indToOri.findIndex((e) => e[0] === item.ind);
+      if (k < 0) k = indToOri.findIndex((e) => e[0] < item.ind);
+      indToOri = k >= 0 ? indToOri.slice(k) : [[item.ind, undefined]];
+      out.set(item.pos, indToOri[0][1]);
+    } else if (prevInd < item.ind) {
+      indToOri.unshift([item.ind, prevPos[1]]);
+      out.set(item.pos, prevPos[1]);
+    } else out.set(item.pos, indToOri[0][1]);
+  }
+  return out;
+}
+
+function nextItem(item: number, prevs: Alist): number | undefined {
+  for (const [pos, prev] of prevs) if (prev === item) return pos;
+  return undefined;
+}
+
+function prevItem(item: number, prevs: Alist): number | undefined {
+  return prevs.get(item);
+}
+
+export function itemEndBeforeBlank(struct: Struct, item: number): number {
+  let q = getItem(struct, item).end;
+  while (q > 0 && /[ \r\t\n]/.test(ember.bufferText(q - 1, q))) q--;
+  return ember.lineEnd(lineAt(q));
+}
+
+export function hasChild(struct: Struct, item: number): number | undefined {
+  const k = struct.findIndex((e) => e.pos === item);
+  const next = struct[k + 1];
+  return next && struct[k].ind < next.ind ? next.pos : undefined;
+}
+
+function subtreeItems(struct: Struct, item: number): number[] {
+  const e = getItem(struct, item);
+  return struct.filter((x) => x.pos > item && x.pos < e.end).map((x) => x.pos);
+}
+
+export function allItems(item: number, prevs: Alist): number[] {
+  const before: number[] = [];
+  for (let p = prevItem(item, prevs); p !== undefined; p = prevItem(p, prevs)) before.unshift(p);
+  const after: number[] = [];
+  for (let n = nextItem(item, prevs); n !== undefined; n = nextItem(n, prevs)) after.push(n);
+  return [...before, item, ...after];
+}
+
+export function children(item: number, parents: Alist): number[] {
+  return [...parents].filter(([, parent]) => parent === item).map(([pos]) => pos);
+}
+
+export function bottomPoint(struct: Struct): number {
+  return Math.max(...struct.map((e) => e.end));
+}
+
+function firstItem(item: number, prevs: Alist): number {
+  let first = item;
+  for (let p = prevItem(first, prevs); p !== undefined; p = prevItem(first, prevs)) first = p;
+  return first;
+}
+
+function lastItem(item: number, prevs: Alist): number {
+  let last = item;
+  for (let n = nextItem(last, prevs); n !== undefined; n = nextItem(last, prevs)) last = n;
+  return last;
+}
+
+export function copyStruct(struct: Struct): Struct {
+  return struct.map((e) => ({ ...e }));
+}
+
+function sameItem(a: ListItem | undefined, b: ListItem | undefined): boolean {
+  return (
+    a !== undefined &&
+    b !== undefined &&
+    a.pos === b.pos &&
+    a.ind === b.ind &&
+    a.bullet === b.bullet &&
+    a.counter === b.counter &&
+    a.checkbox === b.checkbox &&
+    a.tag === b.tag &&
+    a.end === b.end
+  );
+}
+
+export function sameStruct(a: Struct, b: Struct): boolean {
+  return a.length === b.length && a.every((e, k) => sameItem(e, b[k]));
+}
+
+/** A bullet with one space after it, as org-list-bullet-string makes it. */
+function bulletString(bullet: string): string {
+  const m = /\S+([ \t]*)/.exec(bullet);
+  if (!m) return bullet;
+  const at = (m.index ?? 0) + m[0].length - m[1].length;
+  return bullet.slice(0, at) + " " + bullet.slice(at + m[1].length);
+}
+
+function incBulletMaybe(bullet: string): string {
+  const n = /\d+/.exec(bullet);
+  if (n) return bullet.replace(/\d+/, String(Number(n[0]) + 1));
+  const a = /[A-Za-z]/.exec(bullet);
+  if (a) return bullet.replace(/[A-Za-z]/, String.fromCharCode(a[0].charCodeAt(0) + 1));
+  return bullet;
+}
+
+/** Numbers ordered lists from 1 or their counters, and gives items their list's bullet, as org-list-struct-fix-bul does. */
+export function fixBul(struct: Struct, prevs: Alist): void {
+  for (const e of struct) {
+    const prev = prevItem(e.pos, prevs);
+    const prevBul = prev === undefined ? undefined : getItem(struct, prev).bullet;
+    const { counter, bullet } = e;
+    let fixed: string;
+    if (prevBul !== undefined && counter && /[a-zA-Z]/.test(counter) && /[a-zA-Z]/.test(prevBul)) {
+      fixed = prevBul.replace(/[a-zA-Z]/, /[a-z]/.test(prevBul) ? counter.toLowerCase() : counter.toUpperCase());
+    } else if (prevBul !== undefined && counter && /\d+/.test(counter) && /\d+/.test(prevBul)) {
+      fixed = prevBul.replace(/\d+/, counter);
+    } else if (prevBul !== undefined) {
+      fixed = incBulletMaybe(prevBul);
+    } else if (counter && /\d+/.test(counter) && /\d+/.test(bullet)) {
+      fixed = bullet.replace(/\d+/, counter);
+    } else if (/\d+|[A-Za-z]/.test(bullet)) {
+      fixed = bullet.replace(/\d+|[A-Za-z]/, "1");
+    } else fixed = bullet;
+    e.bullet = bulletString(fixed);
+  }
+}
+
+/** Indents items under their parents' text, or as the first item, as org-list-struct-fix-ind does. */
+export function fixInd(struct: Struct, parents: Alist, bulletSize?: number): void {
+  const topInd = struct[0].ind;
+  // By position, as Org goes, setting the first item there, as assq finds it.
+  for (const { pos } of struct.slice(1)) {
+    const e = getItem(struct, pos);
+    const parent = parents.get(e.pos);
+    if (parent === undefined) e.ind = topInd;
+    else {
+      const p = getItem(struct, parent);
+      e.ind = (bulletSize ?? charCount(p.bullet)) + p.ind;
+    }
+  }
+}
+
+/** Gives parents with checkboxes the state of their children's, as org-list-struct-fix-box does. */
+export function fixBox(struct: Struct, parents: Alist): void {
+  const parentList: number[] = [];
+  for (const e of struct) {
+    const parent = parents.get(e.pos);
+    if (parent !== undefined && getItem(struct, parent).checkbox && !parentList.includes(parent)) parentList.unshift(parent);
+  }
+  parentList.sort((a, b) => getItem(struct, b).ind - getItem(struct, a).ind);
+  for (const item of parentList) {
+    const boxes = children(item, parents).map((c) => getItem(struct, c).checkbox);
+    const e = getItem(struct, item);
+    if (boxes.includes("[ ]") && boxes.includes("[X]")) e.checkbox = "[-]";
+    else if (boxes.includes("[-]")) e.checkbox = "[-]";
+    else if (boxes.includes("[X]")) e.checkbox = "[X]";
+    else if (boxes.includes("[ ]")) e.checkbox = "[ ]";
+  }
+}
+
+/** Works out items' ends again after their indentation changed, as org-list-struct-fix-item-end does. */
+export function fixItemEnd(struct: Struct): void {
+  const endList: [number, number][] = [];
+  const accEnd: [number, number][] = [];
+  for (const e of struct) {
+    if (!struct.some((x) => x.pos === e.end)) {
+      const up = accEnd.find(([end]) => end > e.end)?.[1];
+      endList.unshift([up !== undefined ? getItem(struct, up).ind + 2 : 0, e.end]);
+    }
+    endList.unshift([e.ind, e.pos]);
+    accEnd.unshift([e.end, e.pos]);
+  }
+  endList.sort((a, b) => a[1] - b[1]);
+  assocEnd(struct, endList);
+}
+
+/** Writes the differences between a structure and the old one to the buffer, as org-list-struct-apply-struct does. */
+export function applyStruct(struct: Struct, old: Struct): void {
+  const origin = marker(ember.point());
+  const shiftBodyInd = (end: number, beg: number, delta: number): void => {
+    let q = end;
+    while (q > 0 && /[ \r\t\n]/.test(ember.bufferText(q - 1, q))) q--;
+    let l = lineAt(q);
+    while (ember.lineStart(l) > beg || (ember.lineStart(l) === beg && !ITEM_RE.test(ember.lineText(l)))) {
+      const text = ember.lineText(l);
+      if (/^[ \t]*\S/.test(text)) indentLineTo(l, textIndentation(text) + delta);
+      if (l === 0) break;
+      l--;
+    }
+  };
+  const modifyItem = (item: number): void => {
+    const e = getItem(struct, item);
+    const line = lineAt(item);
+    const newBul = bulletString(e.bullet);
+    const reindent = (): void => {
+      if (e.ind !== textIndentation(ember.lineText(line))) {
+        const ls = ember.lineStart(line);
+        const ws = /^[ \t]*/.exec(ember.lineText(line))?.[0] ?? "";
+        edDelete(ls, ls + charCount(ws));
+        edInsert(ls, indentString(e.ind));
+      }
+    };
+    // Org's structure can hold a position partway along a line, which its
+    // anchored regexp then fails to match: only the indentation, worked out
+    // from the line's start, changes.
+    if (item !== ember.lineStart(line)) {
+      reindent();
+      return;
+    }
+    let m = itemParts(line);
+    if (!m) return;
+    if (getItem(old, item).bullet !== newBul) {
+      const bulletEnd = m.bulletAt + charCount(m.bullet);
+      let keep = "";
+      if (m.bulletAt <= origin.pos && origin.pos <= bulletEnd) {
+        keep = /^[ \t]+/.exec(ember.bufferText(origin.pos, ember.lineEnd(line)))?.[0] ?? "";
+      }
+      edDelete(m.bulletAt, bulletEnd);
+      edInsert(m.bulletAt, newBul, true);
+      edInsert(m.bulletAt + charCount(newBul), keep);
+    }
+    m = itemParts(line);
+    if (!m) return;
+    if (m.checkbox === e.checkbox) {
+      // The checkbox is right.
+    } else if (m.checkbox !== undefined && e.checkbox !== undefined && m.boxAt !== undefined) {
+      edReplace(m.boxAt, m.boxAt + 3, e.checkbox);
+    } else if (m.checkbox !== undefined) {
+      // The box goes, with the spaces before it.
+      const text = ember.lineText(line);
+      for (let k = 0; k < text.length; k++) {
+        const box = /^[ \t]*\[[ X-]\]/.exec(text.slice(k));
+        if (box) {
+          const start = item + charCount(text.slice(0, k));
+          edDelete(start, start + charCount(box[0]));
+          break;
+        }
+      }
+    } else if (e.checkbox !== undefined) {
+      const at = m.counterEnd ?? m.bulletAt + charCount(m.bullet);
+      edInsert(at, e.checkbox + (m.counterEnd !== undefined ? "" : " "));
+    }
+    reindent();
+  };
+  const endList: [number, number | undefined][] = [];
+  let accEnd: [number, number][] = [];
+  const itmShift = new Map<number, number>();
+  for (const { pos } of old) {
+    // Looked up by position, as Org does with assq, so two items at one
+    // position both read the first.
+    const now = getItem(struct, pos);
+    const was = getItem(old, pos);
+    itmShift.set(pos, now.ind + charCount(now.bullet) - (was.ind + charCount(was.bullet)));
+    if (!old.some((x) => x.pos === was.end)) {
+      const up = accEnd.find(([end]) => end > was.end)?.[1];
+      endList.unshift([was.end, up]);
+    }
+    accEnd.unshift([was.end, pos]);
+  }
+  // Only the ends that are not at items are made unique, as in Org.
+  const allEnds = [...old.map((e) => e.pos), ...new Set(endList.map(([end]) => end))].sort((a, b) => a - b);
+  accEnd = accEnd.reverse();
+  const sliced: [number, number, number][] = [];
+  while (allEnds.length > 1) {
+    const up = allEnds.shift() as number;
+    const down = allEnds[0];
+    let delta: number;
+    if (struct.some((x) => x.pos === up)) delta = itmShift.get(up) ?? 0;
+    else {
+      const child = accEnd.find(([end]) => end === up)?.[1];
+      const ind = child === undefined ? 0 : getItem(struct, child).ind;
+      let minInd = Infinity;
+      for (let l = lineAt(up); l < ember.lineCount() && ember.lineStart(l) < down; l++) {
+        const text = ember.lineText(l);
+        if (isBlank(text)) continue;
+        minInd = Math.min(minInd, textIndentation(text));
+        const block = /^#\+BEGIN(:|_\S+)/i.exec(text);
+        if (block) {
+          const close = new RegExp(`^[ \\t]*#\\+END${block[1].replace(/[^\w:]/g, "")}[ \\t]*$`, "i");
+          for (let k = l + 1; k < ember.lineCount() && ember.lineStart(k) < down; k++) {
+            if (close.test(ember.lineText(k))) {
+              l = k;
+              break;
+            }
+          }
+        } else if (DRAWER_RE.test(text)) {
+          for (let k = l + 1; k < ember.lineCount() && ember.lineStart(k) < down; k++) {
+            if (/^[ \t]*:END:[ \t]*$/i.test(ember.lineText(k))) {
+              l = k;
+              break;
+            }
+          }
+        }
+      }
+      delta = minInd === Infinity ? 0 : ind - minInd;
+    }
+    sliced.unshift([down, up, delta]);
+  }
+  for (const [down, up, delta] of sliced) {
+    if (delta !== 0) shiftBodyInd(down, up, delta);
+    const cell = struct.find((x) => x.pos === up);
+    if (cell && !sameItem(cell, old.find((x) => x.pos === up))) modifyItem(up);
+  }
+  ember.gotoChar(origin.pos);
+  dropMarker(origin);
+}
+
+/** Fixes a list's bullets, indentation and checkboxes and writes it back, as org-list-write-struct does. */
+export function writeStruct(struct: Struct, parents: Alist, old?: Struct): Struct {
+  const reference = old ?? copyStruct(struct);
+  fixInd(struct, parents, 2);
+  fixItemEnd(struct);
+  const prevs = prevsAlist(struct);
+  fixBul(struct, prevs);
+  fixInd(struct, parents);
+  fixBox(struct, parents);
+  applyStruct(struct, reference);
+  return struct;
+}
+
+/** Swaps two items of a sub-list, leaving their blank lines where they were, as org-list-swap-items does. */
+function swapItems(begA: number, begB: number, struct: Struct): Struct {
+  return withoutFoldChecks(() => swapItemsChecked(begA, begB, struct));
+}
+
+function swapItemsChecked(begA: number, begB: number, struct: Struct): Struct {
+  const p = marker(ember.point());
+  const endANoBlank = itemEndBeforeBlank(struct, begA);
+  const endBNoBlank = itemEndBeforeBlank(struct, begB);
+  const endA = getItem(struct, begA).end;
+  const endB = getItem(struct, begB).end;
+  const sizeA = endANoBlank - begA;
+  const sizeB = endBNoBlank - begB;
+  const bodyA = ember.bufferText(begA, endANoBlank);
+  const bodyB = ember.bufferText(begB, endBNoBlank);
+  const between = ember.bufferText(endANoBlank, begB);
+  const subA = [begA, ...subtreeItems(struct, begA)];
+  const subB = [begB, ...subtreeItems(struct, begB)];
+  // Folds inside the items move with them.
+  const folds = (from: number, to: number): [number, number, string][] =>
+    ember
+      .overlaysIn(from, to)
+      .filter((id) => FOLD_SPECS.includes(String(ember.overlayGet(id, "invisible"))))
+      .map((id) => [(ember.overlayStart(id) ?? from) - from, (ember.overlayEnd(id) ?? from) - from, String(ember.overlayGet(id, "invisible"))]);
+  const foldsA = folds(begA, endA);
+  const foldsB = folds(begB, endB);
+  for (const spec of FOLD_SPECS) flag(begA, endBNoBlank, false, spec);
+  edDelete(begA, endBNoBlank);
+  edInsert(begA, bodyB + between + bodyA);
+  for (const [s, e, spec] of foldsB) flag(begA + s, begA + e, true, spec);
+  const at = begA + sizeB + charCount(between);
+  for (const [s, e, spec] of foldsA) flag(at + s, at + e, true, spec);
+  for (const e of struct) {
+    const { pos, end } = e;
+    if (pos < begA) continue;
+    if (subA.includes(pos)) {
+      e.pos = pos + (endBNoBlank - endANoBlank);
+      e.end = end === endA ? endB : end + (endBNoBlank - endANoBlank);
+    } else if (subB.includes(pos)) {
+      e.pos = pos + begA - begB;
+      e.end = end === endB ? begA + sizeB + (endA - endANoBlank) : end + (begA - begB);
+    } else if (pos < begB) {
+      e.pos = pos + (sizeB - sizeA);
+      e.end = end + (sizeB - sizeA);
+    }
+  }
+  struct.sort((a, b) => a.pos - b.pos);
+  ember.gotoChar(p.pos);
+  dropMarker(p);
+  return struct;
+}
+
+/** How many blank lines go between items when one is inserted, as org-list-separating-blank-lines-number guesses. */
+function separatingBlankLines(pos: number, item: number, struct: Struct, prevs: Alist): number {
+  const countBlanks = (at: number): number => {
+    const bol = ember.lineStart(lineAt(at));
+    let q = bol;
+    while (q > 0 && /[ \r\t\n]/.test(ember.bufferText(q - 1, q))) q--;
+    const after = lineStartOrEnd(lineAt(q) + 1);
+    const [a, b] = [Math.min(bol, after), Math.max(bol, after)];
+    return (ember.bufferText(a, b).match(/\n/g) ?? []).length;
+  };
+  const next = nextItem(item, prevs);
+  if (next !== undefined) return countBlanks(next);
+  if (prevItem(item, prevs) !== undefined) return countBlanks(item);
+  if (pos > itemEndBeforeBlank(struct, item)) {
+    const blanks = countBlanks(pos);
+    if (blanks > 0) return blanks;
+  }
+  const top = lineAt(struct[0].pos);
+  const limit = itemEndBeforeBlank(struct, item);
+  for (let l = top; l < ember.lineCount() && ember.lineStart(l) <= limit; l++) {
+    if (/^[ \t]*$/.test(ember.lineText(l)) && ember.lineEnd(l) <= limit) return 1;
+  }
+  return 0;
+}
+
+/**
+ * Inserts an item at pos, before the item there if pos is before its text,
+ * as org-list-insert-item does, leaving point at the new item's start.
+ */
+function insertItemStruct(pos: number, struct: Struct, prevs: Alist, checkbox: boolean, afterBullet = ""): Struct {
+  let item: number | undefined;
+  for (const e of struct) {
+    if (e.pos > pos) break;
+    if (e.end < pos) continue;
+    item = e.pos;
+  }
+  if (item === undefined) item = struct[struct.length - 1].pos;
+  const it = getItem(struct, item);
+  const itemEnd = it.end;
+  const itemEndNoBlank = itemEndBeforeBlank(struct, item);
+  const parts = itemParts(lineAt(item));
+  // Before the text after the bullet, checkbox and tag, the new item goes before this one.
+  let bodyStart = parts?.matchEnd ?? item;
+  if (parts?.tagAt !== undefined && parts.tagEnd !== undefined) {
+    if (/[.)]/.test(parts.bullet)) bodyStart = parts.tagAt;
+    else {
+      bodyStart = parts.tagEnd;
+      while (/[ \t]/.test(ember.bufferText(bodyStart, bodyStart + 1))) bodyStart++;
+    }
+  }
+  const beforep = pos <= bodyStart;
+  const split = ember.variable("org-M-RET-may-split-line") !== false;
+  const blankNb = separatingBlankLines(pos, item, struct, prevs);
+  const { ind } = it;
+  const tab = Number(ember.variable("tab-width") ?? 8);
+  const indSize = ember.variable("indent-tabs-mode") === true ? Math.floor(ind / tab) + (ind % tab) : ind;
+  const bullet = bulletString(it.bullet);
+  const box = checkbox ? "[ ]" : undefined;
+  let textCut: string | undefined;
+  if (!beforep && split) {
+    let q = pos;
+    if (itemEnd < pos) {
+      edDelete(itemEnd - 1, ember.lineEnd(lineAt(pos)));
+      q = itemEnd - 1;
+    }
+    while (q > 0 && /[ \r\t\n]/.test(ember.bufferText(q - 1, q))) q--;
+    let after = q;
+    while (after < ember.bufferSize() && /[ \t]/.test(ember.bufferText(after, after + 1))) after++;
+    pos = after;
+    textCut = edDelete(q, Math.max(q, itemEndNoBlank));
+  }
+  const body = bullet + (box ? `${box} ` : "") + afterBullet + (textCut === undefined ? "" : textCut.replace(/^[ \t]+/, ""));
+  const sep = "\n".repeat(blankNb + 1);
+  const itemSize = indSize + charCount(body) + charCount(sep);
+  const sizeOffset = itemSize - charCount(textCut ?? "");
+  edInsert(item, indentString(ind) + body + sep);
+  for (const e of struct) {
+    const { pos: p, end } = e;
+    if (p < item) {
+      if (end > item) e.end = end + sizeOffset;
+    } else if (p === item && !beforep && split) {
+      e.pos = p + itemSize;
+      e.end = end + sizeOffset;
+    } else if (split && !beforep && p >= pos && p <= itemEndNoBlank) {
+      const offset = pos - item - ind - charCount(bullet) - charCount(afterBullet);
+      e.pos = p - offset;
+      e.end = end - offset;
+    } else {
+      e.pos = p + sizeOffset;
+      e.end = end + sizeOffset;
+    }
+  }
+  struct.push({ pos: item, ind, bullet, checkbox: box, end: item + itemSize });
+  struct.sort((a, b) => a.pos - b.pos);
+  if (beforep) ember.gotoChar(item);
+  else {
+    struct = swapItems(item, item + itemSize, struct);
+    ember.gotoChar(nextItem(item, prevsAlist(struct)) ?? item);
+  }
+  return struct;
+}
+
+/** The parents items between start and end get when outdented, as org-list-struct-outdent works them out. */
+function structOutdent(start: number, end: number, struct: Struct, parents: Alist): Alist {
+  const acc = new Map<number, number | undefined>();
+  const out: Alist = new Map();
+  for (const [item, parent] of parents) {
+    if (item < start) out.set(item, parent);
+    else if (item >= end) out.set(item, parent !== undefined && acc.has(parent) ? acc.get(parent) : parent);
+    else if (parent === undefined) throw new Error("Cannot outdent top-level items");
+    else if (parent >= start) {
+      acc.set(parent, item);
+      out.set(item, parent);
+    } else {
+      acc.set(parent, item);
+      out.set(item, parents.get(parent));
+    }
+  }
+  void struct;
+  return out;
+}
+
+/** The parents items between start and end get when indented, as org-list-struct-indent works them out. */
+function structIndent(start: number, end: number, struct: Struct, parents: Alist, prevs: Alist): Alist {
+  const acc = new Map<number, number | undefined>();
+  const out: Alist = new Map();
+  for (const [item, parent] of parents) {
+    if (item < start) out.set(item, parent);
+    else if (item >= end) out.set(item, parent !== undefined && acc.has(parent) ? acc.get(parent) : parent);
+    else {
+      const prev = prevItem(item, prevs);
+      if (prev === undefined && (parent === undefined || parent < start)) throw new Error("Cannot indent the first item of a list");
+      let now: number | undefined;
+      if (prev === undefined) now = parent;
+      else if (prev < start) now = prev;
+      else now = acc.get(prev);
+      acc.set(item, now);
+      out.set(item, now);
+    }
+  }
+  void struct;
+  return out;
+}
+
+/** Where the last M-S-<left> or M-S-<right> began and ended, so repeating it moves the same items, as Org's markers keep them. */
+const lastIndentBegin = lastingMarker(0);
+const lastIndentEnd = lastingMarker(0);
+
+/**
+ * Indents (arg > 0) or outdents an item, with its children unless
+ * noSubtree, or the items in the region, as org-list-indent-item-generic
+ * does. At the first item, the whole list moves.
+ */
+function indentItemGeneric(arg: number, noSubtree: boolean, struct: Struct): void {
+  const saved = marker(ember.point());
+  const region = orgRegionActive() && ember.mark() !== undefined;
+  const mark = ember.mark() ?? ember.point();
+  const [rbeg, rend] = [Math.min(mark, ember.point()), Math.max(mark, ember.point())];
+  const top = struct[0].pos;
+  const parents = parentsAlist(struct);
+  const prevs = prevsAlist(struct);
+  const bol = ember.lineStart(lineAt());
+  let special = false;
+  if (!region && top === bol) {
+    if (noSubtree) throw new Error("At first item: use S-M-<left/right> to move the whole list");
+    special = true;
+  }
+  const shiftMeta = ["org-shiftmetaright", "org-shiftmetaleft"];
+  if (!(shiftMeta.includes(ember.lastCommand() ?? "") && shiftMeta.includes(ember.thisCommand() ?? ""))) {
+    lastIndentBegin.pos = region ? rbeg : bol;
+    lastIndentEnd.pos = region ? rend : special ? bottomPoint(struct) : noSubtree ? bol + 1 : getItem(struct, bol).end;
+  }
+  const beg = lastIndentBegin.pos;
+  const end = lastIndentEnd.pos;
+  try {
+    // As Org binds deactivate-mark to nil, a region stays active.
+    ember.keepMarkActive(() => {
+      if (special) {
+        const offset = arg < 0 ? -1 : 1;
+        const first = struct.find((e) => e.pos === beg) ?? struct[0];
+        const old = copyStruct(struct);
+        if (first.ind + offset < 0) throw new Error("Cannot outdent beyond margin");
+        if (first.ind + offset === 0 && first.bullet.includes("*")) first.bullet = bulletString("-");
+        for (const e of struct) e.ind += offset;
+        fixBul(struct, prevs);
+        applyStruct(struct, old);
+      } else if (
+        arg < 0 &&
+        ((noSubtree && !region && hasChild(struct, beg) !== undefined) ||
+          hasChild(struct, [...struct].reverse().find((e) => e.pos < end)?.pos ?? beg) !== undefined)
+      ) {
+        throw new Error("Cannot outdent an item without its children");
+      } else {
+        const old = copyStruct(struct);
+        const newParents = arg < 0 ? structOutdent(beg, end, struct, parents) : structIndent(beg, end, struct, parents, prevs);
+        writeStruct(struct, newParents, old);
+        updateCheckboxCount();
+      }
+    });
+  } finally {
+    ember.gotoChar(saved.pos);
+    dropMarker(saved);
+  }
+}
+
+/** The item point's line starts, for commands that need one, or an error. */
+export function structAtItem(error = "Not at an item"): Struct {
+  if (!itemLine(lineAt())) throw new Error(error);
+  return listStruct(lineAt());
+}
+
+export function indentItemCommand(arg: number, noSubtree: boolean): void {
+  const region = orgRegionActive() && ember.mark() !== undefined;
+  const regionStart = region ? Math.min(ember.mark() ?? 0, ember.point()) : 0;
+  if (itemLine(lineAt()) || (region && itemLine(lineAt(regionStart)))) {
+    const struct = listStruct(region ? lineAt(regionStart) : lineAt());
+    indentItemGeneric(arg, noSubtree, struct);
+  } else if (region) throw new Error("Region not starting at an item");
+  else throw new Error("Not at an item");
+}
+
+let tabIndState: [number, string] | undefined;
+
+/**
+ * Cycles an empty item's indentation, as org-cycle-item-indentation does
+ * for TAB: in, then out a level at a time, then back where it was.
+ * Returns whether it applied.
+ */
+export function cycleItemIndentation(): boolean {
+  const line = lineAt();
+  if (!itemLine(line)) return false;
+  const struct = listStruct(line);
+  const item = ember.lineStart(line);
+  const { ind } = getItem(struct, item);
+  const again = ember.lastCommand() === "org-cycle-item-indentation";
+  const parts = itemParts(line);
+  let end = getItem(struct, item).end;
+  while (end > 0 && /[ \t\n]/.test(ember.bufferText(end - 1, end))) end--;
+  if (!(again || (parts && parts.matchEnd >= end))) return false;
+  ember.setThisCommand("org-cycle-item-indentation");
+  const prevs = prevsAlist(struct);
+  const parents = parentsAlist(struct);
+  if (again && tabIndState) {
+    const [oldInd, oldBul] = tabIndState;
+    const allowOutdent = (s: Struct, pv: Alist, pa: Alist): boolean =>
+      nextItem(item, pv) === undefined && hasChild(s, item) === undefined && pa.get(item) !== undefined;
+    if (ind > oldInd && prevItem(item, prevs) !== undefined) indentItemGeneric(1, true, struct);
+    else if (ind < oldInd && allowOutdent(struct, prevs, parents)) indentItemGeneric(-1, true, struct);
+    else {
+      edDelete(item, ember.lineEnd(line));
+      edInsert(item, indentString(oldInd) + oldBul + " ");
+      ember.gotoChar(ember.lineEnd(line));
+      const fresh = listStruct(line);
+      const freshParents = parentsAlist(fresh);
+      if (ind > oldInd && allowOutdent(fresh, prevsAlist(fresh), freshParents)) indentItemGeneric(-1, true, fresh);
+      else {
+        writeStruct(fresh, freshParents);
+        ember.setThisCommand("identity" as ember.CommandName);
+      }
+    }
+    return true;
+  }
+  tabIndState = [ind, ember.lineText(line).trim()];
+  if (prevItem(item, prevs) !== undefined) indentItemGeneric(1, true, struct);
+  else if (nextItem(item, prevs) === undefined && parents.get(item) !== undefined) indentItemGeneric(-1, true, struct);
+  else {
+    ember.setThisCommand("identity" as ember.CommandName);
+    throw new Error("Cannot move item");
+  }
+  return true;
+}
+
+/** Changes the bullets of the list at point, as org-cycle-list-bullet does. `which` is a bullet, "previous", or undefined for the next. */
+export function cycleListBullet(which?: string): void {
+  if (!itemLine(lineAt())) throw new Error("Not at an item");
+  const origin = marker(ember.point());
+  const line = lineAt();
+  const bol = ember.lineStart(line);
+  const struct = listStruct(line);
+  const parents = parentsAlist(struct);
+  const prevs = prevsAlist(struct);
+  const listBeg = firstItem(bol, prevs);
+  const here = getItem(struct, bol);
+  const offset = origin.pos - (bol + here.ind);
+  const offset2 = origin.pos - (bol + here.ind + charCount(here.bullet));
+  const bullet = getItem(struct, listBeg).bullet;
+  const current = /\./.test(bullet) ? "1." : /\)/.test(bullet) ? "1)" : bullet.trim();
+  const description = itemParts(line)?.tag !== undefined;
+  const choices = ["-", "+", ...(/^\S/.test(ember.lineText(line)) ? [] : ["*"]), ...(description ? [] : ["1.", "1)"])];
+  const k = choices.indexOf(current);
+  const index = k < 0 ? choices.length : k;
+  const get = (i: number): string => choices[((i % choices.length) + choices.length) % choices.length];
+  const next = which !== undefined && choices.includes(which) ? which : which === "previous" ? get(index - 1) : get(index + 1);
+  const old = copyStruct(struct);
+  getItem(struct, listBeg).bullet = bulletString(next);
+  fixBul(struct, prevs);
+  fixInd(struct, parents);
+  ember.gotoChar(bol);
+  applyStruct(struct, old);
+  const fresh = listStruct(lineAt(origin.pos));
+  const at = ember.lineStart(lineAt(origin.pos));
+  const item = fresh.find((e) => e.pos === at);
+  if (item && offset2 >= 0) ember.gotoChar(at + item.ind + charCount(item.bullet) + offset2);
+  else if (item && offset >= 0) ember.gotoChar(at + item.ind + offset);
+  else ember.gotoChar(origin.pos);
+  dropMarker(origin);
+}
+
+/** Inserts an item, with a checkbox if asked, as org-insert-item does. Returns whether point was in an item. */
+export function insertListItem(checkbox: boolean): boolean {
+  const start = inItem(lineAt());
+  if (start === undefined || ember.invisibleAt(start)) return false;
+  const pos = ember.point();
+  let struct = listStruct(lineAt(start));
+  const prevs = prevsAlist(struct);
+  const first = getItem(struct, firstItem(start, prevs));
+  const description = !/[0-9A-Za-z]/.test(first.bullet) && first.tag !== undefined;
+  struct = insertItemStruct(pos, struct, prevs, checkbox, description ? " :: " : "");
+  writeStruct(struct, parentsAlist(struct));
+  if (checkbox) updateCheckboxCount();
+  const line = lineAt();
+  ember.gotoChar(ember.lineStart(line));
+  const parts = itemParts(line);
+  if (parts) ember.gotoChar(parts.matchEnd);
+  if (description) ember.gotoChar(ember.point() - 1);
+  return true;
+}
+
+export function moveItemDown(): void {
+  if (!itemLine(lineAt())) throw new Error("Not at an item");
+  const col = ember.point() - ember.lineStart(lineAt());
+  const item = ember.lineStart(lineAt());
+  let struct = listStruct(lineAt());
+  const next = nextItem(item, prevsAlist(struct));
+  if (next === undefined) throw new Error("Cannot move this item further down");
+  struct = swapItems(item, next, struct);
+  ember.gotoChar(nextItem(item, prevsAlist(struct)) ?? item);
+  writeStruct(struct, parentsAlist(struct));
+  moveToColumn(col);
+}
+
+export function moveItemUp(): void {
+  if (!itemLine(lineAt())) throw new Error("Not at an item");
+  const col = ember.point() - ember.lineStart(lineAt());
+  const item = ember.lineStart(lineAt());
+  let struct = listStruct(lineAt());
+  const prev = prevItem(item, prevsAlist(struct));
+  if (prev === undefined) throw new Error("Cannot move this item further up");
+  struct = swapItems(prev, item, struct);
+  writeStruct(struct, parentsAlist(struct));
+  moveToColumn(col);
+}
+
+export function previousItem(): void {
+  const item = inItem(lineAt());
+  if (item === undefined) throw new Error("Not in an item");
+  ember.gotoChar(item);
+  const prev = prevItem(item, prevsAlist(listStruct(lineAt(item))));
+  if (prev === undefined) throw new Error("On first item");
+  ember.gotoChar(prev);
+}
+
+export function nextListItem(): void {
+  const item = inItem(lineAt());
+  if (item === undefined) throw new Error("Not in an item");
+  ember.gotoChar(item);
+  const next = nextItem(item, prevsAlist(listStruct(lineAt(item))));
+  if (next === undefined) throw new Error("On last item");
+  ember.gotoChar(next);
+}
+
+/**
+ * Ticks or unticks the checkbox on point's item line, or the first one
+ * under a heading or in the region and the rest like it, as
+ * org-toggle-checkbox does. With C-u, adds or removes checkboxes.
+ */
+export function toggleCheckbox(arg: ember.PrefixArg): void {
+  const saved = marker(ember.point());
+  const presence = Array.isArray(arg) && arg[0] === 4;
+  try {
+    let limUp: number;
+    let limDown: Marker;
+    const firstItemFrom = (from: number, limit: number): number | undefined => {
+      for (let l = lineAt(from); l < ember.lineCount() && ember.lineStart(l) < limit; l++) {
+        if (ember.lineStart(l) >= from && itemLine(l)) return ember.lineStart(l);
+      }
+      return undefined;
+    };
+    if (orgRegionActive() && ember.mark() !== undefined) {
+      const [rb, re] = [Math.min(ember.mark() ?? 0, ember.point()), Math.max(ember.mark() ?? 0, ember.point())];
+      const found = firstItemFrom(ember.lineStart(lineAt(rb)), re);
+      if (found === undefined) throw new Error("No item in region");
+      limUp = found;
+      limDown = marker(re);
+    } else if (parseHeading(lineAt())) {
+      const all = headings();
+      const i = headingIndex(all, lineAt()) as number;
+      const limit = all[i + 1]?.start ?? ember.bufferSize();
+      const found = firstItemFrom(endOfMetaData(all[i], true), limit);
+      if (found === undefined) throw new Error("No item in subtree");
+      limUp = found;
+      limDown = marker(limit);
+    } else if (itemLine(lineAt())) {
+      limUp = ember.lineStart(lineAt());
+      limDown = marker(ember.lineEnd(lineAt()));
+    } else throw new Error("Not at an item or heading, and no active region");
+    // As org-at-item-checkbox-p sees it: a box needs blanks after it.
+    const parts = itemParts(lineAt(limUp));
+    const box = parts?.boxAt !== undefined && /^[ \t]/.test(ember.bufferText(parts.boxAt + 3, parts.boxAt + 4)) ? parts.checkbox : undefined;
+    const ref = Array.isArray(arg) && arg[0] === 16 ? "[-]" : presence ? (box ? undefined : "[ ]") : box === "[X]" ? "[ ]" : "[X]";
+    let at = limUp;
+    while (at < limDown.pos) {
+      const found = firstItemFrom(at, limDown.pos);
+      if (found === undefined) break;
+      const struct = listStruct(lineAt(found));
+      const old = copyStruct(struct);
+      const parents = parentsAlist(struct);
+      const bottom = marker(bottomPoint(struct));
+      for (const e of struct) {
+        if (e.pos < limUp || e.pos > limDown.pos) continue;
+        if (e.checkbox !== undefined || presence) e.checkbox = ref;
+      }
+      fixBox(struct, parents);
+      applyStruct(struct, old);
+      at = bottom.pos;
+      dropMarker(bottom);
+    }
+    dropMarker(limDown);
+  } finally {
+    ember.gotoChar(saved.pos);
+    dropMarker(saved);
+  }
+  updateCheckboxCount();
+}
+
+/**
+ * Where a heading's planning line and property drawer end, as
+ * org-end-of-meta-data does: with `full`, clock lines, blank lines and the
+ * logbook too, and with `true` any drawer.
+ */
+export function endOfMetaData(h: Heading, full: boolean | "logbook" = false): number {
+  let l = h.line + 1;
+  if (l < ember.lineCount() && PLANNING.test(ember.lineText(l))) l++;
+  const close = propertyDrawerEnd(l);
+  if (close !== undefined) l = close + 1;
+  if (full && !(l < ember.lineCount() && isHeadingLine(ember.lineText(l)))) {
+    while (l < ember.lineCount()) {
+      const text = ember.lineText(l);
+      if (/^[ \t]*$/.test(text) || /^[ \t]*CLOCK:/.test(text)) {
+        if (l === ember.lineCount() - 1) return ember.bufferSize();
+        l++;
+      } else if (/^[ \t]*:LOGBOOK:[ \t]*$/i.test(text) || (full === true && DRAWER_RE.test(text))) {
+        const e = drawerEnd(l, ember.bufferSize());
+        if (e === undefined) break;
+        l = e + 1;
+      } else break;
+    }
+  }
+  return lineStartOrEnd(l);
+}
+
+/** The closing line of a property drawer starting at a line, as org-property-drawer-re matches one. */
+function propertyDrawerEnd(line: number): number | undefined {
+  if (line >= ember.lineCount() || !/^[ \t]*:PROPERTIES:[ \t]*$/i.test(ember.lineText(line))) return undefined;
+  for (let l = line + 1; l < ember.lineCount(); l++) {
+    const text = ember.lineText(l);
+    if (/^[ \t]*:END:[ \t]*$/i.test(text)) return l;
+    if (!/^[ \t]*:\S+:(?:[ \t].*)?[ \t]*$/.test(text)) return undefined;
+  }
+  return undefined;
+}
+
+/**
+ * Sets a property in a heading's property drawer, adding the drawer after
+ * its planning line, folded, if there is none, as org-entry-put does.
+ */
+export function entryPut(headingLine: number, property: string, value: string): void {
+  withoutFoldChecks(() => {
+    let line = headingLine + 1;
+    if (line < ember.lineCount() && PLANNING.test(ember.lineText(line))) line++;
+    if (propertyDrawerEnd(line) === undefined) {
+      let at = lineStartOrEnd(line);
+      if (at === ember.lineStart(lineAt(at)) && at > 0 && (line < ember.lineCount() || ember.bufferText(at - 1, at) === "\n")) at--;
+      const begin = at === 0 ? 0 : at + 1;
+      ember.gotoChar(at);
+      if (at > 0) edInsert(at, "\n");
+      edInsert(ember.point(), ":PROPERTIES:\n:END:");
+      const endPos = ember.point();
+      hideOverlay(ember.lineEnd(lineAt(endPos) - 1), endPos, "org-hide-drawer");
+      if (endPos === ember.bufferSize() || begin === 0) edInsert(endPos, "\n");
+      line = lineAt(begin);
+    }
+    const close = propertyDrawerEnd(line) as number;
+    const re = new RegExp(`^[ \\t]*:${property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:`, "i");
+    let at: number | undefined;
+    for (let l = line + 1; l < close; l++) {
+      if (re.test(ember.lineText(l))) {
+        at = ember.lineStart(l);
+        edDelete(at, ember.lineEnd(l));
+        break;
+      }
+    }
+    if (at === undefined) {
+      at = ember.lineStart(close);
+      edInsert(at, "\n");
+    }
+    edInsert(at, `:${property}: ${value}`);
+    // As org-entry-put ends with org-indent-line, which aligns a property's value.
+    alignNodeProperty(lineAt(at));
+  });
+}
+
+/** A property's value in a heading's property drawer, as org-entry-get reads it, ignoring case. */
+function entryGet(headingLine: number, property: string): string | undefined {
+  let line = headingLine + 1;
+  if (line < ember.lineCount() && PLANNING.test(ember.lineText(line))) line++;
+  const close = propertyDrawerEnd(line);
+  if (close === undefined) return undefined;
+  const re = new RegExp(`^[ \\t]*:${property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:(?:[ \\t]+(.*?))?[ \\t]*$`, "i");
+  for (let l = line + 1; l < close; l++) {
+    const m = re.exec(ember.lineText(l));
+    if (m) return m[1] ?? "";
+  }
+  return undefined;
+}
+
+/** The properties Org works out itself, which org-entry-put cannot set, as org-special-properties lists them. */
+const SPECIAL_PROPERTIES = [
+  "ALLTAGS", "BLOCKED", "CLOCKSUM", "CLOCKSUM_T", "CLOSED", "FILE", "ITEM", "TAGS", "TIMESTAMP", "TIMESTAMP_IA",
+];
+
+/** The heading whose entry point is in, as org-back-to-heading with invisible-ok finds it. */
+export function entryHeading(): Heading | undefined {
+  const all = headings();
+  const i = headingIndex(all, lineAt());
+  return i === undefined ? undefined : all[i];
+}
+
+export const setProperty = ember.defineCommand({
+  name: "org-set-property",
+  doc: "In the current entry, set a property to a value, adding a property drawer if there is none.",
+  params: [
+    { name: "property", kind: "string", prompt: "Property: " },
+    { name: "value", kind: "string", prompt: "Value: " },
+  ],
+  run: (property, value) => {
+    if (property === "" || /\s/.test(property)) throw new Error(`Invalid property name: "${property}"`);
+    const h = entryHeading();
+    if (!h) throw new Error("Before first headline at position 1 in buffer " + ember.bufferName());
+    const upper = property.toUpperCase();
+    if (upper === "TODO") {
+      if (value !== "" && !allKeywords().includes(value)) throw new Error(`"${value}" is not a valid TODO state`);
+      setTodo(h, value === "" ? undefined : value);
+      return;
+    }
+    if (SPECIAL_PROPERTIES.includes(upper)) throw new Error(`The ${property} property cannot be set with \`org-entry-put'`);
+    if (entryGet(h.line, property) === value) return;
+    const p = marker(ember.point());
+    entryPut(h.line, property, value);
+    ember.gotoChar(p.pos);
+    dropMarker(p);
+  },
+});
+
+ember.defineCommand({
+  name: "org-delete-property",
+  doc: "In the current entry, delete a property, and the property drawer with it if that leaves it empty.",
+  params: [{ name: "property", kind: "string", prompt: "Property: " }],
+  run: (property) => {
+    const h = entryHeading();
+    if (!h) throw new Error("Before first headline at position 1 in buffer " + ember.bufferName());
+    let line = h.line + 1;
+    if (line < ember.lineCount() && PLANNING.test(ember.lineText(line))) line++;
+    const close = propertyDrawerEnd(line);
+    if (close === undefined) {
+      ember.message("No property to delete in this entry");
+      return;
+    }
+    const p = marker(ember.point());
+    // The property and its accumulated form, PROPERTY+, as org-entry-delete removes them.
+    const re = new RegExp(`^[ \\t]*:${property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\+?:`, "i");
+    let end = close;
+    for (let l = line + 1; l < end; ) {
+      if (re.test(ember.lineText(l))) {
+        edDelete(ember.lineStart(l), ember.lineStart(l + 1));
+        end--;
+      } else l++;
+    }
+    // An emptied drawer goes altogether.
+    if (end === line + 1) edDelete(ember.lineStart(line), lineStartOrEnd(line + 2));
+    ember.gotoChar(p.pos);
+    dropMarker(p);
+    ember.message(`Property "${property}" deleted`);
+  },
+});
+
+ember.defineCommand({
+  name: "org--insert-named-drawer",
+  doc: "Insert a drawer of the name given at point, with point inside it, as org-insert-drawer does without a prefix argument.",
+  params: [{ name: "drawer", kind: "string", prompt: "Drawer: " }],
+  run: (drawer) => {
+    if (!/^[\w-]+$/.test(drawer)) throw new Error("Invalid drawer name");
+    if (ember.point() !== ember.lineStart(lineAt())) ember.insert("\n");
+    ember.insert(`:${drawer}:\n\n:END:\n`);
+    ember.gotoChar(ember.lineStart(lineAt() - 2));
+  },
+});
+
+export const insertDrawer = ember.defineCommand({
+  name: "org-insert-drawer",
+  doc:
+    "Insert a drawer at point, asking for its name, with point inside it.\n\n" +
+    "With a prefix argument, insert the entry's property drawer instead.",
+  run: () => {
+    if (ember.prefixArg() === null) {
+      // The name is asked for only without a prefix argument, as Org's interactive form does.
+      ember.callInteractively("org--insert-named-drawer");
+      return;
+    }
+    {
+      const h = entryHeading();
+      if (!h) throw new Error("Before first headline at position 1 in buffer " + ember.bufferName());
+      let line = h.line + 1;
+      if (line < ember.lineCount() && PLANNING.test(ember.lineText(line))) line++;
+      if (propertyDrawerEnd(line) === undefined) {
+        // An empty drawer made and opened, with a line inside it, as
+        // org-insert-property-drawer and org-insert-drawer leave it.
+        entryPut(h.line, "X", "");
+        const close = propertyDrawerEnd(line) as number;
+        edDelete(ember.lineStart(close - 1), ember.lineStart(close));
+      }
+      const close = propertyDrawerEnd(line) as number;
+      flag(ember.lineEnd(line), ember.lineStart(close), false, "org-hide-drawer");
+      ember.gotoChar(ember.lineStart(close));
+      if (close === line + 1) {
+        ember.insert("\n");
+        ember.gotoChar(ember.point() - 1);
+      }
+    }
+  },
+});
