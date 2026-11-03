@@ -164,3 +164,86 @@ fn process_output_arrives_with_no_key() {
         std::thread::sleep(Duration::from_millis(5));
     }
 }
+
+#[test]
+fn settling_waits_for_the_input_sent_while_a_process_wakes_the_loop() {
+    let d = driver();
+    d.with(|ed| {
+        ed.make_process(ember_core::ProcessSpec {
+            name: "chatter".into(),
+            buffer: None,
+            command: vec!["sh".into(), "-c".into(), "i=0; while [ $i -lt 400 ]; do echo $i; sleep 0.002; i=$((i+1)); done".into()],
+            directory: None,
+            env: Vec::new(),
+            merge_stderr: true,
+            filter: None,
+            sentinel: None,
+            pty: false,
+            coding: None,
+        })
+        .unwrap();
+    });
+    // Each wake from the process is input the driver did not send: settle
+    // waits for what it sent, however many wakes came between.
+    let ran = std::sync::Arc::new(std::sync::atomic::AtomicU32::new(0));
+    for i in 1..=100 {
+        let counter = ran.clone();
+        d.run(move |_| {
+            std::thread::sleep(Duration::from_millis(1));
+            counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        });
+        d.settle();
+        assert_eq!(ran.load(std::sync::atomic::Ordering::SeqCst), i, "settled before the input ran");
+    }
+}
+
+#[test]
+fn a_describe_that_panics_leaves_the_last_frames() {
+    let calls = std::sync::atomic::AtomicU32::new(0);
+    let d = Driver::spawn(|_| Box::new(()), move |ed| {
+        if calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst) > 0 {
+            panic!("describe broke");
+        }
+        ed.redisplay();
+        vec![ed.describe_frame(ed.selected_frame(), true, 1.0)]
+    }, || {});
+    let first = published_after(&d, 0);
+    assert!(!d.published().frames.is_empty());
+    d.key(key("x"));
+    published_after(&d, first);
+    assert!(!d.published().frames.is_empty(), "the window does not go blank");
+}
+
+#[test]
+fn nesting_too_deep_is_an_error_not_a_crash() {
+    let d = driver();
+    // Each nested edit is a command loop on the editor thread's stack.
+    for _ in 0..1100 {
+        d.run(|ed| {
+            if let Err(e) = ed.call("recursive-edit", vec![]) {
+                ed.message(e.to_string());
+            }
+        });
+    }
+    let (depth, echo) = d.with(|ed| (ed.recursion_depth(), ed.echo().map(str::to_string)));
+    assert_eq!(depth, 1000);
+    assert_eq!(echo.as_deref(), Some("Lisp nesting exceeds ‘max-lisp-eval-depth’: 1001"));
+}
+
+#[test]
+fn a_timer_cancelled_by_one_before_it_in_the_round_does_not_run() {
+    let mut ed = Editor::new();
+    let second = Rc::new(std::cell::Cell::new(0u64));
+    let cancels = second.clone();
+    ed.run_with_timer(0.01, None, Rc::new(move |ed: &mut Editor, _| {
+        ed.cancel_timer(cancels.get());
+        Ok(())
+    }));
+    second.set(ed.run_with_timer(0.01, None, Rc::new(|ed: &mut Editor, _| {
+        ed.set_variable("ran", ember_core::Value::Bool(true));
+        Ok(())
+    })));
+    ed.advance_clock(Duration::from_millis(20));
+    ed.run_timers();
+    assert!(ed.variable("ran").is_none(), "the cancelled timer ran");
+}

@@ -374,3 +374,53 @@ fn the_heading_index_follows_random_edits() {
     let verdict = s.eval_expression(&mut ed, "ember.funcall('org--headings-verify')").unwrap();
     assert_eq!(verdict, "null", "at the end");
 }
+
+/// Org's markers live only while the command that made them runs: one an
+/// error left behind is dropped once the command is over, not moved on
+/// every later edit for the rest of the session.
+#[test]
+fn markers_a_failed_command_leaves_are_dropped_after_it() {
+    let (mut ed, s) = org("* One\n");
+    s.eval_typescript(
+        &mut ed,
+        "leak.ts",
+        r#"import("org-macs").then((m) => {
+             (globalThis as any).orgMacs = m;
+             ember.defineCommand({ name: "leak-a-marker", run: () => { m.marker(0); throw new Error("partway"); } });
+           });"#
+            .to_string(),
+    )
+    .unwrap();
+    // Org keeps a few markers across commands, as its last-indent ones.
+    let count = |ed: &mut ember_core::Editor| s.eval_expression(ed, "(globalThis as any).orgMacs.markers.length").unwrap();
+    let before = count(&mut ed);
+    ed.press("M-x").unwrap();
+    ed.type_text("leak-a-marker\n");
+    assert_eq!(count(&mut ed), before);
+}
+
+/// A fold an edit breaks is shown once the command is over in the buffer
+/// it is in, though another is current by then, as when the edit is made
+/// from the agenda or capture.
+#[test]
+fn a_fold_broken_from_another_buffer_is_shown_in_its_own() {
+    let (mut ed, s) = org("* A\nbody\n* B\n");
+    ed.press("TAB").unwrap();
+    ed.redisplay();
+    assert!(!rows(&ed).iter().any(|r| r.contains("body")), "folded: {:?}", rows(&ed));
+    s.eval_typescript(
+        &mut ed,
+        "break.ts",
+        r#"ember.defineCommand({ name: "break-fold-elsewhere", run: () => {
+             ember.call("switch-to-buffer", "other");
+             ember.withCurrentBuffer("*scratch*", () => ember.deleteRegion(0, 2));
+           } });"#
+            .to_string(),
+    )
+    .unwrap();
+    ed.press("M-x").unwrap();
+    ed.type_text("break-fold-elsewhere\n");
+    ed.call("switch-to-buffer", vec![Arg::Str("*scratch*".into())]).unwrap();
+    ed.redisplay();
+    assert!(rows(&ed).iter().any(|r| r.contains("body")), "shown: {:?}", rows(&ed));
+}

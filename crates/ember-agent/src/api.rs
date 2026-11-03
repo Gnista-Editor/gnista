@@ -7,6 +7,7 @@
 
 use std::io::{BufRead, BufReader};
 use std::sync::mpsc::{Receiver, Sender, channel};
+use std::time::Duration;
 
 use serde_json::{Value, json};
 
@@ -100,7 +101,15 @@ impl Model for Anthropic {
 /// stream ends or the receiver is dropped.
 fn stream(url: &str, body: &Value, tx: &Sender<Event>) -> Result<(), String> {
     let key = api_key()?;
-    let agent: ureq::Agent = ureq::Agent::config_builder().http_status_as_error(false).build().into();
+    // Long enough for the longest reply, so a connection that stops
+    // answering ends in an error rather than a wait for ever.
+    let agent: ureq::Agent = ureq::Agent::config_builder()
+        .http_status_as_error(false)
+        .timeout_connect(Some(Duration::from_secs(30)))
+        .timeout_recv_response(Some(Duration::from_secs(300)))
+        .timeout_recv_body(Some(Duration::from_secs(3600)))
+        .build()
+        .into();
     let response = agent
         .post(url)
         .header("x-api-key", &key)
@@ -133,23 +142,44 @@ fn api_error(status: u16, text: &str) -> String {
 }
 
 /// Server-sent events: each `data:` line's JSON, in order. An `error`
-/// event becomes [`Event::Error`]; `ping`s are dropped.
+/// event becomes [`Event::Error`], as does the connection failing partway,
+/// which is not the reply ending; `ping`s are dropped.
 pub fn parse_sse(reader: impl BufRead) -> impl Iterator<Item = Event> {
-    reader.lines().map_while(Result::ok).filter_map(|line| {
-        let data = line.strip_prefix("data:")?.trim();
-        let value: Value = match serde_json::from_str(data) {
-            Ok(v) => v,
-            Err(e) => return Some(Event::Error(format!("Unreadable event from the API: {e}"))),
-        };
-        match value.get("type").and_then(Value::as_str) {
-            Some("ping") => None,
-            Some("error") => {
-                let message = value.pointer("/error/message").and_then(Value::as_str).unwrap_or("unknown error");
-                Some(Event::Error(format!("The API reported an error: {message}")))
+    let mut lines = reader.lines();
+    let mut broken = false;
+    std::iter::from_fn(move || {
+        while !broken {
+            match lines.next()? {
+                Ok(line) => {
+                    if let Some(event) = parse_sse_line(&line) {
+                        return Some(event);
+                    }
+                }
+                Err(e) => {
+                    broken = true;
+                    return Some(Event::Error(format!("The connection to the API failed: {e}")));
+                }
             }
-            _ => Some(Event::Data(value)),
         }
+        None
     })
+}
+
+/// One line of server-sent events, if it is an event to pass on.
+fn parse_sse_line(line: &str) -> Option<Event> {
+    let data = line.strip_prefix("data:")?.trim();
+    let value: Value = match serde_json::from_str(data) {
+        Ok(v) => v,
+        Err(e) => return Some(Event::Error(format!("Unreadable event from the API: {e}"))),
+    };
+    match value.get("type").and_then(Value::as_str) {
+        Some("ping") => None,
+        Some("error") => {
+            let message = value.pointer("/error/message").and_then(Value::as_str).unwrap_or("unknown error");
+            Some(Event::Error(format!("The API reported an error: {message}")))
+        }
+        _ => Some(Event::Data(value)),
+    }
 }
 
 #[cfg(test)]
@@ -166,6 +196,27 @@ mod tests {
         assert_eq!(events.len(), 3);
         assert_eq!(events[1], Event::Data(json!({"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Hi"}})));
         assert_eq!(events[2], Event::Error("The API reported an error: Overloaded".into()));
+    }
+
+    #[test]
+    fn a_connection_failing_partway_is_an_error() {
+        /// A response body that gives one event, then fails.
+        struct Failing(Option<&'static [u8]>);
+        impl std::io::Read for Failing {
+            fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+                match self.0.take() {
+                    Some(bytes) => {
+                        buf[..bytes.len()].copy_from_slice(bytes);
+                        Ok(bytes.len())
+                    }
+                    None => Err(std::io::Error::new(std::io::ErrorKind::ConnectionReset, "connection reset")),
+                }
+            }
+        }
+        let first: &[u8] = b"data: {\"type\":\"message_start\"}\n\n";
+        let events: Vec<Event> = parse_sse(BufReader::new(Failing(Some(first)))).collect();
+        assert_eq!(events.len(), 2, "{events:?}");
+        assert_eq!(events[1], Event::Error("The connection to the API failed: connection reset".into()));
     }
 
     #[test]

@@ -222,6 +222,10 @@
       return this.position;
     }
   }
+  // A script's function that calls an editor function: once collected,
+  // the engine can forget the editor function, if it gave out no other.
+  const functionsFreed = new FinalizationRegistry((id) => native.forgetFunction(id));
+  globalThis.__emberTrackFunction = (f, id) => functionsFreed.register(f, id);
   // Markers the editor holds in variables and properties: kept from the
   // registry that deletes collected ones, and the same object each time.
   const markersKept = new Map();
@@ -1330,6 +1334,7 @@
     Marker,
     deleteMarker(m) {
       if (m instanceof Marker) markersFreed.unregister(m.__emberMarkerToken);
+      markersKept.delete(markerId(m));
       native.deleteMarker(markerId(m));
     },
     markerPosition: (m) => native.markerPosition(markerId(m)) ?? undefined,

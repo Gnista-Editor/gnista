@@ -39,6 +39,9 @@ pub(crate) struct Timers {
     /// The timers whose functions are running, which a prompt they open
     /// does not run again while it waits.
     running: Vec<u64>,
+    /// The timers taken to run this round and not yet run, which one
+    /// cancelled meanwhile leaves, so it does not run after all.
+    due: Vec<u64>,
 }
 
 impl Default for Timers {
@@ -51,6 +54,7 @@ impl Default for Timers {
             keys_since_auto_save: 0,
             idle_auto_saved: false,
             running: Vec::new(),
+            due: Vec::new(),
         }
     }
 }
@@ -92,6 +96,7 @@ impl Editor {
     /// Stops a timer, as Emacs's `cancel-timer`.
     pub fn cancel_timer(&mut self, id: u64) {
         self.timers.list.retain(|t| t.id != id);
+        self.timers.due.retain(|&d| d != id);
     }
 
     /// Notes a key typed: idle time starts again.
@@ -167,7 +172,11 @@ impl Editor {
             _ => true,
         });
         self.timers.running = running;
+        self.timers.due.extend(due.iter().map(|(id, _)| *id));
         for (id, f) in due {
+            // Cancelled by a timer that ran before it this round.
+            let Some(at) = self.timers.due.iter().position(|&d| d == id) else { continue };
+            self.timers.due.remove(at);
             self.timers.running.push(id);
             let result = f(self, &[]);
             self.timers.running.retain(|&r| r != id);

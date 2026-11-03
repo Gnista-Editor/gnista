@@ -31,27 +31,27 @@ Each of these is wrong only after a while, or in a case the tests do not make, a
 
 | | Where | What | State |
 | --- | --- | --- | --- |
-| 2.1 | `packages/org-agenda.ts:76,377` | **Agenda lines hold positions as numbers**: after `t` changes an entry's text, later entries in the same file point at the wrong place. Markers, as compile.ts keeps. | open |
-| 2.2 | `packages/org-macs.ts:12`, `org.ts:2635` and most of 55 `marker(` sites | **Org's markers leak on quit or error**, dropped only on the normal path, and every later Org edit walks them. A `withMarker` that drops in `finally`. | open |
-| 2.3 | `packages/org.ts:1339` | **Delayed fold reveals run in whatever buffer is current** at the end of the command: from the agenda or capture, the agenda is unfolded and the Org file's fold stays broken. | open |
-| 2.4 | `comint.ts:47`, `shell.ts:17`, `hi-lock.ts:45`, `view.ts:6`, `diff.ts:70`, `bookmark.ts:23`, `ansi-color.ts:102`, `tabulated-list.ts:465` | **Per-buffer state in module maps keyed by buffer name**: renaming a shell loses its history and directory stack, hi-lock highlights in a renamed buffer cannot be removed, killed buffers leave entries. Buffer-local variables, as Emacs keeps them. | open |
-| 2.5 | `packages/org.ts:425,7700` | **Org's heading index is never dropped** when its buffer is killed (indirect buffers, capture, agenda visits). | open |
-| 2.6 | `packages/recentf.ts:58` | **`recentf-exclude` is compiled as a JavaScript regexp**, not an Emacs one; a user's Emacs pattern mismatches or throws inside the find-file hook. | open |
-| 2.7 | `packages/org-capture.ts:79` | Capture's origin point is a number while the origin buffer stays editable beside it. | open |
-| 2.8 | `ember-script/src/v8engine/mod.rs:77,946` | **V8 keeps every editor function given to a script**, for the isolate's life, and some close over the engine itself, a cycle that never frees the isolate (around-advice would leak one per call). | open |
-| 2.9 | `ember-script/src/prelude.js:227` | **A marker that has once been an editor value is never freed**: `markersKept` only grows, on both engines. | open |
-| 2.10 | `ember-script/src/v8engine/bindings.rs:79`, `quickjs/bindings.rs:60` | **Out-of-range numbers convert differently**: V8 saturates (`gotoChar(-1)` is 0), QuickJS throws. Pick one for both. Smaller drifts: thrown non-Error objects, `[x]` prefixes, frozen functions, over-long strings. | open |
-| 2.11 | `ember-script/src/natives/text.rs` (`deleteMarker`), `lib.rs:304` | FinalizationRegistry cleanups go through safe points, so a `C-g` pending then makes them throw and the marker is never deleted: `#[safe_point = false]`. | open |
-| 2.12 | `ember-core/src/buffer.rs:2079,719` | **Undoing entries that no longer fit the buffer panics**: a `buffer-undo-list` set by a script is not checked as `undo_in_region` checks. | open |
-| 2.13 | `ember-core/src/buffer.rs:1104,2223` | **Changing the case of ß right after an insertion corrupts the insertion's undo entry**, through typing amalgamation the trial edits do not take back. | open |
-| 2.14 | `ember-core/src/editor.rs:1174` | `call_interactively` reports a quit as success once keys were typed into its prompt. | open |
-| 2.15 | `ember-core/src/driver.rs:167` | `Driver::settle` can return before the keys it waits for ran, when a process woke the loop: driven tests with a process can flake. | open |
-| 2.16 | `ember-core/src/driver.rs:247` | A panic or re-entry in `describe` publishes empty frames: the window goes blank until the next input. | open |
-| 2.17 | `ember-core/src/keyboard.rs:281`, `editor.rs:1205` | Nested prompts and recursive edits have no depth limit, and overflow the stack rather than signalling `excessive-lisp-nesting`. | open |
-| 2.18 | `ember-mcp/src/socket.rs:36` | The socket's directory is chmodded whatever it is (`EMBER_SOCKET=~/x.sock` makes home 0700) and the default one is not checked for its owner, which matters on Linux's shared `/tmp`. | open |
-| 2.19 | `ember-agent/src/api.rs:103,138`, `lib.rs:344` | The API connection has no timeouts, a mid-stream error is reported as "ended early", and a block index from the stream is used unbounded. | open |
-| 2.20 | `ember-agent/src/lib.rs:163,207` | A killed `*agent*` buffer's history is reused by the next `M-x agent`; buffers the agent opens in a turn are not folded into one undo step. | open |
-| 2.21 | `ember-core/src/timers.rs:145` | A timer cancelled by an earlier timer in the same round still runs. | open |
+| 2.1 | `packages/org-agenda.ts:76,377` | **Agenda lines hold positions as numbers**: after `t` changes an entry's text, later entries in the same file point at the wrong place. Markers, as compile.ts keeps. | fixed: markers, as compile.ts keeps |
+| 2.2 | `packages/org-macs.ts:12`, `org.ts:2635` and most of 55 `marker(` sites | **Org's markers leak on quit or error**, dropped only on the normal path, and every later Org edit walks them. A `withMarker` that drops in `finally`. | fixed: markers still left after a command are dropped in `post-command-hook`, outside prompts and recursive edits |
+| 2.3 | `packages/org.ts:1339` | **Delayed fold reveals run in whatever buffer is current** at the end of the command: from the agenda or capture, the agenda is unfolded and the Org file's fold stays broken. | fixed: each reveal remembers its buffer |
+| 2.4 | `comint.ts:47`, `shell.ts:17`, `hi-lock.ts:45`, `view.ts:6`, `diff.ts:70`, `bookmark.ts:23`, `ansi-color.ts:102`, `tabulated-list.ts:465` | **Per-buffer state in module maps keyed by buffer name**: renaming a shell loses its history and directory stack, hi-lock highlights in a renamed buffer cannot be removed, killed buffers leave entries. Buffer-local variables, as Emacs keeps them. | fixed: `PerBuffer` in subr.ts, keyed by buffer id and cleared when the buffer is killed |
+| 2.5 | `packages/org.ts:425,7700` | **Org's heading index is never dropped** when its buffer is killed (indirect buffers, capture, agenda visits). | fixed |
+| 2.6 | `packages/recentf.ts:58` | **`recentf-exclude` is compiled as a JavaScript regexp**, not an Emacs one; a user's Emacs pattern mismatches or throws inside the find-file hook. | fixed: Emacs regexps and predicates |
+| 2.7 | `packages/org-capture.ts:79` | Capture's origin point is a number while the origin buffer stays editable beside it. | fixed: a marker |
+| 2.8 | `ember-script/src/v8engine/mod.rs:77,946` | **V8 keeps every editor function given to a script**, for the isolate's life, and some close over the engine itself, a cycle that never frees the isolate (around-advice would leak one per call). | fixed: counted per function and forgotten through a FinalizationRegistry |
+| 2.9 | `ember-script/src/prelude.js:227` | **A marker that has once been an editor value is never freed**: `markersKept` only grows, on both engines. | fixed |
+| 2.10 | `ember-script/src/v8engine/bindings.rs:79`, `quickjs/bindings.rs:60` | **Out-of-range numbers convert differently**: V8 saturates (`gotoChar(-1)` is 0), QuickJS throws. Pick one for both. Smaller drifts: thrown non-Error objects, `[x]` prefixes, frozen functions, over-long strings. | fixed: both throw a TypeError on a number out of range; the smaller drifts aligned |
+| 2.11 | `ember-script/src/natives/text.rs` (`deleteMarker`), `lib.rs:304` | FinalizationRegistry cleanups go through safe points, so a `C-g` pending then makes them throw and the marker is never deleted: `#[safe_point = false]`. | fixed |
+| 2.12 | `ember-core/src/buffer.rs:2079,719` | **Undoing entries that no longer fit the buffer panics**: a `buffer-undo-list` set by a script is not checked as `undo_in_region` checks. | fixed: refused with Emacs's error |
+| 2.13 | `ember-core/src/buffer.rs:1104,2223` | **Changing the case of ß right after an insertion corrupts the insertion's undo entry**, through typing amalgamation the trial edits do not take back. | fixed |
+| 2.14 | `ember-core/src/editor.rs:1174` | `call_interactively` reports a quit as success once keys were typed into its prompt. | fixed |
+| 2.15 | `ember-core/src/driver.rs:167` | `Driver::settle` can return before the keys it waits for ran, when a process woke the loop: driven tests with a process can flake. | fixed: a process's wake is not counted as input sent |
+| 2.16 | `ember-core/src/driver.rs:247` | A panic or re-entry in `describe` publishes empty frames: the window goes blank until the next input. | fixed: the last frames stay |
+| 2.17 | `ember-core/src/keyboard.rs:281`, `editor.rs:1205` | Nested prompts and recursive edits have no depth limit, and overflow the stack rather than signalling `excessive-lisp-nesting`. | fixed: 1,000 waits deep; scripts stop sooner, at the engines' own stack checks, about 60 to 80, with a RangeError |
+| 2.18 | `ember-mcp/src/socket.rs:36` | The socket's directory is chmodded whatever it is (`EMBER_SOCKET=~/x.sock` makes home 0700) and the default one is not checked for its owner, which matters on Linux's shared `/tmp`. | fixed: a directory that was there is left alone, and the default one, named by uid, must be the user's alone |
+| 2.19 | `ember-agent/src/api.rs:103,138`, `lib.rs:344` | The API connection has no timeouts, a mid-stream error is reported as "ended early", and a block index from the stream is used unbounded. | fixed |
+| 2.20 | `ember-agent/src/lib.rs:163,207` | A killed `*agent*` buffer's history is reused by the next `M-x agent`; buffers the agent opens in a turn are not folded into one undo step. | fixed |
+| 2.21 | `ember-core/src/timers.rs:145` | A timer cancelled by an earlier timer in the same round still runs. | fixed |
 
 ## 3. Large buffers
 

@@ -2,8 +2,10 @@
 // reading, SPC and DEL page through it, s and r search, and q leaves,
 // putting back the buffer shown before or killing one view-file read.
 
+import { PerBuffer } from "subr";
+
 /** What view-mode found in each buffer it was turned on in: whether it was read-only, and how to leave. */
-const entered = new Map<string, { readOnly: boolean; killOnQuit: boolean }>();
+const entered = new PerBuffer<{ readOnly: boolean; killOnQuit: boolean }>();
 
 ember.defineMinorMode({
   name: "view-mode",

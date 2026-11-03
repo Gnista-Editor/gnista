@@ -126,6 +126,27 @@ fn find_alternate_file_starts_with_the_current_file() {
     assert!(ed.find_buffer("a.txt").is_none(), "a.txt was killed");
 }
 
+/// recentf-exclude holds Emacs regexps, as a user's config from Emacs
+/// would set it, and predicates on the file name.
+#[test]
+fn recentf_exclude_is_emacs_regexps_and_predicates() {
+    let (mut ed, scripting) = setup();
+    let config = dir();
+    let files = dir();
+    ed.set_variable("user-emacs-directory", Value::Str(format!("{}/", config.path().display())));
+    ed.call("recentf-mode", vec![]).unwrap();
+    scripting
+        .eval_typescript(&mut ed, "exclude.ts", r#"ember.setVariable("recentf-exclude", ["\\.log\\'", (f: string) => f.endsWith(".tmp")]);"#.to_string())
+        .unwrap();
+    for name in ["kept.txt", "out.log", "log.txt", "x.tmp"] {
+        let path = files.path().join(name);
+        fs::write(&path, name).unwrap();
+        visit(&mut ed, &path);
+    }
+    let short = |name: &str| ember_core::abbreviate_path(&files.path().join(name));
+    assert_eq!(strings(&ed, "recentf-list"), [short("log.txt"), short("kept.txt")]);
+}
+
 #[test]
 fn recent_files_are_kept_and_saved() {
     let (mut ed, scripting) = setup();

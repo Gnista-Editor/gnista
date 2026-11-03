@@ -77,11 +77,24 @@ interface AgendaItem {
   text: string;
   urgency: number;
   buffer: string;
+  /** Where the line points and the heading, when the agenda was made. */
   pos: number;
   heading: number;
   cat: string;
   leader: string;
   removeTimestamp: boolean;
+  /** Markers at `pos` and `heading`, once the agenda shows the line, so they follow edits there. */
+  marks?: { pos: ember.Marker; heading: ember.Marker };
+}
+
+/** Where the line's entry is now: its marker's place, as Org's org-marker follows edits. */
+function posOf(item: AgendaItem): number {
+  return (item.marks && ember.markerPosition(item.marks.pos)) ?? item.pos;
+}
+
+/** Where the entry's heading is now, as org-hd-marker. */
+function headingOf(item: AgendaItem): number {
+  return (item.marks && ember.markerPosition(item.marks.heading)) ?? item.heading;
 }
 
 /** The buffer's category, as org-get-category gives it: #+CATEGORY, or the file's name. */
@@ -223,7 +236,23 @@ function showAgenda(lines: { text: string; item?: AgendaItem }[], pointLine: num
     ember.setReadOnly(true);
     ember.gotoChar(ember.lineStart(pointLine));
   });
+  // The lines' markers, made in the entries' buffers, as Org makes
+  // org-marker and org-hd-marker; the last agenda's are freed.
+  for (const old of agendaLines) {
+    if (old?.marks) {
+      ember.deleteMarker(old.marks.pos);
+      ember.deleteMarker(old.marks.heading);
+    }
+  }
   agendaLines = lines.map((l) => l.item);
+  for (const item of agendaLines) {
+    if (item && ember.getBuffer(item.buffer)) {
+      item.marks = {
+        pos: ember.makeMarker(item.pos, { buffer: item.buffer }),
+        heading: ember.makeMarker(item.heading, { buffer: item.buffer }),
+      };
+    }
+  }
   if (ember.windowBuffer() !== AGENDA) {
     // As org-agenda-window-setup's reorganize-frame: this window and the agenda's.
     if (!ember.windowList().some((w) => ember.windowBuffer(w) === AGENDA)) ember.call("delete-other-windows");
@@ -355,7 +384,7 @@ const agendaSwitchTo = ember.defineCommand({
   run: () => {
     const item = agendaItemHere();
     ember.call("switch-to-buffer", item.buffer);
-    ember.gotoChar(item.pos);
+    ember.gotoChar(posOf(item));
   },
 });
 
@@ -366,9 +395,10 @@ const agendaGoto = ember.defineCommand({
     const item = agendaItemHere();
     ember.call("pop-to-buffer", item.buffer);
     ember.pushMark(ember.point());
-    ember.gotoChar(item.pos);
+    ember.gotoChar(posOf(item));
     // At the heading's title, as org-agenda-goto leaves it.
-    const h = headings().find((x) => x.start === item.heading);
+    const heading = headingOf(item);
+    const h = headings().find((x) => x.start === heading);
     if (h) ember.gotoChar(h.titleAt);
   },
 });
@@ -379,17 +409,18 @@ const agendaTodo = ember.defineCommand({
   run: () => {
     const item = agendaItemHere();
     ember.withCurrentBuffer(item.buffer, () => {
-      ember.gotoChar(item.heading);
+      ember.gotoChar(headingOf(item));
       ember.callWithPrefix(ember.prefixArg(), "org-todo");
     });
     // The lines showing the entry are written again where they are, as
     // org-agenda-change-all-lines does, rather than the agenda rebuilt.
+    const heading = headingOf(item);
     ember.withCurrentBuffer(AGENDA, () => ember.letBind({ "inhibit-read-only": true }, () => {
       const point = ember.point();
       for (const [l, other] of agendaLines.entries()) {
-        if (!other || other.buffer !== item.buffer || other.heading !== item.heading) continue;
+        if (!other || other.buffer !== item.buffer || headingOf(other) !== heading) continue;
         const text = ember.withCurrentBuffer(item.buffer, () => {
-          const h = headings().find((x) => x.start === item.heading);
+          const h = headings().find((x) => x.start === heading);
           return h ? agendaLine(h, other.cat, other.leader, other.removeTimestamp) : other.text;
         });
         other.text = text;

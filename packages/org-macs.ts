@@ -11,6 +11,16 @@ export type Marker = { readonly id: ember.Marker; pos: number };
 /** This package's markers, for the edits that place them by a rule of their own, as replace-match does. */
 export const markers: Marker[] = [];
 
+/** Markers that outlive the command that made them, as Org's org-last-indent-begin-marker, which the sweep below leaves. */
+const lasting = new Set<Marker>();
+
+/** A marker kept across commands, until dropped. */
+export function lastingMarker(pos: number, advances = false): Marker {
+  const m = marker(pos, advances);
+  lasting.add(m);
+  return m;
+}
+
 export function marker(pos: number, advances = false): Marker {
   const id = ember.makeMarker(pos, { advances });
   const m: Marker = {
@@ -27,9 +37,22 @@ export function marker(pos: number, advances = false): Marker {
 }
 
 export function dropMarker(m: Marker): void {
-  markers.splice(markers.indexOf(m), 1);
+  const i = markers.indexOf(m);
+  if (i < 0) return;
+  markers.splice(i, 1);
+  lasting.delete(m);
   ember.deleteMarker(m.id);
 }
+
+// A marker made here lives only while the command that made it runs, unless
+// made with lastingMarker. One
+// an error or a quit left behind, before the command dropped it, would be
+// moved on every later edit; it is dropped once the outermost command is
+// over, when no prompt or recursive edit keeps a command waiting partway.
+ember.addHook("post-command-hook", () => {
+  if (markers.length === lasting.size || ember.minibufferDepth() > 0 || ember.recursionDepth() > 0) return;
+  for (const m of [...markers]) if (!lasting.has(m)) dropMarker(m);
+});
 
 /** Puts this package's markers in the current buffer where `moved` says, after an edit that moved them its own way. */
 export function placeMarkers(saved: [Marker, number][]): void {

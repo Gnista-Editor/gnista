@@ -21,22 +21,55 @@ pub struct Request {
 }
 
 /// Where the socket goes: `$EMBER_SOCKET`, or `gui.sock` in a directory of
-/// the user's own under the temporary directory.
+/// the user's own under the temporary directory, named by uid.
 pub fn default_path() -> PathBuf {
     if let Some(path) = std::env::var_os("EMBER_SOCKET") {
         return PathBuf::from(path);
     }
-    let user = std::env::var("USER").unwrap_or_else(|_| "user".to_string());
-    std::env::temp_dir().join(format!("ember-{user}")).join("gui.sock")
+    default_dir().join("gui.sock")
+}
+
+/// The directory of the user's own the socket goes in by default, named by
+/// uid, as `$USER` can be anything.
+fn default_dir() -> PathBuf {
+    std::env::temp_dir().join(format!("ember-{}", uid()))
+}
+
+fn uid() -> u32 {
+    // SAFETY: getuid cannot fail and touches no memory of ours.
+    unsafe { libc::getuid() }
+}
+
+/// Fails unless `dir` is a directory, not a link, that this user owns and
+/// no one else can open, as one in a shared `/tmp` may have been made by
+/// someone else first.
+fn check_private(dir: &Path) -> io::Result<()> {
+    use std::os::unix::fs::MetadataExt;
+    let meta = std::fs::symlink_metadata(dir)?;
+    if !meta.is_dir() || meta.uid() != uid() || meta.mode() & 0o077 != 0 {
+        return Err(io::Error::new(
+            io::ErrorKind::PermissionDenied,
+            format!("{} is not a directory of your own that only you can open", dir.display()),
+        ));
+    }
+    Ok(())
 }
 
 /// Listens on `path`, calling `wake` whenever a request waits so the
 /// editor's thread can take it from the receiver. Fails if another Ember is
 /// listening there already; a socket left by one that has gone is replaced.
 pub fn listen(path: &Path, wake: impl Fn() + Send + Sync + 'static) -> io::Result<Receiver<Request>> {
+    // A directory made here is the user's alone; one that was there, as
+    // the home directory `EMBER_SOCKET=~/x.sock` names, is left as it is,
+    // except the default one, which must already be the user's alone.
     if let Some(dir) = path.parent() {
-        std::fs::create_dir_all(dir)?;
-        std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700))?;
+        if !dir.exists() {
+            std::fs::create_dir_all(dir)?;
+            std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700))?;
+        }
+        if dir == default_dir() {
+            check_private(dir)?;
+        }
     }
     if path.exists() {
         if UnixStream::connect(path).is_ok() {

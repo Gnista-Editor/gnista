@@ -667,3 +667,34 @@ fn the_api_defined_is_the_api_declared() {
         assert!(!name.contains(['-', '_']), "{name} is not camelCase");
     }
 }
+
+/// The engines agree where they used to differ: an integer out of range is
+/// refused, a prefix list must hold a number, an object thrown with a
+/// message keeps its condition, and a frozen function can still be a hook.
+#[test]
+fn the_engines_agree_on_the_corners() {
+    let (mut ed, scripting) = setup();
+    let caught = |ed: &mut Editor, js: &str| {
+        scripting.eval_expression(ed, &format!("(() => {{ try {{ {js}; return 'ran'; }} catch (e) {{ return String(e.message ?? e); }} }})()")).unwrap()
+    };
+    assert!(caught(&mut ed, "ember.gotoChar(-1)").contains("Underflow"), "a position below 0");
+    assert!(caught(&mut ed, r#"ember.callWithPrefix(["x"], "forward-char")"#).contains("prefix argument"));
+    let escaped = scripting.eval_expression(&mut ed, r#"(() => { throw { message: "custom", symbol: "user-error", data: [] }; })()"#).unwrap_err();
+    assert_eq!((escaped.symbol(), escaped.message()), ("user-error", "custom"));
+    let got = scripting
+        .eval_expression(&mut ed, r#"(() => { const f = Object.freeze(() => {}); ember.addHook("after-change-functions", f); ember.removeHook("after-change-functions", f); return "ok"; })()"#)
+        .unwrap();
+    assert_eq!(got, r#""ok""#);
+}
+
+/// An editor function a script holds keeps working when the engine forgets
+/// the others it gave out, once they are collected.
+#[test]
+fn editor_functions_a_script_holds_survive_collection() {
+    let (mut ed, scripting) = setup();
+    scripting
+        .eval_expression(&mut ed, r#"(globalThis.kept = ember.symbolFunction("forward-char"), [...Array(50)].forEach(() => ember.symbolFunction("forward-char")), ember.garbageCollect(), 0)"#)
+        .unwrap();
+    let got = scripting.eval_expression(&mut ed, r#"(ember.insert("ab"), ember.gotoChar(0), globalThis.kept(), ember.point())"#).unwrap();
+    assert_eq!(got, "1");
+}

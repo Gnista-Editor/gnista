@@ -192,6 +192,10 @@ fn arg_to_js<'js>(ctx: &Ctx<'js>, arg: &Arg) -> rquickjs::Result<Value<'js>> {
     }
 }
 
+/// The editor functions scripts call are kept by their JavaScript
+/// functions here, and freed with them: nothing to forget.
+pub(crate) fn forget_function(_id: u64) {}
+
 /// Collects garbage in the running script's runtime.
 pub(crate) fn collect_garbage() {
     if let Some(raw) = ACTIVE.get() {
@@ -591,7 +595,11 @@ fn function_from_js<'js>(ctx: &Ctx<'js>, f: Function<'js>) -> rquickjs::Result<E
     Ok(EditorValue::Function(match known {
         Some(id) => function.with_id(id as u64),
         None => {
-            f.set(FUNCTION_ID, function.id() as f64)?;
+            // A frozen function cannot keep its identity, and works without
+            // it, as on V8.
+            if f.set(FUNCTION_ID, function.id() as f64).is_err() {
+                let _ = ctx.catch();
+            }
             function
         }
     }))
@@ -751,8 +759,8 @@ fn prefix_from_js<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> rquickjs::Result<Op
     }
     if let Some(list) = value.as_array()
         && list.len() == 1
+        && let Ok(n) = list.get::<f64>(0)
     {
-        let n: f64 = list.get(0)?;
         return Ok(Some(PrefixArg::Universal(n as i64)));
     }
     Err(Exception::throw_type(ctx, "A prefix argument is null, a number, \"-\" or [n]"))
@@ -765,6 +773,24 @@ fn failure(ctx: &Ctx<'_>, err: rquickjs::Error) -> Failure {
     }
     let value = ctx.catch();
     let Some(exception) = value.as_exception() else {
+        // An object with a message, as an error class of a script's own
+        // not built on Error, is read as an error is, as on V8.
+        if let Some(object) = value.as_object()
+            && let Ok(Some(message)) = object.get::<_, Option<String>>("message")
+        {
+            let name: String = object.get::<_, Option<String>>("name").ok().flatten().unwrap_or_default();
+            let stack: Option<String> = object.get("stack").ok().flatten();
+            let symbol: Option<String> = object.get("symbol").ok().flatten();
+            let data: Vec<EditorValue> = object
+                .get::<_, Option<Vec<Value>>>("data")
+                .ok()
+                .flatten()
+                .unwrap_or_default()
+                .into_iter()
+                .filter_map(|v| value_from_js(ctx, v).ok())
+                .collect();
+            return Failure::thrown(&name, message, stack.as_deref(), symbol, data);
+        }
         let message = Coerced::<String>::from_js(ctx, value)
             .map(|s| s.0)
             .unwrap_or_else(|_| "Script threw a value that is not an Error".into());

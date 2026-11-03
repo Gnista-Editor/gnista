@@ -1,5 +1,5 @@
 import { applyOnRegion } from "ansi-color";
-import { readPasswd, regexpQuote } from "subr";
+import { PerBuffer, readPasswd, regexpQuote } from "subr";
 import { isearchSearchFunDefault, isearchMessage, isearchMessagePrefix } from "isearch";
 
 // Command interpreters in a buffer, after Emacs's comint.el: a program on
@@ -44,7 +44,7 @@ interface State {
   lastOutputStart: ember.Marker;
 }
 
-const states = new Map<string, State>();
+const states = new PerBuffer<State>();
 
 function state(buffer = ember.bufferName()): State {
   let s = states.get(buffer);

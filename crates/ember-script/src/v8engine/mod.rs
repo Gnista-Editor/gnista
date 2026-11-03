@@ -73,8 +73,10 @@ struct Inner {
     context: v8::Global<v8::Context>,
     /// The packages compiled, by file name.
     modules: RefCell<HashMap<String, v8::Global<v8::Module>>>,
-    /// Editor functions given to scripts, by id, for the functions that call them.
-    functions: RefCell<HashMap<u64, ember_core::Function>>,
+    /// Editor functions given to scripts, by id, for the functions that call
+    /// them, with how many of those the script still has: the prelude tells
+    /// [`forget_function`] as each is collected.
+    functions: RefCell<HashMap<u64, (ember_core::Function, usize)>>,
     watchdog: Watchdog,
     /// The isolate, which `owned` keeps at this address.
     isolate: NonNull<v8::Isolate>,
@@ -482,6 +484,19 @@ pub(crate) fn throw(scope: &mut v8::PinScope<'_, '_>, e: &Error) -> Thrown {
     let error = error_value(scope, e);
     scope.throw_exception(error);
     Thrown
+}
+
+/// Forgets an editor function a script's function called, once the
+/// script has none left that call it.
+pub(crate) fn forget_function(id: u64) {
+    let Some(engine) = ENGINES.with_borrow(|e| e.last().cloned()) else { return };
+    let mut functions = engine.functions.borrow_mut();
+    if let Some((_, held)) = functions.get_mut(&id) {
+        *held -= 1;
+        if *held == 0 {
+            functions.remove(&id);
+        }
+    }
 }
 
 /// Collects garbage in the running script's isolate; a FinalizationRegistry's
@@ -954,9 +969,10 @@ fn function_to_js<'s>(scope: &mut v8::PinScope<'s, '_>, function: &ember_core::F
     if let Some(script) = function.origin().and_then(|o| o.downcast_ref::<ScriptFunction>()) {
         return Ok(v8::Local::new(scope, &script.run).into());
     }
-    current().functions.borrow_mut().insert(function.id(), function.clone());
+    current().functions.borrow_mut().entry(function.id()).or_insert_with(|| (function.clone(), 0)).1 += 1;
     let id = number(scope, function.id() as f64);
     let js = v8::Function::builder(call_editor_function).data(id).build(scope).ok_or(Thrown)?;
+    call_global(scope, "__emberTrackFunction", &[js.into(), id])?;
     set(scope, js.into(), FUNCTION_ID, id);
     if let Some(name) = function.name() {
         let name = string(scope, name).into();
@@ -969,7 +985,7 @@ fn function_to_js<'s>(scope: &mut v8::PinScope<'s, '_>, function: &ember_core::F
 fn call_editor_function<'s>(scope: &mut v8::PinScope<'s, '_>, args: v8::FunctionCallbackArguments<'s>, mut rv: v8::ReturnValue<'s, v8::Value>) {
     catching(scope, |scope| {
         let id = args.data().number_value(scope).unwrap_or(-1.0) as u64;
-        let Some(function) = current().functions.borrow().get(&id).cloned() else { return };
+        let Some(function) = current().functions.borrow().get(&id).map(|(f, _)| f.clone()) else { return };
         let mut values = Vec::with_capacity(args.length() as usize);
         for i in 0..args.length() {
             let Ok(v) = value_from_js(scope, args.get(i)) else { return };
@@ -1159,8 +1175,8 @@ fn prefix_from_js<'s>(scope: &mut v8::PinScope<'s, '_>, value: v8::Local<'s, v8:
     }
     if let Ok(list) = v8::Local::<v8::Array>::try_from(value)
         && list.length() == 1
+        && let Some(n) = list.get_index(scope, 0).filter(|v| v.is_number()).and_then(|v| v.number_value(scope))
     {
-        let n = list.get_index(scope, 0).and_then(|v| v.number_value(scope)).unwrap_or(4.0);
         return Ok(Some(PrefixArg::Universal(n as i64)));
     }
     let message = string(scope, "A prefix argument is null, a number, \"-\" or [n]");

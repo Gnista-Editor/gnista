@@ -1558,6 +1558,7 @@ version = "0.1.0"
 dependencies = [
  "ember-core",
  "ember-script",
+ "libc",
  "serde_json",
  "tempfile",
 ]

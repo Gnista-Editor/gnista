@@ -3,6 +3,8 @@
 // with its file, and diff-mode colours the hunks, moves between them with
 // n and p, and goes to the source with RET.
 
+import { PerBuffer } from "subr";
+
 for (const [name, doc, value] of [
   ["diff-command", "The program M-x diff runs.", "diff"],
   ["diff-switches", "The options M-x diff gives diff: a string or a list of strings.", "-u"],
@@ -67,7 +69,7 @@ function diffNoSelect(oldFile: string, newFile: string, labels?: [string, string
 }
 
 /** What each diff buffer compared, to make it again with g. */
-const diffBuffers = new Map<string, { oldFile: string; newFile: string; labels?: [string, string] }>();
+const diffBuffers = new PerBuffer<{ oldFile: string; newFile: string; labels?: [string, string] }>();
 
 /** The newest numbered or plain backup of a file, as diff-latest-backup-file finds it. */
 function latestBackup(file: string): string | undefined {

@@ -4,6 +4,8 @@
 // for one of them, with completion. Emacs keeps the list as Lisp; Ember
 // keeps it as JSON.
 
+import { truthy } from "subr";
+
 ember.defineVariable({
   name: "recentf-list",
   doc: "The files visited or saved most recently, newest first, as recentf-mode keeps them.",
@@ -56,8 +58,12 @@ function saveFile(): string | undefined {
 const recentName = (file: string): string => ember.abbreviateFileName(ember.expandFileName(file));
 
 function included(file: string): boolean {
-  const exclude = ember.variable("recentf-exclude");
-  return !Array.isArray(exclude) || !exclude.some((re) => typeof re === "string" && new RegExp(re).test(file));
+  // Each an Emacs regexp, matched as string-match does with
+  // recentf-case-fold-search, or a predicate on the file name.
+  const exclude = ember.variable("recentf-exclude") as unknown;
+  const caseFold = truthy(ember.variable("recentf-case-fold-search"));
+  return !Array.isArray(exclude) || !exclude.some((re: unknown) =>
+    typeof re === "string" ? ember.stringMatch(re, file, { caseFold }) !== undefined : typeof re === "function" && truthy(ember.funcall(re as (...args: unknown[]) => ember.Value, file)));
 }
 
 /** Puts a file at the front of the list, as recentf-add-file, unless recentf-exclude leaves it out. */

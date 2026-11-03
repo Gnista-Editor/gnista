@@ -77,7 +77,7 @@ function fillTemplate(template: string): { text: string; cursor?: number } {
 
 /** What a capture under way changed, to finish or undo it. */
 let capturing:
-  | { buffer: string; from: string; point: number; level: number; modified: boolean }
+  | { buffer: string; from: string; point: ember.Marker; level: number; modified: boolean }
   | undefined;
 
 /**
@@ -92,7 +92,8 @@ function captureWith(key: string): void {
   if (capturing) throw new Error("A capture is already under way: C-c C-c or C-c C-k finishes it");
   const file = target[1] === "" || target[1] === undefined ? String(ember.variable("org-default-notes-file") ?? "~/.notes") : target[1];
   const from = ember.windowBuffer() ?? "";
-  const point = ember.point();
+  // A marker, as the buffer the capture came from stays editable below it.
+  const point = ember.makeMarker(ember.point());
   const buffer = ember.findFileNoselect(file);
   const modified = ember.withCurrentBuffer(buffer, () => ember.bufferModified());
   const filled = fillTemplate(template);
@@ -168,7 +169,8 @@ function endCapture(): void {
   });
   ember.call("delete-other-windows");
   ember.setWindowBuffer(undefined, state.from);
-  ember.gotoChar(state.point);
+  ember.gotoChar(ember.markerPosition(state.point) ?? ember.point());
+  ember.deleteMarker(state.point);
 }
 
 ember.defineCommand({

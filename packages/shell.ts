@@ -3,6 +3,7 @@
 // the directory as cd, pushd and popd change it.
 
 import { makeComintInBuffer, outputFilter, readInputRing } from "comint";
+import { PerBuffer } from "subr";
 
 for (const [name, doc, value] of [
   ["explicit-shell-file-name", "The shell M-x shell runs, if not $ESHELL or shell-file-name.", null],
@@ -14,7 +15,7 @@ for (const [name, doc, value] of [
 }
 
 /** The directories pushd has pushed, newest first, as shell-dirstack. */
-const dirstacks = new Map<string, string[]>();
+const dirstacks = new PerBuffer<string[]>();
 
 /** Follows a command that changes directory, as shell-directory-tracker: cd, pushd and popd. */
 function directoryTracker(input: string): void {

@@ -3,6 +3,8 @@
 // C-x r l lists them. They are saved in Emacs's own format, in the file
 // bookmark-default-file names, so Emacs and Ember share them.
 
+import { PerBuffer } from "subr";
+
 ember.defineVariable({ name: "bookmark-search-size", doc: "How many characters of text on each side a bookmark keeps, to find its place again after edits.", value: 16 });
 ember.defineVariable({ name: "bookmark-save-flag", doc: "When bookmarks are saved: t on quitting, a number after that many changes, nil never.", value: 1 });
 ember.defineVariable({ name: "bookmark-default-file", doc: "The file bookmarks are saved in, or nil for bookmarks under user-emacs-directory.", value: null });
@@ -20,7 +22,7 @@ interface Bookmark {
 let alist: Bookmark[] | undefined;
 let changes = 0;
 /** The bookmark used last in each buffer, as bookmark-current-bookmark. */
-const current = new Map<string, string>();
+const current = new PerBuffer<string>();
 
 function bookmarkFile(): string | undefined {
   const own = ember.variable("bookmark-default-file");

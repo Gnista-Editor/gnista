@@ -234,6 +234,9 @@ natives! {
         ed.set_window_configuration(id)
     }
 
+    /// Not a safe point, as collection's cleanup calls it: a quit pending
+    /// then must not stop the configuration being freed.
+    #[safe_point = false]
     fn freeWindowConfiguration(ed, id: u64) {
         ed.free_window_configuration(id);
         Ok(())
@@ -315,6 +318,14 @@ natives! {
         Ok(b.make_marker(pos, advances) as f64)
     }
 
+    /// Forget an editor function a script's function called, once that is
+    /// collected. Not a safe point: collection's cleanup must not be quit.
+    #[safe_point = false]
+    fn forgetFunction(ed, id: f64) {
+        crate::engine::forget_function(id as u64);
+        Ok(())
+    }
+
     /// Collect garbage now, as Emacs's garbage-collect: markers nothing
     /// refers to any more are freed by the time the code running finishes.
     pub fn garbageCollect(ed) {
@@ -322,6 +333,9 @@ natives! {
         Ok(())
     }
 
+    /// Not a safe point, as collection's cleanup calls it: a quit pending
+    /// then must not stop the marker being deleted.
+    #[safe_point = false]
     fn deleteMarker(ed, id: f64) {
         ed.delete_marker(id as u64);
         Ok(())

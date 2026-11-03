@@ -489,3 +489,43 @@ fn a_renamed_agent_buffer_keeps_its_conversation() {
     assert!(text.contains("First.") && text.contains("* You\ntwo\n* Agent\nSecond."), "{text}");
     assert_eq!(s.request(1)["messages"].as_array().unwrap().len(), 3, "the second request carries the first exchange");
 }
+
+#[test]
+fn a_block_out_of_order_is_an_error_not_room_made() {
+    let start = data(json!({"type": "message_start", "message": {"model": "m", "usage": {"input_tokens": 1}}}));
+    let far = data(json!({"type": "content_block_start", "index": 4_000_000_000u64, "content_block": {"type": "text", "text": ""}}));
+    let mut s = setup("", vec![vec![start, far]]);
+    s.ask("anything");
+    let agent = s.agent_text();
+    assert!(agent.contains("[Error: the API started block 4000000000 after 0 blocks."), "{agent}");
+}
+
+#[test]
+fn a_buffer_the_turn_makes_is_one_undo_step_too() {
+    let mut s = setup(
+        "",
+        vec![
+            reply(&[call("t1", "switch-to-buffer", &["fresh"])], "tool_use"),
+            reply(&[call("t2", "insert", &["one "])], "tool_use"),
+            reply(&[call("t3", "insert", &["two "])], "tool_use"),
+            reply(&[text("Done.")], "end_turn"),
+        ],
+    );
+    s.ask("write in a new buffer");
+    assert_eq!(s.text_of("fresh"), "one two ");
+    s.ed.press("C-x o").unwrap();
+    assert_eq!(s.ed.window_buffer().name, "fresh");
+    s.ed.press("C-/").unwrap();
+    assert_eq!(s.text_of("fresh"), "");
+}
+
+#[test]
+fn killing_the_agent_buffer_forgets_its_conversation() {
+    let mut s = setup("", vec![reply(&[text("First.")], "end_turn"), reply(&[text("Second.")], "end_turn")]);
+    s.ask("first");
+    s.ed.call("kill-buffer", vec![Arg::Str("*agent*".into())]).unwrap();
+    s.ask("second");
+    let messages = s.request(1)["messages"].as_array().unwrap().clone();
+    assert_eq!(messages.len(), 1, "{messages:?}");
+    assert!(s.agent_text().starts_with("* You\nsecond\n"), "{}", s.agent_text());
+}

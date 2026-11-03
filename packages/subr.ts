@@ -139,3 +139,48 @@ export function bidiStringMarkLeftToRight(str: string): string | ember.Propertiz
   if (typeof str !== "string") ember.signal("wrong-type-argument", "Wrong type argument: stringp", [str]);
   return ember.stringMatch("\\cR", str) === undefined ? str : ember.concat(str, ember.propertize("\u200e", { invisible: true }));
 }
+
+/**
+ * State a package keeps for each buffer, as a buffer-local variable holds
+ * it: found by the buffer, given as a name or a buffer object, through its
+ * id, so it follows a buffer that is renamed, and forgotten when the
+ * buffer is killed.
+ */
+export class PerBuffer<T> {
+  private readonly values = new Map<number, T>();
+
+  constructor() {
+    perBufferValues.push(this.values);
+  }
+
+  private static id(buffer: string | ember.Buffer): number | undefined {
+    return typeof buffer === "string" ? ember.getBuffer(buffer)?.id : buffer.id;
+  }
+
+  get(buffer: string | ember.Buffer): T | undefined {
+    const id = PerBuffer.id(buffer);
+    return id === undefined ? undefined : this.values.get(id);
+  }
+
+  has(buffer: string | ember.Buffer): boolean {
+    const id = PerBuffer.id(buffer);
+    return id !== undefined && this.values.has(id);
+  }
+
+  set(buffer: string | ember.Buffer, value: T): void {
+    const id = PerBuffer.id(buffer);
+    if (id !== undefined) this.values.set(id, value);
+  }
+
+  delete(buffer: string | ember.Buffer): void {
+    const id = PerBuffer.id(buffer);
+    if (id !== undefined) this.values.delete(id);
+  }
+}
+
+const perBufferValues: Map<number, unknown>[] = [];
+
+ember.addHook("kill-buffer-hook", () => {
+  const id = ember.currentBuffer().id;
+  for (const values of perBufferValues) values.delete(id);
+});

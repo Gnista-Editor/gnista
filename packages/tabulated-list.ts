@@ -7,7 +7,7 @@
 // tabulated-list-entry, and each column its name as
 // tabulated-list-column-name.
 
-import { truthy, forwardLine } from "subr";
+import { forwardLine, PerBuffer, truthy } from "subr";
 
 /** A column of an entry: its text, or [text, ...button properties]. */
 export type Column = string | ember.PropertizedString | ember.Value[];
@@ -462,7 +462,7 @@ function replaceEntry(id: ember.Value | undefined, cols: Column[]): void {
 }
 
 /** Each buffer's entries in the order they first came, by id, so S with -1 can put them back, as tabulated-list--original-order. */
-const originalOrder = new Map<string, Map<ember.Value, number>>();
+const originalOrder = new PerBuffer<Map<ember.Value, number>>();
 
 function sortByColumnName(name: string | undefined): void {
   if (name === undefined || !ember.derivedModeP("tabulated-list-mode")) return;

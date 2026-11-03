@@ -120,6 +120,9 @@ const AMALGAMATING: &[&str] = &[
 /// it is stopped, in case nothing ever fails.
 const MACRO_REPEAT_LIMIT: usize = 100_000;
 
+/// How many prompts and recursive edits may wait inside each other.
+const MAX_WAITS: usize = 1_000;
+
 /// A command whose arguments are still being read.
 pub(crate) struct PendingCall {
     command: Rc<Command>,
@@ -202,6 +205,9 @@ pub struct Editor {
     /// last laid the echo area out.
     pub(crate) minibuffer_width: Option<usize>,
     pub(crate) pending_call: Option<PendingCall>,
+    /// How many commands that read their arguments in the minibuffer have
+    /// gone on to run, for `call_interactively` to tell one run from one quit.
+    pending_calls_run: u64,
     /// Keys read so far for a command parameter of kind [`ParamKind::Keys`].
     pub(crate) reading_keys: Option<Vec<Key>>,
     /// Keys typed so far of a multi-key binding such as `C-x C-f`.
@@ -416,6 +422,7 @@ impl Editor {
             minibuffer_width: None,
             prompt: None,
             pending_call: None,
+            pending_calls_run: 0,
             reading_keys: None,
             pending_keys: Vec::new(),
             esc_prefix: false,
@@ -759,6 +766,7 @@ impl Editor {
         }
         let call = self.pending_call.take().expect("checked above");
         self.last_command = call.last_command;
+        self.pending_calls_run += 1;
         self.execute(call.command, call.args, call.prefix);
     }
 
@@ -1190,13 +1198,16 @@ impl Editor {
     /// has run when this returns. Quitting the reading is `quit`.
     pub fn call_interactively(&mut self, name: &str) -> Result<()> {
         let asker = self.resume_point();
-        let before = self.executed;
         self.run_interactive(name);
         if self.pending_call.is_none() {
             return Ok(());
         }
+        // Whether its arguments were all read and it ran, rather than being
+        // quit: commands typed into its prompts run meanwhile, so counting
+        // every command executed would not tell.
+        let before = self.pending_calls_run;
         self.wait_until(&asker, Rc::new(|ed| ed.pending_call.is_none()))?;
-        if self.executed == before {
+        if self.pending_calls_run == before {
             return Err(crate::quit::quit_error());
         }
         Ok(())
@@ -1220,6 +1231,12 @@ impl Editor {
     /// opened. Fails with `quit` if the editor is closing, and with
     /// `end-of-file` if there is no more input, as batch Emacs does.
     pub fn wait_until(&mut self, asker: &Resume, done: WaitDone) -> Result<()> {
+        // Each wait is a command loop on the stack: past this many, refuse,
+        // as Emacs signals rather than overflow its stack.
+        if self.waits.len() >= MAX_WAITS {
+            let depth = self.waits.len() as i64 + 1;
+            return Err(Error::signal("excessive-lisp-nesting", format!("Lisp nesting exceeds ‘max-lisp-eval-depth’: {depth}"), vec![Value::Number(depth as f64)]));
+        }
         self.waits.push(done.clone());
         self.input_serial += 1;
         self.wait_serials.push(self.input_serial);

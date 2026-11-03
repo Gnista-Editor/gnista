@@ -284,3 +284,37 @@ fn a_tool_call_that_asks_waits_for_the_users_answer() {
     assert_eq!(*asked.borrow(), ["Go? (y or n) "]);
     assert_eq!(text(&ed), "went");
 }
+
+#[test]
+fn the_socket_directory_is_checked_not_changed() {
+    use std::os::unix::fs::PermissionsExt;
+    let mode = |p: &std::path::Path| std::fs::metadata(p).unwrap().permissions().mode() & 0o777;
+    // A directory that was there, as home, keeps its permissions.
+    let home = tempfile::tempdir().unwrap();
+    std::fs::set_permissions(home.path(), std::fs::Permissions::from_mode(0o755)).unwrap();
+    let _requests = socket::listen(&home.path().join("x.sock"), || {}).unwrap();
+    assert_eq!(mode(home.path()), 0o755);
+
+    // The default one, in a temporary directory others share, must be the
+    // user's alone: one anyone else could open is refused, not taken over.
+    let tmp = tempfile::tempdir().unwrap();
+    // SAFETY: each test runs in a process of its own under nextest, and
+    // this one starts no threads that read the environment before this.
+    unsafe {
+        std::env::remove_var("EMBER_SOCKET");
+        std::env::set_var("TMPDIR", tmp.path());
+    }
+    let path = socket::default_path();
+    let dir = path.parent().unwrap();
+    assert!(dir.file_name().unwrap().to_str().unwrap().starts_with("ember-"));
+    std::fs::create_dir(dir).unwrap();
+    std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o777)).unwrap();
+    let Err(refused) = socket::listen(&path, || {}) else { panic!("an open directory is refused") };
+    assert_eq!(refused.kind(), std::io::ErrorKind::PermissionDenied);
+    assert_eq!(mode(dir), 0o777, "and left alone");
+    std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700)).unwrap();
+    let _requests = socket::listen(&path, || {}).unwrap();
+    std::fs::remove_dir_all(dir).unwrap();
+    let _again = socket::listen(&path, || {}).unwrap();
+    assert_eq!(mode(dir), 0o700, "made private when made here");
+}

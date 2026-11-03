@@ -194,3 +194,42 @@ fn waiting_for_an_answer_is_not_the_scripts_time() {
     keys(&d, "ok RET");
     assert_eq!(text(&d), "ok");
 }
+
+/// callInteractively reports a quit as a quit, though keys were typed into
+/// the command's prompt first, which ran commands of their own.
+#[test]
+fn call_interactively_quit_after_typing_is_a_quit() {
+    let d = driver();
+    eval(
+        &d,
+        r#"ember.defineCommand({ name: "ask-then-say", run: () => {
+            const said = ember.conditionCase(() => { ember.callInteractively("switch-to-buffer"); return "ran"; }, { quit: () => "quit" });
+            ember.insert(said);
+        } });"#,
+    );
+    keys(&d, "M-x ask-then-say RET");
+    keys(&d, "abc");
+    // C-g once the prompt waits, so that it quits the prompt.
+    assert!(prompt(&d).is_some());
+    keys(&d, "C-g");
+    assert_eq!(text(&d), "quit");
+}
+
+#[test]
+fn scripts_nesting_too_deep_is_an_error_not_a_crash() {
+    // A thousand recursive edits, each from a script inside the last.
+    let d = driver();
+    for _ in 0..1100 {
+        let source = r#"try { ember.recursiveEdit(); } catch (e) { ember.message(String(e.message ?? e)); }"#.to_string();
+        d.send(Input::Run(Box::new(move |ed, keep| {
+            let scripting = keep.downcast_ref::<Scripting>().unwrap();
+            if let Err(e) = scripting.eval_typescript(ed, "nest.ts", source) {
+                ed.message(format!("eval: {e}"));
+            }
+        })));
+    }
+    let (depth, echo) = d.with(|ed| (ed.recursion_depth(), ed.echo().map(str::to_string)));
+    // The engines check their own stacks before the editor's limit.
+    assert!(depth < 1000, "{depth}");
+    assert!(echo.as_deref().is_some_and(|e| e.contains("Maximum call stack size exceeded")), "{echo:?}");
+}

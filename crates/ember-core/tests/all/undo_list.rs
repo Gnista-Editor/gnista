@@ -104,3 +104,23 @@ fn undo_calls_the_function_of_an_apply_entry() {
     ed.press("C-/").unwrap();
     assert_eq!(ed.variable("undone-with"), Some(Value::Number(7.0)));
 }
+
+/// Changing case where it changes length, as ß to SS, right after an
+/// insertion in the same command leaves that insertion's undo as it was:
+/// undoing the command gives back the text before it.
+#[test]
+fn changing_case_after_an_insertion_undoes_cleanly() {
+    let mut ed = ember_core::Editor::new();
+    ed.type_text("aßb");
+    ed.press("C-a").unwrap();
+    ed.press("C-f").unwrap();
+    ed.define_command(ember_core::Command::new("insert-then-upcase", "Inserts x and upcases the character after it.", |ed, _| {
+        ed.insert("x")?;
+        let p = ed.buffer().point();
+        ed.casify_region(ember_core::casefiddle::Case::Up, p, p + 1).map(drop)
+    }));
+    ed.call("insert-then-upcase", vec![]).unwrap();
+    assert_eq!(ed.buffer().slice(0..ed.buffer().len()), "axSSb");
+    ed.press("C-/").unwrap();
+    assert_eq!(ed.buffer().slice(0..ed.buffer().len()), "aßb");
+}

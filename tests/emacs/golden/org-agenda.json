@@ -598,6 +598,49 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "todo-list-two-entries-changed-in-turn",
+      "input": {
+        "text": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+        "point": 0,
+        "keys": "n n n t t n t RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [
+          "org-todo-list"
+        ],
+        "platform": null,
+        "windows": true,
+        "visit": "ember-agenda.org",
+        "today": "2026-10-28",
+        "agenda_files": true
+      },
+      "text": "* Write report\nSCHEDULED: <2026-10-28 Wed>\n* DONE Call Ann                                                        :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+      "visible": "* Write report\nSCHEDULED: <2026-10-28 Wed>\n* DONE Call Ann                                                        :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+      "point": 43,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "windows": [
+        {
+          "buffer": "*ember-oracle*",
+          "point": 0,
+          "width": 80,
+          "height": 12,
+          "selected": false
+        },
+        {
+          "buffer": "*ember-oracle*",
+          "point": 43,
+          "width": 80,
+          "height": 12,
+          "selected": true
+        }
+      ]
     }
   ]
 }

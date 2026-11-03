@@ -4,7 +4,7 @@
 // a buffer without font-lock rules, the matches get overlays, so text typed
 // later is not highlighted.
 
-import { regexpQuote } from "subr";
+import { PerBuffer, regexpQuote } from "subr";
 
 for (const [name, background, foreground, bold] of [
   ["hi-yellow", "#ffff00", "#000000", false],
@@ -42,9 +42,9 @@ interface Pattern {
 }
 
 /** Each buffer's highlightings, newest first, as hi-lock-interactive-patterns. */
-const patterns = new Map<string, Pattern[]>();
+const patterns = new PerBuffer<Pattern[]>();
 /** Faces not used yet in each buffer, as hi-lock--unused-faces. */
-const unused = new Map<string, string[]>();
+const unused = new PerBuffer<string[]>();
 
 const defaults = (): string[] => ((ember.variable("hi-lock-face-defaults") ?? []) as string[]).map(String);
 const mine = (): Pattern[] => patterns.get(ember.bufferName()) ?? [];

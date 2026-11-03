@@ -245,11 +245,19 @@ struct CommandLoop<D> {
 impl<D: FnMut(&mut Editor) -> Vec<FrameDescription>> CommandLoop<D> {
     /// Redisplays and publishes what each frame shows, and tells the front end.
     fn publish(&self, ed: &mut Editor) {
-        let frames = std::panic::catch_unwind(AssertUnwindSafe(|| (self.describe.borrow_mut())(ed))).unwrap_or_default();
+        // A describe that panics, or that publishes again from inside
+        // itself, leaves the frames last published rather than none.
+        let frames = self
+            .describe
+            .try_borrow_mut()
+            .ok()
+            .and_then(|mut describe| std::panic::catch_unwind(AssertUnwindSafe(|| describe(ed))).ok());
         {
             let mut p = self.published.lock().unwrap_or_else(|e| e.into_inner());
             p.generation += 1;
-            p.frames = frames;
+            if let Some(frames) = frames {
+                p.frames = frames;
+            }
             p.bell |= ed.take_bell();
             p.visible_bell = ed.variable("visible-bell").is_some_and(|v| v.is_true());
             p.exit = ed.should_quit();
@@ -297,7 +305,7 @@ impl<D: FnMut(&mut Editor) -> Vec<FrameDescription>> NestedLoop for CommandLoop<
             }
             let input = match self.rx.try_recv() {
                 Ok(input) => {
-                    self.idle.set(|s| s.0 += 1);
+                    self.idle.set(|s| s.0 += counted(&input));
                     input
                 }
                 Err(TryRecvError::Disconnected) => {
@@ -316,7 +324,7 @@ impl<D: FnMut(&mut Editor) -> Vec<FrameDescription>> NestedLoop for CommandLoop<
                     let input = self.rx.recv_timeout(timeout);
                     self.idle.set(|s| {
                         s.1 = false;
-                        s.0 += input.is_ok() as u64;
+                        s.0 += input.as_ref().map_or(0, counted);
                     });
                     match input {
                         Ok(input) => input,
@@ -333,6 +341,13 @@ impl<D: FnMut(&mut Editor) -> Vec<FrameDescription>> NestedLoop for CommandLoop<
             }
         }
     }
+}
+
+/// How many of the inputs [`Driver::send`] counts this is: a process's
+/// wake is sent by the process, so counting it would let
+/// [`Driver::settle`] return before the input it waits for ran.
+fn counted(input: &Input) -> u64 {
+    !matches!(input, Input::Wake) as u64
 }
 
 /// Runs the command loop until the editor exits or the front end closes.

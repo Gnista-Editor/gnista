@@ -108,8 +108,9 @@ struct Session {
     state: State,
     /// How long `messages` was before this turn, to forget a failed turn.
     turn_start: usize,
-    /// Each buffer's undo steps when the turn began, to make the turn one.
-    undo_marks: BTreeMap<String, usize>,
+    /// Each buffer's undo steps when the turn began, by buffer id, to make
+    /// the turn one.
+    undo_marks: BTreeMap<u64, usize>,
     /// Where this turn's tool results are shown, to fold them once it ends.
     results_shown: Vec<usize>,
     /// Effects the user allowed the agent this turn.
@@ -208,10 +209,10 @@ impl Agent {
             session.target
         };
         let context = describe_target(ed, context);
-        let undo_marks = ed.buffers().iter().map(|b| b.name.clone()).collect::<Vec<_>>();
+        let undo_marks = ed.buffers().iter().map(|b| (b.id(), b.name.clone())).collect::<Vec<_>>();
         let undo_marks = undo_marks
             .into_iter()
-            .filter_map(|n| Some((n.clone(), ed.buffer_named_mut(&n)?.undo_steps())))
+            .filter_map(|(id, n)| Some((id, ed.buffer_named_mut(&n)?.undo_steps())))
             .collect();
         {
             let mut sessions = self.sessions.borrow_mut();
@@ -275,12 +276,16 @@ impl Agent {
     }
 
     /// Brings each session's buffer name up to date, as the buffer may have been renamed.
+    /// Follows renamed agent buffers, and forgets the sessions of killed
+    /// ones, so the next `M-x agent` starts afresh.
     fn sync_names(&self, ed: &Editor) {
-        for s in self.sessions.borrow_mut().iter_mut() {
-            if let Some(i) = ed.buffer_with_id(s.buffer_id) {
+        self.sessions.borrow_mut().retain_mut(|s| match ed.buffer_with_id(s.buffer_id) {
+            Some(i) => {
                 s.buffer.clone_from(&ed.buffers()[i].name);
+                true
             }
-        }
+            None => false,
+        });
     }
 
     /// Takes the events that came in, for every session, and runs tool
@@ -362,8 +367,13 @@ impl Agent {
                 }
                 Some("content_block_start") => {
                     let block = data.get("content_block").cloned().unwrap_or(Value::Null);
-                    if reply.blocks.len() <= index {
-                        reply.blocks.resize(index + 1, Value::Null);
+                    // Blocks start in order: an index past the next is a
+                    // broken stream, not room to make.
+                    if index > reply.blocks.len() {
+                        return Next::Finish(Some(format!("Error: the API started block {index} after {} blocks.", reply.blocks.len())));
+                    }
+                    if reply.blocks.len() == index {
+                        reply.blocks.push(Value::Null);
                     }
                     if let Some(text) = block.get("text").and_then(Value::as_str) {
                         shown = Some(text.to_string());
@@ -555,13 +565,18 @@ impl Agent {
             if failed {
                 session.messages.truncate(session.turn_start);
             }
-            (std::mem::take(&mut session.undo_marks), std::mem::take(&mut session.results_shown), session.usage, failed)
+            let marks = (std::mem::take(&mut session.undo_marks), session.buffer_id);
+            (marks, std::mem::take(&mut session.results_shown), session.usage, failed)
         };
-        for (buffer, since) in marks {
-            if buffer != name
+        // Each buffer's changes in the turn are one undo step, in buffers
+        // the turn made as well, whose every step is the turn's.
+        let (marks, agent) = marks;
+        let buffers: Vec<(u64, String)> = ed.buffers().iter().map(|b| (b.id(), b.name.clone())).collect();
+        for (id, buffer) in buffers {
+            if id != agent
                 && let Some(b) = ed.buffer_named_mut(&buffer)
             {
-                b.amalgamate_undo_since(since);
+                b.amalgamate_undo_since(marks.get(&id).copied().unwrap_or(0));
             }
         }
         start_line(ed, name);

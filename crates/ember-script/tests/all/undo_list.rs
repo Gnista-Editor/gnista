@@ -80,3 +80,17 @@ fn fontifying_between_keys_leaves_typing_one_undo_step() {
     ed.press("C-/").unwrap();
     assert_eq!(eval(&mut ed, &s, "ember.bufferText(0, ember.bufferSize())"), "\"\"", "typing amalgamates, as Emacs's does");
 }
+
+/// An undo list set from code whose positions no longer fit the buffer is
+/// refused, as undo in a region refuses changes outside it, rather than
+/// taking out text that is not there.
+#[test]
+fn an_undo_list_that_no_longer_fits_is_refused() {
+    let (mut ed, s) = setup();
+    // Text "x" deleted at a position far past the buffer's end.
+    eval(&mut ed, &s, r#"ember.setVariable("buffer-undo-list", [["x", 1000000], null])"#);
+    ed.press("C-/").unwrap();
+    let error = ed.take_error().map(|e| e.to_string()).unwrap_or_default();
+    assert!(error.contains("outside visible portion"), "{error}");
+    assert_eq!(ed.buffer().slice(0..ed.buffer().len()), "hello world");
+}

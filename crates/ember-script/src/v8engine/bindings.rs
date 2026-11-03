@@ -76,7 +76,19 @@ impl Conv for bool {
     }
 }
 
-macro_rules! conv_number {
+impl Conv for f64 {
+    fn conv<'s>(scope: &mut Scope<'s, '_>, value: Value<'s>) -> Result<Self, Thrown> {
+        if !value.is_number() {
+            return Err(type_error(scope, "Expected a number for f64"));
+        }
+        Ok(value.number_value(scope).unwrap_or(f64::NAN))
+    }
+}
+
+/// An integer outside the type's range is refused, as QuickJS's binding
+/// refuses it, rather than saturated: a position below 0 is an error on
+/// both engines.
+macro_rules! conv_integer {
     ($($t:ty),*) => {$(
         impl Conv for $t {
             fn conv<'s>(scope: &mut Scope<'s, '_>, value: Value<'s>) -> Result<Self, Thrown> {
@@ -84,12 +96,18 @@ macro_rules! conv_number {
                     let message = format!("Expected a number for {}", stringify!($t));
                     return Err(type_error(scope, &message));
                 }
-                Ok(value.number_value(scope).unwrap_or(0.0) as $t)
+                let n = value.number_value(scope).unwrap_or(f64::NAN);
+                let out = if n < <$t>::MIN as f64 { Some("Underflow") } else if n > <$t>::MAX as f64 { Some("Overflow") } else { None };
+                if let Some(why) = out {
+                    let message = format!("Error converting from js 'f64' into type '{}': {why}", stringify!($t));
+                    return Err(type_error(scope, &message));
+                }
+                Ok(n as $t)
             }
         }
     )*};
 }
-conv_number!(f64, i64, i32, u64, u32, u8, usize);
+conv_integer!(i64, i32, u64, u32, u8, usize);
 
 /// Null or undefined is `None`.
 impl<T: Conv> Conv for Option<T> {

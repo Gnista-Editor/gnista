@@ -221,5 +221,20 @@
     "visit": "ember-agenda-3.org",
     "today": "2026-10-28",
     "agenda_files": true
+  },
+  {
+    "text": "* TODO Write report\nSCHEDULED: <2026-10-28 Wed>\n* TODO Call Ann :work:\nDEADLINE: <2026-10-30 Fri>\n* Meeting <2026-10-29 Thu>\n* DONE Old thing\nSCHEDULED: <2026-10-26 Mon>\n* TODO Late task\nSCHEDULED: <2026-10-20 Tue>\n* TODO [#A] Plain todo\n",
+    "modes": [
+      "org-mode"
+    ],
+    "visit": "ember-agenda.org",
+    "today": "2026-10-28",
+    "agenda_files": true,
+    "windows": true,
+    "name": "todo-list-two-entries-changed-in-turn",
+    "call": [
+      "org-todo-list"
+    ],
+    "keys": "n n n t t n t RET"
   }
 ]

@@ -13,7 +13,7 @@
 // "org-hide-block" for blocks. A link's brackets and target are hidden by
 // an "org-link" text property, so [[https://gnu.org][GNU]] shows as GNU.
 
-import { type Marker, allMatches, dropMarker, edDelete, edInsert, marker, markers, placeMarkers } from "org-macs";
+import { type Marker, allMatches, dropMarker, edDelete, edInsert, lastingMarker, marker, markers, placeMarkers } from "org-macs";
 import { charCount } from "subr";
 
 // Variables
@@ -429,6 +429,13 @@ const indexKey = (): string => String(ember.currentBuffer().id);
 
 /** The changes to each indexed buffer since its index was last brought up to date, as after-change-functions gives them. */
 const headingChanges = new Map<string, [number, number, number][]>();
+
+// A killed buffer's index goes with it: indirect buffers, capture and the
+// agenda's visits each make one.
+ember.addHook("kill-buffer-hook", () => {
+  headingIndexes.delete(indexKey());
+  headingChanges.delete(indexKey());
+});
 
 /** Records a change to an Org buffer, for headings() to follow it. */
 function headingsAfterChange(beg: number, end: number, oldLen: number): void {
@@ -1336,7 +1343,7 @@ function checkFold(id: number): void {
  * Regions to show once the command is over, each held by an overlay that
  * hides nothing, so it moves with the text as Org's markers do.
  */
-let delayedReveals: number[] = [];
+let delayedReveals: { buffer: ember.Buffer; id: number }[] = [];
 
 /**
  * Shows a region, every kind of fold in it, once the command is over, as
@@ -1345,17 +1352,22 @@ let delayedReveals: number[] = [];
  * alone.
  */
 function revealAfterCommand(start: number, end: number): void {
-  delayedReveals.push(ember.makeOverlay(start, end));
+  delayedReveals.push({ buffer: ember.currentBuffer(), id: ember.makeOverlay(start, end) });
 }
 
+// Each in the buffer it was made in, which need not be current once the
+// command is over: a change made from the agenda or capture is to another.
 ember.addHook("post-command-hook", () => {
-  const ids = delayedReveals;
+  const reveals = delayedReveals;
   delayedReveals = [];
-  for (const id of ids) {
-    const [start, end] = [ember.overlayStart(id), ember.overlayEnd(id)];
-    ember.deleteOverlay(id);
-    if (start === undefined || end === undefined || start >= end) continue;
-    for (const spec of FOLD_SPECS) flag(start, end, false, spec);
+  for (const { buffer, id } of reveals) {
+    if (!ember.bufferLiveP(buffer)) continue;
+    ember.withCurrentBuffer(buffer, () => {
+      const [start, end] = [ember.overlayStart(id), ember.overlayEnd(id)];
+      ember.deleteOverlay(id);
+      if (start === undefined || end === undefined || start >= end) return;
+      for (const spec of FOLD_SPECS) flag(start, end, false, spec);
+    });
   }
 });
 
@@ -2401,8 +2413,8 @@ function structIndent(start: number, end: number, struct: Struct, parents: Alist
 }
 
 /** Where the last M-S-<left> or M-S-<right> began and ended, so repeating it moves the same items, as Org's markers keep them. */
-const lastIndentBegin = marker(0);
-const lastIndentEnd = marker(0);
+const lastIndentBegin = lastingMarker(0);
+const lastIndentEnd = lastingMarker(0);
 
 /**
  * Indents (arg > 0) or outdents an item, with its children unless
@@ -2638,7 +2650,6 @@ function toggleCheckbox(arg: ember.PrefixArg): void {
   try {
     let limUp: number;
     let limDown: Marker;
-    let single = false;
     const firstItemFrom = (from: number, limit: number): number | undefined => {
       for (let l = lineAt(from); l < ember.lineCount() && ember.lineStart(l) < limit; l++) {
         if (ember.lineStart(l) >= from && itemLine(l)) return ember.lineStart(l);
@@ -2660,11 +2671,9 @@ function toggleCheckbox(arg: ember.PrefixArg): void {
       limUp = found;
       limDown = marker(limit);
     } else if (itemLine(lineAt())) {
-      single = true;
       limUp = ember.lineStart(lineAt());
       limDown = marker(ember.lineEnd(lineAt()));
     } else throw new Error("Not at an item or heading, and no active region");
-    void single;
     // As org-at-item-checkbox-p sees it: a box needs blanks after it.
     const parts = itemParts(lineAt(limUp));
     const box = parts?.boxAt !== undefined && /^[ \t]/.test(ember.bufferText(parts.boxAt + 3, parts.boxAt + 4)) ? parts.checkbox : undefined;

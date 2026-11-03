@@ -1105,6 +1105,9 @@ impl Buffer {
         self.check_writable()?;
         let (old, old_props, point) = (self.slice(start..end), self.properties.save(start, end), self.point);
         let (open, log) = (self.open_group.len(), self.change_log.len());
+        // A trial edit can join onto the edit before it, as typing does,
+        // which truncating the group would not take back: it is put back.
+        let last = self.open_group.last().cloned();
         let unmodified = (!self.modified).then_some(self.save_generation);
         let (mark, ring, window_points) = (self.mark, self.mark_ring.clone(), self.window_points.clone());
         let markers: Vec<usize> = self.markers.iter().map(|m| m.pos).collect();
@@ -1124,6 +1127,9 @@ impl Buffer {
             }
         }
         self.open_group.truncate(open);
+        if let (Some(last), Some(slot)) = (last, self.open_group.last_mut()) {
+            *slot = last;
+        }
         self.change_log.truncate(log);
         let new_end = (end as isize + added) as usize;
         let inserted = self.slice(start..new_end);
@@ -1812,7 +1818,7 @@ impl Buffer {
             return Err(e);
         }
         let redo = self.undo_groups[index].kind != GroupKind::Change;
-        self.revert(index);
+        self.revert(index)?;
         self.close_group(GroupKind::Undo { undid: index });
         self.pending_undo = index.checked_sub(1);
         self.boundary_point = self.point;
@@ -2039,7 +2045,7 @@ impl Buffer {
             _ => return Err(Error::new("No undone changes to redo")),
         };
         self.check_writable()?;
-        self.revert(index);
+        self.revert(index)?;
         self.open_group.clear();
         self.undo_groups.truncate(index);
         // A following undo continues from where the undo below this one stopped.
@@ -2076,7 +2082,28 @@ impl Buffer {
 
     /// Applies the inverse of the group at `index`, recording the edits in
     /// the open group.
-    fn revert(&mut self, index: usize) {
+    /// Whether a group's edits fit the buffer as it is, taken back in turn,
+    /// as one set from code (`buffer-undo-list`) may no longer: undoing it
+    /// would otherwise take out text that is not there.
+    fn group_fits(&self, index: usize) -> bool {
+        let mut len = self.len();
+        for edit in self.undo_groups[index].edits.iter().rev() {
+            if !matches!(edit.extra, Extra::None) {
+                continue;
+            }
+            let inserted = edit.inserted.chars().count();
+            if edit.pos + inserted > len {
+                return false;
+            }
+            len = len - inserted + edit.deleted.chars().count();
+        }
+        true
+    }
+
+    fn revert(&mut self, index: usize) -> Result<()> {
+        if !self.group_fits(index) {
+            return Err(Error::new("Changes to be undone are outside visible portion of buffer"));
+        }
         let group = self.undo_groups[index].clone();
         for edit in group.edits.iter().rev() {
             if self.revert_extra(edit) {
@@ -2113,11 +2140,9 @@ impl Buffer {
         if group.unmodified_at == Some(self.save_generation) {
             self.modified = false;
         }
+        Ok(())
     }
 
-    /// Undoes a change that is not text inserted or deleted: puts a text
-    /// property back, or keeps an `(apply ...)` for the editor to call.
-    /// Returns whether the edit was one.
     fn revert_extra(&mut self, edit: &Edit) -> bool {
         match &edit.extra {
             Extra::None => false,

@@ -3,6 +3,8 @@
 // ansi-color faces on the text, and other control sequences are removed,
 // as ansi-color-apply-on-region does for comint's output.
 
+import { PerBuffer } from "subr";
+
 /** Emacs's colours for the eight ANSI colours and their bright forms, as its X colour names give them. */
 const COLOURS: [string, string, string][] = [
   ["black", "#000000", "#4d4d4d"],
@@ -99,7 +101,7 @@ const faces = (r: Rendition): string[] =>
   [r.bold && "ansi-color-bold", r.italic && "ansi-color-italic", r.underline && "ansi-color-underline", r.fg, r.bg].filter((f): f is string => Boolean(f));
 
 /** Each buffer's rendition, and where an escape sequence not yet ended starts, as ansi-color-context-region. */
-const contexts = new Map<string, { rendition: Rendition; pending?: ember.Marker }>();
+const contexts = new PerBuffer<{ rendition: Rendition; pending?: ember.Marker }>();
 
 /**
  * Colours the text from start to end by the escape sequences in it, and
