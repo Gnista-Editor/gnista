@@ -249,6 +249,24 @@ function pushMarker(stack: ember.Marker[]): void {
 
 ember.defineVariable({ name: "xref-history-max", doc: "How many places M-, can go back to.", value: 16 });
 
+ember.defineVariable({
+  name: "xref-show-xrefs-function",
+  doc: "The function that shows the places references are found, called with them: xref-show-xrefs lists them in *xref*; consult-xref reads one.",
+  value: "xref-show-xrefs",
+});
+ember.defineVariable({
+  name: "xref-show-definitions-function",
+  doc: "The function that shows several definitions, called with them, as xref-show-xrefs-function shows references.",
+  value: "xref-show-xrefs",
+});
+
+/** Shows places with the function a variable names, as xref--show-xrefs does. */
+function showWith(variable: string, xrefs: Xref[]): void {
+  const fn = ember.variable(variable);
+  if (fn === "xref-show-xrefs" || fn === null || fn === undefined) showXrefs(xrefs);
+  else ember.funcall(fn as string, xrefs);
+}
+
 /** Goes to one place, or lists several, as xref--show-xrefs does for definitions. */
 function showOrGo(xrefs: Xref[], kind: string, identifier: string): void {
   if (xrefs.length === 0) ember.userError(`No ${kind} found for: ${identifier}`);
@@ -257,7 +275,7 @@ function showOrGo(xrefs: Xref[], kind: string, identifier: string): void {
   if (xrefs.length === 1) {
     ember.call("switch-to-buffer", ember.findFileNoselect(xrefs[0].file));
     gotoXref(xrefs[0]);
-  } else showXrefs(xrefs);
+  } else showWith("xref-show-definitions-function", xrefs);
 }
 
 /** Reads the identifier, asking with a prompt when there is none at point or with a prefix argument, as xref--read-identifier. */
@@ -288,7 +306,7 @@ ember.defineCommand({
     const xrefs = findBackend().references(id);
     if (xrefs.length === 0) ember.userError(`No references found for: ${id}`);
     pushMarker(history.back);
-    showXrefs(xrefs);
+    showWith("xref-show-xrefs-function", xrefs);
   },
 });
 

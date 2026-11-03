@@ -138,3 +138,33 @@ fn consult_outline_goes_to_a_heading_and_digits_narrow_by_level() {
     d.press("T h r RET");
     assert_eq!(point(&d), "* One\ntext\n** Two\n".len());
 }
+
+#[test]
+fn consult_flymake_lists_the_diagnostics_and_goes_to_one() {
+    let d = setup("let a = 1;\nlet b = 2;\nlet c = 3;\n");
+    d.eval(r#"ember.makeOverlay(15, 16, { face: "flymake-error", "flymake-diagnostic": "unused b" });
+      ember.makeOverlay(26, 27, { face: "flymake-warning", "flymake-diagnostic": "odd c" });"#);
+    d.start(|ed| ed.call("consult-flymake", vec![]).unwrap());
+    assert_eq!(after(&d), " \n   2:4   error   unused b\n   3:4   warning odd c\n");
+    d.press("w SPC");
+    assert_eq!(after(&d), " \n   3:4   warning odd c\n");
+    d.press("RET");
+    assert_eq!(point(&d), 26);
+}
+
+#[test]
+fn consult_xref_reads_a_place_for_xref() {
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("x.rs");
+    std::fs::write(&file, "fn a() {}\nfn b() { a(); }\nfn c() { a(); }\n").unwrap();
+    let d = setup("");
+    let file = file.display().to_string();
+    d.start_eval(&format!(
+        r#"ember.funcall("consult-xref", [{{ file: {file:?}, line: 2, col: 9, summary: "fn b() {{ a(); }}", group: "x.rs" }}, {{ file: {file:?}, line: 3, col: 9, summary: "fn c() {{ a(); }}", group: "x.rs" }}])"#
+    ));
+    let shown = after(&d);
+    assert!(shown.contains("x.rs") && shown.contains("2: fn b() { a(); }") && shown.contains("3: fn c() { a(); }"), "{shown:?}");
+    d.press("c RET");
+    let (name, pt) = d.with(|ed| (ed.buffer().name.clone(), ed.buffer().point()));
+    assert_eq!((name.as_str(), pt), ("x.rs", "fn a() {}\nfn b() { a(); }\n".len() + 9));
+}

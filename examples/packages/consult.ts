@@ -1300,3 +1300,84 @@ ember.defineCommand({
     if (r) ember.callWithPrefix([4], "load-theme", r.cand);
   },
 });
+
+// consult-flymake, after consult-flymake.el: the buffer's diagnostics, as
+// eglot's overlays mark them.
+
+ember.defineCommand({
+  name: "consult-flymake",
+  doc: "Jump to a diagnostic in the buffer, previewing each; e, w and n narrow to errors, warnings and notes.",
+  run: () => {
+    const buffer = ember.bufferName();
+    const kinds = new Map<string, string>([["flymake-error", "e"], ["flymake-warning", "w"], ["flymake-note", "n"]]);
+    const found = ember
+      .overlaysIn(ember.pointMin(), ember.pointMax())
+      .filter((o) => ember.overlayGet(o, "flymake-diagnostic") !== undefined)
+      .sort((a, b) => ember.overlayStart(a)! - ember.overlayStart(b)!);
+    if (found.length === 0) ember.userError("No flymake errors");
+    const locs = new Map<string, Location>();
+    const kind = new Map<string, string>();
+    const cands = found.map((o, i) => {
+      const pos = ember.overlayStart(o)!;
+      const face = String(ember.overlayGet(o, "face"));
+      const type = face === "flymake-warning" ? "warning" : face === "flymake-note" ? "note" : "error";
+      const line = ember.lineOf(pos) + 1;
+      const col = pos - ember.lineBeginningPosition(pos);
+      const cand = `${String(line).padStart(4)}:${String(col).padEnd(3)} ${ember.propertize(type.padEnd(7), { face })} ${String(ember.overlayGet(o, "flymake-diagnostic"))}${tofu(i)}`;
+      locs.set(cand, { buffer, pos, matches: [[0, Math.max(1, ember.overlayEnd(o)! - pos)]] });
+      kind.set(cand, kinds.get(face) ?? "e");
+      return cand;
+    });
+    consultRead({
+      command: "consult-flymake",
+      prompt: "Flymake diagnostic: ",
+      candidates: cands,
+      sort: false,
+      requireMatch: true,
+      category: "consult-flymake-error",
+      history: "consult-flymake--history",
+      narrow: { keys: [["e", "Error"], ["w", "Warning"], ["n", "Note"]], predicate: (c, k) => kind.get(c) === k },
+      lookup: (c) => locs.get(c),
+      state: jumpState(),
+    });
+  },
+});
+ember.defineVariable({ name: "consult-flymake--history", doc: "Diagnostics consult-flymake went to.", value: [] });
+
+// consult-xref, after consult-xref.el: set xref-show-xrefs-function and
+// xref-show-definitions-function to "consult-xref" to choose a place with
+// preview rather than in *xref*.
+
+/** Reads one of XREFS, grouped by file, previewing each, and goes to it, as consult-xref. */
+export function consultXref(xrefs: { file: string; line: number; col: number; summary: string; group: string }[]): void {
+  const locs = new Map<string, { file: string; line: number; col: number }>();
+  const groups = new Map<string, string>();
+  const cands = xrefs.map((x, i) => {
+    const cand = `${ember.propertize(String(x.line), { face: "consult-line-number" })}: ${x.summary}${tofu(i)}`;
+    const plain = String(cand);
+    locs.set(plain, x);
+    groups.set(plain, x.group || ember.abbreviateFileName(x.file));
+    return plain;
+  });
+  const lookup = (c: string): Location | undefined => {
+    const x = locs.get(c);
+    if (!x) return undefined;
+    const buffer = ember.withCurrentBuffer(ember.currentBuffer(), () => ember.findFileNoselect(x.file));
+    const pos = ember.withCurrentBuffer(buffer, () => Math.min(ember.lineStart(Math.max(0, x.line - 1)) + x.col, ember.lineEnd(Math.max(0, x.line - 1))));
+    return { buffer, pos };
+  };
+  consultRead({
+    command: "consult-xref",
+    prompt: "Go to xref: ",
+    candidates: cands,
+    sort: false,
+    requireMatch: true,
+    category: "consult-xref",
+    history: "consult-xref--history",
+    group: (c, transform) => (transform ? c : (groups.get(c) ?? "")),
+    lookup,
+    state: jumpState(),
+  });
+}
+ember.defun("consult-xref", consultXref);
+ember.defineVariable({ name: "consult-xref--history", doc: "Places consult-xref went to.", value: [] });
