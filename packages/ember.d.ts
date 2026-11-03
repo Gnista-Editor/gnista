@@ -3544,6 +3544,22 @@ declare global {
        */
       "org-align-tags": [];
       /**
+       * Write the source blocks whose :tangle header argument names a file into their files. With C-u, only the block at point; with C-u C-u, the blocks that tangle to the same file as it.
+       *
+       * @param arg raw prefix argument
+       *
+       * Defined in packages/ob-tangle.ts.
+       */
+      "org-babel-tangle": [arg?: PrefixArg];
+      /**
+       * Tangle an Org file's source blocks into their files.
+       *
+       * @param file file name
+       *
+       * Defined in packages/ob-tangle.ts.
+       */
+      "org-babel-tangle-file": [file: string];
+      /**
        * Move to the previous heading at the same level, under the same parent.
        *
        * @param arg prefix count
@@ -8107,6 +8123,18 @@ declare global {
        */
       "org-agenda-mode-map": Value;
       /**
+       * The header arguments every source block has unless it says otherwise: pairs of an argument and its value.
+       *
+       * Defined in packages/ob-tangle.ts.
+       */
+      "org-babel-default-header-args": Value;
+      /**
+       * The extension a language's code is tangled to with :tangle yes: pairs of a language and an extension, else the language's name.
+       *
+       * Defined in packages/ob-tangle.ts.
+       */
+      "org-babel-tangle-lang-exts": Value;
+      /**
        * Whether Org-Capture mode is on in this buffer. Use the command org-capture-mode to change it.
        *
        * Defined in packages/org-capture.ts.
@@ -8246,6 +8274,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-special-ctrl-o": Value;
+      /**
+       * Whether a source block's code keeps its indentation when tangled, rather than losing what all its lines share.
+       *
+       * Defined in packages/ob-tangle.ts.
+       */
+      "org-src-preserve-indentation": Value;
       /**
        * How much of a file org-mode shows when it starts: "showeverything", "showall" (drawers folded), "content" (all headings) or "overview" (top headings). A #+STARTUP: line in the file says otherwise.
        *
@@ -10875,6 +10909,18 @@ declare global {
        * Run after entering Org-Agenda mode, after the hooks of the modes it is built on.
        */
       "org-agenda-mode-hook": Value;
+      /**
+       * Run in each file tangled, visited, after tangling.
+       */
+      "org-babel-post-tangle-hook": Value;
+      /**
+       * Run before tangling.
+       */
+      "org-babel-pre-tangle-hook": Value;
+      /**
+       * Run once tangling is done.
+       */
+      "org-babel-tangle-finished-hook": Value;
       /**
        * Run after Org-Capture mode is turned on or off.
        */

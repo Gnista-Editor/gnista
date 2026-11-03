@@ -536,3 +536,31 @@ fn require_loads_a_package_once_from_load_path() {
     assert_eq!(missing, "\"Cannot open load file: No such file or directory, no-such-thing\"");
     std::fs::remove_dir_all(&dir).unwrap();
 }
+
+#[test]
+fn tangling_writes_blocks_as_emacs_does() {
+    // As Emacs 30's org-babel-tangle writes this file's blocks: header
+    // arguments from #+PROPERTY, a drawer and the blocks themselves, a
+    // COMMENT heading's left out, indentation and escaping commas taken
+    // off, a blank line between blocks but with :padline no, a shebang
+    // that makes the file executable, and directories :mkdirp makes.
+    let dir = tempfile::tempdir().unwrap();
+    let org = dir.path().join("conf.org");
+    std::fs::write(&org, include_str!("../data/tangle.org")).unwrap();
+    let mut ed = Editor::new();
+    let _s = Scripting::new(&mut ed).unwrap();
+    ed.call("find-file", vec![Arg::Str(org.display().to_string())]).unwrap();
+    ed.press("C-c C-v t").unwrap();
+    assert_eq!(ed.echo(), Some("Tangled 5 code blocks from conf.org"));
+    let read = |name: &str| std::fs::read_to_string(dir.path().join(name)).unwrap();
+    assert_eq!(read("conf.el"), "(setq a 1)\n\n(when t\n  * not a heading\n  (setq b 2))\n");
+    assert_eq!(read("out/other.py"), "print(\"one\")\nprint(\"two\")\n");
+    assert_eq!(read("run.sh"), "#!/bin/sh\necho hi\n");
+    use std::os::unix::fs::PermissionsExt;
+    assert_eq!(std::fs::metadata(dir.path().join("run.sh")).unwrap().permissions().mode() & 0o777, 0o755);
+    // C-u tangles only the block at point.
+    std::fs::remove_file(dir.path().join("conf.el")).unwrap();
+    ed.press("M-< C-s r u n . s h RET C-u C-c C-v t").unwrap();
+    assert_eq!(ed.echo(), Some("Tangled 1 code block from conf.org"));
+    assert!(!dir.path().join("conf.el").exists());
+}

@@ -164,6 +164,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/ol.ts", include_str!("../../../packages/ol.ts")),
     ("packages/org-agenda.ts", include_str!("../../../packages/org-agenda.ts")),
     ("packages/org-capture.ts", include_str!("../../../packages/org-capture.ts")),
+    ("packages/ob-tangle.ts", include_str!("../../../packages/ob-tangle.ts")),
 ];
 
 /// The packages that ship with Ember but load only when a configuration

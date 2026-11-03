@@ -1,0 +1,41 @@
+#+TITLE: Test
+#+PROPERTY: header-args :tangle yes
+#+PROPERTY: header-args:sh :tangle no
+
+* Basics
+#+begin_src emacs-lisp
+(setq a 1)
+#+end_src
+
+  #+begin_src emacs-lisp
+    (when t
+      ,* not a heading
+      (setq b 2))
+  #+end_src
+
+* COMMENT Skipped
+#+begin_src emacs-lisp
+(setq skipped t)
+#+end_src
+
+* Elsewhere
+:PROPERTIES:
+:header-args: :tangle out/other.py :mkdirp yes
+:END:
+#+begin_src python
+print("one")
+#+end_src
+#+header: :padline no
+#+begin_src python
+print("two")
+#+end_src
+** Deeper
+#+begin_src python :tangle no
+print("never")
+#+end_src
+#+begin_src sh :tangle run.sh :shebang "#!/bin/sh"
+echo hi
+#+end_src
+#+begin_src sh
+echo default-no
+#+end_src
