@@ -126,6 +126,20 @@ fn tab_bar() {
     harness(ed, Theme::Dark).snapshot("tab_bar_dark");
 }
 
+/// examples/packages/nord-theme.ts loaded as a user's config loads it: the
+/// page, text, mode line and cursor in Nord's colours, from its faces.
+#[test]
+fn nord_theme() {
+    let mut ed = sample();
+    let scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    let examples = concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples/packages");
+    ed.set_variable("load-path", ember_core::Value::List(vec![ember_core::Value::Str(examples.into())]));
+    scripting.eval_expression(&mut ed, r#"ember.call("load-theme", "nord", true)"#).unwrap();
+    ed.call("org-mode", vec![]).unwrap();
+    ed.press("C-x 2").unwrap();
+    harness(ed, Theme::Dark).snapshot("nord_theme");
+}
+
 /// Emacs's face attributes drawn: a coloured wavy underline, an overline,
 /// a box, a coloured strike-through, inverse video, colour names, and a
 /// background that extends to the window's edge.

@@ -76,7 +76,7 @@ declare global {
        *
        * Defined in packages/buff-menu.ts.
        */
-      "Buffer-menu-not-modified": [arg?: PrefixArg];
+      "Buffer-menu-not-modified": [arg?: PrefixArg | boolean];
       /**
        * Show this line's buffer in another window, and select it.
        *
@@ -114,7 +114,7 @@ declare global {
        *
        * Defined in packages/buff-menu.ts.
        */
-      "Buffer-menu-toggle-files-only": [arg?: PrefixArg];
+      "Buffer-menu-toggle-files-only": [arg?: PrefixArg | boolean];
       /**
        * Show internal buffers too, or not; a positive prefix argument shows them and zero or negative does not.
        *
@@ -122,7 +122,7 @@ declare global {
        *
        * Defined in packages/buff-menu.ts.
        */
-      "Buffer-menu-toggle-internal": [arg?: PrefixArg];
+      "Buffer-menu-toggle-internal": [arg?: PrefixArg | boolean];
       /**
        * Make this line's buffer read-only, or editable again, as C-x C-q there.
        *
@@ -136,7 +136,7 @@ declare global {
        *
        * Defined in packages/buff-menu.ts.
        */
-      "Buffer-menu-unmark": [backup?: PrefixArg];
+      "Buffer-menu-unmark": [backup?: PrefixArg | boolean];
       /**
        * Take the marks off every buffer.
        *
@@ -186,7 +186,7 @@ declare global {
        *
        * Defined in packages/view.ts.
        */
-      "View-goto-line": [arg?: PrefixArg];
+      "View-goto-line": [arg?: PrefixArg | boolean];
       /**
        * Go to the line that percentage of the way through the buffer: the prefix argument's, else the start.
        *
@@ -194,7 +194,7 @@ declare global {
        *
        * Defined in packages/view.ts.
        */
-      "View-goto-percent": [arg?: PrefixArg];
+      "View-goto-percent": [arg?: PrefixArg | boolean];
       /**
        * Leave view mode and kill the buffer.
        *
@@ -304,7 +304,7 @@ declare global {
        *
        * Defined in packages/abbrev.ts.
        */
-      "add-global-abbrev": [arg?: PrefixArg];
+      "add-global-abbrev": [arg?: PrefixArg | boolean];
       /**
        * Define an abbrev for the major mode for the word before point, or that many words, or the region with 0, asking for its name.
        *
@@ -312,7 +312,7 @@ declare global {
        *
        * Defined in packages/abbrev.ts.
        */
-      "add-mode-abbrev": [arg?: PrefixArg];
+      "add-mode-abbrev": [arg?: PrefixArg | boolean];
       /**
        * Make the next kill join onto the last one on the kill ring, as consecutive kills do.
        *
@@ -348,7 +348,7 @@ declare global {
        *
        * Defined in packages/register.ts.
        */
-      "append-to-register": [start: number, end: number, del?: PrefixArg];
+      "append-to-register": [start: number, end: number, del?: PrefixArg | boolean];
       /**
        * Run a shell command in the background, its output going into *Async Shell Command* as it comes.
        *
@@ -618,7 +618,7 @@ declare global {
        *
        * Defined in packages/bookmark.ts.
        */
-      "bookmark-set": [arg?: PrefixArg];
+      "bookmark-set": [arg?: PrefixArg | boolean];
       /**
        * Show the buffer's text in the face buffer-face-mode-face says, variable-pitch to begin with.
        *
@@ -634,7 +634,7 @@ declare global {
        *
        * Defined in packages/buff-menu.ts.
        */
-      "buffer-menu": [arg?: PrefixArg];
+      "buffer-menu": [arg?: PrefixArg | boolean];
       /**
        * Show the list of buffers in another window and select it.
        *
@@ -642,7 +642,7 @@ declare global {
        *
        * Defined in packages/buff-menu.ts.
        */
-      "buffer-menu-other-window": [arg?: PrefixArg];
+      "buffer-menu-other-window": [arg?: PrefixArg | boolean];
       /**
        * Put a buffer last in the buffer list, the current one by default.
        *
@@ -658,7 +658,7 @@ declare global {
        *
        * Defined in packages/simple.ts.
        */
-      "capitalize-dwim": [arg?: PrefixArg];
+      "capitalize-dwim": [arg?: PrefixArg | boolean];
       /**
        * Capitalize the region: each word's first character in title case or upper case, and the rest in lower case.
        *
@@ -681,7 +681,7 @@ declare global {
        *
        * Defined in packages/text-mode.ts.
        */
-      "center-line": [nlines?: PrefixArg];
+      "center-line": [nlines?: PrefixArg | boolean];
       /**
        * Center each line of the region that is not blank, as center-line does.
        *
@@ -706,7 +706,7 @@ declare global {
        *
        * Defined in packages/rect.ts.
        */
-      "clear-rectangle": [start: number, end: number, fill?: PrefixArg];
+      "clear-rectangle": [start: number, end: number, fill?: PrefixArg | boolean];
       /**
        * Make an indirect buffer of the current buffer and show it in another window: the same text, with a point, narrowing and modes of its own.
        *
@@ -716,7 +716,7 @@ declare global {
        *
        * Defined in packages/simple.ts.
        */
-      "clone-indirect-buffer": [arg?: PrefixArg];
+      "clone-indirect-buffer": [arg?: PrefixArg | boolean];
       /**
        * Make an indirect buffer of the current buffer and show it in another window: the same text, with a point, narrowing and modes of its own.
        *
@@ -726,7 +726,7 @@ declare global {
        *
        * Defined in packages/simple.ts.
        */
-      "clone-indirect-buffer-other-window": [arg?: PrefixArg];
+      "clone-indirect-buffer-other-window": [arg?: PrefixArg | boolean];
       /**
        * Go to the start of the line, after the prompt if there is one.
        *
@@ -766,7 +766,7 @@ declare global {
        *
        * Defined in packages/comint.ts.
        */
-      "comint-delete-output": [kill?: PrefixArg];
+      "comint-delete-output": [kill?: PrefixArg | boolean];
       /**
        * Search back through the input history for a string, incrementally: each match is put after the prompt.
        *
@@ -1028,7 +1028,7 @@ declare global {
        *
        * Defined in packages/misc.ts.
        */
-      "copy-from-above-command": [arg?: PrefixArg];
+      "copy-from-above-command": [arg?: PrefixArg | boolean];
       /**
        * Copy the lines after point, or in the region, that have a match for a regexp to the kill ring, together as one kill.
        *
@@ -1053,7 +1053,7 @@ declare global {
        *
        * Defined in packages/register.ts.
        */
-      "copy-rectangle-to-register": [start: number, end: number, del?: PrefixArg];
+      "copy-rectangle-to-register": [start: number, end: number, del?: PrefixArg | boolean];
       /**
        * Put the region's text on the kill ring without deleting it, as if it had been killed.
        *
@@ -1079,7 +1079,7 @@ declare global {
        *
        * Defined in packages/register.ts.
        */
-      "copy-to-register": [start: number, end: number, del?: PrefixArg];
+      "copy-to-register": [start: number, end: number, del?: PrefixArg | boolean];
       /**
        * Say how many lines the page has, and how many are before and after point.
        *
@@ -1093,7 +1093,7 @@ declare global {
        *
        * Defined in packages/simple.ts.
        */
-      "count-words": [arg?: PrefixArg];
+      "count-words": [arg?: PrefixArg | boolean];
       /**
        * Say how many lines, sentences, words and characters the region has, whether or not it is active; with a prefix argument, the buffer's.
        *
@@ -1101,7 +1101,7 @@ declare global {
        *
        * Defined in packages/simple.ts.
        */
-      "count-words-region": [arg?: PrefixArg];
+      "count-words-region": [arg?: PrefixArg | boolean];
       /**
        * Change the space around point, a different way each time in a row, as cycle-spacing-actions says: first one space, then none, then as it was.
        *
@@ -1111,7 +1111,7 @@ declare global {
        *
        * Defined in packages/simple.ts.
        */
-      "cycle-spacing": [n?: PrefixArg];
+      "cycle-spacing": [n?: PrefixArg | boolean];
       /**
        * Expand the word before point to the nearest word before it that starts with it, else one after it, else one in another buffer. Again, try the next one.
        *
@@ -1121,7 +1121,7 @@ declare global {
        *
        * Defined in packages/dabbrev.ts.
        */
-      "dabbrev-expand": [arg?: PrefixArg];
+      "dabbrev-expand": [arg?: PrefixArg | boolean];
       /**
        * Break the line and indent the new one, continuing a comment point is in, as comment-indent-new-line does.
        *
@@ -1153,7 +1153,7 @@ declare global {
        *
        * Defined in packages/simple.ts.
        */
-      "delete-all-space": [arg?: PrefixArg];
+      "delete-all-space": [arg?: PrefixArg | boolean];
       /**
        * Delete the character before point, or as many as the prefix argument says.
        *
@@ -1197,7 +1197,7 @@ declare global {
        *
        * Defined in packages/sort.ts.
        */
-      "delete-duplicate-lines": [beg: number, end: number, arg?: PrefixArg];
+      "delete-duplicate-lines": [beg: number, end: number, arg?: PrefixArg | boolean];
       /**
        * Delete a file. With delete-by-moving-to-trash, on in Ember, it goes to the trash, from where it can be put back.
        *
@@ -1229,7 +1229,7 @@ declare global {
        *
        * Defined in packages/simple.ts.
        */
-      "delete-horizontal-space": [arg?: PrefixArg];
+      "delete-horizontal-space": [arg?: PrefixArg | boolean];
       /**
        * Join this line to the one before it, leaving one space or none between them; with a prefix argument, to the one after.
        *
@@ -1239,7 +1239,7 @@ declare global {
        *
        * Defined in packages/simple.ts.
        */
-      "delete-indentation": [arg?: PrefixArg];
+      "delete-indentation": [arg?: PrefixArg | boolean];
       /**
        * Delete all the input in the minibuffer, leaving the prompt.
        *
@@ -1265,7 +1265,7 @@ declare global {
        *
        * Defined in packages/lisp.ts.
        */
-      "delete-pair": [arg?: PrefixArg];
+      "delete-pair": [arg?: PrefixArg | boolean];
       /**
        * Delete the text in the rectangle between point and the mark; with a prefix argument, lines too short are padded first.
        *
@@ -1275,7 +1275,7 @@ declare global {
        *
        * Defined in packages/rect.ts.
        */
-      "delete-rectangle": [start: number, end: number, fill?: PrefixArg];
+      "delete-rectangle": [start: number, end: number, fill?: PrefixArg | boolean];
       /**
        * Typing replaces the selection, rather than inserting next to it.
        *
@@ -1373,7 +1373,7 @@ declare global {
        *
        * Defined in packages/desktop.ts.
        */
-      "desktop-read": [ask?: PrefixArg];
+      "desktop-read": [ask?: PrefixArg | boolean];
       /**
        * Delete the desktop file and stop saving the desktop until one is saved again.
        *
@@ -1394,7 +1394,7 @@ declare global {
        *
        * Defined in packages/desktop.ts.
        */
-      "desktop-save": [dirname: string, release?: PrefixArg];
+      "desktop-save": [dirname: string, release?: PrefixArg | boolean];
       /**
        * Save the desktop in desktop-dirname, or ask for a directory if it has none.
        *
@@ -1813,6 +1813,14 @@ declare global {
        */
       "dired-view-file": [];
       /**
+       * Disable a theme, its faces going back to what they were.
+       *
+       * @param theme text
+       *
+       * Defined in packages/custom.ts.
+       */
+      "disable-theme": [theme: string];
+      /**
        * Show a buffer in some window without selecting it.
        *
        * A window that already shows it is used, else a new window split off a large enough one, else the least recently used window.
@@ -1863,7 +1871,7 @@ declare global {
        *
        * Defined in packages/simple.ts.
        */
-      "downcase-dwim": [arg?: PrefixArg];
+      "downcase-dwim": [arg?: PrefixArg | boolean];
       /**
        * Convert the region to lower case.
        *
@@ -1999,6 +2007,14 @@ declare global {
        * Defined in packages/elec-pair.ts.
        */
       "electric-pair-mode": [];
+      /**
+       * Enable a theme that is loaded, its faces winning over the other themes'.
+       *
+       * @param theme text
+       *
+       * Defined in packages/custom.ts.
+       */
+      "enable-theme": [theme: string];
       /**
        * Move point to the end of the buffer.
        *
@@ -2318,7 +2334,7 @@ declare global {
        *
        * Defined in packages/simple.ts.
        */
-      "goto-char": [arg?: PrefixArg];
+      "goto-char": [arg?: PrefixArg | boolean];
       /**
        * Go to a line, counting from 1 at the start of the buffer: the prefix argument's, else one asked for, the number at point by default.
        *
@@ -2328,7 +2344,7 @@ declare global {
        *
        * Defined in packages/simple.ts.
        */
-      "goto-line": [arg?: PrefixArg];
+      "goto-line": [arg?: PrefixArg | boolean];
       /**
        * Run grep, with the arguments you give, in the background, showing its hits in *grep*. M-g n (next-error) then visits each in turn.
        *
@@ -2384,7 +2400,7 @@ declare global {
        *
        * Defined in packages/hi-lock.ts.
        */
-      "highlight-regexp": [subexp?: PrefixArg];
+      "highlight-regexp": [subexp?: PrefixArg | boolean];
       /**
        * Highlight the symbol at point wherever it is in the buffer, in the next unused face.
        *
@@ -2410,7 +2426,7 @@ declare global {
        *
        * Defined in packages/hideshow.ts.
        */
-      "hs-hide-block": [end?: PrefixArg];
+      "hs-hide-block": [end?: PrefixArg | boolean];
       /**
        * Hide the comment at the start of the file, if it has more than one line.
        *
@@ -2446,7 +2462,7 @@ declare global {
        *
        * Defined in packages/hideshow.ts.
        */
-      "hs-show-block": [end?: PrefixArg];
+      "hs-show-block": [end?: PrefixArg | boolean];
       /**
        * Hide the block point is in if it shows, else show it.
        *
@@ -2554,7 +2570,7 @@ declare global {
        *
        * Defined in packages/image.ts.
        */
-      "image-decrease-size": [n?: PrefixArg];
+      "image-decrease-size": [n?: PrefixArg | boolean];
       /**
        * Horizontally flip the image under point.
        *
@@ -2574,7 +2590,7 @@ declare global {
        *
        * Defined in packages/image.ts.
        */
-      "image-increase-size": [n?: PrefixArg];
+      "image-increase-size": [n?: PrefixArg | boolean];
       /**
        * Show the image a visited file holds, made smaller to fit the window if it is larger. + and - change its size, r rotates it, h and v flip it, and q quits the window.
        *
@@ -2588,7 +2604,7 @@ declare global {
        *
        * Defined in packages/image.ts.
        */
-      "image-rotate": [arg?: PrefixArg];
+      "image-rotate": [arg?: PrefixArg | boolean];
       /**
        * Go to a definition in the buffer, chosen by name with completion from the buffer's index.
        *
@@ -2604,7 +2620,7 @@ declare global {
        *
        * Defined in packages/register.ts.
        */
-      "increment-register": [prefix?: PrefixArg];
+      "increment-register": [prefix?: PrefixArg | boolean];
       /**
        * Indent the current line as the major mode says, through indent-line-function.
        *
@@ -2694,7 +2710,7 @@ declare global {
        *
        * Defined in packages/register.ts.
        */
-      "insert-register": [arg?: PrefixArg];
+      "insert-register": [arg?: PrefixArg | boolean];
       /**
        * Make the word before point a global abbrev for an expansion asked for, and expand it.
        *
@@ -2732,7 +2748,7 @@ declare global {
        *
        * Defined in packages/isearch.ts.
        */
-      "isearch-backward": [regexp?: PrefixArg];
+      "isearch-backward": [regexp?: PrefixArg | boolean];
       /**
        * Search backward incrementally for a regular expression, in Emacs's syntax. See isearch-forward.
        *
@@ -2740,7 +2756,7 @@ declare global {
        *
        * Defined in packages/isearch.ts.
        */
-      "isearch-backward-regexp": [regexp?: PrefixArg];
+      "isearch-backward-regexp": [regexp?: PrefixArg | boolean];
       /**
        * Take the last character off the search string and search again, keeping the effect of other commands.
        *
@@ -2770,7 +2786,7 @@ declare global {
        *
        * Defined in packages/isearch.ts.
        */
-      "isearch-forward": [regexp?: PrefixArg];
+      "isearch-forward": [regexp?: PrefixArg | boolean];
       /**
        * Search forward incrementally for a regular expression, in Emacs's syntax. See isearch-forward.
        *
@@ -2778,7 +2794,7 @@ declare global {
        *
        * Defined in packages/isearch.ts.
        */
-      "isearch-forward-regexp": [regexp?: PrefixArg];
+      "isearch-forward-regexp": [regexp?: PrefixArg | boolean];
       /**
        * Add the character typed to the search string, or for any other key, end the search and run the key.
        *
@@ -2925,7 +2941,7 @@ declare global {
        *
        * Defined in packages/files.ts.
        */
-      "kill-matching-buffers": [regexp: string, internal?: PrefixArg];
+      "kill-matching-buffers": [regexp: string, internal?: PrefixArg | boolean];
       /**
        * Kill the buffers whose names match a regexp, without asking; with a prefix argument, those whose names start with a space too.
        *
@@ -2934,7 +2950,7 @@ declare global {
        *
        * Defined in packages/files.ts.
        */
-      "kill-matching-buffers-no-ask": [regexp: string, internal?: PrefixArg];
+      "kill-matching-buffers-no-ask": [regexp: string, internal?: PrefixArg | boolean];
       /**
        * Kill the lines after point, or in the region, that have a match for a regexp, together as one kill.
        *
@@ -2958,7 +2974,7 @@ declare global {
        *
        * Defined in packages/rect.ts.
        */
-      "kill-rectangle": [start: number, end: number, fill?: PrefixArg];
+      "kill-rectangle": [start: number, end: number, fill?: PrefixArg | boolean];
       /**
        * Kill the text between point and the mark.
        */
@@ -3090,7 +3106,7 @@ declare global {
        *
        * Defined in packages/buff-menu.ts.
        */
-      "list-buffers": [arg?: PrefixArg];
+      "list-buffers": [arg?: PrefixArg | boolean];
       /**
        * Show the colours Emacs knows by name, each in its colour, with the names that look the same and its #RRGGBB.
        *
@@ -3104,7 +3120,7 @@ declare global {
        *
        * Defined in packages/faces.ts.
        */
-      "list-faces-display": [arg?: PrefixArg];
+      "list-faces-display": [arg?: PrefixArg | boolean];
       /**
        * Run a TypeScript file, such as init.ts after editing it.
        *
@@ -3113,6 +3129,15 @@ declare global {
        * @param file file name
        */
       "load-file": [file: string];
+      /**
+       * Load a theme, NAME-theme along load-path, and enable it. A theme's code runs, so Ember asks first unless custom-safe-themes names it.
+       *
+       * @param theme text
+       * @param noConfirm raw prefix argument
+       *
+       * Defined in packages/custom.ts.
+       */
+      "load-theme": [theme: string, noConfirm?: PrefixArg | boolean];
       /**
        * Make a directory, and any directories above it that are missing.
        *
@@ -3190,7 +3215,7 @@ declare global {
        *
        * Defined in packages/page.ts.
        */
-      "mark-page": [arg?: PrefixArg];
+      "mark-page": [arg?: PrefixArg | boolean];
       /**
        * Put point at the start of this paragraph and the mark at its end; with a prefix argument, at the end of that many.
        *
@@ -3220,7 +3245,7 @@ declare global {
        *
        * Defined in packages/simple.ts.
        */
-      "mark-word": [arg?: PrefixArg];
+      "mark-word": [arg?: PrefixArg | boolean];
       /**
        * Complete the minibuffer input as far as it is unambiguous.
        *
@@ -3318,7 +3343,7 @@ declare global {
        *
        * Defined in packages/window.ts.
        */
-      "move-to-window-line-top-bottom": [arg?: PrefixArg];
+      "move-to-window-line-top-bottom": [arg?: PrefixArg | boolean];
       /**
        * Scroll the window for the mouse wheel or a trackpad.
        *
@@ -3338,7 +3363,7 @@ declare global {
        *
        * Defined in packages/page.ts.
        */
-      "narrow-to-page": [arg?: PrefixArg];
+      "narrow-to-page": [arg?: PrefixArg | boolean];
       /**
        * Restrict editing in this buffer to the region: the rest is hidden and out of reach until widen (C-x n w).
        */
@@ -3416,7 +3441,7 @@ declare global {
        *
        * Defined in packages/register.ts.
        */
-      "number-to-register": [number?: PrefixArg];
+      "number-to-register": [number?: PrefixArg | boolean];
       /**
        * List the lines of the buffer, or of the region if it is active, that match a regexp, in *Occur*.
        *
@@ -3486,7 +3511,7 @@ declare global {
        *
        * Defined in packages/rect.ts.
        */
-      "open-rectangle": [start: number, end: number, fill?: PrefixArg];
+      "open-rectangle": [start: number, end: number, fill?: PrefixArg | boolean];
       /**
        * Capture with the template of the key given, as org-capture does once it has asked.
        *
@@ -3620,7 +3645,7 @@ declare global {
        *
        * Defined in packages/ob-tangle.ts.
        */
-      "org-babel-tangle": [arg?: PrefixArg];
+      "org-babel-tangle": [arg?: PrefixArg | boolean];
       /**
        * Tangle an Org file's source blocks into their files.
        *
@@ -4512,7 +4537,7 @@ declare global {
        *
        * Defined in packages/org.ts.
        */
-      "org-tree-to-indirect-buffer": [arg?: PrefixArg];
+      "org-tree-to-indirect-buffer": [arg?: PrefixArg | boolean];
       /**
        * Bring the statistics cookies, such as [1/3], of the heading or item point is in up to date.
        *
@@ -4684,7 +4709,7 @@ declare global {
        *
        * Defined in packages/register.ts.
        */
-      "prepend-to-register": [start: number, end: number, del?: PrefixArg];
+      "prepend-to-register": [start: number, end: number, del?: PrefixArg | boolean];
       /**
        * Show in the selected window the buffer it showed before this one, as switch-to-prev-buffer.
        *
@@ -4918,7 +4943,7 @@ declare global {
        *
        * Defined in packages/window.ts.
        */
-      "quit-window": [kill?: PrefixArg];
+      "quit-window": [kill?: PrefixArg | boolean];
       /**
        * Insert the next character typed, whatever it is, such as a control character; with a prefix argument, that many.
        *
@@ -4990,7 +5015,7 @@ declare global {
        *
        * Defined in packages/window.ts.
        */
-      "recenter-top-bottom": [arg?: PrefixArg];
+      "recenter-top-bottom": [arg?: PrefixArg | boolean];
       /**
        * Visit one of the files visited or saved recently, as recentf-open does.
        *
@@ -5066,7 +5091,7 @@ declare global {
        *
        * Defined in packages/rect.ts.
        */
-      "rectangle-number-lines": [start: number, end: number, arg?: PrefixArg];
+      "rectangle-number-lines": [start: number, end: number, arg?: PrefixArg | boolean];
       /**
        * Edit recursively: go on with commands, with [ ] around the modes in the mode line, until C-M-c goes back to what entered the edit or C-] quits it.
        */
@@ -5079,7 +5104,7 @@ declare global {
        * @param newname text
        * @param unique raw prefix argument
        */
-      "rename-buffer": [newname: string, unique?: PrefixArg];
+      "rename-buffer": [newname: string, unique?: PrefixArg | boolean];
       /**
        * Rename a file or directory. A name ending in a slash moves it into that directory.
        *
@@ -5161,7 +5186,7 @@ declare global {
        *
        * Defined in packages/mule.ts.
        */
-      "revert-buffer-with-coding-system": [arg?: PrefixArg];
+      "revert-buffer-with-coding-system": [arg?: PrefixArg | boolean];
       /**
        * Move point a character to the right, or as many as the prefix argument says: forward in left-to-right text and back in right-to-left, or to the right on display with visual-order-cursor-movement.
        *
@@ -5319,7 +5344,7 @@ declare global {
        *
        * Defined in packages/faces.ts.
        */
-      "set-face-extend": [face: string, arg?: PrefixArg];
+      "set-face-extend": [face: string, arg?: PrefixArg | boolean];
       /**
        * Set the foreground colour of a face, for this session.
        *
@@ -5337,7 +5362,7 @@ declare global {
        *
        * Defined in packages/faces.ts.
        */
-      "set-face-inverse-video": [face: string, arg?: PrefixArg];
+      "set-face-inverse-video": [face: string, arg?: PrefixArg | boolean];
       /**
        * Underline a face's text, or with an empty answer stop underlining it.
        *
@@ -5374,7 +5399,7 @@ declare global {
        *
        * Defined in packages/shell.ts.
        */
-      "shell": [arg?: PrefixArg];
+      "shell": [arg?: PrefixArg | boolean];
       /**
        * Run a shell command and show its output: in the echo area if it is one line, else in *Shell Command Output*.
        *
@@ -5385,7 +5410,7 @@ declare global {
        *
        * Defined in packages/simple.ts.
        */
-      "shell-command": [command: string, arg?: PrefixArg];
+      "shell-command": [command: string, arg?: PrefixArg | boolean];
       /**
        * Run a shell command with the region as its input, showing its output.
        *
@@ -5398,7 +5423,7 @@ declare global {
        *
        * Defined in packages/simple.ts.
        */
-      "shell-command-on-region": [start: number, end: number, command: string, replace?: PrefixArg];
+      "shell-command-on-region": [start: number, end: number, command: string, replace?: PrefixArg | boolean];
       /**
        * The major mode for a shell in a buffer: type commands after its prompt and send them with RET.
        *
@@ -5444,7 +5469,7 @@ declare global {
        *
        * Defined in packages/sort.ts.
        */
-      "sort-lines": [beg: number, end: number, reverse?: PrefixArg];
+      "sort-lines": [beg: number, end: number, reverse?: PrefixArg | boolean];
       /**
        * The parent of modes for buffers that are read rather than edited: q quits the window, g makes the buffer again, SPC and DEL page, < and > go to the ends, and h or ? describes the mode.
        *
@@ -5458,7 +5483,7 @@ declare global {
        *
        * Defined in packages/simple.ts.
        */
-      "split-line": [arg?: PrefixArg];
+      "split-line": [arg?: PrefixArg | boolean];
       /**
        * Split the frame's root window in two, the new window below taking the frame's whole width. A prefix argument gives the windows above that many lines, or the new one if it is negative.
        *
@@ -5541,7 +5566,7 @@ declare global {
        *
        * Defined in packages/tab-bar.ts.
        */
-      "tab-bar-close-tab": [n?: PrefixArg];
+      "tab-bar-close-tab": [n?: PrefixArg | boolean];
       /**
        * Close the tab of a name.
        *
@@ -5557,7 +5582,7 @@ declare global {
        *
        * Defined in packages/tab-bar.ts.
        */
-      "tab-bar-duplicate-tab": [arg?: PrefixArg];
+      "tab-bar-duplicate-tab": [arg?: PrefixArg | boolean];
       /**
        * Put back the windows the current tab had before, going back in its history.
        *
@@ -5623,7 +5648,7 @@ declare global {
        *
        * Defined in packages/tab-bar.ts.
        */
-      "tab-bar-new-tab": [arg?: PrefixArg];
+      "tab-bar-new-tab": [arg?: PrefixArg | boolean];
       /**
        * Make a new tab at a position on the tab bar, from 1, which a prefix argument gives; negative counts from the end.
        *
@@ -5631,7 +5656,7 @@ declare global {
        *
        * Defined in packages/tab-bar.ts.
        */
-      "tab-bar-new-tab-to": [n?: PrefixArg];
+      "tab-bar-new-tab-to": [n?: PrefixArg | boolean];
       /**
        * Name the current tab, or the tab a prefix argument numbers. An empty name gives it back its automatic name.
        *
@@ -5640,7 +5665,7 @@ declare global {
        *
        * Defined in packages/tab-bar.ts.
        */
-      "tab-bar-rename-tab": [name: string, n?: PrefixArg];
+      "tab-bar-rename-tab": [name: string, n?: PrefixArg | boolean];
       /**
        * Select a tab by its number on the tab bar, from 1; negative counts from the end. Bound to a digit, the digit says.
        *
@@ -5648,7 +5673,7 @@ declare global {
        *
        * Defined in packages/tab-bar.ts.
        */
-      "tab-bar-select-tab": [n?: PrefixArg];
+      "tab-bar-select-tab": [n?: PrefixArg | boolean];
       /**
        * Select the last tab, or the one that many from the end with a prefix argument.
        *
@@ -5764,7 +5789,7 @@ declare global {
        *
        * Defined in packages/tab-bar.ts.
        */
-      "tab-switcher-unmark": [backup?: PrefixArg];
+      "tab-switcher-unmark": [backup?: PrefixArg | boolean];
       /**
        * Insert whitespace up to the next tab stop, every tab-width columns.
        *
@@ -5778,7 +5803,7 @@ declare global {
        *
        * Defined in packages/simple.ts.
        */
-      "tabify": [arg?: PrefixArg];
+      "tabify": [arg?: PrefixArg | boolean];
       /**
        * The parent of modes that list entries in columns, titled in the header line. S sorts by the column point is in, n and p move by lines, M-<left> and M-<right> by columns, and { and } narrow and widen a column.
        *
@@ -5822,7 +5847,7 @@ declare global {
        *
        * Defined in packages/tabulated-list.ts.
        */
-      "tabulated-list-sort": [n?: PrefixArg];
+      "tabulated-list-sort": [n?: PrefixArg | boolean];
       /**
        * Widen the column point is in by one column, or as many as the prefix argument says.
        *
@@ -5986,7 +6011,7 @@ declare global {
        *
        * Defined in packages/hi-lock.ts.
        */
-      "unhighlight-regexp": [arg?: PrefixArg];
+      "unhighlight-regexp": [arg?: PrefixArg | boolean];
       /**
        * Begin a prefix argument for the next command.
        *
@@ -6018,7 +6043,7 @@ declare global {
        *
        * Defined in packages/simple.ts.
        */
-      "untabify": [arg?: PrefixArg];
+      "untabify": [arg?: PrefixArg | boolean];
       /**
        * Move forward out of a list, past its close paren, or out of a string. With a prefix argument, that many levels.
        *
@@ -6032,7 +6057,7 @@ declare global {
        *
        * Defined in packages/simple.ts.
        */
-      "upcase-dwim": [arg?: PrefixArg];
+      "upcase-dwim": [arg?: PrefixArg | boolean];
       /**
        * Upcase the initial of each word in the region, leaving the rest as it is.
        *
@@ -6062,7 +6087,7 @@ declare global {
        *
        * Defined in packages/face-remap.ts.
        */
-      "variable-pitch-mode": [arg?: PrefixArg];
+      "variable-pitch-mode": [arg?: PrefixArg | boolean];
       /**
        * Show a buffer in view mode, read-only; q goes back to the buffer before.
        *
@@ -6203,7 +6228,7 @@ declare global {
        *
        * Defined in packages/xref.ts.
        */
-      "xref-find-definitions": [arg?: PrefixArg];
+      "xref-find-definitions": [arg?: PrefixArg | boolean];
       /**
        * List the places that refer to the identifier at point. With a prefix argument, ask for it.
        *
@@ -6211,7 +6236,7 @@ declare global {
        *
        * Defined in packages/xref.ts.
        */
-      "xref-find-references": [arg?: PrefixArg];
+      "xref-find-references": [arg?: PrefixArg | boolean];
       /**
        * Go back to where M-. or M-? was typed.
        *
@@ -6279,7 +6304,7 @@ declare global {
        *
        * Defined in packages/simple.ts.
        */
-      "yank-from-kill-ring": [arg?: PrefixArg];
+      "yank-from-kill-ring": [arg?: PrefixArg | boolean];
       /**
        * Replace the text just yanked with an earlier kill.
        *
@@ -6886,6 +6911,18 @@ declare global {
        * Keymap ctl-x-x-map.
        */
       "ctl-x-x-map": Value;
+      /**
+       * The themes enabled, the one enabled last first, whose faces win.
+       *
+       * Defined in packages/custom.ts.
+       */
+      "custom-enabled-themes": Value;
+      /**
+       * The themes load-theme loads without asking whether to run their code: names, or t for all. "default" stands for the ones Ember ships.
+       *
+       * Defined in packages/custom.ts.
+       */
+      "custom-safe-themes": Value;
       /**
        * What M-SPC does each time in a row: just-one-space, delete-all-space, delete-space-after, delete-space-before or restore.
        *
@@ -10834,6 +10871,10 @@ declare global {
        */
       "dired-mode-hook": Value;
       /**
+       * Functions called with a theme's name after it is disabled.
+       */
+      "disable-theme-functions": Value;
+      /**
        * Run after Display-Line-Numbers mode is turned on or off.
        */
       "display-line-numbers-mode-hook": Value;
@@ -10901,6 +10942,10 @@ declare global {
        * Run after after-init-hook, once Ember has started and loaded init.ts.
        */
       "emacs-startup-hook": Value;
+      /**
+       * Functions called with a theme's name after it is enabled.
+       */
+      "enable-theme-functions": Value;
       /**
        * Run after Fido mode is turned on or off.
        */

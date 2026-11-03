@@ -17,7 +17,7 @@ A working editor, in a terminal (`ember`) or a window (`ember-gui`), with most o
 - `crates/ember`: the terminal binary. `crates/ember-gui`: the egui binary; drawing code takes colours from `Tokens`, never literals.
 - `crates/ember-agent`: the agent ([ADR 0019](docs/adr/0019-agent-buffer.md)); while it acts, `Editor::check_permission` stops writing files, discarding unsaved work, quitting and running code until the user approves. `crates/ember-mcp`: Ember as an MCP server ([ADR 0015](docs/adr/0015-mcp-server.md)).
 - `packages/`: TypeScript packages that ship with Ember, as Emacs ships its preloaded Lisp, each following the Emacs Lisp file of the same name (`simple.ts`, `files.ts`, `org.ts`, ...).
-- `examples/init.ts`: a sample config.
+- `examples/init.ts`: a sample config; `examples/packages/`: packages that do not ship, as a user's `~/.config/ember/packages` holds them, such as `nord-theme.ts` (type-check with `tsc -p examples/packages`).
 
 ### Writing packages
 

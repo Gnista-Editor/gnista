@@ -118,6 +118,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/elec-pair.ts", include_str!("../../../packages/elec-pair.ts")),
     ("packages/help.ts", include_str!("../../../packages/help.ts")),
     ("packages/faces.ts", include_str!("../../../packages/faces.ts")),
+    ("packages/custom.ts", include_str!("../../../packages/custom.ts")),
     ("packages/image.ts", include_str!("../../../packages/image.ts")),
     ("packages/repeat.ts", include_str!("../../../packages/repeat.ts")),
     ("packages/kmacro.ts", include_str!("../../../packages/kmacro.ts")),

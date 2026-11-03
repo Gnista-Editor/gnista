@@ -89,6 +89,12 @@ pub fn layout_windows(ed: &mut Editor, width: u16, height: u16) {
 /// Draws a frame as the core described it, asking the editor nothing.
 pub fn draw(frame: &mut Frame, fd: &FrameDescription) {
     let screen = frame.area();
+    // A theme's background for the default face fills the screen, as on
+    // Emacs's terminal frames, not only behind text.
+    if fd.default_style.background.is_some() {
+        let base = terminal_style(&fd.default_style, fd.dark);
+        frame.buffer_mut().set_style(screen, base);
+    }
     let echo = (fd.echo_lines as u16).min(screen.height);
     let echo_area = Rect::new(screen.x, screen.bottom().saturating_sub(echo), screen.width, echo);
     let areas = described_areas(fd, screen.width, screen.height);
@@ -652,6 +658,20 @@ mod tests {
         // The tab bar is no window's.
         assert_eq!(mouse_target(&ed, 30, 6, 2, 0), None);
         assert_eq!(mouse_target(&ed, 30, 6, 1, 1).map(|t| t.1), Some(Some(1)));
+    }
+
+    #[test]
+    fn a_themes_default_background_fills_the_screen() {
+        let mut ed = Editor::new();
+        ed.type_text("one");
+        ed.set_face_attribute("default", ":background", &ember_core::Value::Str("#2E3440".into()), ember_core::Background::Both);
+        let mut terminal = Terminal::new(TestBackend::new(20, 5)).unwrap();
+        layout_windows(&mut ed, 20, 5);
+        ed.redisplay();
+        let fd = describe(&ed);
+        terminal.draw(|frame| draw(frame, &fd)).unwrap();
+        // An empty cell past the text, below it too.
+        assert_eq!(terminal.backend().buffer()[(15, 1)].bg, Color::Rgb(0x2E, 0x34, 0x40));
     }
 
     #[test]

@@ -44,6 +44,9 @@ pub struct FrameDescription {
     pub echo: Echo,
     /// The tab bar along its top, if it shows one, as the mode line is drawn.
     pub tab_bar: Option<Vec<(ModeLineSegment, Style)>>,
+    /// The faces of the parts a front end draws in its own look, where a
+    /// theme has given them colours of their own.
+    pub chrome: Chrome,
     /// The `default` face, which text without faces of its own shows in.
     pub default_style: Style,
     /// Fringe bitmaps `define-fringe-bitmap` defined, by name, for drawing
@@ -51,6 +54,21 @@ pub struct FrameDescription {
     pub fringe_bitmaps: HashMap<String, FringeBitmap>,
     /// Each image's pixels, by its id, for the images the windows show.
     pub images: HashMap<u64, Option<Arc<Rgba>>>,
+}
+
+/// The styles of the faces a front end draws its own parts in, such as
+/// `mode-line`, each only if the face has a background of its own, as a
+/// theme gives one; without, the front end draws the part in its own look.
+#[derive(Clone, Debug, Default)]
+pub struct Chrome {
+    pub mode_line: Option<Style>,
+    pub mode_line_inactive: Option<Style>,
+    pub header_line: Option<Style>,
+    pub tab_bar: Option<Style>,
+    pub tab_bar_tab: Option<Style>,
+    pub tab_bar_tab_inactive: Option<Style>,
+    /// The `cursor` face, whose background is the cursor's colour.
+    pub cursor: Option<Style>,
 }
 
 /// What the echo area shows.
@@ -241,6 +259,18 @@ impl Editor {
             minibuffer_selected: self.minibuffer_window_selected(),
             windows,
             echo,
+            chrome: {
+                let themed = |name: &str| self.face_attrs(name, dark).background.is_some().then(|| style(&[name]));
+                Chrome {
+                    mode_line: themed("mode-line"),
+                    mode_line_inactive: themed("mode-line-inactive"),
+                    header_line: themed("header-line"),
+                    tab_bar: themed("tab-bar"),
+                    tab_bar_tab: themed("tab-bar-tab"),
+                    tab_bar_tab_inactive: themed("tab-bar-tab-inactive"),
+                    cursor: themed("cursor"),
+                }
+            },
             tab_bar: (self.tab_bar_lines(frame) > 0)
                 .then(|| self.tab_bar(frame).unwrap_or(&[]).iter().map(|s| (s.clone(), self.style_for(&s.faces, dark))).collect()),
             default_style: style(&["default"]),

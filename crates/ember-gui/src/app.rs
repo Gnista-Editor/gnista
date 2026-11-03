@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 
 use ember_core::display::{Glyph, cursor_glyph};
 use ember_core::driver::{Driver, Input as DriverInput};
-use ember_core::frame_description::{Echo, FrameDescription, RowDescription, WindowDescription};
+use ember_core::frame_description::{Chrome, Echo, FrameDescription, RowDescription, WindowDescription};
 use ember_core::layout::FontSpec;
 use ember_core::{Editor, FrameId, Key, ModeLineSegment, Row, Style, WindowId};
 use egui::text::{CCursor, LayoutJob, TextFormat};
@@ -466,6 +466,8 @@ impl EmberApp {
                 None => return,
             },
         };
+        // A theme's colours, where its faces give them.
+        let t = t.themed(&description);
         // The view moved some other way than by the wheel, as by C-v or
         // switching buffers: no offset.
         if frame_selected {
@@ -858,7 +860,7 @@ fn draw(ui: &Ui, fd: &FrameDescription, layout: &Layout, t: Tokens, focused: boo
     let m = &layout.m;
     let in_minibuffer = fd.minibuffer_selected;
     if let (Some(rect), Some(tab_bar)) = (layout.tab_rect, &fd.tab_bar) {
-        draw_tab_bar(&painter, tab_bar, rect, m, t);
+        draw_tab_bar(&painter, tab_bar, rect, m, t, &fd.chrome);
     }
     for window in &fd.windows {
         let Some(w) = layout.windows.iter().find(|w| w.id == window.id) else { continue };
@@ -875,9 +877,9 @@ fn draw(ui: &Ui, fd: &FrameDescription, layout: &Layout, t: Tokens, focused: boo
         let offset = if window.id == scroll.0 { scroll.1 } else { 0.0 };
         let view = View { area: w.text_rect, clip, scroll_offset: offset, margins: w.margins, fringes: w.fringes };
         draw_buffer(&painter, fd, window, &view, m, t, cursor);
-        draw_mode_line(&painter, window, w.mode_rect, m, t);
+        draw_mode_line(&painter, window, w.mode_rect, m, t, &fd.chrome);
         if let Some(header) = w.header_rect {
-            draw_header_line(&painter, window, header, m, t);
+            draw_header_line(&painter, window, header, m, t, &fd.chrome);
         }
         if w.divider {
             painter.vline(w.rect.right() - 0.5, w.rect.y_range(), Stroke::new(1.0, t.line));
@@ -1401,7 +1403,7 @@ fn draw_cursor(
     let rect = Rect::from_min_size(pos, vec2(width, height));
     match style {
         CursorStyle::Filled => {
-            painter.rect_filled(rect, 0.0, t.ink);
+            painter.rect_filled(rect, 0.0, t.cursor);
             if let Some(c) = under {
                 let id = if font.scale == 1.0 && !font.proportional() { m.font.clone() } else { font_id(font) };
                 let glyph = painter.layout_no_wrap(c.to_string(), id, t.bg);
@@ -1410,7 +1412,7 @@ fn draw_cursor(
             }
         }
         CursorStyle::Hollow => {
-            painter.rect_stroke(rect, 0.0, Stroke::new(1.0, t.ink), StrokeKind::Inside);
+            painter.rect_stroke(rect, 0.0, Stroke::new(1.0, t.cursor), StrokeKind::Inside);
         }
     }
 }
@@ -1421,7 +1423,14 @@ fn text_format(m: &Metrics, color: Color32) -> TextFormat {
     TextFormat { font_id: m.font.clone(), color, expand_bg: 0.0, ..Default::default() }
 }
 
-fn draw_mode_line(painter: &Painter, window: &WindowDescription, rect: Rect, m: &Metrics, t: Tokens) {
+fn draw_mode_line(painter: &Painter, window: &WindowDescription, rect: Rect, m: &Metrics, t: Tokens, chrome: &Chrome) {
+    // A theme's mode-line faces, where it gives them colours.
+    let themed = if window.selected { chrome.mode_line.as_ref() } else { chrome.mode_line_inactive.as_ref() };
+    if let Some(style) = themed {
+        painter.rect_filled(rect, 0.0, style.background.map_or(t.sunken, color32));
+        draw_bar_text(painter, &window.mode_line, rect, m, t, style);
+        return;
+    }
     // The selected window's mode line is a well; the others' sit on the page,
     // as Emacs's mode-line-inactive face is plainer.
     painter.rect_filled(rect, 0.0, if window.selected { t.sunken } else { t.bg });
@@ -1446,10 +1455,42 @@ fn draw_mode_line(painter: &Painter, window: &WindowDescription, rect: Rect, m: 
     painter.with_clip_rect(rect).galley(pos2(rect.left() + PAD_X, y), galley, t.ink);
 }
 
+/// Draws a bar's segments, a mode line's or a header line's, in a theme's
+/// face for it: segments in no face of their own in its foreground.
+fn draw_bar_text(painter: &Painter, segments: &[(ModeLineSegment, Style)], rect: Rect, m: &Metrics, t: Tokens, bar: &Style) {
+    let mut job = LayoutJob::default();
+    let (fg, bg) = (bar.foreground.map_or(t.ink, color32), bar.background.map_or(t.bg, color32));
+    for (segment, style) in segments {
+        let format = if segment.faces.is_empty() {
+            text_format(m, fg)
+        } else if segment.faces.last().map(String::as_str) == Some("shadow") {
+            // Quieter than the bar's text, but never the bar's own colour, as
+            // a theme's shadow face can be.
+            text_format(m, fg.lerp_to_gamma(bg, 0.45))
+        } else {
+            let mut f = face_format(style, bar, m, t);
+            // The bar's own background shows through.
+            if style.background == bar.background {
+                f.background = Color32::TRANSPARENT;
+            }
+            f
+        };
+        job.append(&segment.text, 0.0, format);
+    }
+    let galley = painter.layout_job(job);
+    let y = rect.center().y - galley.size().y / 2.0;
+    painter.with_clip_rect(rect).galley(pos2(rect.left() + PAD_X, y), galley, t.ink);
+}
+
 /// Draws a frame's tab bar, as the core formatted its `tab-bar-line`: a bar
 /// like the header line's, the current tab a well in strong ink, the others
 /// in muted ink, as tab-bar-tab and tab-bar-tab-inactive set them apart.
-fn draw_tab_bar(painter: &Painter, tab_bar: &[(ModeLineSegment, Style)], rect: Rect, m: &Metrics, t: Tokens) {
+fn draw_tab_bar(painter: &Painter, tab_bar: &[(ModeLineSegment, Style)], rect: Rect, m: &Metrics, t: Tokens, chrome: &Chrome) {
+    if let Some(style) = &chrome.tab_bar {
+        painter.rect_filled(rect, 0.0, style.background.map_or(t.bg, color32));
+        draw_bar_text(painter, tab_bar, rect, m, t, style);
+        return;
+    }
     painter.rect_filled(rect, 0.0, t.bg);
     painter.hline(rect.x_range(), rect.bottom() - 0.5, Stroke::new(1.0, t.line));
     let default_style = Style::default();
@@ -1475,7 +1516,12 @@ fn draw_tab_bar(painter: &Painter, tab_bar: &[(ModeLineSegment, Style)], rect: R
 /// Draws a window's header line, as the core formatted `header-line-format`:
 /// a bar like the mode line's, with a hairline under it, its text in the
 /// mode line's muted ink and bold faces strong.
-fn draw_header_line(painter: &Painter, window: &WindowDescription, rect: Rect, m: &Metrics, t: Tokens) {
+fn draw_header_line(painter: &Painter, window: &WindowDescription, rect: Rect, m: &Metrics, t: Tokens, chrome: &Chrome) {
+    if let Some(style) = &chrome.header_line {
+        painter.rect_filled(rect, 0.0, style.background.map_or(t.sunken, color32));
+        draw_bar_text(painter, window.header_line.as_deref().unwrap_or(&[]), rect, m, t, style);
+        return;
+    }
     painter.rect_filled(rect, 0.0, t.sunken);
     painter.hline(rect.x_range(), rect.bottom() - 0.5, Stroke::new(1.0, t.line));
     let default_style = Style::default();

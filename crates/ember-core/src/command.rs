@@ -207,7 +207,7 @@ impl std::fmt::Display for Arg {
 impl Arg {
     /// An argument of a kind from text, as the MCP server and the agent
     /// pass them: keys in Emacs notation, numbers in digits, and a prefix
-    /// argument as nothing, "-", a number, or C-u or (4).
+    /// argument as nothing, "-", a number, or C-u, (4) or true.
     pub fn from_text(kind: ParamKind, text: &str) -> Result<Arg> {
         use crate::prefix::PrefixArg;
         let number = |text: &str| text.trim().parse::<i64>().map_err(|_| Error::signal("wrong-type-argument", format!("Not a number: {text:?}"), Vec::new()));
@@ -219,9 +219,10 @@ impl Arg {
                 Arg::Int(number(text)?)
             }
             ParamKind::Prefix => Arg::Prefix(match text.trim() {
-                "" | "nil" => None,
+                "" | "nil" | "false" => None,
                 "-" => Some(PrefixArg::Minus),
-                "C-u" => Some(PrefixArg::Universal(4)),
+                // Any other non-nil value, as Lisp passes t for an optional flag.
+                "C-u" | "t" | "true" => Some(PrefixArg::Universal(4)),
                 t if t.starts_with('(') && t.ends_with(')') => Some(PrefixArg::Universal(number(&t[1..t.len() - 1])?)),
                 t => Some(PrefixArg::Number(number(t)?)),
             }),

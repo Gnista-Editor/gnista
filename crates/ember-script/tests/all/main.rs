@@ -54,6 +54,7 @@ mod symbols;
 mod tab_bar;
 mod tabulated_list;
 mod textprop;
+mod themes;
 mod treesit;
 mod undo_list;
 mod view;

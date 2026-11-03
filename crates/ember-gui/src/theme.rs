@@ -39,6 +39,8 @@ pub struct Tokens {
     /// The active region: the brand blue, translucent so text stays readable.
     pub selection: Color32,
     pub bad: Color32,
+    /// The cursor, ink unless a theme's `cursor` face says otherwise.
+    pub cursor: Color32,
 }
 
 /// A core colour as egui's.
@@ -64,7 +66,36 @@ impl Tokens {
             accent_ink: named("accent-ink"),
             selection: named("selection"),
             bad: named("bad"),
+            cursor: named("ink"),
         }
+    }
+
+    /// The tokens a frame's faces make, where a theme has given them
+    /// colours: the `default` face's for the page and its text, with the
+    /// quieter inks mixed between them, and the `cursor` face's for the
+    /// cursor. Without a theme, these tokens as they are.
+    pub fn themed(self, fd: &ember_core::frame_description::FrameDescription) -> Tokens {
+        let mut t = self;
+        if let (Some(bg), Some(fg)) = (fd.default_style.background, fd.default_style.foreground) {
+            let (bg, fg) = (color32(bg), color32(fg));
+            let mix = |k: f32| Color32::from_rgb(
+                (fg.r() as f32 * (1.0 - k) + bg.r() as f32 * k) as u8,
+                (fg.g() as f32 * (1.0 - k) + bg.g() as f32 * k) as u8,
+                (fg.b() as f32 * (1.0 - k) + bg.b() as f32 * k) as u8,
+            );
+            t.bg = bg;
+            t.ink = fg;
+            t.ink_strong = fg;
+            t.muted = mix(0.3);
+            t.faint = mix(0.55);
+            t.line = mix(0.85);
+            t.sunken = fd.chrome.mode_line.as_ref().and_then(|s| s.background).map_or(mix(0.9), color32);
+            t.cursor = fg;
+        }
+        if let Some(c) = fd.chrome.cursor.as_ref().and_then(|s| s.background) {
+            t.cursor = color32(c);
+        }
+        t
     }
 
     /// The tokens for the context's theme, which follows the system by default.

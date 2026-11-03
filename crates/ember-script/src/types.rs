@@ -1838,7 +1838,8 @@ pub fn type_definitions(ed: &Editor) -> String {
                 use ember_core::ParamKind::*;
                 let ty = match p.kind {
                     Number | Count | Point | Mark | RegionBeginning | RegionEnd => "number",
-                    Prefix => "PrefixArg",
+                    // true for a flag, as Lisp passes t: C-u.
+                    Prefix => "PrefixArg | boolean",
                     _ => "string",
                 };
                 let optional = if p.kind.optional() { "?" } else { "" };

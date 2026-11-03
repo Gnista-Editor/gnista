@@ -33,7 +33,17 @@ pub fn setup_with(
     load_init: bool,
     extensions: impl FnOnce(&mut Editor, &Scripting) -> ember_core::Result<()>,
 ) -> Option<Scripting> {
-    let dir = config_dir();
+    setup_in(ed, &config_dir(), load_init, extensions)
+}
+
+/// As [`setup_with`], with the configuration in `dir`.
+pub fn setup_in(
+    ed: &mut Editor,
+    dir: &Path,
+    load_init: bool,
+    extensions: impl FnOnce(&mut Editor, &Scripting) -> ember_core::Result<()>,
+) -> Option<Scripting> {
+    let dir = dir.to_path_buf();
     let scripting = match Scripting::start(ed) {
         Ok((scripting, failures)) => {
             for e in failures {
@@ -116,6 +126,18 @@ pub fn write_type_files(ed: &Editor, dir: &Path) -> io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn init_requires_packages_from_the_config_directory() {
+        // As a user's own package, outside Ember: found in packages/, along load-path.
+        let dir = tempfile::tempdir().unwrap();
+        fs::create_dir(dir.path().join("packages")).unwrap();
+        fs::write(dir.path().join("packages/my-own.ts"), "import { truthy } from \"subr\";\nember.setVariable(\"my-own-loaded\", truthy(1));\n").unwrap();
+        fs::write(dir.path().join("init.ts"), "ember.require(\"my-own\");\n").unwrap();
+        let mut ed = Editor::new();
+        let _scripting = setup_in(&mut ed, dir.path(), true, |_, _| Ok(())).unwrap();
+        assert_eq!(ed.variable("my-own-loaded"), Some(ember_core::Value::Bool(true)));
+    }
 
     #[test]
     fn loads_init_and_writes_type_files() {

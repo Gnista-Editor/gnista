@@ -67,6 +67,7 @@ What works today, in a terminal (`ember`) or a window (`ember-gui`). Where it di
 - Splitting the frame's root window (`C-x w 2`, `C-x w 3`).
 - Ember.app opened from Finder takes its PATH from the login shell, as exec-path-from-shell gives Emacs.app.
 - Language servers (`M-x eglot`, `eglot-ensure`: definitions on `M-.`, references on `M-?`, back with `M-,`, completion on `C-M-i`, diagnostics underlined with `flymake-goto-next-error`, what point is on after a pause, `eglot-rename`, `eglot-format-buffer`, `eglot-code-actions`), and `xref-backend-functions` and `completion-at-point-functions` for other packages.
+- Themes (`load-theme`, `enable-theme`, `disable-theme`, `custom-enabled-themes`): a theme is a package, NAME-theme, along `load-path`; both front ends draw in its colours, the GUI's mode line, header line, tab bar and cursor too. `examples/packages/nord-theme.ts` is Nord, as a package that does not ship.
 - Indirect buffers (`C-x 4 c`, and Org's `C-c C-x b` for a subtree).
 - Fields (C-a and the word commands stop at a prompt's edge).
 - Tree-sitter highlighting (`rust-ts-mode`, `js-ts-mode`, `json-ts-mode`, `python-ts-mode`, and `go-ts-mode` with a grammar library), loading the grammars Emacs builds (`libtree-sitter-LANG.dylib` along `treesit-extra-load-path` or in `~/.config/ember/tree-sitter`), and modes' `treesit-font-lock-rules` by `treesit-font-lock-level`.
