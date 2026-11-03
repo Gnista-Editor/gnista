@@ -16,12 +16,17 @@ struct Case {
     name: String,
     #[serde(default)]
     vars: serde_json::Map<String, serde_json::Value>,
+    #[serde(default)]
     collection: Vec<String>,
     #[serde(default)]
     require_match: bool,
     #[serde(default)]
     history: Vec<String>,
     default: Option<String>,
+    #[serde(default)]
+    reader: Option<String>,
+    #[serde(default)]
+    files: Vec<String>,
     keys: Vec<String>,
 }
 
@@ -53,20 +58,42 @@ fn run(case: &Case) -> Vec<Step> {
         .iter()
         .map(|(k, v)| format!("ember.setVariable({k:?}, {v});"))
         .collect();
+    // A file prompt reads in a directory of its own, holding the case's files.
+    let files_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/completion-files");
+    let _ = std::fs::create_dir_all(&files_root);
+    let files_root = format!("{}/", files_root.canonicalize().unwrap().display());
+    let dir = format!("{files_root}{}/", case.name);
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    for f in &case.files {
+        let path = Path::new(&dir).join(f);
+        if f.ends_with('/') {
+            std::fs::create_dir_all(&path).unwrap();
+        } else {
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(&path, "").unwrap();
+        }
+    }
+    let read = if case.reader.as_deref() == Some("file") {
+        format!("ember.readFileName(\"File: \", {{ dir: {dir:?} }})")
+    } else {
+        format!(
+            "ember.completingRead(\"Pick: \", {}, {{ requireMatch: {}, history: \"cr-history\"{} }})",
+            serde_json::to_string(&case.collection).unwrap(),
+            case.require_match,
+            case.default.as_ref().map_or(String::new(), |d| format!(", default: {d:?}"))
+        )
+    };
     let source = format!(
         r#"ember.require("vertico"); ember.require("orderless");
         ember.defineVariable({{ name: "cr-answer", value: null }});
         ember.defineVariable({{ name: "cr-history", value: {history} }});
         {vars}
         ember.call("vertico-mode");
-        ember.defineCommand({{ name: "cr-read", run: () => ember.setVariable("cr-answer",
-          ember.completingRead("Pick: ", {collection}, {{ requireMatch: {require_match}, history: "cr-history"{default} }})) }});
+        ember.defineCommand({{ name: "cr-read", run: () => ember.setVariable("cr-answer", {read}) }});
         ember.bindKey("<f5>", "cr-read");"#,
         history = serde_json::to_string(&case.history).unwrap(),
         vars = vars.join("\n"),
-        collection = serde_json::to_string(&case.collection).unwrap(),
-        require_match = case.require_match,
-        default = case.default.as_ref().map_or(String::new(), |d| format!(", default: {d:?}")),
     );
     d.eval(&source);
     let mut states = Vec::new();
@@ -76,11 +103,13 @@ fn run(case: &Case) -> Vec<Step> {
             let answer = ed.variable("cr-answer").and_then(|v| v.as_str().map(str::to_string));
             (ed.prompt().is_some(), answer, ed.minibuffer_input(), ed.minibuffer_strings())
         });
+        let short = ember_core::abbreviate_dir(Path::new(&files_root));
+        let without_dir = |t: &str| t.replace(&files_root, "DIR/").replace(&short, "DIR/");
         if !open {
-            states.push(Step::Exited { exited: true, answer });
+            states.push(Step::Exited { exited: true, answer: answer.as_deref().map(without_dir) });
             break;
         }
-        states.push(Step::Open { input, before, after });
+        states.push(Step::Open { input: without_dir(&input), before, after: without_dir(&after) });
     }
     states
 }

@@ -487,6 +487,128 @@
           "answer": "README"
         }
       ]
+    },
+    {
+      "name": "file-partial",
+      "states": [
+        {
+          "input": "DIR/file-partial/",
+          "before": "*/4    ",
+          "after": " \nbeta/\nalps.org\nalpha.txt\nnotes.org\n"
+        },
+        {
+          "input": "DIR/file-partial/a",
+          "before": "1/2    ",
+          "after": " \nalps.org\nalpha.txt\n"
+        },
+        {
+          "input": "DIR/file-partial/al",
+          "before": "1/2    ",
+          "after": " \nalps.org\nalpha.txt\n"
+        },
+        {
+          "input": "DIR/file-partial/alps.org",
+          "before": "1/1    ",
+          "after": " \nalps.org\n"
+        },
+        {
+          "input": "DIR/file-partial/alps.or",
+          "before": "1/1    ",
+          "after": " \nalps.org\n"
+        },
+        {
+          "input": "DIR/file-partial/alps.o",
+          "before": "1/1    ",
+          "after": " \nalps.org\n"
+        },
+        {
+          "input": "DIR/file-partial/alps.ob",
+          "before": "*/0    ",
+          "after": " "
+        },
+        {
+          "input": "DIR/file-partial/alps.ob",
+          "before": "*/0    ",
+          "after": " "
+        },
+        {
+          "input": "DIR/file-partial/alps.obi",
+          "before": "*/0    ",
+          "after": " "
+        },
+        {
+          "exited": true,
+          "answer": "DIR/file-partial/alps.obi"
+        }
+      ]
+    },
+    {
+      "name": "file-directory-preselect",
+      "states": [
+        {
+          "input": "DIR/file-directory-preselect/",
+          "before": "*/2    ",
+          "after": " \nsrc/\nREADME\n"
+        },
+        {
+          "input": "DIR/file-directory-preselect/s",
+          "before": "1/1    ",
+          "after": " \nsrc/\n"
+        },
+        {
+          "input": "DIR/file-directory-preselect/sr",
+          "before": "1/1    ",
+          "after": " \nsrc/\n"
+        },
+        {
+          "input": "DIR/file-directory-preselect/src",
+          "before": "1/1    ",
+          "after": " \nsrc/\n"
+        },
+        {
+          "input": "DIR/file-directory-preselect/src/",
+          "before": "*/2    ",
+          "after": " \nlib.rs\nmain.rs\n"
+        },
+        {
+          "input": "DIR/file-directory-preselect/src/",
+          "before": "1/2    ",
+          "after": " \nlib.rs\nmain.rs\n"
+        },
+        {
+          "exited": true,
+          "answer": "DIR/file-directory-preselect/src/lib.rs"
+        }
+      ]
+    },
+    {
+      "name": "file-orderless",
+      "states": [
+        {
+          "input": "DIR/file-orderless/",
+          "before": "*/4    ",
+          "after": " \nbeta/\nalps.org\nalpha.txt\nnotes.org\n"
+        },
+        {
+          "input": "DIR/file-orderless/o",
+          "before": "1/2    ",
+          "after": " \nalps.org\nnotes.org\n"
+        },
+        {
+          "input": "DIR/file-orderless/or",
+          "before": "1/2    ",
+          "after": " \nalps.org\nnotes.org\n"
+        },
+        {
+          "input": "DIR/file-orderless/org",
+          "before": "1/2    ",
+          "after": " \nalps.org\nnotes.org\n"
+        },
+        {
+          "exited": true,
+          "answer": "DIR/file-orderless/alps.org"
+        }
+      ]
     }
   ]
 }

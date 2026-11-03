@@ -33,12 +33,18 @@
 (defvar cr-reader nil)
 (defvar cr-history nil)
 
+(defun cr-without-dir (text)
+  (if (and text (stringp text))
+      (replace-regexp-in-string (regexp-quote (abbreviate-file-name cr-files-dir)) "DIR/"
+                                (replace-regexp-in-string (regexp-quote cr-files-dir) "DIR/" text t t) t t)
+    text))
+
 (defun cr-state ()
   (let ((mb (active-minibuffer-window)))
     (if (not mb)
-        `((exited . t) (answer . ,cr-answer))
+        `((exited . t) (answer . ,(cr-without-dir cr-answer)))
       (with-current-buffer (window-buffer mb)
-        `((input . ,(minibuffer-contents-no-properties))
+        `((input . ,(cr-without-dir (minibuffer-contents-no-properties)))
           (before . ,(or (and (overlayp vertico--count-ov) (overlay-get vertico--count-ov 'before-string)
                               (substring-no-properties (overlay-get vertico--count-ov 'before-string)))
                          ""))
@@ -51,12 +57,31 @@
     (completion-styles . (basic partial-completion emacs22)) (completion-category-defaults . ,completion-category-defaults)
     (completion-category-overrides . nil) (marginalia-mode . nil)))
 
+(defvar cr-files-dir (expand-file-name "../../../target/completion-files/" cr-dir))
+
+(defun cr-make-files (case)
+  "Make the files of CASE in a directory of its own, and return it."
+  (let ((dir (file-name-as-directory (expand-file-name (alist-get 'name case) cr-files-dir))))
+    (when (file-exists-p dir) (delete-directory dir t))
+    (make-directory dir t)
+    (dolist (file (append (alist-get 'files case) nil))
+      (let ((path (expand-file-name file dir)))
+        (if (string-suffix-p "/" file)
+            (make-directory path t)
+          (make-directory (file-name-directory path) t)
+          (write-region "" nil path nil 'silent))))
+    dir))
+
+(defun cr-to-lisp (v)
+  "V, a JSON array of strings and arrays, as a list of symbols and lists."
+  (if (vectorp v) (mapcar #'cr-to-lisp (append v nil)) (if (stringp v) (intern v) v)))
+
 (defun cr-setup (case)
   (dolist (v cr-defaults) (set (car v) (cdr v)))
   (marginalia-mode -1)
   (dolist (v (alist-get 'vars case))
     (let ((value (cdr v)))
-      (set (car v) (cond ((vectorp value) (mapcar #'intern (append value nil)))
+      (set (car v) (cond ((vectorp value) (cr-to-lisp value))
                          ((eq value :json-false) nil)
                          ((and (stringp value) (memq (car v) '(vertico-preselect))) (intern value))
                          (t value)))))
@@ -68,7 +93,10 @@
         (require-match (eq (alist-get 'require_match case) t))
         (default (alist-get 'default case)))
     (setq cr-reader
-          (lambda () (setq cr-answer (completing-read "Pick: " collection nil require-match nil 'cr-history default))))))
+          (if (equal (alist-get 'reader case) "file")
+              (let ((dir (cr-make-files case)))
+                (lambda () (setq cr-answer (read-file-name "File: " dir))))
+            (lambda () (setq cr-answer (completing-read "Pick: " collection nil require-match nil 'cr-history default)))))))
 
 (global-set-key (kbd "<f5>") (lambda () (interactive) (funcall cr-reader)))
 
