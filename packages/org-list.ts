@@ -1359,7 +1359,7 @@ export function entryPut(headingLine: number, property: string, value: string): 
 }
 
 /** A property's value in a heading's property drawer, as org-entry-get reads it, ignoring case. */
-function entryGet(headingLine: number, property: string): string | undefined {
+export function entryGet(headingLine: number, property: string): string | undefined {
   let line = headingLine + 1;
   if (line < ember.lineCount() && PLANNING.test(ember.lineText(line))) line++;
   const close = propertyDrawerEnd(line);

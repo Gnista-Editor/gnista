@@ -45,6 +45,7 @@ mod minibuffer;
 mod modes;
 mod mouse;
 mod org;
+mod org_roam;
 mod parens;
 mod persistent_scratch;
 mod processes;

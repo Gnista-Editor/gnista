@@ -124,7 +124,7 @@ export interface ReadOptions {
   initial?: string;
   history?: string;
   /** The narrowing keys, as [key, name] pairs, and the predicate that says whether a candidate shows when narrowed. */
-  narrow?: { keys: [string, string][]; predicate: (cand: string, key: string) => boolean };
+  narrow?: { keys: [string, string][]; predicate: (cand: string, key: string) => boolean; visible?: (cand: string) => boolean };
   keymap?: string | ember.Keymap;
   /** The command, for consult-customize. */
   command?: string;
@@ -142,7 +142,10 @@ ember.defineKeymap("consult-narrow-map");
 /** Whether a candidate shows, as narrowed. */
 function narrowed(options: ReadOptions, cand: string): boolean {
   const n = narrowing.get(ember.minibufferDepth());
-  return !n?.key || !options.narrow || options.narrow.predicate(cand, n.key);
+  if (!options.narrow) return true;
+  // Widened, a hidden source's candidates stay out, as consult--multi hides them.
+  if (!n?.key) return options.narrow.visible?.(cand) ?? true;
+  return options.narrow.predicate(cand, n.key);
 }
 
 /** Narrows to KEY, or widens with none, as consult-narrow: the prompt says what it is narrowed to. */
@@ -795,7 +798,7 @@ export function consultMulti(sourceNames: string[], options: { prompt: string; h
     history: options.history,
     sort: false,
     category: "multi-category",
-    narrow: { keys, predicate: (c, k) => visible(c, k) },
+    narrow: { keys, predicate: (c, k) => visible(c, k), visible: (c) => visible(c, undefined) },
     group: (c, transform) => (transform ? c : (items.get(c)?.source.name ?? "")),
     annotate: (c) => {
       const entry = items.get(c);
@@ -1173,24 +1176,28 @@ function searchDirectory(arg: ember.Value): string {
   return projectRoot() ?? String(ember.variable("default-directory"));
 }
 
+/** Searches DIR with ripgrep as you type, as consult-ripgrep with a directory. */
+export function consultRipgrep(dir: string, initial?: string): void {
+  consultGrep(`Ripgrep (${ember.abbreviateFileName(dir)}): `, (search) => [...splitArgs(String(ember.variable("consult-ripgrep-args"))), "-e", search, "."], dir, initial);
+}
+
+/** Searches DIR with grep as you type, as consult-grep with a directory. */
+export function consultGrepDir(dir: string, initial?: string): void {
+  consultGrep(`Grep (${ember.abbreviateFileName(dir)}): `, (search) => [...splitArgs(String(ember.variable("consult-grep-args"))), "-e", search, "."], dir, initial);
+}
+
 ember.defineCommand({
   name: "consult-ripgrep",
   doc: "Search the project's files with ripgrep as you type, previewing each match; #search#filter filters the matches. A prefix argument asks for the directory.",
   params: [{ name: "dir", kind: "prefix" }],
-  run: (arg: ember.Value) => {
-    const dir = searchDirectory(arg);
-    consultGrep(`Ripgrep (${ember.abbreviateFileName(dir)}): `, (search) => [...splitArgs(String(ember.variable("consult-ripgrep-args"))), "-e", search, "."], dir);
-  },
+  run: (arg: ember.Value) => consultRipgrep(searchDirectory(arg)),
 });
 
 ember.defineCommand({
   name: "consult-grep",
   doc: "Search the project's files with grep as you type, previewing each match; #search#filter filters the matches. A prefix argument asks for the directory.",
   params: [{ name: "dir", kind: "prefix" }],
-  run: (arg: ember.Value) => {
-    const dir = searchDirectory(arg);
-    consultGrep(`Grep (${ember.abbreviateFileName(dir)}): `, (search) => [...splitArgs(String(ember.variable("consult-grep-args"))), "-e", search, "."], dir);
-  },
+  run: (arg: ember.Value) => consultGrepDir(searchDirectory(arg)),
 });
 
 ember.defineCommand({

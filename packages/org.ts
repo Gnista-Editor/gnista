@@ -3963,8 +3963,25 @@ ember.addHook("imenu-after-jump-hook", () => {
   if (ember.derivedModeP("org-mode")) showAncestors(ember.point());
 });
 
+/** What a link type does, as org-link-set-parameters keeps it: following it. */
+export interface LinkParameters {
+  follow: (path: string) => void;
+}
+const linkTypes = new Map<string, LinkParameters>();
+
+/** Says how links of TYPE are followed, as org-link-set-parameters: id: links, as org-id.ts does, or a package's own. */
+export function linkSetParameters(type: string, parameters: LinkParameters): void {
+  linkTypes.set(type, parameters);
+}
+
 function openLink(link: Link): void {
   const path = link.path;
+  const type = /^([a-z][a-z0-9+.-]*):(.*)$/is.exec(path);
+  const handler = type ? linkTypes.get(type[1].toLowerCase()) : undefined;
+  if (type && handler) {
+    handler.follow(type[2]);
+    return;
+  }
   const file = /^file:(.*)$/.exec(path)?.[1] ?? (/^(?:\/|~\/|\.\.?\/)/.test(path) ? path : undefined);
   if (file !== undefined) {
     const [name, search] = file.split("::");
