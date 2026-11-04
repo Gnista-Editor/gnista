@@ -142,3 +142,29 @@ fn vertico_and_orderless_show_what_emacs_shows() {
     }
     assert!(failures.is_empty(), "{} cases differ from Emacs:\n{}", failures.len(), failures.join("\n"));
 }
+
+/// The minibuffer grows past a quarter of the frame for vertico-count
+/// lines, as vertico sets max-mini-window-height there, so the selected
+/// candidate stays in sight as the arrow keys move down the list.
+#[test]
+fn the_minibuffer_grows_to_show_vertico_count_lines() {
+    let d = Driven::new("");
+    d.with(|ed| {
+        ed.set_frame_size(80, 28);
+        ed.set_variable("load-path", Value::List(vec![Value::Str(EXAMPLES.into())]));
+    });
+    d.eval(
+        r#"ember.require("vertico"); ember.setVariable("vertico-count", 12); ember.call("vertico-mode");
+        ember.defineCommand({ name: "cr-read", run: () => ember.completingRead("Pick: ", Array.from({ length: 20 }, (_, i) => `c${i + 1}`)) });
+        ember.bindKey("<f5>", "cr-read");"#,
+    );
+    d.press("<f5>");
+    d.press("<down> <down> <down> <down> <down> <down> <down> <down>");
+    // A quarter of the 30 lines would be 7: the prompt and six candidates.
+    let (lines, after) = d.with(|ed| (ed.mini_window_height(30), ed.minibuffer_strings().1));
+    assert_eq!(lines, 13, "{after:?}");
+    assert!(after.contains("c8"), "{after:?}");
+    // The window's own buffer keeps the quarter once the prompt is gone.
+    d.press("C-g");
+    assert_eq!(d.with(|ed| ed.max_mini_window_lines(30)), 7);
+}

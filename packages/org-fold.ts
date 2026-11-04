@@ -194,6 +194,12 @@ export function showEmptyLines(state: string, narrowed?: [number, number]): void
   if (eoh < size && /^[ \t\n]+$/.test(ember.bufferText(eoh, size))) flag(eoh, size, false);
 }
 
+/** Whether any of the text from `start` to `end` is folded. */
+function anyFolded(start: number, end: number): boolean {
+  for (let p = start; p < end; p++) if (folded(p)) return true;
+  return false;
+}
+
 /** Where the text hidden from the line after `line` ends, as org-cycle-internal-local finds it. */
 export function endOfHidden(line: number): number {
   const size = ember.bufferSize();
@@ -230,7 +236,11 @@ export function cycleHeading(all: Heading[], i: number, at = i): void {
     showFollowing();
     return;
   }
-  const hiddenInOneLine = eol >= eos || /^\s*$/.test(ember.bufferText(eol, eos));
+  // Org takes an entry of only blank lines for folded whether they show or
+  // not, so once shown TAB never folds it again; Ember folds it when none of
+  // it is hidden (docs/departures.md).
+  const shownBlank = !hasChildren && eol < eos && /^\s*$/.test(ember.bufferText(eoh, eos)) && !anyFolded(eoh, eos);
+  const hiddenInOneLine = !shownBlank && (eol >= eos || /^\s*$/.test(ember.bufferText(eol, eos)));
   if (hiddenInOneLine && !hasChildren) skipped = true;
   if (hiddenInOneLine && hasChildren) {
     showEntry(all, at);

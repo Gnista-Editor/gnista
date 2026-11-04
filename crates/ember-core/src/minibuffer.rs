@@ -15,6 +15,7 @@ use crate::completion;
 use crate::editor::{Editor, Prompt};
 use crate::error::{Error, Result};
 use crate::files::{abbreviate_dir, expand_file_name};
+use crate::buffer::Buffer;
 use crate::variables::Value;
 
 /// What a prompt opened partway through a command reads, and how.
@@ -699,6 +700,13 @@ impl Editor {
         self.minibuffer_width = Some(columns.max(1));
     }
 
+    /// The buffer whose values size the echo area: the minibuffer's while a
+    /// prompt is open, as a completion UI such as vertico sets
+    /// `max-mini-window-height` there, else the selected window's.
+    fn mini_window_buffer(&self) -> &Buffer {
+        if self.prompt.is_some() { self.minibuffer() } else { self.window_buffer() }
+    }
+
     /// The frame's height in lines with the echo area, as the front end
     /// last gave it to [`Editor::mini_window_height`].
     pub fn frame_lines(&self) -> usize {
@@ -706,11 +714,14 @@ impl Editor {
     }
 
     /// The most lines the minibuffer may take in a frame of `frame_lines`
-    /// lines, as `max-mini-window-height` says: a fraction of the frame, or
-    /// a number of lines.
+    /// lines, as `max-mini-window-height` says: a fraction of the frame, up
+    /// to 1, or a number of lines.
     pub fn max_mini_window_lines(&self, frame_lines: usize) -> usize {
-        let max = self.number_in(self.window_buffer(), "max-mini-window-height", 0.25);
-        let lines = if max < 1.0 { (max * frame_lines as f64).floor() } else { max.floor() };
+        let max = self.number_in(self.mini_window_buffer(), "max-mini-window-height", 0.25);
+        // Emacs takes a float as a fraction and an integer as lines; Ember's
+        // numbers cannot tell 1.0 from 1, so 1 is the whole frame, as
+        // vertico's 1.0 means it.
+        let lines = if max <= 1.0 { (max * frame_lines as f64).floor() } else { max.floor() };
         (lines as usize).max(1)
     }
 
@@ -764,9 +775,17 @@ impl Editor {
             self.echo_area_lines = limit(self, self.echo_lines().len().max(1));
             return self.echo_area_lines;
         }
-        let wanted = self.minibuffer_rows(true).len().max(1);
+        let rows = self.minibuffer_rows(true);
+        // An empty last line after an overlay string's newline, as ends
+        // vertico's last candidate, takes no line, as Emacs's
+        // resize_mini_window finds it has no height; one the input ends
+        // with holds the cursor, and does.
+        let empty_last = rows.len() > 1
+            && rows.last().is_some_and(|r| r.segments.iter().all(|s| s.text.is_empty()))
+            && rows[rows.len() - 2].segments.last().is_some_and(|s| s.string);
+        let wanted = (rows.len() - usize::from(empty_last)).max(1);
         let wanted = wanted.min(self.max_mini_window_lines(frame_lines)).min(frame_lines.saturating_sub(2).max(1));
-        let grow_only = !matches!(self.variable("resize-mini-windows"), Some(Value::Bool(true)));
+        let grow_only = !matches!(self.variable_in(self.mini_window_buffer(), "resize-mini-windows"), Some(Value::Bool(true)));
         self.mini_window_lines = if grow_only { self.mini_window_lines.max(wanted) } else { wanted };
         self.mini_window_lines
     }

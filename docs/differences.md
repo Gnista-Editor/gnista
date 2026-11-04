@@ -16,6 +16,7 @@ Each entry says whether the difference is **deliberate**, which keeps it, or **n
 
 ## Keys and the command loop
 
+- **`max-mini-window-height`** of 1 lets the minibuffer take the whole frame, as 1.0 does in Emacs, where an integer 1 means one line: Ember's numbers do not tell integers from floats, and vertico's 1.0 must mean the frame.
 - **`read-key-sequence` and ESC** (not yet): ESC then x reads as `M-x`, where Emacs's gives the two keys `ESC x`. `read-key` takes ESC alone, as Emacs does.
 - **Abbrevs** (not yet) are not saved to `abbrev_defs` between sessions, a mode's table does not inherit its parent mode's, and `list-abbrevs` shows only the tables that have been used, where Emacs shows every mode's ([ADR 0040](adr/0040-everyday-editing-commands.md)).
 - **`M-x diff`** (not yet) runs diff to the end before showing `*Diff*`, where Emacs shows its output as it comes, and diff-mode cannot apply, split or refine hunks ([ADR 0040](adr/0040-everyday-editing-commands.md)).
@@ -51,6 +52,7 @@ Each entry says whether the difference is **deliberate**, which keeps it, or **n
 - **Literal searches** (not yet) fold case by the standard case table, not by a buffer's own; regexp searches follow the buffer's.
 - **Case equivalence tables** (not yet): a case table's third extra slot is not worked out.
 - **Putting text properties** (not yet) records no undo, does not mark the buffer modified and runs no change hooks, as if Emacs's `with-silent-modifications` were around every call. Ember's packages fontify and fold this way, as Emacs's font-lock does inside that macro, so a package that relies on properties being undone does not work yet ([ADR 0034](adr/0034-buffer-and-text-property-primitives.md)).
+- **TAB on an entry of only blank lines** (deliberate) folds it again once it is shown, so TAB goes between folded and shown as for an entry with text. Org takes such an entry for folded whether it shows or not, so once TAB has shown it, it says `SUBTREE (NO CHILDREN)` each time and leaves it open; only `S-TAB` or `outline-hide-subtree` fold it. The oracle's `org-folding/blank-entry-*` cases record Org's way.
 - **`org-adapt-indentation`** (not yet) is not read: Org's indentation commands indent as if it were nil, so text under a heading is not indented to the heading's text.
 - **Indirect buffers** (not yet): Org's `org-indirect-buffer-display` frames are not titled after the heading, and `org-cycle-hook` is not run after `C-c C-x b` ([ADR 0034](adr/0034-buffer-and-text-property-primitives.md)).
 - **`buffer-undo-list`** (not yet) counts positions from 0, shows no `(MARKER . ADJUSTMENT)` entries and `(t . TIME)` as `[true]`; a list set from code loses which steps were undos and the markers deletions moved, though binding it to t and back loses nothing. Text property changes are recorded and modify the buffer, but run no change hooks and do not check for read-only text ([ADR 0034](adr/0034-buffer-and-text-property-primitives.md), [ADR 0043](adr/0043-the-undo-list-and-property-changes.md)).

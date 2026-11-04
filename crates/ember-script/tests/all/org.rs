@@ -136,6 +136,25 @@ fn editing_refontifies_what_follows() {
     assert_eq!(faces_at(&ed, find(&ed, "three")), ["org-quote"]);
 }
 
+/// An entry of only blank lines folds again once shown, where Org's TAB
+/// keeps showing it (docs/departures.md), and shows again after.
+#[test]
+fn tab_folds_an_entry_of_blank_lines_again() {
+    let (mut ed, _s) = org("#+STARTUP: content\n* Scratch\n** Privesc\n\n\n\n** ffuf\nf\n");
+    let at = find(&ed, "** Privesc");
+    ed.window_buffer_mut().set_point(at);
+    let folded = ["#+STARTUP: content", "* Scratch", "** Privesc...", "", "** ffuf..."];
+    assert_eq!(rows(&ed), folded);
+    ed.press("TAB").unwrap();
+    assert_eq!(ed.echo(), Some("SUBTREE (NO CHILDREN)"));
+    assert_eq!(rows(&ed), ["#+STARTUP: content", "* Scratch", "** Privesc", "", "", "", "** ffuf..."]);
+    ed.press("TAB").unwrap();
+    assert_eq!(ed.echo(), Some("FOLDED"));
+    assert_eq!(rows(&ed), folded);
+    ed.press("TAB").unwrap();
+    assert_eq!(ed.echo(), Some("SUBTREE (NO CHILDREN)"));
+}
+
 #[test]
 fn folded_headings_show_an_ellipsis() {
     let (mut ed, _s) = org("* One\nbody\n** Sub\ntext\n* Two\n");

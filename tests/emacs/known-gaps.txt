@@ -36,3 +36,9 @@ everyday-3/undo-only  # undo boundary after a failed command
 # list's first position entry and moves point to it, without an error, and
 # again; Ember's undo history has no such entries, so the second one fails.
 everyday-3/undo-only-chain  # position entries in buffer-undo-list
+
+# Deliberate (docs/departures.md): Org's TAB keeps showing an entry of only
+# blank lines once it is shown; Ember's folds it again.
+org-folding/blank-entry-tab-twice  # TAB folds a shown blank entry
+org-folding/blank-entry-tab-twice-with-separator-lines-0  # TAB folds a shown blank entry
+org-folding/blank-entry-tab-twice-with-separator-lines-1  # TAB folds a shown blank entry

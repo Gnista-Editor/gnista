@@ -360,9 +360,14 @@ function prepare(): void {
 /** Sets vertico up in the minibuffer of a prompt that completes, as vertico--setup. */
 function setup(): void {
   if (!truthy(ember.variable("vertico-mode")) || !ember.minibufferInfo()?.completing) return;
+  // The minibuffer may grow to the frame's height for vertico-count lines,
+  // and shrinks with them only as vertico-resize t says, as
+  // vertico--resize-window has it.
   for (const [name, value] of [
     ["completion-auto-help", null],
     ["completion-show-inline-help", null],
+    ["max-mini-window-height", 1.0],
+    ["resize-mini-windows", ember.variable("vertico-resize") === true ? true : "grow-only"],
   ] as const) {
     ember.makeLocalVariable(name);
     ember.setVariable(name, value);
