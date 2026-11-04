@@ -6,10 +6,20 @@
 #   make tidy                 delete the build's day-old leftover object files
 #
 # make app builds target/Ember.app; open it, or copy it to /Applications.
+# In a git worktree it builds Ember.app in the worktree's own folder
+# instead, so each branch has an app of its own to open and the main
+# checkout's stays as it was, though the worktree builds in the main
+# checkout's target (.claude/hooks/share-target.sh).
 
 ENGINE  ?= v8
 VERSION := $(shell sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
-APP     := target/Ember.app
+# A worktree's git directory is not the repository's own.
+WORKTREE := $(shell [ "$$(git rev-parse --git-dir 2>/dev/null)" != "$$(git rev-parse --git-common-dir 2>/dev/null)" ] && echo yes)
+ifeq ($(WORKTREE),yes)
+APP     ?= Ember.app
+else
+APP     ?= target/Ember.app
+endif
 
 ifeq ($(ENGINE),v8)
 FEATURES :=
