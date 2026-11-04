@@ -658,7 +658,13 @@ impl Editor {
                     if let Some(dark) = dark
                         && pos < len
                     {
-                        let faces = self.faces_at(b, pos);
+                        // After an ellipsis, in the faces it is drawn over, as
+                        // Emacs goes on in the face kept for it: a folded
+                        // block's #+begin line, not its hidden #+end line.
+                        let faces = match segments.last() {
+                            Some(last) if last.ellipsis => self.ellipsis_faces(b, last.start),
+                            _ => self.faces_at(b, pos),
+                        };
                         if !faces.is_empty() {
                             let style = styles.entry(faces).or_insert_with_key(|f| self.style_for_in(b, f, dark)).clone();
                             if style.extend && (style.background.is_some() || style.underline || style.overline) {
@@ -742,9 +748,18 @@ impl Editor {
         rows
     }
 
-    /// What a line or its continued rows start with, as Emacs's
-    /// `line-prefix` and `wrap-prefix` give it: the property of the text at
-    /// the line's start, or else the buffer's variable, if it is a string.
+    /// The faces an ellipsis for text hidden from `pos` is drawn over: the
+    /// faces there, when the character before has the same, as Emacs's
+    /// setup_for_ellipsis keeps that face, and else none, the default face:
+    /// a folded block's ellipsis on its #+begin line's background.
+    fn ellipsis_faces(&self, b: &Buffer, pos: usize) -> Vec<String> {
+        if pos == 0 || pos >= b.len() {
+            return Vec::new();
+        }
+        let at = self.faces_at(b, pos);
+        if at == self.faces_at(b, pos - 1) { at } else { Vec::new() }
+    }
+
     /// What hidden text with an ellipsis shows as: the string in the
     /// selective-display slot of the buffer's display table, or else the
     /// standard one's, in its own faces, as Emacs draws the glyphs there;
@@ -754,16 +769,7 @@ impl Editor {
             Some(Value::CharTable(id)) => self.char_table_extra_slot(id, 4).ok().filter(|v| v.as_str().is_some_and(|s| !s.is_empty())),
             _ => None,
         });
-        // It is drawn over the face of the hidden text's start, when the
-        // character before has the same, as Emacs's setup_for_ellipsis keeps
-        // that face, and else over the default face: a folded block's
-        // ellipsis on its #+begin line's background.
-        let base = if pos > 0 && pos < b.len() {
-            let at = self.faces_at(b, pos);
-            if at == self.faces_at(b, pos - 1) { at } else { Vec::new() }
-        } else {
-            Vec::new()
-        };
+        let base = self.ellipsis_faces(b, pos);
         match slot {
             Some(value) => {
                 let mut out = self.string_segments(b, pos, &value, None, &base, dark, styles);
@@ -780,6 +786,9 @@ impl Editor {
         }
     }
 
+    /// What a line or its continued rows start with, as Emacs's
+    /// `line-prefix` and `wrap-prefix` give it: the property of the text at
+    /// the line's start, or else the buffer's variable, if it is a string.
     fn prefix_segments(&self, b: &Buffer, pos: usize, name: &str, dark: Option<bool>, styles: &mut HashMap<Vec<String>, Style>) -> Vec<Segment> {
         let at = if pos < b.len() { b.char_property(pos, name).cloned() } else { None };
         match at.or_else(|| self.variable_in(b, name)) {

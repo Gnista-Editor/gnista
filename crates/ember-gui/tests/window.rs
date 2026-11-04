@@ -187,14 +187,15 @@ fn face_decorations() {
     harness(ed, Theme::Dark).snapshot("face_decorations_dark");
 }
 
-/// A source block as config.org's faces draw it: the #+begin line's
+/// Source blocks as config.org's faces draw them: the #+begin line's
 /// overline and the #+end line's underline go on to the window's edge
-/// with their background, as faces that :extend do in Emacs.
+/// with their background, as faces that :extend do in Emacs, and a folded
+/// block's row in its #+begin line's face, [+] and all.
 #[test]
 fn extended_overline_and_underline() {
     let mut ed = Editor::new();
     let scripting = ember_script::Scripting::new(&mut ed).unwrap();
-    ed.type_text("* Block\n#+begin_src bash\nuname -a\n#+end_src\nafter\n");
+    ed.type_text("* Block\n#+begin_src bash\nls\n#+end_src\n\n#+begin_src bash\nuname -a\n#+end_src\nafter\n");
     scripting
         .eval_typescript(
             &mut ed,
@@ -203,12 +204,13 @@ fn extended_overline_and_underline() {
             ember.setFaceAttribute("org-block", { background: "#090A0C", extend: true });
             ember.setFaceAttribute("org-block-begin-line", { overline: "#D08770", foreground: "#8FBCBB", background: "#3B4252", extend: true });
             ember.setFaceAttribute("org-block-end-line", { underline: "#D08770", foreground: "#8FBCBB", background: "#3B4252", extend: true });
+            ember.setVariable("org-ellipsis", " [+] ");
             ember.call("org-mode");
             "##
             .into(),
         )
         .unwrap();
-    ed.press("M->").unwrap();
+    ed.press("M-< C-n TAB M->").unwrap();
     harness(ed, Theme::Dark).snapshot("extended_overline_and_underline");
 }
 
