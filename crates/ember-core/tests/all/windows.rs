@@ -48,3 +48,15 @@ fn cursor_type_nil_hides_the_cursor_in_the_buffers_windows() {
     let fd = ed.describe_frame(frame, true, 1.0);
     assert!(fd.windows.iter().all(|w| w.cursor_shown));
 }
+
+#[test]
+fn frame_titles_follow_frame_title_format() {
+    let mut ed = Editor::new();
+    ed.set_frame_size(80, 24);
+    ed.redisplay();
+    let frame = ed.selected_frame();
+    assert_eq!(ed.describe_frame(frame, true, 1.0).title, "*scratch* \u{2014} Ember");
+    ed.set_variable("frame-title-format", ember_core::Value::Str("%b".into()));
+    ed.redisplay();
+    assert_eq!(ed.describe_frame(frame, true, 1.0).title, "*scratch*");
+}

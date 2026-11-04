@@ -27,7 +27,7 @@ use crate::window::{FrameId, WindowId};
 #[derive(Clone, Debug)]
 pub struct FrameDescription {
     pub frame: FrameId,
-    /// The name of the buffer its selected window shows, for its title.
+    /// Its title, as `frame-title-format` gives it.
     pub title: String,
     /// Whether its styles are for a dark background.
     pub dark: bool,
@@ -248,7 +248,12 @@ impl Editor {
         } else {
             Echo::Message(if selected { self.echo_lines() } else { Vec::new() })
         };
-        let title = windows.iter().find(|w| w.selected).or(windows.first()).map(|w| w.buffer.clone()).unwrap_or_default();
+        // As frame-title-format makes it, else the selected window's buffer's name.
+        let title = self
+            .frame_titles
+            .get(&frame)
+            .cloned()
+            .unwrap_or_else(|| windows.iter().find(|w| w.selected).or(windows.first()).map(|w| w.buffer.clone()).unwrap_or_default());
         FrameDescription {
             frame,
             title,

@@ -566,9 +566,9 @@ impl EmberApp {
         }
     }
 
-    /// The native window's title: the buffer its frame's selected window shows.
+    /// The native window's title, as the frame's frame-title-format gives it.
     fn update_title(&mut self, ctx: &egui::Context, frame: FrameId, name: &str) {
-        let title = format!("{name} — Ember");
+        let title = name.to_string();
         if self.titles.get(&frame) != Some(&title) {
             ctx.send_viewport_cmd(ViewportCommand::Title(title.clone()));
             if frame == self.main_frame {

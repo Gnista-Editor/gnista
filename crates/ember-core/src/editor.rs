@@ -335,6 +335,8 @@ pub struct Editor {
     pub(crate) frame_parameters: std::collections::HashMap<crate::window::FrameId, std::collections::BTreeMap<String, Value>>,
     /// Each frame's tab bar, as the last redisplay formatted it, for frames that show one.
     pub(crate) tab_bars: std::collections::HashMap<crate::window::FrameId, Vec<crate::modeline::ModeLineSegment>>,
+    /// Each frame's title, from `frame-title-format`, as redisplay last formatted it.
+    pub(crate) frame_titles: std::collections::HashMap<crate::window::FrameId, String>,
     /// The column of the tab bar the last mouse event was on, if it was on the tab bar.
     pub(crate) tab_bar_column: Option<usize>,
     /// Window configurations kept for code to put back, by id.
@@ -474,6 +476,7 @@ impl Editor {
             bell: false,
             frame_parameters: Default::default(),
             tab_bars: Default::default(),
+            frame_titles: Default::default(),
             tab_bar_column: None,
             window_configurations: Default::default(),
             next_window_configuration: 0,

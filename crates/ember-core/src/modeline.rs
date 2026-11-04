@@ -134,6 +134,18 @@ impl Editor {
             bars.insert(frame, f.out);
         }
         self.tab_bars = bars;
+        // Each frame's title, as Emacs formats frame-title-format for its selected window.
+        let mut titles = HashMap::new();
+        for frame in self.frame_list() {
+            let Some(id) = self.frame_selected_window(frame) else { continue };
+            let Some(view) = self.frame_windows(frame).into_iter().find(|v| v.id == id).map(|v| (v.buffer.id(), v.point, v.top_line)) else { continue };
+            let Some(index) = self.buffer_with_id(view.0) else { continue };
+            let format = self.variable_in(&self.buffers[index], "frame-title-format").unwrap_or(Value::Null);
+            let mut f = self.formatting(id, view.1, view.2);
+            self.with_current_buffer(index, |ed| ed.mode_line_element(&mut f, &format, &[], 0, false));
+            titles.insert(frame, f.out.iter().map(|s| s.text.as_str()).collect::<String>());
+        }
+        self.frame_titles = titles;
     }
 
     /// What formatting a window's mode line starts from. %- fills the
@@ -488,6 +500,11 @@ pub(crate) fn install(ed: &mut Editor) {
     for (name, doc, value) in vars {
         ed.define_variable(Variable::new(name, doc, value));
     }
+    ed.define_variable(Variable::new(
+        "frame-title-format",
+        "What a frame's window title shows, a mode line construct formatted for its selected window, as Emacs's: \"%b\" for the buffer's name.",
+        s("%b \u{2014} Ember"),
+    ));
     ed.define_variable(Variable::new(
         "global-mode-string",
         "What every mode line shows after the modes, a mode line construct, as Org's running clock adds to it.",

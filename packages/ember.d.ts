@@ -8134,6 +8134,10 @@ declare global {
        */
       "frame-background-mode": Value;
       /**
+       * What a frame's window title shows, a mode line construct formatted for its selected window, as Emacs's: "%b" for the buffer's name.
+       */
+      "frame-title-format": Value;
+      /**
        * Mapping from logical to physical fringe indicator bitmaps. The value is an alist of (INDICATOR . BITMAPS) where INDICATOR is `truncation', `continuation', `overlay-arrow', `top', `bottom', `top-bottom', `up', `down', `empty-line' or `unknown', and BITMAPS is a bitmap for both fringes, or a list (LEFT RIGHT [LEFT1 RIGHT1]) with the bitmaps for the left and right fringe and for a partial last line, t meaning the default's.
        */
       "fringe-indicator-alist": Value;
