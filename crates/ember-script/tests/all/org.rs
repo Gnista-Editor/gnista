@@ -715,6 +715,36 @@ fn org_ellipsis_shows_after_a_folded_heading() {
     assert_eq!(&rows(&plain)[..2], ["* One...", "* Two"]);
 }
 
+#[test]
+fn a_folded_block_s_ellipsis_takes_its_begin_line_s_background() {
+    // As Emacs draws the ellipsis over the face of the hidden text's start,
+    // the #+begin line's newline here, and over the default face after a heading.
+    let mut ed = Editor::new();
+    let s = Scripting::new(&mut ed).unwrap();
+    s.eval_expression(
+        &mut ed,
+        r##"(ember.setVariable("org-ellipsis", " [+] "), ember.setFaceAttribute("org-block-begin-line", { background: "#3B4252", extend: true }), 1)"##,
+    )
+    .unwrap();
+    ed.window_buffer_mut().set_text("* H\n#+begin_src bash\nls\n#+end_src\n* Two\nbody\n");
+    ed.call("org-mode", vec![]).unwrap();
+    ed.set_window_size(ed.selected_window(), 80, 20);
+    ed.press("C-n TAB").unwrap();
+    ed.redisplay();
+    let rows = ed.window_rows(20, true);
+    let text: Vec<String> = rows.iter().map(|r| r.segments.iter().map(|s| s.text.as_str()).collect()).collect();
+    assert_eq!(&text[..3], ["* H", "#+begin_src bash [+] ", "* Two"]);
+    let block = &rows[1].segments;
+    let begin = block.iter().find(|s| s.text.contains("begin")).unwrap().style.background;
+    assert!(begin.is_some());
+    assert!(block.iter().filter(|s| s.ellipsis).all(|s| s.style.background == begin), "{block:?}");
+    ed.press("M-> C-p C-p TAB").unwrap();
+    ed.redisplay();
+    let rows = ed.window_rows(20, true);
+    let heading = rows.iter().find(|r| r.segments.iter().any(|s| s.text.contains("Two"))).unwrap();
+    assert!(heading.segments.iter().filter(|s| s.ellipsis).all(|s| s.style.background.is_none()), "{heading:?}");
+}
+
 /// config.org's TODO states: keys to pick them, and each change logged into LOGBOOK.
 fn logging_org(text: &str) -> (Editor, Scripting) {
     let mut ed = Editor::new();

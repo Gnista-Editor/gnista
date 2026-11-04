@@ -754,16 +754,29 @@ impl Editor {
             Some(Value::CharTable(id)) => self.char_table_extra_slot(id, 4).ok().filter(|v| v.as_str().is_some_and(|s| !s.is_empty())),
             _ => None,
         });
+        // It is drawn over the face of the hidden text's start, when the
+        // character before has the same, as Emacs's setup_for_ellipsis keeps
+        // that face, and else over the default face: a folded block's
+        // ellipsis on its #+begin line's background.
+        let base = if pos > 0 && pos < b.len() {
+            let at = self.faces_at(b, pos);
+            if at == self.faces_at(b, pos - 1) { at } else { Vec::new() }
+        } else {
+            Vec::new()
+        };
         match slot {
             Some(value) => {
-                let mut out = self.string_segments(b, pos, &value, None, &[], dark, styles);
+                let mut out = self.string_segments(b, pos, &value, None, &base, dark, styles);
                 for s in &mut out {
                     s.ellipsis = true;
                     s.string = false;
                 }
                 out
             }
-            None => vec![Segment { ellipsis: true, ..Segment::text(pos, ELLIPSIS.to_string(), Style::default()) }],
+            None => {
+                let style = dark.filter(|_| !base.is_empty()).map_or_else(Style::default, |dark| styles.entry(base).or_insert_with_key(|f| self.style_for_in(b, f, dark)).clone());
+                vec![Segment { ellipsis: true, ..Segment::text(pos, ELLIPSIS.to_string(), style) }]
+            }
         }
     }
 
