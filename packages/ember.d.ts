@@ -8950,6 +8950,12 @@ declare global {
        */
       "org-agenda-mode-map": Value;
       /**
+       * Where the agenda shows: reorganize-frame, this window and the agenda's; current-window; only-window; or other-window.
+       *
+       * Defined in packages/org-agenda.ts.
+       */
+      "org-agenda-window-setup": Value;
+      /**
        * The header arguments every source block has unless it says otherwise: pairs of an argument and its value.
        *
        * Defined in packages/ob-tangle.ts.
@@ -8961,6 +8967,12 @@ declare global {
        * Defined in packages/ob-tangle.ts.
        */
       "org-babel-tangle-lang-exts": Value;
+      /**
+       * Whether new headings and list items get a blank line before them: [["heading", v], ["plain-list-item", v]], each v true, nil or "auto" to do as the ones around do.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-blank-before-new-entry": Value;
       /**
        * Whether Org-Capture mode is on in this buffer. Use the command org-capture-mode to change it.
        *
@@ -10276,6 +10288,10 @@ declare global {
        * Set it to 0 to let narrow windows continue lines too.
        */
       "truncate-partial-width-windows": Value;
+      /**
+       * Whether questions asked with yes-or-no-p take y or n instead of yes or no and RET.
+       */
+      "use-short-answers": Value;
       /**
        * The directory Ember's configuration and its saved state are in, such as recentf's list of recent files: ~/.config/ember unless EMBER_CONFIG_DIR or XDG_CONFIG_HOME say otherwise. Nil when there is none, as in tests.
        */

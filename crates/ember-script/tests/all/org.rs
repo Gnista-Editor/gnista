@@ -876,3 +876,38 @@ fn capture_clocks_in_and_resumes_the_clock_it_stopped() {
     assert_eq!(mode_line.trim_matches('"'), "[0:00] (Work) ");
     assert_eq!(text(&ed), "* TODO Work\n:LOGBOOK:\nCLOCK: [2026-11-04 Wed 12:00]\nCLOCK: [2026-11-04 Wed 12:00]--[2026-11-04 Wed 12:00] =>  0:00\n:END:\n");
 }
+
+#[test]
+fn org_blank_before_new_entry_nil_adds_no_blank_lines() {
+    // Headings and items with blank lines between them: auto follows them, nil does not.
+    let (mut ed, _s) = org("* One\n\n* Two\n\n- a\n\n- b\n");
+    ed.press("M-< C-e M-RET x").unwrap();
+    assert!(text(&ed).starts_with("* One\n\n* x\n"), "{}", text(&ed));
+    let (mut ed, s) = org("* One\n\n* Two\n\n- a\n\n- b\n");
+    s.eval_expression(&mut ed, r#"(ember.setVariable("org-blank-before-new-entry", [["heading", null], ["plain-list-item", null]]), 1)"#).unwrap();
+    ed.press("M-< C-e M-RET x").unwrap();
+    assert!(text(&ed).starts_with("* One\n* x\n"), "{}", text(&ed));
+    ed.press("M-> C-p C-e M-RET y").unwrap();
+    assert!(text(&ed).ends_with("- b\n- y\n"), "{}", text(&ed));
+}
+
+#[test]
+fn use_short_answers_takes_y_for_yes() {
+    let (mut ed, s) = org("x");
+    s.eval_expression(&mut ed, r#"(ember.setVariable("use-short-answers", true), 1)"#).unwrap();
+    let r = s.eval_expression(&mut ed, r#"(ember.unreadKeys(["y"]), String(ember.yesOrNoP("Really? ")))"#).unwrap();
+    assert_eq!(r.trim_matches('"'), "true");
+}
+
+#[test]
+fn org_agenda_window_setup_current_window_keeps_one_window() {
+    let (mut ed, s) = org("");
+    ed.set_frame_size(80, 24);
+    let dir = tempfile::tempdir_in(env!("CARGO_TARGET_TMPDIR")).unwrap();
+    let path = dir.path().join("a.org");
+    std::fs::write(&path, "* TODO Task\n").unwrap();
+    s.eval_typescript(&mut ed, "files.ts", format!("ember.setVariable(\"org-agenda-files\", [{:?}]); ember.setVariable(\"org-agenda-window-setup\", \"current-window\");", path.to_str().unwrap())).unwrap();
+    s.eval_typescript(&mut ed, "week.ts", "ember.call(\"org-agenda-list\");".to_string()).unwrap();
+    assert_eq!(ed.window_list().len(), 1);
+    assert_eq!(ed.window_buffer().name, "*Org Agenda*");
+}

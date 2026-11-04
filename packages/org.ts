@@ -47,6 +47,7 @@ import {
 import {
   allItems,
   applyStruct,
+  blankBeforeNewEntry,
   bottomPoint,
   children,
   copyStruct,
@@ -122,6 +123,7 @@ const variables: [string, string, ember.Value][] = [
   ["org-treat-insert-todo-heading-as-state-change", "Whether inserting a TODO heading logs it as a change to that state.", false],
   ["org-todo-keyword-faces", "Faces for TODO keywords, as [keyword, face] lists: a face's name, a colour, or a list of attributes such as [\":foreground\", \"#b48ead\", \":weight\", \"bold\"].", null],
   ["org-tag-faces", "Faces for tags, as [tag, face] lists, as org-todo-keyword-faces gives them for keywords.", null],
+  ["org-blank-before-new-entry", 'Whether new headings and list items get a blank line before them: [["heading", v], ["plain-list-item", v]], each v true, nil or "auto" to do as the ones around do.', [["heading", "auto"], ["plain-list-item", "auto"]]],
   ["org-ellipsis", "What a folded heading shows after it in place of ..., a string, or nil for ....", null],
   ["org-return-follows-link", "Whether RET on a link follows it, as C-c C-o does, rather than breaking the line.", false],
   ["org-directory", "Where Org files are kept: relative names in org-agenda-files are in it.", "~/org"],
@@ -2414,6 +2416,9 @@ function previousLineEmpty(): boolean {
  * "auto": when the heading point is under, or its parent, has one.
  */
 export function blankBeforeHeading(parent: boolean): boolean {
+  // As org-blank-before-new-entry's heading entry says, auto by default.
+  const setting = blankBeforeNewEntry("heading");
+  if (setting !== "auto") return setting !== null && setting !== false;
   const all = headings();
   let i = headingIndex(all, lineAt());
   if (i === undefined) {

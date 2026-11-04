@@ -848,6 +848,10 @@ function swapItemsChecked(begA: number, begB: number, struct: Struct): Struct {
 
 /** How many blank lines go between items when one is inserted, as org-list-separating-blank-lines-number guesses. */
 function separatingBlankLines(pos: number, item: number, struct: Struct, prevs: Alist): number {
+  // As org-blank-before-new-entry's plain-list-item says: nil for none, a number for that many, auto to follow the list.
+  const setting = blankBeforeNewEntry("plain-list-item");
+  if (setting === null || setting === false) return 0;
+  if (typeof setting === "number") return setting;
   const countBlanks = (at: number): number => {
     const bol = ember.lineStart(lineAt(at));
     let q = bol;
@@ -869,6 +873,13 @@ function separatingBlankLines(pos: number, item: number, struct: Struct, prevs: 
     if (/^[ \t]*$/.test(ember.lineText(l)) && ember.lineEnd(l) <= limit) return 1;
   }
   return 0;
+}
+
+/** What org-blank-before-new-entry says for headings or list items: "auto" unless it says otherwise. */
+export function blankBeforeNewEntry(kind: "heading" | "plain-list-item"): ember.Value {
+  const alist = ember.variable("org-blank-before-new-entry");
+  const entry = Array.isArray(alist) ? (alist.find((e) => Array.isArray(e) && e[0] === kind) as ember.Value[] | undefined) : undefined;
+  return entry === undefined ? "auto" : (entry[1] ?? null);
 }
 
 /**

@@ -29,6 +29,10 @@ impl Editor {
     /// Asks a question answered by typing "yes" or "no" and RET, as Emacs's
     /// `yes-or-no-p`, and returns whether the answer was yes.
     pub fn yes_or_no_p(&mut self, question: &str) -> Result<bool> {
+        // As Emacs 28's use-short-answers: y or n will do.
+        if self.variable("use-short-answers").is_some_and(|v| v.is_true()) {
+            return self.y_or_n_p(question);
+        }
         Ok(self.read_answer(question, &["yes", "no"])? == "yes")
     }
 

@@ -6,6 +6,11 @@ import { type DateTime, type Heading, PLANNING, allKeywords, at, entryEnd, headi
 import { allMatches, charCount } from "subr";
 
 ember.defineVariable({
+  name: "org-agenda-window-setup",
+  doc: "Where the agenda shows: reorganize-frame, this window and the agenda's; current-window; only-window; or other-window.",
+  value: "reorganize-frame",
+});
+ember.defineVariable({
   name: "org-agenda-files",
   doc: "The files the agenda collects entries from, as a list of file names.",
   value: [],
@@ -270,12 +275,20 @@ function showAgenda(lines: { text: string; item?: AgendaItem }[], pointLine: num
       };
     }
   }
+  const setup = ember.variable("org-agenda-window-setup");
   if (ember.windowBuffer() !== AGENDA) {
-    // As org-agenda-window-setup's reorganize-frame: this window and the agenda's.
-    if (!ember.windowList().some((w) => ember.windowBuffer(w) === AGENDA)) ember.call("delete-other-windows");
-    ember.call("pop-to-buffer", AGENDA);
+    if (setup === "current-window") ember.call("switch-to-buffer", AGENDA);
+    else if (setup === "only-window") {
+      ember.call("delete-other-windows");
+      ember.call("switch-to-buffer", AGENDA);
+    } else if (setup === "other-window") ember.call("switch-to-buffer-other-window", AGENDA);
+    else {
+      // As org-agenda-window-setup's reorganize-frame: this window and the agenda's.
+      if (!ember.windowList().some((w) => ember.windowBuffer(w) === AGENDA)) ember.call("delete-other-windows");
+      ember.call("pop-to-buffer", AGENDA);
+    }
   }
-  fitAgendaWindow(lines.length);
+  if (setup === undefined || setup === null || setup === "reorganize-frame") fitAgendaWindow(lines.length);
 }
 
 /**

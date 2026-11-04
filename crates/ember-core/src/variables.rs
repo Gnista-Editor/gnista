@@ -593,6 +593,11 @@ pub(crate) fn install(ed: &mut Editor) {
         Variable::new("mode-name", "The current buffer's major mode as the mode line shows it.", "Fundamental")
             .local(),
         Variable::new(
+            "use-short-answers",
+            "Whether questions asked with yes-or-no-p take y or n instead of yes or no and RET.",
+            false,
+        ),
+        Variable::new(
             "buffer-display-table",
             "This buffer's display table, a char-table of subtype display-table, or nil. Its extra slot 4, selective-display, holds the string hidden text with an ellipsis shows as in place of ..., as Org's org-ellipsis sets.",
             Value::Null,
