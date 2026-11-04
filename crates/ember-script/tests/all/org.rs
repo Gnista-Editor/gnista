@@ -564,3 +564,79 @@ fn tangling_writes_blocks_as_emacs_does() {
     assert_eq!(ed.echo(), Some("Tangled 1 code block from conf.org"));
     assert!(!dir.path().join("conf.el").exists());
 }
+
+/// Each line with its line-prefix and wrap-prefix, as org-indent-mode gives them.
+fn prefixes(ed: &mut Editor, s: &Scripting) -> String {
+    s.eval_expression(
+        ed,
+        r#"Array.from({ length: ember.lineCount() - 1 }, (_, l) => {
+            const p = ember.lineStart(l);
+            const get = (name) => String(ember.getTextProperty(p, name) ?? "");
+            return JSON.stringify([ember.lineText(l), get("line-prefix"), get("wrap-prefix")]);
+          }).join("\n")"#,
+    )
+    .unwrap()
+}
+
+#[test]
+fn org_indent_mode_indents_text_under_headings_as_emacs_does() {
+    // What Emacs 30's org-indent-mode gives each line of this text.
+    let (mut ed, s) = org("Intro\n* One\nText one\n- item one\n  continued\n** Two\n  indented text\n*** Three\n\nlast\n- tag :: desc\n");
+    ed.press("M-x o r g - i n d e n t - m o d e RET").unwrap();
+    let expected = [
+        r#"["Intro","",""]"#,
+        r#"["* One","","* "]"#,
+        r#"["Text one","  ","  "]"#,
+        r#"["- item one","  ","    "]"#,
+        r#"["  continued","  ","    "]"#,
+        r#"["** Two","*","*** "]"#,
+        r#"["  indented text","    ","      "]"#,
+        r#"["*** Three","**","***** "]"#,
+        r#"["","      ","      "]"#,
+        r#"["last","      ","      "]"#,
+        r#"["- tag :: desc","      ","        "]"#,
+    ]
+    .join("\n");
+    assert_eq!(prefixes(&mut ed, &s).trim_matches('"').replace("\\n", "\n").replace("\\\"", "\""), expected);
+    // The rows show the indentation, and the leading stars are hidden.
+    ed.redisplay();
+    assert_eq!(rows(&ed)[2], "  Text one");
+    // The prefix stars are drawn in org-indent, the background colour.
+    assert_eq!(rows(&ed)[7], "***** Three");
+    let face = s.eval_expression(&mut ed, r#"String(ember.getTextProperty(ember.lineStart(7), "face"))"#).unwrap();
+    assert_eq!(face.trim_matches('"'), "org-hide");
+    // A new heading gives the text after it its level.
+    ed.press("M-< C-n C-n C-o * * * SPC N e w").unwrap();
+    let p = prefixes(&mut ed, &s);
+    assert!(p.contains(r#"[\"Text one\",\"      \",\"      \"]"#), "{p}");
+    ed.press("M-x o r g - i n d e n t - m o d e RET").unwrap();
+    let left = s.eval_expression(&mut ed, r#"String(Array.from({ length: ember.bufferSize() }, (_, p) => ember.getTextProperty(p, "line-prefix")).filter((v) => v !== undefined).length)"#).unwrap();
+    assert_eq!(left.trim_matches('"'), "0", "turning it off takes the prefixes off");
+}
+
+#[test]
+fn startup_indent_turns_org_indent_mode_on() {
+    let (ed, _s) = org("#+STARTUP: indent\n* One\ntext\n");
+    assert_eq!(ed.variable("org-indent-mode"), Some(Value::Bool(true)));
+    let (ed, _s) = org("* One\ntext\n");
+    assert_eq!(ed.variable("org-indent-mode"), Some(Value::Bool(false)));
+}
+
+#[test]
+fn org_indent_mode_indents_a_big_buffer_a_piece_at_a_time() {
+    let mut text = String::new();
+    for i in 0..5000 {
+        text.push_str(&format!("* Heading {i}\nSome text under it\n"));
+    }
+    let (mut ed, s) = org(&text);
+    ed.call("org-indent-mode", vec![]).unwrap();
+    let last = r#"String(ember.getTextProperty(ember.lineStart(ember.lineCount() - 2), "line-prefix"))"#;
+    // Until the timers have run, the end has no prefix yet; then it has.
+    for _ in 0..1000 {
+        if s.eval_expression(&mut ed, last).unwrap().trim_matches('"') == "  " {
+            return;
+        }
+        ed.advance_clock(std::time::Duration::from_millis(60));
+    }
+    panic!("the end of the buffer was never indented");
+}

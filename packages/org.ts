@@ -117,6 +117,9 @@ const variables: [string, string, ember.Value][] = [
     "showeverything",
   ],
   ["org-startup-truncated", "Whether org-mode turns on truncate-lines, so long lines run off the window.", true],
+  ["org-startup-indented", "Whether org-mode turns on org-indent-mode, indenting text under its headings as it shows. #+STARTUP: indent or noindent says otherwise for a file.", false],
+  ["org-hide-leading-stars", "Whether a heading shows only its last star, the others in the org-hide face, the colour of the background.", false],
+  ["org-adapt-indentation", "Whether text under a heading is indented to line up with its title; org-indent-mode turns it off.", false],
   [
     "org-tags-column",
     "Where tags go on a heading line: a negative column aligns their end there, a positive one their start.",
@@ -228,6 +231,7 @@ const faces: [string, string, ember.FaceAttributes][] = [
   ["org-strike-through", "+Struck through+ text.", { strike: true }],
   ["org-footnote", "Footnotes, such as [fn:1].", { foreground: "accent-ink", underline: true }],
   ["org-target", "Link targets, such as <<target>>.", { underline: true }],
+  ["org-hide", "The leading stars of headings org-hide-leading-stars hides, in the colour of the background.", { foreground: "bg" }],
 ];
 for (const [name, doc, attributes] of faces) ember.defineFace({ name, doc, attributes });
 for (let i = 1; i <= 8; i++) {
@@ -1357,6 +1361,8 @@ function fontifyObjects(line: number, text: string, from: number, to = text.leng
 
 function fontifyHeading(h: Heading, text: string): void {
   ember.putTextProperty(h.start, h.end, "face", `org-level-${((h.level - 1) % 8) + 1}`);
+  // All but the last star, as org-get-level-face gives them org-hide.
+  if (h.level > 1 && ember.variable("org-hide-leading-stars") === true) ember.putTextProperty(h.start, h.start + h.level - 1, "face", "org-hide");
   if (h.todo !== undefined && h.todoAt !== undefined) {
     const done = isDone(h.todo);
     if (done && ember.variable("org-fontify-done-headline") === true) face(h.todoAt, h.end, "org-headline-done");
@@ -5270,6 +5276,16 @@ ember.defineMajorMode({
     ember.addToInvisibilitySpec("org-link");
     storeTodoSets();
     if (ember.variable("org-startup-truncated") === true) ember.setVariable("truncate-lines", true);
+    // As org-mode turns org-indent-mode on, from the variable or a #+STARTUP: line.
+    let indented = ember.variable("org-startup-indented") === true;
+    for (const [, , text] of keywordLines()) {
+      const m = /^#\+STARTUP:(.*)$/i.exec(text);
+      for (const word of m ? m[1].trim().split(/\s+/) : []) {
+        if (word === "indent") indented = true;
+        else if (word === "noindent") indented = false;
+      }
+    }
+    if (indented) ember.callWithPrefix(1, "org-indent-mode");
     ember.addHook("jit-lock-functions", fontify, { local: true });
     ember.addHook("after-change-functions", foldsAfterChange, { local: true });
     ember.addHook("after-change-functions", headingsAfterChange, { local: true });

@@ -4165,6 +4165,12 @@ declare global {
        */
       "org-indent-drawer": [];
       /**
+       * Give the whole buffer org-indent-mode's indentation again.
+       *
+       * Defined in packages/org-indent.ts.
+       */
+      "org-indent-indent-buffer": [];
+      /**
        * Make the item point is on a child of the item before it, leaving its children where they are.
        *
        * Defined in packages/org.ts.
@@ -4182,6 +4188,14 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-indent-line": [];
+      /**
+       * Indent Org text under its headings, as it shows, without changing it: each line gets a line-prefix, and long lines continue at the text's indentation. Turns org-hide-leading-stars on, so each heading shows its last star.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/org-indent.ts.
+       */
+      "org-indent-mode": [];
       /**
        * Insert a drawer at point, asking for its name, with point inside it.
        *
@@ -8880,6 +8894,12 @@ declare global {
        */
       "org-M-RET-may-split-line": Value;
       /**
+       * Whether text under a heading is indented to line up with its title; org-indent-mode turns it off.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-adapt-indentation": Value;
+      /**
        * The files the agenda collects entries from, as a list of file names.
        *
        * Defined in packages/org-agenda.ts.
@@ -8966,6 +8986,12 @@ declare global {
        */
       "org-fontify-done-headline": Value;
       /**
+       * Whether a heading shows only its last star, the others in the org-hide face, the colour of the background.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-hide-leading-stars": Value;
+      /**
        * Files besides the agenda files that org-id-find looks in for IDs.
        *
        * Defined in packages/org-id.ts.
@@ -8977,6 +9003,40 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-imenu-depth": Value;
+      /**
+       * The character that ends the indentation of text, a space by default; | shows where it ends.
+       *
+       * Defined in packages/org-indent.ts.
+       */
+      "org-indent-boundary-char": Value;
+      /**
+       * How many columns each level of headings indents the text under it.
+       *
+       * Defined in packages/org-indent.ts.
+       */
+      "org-indent-indentation-per-level": Value;
+      /**
+       * Whether Org-Indent mode is on in this buffer. Use the command org-indent-mode to change it.
+       *
+       * Defined in packages/org-indent.ts.
+       */
+      "org-indent-mode": Value;
+      /**
+       * Keymap org-indent-mode-map.
+       */
+      "org-indent-mode-map": Value;
+      /**
+       * Whether org-indent-mode turns org-adapt-indentation off.
+       *
+       * Defined in packages/org-indent.ts.
+       */
+      "org-indent-mode-turns-off-org-adapt-indentation": Value;
+      /**
+       * Whether org-indent-mode turns org-hide-leading-stars on.
+       *
+       * Defined in packages/org-indent.ts.
+       */
+      "org-indent-mode-turns-on-hiding-stars": Value;
       /**
        * Where C-c C-x b shows the indirect buffer it makes: "current-window", "other-window", "new-frame" each time, or "dedicated-frame", one frame used again.
        *
@@ -9059,6 +9119,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-startup-folded": Value;
+      /**
+       * Whether org-mode turns on org-indent-mode, indenting text under its headings as it shows. #+STARTUP: indent or noindent says otherwise for a file.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-startup-indented": Value;
       /**
        * Whether org-mode turns on truncate-lines, so long lines run off the window.
        *
@@ -11045,6 +11111,18 @@ declare global {
        */
       "org-headline-done": FaceAttributes;
       /**
+       * The leading stars of headings org-hide-leading-stars hides, in the colour of the background.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-hide": FaceAttributes;
+      /**
+       * The indentation org-indent-mode shows.
+       *
+       * Defined in packages/org-indent.ts.
+       */
+      "org-indent": FaceAttributes;
+      /**
        * Level 1 headings, and deeper levels in turn.
        *
        * Defined in packages/org.ts.
@@ -11908,6 +11986,22 @@ declare global {
        * Functions TAB in Org tries first, each until one gives true, which then is all TAB does. Emacs also calls it org-tab-first-hook.
        */
       "org-cycle-tab-first-hook": Value;
+      /**
+       * Run after Org-Indent mode is turned on or off.
+       */
+      "org-indent-mode-hook": Value;
+      /**
+       * Run after Org-Indent mode is turned off.
+       */
+      "org-indent-mode-off-hook": Value;
+      /**
+       * Run after Org-Indent mode is turned on.
+       */
+      "org-indent-mode-on-hook": Value;
+      /**
+       * Functions called with the buffer once org-indent-mode has indented all of it.
+       */
+      "org-indent-post-buffer-init-functions": Value;
       /**
        * Run after entering Org mode, after the hooks of the modes it is built on.
        */

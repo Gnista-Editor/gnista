@@ -131,7 +131,10 @@ impl TextProperties {
     /// The properties of a stretch of text, as [`TextProperties::delete`]
     /// saves them, leaving them in place.
     pub(crate) fn save(&self, start: usize, end: usize) -> SavedProps {
-        self.runs
+        // Only the runs the stretch touches, found by halving.
+        let lo = self.runs.partition_point(|r| r.end <= start);
+        let hi = self.runs.partition_point(|r| r.start < end).max(lo);
+        self.runs[lo..hi]
             .iter()
             .filter_map(|run| {
                 let (cut_start, cut_end) = (run.start.max(start), run.end.min(end));

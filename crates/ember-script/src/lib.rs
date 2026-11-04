@@ -169,6 +169,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/org-element.ts", include_str!("../../../packages/org-element.ts")),
     ("packages/org-fold.ts", include_str!("../../../packages/org-fold.ts")),
     ("packages/org-list.ts", include_str!("../../../packages/org-list.ts")),
+    ("packages/org-indent.ts", include_str!("../../../packages/org-indent.ts")),
     ("packages/org-refile.ts", include_str!("../../../packages/org-refile.ts")),
     ("packages/ol.ts", include_str!("../../../packages/ol.ts")),
     ("packages/org-id.ts", include_str!("../../../packages/org-id.ts")),
