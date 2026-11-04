@@ -46,7 +46,10 @@ ember.defineVariable({
 ember.defineVariable({
   name: "persistent-scratch-save-file",
   doc: "File to save to the scratch buffers to.",
-  value: ember.expandFileName(".persistent-scratch", String(ember.variable("user-emacs-directory") ?? "~/.config/ember")),
+  value: (() => {
+    const dir = ember.variable("user-emacs-directory");
+    return typeof dir === "string" ? ember.expandFileName(".persistent-scratch", dir) : null;
+  })(),
 });
 ember.defineHook(
   "persistent-scratch-before-save-commit-functions",
@@ -228,13 +231,20 @@ function formatTime(format: string, date: Date): string {
 
 let currentBackupTime = new Date();
 
+/** Where the scratch buffers are saved, or undefined when persistent-scratch-save-file is nil, as without a user-emacs-directory. */
+function saveFile(): string | undefined {
+  const file = ember.variable("persistent-scratch-save-file");
+  return typeof file === "string" ? file : undefined;
+}
+
 /** Copies the save file into the backup directory, as persistent-scratch--update-backup. */
 function updateBackup(): void {
   const dir = ember.variable("persistent-scratch-backup-directory");
   if (typeof dir !== "string") return;
   const name = ember.expandFileName(formatTime(String(ember.variable("persistent-scratch-backup-file-name-format")), currentBackupTime), dir);
   ember.makeDirectory(dir, { parents: true });
-  ember.copyFile(String(ember.variable("persistent-scratch-save-file")), name, { okIfExists: true, keepTime: true });
+  const file = saveFile();
+  if (file !== undefined) ember.copyFile(file, name, { okIfExists: true, keepTime: true });
 }
 
 /** Deletes the backups persistent-scratch-backup-filter names, as persistent-scratch--cleanup-backups. */
@@ -252,8 +262,9 @@ function cleanupBackups(): void {
  * with a backup if there is a backup directory, as persistent-scratch-save:
  * written to FILE.new, readable only by the user, then moved over it.
  */
-export function save(file?: string): string {
-  const actual = file ?? String(ember.variable("persistent-scratch-save-file"));
+export function save(file?: string): string | undefined {
+  const actual = file ?? saveFile();
+  if (actual === undefined) return undefined;
   const tmp = `${actual}.new`;
   const [buffers, text] = saveBuffersState();
   ember.writeTextFile(tmp, text, { mode: 0o600 });
@@ -269,7 +280,9 @@ export function save(file?: string): string {
 
 /** Restores the scratch buffers saved in FILE, or persistent-scratch-save-file, as persistent-scratch-restore. */
 export function restore(file?: string): void {
-  const text = ember.readTextFile(ember.expandFileName(file ?? String(ember.variable("persistent-scratch-save-file"))));
+  const from = file ?? saveFile();
+  if (from === undefined) return;
+  const text = ember.readTextFile(ember.expandFileName(from));
   const data = read(text);
   if (isNil(data)) return;
   if (typeof data !== "object" || !("cons" in data)) ember.signal("invalid-read-syntax", "Not a list of saved buffers");

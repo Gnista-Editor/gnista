@@ -25,7 +25,11 @@ ember.defineVariable({ name: "org-roam-directory", doc: "The directory of Org-ro
 ember.defineVariable({
   name: "org-roam-db-location",
   doc: "The file Org-roam keeps its index of nodes and links in, as JSON in Ember.",
-  value: ember.expandFileName("org-roam.json", String(ember.variable("user-emacs-directory") ?? "~/.config/ember")),
+  // Nil, kept only in memory, without a user-emacs-directory, as in tests.
+  value: (() => {
+    const dir = ember.variable("user-emacs-directory");
+    return typeof dir === "string" ? ember.expandFileName("org-roam.json", dir) : null;
+  })(),
 });
 ember.defineVariable({ name: "org-roam-file-extensions", doc: "The extensions of the files that are notes.", value: ["org"] });
 ember.defineVariable({ name: "org-roam-file-exclude-regexp", doc: "A regexp of the files, relative to org-roam-directory, that are not notes.", value: ["data/"] });
@@ -232,9 +236,9 @@ function indexAll(): void {
 
 function loadDb(): void {
   if (db) return;
-  const file = String(ember.variable("org-roam-db-location"));
+  const file = ember.variable("org-roam-db-location");
   try {
-    db = ember.fileExists(file) ? JSON.parse(ember.readTextFile(file)) : undefined;
+    db = typeof file === "string" && ember.fileExists(file) ? JSON.parse(ember.readTextFile(file)) : undefined;
   } catch {
     db = undefined;
   }
@@ -243,7 +247,8 @@ function loadDb(): void {
 }
 
 function saveDb(): void {
-  const file = String(ember.variable("org-roam-db-location"));
+  const file = ember.variable("org-roam-db-location");
+  if (typeof file !== "string") return;
   const dir = file.replace(/[^/]*$/, "");
   if (dir && !ember.fileExists(dir)) ember.makeDirectory(dir, { parents: true });
   ember.writeTextFile(file, JSON.stringify(db));

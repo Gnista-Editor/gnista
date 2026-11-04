@@ -338,7 +338,10 @@ ember.defineCommand({
   name: "desktop-save",
   doc: "Save the desktop in a directory, which then is where it is saved again; with a prefix argument, release its lock too.",
   params: [
-    { name: "dirname", kind: "file", prompt: "Directory to save desktop file in: ", initial: () => String(ember.variable("desktop-dirname") ?? ember.variable("user-emacs-directory") ?? "~/") },
+    { name: "dirname", kind: "file", prompt: "Directory to save desktop file in: ", initial: () => {
+      const dir = [ember.variable("desktop-dirname"), ember.variable("user-emacs-directory")].find((d) => typeof d === "string");
+      return typeof dir === "string" ? dir : "~/";
+    } },
     { name: "release", kind: "prefix" },
   ],
   run: (dirname, release) => save(dirname, release !== null && release !== undefined),
