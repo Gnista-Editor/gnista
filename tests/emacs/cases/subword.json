@@ -1,0 +1,88 @@
+[
+ {
+  "name": "subword-forward",
+  "text": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+  "keys": "M-x M-f M-f M-f M-f M-f M-f M-f",
+  "answers": [
+   "subword-mode"
+  ]
+ },
+ {
+  "name": "subword-backward",
+  "text": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+  "keys": "M-x C-e M-b M-b M-b M-b M-b M-b",
+  "answers": [
+   "subword-mode"
+  ]
+ },
+ {
+  "name": "subword-kill",
+  "text": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+  "keys": "M-x M-d M-d C-e M-DEL",
+  "answers": [
+   "subword-mode"
+  ]
+ },
+ {
+  "name": "subword-capitalize",
+  "text": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+  "keys": "M-x M-c M-c M-u M-l",
+  "answers": [
+   "subword-mode"
+  ]
+ },
+ {
+  "name": "subword-transpose",
+  "text": "fooBar bazQux\n",
+  "keys": "M-x M-f M-t",
+  "answers": [
+   "subword-mode"
+  ]
+ },
+ {
+  "name": "subword-digits",
+  "text": "parse2Json v10Value\n",
+  "keys": "M-x M-f M-f M-f M-f M-f",
+  "answers": [
+   "subword-mode"
+  ]
+ },
+ {
+  "name": "superword-forward",
+  "text": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+  "keys": "M-x M-f M-f M-f M-b M-b",
+  "answers": [
+   "superword-mode"
+  ]
+ },
+ {
+  "name": "superword-kill",
+  "text": "foo_bar baz-qux\n",
+  "keys": "M-x M-d M-d",
+  "answers": [
+   "superword-mode"
+  ]
+ },
+ {
+  "name": "superword-off-subword",
+  "text": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+  "keys": "M-x M-x M-f M-f",
+  "answers": [
+   "superword-mode",
+   "subword-mode"
+  ]
+ },
+ {
+  "name": "words-without-subword",
+  "text": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+  "keys": "M-f M-f M-f M-f"
+ },
+ {
+  "name": "subword-in-a-region-narrowed",
+  "text": "aaBb ccDd\n",
+  "keys": "M-x M-f C-SPC C-e C-x n n M-< M-f M-f M-f",
+  "answers": [
+   "subword-mode"
+  ]
+ }
+]

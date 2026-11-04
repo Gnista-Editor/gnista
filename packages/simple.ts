@@ -1,4 +1,4 @@
-import { allMatches, forwardLine } from "subr";
+import { allMatches, defineGlobalizedMinorMode, forwardLine } from "subr";
 // Basic editing commands that Emacs writes in Lisp, after its simple.el.
 // Ember loads this file at startup, before init.ts.
 
@@ -299,6 +299,7 @@ ember.defineMinorMode({
     }
   },
 });
+defineGlobalizedMinorMode("global-visual-line-mode", "visual-line-mode", "Turn visual-line-mode on in every buffer: long lines continue at word boundaries everywhere.");
 
 // Transposing, after simple.el's transpose-subr.
 

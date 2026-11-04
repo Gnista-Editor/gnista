@@ -151,3 +151,16 @@ fn scripts_see_screen_lines() {
         .unwrap();
     assert_eq!(ed.echo(), Some("19 38 true"));
 }
+
+#[test]
+fn global_visual_line_mode_wraps_every_buffer_and_new_ones() {
+    let (mut ed, _scripting) = setup("x");
+    ed.call("global-visual-line-mode", vec![]).unwrap();
+    assert_eq!(ed.variable("visual-line-mode"), Some(Value::Bool(true)));
+    ed.press("C-x b n e w RET").unwrap();
+    ed.call("text-mode", vec![]).unwrap();
+    assert_eq!(ed.variable("visual-line-mode"), Some(Value::Bool(true)));
+    assert_eq!(ed.variable("word-wrap"), Some(Value::Bool(true)));
+    ed.press("M-x g l o b a l - v i s u a l - l i n e - m o d e RET").unwrap();
+    assert_eq!(ed.variable("visual-line-mode"), Some(Value::Bool(false)));
+}

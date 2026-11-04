@@ -2473,6 +2473,30 @@ declare global {
        */
       "global-display-line-numbers-mode": [];
       /**
+       * Turn subword-mode on in every buffer.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/subword.ts.
+       */
+      "global-subword-mode": [];
+      /**
+       * Turn superword-mode on in every buffer.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/subword.ts.
+       */
+      "global-superword-mode": [];
+      /**
+       * Turn visual-line-mode on in every buffer: long lines continue at word boundaries everywhere.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "global-visual-line-mode": [];
+      /**
        * Edit Go, in go-ts-mode: Ember's mode for it, as major-mode-remap-alist would have Emacs use.
        *
        * Defined in packages/treesit-modes.ts.
@@ -5703,6 +5727,38 @@ declare global {
        */
       "string-rectangle": [start: number, end: number];
       /**
+       * Move to the start of the subword before, or as many as the prefix argument says.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/subword.ts.
+       */
+      "subword-backward": [n?: number];
+      /**
+       * Move to the end of the next subword, or as many as the prefix argument says.
+       *
+       * @param n prefix count
+       *
+       * Defined in packages/subword.ts.
+       */
+      "subword-forward": [n?: number];
+      /**
+       * Make the word commands stop at each part of a name written in capitals: GetHttpResponse is three words, Get, Http and Response. Turning it on turns superword-mode off.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/subword.ts.
+       */
+      "subword-mode": [];
+      /**
+       * Make the word commands treat a symbol as one word: this_is_a_symbol is one. Turning it on turns subword-mode off.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/subword.ts.
+       */
+      "superword-mode": [];
+      /**
        * Show a buffer in the window, creating it if it does not exist.
        *
        * Empty input switches to the buffer shown before this one.
@@ -7845,6 +7901,10 @@ declare global {
        */
       "fill-prefix": Value;
       /**
+       * A char-table of functions that find where words end, for the word commands: a word whose first character, or last going back, has one ends where it says, called with the position and the limit. Subword mode sets it.
+       */
+      "find-word-boundary-function-table": Value;
+      /**
        * If non-nil, the function forward-sexp and the commands built on it call with the count, as tree-sitter modes set it.
        *
        * Defined in packages/lisp.ts.
@@ -7890,6 +7950,36 @@ declare global {
        * How many places the global mark ring keeps, one for each buffer the mark was set in, newest first.
        */
       "global-mark-ring-max": Value;
+      /**
+       * Whether Global-Subword mode is on. Use the command global-subword-mode to change it.
+       *
+       * Defined in packages/subword.ts.
+       */
+      "global-subword-mode": Value;
+      /**
+       * Keymap global-subword-mode-map.
+       */
+      "global-subword-mode-map": Value;
+      /**
+       * Whether Global-Superword mode is on. Use the command global-superword-mode to change it.
+       *
+       * Defined in packages/subword.ts.
+       */
+      "global-superword-mode": Value;
+      /**
+       * Keymap global-superword-mode-map.
+       */
+      "global-superword-mode-map": Value;
+      /**
+       * Whether Global-Visual-Line mode is on. Use the command global-visual-line-mode to change it.
+       *
+       * Defined in packages/simple.ts.
+       */
+      "global-visual-line-mode": Value;
+      /**
+       * Keymap global-visual-line-mode-map.
+       */
+      "global-visual-line-mode-map": Value;
       /**
        * How far Go indents each level.
        *
@@ -9415,6 +9505,26 @@ declare global {
        * Defined in packages/rect.ts.
        */
       "string-rectangle-history": Value;
+      /**
+       * Whether Subword mode is on in this buffer. Use the command subword-mode to change it.
+       *
+       * Defined in packages/subword.ts.
+       */
+      "subword-mode": Value;
+      /**
+       * Keymap subword-mode-map.
+       */
+      "subword-mode-map": Value;
+      /**
+       * Whether Superword mode is on in this buffer. Use the command superword-mode to change it.
+       *
+       * Defined in packages/subword.ts.
+       */
+      "superword-mode": Value;
+      /**
+       * Keymap superword-mode-map.
+       */
+      "superword-mode-map": Value;
       /**
        * Whether switch-to-buffer shows a buffer where the window last showed it, with its point there.
        *
@@ -11368,6 +11478,42 @@ declare global {
        */
       "global-display-line-numbers-mode-on-hook": Value;
       /**
+       * Run after Global-Subword mode is turned on or off.
+       */
+      "global-subword-mode-hook": Value;
+      /**
+       * Run after Global-Subword mode is turned off.
+       */
+      "global-subword-mode-off-hook": Value;
+      /**
+       * Run after Global-Subword mode is turned on.
+       */
+      "global-subword-mode-on-hook": Value;
+      /**
+       * Run after Global-Superword mode is turned on or off.
+       */
+      "global-superword-mode-hook": Value;
+      /**
+       * Run after Global-Superword mode is turned off.
+       */
+      "global-superword-mode-off-hook": Value;
+      /**
+       * Run after Global-Superword mode is turned on.
+       */
+      "global-superword-mode-on-hook": Value;
+      /**
+       * Run after Global-Visual-Line mode is turned on or off.
+       */
+      "global-visual-line-mode-hook": Value;
+      /**
+       * Run after Global-Visual-Line mode is turned off.
+       */
+      "global-visual-line-mode-off-hook": Value;
+      /**
+       * Run after Global-Visual-Line mode is turned on.
+       */
+      "global-visual-line-mode-on-hook": Value;
+      /**
        * Run after entering Go mode, after the hooks of the modes it is built on.
        */
       "go-ts-mode-hook": Value;
@@ -11683,6 +11829,30 @@ declare global {
        * Run after entering Special mode, after the hooks of the modes it is built on.
        */
       "special-mode-hook": Value;
+      /**
+       * Run after Subword mode is turned on or off.
+       */
+      "subword-mode-hook": Value;
+      /**
+       * Run after Subword mode is turned off.
+       */
+      "subword-mode-off-hook": Value;
+      /**
+       * Run after Subword mode is turned on.
+       */
+      "subword-mode-on-hook": Value;
+      /**
+       * Run after Superword mode is turned on or off.
+       */
+      "superword-mode-hook": Value;
+      /**
+       * Run after Superword mode is turned off.
+       */
+      "superword-mode-off-hook": Value;
+      /**
+       * Run after Superword mode is turned on.
+       */
+      "superword-mode-on-hook": Value;
       /**
        * Run after Tab-Bar-History mode is turned on or off.
        */

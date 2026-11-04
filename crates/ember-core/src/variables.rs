@@ -592,6 +592,11 @@ pub(crate) fn install(ed: &mut Editor) {
         .local(),
         Variable::new("mode-name", "The current buffer's major mode as the mode line shows it.", "Fundamental")
             .local(),
+        Variable::new(
+            "find-word-boundary-function-table",
+            "A char-table of functions that find where words end, for the word commands: a word whose first character, or last going back, has one ends where it says, called with the position and the limit. Subword mode sets it.",
+            Value::Null,
+        ),
         Variable::new("tab-width", "How many columns apart tab stops are, for showing tab characters.", 8.0)
             .local(),
         Variable::new(

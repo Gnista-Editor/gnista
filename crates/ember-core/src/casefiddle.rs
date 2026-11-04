@@ -152,7 +152,7 @@ impl Editor {
     /// before point if `n` is negative, leaving point where it is.
     pub fn casify_word(&mut self, case: Case, n: i64) -> Result<()> {
         let point = self.buffer().point();
-        let far = crate::commands::move_words(self, point, n);
+        let far = crate::commands::move_words(self, point, n)?;
         // Point goes to the end of what was cased: past the words going
         // forward, where it was going back.
         let end = self.casify_region(case, point, far)?;

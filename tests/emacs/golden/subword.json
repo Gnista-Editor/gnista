@@ -1,0 +1,251 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "subword-forward",
+      "input": {
+        "text": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+        "point": 0,
+        "keys": "M-x M-f M-f M-f M-f M-f M-f M-f",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "subword-mode"
+        ]
+      },
+      "text": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+      "visible": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+      "point": 38,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "subword-backward",
+      "input": {
+        "text": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+        "point": 0,
+        "keys": "M-x C-e M-b M-b M-b M-b M-b M-b",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "subword-mode"
+        ]
+      },
+      "text": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+      "visible": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "subword-kill",
+      "input": {
+        "text": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+        "point": 0,
+        "keys": "M-x M-d M-d C-e M-DEL",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "subword-mode"
+        ]
+      },
+      "text": "Response = parse_json_value(XMLHttp\n",
+      "visible": "Response = parse_json_value(XMLHttp\n",
+      "point": 35,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "Request)",
+        "getHTTP"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "subword-capitalize",
+      "input": {
+        "text": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+        "point": 0,
+        "keys": "M-x M-c M-c M-u M-l",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "subword-mode"
+        ]
+      },
+      "text": "GetHttpRESPONSE = parse_json_value(XMLHttpRequest)\n",
+      "visible": "GetHttpRESPONSE = parse_json_value(XMLHttpRequest)\n",
+      "point": 23,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "subword-transpose",
+      "input": {
+        "text": "fooBar bazQux\n",
+        "point": 0,
+        "keys": "M-x M-f M-t",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "subword-mode"
+        ]
+      },
+      "text": "Barfoo bazQux\n",
+      "visible": "Barfoo bazQux\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "subword-digits",
+      "input": {
+        "text": "parse2Json v10Value\n",
+        "point": 0,
+        "keys": "M-x M-f M-f M-f M-f M-f",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "subword-mode"
+        ]
+      },
+      "text": "parse2Json v10Value\n",
+      "visible": "parse2Json v10Value\n",
+      "point": 20,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "superword-forward",
+      "input": {
+        "text": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+        "point": 0,
+        "keys": "M-x M-f M-f M-f M-b M-b",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "superword-mode"
+        ]
+      },
+      "text": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+      "visible": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "superword-kill",
+      "input": {
+        "text": "foo_bar baz-qux\n",
+        "point": 0,
+        "keys": "M-x M-d M-d",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "superword-mode"
+        ]
+      },
+      "text": "\n",
+      "visible": "\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "foo_bar baz-qux"
+      ],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "superword-off-subword",
+      "input": {
+        "text": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+        "point": 0,
+        "keys": "M-x M-x M-f M-f",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "superword-mode",
+          "subword-mode"
+        ]
+      },
+      "text": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+      "visible": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+      "point": 7,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "words-without-subword",
+      "input": {
+        "text": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+        "point": 0,
+        "keys": "M-f M-f M-f M-f",
+        "modes": [],
+        "call": [],
+        "platform": null
+      },
+      "text": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+      "visible": "getHTTPResponse = parse_json_value(XMLHttpRequest)\n",
+      "point": 34,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "subword-in-a-region-narrowed",
+      "input": {
+        "text": "aaBb ccDd\n",
+        "point": 0,
+        "keys": "M-x M-f C-SPC C-e C-x n n M-< M-f M-f M-f",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "subword-mode"
+        ]
+      },
+      "text": "aaBb ccDd\n",
+      "visible": "aaBb ccDd\n",
+      "point": 9,
+      "mark": 2,
+      "mark_active": true,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    }
+  ]
+}

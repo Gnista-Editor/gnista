@@ -175,6 +175,33 @@ export function bidiStringMarkLeftToRight(str: string): string | ember.Propertiz
  * id, so it follows a buffer that is renamed, and forgotten when the
  * buffer is killed.
  */
+/**
+ * A global mode that turns a buffer's mode on in every buffer, and in those
+ * made later as their major modes start, as easy-mmode's
+ * define-globalized-minor-mode does with a function that turns MODE on.
+ */
+export function defineGlobalizedMinorMode(name: string, mode: ember.CommandName, doc: string): ember.DefinedCommand {
+  const turnOn = () => {
+    if (ember.variable(name) === true && !ember.bufferName().startsWith(" ") && ember.variable(mode) !== true) ember.callWithPrefix(1, mode);
+  };
+  return ember.defineMinorMode({
+    name,
+    global: true,
+    doc,
+    onChange: (enabled) => {
+      for (const b of ember.bufferList()) {
+        if (b.startsWith(" ")) continue;
+        ember.withCurrentBuffer(b, () => {
+          if (enabled) turnOn();
+          else if (ember.variable(mode) === true) ember.callWithPrefix(-1, mode);
+        });
+      }
+      if (enabled) ember.addHook("after-change-major-mode-hook", turnOn);
+      else ember.removeHook("after-change-major-mode-hook", turnOn);
+    },
+  });
+}
+
 export class PerBuffer<T> {
   private readonly values = new Map<number, T>();
 

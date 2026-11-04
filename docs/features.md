@@ -30,7 +30,8 @@ What works today, in a terminal (`ember`) or a window (`ember-gui`). Where it di
 - Drags.
 - Double and triple clicks and shift-click as Emacs mouse keys (`<mouse-1>`, `<drag-mouse-1>`, `<double-mouse-1>`).
 - Long lines continued by default.
-- `truncate-lines` and `visual-line-mode`.
+- `truncate-lines`, `visual-line-mode` and `global-visual-line-mode`.
+- `subword-mode` (the word commands stop inside CamelCase names) and `superword-mode` (a symbol is one word), and their global modes.
 - The kill ring with `M-y` (choosing a kill from the minibuffer when not after a yank).
 - The mark ring (`C-u C-SPC`).
 - Undo as in Emacs (undoable, with `undo-redo`, text property changes undone, `buffer-undo-list` read, set and bound, `with-silent-modifications`).

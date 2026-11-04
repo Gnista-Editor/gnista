@@ -240,7 +240,8 @@ fn movement(ed: &mut Editor) {
         "Move point forward to the end of a word, or as many words as the prefix argument says.\n\nA negative argument moves backward.",
         |ed, args| {
             let n = args[0].as_int()?;
-            let to = move_words(ed, ed.buffer().point(), n);
+            let point = ed.buffer().point();
+            let to = move_words(ed, point, n)?;
             ed.buffer_mut().set_point(to);
             Ok(())
         },
@@ -251,7 +252,8 @@ fn movement(ed: &mut Editor) {
         "Move point back to the start of a word, or as many words as the prefix argument says.\n\nA negative argument moves forward.",
         |ed, args| {
             let n = args[0].as_int()?;
-            let to = move_words(ed, ed.buffer().point(), -n);
+            let point = ed.buffer().point();
+            let to = move_words(ed, point, -n)?;
             ed.buffer_mut().set_point(to);
             Ok(())
         },
@@ -451,17 +453,57 @@ fn tenths(size: usize, n: i64) -> i64 {
     size as i64 * n / 10
 }
 
-/// The position after moving `n` words from `pos`, backward if negative.
-pub(crate) fn move_words(ed: &Editor, mut pos: usize, n: i64) -> usize {
-    let word = |c: char| ed.char_syntax(c).class == crate::syntax_table::Class::Word;
-    let b = ed.buffer();
+/// The position after moving `n` words from `pos`, backward if negative,
+/// as Emacs's `scan_words`: a word whose first character, or last going
+/// back, `find-word-boundary-function-table` gives a function ends where
+/// that function, called with that character's position and the limit,
+/// says, as subword and superword modes split and join words.
+pub(crate) fn move_words(ed: &mut Editor, mut pos: usize, n: i64) -> Result<usize> {
     let start = pos;
+    let table = match ed.variable("find-word-boundary-function-table") {
+        Some(Value::CharTable(id)) => Some(id),
+        _ => None,
+    };
+    let word = |ed: &Editor, c: char| ed.char_syntax(c).class == crate::syntax_table::Class::Word;
     for _ in 0..n.unsigned_abs() {
-        pos = if n > 0 { word_end(b, pos, word) } else { word_start(b, pos, word) };
+        let (min, max) = (ed.buffer().point_min(), ed.buffer().point_max());
+        if n > 0 {
+            while pos < max && ed.buffer().char_at(pos).is_some_and(|c| !word(ed, c)) {
+                pos += 1;
+            }
+            let function = table.zip(ed.buffer().char_at(pos)).map(|(t, c)| ed.char_table_get(t, c as u32));
+            match function {
+                Some(f) if f.is_true() && pos < max => pos = boundary(ed, &f, pos, max)?,
+                _ => {
+                    while pos < max && ed.buffer().char_at(pos).is_some_and(|c| word(ed, c)) {
+                        pos += 1;
+                    }
+                }
+            }
+        } else {
+            while pos > min && ed.buffer().char_at(pos - 1).is_some_and(|c| !word(ed, c)) {
+                pos -= 1;
+            }
+            let function = table.zip(pos.checked_sub(1).and_then(|p| ed.buffer().char_at(p))).map(|(t, c)| ed.char_table_get(t, c as u32));
+            match function {
+                Some(f) if f.is_true() && pos > min => pos = boundary(ed, &f, pos - 1, min)?,
+                _ => {
+                    while pos > min && ed.buffer().char_at(pos - 1).is_some_and(|c| word(ed, c)) {
+                        pos -= 1;
+                    }
+                }
+            }
+        }
     }
     // Word motion keeps to the field it started in, such as the
     // minibuffer's input, as Emacs's does.
-    ed.constrain_to_field(pos, start, false, false, None)
+    Ok(ed.constrain_to_field(pos, start, false, false, None))
+}
+
+/// Where a word boundary function says the word at `pos` ends, going towards `limit`.
+fn boundary(ed: &mut Editor, function: &Value, pos: usize, limit: usize) -> Result<usize> {
+    let to = ed.funcall(function, &[Value::Number(pos as f64), Value::Number(limit as f64)])?;
+    Ok(to.as_number().map_or(pos, |n| n as usize))
 }
 
 /// Scrolls `lines` lines, signalling an error if the window cannot scroll at all.
@@ -819,26 +861,6 @@ fn move_by_height(ed: &Editor, b: &Buffer, mut line: usize, height: f32, forward
 /// How far a screen scroll moves: the window height less two lines of context.
 fn scroll_step(ed: &Editor) -> usize {
     ed.viewport_height().saturating_sub(2).max(1)
-}
-
-fn word_end(b: &Buffer, mut pos: usize, word: impl Fn(char) -> bool) -> usize {
-    while b.char_at(pos).is_some_and(|c| !word(c)) {
-        pos += 1;
-    }
-    while b.char_at(pos).is_some_and(&word) {
-        pos += 1;
-    }
-    pos
-}
-
-fn word_start(b: &Buffer, mut pos: usize, word: impl Fn(char) -> bool) -> usize {
-    while pos > 0 && b.char_at(pos - 1).is_some_and(|c| !word(c)) {
-        pos -= 1;
-    }
-    while pos > 0 && b.char_at(pos - 1).is_some_and(&word) {
-        pos -= 1;
-    }
-    pos
 }
 
 /// What Emacs's self-insert does after inserting a character: a space or
@@ -1260,7 +1282,7 @@ fn delete_active_region(ed: &mut Editor, n: i64) -> Result<bool> {
 /// Kills `n` words after point, or before it if negative.
 fn kill_words(ed: &mut Editor, n: i64) -> Result<()> {
     let p = ed.buffer().point();
-    let to = move_words(ed, p, n);
+    let to = move_words(ed, p, n)?;
     kill_to(ed, p, to)
 }
 
