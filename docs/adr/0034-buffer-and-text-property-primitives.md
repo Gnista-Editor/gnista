@@ -4,7 +4,7 @@ Status: accepted · 2026-10-30
 
 ## Context
 
-Packages ported from Emacs call a set of primitives from editfns.c, textprop.c and buffer.c directly, and Ember had few of them. Some had names of Ember's own; for others, packages worked around the gap, as lisp.ts and org.ts each put a narrowing back by hand. The missing ones:
+Packages ported from Emacs call a set of primitives from editfns.c, textprop.c and buffer.c directly, and Gnista had few of them. Some had names of Gnista's own; for others, packages worked around the gap, as lisp.ts and org.ts each put a narrowing back by hand. The missing ones:
 - **Fields**, the stretches of text with one `field` property, which comint, eshell and the minibuffer's prompt are built on: `field-beginning`, `field-end`, `field-string`, `delete-field` and `constrain-to-field`, which C-a and the word commands obey.
 - **Searches for where a property changes**: `next-single-property-change` and its kin, `text-property-any` and `text-property-not-all`, and `get-pos-property`, the property inserted text would take.
 - **Buffer substrings**: `insert-buffer-substring`, `delete-and-extract-region` and `compare-buffer-substrings`.
@@ -51,22 +51,22 @@ Option 2.
 
 Positions count from 0, as everywhere in scripts. `bufferDisableUndo` and `bufferEnableUndo` turn recording off and on. The list is read-only: undo keeps its own structure, so code cannot push entries or bind the list.
 
-Making the list visible showed two places where Ember recorded point differently from Emacs 30's `record_point`. Neither showed in what undo did:
+Making the list visible showed two places where Gnista recorded point differently from Emacs 30's `record_point`. Neither showed in what undo did:
 - Emacs records point before a backward deletion even when point was at its end.
 - Emacs takes the position from where point was before the command, `point_before_last_command_or_undo`, even when the command joins its undo step to the one before.
 
-Ember now does both.
+Gnista now does both.
 
 **Indirect buffers** (`indirect.rs`), as buffer.c's `make-indirect-buffer`:
 - **What they share.** An indirect buffer shares its base's text, text properties, undo history and modified flag. It has its own point, narrowing, markers, overlays, local variables and major mode. With CLONE, it starts with the base's mode, variables, keymaps, tables, mark and overlays, and runs `clone-indirect-buffer-hook`. Without, it is in Fundamental mode.
 - **Bases and killing.** The base of an indirect buffer is its own base. Killing the base kills its indirect buffers. `buffer-base-buffer` says which buffer is the base.
-- **One text, kept in each buffer.** Emacs keeps one copy of the text for the whole family. Ember's buffers each own their text, so each keeps a copy, which costs little because ropes share what is the same. Each change is noted, and the editor makes it in the others with markers, point and overlays moving as they would. The text properties go across whole, with the modified flag. This happens after every edit through the editor, after each call a script makes, after each command, after fontifying each window, and after process output.
+- **One text, kept in each buffer.** Emacs keeps one copy of the text for the whole family. Gnista's buffers each own their text, so each keeps a copy, which costs little because ropes share what is the same. Each change is noted, and the editor makes it in the others with markers, point and overlays moving as they would. The text properties go across whole, with the modified flag. This happens after every edit through the editor, after each call a script makes, after each command, after fontifying each window, and after process output.
 - **One undo history.** The family has one undo history, as Emacs shares the list. It moves to whichever buffer is about to record a change, start a command or undo. So undoing in the base undoes a change made in an indirect buffer.
 - **The commands built on them.** `clone-indirect-buffer` and `clone-indirect-buffer-other-window` on `C-x 4 c`, from simple.el. Org's `org-tree-to-indirect-buffer` on `C-c C-x b`, with `org-indirect-buffer-display`, names the buffer after the heading and narrows it to the subtree. Its folds are its own, as Org's overlays are per buffer. `org-show-all` now shows only what is accessible, as `org-fold-show-all` does, so the base's folds outside the subtree stay.
 
 Copying beats sharing here. Sharing one text between `Buffer`s would have put every read of the text behind a lock or a reference count, slowing every buffer for the sake of a few. Copying costs nothing until a buffer has an indirect buffer, and then a copy of the property runs after each change.
 
-The values were checked against Emacs 30.2 by a batch probe on the same text, and the tests (`crates/ember-script/tests/textprop.rs`) hold its answers. Batch Emacs cannot type into the minibuffer, so field motion there is tested headless rather than by the Emacs comparison. Indirect buffers have cases in the comparison: Org's `C-c C-x b` and its folds, and `C-x 4 c` with undo across buffers.
+The values were checked against Emacs 30.2 by a batch probe on the same text, and the tests (`crates/gnista-script/tests/textprop.rs`) hold its answers. Batch Emacs cannot type into the minibuffer, so field motion there is tested headless rather than by the Emacs comparison. Indirect buffers have cases in the comparison: Org's `C-c C-x b` and its folds, and `C-x 4 c` with undo across buffers.
 
 ## Consequences
 
@@ -74,7 +74,7 @@ Packages can port code that uses fields, property searches, restrictions and oth
 - `buffer-undo-list` cannot be written or let-bound, as Lisp binds it to t to make changes without undo.
 - Text properties are still put without undo, the modified flag or change hooks (see [differences.md](../differences.md)).
 - `field` values are compared with `equal`, where Emacs uses `eq`, which differs only for two distinct strings with the same text.
-- **Changes in two buffers before the editor passes them on.** If two buffers of a family both change between the editor's passes, the second's text properties replace the first's. Ember's code never does this, but a Rust caller editing two of them in one step would.
+- **Changes in two buffers before the editor passes them on.** If two buffers of a family both change between the editor's passes, the second's text properties replace the first's. Gnista's code never does this, but a Rust caller editing two of them in one step would.
 - **Org's other displays.** `org-indirect-buffer-display`'s frames are not given the heading as their title, and `org-cycle-hook` is not run.
 
 ## Dependencies introduced

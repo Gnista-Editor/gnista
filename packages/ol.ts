@@ -16,8 +16,8 @@ export interface Link {
 /** The link point is on: a bracket link, an angle link or a plain one. */
 export function linkHere(): Link | undefined {
   const line = lineAt();
-  const text = ember.lineText(line);
-  const p = ember.point();
+  const text = gnista.lineText(line);
+  const p = gnista.point();
   for (const m of allMatches(LINK, text)) {
     const start = at(line, text, m.index ?? 0);
     const end = at(line, text, (m.index ?? 0) + m[0].length);
@@ -52,14 +52,14 @@ export function searchInBuffer(path: string): number {
   }
   if (path.startsWith("#")) {
     const id = path.slice(1);
-    const found = ember.search(`^[ \\t]*:CUSTOM_ID:[ \\t]+${regexpQuote(id)}[ \\t]*$`, { from: 0, regexp: true });
+    const found = gnista.search(`^[ \\t]*:CUSTOM_ID:[ \\t]+${regexpQuote(id)}[ \\t]*$`, { from: 0, regexp: true });
     if (!found) throw new Error(`No match for custom ID: ${id}`);
     const all = headings();
     const i = headingIndex(all, lineAt(found.start));
     return i === undefined ? found.start : all[i].start;
   }
-  if (/^\d+$/.test(path)) return ember.lineStart(Math.min(Number(path) - 1, ember.lineCount() - 1));
-  const target = ember.search(`<<${path}>>`, { from: 0 });
+  if (/^\d+$/.test(path)) return gnista.lineStart(Math.min(Number(path) - 1, gnista.lineCount() - 1));
+  const target = gnista.search(`<<${path}>>`, { from: 0 });
   if (target) return target.start;
   const h = searchHeading(path);
   if (h) return h.start;
@@ -67,8 +67,8 @@ export function searchInBuffer(path: string): number {
 }
 
 export function jump(pos: number): void {
-  ember.pushMark(ember.point());
-  ember.gotoChar(pos);
+  gnista.pushMark(gnista.point());
+  gnista.gotoChar(pos);
   showContext(pos);
 }
 

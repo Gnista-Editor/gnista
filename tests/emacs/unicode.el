@@ -1,6 +1,6 @@
-;;; unicode.el --- Writes the character tables Ember's regexps use, from Emacs  -*- lexical-binding: t -*-
+;;; unicode.el --- Writes the character tables Gnista's regexps use, from Emacs  -*- lexical-binding: t -*-
 
-;; Writes crates/ember-core/src/chartab_data.rs: each character's Unicode
+;; Writes crates/gnista-core/src/chartab_data.rs: each character's Unicode
 ;; general category, its script in `char-script-table', its entry in the
 ;; standard syntax table, its lower and upper case in the standard case
 ;; table where they differ from it, its title case where that differs from
@@ -21,12 +21,12 @@
               (mapconcat (lambda (f) (if (/= 0 (logand flags (ash 1 (car f)))) (cdr f) ""))
                          '((0 . "1") (1 . "2") (2 . "3") (3 . "4") (4 . "p") (5 . "b") (6 . "n") (7 . "c")) "")))))
 
-(defun ember--rust-string (s)
+(defun gnista--rust-string (s)
   "S as a Rust string literal."
   (concat "\"" (mapconcat (lambda (c) (cond ((eq c ?\") "\\\"") ((eq c ?\\) "\\\\") ((< c 32) (format "\\u{%x}" c)) (t (string c)))) s "") "\""))
 
 (let* ((root (file-name-directory (directory-file-name (file-name-directory load-file-name))))
-       (out (expand-file-name "../crates/ember-core/src/chartab_data.rs" root))
+       (out (expand-file-name "../crates/gnista-core/src/chartab_data.rs" root))
        (categories (let (l) (dotimes (i 95) (let ((c (+ ?\s i))) (when (category-docstring c) (push c l)))) (nreverse l)))
        (names '(Lu Ll Lt Lm Lo Mn Mc Me Nd Nl No Pc Pd Ps Pe Pi Pf Po Sm Sc Sk So Zs Zl Zp Cc Cf Cs Co Cn))
        (runs (make-vector 128 nil))
@@ -91,7 +91,7 @@
     (insert "];\n\n/// Runs of characters with one entry in the standard syntax table, as a descriptor.\n"
             "pub(crate) const SYNTAX: &[(u32, u32, &str)] = &[\n")
     (dolist (r (nreverse syntax-runs))
-      (insert (format "    (%d, %d, %s),\n" (nth 0 r) (nth 1 r) (ember--rust-string (nth 2 r)))))
+      (insert (format "    (%d, %d, %s),\n" (nth 0 r) (nth 1 r) (gnista--rust-string (nth 2 r)))))
     (insert "];\n\n/// Characters whose lower case, in the standard case table, is another.\n"
             "pub(crate) const DOWNCASE: &[(u32, u32)] = &[\n")
     (dolist (r (nreverse downs)) (insert (format "    (%d, %d),\n" (car r) (cdr r))))
@@ -107,11 +107,11 @@
             "pub(crate) const SPECIAL_CASING: &[SpecialCasing] = &[\n")
     (dolist (r (nreverse specials))
       (insert (format "    (%d, %s),\n" (car r)
-                      (mapconcat (lambda (s) (if (stringp s) (format "Some(%s)" (ember--rust-string s)) "None")) (cdr r) ", "))))
+                      (mapconcat (lambda (s) (if (stringp s) (format "Some(%s)" (gnista--rust-string s)) "None")) (cdr r) ", "))))
     (insert "];\n\n/// Each standard category's designator and its docstring, as category-docstring gives it.\n"
             "pub(crate) const CATEGORY_DOCS: &[(char, &str)] = &[\n")
     (dolist (c categories)
-      (insert (format "    ('%c', %s),\n" c (ember--rust-string (category-docstring c)))))
+      (insert (format "    ('%c', %s),\n" c (gnista--rust-string (category-docstring c)))))
     (insert "];\n\n/// Each category's designator and its runs of characters.\n"
             "pub(crate) const CATEGORIES: &[(char, &[(u32, u32)])] = &[\n")
     (dolist (c categories)

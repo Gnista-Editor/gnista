@@ -1,15 +1,15 @@
-# Ember's chores. Cargo does the building; these put the steps together.
+# Gnista's chores. Cargo does the building; these put the steps together.
 #
-#   make app                  Ember.app, optimised, on V8 (the default engine)
+#   make app                  Gnista.app, optimised, on V8 (the default engine)
 #   make app ENGINE=quickjs   on QuickJS: a smaller app, about 41 MB against 97
 #   make check                every test and clippy, on V8 and on QuickJS
 #   make tidy                 delete the build's day-old leftover object files
 #
-# make app builds target/Ember.app; open it, or copy it to /Applications.
+# make app builds target/Gnista.app; open it, or copy it to /Applications.
 
 ENGINE  ?= v8
 VERSION := $(shell sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
-APP     := target/Ember.app
+APP     := target/Gnista.app
 
 ifeq ($(ENGINE),v8)
 FEATURES :=
@@ -26,11 +26,11 @@ QUICKJS_FEATURES := --no-default-features --features quickjs
 .PHONY: app clean-app check tidy
 
 app:
-	cargo build --release -p ember-gui $(FEATURES)
+	cargo build --release -p gnista-gui $(FEATURES)
 	rm -rf $(APP)
 	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources
-	cp target/release/ember-gui $(APP)/Contents/MacOS/
-	sed 's/@VERSION@/$(VERSION)/g' crates/ember-gui/macos/Info.plist > $(APP)/Contents/Info.plist
+	cp target/release/gnista-gui $(APP)/Contents/MacOS/
+	sed 's/@VERSION@/$(VERSION)/g' crates/gnista-gui/macos/Info.plist > $(APP)/Contents/Info.plist
 	codesign --force --deep --sign - $(APP)
 	@echo "Built $(APP) ($(ENGINE), version $(VERSION))"
 

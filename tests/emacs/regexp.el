@@ -1,17 +1,17 @@
 ;;; regexp.el --- What Emacs's string-match makes of regexp cases  -*- lexical-binding: t -*-
 
 ;; Reads cases, one JSON object a line with a regexp "re", a string "s"
-;; and whether to fold case, "fold", from the file EMBER_REGEXP_CASES, and
-;; writes to EMBER_REGEXP_RESULTS, a line for each, what string-match
+;; and whether to fold case, "fold", from the file GNISTA_REGEXP_CASES, and
+;; writes to GNISTA_REGEXP_RESULTS, a line for each, what string-match
 ;; gives in a fundamental-mode buffer, whose syntax table is the standard
 ;; one, or with "backward" re-search-backward from the end of a buffer
 ;; holding the string: the match data as an array, "none", or "error SYMBOL".
 ;;
-;;   EMBER_REGEXP_CASES=cases.jsonl EMBER_REGEXP_RESULTS=results.jsonl \
+;;   GNISTA_REGEXP_CASES=cases.jsonl GNISTA_REGEXP_RESULTS=results.jsonl \
 ;;     emacs -Q --batch -l tests/emacs/regexp.el
 
-(let ((in (getenv "EMBER_REGEXP_CASES"))
-      (out (getenv "EMBER_REGEXP_RESULTS"))
+(let ((in (getenv "GNISTA_REGEXP_CASES"))
+      (out (getenv "GNISTA_REGEXP_RESULTS"))
       results)
   (with-temp-buffer
     (insert-file-contents in)

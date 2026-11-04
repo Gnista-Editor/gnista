@@ -4,7 +4,7 @@ Status: accepted · 2026-10-27
 
 ## Context
 
-The first slice of milestone 3 in [the plan](../plan.md) is what syntax highlighting, org headings and folding stand on: text properties, overlays, faces and invisible text. In Emacs these are C primitives that redisplay reads. Ember has two front ends, so it needs one model of what to draw that both can use.
+The first slice of milestone 3 in [the plan](../plan.md) is what syntax highlighting, org headings and folding stand on: text properties, overlays, faces and invisible text. In Emacs these are C primitives that redisplay reads. Gnista has two front ends, so it needs one model of what to draw that both can use.
 
 ## Options considered
 

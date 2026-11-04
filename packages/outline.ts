@@ -5,7 +5,7 @@
 // text with overlays whose invisible property is "outline", shown as "...",
 // as Emacs does it.
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "outline-regexp",
   doc:
     "What starts a heading line: an Emacs regular expression matched at the start of a line. " +
@@ -25,7 +25,7 @@ const levelFaces = [
   "font-lock-string-face",
 ];
 levelFaces.forEach((inherit, i) => {
-  ember.defineFace({ name: `outline-${i + 1}`, doc: `Level ${i + 1} headings, and deeper levels in turn.`, attributes: { inherit } });
+  gnista.defineFace({ name: `outline-${i + 1}`, doc: `Level ${i + 1} headings, and deeper levels in turn.`, attributes: { inherit } });
 });
 
 interface Heading {
@@ -38,25 +38,25 @@ interface Heading {
 
 /** How long the heading at the start of `line` is, as outline-regexp matches it there with looking-at, or 0. */
 function headingMatch(line: number): string {
-  const start = ember.lineStart(line);
-  const regexp = `\\(?:${String(ember.variable("outline-regexp"))}\\)`;
-  return ember.lookingAt(regexp, start) ? ember.bufferText(start, ember.matchEnd(0)!) : "";
+  const start = gnista.lineStart(line);
+  const regexp = `\\(?:${String(gnista.variable("outline-regexp"))}\\)`;
+  return gnista.lookingAt(regexp, start) ? gnista.bufferText(start, gnista.matchEnd(0)!) : "";
 }
 
 function headings(): Heading[] {
   const found: Heading[] = [];
   // Only the lines outline-regexp can match at the start of, found in one
   // pass, rather than a search at every line.
-  const regexp = `\\(?:${String(ember.variable("outline-regexp"))}\\)`;
-  const lines = ember.saveRestriction(() => {
-    ember.widen();
-    return ember.matchingLines(regexp);
+  const regexp = `\\(?:${String(gnista.variable("outline-regexp"))}\\)`;
+  const lines = gnista.saveRestriction(() => {
+    gnista.widen();
+    return gnista.matchingLines(regexp);
   });
   for (const [line] of lines) {
     const match = headingMatch(line);
     if (match.trimEnd().length > 0) {
       // The match's length is the level, not counting a space after the stars, as in org-mode's "\\*+ ".
-      found.push({ line, start: ember.lineStart(line), end: ember.lineEnd(line), level: match.trimEnd().length });
+      found.push({ line, start: gnista.lineStart(line), end: gnista.lineEnd(line), level: match.trimEnd().length });
     }
   }
   return found;
@@ -64,7 +64,7 @@ function headings(): Heading[] {
 
 /** The heading point is under: the nearest heading line at or before it. */
 function currentHeading(all: Heading[]): number | undefined {
-  const line = ember.lineOf(ember.point());
+  const line = gnista.lineOf(gnista.point());
   let found: number | undefined;
   all.forEach((h, i) => {
     if (h.line <= line) found = i;
@@ -82,8 +82,8 @@ function subtreeEnd(all: Heading[], i: number): number {
   if (next) {
     return Math.max(all[i].end, next.start - 1);
   }
-  const last = ember.lineCount() - 1;
-  const end = ember.lineStart(last) === ember.lineEnd(last) && last > 0 ? ember.lineStart(last) - 1 : ember.bufferSize();
+  const last = gnista.lineCount() - 1;
+  const end = gnista.lineStart(last) === gnista.lineEnd(last) && last > 0 ? gnista.lineStart(last) - 1 : gnista.bufferSize();
   return Math.max(all[i].end, end);
 }
 
@@ -98,10 +98,10 @@ function entryEnd(all: Heading[], i: number): number {
  * where they reach outside it, and a new one hides it.
  */
 function flag(start: number, end: number, hide: boolean): void {
-  for (const id of ember.overlaysIn(start, end)) {
-    if (ember.overlayGet(id, "invisible") !== "outline") continue;
-    const [from, to] = [ember.overlayStart(id) ?? start, ember.overlayEnd(id) ?? end];
-    ember.deleteOverlay(id);
+  for (const id of gnista.overlaysIn(start, end)) {
+    if (gnista.overlayGet(id, "invisible") !== "outline") continue;
+    const [from, to] = [gnista.overlayStart(id) ?? start, gnista.overlayEnd(id) ?? end];
+    gnista.deleteOverlay(id);
     if (from < start) outlineOverlay(from, start);
     if (to > end) outlineOverlay(end, to);
   }
@@ -110,7 +110,7 @@ function flag(start: number, end: number, hide: boolean): void {
 
 function outlineOverlay(start: number, end: number): void {
   // Front-advance, as outline-flag-region makes its overlays.
-  ember.makeOverlay(start, end, { invisible: "outline", evaporate: true }, { frontAdvance: true });
+  gnista.makeOverlay(start, end, { invisible: "outline", evaporate: true }, { frontAdvance: true });
 }
 
 /** The heading at point, or an error as in Emacs. */
@@ -156,27 +156,27 @@ const commands: { [name: string]: [string, () => void] } = {
     const all = headings();
     all.forEach((_, i) => flag(all[i].end, entryEnd(all, i), true));
   }],
-  "outline-show-all": ["Show all text.", () => flag(0, ember.bufferSize(), false)],
+  "outline-show-all": ["Show all text.", () => flag(0, gnista.bufferSize(), false)],
   "outline-next-visible-heading": ["Move to the next heading that is not hidden.", () => moveToHeading(1)],
   "outline-previous-visible-heading": ["Move to the previous heading that is not hidden.", () => moveToHeading(-1)],
 };
 
 function moveToHeading(direction: number): void {
-  const here = ember.lineOf(ember.point());
-  const visible = headings().filter((h) => h.start === 0 || !ember.invisibleAt(h.start - 1));
+  const here = gnista.lineOf(gnista.point());
+  const visible = headings().filter((h) => h.start === 0 || !gnista.invisibleAt(h.start - 1));
   const target = direction > 0 ? visible.find((h) => h.line > here) : visible.reverse().find((h) => h.line < here);
   if (target === undefined) {
-    ember.gotoChar(direction > 0 ? ember.bufferSize() : 0);
+    gnista.gotoChar(direction > 0 ? gnista.bufferSize() : 0);
     return;
   }
-  ember.gotoChar(target.start);
+  gnista.gotoChar(target.start);
 }
 
 for (const [name, [doc, run]] of Object.entries(commands)) {
-  ember.defineCommand({ name, doc, run });
+  gnista.defineCommand({ name, doc, run });
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "outline-cycle",
   doc:
     "On a heading, cycle its visibility: folded, then its children, then its whole subtree.\n\n" +
@@ -184,92 +184,92 @@ ember.defineCommand({
   run: () => {
     const all = headings();
     const i = currentHeading(all);
-    if (i === undefined || all[i].line !== ember.lineOf(ember.point())) {
-      ember.call("indent-for-tab-command");
+    if (i === undefined || all[i].line !== gnista.lineOf(gnista.point())) {
+      gnista.call("indent-for-tab-command");
       return;
     }
     const end = subtreeEnd(all, i);
     if (end <= all[i].end) {
-      ember.message("EMPTY ENTRY");
+      gnista.message("EMPTY ENTRY");
       return;
     }
     const children = all.slice(i + 1).filter((h) => h.start <= end);
-    const anyChildShown = children.some((h) => !ember.invisibleAt(h.start - 1));
-    const anyHidden = ember.overlaysIn(all[i].end, end).some((id) => ember.overlayGet(id, "invisible") === "outline");
-    if (ember.invisibleAt(all[i].end) && !anyChildShown) {
+    const anyChildShown = children.some((h) => !gnista.invisibleAt(h.start - 1));
+    const anyHidden = gnista.overlaysIn(all[i].end, end).some((id) => gnista.overlayGet(id, "invisible") === "outline");
+    if (gnista.invisibleAt(all[i].end) && !anyChildShown) {
       showChildren(all, i);
-      ember.message(children.length > 0 ? "CHILDREN" : "SUBTREE");
+      gnista.message(children.length > 0 ? "CHILDREN" : "SUBTREE");
     } else if (anyHidden) {
       flag(all[i].end, end, false);
-      ember.message("SUBTREE");
+      gnista.message("SUBTREE");
     } else {
       flag(all[i].end, end, true);
-      ember.message("FOLDED");
+      gnista.message("FOLDED");
     }
   },
 });
 
-ember.defineVariable({ name: "outline--cycle-buffer-state", value: null, local: true });
+gnista.defineVariable({ name: "outline--cycle-buffer-state", value: null, local: true });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "outline-cycle-buffer",
   doc: "Cycle the whole buffer: top-level headings only, then all headings, then everything.",
   run: () => {
     const all = headings();
-    const state = ember.lastCommand() === "outline-cycle-buffer" ? ember.variable("outline--cycle-buffer-state") : null;
+    const state = gnista.lastCommand() === "outline-cycle-buffer" ? gnista.variable("outline--cycle-buffer-state") : null;
     if (state === "top level") {
-      flag(0, ember.bufferSize(), false);
+      flag(0, gnista.bufferSize(), false);
       all.forEach((_, i) => flag(all[i].end, entryEnd(all, i), true));
-      ember.setVariable("outline--cycle-buffer-state", "all headings");
-      ember.message("All headings");
+      gnista.setVariable("outline--cycle-buffer-state", "all headings");
+      gnista.message("All headings");
     } else if (state === "all headings") {
-      flag(0, ember.bufferSize(), false);
-      ember.setVariable("outline--cycle-buffer-state", "show all");
-      ember.message("Show all");
+      flag(0, gnista.bufferSize(), false);
+      gnista.setVariable("outline--cycle-buffer-state", "show all");
+      gnista.message("Show all");
     } else {
       const top = Math.min(...all.map((h) => h.level), Infinity);
       all.forEach((h, i) => {
         if (h.level === top) flag(h.end, subtreeEnd(all, i), true);
       });
-      ember.setVariable("outline--cycle-buffer-state", "top level");
-      ember.message("Top level headings");
+      gnista.setVariable("outline--cycle-buffer-state", "top level");
+      gnista.message("Top level headings");
     }
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "outline-up-heading",
   doc: "Move to the heading above the one point is under, a level higher, or as many levels as the prefix argument says.",
   run: () => {
     // As in Emacs, the mark is pushed and point goes to the start of its
     // line before anything can fail.
-    if (ember.thisCommand() === "outline-up-heading" && ember.lastCommand() !== "outline-up-heading") ember.pushMark(ember.point());
-    ember.gotoChar(ember.lineStart(ember.lineOf(ember.point())));
+    if (gnista.thisCommand() === "outline-up-heading" && gnista.lastCommand() !== "outline-up-heading") gnista.pushMark(gnista.point());
+    gnista.gotoChar(gnista.lineStart(gnista.lineOf(gnista.point())));
     const all = headings();
     let current = currentHeading(all);
     if (current === undefined) throw new Error("Before first heading");
     // From the nearest heading that shows, as outline-back-to-heading finds it.
-    while (current > 0 && ember.invisibleAt(all[current].start)) current--;
+    while (current > 0 && gnista.invisibleAt(all[current].start)) current--;
     // As in Emacs, only a top-level heading is an error; a deeper one with
     // no heading above it goes to the start of the buffer.
-    ember.gotoChar(all[current].start);
+    gnista.gotoChar(all[current].start);
     if (all[current].level === 1) throw new Error("Already at top level of the outline");
     let target = all[current].start;
     let i: number | undefined = current;
-    for (let n = ember.prefixNumericValue(); n > 0 && i !== undefined; n--) {
+    for (let n = gnista.prefixNumericValue(); n > 0 && i !== undefined; n--) {
       const level: number = all[i].level;
       let parent: number | undefined;
       for (let k = i - 1; k >= 0 && parent === undefined; k--) {
-        if (all[k].level < level && !ember.invisibleAt(all[k].start)) parent = k;
+        if (all[k].level < level && !gnista.invisibleAt(all[k].start)) parent = k;
       }
       i = parent;
       target = parent === undefined ? 0 : all[parent].start;
     }
-    ember.gotoChar(target);
+    gnista.gotoChar(target);
   },
 });
 
-const outlineKeys: { [keys: string]: ember.CommandName } = {
+const outlineKeys: { [keys: string]: gnista.CommandName } = {
   "C-d": "outline-hide-subtree",
   "C-s": "outline-show-subtree",
   "C-c": "outline-hide-entry",
@@ -289,32 +289,32 @@ const withPrefix = (prefix: string) =>
  * org-mode, fontify in their own way, so this only works in outline-mode.
  */
 function fontifyHeadings(start: number, end: number): void {
-  if (ember.variable("major-mode") !== "outline-mode") return;
-  ember.removeTextProperty(start, end, "face");
-  for (let line = ember.lineOf(start); line < ember.lineCount() && ember.lineStart(line) < end; line++) {
+  if (gnista.variable("major-mode") !== "outline-mode") return;
+  gnista.removeTextProperty(start, end, "face");
+  for (let line = gnista.lineOf(start); line < gnista.lineCount() && gnista.lineStart(line) < end; line++) {
     const match = headingMatch(line);
     if (match.length > 0) {
-      ember.putTextProperty(ember.lineStart(line), ember.lineEnd(line), "face", `outline-${((match.length - 1) % 8) + 1}`);
+      gnista.putTextProperty(gnista.lineStart(line), gnista.lineEnd(line), "face", `outline-${((match.length - 1) % 8) + 1}`);
     }
   }
 }
 
-ember.defineMinorMode({
+gnista.defineMinorMode({
   name: "outline-minor-mode",
   lighter: " Outl",
   doc: "Fold text under headings, in any major mode. The keys start with C-c @, such as C-c @ C-d to hide a subtree.",
   bindings: withPrefix("C-c @"),
   onChange: (enabled) => {
     if (enabled) {
-      ember.addToInvisibilitySpec("outline", { ellipsis: true });
+      gnista.addToInvisibilitySpec("outline", { ellipsis: true });
     } else {
-      flag(0, ember.bufferSize(), false);
-      ember.removeFromInvisibilitySpec("outline");
+      flag(0, gnista.bufferSize(), false);
+      gnista.removeFromInvisibilitySpec("outline");
     }
   },
 });
 
-ember.defineMajorMode({
+gnista.defineMajorMode({
   name: "outline-mode",
   modeName: "Outline",
   parent: "text-mode",
@@ -324,9 +324,9 @@ ember.defineMajorMode({
     "S-TAB cycles the whole buffer. The other keys start with C-c, such as C-c C-d to hide a subtree.",
   bindings: { ...withPrefix("C-c"), TAB: "outline-cycle", "S-TAB": "outline-cycle-buffer" },
   setup: () => {
-    ember.addToInvisibilitySpec("outline", { ellipsis: true });
-    ember.addHook("jit-lock-functions", fontifyHeadings, { local: true });
+    gnista.addToInvisibilitySpec("outline", { ellipsis: true });
+    gnista.addHook("jit-lock-functions", fontifyHeadings, { local: true });
     // M-x imenu lists the headings, as outline-imenu-generic-expression.
-    ember.setVariable("imenu-generic-expression", [[null, `^\\(?:${String(ember.variable("outline-regexp"))}\\).*$`, 0]]);
+    gnista.setVariable("imenu-generic-expression", [[null, `^\\(?:${String(gnista.variable("outline-regexp"))}\\).*$`, 0]]);
   },
 });

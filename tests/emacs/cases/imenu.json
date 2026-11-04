@@ -125,7 +125,7 @@
   },
   {
     "name": "imenu-org-top-heading",
-    "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Ember\ntext\n* Done\n",
+    "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Gnista\ntext\n* Done\n",
     "keys": "M-x",
     "answers": [
       "imenu",
@@ -137,7 +137,7 @@
   },
   {
     "name": "imenu-org-subheading",
-    "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Ember\ntext\n* Done\n",
+    "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Gnista\ntext\n* Done\n",
     "keys": "M-x",
     "answers": [
       "imenu",
@@ -150,12 +150,12 @@
   },
   {
     "name": "imenu-org-folded-subheading-shows",
-    "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Ember\ntext\n* Done\n",
+    "text": "* Inbox\nnotes\n** TODO [#A] Call [[https://x.org][Alice]] :work:\n** Shopping\n*** Milk\n* Projects\n** Gnista\ntext\n* Done\n",
     "keys": "S-TAB M-x",
     "answers": [
       "imenu",
       "Projects",
-      "Ember"
+      "Gnista"
     ],
     "modes": [
       "org-mode"

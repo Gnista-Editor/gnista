@@ -10,9 +10,9 @@ import { forwardLine, truthy } from "subr";
 
 // --- Faces and options ------------------------------------------------------
 
-ember.defineFace({ name: "tab-bar", doc: "The tab bar, across the top of a frame." });
-ember.defineFace({ name: "tab-bar-tab", doc: "The selected tab on the tab bar.", attributes: { inherit: "tab-bar" } });
-ember.defineFace({ name: "tab-bar-tab-inactive", doc: "The tabs on the tab bar that are not selected.", attributes: { inherit: "tab-bar-tab" } });
+gnista.defineFace({ name: "tab-bar", doc: "The tab bar, across the top of a frame." });
+gnista.defineFace({ name: "tab-bar-tab", doc: "The selected tab on the tab bar.", attributes: { inherit: "tab-bar" } });
+gnista.defineFace({ name: "tab-bar-tab-inactive", doc: "The tabs on the tab bar that are not selected.", attributes: { inherit: "tab-bar-tab" } });
 
 for (const [name, value, doc] of [
   ["tab-bar-show", true, "When the tab bar shows: t always, once tab-bar-mode is on; a number, when there are more tabs than that; nil never."],
@@ -43,18 +43,18 @@ for (const [name, value, doc] of [
   ["tab-bar-back-button", " < ", "The button that goes back in the tab's history."],
   ["tab-bar-forward-button", " > ", "The button that goes forward in the tab's history."],
 ] as const) {
-  ember.defineVariable({ name, value: value as ember.Value, doc });
+  gnista.defineVariable({ name, value: value as gnista.Value, doc });
 }
-ember.defineHook("tab-bar-tab-post-open-functions", "Functions called with the new tab's name after a tab is made.");
-ember.defineHook("tab-bar-tab-post-select-functions", "Functions called after selecting a tab, with the names of the tab left and the tab selected.");
-ember.defineHook("tab-bar-tab-pre-close-functions", "Functions called with the name of a tab about to be closed, and whether it is the frame's only one.");
+gnista.defineHook("tab-bar-tab-post-open-functions", "Functions called with the new tab's name after a tab is made.");
+gnista.defineHook("tab-bar-tab-post-select-functions", "Functions called after selecting a tab, with the names of the tab left and the tab selected.");
+gnista.defineHook("tab-bar-tab-pre-close-functions", "Functions called with the name of a tab about to be closed, and whether it is the frame's only one.");
 
 // --- Tabs -------------------------------------------------------------------
 
 /** A window configuration and where point was in it, as a tab's wc and wc-point. */
 interface Saved {
-  wc: ember.WindowConfiguration;
-  point: ember.Marker;
+  wc: gnista.WindowConfiguration;
+  point: gnista.Marker;
 }
 
 interface Tab {
@@ -83,37 +83,37 @@ const closedTabs: { frame: number; index: number; tab: Tab }[] = [];
 
 /** The name tab-bar-tab-name-function gives the current tab. */
 function autoName(): string {
-  const fn = ember.variable("tab-bar-tab-name-function");
-  const name = typeof fn === "string" || typeof fn === "function" ? ember.funcall(fn as string) : undefined;
+  const fn = gnista.variable("tab-bar-tab-name-function");
+  const name = typeof fn === "string" || typeof fn === "function" ? gnista.funcall(fn as string) : undefined;
   return typeof name === "string" ? name : currentName();
 }
 
 /** The name of the buffer a tab is named after: the window's the minibuffer was entered from, while it is open, as Emacs's tab-bar names do. */
 function currentName(): string {
-  return ember.windowBuffer(ember.minibufferSelectedWindow() ?? ember.selectedWindow()) ?? "";
+  return gnista.windowBuffer(gnista.minibufferSelectedWindow() ?? gnista.selectedWindow()) ?? "";
 }
 
-ember.defun("tab-bar-tab-name-current", () => currentName());
-ember.defun("tab-bar-tab-name-current-with-count", () => {
-  const count = ember.windowList().length;
+gnista.defun("tab-bar-tab-name-current", () => currentName());
+gnista.defun("tab-bar-tab-name-current-with-count", () => {
+  const count = gnista.windowList().length;
   const name = currentName();
   return count > 1 ? `${name} (${count})` : name;
 });
-ember.defun("tab-bar-tab-name-all", () => [...new Set(ember.windowList().map((w) => ember.windowBuffer(w)))].join(", "));
-ember.defun("tab-bar-tab-name-truncated", () => {
+gnista.defun("tab-bar-tab-name-all", () => [...new Set(gnista.windowList().map((w) => gnista.windowBuffer(w)))].join(", "));
+gnista.defun("tab-bar-tab-name-truncated", () => {
   const name = currentName();
-  const max = Number(ember.variable("tab-bar-tab-name-truncated-max") ?? 20);
+  const max = Number(gnista.variable("tab-bar-tab-name-truncated-max") ?? 20);
   return [...name].length < max ? name : `${[...name].slice(0, max - 1).join("")}…`;
 });
 
 /** A frame's tabs, the selected frame's by default, made with one current tab if it has none, as tab-bar-tabs. */
-function tabs(frame = ember.selectedFrame()): Tab[] {
+function tabs(frame = gnista.selectedFrame()): Tab[] {
   let list = frameTabs.get(frame);
   if (!list) {
-    list = [{ id: nextId++, name: frame === ember.selectedFrame() ? autoName() : "", explicitName: false, time: ++clock, current: true }];
+    list = [{ id: nextId++, name: frame === gnista.selectedFrame() ? autoName() : "", explicitName: false, time: ++clock, current: true }];
     frameTabs.set(frame, list);
-    ember.runHooks("tab-bar-tab-post-open-functions", list[0].name);
-  } else if (frame === ember.selectedFrame()) {
+    gnista.runHooks("tab-bar-tab-post-open-functions", list[0].name);
+  } else if (frame === gnista.selectedFrame()) {
     const current = list.find((t) => t.current);
     if (current && !current.explicitName) current.name = autoName();
   }
@@ -123,23 +123,23 @@ function tabs(frame = ember.selectedFrame()): Tab[] {
 const currentIndex = (list: Tab[]): number => Math.max(0, list.findIndex((t) => t.current));
 
 /** Where point is now, kept as a marker. */
-const pointMarker = (): ember.Marker => ember.makeMarker(ember.point());
+const pointMarker = (): gnista.Marker => gnista.makeMarker(gnista.point());
 
 /** The current windows, kept for the tab being left, as tab-bar--tab does. */
 function leave(tab: Tab): void {
-  tab.saved = { wc: ember.currentWindowConfiguration(), point: pointMarker() };
+  tab.saved = { wc: gnista.currentWindowConfiguration(), point: pointMarker() };
   tab.time = ++clock;
   tab.current = false;
   if (historyMode()) {
-    tab.back = history(ember.selectedFrame()).back;
-    tab.forward = history(ember.selectedFrame()).forward;
+    tab.back = history(gnista.selectedFrame()).back;
+    tab.forward = history(gnista.selectedFrame()).forward;
   }
 }
 
 /** Puts saved windows back, with point in the buffer that is current then. */
 function restore(saved: Saved): void {
-  ember.setWindowConfiguration(saved.wc);
-  if (ember.markerBuffer(saved.point) === ember.currentBuffer().name) ember.gotoChar(ember.markerPosition(saved.point)!);
+  gnista.setWindowConfiguration(saved.wc);
+  if (gnista.markerBuffer(saved.point) === gnista.currentBuffer().name) gnista.gotoChar(gnista.markerPosition(saved.point)!);
 }
 
 /** The tabs ordered by when they were last left, most recent first, the current one left out, as tab-bar--tabs-recent. */
@@ -161,16 +161,16 @@ interface Item {
 const shownItems = new Map<number, { item: Item; from: number; to: number; closeFrom?: number }[]>();
 
 const separator = (): string => {
-  const sep = ember.variable("tab-bar-separator");
-  return typeof sep === "string" ? sep : ember.displayGraphicP() ? " " : "|";
+  const sep = gnista.variable("tab-bar-separator");
+  return typeof sep === "string" ? sep : gnista.displayGraphicP() ? " " : "|";
 };
 
 /** A tab's name as the tab bar shows it, as tab-bar-tab-name-format-default with its hints and close button. */
 function formatTabName(tab: Tab, i: number): { text: string; close: string } {
-  const hints = truthy(ember.variable("tab-bar-tab-hints"));
-  const show = ember.variable("tab-bar-close-button-show");
+  const hints = truthy(gnista.variable("tab-bar-tab-hints"));
+  const show = gnista.variable("tab-bar-close-button-show");
   const closeShown = truthy(show) && show !== (tab.current ? "non-selected" : "selected");
-  const close = closeShown ? String(ember.variable("tab-bar-close-button") ?? " x") : "";
+  const close = closeShown ? String(gnista.variable("tab-bar-close-button") ?? " x") : "";
   return { text: `${hints ? `${i} ` : ""}${tab.name}`, close };
 }
 
@@ -179,9 +179,9 @@ const formats: { [name: string]: (frame: number) => Item[] } = {
     historyMode()
       ? [
           { text: separator() },
-          { text: String(ember.variable("tab-bar-back-button") ?? " < "), command: "tab-bar-history-back" },
+          { text: String(gnista.variable("tab-bar-back-button") ?? " < "), command: "tab-bar-history-back" },
           { text: separator() },
-          { text: String(ember.variable("tab-bar-forward-button") ?? " > "), command: "tab-bar-history-forward" },
+          { text: String(gnista.variable("tab-bar-forward-button") ?? " > "), command: "tab-bar-history-forward" },
         ]
       : [],
   "tab-bar-format-tabs": (frame) =>
@@ -190,16 +190,16 @@ const formats: { [name: string]: (frame: number) => Item[] } = {
       return [{ text: separator() }, { text: text + close, face: tab.current ? "tab-bar-tab" : "tab-bar-tab-inactive", tab: k + 1 }];
     }),
   "tab-bar-separator": () => [{ text: separator() }],
-  "tab-bar-format-add-tab": () => [{ text: String(ember.variable("tab-bar-new-button") ?? " + "), command: "tab-bar-new-tab" }],
+  "tab-bar-format-add-tab": () => [{ text: String(gnista.variable("tab-bar-new-button") ?? " + "), command: "tab-bar-new-tab" }],
 };
 
 /** What the width limits say for this display: the pixel width over the default font's for a graphical one. */
 function autoWidthLimit(name: string): number | undefined {
-  const value = ember.variable(name);
+  const value = gnista.variable(name);
   if (!Array.isArray(value)) return undefined;
-  if (!ember.displayGraphicP()) return Number(value[1]);
+  if (!gnista.displayGraphicP()) return Number(value[1]);
   const pixels = Array.isArray(value[0]) ? Number(value[0][0]) : Number(value[0]);
-  return Math.floor(pixels / Math.max(1, ember.frameCharWidth()));
+  return Math.floor(pixels / Math.max(1, gnista.frameCharWidth()));
 }
 
 /**
@@ -209,26 +209,26 @@ function autoWidthLimit(name: string): number | undefined {
  */
 function autoWidth(items: Item[], frame: number): { item: Item; shadowFrom?: number; closeLength: number }[] {
   const tabItems = items.filter((i) => i.tab !== undefined);
-  const others = items.filter((i) => i.tab === undefined).reduce((n, i) => n + ember.stringWidth(i.text), 0);
-  let width = tabItems.length ? Math.floor((ember.frameWidth(frame) - others) / tabItems.length) : 0;
+  const others = items.filter((i) => i.tab === undefined).reduce((n, i) => n + gnista.stringWidth(i.text), 0);
+  let width = tabItems.length ? Math.floor((gnista.frameWidth(frame) - others) / tabItems.length) : 0;
   const min = autoWidthLimit("tab-bar-auto-width-min");
   const max = autoWidthLimit("tab-bar-auto-width-max");
   if (min !== undefined) width = Math.max(width, min);
   if (max !== undefined) width = Math.min(width, max);
-  const close = String(ember.variable("tab-bar-close-button") ?? " x");
+  const close = String(gnista.variable("tab-bar-close-button") ?? " x");
   return items.map((item) => {
     const closeLength = item.tab !== undefined && item.text.endsWith(close) && formatTabName(tabs(frame)[item.tab - 1], item.tab).close ? [...close].length : 0;
-    if (item.tab === undefined || !truthy(ember.variable("tab-bar-auto-width"))) return { item, closeLength };
+    if (item.tab === undefined || !truthy(gnista.variable("tab-bar-auto-width"))) return { item, closeLength };
     let chars = [...item.text];
     const at = chars.length - closeLength;
-    if (ember.stringWidth(item.text) < width) {
+    if (gnista.stringWidth(item.text) < width) {
       // Spaces before the close button while it stays narrower than the width.
-      while (ember.stringWidth(chars.join("")) + 1 < width) chars.splice(chars.length - closeLength, 0, " ");
+      while (gnista.stringWidth(chars.join("")) + 1 < width) chars.splice(chars.length - closeLength, 0, " ");
       return { item: { ...item, text: chars.join("") }, closeLength };
     }
     let shadowFrom: number | undefined;
-    if (ember.stringWidth(item.text) > width) {
-      while (ember.stringWidth(chars.join("")) > width && chars.length > closeLength) chars.splice(chars.length - closeLength - 1, 1);
+    if (gnista.stringWidth(item.text) > width) {
+      while (gnista.stringWidth(chars.join("")) > width && chars.length > closeLength) chars.splice(chars.length - closeLength - 1, 1);
       chars = chars.slice();
       shadowFrom = Math.max(0, chars.length - closeLength - 2);
       void at;
@@ -238,17 +238,17 @@ function autoWidth(items: Item[], frame: number): { item: Item; shadowFrom?: num
 }
 
 /** A frame's tab bar from tab-bar-format, as tab-bar-make-keymap-1 builds it at redisplay. */
-function tabBarLine(frame: number): string | ember.PropertizedString {
-  const format = ember.variable("tab-bar-format");
+function tabBarLine(frame: number): string | gnista.PropertizedString {
+  const format = gnista.variable("tab-bar-format");
   const items = (Array.isArray(format) ? format : []).flatMap((f) => {
     if (typeof f === "string" && formats[f]) return formats[f](frame);
     if (typeof f === "string" || typeof f === "function") {
-      const text = ember.funcall(f as string);
+      const text = gnista.funcall(f as string);
       return typeof text === "string" ? [{ text }] : [];
     }
     return [];
   });
-  let line: string | ember.PropertizedString = "";
+  let line: string | gnista.PropertizedString = "";
   const shown: { item: Item; from: number; to: number; closeFrom?: number }[] = [];
   let column = 0;
   for (const { item, shadowFrom, closeLength } of autoWidth(items, frame)) {
@@ -256,15 +256,15 @@ function tabBarLine(frame: number): string | ember.PropertizedString {
     const face = item.face ?? "tab-bar";
     const parts =
       shadowFrom === undefined
-        ? [ember.propertize(item.text, { face })]
+        ? [gnista.propertize(item.text, { face })]
         : [
-            ember.propertize(chars.slice(0, shadowFrom).join(""), { face }),
-            ember.propertize(chars.slice(shadowFrom, chars.length - closeLength).join(""), { face: ["shadow", face] }),
-            ember.propertize(chars.slice(chars.length - closeLength).join(""), { face }),
+            gnista.propertize(chars.slice(0, shadowFrom).join(""), { face }),
+            gnista.propertize(chars.slice(shadowFrom, chars.length - closeLength).join(""), { face: ["shadow", face] }),
+            gnista.propertize(chars.slice(chars.length - closeLength).join(""), { face }),
           ];
-    line = ember.concat(line, ...parts);
-    const width = ember.stringWidth(item.text);
-    const closeFrom = closeLength ? column + width - ember.stringWidth(chars.slice(chars.length - closeLength).join("")) : undefined;
+    line = gnista.concat(line, ...parts);
+    const width = gnista.stringWidth(item.text);
+    const closeFrom = closeLength ? column + width - gnista.stringWidth(chars.slice(chars.length - closeLength).join("")) : undefined;
     shown.push({ item, from: column, to: column + width, closeFrom });
     column += width;
   }
@@ -274,8 +274,8 @@ function tabBarLine(frame: number): string | ember.PropertizedString {
 
 /** Whether a frame shows the tab bar, as tab-bar--tab-bar-lines-for-frame decides. */
 function tabBarLinesFor(frame: number): number {
-  if (!truthy(ember.variable("tab-bar-mode"))) return 0;
-  const show = ember.variable("tab-bar-show");
+  if (!truthy(gnista.variable("tab-bar-mode"))) return 0;
+  const show = gnista.variable("tab-bar-show");
   if (!truthy(show)) return 0;
   if (typeof show === "number") return tabs(frame).length > show ? 1 : 0;
   return 1;
@@ -283,21 +283,21 @@ function tabBarLinesFor(frame: number): number {
 
 /** Shows or hides each frame's tab bar, and brings what it shows up to date. */
 function update(): void {
-  for (const frame of ember.frameList()) {
+  for (const frame of gnista.frameList()) {
     const lines = tabBarLinesFor(frame);
-    if (ember.frameParameter(frame, "tab-bar-lines") !== lines) ember.setFrameParameter(frame, "tab-bar-lines", lines);
+    if (gnista.frameParameter(frame, "tab-bar-lines") !== lines) gnista.setFrameParameter(frame, "tab-bar-lines", lines);
     // Formatted at each redisplay, so it shows the tabs as they are then.
-    if (lines > 0 && ember.frameParameter(frame, "tab-bar-line") === undefined) {
-      ember.setFrameParameter(frame, "tab-bar-line", [Symbol.for(":eval"), () => tabBarLine(frame)] as unknown as ember.Value);
+    if (lines > 0 && gnista.frameParameter(frame, "tab-bar-line") === undefined) {
+      gnista.setFrameParameter(frame, "tab-bar-line", [Symbol.for(":eval"), () => tabBarLine(frame)] as unknown as gnista.Value);
     }
   }
 }
 
-ember.addHook("post-command-hook", () => {
-  if (truthy(ember.variable("tab-bar-mode"))) update();
+gnista.addHook("post-command-hook", () => {
+  if (truthy(gnista.variable("tab-bar-mode"))) update();
 });
 
-const tabBarMode = ember.defineMinorMode({
+const tabBarMode = gnista.defineMinorMode({
   name: "tab-bar-mode",
   global: true,
   doc:
@@ -308,7 +308,7 @@ const tabBarMode = ember.defineMinorMode({
 
 /** Turns tab-bar-mode on if tab-bar-show says to, else updates the bar, as making a tab does. */
 function showAfterChange(): void {
-  if (truthy(ember.variable("tab-bar-show")) && !truthy(ember.variable("tab-bar-mode"))) ember.callWithPrefix(1, tabBarMode);
+  if (truthy(gnista.variable("tab-bar-show")) && !truthy(gnista.variable("tab-bar-mode"))) gnista.callWithPrefix(1, tabBarMode);
   else update();
 }
 
@@ -327,31 +327,31 @@ function selectTab(n: number): void {
   toTab.saved = undefined;
   toTab.current = true;
   if (historyMode()) {
-    const h = history(ember.selectedFrame());
+    const h = history(gnista.selectedFrame());
     h.back = toTab.back ?? [];
     h.forward = toTab.forward ?? [];
     historyOmit = true;
   }
   toTab.back = toTab.forward = undefined;
   if (!toTab.explicitName) toTab.name = autoName();
-  if (!truthy(ember.variable("tab-bar-mode"))) ember.message(`Selected tab '${toTab.name}'`);
-  ember.runHooks("tab-bar-tab-post-select-functions", fromTab.name, toTab.name);
+  if (!truthy(gnista.variable("tab-bar-mode"))) gnista.message(`Selected tab '${toTab.name}'`);
+  gnista.runHooks("tab-bar-tab-post-select-functions", fromTab.name, toTab.name);
   update();
 }
 
-const selectTabCommand = ember.defineCommand({
+const selectTabCommand = gnista.defineCommand({
   name: "tab-bar-select-tab",
   doc: "Select a tab by its number on the tab bar, from 1; negative counts from the end. Bound to a digit, the digit says.",
   params: [{ name: "n", kind: "prefix" }],
   run: (n) => {
     if (typeof n === "number") return selectTab(n);
-    const key = ember.lastKey() ?? "";
+    const key = gnista.lastKey() ?? "";
     const digit = /([1-9])$/.exec(key);
     selectTab(digit ? Number(digit[1]) : 0);
   },
 });
 
-const nextTab = ember.defineCommand({
+const nextTab = gnista.defineCommand({
   name: "tab-bar-switch-to-next-tab",
   doc: "Select the next tab, or the one that many on with a prefix argument, round to the first after the last.",
   params: [{ name: "arg", kind: "count" }],
@@ -362,21 +362,21 @@ const nextTab = ember.defineCommand({
   },
 });
 
-const prevTab = ember.defineCommand({
+const prevTab = gnista.defineCommand({
   name: "tab-bar-switch-to-prev-tab",
   doc: "Select the previous tab, or the one that many back with a prefix argument.",
   params: [{ name: "arg", kind: "count" }],
-  run: (arg) => ember.callWithPrefix(-arg, nextTab),
+  run: (arg) => gnista.callWithPrefix(-arg, nextTab),
 });
 
-const lastTab = ember.defineCommand({
+const lastTab = gnista.defineCommand({
   name: "tab-bar-switch-to-last-tab",
   doc: "Select the last tab, or the one that many from the end with a prefix argument.",
   params: [{ name: "arg", kind: "count" }],
   run: (arg) => selectTab(tabs().length - (Math.abs(arg) - 1)),
 });
 
-const recentTab = ember.defineCommand({
+const recentTab = gnista.defineCommand({
   name: "tab-bar-switch-to-recent-tab",
   doc: "Select the tab used most recently before this one, or the one that many back in recency with a prefix argument.",
   params: [{ name: "arg", kind: "count" }],
@@ -384,11 +384,11 @@ const recentTab = ember.defineCommand({
     const list = tabs();
     const tab = recentTabs(list)[arg - 1];
     if (tab) selectTab(list.indexOf(tab) + 1);
-    else ember.message("No more recent tabs");
+    else gnista.message("No more recent tabs");
   },
 });
 
-const switchTab = ember.defineCommand({
+const switchTab = gnista.defineCommand({
   name: "tab-bar-switch-to-tab",
   doc: "Select the tab of a name, the most recent ones offered first; a name no tab has makes a new tab of that name.",
   params: [
@@ -420,21 +420,21 @@ function newTabTo(n?: number): void {
   const list = tabs();
   const from = currentIndex(list);
   const fromTab = list[from];
-  const choice = ember.variable("tab-bar-new-tab-choice");
-  const clone = choice === "clone" ? ember.currentWindowConfiguration() : undefined;
+  const choice = gnista.variable("tab-bar-new-tab-choice");
+  const clone = choice === "clone" ? gnista.currentWindowConfiguration() : undefined;
   leave(fromTab);
   if (truthy(choice)) {
-    if (clone) ember.setWindowConfiguration(clone);
-    else ember.call("delete-other-windows");
+    if (clone) gnista.setWindowConfiguration(clone);
+    else gnista.call("delete-other-windows");
     let buffer: string | undefined;
-    if (typeof choice === "function") buffer = String(ember.funcall(choice as unknown as string));
+    if (typeof choice === "function") buffer = String(gnista.funcall(choice as unknown as string));
     else if (typeof choice === "string" && choice !== "clone" && choice !== "window") {
-      buffer = ember.getBuffer(choice)?.name ?? ember.findFileNoselect(choice);
+      buffer = gnista.getBuffer(choice)?.name ?? gnista.findFileNoselect(choice);
     }
-    if (buffer !== undefined && ember.bufferLiveP(ember.getBuffer(buffer))) ember.call("switch-to-buffer", buffer);
+    if (buffer !== undefined && gnista.bufferLiveP(gnista.getBuffer(buffer))) gnista.call("switch-to-buffer", buffer);
   }
   const tab: Tab = { id: nextId++, name: autoName(), explicitName: false, time: ++clock, current: true };
-  const where = ember.variable("tab-bar-new-tab-to");
+  const where = gnista.variable("tab-bar-new-tab-to");
   let to =
     n !== undefined
       ? n < 0
@@ -450,17 +450,17 @@ function newTabTo(n?: number): void {
   to = Math.max(0, Math.min(to, list.length));
   list.splice(to, 0, tab);
   if (historyMode()) {
-    const h = history(ember.selectedFrame());
+    const h = history(gnista.selectedFrame());
     h.back = [];
     h.forward = [];
     historyOmit = true;
   }
-  ember.runHooks("tab-bar-tab-post-open-functions", tab.name);
+  gnista.runHooks("tab-bar-tab-post-open-functions", tab.name);
   showAfterChange();
-  if (!truthy(ember.variable("tab-bar-mode"))) ember.message(`Added new tab at ${String(where)}`);
+  if (!truthy(gnista.variable("tab-bar-mode"))) gnista.message(`Added new tab at ${String(where)}`);
 }
 
-const newTab = ember.defineCommand({
+const newTab = gnista.defineCommand({
   name: "tab-bar-new-tab",
   doc:
     "Make a new tab, showing what tab-bar-new-tab-choice says, where tab-bar-new-tab-to says; with a prefix argument, " +
@@ -469,22 +469,22 @@ const newTab = ember.defineCommand({
   run: (arg) => {
     if (arg === null || arg === undefined) return newTabTo();
     const list = tabs();
-    newTabTo(currentIndex(list) + 1 + ember.prefixNumericValue(arg));
+    newTabTo(currentIndex(list) + 1 + gnista.prefixNumericValue(arg));
   },
 });
 
-const newTabToCommand = ember.defineCommand({
+const newTabToCommand = gnista.defineCommand({
   name: "tab-bar-new-tab-to",
   doc: "Make a new tab at a position on the tab bar, from 1, which a prefix argument gives; negative counts from the end.",
   params: [{ name: "n", kind: "prefix" }],
-  run: (n) => newTabTo(n === null || n === undefined ? undefined : ember.prefixNumericValue(n)),
+  run: (n) => newTabTo(n === null || n === undefined ? undefined : gnista.prefixNumericValue(n)),
 });
 
-const duplicateTab = ember.defineCommand({
+const duplicateTab = gnista.defineCommand({
   name: "tab-bar-duplicate-tab",
   doc: "Make a new tab showing the same windows as the current one.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: (arg) => ember.letBind({ "tab-bar-new-tab-choice": "clone" }, () => ember.callWithPrefix(arg, newTab)),
+  run: (arg) => gnista.letBind({ "tab-bar-new-tab-choice": "clone" }, () => gnista.callWithPrefix(arg, newTab)),
 });
 
 /** Gives tab `n`, the current one by default, a name, or back its automatic name if empty, as tab-bar-rename-tab. */
@@ -494,10 +494,10 @@ function renameTab(name: string, n?: number): void {
   tab.explicitName = name !== "";
   tab.name = name !== "" ? name : tab.current ? autoName() : tab.name;
   update();
-  if (!truthy(ember.variable("tab-bar-mode"))) ember.message(`Renamed tab to '${tab.name}'`);
+  if (!truthy(gnista.variable("tab-bar-mode"))) gnista.message(`Renamed tab to '${tab.name}'`);
 }
 
-const renameTabCommand = ember.defineCommand({
+const renameTabCommand = gnista.defineCommand({
   name: "tab-bar-rename-tab",
   doc: "Name the current tab, or the tab a prefix argument numbers. An empty name gives it back its automatic name.",
   params: [
@@ -507,7 +507,7 @@ const renameTabCommand = ember.defineCommand({
     },
     { name: "n", kind: "prefix" },
   ],
-  run: (name, n) => renameTab(name, n === null || n === undefined ? undefined : ember.prefixNumericValue(n)),
+  run: (name, n) => renameTab(name, n === null || n === undefined ? undefined : gnista.prefixNumericValue(n)),
 });
 
 /** Moves tab `from`, the current one by default, to position `to`, both from 1, as tab-bar-move-tab-to. */
@@ -520,14 +520,14 @@ function moveTabTo(to: number, from?: number): void {
   update();
 }
 
-const moveTabToCommand = ember.defineCommand({
+const moveTabToCommand = gnista.defineCommand({
   name: "tab-bar-move-tab-to",
   doc: "Move the current tab to a position on the tab bar, from 1, which a prefix argument gives; negative counts from the end.",
   params: [{ name: "to", kind: "count" }],
   run: (to) => moveTabTo(to),
 });
 
-const moveTab = ember.defineCommand({
+const moveTab = gnista.defineCommand({
   name: "tab-bar-move-tab",
   doc: "Move the current tab one place right, or that many with a prefix argument, left if negative.",
   params: [{ name: "arg", kind: "count" }],
@@ -538,11 +538,11 @@ const moveTab = ember.defineCommand({
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "tab-bar-move-tab-backward",
   doc: "Move the current tab one place left, or that many with a prefix argument.",
   params: [{ name: "arg", kind: "count" }],
-  run: (arg) => ember.callWithPrefix(-arg, moveTab),
+  run: (arg) => gnista.callWithPrefix(-arg, moveTab),
 });
 
 /** Closes tab `n`, the current one by default, then selecting `to` or the one tab-bar-close-tab-select says, as tab-bar-close-tab. */
@@ -551,17 +551,17 @@ function closeTab(n?: number, to?: number): void {
   const current = currentIndex(list);
   const index = n === undefined ? current : n - 1;
   const last = list.length === 1;
-  ember.runHooks("tab-bar-tab-pre-close-functions", list[index].name, last);
+  gnista.runHooks("tab-bar-tab-pre-close-functions", list[index].name, last);
   if (last) {
-    const choice = ember.variable("tab-bar-close-last-tab-choice");
-    if (choice === "delete-frame") ember.deleteFrame();
-    else if (choice === "tab-bar-mode-disable") ember.callWithPrefix(-1, tabBarMode);
-    else if (typeof choice === "function" || (typeof choice === "string" && choice !== "")) ember.funcall(choice as string, list[index].name);
-    else ember.userError("Attempt to delete the sole tab in a frame");
+    const choice = gnista.variable("tab-bar-close-last-tab-choice");
+    if (choice === "delete-frame") gnista.deleteFrame();
+    else if (choice === "tab-bar-mode-disable") gnista.callWithPrefix(-1, tabBarMode);
+    else if (typeof choice === "function" || (typeof choice === "string" && choice !== "")) gnista.funcall(choice as string, list[index].name);
+    else gnista.userError("Attempt to delete the sole tab in a frame");
     return;
   }
   if (index === current) {
-    const select = ember.variable("tab-bar-close-tab-select");
+    const select = gnista.variable("tab-bar-close-tab-select");
     let next =
       to !== undefined
         ? to - 1
@@ -575,32 +575,32 @@ function closeTab(n?: number, to?: number): void {
               : current - 1
             : list.indexOf(recentTabs(list)[0]);
     next = Math.max(0, Math.min(next, list.length - 1));
-    ember.letBind({ "inhibit-message": true }, () => selectTab(next + 1));
+    gnista.letBind({ "inhibit-message": true }, () => selectTab(next + 1));
     list = tabs();
   }
   const tab = list[index];
   if (tab.current) leave(tab);
-  closedTabs.unshift({ frame: ember.selectedFrame(), index, tab });
+  closedTabs.unshift({ frame: gnista.selectedFrame(), index, tab });
   list.splice(index, 1);
   update();
-  if (!truthy(ember.variable("tab-bar-mode"))) ember.message(`Deleted tab and switched to ${String(ember.variable("tab-bar-close-tab-select"))}`);
+  if (!truthy(gnista.variable("tab-bar-mode"))) gnista.message(`Deleted tab and switched to ${String(gnista.variable("tab-bar-close-tab-select"))}`);
 }
 
-const closeTabCommand = ember.defineCommand({
+const closeTabCommand = gnista.defineCommand({
   name: "tab-bar-close-tab",
   doc: "Close the current tab, or the tab a prefix argument numbers, selecting the one tab-bar-close-tab-select says.",
   params: [{ name: "n", kind: "prefix" }],
   run: (n) => closeTab(typeof n === "number" ? n : undefined),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "tab-bar-close-tab-by-name",
   doc: "Close the tab of a name.",
   params: [{ name: "name", prompt: "Close tab by name: ", collection: () => tabs().map((t) => t.name), requireMatch: true }],
   run: (name) => closeTab(tabs().findIndex((t) => t.name === name) + 1),
 });
 
-const closeOtherTabs = ember.defineCommand({
+const closeOtherTabs = gnista.defineCommand({
   name: "tab-bar-close-other-tabs",
   doc: "Close every tab of the frame but the current one.",
   run: () => {
@@ -608,26 +608,26 @@ const closeOtherTabs = ember.defineCommand({
     const keep = currentIndex(list);
     list.forEach((tab, index) => {
       if (index === keep) return;
-      closedTabs.unshift({ frame: ember.selectedFrame(), index, tab });
-      ember.runHooks("tab-bar-tab-pre-close-functions", tab.name, false);
+      closedTabs.unshift({ frame: gnista.selectedFrame(), index, tab });
+      gnista.runHooks("tab-bar-tab-pre-close-functions", tab.name, false);
     });
-    frameTabs.set(ember.selectedFrame(), [list[keep]]);
+    frameTabs.set(gnista.selectedFrame(), [list[keep]]);
     update();
-    if (!truthy(ember.variable("tab-bar-mode"))) ember.message("Deleted all other tabs");
+    if (!truthy(gnista.variable("tab-bar-mode"))) gnista.message("Deleted all other tabs");
   },
 });
 
-const undoCloseTab = ember.defineCommand({
+const undoCloseTab = gnista.defineCommand({
   name: "tab-bar-undo-close-tab",
   doc: "Open again the tab closed last.",
   run: () => {
-    while (closedTabs.length && !ember.frameList().includes(closedTabs[0].frame)) closedTabs.shift();
+    while (closedTabs.length && !gnista.frameList().includes(closedTabs[0].frame)) closedTabs.shift();
     const closed = closedTabs.shift();
     if (!closed) {
-      ember.message("No more closed tabs to undo");
+      gnista.message("No more closed tabs to undo");
       return;
     }
-    if (closed.frame !== ember.selectedFrame()) ember.selectFrame(closed.frame);
+    if (closed.frame !== gnista.selectedFrame()) gnista.selectFrame(closed.frame);
     const list = tabs();
     const index = Math.max(0, Math.min(closed.index, list.length));
     list.splice(index, 0, closed.tab);
@@ -638,7 +638,7 @@ const undoCloseTab = ember.defineCommand({
 
 // --- History, as tab-bar-history-mode ---------------------------------------
 
-const historyMode = (): boolean => truthy(ember.variable("tab-bar-history-mode"));
+const historyMode = (): boolean => truthy(gnista.variable("tab-bar-history-mode"));
 /** Each frame's current tab's history, as tab-bar-history-back and -forward. */
 const histories = new Map<number, { back: Saved[]; forward: Saved[] }>();
 function history(frame: number): { back: Saved[]; forward: Saved[] } {
@@ -652,31 +652,31 @@ let historyOmit = false;
 let historyOld: { saved: Saved; shape: string } | undefined;
 
 /** What the selected frame's windows show, to tell whether a command changed them, as window-configuration-change-hook would. */
-const windowShape = (): string => ember.windowList().map((w) => `${w}:${ember.windowBuffer(w)}`).join(" ");
+const windowShape = (): string => gnista.windowList().map((w) => `${w}:${gnista.windowBuffer(w)}`).join(" ");
 
-ember.addHook("pre-command-hook", () => {
+gnista.addHook("pre-command-hook", () => {
   if (!historyMode()) return;
   historyOmit = false;
-  if (ember.minibufferDepth() === 0) historyOld = { saved: { wc: ember.currentWindowConfiguration(), point: pointMarker() }, shape: windowShape() };
+  if (gnista.minibufferDepth() === 0) historyOld = { saved: { wc: gnista.currentWindowConfiguration(), point: pointMarker() }, shape: windowShape() };
 });
 
-ember.addHook("post-command-hook", () => {
-  if (!historyMode() || historyOmit || !historyOld || ember.minibufferDepth() !== 0) return;
+gnista.addHook("post-command-hook", () => {
+  if (!historyMode() || historyOmit || !historyOld || gnista.minibufferDepth() !== 0) return;
   if (windowShape() === historyOld.shape) return;
-  const h = history(ember.selectedFrame());
-  h.back = [historyOld.saved, ...h.back].slice(0, Number(ember.variable("tab-bar-history-limit") ?? 10));
+  const h = history(gnista.selectedFrame());
+  h.back = [historyOld.saved, ...h.back].slice(0, Number(gnista.variable("tab-bar-history-limit") ?? 10));
   historyOld = undefined;
 });
 
-const historyBack = ember.defineCommand({
+const historyBack = gnista.defineCommand({
   name: "tab-bar-history-back",
   doc: "Put back the windows the current tab had before, going back in its history.",
   run: () => {
     historyOmit = true;
-    const h = history(ember.selectedFrame());
+    const h = history(gnista.selectedFrame());
     const saved = h.back.shift();
     if (!saved) {
-      ember.message("No more tab back history");
+      gnista.message("No more tab back history");
       return;
     }
     if (historyOld) h.forward.unshift(historyOld.saved);
@@ -684,15 +684,15 @@ const historyBack = ember.defineCommand({
   },
 });
 
-const historyForward = ember.defineCommand({
+const historyForward = gnista.defineCommand({
   name: "tab-bar-history-forward",
   doc: "Undo going back in the current tab's history.",
   run: () => {
     historyOmit = true;
-    const h = history(ember.selectedFrame());
+    const h = history(gnista.selectedFrame());
     const saved = h.forward.shift();
     if (!saved) {
-      ember.message("No more tab forward history");
+      gnista.message("No more tab forward history");
       return;
     }
     if (historyOld) h.back.unshift(historyOld.saved);
@@ -700,7 +700,7 @@ const historyForward = ember.defineCommand({
   },
 });
 
-ember.defineMinorMode({
+gnista.defineMinorMode({
   name: "tab-bar-history-mode",
   global: true,
   doc: "Keep each tab's earlier window configurations: C-c <left> goes back to them and C-c <right> forward again.",
@@ -710,60 +710,60 @@ ember.defineMinorMode({
 
 // --- Clicking the tab bar ---------------------------------------------------
 
-const mouse1 = ember.defineCommand({
+const mouse1 = gnista.defineCommand({
   name: "tab-bar-mouse-1",
   doc: "On the tab bar: select the tab clicked, close it if its close button was, or run the button clicked.",
   run: () => {
-    const column = ember.lastMouseEvent()?.tabBar;
+    const column = gnista.lastMouseEvent()?.tabBar;
     if (column === undefined) return;
-    const hit = (shownItems.get(ember.selectedFrame()) ?? []).find((s) => column >= s.from && column < s.to);
+    const hit = (shownItems.get(gnista.selectedFrame()) ?? []).find((s) => column >= s.from && column < s.to);
     if (!hit) return;
     if (hit.item.tab !== undefined) {
       if (hit.closeFrom !== undefined && column >= hit.closeFrom) closeTab(hit.item.tab);
       else selectTab(hit.item.tab);
-    } else if (hit.item.command) ember.call(hit.item.command as ember.CommandName);
+    } else if (hit.item.command) gnista.call(hit.item.command as gnista.CommandName);
   },
 });
-ember.bindKey("<tab-bar> <mouse-1>", mouse1);
+gnista.bindKey("<tab-bar> <mouse-1>", mouse1);
 
 // --- Commands that show a buffer in another tab -----------------------------
 
-const switchToBufferOtherTab = ember.defineCommand({
+const switchToBufferOtherTab = gnista.defineCommand({
   name: "switch-to-buffer-other-tab",
   doc: "Show a buffer in a new tab, creating the buffer if there is none.",
   params: [{ name: "buffer", kind: "buffer", prompt: "Switch to buffer in other tab: " }],
   run: (buffer) => {
-    const name = buffer === "" ? (ember.windowBuffer() ?? "*scratch*") : buffer;
-    ember.getBufferCreate(name);
+    const name = buffer === "" ? (gnista.windowBuffer() ?? "*scratch*") : buffer;
+    gnista.getBufferCreate(name);
     newTabTo();
-    ember.call("switch-to-buffer", name);
+    gnista.call("switch-to-buffer", name);
   },
 });
 
-const findFileOtherTab = ember.defineCommand({
+const findFileOtherTab = gnista.defineCommand({
   name: "find-file-other-tab",
   doc: "Visit a file in a new tab.",
   params: [{ name: "file", kind: "file", prompt: "Find file in other tab: " }],
-  run: (file) => ember.call(switchToBufferOtherTab, ember.findFileNoselect(file)),
+  run: (file) => gnista.call(switchToBufferOtherTab, gnista.findFileNoselect(file)),
 });
 
-const findFileReadOnlyOtherTab = ember.defineCommand({
+const findFileReadOnlyOtherTab = gnista.defineCommand({
   name: "find-file-read-only-other-tab",
   doc: "Visit a file in a new tab, read-only.",
   params: [{ name: "file", kind: "file", prompt: "Find file read-only in other tab: " }],
   run: (file) => {
-    ember.call(findFileOtherTab, file);
-    ember.setReadOnly(true);
+    gnista.call(findFileOtherTab, file);
+    gnista.setReadOnly(true);
   },
 });
 
-const diredOtherTab = ember.defineCommand({
+const diredOtherTab = gnista.defineCommand({
   name: "dired-other-tab",
   doc: "Show a directory in Dired in a new tab.",
   params: [{ name: "directory", kind: "file", prompt: "Dired in other tab (directory): " }],
   run: (directory) => {
     newTabTo();
-    ember.call("dired", directory);
+    gnista.call("dired", directory);
   },
 });
 
@@ -772,7 +772,7 @@ const diredOtherTab = ember.defineCommand({
 /** The column the tab switcher's names start at, after its mark. */
 let switcherColumn = 3;
 
-ember.defineMajorMode({
+gnista.defineMajorMode({
   name: "tab-switcher-mode",
   modeName: "Window Configurations",
   doc:
@@ -794,49 +794,49 @@ ember.defineMajorMode({
     u: "tab-switcher-unmark",
   },
   setup: () => {
-    ember.setVariable("truncate-lines", true);
+    gnista.setVariable("truncate-lines", true);
   },
 });
 
 /** The tab on the switcher's line, by its id, as tab-switcher-current-tab. */
 function switcherTab(required: boolean): Tab | undefined {
-  const where = ember.lineBeginningPosition() + 2 + switcherColumn;
-  const id = where < ember.pointMax() ? ember.getTextProperty(where, "tab") : undefined;
+  const where = gnista.lineBeginningPosition() + 2 + switcherColumn;
+  const id = where < gnista.pointMax() ? gnista.getTextProperty(where, "tab") : undefined;
   const tab = typeof id === "number" ? tabs().find((t) => t.id === id) : undefined;
-  if (!tab && required) ember.userError("No window configuration on this line");
+  if (!tab && required) gnista.userError("No window configuration on this line");
   return tab;
 }
 
-const toColumn = () => ember.moveToColumn(switcherColumn);
+const toColumn = () => gnista.moveToColumn(switcherColumn);
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "tab-switcher",
   doc: "List the tabs other than the current one, most recent first, in a tab of its own, to select or close them.",
   run: () => {
-    const dir = ember.variable("default-directory");
-    ember.letBind({ "tab-bar-new-tab-choice": true, "tab-bar-show": null }, () => newTabTo());
+    const dir = gnista.variable("default-directory");
+    gnista.letBind({ "tab-bar-new-tab-choice": true, "tab-bar-show": null }, () => newTabTo());
     const others = recentTabs(tabs());
-    const buffer = ember.getBufferCreate(` *Tabs*<${ember.selectedFrame()}>`);
-    ember.call("switch-to-buffer", buffer.name!);
-    ember.setReadOnly(false);
-    ember.deleteRegion(ember.pointMin(), ember.pointMax());
-    ember.call("tab-switcher-mode");
-    const height = ember.windowSize()?.height ?? 0;
-    ember.insert("\n".repeat(Math.max(0, Math.floor((height - others.length - 1) / 2))));
-    switcherColumn = Math.max(0, Math.floor(ember.frameWidth() / 2) - 15);
+    const buffer = gnista.getBufferCreate(` *Tabs*<${gnista.selectedFrame()}>`);
+    gnista.call("switch-to-buffer", buffer.name!);
+    gnista.setReadOnly(false);
+    gnista.deleteRegion(gnista.pointMin(), gnista.pointMax());
+    gnista.call("tab-switcher-mode");
+    const height = gnista.windowSize()?.height ?? 0;
+    gnista.insert("\n".repeat(Math.max(0, Math.floor((height - others.length - 1) / 2))));
+    switcherColumn = Math.max(0, Math.floor(gnista.frameWidth() / 2) - 15);
     for (const tab of others) {
-      ember.insert(ember.propertize(`${" ".repeat(switcherColumn)} ${tab.name}\n`, { tab: tab.id }));
+      gnista.insert(gnista.propertize(`${" ".repeat(switcherColumn)} ${tab.name}\n`, { tab: tab.id }));
     }
-    ember.gotoChar(ember.pointMin());
-    ember.gotoChar(ember.nextSinglePropertyChange(ember.point(), "tab") ?? ember.pointMin());
+    gnista.gotoChar(gnista.pointMin());
+    gnista.gotoChar(gnista.nextSinglePropertyChange(gnista.point(), "tab") ?? gnista.pointMin());
     if (others.length > 1) {
       forwardLines(1);
     }
     toColumn();
-    ember.setBufferModified(false);
-    ember.setReadOnly(true);
-    if (typeof dir === "string") ember.setVariable("default-directory", dir);
-    ember.message("Commands: d, x; RET; q to quit; ? for help.");
+    gnista.setBufferModified(false);
+    gnista.setReadOnly(true);
+    if (typeof dir === "string") gnista.setVariable("default-directory", dir);
+    gnista.message("Commands: d, x; RET; q to quit; ? for help.");
   },
 });
 
@@ -845,13 +845,13 @@ function forwardLines(n: number): void {
   toColumn();
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "tab-switcher-next-line",
   doc: "Move to the next tab's line.",
   params: [{ name: "arg", kind: "count" }],
   run: (arg) => forwardLines(arg),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "tab-switcher-prev-line",
   doc: "Move to the previous tab's line.",
   params: [{ name: "arg", kind: "count" }],
@@ -860,15 +860,15 @@ ember.defineCommand({
 
 /** Puts a mark before the line's tab: "D" or a space. */
 function markLine(mark: string): void {
-  ember.gotoChar(ember.lineBeginningPosition());
+  gnista.gotoChar(gnista.lineBeginningPosition());
   toColumn();
-  ember.letBind({ "inhibit-read-only": true }, () => {
-    if (ember.point() < ember.pointMax() && ember.charAfter() !== "\n") ember.deleteRegion(ember.point(), ember.point() + 1);
-    ember.insert(mark);
+  gnista.letBind({ "inhibit-read-only": true }, () => {
+    if (gnista.point() < gnista.pointMax() && gnista.charAfter() !== "\n") gnista.deleteRegion(gnista.point(), gnista.point() + 1);
+    gnista.insert(mark);
   });
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "tab-switcher-unmark",
   doc: "Take the mark off the line's tab, and move down, or up with a prefix argument.",
   params: [{ name: "backup", kind: "prefix" }],
@@ -877,7 +877,7 @@ ember.defineCommand({
     forwardLines(backup === null || backup === undefined ? 1 : -1);
   },
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "tab-switcher-backup-unmark",
   doc: "Move up a line and take the mark off its tab.",
   run: () => {
@@ -886,7 +886,7 @@ ember.defineCommand({
     toColumn();
   },
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "tab-switcher-delete",
   doc: "Mark the line's tab to be closed by x, and move down; a prefix argument marks that many, up if negative.",
   params: [{ name: "arg", kind: "count" }],
@@ -899,44 +899,44 @@ ember.defineCommand({
     toColumn();
   },
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "tab-switcher-delete-backwards",
   doc: "Mark the line's tab to be closed by x, and move up.",
   params: [{ name: "arg", kind: "count" }],
-  run: (arg) => ember.callWithPrefix(-arg, "tab-switcher-delete"),
+  run: (arg) => gnista.callWithPrefix(-arg, "tab-switcher-delete"),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "tab-switcher-execute",
   doc: "Close the tabs marked with d.",
   run: () => {
-    ember.saveExcursion(() => {
-      ember.gotoChar(ember.pointMin());
-      ember.letBind({ "inhibit-read-only": true }, () => {
-        while (ember.reSearchForward(`^${" ".repeat(switcherColumn)}D`, { noerror: true }) != null) {
-          ember.gotoChar(ember.point() - 1);
+    gnista.saveExcursion(() => {
+      gnista.gotoChar(gnista.pointMin());
+      gnista.letBind({ "inhibit-read-only": true }, () => {
+        while (gnista.reSearchForward(`^${" ".repeat(switcherColumn)}D`, { noerror: true }) != null) {
+          gnista.gotoChar(gnista.point() - 1);
           const tab = switcherTab(false);
           if (tab) {
             const list = tabs();
-            closedTabs.unshift({ frame: ember.selectedFrame(), index: list.indexOf(tab), tab });
+            closedTabs.unshift({ frame: gnista.selectedFrame(), index: list.indexOf(tab), tab });
             list.splice(list.indexOf(tab), 1);
-            const bol = ember.lineBeginningPosition();
-            ember.deleteRegion(bol, Math.min(ember.pointMax(), ember.lineEndPosition() + 1));
-          } else ember.gotoChar(ember.lineEndPosition());
+            const bol = gnista.lineBeginningPosition();
+            gnista.deleteRegion(bol, Math.min(gnista.pointMax(), gnista.lineEndPosition() + 1));
+          } else gnista.gotoChar(gnista.lineEndPosition());
         }
       });
     });
-    ember.gotoChar(ember.lineBeginningPosition());
+    gnista.gotoChar(gnista.lineBeginningPosition());
     toColumn();
     update();
   },
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "tab-switcher-select",
   doc: "Select the line's tab, closing the switcher's own.",
   run: () => {
     const tab = switcherTab(true)!;
-    ember.call("kill-buffer", ember.currentBuffer().name!);
-    ember.letBind({ "inhibit-message": true }, () => {
+    gnista.call("kill-buffer", gnista.currentBuffer().name!);
+    gnista.letBind({ "inhibit-message": true }, () => {
       const saved = closedTabs.length;
       closeTab(undefined, tabs().indexOf(tab) + 1);
       closedTabs.splice(0, closedTabs.length - saved);
@@ -951,7 +951,7 @@ export function currentTabName(): string {
   const list = tabs();
   return list[currentIndex(list)]?.name ?? "";
 }
-ember.defun("tab-bar--current-tab-name", () => currentTabName());
+gnista.defun("tab-bar--current-tab-name", () => currentTabName());
 
 for (const [alias, command] of [
   ["tab-new", "tab-bar-new-tab"],
@@ -971,10 +971,10 @@ for (const [alias, command] of [
   ["tab-rename", "tab-bar-rename-tab"],
   ["tab-list", "tab-switcher"],
 ] as const) {
-  ember.defalias(alias, command);
+  gnista.defalias(alias, command);
 }
 
-const tabPrefixMap = ember.defineKeymap("tab-prefix-map");
+const tabPrefixMap = gnista.defineKeymap("tab-prefix-map");
 for (const [keys, command] of [
   ["n", duplicateTab],
   ["N", newTabToCommand],
@@ -994,11 +994,11 @@ for (const [keys, command] of [
   ["C-r", findFileReadOnlyOtherTab],
   ["d", diredOtherTab],
 ] as const) {
-  ember.bindKey(keys, command, "tab-prefix-map");
+  gnista.bindKey(keys, command, "tab-prefix-map");
 }
-ember.bindKey("C-x t", tabPrefixMap);
-ember.bindKey("C-<tab>", nextTab, "tab-bar-mode-map");
-ember.bindKey("C-S-<tab>", prevTab, "tab-bar-mode-map");
+gnista.bindKey("C-x t", tabPrefixMap);
+gnista.bindKey("C-<tab>", nextTab, "tab-bar-mode-map");
+gnista.bindKey("C-S-<tab>", prevTab, "tab-bar-mode-map");
 
 void selectTabCommand;
 void lastTab;

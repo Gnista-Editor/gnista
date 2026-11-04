@@ -6,7 +6,7 @@
 // styles, as orderless adds one, and sorted by history, length and name.
 //
 // Copyright (C) 2021-2025 Free Software Foundation, Inc.
-// Ported to Ember in 2026.
+// Ported to Gnista in 2026.
 //
 // This program is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -16,32 +16,32 @@
 import { completionAllCompletions, completionMetadataGet, testCompletion, type CompletionMetadata } from "minibuffer";
 import { truthy } from "subr";
 
-ember.defineVariable({ name: "vertico-count-format", doc: 'Format string used for the candidate count, as [outer, inner], or nil for none.', value: ["%-6s ", "%s/%s"] });
-ember.defineVariable({ name: "vertico-group-format", doc: "Format string used for the group title, %s for the title, or nil for no titles.", value: "     %s " });
-ember.defineVariable({ name: "vertico-count", doc: "Maximal number of candidates to show.", value: 10 });
-ember.defineVariable({
+gnista.defineVariable({ name: "vertico-count-format", doc: 'Format string used for the candidate count, as [outer, inner], or nil for none.', value: ["%-6s ", "%s/%s"] });
+gnista.defineVariable({ name: "vertico-group-format", doc: "Format string used for the group title, %s for the title, or nil for no titles.", value: "     %s " });
+gnista.defineVariable({ name: "vertico-count", doc: "Maximal number of candidates to show.", value: 10 });
+gnista.defineVariable({
   name: "vertico-preselect",
   doc: 'What is selected first: "prompt" the input, "first" the first candidate, "no-prompt" like first without ever selecting the input, "directory" like first but the input if it is a directory.',
   value: "directory",
 });
-ember.defineVariable({ name: "vertico-scroll-margin", doc: "Number of lines at the top and bottom when scrolling, between 0 and vertico-count/2.", value: 2 });
-ember.defineVariable({ name: "vertico-resize", doc: 'How the minibuffer window resizes: t shrinks and grows, "grow-only" only grows, nil keeps it vertico-count high.', value: true });
-ember.defineVariable({ name: "vertico-cycle", doc: "Enable cycling for vertico-next and vertico-previous.", value: false });
-ember.defineVariable({
+gnista.defineVariable({ name: "vertico-scroll-margin", doc: "Number of lines at the top and bottom when scrolling, between 0 and vertico-count/2.", value: 2 });
+gnista.defineVariable({ name: "vertico-resize", doc: 'How the minibuffer window resizes: t shrinks and grows, "grow-only" only grows, nil keeps it vertico-count high.', value: true });
+gnista.defineVariable({ name: "vertico-cycle", doc: "Enable cycling for vertico-next and vertico-previous.", value: false });
+gnista.defineVariable({
   name: "vertico-sort-function",
   doc: "Default sorting function, used if the table gives no display-sort-function: a function of the candidates.",
   value: "vertico-sort-history-length-alpha",
 });
-ember.defineVariable({ name: "vertico-sort-override-function", doc: "Override sort function which overrides the display-sort-function.", value: null });
-ember.defineVariable({ name: "vertico-sort-history-duplicate", doc: "History position shift for duplicate history elements, which decays with vertico-sort-history-decay.", value: 10 });
-ember.defineVariable({ name: "vertico-sort-history-decay", doc: "Exponential decay for the position shift of duplicate elements.", value: 10 });
+gnista.defineVariable({ name: "vertico-sort-override-function", doc: "Override sort function which overrides the display-sort-function.", value: null });
+gnista.defineVariable({ name: "vertico-sort-history-duplicate", doc: "History position shift for duplicate history elements, which decays with vertico-sort-history-decay.", value: 10 });
+gnista.defineVariable({ name: "vertico-sort-history-decay", doc: "Exponential decay for the position shift of duplicate elements.", value: 10 });
 
-ember.defineFace({ name: "vertico-multiline", doc: "Face used to highlight multiline replacement characters.", attributes: { inherit: "shadow" } });
-ember.defineFace({ name: "vertico-group-title", doc: "Face used for the title text of the candidate group headlines.", attributes: { inherit: "shadow", slant: "italic" } });
-ember.defineFace({ name: "vertico-group-separator", doc: "Face used for the separator lines of the candidate groups.", attributes: { inherit: "vertico-group-title", strikeThrough: true } });
-ember.defineFace({ name: "vertico-current", doc: "Face used to highlight the currently selected candidate.", attributes: { inherit: "highlight", extend: true } });
+gnista.defineFace({ name: "vertico-multiline", doc: "Face used to highlight multiline replacement characters.", attributes: { inherit: "shadow" } });
+gnista.defineFace({ name: "vertico-group-title", doc: "Face used for the title text of the candidate group headlines.", attributes: { inherit: "shadow", slant: "italic" } });
+gnista.defineFace({ name: "vertico-group-separator", doc: "Face used for the separator lines of the candidate groups.", attributes: { inherit: "vertico-group-title", strikeThrough: true } });
+gnista.defineFace({ name: "vertico-current", doc: "Face used to highlight the currently selected candidate.", attributes: { inherit: "highlight", extend: true } });
 
-type Text = string | ember.PropertizedString;
+type Text = string | gnista.PropertizedString;
 
 /** The open prompt's state, as vertico's buffer-local variables in the minibuffer. */
 interface State {
@@ -65,10 +65,10 @@ interface State {
 
 /** Each open prompt's state, by minibuffer depth. */
 const states = new Map<number, State>();
-const state = (): State | undefined => states.get(ember.minibufferDepth());
+const state = (): State | undefined => states.get(gnista.minibufferDepth());
 
 const number = (name: string, fallback: number): number => {
-  const v = ember.variable(name);
+  const v = gnista.variable(name);
   return typeof v === "number" ? v : fallback;
 };
 
@@ -76,8 +76,8 @@ const number = (name: string, fallback: number): number => {
 
 /** The positions of the history's elements, for the base being completed, as vertico-sort--history. */
 function historyPositions(base: string): Map<string, number> {
-  const name = ember.minibufferInfo()?.history;
-  const hist = name && name !== "t" ? ember.variable(name) : undefined;
+  const name = gnista.minibufferInfo()?.history;
+  const hist = name && name !== "t" ? gnista.variable(name) : undefined;
   const list = Array.isArray(hist) ? hist.map(String) : [];
   const positions = new Map<string, number>();
   const filep = base.length > 0 && name === "file-name-history";
@@ -113,23 +113,23 @@ export const sortHistoryLengthAlpha = (c: string[]): string[] => sortBy(c, true,
 export const sortHistoryAlpha = (c: string[]): string[] => sortBy(c, true, alpha);
 export const sortLengthAlpha = (c: string[]): string[] => sortBy(c, false, lengthAlpha);
 export const sortAlpha = (c: string[]): string[] => sortBy(c, false, alpha);
-ember.defun("vertico-sort-history-length-alpha", sortHistoryLengthAlpha);
-ember.defun("vertico-sort-history-alpha", sortHistoryAlpha);
-ember.defun("vertico-sort-length-alpha", sortLengthAlpha);
-ember.defun("vertico-sort-alpha", sortAlpha);
-ember.defun("vertico-sort-directories-first", (list: string[]) => {
+gnista.defun("vertico-sort-history-length-alpha", sortHistoryLengthAlpha);
+gnista.defun("vertico-sort-history-alpha", sortHistoryAlpha);
+gnista.defun("vertico-sort-length-alpha", sortLengthAlpha);
+gnista.defun("vertico-sort-alpha", sortAlpha);
+gnista.defun("vertico-sort-directories-first", (list: string[]) => {
   const sorted = sortHistoryLengthAlpha(list);
   return [...sorted.filter((x) => x.endsWith("/")), ...sorted.filter((x) => !x.endsWith("/"))];
 });
 
 /** The sort function: the override, the table's own, or vertico-sort-function, as vertico--sort-function. */
 function sortFunction(): ((c: string[]) => string[]) | undefined {
-  const override = ember.variable("vertico-sort-override-function");
-  if (truthy(override)) return (c) => ember.funcall(override as string, c) as string[];
+  const override = gnista.variable("vertico-sort-override-function");
+  if (truthy(override)) return (c) => gnista.funcall(override as string, c) as string[];
   const own = completionMetadataGet("displaySortFunction");
   if (own) return own;
-  const fn = ember.variable("vertico-sort-function");
-  return truthy(fn) ? (c) => ember.funcall(fn as string, c) as string[] : undefined;
+  const fn = gnista.variable("vertico-sort-function");
+  return truthy(fn) ? (c) => gnista.funcall(fn as string, c) as string[] : undefined;
 }
 
 // Working out the candidates.
@@ -162,8 +162,8 @@ function groupBy(fun: NonNullable<CompletionMetadata["groupFunction"]>, elems: s
 
 /** Works the candidates out afresh for the input and point, as vertico--recompute. */
 function recompute(s: State, pt: number, content: string): void {
-  const info = ember.minibufferInfo();
-  const found = completionAllCompletions(ember.minibufferPromptEnd() + pt);
+  const info = gnista.minibufferInfo();
+  const found = completionAllCompletions(gnista.minibufferPromptEnd() + pt);
   if (!found) return;
   const field = found.field.before + found.field.after;
   const completingFile = completionMetadataGet("category") === "file";
@@ -190,7 +190,7 @@ function recompute(s: State, pt: number, content: string): void {
     const at = s.index < 0 ? -1 : all.indexOf(s.candidates[s.index]);
     lock = s.index < 0 || at >= 0 ? at : undefined;
   }
-  const preselect = String(ember.variable("vertico-preselect"));
+  const preselect = String(gnista.variable("vertico-preselect"));
   s.candidates = all;
   s.total = all.length;
   s.hilit = found.hilit ?? ((c) => c);
@@ -208,8 +208,8 @@ function recompute(s: State, pt: number, content: string): void {
 
 /** Works the candidates out if the input or point changed, as vertico--update. */
 function update(s: State): void {
-  const pt = Math.max(0, ember.point() - ember.minibufferPromptEnd());
-  const content = ember.minibufferContents();
+  const pt = Math.max(0, gnista.point() - gnista.minibufferPromptEnd());
+  const content = gnista.minibufferContents();
   if (s.input !== true && s.input[0] === content && s.input[1] === pt) return;
   recompute(s, pt, content);
   s.input = [content, pt];
@@ -226,7 +226,7 @@ function affixate(cands: Text[]): [Text, Text, Text][] {
   if (ann) {
     return cands.map((c, i) => {
       const suffix = ann(plain[i]) ?? "";
-      return [c, "", typeof suffix === "string" ? ember.propertize(suffix, { face: "completions-annotations" }) : suffix];
+      return [c, "", typeof suffix === "string" ? gnista.propertize(suffix, { face: "completions-annotations" }) : suffix];
     });
   }
   return cands.map((c) => [c, "", ""]);
@@ -242,19 +242,19 @@ function computeScroll(s: State): void {
 }
 
 function minibufferWidth(): number {
-  return ember.windowSize(ember.minibufferWindow())?.width ?? 80;
+  return gnista.windowSize(gnista.minibufferWindow())?.width ?? 80;
 }
 
 /** A group's title line, as vertico--format-group-title. */
 function formatGroupTitle(title: string): Text {
-  const format = ember.variable("vertico-group-format");
+  const format = gnista.variable("vertico-group-format");
   if (typeof format !== "string") return "";
   const [before, after] = format.split("%s");
   const width = Math.max(0, minibufferWidth() - 1 - before.length - title.length - (after ?? "").length);
-  return ember.concat(
-    ember.propertize(before.slice(0, 4), { face: "vertico-group-separator" }),
-    ember.propertize(`${before.slice(4)}${title}${after ?? ""}`, { face: "vertico-group-title" }),
-    ember.propertize(" ".repeat(width), { face: "vertico-group-separator" }),
+  return gnista.concat(
+    gnista.propertize(before.slice(0, 4), { face: "vertico-group-separator" }),
+    gnista.propertize(`${before.slice(4)}${title}${after ?? ""}`, { face: "vertico-group-title" }),
+    gnista.propertize(" ".repeat(width), { face: "vertico-group-separator" }),
     "\n",
   );
 }
@@ -263,7 +263,7 @@ function formatGroupTitle(title: string): Text {
 function arrangeCandidates(s: State): Text[] {
   computeScroll(s);
   const count = number("vertico-count", 10);
-  const groupFun = ember.variable("vertico-group-format") ? completionMetadataGet("groupFunction") : undefined;
+  const groupFun = gnista.variable("vertico-group-format") ? completionMetadataGet("groupFunction") : undefined;
   const shown = s.candidates.slice(s.scroll, s.scroll + count);
   const cands = affixate(shown.map((c) => s.hilit(c)));
   const lines: (Text | [number, Text, Text, Text])[] = [];
@@ -295,9 +295,9 @@ function arrangeCandidates(s: State): Text[] {
     if (!Array.isArray(line)) return line;
     const [index, cand, prefix, suffix] = line;
     let text: Text = String(cand).includes("\n") ? String(cand).replace(/\n/g, "↲") : cand;
-    text = ember.concat(prefix, text, suffix, "\n");
+    text = gnista.concat(prefix, text, suffix, "\n");
     if (index === s.index) {
-      text = ember.concat(...splitFaces(text, "vertico-current"));
+      text = gnista.concat(...splitFaces(text, "vertico-current"));
     }
     return text;
   });
@@ -305,25 +305,25 @@ function arrangeCandidates(s: State): Text[] {
 
 /** TEXT with FACE added under the faces it has, as add-face-text-property with APPEND. */
 function splitFaces(text: Text, face: string): Text[] {
-  if (typeof text === "string") return [ember.propertize(text, { face })];
+  if (typeof text === "string") return [gnista.propertize(text, { face })];
   // A propertized string: its runs, each with FACE after its own.
-  const runs = (text as unknown as { string: string; properties: [number, number, { [name: string]: ember.Value }][] }).properties ?? [];
+  const runs = (text as unknown as { string: string; properties: [number, number, { [name: string]: gnista.Value }][] }).properties ?? [];
   const string = String(text);
   const out: Text[] = [];
   let at = 0;
   for (const [start, end, props] of [...runs].sort((a, b) => a[0] - b[0])) {
-    if (start > at) out.push(ember.propertize(string.slice(at, start), { face }));
+    if (start > at) out.push(gnista.propertize(string.slice(at, start), { face }));
     const own = props.face;
-    out.push(ember.propertize(string.slice(start, end), { ...props, face: own ? [...(Array.isArray(own) ? own : [own]), face] : face }));
+    out.push(gnista.propertize(string.slice(start, end), { ...props, face: own ? [...(Array.isArray(own) ? own : [own]), face] : face }));
     at = end;
   }
-  if (at < string.length) out.push(ember.propertize(string.slice(at), { face }));
+  if (at < string.length) out.push(gnista.propertize(string.slice(at), { face }));
   return out;
 }
 
 /** The count before the prompt, as vertico--format-count. */
 function formatCount(s: State): string {
-  const format = ember.variable("vertico-count-format");
+  const format = gnista.variable("vertico-count-format");
   if (!Array.isArray(format)) return "";
   const which = s.index >= 0 ? String(s.index + 1) : s.allowPrompt ? "*" : "!";
   const inner = String(format[1]).replace("%s", which).replace("%s", String(s.total));
@@ -338,32 +338,32 @@ function formatCount(s: State): string {
 function exhibit(): void {
   const s = state();
   if (!s) return;
-  ember.letBind({ "buffer-undo-list": true }, () => {
+  gnista.letBind({ "buffer-undo-list": true }, () => {
     update(s);
-    ember.moveOverlay(s.promptOv, ember.minibufferPromptEnd(), ember.pointMax());
-    ember.overlayPut(s.promptOv, "face", s.index < 0 && s.allowPrompt ? "vertico-current" : null);
-    ember.moveOverlay(s.countOv, ember.pointMin(), ember.pointMin());
-    ember.overlayPut(s.countOv, "before-string", formatCount(s));
+    gnista.moveOverlay(s.promptOv, gnista.minibufferPromptEnd(), gnista.pointMax());
+    gnista.overlayPut(s.promptOv, "face", s.index < 0 && s.allowPrompt ? "vertico-current" : null);
+    gnista.moveOverlay(s.countOv, gnista.pointMin(), gnista.pointMin());
+    gnista.overlayPut(s.countOv, "before-string", formatCount(s));
     const lines = arrangeCandidates(s);
-    ember.moveOverlay(s.candidatesOv, ember.pointMax(), ember.pointMax());
-    ember.overlayPut(s.candidatesOv, "after-string", ember.concat(ember.propertize(" ", { cursor: true }), ...(lines.length > 0 ? ["\n"] : []), ...lines));
+    gnista.moveOverlay(s.candidatesOv, gnista.pointMax(), gnista.pointMax());
+    gnista.overlayPut(s.candidatesOv, "after-string", gnista.concat(gnista.propertize(" ", { cursor: true }), ...(lines.length > 0 ? ["\n"] : []), ...lines));
     // Rows are cut at the window's edge, not continued, unless the input
     // itself runs long, as vertico--resize-window has it.
-    ember.makeLocalVariable("truncate-lines");
-    ember.setVariable("truncate-lines", ember.point() - ember.pointMin() + 1 < 0.8 * minibufferWidth());
+    gnista.makeLocalVariable("truncate-lines");
+    gnista.setVariable("truncate-lines", gnista.point() - gnista.pointMin() + 1 < 0.8 * minibufferWidth());
   });
 }
 
 /** Works the candidates out before a vertico command runs, so it sees them for the input, as vertico--prepare. */
 function prepare(): void {
   const s = state();
-  const command = ember.thisCommand();
+  const command = gnista.thisCommand();
   if (s && command?.startsWith("vertico-")) update(s);
 }
 
 /** Sets vertico up in the minibuffer of a prompt that completes, as vertico--setup. */
 function setup(): void {
-  if (!truthy(ember.variable("vertico-mode")) || !ember.minibufferInfo()?.completing) return;
+  if (!truthy(gnista.variable("vertico-mode")) || !gnista.minibufferInfo()?.completing) return;
   // The minibuffer may grow to the frame's height for vertico-count lines,
   // and shrinks with them only as vertico-resize t says, as
   // vertico--resize-window has it.
@@ -371,10 +371,10 @@ function setup(): void {
     ["completion-auto-help", null],
     ["completion-show-inline-help", null],
     ["max-mini-window-height", 1.0],
-    ["resize-mini-windows", ember.variable("vertico-resize") === true ? true : "grow-only"],
+    ["resize-mini-windows", gnista.variable("vertico-resize") === true ? true : "grow-only"],
   ] as const) {
-    ember.makeLocalVariable(name);
-    ember.setVariable(name, value);
+    gnista.makeLocalVariable(name);
+    gnista.setVariable(name, value);
   }
   const s: State = {
     index: -1,
@@ -389,24 +389,24 @@ function setup(): void {
     allGroups: [],
     groups: [],
     allowPrompt: false,
-    candidatesOv: ember.makeOverlay(ember.pointMax(), ember.pointMax()),
-    countOv: ember.makeOverlay(ember.pointMin(), ember.pointMin()),
-    promptOv: ember.makeOverlay(ember.minibufferPromptEnd(), ember.pointMax()),
+    candidatesOv: gnista.makeOverlay(gnista.pointMax(), gnista.pointMax()),
+    countOv: gnista.makeOverlay(gnista.pointMin(), gnista.pointMin()),
+    promptOv: gnista.makeOverlay(gnista.minibufferPromptEnd(), gnista.pointMax()),
   };
-  ember.overlayPut(s.countOv, "priority", 1);
-  states.set(ember.minibufferDepth(), s);
-  ember.composeLocalMap("vertico-map");
-  ember.addHook("pre-command-hook", prepare, { local: true });
-  ember.addHook("post-command-hook", exhibit, { local: true });
+  gnista.overlayPut(s.countOv, "priority", 1);
+  states.set(gnista.minibufferDepth(), s);
+  gnista.composeLocalMap("vertico-map");
+  gnista.addHook("pre-command-hook", prepare, { local: true });
+  gnista.addHook("post-command-hook", exhibit, { local: true });
   exhibit();
 }
 
-ember.addHook("minibuffer-setup-hook", setup);
-ember.addHook("minibuffer-exit-hook", () => {
+gnista.addHook("minibuffer-setup-hook", setup);
+gnista.addHook("minibuffer-exit-hook", () => {
   const s = state();
   if (!s) return;
-  for (const ov of [s.candidatesOv, s.countOv, s.promptOv]) ember.deleteOverlay(ov);
-  states.delete(ember.minibufferDepth());
+  for (const ov of [s.candidatesOv, s.countOv, s.promptOv]) gnista.deleteOverlay(ov);
+  states.delete(gnista.minibufferDepth());
 });
 
 // Commands.
@@ -421,16 +421,16 @@ function goTo(s: State, index: number): void {
 export function candidate(): string | undefined {
   const s = state();
   if (!s) return undefined;
-  const content = s.input === true ? ember.minibufferContents() : s.input[0];
+  const content = s.input === true ? gnista.minibufferContents() : s.input[0];
   if (s.index >= 0) return s.base + s.candidates[s.index];
-  const def = ember.minibufferInfo()?.default;
+  const def = gnista.minibufferInfo()?.default;
   if (content === "" && def) return def;
   return content;
 }
-ember.defun("vertico--candidate", () => candidate());
+gnista.defun("vertico--candidate", () => candidate());
 
 /** Works the candidates out again and shows them, as when a table's names changed between commands, as consult--vertico-refresh does. */
-ember.defun("vertico--refresh", () => {
+gnista.defun("vertico--refresh", () => {
   const s = state();
   if (!s) return;
   s.input = true;
@@ -439,8 +439,8 @@ ember.defun("vertico--refresh", () => {
 
 /** Whether INPUT may be the answer, as vertico--match-p. */
 function matchP(input: string): boolean {
-  if (!ember.minibufferInfo()?.requireMatch || input === "" || testCompletion(input)) return true;
-  ember.message("Match required");
+  if (!gnista.minibufferInfo()?.requireMatch || input === "" || testCompletion(input)) return true;
+  gnista.message("Match required");
   return false;
 }
 
@@ -449,20 +449,20 @@ const withState = (fn: (s: State) => void) => () => {
   if (s) fn(s);
 };
 
-const first = ember.defineCommand({
+const first = gnista.defineCommand({
   name: "vertico-first",
   doc: "Go to first candidate, or to the prompt when the first candidate is selected.",
   run: withState((s) => goTo(s, s.index > 0 ? 0 : -1)),
 });
-const last = ember.defineCommand({ name: "vertico-last", doc: "Go to last candidate.", run: withState((s) => goTo(s, s.total - 1)) });
+const last = gnista.defineCommand({ name: "vertico-last", doc: "Go to last candidate.", run: withState((s) => goTo(s, s.total - 1)) });
 
-const scrollDown = ember.defineCommand({
+const scrollDown = gnista.defineCommand({
   name: "vertico-scroll-down",
   doc: "Go back by N pages.",
   params: [{ name: "n", kind: "count" }],
   run: (n: number) => withState((s) => goTo(s, Math.max(0, s.index - n * number("vertico-count", 10))))(),
 });
-const scrollUp = ember.defineCommand({
+const scrollUp = gnista.defineCommand({
   name: "vertico-scroll-up",
   doc: "Go forward by N pages.",
   params: [{ name: "n", kind: "count" }],
@@ -477,7 +477,7 @@ function next(n: number): void {
   const mod = (a: number, b: number) => ((a % b) + b) % b;
   goTo(
     s,
-    !truthy(ember.variable("vertico-cycle"))
+    !truthy(gnista.variable("vertico-cycle"))
       ? index
       : s.total === 0
         ? -1
@@ -487,13 +487,13 @@ function next(n: number): void {
   );
 }
 
-const nextCommand = ember.defineCommand({
+const nextCommand = gnista.defineCommand({
   name: "vertico-next",
   doc: "Go forward N candidates.",
   params: [{ name: "n", kind: "count" }],
   run: (n: number) => next(n),
 });
-const previousCommand = ember.defineCommand({
+const previousCommand = gnista.defineCommand({
   name: "vertico-previous",
   doc: "Go backward N candidates.",
   params: [{ name: "n", kind: "count" }],
@@ -508,35 +508,35 @@ function insert(): void {
   s.index = Math.max(0, s.index);
   const cand = candidate()!;
   s.index = saved;
-  ember.deleteRegion(ember.minibufferPromptEnd(), ember.pointMax());
-  ember.insert(cand);
+  gnista.deleteRegion(gnista.minibufferPromptEnd(), gnista.pointMax());
+  gnista.insert(cand);
 }
 
-const insertCommand = ember.defineCommand({ name: "vertico-insert", doc: "Insert current candidate in minibuffer.", run: () => insert() });
+const insertCommand = gnista.defineCommand({ name: "vertico-insert", doc: "Insert current candidate in minibuffer.", run: () => insert() });
 
-const exitCommand = ember.defineCommand({
+const exitCommand = gnista.defineCommand({
   name: "vertico-exit",
   doc: "Exit minibuffer with current candidate, or with the input if given a prefix argument.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: (arg: ember.Value) => {
+  run: (arg: gnista.Value) => {
     const s = state();
     if (s && !truthy(arg) && s.index >= 0) insert();
-    if (matchP(ember.minibufferContents())) ember.call("exit-minibuffer");
+    if (matchP(gnista.minibufferContents())) gnista.call("exit-minibuffer");
   },
 });
 
-const exitInput = ember.defineCommand({
+const exitInput = gnista.defineCommand({
   name: "vertico-exit-input",
   doc: "Exit minibuffer with input.",
-  run: () => ember.callWithPrefix([4], exitCommand),
+  run: () => gnista.callWithPrefix([4], exitCommand),
 });
 
-const saveCommand = ember.defineCommand({
+const saveCommand = gnista.defineCommand({
   name: "vertico-save",
   doc: "Save current candidate to kill ring.",
   run: () => {
-    if (ember.regionActive()) ember.call("kill-ring-save");
-    else ember.killNew(candidate() ?? "");
+    if (gnista.regionActive()) gnista.call("kill-ring-save");
+    else gnista.killNew(candidate() ?? "");
   },
 });
 
@@ -559,20 +559,20 @@ function nextGroup(n: number): void {
   s.input = true;
 }
 
-const nextGroupCommand = ember.defineCommand({
+const nextGroupCommand = gnista.defineCommand({
   name: "vertico-next-group",
   doc: "Cycle N groups forward. When the prefix argument is 0, the group order is reset.",
   params: [{ name: "n", kind: "count" }],
   run: (n: number) => nextGroup(n),
 });
-const previousGroupCommand = ember.defineCommand({
+const previousGroupCommand = gnista.defineCommand({
   name: "vertico-previous-group",
   doc: "Cycle N groups backward. When the prefix argument is 0, the group order is reset.",
   params: [{ name: "n", kind: "count" }],
   run: (n: number) => nextGroup(-n),
 });
 
-ember.defineKeymap("vertico-map");
+gnista.defineKeymap("vertico-map");
 for (const [from, to] of [
   ["beginning-of-buffer", first],
   ["end-of-buffer", last],
@@ -586,22 +586,22 @@ for (const [from, to] of [
   ["minibuffer-complete-and-exit", exitCommand],
   ["kill-ring-save", saveCommand],
 ] as const) {
-  ember.remapCommand("vertico-map", from as ember.CommandName, to);
+  gnista.remapCommand("vertico-map", from as gnista.CommandName, to);
 }
 // Emacs's minibuffer has these on next-line-or-history-element, which vertico remaps.
-ember.defineKey("vertico-map", "<down>", nextCommand);
-ember.defineKey("vertico-map", "<up>", previousCommand);
-ember.defineKey("vertico-map", "M-RET", exitInput);
-ember.defineKey("vertico-map", "TAB", insertCommand);
+gnista.defineKey("vertico-map", "<down>", nextCommand);
+gnista.defineKey("vertico-map", "<up>", previousCommand);
+gnista.defineKey("vertico-map", "M-RET", exitInput);
+gnista.defineKey("vertico-map", "TAB", insertCommand);
 
-ember.defineMinorMode({
+gnista.defineMinorMode({
   name: "vertico-mode",
   global: true,
   doc: "VERTical Interactive COmpletion: list the candidates of every prompt that completes down the minibuffer. Turning it on turns icomplete's modes off, as both would list them.",
   onChange: (enabled) => {
     if (!enabled) return;
     for (const mode of ["fido-vertical-mode", "icomplete-vertical-mode", "fido-mode", "icomplete-mode"]) {
-      if (truthy(ember.variable(mode))) ember.callWithPrefix(-1, mode as ember.CommandName);
+      if (truthy(gnista.variable(mode))) gnista.callWithPrefix(-1, mode as gnista.CommandName);
     }
   },
 });

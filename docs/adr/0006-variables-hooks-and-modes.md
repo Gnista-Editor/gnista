@@ -4,7 +4,7 @@ Status: accepted · 2026-10-27
 
 ## Context
 
-Milestone 2 of [the plan](../plan.md) is the substrate packages are built on, org mode included: documented variables with buffer-local values, hooks, and major and minor modes with their own keymaps. In Emacs all of these are values of Lisp symbols. Ember has no Lisp, so it needs its own model, and [ADR 0005](0005-rust-core-typescript-commands.md) says how to split it: what Emacs does in C goes in Rust, and what it does in Lisp goes in TypeScript.
+Milestone 2 of [the plan](../plan.md) is the substrate packages are built on, org mode included: documented variables with buffer-local values, hooks, and major and minor modes with their own keymaps. In Emacs all of these are values of Lisp symbols. Gnista has no Lisp, so it needs its own model, and [ADR 0005](0005-rust-core-typescript-commands.md) says how to split it: what Emacs does in C goes in Rust, and what it does in Lisp goes in TypeScript.
 
 ## Options considered
 
@@ -38,7 +38,7 @@ Follow Emacs's split.
 
 ## Consequences
 
-Packages can define modes and variables, and Rust commands can read the same variables. `auto-mode-alist` patterns are JavaScript regular expressions rather than Emacs's. The generated `ember.d.ts` lists every variable and hook with its documentation, as it does commands. Variables cannot hold functions or objects yet; hooks are the only place functions are stored.
+Packages can define modes and variables, and Rust commands can read the same variables. `auto-mode-alist` patterns are JavaScript regular expressions rather than Emacs's. The generated `gnista.d.ts` lists every variable and hook with its documentation, as it does commands. Variables cannot hold functions or objects yet; hooks are the only place functions are stored.
 
 ## Dependencies introduced
 

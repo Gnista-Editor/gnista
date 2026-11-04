@@ -1,8 +1,8 @@
 # Departures from Emacs and Org
 
-Ember behaves like Emacs and Org, and the oracle checks it. This document collects places where it could, later, do better than they do: ideas held back until the base editor is stable, so that each departure is a choice made against a known baseline rather than a drift. Each entry says what Emacs or Org does, what Ember might do instead, and whether it would be the default or something a user turns on.
+Gnista behaves like Emacs and Org, and the oracle checks it. This document collects places where it could, later, do better than they do: ideas held back until the base editor is stable, so that each departure is a choice made against a known baseline rather than a drift. Each entry says what Emacs or Org does, what Gnista might do instead, and whether it would be the default or something a user turns on.
 
-Two rules for when one is taken up. A departure leaves files as Emacs and Org would write them, unless that is the point of it, so a file edited in Ember still reads the same in Emacs. And it is off by default unless the Emacs behaviour is plainly a limitation nobody relies on; otherwise it is a mode or an option, as a package would add it in Emacs.
+Two rules for when one is taken up. A departure leaves files as Emacs and Org would write them, unless that is the point of it, so a file edited in Gnista still reads the same in Emacs. And it is off by default unless the Emacs behaviour is plainly a limitation nobody relies on; otherwise it is a mode or an option, as a package would add it in Emacs.
 
 ## Org's tags against the window's right edge
 
@@ -16,6 +16,6 @@ Two rules for when one is taken up. A departure leaves files as Emacs and Org wo
 
 **marginalia.** An annotation's fields are cut to `marginalia-field-width`, 80 columns, or half the window's width if that is less, so in a wide frame a command's documentation stops well short of the edge with room to spare. Its column is the widest candidate seen so far in this minibuffer, rounded up to ten, so it moves right as longer names scroll into view and stays there. The maintainer keeps both, because the completion APIs give the annotator no better way to know how much room there is ([minad/marginalia#150](https://github.com/minad/marginalia/issues/150), [#169](https://github.com/minad/marginalia/issues/169), [#145](https://github.com/minad/marginalia/issues/145)).
 
-**Idea.** Ember's vertico knows the rows it shows, so it could cut each annotation's last field where the minibuffer's window ends instead, and line the annotations up by the candidates on screen, not every one seen. An option of Ember's vertico and marginalia, off by default, since it changes what every completion looks like.
+**Idea.** Gnista's vertico knows the rows it shows, so it could cut each annotation's last field where the minibuffer's window ends instead, and line the annotations up by the candidates on screen, not every one seen. An option of Gnista's vertico and marginalia, off by default, since it changes what every completion looks like.
 
 **Needs.** A way for vertico to tell the annotator the width left on each row, or to cut the annotation itself, as it already cuts candidates that run past the edge.

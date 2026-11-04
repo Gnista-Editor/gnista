@@ -7,10 +7,10 @@
 // negates, , as an initialism, = literally, ^ as a literal prefix, ~ flex,
 // & against the annotation. Lower case input ignores case.
 //
-//   ember.setVariable("completion-styles", ["orderless", "basic"]);
+//   gnista.setVariable("completion-styles", ["orderless", "basic"]);
 //
 // Copyright (C) 2021-2025 Free Software Foundation, Inc.
-// Ported to Ember in 2026.
+// Ported to Gnista in 2026.
 //
 // This program is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -27,7 +27,7 @@ const faces: [string, string, string][] = [
   ["#f0ce43", "#804000", "3"],
 ];
 for (const [dark, light, n] of faces) {
-  ember.defineFace({
+  gnista.defineFace({
     name: `orderless-match-face-${n}`,
     doc: `Face for matches of components numbered ${n} mod 4.`,
     attributes: { weight: "bold" },
@@ -36,22 +36,22 @@ for (const [dark, light, n] of faces) {
   });
 }
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "orderless-component-separator",
   doc: "What splits the input into components: an Emacs regexp, or a function of the input giving them. By default spaces, which a backslash escapes.",
   value: "orderless-escapable-split-on-space",
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "orderless-match-faces",
   doc: "Faces used, in turn, for the matches of each component.",
   value: ["orderless-match-face-0", "orderless-match-face-1", "orderless-match-face-2", "orderless-match-face-3"],
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "orderless-matching-styles",
   doc: "How each component matches: functions from a component to an Emacs regexp, or to a predicate. A component matches if any of them does.",
   value: ["orderless-literal", "orderless-regexp"],
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "orderless-affix-dispatch-alist",
   doc: "Characters that, starting or ending a component, match the rest of it another way, as [character, style] pairs.",
   value: [
@@ -64,12 +64,12 @@ ember.defineVariable({
     ["~", "orderless-flex"],
   ],
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "orderless-style-dispatchers",
   doc: "Functions that choose how a component matches, called with the component, its index and how many there are, as orderless--dispatch describes.",
   value: ["orderless-affix-dispatch"],
 });
-ember.defineVariable({ name: "orderless-smart-case", doc: "Whether input with upper case letters matches case, and input without ignores it.", value: true });
+gnista.defineVariable({ name: "orderless-smart-case", doc: "Whether input with upper case letters matches case, and input without ignores it.", value: true });
 
 /** What a matching style gives: a regexp, a predicate, or nothing. */
 type Matcher = string | ((candidate: string) => boolean) | undefined;
@@ -82,7 +82,7 @@ const notChar = (c: string): string => (c === "]" ? "[^]]" : c === "^" ? "[^^]" 
 /** Matches COMPONENT as a regexp, if it is a valid one, as orderless-regexp. */
 export function orderlessRegexp(component: string): Matcher {
   try {
-    ember.emacsRegexp(component);
+    gnista.emacsRegexp(component);
     return component;
   } catch {
     return undefined;
@@ -125,7 +125,7 @@ const named: { [name: string]: (component: string) => Matcher } = {
   "orderless-initialism": orderlessInitialism,
   "orderless-prefixes": orderlessPrefixes,
   "orderless-without-literal": orderlessWithoutLiteral,
-  // Ember has no character folding yet: the component matches literally.
+  // Gnista has no character folding yet: the component matches literally.
   "char-fold-to-regexp": orderlessLiteral,
 };
 
@@ -144,8 +144,8 @@ const wrapping: { [name: string]: (pred: Matcher, regexp: string | undefined) =>
 function matchP(pred: Matcher, regexp: string | undefined, candidate: string): boolean {
   if (typeof pred === "function" && !pred(candidate)) return false;
   if (regexp !== undefined) {
-    const fold = truthy(ember.variable("completion-ignore-case"));
-    if (!ember.emacsRegexp(regexp, { caseFold: fold }).test(candidate)) return false;
+    const fold = truthy(gnista.variable("completion-ignore-case"));
+    if (!gnista.emacsRegexp(regexp, { caseFold: fold }).test(candidate)) return false;
   }
   return true;
 }
@@ -153,7 +153,7 @@ function matchP(pred: Matcher, regexp: string | undefined, candidate: string): b
 const callStyle = (style: string, component: string): Matcher => {
   const fn = named[style];
   if (fn) return fn(component);
-  const result = ember.funcall(style, component);
+  const result = gnista.funcall(style, component);
   return typeof result === "string" || typeof result === "function" ? (result as Matcher) : undefined;
 };
 
@@ -165,11 +165,11 @@ export function escapableSplitOnSpace(string: string): string[] {
     .filter((p) => p !== "")
     .map((p) => p.replace(/\0/g, " "));
 }
-ember.defun("orderless-escapable-split-on-space", escapableSplitOnSpace);
+gnista.defun("orderless-escapable-split-on-space", escapableSplitOnSpace);
 
 /** Matches a component by a character at either end, as orderless-affix-dispatch. */
 export function orderlessAffixDispatch(component: string): string | [string, string] | undefined {
-  const alist = ember.variable("orderless-affix-dispatch-alist");
+  const alist = gnista.variable("orderless-affix-dispatch-alist");
   const styles = new Map(Array.isArray(alist) ? (alist as [string, string][]) : []);
   if (component.length === 0) return undefined;
   const chars = [...component];
@@ -180,13 +180,13 @@ export function orderlessAffixDispatch(component: string): string | [string, str
   if (tail) return [tail, chars.slice(0, -1).join("")];
   return undefined;
 }
-ember.defun("orderless-affix-dispatch", (c: string) => orderlessAffixDispatch(c));
+gnista.defun("orderless-affix-dispatch", (c: string) => orderlessAffixDispatch(c));
 
 /** The styles to match COMPONENT with and the component they match, as orderless--dispatch. */
 function dispatch(defaults: string[], component: string, index: number, total: number): [string[], string] {
-  const dispatchers = ember.variable("orderless-style-dispatchers");
+  const dispatchers = gnista.variable("orderless-style-dispatchers");
   for (const d of Array.isArray(dispatchers) ? dispatchers.map(String) : []) {
-    const result = d === "orderless-affix-dispatch" ? orderlessAffixDispatch(component) : (ember.funcall(d, component, index, total) as unknown);
+    const result = d === "orderless-affix-dispatch" ? orderlessAffixDispatch(component) : (gnista.funcall(d, component, index, total) as unknown);
     if (result === undefined || result === null) continue;
     if (typeof result === "string") {
       component = result;
@@ -232,15 +232,15 @@ function compileComponent(component: string, index: number, total: number, style
 
 /** Builds the regexps and the predicate PATTERN's components match by, as orderless-compile. */
 export function orderlessCompile(pattern: string, styles?: string[]): Compiled {
-  const matching = ember.variable("orderless-matching-styles");
+  const matching = gnista.variable("orderless-matching-styles");
   styles ??= Array.isArray(matching) && matching.length > 0 ? matching.map(String) : ["orderless-regexp"];
-  const separator = ember.variable("orderless-component-separator");
+  const separator = gnista.variable("orderless-component-separator");
   const components =
     separator === "orderless-escapable-split-on-space"
       ? escapableSplitOnSpace(pattern)
-      : typeof separator === "string" && !ember.fboundp(separator)
-        ? pattern.split(ember.emacsRegexp(separator)).filter((p) => p !== "")
-        : ((ember.funcall(separator as string, pattern) as string[]) ?? []);
+      : typeof separator === "string" && !gnista.fboundp(separator)
+        ? pattern.split(gnista.emacsRegexp(separator)).filter((p) => p !== "")
+        : ((gnista.funcall(separator as string, pattern) as string[]) ?? []);
   let pred: ((c: string) => boolean) | undefined;
   const regexps: string[] = [];
   components.forEach((comp, index) => {
@@ -256,14 +256,14 @@ export function orderlessCompile(pattern: string, styles?: string[]): Compiled {
 
 /** Whether case is ignored for REGEXPS: with smart case, when none has an upper case letter, as orderless--ignore-case-p. */
 function ignoreCaseP(regexps: string[], ignoreCase: boolean): boolean {
-  if (!truthy(ember.variable("orderless-smart-case"))) return ignoreCase;
+  if (!truthy(gnista.variable("orderless-smart-case"))) return ignoreCase;
   // As isearch-no-upper-case-p with REGEXP-FLAG: escapes do not count.
   return regexps.every((r) => !/\p{Lu}/u.test(r.replace(/\\./gu, "")));
 }
 
 /** Highlights the match of each of REGEXPS in CANDIDATE, its groups if it has any, as orderless--highlight. */
-function highlight(compiled: RegExp[], candidate: string): string | ember.PropertizedString {
-  const facesValue = ember.variable("orderless-match-faces");
+function highlight(compiled: RegExp[], candidate: string): string | gnista.PropertizedString {
+  const facesValue = gnista.variable("orderless-match-faces");
   const names = Array.isArray(facesValue) ? facesValue.map(String) : [];
   const marks: (string | undefined)[] = new Array(candidate.length).fill(undefined);
   compiled.forEach((re, i) => {
@@ -276,16 +276,16 @@ function highlight(compiled: RegExp[], candidate: string): string | ember.Proper
     }
   });
   if (marks.every((m) => m === undefined)) return candidate;
-  const parts: (string | ember.PropertizedString)[] = [];
+  const parts: (string | gnista.PropertizedString)[] = [];
   let start = 0;
   for (let k = 1; k <= candidate.length; k++) {
     if (k === candidate.length || marks[k] !== marks[start]) {
       const text = candidate.slice(start, k);
-      parts.push(marks[start] ? ember.propertize(text, { face: marks[start]! }) : text);
+      parts.push(marks[start] ? gnista.propertize(text, { face: marks[start]! }) : text);
       start = k;
     }
   }
-  return ember.concat(...parts);
+  return gnista.concat(...parts);
 }
 
 /** The candidates matching every component of the field, as orderless-all-completions, highlighted lazily. */
@@ -293,7 +293,7 @@ function allCompletions(field: CompletionField, ignoreCase: boolean) {
   const pattern = field.before + field.after;
   const { pred, regexps } = orderlessCompile(pattern);
   const fold = ignoreCaseP(regexps, ignoreCase);
-  const compiled = regexps.map((r) => ember.emacsRegexp(r, { caseFold: fold }));
+  const compiled = regexps.map((r) => gnista.emacsRegexp(r, { caseFold: fold }));
   const completions = field.names.filter((n) => compiled.every((re) => re.test(n)) && (!pred || pred(n)));
   const withIndices = compiled.map((re) => {
     try {
@@ -306,16 +306,16 @@ function allCompletions(field: CompletionField, ignoreCase: boolean) {
 }
 
 /** Highlights the matches of each of PATTERN's components in each of STRINGS, as orderless-highlight-matches. */
-export function orderlessHighlightMatches(pattern: string, strings: string[]): (string | ember.PropertizedString)[] {
+export function orderlessHighlightMatches(pattern: string, strings: string[]): (string | gnista.PropertizedString)[] {
   const { regexps } = orderlessCompile(pattern);
-  const fold = ignoreCaseP(regexps, truthy(ember.variable("completion-ignore-case")));
-  const compiled = regexps.map((r) => new RegExp(ember.emacsRegexp(r, { caseFold: fold }).source, `${fold ? "i" : ""}ud`));
+  const fold = ignoreCaseP(regexps, truthy(gnista.variable("completion-ignore-case")));
+  const compiled = regexps.map((r) => new RegExp(gnista.emacsRegexp(r, { caseFold: fold }).source, `${fold ? "i" : ""}ud`));
   return strings.map((s) => highlight(compiled, s));
 }
 
 /** Filters NAMES by PATTERN as orderless does, as orderless-filter. */
 export function orderlessFilter(pattern: string, names: string[]): string[] {
-  return allCompletions({ base: "", before: pattern, after: "", suffix: "", names }, truthy(ember.variable("completion-ignore-case"))).completions;
+  return allCompletions({ base: "", before: pattern, after: "", suffix: "", names }, truthy(gnista.variable("completion-ignore-case"))).completions;
 }
 
 defineCompletionStyle("orderless", { doc: "Completion of multiple components, in any order.", all: allCompletions });

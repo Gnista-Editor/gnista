@@ -3,61 +3,61 @@
 
 /** The size a prefix argument asks a split for, as split-window-below reads it. */
 function splitSize(): number | undefined {
-  const arg = ember.prefixArg();
-  return arg === null ? undefined : ember.prefixNumericValue(arg);
+  const arg = gnista.prefixArg();
+  return arg === null ? undefined : gnista.prefixNumericValue(arg);
 }
 
-const splitBelow = ember.defineCommand({
+const splitBelow = gnista.defineCommand({
   name: "split-window-below",
   doc:
     "Split the selected window into two, one above the other.\n\n" +
     "The selected window stays on top and the new one below shows the same buffer at the same place. " +
     "A prefix argument gives the selected window that many lines, or the new one if it is negative.",
   run: () => {
-    ember.splitWindow(undefined, "below", splitSize());
+    gnista.splitWindow(undefined, "below", splitSize());
   },
 });
 
-const splitRight = ember.defineCommand({
+const splitRight = gnista.defineCommand({
   name: "split-window-right",
   doc:
     "Split the selected window into two, side by side.\n\n" +
     "The selected window stays on the left and the new one on the right shows the same buffer at the same place. " +
     "A prefix argument gives the selected window that many columns, or the new one if it is negative.",
   run: () => {
-    ember.splitWindow(undefined, "right", splitSize());
+    gnista.splitWindow(undefined, "right", splitSize());
   },
 });
 
-const otherWindow = ember.defineCommand({
+const otherWindow = gnista.defineCommand({
   name: "other-window",
   doc:
     "Select another window, the next in cyclic order.\n\n" +
     "A prefix argument says how many windows on to go; a negative one goes back.",
   run: () => {
-    const windows = ember.windowList();
-    const count = ember.prefixNumericValue(ember.prefixArg());
-    const i = windows.indexOf(ember.selectedWindow());
+    const windows = gnista.windowList();
+    const count = gnista.prefixNumericValue(gnista.prefixArg());
+    const i = windows.indexOf(gnista.selectedWindow());
     const n = windows.length;
-    ember.selectWindow(windows[(((i + count) % n) + n) % n]);
+    gnista.selectWindow(windows[(((i + count) % n) + n) % n]);
   },
 });
 
-const deleteWindow = ember.defineCommand({
+const deleteWindow = gnista.defineCommand({
   name: "delete-window",
   doc:
     "Delete the selected window, giving its space to its neighbour.\n\n" +
     "The most recently used of the other windows is selected.",
-  run: () => ember.deleteWindow(),
+  run: () => gnista.deleteWindow(),
 });
 
-const deleteOtherWindows = ember.defineCommand({
+const deleteOtherWindows = gnista.defineCommand({
   name: "delete-other-windows",
   doc: "Make the selected window fill the frame, deleting the others.",
   run: () => {
-    const selected = ember.selectedWindow();
-    for (const window of ember.windowList()) {
-      if (window !== selected) ember.deleteWindow(window);
+    const selected = gnista.selectedWindow();
+    for (const window of gnista.windowList()) {
+      if (window !== selected) gnista.deleteWindow(window);
     }
   },
 });
@@ -76,7 +76,7 @@ const deleteOtherWindows = ember.defineCommand({
 type QuitRestore = [string, string | [string, number, number, number], number, string];
 
 function quitRestore(window: number): QuitRestore | undefined {
-  const v = ember.windowParameter(window, "quit-restore");
+  const v = gnista.windowParameter(window, "quit-restore");
   return Array.isArray(v) && v.length === 4 ? (v as unknown as QuitRestore) : undefined;
 }
 
@@ -86,19 +86,19 @@ function quitRestore(window: number): QuitRestore | undefined {
  * that was there, else "window" or "frame" for one made for the buffer.
  */
 function recordWindow(type: "reuse" | "window" | "frame", window: number, buffer: string): void {
-  const selected = ember.selectedWindow();
+  const selected = gnista.selectedWindow();
   if (type !== "reuse") {
-    ember.setWindowParameter(window, "quit-restore", [type, type, selected, buffer]);
-  } else if (ember.windowBuffer(window) === buffer) {
+    gnista.setWindowParameter(window, "quit-restore", [type, type, selected, buffer]);
+  } else if (gnista.windowBuffer(window) === buffer) {
     const restore = quitRestore(window);
     if (restore) {
       restore[0] = "same";
       if (window !== selected && window !== restore[2]) restore[2] = selected;
-      ember.setWindowParameter(window, "quit-restore", restore as unknown as ember.Value);
+      gnista.setWindowParameter(window, "quit-restore", restore as unknown as gnista.Value);
     }
   } else {
-    const previous = [ember.windowBuffer(window) ?? "", ember.windowStart(window), ember.windowPoint(window), size(window).totalHeight];
-    ember.setWindowParameter(window, "quit-restore", ["other", previous, selected, buffer]);
+    const previous = [gnista.windowBuffer(window) ?? "", gnista.windowStart(window), gnista.windowPoint(window), size(window).totalHeight];
+    gnista.setWindowParameter(window, "quit-restore", ["other", previous, selected, buffer]);
   }
 }
 
@@ -109,19 +109,19 @@ function recordWindow(type: "reuse" | "window" | "frame", window: number, buffer
  */
 function showInWindow(buffer: string, window: number, type: "reuse" | "window" | "frame"): number {
   recordWindow(type, window, buffer);
-  if (ember.windowBuffer(window) !== buffer) {
-    ember.setWindowDedicatedP(window, null);
-    ember.setWindowBuffer(window, buffer);
+  if (gnista.windowBuffer(window) !== buffer) {
+    gnista.setWindowDedicatedP(window, null);
+    gnista.setWindowBuffer(window, buffer);
   }
-  if (type !== "reuse") ember.setWindowPrevBuffers(window, []);
+  if (type !== "reuse") gnista.setWindowPrevBuffers(window, []);
   return window;
 }
 
 /** Whether a window is dedicated to its buffer, which display-buffer does not take for another. */
-const dedicated = (window: number): boolean => ember.windowDedicatedP(window) !== undefined && ember.windowDedicatedP(window) !== false;
+const dedicated = (window: number): boolean => gnista.windowDedicatedP(window) !== undefined && gnista.windowDedicatedP(window) !== false;
 
 function size(window: number) {
-  return ember.windowSize(window) ?? { width: 0, height: 0, totalWidth: 0, totalHeight: 0, fullWidth: true };
+  return gnista.windowSize(window) ?? { width: 0, height: 0, totalWidth: 0, totalHeight: 0, fullWidth: true };
 }
 
 /**
@@ -131,14 +131,14 @@ function size(window: number) {
  * only with `dedicatedOk`.
  */
 function lruWindow(notSelected: boolean, dedicatedOk = false): number | undefined {
-  const selected = ember.selectedWindow();
+  const selected = gnista.selectedWindow();
   let best: number | undefined;
   let bestTime = Infinity;
   let second: number | undefined;
   let secondTime = Infinity;
-  for (const window of ember.windowList()) {
+  for (const window of gnista.windowList()) {
     if ((notSelected && window === selected) || (!dedicatedOk && dedicated(window))) continue;
-    const time = ember.windowUseTime(window) ?? 0;
+    const time = gnista.windowUseTime(window) ?? 0;
     if (window === selected || !size(window).fullWidth) {
       if (time < secondTime) [second, secondTime] = [window, time];
     } else if (time < bestTime) {
@@ -152,8 +152,8 @@ function lruWindow(notSelected: boolean, dedicatedOk = false): number | undefine
 function largestWindow(notSelected: boolean, dedicatedOk = false): number | undefined {
   let best: number | undefined;
   let bestArea = -1;
-  for (const window of ember.windowList()) {
-    if ((notSelected && window === ember.selectedWindow()) || (!dedicatedOk && dedicated(window))) continue;
+  for (const window of gnista.windowList()) {
+    if ((notSelected && window === gnista.selectedWindow()) || (!dedicatedOk && dedicated(window))) continue;
     const s = size(window);
     const area = s.totalWidth * s.totalHeight;
     if (area > bestArea) [best, bestArea] = [window, area];
@@ -164,12 +164,12 @@ function largestWindow(notSelected: boolean, dedicatedOk = false): number | unde
 const WINDOW_MIN_HEIGHT = 4;
 const WINDOW_MIN_WIDTH = 10;
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "split-height-threshold",
   doc: "How tall a window must be, in lines, for display-buffer to split it into one above the other; nil never.",
   value: 80,
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "split-width-threshold",
   doc: "How wide a window must be, in columns, for display-buffer to split it side by side; nil never.",
   value: 160,
@@ -179,11 +179,11 @@ ember.defineVariable({
 function splittable(window: number, horizontal: boolean, heightThreshold?: number): boolean {
   const s = size(window);
   if (horizontal) {
-    const threshold = ember.variable("split-width-threshold");
+    const threshold = gnista.variable("split-width-threshold");
     if (typeof threshold !== "number") return false;
     return s.width >= Math.max(threshold, 2 * Math.max(WINDOW_MIN_WIDTH, 2));
   }
-  const threshold = heightThreshold ?? ember.variable("split-height-threshold");
+  const threshold = heightThreshold ?? gnista.variable("split-height-threshold");
   if (typeof threshold !== "number") return false;
   return s.totalHeight >= Math.max(threshold, 2 * Math.max(WINDOW_MIN_HEIGHT, 2));
 }
@@ -194,9 +194,9 @@ function splittable(window: number, horizontal: boolean, heightThreshold?: numbe
  * else below it anyway if it is the only window. Returns the new window.
  */
 function splitSensibly(window: number): number | undefined {
-  if (splittable(window, false)) return ember.splitWindow(window, "below");
-  if (splittable(window, true)) return ember.splitWindow(window, "right");
-  if (ember.windowList().length === 1 && splittable(window, false, 0)) return ember.splitWindow(window, "below");
+  if (splittable(window, false)) return gnista.splitWindow(window, "below");
+  if (splittable(window, true)) return gnista.splitWindow(window, "right");
+  if (gnista.windowList().length === 1 && splittable(window, false, 0)) return gnista.splitWindow(window, "below");
   return undefined;
 }
 
@@ -207,9 +207,9 @@ function splitSensibly(window: number): number | undefined {
  * least recently used one; else the least recently used window.
  */
 function displayBuffer(buffer: string, inhibitSameWindow = false): number {
-  ember.getBufferCreate(buffer);
-  const selected = ember.selectedWindow();
-  const showing = ember.windowList().filter((w) => ember.windowBuffer(w) === buffer && !(inhibitSameWindow && w === selected));
+  gnista.getBufferCreate(buffer);
+  const selected = gnista.selectedWindow();
+  const showing = gnista.windowList().filter((w) => gnista.windowBuffer(w) === buffer && !(inhibitSameWindow && w === selected));
   const reuse = showing.includes(selected) ? selected : showing[0];
   if (reuse !== undefined) return showInWindow(buffer, reuse, "reuse");
   // A dedicated window may be split, though not reused, as get-largest-window's DEDICATED allows.
@@ -222,16 +222,16 @@ function displayBuffer(buffer: string, inhibitSameWindow = false): number {
   const window = lruWindow(inhibitSameWindow) ?? largestWindow(inhibitSameWindow);
   if (window !== undefined) return showInWindow(buffer, window, "reuse");
   // Every window is dedicated or ruled out: a new frame, as display-buffer-pop-up-frame.
-  ember.makeFrame(buffer);
-  return showInWindow(buffer, ember.selectedWindow(), "frame");
+  gnista.makeFrame(buffer);
+  return showInWindow(buffer, gnista.selectedWindow(), "frame");
 }
 
 /** Shows a buffer in some window, as display-buffer does, and selects it. */
 function popToBuffer(buffer: string, inhibitSameWindow = false): void {
-  ember.selectWindow(displayBuffer(buffer, inhibitSameWindow));
+  gnista.selectWindow(displayBuffer(buffer, inhibitSameWindow));
 }
 
-const displayBufferCommand = ember.defineCommand({
+const displayBufferCommand = gnista.defineCommand({
   name: "display-buffer",
   doc:
     "Show a buffer in some window without selecting it.\n\n" +
@@ -243,38 +243,38 @@ const displayBufferCommand = ember.defineCommand({
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "pop-to-buffer",
   doc: "Show a buffer in some window, as display-buffer does, and select that window.",
   params: [{ name: "buffer", kind: "buffer", prompt: "Pop to buffer: " }],
   run: (buffer) => popToBuffer(buffer),
 });
 
-const switchToBufferOtherWindow = ember.defineCommand({
+const switchToBufferOtherWindow = gnista.defineCommand({
   name: "switch-to-buffer-other-window",
   doc: "Show a buffer in another window and select it, creating the buffer if there is none.",
   params: [{ name: "buffer", kind: "buffer", prompt: "Switch to buffer in other window: " }],
-  run: (buffer) => popToBuffer(buffer === "" ? (ember.windowBuffer() ?? "*scratch*") : buffer, true),
+  run: (buffer) => popToBuffer(buffer === "" ? (gnista.windowBuffer() ?? "*scratch*") : buffer, true),
 });
 
-const findFileOtherWindow = ember.defineCommand({
+const findFileOtherWindow = gnista.defineCommand({
   name: "find-file-other-window",
   doc: "Visit a file in another window and select it.",
   params: [{ name: "file", kind: "file", prompt: "Find file in other window: " }],
-  run: (file) => ember.fileDirectoryP(file) ? ember.call("dired-other-window", file) : popToBuffer(ember.findFileNoselect(file), true),
+  run: (file) => gnista.fileDirectoryP(file) ? gnista.call("dired-other-window", file) : popToBuffer(gnista.findFileNoselect(file), true),
 });
 
-const killBufferAndWindow = ember.defineCommand({
+const killBufferAndWindow = gnista.defineCommand({
   name: "kill-buffer-and-window",
   doc: "Kill the current buffer and delete the selected window.",
   run: () => {
-    const buffer = ember.windowBuffer() ?? "";
-    const window = ember.selectedWindow();
-    if (ember.windowList().length > 1) {
-      ember.setWindowParameter(window, "quit-restore", null);
-      ember.deleteWindow(window);
+    const buffer = gnista.windowBuffer() ?? "";
+    const window = gnista.selectedWindow();
+    if (gnista.windowList().length > 1) {
+      gnista.setWindowParameter(window, "quit-restore", null);
+      gnista.deleteWindow(window);
     }
-    ember.call("kill-buffer", buffer);
+    gnista.call("kill-buffer", buffer);
   },
 });
 
@@ -282,16 +282,16 @@ const killBufferAndWindow = ember.defineCommand({
  * Deletes a window if it can be, as window--delete: with `dedicatedOnly`,
  * only one dedicated to its buffer. The only window of a frame goes with
  * the frame if there are others and its buffer is being killed; Emacs
- * would hide such a frame otherwise, which Ember cannot. Says whether it went.
+ * would hide such a frame otherwise, which Gnista cannot. Says whether it went.
  */
 function windowDelete(window: number, dedicatedOnly: boolean, kill: boolean): boolean {
   if (dedicatedOnly && !dedicated(window)) return false;
-  if (ember.windowList().length > 1) {
-    ember.deleteWindow(window);
+  if (gnista.windowList().length > 1) {
+    gnista.deleteWindow(window);
     return true;
   }
-  if (kill && ember.frameList().length > 1) {
-    ember.deleteFrame();
+  if (kill && gnista.frameList().length > 1) {
+    gnista.deleteFrame();
     return true;
   }
   return false;
@@ -299,7 +299,7 @@ function windowDelete(window: number, dedicatedOnly: boolean, kill: boolean): bo
 
 /** Selects the window selected when a quit window's buffer was shown, if it is still there. */
 function reselect(window: number | undefined): void {
-  if (window !== undefined && window !== ember.selectedWindow() && ember.windowList().includes(window)) ember.selectWindow(window);
+  if (window !== undefined && window !== gnista.selectedWindow() && gnista.windowList().includes(window)) gnista.selectWindow(window);
 }
 
 /**
@@ -311,55 +311,55 @@ function reselect(window: number | undefined): void {
  * end of the window's previous buffers.
  */
 function quitRestoreWindow(window: number, buryOrKill?: "bury" | "kill" | "append"): void {
-  const buffer = ember.windowBuffer(window) ?? "";
+  const buffer = gnista.windowBuffer(window) ?? "";
   const restore = quitRestore(window);
   const selectedThen = restore?.[2];
-  const prevBuffer = ember.windowPrevBuffers(window).find(([b]) => b !== buffer)?.[0];
-  const flag = ember.windowDedicatedP(window);
+  const prevBuffer = gnista.windowPrevBuffers(window).find(([b]) => b !== buffer)?.[0];
+  const flag = gnista.windowDedicatedP(window);
   const kill = buryOrKill === "kill";
   if (dedicated(window) && flag !== "side" && windowDelete(window, true, kill)) {
     reselect(selectedThen);
   } else if (
     prevBuffer === undefined &&
-    (restore?.[1] === "frame" || (restore?.[1] === "window" && ember.windowList().length > 1)) &&
+    (restore?.[1] === "frame" || (restore?.[1] === "window" && gnista.windowList().length > 1)) &&
     restore?.[3] === buffer &&
     windowDelete(window, false, kill)
   ) {
     reselect(selectedThen);
-  } else if (restore && Array.isArray(restore[1]) && ember.getBuffer(restore[1][0]) !== undefined && restore[3] === buffer) {
+  } else if (restore && Array.isArray(restore[1]) && gnista.getBuffer(restore[1][0]) !== undefined && restore[3] === buffer) {
     const [previous, start, point] = restore[1];
     // Where the window was in it, from its previous buffers, which follow
     // edits as the markers Emacs keeps here do.
-    const entry = ember.windowPrevBuffers(window).find(([b]) => b === previous);
-    ember.setWindowDedicatedP(window, null);
-    ember.setWindowBuffer(window, previous);
-    ember.setWindowStart(window, entry?.[1] ?? start);
-    ember.setWindowPoint(window, entry?.[2] ?? point);
-    if (flag === "side") ember.setWindowDedicatedP(window, "side");
-    const appended = buryOrKill === "append" ? ember.windowPrevBuffers(window).find(([b]) => b === buffer) : undefined;
+    const entry = gnista.windowPrevBuffers(window).find(([b]) => b === previous);
+    gnista.setWindowDedicatedP(window, null);
+    gnista.setWindowBuffer(window, previous);
+    gnista.setWindowStart(window, entry?.[1] ?? start);
+    gnista.setWindowPoint(window, entry?.[2] ?? point);
+    if (flag === "side") gnista.setWindowDedicatedP(window, "side");
+    const appended = buryOrKill === "append" ? gnista.windowPrevBuffers(window).find(([b]) => b === buffer) : undefined;
     if (buryOrKill) {
-      ember.setWindowPrevBuffers(window, ember.windowPrevBuffers(window).filter(([b]) => b !== buffer));
-      ember.setWindowNextBuffers(window, ember.windowNextBuffers(window).filter((b) => b !== buffer));
+      gnista.setWindowPrevBuffers(window, gnista.windowPrevBuffers(window).filter(([b]) => b !== buffer));
+      gnista.setWindowNextBuffers(window, gnista.windowNextBuffers(window).filter((b) => b !== buffer));
     }
-    if (appended) ember.setWindowPrevBuffers(window, [...ember.windowPrevBuffers(window), appended]);
-    ember.setWindowParameter(window, "quit-restore", null);
+    if (appended) gnista.setWindowPrevBuffers(window, [...gnista.windowPrevBuffers(window), appended]);
+    gnista.setWindowParameter(window, "quit-restore", null);
     reselect(selectedThen);
   } else {
-    ember.setWindowParameter(window, "quit-restore", null);
-    ember.setWindowDedicatedP(window, null);
-    if (ember.switchToPrevBuffer(window, buryOrKill) !== undefined) {
-      if (flag === "side") ember.setWindowDedicatedP(window, "side");
+    gnista.setWindowParameter(window, "quit-restore", null);
+    gnista.setWindowDedicatedP(window, null);
+    if (gnista.switchToPrevBuffer(window, buryOrKill) !== undefined) {
+      if (flag === "side") gnista.setWindowDedicatedP(window, "side");
     } else {
       windowDelete(window, false, kill);
     }
     reselect(selectedThen);
   }
-  if (ember.getBuffer(buffer) === undefined) return;
-  if (kill) ember.call("kill-buffer", buffer);
-  else if (buryOrKill) ember.buryBufferInternal(buffer);
+  if (gnista.getBuffer(buffer) === undefined) return;
+  if (kill) gnista.call("kill-buffer", buffer);
+  else if (buryOrKill) gnista.buryBufferInternal(buffer);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "quit-window",
   doc:
     "Quit the selected window and bury its buffer.\n\n" +
@@ -367,53 +367,53 @@ ember.defineCommand({
     "Then the window that was selected when the buffer was shown is selected again. With a prefix argument, the buffer is killed.",
   params: [{ name: "kill", kind: "prefix" }],
   run: (kill) => {
-    const window = ember.selectedWindow();
-    ember.withCurrentBuffer(ember.windowBuffer(window) ?? "", () => ember.runHooks("quit-window-hook"));
+    const window = gnista.selectedWindow();
+    gnista.withCurrentBuffer(gnista.windowBuffer(window) ?? "", () => gnista.runHooks("quit-window-hook"));
     quitRestoreWindow(window, kill !== null && kill !== undefined ? "kill" : "bury");
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "bury-buffer",
   doc:
     "Put a buffer last in the buffer list, the current one by default.\n\n" +
     "Burying the current buffer shown in the selected window also takes it out of the window: " +
     "a window dedicated to it is deleted, and any other shows the buffer it showed before.",
   run: () => {
-    const buffer = ember.bufferName();
-    ember.buryBufferInternal(buffer);
-    const window = ember.selectedWindow();
-    if (window === 0 || ember.windowBuffer(window) !== buffer) return;
+    const buffer = gnista.bufferName();
+    gnista.buryBufferInternal(buffer);
+    const window = gnista.selectedWindow();
+    if (window === 0 || gnista.windowBuffer(window) !== buffer) return;
     if (windowDelete(window, true, false)) return;
-    ember.setWindowDedicatedP(window, null);
-    ember.switchToPrevBuffer(window, "bury");
+    gnista.setWindowDedicatedP(window, null);
+    gnista.switchToPrevBuffer(window, "bury");
   },
 });
 
 /** The window C-M-v scrolls, as other-window-for-scrolling: the next one. */
 function otherWindowForScrolling(): number {
-  const windows = ember.windowList();
+  const windows = gnista.windowList();
   if (windows.length === 1) throw new Error("There is no other window");
-  return windows[(windows.indexOf(ember.selectedWindow()) + 1) % windows.length];
+  return windows[(windows.indexOf(gnista.selectedWindow()) + 1) % windows.length];
 }
 
-function scrollOther(command: ember.CommandName): void {
-  const selected = ember.selectedWindow();
-  ember.selectWindow(otherWindowForScrolling());
+function scrollOther(command: gnista.CommandName): void {
+  const selected = gnista.selectedWindow();
+  gnista.selectWindow(otherWindowForScrolling());
   try {
-    ember.callWithPrefix(ember.prefixArg(), command);
+    gnista.callWithPrefix(gnista.prefixArg(), command);
   } finally {
-    ember.selectWindow(selected);
+    gnista.selectWindow(selected);
   }
 }
 
-const scrollOtherWindow = ember.defineCommand({
+const scrollOtherWindow = gnista.defineCommand({
   name: "scroll-other-window",
   doc: "Scroll the next window up a screen, as C-v does in the selected one. A prefix argument says how many lines.",
   run: () => scrollOther("scroll-up-command"),
 });
 
-const scrollOtherWindowDown = ember.defineCommand({
+const scrollOtherWindowDown = gnista.defineCommand({
   name: "scroll-other-window-down",
   doc: "Scroll the next window down a screen, as M-v does in the selected one. A prefix argument says how many lines.",
   run: () => scrollOther("scroll-down-command"),
@@ -423,11 +423,11 @@ const scrollOtherWindowDown = ember.defineCommand({
 
 /** Why the selected window cannot switch buffers, if it cannot, as previous-buffer checks. */
 function cannotSwitch(): void {
-  if (ember.selectedWindow() === 0) ember.userError("Cannot switch buffers in minibuffer window");
-  if (ember.windowDedicatedP() === true) ember.userError("Window is strongly dedicated to its buffer");
+  if (gnista.selectedWindow() === 0) gnista.userError("Cannot switch buffers in minibuffer window");
+  if (gnista.windowDedicatedP() === true) gnista.userError("Window is strongly dedicated to its buffer");
 }
 
-const previousBuffer = ember.defineCommand({
+const previousBuffer = gnista.defineCommand({
   name: "previous-buffer",
   doc:
     "Show in the selected window the buffer it showed before this one, as switch-to-prev-buffer.\n\n" +
@@ -435,22 +435,22 @@ const previousBuffer = ember.defineCommand({
   params: [{ name: "count", kind: "count" }],
   run: (count) => {
     cannotSwitch();
-    const interactive = ember.calledInteractively() && !ember.executingKbdMacro();
+    const interactive = gnista.calledInteractively() && !gnista.executingKbdMacro();
     for (let n = count; n > 0; n--) {
-      if (ember.switchToPrevBuffer() === undefined && interactive) ember.userError("No previous buffer");
+      if (gnista.switchToPrevBuffer() === undefined && interactive) gnista.userError("No previous buffer");
     }
   },
 });
 
-const nextBuffer = ember.defineCommand({
+const nextBuffer = gnista.defineCommand({
   name: "next-buffer",
   doc: "Show in the selected window the buffer previous-buffer went back from, as switch-to-next-buffer. A prefix argument goes that many on.",
   params: [{ name: "count", kind: "count" }],
   run: (count) => {
     cannotSwitch();
-    const interactive = ember.calledInteractively() && !ember.executingKbdMacro();
+    const interactive = gnista.calledInteractively() && !gnista.executingKbdMacro();
     for (let n = count; n > 0; n--) {
-      if (ember.switchToNextBuffer() === undefined && interactive) ember.userError("No next buffer");
+      if (gnista.switchToNextBuffer() === undefined && interactive) gnista.userError("No next buffer");
     }
   },
 });
@@ -464,248 +464,248 @@ const nextBuffer = ember.defineCommand({
  * it can.
  */
 function resize(command: string, horizontal: boolean, shrink: boolean): void {
-  const count = ember.prefixNumericValue(ember.prefixArg());
+  const count = gnista.prefixNumericValue(gnista.prefixArg());
   const delta = shrink ? -count : count;
   if (delta === 0) return;
-  if (ember.resizeWindow(undefined, delta, horizontal, false) === delta) {
-    ember.resizeWindow(undefined, delta, horizontal);
+  if (gnista.resizeWindow(undefined, delta, horizontal, false) === delta) {
+    gnista.resizeWindow(undefined, delta, horizontal);
     return;
   }
-  if (ember.thisCommand() === command) {
+  if (gnista.thisCommand() === command) {
     throw new Error(`Cannot ${shrink ? "shrink" : "enlarge"} selected window ${horizontal ? "horizontally" : "vertically"}`);
   }
-  ember.resizeWindow(undefined, delta, horizontal);
+  gnista.resizeWindow(undefined, delta, horizontal);
 }
 
-const enlargeWindow = ember.defineCommand({
+const enlargeWindow = gnista.defineCommand({
   name: "enlarge-window",
   doc: "Make the selected window taller by the prefix argument's lines, taking them from its neighbour.",
   run: () => resize("enlarge-window", false, false),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "shrink-window",
   doc: "Make the selected window shorter by the prefix argument's lines, giving them to its neighbour.",
   run: () => resize("shrink-window", false, true),
 });
 
-const enlargeWindowHorizontally = ember.defineCommand({
+const enlargeWindowHorizontally = gnista.defineCommand({
   name: "enlarge-window-horizontally",
   doc: "Make the selected window wider by the prefix argument's columns, taking them from its neighbour.",
   run: () => resize("enlarge-window-horizontally", true, false),
 });
 
-const shrinkWindowHorizontally = ember.defineCommand({
+const shrinkWindowHorizontally = gnista.defineCommand({
   name: "shrink-window-horizontally",
   doc: "Make the selected window narrower by the prefix argument's columns, giving them to its neighbour.",
   run: () => resize("shrink-window-horizontally", true, true),
 });
 
-const balanceWindows = ember.defineCommand({
+const balanceWindows = gnista.defineCommand({
   name: "balance-windows",
   doc: "Make windows side by side the same width and windows one above another the same height.",
-  run: () => ember.balanceWindows(),
+  run: () => gnista.balanceWindows(),
 });
 
-const shrinkIfLarger = ember.defineCommand({
+const shrinkIfLarger = gnista.defineCommand({
   name: "shrink-window-if-larger-than-buffer",
   doc:
     "Shrink the selected window to fit its buffer, if the buffer is shorter than the window.\n\n" +
     "The window keeps at least window-min-height lines, and a window alone in its column is left as it is.",
   run: () => {
-    const s = size(ember.selectedWindow());
-    const needed = Math.max(WINDOW_MIN_HEIGHT, ember.lineCount() + 1);
-    if (s.totalHeight > needed) ember.resizeWindow(undefined, needed - s.totalHeight, false);
+    const s = size(gnista.selectedWindow());
+    const needed = Math.max(WINDOW_MIN_HEIGHT, gnista.lineCount() + 1);
+    if (s.totalHeight > needed) gnista.resizeWindow(undefined, needed - s.totalHeight, false);
   },
 });
 
 // Frames, as frame.el's commands, on C-x 5.
 
-const makeFrameCommand = ember.defineCommand({
+const makeFrameCommand = gnista.defineCommand({
   name: "make-frame-command",
   doc: "Make a new frame showing the current buffer, and select it.",
   run: () => {
-    ember.makeFrame();
+    gnista.makeFrame();
   },
 });
 
-const otherFrame = ember.defineCommand({
+const otherFrame = gnista.defineCommand({
   name: "other-frame",
   doc: "Select another frame, the next in frame-list's order; a prefix argument says how many on to go.",
   run: () => {
-    const frames = ember.frameList();
-    const count = ember.prefixNumericValue(ember.prefixArg());
-    const i = frames.indexOf(ember.selectedFrame());
+    const frames = gnista.frameList();
+    const count = gnista.prefixNumericValue(gnista.prefixArg());
+    const i = frames.indexOf(gnista.selectedFrame());
     const n = frames.length;
-    ember.selectFrame(frames[(((i + count) % n) + n) % n]);
+    gnista.selectFrame(frames[(((i + count) % n) + n) % n]);
   },
 });
 
-const deleteFrameCommand = ember.defineCommand({
+const deleteFrameCommand = gnista.defineCommand({
   name: "delete-frame",
   doc: "Delete the selected frame and its windows. The only frame cannot be deleted.",
-  run: () => ember.deleteFrame(),
+  run: () => gnista.deleteFrame(),
 });
 
-const deleteOtherFrames = ember.defineCommand({
+const deleteOtherFrames = gnista.defineCommand({
   name: "delete-other-frames",
   doc: "Delete every frame but the selected one.",
   run: () => {
-    const selected = ember.selectedFrame();
-    for (const frame of ember.frameList()) if (frame !== selected) ember.deleteFrame(frame);
+    const selected = gnista.selectedFrame();
+    for (const frame of gnista.frameList()) if (frame !== selected) gnista.deleteFrame(frame);
   },
 });
 
-const switchToBufferOtherFrame = ember.defineCommand({
+const switchToBufferOtherFrame = gnista.defineCommand({
   name: "switch-to-buffer-other-frame",
   doc: "Show a buffer in a new frame and select it, creating the buffer if there is none.",
   params: [{ name: "buffer", kind: "buffer", prompt: "Switch to buffer in other frame: " }],
   run: (buffer) => {
-    const name = buffer === "" ? (ember.windowBuffer() ?? "*scratch*") : buffer;
-    ember.getBufferCreate(name);
-    ember.makeFrame(name);
+    const name = buffer === "" ? (gnista.windowBuffer() ?? "*scratch*") : buffer;
+    gnista.getBufferCreate(name);
+    gnista.makeFrame(name);
   },
 });
 
-const findFileOtherFrame = ember.defineCommand({
+const findFileOtherFrame = gnista.defineCommand({
   name: "find-file-other-frame",
   doc: "Visit a file in a new frame and select it.",
   params: [{ name: "file", kind: "file", prompt: "Find file in other frame: " }],
   run: (file) => {
-    ember.makeFrame(ember.findFileNoselect(file));
+    gnista.makeFrame(gnista.findFileNoselect(file));
   },
 });
 
-const displayBufferOtherFrame = ember.defineCommand({
+const displayBufferOtherFrame = gnista.defineCommand({
   name: "display-buffer-other-frame",
   doc: "Show a buffer in a new frame, leaving the selected frame selected.",
   params: [{ name: "buffer", kind: "buffer", prompt: "Display buffer in other frame: " }],
   run: (buffer) => {
-    const selected = ember.selectedFrame();
-    ember.getBufferCreate(buffer);
-    ember.makeFrame(buffer);
-    ember.selectFrame(selected);
+    const selected = gnista.selectedFrame();
+    gnista.getBufferCreate(buffer);
+    gnista.makeFrame(buffer);
+    gnista.selectFrame(selected);
   },
 });
 
-ember.bindKey("C-x 5 2", makeFrameCommand);
-ember.bindKey("C-x 5 o", otherFrame);
-ember.bindKey("C-x 5 0", deleteFrameCommand);
-ember.bindKey("C-x 5 1", deleteOtherFrames);
-ember.bindKey("C-x 5 b", switchToBufferOtherFrame);
-ember.bindKey("C-x 5 f", findFileOtherFrame);
-ember.bindKey("C-x 5 C-f", findFileOtherFrame);
-ember.bindKey("C-x 5 C-o", displayBufferOtherFrame);
+gnista.bindKey("C-x 5 2", makeFrameCommand);
+gnista.bindKey("C-x 5 o", otherFrame);
+gnista.bindKey("C-x 5 0", deleteFrameCommand);
+gnista.bindKey("C-x 5 1", deleteOtherFrames);
+gnista.bindKey("C-x 5 b", switchToBufferOtherFrame);
+gnista.bindKey("C-x 5 f", findFileOtherFrame);
+gnista.bindKey("C-x 5 C-f", findFileOtherFrame);
+gnista.bindKey("C-x 5 C-o", displayBufferOtherFrame);
 
-ember.bindKey("C-x <left>", previousBuffer);
-ember.bindKey("C-x <right>", nextBuffer);
-const splitRootBelow = ember.defineCommand({
+gnista.bindKey("C-x <left>", previousBuffer);
+gnista.bindKey("C-x <right>", nextBuffer);
+const splitRootBelow = gnista.defineCommand({
   name: "split-root-window-below",
   doc:
     "Split the frame's root window in two, the new window below taking the frame's whole width. " +
     "A prefix argument gives the windows above that many lines, or the new one if it is negative.",
   run: () => {
-    ember.splitRootWindow("below", splitSize());
+    gnista.splitRootWindow("below", splitSize());
   },
 });
 
-const splitRootRight = ember.defineCommand({
+const splitRootRight = gnista.defineCommand({
   name: "split-root-window-right",
   doc:
     "Split the frame's root window in two, the new window on the right taking the frame's whole height. " +
     "A prefix argument gives the windows on the left that many columns, or the new one if it is negative.",
   run: () => {
-    ember.splitRootWindow("right", splitSize());
+    gnista.splitRootWindow("right", splitSize());
   },
 });
 
-ember.bindKey("C-x w 2", splitRootBelow);
-ember.bindKey("C-x w 3", splitRootRight);
-ember.bindKey("C-x 2", splitBelow);
-ember.bindKey("C-x 3", splitRight);
-ember.bindKey("C-x o", otherWindow);
-ember.bindKey("C-x 0", deleteWindow);
-ember.bindKey("C-x 1", deleteOtherWindows);
-ember.bindKey("C-x 4 b", switchToBufferOtherWindow);
-ember.bindKey("C-x 4 f", findFileOtherWindow);
-ember.bindKey("C-x 4 C-f", findFileOtherWindow);
-ember.bindKey("C-x 4 C-o", displayBufferCommand);
-ember.bindKey("C-x 4 0", killBufferAndWindow);
-ember.bindKey("C-M-v", scrollOtherWindow);
-ember.bindKey("C-M-S-v", scrollOtherWindowDown);
-ember.bindKey("C-x ^", enlargeWindow);
-ember.bindKey("C-x }", enlargeWindowHorizontally);
-ember.bindKey("C-x {", shrinkWindowHorizontally);
-ember.bindKey("C-x +", balanceWindows);
-ember.bindKey("C-x -", shrinkIfLarger);
+gnista.bindKey("C-x w 2", splitRootBelow);
+gnista.bindKey("C-x w 3", splitRootRight);
+gnista.bindKey("C-x 2", splitBelow);
+gnista.bindKey("C-x 3", splitRight);
+gnista.bindKey("C-x o", otherWindow);
+gnista.bindKey("C-x 0", deleteWindow);
+gnista.bindKey("C-x 1", deleteOtherWindows);
+gnista.bindKey("C-x 4 b", switchToBufferOtherWindow);
+gnista.bindKey("C-x 4 f", findFileOtherWindow);
+gnista.bindKey("C-x 4 C-f", findFileOtherWindow);
+gnista.bindKey("C-x 4 C-o", displayBufferCommand);
+gnista.bindKey("C-x 4 0", killBufferAndWindow);
+gnista.bindKey("C-M-v", scrollOtherWindow);
+gnista.bindKey("C-M-S-v", scrollOtherWindowDown);
+gnista.bindKey("C-x ^", enlargeWindow);
+gnista.bindKey("C-x }", enlargeWindowHorizontally);
+gnista.bindKey("C-x {", shrinkWindowHorizontally);
+gnista.bindKey("C-x +", balanceWindows);
+gnista.bindKey("C-x -", shrinkIfLarger);
 
 // C-l, after window.el's recenter-top-bottom: the line with point to the
 // middle, then the top, then the bottom of the window, each time in a row.
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "recenter-positions",
   doc: "Where C-l puts the line with point each time in a row: middle, top, bottom, or a line of the window.",
   value: ["middle", "top", "bottom"],
 });
 
-let recenterLastOp: ember.Value | undefined;
+let recenterLastOp: gnista.Value | undefined;
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "recenter-top-bottom",
   doc:
     "Scroll so the line with point is in the middle of the window; again, at the top; again, at the bottom, " +
     "as recenter-positions says. With a prefix argument, put it on that line of the window, as recenter does.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: (arg: ember.PrefixArg) => {
+  run: (arg: gnista.PrefixArg) => {
     if (arg !== null) {
-      ember.callWithPrefix(arg, "recenter");
+      gnista.callWithPrefix(arg, "recenter");
       return;
     }
-    const positions = (ember.variable("recenter-positions") ?? ["middle"]) as ember.Value[];
-    if (ember.lastCommand() === "recenter-top-bottom") {
+    const positions = (gnista.variable("recenter-positions") ?? ["middle"]) as gnista.Value[];
+    if (gnista.lastCommand() === "recenter-top-bottom") {
       const i = positions.findIndex((p) => JSON.stringify(p) === JSON.stringify(recenterLastOp));
       recenterLastOp = i >= 0 && i + 1 < positions.length ? positions[i + 1] : positions[0];
     } else {
       recenterLastOp = positions[0];
     }
-    const margin = Math.max(0, Number(ember.variable("scroll-margin") ?? 0));
+    const margin = Math.max(0, Number(gnista.variable("scroll-margin") ?? 0));
     const op = recenterLastOp;
-    if (op === "middle") ember.callWithPrefix(null, "recenter");
-    else if (op === "top") ember.callWithPrefix(margin, "recenter");
-    else if (op === "bottom") ember.callWithPrefix(-1 - margin, "recenter");
-    else if (typeof op === "number" && Number.isInteger(op)) ember.callWithPrefix(op, "recenter");
+    if (op === "middle") gnista.callWithPrefix(null, "recenter");
+    else if (op === "top") gnista.callWithPrefix(margin, "recenter");
+    else if (op === "bottom") gnista.callWithPrefix(-1 - margin, "recenter");
+    else if (typeof op === "number" && Number.isInteger(op)) gnista.callWithPrefix(op, "recenter");
   },
 });
-ember.bindKey("C-l", "recenter-top-bottom");
+gnista.bindKey("C-l", "recenter-top-bottom");
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "move-to-window-line-top-bottom",
   doc:
     "Move point to the line in the middle of the window; again, the top line; again, the bottom one, " +
     "as recenter-positions says. With a prefix argument, to that line of the window, as move-to-window-line does.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: (arg: ember.PrefixArg) => {
+  run: (arg: gnista.PrefixArg) => {
     if (arg !== null) {
-      ember.callWithPrefix(arg, "move-to-window-line");
+      gnista.callWithPrefix(arg, "move-to-window-line");
       return;
     }
     // It goes through recenter-positions as C-l does, sharing where it is.
-    const positions = (ember.variable("recenter-positions") ?? ["middle"]) as ember.Value[];
-    if (ember.lastCommand() === "move-to-window-line-top-bottom") {
+    const positions = (gnista.variable("recenter-positions") ?? ["middle"]) as gnista.Value[];
+    if (gnista.lastCommand() === "move-to-window-line-top-bottom") {
       const i = positions.findIndex((p) => JSON.stringify(p) === JSON.stringify(recenterLastOp));
       recenterLastOp = i >= 0 && i + 1 < positions.length ? positions[i + 1] : positions[0];
     } else {
       recenterLastOp = positions[0];
     }
-    const margin = Math.max(0, Number(ember.variable("scroll-margin") ?? 0));
+    const margin = Math.max(0, Number(gnista.variable("scroll-margin") ?? 0));
     const op = recenterLastOp;
-    if (op === "middle") ember.callWithPrefix(null, "move-to-window-line");
-    else if (op === "top") ember.callWithPrefix(margin, "move-to-window-line");
-    else if (op === "bottom") ember.callWithPrefix(-1 - margin, "move-to-window-line");
-    else if (typeof op === "number" && Number.isInteger(op)) ember.callWithPrefix(op, "move-to-window-line");
+    if (op === "middle") gnista.callWithPrefix(null, "move-to-window-line");
+    else if (op === "top") gnista.callWithPrefix(margin, "move-to-window-line");
+    else if (op === "bottom") gnista.callWithPrefix(-1 - margin, "move-to-window-line");
+    else if (typeof op === "number" && Number.isInteger(op)) gnista.callWithPrefix(op, "move-to-window-line");
   },
 });
-ember.bindKey("M-r", "move-to-window-line-top-bottom");
+gnista.bindKey("M-r", "move-to-window-line-top-bottom");
 
 // --- Window states, as window.el's window-state-get and window-state-put ----
 
@@ -721,17 +721,17 @@ interface WindowLeafState {
 export type WindowState = WindowLeafState | { sideBySide: boolean; firstSize: number | null; first: WindowState; second: WindowState };
 
 export function windowStateGet(): WindowState {
-  const selected = ember.selectedWindow();
-  const node = (t: ember.WindowTreeNode): WindowState => {
+  const selected = gnista.selectedWindow();
+  const node = (t: gnista.WindowTreeNode): WindowState => {
     if (typeof t === "number") {
-      const buffer = ember.windowBuffer(t) ?? "*scratch*";
-      const file = ember.withCurrentBuffer(buffer, () => ember.bufferFileName());
-      return { buffer, ...(file ? { file } : {}), point: ember.windowPoint(t), start: ember.windowStart(t), selected: t === selected };
+      const buffer = gnista.windowBuffer(t) ?? "*scratch*";
+      const file = gnista.withCurrentBuffer(buffer, () => gnista.bufferFileName());
+      return { buffer, ...(file ? { file } : {}), point: gnista.windowPoint(t), start: gnista.windowStart(t), selected: t === selected };
     }
     const [sideBySide, firstSize, first, second] = t;
     return { sideBySide, firstSize, first: node(first), second: node(second) };
   };
-  return node(ember.windowTree());
+  return node(gnista.windowTree());
 }
 
 /**
@@ -740,43 +740,43 @@ export function windowStateGet(): WindowState {
  * current buffer, at its point.
  */
 export function windowStatePut(state: WindowState): void {
-  ember.call("delete-other-windows");
+  gnista.call("delete-other-windows");
   let toSelect: number | undefined;
   const fill = (window: number, s: WindowState): void => {
     if ("buffer" in s) {
-      const visiting = (file: string) => ember.bufferList().find((b) => ember.withCurrentBuffer(b, () => ember.bufferFileName()) === file);
+      const visiting = (file: string) => gnista.bufferList().find((b) => gnista.withCurrentBuffer(b, () => gnista.bufferFileName()) === file);
       const byFile = s.file ? visiting(s.file) : undefined;
-      const live = ember.getBuffer(byFile ?? s.buffer);
+      const live = gnista.getBuffer(byFile ?? s.buffer);
       if (live) {
-        ember.setWindowBuffer(window, live.name!);
-        ember.setWindowStart(window, Math.min(s.start, ember.withCurrentBuffer(live, () => ember.bufferSize())));
-        ember.setWindowPoint(window, Math.min(s.point, ember.withCurrentBuffer(live, () => ember.bufferSize())));
+        gnista.setWindowBuffer(window, live.name!);
+        gnista.setWindowStart(window, Math.min(s.start, gnista.withCurrentBuffer(live, () => gnista.bufferSize())));
+        gnista.setWindowPoint(window, Math.min(s.point, gnista.withCurrentBuffer(live, () => gnista.bufferSize())));
       }
       if (s.selected) toSelect = window;
       return;
     }
     let other: number;
     try {
-      other = ember.splitWindow(window, s.sideBySide ? "right" : "below", s.firstSize ?? undefined);
+      other = gnista.splitWindow(window, s.sideBySide ? "right" : "below", s.firstSize ?? undefined);
     } catch {
-      other = ember.splitWindow(window, s.sideBySide ? "right" : "below");
+      other = gnista.splitWindow(window, s.sideBySide ? "right" : "below");
     }
     fill(window, s.first);
     fill(other, s.second);
   };
-  fill(ember.selectedWindow(), state);
-  if (toSelect !== undefined) ember.selectWindow(toSelect);
+  fill(gnista.selectedWindow(), state);
+  if (toSelect !== undefined) gnista.selectWindow(toSelect);
 }
 
 // window-configuration-change-hook: run after a command that changed which
 // windows the selected frame has or which buffers they show, where Emacs
 // runs it as redisplay finds the change.
-ember.defineHook("window-configuration-change-hook", "Functions called after the selected frame's windows, or the buffers they show, change.");
+gnista.defineHook("window-configuration-change-hook", "Functions called after the selected frame's windows, or the buffers they show, change.");
 let lastConfiguration: string | undefined;
-ember.addHook("post-command-hook", () => {
-  const now = ember.windowList().map((w) => `${w}:${ember.windowBuffer(w)}`).join(" ");
+gnista.addHook("post-command-hook", () => {
+  const now = gnista.windowList().map((w) => `${w}:${gnista.windowBuffer(w)}`).join(" ");
   if (now === lastConfiguration) return;
   const changed = lastConfiguration !== undefined;
   lastConfiguration = now;
-  if (changed) ember.runHooks("window-configuration-change-hook");
+  if (changed) gnista.runHooks("window-configuration-change-hook");
 });

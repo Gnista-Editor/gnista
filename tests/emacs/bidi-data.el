@@ -1,6 +1,6 @@
-;;; bidi-data.el --- Writes the bidi tables Ember's display reorders with, from Emacs  -*- lexical-binding: t -*-
+;;; bidi-data.el --- Writes the bidi tables Gnista's display reorders with, from Emacs  -*- lexical-binding: t -*-
 
-;; Writes crates/ember-core/src/bidi_data.rs: each character's
+;; Writes crates/gnista-core/src/bidi_data.rs: each character's
 ;; `bidi-class', as runs of code points, its `mirroring' character, its
 ;; `paired-bracket' and `bracket-type', and whether it is `mirrored' (Y), as
 ;; Emacs's bidi.c and `get-char-code-property' see them:
@@ -8,7 +8,7 @@
 ;;   emacs -Q --batch -l tests/emacs/bidi-data.el
 
 (let* ((root (file-name-directory (directory-file-name (file-name-directory load-file-name))))
-       (out (expand-file-name "../crates/ember-core/src/bidi_data.rs" root))
+       (out (expand-file-name "../crates/gnista-core/src/bidi_data.rs" root))
        (classes '(L R AL EN ES ET AN CS NSM BN B S WS ON LRE LRO RLE RLO PDF LRI RLI FSI PDI))
        class-runs mirrors brackets mirrored-runs)
   (let ((last nil) (start 0) (open nil))

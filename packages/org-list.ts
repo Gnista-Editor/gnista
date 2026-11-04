@@ -70,8 +70,8 @@ export function textIndentation(text: string): number {
 export function indentString(col: number, from = 0): string {
   // As indent-to does, a column at or before where it starts adds nothing.
   if (col <= from) return "";
-  if (ember.variable("indent-tabs-mode") === true) {
-    const width = Number(ember.variable("tab-width") ?? 8);
+  if (gnista.variable("indent-tabs-mode") === true) {
+    const width = Number(gnista.variable("tab-width") ?? 8);
     let s = "";
     let c = from;
     while (Math.floor(c / width) < Math.floor(col / width)) {
@@ -90,28 +90,28 @@ export function indentString(col: number, from = 0): string {
 export function edReplace(from: number, to: number, text: string): void {
   const n = charCount(text);
   const delta = n - (to - from);
-  const mark = ember.mark();
+  const mark = gnista.mark();
   const saved: [Marker, number][] = markers.map((m) => [m, m.pos]);
   // One change, as replace-match is, so folds are checked once, after it.
   const checks = !foldChecksOff;
   withoutFoldChecks(() => {
-    ember.deleteRegion(from, to);
-    ember.gotoChar(from);
-    ember.insert(text);
+    gnista.deleteRegion(from, to);
+    gnista.gotoChar(from);
+    gnista.insert(text);
   });
   const moved = (x: number): number => (x >= to ? x + delta : x > from ? from : x);
   placeMarkers(saved.map(([m, p]) => [m, moved(p)]));
-  if (mark !== undefined) ember.setMark(moved(mark));
+  if (mark !== undefined) gnista.setMark(moved(mark));
   if (checks) fixFoldsAround(from, from + n);
 }
 
 /** Sets a line's indentation, as indent-line-to does: only the difference is inserted or deleted. */
 export function indentLineTo(line: number, col: number): void {
-  const ls = ember.lineStart(line);
-  const ws = /^[ \t]*/.exec(ember.lineText(line))?.[0] ?? "";
+  const ls = gnista.lineStart(line);
+  const ws = /^[ \t]*/.exec(gnista.lineText(line))?.[0] ?? "";
   const end = ls + charCount(ws);
   const cur = textIndentation(ws);
-  const width = Number(ember.variable("tab-width") ?? 8);
+  const width = Number(gnista.variable("tab-width") ?? 8);
   if (cur < col) {
     let from = cur;
     let at = end;
@@ -132,7 +132,7 @@ export function indentLineTo(line: number, col: number): void {
         if (c < col) {
           edDelete(ls + i, ls + i + 1);
           edInsert(ls + i, " ".repeat(next - c));
-          edDelete(ls + i + (col - c), ls + charCount(/^[ \t]*/.exec(ember.lineText(line))?.[0] ?? ""));
+          edDelete(ls + i + (col - c), ls + charCount(/^[ \t]*/.exec(gnista.lineText(line))?.[0] ?? ""));
           return;
         }
         break;
@@ -151,58 +151,58 @@ export function indentLineTo(line: number, col: number): void {
  * export blocks.
  */
 function listContext(line: number): { up: number; down: number; type?: string } {
-  const pos = ember.lineStart(line);
+  const pos = gnista.lineStart(line);
   const all = headings();
   const h = headingIndex(all, line);
   let up = h === undefined ? 0 : all[h].start;
-  let down = all.find((x) => x.start > pos)?.start ?? ember.bufferSize();
+  let down = all.find((x) => x.start > pos)?.start ?? gnista.bufferSize();
   let type: string | undefined;
-  const text = ember.lineText(line);
+  const text = gnista.lineText(line);
   const upLine = lineAt(up);
   const downLine = lineAt(down);
   if (!DRAWER_RE.test(text) && !/^[ \t]*:END:/i.test(text)) {
     let beg: number | undefined;
-    for (let l = line - 1; l >= upLine && ember.lineStart(l) >= up; l--) {
-      if (DRAWER_RE.test(ember.lineText(l))) {
+    for (let l = line - 1; l >= upLine && gnista.lineStart(l) >= up; l--) {
+      if (DRAWER_RE.test(gnista.lineText(l))) {
         beg = l;
         break;
       }
     }
     if (beg !== undefined) {
       let end = down;
-      for (let l = beg; l <= downLine && l < ember.lineCount(); l++) {
-        if (ember.lineStart(l) >= down) break;
-        if (/^[ \t]*:END:/i.test(ember.lineText(l))) {
-          end = ember.lineStart(l) - 1;
+      for (let l = beg; l <= downLine && l < gnista.lineCount(); l++) {
+        if (gnista.lineStart(l) >= down) break;
+        if (/^[ \t]*:END:/i.test(gnista.lineText(l))) {
+          end = gnista.lineStart(l) - 1;
           break;
         }
       }
-      if (end >= pos) [up, down, type] = [ember.lineStart(beg + 1), end, "drawer"];
+      if (end >= pos) [up, down, type] = [gnista.lineStart(beg + 1), end, "drawer"];
     }
   }
   const BLOCK = /^[ \t]*#\+(begin|end)_/i;
-  if (!BLOCK.test(ember.lineText(line))) {
+  if (!BLOCK.test(gnista.lineText(line))) {
     let beg: number | undefined;
-    for (let l = line - 1; l >= 0 && ember.lineStart(l) >= up; l--) {
-      if (BLOCK.test(ember.lineText(l))) {
+    for (let l = line - 1; l >= 0 && gnista.lineStart(l) >= up; l--) {
+      if (BLOCK.test(gnista.lineText(l))) {
         beg = l;
         break;
       }
     }
-    const open = beg === undefined ? null : /^[ \t]*#\+begin_(\S+)/i.exec(ember.lineText(beg));
+    const open = beg === undefined ? null : /^[ \t]*#\+begin_(\S+)/i.exec(gnista.lineText(beg));
     if (beg !== undefined && open) {
       let end = down;
       let closes = false;
-      for (let l = beg + 1; l < ember.lineCount() && ember.lineStart(l) < down; l++) {
-        const m = BLOCK.exec(ember.lineText(l));
+      for (let l = beg + 1; l < gnista.lineCount() && gnista.lineStart(l) < down; l++) {
+        const m = BLOCK.exec(gnista.lineText(l));
         if (m) {
-          end = ember.lineStart(l) - 1;
+          end = gnista.lineStart(l) - 1;
           closes = m[1].toLowerCase() === "end";
           break;
         }
       }
       if (end >= pos && closes) {
-        [up, down] = [ember.lineStart(beg + 1), end];
+        [up, down] = [gnista.lineStart(beg + 1), end];
         type = LIST_FORBIDDEN_BLOCKS.includes(open[1].toLowerCase()) ? "invalid" : "block";
       }
     }
@@ -212,13 +212,13 @@ function listContext(line: number): { up: number; down: number; type?: string } 
 
 /** Whether a line and the one after it are blank, which ends a list (org-list-end-re). */
 function atListEnd(line: number): boolean {
-  return line + 1 < ember.lineCount() && isBlank(ember.lineText(line)) && isBlank(ember.lineText(line + 1));
+  return line + 1 < gnista.lineCount() && isBlank(gnista.lineText(line)) && isBlank(gnista.lineText(line + 1));
 }
 
 /** Whether a line starts an item: org-at-item-p for that line. */
 export function itemLine(line: number): boolean {
-  if (line < 0 || line >= ember.lineCount()) return false;
-  if (!ITEM_RE.test(ember.lineText(line))) return false;
+  if (line < 0 || line >= gnista.lineCount()) return false;
+  if (!ITEM_RE.test(gnista.lineText(line))) return false;
   return listContext(line).type !== "invalid";
 }
 
@@ -226,31 +226,31 @@ export function itemLine(line: number): boolean {
 export function inItem(line: number): number | undefined {
   const ctx = listContext(line);
   if (ctx.type === "invalid") return undefined;
-  if (ITEM_RE.test(ember.lineText(line))) return ember.lineStart(line);
-  let indRef = isBlank(ember.lineText(line)) ? 10000 : textIndentation(ember.lineText(line));
+  if (ITEM_RE.test(gnista.lineText(line))) return gnista.lineStart(line);
+  let indRef = isBlank(gnista.lineText(line)) ? 10000 : textIndentation(gnista.lineText(line));
   let l = line;
   // Between the two blank lines that end a list, start from the first.
   if (l > 0 && atListEnd(l - 1)) l -= 2;
   else if (atListEnd(l)) l -= 1;
   for (;;) {
     if (l < 0) return undefined;
-    const text = ember.lineText(l);
+    const text = gnista.lineText(l);
     const ind = textIndentation(text);
-    if (ITEM_RE.test(text) && ind < indRef) return ember.lineStart(l);
-    if (ember.lineStart(l) <= ctx.up) return undefined;
+    if (ITEM_RE.test(text) && ind < indRef) return gnista.lineStart(l);
+    if (gnista.lineStart(l) <= ctx.up) return undefined;
     if (atListEnd(l)) return undefined;
     if (/^[ \t]*#\+end_/i.test(text)) {
       let k = l - 1;
-      while (k >= 0 && ember.lineStart(k) >= ctx.up && !/^[ \t]*#\+begin_/i.test(ember.lineText(k))) k--;
-      if (k >= 0 && ember.lineStart(k) >= ctx.up) {
+      while (k >= 0 && gnista.lineStart(k) >= ctx.up && !/^[ \t]*#\+begin_/i.test(gnista.lineText(k))) k--;
+      if (k >= 0 && gnista.lineStart(k) >= ctx.up) {
         l = k;
         continue;
       }
     }
     if (/^[ \t]*:END:/i.test(text)) {
       let k = l - 1;
-      while (k >= 0 && ember.lineStart(k) >= ctx.up && !DRAWER_RE.test(ember.lineText(k))) k--;
-      if (k >= 0 && ember.lineStart(k) >= ctx.up) {
+      while (k >= 0 && gnista.lineStart(k) >= ctx.up && !DRAWER_RE.test(gnista.lineText(k))) k--;
+      if (k >= 0 && gnista.lineStart(k) >= ctx.up) {
         l = k;
         continue;
       }
@@ -282,8 +282,8 @@ export interface ItemParts {
 }
 
 export function itemParts(line: number): ItemParts | undefined {
-  const text = ember.lineText(line);
-  const base = ember.lineStart(line);
+  const text = gnista.lineText(line);
+  const base = gnista.lineStart(line);
   const pos = (i: number): number => base + charCount(text.slice(0, i));
   const ws = /^[ \t]*/.exec(text)?.[0] ?? "";
   let i = ws.length;
@@ -318,7 +318,7 @@ function readItem(line: number, ind: number): ListItem {
   const m = itemParts(line);
   const bullet = m?.bullet ?? "";
   return {
-    pos: ember.lineStart(line),
+    pos: gnista.lineStart(line),
     ind,
     bullet,
     counter: m?.counter,
@@ -331,7 +331,7 @@ function readItem(line: number, ind: number): ListItem {
 /** The structure of the list the item on a line is in, as org-list-struct reads it. */
 export function listStruct(line: number, ctx: { up: number; down: number; type?: string } = listContext(line)): Struct {
   let textMinInd = 10000;
-  let begCell: [number, number] = [ember.lineStart(line), textIndentation(ember.lineText(line))];
+  let begCell: [number, number] = [gnista.lineStart(line), textIndentation(gnista.lineText(line))];
   let itmLst: Struct = [];
   const endLst: [number, number][] = [];
   const fromBeg = (): Struct => {
@@ -340,8 +340,8 @@ export function listStruct(line: number, ctx: { up: number; down: number; type?:
   };
   // 1. Up from the item to the start of the list.
   for (let l = line; ; ) {
-    const pos = ember.lineStart(l);
-    const text = ember.lineText(l);
+    const pos = gnista.lineStart(l);
+    const text = gnista.lineText(l);
     const ind = textIndentation(text);
     if (pos <= ctx.up) {
       if (!ITEM_RE.test(text)) itmLst = fromBeg();
@@ -364,16 +364,16 @@ export function listStruct(line: number, ctx: { up: number; down: number; type?:
     }
     if (/^[ \t]*#\+end_/i.test(text)) {
       let k = l - 1;
-      while (k >= 0 && ember.lineStart(k) >= ctx.up && !/^[ \t]*#\+begin_/i.test(ember.lineText(k))) k--;
-      if (k >= 0 && ember.lineStart(k) >= ctx.up) {
+      while (k >= 0 && gnista.lineStart(k) >= ctx.up && !/^[ \t]*#\+begin_/i.test(gnista.lineText(k))) k--;
+      if (k >= 0 && gnista.lineStart(k) >= ctx.up) {
         l = k;
         continue;
       }
     }
     if (/^[ \t]*:END:/i.test(text)) {
       let k = l - 1;
-      while (k >= 0 && ember.lineStart(k) >= ctx.up && !DRAWER_RE.test(ember.lineText(k))) k--;
-      if (k >= 0 && ember.lineStart(k) >= ctx.up) {
+      while (k >= 0 && gnista.lineStart(k) >= ctx.up && !DRAWER_RE.test(gnista.lineText(k))) k--;
+      if (k >= 0 && gnista.lineStart(k) >= ctx.up) {
         l = k;
         continue;
       }
@@ -395,8 +395,8 @@ export function listStruct(line: number, ctx: { up: number; down: number; type?:
   const endLst2: [number, number][] = [];
   const endBeforeBlank = (pos: number): number => {
     let q = pos;
-    while (q > 0 && /[ \r\t\n]/.test(ember.bufferText(q - 1, q))) q--;
-    return Math.min(ember.lineEnd(lineAt(q)) + 1, ctx.down);
+    while (q > 0 && /[ \r\t\n]/.test(gnista.bufferText(q - 1, q))) q--;
+    return Math.min(gnista.lineEnd(lineAt(q)) + 1, ctx.down);
   };
   for (let l = line; ; ) {
     const pos = lineStartOrEnd(l);
@@ -404,7 +404,7 @@ export function listStruct(line: number, ctx: { up: number; down: number; type?:
       endLst2.unshift([0, endBeforeBlank(pos)]);
       break;
     }
-    const text = ember.lineText(l);
+    const text = gnista.lineText(l);
     const ind = textIndentation(text);
     if (atListEnd(l)) {
       endLst2.unshift([0, pos]);
@@ -427,12 +427,12 @@ export function listStruct(line: number, ctx: { up: number; down: number; type?:
     if (itmLst2.length > 0 && ind <= itmLst2[0].ind) endLst2.unshift([ind, pos]);
     if (/^[ \t]*#\+begin_/i.test(text)) {
       let k = l + 1;
-      while (k < ember.lineCount() && lineStartOrEnd(k) < ctx.down && !/^[ \t]*#\+end_/i.test(ember.lineText(k))) k++;
-      if (k < ember.lineCount() && lineStartOrEnd(k) < ctx.down) l = k;
+      while (k < gnista.lineCount() && lineStartOrEnd(k) < ctx.down && !/^[ \t]*#\+end_/i.test(gnista.lineText(k))) k++;
+      if (k < gnista.lineCount() && lineStartOrEnd(k) < ctx.down) l = k;
     } else if (DRAWER_RE.test(text)) {
       let k = l + 1;
-      while (k < ember.lineCount() && lineStartOrEnd(k) < ctx.down && !/^[ \t]*:END:/i.test(ember.lineText(k))) k++;
-      if (k < ember.lineCount() && lineStartOrEnd(k) < ctx.down) l = k;
+      while (k < gnista.lineCount() && lineStartOrEnd(k) < ctx.down && !/^[ \t]*:END:/i.test(gnista.lineText(k))) k++;
+      if (k < gnista.lineCount() && lineStartOrEnd(k) < ctx.down) l = k;
     }
     l++;
   }
@@ -498,8 +498,8 @@ function prevItem(item: number, prevs: Alist): number | undefined {
 
 export function itemEndBeforeBlank(struct: Struct, item: number): number {
   let q = getItem(struct, item).end;
-  while (q > 0 && /[ \r\t\n]/.test(ember.bufferText(q - 1, q))) q--;
-  return ember.lineEnd(lineAt(q));
+  while (q > 0 && /[ \r\t\n]/.test(gnista.bufferText(q - 1, q))) q--;
+  return gnista.lineEnd(lineAt(q));
 }
 
 export function hasChild(struct: Struct, item: number): number | undefined {
@@ -652,13 +652,13 @@ export function fixItemEnd(struct: Struct): void {
 
 /** Writes the differences between a structure and the old one to the buffer, as org-list-struct-apply-struct does. */
 export function applyStruct(struct: Struct, old: Struct): void {
-  const origin = marker(ember.point());
+  const origin = marker(gnista.point());
   const shiftBodyInd = (end: number, beg: number, delta: number): void => {
     let q = end;
-    while (q > 0 && /[ \r\t\n]/.test(ember.bufferText(q - 1, q))) q--;
+    while (q > 0 && /[ \r\t\n]/.test(gnista.bufferText(q - 1, q))) q--;
     let l = lineAt(q);
-    while (ember.lineStart(l) > beg || (ember.lineStart(l) === beg && !ITEM_RE.test(ember.lineText(l)))) {
-      const text = ember.lineText(l);
+    while (gnista.lineStart(l) > beg || (gnista.lineStart(l) === beg && !ITEM_RE.test(gnista.lineText(l)))) {
+      const text = gnista.lineText(l);
       if (/^[ \t]*\S/.test(text)) indentLineTo(l, textIndentation(text) + delta);
       if (l === 0) break;
       l--;
@@ -669,9 +669,9 @@ export function applyStruct(struct: Struct, old: Struct): void {
     const line = lineAt(item);
     const newBul = bulletString(e.bullet);
     const reindent = (): void => {
-      if (e.ind !== textIndentation(ember.lineText(line))) {
-        const ls = ember.lineStart(line);
-        const ws = /^[ \t]*/.exec(ember.lineText(line))?.[0] ?? "";
+      if (e.ind !== textIndentation(gnista.lineText(line))) {
+        const ls = gnista.lineStart(line);
+        const ws = /^[ \t]*/.exec(gnista.lineText(line))?.[0] ?? "";
         edDelete(ls, ls + charCount(ws));
         edInsert(ls, indentString(e.ind));
       }
@@ -679,7 +679,7 @@ export function applyStruct(struct: Struct, old: Struct): void {
     // Org's structure can hold a position partway along a line, which its
     // anchored regexp then fails to match: only the indentation, worked out
     // from the line's start, changes.
-    if (item !== ember.lineStart(line)) {
+    if (item !== gnista.lineStart(line)) {
       reindent();
       return;
     }
@@ -689,7 +689,7 @@ export function applyStruct(struct: Struct, old: Struct): void {
       const bulletEnd = m.bulletAt + charCount(m.bullet);
       let keep = "";
       if (m.bulletAt <= origin.pos && origin.pos <= bulletEnd) {
-        keep = /^[ \t]+/.exec(ember.bufferText(origin.pos, ember.lineEnd(line)))?.[0] ?? "";
+        keep = /^[ \t]+/.exec(gnista.bufferText(origin.pos, gnista.lineEnd(line)))?.[0] ?? "";
       }
       edDelete(m.bulletAt, bulletEnd);
       edInsert(m.bulletAt, newBul, true);
@@ -703,7 +703,7 @@ export function applyStruct(struct: Struct, old: Struct): void {
       edReplace(m.boxAt, m.boxAt + 3, e.checkbox);
     } else if (m.checkbox !== undefined) {
       // The box goes, with the spaces before it.
-      const text = ember.lineText(line);
+      const text = gnista.lineText(line);
       for (let k = 0; k < text.length; k++) {
         const box = /^[ \t]*\[[ X-]\]/.exec(text.slice(k));
         if (box) {
@@ -746,22 +746,22 @@ export function applyStruct(struct: Struct, old: Struct): void {
       const child = accEnd.find(([end]) => end === up)?.[1];
       const ind = child === undefined ? 0 : getItem(struct, child).ind;
       let minInd = Infinity;
-      for (let l = lineAt(up); l < ember.lineCount() && ember.lineStart(l) < down; l++) {
-        const text = ember.lineText(l);
+      for (let l = lineAt(up); l < gnista.lineCount() && gnista.lineStart(l) < down; l++) {
+        const text = gnista.lineText(l);
         if (isBlank(text)) continue;
         minInd = Math.min(minInd, textIndentation(text));
         const block = /^#\+BEGIN(:|_\S+)/i.exec(text);
         if (block) {
           const close = new RegExp(`^[ \\t]*#\\+END${block[1].replace(/[^\w:]/g, "")}[ \\t]*$`, "i");
-          for (let k = l + 1; k < ember.lineCount() && ember.lineStart(k) < down; k++) {
-            if (close.test(ember.lineText(k))) {
+          for (let k = l + 1; k < gnista.lineCount() && gnista.lineStart(k) < down; k++) {
+            if (close.test(gnista.lineText(k))) {
               l = k;
               break;
             }
           }
         } else if (DRAWER_RE.test(text)) {
-          for (let k = l + 1; k < ember.lineCount() && ember.lineStart(k) < down; k++) {
-            if (/^[ \t]*:END:[ \t]*$/i.test(ember.lineText(k))) {
+          for (let k = l + 1; k < gnista.lineCount() && gnista.lineStart(k) < down; k++) {
+            if (/^[ \t]*:END:[ \t]*$/i.test(gnista.lineText(k))) {
               l = k;
               break;
             }
@@ -777,7 +777,7 @@ export function applyStruct(struct: Struct, old: Struct): void {
     const cell = struct.find((x) => x.pos === up);
     if (cell && !sameItem(cell, old.find((x) => x.pos === up))) modifyItem(up);
   }
-  ember.gotoChar(origin.pos);
+  gnista.gotoChar(origin.pos);
   dropMarker(origin);
 }
 
@@ -800,24 +800,24 @@ function swapItems(begA: number, begB: number, struct: Struct): Struct {
 }
 
 function swapItemsChecked(begA: number, begB: number, struct: Struct): Struct {
-  const p = marker(ember.point());
+  const p = marker(gnista.point());
   const endANoBlank = itemEndBeforeBlank(struct, begA);
   const endBNoBlank = itemEndBeforeBlank(struct, begB);
   const endA = getItem(struct, begA).end;
   const endB = getItem(struct, begB).end;
   const sizeA = endANoBlank - begA;
   const sizeB = endBNoBlank - begB;
-  const bodyA = ember.bufferText(begA, endANoBlank);
-  const bodyB = ember.bufferText(begB, endBNoBlank);
-  const between = ember.bufferText(endANoBlank, begB);
+  const bodyA = gnista.bufferText(begA, endANoBlank);
+  const bodyB = gnista.bufferText(begB, endBNoBlank);
+  const between = gnista.bufferText(endANoBlank, begB);
   const subA = [begA, ...subtreeItems(struct, begA)];
   const subB = [begB, ...subtreeItems(struct, begB)];
   // Folds inside the items move with them.
   const folds = (from: number, to: number): [number, number, string][] =>
-    ember
+    gnista
       .overlaysIn(from, to)
-      .filter((id) => FOLD_SPECS.includes(String(ember.overlayGet(id, "invisible"))))
-      .map((id) => [(ember.overlayStart(id) ?? from) - from, (ember.overlayEnd(id) ?? from) - from, String(ember.overlayGet(id, "invisible"))]);
+      .filter((id) => FOLD_SPECS.includes(String(gnista.overlayGet(id, "invisible"))))
+      .map((id) => [(gnista.overlayStart(id) ?? from) - from, (gnista.overlayEnd(id) ?? from) - from, String(gnista.overlayGet(id, "invisible"))]);
   const foldsA = folds(begA, endA);
   const foldsB = folds(begB, endB);
   for (const spec of FOLD_SPECS) flag(begA, endBNoBlank, false, spec);
@@ -841,7 +841,7 @@ function swapItemsChecked(begA: number, begB: number, struct: Struct): Struct {
     }
   }
   struct.sort((a, b) => a.pos - b.pos);
-  ember.gotoChar(p.pos);
+  gnista.gotoChar(p.pos);
   dropMarker(p);
   return struct;
 }
@@ -853,12 +853,12 @@ function separatingBlankLines(pos: number, item: number, struct: Struct, prevs: 
   if (setting === null || setting === false) return 0;
   if (typeof setting === "number") return setting;
   const countBlanks = (at: number): number => {
-    const bol = ember.lineStart(lineAt(at));
+    const bol = gnista.lineStart(lineAt(at));
     let q = bol;
-    while (q > 0 && /[ \r\t\n]/.test(ember.bufferText(q - 1, q))) q--;
+    while (q > 0 && /[ \r\t\n]/.test(gnista.bufferText(q - 1, q))) q--;
     const after = lineStartOrEnd(lineAt(q) + 1);
     const [a, b] = [Math.min(bol, after), Math.max(bol, after)];
-    return (ember.bufferText(a, b).match(/\n/g) ?? []).length;
+    return (gnista.bufferText(a, b).match(/\n/g) ?? []).length;
   };
   const next = nextItem(item, prevs);
   if (next !== undefined) return countBlanks(next);
@@ -869,16 +869,16 @@ function separatingBlankLines(pos: number, item: number, struct: Struct, prevs: 
   }
   const top = lineAt(struct[0].pos);
   const limit = itemEndBeforeBlank(struct, item);
-  for (let l = top; l < ember.lineCount() && ember.lineStart(l) <= limit; l++) {
-    if (/^[ \t]*$/.test(ember.lineText(l)) && ember.lineEnd(l) <= limit) return 1;
+  for (let l = top; l < gnista.lineCount() && gnista.lineStart(l) <= limit; l++) {
+    if (/^[ \t]*$/.test(gnista.lineText(l)) && gnista.lineEnd(l) <= limit) return 1;
   }
   return 0;
 }
 
 /** What org-blank-before-new-entry says for headings or list items: "auto" unless it says otherwise. */
-export function blankBeforeNewEntry(kind: "heading" | "plain-list-item"): ember.Value {
-  const alist = ember.variable("org-blank-before-new-entry");
-  const entry = Array.isArray(alist) ? (alist.find((e) => Array.isArray(e) && e[0] === kind) as ember.Value[] | undefined) : undefined;
+export function blankBeforeNewEntry(kind: "heading" | "plain-list-item"): gnista.Value {
+  const alist = gnista.variable("org-blank-before-new-entry");
+  const entry = Array.isArray(alist) ? (alist.find((e) => Array.isArray(e) && e[0] === kind) as gnista.Value[] | undefined) : undefined;
   return entry === undefined ? "auto" : (entry[1] ?? null);
 }
 
@@ -904,27 +904,27 @@ function insertItemStruct(pos: number, struct: Struct, prevs: Alist, checkbox: b
     if (/[.)]/.test(parts.bullet)) bodyStart = parts.tagAt;
     else {
       bodyStart = parts.tagEnd;
-      while (/[ \t]/.test(ember.bufferText(bodyStart, bodyStart + 1))) bodyStart++;
+      while (/[ \t]/.test(gnista.bufferText(bodyStart, bodyStart + 1))) bodyStart++;
     }
   }
   const beforep = pos <= bodyStart;
-  const split = ember.variable("org-M-RET-may-split-line") !== false;
+  const split = gnista.variable("org-M-RET-may-split-line") !== false;
   const blankNb = separatingBlankLines(pos, item, struct, prevs);
   const { ind } = it;
-  const tab = Number(ember.variable("tab-width") ?? 8);
-  const indSize = ember.variable("indent-tabs-mode") === true ? Math.floor(ind / tab) + (ind % tab) : ind;
+  const tab = Number(gnista.variable("tab-width") ?? 8);
+  const indSize = gnista.variable("indent-tabs-mode") === true ? Math.floor(ind / tab) + (ind % tab) : ind;
   const bullet = bulletString(it.bullet);
   const box = checkbox ? "[ ]" : undefined;
   let textCut: string | undefined;
   if (!beforep && split) {
     let q = pos;
     if (itemEnd < pos) {
-      edDelete(itemEnd - 1, ember.lineEnd(lineAt(pos)));
+      edDelete(itemEnd - 1, gnista.lineEnd(lineAt(pos)));
       q = itemEnd - 1;
     }
-    while (q > 0 && /[ \r\t\n]/.test(ember.bufferText(q - 1, q))) q--;
+    while (q > 0 && /[ \r\t\n]/.test(gnista.bufferText(q - 1, q))) q--;
     let after = q;
-    while (after < ember.bufferSize() && /[ \t]/.test(ember.bufferText(after, after + 1))) after++;
+    while (after < gnista.bufferSize() && /[ \t]/.test(gnista.bufferText(after, after + 1))) after++;
     pos = after;
     textCut = edDelete(q, Math.max(q, itemEndNoBlank));
   }
@@ -951,10 +951,10 @@ function insertItemStruct(pos: number, struct: Struct, prevs: Alist, checkbox: b
   }
   struct.push({ pos: item, ind, bullet, checkbox: box, end: item + itemSize });
   struct.sort((a, b) => a.pos - b.pos);
-  if (beforep) ember.gotoChar(item);
+  if (beforep) gnista.gotoChar(item);
   else {
     struct = swapItems(item, item + itemSize, struct);
-    ember.gotoChar(nextItem(item, prevsAlist(struct)) ?? item);
+    gnista.gotoChar(nextItem(item, prevsAlist(struct)) ?? item);
   }
   return struct;
 }
@@ -988,7 +988,7 @@ function structIndent(start: number, end: number, struct: Struct, parents: Alist
     else if (item >= end) out.set(item, parent !== undefined && acc.has(parent) ? acc.get(parent) : parent);
     else {
       const prev = prevItem(item, prevs);
-      if (prev === undefined && (parent === undefined || parent < start)) ember.userError("Cannot indent the first item of a list");
+      if (prev === undefined && (parent === undefined || parent < start)) gnista.userError("Cannot indent the first item of a list");
       let now: number | undefined;
       if (prev === undefined) now = parent;
       else if (prev < start) now = prev;
@@ -1011,21 +1011,21 @@ const lastIndentEnd = lastingMarker(0);
  * does. At the first item, the whole list moves.
  */
 function indentItemGeneric(arg: number, noSubtree: boolean, struct: Struct): void {
-  const saved = marker(ember.point());
-  const region = orgRegionActive() && ember.mark() !== undefined;
-  const mark = ember.mark() ?? ember.point();
-  const [rbeg, rend] = [Math.min(mark, ember.point()), Math.max(mark, ember.point())];
+  const saved = marker(gnista.point());
+  const region = orgRegionActive() && gnista.mark() !== undefined;
+  const mark = gnista.mark() ?? gnista.point();
+  const [rbeg, rend] = [Math.min(mark, gnista.point()), Math.max(mark, gnista.point())];
   const top = struct[0].pos;
   const parents = parentsAlist(struct);
   const prevs = prevsAlist(struct);
-  const bol = ember.lineStart(lineAt());
+  const bol = gnista.lineStart(lineAt());
   let special = false;
   if (!region && top === bol) {
-    if (noSubtree) ember.userError("At first item: use S-M-<left/right> to move the whole list");
+    if (noSubtree) gnista.userError("At first item: use S-M-<left/right> to move the whole list");
     special = true;
   }
   const shiftMeta = ["org-shiftmetaright", "org-shiftmetaleft"];
-  if (!(shiftMeta.includes(ember.lastCommand() ?? "") && shiftMeta.includes(ember.thisCommand() ?? ""))) {
+  if (!(shiftMeta.includes(gnista.lastCommand() ?? "") && shiftMeta.includes(gnista.thisCommand() ?? ""))) {
     lastIndentBegin.pos = region ? rbeg : bol;
     lastIndentEnd.pos = region ? rend : special ? bottomPoint(struct) : noSubtree ? bol + 1 : getItem(struct, bol).end;
   }
@@ -1033,7 +1033,7 @@ function indentItemGeneric(arg: number, noSubtree: boolean, struct: Struct): voi
   const end = lastIndentEnd.pos;
   try {
     // As Org binds deactivate-mark to nil, a region stays active.
-    ember.keepMarkActive(() => {
+    gnista.keepMarkActive(() => {
       if (special) {
         const offset = arg < 0 ? -1 : 1;
         const first = struct.find((e) => e.pos === beg) ?? struct[0];
@@ -1057,7 +1057,7 @@ function indentItemGeneric(arg: number, noSubtree: boolean, struct: Struct): voi
       }
     });
   } finally {
-    ember.gotoChar(saved.pos);
+    gnista.gotoChar(saved.pos);
     dropMarker(saved);
   }
 }
@@ -1069,8 +1069,8 @@ export function structAtItem(error = "Not at an item"): Struct {
 }
 
 export function indentItemCommand(arg: number, noSubtree: boolean): void {
-  const region = orgRegionActive() && ember.mark() !== undefined;
-  const regionStart = region ? Math.min(ember.mark() ?? 0, ember.point()) : 0;
+  const region = orgRegionActive() && gnista.mark() !== undefined;
+  const regionStart = region ? Math.min(gnista.mark() ?? 0, gnista.point()) : 0;
   if (itemLine(lineAt()) || (region && itemLine(lineAt(regionStart)))) {
     const struct = listStruct(region ? lineAt(regionStart) : lineAt());
     indentItemGeneric(arg, noSubtree, struct);
@@ -1089,14 +1089,14 @@ export function cycleItemIndentation(): boolean {
   const line = lineAt();
   if (!itemLine(line)) return false;
   const struct = listStruct(line);
-  const item = ember.lineStart(line);
+  const item = gnista.lineStart(line);
   const { ind } = getItem(struct, item);
-  const again = ember.lastCommand() === "org-cycle-item-indentation";
+  const again = gnista.lastCommand() === "org-cycle-item-indentation";
   const parts = itemParts(line);
   let end = getItem(struct, item).end;
-  while (end > 0 && /[ \t\n]/.test(ember.bufferText(end - 1, end))) end--;
+  while (end > 0 && /[ \t\n]/.test(gnista.bufferText(end - 1, end))) end--;
   if (!(again || (parts && parts.matchEnd >= end))) return false;
-  ember.setThisCommand("org-cycle-item-indentation");
+  gnista.setThisCommand("org-cycle-item-indentation");
   const prevs = prevsAlist(struct);
   const parents = parentsAlist(struct);
   if (again && tabIndState) {
@@ -1106,25 +1106,25 @@ export function cycleItemIndentation(): boolean {
     if (ind > oldInd && prevItem(item, prevs) !== undefined) indentItemGeneric(1, true, struct);
     else if (ind < oldInd && allowOutdent(struct, prevs, parents)) indentItemGeneric(-1, true, struct);
     else {
-      edDelete(item, ember.lineEnd(line));
+      edDelete(item, gnista.lineEnd(line));
       edInsert(item, indentString(oldInd) + oldBul + " ");
-      ember.gotoChar(ember.lineEnd(line));
+      gnista.gotoChar(gnista.lineEnd(line));
       const fresh = listStruct(line);
       const freshParents = parentsAlist(fresh);
       if (ind > oldInd && allowOutdent(fresh, prevsAlist(fresh), freshParents)) indentItemGeneric(-1, true, fresh);
       else {
         writeStruct(fresh, freshParents);
-        ember.setThisCommand("identity" as ember.CommandName);
+        gnista.setThisCommand("identity" as gnista.CommandName);
       }
     }
     return true;
   }
-  tabIndState = [ind, ember.lineText(line).trim()];
+  tabIndState = [ind, gnista.lineText(line).trim()];
   if (prevItem(item, prevs) !== undefined) indentItemGeneric(1, true, struct);
   else if (nextItem(item, prevs) === undefined && parents.get(item) !== undefined) indentItemGeneric(-1, true, struct);
   else {
-    ember.setThisCommand("identity" as ember.CommandName);
-    ember.userError("Cannot move item");
+    gnista.setThisCommand("identity" as gnista.CommandName);
+    gnista.userError("Cannot move item");
   }
   return true;
 }
@@ -1132,9 +1132,9 @@ export function cycleItemIndentation(): boolean {
 /** Changes the bullets of the list at point, as org-cycle-list-bullet does. `which` is a bullet, "previous", or undefined for the next. */
 export function cycleListBullet(which?: string): void {
   if (!itemLine(lineAt())) throw new Error("Not at an item");
-  const origin = marker(ember.point());
+  const origin = marker(gnista.point());
   const line = lineAt();
-  const bol = ember.lineStart(line);
+  const bol = gnista.lineStart(line);
   const struct = listStruct(line);
   const parents = parentsAlist(struct);
   const prevs = prevsAlist(struct);
@@ -1145,7 +1145,7 @@ export function cycleListBullet(which?: string): void {
   const bullet = getItem(struct, listBeg).bullet;
   const current = /\./.test(bullet) ? "1." : /\)/.test(bullet) ? "1)" : bullet.trim();
   const description = itemParts(line)?.tag !== undefined;
-  const choices = ["-", "+", ...(/^\S/.test(ember.lineText(line)) ? [] : ["*"]), ...(description ? [] : ["1.", "1)"])];
+  const choices = ["-", "+", ...(/^\S/.test(gnista.lineText(line)) ? [] : ["*"]), ...(description ? [] : ["1.", "1)"])];
   const k = choices.indexOf(current);
   const index = k < 0 ? choices.length : k;
   const get = (i: number): string => choices[((i % choices.length) + choices.length) % choices.length];
@@ -1154,22 +1154,22 @@ export function cycleListBullet(which?: string): void {
   getItem(struct, listBeg).bullet = bulletString(next);
   fixBul(struct, prevs);
   fixInd(struct, parents);
-  ember.gotoChar(bol);
+  gnista.gotoChar(bol);
   applyStruct(struct, old);
   const fresh = listStruct(lineAt(origin.pos));
-  const at = ember.lineStart(lineAt(origin.pos));
+  const at = gnista.lineStart(lineAt(origin.pos));
   const item = fresh.find((e) => e.pos === at);
-  if (item && offset2 >= 0) ember.gotoChar(at + item.ind + charCount(item.bullet) + offset2);
-  else if (item && offset >= 0) ember.gotoChar(at + item.ind + offset);
-  else ember.gotoChar(origin.pos);
+  if (item && offset2 >= 0) gnista.gotoChar(at + item.ind + charCount(item.bullet) + offset2);
+  else if (item && offset >= 0) gnista.gotoChar(at + item.ind + offset);
+  else gnista.gotoChar(origin.pos);
   dropMarker(origin);
 }
 
 /** Inserts an item, with a checkbox if asked, as org-insert-item does. Returns whether point was in an item. */
 export function insertListItem(checkbox: boolean): boolean {
   const start = inItem(lineAt());
-  if (start === undefined || ember.invisibleAt(start)) return false;
-  const pos = ember.point();
+  if (start === undefined || gnista.invisibleAt(start)) return false;
+  const pos = gnista.point();
   let struct = listStruct(lineAt(start));
   const prevs = prevsAlist(struct);
   const first = getItem(struct, firstItem(start, prevs));
@@ -1178,33 +1178,33 @@ export function insertListItem(checkbox: boolean): boolean {
   writeStruct(struct, parentsAlist(struct));
   if (checkbox) updateCheckboxCount();
   const line = lineAt();
-  ember.gotoChar(ember.lineStart(line));
+  gnista.gotoChar(gnista.lineStart(line));
   const parts = itemParts(line);
-  if (parts) ember.gotoChar(parts.matchEnd);
-  if (description) ember.gotoChar(ember.point() - 1);
+  if (parts) gnista.gotoChar(parts.matchEnd);
+  if (description) gnista.gotoChar(gnista.point() - 1);
   return true;
 }
 
 export function moveItemDown(): void {
   if (!itemLine(lineAt())) throw new Error("Not at an item");
-  const col = ember.point() - ember.lineStart(lineAt());
-  const item = ember.lineStart(lineAt());
+  const col = gnista.point() - gnista.lineStart(lineAt());
+  const item = gnista.lineStart(lineAt());
   let struct = listStruct(lineAt());
   const next = nextItem(item, prevsAlist(struct));
-  if (next === undefined) ember.userError("Cannot move this item further down");
+  if (next === undefined) gnista.userError("Cannot move this item further down");
   struct = swapItems(item, next, struct);
-  ember.gotoChar(nextItem(item, prevsAlist(struct)) ?? item);
+  gnista.gotoChar(nextItem(item, prevsAlist(struct)) ?? item);
   writeStruct(struct, parentsAlist(struct));
   moveToColumn(col);
 }
 
 export function moveItemUp(): void {
   if (!itemLine(lineAt())) throw new Error("Not at an item");
-  const col = ember.point() - ember.lineStart(lineAt());
-  const item = ember.lineStart(lineAt());
+  const col = gnista.point() - gnista.lineStart(lineAt());
+  const item = gnista.lineStart(lineAt());
   let struct = listStruct(lineAt());
   const prev = prevItem(item, prevsAlist(struct));
-  if (prev === undefined) ember.userError("Cannot move this item further up");
+  if (prev === undefined) gnista.userError("Cannot move this item further up");
   struct = swapItems(prev, item, struct);
   writeStruct(struct, parentsAlist(struct));
   moveToColumn(col);
@@ -1213,19 +1213,19 @@ export function moveItemUp(): void {
 export function previousItem(): void {
   const item = inItem(lineAt());
   if (item === undefined) throw new Error("Not in an item");
-  ember.gotoChar(item);
+  gnista.gotoChar(item);
   const prev = prevItem(item, prevsAlist(listStruct(lineAt(item))));
   if (prev === undefined) throw new Error("On first item");
-  ember.gotoChar(prev);
+  gnista.gotoChar(prev);
 }
 
 export function nextListItem(): void {
   const item = inItem(lineAt());
   if (item === undefined) throw new Error("Not in an item");
-  ember.gotoChar(item);
+  gnista.gotoChar(item);
   const next = nextItem(item, prevsAlist(listStruct(lineAt(item))));
   if (next === undefined) throw new Error("On last item");
-  ember.gotoChar(next);
+  gnista.gotoChar(next);
 }
 
 /**
@@ -1233,39 +1233,39 @@ export function nextListItem(): void {
  * under a heading or in the region and the rest like it, as
  * org-toggle-checkbox does. With C-u, adds or removes checkboxes.
  */
-export function toggleCheckbox(arg: ember.PrefixArg): void {
-  const saved = marker(ember.point());
+export function toggleCheckbox(arg: gnista.PrefixArg): void {
+  const saved = marker(gnista.point());
   const presence = Array.isArray(arg) && arg[0] === 4;
   try {
     let limUp: number;
     let limDown: Marker;
     const firstItemFrom = (from: number, limit: number): number | undefined => {
-      for (let l = lineAt(from); l < ember.lineCount() && ember.lineStart(l) < limit; l++) {
-        if (ember.lineStart(l) >= from && itemLine(l)) return ember.lineStart(l);
+      for (let l = lineAt(from); l < gnista.lineCount() && gnista.lineStart(l) < limit; l++) {
+        if (gnista.lineStart(l) >= from && itemLine(l)) return gnista.lineStart(l);
       }
       return undefined;
     };
-    if (orgRegionActive() && ember.mark() !== undefined) {
-      const [rb, re] = [Math.min(ember.mark() ?? 0, ember.point()), Math.max(ember.mark() ?? 0, ember.point())];
-      const found = firstItemFrom(ember.lineStart(lineAt(rb)), re);
+    if (orgRegionActive() && gnista.mark() !== undefined) {
+      const [rb, re] = [Math.min(gnista.mark() ?? 0, gnista.point()), Math.max(gnista.mark() ?? 0, gnista.point())];
+      const found = firstItemFrom(gnista.lineStart(lineAt(rb)), re);
       if (found === undefined) throw new Error("No item in region");
       limUp = found;
       limDown = marker(re);
     } else if (parseHeading(lineAt())) {
       const all = headings();
       const i = headingIndex(all, lineAt()) as number;
-      const limit = all[i + 1]?.start ?? ember.bufferSize();
+      const limit = all[i + 1]?.start ?? gnista.bufferSize();
       const found = firstItemFrom(endOfMetaData(all[i], true), limit);
       if (found === undefined) throw new Error("No item in subtree");
       limUp = found;
       limDown = marker(limit);
     } else if (itemLine(lineAt())) {
-      limUp = ember.lineStart(lineAt());
-      limDown = marker(ember.lineEnd(lineAt()));
+      limUp = gnista.lineStart(lineAt());
+      limDown = marker(gnista.lineEnd(lineAt()));
     } else throw new Error("Not at an item or heading, and no active region");
     // As org-at-item-checkbox-p sees it: a box needs blanks after it.
     const parts = itemParts(lineAt(limUp));
-    const box = parts?.boxAt !== undefined && /^[ \t]/.test(ember.bufferText(parts.boxAt + 3, parts.boxAt + 4)) ? parts.checkbox : undefined;
+    const box = parts?.boxAt !== undefined && /^[ \t]/.test(gnista.bufferText(parts.boxAt + 3, parts.boxAt + 4)) ? parts.checkbox : undefined;
     const ref = Array.isArray(arg) && arg[0] === 16 ? "[-]" : presence ? (box ? undefined : "[ ]") : box === "[X]" ? "[ ]" : "[X]";
     let at = limUp;
     while (at < limDown.pos) {
@@ -1286,7 +1286,7 @@ export function toggleCheckbox(arg: ember.PrefixArg): void {
     }
     dropMarker(limDown);
   } finally {
-    ember.gotoChar(saved.pos);
+    gnista.gotoChar(saved.pos);
     dropMarker(saved);
   }
   updateCheckboxCount();
@@ -1299,17 +1299,17 @@ export function toggleCheckbox(arg: ember.PrefixArg): void {
  */
 export function endOfMetaData(h: Heading, full: boolean | "logbook" = false): number {
   let l = h.line + 1;
-  if (l < ember.lineCount() && PLANNING.test(ember.lineText(l))) l++;
+  if (l < gnista.lineCount() && PLANNING.test(gnista.lineText(l))) l++;
   const close = propertyDrawerEnd(l);
   if (close !== undefined) l = close + 1;
-  if (full && !(l < ember.lineCount() && isHeadingLine(ember.lineText(l)))) {
-    while (l < ember.lineCount()) {
-      const text = ember.lineText(l);
+  if (full && !(l < gnista.lineCount() && isHeadingLine(gnista.lineText(l)))) {
+    while (l < gnista.lineCount()) {
+      const text = gnista.lineText(l);
       if (/^[ \t]*$/.test(text) || /^[ \t]*CLOCK:/.test(text)) {
-        if (l === ember.lineCount() - 1) return ember.bufferSize();
+        if (l === gnista.lineCount() - 1) return gnista.bufferSize();
         l++;
       } else if (/^[ \t]*:LOGBOOK:[ \t]*$/i.test(text) || (full === true && DRAWER_RE.test(text))) {
-        const e = drawerEnd(l, ember.bufferSize());
+        const e = drawerEnd(l, gnista.bufferSize());
         if (e === undefined) break;
         l = e + 1;
       } else break;
@@ -1320,9 +1320,9 @@ export function endOfMetaData(h: Heading, full: boolean | "logbook" = false): nu
 
 /** The closing line of a property drawer starting at a line, as org-property-drawer-re matches one. */
 function propertyDrawerEnd(line: number): number | undefined {
-  if (line >= ember.lineCount() || !/^[ \t]*:PROPERTIES:[ \t]*$/i.test(ember.lineText(line))) return undefined;
-  for (let l = line + 1; l < ember.lineCount(); l++) {
-    const text = ember.lineText(l);
+  if (line >= gnista.lineCount() || !/^[ \t]*:PROPERTIES:[ \t]*$/i.test(gnista.lineText(line))) return undefined;
+  for (let l = line + 1; l < gnista.lineCount(); l++) {
+    const text = gnista.lineText(l);
     if (/^[ \t]*:END:[ \t]*$/i.test(text)) return l;
     if (!/^[ \t]*:\S+:(?:[ \t].*)?[ \t]*$/.test(text)) return undefined;
   }
@@ -1336,31 +1336,31 @@ function propertyDrawerEnd(line: number): number | undefined {
 export function entryPut(headingLine: number, property: string, value: string): void {
   withoutFoldChecks(() => {
     let line = headingLine + 1;
-    if (line < ember.lineCount() && PLANNING.test(ember.lineText(line))) line++;
+    if (line < gnista.lineCount() && PLANNING.test(gnista.lineText(line))) line++;
     if (propertyDrawerEnd(line) === undefined) {
       let at = lineStartOrEnd(line);
-      if (at === ember.lineStart(lineAt(at)) && at > 0 && (line < ember.lineCount() || ember.bufferText(at - 1, at) === "\n")) at--;
+      if (at === gnista.lineStart(lineAt(at)) && at > 0 && (line < gnista.lineCount() || gnista.bufferText(at - 1, at) === "\n")) at--;
       const begin = at === 0 ? 0 : at + 1;
-      ember.gotoChar(at);
+      gnista.gotoChar(at);
       if (at > 0) edInsert(at, "\n");
-      edInsert(ember.point(), ":PROPERTIES:\n:END:");
-      const endPos = ember.point();
-      hideOverlay(ember.lineEnd(lineAt(endPos) - 1), endPos, "org-hide-drawer");
-      if (endPos === ember.bufferSize() || begin === 0) edInsert(endPos, "\n");
+      edInsert(gnista.point(), ":PROPERTIES:\n:END:");
+      const endPos = gnista.point();
+      hideOverlay(gnista.lineEnd(lineAt(endPos) - 1), endPos, "org-hide-drawer");
+      if (endPos === gnista.bufferSize() || begin === 0) edInsert(endPos, "\n");
       line = lineAt(begin);
     }
     const close = propertyDrawerEnd(line) as number;
     const re = new RegExp(`^[ \\t]*:${escapeRegExp(property)}:`, "i");
     let at: number | undefined;
     for (let l = line + 1; l < close; l++) {
-      if (re.test(ember.lineText(l))) {
-        at = ember.lineStart(l);
-        edDelete(at, ember.lineEnd(l));
+      if (re.test(gnista.lineText(l))) {
+        at = gnista.lineStart(l);
+        edDelete(at, gnista.lineEnd(l));
         break;
       }
     }
     if (at === undefined) {
-      at = ember.lineStart(close);
+      at = gnista.lineStart(close);
       edInsert(at, "\n");
     }
     edInsert(at, `:${property}: ${value}`);
@@ -1372,12 +1372,12 @@ export function entryPut(headingLine: number, property: string, value: string): 
 /** A property's value in a heading's property drawer, as org-entry-get reads it, ignoring case. */
 export function entryGet(headingLine: number, property: string): string | undefined {
   let line = headingLine + 1;
-  if (line < ember.lineCount() && PLANNING.test(ember.lineText(line))) line++;
+  if (line < gnista.lineCount() && PLANNING.test(gnista.lineText(line))) line++;
   const close = propertyDrawerEnd(line);
   if (close === undefined) return undefined;
   const re = new RegExp(`^[ \\t]*:${escapeRegExp(property)}:(?:[ \\t]+(.*?))?[ \\t]*$`, "i");
   for (let l = line + 1; l < close; l++) {
-    const m = re.exec(ember.lineText(l));
+    const m = re.exec(gnista.lineText(l));
     if (m) return m[1] ?? "";
   }
   return undefined;
@@ -1395,7 +1395,7 @@ export function entryHeading(): Heading | undefined {
   return i === undefined ? undefined : all[i];
 }
 
-export const setProperty = ember.defineCommand({
+export const setProperty = gnista.defineCommand({
   name: "org-set-property",
   doc: "In the current entry, set a property to a value, adding a property drawer if there is none.",
   params: [
@@ -1405,7 +1405,7 @@ export const setProperty = ember.defineCommand({
   run: (property, value) => {
     if (property === "" || /\s/.test(property)) throw new Error(`Invalid property name: "${property}"`);
     const h = entryHeading();
-    if (!h) throw new Error("Before first headline at position 1 in buffer " + ember.bufferName());
+    if (!h) throw new Error("Before first headline at position 1 in buffer " + gnista.bufferName());
     const upper = property.toUpperCase();
     if (upper === "TODO") {
       if (value !== "" && !allKeywords().includes(value)) throw new Error(`"${value}" is not a valid TODO state`);
@@ -1414,86 +1414,86 @@ export const setProperty = ember.defineCommand({
     }
     if (SPECIAL_PROPERTIES.includes(upper)) throw new Error(`The ${property} property cannot be set with \`org-entry-put'`);
     if (entryGet(h.line, property) === value) return;
-    const p = marker(ember.point());
+    const p = marker(gnista.point());
     entryPut(h.line, property, value);
-    ember.gotoChar(p.pos);
+    gnista.gotoChar(p.pos);
     dropMarker(p);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-delete-property",
   doc: "In the current entry, delete a property, and the property drawer with it if that leaves it empty.",
   params: [{ name: "property", kind: "string", prompt: "Property: " }],
   run: (property) => {
     const h = entryHeading();
-    if (!h) throw new Error("Before first headline at position 1 in buffer " + ember.bufferName());
+    if (!h) throw new Error("Before first headline at position 1 in buffer " + gnista.bufferName());
     let line = h.line + 1;
-    if (line < ember.lineCount() && PLANNING.test(ember.lineText(line))) line++;
+    if (line < gnista.lineCount() && PLANNING.test(gnista.lineText(line))) line++;
     const close = propertyDrawerEnd(line);
     if (close === undefined) {
-      ember.message("No property to delete in this entry");
+      gnista.message("No property to delete in this entry");
       return;
     }
-    const p = marker(ember.point());
+    const p = marker(gnista.point());
     // The property and its accumulated form, PROPERTY+, as org-entry-delete removes them.
     const re = new RegExp(`^[ \\t]*:${escapeRegExp(property)}\\+?:`, "i");
     let end = close;
     for (let l = line + 1; l < end; ) {
-      if (re.test(ember.lineText(l))) {
-        edDelete(ember.lineStart(l), ember.lineStart(l + 1));
+      if (re.test(gnista.lineText(l))) {
+        edDelete(gnista.lineStart(l), gnista.lineStart(l + 1));
         end--;
       } else l++;
     }
     // An emptied drawer goes altogether.
-    if (end === line + 1) edDelete(ember.lineStart(line), lineStartOrEnd(line + 2));
-    ember.gotoChar(p.pos);
+    if (end === line + 1) edDelete(gnista.lineStart(line), lineStartOrEnd(line + 2));
+    gnista.gotoChar(p.pos);
     dropMarker(p);
-    ember.message(`Property "${property}" deleted`);
+    gnista.message(`Property "${property}" deleted`);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org--insert-named-drawer",
   doc: "Insert a drawer of the name given at point, with point inside it, as org-insert-drawer does without a prefix argument.",
   params: [{ name: "drawer", kind: "string", prompt: "Drawer: " }],
   run: (drawer) => {
-    if (!/^[\w-]+$/.test(drawer)) ember.userError("Invalid drawer name");
-    if (ember.point() !== ember.lineStart(lineAt())) ember.insert("\n");
-    ember.insert(`:${drawer}:\n\n:END:\n`);
-    ember.gotoChar(ember.lineStart(lineAt() - 2));
+    if (!/^[\w-]+$/.test(drawer)) gnista.userError("Invalid drawer name");
+    if (gnista.point() !== gnista.lineStart(lineAt())) gnista.insert("\n");
+    gnista.insert(`:${drawer}:\n\n:END:\n`);
+    gnista.gotoChar(gnista.lineStart(lineAt() - 2));
   },
 });
 
-export const insertDrawer = ember.defineCommand({
+export const insertDrawer = gnista.defineCommand({
   name: "org-insert-drawer",
   doc:
     "Insert a drawer at point, asking for its name, with point inside it.\n\n" +
     "With a prefix argument, insert the entry's property drawer instead.",
   run: () => {
-    if (ember.prefixArg() === null) {
+    if (gnista.prefixArg() === null) {
       // The name is asked for only without a prefix argument, as Org's interactive form does.
-      ember.callInteractively("org--insert-named-drawer");
+      gnista.callInteractively("org--insert-named-drawer");
       return;
     }
     {
       const h = entryHeading();
-      if (!h) throw new Error("Before first headline at position 1 in buffer " + ember.bufferName());
+      if (!h) throw new Error("Before first headline at position 1 in buffer " + gnista.bufferName());
       let line = h.line + 1;
-      if (line < ember.lineCount() && PLANNING.test(ember.lineText(line))) line++;
+      if (line < gnista.lineCount() && PLANNING.test(gnista.lineText(line))) line++;
       if (propertyDrawerEnd(line) === undefined) {
         // An empty drawer made and opened, with a line inside it, as
         // org-insert-property-drawer and org-insert-drawer leave it.
         entryPut(h.line, "X", "");
         const close = propertyDrawerEnd(line) as number;
-        edDelete(ember.lineStart(close - 1), ember.lineStart(close));
+        edDelete(gnista.lineStart(close - 1), gnista.lineStart(close));
       }
       const close = propertyDrawerEnd(line) as number;
-      flag(ember.lineEnd(line), ember.lineStart(close), false, "org-hide-drawer");
-      ember.gotoChar(ember.lineStart(close));
+      flag(gnista.lineEnd(line), gnista.lineStart(close), false, "org-hide-drawer");
+      gnista.gotoChar(gnista.lineStart(close));
       if (close === line + 1) {
-        ember.insert("\n");
-        ember.gotoChar(ember.point() - 1);
+        gnista.insert("\n");
+        gnista.gotoChar(gnista.point() - 1);
       }
     }
   },

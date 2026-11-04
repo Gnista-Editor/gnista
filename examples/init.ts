@@ -1,42 +1,42 @@
-// An example init.ts. Copy it to ~/.config/ember/init.ts (or $EMBER_CONFIG_DIR).
+// An example init.ts. Copy it to ~/.config/gnista/init.ts (or $GNISTA_CONFIG_DIR).
 //
-// Ember loads this file at startup. After editing it, run M-x load-file to
-// reload it into the running editor. Ember writes ember.d.ts and tsconfig.json
-// next to it, so `tsc -p ~/.config/ember` checks it against the real commands.
+// Gnista loads this file at startup. After editing it, run M-x load-file to
+// reload it into the running editor. Gnista writes gnista.d.ts and tsconfig.json
+// next to it, so `tsc -p ~/.config/gnista` checks it against the real commands.
 //
 // C-c followed by a letter is reserved for your own bindings, as in Emacs.
 
 // List completions down the minibuffer, with keys like ido's: RET takes the
 // first or goes into a directory, DEL goes up one, C-n and C-p move.
-ember.call("fido-vertical-mode");
+gnista.call("fido-vertical-mode");
 
 // Remember recently visited files across sessions; M-x recentf-open visits one.
-ember.call("recentf-mode");
+gnista.call("recentf-mode");
 
 // Keep minibuffer history between sessions, and go back to where you were
 // in each file when you visit it again.
-ember.call("savehist-mode");
-ember.call("save-place-mode");
+gnista.call("savehist-mode");
+gnista.call("save-place-mode");
 
 // Type parens and quotes in pairs.
-ember.call("electric-pair-mode");
+gnista.call("electric-pair-mode");
 
 // Number lines in buffers of code.
-ember.addHook("prog-mode-hook", () => ember.call("display-line-numbers-mode"));
+gnista.addHook("prog-mode-hook", () => gnista.call("display-line-numbers-mode"));
 
 // Break lines as you type in prose.
-ember.addHook("text-mode-hook", () => ember.call("auto-fill-mode"));
+gnista.addHook("text-mode-hook", () => gnista.call("auto-fill-mode"));
 
-const insertDate = ember.defineCommand({
+const insertDate = gnista.defineCommand({
   name: "insert-date",
   doc: "Insert today's date, such as 2026-10-27.",
   run: () => {
-    ember.insert(new Date().toISOString().slice(0, 10));
+    gnista.insert(new Date().toISOString().slice(0, 10));
   },
 });
-ember.bindKey("C-c d", insertDate);
+gnista.bindKey("C-c d", insertDate);
 
-const surroundRegion = ember.defineCommand({
+const surroundRegion = gnista.defineCommand({
   name: "surround-region",
   doc: "Put text before and after the region.\n\nWith no region, inserts both at point.",
   params: [
@@ -44,53 +44,53 @@ const surroundRegion = ember.defineCommand({
     { name: "after", prompt: "After (empty for the same): " },
   ],
   run: (before, after) => {
-    const point = ember.point();
-    const mark = ember.mark() ?? point;
+    const point = gnista.point();
+    const mark = gnista.mark() ?? point;
     const [start, end] = [Math.min(point, mark), Math.max(point, mark)];
-    ember.gotoChar(end);
-    ember.insert(after === "" ? before : after);
-    ember.gotoChar(start);
-    ember.insert(before);
+    gnista.gotoChar(end);
+    gnista.insert(after === "" ? before : after);
+    gnista.gotoChar(start);
+    gnista.insert(before);
   },
 });
-ember.bindKey("C-c s", surroundRegion);
+gnista.bindKey("C-c s", surroundRegion);
 
 // Built-in commands are checked too: a misspelt name or a missing argument is
 // a type error.
-ember.bindKey("C-c f", "find-file");
+gnista.bindKey("C-c f", "find-file");
 
-const countWords = ember.defineCommand({
+const countWords = gnista.defineCommand({
   name: "count-words",
   doc: "Show how many words the buffer has.",
   run: () => {
-    const words = ember.bufferText().split(/\s+/).filter((w) => w !== "");
-    ember.message(`${ember.bufferName()} has ${words.length} words`);
+    const words = gnista.bufferText().split(/\s+/).filter((w) => w !== "");
+    gnista.message(`${gnista.bufferName()} has ${words.length} words`);
   },
 });
-ember.bindKey("C-c w", countWords);
+gnista.bindKey("C-c w", countWords);
 
 // A command that asks as it goes, awaiting each answer, and takes the
 // prefix argument as a count: C-u 3 C-c n asks for three notes.
-const jotNotes = ember.defineCommand({
+const jotNotes = gnista.defineCommand({
   name: "jot-notes",
   doc: "Ask for notes, as many as the prefix argument says, and add each to *notes* with the time.",
   params: [{ name: "count", kind: "count" }],
   run: async (count: number) => {
-    ember.getBufferCreate("*notes*");
+    gnista.getBufferCreate("*notes*");
     for (let i = 1; i <= count; i++) {
-      const note = await ember.readString(count > 1 ? `Note ${i} of ${count}: ` : "Note: ");
-      ember.withCurrentBuffer("*notes*", () => ember.insert(`${new Date().toISOString().slice(11, 16)} ${note}\n`));
+      const note = await gnista.readString(count > 1 ? `Note ${i} of ${count}: ` : "Note: ");
+      gnista.withCurrentBuffer("*notes*", () => gnista.insert(`${new Date().toISOString().slice(11, 16)} ${note}\n`));
     }
-    if (await ember.yOrNP("Show the notes? ")) ember.call("switch-to-buffer", "*notes*");
+    if (await gnista.yOrNP("Show the notes? ")) gnista.call("switch-to-buffer", "*notes*");
   },
 });
-ember.bindKey("C-c n", jotNotes);
+gnista.bindKey("C-c n", jotNotes);
 
 // Org's agenda and capture, on the keys Org's manual suggests. Emacs leaves
-// them unbound, as Ember does.
-ember.setVariable("org-agenda-files", ["~/org/notes.org"]);
-ember.setVariable("org-capture-templates", [
+// them unbound, as Gnista does.
+gnista.setVariable("org-agenda-files", ["~/org/notes.org"]);
+gnista.setVariable("org-capture-templates", [
   ["t", "Task", "entry", ["file+headline", "~/org/notes.org", "Inbox"], "* TODO %?\n  %u\n"],
 ]);
-ember.bindKey("C-c a", "org-agenda");
-ember.bindKey("C-c c", "org-capture");
+gnista.bindKey("C-c a", "org-agenda");
+gnista.bindKey("C-c c", "org-capture");

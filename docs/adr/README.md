@@ -15,12 +15,12 @@ One record per decision, in the order they were made; a later one can change an 
 - [0011](0011-search-and-the-minibuffer.md) Search, replace and the minibuffer
 - [0012](0012-org-mode.md) Org mode as TypeScript packages
 - [0013](0013-following-org-closely.md) Following Org's Lisp closely
-- [0014](0014-gpl.md) Ember is GPL
-- [0015](0015-mcp-server.md) Ember as an MCP server
+- [0014](0014-gpl.md) Gnista is GPL
+- [0015](0015-mcp-server.md) Gnista as an MCP server
 - [0016](0016-org-agenda-and-capture.md) The Org agenda and capture
 - [0017](0017-frames.md) Frames
 - [0018](0018-files-and-saving.md) Files and saving
-- [0019](0019-agent-buffer.md) An agent inside Ember
+- [0019](0019-agent-buffer.md) An agent inside Gnista
 - [0020](0020-completion-and-icomplete.md) Completion and icomplete
 - [0021](0021-managing-files.md) Managing files
 - [0022](0022-dired-and-projects.md) Dired and projects
@@ -59,3 +59,4 @@ One record per decision, in the order they were made; a later one can change an 
 - [0055](0055-require-frame-parameters-and-the-tab-bar.md) Require, frame parameters and the tab bar
 - [0056](0056-grammars-from-shared-libraries.md) Grammars from shared libraries
 - [0057](0057-script-objects-as-values.md) Script objects as values
+- [0058](0058-the-name-gnista.md) The name Gnista

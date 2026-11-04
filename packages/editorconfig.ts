@@ -9,7 +9,7 @@
 import { fileRelativeName } from "files";
 import { truthy } from "subr";
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "editorconfig-indentation-alist",
   doc: "For each major mode, the variables indent_size sets, as [mode, ...variables].",
   value: [
@@ -28,7 +28,7 @@ ember.defineVariable({
     ["yaml-ts-mode", "yaml-indent-offset"],
   ],
 });
-ember.defineHook("editorconfig-after-apply-functions", "Functions called with a file's EditorConfig properties, as an object, after they are applied.");
+gnista.defineHook("editorconfig-after-apply-functions", "Functions called with a file's EditorConfig properties, as an object, after they are applied.");
 
 // --- Reading .editorconfig files, as editorconfig-core-handle --------------
 
@@ -50,7 +50,7 @@ function parse(file: string, dir: string): Handle {
   const sections: Section[] = [];
   const top: [string, string][] = [];
   let current: Section | undefined;
-  ember
+  gnista
     .readTextFile(file)
     .split(/\r?\n/)
     .forEach((raw, k) => {
@@ -63,7 +63,7 @@ function parse(file: string, dir: string): Handle {
         return;
       }
       const prop = /^([^=: \t]+)[ \t]*[=:][ \t]*(.*?)[ \t]*$/.exec(line);
-      if (!prop) ember.signal("error", `Error while reading config file: ${file}:${k + 1}:\n    ${raw}\n`);
+      if (!prop) gnista.signal("error", `Error while reading config file: ${file}:${k + 1}:\n    ${raw}\n`);
       const [key, value] = [prop[1].toLowerCase(), prop[2]];
       if (key.length < 51 && value.length < 256) (current ? current.props : top).push([key, value]);
     });
@@ -72,9 +72,9 @@ function parse(file: string, dir: string): Handle {
 }
 
 function handleFor(dir: string): Handle | undefined {
-  const file = ember.expandFileName(".editorconfig", dir);
-  if (!ember.fileExists(file)) return undefined;
-  const mtime = ember.fileAttributes(file)?.modified ?? 0;
+  const file = gnista.expandFileName(".editorconfig", dir);
+  if (!gnista.fileExists(file)) return undefined;
+  const mtime = gnista.fileAttributes(file)?.modified ?? 0;
   const cached = handles.get(file);
   if (cached && cached.mtime === mtime) return cached.handle;
   const handle = parse(file, dir);
@@ -85,13 +85,13 @@ function handleFor(dir: string): Handle | undefined {
 /** The .editorconfig files that apply to a directory, the one nearest the root first, as editorconfig-core--get-handles. */
 function handlesFor(dir: string): Handle[] {
   const out: Handle[] = [];
-  for (let d = ember.fileNameAsDirectory(dir); ; ) {
+  for (let d = gnista.fileNameAsDirectory(dir); ; ) {
     const handle = handleFor(d);
     if (handle) {
       out.unshift(handle);
       if (handle.root) break;
     }
-    const parent = ember.fileNameDirectory(d.replace(/\/$/, ""));
+    const parent = gnista.fileNameDirectory(d.replace(/\/$/, ""));
     if (!parent || parent === d) break;
     d = parent;
   }
@@ -184,9 +184,9 @@ function sectionMatches(file: string, pattern: string, dir: string): boolean {
 
 /** A file's EditorConfig properties, the nearest file's winning, as editorconfig-core-get-properties-hash. */
 export function properties(file: string): { [key: string]: string } {
-  file = ember.expandFileName(file);
+  file = gnista.expandFileName(file);
   const out: { [key: string]: string } = {};
-  for (const handle of handlesFor(ember.fileNameDirectory(file) ?? "/")) {
+  for (const handle of handlesFor(gnista.fileNameDirectory(file) ?? "/")) {
     for (const section of handle.sections) {
       if (!sectionMatches(file, section.pattern, handle.dir)) continue;
       for (const [key, value] of section.props) out[key] = value;
@@ -205,25 +205,25 @@ const integer = (s: string | undefined): boolean => s !== undefined && /^\d+$/.t
 
 /** The variables indent_size sets in the current buffer's mode, as editorconfig--default-indent-size-function. */
 function indentSizeVariables(): string[] {
-  const alist = ember.variable("editorconfig-indentation-alist");
-  const entries = (Array.isArray(alist) ? alist : []) as ember.Value[][];
-  const parents = ember.derivedModeAllParents();
+  const alist = gnista.variable("editorconfig-indentation-alist");
+  const entries = (Array.isArray(alist) ? alist : []) as gnista.Value[][];
+  const parents = gnista.derivedModeAllParents();
   for (const m of parents) {
     const entry = entries.find((e) => e[0] === m);
-    if (entry) return entry.slice(1).filter((v): v is string => typeof v === "string" && ember.variable(v) !== undefined);
+    if (entry) return entry.slice(1).filter((v): v is string => typeof v === "string" && gnista.variable(v) !== undefined);
   }
   // A guess from the mode's name, as for modes not listed.
   for (const m of parents) {
     const name = m.replace(/-mode$/, "");
-    const guess = ["-indent-level", "-basic-offset", "-indent-offset", "-block-offset"].map((s) => name + s).find((v) => ember.variable(v) !== undefined);
+    const guess = ["-indent-level", "-basic-offset", "-indent-offset", "-block-offset"].map((s) => name + s).find((v) => gnista.variable(v) !== undefined);
     if (guess) return [guess];
   }
   return [];
 }
 
 /** The buffer-local values a file's properties give, as editorconfig--get-local-variables. */
-function localVariables(props: { [key: string]: string }): [string, ember.Value][] {
-  const out: [string, ember.Value][] = [];
+function localVariables(props: { [key: string]: string }): [string, gnista.Value][] {
+  const out: [string, gnista.Value][] = [];
   // As editorconfig--get-indentation.
   let style = props.indent_style;
   let tabWidth: number | undefined = integer(props.tab_width) ? Number(props.tab_width) : undefined;
@@ -232,7 +232,7 @@ function localVariables(props: { [key: string]: string }): [string, ember.Value]
   const size = integer(props.indent_size)
     ? Number(props.indent_size)
     : props.indent_size === "tab"
-      ? (tabWidth ?? Number(ember.variable("tab-width") ?? 8))
+      ? (tabWidth ?? Number(gnista.variable("tab-width") ?? 8))
       : undefined;
   if (tabWidth !== undefined) out.push(["tab-width", tabWidth]);
   if (style === "space") out.push(["indent-tabs-mode", false]);
@@ -240,8 +240,8 @@ function localVariables(props: { [key: string]: string }): [string, ember.Value]
   if (size !== undefined) for (const v of indentSizeVariables()) out.push([v, size]);
   // As editorconfig--get-trailing-nl.
   if (props.insert_final_newline === "true") {
-    const current = ember.variable("require-final-newline");
-    out.push(["require-final-newline", truthy(current) ? current! : (ember.variable("mode-require-final-newline") ?? true)]);
+    const current = gnista.variable("require-final-newline");
+    out.push(["require-final-newline", truthy(current) ? current! : (gnista.variable("mode-require-final-newline") ?? true)]);
   } else if (props.insert_final_newline === "false") out.push(["require-final-newline", false]);
   // As editorconfig--get-line-length.
   if (integer(props.max_line_length) && Number(props.max_line_length) > 0) out.push(["fill-column", Number(props.max_line_length)]);
@@ -250,27 +250,27 @@ function localVariables(props: { [key: string]: string }): [string, ember.Value]
 
 /** Deletes trailing whitespace before saving, unless the buffer is read-only, as editorconfig--delete-trailing-whitespace. */
 const deleteTrailingWhitespace = (): void => {
-  if (!ember.bufferReadOnly()) ember.call("delete-trailing-whitespace");
+  if (!gnista.bufferReadOnly()) gnista.call("delete-trailing-whitespace");
 };
 
 /** Applies the visited file's properties to the current buffer. */
 function apply(): void {
-  const file = ember.bufferFileName();
-  if (!file || !truthy(ember.variable("editorconfig-mode"))) return;
+  const file = gnista.bufferFileName();
+  if (!file || !truthy(gnista.variable("editorconfig-mode"))) return;
   const props = properties(file);
   for (const [name, value] of localVariables(props)) {
-    ember.makeLocalVariable(name);
-    ember.setVariable(name, value);
+    gnista.makeLocalVariable(name);
+    gnista.setVariable(name, value);
   }
   // As editorconfig--get-trailing-ws.
-  if (props.trim_trailing_whitespace === "true") ember.addHook("before-save-hook", deleteTrailingWhitespace, { local: true });
-  else if (props.trim_trailing_whitespace === "false") ember.removeHook("before-save-hook", deleteTrailingWhitespace, { local: true });
-  ember.runHooks("editorconfig-after-apply-functions", props as unknown as ember.Value);
+  if (props.trim_trailing_whitespace === "true") gnista.addHook("before-save-hook", deleteTrailingWhitespace, { local: true });
+  else if (props.trim_trailing_whitespace === "false") gnista.removeHook("before-save-hook", deleteTrailingWhitespace, { local: true });
+  gnista.runHooks("editorconfig-after-apply-functions", props as unknown as gnista.Value);
 }
 
-ember.addHook("hack-local-variables-hook", apply);
+gnista.addHook("hack-local-variables-hook", apply);
 
-ember.defineMinorMode({
+gnista.defineMinorMode({
   name: "editorconfig-mode",
   global: true,
   doc:
@@ -278,22 +278,22 @@ ember.defineMinorMode({
     "max_line_length, insert_final_newline and trim_trailing_whitespace.",
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "editorconfig-display-current-properties",
   doc: "Show the EditorConfig properties of the visited file.",
   run: () => {
-    const file = ember.bufferFileName();
-    if (!file) ember.userError("Buffer has no file");
+    const file = gnista.bufferFileName();
+    if (!file) gnista.userError("Buffer has no file");
     const props = properties(file);
     const text = Object.entries(props)
       .map(([k, v]) => `${k} = ${v}`)
       .join("\n");
-    ember.withCurrentBuffer(ember.getBufferCreate("*EditorConfig Properties*"), () => {
-      ember.setReadOnly(false);
-      ember.deleteRegion(ember.pointMin(), ember.pointMax());
-      ember.insert(`${text}\n`);
-      ember.setReadOnly(true);
+    gnista.withCurrentBuffer(gnista.getBufferCreate("*EditorConfig Properties*"), () => {
+      gnista.setReadOnly(false);
+      gnista.deleteRegion(gnista.pointMin(), gnista.pointMax());
+      gnista.insert(`${text}\n`);
+      gnista.setReadOnly(true);
     });
-    ember.call("display-buffer", "*EditorConfig Properties*");
+    gnista.call("display-buffer", "*EditorConfig Properties*");
   },
 });

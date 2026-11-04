@@ -1,13 +1,13 @@
-// Nord for Ember: an arctic, north-bluish theme, after nord-theme.el 0.6.0
+// Nord for Gnista: an arctic, north-bluish theme, after nord-theme.el 0.6.0
 // (https://github.com/nordtheme/emacs), as a package that does not ship
-// with Ember. Its faces for what Ember has: the base faces, font-lock, the
+// with Gnista. Its faces for what Gnista has: the base faces, font-lock, the
 // mode line, search, diff, whitespace, Org and completion. Copy it to
-// ~/.config/ember/packages/, a directory of load-path, and load it from
-// init.ts with ember.call("load-theme", "nord", true), true saying not to ask first.
+// ~/.config/gnista/packages/, a directory of load-path, and load it from
+// init.ts with gnista.call("load-theme", "nord", true), true saying not to ask first.
 //
 // Copyright (c) 2016-present Sven Greb <development@svengreb.de> (https://www.svengreb.de)
 // Copyright (C) 2018 Google LLC.
-// Ported to Ember in 2026.
+// Ported to Gnista in 2026.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,12 +29,12 @@
 
 import { customThemeSetFaces, deftheme, provideTheme } from "custom";
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "nord-region-highlight",
   doc: 'How the region shows: nil for nord2, "snowstorm" for nord0 on nord4, or "frost" for nord0 on nord8. Reload the theme after changing it.',
   value: null,
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "nord-uniform-mode-lines",
   doc: "Whether the inactive mode lines look like the active one, on nord3. Reload the theme after changing it.",
   value: false,
@@ -59,10 +59,10 @@ const nord14 = "#A3BE8C";
 // Comments 10% brighter than nord3, as nord-theme--brightened-comment-color gives them.
 const nordComment = "#616E88";
 
-const highlight = ember.variable("nord-region-highlight");
+const highlight = gnista.variable("nord-region-highlight");
 const regionForeground = highlight === "frost" || highlight === "snowstorm" ? nord0 : undefined;
 const regionBackground = highlight === "frost" ? nord8 : highlight === "snowstorm" ? nord4 : nord2;
-const inactiveModeLine = ember.variable("nord-uniform-mode-lines") === true ? nord3 : nord1;
+const inactiveModeLine = gnista.variable("nord-uniform-mode-lines") === true ? nord3 : nord1;
 const wave = (color: string) => ({ style: "wave", color });
 const pressed = { lineWidth: 2, color: nord4, style: "pressed-button" };
 
@@ -135,7 +135,7 @@ customThemeSetFaces("nord", [
   ["mode-line-inactive", { foreground: nord4, background: inactiveModeLine }],
   ["next-error", { inherit: "error" }],
   ["nobreak-space", { foreground: nord3 }],
-  ...[1, 2, 3, 4, 5, 6, 7, 8].map((n): [string, ember.FaceAttributes] => [`outline-${n}`, n === 1 ? { foreground: nord8, weight: "bold" } : { inherit: "outline-1" }]),
+  ...[1, 2, 3, 4, 5, 6, 7, 8].map((n): [string, gnista.FaceAttributes] => [`outline-${n}`, n === 1 ? { foreground: nord8, weight: "bold" } : { inherit: "outline-1" }]),
   ["query-replace", { foreground: nord8, background: nord2 }],
   ["region", { ...(regionForeground ? { foreground: regionForeground } : {}), background: regionBackground }],
   ["secondary-selection", { background: nord2 }],
@@ -155,7 +155,7 @@ customThemeSetFaces("nord", [
     "whitespace-space-after-tab",
     "whitespace-space-before-tab",
     "whitespace-tab",
-  ].map((face): [string, ember.FaceAttributes] => [face, { foreground: nord3, background: nord0 }]),
+  ].map((face): [string, gnista.FaceAttributes] => [face, { foreground: nord3, background: nord0 }]),
   ["whitespace-line", { background: nord0 }],
   ["whitespace-trailing", { inherit: "trailing-whitespace" }],
   ["window-divider", { background: nord3 }],
@@ -168,7 +168,7 @@ customThemeSetFaces("nord", [
   ["org-level-2", { foreground: nord8, weight: "bold" }],
   ["org-level-3", { foreground: nord9, weight: "semi-bold" }],
   ["org-level-4", { foreground: nord10, weight: "normal" }],
-  ...[5, 6, 7, 8].map((n): [string, ember.FaceAttributes] => [`org-level-${n}`, { inherit: "org-level-4" }]),
+  ...[5, 6, 7, 8].map((n): [string, gnista.FaceAttributes] => [`org-level-${n}`, { inherit: "org-level-4" }]),
   ["org-agenda-structure", { foreground: nord9 }],
   ["org-agenda-date", { foreground: nord8, underline: false }],
   ["org-agenda-done", { foreground: nord14 }],
@@ -201,8 +201,8 @@ customThemeSetFaces("nord", [
   ["org-todo", { foreground: nord13, weight: "bold" }],
   ["org-upcoming-deadline", { foreground: nord12 }],
   ["org-warning", { foreground: nord13, weight: "bold" }],
-  // Packages nord styles that Ember may get: markdown.
-  ...[1, 2, 3, 4, 5, 6].map((n): [string, ember.FaceAttributes] => [`markdown-header-face-${n}`, { foreground: nord8 }]),
+  // Packages nord styles that Gnista may get: markdown.
+  ...[1, 2, 3, 4, 5, 6].map((n): [string, gnista.FaceAttributes] => [`markdown-header-face-${n}`, { foreground: nord8 }]),
   ["markdown-blockquote-face", { foreground: nordComment }],
   ["markdown-inline-code-face", { foreground: nord7 }],
   ["markdown-link-face", { foreground: nord8 }],

@@ -8,35 +8,35 @@
  * conversion, taken from `other`, as merge-coding-systems.
  */
 export function mergeCodingSystems(coding: string, other: string | undefined): string {
-  if (other === undefined || !ember.codingSystemP(other)) return coding;
+  if (other === undefined || !gnista.codingSystemP(other)) return coding;
   let merged = coding;
-  if (Array.isArray(ember.codingSystemEolType(merged)) && !Array.isArray(ember.codingSystemEolType(other))) {
-    merged = ember.codingSystemChangeEolConversion(merged, ember.codingSystemEolType(other) as number);
+  if (Array.isArray(gnista.codingSystemEolType(merged)) && !Array.isArray(gnista.codingSystemEolType(other))) {
+    merged = gnista.codingSystemChangeEolConversion(merged, gnista.codingSystemEolType(other) as number);
   }
-  if (ember.codingSystemType(merged) === "undecided" && ember.codingSystemType(other) !== "undecided") {
-    merged = ember.codingSystemChangeTextConversion(merged, other);
+  if (gnista.codingSystemType(merged) === "undecided" && gnista.codingSystemType(other) !== "undecided") {
+    merged = gnista.codingSystemChangeTextConversion(merged, other);
   }
   return merged;
 }
 
 /** The current buffer's coding system, if it has one. */
 function bufferCoding(): string | undefined {
-  const value = ember.variable("buffer-file-coding-system");
+  const value = gnista.variable("buffer-file-coding-system");
   return typeof value === "string" ? value : undefined;
 }
 
 /** Reads a coding system's name with completion, as read-coding-system; empty input gives undefined. */
 export async function readCodingSystem(prompt: string, { asTyped = false } = {}): Promise<string | undefined> {
-  const name = await ember.completingRead(prompt, ember.codingSystemList(), { history: "coding-system-history" });
+  const name = await gnista.completingRead(prompt, gnista.codingSystemList(), { history: "coding-system-history" });
   if (name === "") return undefined;
   // Checked either way; an alias stays as typed if asked, as a symbol read stays itself.
-  const coding = ember.checkCodingSystem(name);
+  const coding = gnista.checkCodingSystem(name);
   return asTyped ? name : coding;
 }
 
-ember.defineVariable({ name: "coding-system-history", doc: "Coding systems answered in the minibuffer, newest first.", value: [] });
+gnista.defineVariable({ name: "coding-system-history", doc: "Coding systems answered in the minibuffer, newest first.", value: [] });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "set-buffer-file-coding-system",
   doc:
     "Set how the buffer is written to its file: a coding system such as utf-8, iso-latin-1 or japanese-shift-jis, " +
@@ -45,9 +45,9 @@ ember.defineCommand({
   params: [{ name: "coding", kind: "string", prompt: "Coding system for saved file (default nil): " }],
   run: (name: string) => {
     if (name === "") return;
-    const coding = ember.checkCodingSystem(name) as string;
-    ember.setVariable("buffer-file-coding-system", mergeCodingSystems(coding, bufferCoding()));
-    ember.setBufferModified(true);
+    const coding = gnista.checkCodingSystem(name) as string;
+    gnista.setVariable("buffer-file-coding-system", mergeCodingSystems(coding, bufferCoding()));
+    gnista.setBufferModified(true);
   },
 });
 
@@ -56,10 +56,10 @@ ember.defineCommand({
  * through the questions it asks, as a let around a command keeps its binding.
  */
 function withCoding(variables: string[], coding: string, fn: () => void): void {
-  const old = variables.map((v) => [v, ember.variable(v)] as const);
-  for (const v of variables) ember.setVariable(v, coding);
+  const old = variables.map((v) => [v, gnista.variable(v)] as const);
+  for (const v of variables) gnista.setVariable(v, coding);
   const restore = () => {
-    for (const [v, value] of old) ember.setVariable(v, value ?? null);
+    for (const [v, value] of old) gnista.setVariable(v, value ?? null);
   };
   try {
     fn();
@@ -68,9 +68,9 @@ function withCoding(variables: string[], coding: string, fn: () => void): void {
   }
 }
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "default-file-name-coding-system",
-  doc: "How file names are encoded: always UTF-8, as on macOS, since Ember keeps file names as Rust strings.",
+  doc: "How file names are encoded: always UTF-8, as on macOS, since Gnista keeps file names as Rust strings.",
   value: "utf-8-unix",
 });
 
@@ -79,42 +79,42 @@ ember.defineVariable({
  * the processes' line ends, as Emacs's set-default-coding-systems.
  */
 export function setDefaultCodingSystems(coding: string): void {
-  ember.checkCodingSystem(coding);
-  ember.setDefault("buffer-file-coding-system", coding);
-  const process = ember.variable("default-process-coding-system");
+  gnista.checkCodingSystem(coding);
+  gnista.setDefault("buffer-file-coding-system", coding);
+  const process = gnista.variable("default-process-coding-system");
   if (Array.isArray(process) && process.length === 2) {
-    ember.setVariable(
+    gnista.setVariable(
       "default-process-coding-system",
-      process.map((p) => ember.codingSystemChangeTextConversion(String(p), coding)),
+      process.map((p) => gnista.codingSystemChangeTextConversion(String(p), coding)),
     );
   }
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "prefer-coding-system",
   doc:
     "Make a coding system the one files are read in when their bytes fit it, and the default for new files and processes.\n\n" +
     "Its line ends, if named, become the default too.",
   run: async () => {
     const coding = await readCodingSystem("Prefer coding system: ", { asTyped: true });
-    if (coding === undefined || !ember.codingSystemP(coding)) throw new Error(`Invalid coding system \`${coding ?? "nil"}'`);
-    const type = ember.codingSystemType(coding);
+    if (coding === undefined || !gnista.codingSystemP(coding)) throw new Error(`Invalid coding system \`${coding ?? "nil"}'`);
+    const type = gnista.codingSystemType(coding);
     if (type === "raw-text" || type === "undecided") throw new Error(`Can't prefer the coding system \`${coding}'`);
-    let base = String(ember.codingSystemBase(coding));
-    const eol = ember.codingSystemEolType(coding);
-    ember.setCodingSystemPriority(base);
-    if (base !== coding) ember.message(`Highest priority is set to ${base} (base of ${coding})`);
-    if (typeof eol === "number") base = ember.codingSystemChangeEolConversion(base, eol);
+    let base = String(gnista.codingSystemBase(coding));
+    const eol = gnista.codingSystemEolType(coding);
+    gnista.setCodingSystemPriority(base);
+    if (base !== coding) gnista.message(`Highest priority is set to ${base} (base of ${coding})`);
+    if (typeof eol === "number") base = gnista.codingSystemChangeEolConversion(base, eol);
     setDefaultCodingSystems(base);
-    if (base !== ember.variable("default-file-name-coding-system")) {
-      ember.message(
+    if (base !== gnista.variable("default-file-name-coding-system")) {
+      gnista.message(
         "The default value of `file-name-coding-system' was not changed because the specified coding system is not suitable for file names.",
       );
     }
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "revert-buffer-with-coding-system",
   doc:
     "Visit the buffer's file again, reading it in another coding system: for a file that was read wrongly.\n\n" +
@@ -124,14 +124,14 @@ ember.defineCommand({
     const given = await readCodingSystem("Coding system for visited file (default nil): ");
     const coding = given !== undefined && arg === null ? mergeCodingSystems(given, bufferCoding()) : given;
     if (coding === undefined) {
-      ember.call("revert-buffer");
+      gnista.call("revert-buffer");
       return;
     }
-    withCoding(["coding-system-for-read"], coding, () => ember.call("revert-buffer"));
+    withCoding(["coding-system-for-read"], coding, () => gnista.call("revert-buffer"));
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "universal-coding-system-argument",
   doc:
     "Read a coding system, then a key sequence, and run its command with files read and written in that coding system.\n\n" +
@@ -139,10 +139,10 @@ ember.defineCommand({
   run: async () => {
     const coding = await readCodingSystem("Coding system for following command: ");
     if (coding === undefined) return;
-    const keys = await ember.readKeySequence(`Command to execute with ${coding}:`);
-    const command = ember.currentActiveMaps().map((map) => ember.lookupKey(map, keys)).find((b) => typeof b === "string");
+    const keys = await gnista.readKeySequence(`Command to execute with ${coding}:`);
+    const command = gnista.currentActiveMaps().map((map) => gnista.lookupKey(map, keys)).find((b) => typeof b === "string");
     if (typeof command !== "string") throw new Error(`${keys} is undefined`);
-    withCoding(["coding-system-for-read", "coding-system-for-write"], coding, () => ember.callInteractively(command as ember.CommandName));
+    withCoding(["coding-system-for-read", "coding-system-for-write"], coding, () => gnista.callInteractively(command as gnista.CommandName));
   },
 });
 
@@ -152,15 +152,15 @@ ember.defineCommand({
  * makes it the buffer's.
  */
 export function selectSafeCodingSystem(): void {
-  const coding = (ember.variable("coding-system-for-write") as string | null) ?? bufferCoding();
-  if (coding === undefined || ember.unencodableCharPosition(0, ember.bufferSize(), coding) === undefined) return;
-  const safe = ember.findCodingSystemsRegion(0, ember.bufferSize());
+  const coding = (gnista.variable("coding-system-for-write") as string | null) ?? bufferCoding();
+  if (coding === undefined || gnista.unencodableCharPosition(0, gnista.bufferSize(), coding) === undefined) return;
+  const safe = gnista.findCodingSystemsRegion(0, gnista.bufferSize());
   const fallback = safe[0] ?? "utf-8";
-  const answer = ember.completingRead(`Select coding system (default ${fallback}): `, ember.codingSystemList(), { history: "coding-system-history" });
-  const chosen = ember.checkCodingSystem(answer === "" ? fallback : answer) as string;
-  ember.setVariable("buffer-file-coding-system", mergeCodingSystems(chosen, coding));
+  const answer = gnista.completingRead(`Select coding system (default ${fallback}): `, gnista.codingSystemList(), { history: "coding-system-history" });
+  const chosen = gnista.checkCodingSystem(answer === "" ? fallback : answer) as string;
+  gnista.setVariable("buffer-file-coding-system", mergeCodingSystems(chosen, coding));
 }
 
-ember.bindKey("C-x RET f", "set-buffer-file-coding-system");
-ember.bindKey("C-x RET r", "revert-buffer-with-coding-system");
-ember.bindKey("C-x RET c", "universal-coding-system-argument");
+gnista.bindKey("C-x RET f", "set-buffer-file-coding-system");
+gnista.bindKey("C-x RET r", "revert-buffer-with-coding-system");
+gnista.bindKey("C-x RET c", "universal-coding-system-argument");

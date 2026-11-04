@@ -1,13 +1,13 @@
 // Bookmarks, after Emacs's bookmark.el: C-x r m names the place in a file,
 // C-x r b goes back to it, even after the file changed around it, and
 // C-x r l lists them. They are saved in Emacs's own format, in the file
-// bookmark-default-file names, so Emacs and Ember share them.
+// bookmark-default-file names, so Emacs and Gnista share them.
 
 import { PerBuffer } from "subr";
 
-ember.defineVariable({ name: "bookmark-search-size", doc: "How many characters of text on each side a bookmark keeps, to find its place again after edits.", value: 16 });
-ember.defineVariable({ name: "bookmark-save-flag", doc: "When bookmarks are saved: t on quitting, a number after that many changes, nil never.", value: 1 });
-ember.defineVariable({ name: "bookmark-default-file", doc: "The file bookmarks are saved in, or nil for bookmarks under user-emacs-directory.", value: null });
+gnista.defineVariable({ name: "bookmark-search-size", doc: "How many characters of text on each side a bookmark keeps, to find its place again after edits.", value: 16 });
+gnista.defineVariable({ name: "bookmark-save-flag", doc: "When bookmarks are saved: t on quitting, a number after that many changes, nil never.", value: 1 });
+gnista.defineVariable({ name: "bookmark-default-file", doc: "The file bookmarks are saved in, or nil for bookmarks under user-emacs-directory.", value: null });
 
 /** A bookmark: its name and where it is, as bookmark.el's records hold them. */
 interface Bookmark {
@@ -25,10 +25,10 @@ let changes = 0;
 const current = new PerBuffer<string>();
 
 function bookmarkFile(): string | undefined {
-  const own = ember.variable("bookmark-default-file");
-  if (typeof own === "string") return ember.expandFileName(own);
-  const dir = ember.variable("user-emacs-directory");
-  return typeof dir === "string" ? ember.expandFileName("bookmarks", dir) : undefined;
+  const own = gnista.variable("bookmark-default-file");
+  if (typeof own === "string") return gnista.expandFileName(own);
+  const dir = gnista.variable("user-emacs-directory");
+  return typeof dir === "string" ? gnista.expandFileName("bookmarks", dir) : undefined;
 }
 
 // --- Emacs's bookmark file: a Lisp list, read and written ---------------------
@@ -135,7 +135,7 @@ function parse(text: string): Bookmark[] {
 function bookmarks(): Bookmark[] {
   if (alist !== undefined) return alist;
   const file = bookmarkFile();
-  alist = file !== undefined && ember.fileReadableP(file) ? parse(ember.readTextFile(file) ?? "") : [];
+  alist = file !== undefined && gnista.fileReadableP(file) ? parse(gnista.readTextFile(file) ?? "") : [];
   return alist;
 }
 
@@ -143,58 +143,58 @@ function bookmarks(): Bookmark[] {
 function save(): void {
   const file = bookmarkFile();
   if (file === undefined) return;
-  ember.writeTextFile(file, writeText(bookmarks()));
+  gnista.writeTextFile(file, writeText(bookmarks()));
   changes = 0;
-  ember.message(`Saving bookmarks to file ${file}...done`);
+  gnista.message(`Saving bookmarks to file ${file}...done`);
 }
 
 /** Notes a change, saving when bookmark-save-flag says, as bookmark-time-to-save-p. */
 function changed(): void {
   changes++;
-  const flag = ember.variable("bookmark-save-flag");
+  const flag = gnista.variable("bookmark-save-flag");
   if (typeof flag === "number" && changes >= flag) save();
 }
 
-ember.addHook("kill-emacs-hook", () => {
-  if (changes > 0 && ember.variable("bookmark-save-flag") === true) save();
+gnista.addHook("kill-emacs-hook", () => {
+  if (changes > 0 && gnista.variable("bookmark-save-flag") === true) save();
 });
 
 /** A bookmark by name, or an error, as bookmark-get-bookmark. */
 function find(name: string): Bookmark {
   const b = bookmarks().find((x) => x.name === name);
-  if (b === undefined) ember.userError(`Invalid bookmark ${name}`);
+  if (b === undefined) gnista.userError(`Invalid bookmark ${name}`);
   return b!;
 }
 
 /** Reads a bookmark's name with completion, as bookmark-completing-read. */
 async function readBookmark(prompt: string): Promise<string> {
   const names = bookmarks().map((b) => b.name);
-  if (names.length === 0) ember.userError("No bookmarks exist");
-  const def = current.get(ember.bufferName()) ?? names[0];
-  const answer = await ember.completingRead(`${prompt} (default ${def}): `, names, { requireMatch: true, history: "bookmark-history", default: def });
+  if (names.length === 0) gnista.userError("No bookmarks exist");
+  const def = current.get(gnista.bufferName()) ?? names[0];
+  const answer = await gnista.completingRead(`${prompt} (default ${def}): `, names, { requireMatch: true, history: "bookmark-history", default: def });
   return answer === "" ? def! : answer;
 }
 
-ember.defineVariable({ name: "bookmark-history", doc: "Bookmark names answered at prompts, newest first.", value: [] });
+gnista.defineVariable({ name: "bookmark-history", doc: "Bookmark names answered at prompts, newest first.", value: [] });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "bookmark-set",
   doc:
     "Name the place point is at in this file, to go back to with C-x r b. The default name is the file's.\n\n" +
     "A bookmark of the same name is replaced; with a prefix argument, the new one goes in front of it instead.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: async (arg: ember.PrefixArg) => {
-    const file = ember.bufferFileName();
-    const def = current.get(ember.bufferName()) ?? (file !== undefined ? file.replace(/.*\//, "") : ember.bufferName());
-    const answer = await ember.readString(`Set bookmark (default ${def}): `, { history: "bookmark-history" });
+  run: async (arg: gnista.PrefixArg) => {
+    const file = gnista.bufferFileName();
+    const def = current.get(gnista.bufferName()) ?? (file !== undefined ? file.replace(/.*\//, "") : gnista.bufferName());
+    const answer = await gnista.readString(`Set bookmark (default ${def}): `, { history: "bookmark-history" });
     const name = answer === "" ? def : answer;
-    const size = Number(ember.variable("bookmark-search-size") ?? 16);
-    const p = ember.point();
+    const size = Number(gnista.variable("bookmark-search-size") ?? 16);
+    const p = gnista.point();
     const b: Bookmark = {
       name,
-      filename: file === undefined ? undefined : ember.abbreviateFileName(file),
-      front: ember.pointMax() - p >= size ? ember.bufferSubstringNoProperties(p, p + size) : undefined,
-      rear: p - ember.pointMin() >= size ? ember.bufferSubstringNoProperties(p - size, p) : undefined,
+      filename: file === undefined ? undefined : gnista.abbreviateFileName(file),
+      front: gnista.pointMax() - p >= size ? gnista.bufferSubstringNoProperties(p, p + size) : undefined,
+      rear: p - gnista.pointMin() >= size ? gnista.bufferSubstringNoProperties(p - size, p) : undefined,
       position: p,
     };
     const list = bookmarks();
@@ -203,7 +203,7 @@ ember.defineCommand({
       if (i >= 0) list.splice(i, 1);
     }
     list.unshift(b);
-    current.set(ember.bufferName(), name);
+    current.set(gnista.bufferName(), name);
     changed();
   },
 });
@@ -211,37 +211,37 @@ ember.defineCommand({
 /** Goes to a bookmark's place: its file, at its context or else its position, as bookmark-default-handler. */
 export function jumpTo(name: string, how: "switch-to-buffer" | "switch-to-buffer-other-window"): void {
   const b = find(name);
-  if (b.filename === undefined || !ember.fileReadableP(ember.expandFileName(b.filename))) {
-    ember.signal("bookmark-error-no-filename", `Bookmark ${name} has no file it can read`, [b.filename ?? null]);
+  if (b.filename === undefined || !gnista.fileReadableP(gnista.expandFileName(b.filename))) {
+    gnista.signal("bookmark-error-no-filename", `Bookmark ${name} has no file it can read`, [b.filename ?? null]);
   }
-  const buffer = ember.findFileNoselect(ember.expandFileName(b.filename!));
-  ember.call(how, buffer);
-  ember.gotoChar(Math.min(b.position, ember.pointMax()));
+  const buffer = gnista.findFileNoselect(gnista.expandFileName(b.filename!));
+  gnista.call(how, buffer);
+  gnista.gotoChar(Math.min(b.position, gnista.pointMax()));
   // Its text first, then the text before it, so a change around it is followed.
   if (b.front !== undefined) {
-    const m = ember.search(b.front, { bound: ember.pointMax(), caseFold: false });
-    if (m !== undefined) ember.gotoChar(m.start);
+    const m = gnista.search(b.front, { bound: gnista.pointMax(), caseFold: false });
+    if (m !== undefined) gnista.gotoChar(m.start);
   }
   if (b.rear !== undefined) {
-    const m = ember.search(b.rear, { backward: true, bound: ember.pointMin(), caseFold: false });
-    if (m !== undefined) ember.gotoChar(m.end);
+    const m = gnista.search(b.rear, { backward: true, bound: gnista.pointMin(), caseFold: false });
+    if (m !== undefined) gnista.gotoChar(m.end);
   }
-  current.set(ember.bufferName(), name);
+  current.set(gnista.bufferName(), name);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "bookmark-jump",
   doc: "Go to a bookmark's place, in its file.",
   run: async () => jumpTo(await readBookmark("Jump to bookmark"), "switch-to-buffer"),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "bookmark-jump-other-window",
   doc: "Go to a bookmark's place, in its file, in another window.",
   run: async () => jumpTo(await readBookmark("Jump to bookmark (in another window)"), "switch-to-buffer-other-window"),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "bookmark-delete",
   doc: "Forget a bookmark.",
   run: async () => {
@@ -252,30 +252,30 @@ ember.defineCommand({
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "bookmark-rename",
   doc: "Give a bookmark another name.",
   run: async () => {
     const old = await readBookmark("Old bookmark name");
-    const name = await ember.readString(`Rename "${old}" to: `, { history: "bookmark-history" });
+    const name = await gnista.readString(`Rename "${old}" to: `, { history: "bookmark-history" });
     find(old).name = name;
     changed();
   },
 });
 
-ember.defineCommand({ name: "bookmark-save", doc: "Save the bookmarks to their file.", run: () => save() });
+gnista.defineCommand({ name: "bookmark-save", doc: "Save the bookmarks to their file.", run: () => save() });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "bookmark-insert",
   doc: "Insert the text of the file a bookmark is in, leaving the mark after it.",
   run: async () => {
     const b = find(await readBookmark("Insert bookmark contents"));
-    if (b.filename === undefined) ember.userError("That bookmark has no file");
-    const text = ember.readTextFile(ember.expandFileName(b.filename!)) ?? "";
-    const p = ember.point();
-    ember.insert(text);
-    ember.pushMark(ember.point());
-    ember.gotoChar(p);
+    if (b.filename === undefined) gnista.userError("That bookmark has no file");
+    const text = gnista.readTextFile(gnista.expandFileName(b.filename!)) ?? "";
+    const p = gnista.point();
+    gnista.insert(text);
+    gnista.pushMark(gnista.point());
+    gnista.gotoChar(p);
   },
 });
 
@@ -285,45 +285,45 @@ const BMENU = "*Bookmark List*";
 const deletions = new Set<string>();
 
 function bmenuRefresh(): void {
-  ember.withCurrentBuffer(BMENU, () => {
-    const line = ember.lineOf(ember.point());
-    ember.letBind({ "inhibit-read-only": true }, () => {
-      ember.deleteRegion(ember.pointMin(), ember.pointMax());
-      ember.insert(ember.propertize(`  ${"Bookmark Name".padEnd(30)} File`, { face: "bold" }) + "\n");
+  gnista.withCurrentBuffer(BMENU, () => {
+    const line = gnista.lineOf(gnista.point());
+    gnista.letBind({ "inhibit-read-only": true }, () => {
+      gnista.deleteRegion(gnista.pointMin(), gnista.pointMax());
+      gnista.insert(gnista.propertize(`  ${"Bookmark Name".padEnd(30)} File`, { face: "bold" }) + "\n");
       for (const b of [...bookmarks()].sort((x, y) => (x.name < y.name ? -1 : x.name > y.name ? 1 : 0))) {
-        const start = ember.point();
-        ember.insert(`${deletions.has(b.name) ? "D" : " "} ${b.name.padEnd(30)} ${b.filename ?? ""}`.trimEnd());
-        ember.putTextProperty(start, ember.point(), "bookmark-name-prop", b.name);
-        ember.insert("\n");
+        const start = gnista.point();
+        gnista.insert(`${deletions.has(b.name) ? "D" : " "} ${b.name.padEnd(30)} ${b.filename ?? ""}`.trimEnd());
+        gnista.putTextProperty(start, gnista.point(), "bookmark-name-prop", b.name);
+        gnista.insert("\n");
       }
     });
-    ember.gotoChar(ember.lineStart(Math.min(Math.max(1, line), Math.max(1, ember.lineCount() - 2))));
-    ember.setBufferModified(false);
+    gnista.gotoChar(gnista.lineStart(Math.min(Math.max(1, line), Math.max(1, gnista.lineCount() - 2))));
+    gnista.setBufferModified(false);
   });
 }
 
 function bmenuBookmark(): string {
-  const name = ember.getTextProperty(ember.lineBeginningPosition(), "bookmark-name-prop");
-  if (typeof name !== "string") ember.userError("No bookmark on this line");
+  const name = gnista.getTextProperty(gnista.lineBeginningPosition(), "bookmark-name-prop");
+  if (typeof name !== "string") gnista.userError("No bookmark on this line");
   return name as string;
 }
 
 const bmenuNext = (n: number) => {
-  const line = Math.max(1, Math.min(ember.lineCount() - 2, ember.lineOf(ember.point()) + n));
-  ember.gotoChar(ember.lineStart(line));
+  const line = Math.max(1, Math.min(gnista.lineCount() - 2, gnista.lineOf(gnista.point()) + n));
+  gnista.gotoChar(gnista.lineStart(line));
 };
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "bookmark-bmenu-list",
   doc: "List the bookmarks in *Bookmark List*: RET goes to one, d marks it to be deleted and x deletes those marked.",
   run: () => {
-    ember.getBufferCreate(BMENU);
-    ember.withCurrentBuffer(BMENU, () => {
-      if (ember.variable("major-mode") !== "bookmark-bmenu-mode") ember.call("bookmark-bmenu-mode");
+    gnista.getBufferCreate(BMENU);
+    gnista.withCurrentBuffer(BMENU, () => {
+      if (gnista.variable("major-mode") !== "bookmark-bmenu-mode") gnista.call("bookmark-bmenu-mode");
     });
     deletions.clear();
     bmenuRefresh();
-    ember.call("switch-to-buffer", BMENU);
+    gnista.call("switch-to-buffer", BMENU);
   },
 });
 
@@ -351,10 +351,10 @@ for (const [name, doc, run] of [
   ["bookmark-bmenu-previous-line", "Move to the bookmark before.", () => bmenuNext(-1)],
   ["bookmark-bmenu-revert", "List the bookmarks again.", () => bmenuRefresh()],
 ] as const) {
-  ember.defineCommand({ name, doc, run });
+  gnista.defineCommand({ name, doc, run });
 }
 
-ember.defineMajorMode({
+gnista.defineMajorMode({
   name: "bookmark-bmenu-mode",
   modeName: "Bookmark Menu",
   doc: "The mode of *Bookmark List*: RET goes to a bookmark, o in another window, d marks it to be deleted, x deletes, g lists again, q quits.",
@@ -371,10 +371,10 @@ ember.defineMajorMode({
     g: "bookmark-bmenu-revert",
     s: "bookmark-save",
     q: "quit-window",
-  } as Record<string, ember.CommandName>,
+  } as Record<string, gnista.CommandName>,
   setup: () => {
-    ember.setVariable("truncate-lines", true);
-    ember.setReadOnly(true);
+    gnista.setVariable("truncate-lines", true);
+    gnista.setReadOnly(true);
   },
 });
 
@@ -384,5 +384,5 @@ for (const [keys, command] of [
   ["C-x r l", "bookmark-bmenu-list"],
   ["C-x 4 r", "bookmark-jump-other-window"],
 ] as const) {
-  ember.bindKey(keys, command);
+  gnista.bindKey(keys, command);
 }

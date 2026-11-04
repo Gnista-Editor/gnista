@@ -6,73 +6,73 @@
 import { transposeSubr } from "simple";
 import { forwardLine } from "subr";
 
-const blank = (line: number): boolean => /^[ \t\f]*$/.test(ember.lineText(line));
+const blank = (line: number): boolean => /^[ \t\f]*$/.test(gnista.lineText(line));
 /** A line where a paragraph starts or one is separated, as paragraph-start matches it. */
-const starter = (line: number): boolean => /^[ \t]*(\f|$)/.test(ember.lineText(line));
+const starter = (line: number): boolean => /^[ \t]*(\f|$)/.test(gnista.lineText(line));
 
-const bol = (): number => ember.lineStart(ember.lineOf(ember.point()));
-const eob = (): boolean => ember.point() >= ember.pointMax();
+const bol = (): number => gnista.lineStart(gnista.lineOf(gnista.point()));
+const eob = (): boolean => gnista.point() >= gnista.pointMax();
 /** Moves over `arg` paragraphs, back if negative, as forward-paragraph. */
 function forwardParagraph(arg: number): void {
-  while (arg < 0 && ember.point() > ember.pointMin()) {
-    const p = ember.point();
-    const line = ember.lineOf(p);
-    const atSeparator = /^[ \t\f]*$/.test(ember.bufferText(p, ember.lineEnd(line)));
+  while (arg < 0 && gnista.point() > gnista.pointMin()) {
+    const p = gnista.point();
+    const line = gnista.lineOf(p);
+    const atSeparator = /^[ \t\f]*$/.test(gnista.bufferText(p, gnista.lineEnd(line)));
     // Just after an empty line, go to it.
-    const afterEmpty = p > ember.pointMin() && ember.bufferText(p - 1, p) === "\n" && (p - 1 === ember.pointMin() || ember.bufferText(p - 2, p - 1) === "\n");
+    const afterEmpty = p > gnista.pointMin() && gnista.bufferText(p - 1, p) === "\n" && (p - 1 === gnista.pointMin() || gnista.bufferText(p - 2, p - 1) === "\n");
     if (!atSeparator && afterEmpty) {
-      ember.gotoChar(p - 1);
+      gnista.gotoChar(p - 1);
       arg++;
       continue;
     }
     // Back over separating lines.
-    ember.gotoChar(ember.lineStart(ember.lineOf(p - 1)));
-    while (ember.point() > ember.pointMin() && blank(ember.lineOf(ember.point()))) forwardLine(-1);
-    if (ember.point() === ember.pointMin()) break;
+    gnista.gotoChar(gnista.lineStart(gnista.lineOf(p - 1)));
+    while (gnista.point() > gnista.pointMin() && blank(gnista.lineOf(gnista.point()))) forwardLine(-1);
+    if (gnista.point() === gnista.pointMin()) break;
     arg++;
     // Back to a line that starts or separates paragraphs.
     let found: number | undefined;
-    for (let l = ember.lineOf(ember.point()); l >= 0; l--) {
-      if (starter(l) && ember.lineStart(l) < ember.lineEnd(ember.lineOf(ember.point()))) {
+    for (let l = gnista.lineOf(gnista.point()); l >= 0; l--) {
+      if (starter(l) && gnista.lineStart(l) < gnista.lineEnd(gnista.lineOf(gnista.point()))) {
         found = l;
         break;
       }
     }
     if (found === undefined) {
-      ember.gotoChar(ember.pointMin());
+      gnista.gotoChar(gnista.pointMin());
       continue;
     }
-    ember.gotoChar(ember.lineStart(found));
-    while (!eob() && blank(ember.lineOf(ember.point()))) forwardLine(1);
+    gnista.gotoChar(gnista.lineStart(found));
+    while (!eob() && blank(gnista.lineOf(gnista.point()))) forwardLine(1);
     // To the end of the line before the paragraph, or past it if it is not empty.
-    const before = ember.lineOf(ember.point()) - 1;
+    const before = gnista.lineOf(gnista.point()) - 1;
     if (before < 0) {
-      ember.gotoChar(ember.pointMin());
+      gnista.gotoChar(gnista.pointMin());
       continue;
     }
-    ember.gotoChar(ember.lineEnd(before));
-    if (ember.currentColumn() > 0) ember.gotoChar(ember.point() + 1);
+    gnista.gotoChar(gnista.lineEnd(before));
+    if (gnista.currentColumn() > 0) gnista.gotoChar(gnista.point() + 1);
   }
   while (arg > 0 && !eob()) {
-    ember.gotoChar(bol());
-    while (!eob() && blank(ember.lineOf(ember.point()))) {
+    gnista.gotoChar(bol());
+    while (!eob() && blank(gnista.lineOf(gnista.point()))) {
       forwardLine(1);
-      if (!eob()) ember.gotoChar(bol());
+      if (!eob()) gnista.gotoChar(bol());
     }
     if (!eob()) arg--;
     forwardLine(1);
     let found: number | undefined;
-    for (let l = ember.lineOf(ember.point()); l < ember.lineCount(); l++) {
-      if (ember.lineStart(l) >= ember.point() && ember.lineStart(l) < ember.pointMax() && starter(l)) {
+    for (let l = gnista.lineOf(gnista.point()); l < gnista.lineCount(); l++) {
+      if (gnista.lineStart(l) >= gnista.point() && gnista.lineStart(l) < gnista.pointMax() && starter(l)) {
         found = l;
         break;
       }
     }
-    ember.gotoChar(found === undefined || ember.lineStart(found) > ember.pointMax() ? ember.pointMax() : ember.lineStart(found));
+    gnista.gotoChar(found === undefined || gnista.lineStart(found) > gnista.pointMax() ? gnista.pointMax() : gnista.lineStart(found));
   }
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "forward-paragraph",
   doc: "Move to the end of this paragraph, or the next if between them. With a prefix argument, that many; back if negative.",
   shiftSelect: true,
@@ -80,7 +80,7 @@ ember.defineCommand({
   run: (arg: number) => forwardParagraph(arg),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "backward-paragraph",
   doc: "Move to the start of this paragraph, or the one before if between them. With a prefix argument, that many.",
   shiftSelect: true,
@@ -88,12 +88,12 @@ ember.defineCommand({
   run: (arg: number) => forwardParagraph(-arg),
 });
 
-ember.bindKey("M-}", "forward-paragraph");
-ember.bindKey("M-{", "backward-paragraph");
-ember.bindKey("C-<down>", "forward-paragraph");
-ember.bindKey("C-<up>", "backward-paragraph");
+gnista.bindKey("M-}", "forward-paragraph");
+gnista.bindKey("M-{", "backward-paragraph");
+gnista.bindKey("C-<down>", "forward-paragraph");
+gnista.bindKey("C-<up>", "backward-paragraph");
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "mark-paragraph",
   doc:
     "Put point at the start of this paragraph and the mark at its end; with a prefix argument, at the end of that many.\n\n" +
@@ -101,21 +101,21 @@ ember.defineCommand({
   params: [{ name: "arg", kind: "count" }],
   run: (arg: number) => {
     if (arg === 0) throw new Error("Cannot mark zero paragraphs");
-    const mark = ember.mark();
-    if ((ember.lastCommand() === "mark-paragraph" && mark !== undefined) || ember.regionActive()) {
-      ember.setMark(ember.saveExcursion(() => {
-        ember.gotoChar(mark!);
+    const mark = gnista.mark();
+    if ((gnista.lastCommand() === "mark-paragraph" && mark !== undefined) || gnista.regionActive()) {
+      gnista.setMark(gnista.saveExcursion(() => {
+        gnista.gotoChar(mark!);
         forwardParagraph(arg);
-        return ember.point();
+        return gnista.point();
       }));
       return;
     }
     forwardParagraph(arg);
-    ember.pushMark(ember.point(), { activate: true });
+    gnista.pushMark(gnista.point(), { activate: true });
     forwardParagraph(-arg);
   },
 });
-ember.bindKey("M-h", "mark-paragraph");
+gnista.bindKey("M-h", "mark-paragraph");
 
 // Sentences, after paragraphs.el: a sentence ends where sentence-end
 // matches, two spaces after a full stop by default, or at the end of its
@@ -128,25 +128,25 @@ for (const [name, doc, value] of [
   ["sentence-end-base", "The regexp for the punctuation that ends a sentence, with what may close it.", "[.?!…‽][]\"'”’)}»›]*"],
   ["sentence-end", "The regexp for the end of a sentence, or nil for the one sentence-end makes from the variables above.", null],
 ] as const) {
-  ember.defineVariable({ name, doc, value });
+  gnista.defineVariable({ name, doc, value });
 }
 
 const on = (name: string): boolean => {
-  const v = ember.variable(name);
+  const v = gnista.variable(name);
   return v !== null && v !== undefined && v !== false;
 };
 
 /** The regexp for the end of a sentence, as sentence-end: sentence-end's value, or one made from the variables. */
 export function sentenceEnd(): string {
-  const own = ember.variable("sentence-end");
+  const own = gnista.variable("sentence-end");
   if (typeof own === "string") return own;
   return (
     (on("sentence-end-without-period") ? "\\w[  ][  ]\\|" : "") +
     "\\(" +
-    String(ember.variable("sentence-end-base")) +
+    String(gnista.variable("sentence-end-base")) +
     (on("sentence-end-double-space") ? "\\($\\|[  ]$\\|\t\\|[  ][  ]\\)" : "\\($\\|[\t  ]\\)") +
     "\\|[" +
-    String(ember.variable("sentence-end-without-space")) +
+    String(gnista.variable("sentence-end-without-space")) +
     "]+" +
     "\\)" +
     "[  \t\n]*"
@@ -155,69 +155,69 @@ export function sentenceEnd(): string {
 
 /** Moves to the first character of this paragraph's text, as start-of-paragraph-text. */
 function startOfParagraphText(): void {
-  const opoint = ember.point();
+  const opoint = gnista.point();
   forwardParagraph(-1);
-  const npoint = ember.point();
-  ember.skipCharsForward(" \t\n");
+  const npoint = gnista.point();
+  gnista.skipCharsForward(" \t\n");
   // Blank lines across where it started: try again from before them.
-  if (ember.point() >= opoint && npoint < opoint) {
-    ember.gotoChar(npoint);
-    if (npoint > ember.pointMin()) startOfParagraphText();
+  if (gnista.point() >= opoint && npoint < opoint) {
+    gnista.gotoChar(npoint);
+    if (npoint > gnista.pointMin()) startOfParagraphText();
   }
 }
 
 /** Moves to the end of this paragraph's text, before its final newline, as end-of-paragraph-text. */
 function endOfParagraphText(): void {
-  const opoint = ember.point();
+  const opoint = gnista.point();
   forwardParagraph(1);
-  if (ember.point() > 0 && ember.bufferText(ember.point() - 1, ember.point()) === "\n") ember.gotoChar(ember.point() - 1);
-  if (ember.point() <= opoint) {
-    if (ember.point() < ember.pointMax()) ember.gotoChar(ember.point() + 1);
-    if (ember.point() < ember.pointMax()) endOfParagraphText();
+  if (gnista.point() > 0 && gnista.bufferText(gnista.point() - 1, gnista.point()) === "\n") gnista.gotoChar(gnista.point() - 1);
+  if (gnista.point() <= opoint) {
+    if (gnista.point() < gnista.pointMax()) gnista.gotoChar(gnista.point() + 1);
+    if (gnista.point() < gnista.pointMax()) endOfParagraphText();
   }
 }
 
 /** Moves over `arg` sentences, back to their starts if negative, as forward-sentence-default-function. */
 export function forwardSentence(argIn = 1): number {
   let arg = argIn;
-  const opoint = ember.point();
+  const opoint = gnista.point();
   const end = sentenceEnd();
   while (arg < 0) {
-    const pos = ember.point();
-    const [parBeg, parTextBeg] = ember.saveExcursion(() => {
+    const pos = gnista.point();
+    const [parBeg, parTextBeg] = gnista.saveExcursion(() => {
       startOfParagraphText();
-      const textBeg = ember.point();
-      return [ember.lineBeginningPosition(), textBeg];
+      const textBeg = gnista.point();
+      return [gnista.lineBeginningPosition(), textBeg];
     });
     const found =
-      ember.reSearchBackward(end, { bound: parBeg, noerror: true }) !== undefined &&
-      (ember.matchEnd(0)! < pos || ember.reSearchBackward(end, { bound: parBeg, noerror: true }) !== undefined);
-    ember.gotoChar(found ? ember.matchEnd(0)! : parTextBeg);
+      gnista.reSearchBackward(end, { bound: parBeg, noerror: true }) !== undefined &&
+      (gnista.matchEnd(0)! < pos || gnista.reSearchBackward(end, { bound: parBeg, noerror: true }) !== undefined);
+    gnista.gotoChar(found ? gnista.matchEnd(0)! : parTextBeg);
     arg++;
   }
   while (arg > 0) {
-    const parEnd = ember.saveExcursion(() => {
+    const parEnd = gnista.saveExcursion(() => {
       endOfParagraphText();
-      return ember.point();
+      return gnista.point();
     });
-    if (ember.reSearchForward(end, { bound: parEnd, noerror: true }) !== undefined) ember.skipCharsBackward(" \t\n");
-    else ember.gotoChar(parEnd);
+    if (gnista.reSearchForward(end, { bound: parEnd, noerror: true }) !== undefined) gnista.skipCharsBackward(" \t\n");
+    else gnista.gotoChar(parEnd);
     arg--;
   }
-  const to = ember.constrainToField(ember.point(), opoint, true);
-  ember.gotoChar(to);
+  const to = gnista.constrainToField(gnista.point(), opoint, true);
+  gnista.gotoChar(to);
   return to;
 }
 
 /** How many sentences there are from start to end, as count-sentences. */
 export function countSentences(start: number, end: number): number {
-  return ember.letBind({ "inhibit-field-text-motion": true }, () =>
-    ember.saveExcursion(() =>
-      ember.saveRestriction(() => {
-        ember.narrowToRegion(start, end);
-        ember.gotoChar(ember.pointMin());
+  return gnista.letBind({ "inhibit-field-text-motion": true }, () =>
+    gnista.saveExcursion(() =>
+      gnista.saveRestriction(() => {
+        gnista.narrowToRegion(start, end);
+        gnista.gotoChar(gnista.pointMin());
         let sentences = 0;
-        let prev = ember.point();
+        let prev = gnista.point();
         let next: number | undefined = forwardSentence();
         while (next !== undefined && prev !== next) {
           prev = next;
@@ -229,14 +229,14 @@ export function countSentences(start: number, end: number): number {
           sentences++;
         }
         // Not a last sentence that is only space.
-        if (ember.skipCharsBackward(" \t\n") !== 0) sentences--;
+        if (gnista.skipCharsBackward(" \t\n") !== 0) sentences--;
         return sentences;
       }),
     ),
   );
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "forward-sentence",
   doc: "Move to the end of this sentence, or the next if between them; with a prefix argument, that many, back if negative.",
   shiftSelect: true,
@@ -246,7 +246,7 @@ ember.defineCommand({
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "backward-sentence",
   doc: "Move to the start of this sentence, or the one before if at its start; with a prefix argument, that many.",
   shiftSelect: true,
@@ -256,80 +256,80 @@ ember.defineCommand({
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "kill-sentence",
   doc: "Kill from point to the end of the sentence; with a prefix argument, to the end of that many, back if negative.",
   params: [{ name: "arg", kind: "count" }],
   run: (arg: number) => {
-    const p = ember.point();
-    ember.killRegion(p, forwardSentence(arg));
+    const p = gnista.point();
+    gnista.killRegion(p, forwardSentence(arg));
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "backward-kill-sentence",
   doc: "Kill from point back to the start of the sentence; with a prefix argument, back to the start of that many.",
   params: [{ name: "arg", kind: "count" }],
   run: (arg: number) => {
-    const p = ember.point();
-    ember.killRegion(p, forwardSentence(-arg));
+    const p = gnista.point();
+    gnista.killRegion(p, forwardSentence(-arg));
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "mark-end-of-sentence",
   doc: "Put the mark at the end of the sentence; again, at the end of the next.",
   params: [{ name: "arg", kind: "count" }],
   run: (arg: number) => {
-    const mark = ember.mark();
-    const again = ember.lastCommand() === "mark-end-of-sentence" && mark !== undefined;
-    const to = ember.saveExcursion(() => {
-      if (again) ember.gotoChar(mark!);
+    const mark = gnista.mark();
+    const again = gnista.lastCommand() === "mark-end-of-sentence" && mark !== undefined;
+    const to = gnista.saveExcursion(() => {
+      if (again) gnista.gotoChar(mark!);
       return forwardSentence(arg);
     });
-    ember.pushMark(to, { activate: true });
+    gnista.pushMark(to, { activate: true });
   },
 });
 
-ember.bindKey("M-e", "forward-sentence");
-ember.bindKey("M-a", "backward-sentence");
-ember.bindKey("M-k", "kill-sentence");
-ember.bindKey("C-x DEL", "backward-kill-sentence");
-ember.defun("count-sentences", (start: number, end: number) => countSentences(start, end));
+gnista.bindKey("M-e", "forward-sentence");
+gnista.bindKey("M-a", "backward-sentence");
+gnista.bindKey("M-k", "kill-sentence");
+gnista.bindKey("C-x DEL", "backward-kill-sentence");
+gnista.defun("count-sentences", (start: number, end: number) => countSentences(start, end));
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "kill-paragraph",
   doc: "Kill from point to the end of the paragraph; with a prefix argument, to the end of that many.",
   params: [{ name: "arg", kind: "count" }],
   run: (arg: number) => {
-    const p = ember.point();
+    const p = gnista.point();
     forwardParagraph(arg);
-    ember.killRegion(p, ember.point());
+    gnista.killRegion(p, gnista.point());
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "backward-kill-paragraph",
   doc: "Kill from point back to the start of the paragraph; with a prefix argument, back to the start of that many.",
   params: [{ name: "arg", kind: "count" }],
   run: (arg: number) => {
-    const p = ember.point();
+    const p = gnista.point();
     forwardParagraph(-arg);
-    ember.killRegion(p, ember.point());
+    gnista.killRegion(p, gnista.point());
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "transpose-paragraphs",
   doc: "Exchange this paragraph with the one before; with a prefix argument, move it past that many.",
-  run: () => transposeSubr((n) => forwardParagraph(n), ember.prefixNumericValue()),
+  run: () => transposeSubr((n) => forwardParagraph(n), gnista.prefixNumericValue()),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "transpose-sentences",
   doc: "Exchange this sentence with the one before; with a prefix argument, move it past that many.",
   run: () =>
     transposeSubr((n) => {
       forwardSentence(n);
-    }, ember.prefixNumericValue()),
+    }, gnista.prefixNumericValue()),
 });

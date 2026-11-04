@@ -710,7 +710,7 @@
       "mark_active": false,
       "kill_ring": [],
       "modified": false,
-      "error": "Args out of range: #<buffer *ember-oracle*>, 1, 6"
+      "error": "Args out of range: #<buffer *gnista-oracle*>, 1, 6"
     },
     {
       "name": "undo-with-an-argument",

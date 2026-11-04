@@ -9,7 +9,7 @@
 // other's.
 //
 // Copyright (c) 2015-2023, Fanael Linithien
-// Ported to Ember in 2026.
+// Ported to Gnista in 2026.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -36,51 +36,51 @@
 
 import { truthy } from "subr";
 
-ember.defun("persistent-scratch-default-scratch-buffer-p", () => ember.bufferName() === "*scratch*");
+gnista.defun("persistent-scratch-default-scratch-buffer-p", () => gnista.bufferName() === "*scratch*");
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "persistent-scratch-scratch-buffer-p-function",
   doc: "A function, called with no arguments in a buffer, that says whether it is a scratch buffer, to be saved.",
   value: "persistent-scratch-default-scratch-buffer-p",
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "persistent-scratch-save-file",
   doc: "File to save to the scratch buffers to.",
   value: (() => {
-    const dir = ember.variable("user-emacs-directory");
-    return typeof dir === "string" ? ember.expandFileName(".persistent-scratch", dir) : null;
+    const dir = gnista.variable("user-emacs-directory");
+    return typeof dir === "string" ? gnista.expandFileName(".persistent-scratch", dir) : null;
   })(),
 });
-ember.defineHook(
+gnista.defineHook(
   "persistent-scratch-before-save-commit-functions",
   "Functions called with the temporary file holding the save data, before it is moved to persistent-scratch-save-file, as to change its permissions.",
 );
-ember.defineVariable({
+gnista.defineVariable({
   name: "persistent-scratch-what-to-save",
   doc: 'What to save of each scratch buffer besides its name and text: "major-mode", "point" (and the mark), "narrowing" and "text-properties".',
   value: ["major-mode", "point", "narrowing"],
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "persistent-scratch-autosave-interval",
-  doc: 'Seconds between autosaves, or ["idle", N] to save each time Ember has been idle for N seconds. Turn persistent-scratch-autosave-mode on again after changing it.',
+  doc: 'Seconds between autosaves, or ["idle", N] to save each time Gnista has been idle for N seconds. Turn persistent-scratch-autosave-mode on again after changing it.',
   value: 300,
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "persistent-scratch-backup-directory",
   doc: "Directory to save old versions of scratch buffer saves to. When nil, backups are disabled.",
   value: null,
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "persistent-scratch-backup-filter",
   doc: "A function called with the names of the files in the backup directory, unsorted, that returns those to delete. By default none are.",
   value: "ignore",
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "persistent-scratch-backup-file-name-format",
   doc: "Format of backup file names, as format-time-string takes it.",
   value: "%Y-%m-%d--%H-%M-%S-%N",
 });
-if (!ember.fboundp("ignore")) ember.defun("ignore", () => undefined);
+if (!gnista.fboundp("ignore")) gnista.defun("ignore", () => undefined);
 
 // Printing and reading the save file, as prin1 and read do for its forms.
 
@@ -113,12 +113,12 @@ function read(text: string, at = { pos: 0 }): Form {
   };
   skip();
   const c = text[at.pos];
-  if (c === undefined) ember.signal("end-of-file", "End of file during parsing");
+  if (c === undefined) gnista.signal("end-of-file", "End of file during parsing");
   if (c === '"') {
     let s = "";
     at.pos++;
     while (text[at.pos] !== '"') {
-      if (at.pos >= text.length) ember.signal("end-of-file", "End of file during parsing");
+      if (at.pos >= text.length) gnista.signal("end-of-file", "End of file during parsing");
       let ch = text[at.pos++];
       if (ch === "\\") {
         ch = text[at.pos++];
@@ -166,35 +166,35 @@ function read(text: string, at = { pos: 0 }): Form {
 // Saving and restoring.
 
 function whatToSave(): string[] {
-  const value = ember.variable("persistent-scratch-what-to-save");
+  const value = gnista.variable("persistent-scratch-what-to-save");
   return Array.isArray(value) ? value.map(String) : [];
 }
 
-/** Whether transient-mark-mode is on: always, unless a config defines the variable as nil, as Ember has no other mode. */
+/** Whether transient-mark-mode is on: always, unless a config defines the variable as nil, as Gnista has no other mode. */
 const transientMarkMode = (): boolean => {
-  const value = ember.variable("transient-mark-mode");
+  const value = gnista.variable("transient-mark-mode");
   return value === undefined || truthy(value);
 };
 
-const isScratch = (): boolean => truthy(ember.funcall(ember.variable("persistent-scratch-scratch-buffer-p-function") as string));
+const isScratch = (): boolean => truthy(gnista.funcall(gnista.variable("persistent-scratch-scratch-buffer-p-function") as string));
 
 /** The current buffer's state, as persistent-scratch--get-buffer-state: name, text, point and mark, mode, narrowing, whether the region is active. */
 function bufferState(): Form {
   const what = whatToSave();
-  const text = ember.saveRestriction(() => {
-    ember.widen();
-    return ember.bufferSubstringNoProperties(ember.pointMin(), ember.pointMax());
+  const text = gnista.saveRestriction(() => {
+    gnista.widen();
+    return gnista.bufferSubstringNoProperties(gnista.pointMin(), gnista.pointMax());
   });
-  const mark = ember.mark();
-  const narrowed = ember.bufferNarrowedP();
+  const mark = gnista.mark();
+  const narrowed = gnista.bufferNarrowedP();
   return {
     vector: [
-      ember.bufferName(),
+      gnista.bufferName(),
       text,
-      what.includes("point") ? { cons: [ember.point() + 1], tail: typeof mark === "number" ? mark + 1 : nil } : nil,
-      what.includes("major-mode") ? { symbol: String(ember.variable("major-mode")) } : nil,
-      narrowed && what.includes("narrowing") ? { cons: [ember.pointMin() + 1], tail: ember.pointMax() + 1 } : nil,
-      what.includes("point") ? (!transientMarkMode() || ember.regionActive() ? t : nil) : nil,
+      what.includes("point") ? { cons: [gnista.point() + 1], tail: typeof mark === "number" ? mark + 1 : nil } : nil,
+      what.includes("major-mode") ? { symbol: String(gnista.variable("major-mode")) } : nil,
+      narrowed && what.includes("narrowing") ? { cons: [gnista.pointMin() + 1], tail: gnista.pointMax() + 1 } : nil,
+      what.includes("point") ? (!transientMarkMode() || gnista.regionActive() ? t : nil) : nil,
     ],
   };
 }
@@ -203,8 +203,8 @@ function bufferState(): Form {
 function saveBuffersState(): [string[], string] {
   const buffers: string[] = [];
   const data: Form[] = [];
-  for (const buffer of ember.bufferList()) {
-    ember.withCurrentBuffer(buffer, () => {
+  for (const buffer of gnista.bufferList()) {
+    gnista.withCurrentBuffer(buffer, () => {
       if (!isScratch()) return;
       buffers.unshift(buffer);
       data.unshift(bufferState());
@@ -233,28 +233,28 @@ let currentBackupTime = new Date();
 
 /** Where the scratch buffers are saved, or undefined when persistent-scratch-save-file is nil, as without a user-emacs-directory. */
 function saveFile(): string | undefined {
-  const file = ember.variable("persistent-scratch-save-file");
+  const file = gnista.variable("persistent-scratch-save-file");
   return typeof file === "string" ? file : undefined;
 }
 
 /** Copies the save file into the backup directory, as persistent-scratch--update-backup. */
 function updateBackup(): void {
-  const dir = ember.variable("persistent-scratch-backup-directory");
+  const dir = gnista.variable("persistent-scratch-backup-directory");
   if (typeof dir !== "string") return;
-  const name = ember.expandFileName(formatTime(String(ember.variable("persistent-scratch-backup-file-name-format")), currentBackupTime), dir);
-  ember.makeDirectory(dir, { parents: true });
+  const name = gnista.expandFileName(formatTime(String(gnista.variable("persistent-scratch-backup-file-name-format")), currentBackupTime), dir);
+  gnista.makeDirectory(dir, { parents: true });
   const file = saveFile();
-  if (file !== undefined) ember.copyFile(file, name, { okIfExists: true, keepTime: true });
+  if (file !== undefined) gnista.copyFile(file, name, { okIfExists: true, keepTime: true });
 }
 
 /** Deletes the backups persistent-scratch-backup-filter names, as persistent-scratch--cleanup-backups. */
 function cleanupBackups(): void {
-  const dir = ember.variable("persistent-scratch-backup-directory");
+  const dir = gnista.variable("persistent-scratch-backup-directory");
   if (typeof dir !== "string") return;
-  const directory = ember.fileNameAsDirectory(dir);
-  const names = ember.directoryFiles(directory, { nosort: true }).filter((n) => n !== "." && n !== "..");
-  const doomed = ember.funcall(ember.variable("persistent-scratch-backup-filter") as string, names);
-  if (Array.isArray(doomed)) for (const name of doomed) ember.deleteFile(directory + String(name));
+  const directory = gnista.fileNameAsDirectory(dir);
+  const names = gnista.directoryFiles(directory, { nosort: true }).filter((n) => n !== "." && n !== "..");
+  const doomed = gnista.funcall(gnista.variable("persistent-scratch-backup-filter") as string, names);
+  if (Array.isArray(doomed)) for (const name of doomed) gnista.deleteFile(directory + String(name));
 }
 
 /**
@@ -267,10 +267,10 @@ export function save(file?: string): string | undefined {
   if (actual === undefined) return undefined;
   const tmp = `${actual}.new`;
   const [buffers, text] = saveBuffersState();
-  ember.writeTextFile(tmp, text, { mode: 0o600 });
-  ember.runHooks("persistent-scratch-before-save-commit-functions", tmp);
-  ember.renameFile(tmp, actual, { okIfExists: true });
-  for (const buffer of buffers) ember.withCurrentBuffer(buffer, () => ember.setBufferModified(false));
+  gnista.writeTextFile(tmp, text, { mode: 0o600 });
+  gnista.runHooks("persistent-scratch-before-save-commit-functions", tmp);
+  gnista.renameFile(tmp, actual, { okIfExists: true });
+  for (const buffer of buffers) gnista.withCurrentBuffer(buffer, () => gnista.setBufferModified(false));
   if (file === undefined) {
     updateBackup();
     cleanupBackups();
@@ -282,34 +282,34 @@ export function save(file?: string): string | undefined {
 export function restore(file?: string): void {
   const from = file ?? saveFile();
   if (from === undefined) return;
-  const text = ember.readTextFile(ember.expandFileName(from));
+  const text = gnista.readTextFile(gnista.expandFileName(from));
   const data = read(text);
   if (isNil(data)) return;
-  if (typeof data !== "object" || !("cons" in data)) ember.signal("invalid-read-syntax", "Not a list of saved buffers");
+  if (typeof data !== "object" || !("cons" in data)) gnista.signal("invalid-read-syntax", "Not a list of saved buffers");
   for (const saved of data.cons) {
     if (typeof saved !== "object" || !("vector" in saved)) continue;
     const [name, contents, pointAndMark, mode, narrowing, active] = saved.vector;
-    ember.getBufferCreate(String(name));
-    ember.withCurrentBuffer(String(name), () => {
-      ember.widen();
-      ember.deleteRegion(ember.pointMin(), ember.pointMax());
-      ember.insert(String(contents));
-      if (typeof mode === "object" && "symbol" in mode && !isNil(mode) && ember.fboundp(mode.symbol)) ember.call(mode.symbol as ember.CommandName);
-      const max = ember.pointMax();
+    gnista.getBufferCreate(String(name));
+    gnista.withCurrentBuffer(String(name), () => {
+      gnista.widen();
+      gnista.deleteRegion(gnista.pointMin(), gnista.pointMax());
+      gnista.insert(String(contents));
+      if (typeof mode === "object" && "symbol" in mode && !isNil(mode) && gnista.fboundp(mode.symbol)) gnista.call(mode.symbol as gnista.CommandName);
+      const max = gnista.pointMax();
       const position = (f: Form | undefined) => (typeof f === "number" ? Math.max(0, Math.min(f - 1, max)) : undefined);
       if (typeof pointAndMark === "object" && "cons" in pointAndMark) {
         const point = position(pointAndMark.cons[0]);
-        if (point !== undefined) ember.gotoChar(point);
+        if (point !== undefined) gnista.gotoChar(point);
         const mark = position(pointAndMark.tail);
-        ember.setMark(mark ?? null);
+        gnista.setMark(mark ?? null);
         // set-mark activates the mark, in transient-mark-mode.
-        if (mark !== undefined && transientMarkMode()) ember.activateMark();
+        if (mark !== undefined && transientMarkMode()) gnista.activateMark();
       }
       if (typeof narrowing === "object" && "cons" in narrowing) {
         const [start, end] = [position(narrowing.cons[0]), position(narrowing.tail)];
-        if (start !== undefined && end !== undefined) ember.narrowToRegion(start, end);
+        if (start !== undefined && end !== undefined) gnista.narrowToRegion(start, end);
       }
-      if (saved.vector.length >= 6 && isNil(active)) ember.deactivateMark();
+      if (saved.vector.length >= 6 && isNil(active)) gnista.deactivateMark();
     });
   }
 }
@@ -319,74 +319,74 @@ let autoRestored = false;
 /** Restores the scratch buffers once a session, showing what went wrong rather than failing, as persistent-scratch--auto-restore. */
 function autoRestore(): void {
   if (autoRestored) return;
-  ember.conditionCase(() => restore(), {
-    error: (e) => ember.message(`Failed to restore scratch buffers: ${e.message}`),
+  gnista.conditionCase(() => restore(), {
+    error: (e) => gnista.message(`Failed to restore scratch buffers: ${e.message}`),
   });
   autoRestored = true;
 }
 
-const saveCommand = ember.defineCommand({
+const saveCommand = gnista.defineCommand({
   name: "persistent-scratch-save",
   doc: "Save the current state of scratch buffers to persistent-scratch-save-file, keeping a backup if persistent-scratch-backup-directory names a directory.",
-  run: () => ember.message(`Wrote persistent-scratch file ${save()}`),
+  run: () => gnista.message(`Wrote persistent-scratch file ${save()}`),
 });
 
-const saveToFile = ember.defineCommand({
+const saveToFile = gnista.defineCommand({
   name: "persistent-scratch-save-to-file",
   doc: "Save the current state of scratch buffers to a file.",
   params: [{ name: "file", kind: "file", prompt: "Save scratch buffers to file: " }],
-  run: (file: string) => ember.message(`Wrote persistent-scratch file ${save(file)}`),
+  run: (file: string) => gnista.message(`Wrote persistent-scratch file ${save(file)}`),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "persistent-scratch-restore",
   doc: "Restore the scratch buffers saved in persistent-scratch-save-file. A buffer of the same name as a saved one has its text replaced.",
   run: () => restore(),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "persistent-scratch-restore-from-file",
   doc: "Restore the scratch buffers from a file.",
   params: [{ name: "file", kind: "file", prompt: "Restore scratch buffers from file: " }],
   run: (file: string) => restore(file),
 });
 
-ember.defineMinorMode({
+gnista.defineMinorMode({
   name: "persistent-scratch-mode",
   lighter: " PS",
   doc: "Save scratch buffers with save-buffer and write-file, as persistent-scratch-save and persistent-scratch-save-to-file. Only in a scratch buffer.",
   onChange: (enabled) => {
     if (enabled && !isScratch()) {
-      ember.setVariable("persistent-scratch-mode", false);
-      ember.signal("error", "This buffer isn't managed by `persistent-scratch', not enabling mode.");
+      gnista.setVariable("persistent-scratch-mode", false);
+      gnista.signal("error", "This buffer isn't managed by `persistent-scratch', not enabling mode.");
     }
   },
 });
-ember.remapCommand("persistent-scratch-mode-map", "save-buffer", saveCommand);
-ember.remapCommand("persistent-scratch-mode-map", "write-file", saveToFile);
+gnista.remapCommand("persistent-scratch-mode-map", "save-buffer", saveCommand);
+gnista.remapCommand("persistent-scratch-mode-map", "write-file", saveToFile);
 
 let autosaveTimer: number | undefined;
 const saveQuietly = () => void save();
 
 function autosaveOff(): void {
-  ember.removeHook("kill-emacs-hook", saveQuietly);
-  if (autosaveTimer !== undefined) ember.cancelTimer(autosaveTimer);
+  gnista.removeHook("kill-emacs-hook", saveQuietly);
+  if (autosaveTimer !== undefined) gnista.cancelTimer(autosaveTimer);
   autosaveTimer = undefined;
 }
 
 function autosaveOn(): void {
-  ember.addHook("kill-emacs-hook", saveQuietly);
-  const interval = ember.variable("persistent-scratch-autosave-interval");
+  gnista.addHook("kill-emacs-hook", saveQuietly);
+  const interval = gnista.variable("persistent-scratch-autosave-interval");
   autosaveTimer =
     Array.isArray(interval) && interval[0] === "idle"
-      ? ember.runWithIdleTimer(Number(interval[1]), true, saveQuietly)
-      : ember.runWithTimer(Number(interval), Number(interval), saveQuietly);
+      ? gnista.runWithIdleTimer(Number(interval[1]), true, saveQuietly)
+      : gnista.runWithTimer(Number(interval), Number(interval), saveQuietly);
 }
 
-ember.defineMinorMode({
+gnista.defineMinorMode({
   name: "persistent-scratch-autosave-mode",
   global: true,
-  doc: "Save the scratch buffers every persistent-scratch-autosave-interval seconds and when Ember quits. Turning it on restores them first, once a session.",
+  doc: "Save the scratch buffers every persistent-scratch-autosave-interval seconds and when Gnista quits. Turning it on restores them first, once a session.",
   onChange: (enabled) => {
     autoRestore();
     autosaveOff();
@@ -394,7 +394,7 @@ ember.defineMinorMode({
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "persistent-scratch-new-backup",
   doc: "Start a new backup file: the next save makes it and keeps using it.",
   run: () => {
@@ -405,21 +405,21 @@ ember.defineCommand({
 /** Turns persistent-scratch-autosave-mode on and restores the scratch buffers, as persistent-scratch-setup-default. */
 export function setupDefault(): void {
   autoRestore();
-  ember.call("persistent-scratch-autosave-mode" as ember.CommandName);
+  gnista.call("persistent-scratch-autosave-mode" as gnista.CommandName);
 }
-ember.defun("persistent-scratch-setup-default", setupDefault);
+gnista.defun("persistent-scratch-setup-default", setupDefault);
 
 /** A backup filter that keeps the N newest backups, as persistent-scratch-keep-n-newest-backups. */
 export function keepNNewestBackups(n: number): (files: string[]) => string[] {
   return (files) => [...files].sort((a, b) => (a < b ? 1 : a > b ? -1 : 0)).slice(n);
 }
-ember.defun("persistent-scratch-keep-n-newest-backups", keepNNewestBackups);
+gnista.defun("persistent-scratch-keep-n-newest-backups", keepNNewestBackups);
 
 /** A backup filter that keeps the backups newer than SECONDS, as persistent-scratch-keep-backups-not-older-than. */
 export function keepBackupsNotOlderThan(seconds: number): (files: string[]) => string[] {
   return (files) => {
-    const limit = formatTime(String(ember.variable("persistent-scratch-backup-file-name-format")), new Date(Date.now() - seconds * 1000));
+    const limit = formatTime(String(gnista.variable("persistent-scratch-backup-file-name-format")), new Date(Date.now() - seconds * 1000));
     return files.filter((f) => f < limit);
   };
 }
-ember.defun("persistent-scratch-keep-backups-not-older-than", keepBackupsNotOlderThan);
+gnista.defun("persistent-scratch-keep-backups-not-older-than", keepBackupsNotOlderThan);

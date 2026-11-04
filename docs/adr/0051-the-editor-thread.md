@@ -32,9 +32,9 @@ Option 2, as the plan has it.
 - The bell's kind is published with the bell, so the screen never asks the editor anything.
 
 **The GUI**
-- `EmberApp` runs an editor in one of two ways:
-  - on a thread of its own (`EmberApp::threaded`), as the binary does;
-  - on the window's thread (`EmberApp::new`), as the snapshot tests do, so their frames stay deterministic.
+- `GnistaApp` runs an editor in one of two ways:
+  - on a thread of its own (`GnistaApp::threaded`), as the binary does;
+  - on the window's thread (`GnistaApp::new`), as the snapshot tests do, so their frames stay deterministic.
 - Both go through the same code:
   - **Keys** go to the driver.
   - **Mouse presses and drags, resize drags and wheel scrolling** become closures run with the editor. Moves are sent only while the button is down.
@@ -46,8 +46,8 @@ Option 2, as the plan has it.
 ## Consequences
 
 - **The window never waits on the editor.**
-  - `crates/ember-gui/tests/threaded.rs` steps 30 frames while a command runs, each under 500 ms, and `C-g` stops the command in well under a second.
-  - `crates/ember-core/tests/driver.rs` checks:
+  - `crates/gnista-gui/tests/threaded.rs` steps 30 frames while a command runs, each under 500 ms, and `C-g` stops the command in well under a second.
+  - `crates/gnista-core/tests/driver.rs` checks:
     - keys run in order;
     - timers fire with no input;
     - `C-g` stops a runaway regexp search while the last frame stays published;
@@ -59,4 +59,4 @@ Option 2, as the plan has it.
   - Process output wakes the loop: each process's reader thread calls a waker the driver installs (`Editor::set_process_waker`), which sends `Wake`.
 - The window does not lay text out again during a long command. A resize shows the old frame, scaled to the new size, until the command ends, as the plan says.
   - Blocking prompts (step 5) and work below the API (step 6) are next.
-- **Not tried by hand.** The GUI binary was not run here, as another Ember window was open on the machine and the two would contend for the agent's socket.
+- **Not tried by hand.** The GUI binary was not run here, as another Gnista window was open on the machine and the two would contend for the agent's socket.

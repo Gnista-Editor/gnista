@@ -8,97 +8,97 @@
 // C-n and C-p to move through them.
 //
 // Emacs keeps the sorted completions in completion-all-sorted-completions,
-// which the rotating commands change; Ember's core keeps them for the open
+// which the rotating commands change; Gnista's core keeps them for the open
 // prompt, and these commands change them with cacheAllSortedCompletions.
 // Emacs can wait a moment before working out completions while you type;
-// Ember works them out at once.
+// Gnista works them out at once.
 
-ember.defineFace({
+gnista.defineFace({
   name: "icomplete-first-match",
   doc: "The first of the completions icomplete lists, which C-j takes.",
   attributes: { bold: true },
 });
-ember.defineFace({
+gnista.defineFace({
   name: "icomplete-selected-match",
   doc: "The completion selected in a vertical list, which C-j takes.",
   attributes: { background: "selection" },
 });
-ember.defineFace({
+gnista.defineFace({
   name: "completions-common-part",
   doc: "The part of a completion that matches the input.",
   attributes: { foreground: "accent-ink" },
 });
-ember.defineFace({
+gnista.defineFace({
   name: "completions-annotations",
   doc: "What a completion list adds after a completion, such as a command's key.",
   attributes: { inherit: "shadow", italic: true },
 });
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "icomplete-separator",
   doc: "What icomplete puts between the completions it lists in a line.",
   value: " | ",
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "icomplete-hide-common-prefix",
   doc: "Whether icomplete leaves out of each completion it lists the part they all share, which it shows after the input instead.",
   value: true,
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "icomplete-show-matches-on-no-input",
   doc: "Whether icomplete lists completions before anything is typed. fido-mode turns it on.",
   value: false,
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "icomplete-matches-format",
   doc: "How a vertical list that scrolls says which completion is selected, of how many: %s for each number, or nil for nothing.",
   value: "%s/%s ",
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "icomplete-prospects-height",
   doc: "How many lines icomplete's list may take, with the input. Vertical lists take up to 25, as max-mini-window-height allows.",
   value: 2,
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "icomplete-scroll",
   doc: "Whether moving through completions scrolls the list rather than rotating it. fido-vertical-mode turns it on.",
   value: false,
 });
-ember.defineHook(
+gnista.defineHook(
   "icomplete-minibuffer-setup-hook",
   "Run when icomplete starts on a prompt, in the minibuffer, to set it up for this prompt.",
 );
 
 const on = (name: string): boolean => {
-  const value = ember.variable(name);
+  const value = gnista.variable(name);
   return value !== null && value !== false && value !== undefined;
 };
 
-const setLocal = (name: string, value: ember.Value): void => {
-  ember.makeLocalVariable(name);
-  ember.setVariable(name, value);
+const setLocal = (name: string, value: gnista.Value): void => {
+  gnista.makeLocalVariable(name);
+  gnista.setVariable(name, value);
 };
 
 /** Text in a face, or plain. */
 type FacedText = string | { text: string; face?: string | string[] | null };
 
 /** Pieces of text as one propertized string, the cursor on its first character if `cursor`, as icomplete-exhibit puts it there. */
-function faced(pieces: FacedText[], cursor: boolean): ember.PropertizedString {
+function faced(pieces: FacedText[], cursor: boolean): gnista.PropertizedString {
   const parts = pieces.map((p) => (typeof p === "string" ? { text: p, face: null } : p));
-  const strings: (string | ember.PropertizedString)[] = [];
+  const strings: (string | gnista.PropertizedString)[] = [];
   let first = cursor;
   for (const { text, face } of parts) {
     if (text === "") continue;
-    const props: { [name: string]: ember.Value } = face ? { face } : {};
+    const props: { [name: string]: gnista.Value } = face ? { face } : {};
     if (first) {
       const [c, ...rest] = [...text];
-      strings.push(ember.propertize(c, { ...props, cursor: true }), ember.propertize(rest.join(""), props));
+      strings.push(gnista.propertize(c, { ...props, cursor: true }), gnista.propertize(rest.join(""), props));
       first = false;
     } else {
-      strings.push(ember.propertize(text, props));
+      strings.push(gnista.propertize(text, props));
     }
   }
-  return ember.concat(...strings);
+  return gnista.concat(...strings);
 }
 
 /**
@@ -109,18 +109,18 @@ function faced(pieces: FacedText[], cursor: boolean): ember.PropertizedString {
 let overlays: { count: number; list: number } | undefined;
 
 /** Shows `count` before the prompt and `list` after the input. */
-function showOverlays(count: ember.PropertizedString | string, list: ember.PropertizedString): void {
-  if (overlays === undefined || ember.overlayStart(overlays.count) === undefined || ember.overlayStart(overlays.list) === undefined) {
-    overlays = { count: ember.makeOverlay(ember.pointMin(), ember.pointMin()), list: ember.makeOverlay(ember.pointMax(), ember.pointMax()) };
+function showOverlays(count: gnista.PropertizedString | string, list: gnista.PropertizedString): void {
+  if (overlays === undefined || gnista.overlayStart(overlays.count) === undefined || gnista.overlayStart(overlays.list) === undefined) {
+    overlays = { count: gnista.makeOverlay(gnista.pointMin(), gnista.pointMin()), list: gnista.makeOverlay(gnista.pointMax(), gnista.pointMax()) };
   }
-  ember.moveOverlay(overlays.count, ember.pointMin(), ember.pointMin());
-  ember.moveOverlay(overlays.list, ember.pointMax(), ember.pointMax());
-  ember.overlayPut(overlays.count, "before-string", count);
-  ember.overlayPut(overlays.list, "after-string", list);
+  gnista.moveOverlay(overlays.count, gnista.pointMin(), gnista.pointMin());
+  gnista.moveOverlay(overlays.list, gnista.pointMax(), gnista.pointMax());
+  gnista.overlayPut(overlays.count, "before-string", count);
+  gnista.overlayPut(overlays.list, "after-string", list);
 }
 
 /** The minibuffer's input, after its prompt, icomplete--field-string. */
-const fieldString = (): string => ember.minibufferContents();
+const fieldString = (): string => gnista.minibufferContents();
 
 /** The input the prompt opened with, icomplete--initial-input. */
 let initialInput = "";
@@ -129,14 +129,14 @@ let scrolledPast: string[] = [];
 /** When the list scrolls, the completions from the selected one on, before the input changed. */
 let scrolledCompletions: string[] | undefined;
 
-const category = (): string | null => ember.minibufferInfo()?.category ?? null;
+const category = (): string | null => gnista.minibufferInfo()?.category ?? null;
 
 /** Whether the prompt completes, and icomplete should work on it: icomplete-simple-completing-p. */
-const simpleCompleting = (): boolean => !ember.executingKbdMacro() && ember.minibufferInfo()?.completing === true;
+const simpleCompleting = (): boolean => !gnista.executingKbdMacro() && gnista.minibufferInfo()?.completing === true;
 
 function ignoredFileName(name: string): boolean {
   if (name === "../") return true;
-  const ignored = ember.variable("completion-ignored-extensions");
+  const ignored = gnista.variable("completion-ignored-extensions");
   return Array.isArray(ignored) && ignored.some((ext) => typeof ext === "string" && name.endsWith(ext));
 }
 
@@ -149,10 +149,10 @@ function ignoredFileName(name: string): boolean {
 function sortedCompletions(): { base: string; completions: string[] } | undefined {
   const field = fieldString();
   // icomplete-exhibit works them out with point at the end of the input.
-  const all = ember.completionAllSortedCompletions({ atEnd: true });
+  const all = gnista.completionAllSortedCompletions({ atEnd: true });
   if (all === undefined || !all.fresh) return all;
   scrolledPast = [];
-  const info = ember.minibufferInfo();
+  const info = gnista.minibufferInfo();
   let comps = all.completions;
   // icomplete-completions leaves out ../ and ignored extensions.
   if (info?.category === "file") comps = comps.filter((c) => !ignoredFileName(c));
@@ -171,11 +171,11 @@ function sortedCompletions(): { base: string; completions: string[] } | undefine
       break;
     }
   }
-  ember.cacheAllSortedCompletions(comps);
+  gnista.cacheAllSortedCompletions(comps);
   return { base: all.base, completions: comps };
 }
 
-const foldCase = (): boolean => ember.minibufferInfo()?.ignoreCase ?? on("completion-ignore-case");
+const foldCase = (): boolean => gnista.minibufferInfo()?.ignoreCase ?? on("completion-ignore-case");
 
 /** The completion with the characters the input matched in completions-common-part, as completion-lazy-hilit does. */
 function hilit(comp: string, name: string): FacedText[] {
@@ -242,14 +242,14 @@ function compareStrings(a: string, b: string): number | true {
 /** What a completion list adds after a command: its key, as read-extended-command--affixation does. */
 function suffix(comp: string): FacedText[] {
   if (category() !== "command") return [];
-  const keys = ember.whereIs(comp);
+  const keys = gnista.whereIs(comp);
   return keys === undefined ? [] : [{ text: ` (${keys})`, face: "completions-annotations" }];
 }
 
 /** The completions down the minibuffer, as icomplete--render-vertical. */
 function renderVertical(comps: string[], name: string): FacedText[] {
-  const height = Number(ember.variable("icomplete-prospects-height") ?? 25);
-  const totalSpace = Math.min(height, Math.trunc(ember.frameSize().maxMiniWindowLines)) - 1;
+  const height = Number(gnista.variable("icomplete-prospects-height") ?? 25);
+  const totalSpace = Math.min(height, Math.trunc(gnista.frameSize().maxMiniWindowLines)) - 1;
   const scroll = on("icomplete-scroll");
   // After the input changed, keep the selection on the completion it was
   // on, if it is still there.
@@ -258,7 +258,7 @@ function renderVertical(comps: string[], name: string): FacedText[] {
     if (i >= 0) {
       scrolledPast = comps.slice(0, i).reverse();
       comps = comps.slice(i);
-      ember.cacheAllSortedCompletions(comps);
+      gnista.cacheAllSortedCompletions(comps);
     } else {
       scrolledCompletions = undefined;
     }
@@ -311,7 +311,7 @@ function completionsDisplay(name: string, requireMatch: boolean): FacedText[] {
   // Over the whole table for a file name, whose completions have a base,
   // and else over the completions themselves, as Emacs does.
   const mostTry = hide || comps.length === 1
-    ? ember.completionTryCompletion(name, base.length > 0 ? undefined : comps)
+    ? gnista.completionTryCompletion(name, base.length > 0 ? undefined : comps)
     : undefined;
   const most = typeof mostTry === "object" ? mostTry.text : mostTry === true ? comps[0] : "";
   const ellipsis = "…";
@@ -327,11 +327,11 @@ function completionsDisplay(name: string, requireMatch: boolean): FacedText[] {
       close;
   }
   if (mostTry === true || (!scroll && comps.length === 1)) return [`${determ ?? ""} [Matched]`];
-  const prompt = ember.minibufferInfo()?.prompt ?? "";
-  const separator = String(ember.variable("icomplete-separator") ?? " | ");
+  const prompt = gnista.minibufferInfo()?.prompt ?? "";
+  const separator = String(gnista.variable("icomplete-separator") ?? " | ");
   let prospectsLen = width(determ ?? open + close) + width(separator) + 2 + width(ellipsis) + width(prompt + name);
-  const columns = ember.frameSize().columns;
-  const height = Number(ember.variable("icomplete-prospects-height") ?? 2);
+  const columns = gnista.frameSize().columns;
+  const height = Number(gnista.variable("icomplete-prospects-height") ?? 2);
   const prospectsMax = (height + Math.trunc(prospectsLen / columns)) * columns;
   const prefix = hide ? commonPrefix(comps) : undefined;
   const prefixLen = prefix !== undefined && (foldCase() ? most.toLowerCase().startsWith(prefix.toLowerCase()) : most.startsWith(prefix))
@@ -366,39 +366,39 @@ function exhibit(): void {
   const field = fieldString();
   // Back at the input it started with, what was shown stays, as in Emacs.
   if (!on("icomplete-show-matches-on-no-input") && field === initialInput) return;
-  const info = ember.minibufferInfo()!;
+  const info = gnista.minibufferInfo()!;
   const after = completionsDisplay(field, info.requireMatch);
   let before = "";
-  const format = ember.variable("icomplete-matches-format");
+  const format = gnista.variable("icomplete-matches-format");
   if (on("icomplete-scroll") && typeof format === "string") {
     const past = scrolledPast.length;
-    const kept = ember.minibufferInfo()?.kept ?? 0;
+    const kept = gnista.minibufferInfo()?.kept ?? 0;
     before = format.replace("%s", String(past + 1)).replace("%s", String(past + kept));
   }
-  showOverlays(before === "" ? "" : ember.propertize(before, { face: "shadow" }), faced(after, true));
+  showOverlays(before === "" ? "" : gnista.propertize(before, { face: "shadow" }), faced(after, true));
 }
 
-ember.defineKeymap("icomplete-minibuffer-map");
-ember.defineKeymap("icomplete-fido-mode-map");
-ember.defineKeymap("icomplete-vertical-mode-minibuffer-map");
+gnista.defineKeymap("icomplete-minibuffer-map");
+gnista.defineKeymap("icomplete-fido-mode-map");
+gnista.defineKeymap("icomplete-vertical-mode-minibuffer-map");
 
 function icompleteSetup(): void {
   initialInput = fieldString();
   scrolledPast = [];
   scrolledCompletions = undefined;
-  ember.composeLocalMap("icomplete-minibuffer-map");
-  ember.addHook("post-command-hook", exhibit, { local: true });
-  ember.runHooks("icomplete-minibuffer-setup-hook");
+  gnista.composeLocalMap("icomplete-minibuffer-map");
+  gnista.addHook("post-command-hook", exhibit, { local: true });
+  gnista.runHooks("icomplete-minibuffer-setup-hook");
 }
 
 function fidoSetup(): void {
-  ember.composeLocalMap("icomplete-fido-mode-map");
+  gnista.composeLocalMap("icomplete-fido-mode-map");
   setLocal("icomplete-show-matches-on-no-input", true);
   setLocal("icomplete-hide-common-prefix", false);
   setLocal("icomplete-scroll", on("icomplete-vertical-mode"));
   setLocal("completion-styles", ["flex"]);
   // Flex first in each category too, as icomplete--fido-ccd puts it.
-  const defaults = ember.variable("completion-category-defaults");
+  const defaults = gnista.variable("completion-category-defaults");
   if (Array.isArray(defaults)) {
     setLocal("completion-category-defaults", defaults.map((entry) => {
       if (!Array.isArray(entry) || !Array.isArray(entry[1])) return entry;
@@ -409,14 +409,14 @@ function fidoSetup(): void {
 }
 
 function verticalSetup(): void {
-  ember.composeLocalMap("icomplete-vertical-mode-minibuffer-map");
+  gnista.composeLocalMap("icomplete-vertical-mode-minibuffer-map");
   setLocal("icomplete-hide-common-prefix", false);
   setLocal("icomplete-prospects-height", 25);
 }
 
 // Emacs adds fido's setup to minibuffer-setup-hook after icomplete's, so
 // it runs first, and icomplete's keymap goes in front of fido's.
-ember.addHook("minibuffer-setup-hook", () => {
+gnista.addHook("minibuffer-setup-hook", () => {
   if (!on("icomplete-mode") || !simpleCompleting()) return;
   if (on("fido-mode")) fidoSetup();
   icompleteSetup();
@@ -429,7 +429,7 @@ ember.addHook("minibuffer-setup-hook", () => {
 function step(forward: boolean): boolean {
   // As Emacs's completion-all-sorted-completions: the kept completions, or
   // freshly sorted ones without what icomplete's display leaves out.
-  const sorted = ember.completionAllSortedCompletions();
+  const sorted = gnista.completionAllSortedCompletions();
   if (sorted === undefined) return false;
   const comps = [...sorted.completions];
   const scroll = on("icomplete-scroll");
@@ -453,21 +453,21 @@ function step(forward: boolean): boolean {
     comps.unshift(comps.pop()!);
     stepped = true;
   }
-  ember.cacheAllSortedCompletions(comps);
+  gnista.cacheAllSortedCompletions(comps);
   return stepped;
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "icomplete-forward-completions",
   doc: "Step forward through the completions icomplete shows: the second becomes the first, which C-j takes.",
   run: () => void step(true),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "icomplete-backward-completions",
   doc: "Step back through the completions icomplete shows: the last becomes the first, which C-j takes.",
   run: () => void step(false),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "icomplete-vertical-goto-first",
   doc: "Go to the first of the completions, in a list that scrolls (icomplete-scroll).",
   run: () => {
@@ -475,7 +475,7 @@ ember.defineCommand({
     while (step(false));
   },
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "icomplete-vertical-goto-last",
   doc: "Go to the last of the completions, in a list that scrolls (icomplete-scroll).",
   run: () => {
@@ -483,27 +483,27 @@ ember.defineCommand({
     while (step(true));
   },
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "icomplete-force-complete",
   doc: "Complete the input to the first of the completions icomplete shows.",
-  run: () => ember.call("minibuffer-force-complete"),
+  run: () => gnista.call("minibuffer-force-complete"),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "icomplete-force-complete-and-exit",
   doc:
     "Complete the input to the first of the completions icomplete shows, and finish it.\n\n" +
     "With nothing typed, and the completions not listed, finish with the default instead.",
   run: () => {
-    const info = ember.minibufferInfo();
+    const info = gnista.minibufferInfo();
     const field = fieldString();
     const force = field !== initialInput ||
       (info?.default == null && on("icomplete-show-matches-on-no-input")) ||
       (info?.kept ?? 0) > 0;
-    ember.call(force ? "minibuffer-force-complete-and-exit" : "minibuffer-complete-and-exit");
+    gnista.call(force ? "minibuffer-force-complete-and-exit" : "minibuffer-complete-and-exit");
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "icomplete-fido-ret",
   doc: "Finish the input with the first completion, or for a directory, go into it, as ido-mode does.",
   run: () => {
@@ -512,64 +512,64 @@ ember.defineCommand({
     const field = fieldString();
     const dir = category() === "file" ? field.slice(0, field.lastIndexOf("/") + 1) : undefined;
     const probe = dir !== undefined && current !== undefined ? dir + current.replace(/\/$/, "") : undefined;
-    if (probe !== undefined && current !== "./" && ember.fileDirectoryP(probe)) {
-      ember.callInteractively("icomplete-force-complete");
+    if (probe !== undefined && current !== "./" && gnista.fileDirectoryP(probe)) {
+      gnista.callInteractively("icomplete-force-complete");
     } else {
-      ember.callInteractively("icomplete-force-complete-and-exit");
+      gnista.callInteractively("icomplete-force-complete-and-exit");
     }
   },
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "icomplete-fido-exit",
   doc:
     "Finish the input as it is typed, not as it would complete.\n\n" +
     "Where the answer must be a completion, complete it first, unless given a prefix argument.",
   run: () => {
-    const force = ember.prefixArg() !== null;
-    ember.call(!force && ember.minibufferInfo()?.requireMatch ? "minibuffer-complete-and-exit" : "exit-minibuffer");
+    const force = gnista.prefixArg() !== null;
+    gnista.call(!force && gnista.minibufferInfo()?.requireMatch ? "minibuffer-complete-and-exit" : "exit-minibuffer");
   },
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "icomplete-fido-backward-updir",
   doc: "Delete the character before point, or after a directory's slash, go up to the directory above, as ido-mode does.",
   run: () => {
-    const start = ember.minibufferPromptEnd();
-    const point = ember.point();
-    if (point > start && ember.bufferText(point - 1, point) === "/" && category() === "file") {
+    const start = gnista.minibufferPromptEnd();
+    const point = gnista.point();
+    if (point > start && gnista.bufferText(point - 1, point) === "/" && category() === "file") {
       if (fieldString() === "~/") {
-        ember.deleteRegion(start, ember.pointMax());
-        ember.insert(ember.expandFileName("~/").replace(/\/?$/, "/"));
+        gnista.deleteRegion(start, gnista.pointMax());
+        gnista.insert(gnista.expandFileName("~/").replace(/\/?$/, "/"));
       }
       const field = fieldString();
-      const slash = field.lastIndexOf("/", ember.point() - start - 2);
-      if (slash >= 0) ember.deleteRegion(start + slash + 1, ember.pointMax());
+      const slash = field.lastIndexOf("/", gnista.point() - start - 2);
+      if (slash >= 0) gnista.deleteRegion(start + slash + 1, gnista.pointMax());
     } else {
-      ember.callInteractively("delete-backward-char");
+      gnista.callInteractively("delete-backward-char");
     }
   },
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "icomplete-fido-delete-char",
   doc: "Delete the character after point, or at the end of a file name, open Dired on its directory, as ido-mode does.",
   run: () => {
     const field = fieldString();
-    if (ember.point() - ember.minibufferPromptEnd() < field.length || category() !== "file") {
-      ember.callInteractively("delete-char");
+    if (gnista.point() - gnista.minibufferPromptEnd() < field.length || category() !== "file") {
+      gnista.callInteractively("delete-char");
       return;
     }
-    ember.call("dired", field.slice(0, field.lastIndexOf("/") + 1));
-    ember.call("exit-minibuffer");
+    gnista.call("dired", field.slice(0, field.lastIndexOf("/") + 1));
+    gnista.call("exit-minibuffer");
   },
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "icomplete-fido-kill",
   doc: "Kill the rest of the line, as C-k does, if point is not at the end of the input.",
   run: () => {
-    if (ember.point() - ember.minibufferPromptEnd() < fieldString().length) {
-      ember.callInteractively("kill-line");
+    if (gnista.point() - gnista.minibufferPromptEnd() < fieldString().length) {
+      gnista.callInteractively("kill-line");
       return;
     }
-    throw new Error("Killing the selected completion needs a minibuffer inside the minibuffer, which Ember does not have yet");
+    throw new Error("Killing the selected completion needs a minibuffer inside the minibuffer, which Gnista does not have yet");
   },
 });
 
@@ -579,7 +579,7 @@ for (const [keys, command] of [
   ["C-.", "icomplete-forward-completions"],
   ["C-,", "icomplete-backward-completions"],
 ] as const) {
-  ember.bindKey(keys, command, "icomplete-minibuffer-map");
+  gnista.bindKey(keys, command, "icomplete-minibuffer-map");
 }
 for (const [keys, command] of [
   ["C-k", "icomplete-fido-kill"],
@@ -594,7 +594,7 @@ for (const [keys, command] of [
   ["C-.", "icomplete-forward-completions"],
   ["C-,", "icomplete-backward-completions"],
 ] as const) {
-  ember.bindKey(keys, command, "icomplete-fido-mode-map");
+  gnista.bindKey(keys, command, "icomplete-fido-mode-map");
 }
 for (const [keys, command] of [
   ["C-n", "icomplete-forward-completions"],
@@ -604,16 +604,16 @@ for (const [keys, command] of [
   ["M-<", "icomplete-vertical-goto-first"],
   ["M->", "icomplete-vertical-goto-last"],
 ] as const) {
-  ember.bindKey(keys, command, "icomplete-vertical-mode-minibuffer-map");
+  gnista.bindKey(keys, command, "icomplete-vertical-mode-minibuffer-map");
 }
 
 // The modes. They are global; what they do happens as each prompt opens.
 
-const setMode = (name: ember.CommandName, enable: boolean): void => {
-  if (on(name) !== enable) ember.callWithPrefix(enable ? 1 : 0, name);
+const setMode = (name: gnista.CommandName, enable: boolean): void => {
+  if (on(name) !== enable) gnista.callWithPrefix(enable ? 1 : 0, name);
 };
 
-ember.defineMinorMode({
+gnista.defineMinorMode({
   name: "icomplete-mode",
   global: true,
   doc:
@@ -625,11 +625,11 @@ ember.defineMinorMode({
   onChange: (enabled) => {
     if (enabled && on("fido-mode")) {
       setMode("fido-mode", false);
-      ember.setVariable("icomplete-mode", true);
+      gnista.setVariable("icomplete-mode", true);
     }
   },
 });
-ember.defineMinorMode({
+gnista.defineMinorMode({
   name: "fido-mode",
   global: true,
   doc:
@@ -640,27 +640,27 @@ ember.defineMinorMode({
   onChange: (enabled) => {
     if (enabled) {
       setMode("icomplete-mode", false);
-      ember.setVariable("icomplete-mode", true);
+      gnista.setVariable("icomplete-mode", true);
     } else {
-      ember.setVariable("icomplete-mode", false);
+      gnista.setVariable("icomplete-mode", false);
     }
   },
 });
-ember.defineMinorMode({
+gnista.defineMinorMode({
   name: "icomplete-vertical-mode",
   global: true,
   doc:
     "List completions down the minibuffer, in icomplete-mode or fido-mode, turning icomplete-mode on if neither is.\n\n" +
     "As many show as max-mini-window-height allows. C-n and C-p, or <down> and <up>, move through them.",
   onChange: (enabled) => {
-    ember.removeHook("icomplete-minibuffer-setup-hook", verticalSetup);
+    gnista.removeHook("icomplete-minibuffer-setup-hook", verticalSetup);
     if (enabled) {
       if (!on("icomplete-mode")) setMode("icomplete-mode", true);
-      ember.addHook("icomplete-minibuffer-setup-hook", verticalSetup);
+      gnista.addHook("icomplete-minibuffer-setup-hook", verticalSetup);
     }
   },
 });
-ember.defineMinorMode({
+gnista.defineMinorMode({
   name: "fido-vertical-mode",
   global: true,
   doc:
@@ -675,5 +675,5 @@ ember.defineMinorMode({
   },
 });
 
-// Ember lists completions by default, where Emacs does not.
-ember.callWithPrefix(1, "icomplete-mode");
+// Gnista lists completions by default, where Emacs does not.
+gnista.callWithPrefix(1, "icomplete-mode");

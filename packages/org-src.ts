@@ -4,7 +4,7 @@
 // the block as it was.
 //
 // Copyright (C) 2004-2025 Free Software Foundation, Inc.
-// Ported to Ember in 2026.
+// Ported to Gnista in 2026.
 //
 // This program is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -13,7 +13,7 @@
 
 import { PerBuffer } from "subr";
 
-const defvar = (name: string, value: ember.Value, doc: string) => ember.defineVariable({ name, value, doc });
+const defvar = (name: string, value: gnista.Value, doc: string) => gnista.defineVariable({ name, value, doc });
 defvar("org-src-lang-modes", [
   ["C", "c"], ["C++", "c++"], ["cpp", "c++"], ["elisp", "emacs-lisp"], ["shell", "sh"], ["bash", "sh"], ["sh", "sh"],
   ["calc", "fundamental"], ["dot", "fundamental"], ["sqlite", "sql"], ["toml", "conf-toml"],
@@ -25,13 +25,13 @@ defvar("org-edit-src-persistent-message", true, "Whether the block's buffer says
 
 /** What a block's buffer edits: where in which buffer, and how its text goes back. */
 interface Edit {
-  beg: ember.Marker;
-  end: ember.Marker;
+  beg: gnista.Marker;
+  end: gnista.Marker;
   source: string;
   blockIndentation: number;
   contentIndentation: number;
   preserve: boolean;
-  windows?: ember.WindowConfiguration;
+  windows?: gnista.WindowConfiguration;
 }
 
 const edits = new PerBuffer<Edit>();
@@ -41,14 +41,14 @@ const END = /^[ \t]*#\+end_(src|example)[ \t]*$/i;
 
 /** The block point is in: its begin and end lines, its kind and language, as org-element-at-point finds them. */
 function blockAt(): { begin: number; end: number; kind: string; lang?: string; indent: number; switches: string } | undefined {
-  const line = ember.lineOf(ember.point());
+  const line = gnista.lineOf(gnista.point());
   for (let l = line; l >= 0; l--) {
-    const text = ember.lineText(l);
+    const text = gnista.lineText(l);
     if (l < line && END.test(text)) return undefined;
     const m = BEGIN.exec(text);
     if (!m) continue;
-    for (let e = l + 1; e < ember.lineCount(); e++) {
-      const close = END.exec(ember.lineText(e));
+    for (let e = l + 1; e < gnista.lineCount(); e++) {
+      const close = END.exec(gnista.lineText(e));
       if (!close) continue;
       if (close[1].toLowerCase() !== m[2].toLowerCase() || e < line) return undefined;
       return { begin: l, end: e, kind: m[2].toLowerCase(), lang: m[3], indent: m[1].replace(/\t/g, "        ").length, switches: m[4] ?? "" };
@@ -60,8 +60,8 @@ function blockAt(): { begin: number; end: number; kind: string; lang?: string; i
 
 /** The major mode for a language, as org-src-get-lang-mode: its entry in org-src-lang-modes, or itself, with -mode. */
 function langMode(lang: string): string {
-  const alist = ember.variable("org-src-lang-modes");
-  const entry = Array.isArray(alist) ? (alist.find((e) => Array.isArray(e) && e[0] === lang) as ember.Value[] | undefined) : undefined;
+  const alist = gnista.variable("org-src-lang-modes");
+  const entry = Array.isArray(alist) ? (alist.find((e) => Array.isArray(e) && e[0] === lang) as gnista.Value[] | undefined) : undefined;
   return `${entry ? String(entry[1]) : lang}-mode`;
 }
 
@@ -87,16 +87,16 @@ function removeIndentation(text: string, n: number): string {
 
 /** Shows a block's buffer, or the Org buffer again, as org-src-switch-to-buffer does for org-src-window-setup. */
 function switchTo(buffer: string, context: "edit" | "exit"): void {
-  const setup = String(ember.variable("org-src-window-setup") ?? "reorganize-frame");
-  if (setup === "current-window") ember.call("switch-to-buffer", buffer);
-  else if (setup === "other-window") ember.call("switch-to-buffer-other-window", buffer);
+  const setup = String(gnista.variable("org-src-window-setup") ?? "reorganize-frame");
+  if (setup === "current-window") gnista.call("switch-to-buffer", buffer);
+  else if (setup === "other-window") gnista.call("switch-to-buffer-other-window", buffer);
   else if (setup === "split-window-below" || setup === "split-window-right") {
-    if (context === "edit") ember.selectWindow(ember.splitWindow(undefined, setup === "split-window-below" ? "below" : "right"));
-    ember.call("switch-to-buffer", buffer);
+    if (context === "edit") gnista.selectWindow(gnista.splitWindow(undefined, setup === "split-window-below" ? "below" : "right"));
+    gnista.call("switch-to-buffer", buffer);
   } else if (context === "edit") {
-    if (ember.windowList().length === 1) ember.splitWindow(undefined, "below");
-    ember.call("switch-to-buffer-other-window", buffer);
-  } else ember.call("switch-to-buffer", buffer);
+    if (gnista.windowList().length === 1) gnista.splitWindow(undefined, "below");
+    gnista.call("switch-to-buffer-other-window", buffer);
+  } else gnista.call("switch-to-buffer", buffer);
 }
 
 type Block = NonNullable<ReturnType<typeof blockAt>>;
@@ -109,39 +109,39 @@ type Block = NonNullable<ReturnType<typeof blockAt>>;
 function openEdit(block: Block): { name: string; edit: Edit } {
   const lang = block.kind === "src" ? block.lang ?? "" : "example";
   const mode = block.kind === "src" ? langMode(lang) : undefined;
-  if (mode !== undefined && !ember.commandNames().includes(mode)) ember.signal("error", `No such language mode: ${mode}`);
-  const begPos = ember.lineStart(block.begin + 1);
-  const endPos = ember.lineStart(block.end);
-  const source = ember.bufferName();
+  if (mode !== undefined && !gnista.commandNames().includes(mode)) gnista.signal("error", `No such language mode: ${mode}`);
+  const begPos = gnista.lineStart(block.begin + 1);
+  const endPos = gnista.lineStart(block.end);
+  const source = gnista.bufferName();
   // Where point is, by line and column within the block, as org-src--coordinates.
-  const point = ember.point();
+  const point = gnista.point();
   const from = Math.max(point, begPos);
-  const coords: [number, number] | "end" = point >= endPos ? "end" : [ember.lineOf(from) - (block.begin + 1), from - ember.lineStart(ember.lineOf(from))];
-  const preserve = ember.variable("org-src-preserve-indentation") === true || /(^|\s)-i(\s|$)/.test(block.switches);
-  let text = ember.bufferSubstringNoProperties(begPos, endPos);
+  const coords: [number, number] | "end" = point >= endPos ? "end" : [gnista.lineOf(from) - (block.begin + 1), from - gnista.lineStart(gnista.lineOf(from))];
+  const preserve = gnista.variable("org-src-preserve-indentation") === true || /(^|\s)-i(\s|$)/.test(block.switches);
+  let text = gnista.bufferSubstringNoProperties(begPos, endPos);
   const removed = preserve ? 0 : commonIndentation(text);
   text = removeIndentation(text, removed);
   const edit: Edit = {
-    beg: ember.makeMarker(begPos),
-    end: ember.makeMarker(endPos, { advances: true }),
+    beg: gnista.makeMarker(begPos),
+    end: gnista.makeMarker(endPos, { advances: true }),
     source,
     blockIndentation: block.indent,
-    contentIndentation: Number(ember.variable("org-edit-src-content-indentation") ?? 2),
+    contentIndentation: Number(gnista.variable("org-edit-src-content-indentation") ?? 2),
     preserve,
   };
   const name = `*Org Src ${source}[ ${lang} ]*`;
-  ember.getBufferCreate(name);
-  ember.withCurrentBuffer(name, () => {
-    ember.deleteRegion(0, ember.bufferSize());
-    ember.insert(text);
-    if (mode !== undefined) ember.call(mode as ember.CommandName);
-    edits.set(ember.currentBuffer(), edit);
-    ember.callWithPrefix(1, orgSrcMode);
-    ember.setBufferModified(false);
-    if (coords === "end") ember.gotoChar(Math.max(ember.bufferSize() - 1, 0));
+  gnista.getBufferCreate(name);
+  gnista.withCurrentBuffer(name, () => {
+    gnista.deleteRegion(0, gnista.bufferSize());
+    gnista.insert(text);
+    if (mode !== undefined) gnista.call(mode as gnista.CommandName);
+    edits.set(gnista.currentBuffer(), edit);
+    gnista.callWithPrefix(1, orgSrcMode);
+    gnista.setBufferModified(false);
+    if (coords === "end") gnista.gotoChar(Math.max(gnista.bufferSize() - 1, 0));
     else {
-      const line = Math.min(coords[0], ember.lineCount() - 1);
-      ember.gotoChar(Math.min(ember.lineStart(line) + Math.max(coords[1] - removed, 0), ember.lineEnd(line)));
+      const line = Math.min(coords[0], gnista.lineCount() - 1);
+      gnista.gotoChar(Math.min(gnista.lineStart(line) + Math.max(coords[1] - removed, 0), gnista.lineEnd(line)));
     }
   });
   return { name, edit };
@@ -150,19 +150,19 @@ function openEdit(block: Block): { name: string; edit: Edit } {
 /** Edits the block at point in its language's mode, as org-edit-src-code. */
 function editSrcCode(): void {
   const block = blockAt();
-  if (!block) ember.userError("Not in a source or example block");
-  const source = ember.bufferName();
-  const begPos = ember.lineStart(block.begin + 1);
+  if (!block) gnista.userError("Not in a source or example block");
+  const source = gnista.bufferName();
+  const begPos = gnista.lineStart(block.begin + 1);
   // An edit of this block already under way is gone back to, as org-src--edit-buffer finds it.
-  const existing = ember.bufferList().find((b) => {
-    const e = ember.getBuffer(b) && edits.get(b);
-    return e !== undefined && ember.markerBuffer(e.beg) === source && ember.markerPosition(e.beg) === begPos;
+  const existing = gnista.bufferList().find((b) => {
+    const e = gnista.getBuffer(b) && edits.get(b);
+    return e !== undefined && gnista.markerBuffer(e.beg) === source && gnista.markerPosition(e.beg) === begPos;
   });
   if (existing !== undefined) {
     switchTo(existing, "edit");
     return;
   }
-  const windows = ember.currentWindowConfiguration();
+  const windows = gnista.currentWindowConfiguration();
   const { name, edit } = openEdit(block);
   edit.windows = windows;
   switchTo(name, "edit");
@@ -170,7 +170,7 @@ function editSrcCode(): void {
 
 /** The block's buffer's text as it goes back: each non-blank line indented by the block's and its content's indentation. */
 function contentsForWriteBack(edit: Edit): string {
-  const text = ember.bufferSubstringNoProperties(0, ember.bufferSize());
+  const text = gnista.bufferSubstringNoProperties(0, gnista.bufferSize());
   const offset = edit.preserve ? 0 : edit.blockIndentation + edit.contentIndentation;
   const body = offset > 0 ? text.split("\n").map((l) => (l === "" ? l : " ".repeat(offset) + l)).join("\n") : text;
   return body === "" || body.endsWith("\n") ? body : `${body}\n`;
@@ -178,47 +178,47 @@ function contentsForWriteBack(edit: Edit): string {
 
 /** Puts the block's buffer's text back in place of the block's, if it changed. */
 function writeBack(edit: Edit, text: string): void {
-  ember.withCurrentBuffer(edit.source, () => {
-    const beg = ember.markerPosition(edit.beg) ?? 0;
-    const end = ember.markerPosition(edit.end) ?? beg;
-    if (ember.bufferSubstringNoProperties(beg, end) === text) return;
-    ember.saveExcursion(() => {
-      ember.gotoChar(beg);
-      ember.deleteRegion(beg, end);
-      ember.insert(text);
+  gnista.withCurrentBuffer(edit.source, () => {
+    const beg = gnista.markerPosition(edit.beg) ?? 0;
+    const end = gnista.markerPosition(edit.end) ?? beg;
+    if (gnista.bufferSubstringNoProperties(beg, end) === text) return;
+    gnista.saveExcursion(() => {
+      gnista.gotoChar(beg);
+      gnista.deleteRegion(beg, end);
+      gnista.insert(text);
     });
   });
 }
 
 /** Leaves the block's buffer for the Org buffer, writing its text back unless `abort`, as org-edit-src-exit. */
 function exit(abort: boolean): void {
-  const edit = edits.get(ember.currentBuffer());
-  if (!edit) ember.signal("error", "Not in a sub-editing buffer");
-  const lineInEdit = ember.lineOf(ember.point());
-  const colInEdit = ember.point() - ember.lineStart(lineInEdit);
+  const edit = edits.get(gnista.currentBuffer());
+  if (!edit) gnista.signal("error", "Not in a sub-editing buffer");
+  const lineInEdit = gnista.lineOf(gnista.point());
+  const colInEdit = gnista.point() - gnista.lineStart(lineInEdit);
   const text = contentsForWriteBack(edit);
-  const name = ember.bufferName();
-  if (!ember.bufferList().includes(edit.source)) ember.signal("error", "Source buffer disappeared.  Aborting");
+  const name = gnista.bufferName();
+  if (!gnista.bufferList().includes(edit.source)) gnista.signal("error", "Source buffer disappeared.  Aborting");
   if (!abort) writeBack(edit, text);
-  ember.setBufferModified(false);
-  edits.delete(ember.currentBuffer());
-  if (edit.windows) ember.setWindowConfiguration(edit.windows);
+  gnista.setBufferModified(false);
+  edits.delete(gnista.currentBuffer());
+  if (edit.windows) gnista.setWindowConfiguration(edit.windows);
   switchTo(edit.source, "exit");
-  ember.call("kill-buffer", name);
+  gnista.call("kill-buffer", name);
   returnPoint(edit, abort ? undefined : [lineInEdit, colInEdit]);
 }
 
 /** Puts point back in the Org buffer where it was in the block's buffer, as org-src--goto-coordinates, and frees the edit's markers. */
 function returnPoint(edit: Edit, at: [number, number] | undefined): void {
-  const beg = ember.markerPosition(edit.beg) ?? 0;
-  if (at === undefined) ember.gotoChar(beg);
+  const beg = gnista.markerPosition(edit.beg) ?? 0;
+  if (at === undefined) gnista.gotoChar(beg);
   else {
-    const line = ember.lineOf(beg) + at[0];
+    const line = gnista.lineOf(beg) + at[0];
     const offset = edit.preserve ? 0 : edit.blockIndentation + edit.contentIndentation;
-    ember.gotoChar(Math.min(ember.lineStart(line) + at[1] + offset, ember.lineEnd(line)));
+    gnista.gotoChar(Math.min(gnista.lineStart(line) + at[1] + offset, gnista.lineEnd(line)));
   }
-  ember.deleteMarker(edit.beg);
-  ember.deleteMarker(edit.end);
+  gnista.deleteMarker(edit.beg);
+  gnista.deleteMarker(edit.end);
 }
 
 /**
@@ -227,127 +227,127 @@ function returnPoint(edit: Edit, at: [number, number] | undefined): void {
  * org-src-window-setup switch-invisibly: how TAB indents a source block's
  * line with org-src-tab-acts-natively.
  */
-ember.defun("org-babel-do-key-sequence-in-edit-buffer", (command: ember.Value) => {
+gnista.defun("org-babel-do-key-sequence-in-edit-buffer", (command: gnista.Value) => {
   const block = blockAt();
   if (!block || block.kind !== "src") return;
-  const outside = ember.lineBeginningPosition() <= ember.lineStart(block.begin) ? ember.makeMarker(ember.point()) : undefined;
+  const outside = gnista.lineBeginningPosition() <= gnista.lineStart(block.begin) ? gnista.makeMarker(gnista.point()) : undefined;
   let opened: { name: string; edit: Edit };
   try {
     opened = openEdit(block);
   } catch {
-    if (outside) ember.deleteMarker(outside);
+    if (outside) gnista.deleteMarker(outside);
     return;
   }
   const { name, edit } = opened;
   let at: [number, number] = [0, 0];
   let text = "";
-  ember.withCurrentBuffer(name, () => {
+  gnista.withCurrentBuffer(name, () => {
     try {
-      ember.call(String(command) as ember.CommandName);
+      gnista.call(String(command) as gnista.CommandName);
     } finally {
-      const line = ember.lineOf(ember.point());
-      at = [line, ember.point() - ember.lineStart(line)];
+      const line = gnista.lineOf(gnista.point());
+      at = [line, gnista.point() - gnista.lineStart(line)];
       text = contentsForWriteBack(edit);
-      edits.delete(ember.currentBuffer());
-      ember.setBufferModified(false);
+      edits.delete(gnista.currentBuffer());
+      gnista.setBufferModified(false);
     }
   });
   writeBack(edit, text);
-  ember.call("kill-buffer", name);
+  gnista.call("kill-buffer", name);
   returnPoint(edit, at);
   if (outside) {
-    ember.gotoChar(ember.markerPosition(outside) ?? ember.point());
-    ember.deleteMarker(outside);
+    gnista.gotoChar(gnista.markerPosition(outside) ?? gnista.point());
+    gnista.deleteMarker(outside);
   }
 });
 
-const exitCommand = ember.defineCommand({
+const exitCommand = gnista.defineCommand({
   name: "org-edit-src-exit",
   doc: "Put the block's text back in the Org buffer, and go back there.",
   run: () => exit(false),
 });
-const abortCommand = ember.defineCommand({
+const abortCommand = gnista.defineCommand({
   name: "org-edit-src-abort",
   doc: "Go back to the Org buffer, leaving the block as it was.",
   run: () => exit(true),
 });
-const saveCommand = ember.defineCommand({
+const saveCommand = gnista.defineCommand({
   name: "org-edit-src-save",
   doc: "Put the block's text back in the Org buffer and save that, staying here.",
   run: () => {
-    const edit = edits.get(ember.currentBuffer());
-    if (!edit) ember.userError("Not in a sub-editing buffer");
+    const edit = edits.get(gnista.currentBuffer());
+    if (!edit) gnista.userError("Not in a sub-editing buffer");
     writeBack(edit, contentsForWriteBack(edit));
-    ember.setBufferModified(false);
-    ember.withCurrentBuffer(edit.source, () => ember.call("save-buffer"));
+    gnista.setBufferModified(false);
+    gnista.withCurrentBuffer(edit.source, () => gnista.call("save-buffer"));
   },
 });
 
-const orgSrcMode = ember.defineMinorMode({
+const orgSrcMode = gnista.defineMinorMode({
   name: "org-src-mode",
   lighter: " OrgSrc",
   doc: "On in a buffer editing an Org block's text: C-c ' puts it back, C-c C-k leaves the block as it was, C-x C-s saves.",
   bindings: { "C-c '": exitCommand, "C-c C-k": abortCommand, "C-x C-s": saveCommand },
   onChange: (enabled) => {
-    if (enabled && ember.variable("org-edit-src-persistent-message") === true) {
-      ember.makeLocalVariable("header-line-format");
-      ember.setVariable("header-line-format", "Edit, then exit with ‘C-c '’ or abort with ‘C-c C-k’");
+    if (enabled && gnista.variable("org-edit-src-persistent-message") === true) {
+      gnista.makeLocalVariable("header-line-format");
+      gnista.setVariable("header-line-format", "Edit, then exit with ‘C-c '’ or abort with ‘C-c C-k’");
     }
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-edit-src-code",
   doc: "Edit the source or example block at point in a buffer of its own, in its language's mode. C-c ' there puts it back.",
   run: () => editSrcCode(),
 });
 
-const editSpecial = ember.defineCommand({
+const editSpecial = gnista.defineCommand({
   name: "org-edit-special",
   doc: "Edit the element at point in a buffer of its own: a source or example block in its language's mode.",
   run: () => {
     if (blockAt()) editSrcCode();
-    else ember.userError("No special environment to edit here");
+    else gnista.userError("No special environment to edit here");
   },
 });
 
-ember.defineKey("org-mode-map", "C-c '", editSpecial);
+gnista.defineKey("org-mode-map", "C-c '", editSpecial);
 
 /**
  * Fontifies a source block's text from start to end as its language's mode
  * does, as org-src-font-lock-fontify-block: in a buffer of its own, whose
  * faces are copied back. False if there is no mode for the language.
  */
-ember.defun("org-src-font-lock-fontify-block", (lang: ember.Value, start: ember.Value, end: ember.Value) => {
+gnista.defun("org-src-font-lock-fontify-block", (lang: gnista.Value, start: gnista.Value, end: gnista.Value) => {
   const mode = langMode(String(lang));
-  if (!ember.commandNames().includes(mode)) return false;
+  if (!gnista.commandNames().includes(mode)) return false;
   const from = Number(start);
-  const text = ember.bufferSubstringNoProperties(from, Number(end));
+  const text = gnista.bufferSubstringNoProperties(from, Number(end));
   const name = ` *org-src-fontification:${mode}*`;
-  const fresh = ember.getBuffer(name) === undefined;
-  ember.getBufferCreate(name);
-  const runs: [number, number, ember.Value][] = [];
-  ember.withCurrentBuffer(name, () => {
-    if (fresh) ember.bufferDisableUndo();
-    ember.deleteRegion(0, ember.bufferSize());
-    ember.insert(`${text} `);
-    if (ember.variable("org-src--fontification-mode") !== mode) {
-      ember.call(mode as ember.CommandName);
-      ember.makeLocalVariable("org-src--fontification-mode");
-      ember.setVariable("org-src--fontification-mode", mode);
+  const fresh = gnista.getBuffer(name) === undefined;
+  gnista.getBufferCreate(name);
+  const runs: [number, number, gnista.Value][] = [];
+  gnista.withCurrentBuffer(name, () => {
+    if (fresh) gnista.bufferDisableUndo();
+    gnista.deleteRegion(0, gnista.bufferSize());
+    gnista.insert(`${text} `);
+    if (gnista.variable("org-src--fontification-mode") !== mode) {
+      gnista.call(mode as gnista.CommandName);
+      gnista.makeLocalVariable("org-src--fontification-mode");
+      gnista.setVariable("org-src--fontification-mode", mode);
     }
-    ember.call("font-lock-ensure");
-    const size = ember.bufferSize() - 1;
+    gnista.call("font-lock-ensure");
+    const size = gnista.bufferSize() - 1;
     // A tree-sitter mode's faces come from its syntax tree, not properties, until asked for.
-    if (ember.treesitLanguage() !== undefined) ember.treesitFontLockFontifyRegion(0, size);
+    if (gnista.treesitLanguage() !== undefined) gnista.treesitFontLockFontifyRegion(0, size);
     for (let p = 0; p < size; ) {
-      const next = Math.min(ember.nextSinglePropertyChange(p, "face", size) ?? size, size);
-      const face = ember.getTextProperty(p, "face");
+      const next = Math.min(gnista.nextSinglePropertyChange(p, "face", size) ?? size, size);
+      const face = gnista.getTextProperty(p, "face");
       if (face !== undefined && face !== null && face !== false) runs.push([p, next, face]);
       p = next;
     }
-    ember.setBufferModified(false);
+    gnista.setBufferModified(false);
   });
-  for (const [a, b, face] of runs) ember.putTextProperty(from + a, from + b, "face", face);
+  for (const [a, b, face] of runs) gnista.putTextProperty(from + a, from + b, "face", face);
   return true;
 });

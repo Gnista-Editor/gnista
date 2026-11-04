@@ -1,4 +1,4 @@
-;;; record.el --- Record how Emacs shows bidirectional text, for Ember's oracle  -*- lexical-binding: t -*-
+;;; record.el --- Record how Emacs shows bidirectional text, for Gnista's oracle  -*- lexical-binding: t -*-
 
 ;; Batch Emacs has no window, so it neither reorders text for display nor
 ;; answers `bidi-resolved-levels' or `move-point-visually'.  This runs in
@@ -22,7 +22,7 @@
 ;; - `overridden': `bidi-find-overridden-directionality' over the whole
 ;;   text, with the base directions nil and `right-to-left'.
 ;;
-;; EMBER_ORACLE_DIR, if set, is read and written instead of this file's
+;; GNISTA_ORACLE_DIR, if set, is read and written instead of this file's
 ;; directory.
 
 (require 'json)
@@ -32,7 +32,7 @@
       ring-bell-function #'ignore)
 
 (defvar bo-dir (file-name-as-directory
-                (or (getenv "EMBER_ORACLE_DIR")
+                (or (getenv "GNISTA_ORACLE_DIR")
                     (file-name-directory (or load-file-name buffer-file-name)))))
 (defvar bo-cases (append (json-read-file (expand-file-name "cases.json" bo-dir)) nil))
 (defvar bo-results nil)

@@ -1,10 +1,10 @@
-# 0015. Ember as an MCP server
+# 0015. Gnista as an MCP server
 
 Status: accepted · 2026-10-28
 
 ## Context
 
-[ADR 0002](0002-start-simple.md) has the AI start as tool calls to commands, and Ember's commands were built for it: each has named, typed parameters, and `Editor::call` takes arguments directly instead of reading them in the minibuffer. The Model Context Protocol is how agents such as Claude Code use tools, so serving Ember's commands over MCP gives an agent in the loop without API keys or provider code in Ember.
+[ADR 0002](0002-start-simple.md) has the AI start as tool calls to commands, and Gnista's commands were built for it: each has named, typed parameters, and `Editor::call` takes arguments directly instead of reading them in the minibuffer. The Model Context Protocol is how agents such as Claude Code use tools, so serving Gnista's commands over MCP gives an agent in the loop without API keys or provider code in Gnista.
 
 ## Options considered
 
@@ -14,28 +14,28 @@ Status: accepted · 2026-10-28
 
 ## Decision
 
-`crates/ember-mcp` serves Ember over MCP's stdio transport, with general tools (option 2):
+`crates/gnista-mcp` serves Gnista over MCP's stdio transport, with general tools (option 2):
 
 - `list_commands`, `describe_command` and `call_command` over the command registry. `call_command` takes the arguments a command would read in the minibuffer, keys in Emacs notation for key parameters, and a prefix argument.
 - `press_keys` and `type_text` type as a user would; a prompt left open is reported, so the agent can answer it.
 - `read_buffer`, `screen` and `list_buffers` read buffers and what the windows show.
-- `eval_typescript` runs code with the same `ember` API as `init.ts`.
+- `eval_typescript` runs code with the same `gnista` API as `init.ts`.
 
 Each call is one undo step, as any call from outside the command loop is. Failures are tool results marked as errors, with where point is, so the agent can recover.
 
-The GUI listens on a Unix domain socket, `gui.sock` in a directory under the temporary directory that only the user can open (or `$EMBER_SOCKET`), and `ember-mcp` passes messages to it when it is there, so the agent works in the editor the user sees (option 3, the second). The editor is not shared between threads: a connection hands each message to the GUI's thread, which answers between frames. Without a running GUI, or with `--headless`, `ember-mcp` runs an editor of its own.
+The GUI listens on a Unix domain socket, `gui.sock` in a directory under the temporary directory that only the user can open (or `$GNISTA_SOCKET`), and `gnista-mcp` passes messages to it when it is there, so the agent works in the editor the user sees (option 3, the second). The editor is not shared between threads: a connection hands each message to the GUI's thread, which answers between frames. Without a running GUI, or with `--headless`, `gnista-mcp` runs an editor of its own.
 
 To use it from Claude Code:
 
 ```bash
-cargo build --release -p ember-mcp
-claude mcp add ember -- /path/to/editor/target/release/ember-mcp
+cargo build --release -p gnista-mcp
+claude mcp add gnista -- /path/to/editor/target/release/gnista-mcp
 ```
 
 ## Consequences
 
-An agent can do anything a user can, through the same commands, and what it does shows in the user's window and undoes like their own edits. Confirming actions with side effects is left to the agent's client for now: Claude Code asks before each tool call that is not marked read-only. Nothing networked is added: the socket is local, in the binary crates, and `ember-core` is unchanged. Next come an agent buffer inside Ember and commands that ask for confirmation themselves.
+An agent can do anything a user can, through the same commands, and what it does shows in the user's window and undoes like their own edits. Confirming actions with side effects is left to the agent's client for now: Claude Code asks before each tool call that is not marked read-only. Nothing networked is added: the socket is local, in the binary crates, and `gnista-core` is unchanged. Next come an agent buffer inside Gnista and commands that ask for confirmation themselves.
 
 ## Dependencies introduced
 
-None: `serde_json` was already used by `ember-script`.
+None: `serde_json` was already used by `gnista-script`.

@@ -5,12 +5,12 @@
 // org-roam-capture adds to one, and org-roam-buffer-toggle shows the
 // backlinks of the node at point beside it.
 //
-// Org-roam keeps its nodes and links in an SQLite database; Ember keeps them
+// Org-roam keeps its nodes and links in an SQLite database; Gnista keeps them
 // in org-roam-db-location as JSON, reading again only the files changed
 // since, which org-roam-db-autosync-mode keeps up to date as files are saved.
 //
 // Copyright © 2020-2025 Jethro Kuan <jethrokuan95@gmail.com>
-// Ported to Ember in 2026.
+// Ported to Gnista in 2026.
 //
 // This program is free software; you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -21,32 +21,32 @@ import { insertHeading, insertRoot, insertSection, magitSectionMode, currentSect
 import { orgIdGoto, orgIdUuid } from "org-id";
 import { PerBuffer, truthy } from "subr";
 
-ember.defineVariable({ name: "org-roam-directory", doc: "The directory of Org-roam's notes, searched recursively.", value: "~/org-roam/" });
-ember.defineVariable({
+gnista.defineVariable({ name: "org-roam-directory", doc: "The directory of Org-roam's notes, searched recursively.", value: "~/org-roam/" });
+gnista.defineVariable({
   name: "org-roam-db-location",
-  doc: "The file Org-roam keeps its index of nodes and links in, as JSON in Ember.",
+  doc: "The file Org-roam keeps its index of nodes and links in, as JSON in Gnista.",
   // Nil, kept only in memory, without a user-emacs-directory, as in tests.
   value: (() => {
-    const dir = ember.variable("user-emacs-directory");
-    return typeof dir === "string" ? ember.expandFileName("org-roam.json", dir) : null;
+    const dir = gnista.variable("user-emacs-directory");
+    return typeof dir === "string" ? gnista.expandFileName("org-roam.json", dir) : null;
   })(),
 });
-ember.defineVariable({ name: "org-roam-file-extensions", doc: "The extensions of the files that are notes.", value: ["org"] });
-ember.defineVariable({ name: "org-roam-file-exclude-regexp", doc: "A regexp of the files, relative to org-roam-directory, that are not notes.", value: ["data/"] });
-ember.defineVariable({ name: "org-roam-node-display-template", doc: 'How a node shows when reading one: ${title}, ${tags:10}, ${file}, ${olp} and the rest, each with a width or * for the rest.', value: "${title}" });
-ember.defineVariable({ name: "org-roam-db-update-on-save", doc: "Whether saving a note updates the index.", value: true });
-ember.defineVariable({
+gnista.defineVariable({ name: "org-roam-file-extensions", doc: "The extensions of the files that are notes.", value: ["org"] });
+gnista.defineVariable({ name: "org-roam-file-exclude-regexp", doc: "A regexp of the files, relative to org-roam-directory, that are not notes.", value: ["data/"] });
+gnista.defineVariable({ name: "org-roam-node-display-template", doc: 'How a node shows when reading one: ${title}, ${tags:10}, ${file}, ${olp} and the rest, each with a width or * for the rest.', value: "${title}" });
+gnista.defineVariable({ name: "org-roam-db-update-on-save", doc: "Whether saving a note updates the index.", value: true });
+gnista.defineVariable({
   name: "org-roam-capture-templates",
   doc: 'Templates for new notes: [key, description, type, template, target], the target ["file+head", file, head] as org-roam-capture-templates\' :target.',
   value: [["d", "default", "plain", "%?", ["file+head", "%<%Y%m%d%H%M%S>-${slug}.org", "#+title: ${title}\n"]]],
 });
-ember.defineHook("org-roam-capture-new-node-hook", "Functions called in the capture buffer of a new node.");
-ember.defineHook("org-roam-find-file-hook", "Functions called in a note's buffer when it is visited.");
+gnista.defineHook("org-roam-capture-new-node-hook", "Functions called in the capture buffer of a new node.");
+gnista.defineHook("org-roam-find-file-hook", "Functions called in a note's buffer when it is visited.");
 
-ember.defineFace({ name: "org-roam-title", doc: "Face for Org-roam titles.", attributes: { weight: "bold" } });
-ember.defineFace({ name: "org-roam-olp", doc: "Face for the outline paths of nodes in the Org-roam buffer.", attributes: { inherit: "shadow" } });
-ember.defineFace({ name: "org-roam-header-line", doc: "Face for the header line of the Org-roam buffer.", attributes: { extend: true, inherit: "magit-section-heading" } });
-ember.defineFace({ name: "org-roam-preview-region", doc: "Face for the preview region in the Org-roam buffer.", attributes: { inherit: "bold" } });
+gnista.defineFace({ name: "org-roam-title", doc: "Face for Org-roam titles.", attributes: { weight: "bold" } });
+gnista.defineFace({ name: "org-roam-olp", doc: "Face for the outline paths of nodes in the Org-roam buffer.", attributes: { inherit: "shadow" } });
+gnista.defineFace({ name: "org-roam-header-line", doc: "Face for the header line of the Org-roam buffer.", attributes: { extend: true, inherit: "magit-section-heading" } });
+gnista.defineFace({ name: "org-roam-preview-region", doc: "Face for the preview region in the Org-roam buffer.", attributes: { inherit: "bold" } });
 
 /** A node: a file or a heading with an ID, as org-roam-node. */
 export interface Node {
@@ -82,23 +82,23 @@ let db: { version: 1; files: { [file: string]: FileEntry } } | undefined;
 let nodesById = new Map<string, Node>();
 let backlinks = new Map<string, Link[]>();
 
-const directory = (): string => ember.fileNameAsDirectory(ember.expandFileName(String(ember.variable("org-roam-directory") ?? "~/org-roam/")));
+const directory = (): string => gnista.fileNameAsDirectory(gnista.expandFileName(String(gnista.variable("org-roam-directory") ?? "~/org-roam/")));
 
 /** Whether FILE is a note: under the directory, with an extension of org-roam-file-extensions, not excluded, as org-roam-file-p. */
 export function orgRoamFileP(file: string | undefined): boolean {
   if (!file) return false;
-  const full = ember.expandFileName(file);
+  const full = gnista.expandFileName(file);
   const dir = directory();
   if (!full.startsWith(dir)) return false;
-  const exts = ember.variable("org-roam-file-extensions");
+  const exts = gnista.variable("org-roam-file-extensions");
   const ext = full.replace(/.*\./, "");
   if (Array.isArray(exts) && !exts.includes(ext)) return false;
   const base = full.replace(/.*\//, "");
   if (base.startsWith(".#") || base.endsWith("~") || base.startsWith("#")) return false;
   const rel = full.slice(dir.length);
-  const exclude = ember.variable("org-roam-file-exclude-regexp");
+  const exclude = gnista.variable("org-roam-file-exclude-regexp");
   for (const r of Array.isArray(exclude) ? exclude : typeof exclude === "string" ? [exclude] : []) {
-    if (ember.stringMatch(String(r), rel) !== undefined) return false;
+    if (gnista.stringMatch(String(r), rel) !== undefined) return false;
   }
   return true;
 }
@@ -236,9 +236,9 @@ function indexAll(): void {
 
 function loadDb(): void {
   if (db) return;
-  const file = ember.variable("org-roam-db-location");
+  const file = gnista.variable("org-roam-db-location");
   try {
-    db = typeof file === "string" && ember.fileExists(file) ? JSON.parse(ember.readTextFile(file)) : undefined;
+    db = typeof file === "string" && gnista.fileExists(file) ? JSON.parse(gnista.readTextFile(file)) : undefined;
   } catch {
     db = undefined;
   }
@@ -247,18 +247,18 @@ function loadDb(): void {
 }
 
 function saveDb(): void {
-  const file = ember.variable("org-roam-db-location");
+  const file = gnista.variable("org-roam-db-location");
   if (typeof file !== "string") return;
   const dir = file.replace(/[^/]*$/, "");
-  if (dir && !ember.fileExists(dir)) ember.makeDirectory(dir, { parents: true });
-  ember.writeTextFile(file, JSON.stringify(db));
+  if (dir && !gnista.fileExists(dir)) gnista.makeDirectory(dir, { parents: true });
+  gnista.writeTextFile(file, JSON.stringify(db));
 }
 
 /** The notes under the directory, recursively, as org-roam-list-files. */
 function listFiles(): string[] {
   const dir = directory();
-  if (!ember.fileExists(dir)) return [];
-  const r = ember.callProcess(["find", dir, "-type", "f"]);
+  if (!gnista.fileExists(dir)) return [];
+  const r = gnista.callProcess(["find", dir, "-type", "f"]);
   // Hidden files and directories under the directory are left out, as org-roam-list-files does.
   return r.output.split("\n").filter((f) => f !== "" && !f.slice(dir.length).split("/").some((part) => part.startsWith(".")) && orgRoamFileP(f));
 }
@@ -266,10 +266,10 @@ function listFiles(): string[] {
 /** Indexes FILE from TEXT, or from disk, as org-roam-db-update-file. */
 function updateFile(file: string, text?: string, mtime?: number): void {
   loadDb();
-  const full = ember.expandFileName(file);
-  const body = text ?? ember.readTextFile(full);
+  const full = gnista.expandFileName(file);
+  const body = text ?? gnista.readTextFile(full);
   const { nodes, links } = parseNote(full, body);
-  db!.files[full] = { mtime: mtime ?? ember.fileAttributes(full)?.modified ?? Date.now(), nodes, links };
+  db!.files[full] = { mtime: mtime ?? gnista.fileAttributes(full)?.modified ?? Date.now(), nodes, links };
 }
 
 /** Brings the index up to date with the notes on disk, reading only those changed, as org-roam-db-sync; FORCE reads them all. */
@@ -285,7 +285,7 @@ export function orgRoamDbSync(force = false): void {
     }
   }
   for (const f of files) {
-    const mtime = ember.fileAttributes(f)?.modified ?? 0;
+    const mtime = gnista.fileAttributes(f)?.modified ?? 0;
     if (force || db!.files[f]?.mtime !== mtime) {
       updateFile(f, undefined, mtime);
       changed = true;
@@ -295,45 +295,45 @@ export function orgRoamDbSync(force = false): void {
   if (changed) saveDb();
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-roam-db-sync",
   doc: "Bring the index of nodes and links up to date with the notes; with a prefix argument, read every note again.",
   params: [{ name: "force", kind: "prefix" }],
-  run: (force: ember.Value) => {
+  run: (force: gnista.Value) => {
     orgRoamDbSync(truthy(force));
-    ember.message(`Org-roam: ${nodesById.size} nodes`);
+    gnista.message(`Org-roam: ${nodesById.size} nodes`);
   },
 });
-ember.defalias("org-roam-db-build-cache", "org-roam-db-sync");
+gnista.defalias("org-roam-db-build-cache", "org-roam-db-sync");
 
 /** Indexes a note as it is saved, as org-roam-db-autosync--setup-update-on-save-h. */
 function onSave(): void {
-  if (!truthy(ember.variable("org-roam-db-update-on-save"))) return;
-  const file = ember.bufferFileName();
+  if (!truthy(gnista.variable("org-roam-db-update-on-save"))) return;
+  const file = gnista.bufferFileName();
   if (!orgRoamFileP(file)) return;
-  updateFile(file!, ember.bufferSubstringNoProperties(ember.pointMin(), ember.pointMax()));
+  updateFile(file!, gnista.bufferSubstringNoProperties(gnista.pointMin(), gnista.pointMax()));
   indexAll();
   saveDb();
   refreshRoamBuffer(true);
 }
 
-ember.defineMinorMode({
+gnista.defineMinorMode({
   name: "org-roam-db-autosync-mode",
   global: true,
   doc: "Keep the index up to date: bring it up to date now, and index each note as it is saved.",
   onChange: (enabled) => {
     if (enabled) {
       orgRoamDbSync();
-      ember.addHook("after-save-hook", onSave);
-      ember.addHook("post-command-hook", followPoint);
+      gnista.addHook("after-save-hook", onSave);
+      gnista.addHook("post-command-hook", followPoint);
     } else {
-      ember.removeHook("after-save-hook", onSave);
-      ember.removeHook("post-command-hook", followPoint);
+      gnista.removeHook("after-save-hook", onSave);
+      gnista.removeHook("post-command-hook", followPoint);
     }
   },
 });
-ember.defun("org-roam-setup", () => ember.call("org-roam-db-autosync-mode" as ember.CommandName));
-ember.defineCommand({ name: "org-roam-db-autosync-enable", doc: "Turn org-roam-db-autosync-mode on.", run: () => ember.call("org-roam-db-autosync-mode" as ember.CommandName) });
+gnista.defun("org-roam-setup", () => gnista.call("org-roam-db-autosync-mode" as gnista.CommandName));
+gnista.defineCommand({ name: "org-roam-db-autosync-enable", doc: "Turn org-roam-db-autosync-mode on.", run: () => gnista.call("org-roam-db-autosync-mode" as gnista.CommandName) });
 
 /** Every node, the index brought up to date first if it never was. */
 export function allNodes(): Node[] {
@@ -345,11 +345,11 @@ export const nodeFromId = (id: string): Node | undefined => (allNodes(), nodesBy
 
 /** The node at point: the innermost heading with an ID, or the file's, as org-roam-node-at-point. */
 export function nodeAtPoint(): Node | undefined {
-  const file = ember.bufferFileName();
+  const file = gnista.bufferFileName();
   if (!file) return undefined;
-  const text = ember.bufferSubstringNoProperties(ember.pointMin(), ember.pointMax());
-  const { nodes } = parseNote(ember.expandFileName(file), text);
-  const line = ember.lineOf(ember.point());
+  const text = gnista.bufferSubstringNoProperties(gnista.pointMin(), gnista.pointMax());
+  const { nodes } = parseNote(gnista.expandFileName(file), text);
+  const line = gnista.lineOf(gnista.point());
   let best: Node | undefined;
   for (const n of nodes) {
     if (n.level === 0) best ??= n;
@@ -375,7 +375,7 @@ export function nodeAtPoint(): Node | undefined {
 
 /** A node as the display template shows it, as org-roam-node--format-entry. */
 function formatNode(n: Node, title = n.title, width = 80): string {
-  const template = String(ember.variable("org-roam-node-display-template") ?? "${title}");
+  const template = String(gnista.variable("org-roam-node-display-template") ?? "${title}");
   const field = (name: string): string => {
     switch (name) {
       case "title":
@@ -424,10 +424,10 @@ export function nodeCandidates(filter?: (n: Node) => boolean): Map<string, Node>
 
 /** Reads a node, as org-roam-node-read, which a package such as consult-org-roam advises to read its own way. */
 export function readNode(prompt = "Node: ", initial?: string, filter?: (n: Node) => boolean): Node | string {
-  return ember.funcall("org-roam-node-read", initial ?? null, filter ?? null, prompt) as Node | string;
+  return gnista.funcall("org-roam-node-read", initial ?? null, filter ?? null, prompt) as Node | string;
 }
 
-ember.defun("org-roam-node-read", (initial: string | null, filter: ((n: Node) => boolean) | null, prompt?: string) =>
+gnista.defun("org-roam-node-read", (initial: string | null, filter: ((n: Node) => boolean) | null, prompt?: string) =>
   readNodeDefault(prompt ?? "Node: ", initial ?? undefined, filter ?? undefined),
 );
 
@@ -435,17 +435,17 @@ ember.defun("org-roam-node-read", (initial: string | null, filter: ((n: Node) =>
 function readNodeDefault(prompt = "Node: ", initial?: string, filter?: (n: Node) => boolean): Node | string {
   const byCandidate = nodeCandidates(filter);
   const candidates = [...byCandidate.keys()];
-  const answer = ember.completingRead(prompt, candidates, { initial, category: "org-roam-node", history: "org-roam-node-history" });
+  const answer = gnista.completingRead(prompt, candidates, { initial, category: "org-roam-node", history: "org-roam-node-history" });
   return byCandidate.get(answer) ?? answer.trim();
 }
-ember.defineVariable({ name: "org-roam-node-history", doc: "Nodes read before.", value: [] });
+gnista.defineVariable({ name: "org-roam-node-history", doc: "Nodes read before.", value: [] });
 
 /** Visits a node: its file, at its heading, as org-roam-node-visit. */
 export function visitNode(n: Node, otherWindow = false): void {
-  ember.call(otherWindow ? "find-file-other-window" : "find-file", n.file);
-  if (n.level === 0) ember.gotoChar(0);
+  gnista.call(otherWindow ? "find-file-other-window" : "find-file", n.file);
+  if (n.level === 0) gnista.gotoChar(0);
   else orgIdGoto(n.id);
-  ember.runHooks("org-roam-find-file-hook");
+  gnista.runHooks("org-roam-find-file-hook");
 }
 
 // Capturing, after org-roam-capture.el.
@@ -499,13 +499,13 @@ function expand(template: string, vars: { [k: string]: string }): { text: string
 const captures = new PerBuffer<{ node: { id: string; title: string }; file: string; fresh: boolean; then?: (node: { id: string; title: string }) => void; window: number }>();
 
 /** Chooses a capture template, by its key if there are several, as org-capture-select-template. */
-function chooseTemplate(): ember.Value[] {
-  const templates = ember.variable("org-roam-capture-templates");
-  const list = Array.isArray(templates) ? (templates as ember.Value[][]) : [];
-  if (list.length === 0) ember.userError("No capture templates");
+function chooseTemplate(): gnista.Value[] {
+  const templates = gnista.variable("org-roam-capture-templates");
+  const list = Array.isArray(templates) ? (templates as gnista.Value[][]) : [];
+  if (list.length === 0) gnista.userError("No capture templates");
   if (list.length === 1) return list[0];
-  const label = (t: ember.Value[]) => `${String(t[0])} ${String(t[1])}`;
-  const key = ember.completingRead("Template: ", list.map(label), { requireMatch: true });
+  const label = (t: gnista.Value[]) => `${String(t[0])} ${String(t[1])}`;
+  const key = gnista.completingRead("Template: ", list.map(label), { requireMatch: true });
   return list.find((t) => label(t) === key)!;
 }
 
@@ -515,32 +515,32 @@ function chooseTemplate(): ember.Value[] {
  * aborts; THEN is called with the node once finished, as org-roam-capture-.
  */
 export function capture(target: Node | string, then?: (node: { id: string; title: string }) => void): void {
-  const window = ember.selectedWindow();
+  const window = gnista.selectedWindow();
   const template = chooseTemplate();
   const body = String(template[3] ?? "%?");
   const targetSpec = Array.isArray(template[4]) ? (template[4] as string[]) : undefined;
   if (typeof target !== "string") {
     // An existing node: the template goes at the end of its entry.
-    ember.call("find-file", target.file);
-    if (target.level === 0) ember.gotoChar(ember.pointMax());
+    gnista.call("find-file", target.file);
+    if (target.level === 0) gnista.gotoChar(gnista.pointMax());
     else {
       orgIdGoto(target.id);
       const level = target.level;
-      let l = ember.lineOf(ember.point()) + 1;
-      for (; l < ember.lineCount(); l++) {
-        const h = /^(\*+)\s/.exec(ember.lineText(l));
+      let l = gnista.lineOf(gnista.point()) + 1;
+      for (; l < gnista.lineCount(); l++) {
+        const h = /^(\*+)\s/.exec(gnista.lineText(l));
         if (h && h[1].length <= level) break;
       }
-      ember.gotoChar(l < ember.lineCount() ? ember.lineStart(l) : ember.pointMax());
+      gnista.gotoChar(l < gnista.lineCount() ? gnista.lineStart(l) : gnista.pointMax());
     }
     const { text, point } = expand(body, { title: target.title, slug: slug(target.title), id: target.id });
-    const start = ember.point();
-    if (start > 0 && ember.charAfter(start - 1) !== "\n") ember.insert("\n");
-    const at = ember.point();
-    ember.insert(text);
-    ember.gotoChar(at + (point ?? [...text].length));
-    captures.set(ember.currentBuffer(), { node: target, file: target.file, fresh: false, then, window });
-    ember.callWithPrefix(1, captureMode);
+    const start = gnista.point();
+    if (start > 0 && gnista.charAfter(start - 1) !== "\n") gnista.insert("\n");
+    const at = gnista.point();
+    gnista.insert(text);
+    gnista.gotoChar(at + (point ?? [...text].length));
+    captures.set(gnista.currentBuffer(), { node: target, file: target.file, fresh: false, then, window });
+    gnista.callWithPrefix(1, captureMode);
     return;
   }
   const title = target;
@@ -548,77 +548,77 @@ export function capture(target: Node | string, then?: (node: { id: string; title
   const vars = { title, slug: slug(title), id };
   const spec = targetSpec ?? ["file+head", "%<%Y%m%d%H%M%S>-${slug}.org", "#+title: ${title}\n"];
   const fileName = expand(String(spec[1]), vars).text;
-  const file = ember.expandFileName(fileName, directory());
+  const file = gnista.expandFileName(fileName, directory());
   const head = spec[0] === "file+head" ? expand(String(spec[2] ?? ""), vars).text : "";
-  if (!ember.fileExists(directory())) ember.makeDirectory(directory(), { parents: true });
-  ember.call("find-file", file);
-  const fresh = ember.bufferSize() === 0;
+  if (!gnista.fileExists(directory())) gnista.makeDirectory(directory(), { parents: true });
+  gnista.call("find-file", file);
+  const fresh = gnista.bufferSize() === 0;
   const prefix = fresh ? `:PROPERTIES:\n:ID:       ${id}\n:END:\n${head}` : "";
-  ember.gotoChar(ember.pointMax());
-  ember.insert(prefix);
+  gnista.gotoChar(gnista.pointMax());
+  gnista.insert(prefix);
   const { text, point } = expand(body, vars);
-  const at = ember.point();
-  ember.insert(text);
-  ember.gotoChar(at + (point ?? [...text].length));
-  captures.set(ember.currentBuffer(), { node: { id, title }, file, fresh, then, window });
-  ember.callWithPrefix(1, captureMode);
-  ember.runHooks("org-roam-capture-new-node-hook");
+  const at = gnista.point();
+  gnista.insert(text);
+  gnista.gotoChar(at + (point ?? [...text].length));
+  captures.set(gnista.currentBuffer(), { node: { id, title }, file, fresh, then, window });
+  gnista.callWithPrefix(1, captureMode);
+  gnista.runHooks("org-roam-capture-new-node-hook");
 }
 
 // Org's own C-c C-c and C-c C-k finish and abort org-roam's captures too, as
 // org-roam captures through org-capture; other captures are left to Org.
-ember.adviceAdd("org-capture-finalize", "before-until", () => {
-  const c = captures.get(ember.currentBuffer());
+gnista.adviceAdd("org-capture-finalize", "before-until", () => {
+  const c = captures.get(gnista.currentBuffer());
   if (!c) return undefined;
-  ember.call("save-buffer");
-  const buffer = ember.bufferName();
-  ember.callWithPrefix(-1, captureMode);
-  captures.delete(ember.currentBuffer());
-  ember.call("bury-buffer");
-  if (ember.windowList().includes(c.window)) ember.selectWindow(c.window);
-  if (c.fresh) ember.call("kill-buffer", buffer);
+  gnista.call("save-buffer");
+  const buffer = gnista.bufferName();
+  gnista.callWithPrefix(-1, captureMode);
+  captures.delete(gnista.currentBuffer());
+  gnista.call("bury-buffer");
+  if (gnista.windowList().includes(c.window)) gnista.selectWindow(c.window);
+  if (c.fresh) gnista.call("kill-buffer", buffer);
   c.then?.(c.node);
   return true;
 });
 
-ember.adviceAdd("org-capture-kill", "before-until", () => {
-  const c = captures.get(ember.currentBuffer());
+gnista.adviceAdd("org-capture-kill", "before-until", () => {
+  const c = captures.get(gnista.currentBuffer());
   if (!c) return undefined;
-  captures.delete(ember.currentBuffer());
-  ember.setBufferModified(false);
-  const buffer = ember.bufferName();
+  captures.delete(gnista.currentBuffer());
+  gnista.setBufferModified(false);
+  const buffer = gnista.bufferName();
   if (c.fresh) {
-    ember.call("kill-buffer", buffer);
-    if (ember.fileExists(c.file)) ember.deleteFile(c.file);
+    gnista.call("kill-buffer", buffer);
+    if (gnista.fileExists(c.file)) gnista.deleteFile(c.file);
   } else {
-    ember.call("revert-buffer");
+    gnista.call("revert-buffer");
   }
-  if (ember.windowList().includes(c.window)) ember.selectWindow(c.window);
-  ember.message("Capture aborted");
+  if (gnista.windowList().includes(c.window)) gnista.selectWindow(c.window);
+  gnista.message("Capture aborted");
   return true;
 });
 
-const captureMode = ember.defineMinorMode({
+const captureMode = gnista.defineMinorMode({
   name: "org-roam-capture-mode",
   lighter: " Cap",
   doc: "In a capture buffer: C-c C-c finishes, C-c C-k aborts.",
   bindings: { "C-c C-c": "org-capture-finalize", "C-c C-k": "org-capture-kill" },
   onChange: (enabled) => {
-    ember.makeLocalVariable("header-line-format");
-    ember.setVariable("header-line-format", enabled ? "Capture buffer.  Finish ‘C-c C-c’, abort ‘C-c C-k’." : null);
+    gnista.makeLocalVariable("header-line-format");
+    gnista.setVariable("header-line-format", enabled ? "Capture buffer.  Finish ‘C-c C-c’, abort ‘C-c C-k’." : null);
   },
 });
 
 // The commands.
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-roam-node-find",
   doc: "Visit a node chosen by its title, or make a note of the title typed, as org-roam-node-find. With a prefix argument, in another window.",
   params: [{ name: "other", kind: "prefix" }],
-  run: (other: ember.Value) => {
+  run: (other: gnista.Value) => {
     const chosen = readNode("Node: ");
     if (typeof chosen === "string") {
-      if (chosen === "") ember.userError("No title given");
+      if (chosen === "") gnista.userError("No title given");
       capture(chosen);
     } else visitNode(chosen, truthy(other));
   },
@@ -626,51 +626,51 @@ ember.defineCommand({
 
 /** Inserts a link to NODE, with DESCRIPTION, as org-roam-node-insert does. */
 function insertLink(node: { id: string; title: string }, description?: string): void {
-  ember.insert(`[[id:${node.id}][${description || node.title}]]`);
+  gnista.insert(`[[id:${node.id}][${description || node.title}]]`);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-roam-node-insert",
   doc: "Insert a link to a node chosen by its title, or to a new note of the title typed; an active region is the link's text and the title to look for.",
   run: () => {
-    const buffer = ember.currentBuffer();
+    const buffer = gnista.currentBuffer();
     let region: [number, number] | undefined;
-    const mark = ember.mark();
-    if (ember.regionActive() && mark !== undefined) region = [Math.min(mark, ember.point()), Math.max(mark, ember.point())];
-    const regionText = region ? ember.bufferSubstringNoProperties(region[0], region[1]) : undefined;
-    const marker = ember.makeMarker(region ? region[0] : ember.point());
+    const mark = gnista.mark();
+    if (gnista.regionActive() && mark !== undefined) region = [Math.min(mark, gnista.point()), Math.max(mark, gnista.point())];
+    const regionText = region ? gnista.bufferSubstringNoProperties(region[0], region[1]) : undefined;
+    const marker = gnista.makeMarker(region ? region[0] : gnista.point());
     const chosen = readNode("Node: ", regionText);
     const put = (node: { id: string; title: string }) => {
-      ember.withCurrentBuffer(buffer, () => {
-        if (region) ember.deleteRegion(region[0], region[1]);
-        ember.gotoChar(ember.markerPosition(marker) ?? ember.point());
+      gnista.withCurrentBuffer(buffer, () => {
+        if (region) gnista.deleteRegion(region[0], region[1]);
+        gnista.gotoChar(gnista.markerPosition(marker) ?? gnista.point());
         insertLink(node, regionText);
-        ember.deleteMarker(marker);
+        gnista.deleteMarker(marker);
       });
     };
     if (typeof chosen === "string") {
-      if (chosen === "") ember.userError("No title given");
+      if (chosen === "") gnista.userError("No title given");
       capture(chosen, put);
     } else put(chosen);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-roam-capture",
   doc: "Add to a node chosen by its title, or make a note of the title typed, from a capture template.",
   run: () => {
     const chosen = readNode("Node: ");
-    if (chosen === "") ember.userError("No title given");
+    if (chosen === "") gnista.userError("No title given");
     capture(chosen);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-roam-node-random",
   doc: "Visit a node chosen at random.",
   run: () => {
     const all = allNodes();
-    if (all.length === 0) ember.userError("No nodes");
+    if (all.length === 0) gnista.userError("No nodes");
     visitNode(all[Math.floor(Math.random() * all.length)]);
   },
 });
@@ -678,68 +678,68 @@ ember.defineCommand({
 /** Changes a list property of the node at point, as org-roam-property-add and -remove do for tags, aliases and refs. */
 function editListProperty(property: "ROAM_ALIASES" | "ROAM_REFS", add: boolean): void {
   const node = nodeAtPoint();
-  if (!node) ember.userError("No node at point");
+  if (!node) gnista.userError("No node at point");
   const current = property === "ROAM_ALIASES" ? node.aliases : node.refs;
-  const value = add ? ember.readString(property === "ROAM_ALIASES" ? "Alias: " : "Ref: ") : ember.completingRead("Remove: ", current, { requireMatch: true });
+  const value = add ? gnista.readString(property === "ROAM_ALIASES" ? "Alias: " : "Ref: ") : gnista.completingRead("Remove: ", current, { requireMatch: true });
   const next = add ? [...current, value] : current.filter((v) => v !== value);
   const quoted = next.map((v) => (/\s/.test(v) ? `"${v.replace(/"/g, '\\"')}"` : v)).join(" ");
-  ember.saveExcursion(() => {
+  gnista.saveExcursion(() => {
     orgIdGoto(node.id);
     if (node.level === 0) setFileProperty(property, quoted);
-    else ember.call("org-set-property", property, quoted);
+    else gnista.call("org-set-property", property, quoted);
   });
 }
 
 /** Sets a property of the file's own drawer at the top, as org-roam-property-add does for a file node. */
 function setFileProperty(name: string, value: string): void {
-  for (let l = 1; l < ember.lineCount(); l++) {
-    const text = ember.lineText(l);
+  for (let l = 1; l < gnista.lineCount(); l++) {
+    const text = gnista.lineText(l);
     if (/^[ \t]*:END:/i.test(text)) {
-      ember.gotoChar(ember.lineStart(l));
-      ember.insert(`:${name}: ${value}\n`);
+      gnista.gotoChar(gnista.lineStart(l));
+      gnista.insert(`:${name}: ${value}\n`);
       return;
     }
     if (new RegExp(`^[ \\t]*:${name}:`, "i").test(text)) {
-      ember.deleteRegion(ember.lineStart(l), ember.lineEnd(l));
-      ember.gotoChar(ember.lineStart(l));
-      ember.insert(`:${name}: ${value}`);
+      gnista.deleteRegion(gnista.lineStart(l), gnista.lineEnd(l));
+      gnista.gotoChar(gnista.lineStart(l));
+      gnista.insert(`:${name}: ${value}`);
       return;
     }
   }
 }
 
-ember.defineCommand({ name: "org-roam-alias-add", doc: "Add an alias to the node at point.", run: () => editListProperty("ROAM_ALIASES", true) });
-ember.defineCommand({ name: "org-roam-alias-remove", doc: "Remove an alias of the node at point.", run: () => editListProperty("ROAM_ALIASES", false) });
-ember.defineCommand({ name: "org-roam-ref-add", doc: "Add a ref to the node at point.", run: () => editListProperty("ROAM_REFS", true) });
-ember.defineCommand({ name: "org-roam-ref-remove", doc: "Remove a ref of the node at point.", run: () => editListProperty("ROAM_REFS", false) });
+gnista.defineCommand({ name: "org-roam-alias-add", doc: "Add an alias to the node at point.", run: () => editListProperty("ROAM_ALIASES", true) });
+gnista.defineCommand({ name: "org-roam-alias-remove", doc: "Remove an alias of the node at point.", run: () => editListProperty("ROAM_ALIASES", false) });
+gnista.defineCommand({ name: "org-roam-ref-add", doc: "Add a ref to the node at point.", run: () => editListProperty("ROAM_REFS", true) });
+gnista.defineCommand({ name: "org-roam-ref-remove", doc: "Remove a ref of the node at point.", run: () => editListProperty("ROAM_REFS", false) });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-roam-tag-add",
   doc: "Add tags to the node at point: the file's #+filetags, or the heading's tags.",
   run: () => {
     const node = nodeAtPoint();
-    if (!node) ember.userError("No node at point");
+    if (!node) gnista.userError("No node at point");
     const known = [...new Set(allNodes().flatMap((n) => n.tags))];
-    const tag = ember.completingRead("Tag: ", known);
+    const tag = gnista.completingRead("Tag: ", known);
     if (tag === "") return;
-    ember.saveExcursion(() => {
+    gnista.saveExcursion(() => {
       if (node.level === 0) {
         let line = -1;
-        for (let l = 0; l < ember.lineCount(); l++) if (/^#\+filetags:/i.test(ember.lineText(l))) line = l;
+        for (let l = 0; l < gnista.lineCount(); l++) if (/^#\+filetags:/i.test(gnista.lineText(l))) line = l;
         if (line >= 0) {
-          const old = tagsOf(ember.lineText(line).replace(/^#\+filetags:\s*/i, ""));
-          ember.deleteRegion(ember.lineStart(line), ember.lineEnd(line));
-          ember.gotoChar(ember.lineStart(line));
-          ember.insert(`#+filetags: :${[...old, tag].join(":")}:`);
+          const old = tagsOf(gnista.lineText(line).replace(/^#\+filetags:\s*/i, ""));
+          gnista.deleteRegion(gnista.lineStart(line), gnista.lineEnd(line));
+          gnista.gotoChar(gnista.lineStart(line));
+          gnista.insert(`#+filetags: :${[...old, tag].join(":")}:`);
         } else {
           let l = 0;
-          while (l < ember.lineCount() && /^(?:#\+|:)/.test(ember.lineText(l))) l++;
-          ember.gotoChar(ember.lineStart(Math.min(l, ember.lineCount() - 1)));
-          ember.insert(`#+filetags: :${tag}:\n`);
+          while (l < gnista.lineCount() && /^(?:#\+|:)/.test(gnista.lineText(l))) l++;
+          gnista.gotoChar(gnista.lineStart(Math.min(l, gnista.lineCount() - 1)));
+          gnista.insert(`#+filetags: :${tag}:\n`);
         }
       } else {
         orgIdGoto(node.id);
-        ember.call("org-set-tags" as ember.CommandName, [...node.tags.filter((t) => !node.tags.includes(t) || true), tag].join(":"));
+        gnista.call("org-set-tags" as gnista.CommandName, [...node.tags.filter((t) => !node.tags.includes(t) || true), tag].join(":"));
       }
     });
   },
@@ -753,9 +753,9 @@ let shownNode: Node | undefined;
 
 /** The paragraph a link is in, for the preview, as org-roam-preview-default-function finds it. */
 function preview(file: string, line: number): string {
-  const lines = (ember.bufferList().some((b) => ember.withCurrentBuffer(b, () => ember.bufferFileName()) === file)
-    ? ember.withCurrentBuffer(ember.bufferList().find((b) => ember.withCurrentBuffer(b, () => ember.bufferFileName()) === file)!, () => ember.bufferSubstringNoProperties(ember.pointMin(), ember.pointMax()))
-    : ember.readTextFile(file)
+  const lines = (gnista.bufferList().some((b) => gnista.withCurrentBuffer(b, () => gnista.bufferFileName()) === file)
+    ? gnista.withCurrentBuffer(gnista.bufferList().find((b) => gnista.withCurrentBuffer(b, () => gnista.bufferFileName()) === file)!, () => gnista.bufferSubstringNoProperties(gnista.pointMin(), gnista.pointMax()))
+    : gnista.readTextFile(file)
   ).split("\n");
   let a = line;
   let b = line;
@@ -766,26 +766,26 @@ function preview(file: string, line: number): string {
 
 /** Draws the Org-roam buffer for NODE: its title and backlinks, each with its preview, as org-roam-buffer-render-contents. */
 function render(node: Node): void {
-  ember.letBind({ "inhibit-read-only": true }, () => {
-    ember.makeLocalVariable("header-line-format");
-    ember.setVariable("header-line-format", ember.propertize(node.title, { face: "org-roam-header-line" }));
+  gnista.letBind({ "inhibit-read-only": true }, () => {
+    gnista.makeLocalVariable("header-line-format");
+    gnista.setVariable("header-line-format", gnista.propertize(node.title, { face: "org-roam-header-line" }));
     insertRoot("org-roam", () => {
       const links = (backlinks.get(node.id) ?? []).filter((l) => l.source !== node.id);
       if (links.length > 0) {
         insertSection("org-roam-backlinks", undefined, false, () => {
-          insertHeading(ember.propertize("Backlinks:", { face: "magit-section-heading" }), "\n");
+          insertHeading(gnista.propertize("Backlinks:", { face: "magit-section-heading" }), "\n");
           const sorted = [...links].sort((x, y) => (nodesById.get(x.source)?.title ?? "").localeCompare(nodesById.get(y.source)?.title ?? ""));
           for (const l of sorted) {
             const source = nodesById.get(l.source);
             if (!source) continue;
             insertSection("org-roam-node-section", source.id, false, () => {
-              insertHeading(ember.propertize(source.title, { face: "org-roam-title" }), " (", ember.propertize(l.outline.length > 0 ? l.outline.join(" > ") : "Top", { face: "org-roam-olp" }), ")", "\n");
+              insertHeading(gnista.propertize(source.title, { face: "org-roam-title" }), " (", gnista.propertize(l.outline.length > 0 ? l.outline.join(" > ") : "Top", { face: "org-roam-olp" }), ")", "\n");
               insertSection("org-roam-preview-section", { file: source.file, line: l.line }, false, () => {
-                ember.insert(`${preview(source.file, l.line)}\n\n`);
+                gnista.insert(`${preview(source.file, l.line)}\n\n`);
               });
             });
           }
-          ember.insert("\n");
+          gnista.insert("\n");
         });
       }
       const refs = node.refs;
@@ -793,107 +793,107 @@ function render(node: Node): void {
         const reflinks = refs.flatMap((r) => backlinks.get(r) ?? []);
         if (reflinks.length > 0) {
           insertSection("org-roam-reflinks", undefined, false, () => {
-            insertHeading(ember.propertize("Reflinks:", { face: "magit-section-heading" }), "\n");
+            insertHeading(gnista.propertize("Reflinks:", { face: "magit-section-heading" }), "\n");
             for (const l of reflinks) {
               const source = nodesById.get(l.source);
-              if (source) insertSection("org-roam-node-section", source.id, false, () => insertHeading(ember.propertize(source.title, { face: "org-roam-title" }), "\n"));
+              if (source) insertSection("org-roam-node-section", source.id, false, () => insertHeading(gnista.propertize(source.title, { face: "org-roam-title" }), "\n"));
             }
-            ember.insert("\n");
+            gnista.insert("\n");
           });
         }
       }
     });
-    ember.gotoChar(0);
+    gnista.gotoChar(0);
   });
 }
 
-const roamMode = ember.defineMajorMode({
+const roamMode = gnista.defineMajorMode({
   name: "org-roam-mode",
   modeName: "Org-roam",
   parent: magitSectionMode,
   doc: "The mode of the Org-roam buffer: the backlinks of a node, each with its text; RET visits one.",
 });
 
-const visitThing = ember.defineCommand({
+const visitThing = gnista.defineCommand({
   name: "org-roam-visit-thing",
   doc: "Visit the node, or the place of the preview, at point.",
   run: () => {
     const s = currentSection();
-    if (!s) ember.userError("Nothing to visit");
+    if (!s) gnista.userError("Nothing to visit");
     if (s.type === "org-roam-preview-section") {
       const { file, line } = s.value as { file: string; line: number };
-      ember.call("other-window");
-      ember.call("find-file", file);
-      ember.gotoChar(ember.lineStart(line));
+      gnista.call("other-window");
+      gnista.call("find-file", file);
+      gnista.gotoChar(gnista.lineStart(line));
       return;
     }
     const node = nodeFromId(String(s.value));
     if (node) {
-      ember.call("other-window");
+      gnista.call("other-window");
       visitNode(node);
     }
   },
 });
-ember.defineKey("org-roam-mode-map", "RET", visitThing);
-ember.defineKey("org-roam-mode-map", "<mouse-1>", visitThing);
+gnista.defineKey("org-roam-mode-map", "RET", visitThing);
+gnista.defineKey("org-roam-mode-map", "<mouse-1>", visitThing);
 
 /** Shows NODE in the Org-roam buffer. */
 function showInRoamBuffer(node: Node): void {
   shownNode = node;
-  ember.getBufferCreate(ROAM_BUFFER);
-  ember.withCurrentBuffer(ROAM_BUFFER, () => {
-    if (ember.variable("major-mode") !== "org-roam-mode") ember.call(roamMode);
+  gnista.getBufferCreate(ROAM_BUFFER);
+  gnista.withCurrentBuffer(ROAM_BUFFER, () => {
+    if (gnista.variable("major-mode") !== "org-roam-mode") gnista.call(roamMode);
     render(node);
   });
 }
 
 /** Shows the node at point in the Org-roam buffer, if it shows and the node changed, as org-roam-buffer--redisplay-h. */
 function refreshRoamBuffer(force = false): void {
-  if (!ember.windowList().some((w) => ember.windowBuffer(w) === ROAM_BUFFER)) return;
-  if (!orgRoamFileP(ember.bufferFileName())) return;
+  if (!gnista.windowList().some((w) => gnista.windowBuffer(w) === ROAM_BUFFER)) return;
+  if (!orgRoamFileP(gnista.bufferFileName())) return;
   const node = nodeAtPoint();
   if (node && (force || node.id !== shownNode?.id)) showInRoamBuffer(node);
 }
 const followPoint = () => refreshRoamBuffer(false);
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-roam-buffer-toggle",
   doc: "Show the backlinks of the node at point in a window beside it, or hide them.",
   run: () => {
-    const w = ember.windowList().find((x) => ember.windowBuffer(x) === ROAM_BUFFER);
+    const w = gnista.windowList().find((x) => gnista.windowBuffer(x) === ROAM_BUFFER);
     if (w !== undefined) {
-      ember.deleteWindow(w);
+      gnista.deleteWindow(w);
       return;
     }
     const node = nodeAtPoint();
-    if (!node) ember.userError("No node at point");
+    if (!node) gnista.userError("No node at point");
     allNodes();
     showInRoamBuffer(node);
-    const selected = ember.selectedWindow();
-    const side = ember.splitWindow(selected, "right", -Math.max(30, Math.trunc((ember.windowSize(selected)?.width ?? 80) / 3)));
-    ember.setWindowBuffer(side, ROAM_BUFFER);
-    ember.selectWindow(selected);
-    ember.addHook("post-command-hook", followPoint);
+    const selected = gnista.selectedWindow();
+    const side = gnista.splitWindow(selected, "right", -Math.max(30, Math.trunc((gnista.windowSize(selected)?.width ?? 80) / 3)));
+    gnista.setWindowBuffer(side, ROAM_BUFFER);
+    gnista.selectWindow(selected);
+    gnista.addHook("post-command-hook", followPoint);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-roam-buffer-display-dedicated",
   doc: "Show the backlinks of a node chosen, in a buffer of their own that does not follow point.",
   run: () => {
     const chosen = readNode("Node: ");
-    if (typeof chosen === "string") ember.userError("No such node");
+    if (typeof chosen === "string") gnista.userError("No such node");
     const name = `*org-roam: ${chosen.title}*`;
-    ember.getBufferCreate(name);
-    ember.withCurrentBuffer(name, () => {
-      ember.call(roamMode);
+    gnista.getBufferCreate(name);
+    gnista.withCurrentBuffer(name, () => {
+      gnista.call(roamMode);
       render(chosen);
     });
-    ember.call("display-buffer", name);
+    gnista.call("display-buffer", name);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-roam-graph",
   doc: "Draw the nodes and their links with Graphviz's dot, as an SVG, and show it.",
   run: () => {
@@ -903,11 +903,11 @@ ember.defineCommand({
     for (const n of all) lines.push(`  "${n.id}" [label="${esc(n.title)}"];`);
     for (const ls of backlinks.values()) for (const l of ls) if (nodesById.has(l.dest)) lines.push(`  "${l.source}" -> "${l.dest}";`);
     lines.push("}");
-    const dot = ember.makeTempFile("org-roam", { suffix: ".dot", text: lines.join("\n") });
+    const dot = gnista.makeTempFile("org-roam", { suffix: ".dot", text: lines.join("\n") });
     const svg = dot.replace(/\.dot$/, ".svg");
-    const r = ember.callProcess(["dot", "-Tsvg", "-o", svg, dot]);
-    if (r.exit !== 0) ember.userError(`Graphviz failed: ${r.output.trim() || "is dot installed?"}`);
-    ember.call("find-file", svg);
+    const r = gnista.callProcess(["dot", "-Tsvg", "-o", svg, dot]);
+    if (r.exit !== 0) gnista.userError(`Graphviz failed: ${r.output.trim() || "is dot installed?"}`);
+    gnista.call("find-file", svg);
   },
 });
 
@@ -921,12 +921,12 @@ export const forwardLinksOf = (id: string): Link[] => {
 };
 
 // org-roam knows where every ID of its directory is, so id: links find them, as org-roam-id.el advises org-id-find.
-ember.adviceAdd("org-id-find", "before-until", (id: string) => {
+gnista.adviceAdd("org-id-find", "before-until", (id: string) => {
   const n = nodeFromId(id);
   if (!n) return undefined;
-  const text = ember.bufferList().find((b) => ember.withCurrentBuffer(b, () => ember.bufferFileName()) === n.file);
+  const text = gnista.bufferList().find((b) => gnista.withCurrentBuffer(b, () => gnista.bufferFileName()) === n.file);
   if (n.level === 0) return [n.file, 0];
-  const content = text ? ember.withCurrentBuffer(text, () => ember.bufferSubstringNoProperties(ember.pointMin(), ember.pointMax())) : ember.readTextFile(n.file);
+  const content = text ? gnista.withCurrentBuffer(text, () => gnista.bufferSubstringNoProperties(gnista.pointMin(), gnista.pointMax())) : gnista.readTextFile(n.file);
   const m = new RegExp(`^[ \\t]*:ID:[ \\t]+${n.id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[ \\t]*$`, "im").exec(content);
   return m ? [n.file, [...content.slice(0, m.index)].length] : [n.file, 0];
 });

@@ -1,11 +1,11 @@
-;;; record.el --- Record what vertico, orderless and marginalia show, for Ember's oracle  -*- lexical-binding: t -*-
+;;; record.el --- Record what vertico, orderless and marginalia show, for Gnista's oracle  -*- lexical-binding: t -*-
 
 ;; As tests/emacs/icomplete/record.el does for icomplete, in an interactive
 ;; Emacs on a terminal, fed keys from timers:
 ;;
 ;;   script -q /dev/null emacs -Q -nw -l tests/emacs/completion/record.el
 ;;
-;; The packages load from EMBER_ELPA, else ~/.emacs.d/elpaca/repos, each in
+;; The packages load from GNISTA_ELPA, else ~/.emacs.d/elpaca/repos, each in
 ;; a directory of its own name, vertico-sort.el with them, as a package
 ;; manager's autoloads make it the default sort.  Each case in cases.json turns vertico-mode
 ;; on with the `vars' it gives, opens a prompt with <f5> reading one of its
@@ -15,7 +15,7 @@
 ;; closed, into golden.json.
 
 (require 'json)
-(defvar cr-elpa (file-name-as-directory (or (getenv "EMBER_ELPA") (expand-file-name "~/.emacs.d/elpaca/repos"))))
+(defvar cr-elpa (file-name-as-directory (or (getenv "GNISTA_ELPA") (expand-file-name "~/.emacs.d/elpaca/repos"))))
 (dolist (p '("vertico" "vertico/extensions" "orderless" "marginalia")) (add-to-list 'load-path (expand-file-name p cr-elpa)))
 (require 'vertico)
 (require 'vertico-sort)

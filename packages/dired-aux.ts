@@ -4,7 +4,7 @@
 // whose text matches, and searching them.
 //
 // Copyright (C) 1985-2025 Free Software Foundation, Inc.
-// Ported to Ember in 2026.
+// Ported to Gnista in 2026.
 //
 // This program is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -17,7 +17,7 @@ import {
 } from "dired";
 import { matchesInFiles } from "xref";
 
-const defvar = (name: string, value: ember.Value, doc: string) => ember.defineVariable({ name, value, doc });
+const defvar = (name: string, value: gnista.Value, doc: string) => gnista.defineVariable({ name, value, doc });
 defvar("dired-keep-marker-symlink", "Y", "The mark symbolic links get, or true for the mark the file had, or nil for none.");
 defvar("dired-keep-marker-relsymlink", "S", "The mark relative symbolic links get, or true for the mark the file had, or nil for none.");
 defvar("dired-keep-marker-hardlink", "H", "The mark hard links get, or true for the mark the file had, or nil for none.");
@@ -29,7 +29,7 @@ defvar("dired-compress-directory-default-suffix", ".tar.gz", "The suffix Z gives
 
 /** The mark a keep-marker variable gives a new file made from `from`. */
 const keptMark = (variable: string) => (from: string): string | undefined => {
-  const keep = ember.variable(variable);
+  const keep = gnista.variable(variable);
   return typeof keep === "string" ? keep : keep === true ? markOf(from) : undefined;
 };
 
@@ -43,8 +43,8 @@ export function shellQuoteArgument(arg: string): string {
 
 /** Makes `link` a link to `file` by the shortest relative name, as dired-make-relative-symlink. */
 export function makeRelativeSymlink(file: string, link: string, okIfExists = false): void {
-  const file1 = ember.expandFileName(file);
-  const file2 = ember.expandFileName(link);
+  const file1 = gnista.expandFileName(file);
+  const file2 = gnista.expandFileName(link);
   // The longest leading directory the two names share.
   let index = 0;
   for (;;) {
@@ -60,26 +60,26 @@ export function makeRelativeSymlink(file: string, link: string, okIfExists = fal
     const ups = [...file2.slice(index)].filter((c) => c === "/").length;
     name1 = "../".repeat(ups) + file1.slice(index);
   }
-  ember.makeSymbolicLink(ember.directoryFileName(name1), file2, okIfExists);
+  gnista.makeSymbolicLink(gnista.directoryFileName(name1), file2, okIfExists);
 }
 
-const symlink: Creator = (from, to) => ember.makeSymbolicLink(from, to, true);
+const symlink: Creator = (from, to) => gnista.makeSymbolicLink(from, to, true);
 const relsymlink: Creator = (from, to) => makeRelativeSymlink(from, to, true);
-const hardlink: Creator = (from, to) => ember.addNameToFile(from, to, true);
+const hardlink: Creator = (from, to) => gnista.addNameToFile(from, to, true);
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "dired-do-symlink",
   doc:
     "Make symbolic links to the marked files, or the one on this line: a new name for one, a directory for several, " +
     "where links of the same names are made. The links name the files absolutely; Y makes relative ones.",
   run: () => doCreateFiles("Symlink", "Symlink", symlink, keptMark("dired-keep-marker-symlink"), true),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "dired-do-relsymlink",
   doc: "Make relative symbolic links to the marked files, or the one on this line, as foo -> ../bar/foo rather than an absolute name.",
   run: () => doCreateFiles("RelSymLink", "RelSymLink", relsymlink, keptMark("dired-keep-marker-relsymlink")),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "dired-do-hardlink",
   doc: "Give the marked files, or the one on this line, other names, as hard links: a new name for one, a directory for several.",
   run: () => doCreateFiles("Hardlink", "Hardlink", hardlink, keptMark("dired-keep-marker-hardlink"), true),
@@ -89,16 +89,16 @@ ember.defineCommand({
 
 /** Renames a file and the buffers visiting it, as dired-rename-file. */
 export const diredRenameFile: Creator = (from, to) => {
-  ember.renameFile(from, to, { okIfExists: true });
-  for (const b of ember.bufferList()) {
-    ember.withCurrentBuffer(b, () => {
-      if (ember.bufferFileName() === from) ember.setVisitedFileName(to, { alongWithFile: true });
+  gnista.renameFile(from, to, { okIfExists: true });
+  for (const b of gnista.bufferList()) {
+    gnista.withCurrentBuffer(b, () => {
+      if (gnista.bufferFileName() === from) gnista.setVisitedFileName(to, { alongWithFile: true });
     });
   }
   removeEntry(from);
 };
 
-const copy: Creator = (from, to) => ember.copyFile(from, to, { okIfExists: true, keepTime: on("dired-copy-preserve-time") });
+const copy: Creator = (from, to) => gnista.copyFile(from, to, { okIfExists: true, keepTime: on("dired-copy-preserve-time") });
 
 /**
  * Makes a new file from each marked file whose name matches `regexp`, named
@@ -106,18 +106,18 @@ const copy: Creator = (from, to) => ember.copyFile(from, to, { okIfExists: true,
  * dired-do-create-files-regexp. With `wholeName`, the regexp matches the
  * whole file name, else the part after the directory.
  */
-function createFilesRegexp(creator: Creator, operation: string, arg: ember.PrefixArg | null, regexp: string, newname: string, wholeName: boolean, marker: (from: string) => string | undefined): void {
+function createFilesRegexp(creator: Creator, operation: string, arg: gnista.PrefixArg | null, regexp: string, newname: string, wholeName: boolean, marker: (from: string) => string | undefined): void {
   requireDired();
   const { files } = markedFiles(arg, MARKER, false, "No files specified");
   const ask = makeQuery();
   const replaced = (name: string) => stringReplaceMatch(regexp, name, newname);
   createFiles(operation, files, (from) => {
-    const relative = ember.fileNameNondirectory(from);
+    const relative = gnista.fileNameNondirectory(from);
     const fromName = wholeName ? from : relative;
     const newName = replaced(fromName);
     if (newName === undefined) return undefined;
-    const to = wholeName ? newName : ember.expandFileName(newName, ember.fileNameDirectory(from));
-    const shown = wholeName ? to : ember.fileNameNondirectory(to);
+    const to = wholeName ? newName : gnista.expandFileName(newName, gnista.fileNameDirectory(from));
+    const shown = wholeName ? to : gnista.fileNameNondirectory(to);
     return ask(`${operation} \u2018${wholeName ? from : relative}\u2019 to \u2018${shown}\u2019?`) ? to : undefined;
   }, creator, marker);
 }
@@ -128,24 +128,24 @@ function createFilesRegexp(creator: Creator, operation: string, arg: ember.Prefi
  * undefined if it does not match.
  */
 export function stringReplaceMatch(regexp: string, string: string, newtext: string): string | undefined {
-  if (ember.stringMatch(regexp, string) === undefined) return undefined;
+  if (gnista.stringMatch(regexp, string) === undefined) return undefined;
   const chars = [...string];
   const group = (n: number): string => {
-    const start = ember.matchBeginning(n);
-    return start === undefined ? "" : chars.slice(start, ember.matchEnd(n)).join("");
+    const start = gnista.matchBeginning(n);
+    return start === undefined ? "" : chars.slice(start, gnista.matchEnd(n)).join("");
   };
   const replacement = newtext.replace(/\\([&\d\\])/g, (_, c: string) => (c === "&" ? group(0) : c === "\\" ? "\\" : group(Number(c))));
-  return chars.slice(0, ember.matchBeginning(0)).join("") + replacement + chars.slice(ember.matchEnd(0)).join("");
+  return chars.slice(0, gnista.matchBeginning(0)).join("") + replacement + chars.slice(gnista.matchEnd(0)).join("");
 }
 
 /** Asks for a regexp and what to replace it with, as dired-mark-read-regexp: with a zero prefix argument, the whole file name. */
-function readRegexpOperation(operation: string, run: (regexp: string, newname: string, arg: ember.PrefixArg | null, whole: boolean) => void): void {
-  const raw = ember.prefixArg();
-  const whole = raw !== null && ember.prefixNumericValue(raw) === 0;
+function readRegexpOperation(operation: string, run: (regexp: string, newname: string, arg: gnista.PrefixArg | null, whole: boolean) => void): void {
+  const raw = gnista.prefixArg();
+  const whole = raw !== null && gnista.prefixNumericValue(raw) === 0;
   const arg = whole ? null : raw;
   const abs = whole ? "Abs. " : "";
-  const regexp = ember.readString(`${abs}${operation} from (regexp): `, { history: "dired-regexp-history" });
-  const newname = ember.readString(`${abs}${operation} ${regexp} to: `);
+  const regexp = gnista.readString(`${abs}${operation} from (regexp): `, { history: "dired-regexp-history" });
+  const newname = gnista.readString(`${abs}${operation} ${regexp} to: `);
   run(regexp, newname, arg, whole);
 }
 
@@ -156,7 +156,7 @@ for (const [name, operation, creator, keep, doc] of [
   ["dired-do-symlink-regexp", "SymLink", symlink, "dired-keep-marker-symlink", "Symlink the marked files whose names match a regexp to names made from the match."],
   ["dired-do-relsymlink-regexp", "RelSymLink", relsymlink, "dired-keep-marker-relsymlink", "Relative symlink the marked files whose names match a regexp to names made from the match."],
 ] as const) {
-  ember.defineCommand({
+  gnista.defineCommand({
     name,
     doc: `${doc}\n\nThe new name may hold \\\\& and \\\\N for the match and its groups, as in query-replace-regexp. With a zero prefix argument, the regexp matches the whole file name.`,
     run: () => {
@@ -172,20 +172,20 @@ for (const [name, operation, creator, keep, doc] of [
 /** Renames each marked file to a name made from the old, asking about each, as dired-rename-non-directory. */
 function renameNonDirectory(basename: (name: string) => string, operation: string): void {
   requireDired();
-  const { files } = markedFiles(ember.prefixArg());
+  const { files } = markedFiles(gnista.prefixArg());
   const ask = makeQuery();
   createFiles(operation, files, (from) => {
-    const to = (ember.fileNameDirectory(from) ?? "") + basename(ember.fileNameNondirectory(from));
-    return ask(`${operation} \u2018${ember.fileNameNondirectory(from)}\u2019 to \u2018${ember.fileNameNondirectory(to)}\u2019`) ? to : undefined;
+    const to = (gnista.fileNameDirectory(from) ?? "") + basename(gnista.fileNameNondirectory(from));
+    return ask(`${operation} \u2018${gnista.fileNameNondirectory(from)}\u2019 to \u2018${gnista.fileNameNondirectory(to)}\u2019`) ? to : undefined;
   }, diredRenameFile, keptMark("dired-keep-marker-rename"));
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "dired-upcase",
   doc: "Rename the marked files, or the next prefix-argument many, to upper case.",
   run: () => renameNonDirectory((n) => n.toUpperCase(), "Rename upcase"),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "dired-downcase",
   doc: "Rename the marked files, or the next prefix-argument many, to lower case.",
   run: () => renameNonDirectory((n) => n.toLowerCase(), "Rename downcase"),
@@ -195,29 +195,29 @@ ember.defineCommand({
 
 /** The buffer visiting a file, as get-file-buffer. */
 function fileBuffer(file: string): string | undefined {
-  return ember.bufferList().find((b) => ember.withCurrentBuffer(b, () => ember.bufferFileName() === file));
+  return gnista.bufferList().find((b) => gnista.withCurrentBuffer(b, () => gnista.bufferFileName() === file));
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "dired-mark-files-containing-regexp",
   doc:
     "Mark the files whose text matches a regexp; with a prefix argument, unmark them. A file a buffer visits is " +
     "searched in its buffer, unless dired-always-read-filesystem says to read it from disk.",
-  params: [{ name: "regexp", prompt: () => `${ember.prefixArg() !== null ? "Unmark" : "Mark"} files containing (regexp): `, history: "dired-regexp-history" }],
+  params: [{ name: "regexp", prompt: () => `${gnista.prefixArg() !== null ? "Unmark" : "Mark"} files containing (regexp): `, history: "dired-regexp-history" }],
   run: (regexp: string) => {
     requireDired();
     const dir = currentDirectory();
     markIf((f) => {
       if (isDot(f.name)) return false;
       const file = dir + f.name;
-      if (!ember.fileReadableP(file) || ember.fileDirectoryP(file)) return false;
-      ember.message(`Checking ${file}`);
+      if (!gnista.fileReadableP(file) || gnista.fileDirectoryP(file)) return false;
+      gnista.message(`Checking ${file}`);
       const buffer = on("dired-always-read-filesystem") ? undefined : fileBuffer(file);
       const text = buffer !== undefined
-        ? ember.withCurrentBuffer(buffer, () => ember.bufferSubstringNoProperties(0, ember.bufferSize()))
-        : ember.readTextFile(file);
-      return ember.stringMatch(regexp, text) !== undefined;
-    }, "matching file", ember.prefixArg() !== null ? " " : MARKER);
+        ? gnista.withCurrentBuffer(buffer, () => gnista.bufferSubstringNoProperties(0, gnista.bufferSize()))
+        : gnista.readTextFile(file);
+      return gnista.stringMatch(regexp, text) !== undefined;
+    }, "matching file", gnista.prefixArg() !== null ? " " : MARKER);
   },
 });
 
@@ -276,30 +276,30 @@ function doShellCommand(command: string, files: string[]): void {
   if (!onEach && !noSubst) throw new Error("You can not combine `*' and `?' substitution marks");
   if (on("dired-confirm-shell-command")) {
     for (const char of ["*", "?"]) {
-      if (needConfirm(command, char) && !ember.yOrNP(`Confirm--do you mean to use \u2018${char}\u2019 as a wildcard? `)) {
-        ember.message("Command canceled");
+      if (needConfirm(command, char) && !gnista.yOrNP(`Confirm--do you mean to use \u2018${char}\u2019 as a wildcard? `)) {
+        gnista.message("Command canceled");
         return;
       }
     }
   }
   const line = shellStuffIt(command, files, onEach);
   // As shell-command, a line ending in & runs in the background.
-  ember.withCurrentBuffer(ember.currentBuffer(), () => ember.call("shell-command", line));
+  gnista.withCurrentBuffer(gnista.currentBuffer(), () => gnista.call("shell-command", line));
 }
 
 /** Reads a command to run on the marked files, as dired-read-shell-command, then runs it. */
 function readAndRunShellCommand(prefix: string, async: boolean): void {
   requireDired();
-  const arg = ember.prefixArg();
+  const arg = gnista.prefixArg();
   const dir = currentDirectory();
   const { files } = markedFiles(arg, MARKER, false, "No files specified");
   const relative = files.map((f) => f.startsWith(dir) ? f.slice(dir.length) : f);
-  let command = ember.readString(`${prefix} on ${markPrompt(arg, files)}: `, { history: "shell-command-history" });
+  let command = gnista.readString(`${prefix} on ${markPrompt(arg, files)}: `, { history: "shell-command-history" });
   if (async && !/&[ \t]*$/.test(command)) command += " &";
   doShellCommand(command, relative);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "dired-do-shell-command",
   doc:
     "Run a shell command on the marked files, or the one on this line.\n\n" +
@@ -308,23 +308,23 @@ ember.defineCommand({
     "in the background.",
   run: () => readAndRunShellCommand("!", false),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "dired-do-async-shell-command",
   doc: "Run a shell command on the marked files in the background, as ! does with & on the end.",
   run: () => readAndRunShellCommand("&", true),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "dired-show-file-type",
   doc: "Say what kind of file is on this line, as the file program tells it. With a prefix argument, what a link points to.",
   run: () => {
     requireDired();
     const file = filenameAt();
     if (file === undefined) throw new Error("No file on this line");
-    const name = ember.fileNameNondirectory(file);
-    const args = ember.prefixArg() !== null ? ["-L", "--", name] : ["--", name];
-    const { output } = ember.callProcess(["file", ...args], { directory: currentDirectory() });
-    ember.message(output.endsWith("\n") ? output.slice(0, -1) : output);
+    const name = gnista.fileNameNondirectory(file);
+    const args = gnista.prefixArg() !== null ? ["-L", "--", name] : ["--", name];
+    const { output } = gnista.callProcess(["file", ...args], { directory: currentDirectory() });
+    gnista.message(output.endsWith("\n") ? output.slice(0, -1) : output);
   },
 });
 
@@ -368,25 +368,25 @@ export function fileModesSymbolicToNumber(modes: string, from = 0): number {
 /** The files a change acts on, and their lines listed again afterwards, as dired-do-redisplay. */
 function changeFiles(change: (files: string[]) => void): void {
   requireDired();
-  const { files } = markedFiles(ember.prefixArg());
+  const { files } = markedFiles(gnista.prefixArg());
   change(files);
   readin(true);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "dired-do-chmod",
   doc: "Change the mode of the marked files, or the one on this line: octal, as 644, or symbolic, as g+w. M-n brings this file's.",
   run: () => {
     changeFiles((files) => {
       const here = filenameAt();
-      const modes = here === undefined ? undefined : ember.fileAttributes(here)?.modes;
+      const modes = here === undefined ? undefined : gnista.fileAttributes(here)?.modes;
       const m = modes && /^.(...)(...)(...)$/.exec(modes);
       const dflt = m ? `u=${m[1]},g=${m[2]},o=${m[3]}`.replace(/-/g, "") : undefined;
-      const input = ember.readString(`Change mode of ${markPrompt(ember.prefixArg(), files)} to: `, { default: dflt });
+      const input = gnista.readString(`Change mode of ${markPrompt(gnista.prefixArg(), files)} to: `, { default: dflt });
       if (input === "") throw new Error("No file mode specified");
       const octal = /^[0-7]+/.test(input) ? parseInt(input, 8) : undefined;
       for (const file of files) {
-        ember.setFileModes(file, octal ?? fileModesSymbolicToNumber(input, ember.fileModes(file) ?? 0));
+        gnista.setFileModes(file, octal ?? fileModesSymbolicToNumber(input, gnista.fileModes(file) ?? 0));
       }
     });
   },
@@ -404,23 +404,23 @@ function doChxxx(attribute: string, program: string, op: "touch" | "chown" | "ch
   changeFiles((files) => {
     const dir = currentDirectory();
     const here = filenameAt();
-    const attrs = here === undefined ? undefined : ember.fileAttributes(here);
+    const attrs = here === undefined ? undefined : gnista.fileAttributes(here);
     let dflt: string | undefined;
     if (attrs && op === "touch") dflt = touchTime(attrs.modified);
     else if (attrs && op === "chown") dflt = attrs.user;
     else if (attrs && op === "chgrp") dflt = attrs.group;
-    const prompt = op === "touch" ? `Change ${attribute} of ${markPrompt(ember.prefixArg(), files)} to (default now): ` : `Change ${attribute} of ${markPrompt(ember.prefixArg(), files)} to: `;
-    const value = ember.readString(prompt, { default: op === "touch" ? undefined : dflt });
+    const prompt = op === "touch" ? `Change ${attribute} of ${markPrompt(gnista.prefixArg(), files)} to (default now): ` : `Change ${attribute} of ${markPrompt(gnista.prefixArg(), files)} to: `;
+    const value = gnista.readString(prompt, { default: op === "touch" ? undefined : dflt });
     const args = value === "" ? [] : op === "touch" ? ["-t", value] : [value];
     const relative = files.map((f) => f.startsWith(dir) ? f.slice(dir.length) : f);
-    const { exit, output } = ember.callProcess([program, ...args, ...relative], { directory: dir });
-    if (exit !== 0) ember.message(`${program} ${value}: error${output.trim() === "" ? "" : `: ${output.trim()}`}`);
+    const { exit, output } = gnista.callProcess([program, ...args, ...relative], { directory: dir });
+    if (exit !== 0) gnista.message(`${program} ${value}: error${output.trim() === "" ? "" : `: ${output.trim()}`}`);
   });
 }
 
-ember.defineCommand({ name: "dired-do-touch", doc: "Change the times of the marked files, or the one on this line, with touch: to now, or a time written as touch -t takes it.", run: () => doChxxx("Timestamp", String(ember.variable("dired-touch-program")), "touch") });
-ember.defineCommand({ name: "dired-do-chown", doc: "Change the owner of the marked files, or the one on this line.", run: () => doChxxx("Owner", String(ember.variable("dired-chown-program")), "chown") });
-ember.defineCommand({ name: "dired-do-chgrp", doc: "Change the group of the marked files, or the one on this line.", run: () => doChxxx("Group", "chgrp", "chgrp") });
+gnista.defineCommand({ name: "dired-do-touch", doc: "Change the times of the marked files, or the one on this line, with touch: to now, or a time written as touch -t takes it.", run: () => doChxxx("Timestamp", String(gnista.variable("dired-touch-program")), "touch") });
+gnista.defineCommand({ name: "dired-do-chown", doc: "Change the owner of the marked files, or the one on this line.", run: () => doChxxx("Owner", String(gnista.variable("dired-chown-program")), "chown") });
+gnista.defineCommand({ name: "dired-do-chgrp", doc: "Change the group of the marked files, or the one on this line.", run: () => doChxxx("Group", "chgrp", "chgrp") });
 
 // Compressing.
 
@@ -446,48 +446,48 @@ const COMPRESS_SUFFIXES: [RegExp, string, string | undefined][] = [
 
 /** Runs a shell command in `dir`, failing with its output if it fails. */
 function runShell(command: string, dir: string): void {
-  const shell = String(ember.variable("shell-file-name"));
-  const { exit, output } = ember.callProcess([shell, "-c", command], { directory: dir });
+  const shell = String(gnista.variable("shell-file-name"));
+  const { exit, output } = gnista.callProcess([shell, "-c", command], { directory: dir });
   if (exit !== 0) throw new Error(`${command}: ${output.trim()}`);
 }
 
 /** Compresses or uncompresses a file, as dired-compress-file: the new file's name, or undefined if nothing changed. */
 export function compressFile(file: string): string | undefined {
-  if (ember.fileSymlinkP(file) !== undefined) return undefined;
-  const dir = ember.fileNameDirectory(file) ?? "/";
+  if (gnista.fileSymlinkP(file) !== undefined) return undefined;
+  const dir = gnista.fileNameDirectory(file) ?? "/";
   const rule = COMPRESS_SUFFIXES.find(([re]) => re.test(file));
   const newname = rule ? file.replace(rule[0], rule[1]) : undefined;
   if (rule && rule[2] !== undefined && newname !== undefined) {
     const command = rule[2];
     if (/%[io]/.test(command)) {
-      const out = ember.fileNameAsDirectory(newname);
+      const out = gnista.fileNameAsDirectory(newname);
       runShell(command.replace("%o", shellQuoteArgument(out)).replace("%i", shellQuoteArgument(file)), dir);
       return out;
     }
-    ember.message(`Uncompressing ${file}`);
+    gnista.message(`Uncompressing ${file}`);
     runShell(`${command} ${shellQuoteArgument(file)}`, dir);
     return newname;
   }
-  if (ember.fileDirectoryP(file)) {
-    const out = file + String(ember.variable("dired-compress-directory-default-suffix"));
-    runShell(`tar -cf - ${shellQuoteArgument(ember.fileNameNondirectory(file))} | gzip -c9 > ${shellQuoteArgument(out)}`, dir);
+  if (gnista.fileDirectoryP(file)) {
+    const out = file + String(gnista.variable("dired-compress-directory-default-suffix"));
+    runShell(`tar -cf - ${shellQuoteArgument(gnista.fileNameNondirectory(file))} | gzip -c9 > ${shellQuoteArgument(out)}`, dir);
     return out;
   }
   const out = newname ?? `${file}.gz`;
-  ember.message(`Compressing ${file}`);
+  gnista.message(`Compressing ${file}`);
   if (newname !== undefined) runShell(`gzip -c9 < ${shellQuoteArgument(file)} > ${shellQuoteArgument(newname)} && rm -f ${shellQuoteArgument(file)}`, dir);
   else runShell(`gzip -f9 ${shellQuoteArgument(file)}`, dir);
   return out;
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "dired-do-compress",
   doc:
     "Compress or uncompress the marked files, or the one on this line: gzip a file, make a directory a .tar.gz, " +
     "and unpack an archive, .tar.gz, .zip and the like.",
   run: () => {
     requireDired();
-    const arg = ember.prefixArg();
+    const arg = gnista.prefixArg();
     const { files } = markedFiles(arg);
     let done = 0;
     const failures: string[] = [];
@@ -495,13 +495,13 @@ ember.defineCommand({
       try {
         if (compressFile(file) !== undefined) done++;
       } catch (e) {
-        failures.push(ember.fileNameNondirectory(file));
-        ember.message(String((e as Error).message ?? e));
+        failures.push(gnista.fileNameNondirectory(file));
+        gnista.message(String((e as Error).message ?? e));
       }
     }
     readin(true);
-    if (failures.length > 0) ember.message(`Compress or uncompress: ${failures.length} of ${files.length} file${files.length === 1 ? "" : "s"} failed (${failures.join(" ")})`);
-    else ember.message(`Compress or uncompress: ${done} file${done === 1 ? "" : "s"}`);
+    if (failures.length > 0) gnista.message(`Compress or uncompress: ${failures.length} of ${files.length} file${files.length === 1 ? "" : "s"} failed (${failures.join(" ")})`);
+    else gnista.message(`Compress or uncompress: ${done} file${done === 1 ? "" : "s"}`);
   },
 });
 
@@ -510,10 +510,10 @@ ember.defineCommand({
 /** The marked files that are not directories, to search. */
 function searchFiles(): string[] {
   requireDired();
-  return markedFiles(ember.prefixArg()).files.filter((f) => !ember.fileDirectoryP(f));
+  return markedFiles(gnista.prefixArg()).files.filter((f) => !gnista.fileDirectoryP(f));
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "dired-do-find-regexp",
   doc: "Find the matches of a regexp in the marked files, listing them in an *xref* buffer.",
   params: [{ name: "regexp", prompt: "Search marked files (regexp): ", history: "regexp-history" }],
@@ -521,12 +521,12 @@ ember.defineCommand({
     const dir = currentDirectory();
     const files = searchFiles().map((f) => f.startsWith(dir) ? f.slice(dir.length) : f);
     const xrefs = matchesInFiles(regexp, files, dir);
-    if (xrefs.length === 0) ember.userError(`No matches for: ${regexp}`);
-    ember.funcall("xref-show-xrefs", xrefs);
+    if (xrefs.length === 0) gnista.userError(`No matches for: ${regexp}`);
+    gnista.funcall("xref-show-xrefs", xrefs);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "dired-do-query-replace-regexp",
   doc: "Replace the matches of a regexp in the marked files, asking about each, as query-replace-regexp does, file by file.",
   params: [
@@ -537,21 +537,21 @@ ember.defineCommand({
     const files = searchFiles();
     for (const file of files) {
       const buffer = fileBuffer(file);
-      if (buffer !== undefined && ember.withCurrentBuffer(buffer, () => ember.bufferModified())) {
+      if (buffer !== undefined && gnista.withCurrentBuffer(buffer, () => gnista.bufferModified())) {
         throw new Error(`Buffer \u2018${buffer}\u2019 has unsaved changes`);
       }
     }
     for (const file of files) {
-      const text = ember.readTextFile(file);
-      if (ember.stringMatch(from, text) === undefined) continue;
-      ember.call("find-file", file);
-      ember.gotoChar(0);
-      ember.call("query-replace-regexp", from, to);
+      const text = gnista.readTextFile(file);
+      if (gnista.stringMatch(from, text) === undefined) continue;
+      gnista.call("find-file", file);
+      gnista.gotoChar(0);
+      gnista.call("query-replace-regexp", from, to);
     }
   },
 });
 
-const auxBindings: [string, ember.CommandName][] = [
+const auxBindings: [string, gnista.CommandName][] = [
   ["S", "dired-do-symlink"], ["Y", "dired-do-relsymlink"], ["H", "dired-do-hardlink"],
   ["% R", "dired-do-rename-regexp"], ["% r", "dired-do-rename-regexp"], ["% C", "dired-do-copy-regexp"], ["% c", "dired-do-copy-regexp"],
   ["% H", "dired-do-hardlink-regexp"], ["% h", "dired-do-hardlink-regexp"], ["% S", "dired-do-symlink-regexp"], ["% s", "dired-do-symlink-regexp"],
@@ -561,4 +561,4 @@ const auxBindings: [string, ember.CommandName][] = [
   ["y", "dired-show-file-type"], ["M", "dired-do-chmod"], ["O", "dired-do-chown"], ["G", "dired-do-chgrp"], ["T", "dired-do-touch"],
   ["Z", "dired-do-compress"], ["A", "dired-do-find-regexp"], ["Q", "dired-do-query-replace-regexp"],
 ];
-for (const [keys, command] of auxBindings) ember.defineKey("dired-mode-map", keys, command);
+for (const [keys, command] of auxBindings) gnista.defineKey("dired-mode-map", keys, command);

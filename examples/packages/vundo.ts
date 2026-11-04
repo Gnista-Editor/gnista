@@ -8,13 +8,13 @@
 //   m, u  mark and unmark a node  d     diff the marked (or parent) node
 //   RET   keep this state         q     go back to where vundo started
 //
-// Ember keeps undo history as steps, which vundo reads with
-// ember.undoHistory, where Emacs's vundo reads buffer-undo-list and
+// Gnista keeps undo history as steps, which vundo reads with
+// gnista.undoHistory, where Emacs's vundo reads buffer-undo-list and
 // undo-equiv-table: a step that undid another leaves the buffer as it was
 // before that one, the same node of the tree.
 //
 // Copyright (C) 2019-2023 Free Software Foundation, Inc.
-// Ported to Ember in 2026.
+// Ported to Gnista in 2026.
 //
 // This program is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -41,52 +41,52 @@ const unicode: [string, string][] = [
   ["last-branch", "└"],
 ];
 
-ember.defineVariable({ name: "vundo-ascii-symbols", doc: "ASCII symbols to draw vundo tree.", value: ascii });
-ember.defineVariable({ name: "vundo-unicode-symbols", doc: "Unicode symbols to draw vundo tree.", value: unicode });
-ember.defineVariable({
+gnista.defineVariable({ name: "vundo-ascii-symbols", doc: "ASCII symbols to draw vundo tree.", value: ascii });
+gnista.defineVariable({ name: "vundo-unicode-symbols", doc: "Unicode symbols to draw vundo tree.", value: unicode });
+gnista.defineVariable({
   name: "vundo-glyph-alist",
   doc: 'The characters the tree is drawn with, as [part, character] pairs for node, selected-node, horizontal-stem, vertical-stem, branch and last-branch. Set it to the value of vundo-unicode-symbols to draw with Unicode lines.',
   value: ascii,
 });
-ember.defineVariable({ name: "vundo-roll-back-on-quit", doc: "If non-nil, vundo will roll back the change when it quits.", value: true });
-ember.defineVariable({
+gnista.defineVariable({ name: "vundo-roll-back-on-quit", doc: "If non-nil, vundo will roll back the change when it quits.", value: true });
+gnista.defineVariable({
   name: "vundo-highlight-saved-nodes",
   doc: "If non-nil, vundo will highlight nodes which have been saved and then modified, the most recent in vundo-last-saved.",
   value: true,
 });
-ember.defineVariable({ name: "vundo-window-max-height", doc: "The maximum height of the vundo window.", value: 3 });
-ember.defineVariable({ name: "vundo-window-side", doc: 'The vundo window pops up on this side: "bottom" or "top".', value: "bottom" });
-ember.defineVariable({ name: "vundo-compact-display", doc: "Show a more compact tree display if non-nil: one stem character between nodes, not two.", value: false });
-ember.defineVariable({
+gnista.defineVariable({ name: "vundo-window-max-height", doc: "The maximum height of the vundo window.", value: 3 });
+gnista.defineVariable({ name: "vundo-window-side", doc: 'The vundo window pops up on this side: "bottom" or "top".', value: "bottom" });
+gnista.defineVariable({ name: "vundo-compact-display", doc: "Show a more compact tree display if non-nil: one stem character between nodes, not two.", value: false });
+gnista.defineVariable({
   name: "vundo-diff-quit",
   doc: 'If non-nil, bury the vundo-diff window when vundo is quit; "kill" kills its buffer too.',
   value: true,
 });
-ember.defineHook("vundo-pre-enter-hook", "Functions called when entering vundo, in the buffer vundo was called in, before vundo sets up.");
-ember.defineHook("vundo-post-exit-hook", "Functions called when exiting vundo, in the original buffer, after vundo cleans up.");
-ember.defineHook("vundo-after-undo-functions", "Functions called after vundo motions, with the original buffer.");
-ember.defineHook("vundo-diff-setup-hook", "Functions called in the vundo-diff buffer after it is set up.");
+gnista.defineHook("vundo-pre-enter-hook", "Functions called when entering vundo, in the buffer vundo was called in, before vundo sets up.");
+gnista.defineHook("vundo-post-exit-hook", "Functions called when exiting vundo, in the original buffer, after vundo cleans up.");
+gnista.defineHook("vundo-after-undo-functions", "Functions called after vundo motions, with the original buffer.");
+gnista.defineHook("vundo-diff-setup-hook", "Functions called in the vundo-diff buffer after it is set up.");
 
-ember.defineFace({ name: "vundo-default", doc: "Default face used in vundo buffer.", attributes: { inherit: "default" } });
-ember.defineFace({ name: "vundo-node", doc: "Face for nodes in the undo tree.", attributes: { inherit: "vundo-default" } });
-ember.defineFace({ name: "vundo-stem", doc: "Face for stems between nodes in the undo tree.", attributes: { inherit: "vundo-default" } });
-ember.defineFace({ name: "vundo-branch-stem", doc: "Face for branching stems in the undo tree.", attributes: { inherit: "vundo-stem", weight: "bold" } });
-ember.defineFace({
+gnista.defineFace({ name: "vundo-default", doc: "Default face used in vundo buffer.", attributes: { inherit: "default" } });
+gnista.defineFace({ name: "vundo-node", doc: "Face for nodes in the undo tree.", attributes: { inherit: "vundo-default" } });
+gnista.defineFace({ name: "vundo-stem", doc: "Face for stems between nodes in the undo tree.", attributes: { inherit: "vundo-default" } });
+gnista.defineFace({ name: "vundo-branch-stem", doc: "Face for branching stems in the undo tree.", attributes: { inherit: "vundo-stem", weight: "bold" } });
+gnista.defineFace({
   name: "vundo-highlight",
   doc: "Face for the highlighted node in the undo tree.",
   attributes: { inherit: "vundo-node", weight: "bold" },
   light: { foreground: "red" },
   dark: { foreground: "yellow" },
 });
-ember.defineFace({
+gnista.defineFace({
   name: "vundo-saved",
   doc: "Face for saved nodes in the undo tree.",
   attributes: { inherit: "vundo-node" },
   light: { foreground: "dark green" },
   dark: { foreground: "light green" },
 });
-ember.defineFace({ name: "vundo-last-saved", doc: "Face for the last saved node in the undo tree.", attributes: { inherit: "vundo-saved", weight: "bold" } });
-ember.defineFace({
+gnista.defineFace({ name: "vundo-last-saved", doc: "Face for the last saved node in the undo tree.", attributes: { inherit: "vundo-saved", weight: "bold" } });
+gnista.defineFace({
   name: "vundo-diff-highlight",
   doc: "Face for nodes marked for diff in the undo tree.",
   attributes: { inherit: "vundo-highlight" },
@@ -115,7 +115,7 @@ interface Mod {
 
 /** The mod list of the current buffer's history, as vundo--mod-list-from, with the tree built. */
 function modListFrom(): Mod[] {
-  const history = ember.undoHistory();
+  const history = gnista.undoHistory();
   const mods: Mod[] = [{ idx: 0, children: [] }];
   for (const step of history) mods.push({ idx: mods.length, children: [], timestamp: step.saved });
   buildTree(mods, history);
@@ -219,8 +219,8 @@ function nodeTimestamp(mods: Mod[], node: Mod, noBuffer = false): number | undef
   const ts = state.timestamps.find(([n]) => n === master)?.[1];
   if (ts !== undefined) return ts;
   if (noBuffer || node !== currentNode(mods)) return undefined;
-  return ember.withCurrentBuffer(state.origBuffer, () =>
-    ember.variable("buffer-file-name") && !ember.bufferModified() ? Number.MAX_SAFE_INTEGER : undefined,
+  return gnista.withCurrentBuffer(state.origBuffer, () =>
+    gnista.variable("buffer-file-name") && !gnista.bufferModified() ? Number.MAX_SAFE_INTEGER : undefined,
   );
 }
 
@@ -231,31 +231,31 @@ const BUFFER = " *vundo tree*";
 /** Translates the Unicode tree characters in TEXT to those vundo-glyph-alist gives. */
 function translate(text: string): string {
   const parts: { [ch: string]: string } = { "○": "node", "●": "selected-node", "─": "horizontal-stem", "│": "vertical-stem", "├": "branch", "└": "last-branch" };
-  const alist = ember.variable("vundo-glyph-alist");
+  const alist = gnista.variable("vundo-glyph-alist");
   const glyphs = new Map(Array.isArray(alist) ? (alist as [string, string][]) : ascii);
   return [...text].map((ch) => glyphs.get(parts[ch]) ?? ch).join("");
 }
 
-const eolp = (): boolean => ember.point() === ember.pointMax() || ember.charAfter() === "\n";
+const eolp = (): boolean => gnista.point() === gnista.pointMax() || gnista.charAfter() === "\n";
 
 /** Moves to the next line at column COL, making the line and the column if there are none, as vundo--next-line-at-column. */
 function nextLineAtColumn(col: number): void {
-  if (!(forwardLine(1) === 0 && ember.point() !== ember.pointMax())) {
-    ember.gotoChar(ember.pointMax());
-    ember.insert("\n");
+  if (!(forwardLine(1) === 0 && gnista.point() !== gnista.pointMax())) {
+    gnista.gotoChar(gnista.pointMax());
+    gnista.insert("\n");
   }
-  ember.moveToColumn(col);
-  if (ember.currentColumn() !== col) ember.letBind({ "indent-tabs-mode": false }, () => ember.indentTo(col));
+  gnista.moveToColumn(col);
+  if (gnista.currentColumn() !== col) gnista.letBind({ "indent-tabs-mode": false }, () => gnista.indentTo(col));
 }
 
 /** Draws the tree of MODS in the current buffer, as vundo--draw-tree. */
 function drawTree(mods: Mod[]): void {
-  const compact = ember.variable("vundo-compact-display") === true;
+  const compact = gnista.variable("vundo-compact-display") === true;
   const room = `\\(?: \\{${compact ? 3 : 4},\\}\\|$\\)`;
   const branchChars = `${regexpQuote(translate("├"))}\\|${regexpQuote(translate("└"))}`;
-  const highlightSaved = ember.variable("vundo-highlight-saved-nodes") !== null && ember.variable("vundo-highlight-saved-nodes") !== false;
-  ember.letBind({ "inhibit-read-only": true, "inhibit-modification-hooks": true }, () => {
-    ember.deleteRegion(ember.pointMin(), ember.pointMax());
+  const highlightSaved = gnista.variable("vundo-highlight-saved-nodes") !== null && gnista.variable("vundo-highlight-saved-nodes") !== false;
+  gnista.letBind({ "inhibit-read-only": true, "inhibit-modification-hooks": true }, () => {
+    gnista.deleteRegion(gnista.pointMin(), gnista.pointMax());
     const queue: Mod[] = [mods[0]];
     while (queue.length > 0) {
       const node = queue.shift()!;
@@ -265,32 +265,32 @@ function drawTree(mods: Mod[]): void {
       const lastChild = parent !== undefined && node === siblings[siblings.length - 1];
       const nodeFace = highlightSaved && nodeTimestamp(mods, node, true) !== undefined ? "vundo-saved" : "vundo-node";
       const stemFace = onlyChild ? "vundo-stem" : "vundo-branch-stem";
-      const stem = (text: string) => ember.insert(ember.propertize(translate(text), { face: stemFace }));
+      const stem = (text: string) => gnista.insert(gnista.propertize(translate(text), { face: stemFace }));
       if (parent === undefined) {
-        ember.insert(ember.propertize(translate("○"), { face: nodeFace }));
+        gnista.insert(gnista.propertize(translate("○"), { face: nodeFace }));
       } else {
-        ember.gotoChar(parent.point!);
-        const planned = ember.point();
+        gnista.gotoChar(parent.point!);
+        const planned = gnista.point();
         // A node in the way: try the next line.
-        while (!ember.lookingAt(room)) {
-          nextLineAtColumn(Math.max(0, ember.currentColumn() - 1));
-          const replace = ember.lookingAt(branchChars) ? "├" : "│";
-          if (!eolp()) ember.deleteRegion(ember.point(), ember.point() + 1);
+        while (!gnista.lookingAt(room)) {
+          nextLineAtColumn(Math.max(0, gnista.currentColumn() - 1));
+          const replace = gnista.lookingAt(branchChars) ? "├" : "│";
+          if (!eolp()) gnista.deleteRegion(gnista.point(), gnista.point() + 1);
           stem(replace);
         }
         // Room for the new node.
-        if (!ember.lookingAt("$")) ember.deleteRegion(ember.point(), ember.point() + (compact ? 2 : 3));
-        if (ember.point() === planned) {
+        if (!gnista.lookingAt("$")) gnista.deleteRegion(gnista.point(), gnista.point() + (compact ? 2 : 3));
+        if (gnista.point() === planned) {
           stem(compact ? "─" : "──");
         } else {
           // The line breaks: the stem drawn last becomes a branch.
-          ember.deleteRegion(ember.point() - 1, ember.point());
+          gnista.deleteRegion(gnista.point() - 1, gnista.point());
           stem(lastChild ? (compact ? "└─" : "└──") : compact ? "├─" : "├──");
         }
-        ember.insert(ember.propertize(translate("○"), { face: nodeFace }));
+        gnista.insert(gnista.propertize(translate("○"), { face: nodeFace }));
       }
-      node.point = ember.point();
-      ember.putTextProperty(ember.point() - 1, ember.point(), "vundo-node", node.idx);
+      node.point = gnista.point();
+      gnista.putTextProperty(gnista.point() - 1, gnista.point(), "vundo-node", node.idx);
       queue.unshift(...node.children);
     }
   });
@@ -300,7 +300,7 @@ function drawTree(mods: Mod[]): void {
 
 /** What the vundo buffer shows, as its buffer-local variables in vundo.el. */
 const state = {
-  origBuffer: undefined as unknown as ember.Buffer,
+  origBuffer: undefined as unknown as gnista.Buffer,
   mods: [] as Mod[],
   timestamps: [] as [Mod, number][],
   /** The node quitting goes back to, by index. */
@@ -318,12 +318,12 @@ function currentNode(mods: Mod[]): Mod {
 }
 
 /** Makes or moves an overlay over the node at POINT, as vundo--highlight-node does. */
-function placeOverlay(overlay: number | undefined, point: number, props: { [name: string]: ember.Value }): number {
+function placeOverlay(overlay: number | undefined, point: number, props: { [name: string]: gnista.Value }): number {
   if (overlay === undefined) {
-    overlay = ember.makeOverlay(point - 1, point);
-    for (const [name, value] of Object.entries(props)) ember.overlayPut(overlay, name, value);
+    overlay = gnista.makeOverlay(point - 1, point);
+    for (const [name, value] of Object.entries(props)) gnista.overlayPut(overlay, name, value);
   }
-  ember.moveOverlay(overlay, point - 1, point);
+  gnista.moveOverlay(overlay, point - 1, point);
   return overlay;
 }
 
@@ -342,49 +342,49 @@ function highlightLastSavedNode(mods: Mod[]): void {
  * current node highlighted and point on it, as vundo--refresh-buffer.
  */
 function refresh(): void {
-  const mods = ember.withCurrentBuffer(state.origBuffer, modListFrom);
+  const mods = gnista.withCurrentBuffer(state.origBuffer, modListFrom);
   state.mods = mods;
   state.timestamps = recordTimestamps(mods);
   drawTree(mods);
   const cur = currentNode(mods);
   // The overlays went with the text.
   for (const key of ["highlight", "lastSavedHighlight", "markedHighlight"] as const) {
-    if (state[key] !== undefined) ember.deleteOverlay(state[key]);
+    if (state[key] !== undefined) gnista.deleteOverlay(state[key]);
     state[key] = undefined;
   }
   state.highlight = placeOverlay(state.highlight, cur.point!, { display: translate("●"), face: "vundo-highlight", priority: 2 });
-  ember.gotoChar(cur.point!);
+  gnista.gotoChar(cur.point!);
   if (state.marked !== undefined && mods[state.marked]) diffMark(mods[state.marked]);
-  if (ember.variable("vundo-highlight-saved-nodes") === true) highlightLastSavedNode(mods);
+  if (gnista.variable("vundo-highlight-saved-nodes") === true) highlightLastSavedNode(mods);
 }
 
-const vundo = ember.defineCommand({
+const vundo = gnista.defineCommand({
   name: "vundo",
   doc: "Display visual undo for the current buffer: its undo history as a tree, below it, to move about in.",
   run: () => {
-    const undoList = ember.variable("buffer-undo-list");
-    if (!Array.isArray(undoList) || undoList.length === 0) ember.userError("There is no undo history");
-    if (ember.variable("buffer-read-only") === true) ember.userError("Buffer is read-only");
-    ember.runHooks("vundo-pre-enter-hook");
-    vundo1(ember.currentBuffer());
-    const height = Math.max(3, Math.min(Number(ember.variable("vundo-window-max-height")) || 3, ember.withCurrentBuffer(BUFFER, () => ember.bufferSubstringNoProperties(ember.pointMin(), ember.pointMax()).split("\n").length)));
-    let window = ember.windowList().find((w) => ember.windowBuffer(w) === BUFFER);
+    const undoList = gnista.variable("buffer-undo-list");
+    if (!Array.isArray(undoList) || undoList.length === 0) gnista.userError("There is no undo history");
+    if (gnista.variable("buffer-read-only") === true) gnista.userError("Buffer is read-only");
+    gnista.runHooks("vundo-pre-enter-hook");
+    vundo1(gnista.currentBuffer());
+    const height = Math.max(3, Math.min(Number(gnista.variable("vundo-window-max-height")) || 3, gnista.withCurrentBuffer(BUFFER, () => gnista.bufferSubstringNoProperties(gnista.pointMin(), gnista.pointMax()).split("\n").length)));
+    let window = gnista.windowList().find((w) => gnista.windowBuffer(w) === BUFFER);
     if (window === undefined) {
-      window = ember.splitRootWindow("below", -height);
-      ember.setWindowBuffer(window, BUFFER);
+      window = gnista.splitRootWindow("below", -height);
+      gnista.setWindowBuffer(window, BUFFER);
     }
-    ember.selectWindow(window);
-    ember.setWindowDedicatedP(window, true);
+    gnista.selectWindow(window);
+    gnista.setWindowDedicatedP(window, true);
     state.rollBackTo = currentNode(state.mods).idx;
-    ember.gotoChar(currentNode(state.mods).point!);
+    gnista.gotoChar(currentNode(state.mods).point!);
   },
 });
 
 /** Makes the vundo buffer show BUFFER's history, as vundo-1. */
-function vundo1(buffer: ember.Buffer): string {
-  ember.getBufferCreate(BUFFER);
-  ember.withCurrentBuffer(BUFFER, () => {
-    if (!ember.derivedModeP("vundo-mode")) ember.call(vundoMode);
+function vundo1(buffer: gnista.Buffer): string {
+  gnista.getBufferCreate(BUFFER);
+  gnista.withCurrentBuffer(BUFFER, () => {
+    if (!gnista.derivedModeP("vundo-mode")) gnista.call(vundoMode);
     state.origBuffer = buffer;
     state.marked = undefined;
     refresh();
@@ -394,10 +394,10 @@ function vundo1(buffer: ember.Buffer): string {
 
 /** Runs BODY in the vundo buffer with the tree up to date, as vundo--check-for-command. */
 function checkForCommand(body: () => void): void {
-  if (!ember.derivedModeP("vundo-mode")) ember.userError("Not in vundo buffer");
-  if (!ember.bufferLiveP(state.origBuffer)) {
-    if (ember.yOrNP("Original buffer is gone, kill vundo buffer? ")) ember.call("kill-buffer-and-window");
-    ember.userError("");
+  if (!gnista.derivedModeP("vundo-mode")) gnista.userError("Not in vundo buffer");
+  if (!gnista.bufferLiveP(state.origBuffer)) {
+    if (gnista.yOrNP("Original buffer is gone, kill vundo buffer? ")) gnista.call("kill-buffer-and-window");
+    gnista.userError("");
   }
   // The original buffer may have changed since: read its history again.
   refresh();
@@ -434,17 +434,17 @@ function latestBufferState(mods: Mod[]): Mod {
  */
 function moveToNode(current: Mod, dest: Mod): void {
   const route = shortestRoute(current, dest);
-  if (!route) ember.signal("error", "No possible route");
+  if (!route) gnista.signal("error", "No possible route");
   const [source, target] = [route[0], route[route.length - 1]];
-  ember.withCurrentBuffer(state.origBuffer, () => {
-    ember.makeLocalVariable("buffer-read-only");
-    ember.setVariable("buffer-read-only", true);
+  gnista.withCurrentBuffer(state.origBuffer, () => {
+    gnista.makeLocalVariable("buffer-read-only");
+    gnista.setVariable("buffer-read-only", true);
     // Mod i is the state after step i - 1, so undoing it is undoing that step.
-    ember.letBind({ "inhibit-read-only": true }, () => {
-      for (let idx = source; idx > target; idx--) ember.undoStep(idx - 1);
+    gnista.letBind({ "inhibit-read-only": true }, () => {
+      for (let idx = source; idx > target; idx--) gnista.undoStep(idx - 1);
     });
-    const win = ember.windowList().find((w) => ember.windowBuffer(w) === ember.bufferName(state.origBuffer));
-    if (win !== undefined) ember.setWindowPoint(win, ember.point());
+    const win = gnista.windowList().find((w) => gnista.windowBuffer(w) === gnista.bufferName(state.origBuffer));
+    if (win !== undefined) gnista.setWindowPoint(win, gnista.point());
   });
 }
 
@@ -456,7 +456,7 @@ function moveToNode(current: Mod, dest: Mod): void {
 function trimUndoList(current: Mod): void {
   const latest = latestBufferState(state.mods).idx;
   const trim = eqvListOf(current).find((node) => node.idx >= latest);
-  if (trim) ember.withCurrentBuffer(state.origBuffer, () => ember.truncateUndo(trim.idx));
+  if (trim) gnista.withCurrentBuffer(state.origBuffer, () => gnista.truncateUndo(trim.idx));
 }
 
 /** Moves to DEST, trims and redraws, as each vundo motion does. */
@@ -487,13 +487,13 @@ function moveAlong(next: (m: Mod) => Mod | undefined, stop: (m: Mod) => boolean)
   });
 }
 
-const vundoQuit = ember.defineCommand({
+const vundoQuit = gnista.defineCommand({
   name: "vundo-quit",
   doc: "Quit buffer and window, rolling back the changes vundo made if vundo-roll-back-on-quit is non-nil.",
   run: () => {
     checkForCommand(() => {
       const cur = currentNode(state.mods);
-      if (ember.variable("vundo-roll-back-on-quit") === true && state.rollBackTo !== undefined && state.rollBackTo !== cur.idx) {
+      if (gnista.variable("vundo-roll-back-on-quit") === true && state.rollBackTo !== undefined && state.rollBackTo !== cur.idx) {
         moveToNode(cur, state.mods[state.rollBackTo]);
       }
       exit();
@@ -501,7 +501,7 @@ const vundoQuit = ember.defineCommand({
   },
 });
 
-const vundoConfirm = ember.defineCommand({
+const vundoConfirm = gnista.defineCommand({
   name: "vundo-confirm",
   doc: "Confirm change and close vundo window.",
   run: () => exit(),
@@ -510,14 +510,14 @@ const vundoConfirm = ember.defineCommand({
 /** Leaves vundo, the original buffer writable again and its window selected. */
 function exit(): void {
   const orig = state.origBuffer;
-  ember.withCurrentBuffer(orig, () => ember.setVariable("buffer-read-only", false));
-  ember.call("kill-buffer-and-window");
-  const window = ember.windowList().find((w) => ember.windowBuffer(w) === ember.bufferName(orig));
-  if (window !== undefined) ember.selectWindow(window);
-  ember.withCurrentBuffer(orig, () => ember.runHooks("vundo-post-exit-hook"));
+  gnista.withCurrentBuffer(orig, () => gnista.setVariable("buffer-read-only", false));
+  gnista.call("kill-buffer-and-window");
+  const window = gnista.windowList().find((w) => gnista.windowBuffer(w) === gnista.bufferName(orig));
+  if (window !== undefined) gnista.selectWindow(window);
+  gnista.withCurrentBuffer(orig, () => gnista.runHooks("vundo-post-exit-hook"));
 }
 
-const vundoForward = ember.defineCommand({
+const vundoForward = gnista.defineCommand({
   name: "vundo-forward",
   doc: "Move forward ARG nodes in the undo tree. If ARG < 0, move backward.",
   params: [{ name: "arg", kind: "count" }],
@@ -529,18 +529,18 @@ const vundoForward = ember.defineCommand({
       for (let n = Math.abs(arg), next = step(dest); next && n > 0; n--, next = step(dest)) dest = next;
       goTo(source, dest);
     });
-    ember.runHooks("vundo-after-undo-functions", state.origBuffer);
+    gnista.runHooks("vundo-after-undo-functions", state.origBuffer);
   },
 });
 
-const vundoBackward = ember.defineCommand({
+const vundoBackward = gnista.defineCommand({
   name: "vundo-backward",
   doc: "Move back ARG nodes in the undo tree. If ARG < 0, move forward.",
   params: [{ name: "arg", kind: "count" }],
-  run: (arg: number) => ember.call(vundoForward, -arg),
+  run: (arg: number) => gnista.call(vundoForward, -arg),
 });
 
-const vundoNext = ember.defineCommand({
+const vundoNext = gnista.defineCommand({
   name: "vundo-next",
   doc: "Move to node below the current one. Move ARG steps.",
   params: [{ name: "arg", kind: "count" }],
@@ -553,15 +553,15 @@ const vundoNext = ember.defineCommand({
       const idx = siblings.indexOf(source);
       goTo(source, siblings[Math.max(0, Math.min(idx + arg, siblings.length - 1))]);
     });
-    ember.runHooks("vundo-after-undo-functions", state.origBuffer);
+    gnista.runHooks("vundo-after-undo-functions", state.origBuffer);
   },
 });
 
-const vundoPrevious = ember.defineCommand({
+const vundoPrevious = gnista.defineCommand({
   name: "vundo-previous",
   doc: "Move to node above the current one. Move ARG steps.",
   params: [{ name: "arg", kind: "count" }],
-  run: (arg: number) => ember.call(vundoNext, -arg),
+  run: (arg: number) => gnista.call(vundoNext, -arg),
 });
 
 /** Whether NODE starts a stem: its parent has more than one child. */
@@ -569,25 +569,25 @@ const stemRootP = (node: Mod): boolean => (node.parent?.children.length ?? 0) > 
 /** Whether NODE ends a stem: no children, or more than one. */
 const stemEndP = (node: Mod): boolean => node.children.length !== 1;
 
-const vundoStemRoot = ember.defineCommand({
+const vundoStemRoot = gnista.defineCommand({
   name: "vundo-stem-root",
   doc: "Move to the beginning of the current stem.",
   run: () => moveAlong((m) => m.parent, stemRootP),
 });
 
-const vundoNextRoot = ember.defineCommand({
+const vundoNextRoot = gnista.defineCommand({
   name: "vundo-next-root",
   doc: "Move to the beginning of the next stem.",
   run: () => moveAlong((m) => m.children[0], stemRootP),
 });
 
-const vundoStemEnd = ember.defineCommand({
+const vundoStemEnd = gnista.defineCommand({
   name: "vundo-stem-end",
   doc: "Move to the end of the current stem.",
   run: () => moveAlong((m) => m.children[0], stemEndP),
 });
 
-const vundoGotoLastSaved = ember.defineCommand({
+const vundoGotoLastSaved = gnista.defineCommand({
   name: "vundo-goto-last-saved",
   doc: "Go back to the first saved node prior to the current node, if any. With a numeric prefix argument, move that many saved nodes back; a negative one moves forward.",
   params: [{ name: "arg", kind: "count" }],
@@ -596,39 +596,39 @@ const vundoGotoLastSaved = ember.defineCommand({
     const cur = currentNode(state.mods);
     const dest = findLastSaved(cur, arg);
     if (!dest) {
-      ember.message("No such saved node");
+      gnista.message("No such saved node");
       return;
     }
     if (cur !== dest) checkForCommand(() => goTo(currentNode(state.mods), state.mods[dest.idx]));
-    ember.message("Node saved");
+    gnista.message("Node saved");
   },
 });
 
-const vundoGotoNextSaved = ember.defineCommand({
+const vundoGotoNextSaved = gnista.defineCommand({
   name: "vundo-goto-next-saved",
   doc: "Go to the ARGth saved node after the current node (default 1). A negative ARG goes to the last saved node prior to it.",
   params: [{ name: "arg", kind: "count" }],
-  run: (arg: number) => ember.call(vundoGotoLastSaved, -arg),
+  run: (arg: number) => gnista.call(vundoGotoLastSaved, -arg),
 });
 
-const vundoSave = ember.defineCommand({
+const vundoSave = gnista.defineCommand({
   name: "vundo-save",
   doc: "Save the buffer vundo is operating on.",
   run: () => {
-    checkForCommand(() => ember.withCurrentBuffer(state.origBuffer, () => ember.call("save-buffer")));
+    checkForCommand(() => gnista.withCurrentBuffer(state.origBuffer, () => gnista.call("save-buffer")));
     refresh();
   },
 });
 
-const vundoInspect = ember.defineCommand({
+const vundoInspect = gnista.defineCommand({
   name: "vundo--inspect",
   doc: "Print some useful info about the node at point.",
   run: () => {
-    const idx = ember.getTextProperty(Math.max(0, ember.point() - 1), "vundo-node");
+    const idx = gnista.getTextProperty(Math.max(0, gnista.point() - 1), "vundo-node");
     const node = typeof idx === "number" ? state.mods[idx] : undefined;
     if (!node) return;
     const children = node.children.length > 0 ? `(${node.children.map((c) => c.idx).join(" ")})` : "nil";
-    ember.message(`Parent: ${node.parent?.idx ?? "nil"} States: (${eqvListOf(node).map((m) => m.idx).join(" ")}) Children: ${children}`);
+    gnista.message(`Parent: ${node.parent?.idx ?? "nil"} States: (${eqvListOf(node).map((m) => m.idx).join(" ")}) Children: ${children}`);
   },
 });
 
@@ -640,47 +640,47 @@ function diffMark(node: Mod): void {
   state.markedHighlight = placeOverlay(state.markedHighlight, node.point!, { display: translate("●"), face: "vundo-diff-highlight", priority: 1 });
 }
 
-const vundoDiffMark = ember.defineCommand({
+const vundoDiffMark = gnista.defineCommand({
   name: "vundo-diff-mark",
   doc: "Mark the current node for vundo diff.",
   run: () => diffMark(currentNode(state.mods)),
 });
 
-const vundoDiffUnmark = ember.defineCommand({
+const vundoDiffUnmark = gnista.defineCommand({
   name: "vundo-diff-unmark",
   doc: "Unmark the node marked for vundo diff.",
   run: () => {
     state.marked = undefined;
-    if (state.markedHighlight !== undefined) ember.deleteOverlay(state.markedHighlight);
+    if (state.markedHighlight !== undefined) gnista.deleteOverlay(state.markedHighlight);
     state.markedHighlight = undefined;
   },
 });
 
 /** Quits the vundo-diff window, killing its buffer if vundo-diff-quit says, as vundo-diff--quit. */
 function diffQuit(): void {
-  const name = `*vundo-diff-${ember.bufferName()}*`;
-  const window = ember.windowList().find((w) => ember.windowBuffer(w) === name);
-  const kill = ember.variable("vundo-diff-quit") === "kill";
+  const name = `*vundo-diff-${gnista.bufferName()}*`;
+  const window = gnista.windowList().find((w) => gnista.windowBuffer(w) === name);
+  const kill = gnista.variable("vundo-diff-quit") === "kill";
   if (window !== undefined) {
-    ember.selectWindow(window);
-    ember.call("quit-window", kill);
-  } else if (kill && ember.bufferLiveP(ember.getBuffer(name))) {
-    ember.call("kill-buffer", name);
+    gnista.selectWindow(window);
+    gnista.call("quit-window", kill);
+  } else if (kill && gnista.bufferLiveP(gnista.getBuffer(name))) {
+    gnista.call("kill-buffer", name);
   }
 }
 
-const vundoDiff = ember.defineCommand({
+const vundoDiff = gnista.defineCommand({
   name: "vundo-diff",
   doc: "Show the differences between the marked node's buffer state, or the current node's parent's, and the current one's.",
   run: () => {
-    ember.addHook("vundo-post-exit-hook", diffQuit);
+    gnista.addHook("vundo-post-exit-hook", diffQuit);
     refresh();
     const orig = state.origBuffer;
-    const origName = ember.bufferName(orig) ?? "";
+    const origName = gnista.bufferName(orig) ?? "";
     const current = currentNode(state.mods);
     const marked = state.marked !== undefined ? state.mods[state.marked] : current.parent;
     if (!marked || marked === current) {
-      ember.message("vundo diff not available.");
+      gnista.message("vundo diff not available.");
       return;
     }
     const swapped = marked.idx > current.idx;
@@ -688,39 +688,39 @@ const vundoDiff = ember.defineCommand({
     let markedText = "";
     checkForCommand(() => {
       moveToNode(current, marked);
-      markedText = ember.withCurrentBuffer(orig, () => ember.bufferSubstringNoProperties(ember.pointMin(), ember.pointMax()));
+      markedText = gnista.withCurrentBuffer(orig, () => gnista.bufferSubstringNoProperties(gnista.pointMin(), gnista.pointMax()));
       refresh();
       moveToNode(currentNode(state.mods), state.mods[current.idx]);
       trimUndoList(state.mods[current.idx]);
       refresh();
     });
-    const currentText = ember.withCurrentBuffer(orig, () => ember.bufferSubstringNoProperties(ember.pointMin(), ember.pointMax()));
+    const currentText = gnista.withCurrentBuffer(orig, () => gnista.bufferSubstringNoProperties(gnista.pointMin(), gnista.pointMax()));
     const [a, b] = swapped ? [current, marked] : [marked, current];
     const [aText, bText] = swapped ? [currentText, markedText] : [markedText, currentText];
     const label = (m: Mod) => `<${origName}> [mod ${m.idx}] (${m === current ? "Current" : state.marked !== undefined ? "Marked" : "Parent"})`;
-    const aFile = ember.makeTempFile("vundo-diff", { text: aText });
-    const bFile = ember.makeTempFile("vundo-diff", { text: bText });
+    const aFile = gnista.makeTempFile("vundo-diff", { text: aText });
+    const bFile = gnista.makeTempFile("vundo-diff", { text: bText });
     const name = `*vundo-diff-${origName}*`;
     try {
       diffNoSelect(aFile, bFile, [label(a), label(b)], name);
     } finally {
-      ember.deleteFile(aFile);
-      ember.deleteFile(bFile);
+      gnista.deleteFile(aFile);
+      gnista.deleteFile(bFile);
     }
-    ember.withCurrentBuffer(name, () => {
-      ember.letBind({ "inhibit-read-only": true }, () => {
-        ember.gotoChar(ember.pointMin());
-        ember.insert(ember.propertize("vundo-diff: ", { face: "diff-header" }));
-        ember.insert(ember.propertize(origName, { face: ["diff-file-header", "diff-header"] }));
-        ember.insert("\n");
+    gnista.withCurrentBuffer(name, () => {
+      gnista.letBind({ "inhibit-read-only": true }, () => {
+        gnista.gotoChar(gnista.pointMin());
+        gnista.insert(gnista.propertize("vundo-diff: ", { face: "diff-header" }));
+        gnista.insert(gnista.propertize(origName, { face: ["diff-file-header", "diff-header"] }));
+        gnista.insert("\n");
       });
-      ember.runHooks("vundo-diff-setup-hook");
+      gnista.runHooks("vundo-diff-setup-hook");
     });
-    ember.call("display-buffer", name);
+    gnista.call("display-buffer", name);
   },
 });
 
-const vundoMode = ember.defineMajorMode({
+const vundoMode = gnista.defineMajorMode({
   name: "vundo-mode",
   modeName: "Vundo",
   parent: "special-mode",
@@ -753,9 +753,9 @@ const vundoMode = ember.defineMajorMode({
       ["truncate-lines", true],
       ["cursor-type", null],
     ] as const) {
-      ember.makeLocalVariable(name);
-      ember.setVariable(name, value);
+      gnista.makeLocalVariable(name);
+      gnista.setVariable(name, value);
     }
   },
 });
-ember.remapCommand("vundo-mode-map", "save-buffer", vundoSave);
+gnista.remapCommand("vundo-mode-map", "save-buffer", vundoSave);

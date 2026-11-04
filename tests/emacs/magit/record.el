@@ -1,16 +1,16 @@
-;;; record.el --- Record Magit's menus, for Ember's oracle  -*- lexical-binding: t -*-
+;;; record.el --- Record Magit's menus, for Gnista's oracle  -*- lexical-binding: t -*-
 
 ;; emacs -Q --batch -l tests/emacs/magit/record.el
 ;;
-;; Magit and its dependencies load from EMBER_ELPA_BUILDS, else
+;; Magit and its dependencies load from GNISTA_ELPA_BUILDS, else
 ;; ~/.emacs.d/elpaca/builds, each in a directory of its own name.  This
-;; makes the repository crates/ember-script/tests/all/magit.rs makes: one
+;; makes the repository crates/gnista-script/tests/all/magit.rs makes: one
 ;; commit, a change unstaged and one staged, an untracked file and no
 ;; upstream; opens its status buffer and records the menu each prefix key
 ;; shows into menus.json.
 
 (require 'json)
-(defvar mr-builds (file-name-as-directory (or (getenv "EMBER_ELPA_BUILDS") (expand-file-name "~/.emacs.d/elpaca/builds"))))
+(defvar mr-builds (file-name-as-directory (or (getenv "GNISTA_ELPA_BUILDS") (expand-file-name "~/.emacs.d/elpaca/builds"))))
 (dolist (p '("magit" "magit-section" "transient" "with-editor" "cond-let" "llama" "compat" "dash"))
   (add-to-list 'load-path (expand-file-name p mr-builds)))
 (require 'magit)

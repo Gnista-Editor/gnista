@@ -9,11 +9,11 @@
 //
 // Commit messages are written in a COMMIT_EDITMSG buffer, C-c C-c to
 // commit and C-c C-k to give up, as git-commit.el's are; Magit has git run
-// Emacs as its editor for that, where Ember writes the message to a file
+// Emacs as its editor for that, where Gnista writes the message to a file
 // for git commit -F.
 //
 // Copyright (C) 2008-2025 The Magit Project Contributors
-// Ported to Ember in 2026.
+// Ported to Gnista in 2026.
 //
 // This program is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -27,10 +27,10 @@ import { withEditorEnv, withEditorFilter } from "with-editor";
 
 // Faces.
 
-const faces: [string, string, ember.FaceAttributes, ember.FaceAttributes?, ember.FaceAttributes?][] = [
+const faces: [string, string, gnista.FaceAttributes, gnista.FaceAttributes?, gnista.FaceAttributes?][] = [
   ["magit-branch-local", "Face for local branches.", {}, { foreground: "SkyBlue4" }, { foreground: "LightSkyBlue1" }],
   ["magit-branch-remote", "Face for remote branch head labels.", {}, { foreground: "DarkOliveGreen4" }, { foreground: "DarkSeaGreen2" }],
-  ["magit-branch-current", "Face for the current branch.", { inherit: "magit-branch-local", box: true } as ember.FaceAttributes],
+  ["magit-branch-current", "Face for the current branch.", { inherit: "magit-branch-local", box: true } as gnista.FaceAttributes],
   ["magit-hash", "Face for the commit object name in the log output.", {}, { foreground: "grey60" }, { foreground: "grey40" }],
   ["magit-tag", "Face for tag labels shown in log buffer.", {}, { foreground: "Goldenrod4" }, { foreground: "LightGoldenrod2" }],
   ["magit-head", "Face for the symbolic ref HEAD.", { inherit: "magit-branch-local" }],
@@ -43,29 +43,29 @@ const faces: [string, string, ember.FaceAttributes, ember.FaceAttributes?, ember
   ["magit-diff-added", "Face for lines in a diff that have been added.", { extend: true }, { background: "#ddffdd", foreground: "#22aa22" }, { background: "#335533", foreground: "#ddffdd" }],
   ["magit-diff-removed", "Face for lines in a diff that have been removed.", { extend: true }, { background: "#ffdddd", foreground: "#aa2222" }, { background: "#553333", foreground: "#ffdddd" }],
   ["magit-diff-context", "Face for lines in a diff that are unchanged.", { extend: true }, { foreground: "grey50" }, { foreground: "grey70" }],
-  ["magit-process-ok", "Face for zero exit-status.", { inherit: "magit-section-heading", foreground: "green" } as ember.FaceAttributes],
-  ["magit-process-ng", "Face for non-zero exit-status.", { inherit: "magit-section-heading", foreground: "red" } as ember.FaceAttributes],
+  ["magit-process-ok", "Face for zero exit-status.", { inherit: "magit-section-heading", foreground: "green" } as gnista.FaceAttributes],
+  ["magit-process-ng", "Face for non-zero exit-status.", { inherit: "magit-section-heading", foreground: "red" } as gnista.FaceAttributes],
 ];
-for (const [name, doc, attributes, light, dark] of faces) ember.defineFace({ name, doc, attributes, light, dark });
+for (const [name, doc, attributes, light, dark] of faces) gnista.defineFace({ name, doc, attributes, light, dark });
 
-ember.defineVariable({ name: "magit-git-executable", doc: "The Git executable used by Magit.", value: "git" });
-ember.defineVariable({ name: "magit-log-section-commit-count", doc: "How many recent commits the status buffer shows.", value: 10 });
-ember.defineVariable({ name: "magit-save-repository-buffers", doc: "Whether to save the repository's modified file buffers before running git, as Magit asks.", value: true });
+gnista.defineVariable({ name: "magit-git-executable", doc: "The Git executable used by Magit.", value: "git" });
+gnista.defineVariable({ name: "magit-log-section-commit-count", doc: "How many recent commits the status buffer shows.", value: 10 });
+gnista.defineVariable({ name: "magit-save-repository-buffers", doc: "Whether to save the repository's modified file buffers before running git, as Magit asks.", value: true });
 
 // Running git.
 
 /** The repository's top directory, with a slash, for DIR or the current buffer's directory, as magit-toplevel. */
-export function toplevel(dir = String(ember.variable("default-directory") ?? ".")): string | undefined {
-  const r = ember.callProcess([git(), "rev-parse", "--show-toplevel"], { directory: ember.expandFileName(dir) });
-  return r.exit === 0 ? ember.fileNameAsDirectory(r.output.trim()) : undefined;
+export function toplevel(dir = String(gnista.variable("default-directory") ?? ".")): string | undefined {
+  const r = gnista.callProcess([git(), "rev-parse", "--show-toplevel"], { directory: gnista.expandFileName(dir) });
+  return r.exit === 0 ? gnista.fileNameAsDirectory(r.output.trim()) : undefined;
 }
 
-const git = (): string => String(ember.variable("magit-git-executable") ?? "git");
+const git = (): string => String(gnista.variable("magit-git-executable") ?? "git");
 
 /** The repository the current buffer belongs to, as Magit's buffers keep it in default-directory. */
 function repo(): string {
   const top = toplevel();
-  if (!top) ember.userError(`Not inside a Git repository: ${ember.abbreviateFileName(String(ember.variable("default-directory")))}`);
+  if (!top) gnista.userError(`Not inside a Git repository: ${gnista.abbreviateFileName(String(gnista.variable("default-directory")))}`);
   return top!;
 }
 
@@ -74,7 +74,7 @@ const processLog: { args: string[]; exit: number; output: string; dir: string }[
 
 /** Runs git with ARGS in the repository and gives its output, as magit-git-string and magit-git-lines. */
 export function gitOutput(args: string[], input?: string, dir = repo()): { exit: number; output: string } {
-  return ember.callProcess([git(), "--no-pager", "--literal-pathspecs", "-c", "core.preloadindex=true", "-c", "log.showSignature=false", "-c", "color.ui=false", "-c", "color.diff=false", ...args], { directory: dir, input });
+  return gnista.callProcess([git(), "--no-pager", "--literal-pathspecs", "-c", "core.preloadindex=true", "-c", "log.showSignature=false", "-c", "color.ui=false", "-c", "color.diff=false", ...args], { directory: dir, input });
 }
 
 const gitString = (args: string[]): string | undefined => {
@@ -95,7 +95,7 @@ export function runGit(args: string[], input?: string): boolean {
   refreshAll();
   if (r.exit !== 0) {
     const line = r.output.split("\n").find((l) => l.trim() !== "") ?? `git exited with code ${r.exit}`;
-    ember.message(`${line.replace(/^(error|fatal): /, "")} ... [Hit $ to see buffer magit-process: ${ember.fileNameNondirectory(dir.replace(/\/$/, ""))} for details]`);
+    gnista.message(`${line.replace(/^(error|fatal): /, "")} ... [Hit $ to see buffer magit-process: ${gnista.fileNameNondirectory(dir.replace(/\/$/, ""))} for details]`);
     return false;
   }
   return true;
@@ -107,47 +107,47 @@ export function runGitAsync(args: string[], what: string, editor = false, env: {
   const dir = repo();
   const entry = { args, exit: -1, output: "", dir };
   processLog.push(entry);
-  ember.message(`Running git ${args.join(" ")}`);
+  gnista.message(`Running git ${args.join(" ")}`);
   const collect = (_p: string, output: string) => {
     entry.output += output;
   };
-  ember.makeProcess({
+  gnista.makeProcess({
     name: "magit-git",
     command: [git(), "--no-pager", "-c", "color.ui=false", ...args],
     directory: dir,
-    // With an editor, git asks Ember to edit its messages and lists, as magit-run-git-with-editor.
+    // With an editor, git asks Gnista to edit its messages and lists, as magit-run-git-with-editor.
     env: { GIT_TERMINAL_PROMPT: "0", ...(editor ? withEditorEnv() : {}), ...env },
     connectionType: "pipe",
     filter: editor ? withEditorFilter(collect) : collect,
     sentinel: (_p, event) => {
       entry.exit = event.startsWith("finished") ? 0 : Number(/code (\d+)/.exec(event)?.[1] ?? 1);
-      ember.withCurrentBuffer(ember.currentBuffer(), () => refreshAll(dir));
-      if (entry.exit === 0) ember.message(`${what}...done`);
-      else ember.message(`${(entry.output.split("\n").find((l) => l.trim()) ?? what).replace(/^(error|fatal): /, "")} ... [Hit $ to see buffer magit-process for details]`);
+      gnista.withCurrentBuffer(gnista.currentBuffer(), () => refreshAll(dir));
+      if (entry.exit === 0) gnista.message(`${what}...done`);
+      else gnista.message(`${(entry.output.split("\n").find((l) => l.trim()) ?? what).replace(/^(error|fatal): /, "")} ... [Hit $ to see buffer magit-process for details]`);
     },
   });
 }
 
 /** Saves the repository's modified file buffers first, as magit-save-repository-buffers. */
 function saveRepositoryBuffers(): void {
-  if (!truthy(ember.variable("magit-save-repository-buffers"))) return;
+  if (!truthy(gnista.variable("magit-save-repository-buffers"))) return;
   const top = toplevel();
   if (!top) return;
-  for (const b of ember.bufferList()) {
-    ember.withCurrentBuffer(b, () => {
-      const f = ember.bufferFileName();
-      if (f && ember.bufferModified() && ember.expandFileName(f).startsWith(top)) ember.call("save-buffer");
+  for (const b of gnista.bufferList()) {
+    gnista.withCurrentBuffer(b, () => {
+      const f = gnista.bufferFileName();
+      if (f && gnista.bufferModified() && gnista.expandFileName(f).startsWith(top)) gnista.call("save-buffer");
     });
   }
 }
 
 // Inserting the status buffer.
 
-const face = (text: string, f: string): ember.PropertizedString => ember.propertize(text, { face: f });
+const face = (text: string, f: string): gnista.PropertizedString => gnista.propertize(text, { face: f });
 
 /** A ref as Magit shows it in a log line, from %D's decorations, as magit-format-ref-labels. */
-function refLabels(decorations: string): ember.PropertizedString | string {
-  const parts: ember.PropertizedString[] = [];
+function refLabels(decorations: string): gnista.PropertizedString | string {
+  const parts: gnista.PropertizedString[] = [];
   for (const d of decorations.split(", ").filter((x) => x !== "")) {
     if (d.startsWith("HEAD -> ")) parts.push(face(d.slice(8), "magit-branch-current"));
     else if (d === "HEAD") parts.push(face("@", "magit-head"));
@@ -156,7 +156,7 @@ function refLabels(decorations: string): ember.PropertizedString | string {
     else if (d.includes("/")) parts.push(face(d, "magit-branch-remote"));
     else parts.push(face(d, "magit-branch-local"));
   }
-  return parts.length === 0 ? "" : ember.concat(...parts.flatMap((p, i) => (i === 0 ? [p] : [" ", p])), " ");
+  return parts.length === 0 ? "" : gnista.concat(...parts.flatMap((p, i) => (i === 0 ? [p] : [" ", p])), " ");
 }
 
 /** Inserts commits as a section's lines, hash, refs and subject, as magit-insert-log does in the status buffer. */
@@ -182,23 +182,23 @@ function insertHeaders(): void {
   const subject = gitString(["log", "-1", "--format=%s"]);
   const label = (s: string) => s.padEnd(10);
   const headLabel = branch ? face(branch, "magit-branch-local") : face(gitString(["rev-parse", "--short", "HEAD"]) ?? "", "magit-hash");
-  ember.insert(ember.concat(label("Head:"), headLabel, subject !== undefined ? ` ${subject}` : " nothing committed (yet)", "\n"));
+  gnista.insert(gnista.concat(label("Head:"), headLabel, subject !== undefined ? ` ${subject}` : " nothing committed (yet)", "\n"));
   const upstream = upstreamOf(branch);
   if (upstream) {
     const usubject = gitString(["log", "-1", "--format=%s", upstream]);
     const kind = gitString(["config", `branch.${branch}.rebase`]) === "true" ? "Rebase:" : "Merge:";
-    ember.insert(ember.concat(label(kind), face(upstream, "magit-branch-remote"), usubject !== undefined ? ` ${usubject}` : "", "\n"));
+    gnista.insert(gnista.concat(label(kind), face(upstream, "magit-branch-remote"), usubject !== undefined ? ` ${usubject}` : "", "\n"));
   }
   const pushRemote = branch ? (gitString(["config", `branch.${branch}.pushRemote`]) ?? gitString(["config", "remote.pushDefault"])) : undefined;
   if (pushRemote && branch && `${pushRemote}/${branch}` !== upstream) {
     const target = `${pushRemote}/${branch}`;
     const psubject = gitString(["log", "-1", "--format=%s", target]);
-    ember.insert(ember.concat(label("Push:"), face(target, "magit-branch-remote"), psubject !== undefined ? ` ${psubject}` : "", "\n"));
+    gnista.insert(gnista.concat(label("Push:"), face(target, "magit-branch-remote"), psubject !== undefined ? ` ${psubject}` : "", "\n"));
   }
   const tag = gitString(["describe", "--tags", "--abbrev=0"]);
   if (tag) {
     const count = gitString(["rev-list", "--count", `${tag}..HEAD`]);
-    ember.insert(ember.concat(label("Tag:"), face(tag, "magit-tag"), count && count !== "0" ? ` (${count})` : "", "\n"));
+    gnista.insert(gnista.concat(label("Tag:"), face(tag, "magit-tag"), count && count !== "0" ? ` (${count})` : "", "\n"));
   }
 }
 
@@ -258,7 +258,7 @@ function insertFiles(diffs: FileDiff[], kind: "unstaged" | "staged" | "commit"):
           insertHeading(face(h.heading, "magit-diff-hunk-heading"), "\n");
           for (const l of h.lines) {
             const f = l.startsWith("+") ? "magit-diff-added" : l.startsWith("-") ? "magit-diff-removed" : "magit-diff-context";
-            ember.insert(face(`${l}\n`, f));
+            gnista.insert(face(`${l}\n`, f));
           }
         });
       }
@@ -273,14 +273,14 @@ const hasCommits = (): boolean => gitOutput(["rev-parse", "--verify", "-q", "HEA
 function insertStatus(): void {
   insertRoot("status", () => {
     insertHeaders();
-    ember.insert("\n");
+    gnista.insert("\n");
     const untracked = gitLines(["ls-files", "--others", "--exclude-standard", "--directory", "--no-empty-directory"]);
     // Each section ends with the blank line after it, which hides with it, as Magit inserts it.
     if (untracked.length > 0) {
       insertSection("untracked", undefined, true, () => {
         insertHeading(face("Untracked files", "magit-section-heading"), ` (${untracked.length})`, "\n");
         for (const f of untracked) insertSection("file", { file: f, kind: "untracked" }, false, () => insertHeading(face(f, "magit-filename"), "\n"));
-        ember.insert("\n");
+        gnista.insert("\n");
       });
     }
     const unstaged = parseDiff(gitOutput(["diff", "--no-ext-diff", "--no-prefix", "-p"]).output);
@@ -288,7 +288,7 @@ function insertStatus(): void {
       insertSection("unstaged", undefined, false, () => {
         insertHeading(face("Unstaged changes", "magit-section-heading"), ` (${unstaged.length})`, "\n");
         insertFiles(unstaged, "unstaged");
-        ember.insert("\n");
+        gnista.insert("\n");
       });
     }
     const staged = parseDiff(gitOutput(["diff", "--cached", "--no-ext-diff", "--no-prefix", "-p"]).output);
@@ -296,7 +296,7 @@ function insertStatus(): void {
       insertSection("staged", undefined, false, () => {
         insertHeading(face("Staged changes", "magit-section-heading"), ` (${staged.length})`, "\n");
         insertFiles(staged, "staged");
-        ember.insert("\n");
+        gnista.insert("\n");
       });
     }
     const stashes = gitLines(["stash", "list", "--format=%gd%x00%gs"]);
@@ -307,7 +307,7 @@ function insertStatus(): void {
           const [ref, subject] = s.split("\0");
           insertSection("stash", ref, false, () => insertHeading(face(ref, "magit-hash"), ` ${subject}`, "\n"));
         }
-        ember.insert("\n");
+        gnista.insert("\n");
       });
     }
     const branch = currentBranch();
@@ -317,13 +317,13 @@ function insertStatus(): void {
         const n = gitLines(["rev-list", `${upstream}..HEAD`]).length;
         insertHeading(face("Unmerged into ", "magit-section-heading"), face(upstream, "magit-branch-remote"), ` (${n})`, "\n");
         insertCommits([`${upstream}..HEAD`]);
-        ember.insert("\n");
+        gnista.insert("\n");
       });
     } else if (!upstream && hasCommits()) {
       insertSection("recent", undefined, true, () => {
         insertHeading(face("Recent commits", "magit-section-heading"), "\n");
-        insertCommits([`-${Number(ember.variable("magit-log-section-commit-count") ?? 10)}`]);
-        ember.insert("\n");
+        insertCommits([`-${Number(gnista.variable("magit-log-section-commit-count") ?? 10)}`]);
+        gnista.insert("\n");
       });
     }
     if (upstream && gitLines(["rev-list", `HEAD..${upstream}`]).length > 0) {
@@ -331,7 +331,7 @@ function insertStatus(): void {
         const n = gitLines(["rev-list", `HEAD..${upstream}`]).length;
         insertHeading(face("Unpulled from ", "magit-section-heading"), face(upstream, "magit-branch-remote"), ` (${n})`, "\n");
         insertCommits([`HEAD..${upstream}`]);
-        ember.insert("\n");
+        gnista.insert("\n");
       });
     }
   });
@@ -343,35 +343,35 @@ function insertStatus(): void {
 const buffers = new PerBuffer<{ kind: string; refresh: () => void }>();
 
 /** Makes or shows a Magit buffer for the repository, as magit-setup-buffer: NAME, its mode, and what refreshes it. */
-function setupBuffer(name: string, mode: ember.DefinedCommand, kind: string, refresh: () => void, select = true): string {
+function setupBuffer(name: string, mode: gnista.DefinedCommand, kind: string, refresh: () => void, select = true): string {
   const dir = repo();
-  const existed = ember.bufferLiveP(ember.getBuffer(name));
-  ember.getBufferCreate(name);
-  ember.withCurrentBuffer(name, () => {
+  const existed = gnista.bufferLiveP(gnista.getBuffer(name));
+  gnista.getBufferCreate(name);
+  gnista.withCurrentBuffer(name, () => {
     if (!existed) {
-      ember.call(mode);
-      ember.makeLocalVariable("default-directory");
-      ember.setVariable("default-directory", dir);
+      gnista.call(mode);
+      gnista.makeLocalVariable("default-directory");
+      gnista.setVariable("default-directory", dir);
     }
-    buffers.set(ember.currentBuffer(), { kind, refresh });
+    buffers.set(gnista.currentBuffer(), { kind, refresh });
     refreshBuffer();
   });
-  if (select) ember.call("switch-to-buffer", name);
+  if (select) gnista.call("switch-to-buffer", name);
   return name;
 }
 
 /** Makes the current Magit buffer again, keeping point on the same section, as magit-refresh-buffer. */
 function refreshBuffer(): void {
-  const entry = buffers.get(ember.currentBuffer());
+  const entry = buffers.get(gnista.currentBuffer());
   if (!entry) return;
   const at = currentSection();
-  const line = ember.lineOf(ember.point());
+  const line = gnista.lineOf(gnista.point());
   const id = at ? sectionPath(at) : undefined;
-  ember.letBind({ "inhibit-read-only": true }, () => entry.refresh());
+  gnista.letBind({ "inhibit-read-only": true }, () => entry.refresh());
   const again = id ? (sections()?.all ?? []).find((s) => sectionPath(s) === id) : undefined;
-  if (again) ember.gotoChar(again.start);
-  else ember.gotoChar(ember.lineStart(Math.min(line, ember.lineCount() - 1)));
-  ember.setBufferModified(false);
+  if (again) gnista.gotoChar(again.start);
+  else gnista.gotoChar(gnista.lineStart(Math.min(line, gnista.lineCount() - 1)));
+  gnista.setBufferModified(false);
 }
 
 const sectionPath = (s: Section): string => {
@@ -385,59 +385,59 @@ const sectionPath = (s: Section): string => {
 
 /** Refreshes every Magit buffer of the repository, as magit-refresh does after a command. */
 function refreshAll(dir = toplevel()): void {
-  for (const b of ember.bufferList()) {
-    const buf = ember.getBuffer(b);
+  for (const b of gnista.bufferList()) {
+    const buf = gnista.getBuffer(b);
     if (!buf || !buffers.get(buf)) continue;
-    ember.withCurrentBuffer(b, () => {
+    gnista.withCurrentBuffer(b, () => {
       if (toplevel() === dir) refreshBuffer();
     });
   }
 }
 
-const repoName = (dir: string): string => ember.fileNameNondirectory(dir.replace(/\/$/, ""));
+const repoName = (dir: string): string => gnista.fileNameNondirectory(dir.replace(/\/$/, ""));
 
 // Modes.
 
 const modeBindings: { [keys: string]: string } = {};
 
-export const magitMode = ember.defineMajorMode({
+export const magitMode = gnista.defineMajorMode({
   name: "magit-mode",
   modeName: "Magit",
   parent: magitSectionMode,
   doc: "Parent major mode of Magit's buffers.",
 });
 
-export const magitStatusMode = ember.defineMajorMode({ name: "magit-status-mode", modeName: "Magit", parent: magitMode, doc: "Mode for looking at Git status: the files changed, staged and untracked, and the commits." });
-export const magitLogMode = ember.defineMajorMode({ name: "magit-log-mode", modeName: "Magit Log", parent: magitMode, doc: "Mode for looking at Git log." });
-export const magitRevisionMode = ember.defineMajorMode({ name: "magit-revision-mode", modeName: "Magit Rev", parent: magitMode, doc: "Mode for looking at a Git commit." });
-export const magitDiffMode = ember.defineMajorMode({ name: "magit-diff-mode", modeName: "Magit Diff", parent: magitMode, doc: "Mode for looking at a Git diff." });
-export const magitProcessMode = ember.defineMajorMode({ name: "magit-process-mode", modeName: "Magit Process", parent: magitMode, doc: "Mode for looking at Git process output." });
+export const magitStatusMode = gnista.defineMajorMode({ name: "magit-status-mode", modeName: "Magit", parent: magitMode, doc: "Mode for looking at Git status: the files changed, staged and untracked, and the commits." });
+export const magitLogMode = gnista.defineMajorMode({ name: "magit-log-mode", modeName: "Magit Log", parent: magitMode, doc: "Mode for looking at Git log." });
+export const magitRevisionMode = gnista.defineMajorMode({ name: "magit-revision-mode", modeName: "Magit Rev", parent: magitMode, doc: "Mode for looking at a Git commit." });
+export const magitDiffMode = gnista.defineMajorMode({ name: "magit-diff-mode", modeName: "Magit Diff", parent: magitMode, doc: "Mode for looking at a Git diff." });
+export const magitProcessMode = gnista.defineMajorMode({ name: "magit-process-mode", modeName: "Magit Process", parent: magitMode, doc: "Mode for looking at Git process output." });
 void modeBindings;
 
 /** Shows the status of the repository, as magit-status. */
-export const magitStatus = ember.defineCommand({
+export const magitStatus = gnista.defineCommand({
   name: "magit-status",
   doc: "Show the status of the current Git repository in a buffer: the branch, the changes and the commits not pushed.",
   run: () => {
     const dir = toplevel();
     if (!dir) {
-      const answer = ember.readFileName("Initialize Git repository: ", { dir: String(ember.variable("default-directory")) });
-      if (!ember.yOrNP(`Create repository in ${answer}? `)) ember.userError("Abort");
-      ember.callProcess([git(), "init", ember.expandFileName(answer)]);
-      ember.letBind({ "default-directory": ember.fileNameAsDirectory(ember.expandFileName(answer)) }, () => ember.call(magitStatus));
+      const answer = gnista.readFileName("Initialize Git repository: ", { dir: String(gnista.variable("default-directory")) });
+      if (!gnista.yOrNP(`Create repository in ${answer}? `)) gnista.userError("Abort");
+      gnista.callProcess([git(), "init", gnista.expandFileName(answer)]);
+      gnista.letBind({ "default-directory": gnista.fileNameAsDirectory(gnista.expandFileName(answer)) }, () => gnista.call(magitStatus));
       return;
     }
-    ember.letBind({ "default-directory": dir }, () => {
+    gnista.letBind({ "default-directory": dir }, () => {
       setupBuffer(`magit: ${repoName(dir)}`, magitStatusMode, "status", insertStatus);
     });
     // Point starts on the first section after the headers, as Magit puts it.
     const first = sections()?.root.children[0];
-    if (first) ember.gotoChar(first.start);
+    if (first) gnista.gotoChar(first.start);
   },
 });
 
-const refreshCommand = ember.defineCommand({ name: "magit-refresh", doc: "Refresh the current buffer.", run: () => refreshBuffer() });
-const refreshAllCommand = ember.defineCommand({ name: "magit-refresh-all", doc: "Refresh all buffers belonging to the current repository.", run: () => refreshAll() });
+const refreshCommand = gnista.defineCommand({ name: "magit-refresh", doc: "Refresh the current buffer.", run: () => refreshBuffer() });
+const refreshAllCommand = gnista.defineCommand({ name: "magit-refresh-all", doc: "Refresh all buffers belonging to the current repository.", run: () => refreshAll() });
 
 // Applying: staging, unstaging and discarding.
 
@@ -489,47 +489,47 @@ function regionPatch(v: FileValue, from: number, to: number, reverse: boolean): 
 
 /** The lines of the hunk at point the active region covers, as indices of its lines, or undefined without a region in a hunk. */
 function regionLines(s: Section): [number, number] | undefined {
-  const mark = ember.mark();
-  if (s.type !== "hunk" || !ember.regionActive() || mark === undefined) return undefined;
-  const [a, b] = [Math.min(mark, ember.point()), Math.max(mark, ember.point())];
-  const first = ember.lineOf(s.content);
-  const from = Math.max(0, ember.lineOf(a) - first);
+  const mark = gnista.mark();
+  if (s.type !== "hunk" || !gnista.regionActive() || mark === undefined) return undefined;
+  const [a, b] = [Math.min(mark, gnista.point()), Math.max(mark, gnista.point())];
+  const first = gnista.lineOf(s.content);
+  const from = Math.max(0, gnista.lineOf(a) - first);
   // A region ending at the start of a line leaves that line out.
-  const end = b > a && b === ember.lineBeginningPosition(b) ? b - 1 : b;
-  const to = ember.lineOf(end) - first;
+  const end = b > a && b === gnista.lineBeginningPosition(b) ? b - 1 : b;
+  const to = gnista.lineOf(end) - first;
   return to >= 0 ? [from, to] : undefined;
 }
 
-export const magitStage = ember.defineCommand({
+export const magitStage = gnista.defineCommand({
   name: "magit-stage",
   doc: "Add the change at point to the staging area: an untracked or changed file, or a hunk.",
   run: () => {
     const t = targets();
-    if (!t || t.values.length === 0) ember.userError("Nothing to stage");
+    if (!t || t.values.length === 0) gnista.userError("Nothing to stage");
     const lines = regionLines(t.section);
     for (const v of t.values) {
-      if (v.kind === "staged") ember.userError("Already staged");
+      if (v.kind === "staged") gnista.userError("Already staged");
       if (v.hunk && lines) {
         runGit(["apply", "--cached", "-p0", "--recount", "-"], regionPatch(v, lines[0], lines[1], false));
-        ember.deactivateMark();
+        gnista.deactivateMark();
       } else if (v.hunk) runGit(["apply", "--cached", "-p0", "--ignore-space-change", "-"], hunkPatch(v));
       else runGit(["add", "--", v.file]);
     }
   },
 });
 
-export const magitUnstage = ember.defineCommand({
+export const magitUnstage = gnista.defineCommand({
   name: "magit-unstage",
   doc: "Remove the change at point from the staging area: a staged file or hunk.",
   run: () => {
     const t = targets();
-    if (!t || t.values.length === 0) ember.userError("Nothing to unstage");
+    if (!t || t.values.length === 0) gnista.userError("Nothing to unstage");
     const lines = regionLines(t.section);
     for (const v of t.values) {
-      if (v.kind !== "staged") ember.userError("Already unstaged");
+      if (v.kind !== "staged") gnista.userError("Already unstaged");
       if (v.hunk && lines) {
         runGit(["apply", "--cached", "--reverse", "-p0", "--recount", "-"], regionPatch(v, lines[0], lines[1], true));
-        ember.deactivateMark();
+        gnista.deactivateMark();
       } else if (v.hunk) runGit(["apply", "--cached", "--reverse", "-p0", "-"], hunkPatch(v));
       else if (hasCommits()) runGit(["reset", "-q", "--", v.file]);
       else runGit(["rm", "--cached", "-q", "--", v.file]);
@@ -537,32 +537,32 @@ export const magitUnstage = ember.defineCommand({
   },
 });
 
-const stageModified = ember.defineCommand({
+const stageModified = gnista.defineCommand({
   name: "magit-stage-modified",
   doc: "Stage all changes to files tracked in the repository; with a prefix argument, untracked files too.",
   params: [{ name: "all", kind: "prefix" }],
-  run: (all: ember.Value) => void runGit(["add", truthy(all) ? "--all" : "-u", "."]),
+  run: (all: gnista.Value) => void runGit(["add", truthy(all) ? "--all" : "-u", "."]),
 });
 
-const unstageAll = ember.defineCommand({
+const unstageAll = gnista.defineCommand({
   name: "magit-unstage-all",
   doc: "Remove all changes from the staging area.",
   run: () => void runGit(hasCommits() ? ["reset", "-q", "HEAD", "--"] : ["rm", "--cached", "-r", "-q", "."]),
 });
 
-export const magitDiscard = ember.defineCommand({
+export const magitDiscard = gnista.defineCommand({
   name: "magit-discard",
   doc: "Remove the change at point from the working tree, or the index for a staged one: an untracked file is deleted.",
   run: () => {
     const t = targets();
-    if (!t || t.values.length === 0) ember.userError("Nothing to discard");
+    if (!t || t.values.length === 0) gnista.userError("Nothing to discard");
     const what = t.values.length === 1 ? (t.values[0].hunk ? "hunk" : t.values[0].file) : `${t.values.length} files`;
     const kind = t.values[0].kind;
     const verb = kind === "untracked" ? "Delete" : "Discard";
-    if (!ember.yOrNP(`${verb} ${what}? `)) ember.userError("Abort");
+    if (!gnista.yOrNP(`${verb} ${what}? `)) gnista.userError("Abort");
     for (const v of t.values) {
       if (v.kind === "untracked") {
-        ember.deleteFile(ember.expandFileName(v.file, repo()));
+        gnista.deleteFile(gnista.expandFileName(v.file, repo()));
         refreshAll();
       } else if (v.hunk) {
         runGit(v.kind === "staged" ? ["apply", "--cached", "--reverse", "-p0", "-"] : ["apply", "--reverse", "-p0", "-"], hunkPatch(v));
@@ -577,12 +577,12 @@ export const magitDiscard = ember.defineCommand({
 });
 
 /** Visits the file at point, at the line of the hunk line point is on, as magit-diff-visit-file. */
-export const magitVisitThing = ember.defineCommand({
+export const magitVisitThing = gnista.defineCommand({
   name: "magit-visit-thing",
   doc: "Visit the thing at point: a file at the line point is on in its diff, a commit, a stash.",
   run: () => {
     const s = currentSection();
-    if (!s) ember.userError("There is no thing at point that could be visited");
+    if (!s) gnista.userError("There is no thing at point that could be visited");
     if (s.type === "commit") {
       showCommit(String(s.value));
       return;
@@ -592,27 +592,27 @@ export const magitVisitThing = ember.defineCommand({
       return;
     }
     const v = s.value as FileValue | undefined;
-    if (!v?.file) ember.userError("There is no thing at point that could be visited");
+    if (!v?.file) gnista.userError("There is no thing at point that could be visited");
     let line = 1;
     if (v.hunk) {
       const m = /^@@ -\d+(?:,\d+)? \+(\d+)/.exec(v.hunk.heading);
       line = Number(m?.[1] ?? 1);
-      const here = ember.lineOf(ember.point());
-      const first = ember.lineOf(s.content);
+      const here = gnista.lineOf(gnista.point());
+      const first = gnista.lineOf(s.content);
       for (let i = 0; i < here - first && i < v.hunk.lines.length; i++) if (!v.hunk.lines[i].startsWith("-")) line++;
     }
     const dir = repo();
-    ember.call("find-file", ember.expandFileName(v.file, dir));
-    ember.gotoChar(ember.lineStart(Math.max(0, Math.min(line - 1, ember.lineCount() - 1))));
+    gnista.call("find-file", gnista.expandFileName(v.file, dir));
+    gnista.gotoChar(gnista.lineStart(Math.max(0, Math.min(line - 1, gnista.lineCount() - 1))));
   },
 });
 
 // Committing, after magit-commit.el and git-commit.el.
 
-ember.defineVariable({ name: "git-commit-summary-max-length", doc: "Column beyond which characters in the summary line are highlighted.", value: 68 });
-ember.defineFace({ name: "git-commit-summary", doc: "Face used for the summary in commit messages.", attributes: { inherit: "font-lock-type-face" } });
-ember.defineFace({ name: "git-commit-comment-heading", doc: "Face used for headings in commit message comments.", attributes: { inherit: "git-commit-keyword" } });
-ember.defineFace({ name: "git-commit-keyword", doc: "Face used for keywords in commit messages.", attributes: { inherit: "font-lock-string-face" } });
+gnista.defineVariable({ name: "git-commit-summary-max-length", doc: "Column beyond which characters in the summary line are highlighted.", value: 68 });
+gnista.defineFace({ name: "git-commit-summary", doc: "Face used for the summary in commit messages.", attributes: { inherit: "font-lock-type-face" } });
+gnista.defineFace({ name: "git-commit-comment-heading", doc: "Face used for headings in commit message comments.", attributes: { inherit: "git-commit-keyword" } });
+gnista.defineFace({ name: "git-commit-keyword", doc: "Face used for keywords in commit messages.", attributes: { inherit: "font-lock-string-face" } });
 
 /** The diff a commit makes, shown beside its message, as magit-commit-diff; the buffer, to take away when done. */
 let commitDiff: string | undefined;
@@ -627,90 +627,90 @@ function editCommit(args: string[], amend = false): void {
 
 /** Shows what the commit makes beside its message, as magit-commit-diff does when COMMIT_EDITMSG is visited. */
 function showCommitDiff(): void {
-  if (!/\/COMMIT_EDITMSG$/.test(ember.bufferFileName() ?? "")) return;
-  const window = ember.selectedWindow();
+  if (!/\/COMMIT_EDITMSG$/.test(gnista.bufferFileName() ?? "")) return;
+  const window = gnista.selectedWindow();
   const staged = amending ? gitOutput(["diff", "--no-prefix", "-p", "HEAD^", "--cached"]) : gitOutput(["diff", "--cached", "--no-prefix", "-p"]);
   if (!staged.output.trim()) return;
   commitDiff = setupBuffer(`magit-diff: ${repoName(repo())}`, magitDiffMode, "diff", () => insertRoot("diff", () => insertFiles(parseDiff(staged.output), "commit")), false);
-  ember.call("display-buffer", commitDiff);
-  ember.selectWindow(window);
+  gnista.call("display-buffer", commitDiff);
+  gnista.selectWindow(window);
 }
 
 /** Takes the commit's diff away once the message is done with. */
 function hideCommitDiff(): void {
-  if (!commitDiff || !ember.bufferLiveP(ember.getBuffer(commitDiff))) return;
-  const w = ember.windowList().find((x) => ember.windowBuffer(x) === commitDiff);
-  if (w !== undefined && ember.windowList().length > 1) ember.deleteWindow(w);
-  ember.call("kill-buffer", commitDiff);
+  if (!commitDiff || !gnista.bufferLiveP(gnista.getBuffer(commitDiff))) return;
+  const w = gnista.windowList().find((x) => gnista.windowBuffer(x) === commitDiff);
+  if (w !== undefined && gnista.windowList().length > 1) gnista.deleteWindow(w);
+  gnista.call("kill-buffer", commitDiff);
   commitDiff = undefined;
 }
 
-ember.addHook("with-editor-filter-visit-hook", showCommitDiff);
-ember.addHook("with-editor-post-finish-hook", hideCommitDiff);
-ember.addHook("with-editor-post-cancel-hook", hideCommitDiff);
-ember.setDefault("with-editor-file-modes", [
-  ...((ember.variable("with-editor-file-modes") as string[][] | null) ?? []),
+gnista.addHook("with-editor-filter-visit-hook", showCommitDiff);
+gnista.addHook("with-editor-post-finish-hook", hideCommitDiff);
+gnista.addHook("with-editor-post-cancel-hook", hideCommitDiff);
+gnista.setDefault("with-editor-file-modes", [
+  ...((gnista.variable("with-editor-file-modes") as string[][] | null) ?? []),
   ["/\\(?:COMMIT\\|MERGE\\|TAG\\)_EDITMSG\\'", "git-commit-mode"],
   ["/git-rebase-todo\\'", "git-rebase-mode"],
 ]);
 
 /** Highlights the summary line and comments, as git-commit-mode's font-lock keywords. */
 function fontifyCommit(start: number, end: number): void {
-  ember.withSilentModifications(() => {
-    for (let line = ember.lineOf(start); line <= ember.lineOf(Math.max(start, end - 1)); line++) {
-      const ls = ember.lineStart(line);
-      const le = ember.lineEnd(line);
-      const text = ember.lineText(line);
-      if (text.startsWith("#")) ember.putTextProperty(ls, le, "face", "font-lock-comment-face");
+  gnista.withSilentModifications(() => {
+    for (let line = gnista.lineOf(start); line <= gnista.lineOf(Math.max(start, end - 1)); line++) {
+      const ls = gnista.lineStart(line);
+      const le = gnista.lineEnd(line);
+      const text = gnista.lineText(line);
+      if (text.startsWith("#")) gnista.putTextProperty(ls, le, "face", "font-lock-comment-face");
       else if (line === 0) {
-        const max = Number(ember.variable("git-commit-summary-max-length") ?? 68);
-        ember.putTextProperty(ls, Math.min(le, ls + max), "face", "git-commit-summary");
-        if (le > ls + max) ember.putTextProperty(ls + max, le, "face", "font-lock-warning-face");
+        const max = Number(gnista.variable("git-commit-summary-max-length") ?? 68);
+        gnista.putTextProperty(ls, Math.min(le, ls + max), "face", "git-commit-summary");
+        if (le > ls + max) gnista.putTextProperty(ls + max, le, "face", "font-lock-warning-face");
       }
     }
   });
 }
 
-export const gitCommitMode = ember.defineMajorMode({
+export const gitCommitMode = gnista.defineMajorMode({
   name: "git-commit-mode",
   modeName: "Git-Commit",
   parent: "text-mode",
   doc: "Major mode for editing git commit messages: C-c C-c commits, C-c C-k cancels.",
   setup: () => {
-    ember.makeLocalVariable("fill-column");
-    ember.setVariable("fill-column", 72);
-    ember.addHook("jit-lock-functions", fontifyCommit, { local: true });
+    gnista.makeLocalVariable("fill-column");
+    gnista.setVariable("fill-column", 72);
+    gnista.addHook("jit-lock-functions", fontifyCommit, { local: true });
   },
 });
 
 const commitArgs = (): string[] => transientArgs("magit-commit");
 
-const commitCreate = ember.defineCommand({
+const commitCreate = gnista.defineCommand({
   name: "magit-commit-create",
   doc: "Create a new commit on HEAD, writing its message in a buffer.",
   run: () => {
     const args = commitArgs();
     if (!args.includes("--all") && !args.includes("--allow-empty") && gitOutput(["diff", "--cached", "--quiet"]).exit === 0) {
-      if (gitOutput(["diff", "--quiet"]).exit !== 0 && ember.yOrNP("Nothing staged.  Commit all uncommitted changes? ")) args.push("--all");
-      else ember.userError("Nothing staged");
+      if (gitOutput(["diff", "--quiet"]).exit !== 0 && gnista.yOrNP("Nothing staged.  Commit all uncommitted changes? ")) args.push("--all");
+      else gnista.userError("Nothing staged");
     }
     editCommit(args);
   },
 });
 
-const commitAmend = ember.defineCommand({
+const commitAmend = gnista.defineCommand({
   name: "magit-commit-amend",
   doc: "Amend the last commit, with the staged changes and an edited message.",
   run: () => editCommit(["--amend", ...commitArgs()], true),
 });
 
-const commitExtend = ember.defineCommand({
+const commitExtend = gnista.defineCommand({
   name: "magit-commit-extend",
   doc: "Amend the last commit with the staged changes, keeping its message.",
   run: () => void runGit(["commit", "--amend", "--no-edit", ...commitArgs()]),
 });
 
-const commitReword = ember.defineCommand({
+const commitReword = gnista.defineCommand({
   name: "magit-commit-reword",
   doc: "Reword the last commit, ignoring the staged changes.",
   run: () => editCommit(["--amend", "--only", ...commitArgs()], true),
@@ -724,13 +724,13 @@ const remoteBranches = (): string[] => gitLines(["for-each-ref", "--format=%(ref
 
 /** Reads a branch or commit, as magit-read-branch-or-commit. */
 function readBranch(prompt: string, choices = [...localBranches(), ...remoteBranches()], def?: string): string {
-  const answer = ember.completingRead(def ? `${prompt} (default ${def}): ` : `${prompt}: `, choices, { default: def, history: "magit-revision-history" });
-  if (answer === "") ember.userError("Nothing selected");
+  const answer = gnista.completingRead(def ? `${prompt} (default ${def}): ` : `${prompt}: `, choices, { default: def, history: "magit-revision-history" });
+  if (answer === "") gnista.userError("Nothing selected");
   return answer;
 }
-ember.defineVariable({ name: "magit-revision-history", doc: "Branches and commits Magit read.", value: [] });
+gnista.defineVariable({ name: "magit-revision-history", doc: "Branches and commits Magit read.", value: [] });
 
-const branchCheckout = ember.defineCommand({
+const branchCheckout = gnista.defineCommand({
   name: "magit-checkout",
   doc: "Check out a branch or commit.",
   run: () => {
@@ -741,44 +741,44 @@ const branchCheckout = ember.defineCommand({
   },
 });
 
-const branchCreateCheckout = ember.defineCommand({
+const branchCreateCheckout = gnista.defineCommand({
   name: "magit-branch-and-checkout",
   doc: "Create a branch starting at a commit and check it out.",
   run: () => {
     const start = readBranch("Create and checkout branch starting at", [...localBranches(), ...remoteBranches()], currentBranch());
-    const name = ember.readString("Name for new branch: ");
-    if (name === "") ember.userError("No name given");
+    const name = gnista.readString("Name for new branch: ");
+    if (name === "") gnista.userError("No name given");
     runGit(["checkout", "-b", name, start]);
   },
 });
 
-const branchCreate = ember.defineCommand({
+const branchCreate = gnista.defineCommand({
   name: "magit-branch-create",
   doc: "Create a branch starting at a commit, without checking it out.",
   run: () => {
     const start = readBranch("Create branch starting at", [...localBranches(), ...remoteBranches()], currentBranch());
-    const name = ember.readString("Name for new branch: ");
-    if (name === "") ember.userError("No name given");
+    const name = gnista.readString("Name for new branch: ");
+    if (name === "") gnista.userError("No name given");
     runGit(["branch", name, start]);
   },
 });
 
-const branchDelete = ember.defineCommand({
+const branchDelete = gnista.defineCommand({
   name: "magit-branch-delete",
   doc: "Delete a branch; one not merged is deleted only if confirmed.",
   run: () => {
     const name = readBranch("Delete branch", localBranches().filter((b) => b !== currentBranch()));
-    if (!runGit(["branch", "-d", name]) && ember.yOrNP(`Delete unmerged branch ${name}? `)) runGit(["branch", "-D", name]);
+    if (!runGit(["branch", "-d", name]) && gnista.yOrNP(`Delete unmerged branch ${name}? `)) runGit(["branch", "-D", name]);
   },
 });
 
-const branchRename = ember.defineCommand({
+const branchRename = gnista.defineCommand({
   name: "magit-branch-rename",
   doc: "Rename a branch.",
   run: () => {
     const old = readBranch("Rename branch", localBranches(), currentBranch());
-    const name = ember.readString(`Rename branch '${old}' to: `);
-    if (name === "") ember.userError("No name given");
+    const name = gnista.readString(`Rename branch '${old}' to: `);
+    if (name === "") gnista.userError("No name given");
     runGit(["branch", "-m", old, name]);
   },
 });
@@ -791,7 +791,7 @@ const remotes = (): string[] => gitLines(["remote"]);
 /** The upstream of the current branch, asking for one to set if there is none, as magit-push-current-to-upstream does. */
 function ensureUpstream(verb: string): [string, string, boolean] {
   const branch = currentBranch();
-  if (!branch) ember.userError("No branch is checked out");
+  if (!branch) gnista.userError("No branch is checked out");
   const upstream = upstreamOf(branch);
   if (upstream) {
     const [remote, ...rest] = upstream.split("/");
@@ -804,7 +804,7 @@ function ensureUpstream(verb: string): [string, string, boolean] {
 
 const pushArgs = (): string[] => transientArgs("magit-push");
 
-const pushUpstream = ember.defineCommand({
+const pushUpstream = gnista.defineCommand({
   name: "magit-push-current-to-upstream",
   doc: "Push the current branch to its upstream, setting one first if there is none.",
   run: () => {
@@ -814,20 +814,20 @@ const pushUpstream = ember.defineCommand({
   },
 });
 
-const pushPushRemote = ember.defineCommand({
+const pushPushRemote = gnista.defineCommand({
   name: "magit-push-current-to-pushremote",
   doc: "Push the current branch to its push remote, by default the upstream's remote.",
   run: () => {
     const branch = currentBranch();
-    if (!branch) ember.userError("No branch is checked out");
+    if (!branch) gnista.userError("No branch is checked out");
     const remote = gitString(["config", `branch.${branch}.pushRemote`]) ?? gitString(["config", "remote.pushDefault"]) ?? upstreamOf(branch)?.split("/")[0] ?? remotes()[0];
-    if (!remote) ember.userError("No remote to push to");
+    if (!remote) gnista.userError("No remote to push to");
     runGitAsync(["push", "-v", ...pushArgs(), remote, `${branch}:refs/heads/${branch}`], `Pushing to ${remote}/${branch}`);
   },
 });
 
 
-const pullUpstream = ember.defineCommand({
+const pullUpstream = gnista.defineCommand({
   name: "magit-pull-from-upstream",
   doc: "Pull from the upstream of the current branch, setting one first if there is none.",
   run: () => {
@@ -838,13 +838,13 @@ const pullUpstream = ember.defineCommand({
 });
 
 
-const fetchAll = ember.defineCommand({ name: "magit-fetch-all", doc: "Fetch from all remotes.", run: () => runGitAsync(["fetch", "--all", ...transientArgs("magit-fetch")], "Fetching all remotes") });
-const fetchUpstream = ember.defineCommand({
+const fetchAll = gnista.defineCommand({ name: "magit-fetch-all", doc: "Fetch from all remotes.", run: () => runGitAsync(["fetch", "--all", ...transientArgs("magit-fetch")], "Fetching all remotes") });
+const fetchUpstream = gnista.defineCommand({
   name: "magit-fetch-from-upstream",
   doc: "Fetch from the remote of the current branch's upstream.",
   run: () => {
     const remote = upstreamOf(currentBranch())?.split("/")[0] ?? remotes()[0];
-    if (!remote) ember.userError("No remote to fetch from");
+    if (!remote) gnista.userError("No remote to fetch from");
     runGitAsync(["fetch", ...transientArgs("magit-fetch"), remote], `Fetching ${remote}`);
   },
 });
@@ -852,14 +852,14 @@ const fetchUpstream = ember.defineCommand({
 
 // Merging, resetting and stashing.
 
-const mergeCommand = ember.defineCommand({
+const mergeCommand = gnista.defineCommand({
   name: "magit-merge-plain",
   doc: "Merge a branch into the current one.",
   run: () => void runGit(["merge", ...transientArgs("magit-merge"), readBranch("Merge", [...localBranches().filter((b) => b !== currentBranch()), ...remoteBranches()])]),
 });
 
 const resetCommand = (mode: string, doc: string) =>
-  ember.defineCommand({
+  gnista.defineCommand({
     name: `magit-reset-${mode}`,
     doc,
     run: () => {
@@ -874,26 +874,26 @@ function stashAt(prompt: string): string {
   const s = currentSection();
   if (s?.type === "stash") return String(s.value);
   const list = gitLines(["stash", "list", "--format=%gd"]);
-  if (list.length === 0) ember.userError("No stashes");
-  return ember.completingRead(`${prompt} (default ${list[0]}): `, list, { default: list[0], requireMatch: true });
+  if (list.length === 0) gnista.userError("No stashes");
+  return gnista.completingRead(`${prompt} (default ${list[0]}): `, list, { default: list[0], requireMatch: true });
 }
 
-const stashBoth = ember.defineCommand({
+const stashBoth = gnista.defineCommand({
   name: "magit-stash-both",
   doc: "Stash the changes in the index and the working tree, with a message.",
   run: () => {
-    const msg = ember.readString(`Stash message (default: On ${currentBranch() ?? "HEAD"}: ...): `);
+    const msg = gnista.readString(`Stash message (default: On ${currentBranch() ?? "HEAD"}: ...): `);
     runGit(["stash", "push", ...transientArgs("magit-stash"), ...(msg ? ["-m", msg] : [])]);
   },
 });
-const stashApply = ember.defineCommand({ name: "magit-stash-apply", doc: "Apply a stash to the working tree.", run: () => void runGit(["stash", "apply", stashAt("Apply stash")]) });
-const stashPop = ember.defineCommand({ name: "magit-stash-pop", doc: "Apply a stash and remove it.", run: () => void runGit(["stash", "pop", stashAt("Pop stash")]) });
-const stashDrop = ember.defineCommand({
+const stashApply = gnista.defineCommand({ name: "magit-stash-apply", doc: "Apply a stash to the working tree.", run: () => void runGit(["stash", "apply", stashAt("Apply stash")]) });
+const stashPop = gnista.defineCommand({ name: "magit-stash-pop", doc: "Apply a stash and remove it.", run: () => void runGit(["stash", "pop", stashAt("Pop stash")]) });
+const stashDrop = gnista.defineCommand({
   name: "magit-stash-drop",
   doc: "Remove a stash.",
   run: () => {
     const s = stashAt("Drop stash");
-    if (ember.yOrNP(`Drop ${s}? `)) runGit(["stash", "drop", s]);
+    if (gnista.yOrNP(`Drop ${s}? `)) runGit(["stash", "drop", s]);
   },
 });
 
@@ -912,29 +912,29 @@ function insertLog(args: string[]): void {
   });
 }
 
-const logCurrent = ember.defineCommand({
+const logCurrent = gnista.defineCommand({
   name: "magit-log-current",
   doc: "Show the log of the current branch.",
   run: () => {
     const dir = repo();
     const args = logArgs();
     setupBuffer(`magit-log: ${repoName(dir)}`, magitLogMode, "log", () => insertLog([...args, "HEAD"]));
-    ember.gotoChar(0);
+    gnista.gotoChar(0);
   },
 });
 
-const logAll = ember.defineCommand({
+const logAll = gnista.defineCommand({
   name: "magit-log-all",
   doc: "Show the log of all references and HEAD.",
   run: () => {
     const dir = repo();
     const args = logArgs();
     setupBuffer(`magit-log: ${repoName(dir)}`, magitLogMode, "log", () => insertLog([...args, "--all"]));
-    ember.gotoChar(0);
+    gnista.gotoChar(0);
   },
 });
 
-const logOther = ember.defineCommand({
+const logOther = gnista.defineCommand({
   name: "magit-log-other",
   doc: "Show the log of a branch or commit read.",
   run: () => {
@@ -942,7 +942,7 @@ const logOther = ember.defineCommand({
     const rev = readBranch("Log rev,s", [...localBranches(), ...remoteBranches()], currentBranch());
     const args = logArgs();
     setupBuffer(`magit-log: ${repoName(dir)}`, magitLogMode, "log", () => insertLog([...args, rev]));
-    ember.gotoChar(0);
+    gnista.gotoChar(0);
   },
 });
 
@@ -957,15 +957,15 @@ export function showCommit(rev: string): void {
       const [hash, ...rest] = meta.split("\n");
       insertSection("headers", hash, false, () => {
         insertHeading(face(hash, "magit-hash"), "\n");
-        ember.insert(`${rest.join("\n").replace(/\n+$/, "")}\n\n`);
+        gnista.insert(`${rest.join("\n").replace(/\n+$/, "")}\n\n`);
       });
       insertFiles(parseDiff(diff), "commit");
     });
   });
-  ember.gotoChar(0);
+  gnista.gotoChar(0);
 }
 
-const diffDwim = ember.defineCommand({
+const diffDwim = gnista.defineCommand({
   name: "magit-diff-dwim",
   doc: "Show the changes in the working tree, unstaged and staged, or those of the commit at point.",
   run: () => {
@@ -979,31 +979,31 @@ const diffDwim = ember.defineCommand({
     setupBuffer(`magit-diff: ${repoName(dir)}`, magitDiffMode, "diff", () =>
       insertRoot("diff", () => insertFiles(parseDiff(gitOutput(staged ? ["diff", "--cached", "--no-prefix", "-p"] : ["diff", "--no-prefix", "-p"]).output), "commit")),
     );
-    ember.gotoChar(0);
+    gnista.gotoChar(0);
   },
 });
-const diffStaged = ember.defineCommand({
+const diffStaged = gnista.defineCommand({
   name: "magit-diff-staged",
   doc: "Show the changes between the index and HEAD.",
   run: () => {
     const dir = repo();
     setupBuffer(`magit-diff: ${repoName(dir)}`, magitDiffMode, "diff", () => insertRoot("diff", () => insertFiles(parseDiff(gitOutput(["diff", "--cached", "--no-prefix", "-p"]).output), "commit")));
-    ember.gotoChar(0);
+    gnista.gotoChar(0);
   },
 });
-const diffUnstaged = ember.defineCommand({
+const diffUnstaged = gnista.defineCommand({
   name: "magit-diff-unstaged",
   doc: "Show the changes between the working tree and the index.",
   run: () => {
     const dir = repo();
     setupBuffer(`magit-diff: ${repoName(dir)}`, magitDiffMode, "diff", () => insertRoot("diff", () => insertFiles(parseDiff(gitOutput(["diff", "--no-prefix", "-p"]).output), "commit")));
-    ember.gotoChar(0);
+    gnista.gotoChar(0);
   },
 });
 
 // The process buffer.
 
-const processBuffer = ember.defineCommand({
+const processBuffer = gnista.defineCommand({
   name: "magit-process-buffer",
   doc: "Show the git commands Magit ran and their output.",
   run: () => {
@@ -1013,7 +1013,7 @@ const processBuffer = ember.defineCommand({
         for (const p of processLog.filter((x) => x.dir === dir)) {
           insertSection("process", p.args.join(" "), true, () => {
             insertHeading(face(`${p.exit < 0 ? "run" : String(p.exit).padStart(3)} `, p.exit === 0 ? "magit-process-ok" : "magit-process-ng"), face(`git ${p.args.join(" ")}`, "magit-section-heading"), "\n");
-            if (p.output) ember.insert(p.output.endsWith("\n") ? p.output : `${p.output}\n`);
+            if (p.output) gnista.insert(p.output.endsWith("\n") ? p.output : `${p.output}\n`);
           });
         }
       }),
@@ -1021,7 +1021,7 @@ const processBuffer = ember.defineCommand({
     const last = sections()?.root.children.at(-1);
     if (last) {
       show(last);
-      ember.gotoChar(last.start);
+      gnista.gotoChar(last.start);
     }
   },
 });
@@ -1033,7 +1033,7 @@ const processBuffer = ember.defineCommand({
 
 /** A command that runs git with the arguments ARGS gives, as Magit's many small commands do. */
 const gitCommand = (name: string, doc: string, args: () => string[] | undefined) =>
-  ember.defineCommand({
+  gnista.defineCommand({
     name,
     doc,
     run: () => {
@@ -1042,23 +1042,23 @@ const gitCommand = (name: string, doc: string, args: () => string[] | undefined)
     },
   });
 
-/** A command Ember's Magit does not have yet, which says so. */
+/** A command Gnista's Magit does not have yet, which says so. */
 const notYet = (name: string, what: string) =>
-  ember.defineCommand({ name, doc: `${what}: not in Ember's Magit yet.`, run: () => ember.userError(`${what} is not in Ember's Magit yet`) });
+  gnista.defineCommand({ name, doc: `${what}: not in Gnista's Magit yet.`, run: () => gnista.userError(`${what} is not in Gnista's Magit yet`) });
 
 /** The commit at point, or one read from the log, as magit-read-branch-or-commit. */
 function readCommit(prompt: string): string {
   const s = currentSection();
   const def = s?.type === "commit" ? String(s.value) : undefined;
   const log = gitLines(["log", "--format=%h %s", "-n100"]);
-  const answer = ember.completingRead(def ? `${prompt} (default ${def}): ` : `${prompt}: `, log, { default: def, history: "magit-revision-history" });
-  if (answer === "") ember.userError("Nothing selected");
+  const answer = gnista.completingRead(def ? `${prompt} (default ${def}): ` : `${prompt}: `, log, { default: def, history: "magit-revision-history" });
+  if (answer === "") gnista.userError("Nothing selected");
   return answer.split(" ")[0];
 }
 
 /** A commit fixing up or squashing into a commit read, then rebasing them together if INSTANT, as magit-commit-fixup and its kin. */
 function fixupCommand(name: string, doc: string, option: (rev: string) => string, edit: boolean, instant = false) {
-  return ember.defineCommand({
+  return gnista.defineCommand({
     name,
     doc,
     run: () => {
@@ -1119,17 +1119,17 @@ const pushRemoteOf = (branch?: string): string | undefined =>
 /** Reads a remote, setting it as the branch's push remote, as magit-push-current-to-pushremote with no push remote does. */
 function ensurePushRemote(): string {
   const branch = currentBranch();
-  if (!branch) ember.userError("No branch is checked out");
+  if (!branch) gnista.userError("No branch is checked out");
   const remote = pushRemoteOf(branch);
   if (remote) return remote;
   const all = remotes();
-  if (all.length === 0) ember.userError("No remote to push to");
-  const chosen = ember.completingRead(`Set push-remote of ${branch} and push there: `, all, { requireMatch: true, default: all[0] });
+  if (all.length === 0) gnista.userError("No remote to push to");
+  const chosen = gnista.completingRead(`Set push-remote of ${branch} and push there: `, all, { requireMatch: true, default: all[0] });
   gitOutput(["config", `branch.${branch}.pushRemote`, chosen]);
   return chosen;
 }
 
-const pushPushRemoteSetting = ember.defineCommand({
+const pushPushRemoteSetting = gnista.defineCommand({
   name: "magit-push-current-to-pushremote",
   doc: "Push the current branch to its push remote, setting one first if there is none.",
   run: () => {
@@ -1139,7 +1139,7 @@ const pushPushRemoteSetting = ember.defineCommand({
   },
 });
 
-const pushElsewhere = ember.defineCommand({
+const pushElsewhere = gnista.defineCommand({
   name: "magit-push-current",
   doc: "Push the current branch to a branch read.",
   run: () => {
@@ -1150,7 +1150,7 @@ const pushElsewhere = ember.defineCommand({
   },
 });
 
-const pushOther = ember.defineCommand({
+const pushOther = gnista.defineCommand({
   name: "magit-push-other",
   doc: "Push a branch or commit to a remote branch, both read.",
   run: () => {
@@ -1161,48 +1161,48 @@ const pushOther = ember.defineCommand({
   },
 });
 
-const pushRefspecs = ember.defineCommand({
+const pushRefspecs = gnista.defineCommand({
   name: "magit-push-refspecs",
   doc: "Push refspecs read to a remote read.",
   run: () => {
-    const remote = ember.completingRead("Push to remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
-    const specs = ember.readString(`Push refspec,s to ${remote}: `);
+    const remote = gnista.completingRead("Push to remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
+    const specs = gnista.readString(`Push refspec,s to ${remote}: `);
     runGitAsync(["push", "-v", ...pushArgs(), remote, ...specs.split(/[ ,]+/).filter(Boolean)], `Pushing to ${remote}`);
   },
 });
 
-const pushMatching = ember.defineCommand({
+const pushMatching = gnista.defineCommand({
   name: "magit-push-matching",
   doc: "Push all branches that have a branch of the same name on a remote.",
   run: () => {
-    const remote = ember.completingRead("Push matching branches to: ", remotes(), { requireMatch: true, default: remotes()[0] });
+    const remote = gnista.completingRead("Push matching branches to: ", remotes(), { requireMatch: true, default: remotes()[0] });
     runGitAsync(["push", "-v", ...pushArgs(), remote, ":"], `Pushing to ${remote}`);
   },
 });
 
-const pushTag = ember.defineCommand({
+const pushTag = gnista.defineCommand({
   name: "magit-push-tag",
   doc: "Push a tag to a remote.",
   run: () => {
-    const tag = ember.completingRead("Push tag: ", gitLines(["tag"]), { requireMatch: true });
-    const remote = ember.completingRead(`Push ${tag} to remote: `, remotes(), { requireMatch: true, default: remotes()[0] });
+    const tag = gnista.completingRead("Push tag: ", gitLines(["tag"]), { requireMatch: true });
+    const remote = gnista.completingRead(`Push ${tag} to remote: `, remotes(), { requireMatch: true, default: remotes()[0] });
     runGitAsync(["push", ...pushArgs(), remote, tag], `Pushing ${tag}`);
   },
 });
 
-const pushTags = ember.defineCommand({
+const pushTags = gnista.defineCommand({
   name: "magit-push-tags",
   doc: "Push all tags to a remote.",
   run: () => {
-    const remote = ember.completingRead("Push tags to remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
+    const remote = gnista.completingRead("Push tags to remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
     runGitAsync(["push", ...pushArgs(), remote, "--tags"], `Pushing tags to ${remote}`);
   },
 });
 
-const setVariables = ember.defineCommand({
+const setVariables = gnista.defineCommand({
   name: "magit-branch-configure",
   doc: "Configure the current branch's upstream, push remote and rebasing.",
-  run: () => ember.call(branchMenu),
+  run: () => gnista.call(branchMenu),
 });
 
 const pushMenu = transientDefinePrefix("magit-push", {
@@ -1240,7 +1240,7 @@ const pushMenu = transientDefinePrefix("magit-push", {
 
 // Pull and fetch.
 
-const pullPushRemote = ember.defineCommand({
+const pullPushRemote = gnista.defineCommand({
   name: "magit-pull-from-pushremote",
   doc: "Pull from the push remote of the current branch, setting one first if there is none.",
   run: () => {
@@ -1249,7 +1249,7 @@ const pullPushRemote = ember.defineCommand({
   },
 });
 
-const pullElsewhere = ember.defineCommand({
+const pullElsewhere = gnista.defineCommand({
   name: "magit-pull-branch",
   doc: "Pull a branch read into the current one.",
   run: () => {
@@ -1261,9 +1261,9 @@ const pullElsewhere = ember.defineCommand({
 
 /** A git config variable a suffix cycles through CHOICES, shown as Magit shows one: name [a|b|default:x]. */
 let configVariables = 0;
-function configVariable(key: string, variable: () => string, choices: () => string[], fallback?: string): [string, () => ember.PropertizedString, ember.DefinedCommand] {
+function configVariable(key: string, variable: () => string, choices: () => string[], fallback?: string): [string, () => gnista.PropertizedString, gnista.DefinedCommand] {
   // Named without asking git which variable it is: that waits for the menu.
-  const command = ember.defineCommand({
+  const command = gnista.defineCommand({
     name: `magit:config-variable:${key}:${configVariables++}`,
     doc: "Cycle a git variable through its values.",
     run: () => {
@@ -1281,7 +1281,7 @@ function configVariable(key: string, variable: () => string, choices: () => stri
     const now = gitString(["config", name]);
     const parts = choices().flatMap((c, i) => [...(i > 0 ? [face("|", "transient-delimiter")] : []), face(c, c === now ? "transient-value" : "transient-inactive-value")]);
     const def = fallback !== undefined ? [face("|", "transient-delimiter"), face(`default:${fallback}`, now === undefined ? "transient-value" : "transient-inactive-value")] : [];
-    return ember.concat(face(name, "transient-argument"), " ", face("[", "transient-delimiter"), ...parts, ...def, face("]", "transient-delimiter"));
+    return gnista.concat(face(name, "transient-argument"), " ", face("[", "transient-delimiter"), ...parts, ...def, face("]", "transient-delimiter"));
   };
   return [key, describe, command];
 }
@@ -1305,7 +1305,7 @@ const pullMenu = transientDefinePrefix("magit-pull", {
   ],
 });
 
-const fetchPushRemote = ember.defineCommand({
+const fetchPushRemote = gnista.defineCommand({
   name: "magit-fetch-from-pushremote",
   doc: "Fetch from the push remote of the current branch, setting one first if there is none.",
   run: () => {
@@ -1313,29 +1313,29 @@ const fetchPushRemote = ember.defineCommand({
     runGitAsync(["fetch", ...transientArgs("magit-fetch"), remote], `Fetching ${remote}`);
   },
 });
-const fetchElsewhere = ember.defineCommand({
+const fetchElsewhere = gnista.defineCommand({
   name: "magit-fetch-other",
   doc: "Fetch from a remote read.",
   run: () => {
-    const remote = ember.completingRead("Fetch remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
+    const remote = gnista.completingRead("Fetch remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
     runGitAsync(["fetch", ...transientArgs("magit-fetch"), remote], `Fetching ${remote}`);
   },
 });
-const fetchBranch = ember.defineCommand({
+const fetchBranch = gnista.defineCommand({
   name: "magit-fetch-branch",
   doc: "Fetch a branch from a remote.",
   run: () => {
-    const remote = ember.completingRead("Fetch from remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
-    const branch = ember.readString(`Fetch branch from ${remote}: `);
+    const remote = gnista.completingRead("Fetch from remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
+    const branch = gnista.readString(`Fetch branch from ${remote}: `);
     runGitAsync(["fetch", ...transientArgs("magit-fetch"), remote, branch], `Fetching ${remote} ${branch}`);
   },
 });
-const fetchRefspec = ember.defineCommand({
+const fetchRefspec = gnista.defineCommand({
   name: "magit-fetch-refspec",
   doc: "Fetch a refspec read from a remote read.",
   run: () => {
-    const remote = ember.completingRead("Fetch from remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
-    const spec = ember.readString(`Fetch using refspec from ${remote}: `);
+    const remote = gnista.completingRead("Fetch from remote: ", remotes(), { requireMatch: true, default: remotes()[0] });
+    const spec = gnista.readString(`Fetch using refspec from ${remote}: `);
     runGitAsync(["fetch", ...transientArgs("magit-fetch"), remote, spec], `Fetching ${remote}`);
   },
 });
@@ -1364,7 +1364,7 @@ const fetchMenu = transientDefinePrefix("magit-fetch", {
 /** Whether a rebase is going on, stopped for something, as magit-rebase-in-progress-p. */
 function rebaseInProgress(): boolean {
   const gitDir = gitString(["rev-parse", "--absolute-git-dir"]);
-  return gitDir !== undefined && (ember.fileExists(`${gitDir}/rebase-merge`) || ember.fileExists(`${gitDir}/rebase-apply`));
+  return gitDir !== undefined && (gnista.fileExists(`${gitDir}/rebase-merge`) || gnista.fileExists(`${gitDir}/rebase-apply`));
 }
 
 const rebaseArgs = (): string[] => transientArgs("magit-rebase");
@@ -1372,17 +1372,17 @@ const rebaseArgs = (): string[] => transientArgs("magit-rebase");
 /** The commit to rebase from, its parent or --root for the first, as magit-rebase-interactive-1 works it out. */
 const ontoParent = (rev: string): string => (gitOutput(["rev-parse", "--verify", "-q", `${rev}^`]).exit === 0 ? `${rev}^` : "--root");
 
-/** Rebases interactively from REV, with the todo list edited by SEQUENCE, a shell command, or in Ember if none. */
+/** Rebases interactively from REV, with the todo list edited by SEQUENCE, a shell command, or in Gnista if none. */
 function rebaseInteractive(rev: string, what: string, sequence?: string): void {
   const args = ["rebase", "-i", ...rebaseArgs().filter((a) => a !== "--interactive"), ontoParent(rev)];
-  // A sequence editor of its own wins over Ember's, which still edits the messages.
+  // A sequence editor of its own wins over Gnista's, which still edits the messages.
   runGitAsync(args, what, true, sequence ? { GIT_SEQUENCE_EDITOR: sequence } : {});
 }
 
 /** A sequence editor that changes the first line's action, as magit-rebase-edit-commit and its kin have git do. */
 const firstLineTo = (action: string): string => `perl -i -p -e 's/^pick/${action}/ if $. == 1'`;
 
-const rebaseOntoUpstream = ember.defineCommand({
+const rebaseOntoUpstream = gnista.defineCommand({
   name: "magit-rebase-onto-upstream",
   doc: "Rebase the current branch onto its upstream, setting one first if there is none.",
   run: () => {
@@ -1391,7 +1391,7 @@ const rebaseOntoUpstream = ember.defineCommand({
     runGitAsync(["rebase", ...rebaseArgs(), `${remote}/${target}`], "Rebasing", true);
   },
 });
-const rebaseOntoPushRemote = ember.defineCommand({
+const rebaseOntoPushRemote = gnista.defineCommand({
   name: "magit-rebase-onto-pushremote",
   doc: "Rebase the current branch onto its push remote's branch, setting one first if there is none.",
   run: () => {
@@ -1399,17 +1399,17 @@ const rebaseOntoPushRemote = ember.defineCommand({
     runGitAsync(["rebase", ...rebaseArgs(), `${remote}/${branchOrHead()}`], "Rebasing", true);
   },
 });
-const rebaseElsewhere = ember.defineCommand({
+const rebaseElsewhere = gnista.defineCommand({
   name: "magit-rebase-branch",
   doc: "Rebase the current branch onto a branch read.",
   run: () => runGitAsync(["rebase", ...rebaseArgs(), readBranch(`Rebase ${branchOrHead()} onto`, [...localBranches(), ...remoteBranches()])], "Rebasing", true),
 });
-const rebaseInteractively = ember.defineCommand({
+const rebaseInteractively = gnista.defineCommand({
   name: "magit-rebase-interactive",
   doc: "Rebase the commits from one read interactively, editing the todo list in git-rebase-mode.",
   run: () => rebaseInteractive(readCommit("Interactively rebase from"), "Rebasing"),
 });
-const rebaseSubset = ember.defineCommand({
+const rebaseSubset = gnista.defineCommand({
   name: "magit-rebase-subset",
   doc: "Rebase the commits from one read onto a new base read.",
   run: () => {
@@ -1418,25 +1418,25 @@ const rebaseSubset = ember.defineCommand({
     runGitAsync(["rebase", ...rebaseArgs(), "--onto", onto, ontoParent(start)], "Rebasing", true);
   },
 });
-const rebaseEditCommit = ember.defineCommand({
+const rebaseEditCommit = gnista.defineCommand({
   name: "magit-rebase-edit-commit",
   doc: "Stop at a commit read, to change it, then go on with r r.",
   run: () => rebaseInteractive(readCommit("Edit commit"), "Rebasing", firstLineTo("edit")),
 });
-const rebaseRewordCommit = ember.defineCommand({
+const rebaseRewordCommit = gnista.defineCommand({
   name: "magit-rebase-reword-commit",
   doc: "Write a commit's message again.",
   run: () => rebaseInteractive(readCommit("Reword commit"), "Rebasing", firstLineTo("reword")),
 });
-const rebaseRemoveCommit = ember.defineCommand({
+const rebaseRemoveCommit = gnista.defineCommand({
   name: "magit-rebase-remove-commit",
   doc: "Take a commit out of the history.",
   run: () => {
     const rev = readCommit("Remove commit");
-    if (ember.yOrNP(`Remove ${rev}? `)) rebaseInteractive(rev, "Rebasing", firstLineTo("drop"));
+    if (gnista.yOrNP(`Remove ${rev}? `)) rebaseInteractive(rev, "Rebasing", firstLineTo("drop"));
   },
 });
-const rebaseAutosquash = ember.defineCommand({
+const rebaseAutosquash = gnista.defineCommand({
   name: "magit-rebase-autosquash",
   doc: "Squash the fixup and squash commits into the commits they name.",
   run: () => {
@@ -1445,14 +1445,14 @@ const rebaseAutosquash = ember.defineCommand({
     runGitAsync(["rebase", "-i", "--autosquash", "--autostash", "--keep-empty", ...(base ? [base] : ["--root"])], "Autosquashing", true, { GIT_SEQUENCE_EDITOR: ":" });
   },
 });
-const rebaseContinue = ember.defineCommand({ name: "magit-rebase-continue", doc: "Go on with the rebase.", run: () => runGitAsync(["rebase", "--continue"], "Rebasing", true) });
-const rebaseSkip = ember.defineCommand({ name: "magit-rebase-skip", doc: "Skip the commit the rebase stopped at.", run: () => runGitAsync(["rebase", "--skip"], "Rebasing", true) });
-const rebaseEditTodo = ember.defineCommand({ name: "magit-rebase-edit", doc: "Edit the rest of the rebase's todo list.", run: () => runGitAsync(["rebase", "--edit-todo"], "Editing", true) });
-const rebaseAbort = ember.defineCommand({
+const rebaseContinue = gnista.defineCommand({ name: "magit-rebase-continue", doc: "Go on with the rebase.", run: () => runGitAsync(["rebase", "--continue"], "Rebasing", true) });
+const rebaseSkip = gnista.defineCommand({ name: "magit-rebase-skip", doc: "Skip the commit the rebase stopped at.", run: () => runGitAsync(["rebase", "--skip"], "Rebasing", true) });
+const rebaseEditTodo = gnista.defineCommand({ name: "magit-rebase-edit", doc: "Edit the rest of the rebase's todo list.", run: () => runGitAsync(["rebase", "--edit-todo"], "Editing", true) });
+const rebaseAbort = gnista.defineCommand({
   name: "magit-rebase-abort",
   doc: "Abort the rebase, going back to where it started.",
   run: () => {
-    if (ember.yOrNP("Abort this rebase? ")) runGit(["rebase", "--abort"]);
+    if (gnista.yOrNP("Abort this rebase? ")) runGit(["rebase", "--abort"]);
   },
 });
 
@@ -1505,59 +1505,59 @@ const TODO_LINE = /^(pick|p|reword|r|edit|e|squash|s|fixup|f|drop|d|exec|x|break
 
 /** Gives the todo line at point ACTION, and goes to the next, as git-rebase-set-action. */
 function setAction(action: string): void {
-  const line = ember.lineOf(ember.point());
-  const text = ember.lineText(line);
+  const line = gnista.lineOf(gnista.point());
+  const text = gnista.lineText(line);
   const m = TODO_LINE.exec(text);
   if (!m || ["exec", "x", "break", "b", "label", "l", "reset", "t", "merge", "m", "update-ref", "u"].includes(m[1])) {
     forwardLine(1);
     return;
   }
-  ember.letBind({ "inhibit-read-only": true }, () => {
-    const start = ember.lineStart(line);
-    ember.deleteRegion(start, start + m[1].length);
-    ember.gotoChar(start);
-    ember.insert(action);
+  gnista.letBind({ "inhibit-read-only": true }, () => {
+    const start = gnista.lineStart(line);
+    gnista.deleteRegion(start, start + m[1].length);
+    gnista.gotoChar(start);
+    gnista.insert(action);
   });
   forwardLine(1);
 }
 
 /** Moves the todo line at point by N lines, as git-rebase-move-line-down. */
 function moveLine(n: number): void {
-  const line = ember.lineOf(ember.point());
+  const line = gnista.lineOf(gnista.point());
   const target = line + n;
-  if (target < 0 || !TODO_LINE.test(ember.lineText(line)) || !TODO_LINE.test(ember.lineText(target))) return;
-  ember.letBind({ "inhibit-read-only": true }, () => {
-    const [a, b] = [ember.lineText(line), ember.lineText(target)];
+  if (target < 0 || !TODO_LINE.test(gnista.lineText(line)) || !TODO_LINE.test(gnista.lineText(target))) return;
+  gnista.letBind({ "inhibit-read-only": true }, () => {
+    const [a, b] = [gnista.lineText(line), gnista.lineText(target)];
     for (const [l, t] of [[line, b], [target, a]] as const) {
-      ember.deleteRegion(ember.lineStart(l), ember.lineEnd(l));
-      ember.gotoChar(ember.lineStart(l));
-      ember.insert(t);
+      gnista.deleteRegion(gnista.lineStart(l), gnista.lineEnd(l));
+      gnista.gotoChar(gnista.lineStart(l));
+      gnista.insert(t);
     }
   });
-  ember.gotoChar(ember.lineStart(target));
+  gnista.gotoChar(gnista.lineStart(target));
 }
 
-const todoCommand = (name: string, action: string, doc: string) => ember.defineCommand({ name, doc, run: () => setAction(action) });
+const todoCommand = (name: string, action: string, doc: string) => gnista.defineCommand({ name, doc, run: () => setAction(action) });
 
 /** Highlights the todo list's actions, hashes and comments, as git-rebase-mode's font-lock keywords. */
 function fontifyTodo(start: number, end: number): void {
-  ember.withSilentModifications(() => {
-    for (let line = ember.lineOf(start); line <= ember.lineOf(Math.max(start, end - 1)); line++) {
-      const ls = ember.lineStart(line);
-      const text = ember.lineText(line);
+  gnista.withSilentModifications(() => {
+    for (let line = gnista.lineOf(start); line <= gnista.lineOf(Math.max(start, end - 1)); line++) {
+      const ls = gnista.lineStart(line);
+      const text = gnista.lineText(line);
       if (text.startsWith("#")) {
-        ember.putTextProperty(ls, ember.lineEnd(line), "face", "font-lock-comment-face");
+        gnista.putTextProperty(ls, gnista.lineEnd(line), "face", "font-lock-comment-face");
         continue;
       }
       const m = /^(\S+)(\s+)([0-9a-f]{4,40})?/.exec(text);
       if (!m || !TODO_LINE.test(text)) continue;
-      ember.putTextProperty(ls, ls + m[1].length, "face", "font-lock-keyword-face");
-      if (m[3]) ember.putTextProperty(ls + m[1].length + m[2].length, ls + m[1].length + m[2].length + m[3].length, "face", "magit-hash");
+      gnista.putTextProperty(ls, ls + m[1].length, "face", "font-lock-keyword-face");
+      if (m[3]) gnista.putTextProperty(ls + m[1].length + m[2].length, ls + m[1].length + m[2].length + m[3].length, "face", "magit-hash");
     }
   });
 }
 
-export const gitRebaseMode = ember.defineMajorMode({
+export const gitRebaseMode = gnista.defineMajorMode({
   name: "git-rebase-mode",
   modeName: "Git Rebase",
   parent: "text-mode",
@@ -1573,49 +1573,49 @@ export const gitRebaseMode = ember.defineMajorMode({
     d: todoCommand("git-rebase-drop", "drop", "Leave the commit out."),
     k: todoCommand("git-rebase-kill-line", "drop", "Leave the commit out."),
     "C-k": todoCommand("git-rebase-kill-line-k", "drop", "Leave the commit out."),
-    p: ember.defineCommand({ name: "git-rebase-backward-line", doc: "Go to the line before.", run: () => void forwardLine(-1) }),
-    n: ember.defineCommand({ name: "git-rebase-forward-line", doc: "Go to the next line.", run: () => void forwardLine(1) }),
-    "M-p": ember.defineCommand({ name: "git-rebase-move-line-up", doc: "Move the line up.", run: () => moveLine(-1) }),
-    "M-n": ember.defineCommand({ name: "git-rebase-move-line-down", doc: "Move the line down.", run: () => moveLine(1) }),
-    "M-<up>": "git-rebase-move-line-up" as ember.CommandName,
-    "M-<down>": "git-rebase-move-line-down" as ember.CommandName,
-    x: ember.defineCommand({
+    p: gnista.defineCommand({ name: "git-rebase-backward-line", doc: "Go to the line before.", run: () => void forwardLine(-1) }),
+    n: gnista.defineCommand({ name: "git-rebase-forward-line", doc: "Go to the next line.", run: () => void forwardLine(1) }),
+    "M-p": gnista.defineCommand({ name: "git-rebase-move-line-up", doc: "Move the line up.", run: () => moveLine(-1) }),
+    "M-n": gnista.defineCommand({ name: "git-rebase-move-line-down", doc: "Move the line down.", run: () => moveLine(1) }),
+    "M-<up>": "git-rebase-move-line-up" as gnista.CommandName,
+    "M-<down>": "git-rebase-move-line-down" as gnista.CommandName,
+    x: gnista.defineCommand({
       name: "git-rebase-exec",
       doc: "Add a shell command to run at this point of the rebase.",
       run: () => {
-        const cmd = ember.readString("Execute: ");
+        const cmd = gnista.readString("Execute: ");
         if (cmd === "") return;
-        ember.gotoChar(ember.lineStart(ember.lineOf(ember.point())));
-        ember.insert(`exec ${cmd}\n`);
+        gnista.gotoChar(gnista.lineStart(gnista.lineOf(gnista.point())));
+        gnista.insert(`exec ${cmd}\n`);
       },
     }),
-    b: ember.defineCommand({
+    b: gnista.defineCommand({
       name: "git-rebase-break",
       doc: "Stop the rebase at this point.",
       run: () => {
-        ember.gotoChar(ember.lineStart(ember.lineOf(ember.point())));
-        ember.insert("break\n");
+        gnista.gotoChar(gnista.lineStart(gnista.lineOf(gnista.point())));
+        gnista.insert("break\n");
       },
     }),
-    RET: ember.defineCommand({
+    RET: gnista.defineCommand({
       name: "git-rebase-show-commit",
       doc: "Show the commit of the line at point.",
       run: () => {
-        const m = /^\S+\s+([0-9a-f]{4,40})/.exec(ember.lineText(ember.lineOf(ember.point())));
+        const m = /^\S+\s+([0-9a-f]{4,40})/.exec(gnista.lineText(gnista.lineOf(gnista.point())));
         if (m) showCommit(m[1]);
       },
     }),
   },
   setup: () => {
-    ember.addHook("jit-lock-functions", fontifyTodo, { local: true });
+    gnista.addHook("jit-lock-functions", fontifyTodo, { local: true });
   },
 });
 
 // Branch.
 
 /** A branch variable read and set, shown as Magit shows it: branch.main.description unset. */
-function branchVariable(key: string, name: () => string, read: () => string | undefined): [string, () => ember.PropertizedString, ember.DefinedCommand] {
-  const command = ember.defineCommand({
+function branchVariable(key: string, name: () => string, read: () => string | undefined): [string, () => gnista.PropertizedString, gnista.DefinedCommand] {
+  const command = gnista.defineCommand({
     name: `magit:branch-variable:${key}`,
     doc: "Set a variable of the current branch.",
     run: () => {
@@ -1627,23 +1627,23 @@ function branchVariable(key: string, name: () => string, read: () => string | un
   });
   const describe = () => {
     const now = gitString(["config", name()]);
-    return ember.concat(face(name(), "transient-argument"), " ", now === undefined ? face("unset", "transient-inactive-value") : face(now, "transient-value"));
+    return gnista.concat(face(name(), "transient-argument"), " ", now === undefined ? face("unset", "transient-inactive-value") : face(now, "transient-value"));
   };
   return [key, describe, command];
 }
 
-const branchLocal = ember.defineCommand({
+const branchLocal = gnista.defineCommand({
   name: "magit-branch-checkout",
   doc: "Check out a local branch, or create one from a remote branch.",
   run: () => runGit(["checkout", readBranch("Checkout branch", localBranches().filter((b) => b !== currentBranch()))]) as unknown as void,
 });
 
-const branchSpinoff = ember.defineCommand({
+const branchSpinoff = gnista.defineCommand({
   name: "magit-branch-spinoff",
   doc: "Create a branch from the current one and check it out, taking the current one back to its upstream.",
   run: () => {
-    const name = ember.readString("Spin off branch: ");
-    if (name === "") ember.userError("No name given");
+    const name = gnista.readString("Spin off branch: ");
+    if (name === "") gnista.userError("No name given");
     const from = currentBranch();
     const upstream = upstreamOf(from);
     if (!runGit(["checkout", "-b", name])) return;
@@ -1651,12 +1651,12 @@ const branchSpinoff = ember.defineCommand({
   },
 });
 
-const branchSpinout = ember.defineCommand({
+const branchSpinout = gnista.defineCommand({
   name: "magit-branch-spinout",
   doc: "Create a branch from the current one, taking the current one back to its upstream, without checking the new one out.",
   run: () => {
-    const name = ember.readString("Spin out branch: ");
-    if (name === "") ember.userError("No name given");
+    const name = gnista.readString("Spin out branch: ");
+    if (name === "") gnista.userError("No name given");
     const from = currentBranch();
     const upstream = upstreamOf(from);
     if (!runGit(["branch", name])) return;
@@ -1664,7 +1664,7 @@ const branchSpinout = ember.defineCommand({
   },
 });
 
-const branchReset = ember.defineCommand({
+const branchReset = gnista.defineCommand({
   name: "magit-branch-reset",
   doc: "Reset a branch to a commit read.",
   run: () => {
@@ -1686,14 +1686,14 @@ const branchMenu = transientDefinePrefix("magit-branch", {
     {
       description: () => `Configure ${branchOrHead()}`,
       items: [
-        branchVariable("d", () => `branch.${branchOrHead()}.description`, () => ember.readString("Description: ")),
+        branchVariable("d", () => `branch.${branchOrHead()}.description`, () => gnista.readString("Description: ")),
         branchVariable("u", () => `branch.${branchOrHead()}.merge`, () => {
           const up = readBranch("Upstream", remoteBranches());
           const [remote, ...rest] = up.split("/");
           gitOutput(["config", `branch.${branchOrHead()}.remote`, remote]);
           return `refs/heads/${rest.join("/")}`;
         }),
-        [" ", { info: () => ember.concat(face(`branch.${branchOrHead()}.remote`, "transient-argument"), " ", ((r) => (r === undefined ? face("unset", "transient-inactive-value") : face(r, "transient-value")))(gitString(["config", `branch.${branchOrHead()}.remote`]))) }],
+        [" ", { info: () => gnista.concat(face(`branch.${branchOrHead()}.remote`, "transient-argument"), " ", ((r) => (r === undefined ? face("unset", "transient-inactive-value") : face(r, "transient-value")))(gitString(["config", `branch.${branchOrHead()}.remote`]))) }],
         configVariable("r", () => `branch.${branchOrHead()}.rebase`, () => ["true", "false"], "false"),
         configVariable("p", () => `branch.${branchOrHead()}.pushRemote`, () => remotes()),
       ],
@@ -1717,7 +1717,7 @@ const branchMenu = transientDefinePrefix("magit-branch", {
 
 // Log.
 
-const logRelated = ember.defineCommand({
+const logRelated = gnista.defineCommand({
   name: "magit-log-related",
   doc: "Show the log of the current branch, its upstream and its push target.",
   run: () => {
@@ -1726,25 +1726,25 @@ const logRelated = ember.defineCommand({
     const revs = ["HEAD", ...[upstreamOf(branch)].filter((r): r is string => r !== undefined)];
     const args = logArgs();
     setupBuffer(`magit-log: ${repoName(dir)}`, magitLogMode, "log", () => insertLog([...args, ...revs]));
-    ember.gotoChar(0);
+    gnista.gotoChar(0);
   },
 });
 
 const logBranches = (name: string, doc: string, refs: string[]) =>
-  ember.defineCommand({
+  gnista.defineCommand({
     name,
     doc,
     run: () => {
       const dir = repo();
       const args = logArgs();
       setupBuffer(`magit-log: ${repoName(dir)}`, magitLogMode, "log", () => insertLog([...args, ...refs]));
-      ember.gotoChar(0);
+      gnista.gotoChar(0);
     },
   });
 
 /** Shows a reflog, as magit-reflog-current. */
 const reflog = (name: string, doc: string, ref: () => string) =>
-  ember.defineCommand({
+  gnista.defineCommand({
     name,
     doc,
     run: () => {
@@ -1758,18 +1758,18 @@ const reflog = (name: string, doc: string, ref: () => string) =>
           }
         }),
       );
-      ember.gotoChar(0);
+      gnista.gotoChar(0);
     },
   });
 
-const shortlog = ember.defineCommand({
+const shortlog = gnista.defineCommand({
   name: "magit-shortlog",
   doc: "Show the commits by author, as git shortlog.",
   run: () => {
     const dir = repo();
     const out = gitOutput(["shortlog", "HEAD"]).output;
-    setupBuffer(`magit-shortlog: ${repoName(dir)}`, magitLogMode, "shortlog", () => insertRoot("shortlog", () => ember.insert(out)));
-    ember.gotoChar(0);
+    setupBuffer(`magit-shortlog: ${repoName(dir)}`, magitLogMode, "shortlog", () => insertRoot("shortlog", () => gnista.insert(out)));
+    gnista.gotoChar(0);
   },
 });
 
@@ -1846,7 +1846,7 @@ const logMenu = transientDefinePrefix("magit-log", {
 // Merge.
 
 const mergeWith = (name: string, doc: string, extra: string[]) =>
-  ember.defineCommand({
+  gnista.defineCommand({
     name,
     doc,
     run: () => {
@@ -1855,7 +1855,7 @@ const mergeWith = (name: string, doc: string, extra: string[]) =>
     },
   });
 const mergePlain = mergeWith("magit-merge-plain", "Merge a branch into the current one.", ["--no-edit"]);
-const mergeEdit = ember.defineCommand({
+const mergeEdit = gnista.defineCommand({
   name: "magit-merge-editmsg",
   doc: "Merge a branch into the current one, writing the merge commit's message.",
   run: () => {
@@ -1865,7 +1865,7 @@ const mergeEdit = ember.defineCommand({
 });
 const mergeNocommit = mergeWith("magit-merge-nocommit", "Merge a branch into the current one, without committing.", ["--no-commit", "--no-ff"]);
 const mergeSquash = mergeWith("magit-merge-squash", "Squash the changes of a branch into the index, without committing.", ["--squash"]);
-const mergeAbsorb = ember.defineCommand({
+const mergeAbsorb = gnista.defineCommand({
   name: "magit-merge-absorb",
   doc: "Merge a branch into the current one and delete it.",
   run: () => {
@@ -1873,17 +1873,17 @@ const mergeAbsorb = ember.defineCommand({
     if (runGit(["merge", "--no-edit", ...transientArgs("magit-merge"), branch])) runGit(["branch", "-D", branch]);
   },
 });
-const mergeDissolve = ember.defineCommand({
+const mergeDissolve = gnista.defineCommand({
   name: "magit-merge-into",
   doc: "Merge the current branch into another and delete the current one.",
   run: () => {
     const from = currentBranch();
-    if (!from) ember.userError("No branch is checked out");
+    if (!from) gnista.userError("No branch is checked out");
     const into = readBranch(`Merge ${from} into`, localBranches().filter((b) => b !== from), upstreamOf(from)?.replace(/^[^/]+\//, ""));
     if (runGit(["checkout", into]) && runGit(["merge", "--no-edit", ...transientArgs("magit-merge"), from])) runGit(["branch", "-D", from]);
   },
 });
-const mergePreview = ember.defineCommand({
+const mergePreview = gnista.defineCommand({
   name: "magit-merge-preview",
   doc: "Show the changes merging a branch would make.",
   run: () => {
@@ -1892,7 +1892,7 @@ const mergePreview = ember.defineCommand({
     const base = gitString(["merge-base", "HEAD", branch]) ?? "HEAD";
     const out = gitOutput(["diff", "--no-prefix", "-p", base, branch]).output;
     setupBuffer(`magit-merge-preview: ${repoName(dir)}`, magitDiffMode, "diff", () => insertRoot("diff", () => insertFiles(parseDiff(out), "commit")));
-    ember.gotoChar(0);
+    gnista.gotoChar(0);
   },
 });
 
@@ -1912,12 +1912,12 @@ const mergeMenu = transientDefinePrefix("magit-merge", {
 
 // Reset.
 
-const resetFile = ember.defineCommand({
+const resetFile = gnista.defineCommand({
   name: "magit-file-checkout",
   doc: "Reset a file in the index and the working tree to a commit.",
   run: () => {
     const rev = readBranch("Checkout from revision", [...localBranches(), ...remoteBranches()], "HEAD");
-    const file = ember.completingRead(`Checkout file from ${rev}: `, gitLines(["ls-files"]), { requireMatch: true });
+    const file = gnista.completingRead(`Checkout file from ${rev}: `, gitLines(["ls-files"]), { requireMatch: true });
     runGit(["checkout", rev, "--", file]);
   },
 });
@@ -1951,17 +1951,17 @@ const diffBuffer = (args: string[]) => {
   const dir = repo();
   const out = gitOutput(["diff", "--no-prefix", "-p", ...diffArgs(), ...args]).output;
   setupBuffer(`magit-diff: ${repoName(dir)}`, magitDiffMode, "diff", () => insertRoot("diff", () => insertFiles(parseDiff(out), "commit")));
-  ember.gotoChar(0);
+  gnista.gotoChar(0);
 };
-const diffRange = ember.defineCommand({ name: "magit-diff-range", doc: "Show the differences between two commits, as A..B read.", run: () => diffBuffer([ember.readString("Diff for range: ", { default: "HEAD~..HEAD" }) || "HEAD~..HEAD"]) });
-const diffPaths = ember.defineCommand({
+const diffRange = gnista.defineCommand({ name: "magit-diff-range", doc: "Show the differences between two commits, as A..B read.", run: () => diffBuffer([gnista.readString("Diff for range: ", { default: "HEAD~..HEAD" }) || "HEAD~..HEAD"]) });
+const diffPaths = gnista.defineCommand({
   name: "magit-diff-paths",
   doc: "Show the changes between two files.",
-  run: () => diffBuffer(["--no-index", ember.readFileName("First file: "), ember.readFileName("Second file: ")]),
+  run: () => diffBuffer(["--no-index", gnista.readFileName("First file: "), gnista.readFileName("Second file: ")]),
 });
-const diffWorktree = ember.defineCommand({ name: "magit-diff-working-tree", doc: "Show the changes between the working tree and HEAD.", run: () => diffBuffer(["HEAD"]) });
-const showCommitCommand = ember.defineCommand({ name: "magit-show-commit", doc: "Show a commit read, or the one at point.", run: () => showCommit(readCommit("Show commit")) });
-const showStash = ember.defineCommand({ name: "magit-stash-show", doc: "Show a stash.", run: () => showCommit(stashAt("Show stash")) });
+const diffWorktree = gnista.defineCommand({ name: "magit-diff-working-tree", doc: "Show the changes between the working tree and HEAD.", run: () => diffBuffer(["HEAD"]) });
+const showCommitCommand = gnista.defineCommand({ name: "magit-show-commit", doc: "Show a commit read, or the one at point.", run: () => showCommit(readCommit("Show commit")) });
+const showStash = gnista.defineCommand({ name: "magit-stash-show", doc: "Show a stash.", run: () => showCommit(stashAt("Show stash")) });
 
 const diffMenu = transientDefinePrefix("magit-diff", {
   doc: "Show changes between different versions.",
@@ -2005,26 +2005,26 @@ const stashIndex = gitCommand("magit-stash-index", "Stash the changes in the ind
 const stashWorktree = gitCommand("magit-stash-worktree", "Stash the changes in the working tree only, keeping the index.", () => ["stash", "push", "--keep-index", ...transientArgs("magit-stash")]);
 const stashKeepIndex = gitCommand("magit-stash-keep-index", "Stash the changes in the index and the working tree, keeping the index.", () => ["stash", "push", "--keep-index", ...transientArgs("magit-stash")]);
 const snapshot = (name: string, doc: string, extra: string[]) =>
-  ember.defineCommand({
+  gnista.defineCommand({
     name,
     doc,
     run: () => {
       const r = gitOutput(["stash", "create", ...extra]);
       const hash = r.output.trim();
-      if (hash === "") ember.userError("No local changes to save");
+      if (hash === "") gnista.userError("No local changes to save");
       runGit(["stash", "store", "-m", `Snapshot of ${branchOrHead()}`, hash]);
     },
   });
-const stashToWip = ember.defineCommand({
+const stashToWip = gnista.defineCommand({
   name: "magit-wip-commit",
   doc: "Commit the working tree's changes to a work-in-progress ref, refs/wip/wtree/refs/heads/BRANCH.",
   run: () => {
     const hash = gitOutput(["stash", "create"]).output.trim();
-    if (hash === "") ember.userError("No local changes to save");
+    if (hash === "") gnista.userError("No local changes to save");
     runGit(["update-ref", `refs/wip/wtree/refs/heads/${branchOrHead()}`, hash]);
   },
 });
-const stashList = ember.defineCommand({
+const stashList = gnista.defineCommand({
   name: "magit-stash-list",
   doc: "List the stashes.",
   run: () => {
@@ -2037,36 +2037,36 @@ const stashList = ember.defineCommand({
         }
       }),
     );
-    ember.gotoChar(0);
+    gnista.gotoChar(0);
   },
 });
-const stashBranch = ember.defineCommand({
+const stashBranch = gnista.defineCommand({
   name: "magit-stash-branch",
   doc: "Create a branch from a stash's commit, apply the stash to it and drop the stash.",
   run: () => {
     const s = stashAt("Branch from stash");
-    const name = ember.readString("Branch name: ");
+    const name = gnista.readString("Branch name: ");
     runGit(["stash", "branch", name, s]);
   },
 });
-const stashBranchHere = ember.defineCommand({
+const stashBranchHere = gnista.defineCommand({
   name: "magit-stash-branch-here",
   doc: "Create a branch at HEAD, check it out, apply a stash to it and drop the stash.",
   run: () => {
     const s = stashAt("Branch from stash");
-    const name = ember.readString("Branch name: ");
+    const name = gnista.readString("Branch name: ");
     if (runGit(["checkout", "-b", name]) && runGit(["stash", "apply", s])) runGit(["stash", "drop", s]);
   },
 });
-const stashFormatPatch = ember.defineCommand({
+const stashFormatPatch = gnista.defineCommand({
   name: "magit-stash-format-patch",
   doc: "Write a stash as a patch file.",
   run: () => {
     const s = stashAt("Format patch from stash");
     const out = gitOutput(["stash", "show", "-p", s]).output;
-    const file = ember.expandFileName(`${s.replace(/[@{}]/g, "")}.patch`, repo());
-    ember.writeTextFile(file, out);
-    ember.message(`Wrote ${file}`);
+    const file = gnista.expandFileName(`${s.replace(/[@{}]/g, "")}.patch`, repo());
+    gnista.writeTextFile(file, out);
+    gnista.message(`Wrote ${file}`);
   },
 });
 
@@ -2096,68 +2096,68 @@ const stashMenu = transientDefinePrefix("magit-stash", {
 
 // The other menus and commands the dispatch menu names.
 
-const cherryPick = ember.defineCommand({
+const cherryPick = gnista.defineCommand({
   name: "magit-cherry-pick",
   doc: "Apply the commit at point, or one read, to the current branch, as git cherry-pick.",
   run: () => runGit(["cherry-pick", readCommit("Cherry-pick")]) as unknown as void,
 });
-const revertCommit = ember.defineCommand({
+const revertCommit = gnista.defineCommand({
   name: "magit-revert-and-commit",
   doc: "Revert the commit at point, or one read, committing the reversion.",
   run: () => runGit(["revert", "--no-edit", readCommit("Revert commit")]) as unknown as void,
 });
-const tagCreate = ember.defineCommand({
+const tagCreate = gnista.defineCommand({
   name: "magit-tag-create",
   doc: "Create a tag at the commit at point, or one read.",
   run: () => {
-    const name = ember.readString("Tag name: ");
-    if (name === "") ember.userError("No name given");
+    const name = gnista.readString("Tag name: ");
+    if (name === "") gnista.userError("No name given");
     runGit(["tag", name, readCommit(`Place ${name} on`)]);
   },
 });
-const gitignore = ember.defineCommand({
+const gitignore = gnista.defineCommand({
   name: "magit-gitignore-in-topdir",
   doc: "Add a file or pattern to the .gitignore at the top of the repository.",
   run: () => {
     const s = currentSection();
     const def = s?.type === "file" ? (s.value as FileValue).file : undefined;
-    const pattern = ember.readString(def ? `File or pattern to ignore (default ${def}): ` : "File or pattern to ignore: ", { default: def });
-    if (pattern === "") ember.userError("Nothing to ignore");
+    const pattern = gnista.readString(def ? `File or pattern to ignore (default ${def}): ` : "File or pattern to ignore: ", { default: def });
+    if (pattern === "") gnista.userError("Nothing to ignore");
     const file = `${repo()}.gitignore`;
-    const old = ember.fileExists(file) ? ember.readTextFile(file) : "";
-    ember.writeTextFile(file, `${old}${old && !old.endsWith("\n") ? "\n" : ""}${pattern}\n`);
+    const old = gnista.fileExists(file) ? gnista.readTextFile(file) : "";
+    gnista.writeTextFile(file, `${old}${old && !old.endsWith("\n") ? "\n" : ""}${pattern}\n`);
     refreshAll();
   },
 });
-const gitInit = ember.defineCommand({
+const gitInit = gnista.defineCommand({
   name: "magit-init",
   doc: "Create a Git repository in a directory read.",
   run: () => {
-    const dir = ember.readFileName("Create repository in: ", { dir: String(ember.variable("default-directory")) });
-    ember.callProcess([git(), "init", ember.expandFileName(dir)]);
-    ember.letBind({ "default-directory": ember.fileNameAsDirectory(ember.expandFileName(dir)) }, () => ember.call(magitStatus));
+    const dir = gnista.readFileName("Create repository in: ", { dir: String(gnista.variable("default-directory")) });
+    gnista.callProcess([git(), "init", gnista.expandFileName(dir)]);
+    gnista.letBind({ "default-directory": gnista.fileNameAsDirectory(gnista.expandFileName(dir)) }, () => gnista.call(magitStatus));
   },
 });
-const gitClone = ember.defineCommand({
+const gitClone = gnista.defineCommand({
   name: "magit-clone",
   doc: "Clone a repository from a URL read into a directory read.",
   run: () => {
-    const url = ember.readString("Clone repository: ");
-    const dir = ember.readFileName("Clone to: ", { dir: String(ember.variable("default-directory")), initial: url.replace(/\.git$/, "").replace(/.*[/:]/, "") });
-    const r = ember.callProcess([git(), "clone", url, ember.expandFileName(dir)]);
-    if (r.exit !== 0) ember.userError(r.output.trim());
-    ember.letBind({ "default-directory": ember.fileNameAsDirectory(ember.expandFileName(dir)) }, () => ember.call(magitStatus));
+    const url = gnista.readString("Clone repository: ");
+    const dir = gnista.readFileName("Clone to: ", { dir: String(gnista.variable("default-directory")), initial: url.replace(/\.git$/, "").replace(/.*[/:]/, "") });
+    const r = gnista.callProcess([git(), "clone", url, gnista.expandFileName(dir)]);
+    if (r.exit !== 0) gnista.userError(r.output.trim());
+    gnista.letBind({ "default-directory": gnista.fileNameAsDirectory(gnista.expandFileName(dir)) }, () => gnista.call(magitStatus));
   },
 });
-const gitRun = ember.defineCommand({
+const gitRun = gnista.defineCommand({
   name: "magit-git-command",
   doc: "Run git with arguments read, as ! ! does.",
   run: () => {
-    const args = ember.readString("Run git: ");
+    const args = gnista.readString("Run git: ");
     runGit(args.split(/\s+/).filter(Boolean));
   },
 });
-const showRefs = ember.defineCommand({
+const showRefs = gnista.defineCommand({
   name: "magit-show-refs",
   doc: "List the branches and tags, with their commits.",
   run: () => {
@@ -2177,69 +2177,69 @@ const showRefs = ember.defineCommand({
               const [name, hash, subject] = r.split("\0");
               insertSection("commit", hash, false, () => insertHeading("  ", face(name.padEnd(20), pattern === "refs/remotes" ? "magit-branch-remote" : pattern === "refs/tags" ? "magit-tag" : "magit-branch-local"), " ", face(hash, "magit-hash"), " ", subject, "\n"));
             }
-            ember.insert("\n");
+            gnista.insert("\n");
           });
         }
       }),
     );
-    ember.gotoChar(0);
+    gnista.gotoChar(0);
   },
 });
-const cherries = ember.defineCommand({
+const cherries = gnista.defineCommand({
   name: "magit-cherry",
   doc: "Show the commits of the current branch not in its upstream, as git cherry.",
   run: () => {
     const dir = repo();
     const up = upstreamOf(currentBranch()) ?? readBranch("Cherry upstream", remoteBranches());
     setupBuffer(`magit-cherry: ${repoName(dir)}`, magitLogMode, "cherry", () => insertRoot("cherry", () => insertCommits([`${up}..HEAD`])));
-    ember.gotoChar(0);
+    gnista.gotoChar(0);
   },
 });
-const remoteAdd = ember.defineCommand({
+const remoteAdd = gnista.defineCommand({
   name: "magit-remote-add",
   doc: "Add a remote, by a name and URL read.",
   run: () => {
-    const name = ember.readString("Remote name: ");
-    const url = ember.readString("Remote url: ");
+    const name = gnista.readString("Remote name: ");
+    const url = gnista.readString("Remote url: ");
     runGit(["remote", "add", name, url]);
   },
 });
-const formatPatches = ember.defineCommand({
+const formatPatches = gnista.defineCommand({
   name: "magit-format-patch",
   doc: "Write the commit at point, or one read, as a patch file.",
   run: () => runGit(["format-patch", "-1", readCommit("Format patch for")]) as unknown as void,
 });
-const jumpToSection = ember.defineCommand({
+const jumpToSection = gnista.defineCommand({
   name: "magit-status-jump",
   doc: "Jump to a section of the status buffer, chosen by its heading.",
   run: () => {
     const top = sections()?.root.children ?? [];
-    const names = top.map((s) => ember.bufferSubstringNoProperties(s.start, ember.lineEndPosition(s.start)));
-    const chosen = ember.completingRead("Jump to section: ", names, { requireMatch: true });
+    const names = top.map((s) => gnista.bufferSubstringNoProperties(s.start, gnista.lineEndPosition(s.start)));
+    const chosen = gnista.completingRead("Jump to section: ", names, { requireMatch: true });
     const s = top[names.indexOf(chosen)];
-    if (s) ember.gotoChar(s.start);
+    if (s) gnista.gotoChar(s.start);
   },
 });
-const displayRepositoryBuffer = ember.defineCommand({
+const displayRepositoryBuffer = gnista.defineCommand({
   name: "magit-display-repository-buffer",
   doc: "Show one of the repository's Magit buffers.",
   run: () => {
-    const names = ember.bufferList().filter((b) => /^magit[-a-z]*: /.test(b));
-    ember.call("switch-to-buffer", ember.completingRead("Display buffer: ", names, { requireMatch: true }));
+    const names = gnista.bufferList().filter((b) => /^magit[-a-z]*: /.test(b));
+    gnista.call("switch-to-buffer", gnista.completingRead("Display buffer: ", names, { requireMatch: true }));
   },
 });
-const sectionInfo = ember.defineCommand({
+const sectionInfo = gnista.defineCommand({
   name: "magit-describe-section",
   doc: "Say what the section at point is.",
   run: () => {
     const s = currentSection();
-    if (!s) ember.userError("No section at point");
+    if (!s) gnista.userError("No section at point");
     const chain: string[] = [];
     for (let x: Section | undefined = s; x && x.parent; x = x.parent) chain.push(x.type);
-    ember.message(`(${chain.join(" ")}) [${s.start}-${s.end}]`);
+    gnista.message(`(${chain.join(" ")}) [${s.start}-${s.end}]`);
   },
 });
-const help = ember.defineCommand({ name: "magit-info", doc: "Show what Magit's keys do.", run: () => ember.call("describe-mode") });
+const help = gnista.defineCommand({ name: "magit-info", doc: "Show what Magit's keys do.", run: () => gnista.call("describe-mode") });
 
 const dispatch = transientDefinePrefix("magit-dispatch", {
   doc: "Invoke a Magit command from a list of available commands.",
@@ -2324,7 +2324,7 @@ const dispatch = transientDefinePrefix("magit-dispatch", {
   ],
 });
 
-const bindings: [string, ember.DefinedCommand | string][] = [
+const bindings: [string, gnista.DefinedCommand | string][] = [
   ["s", magitStage],
   ["S", stageModified],
   ["u", magitUnstage],
@@ -2349,9 +2349,9 @@ const bindings: [string, ember.DefinedCommand | string][] = [
   ["?", dispatch],
   ["q", "quit-window"],
 ];
-for (const [key, command] of bindings) ember.defineKey("magit-mode-map", key, command as ember.DefinedCommand);
+for (const [key, command] of bindings) gnista.defineKey("magit-mode-map", key, command as gnista.DefinedCommand);
 
-ember.bindKey("C-x g", magitStatus);
-ember.bindKey("C-x M-g", dispatch);
+gnista.bindKey("C-x g", magitStatus);
+gnista.bindKey("C-x M-g", dispatch);
 
 void sectionAt;

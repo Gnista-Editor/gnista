@@ -6,7 +6,7 @@
  * buffer, however made. Setting `pos` moves it into the current buffer,
  * as move-marker does.
  */
-export type Marker = { readonly id: ember.Marker; pos: number };
+export type Marker = { readonly id: gnista.Marker; pos: number };
 
 /** This package's markers, for the edits that place them by a rule of their own, as replace-match does. */
 export const markers: Marker[] = [];
@@ -22,14 +22,14 @@ export function lastingMarker(pos: number, advances = false): Marker {
 }
 
 export function marker(pos: number, advances = false): Marker {
-  const id = ember.makeMarker(pos, { advances });
+  const id = gnista.makeMarker(pos, { advances });
   const m: Marker = {
     id,
     get pos() {
-      return ember.markerPosition(id) ?? 0;
+      return gnista.markerPosition(id) ?? 0;
     },
     set pos(p: number) {
-      ember.setMarker(id, p, ember.bufferName());
+      gnista.setMarker(id, p, gnista.bufferName());
     },
   };
   markers.push(m);
@@ -41,7 +41,7 @@ export function dropMarker(m: Marker): void {
   if (i < 0) return;
   markers.splice(i, 1);
   lasting.delete(m);
-  ember.deleteMarker(m.id);
+  gnista.deleteMarker(m.id);
 }
 
 // A marker made here lives only while the command that made it runs, unless
@@ -49,48 +49,48 @@ export function dropMarker(m: Marker): void {
 // an error or a quit left behind, before the command dropped it, would be
 // moved on every later edit; it is dropped once the outermost command is
 // over, when no prompt or recursive edit keeps a command waiting partway.
-ember.addHook("post-command-hook", () => {
-  if (markers.length === lasting.size || ember.minibufferDepth() > 0 || ember.recursionDepth() > 0) return;
+gnista.addHook("post-command-hook", () => {
+  if (markers.length === lasting.size || gnista.minibufferDepth() > 0 || gnista.recursionDepth() > 0) return;
   for (const m of [...markers]) if (!lasting.has(m)) dropMarker(m);
 });
 
 /** Whether the region is active and not empty, as org-region-active-p asks. */
 export function orgRegionActive(): boolean {
-  const mark = ember.mark();
-  return ember.regionActive() && mark !== undefined && mark !== ember.point();
+  const mark = gnista.mark();
+  return gnista.regionActive() && mark !== undefined && mark !== gnista.point();
 }
 
 /** The line a position is on, point's by default. */
-export function lineAt(pos = ember.point()): number {
-  return ember.lineOf(pos);
+export function lineAt(pos = gnista.point()): number {
+  return gnista.lineOf(pos);
 }
 
 /** Where a line starts, or the end of the buffer past the last line. */
 export function lineStartOrEnd(line: number): number {
-  return line < ember.lineCount() ? ember.lineStart(line) : ember.bufferSize();
+  return line < gnista.lineCount() ? gnista.lineStart(line) : gnista.bufferSize();
 }
 
 /** The character at a position, or "" outside the buffer. */
 export function charAt(pos: number): string {
-  return pos >= 0 && pos < ember.bufferSize() ? ember.bufferText(pos, pos + 1) : "";
+  return pos >= 0 && pos < gnista.bufferSize() ? gnista.bufferText(pos, pos + 1) : "";
 }
 
 /** Puts this package's markers in the current buffer where `moved` says, after an edit that moved them its own way. */
 export function placeMarkers(saved: [Marker, number][]): void {
-  const here = ember.bufferName();
-  for (const [m, p] of saved) if (ember.markerBuffer(m.id) === here) m.pos = p;
+  const here = gnista.bufferName();
+  for (const [m, p] of saved) if (gnista.markerBuffer(m.id) === here) m.pos = p;
 }
 
 export function edInsert(pos: number, text: string, beforeMarkers = false): void {
   if (text === "") return;
-  ember.gotoChar(pos);
-  if (beforeMarkers) ember.insertBeforeMarkers(text);
-  else ember.insert(text);
+  gnista.gotoChar(pos);
+  if (beforeMarkers) gnista.insertBeforeMarkers(text);
+  else gnista.insert(text);
 }
 
 export function edDelete(from: number, to: number): string {
   if (to <= from) return "";
-  return ember.deleteRegion(from, to);
+  return gnista.deleteRegion(from, to);
 }
 
 
@@ -101,10 +101,10 @@ export function edDelete(from: number, to: number): string {
  * only, lists those under it. Returns the entry, or for one of `specials`
  * its key; C-g aborts.
  */
-export function orgMks(table: ember.Value[][], title: string, prompt = "Select: ", specials: [string, string][] = []): ember.Value[] | string {
+export function orgMks(table: gnista.Value[][], title: string, prompt = "Select: ", specials: [string, string][] = []): gnista.Value[] | string {
   const name = "*Org Select*";
-  return ember.saveWindowExcursion(() => {
-    ember.call("switch-to-buffer-other-window", name);
+  return gnista.saveWindowExcursion(() => {
+    gnista.call("switch-to-buffer-other-window", name);
     try {
       let current = "";
       for (;;) {
@@ -132,29 +132,29 @@ export function orgMks(table: ember.Value[][], title: string, prompt = "Select: 
             allowed.add(key);
           }
         }
-        ember.letBind({ "inhibit-read-only": true }, () => {
-          ember.deleteRegion(0, ember.bufferSize());
-          ember.insert(text);
+        gnista.letBind({ "inhibit-read-only": true }, () => {
+          gnista.deleteRegion(0, gnista.bufferSize());
+          gnista.insert(text);
         });
-        ember.gotoChar(0);
-        ember.call("shrink-window-if-larger-than-buffer");
+        gnista.gotoChar(0);
+        gnista.call("shrink-window-if-larger-than-buffer");
         let pressed: string;
         for (;;) {
-          const key = ember.readKey(prompt);
+          const key = gnista.readKey(prompt);
           pressed = key === "SPC" || key === "TAB" || key === "RET" ? "\t" : key;
           if (pressed === "C-g" || allowed.has(pressed)) break;
-          ember.message(`Invalid key: ‘${pressed}’`);
+          gnista.message(`Invalid key: ‘${pressed}’`);
         }
-        if (pressed === "C-g") ember.userError("Abort");
+        if (pressed === "C-g") gnista.userError("Abort");
         current += pressed;
         if (prefixes.has(pressed)) continue;
         const entry = table.find((e) => e[0] === current);
         if (entry) return entry;
         if (specials.some(([k]) => k === current)) return current;
-        ember.signal("error", "No entry available");
+        gnista.signal("error", "No entry available");
       }
     } finally {
-      if (ember.bufferList().includes(name)) ember.call("kill-buffer", name);
+      if (gnista.bufferList().includes(name)) gnista.call("kill-buffer", name);
     }
   });
 }

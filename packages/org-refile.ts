@@ -7,7 +7,7 @@ import { ancestors, showHeadingLine } from "org-fold";
 import { entryHeading } from "org-list";
 import { edDelete, lineAt } from "org-macs";
 
-const defvar = (name: string, value: ember.Value, doc: string) => ember.defineVariable({ name, value, doc });
+const defvar = (name: string, value: gnista.Value, doc: string) => gnista.defineVariable({ name, value, doc });
 defvar(
   "org-refile-targets",
   null,
@@ -16,10 +16,10 @@ defvar(
     '":todo" for those with that tag or state, or ":regexp". Nil means this buffer\'s top-level headings.',
 );
 defvar("org-refile-use-outline-path", null, "Whether targets are named by their outline paths, Parent/Child, rather than their titles: t, or file, title, full-file-path or buffer-name to start the path with that.");
-defvar("org-outline-path-complete-in-steps", true, "Whether outline paths complete a level at a time. Ember completes them whole.");
+defvar("org-outline-path-complete-in-steps", true, "Whether outline paths complete a level at a time. Gnista completes them whole.");
 defvar("org-refile-history", null, "The targets chosen before, newest first.");
 defvar("org-refile-target-verify-function", null, "A function called at each heading that may be a target, which says whether it is one.");
-ember.defineHook("org-after-refile-insert-hook", "Functions called where org-refile has put the subtree, before it goes from where it was.");
+gnista.defineHook("org-after-refile-insert-hook", "Functions called where org-refile has put the subtree, before it goes from where it was.");
 
 /** A place to refile to: its name, the file it is in, and its heading. */
 interface Target {
@@ -33,7 +33,7 @@ interface Target {
 const linkDisplay = (s: string): string => s.replace(/\[\[([^\]]*)\](?:\[([^\]]*)\])?\]/g, (_, link: string, desc?: string) => desc ?? link);
 
 /** Which headings a target spec takes, as org-refile-get-targets turns it into a regexp. */
-function specMatcher(kind: string, value: ember.Value): (h: Heading, text: string) => boolean {
+function specMatcher(kind: string, value: gnista.Value): (h: Heading, text: string) => boolean {
   switch (kind) {
     case ":level":
       return (h) => h.level === Number(value);
@@ -44,63 +44,63 @@ function specMatcher(kind: string, value: ember.Value): (h: Heading, text: strin
     case ":todo":
       return (h) => h.todo === String(value);
     case ":regexp":
-      return (_h, text) => ember.stringMatch(String(value), text) !== undefined;
+      return (_h, text) => gnista.stringMatch(String(value), text) !== undefined;
     default:
-      return ember.signal("error", `Bad refiling target description ${kind}`);
+      return gnista.signal("error", `Bad refiling target description ${kind}`);
   }
 }
 
 /** The files an entry names, as org-refile-get-targets reads them: buffers or file names. */
-function entryFiles(files: ember.Value): string[] {
-  if (files === null || files === undefined || files === false) return [ember.currentBuffer().name!];
+function entryFiles(files: gnista.Value): string[] {
+  if (files === null || files === undefined || files === false) return [gnista.currentBuffer().name!];
   if (files === "org-agenda-files") {
-    const agenda = ember.variable("org-agenda-files");
-    const dir = ember.variable("org-directory");
-    return (Array.isArray(agenda) ? agenda : []).map((f) => ember.findFileNoselect(ember.expandFileName(String(f), typeof dir === "string" ? dir : undefined)));
+    const agenda = gnista.variable("org-agenda-files");
+    const dir = gnista.variable("org-directory");
+    return (Array.isArray(agenda) ? agenda : []).map((f) => gnista.findFileNoselect(gnista.expandFileName(String(f), typeof dir === "string" ? dir : undefined)));
   }
   const list = Array.isArray(files) ? files.map(String) : [String(files)];
-  return list.map((f) => ember.findFileNoselect(ember.expandFileName(f)));
+  return list.map((f) => gnista.findFileNoselect(gnista.expandFileName(f)));
 }
 
 /** Every place org-refile can file to, as org-refile-get-targets. */
 export function refileTargets(): Target[] {
-  const spec = ember.variable("org-refile-targets");
-  const entries: [ember.Value, string, ember.Value][] = [];
+  const spec = gnista.variable("org-refile-targets");
+  const entries: [gnista.Value, string, gnista.Value][] = [];
   for (const e of Array.isArray(spec) && spec.length > 0 ? spec : [[null, ":level", 1]]) {
-    if (!Array.isArray(e)) ember.signal("error", "Refile target must be a list: [files, kind, value]");
+    if (!Array.isArray(e)) gnista.signal("error", "Refile target must be a list: [files, kind, value]");
     // [files, kind, value], or [files, [kind, value]], as (FILES :kind . value) and (FILES :kind value).
     if (Array.isArray(e[1])) entries.push([e[0], String(e[1][0]), e[1][1]]);
     else entries.push([e[0], String(e[1]), e[2]]);
   }
-  const outline = ember.variable("org-refile-use-outline-path");
-  const verify = ember.variable("org-refile-target-verify-function");
-  ember.message("Getting targets...");
+  const outline = gnista.variable("org-refile-use-outline-path");
+  const verify = gnista.variable("org-refile-target-verify-function");
+  gnista.message("Getting targets...");
   const targets: Target[] = [];
   for (const [files, kind, value] of entries) {
     const matches = specMatcher(kind, value);
     for (const buffer of entryFiles(files)) {
-      ember.withCurrentBuffer(buffer, () => {
-        if (!ember.derivedModeP("org-mode")) ember.signal("error", `Major mode in refile target buffer "${buffer}" must be ‘org-mode’`);
-        const file = ember.bufferFileName();
-        const fileName = file === undefined ? undefined : ember.fileNameNondirectory(file);
+      gnista.withCurrentBuffer(buffer, () => {
+        if (!gnista.derivedModeP("org-mode")) gnista.signal("error", `Major mode in refile target buffer "${buffer}" must be ‘org-mode’`);
+        const file = gnista.bufferFileName();
+        const fileName = file === undefined ? undefined : gnista.fileNameNondirectory(file);
         const title = () => {
-          const m = /^#\+title:[ \t]*(.*)$/im.exec(ember.bufferSubstringNoProperties(ember.pointMin(), Math.min(ember.pointMax(), ember.pointMin() + 4000)));
+          const m = /^#\+title:[ \t]*(.*)$/im.exec(gnista.bufferSubstringNoProperties(gnista.pointMin(), Math.min(gnista.pointMax(), gnista.pointMin() + 4000)));
           return m?.[1] ?? fileName;
         };
-        const head = outline === "file" ? fileName : outline === "title" ? title() : outline === "full-file-path" ? (file && ember.fileTruename(file)) : outline === "buffer-name" ? buffer : undefined;
+        const head = outline === "file" ? fileName : outline === "title" ? title() : outline === "full-file-path" ? (file && gnista.fileTruename(file)) : outline === "buffer-name" ? buffer : undefined;
         if (head !== undefined && outline !== null && outline !== true) targets.push({ name: head, file, buffer, start: -1 });
-        ember.saveRestriction(() => {
-          ember.widen();
+        gnista.saveRestriction(() => {
+          gnista.widen();
           const all = headings();
           const path: string[] = [];
           for (const h of all) {
             path.length = h.level - 1;
             path[h.level - 1] = linkDisplay(h.title).replace(/\//g, "\\/");
-            const text = ember.lineText(h.line);
+            const text = gnista.lineText(h.line);
             if (h.title === "" || !matches(h, text)) continue;
-            if (verify !== null && verify !== undefined && !ember.saveExcursion(() => {
-              ember.gotoChar(h.start);
-              return ember.funcall(verify as string, []) !== null;
+            if (verify !== null && verify !== undefined && !gnista.saveExcursion(() => {
+              gnista.gotoChar(h.start);
+              return gnista.funcall(verify as string, []) !== null;
             })) continue;
             const ancestors = path.slice(0, h.level).filter((p) => p !== undefined);
             const name = outline === null || outline === false ? h.title : [...(head !== undefined ? [head] : []), ...ancestors].join("/");
@@ -110,19 +110,19 @@ export function refileTargets(): Target[] {
       });
     }
   }
-  ember.message("Getting targets...done");
+  gnista.message("Getting targets...done");
   return targets;
 }
 
 /** The names the minibuffer offers, as org-refile-get-location decorates them: a / for a path, and other files' names. */
 function decorated(targets: Target[]): [string, Target][] {
-  const outline = ember.variable("org-refile-use-outline-path");
+  const outline = gnista.variable("org-refile-use-outline-path");
   const extra = outline === null || outline === false ? "" : "/";
-  const here = ember.bufferFileName();
-  const truename = here === undefined ? undefined : ember.fileTruename(here);
+  const here = gnista.bufferFileName();
+  const truename = here === undefined ? undefined : gnista.fileTruename(here);
   return targets.map((t) => {
-    const other = !["file", "full-file-path", "title"].includes(String(outline)) && (t.file === undefined ? t.buffer !== ember.bufferName() : ember.fileTruename(t.file) !== truename);
-    return [other ? `${t.name}${extra} (${t.file === undefined ? t.buffer : ember.fileNameNondirectory(t.file)})` : `${t.name}${extra}`, t];
+    const other = !["file", "full-file-path", "title"].includes(String(outline)) && (t.file === undefined ? t.buffer !== gnista.bufferName() : gnista.fileTruename(t.file) !== truename);
+    return [other ? `${t.name}${extra} (${t.file === undefined ? t.buffer : gnista.fileNameNondirectory(t.file)})` : `${t.name}${extra}`, t];
   });
 }
 
@@ -140,22 +140,22 @@ function locationOf(answer: string, table: [string, Target][], targets: Target[]
 /** Asks where to refile to, as org-refile-get-location: the name chosen and its target. */
 function getLocation(prompt: string, answer?: string): [string, Target] {
   const targets = refileTargets();
-  if (targets.length === 0) ember.userError("No refile targets");
+  if (targets.length === 0) gnista.userError("No refile targets");
   const table = decorated(targets);
-  const history = ember.variable("org-refile-history");
+  const history = gnista.variable("org-refile-history");
   const last = Array.isArray(history) && history.length > 0 ? String(history[0]) : undefined;
-  const ownName = `${ember.bufferName()}${ember.variable("org-refile-use-outline-path") ? "/" : ""}`;
+  const ownName = `${gnista.bufferName()}${gnista.variable("org-refile-use-outline-path") ? "/" : ""}`;
   const dflt = last ?? (table.some(([n]) => n === ownName) ? ownName : undefined);
-  const chosen = answer ?? ember.completingRead(dflt === undefined ? `${prompt}: ` : `${prompt} (default ${dflt}): `, table.map(([n]) => n), {
+  const chosen = answer ?? gnista.completingRead(dflt === undefined ? `${prompt}: ` : `${prompt} (default ${dflt}): `, table.map(([n]) => n), {
     requireMatch: true,
     history: "org-refile-history",
     default: dflt,
   });
   const found = locationOf(chosen, table, targets);
-  if (!found) ember.userError("Invalid target location");
+  if (!found) gnista.userError("Invalid target location");
   if (answer !== undefined || last !== found[0]) {
     const rest = Array.isArray(history) ? history.filter((h) => h !== found[0]) : [];
-    ember.setVariable("org-refile-history", [found[0], ...rest]);
+    gnista.setVariable("org-refile-history", [found[0], ...rest]);
   }
   return found;
 }
@@ -163,7 +163,7 @@ function getLocation(prompt: string, answer?: string): [string, Target] {
 /** The subtree at point's heading, or the error org-refile gives before the first. */
 function subtreeHeading(): Heading {
   const h = entryHeading();
-  if (!h) ember.userError(`Before first headline at position ${ember.lineStart(lineAt()) + 1} in buffer ${ember.bufferName()}`);
+  if (!h) gnista.userError(`Before first headline at position ${gnista.lineStart(lineAt()) + 1} in buffer ${gnista.bufferName()}`);
   return h;
 }
 
@@ -179,47 +179,47 @@ function refile(answer: string | undefined, keep: boolean): void {
   const all = headings();
   const i = all.findIndex((x) => x.start === h.start);
   const [start, end] = subtreeRegion(all, i);
-  const same = t.buffer === ember.bufferName();
-  if (same && t.start >= start && t.start < end) ember.signal("error", "Cannot refile to position inside the tree or region");
-  const origin = ember.point();
+  const same = t.buffer === gnista.bufferName();
+  if (same && t.start >= start && t.start < end) gnista.signal("error", "Cannot refile to position inside the tree or region");
+  const origin = gnista.point();
   copySubtree(false, 1, false);
-  const before = ember.bufferSize();
+  const before = gnista.bufferSize();
   let pastedAt = 0;
-  ember.withCurrentBuffer(t.buffer, () => {
-    ember.saveRestriction(() => {
-      ember.widen();
+  gnista.withCurrentBuffer(t.buffer, () => {
+    gnista.saveRestriction(() => {
+      gnista.widen();
       const there = headings();
       const ti = there.findIndex((x) => x.start === t.start);
       // After the target's subtree, at its next sibling or the end; with no heading, at the end at the top level.
-      const at = ti < 0 ? ember.bufferSize() : subtreeRegion(there, ti)[1];
+      const at = ti < 0 ? gnista.bufferSize() : subtreeRegion(there, ti)[1];
       const level = ti < 0 ? 1 : Math.max(1, there[ti].level + 1);
-      ember.gotoChar(at);
-      if (ember.point() !== ember.lineStart(lineAt())) ember.call("newline");
-      pastedAt = ember.point();
-      pasteSubtree(level as ember.PrefixArg);
-      ember.runHooks("org-after-refile-insert-hook");
+      gnista.gotoChar(at);
+      if (gnista.point() !== gnista.lineStart(lineAt())) gnista.call("newline");
+      pastedAt = gnista.point();
+      pasteSubtree(level as gnista.PrefixArg);
+      gnista.runHooks("org-after-refile-insert-hook");
     });
   });
-  ember.popKill();
+  gnista.popKill();
   // Back to the subtree where it was, after what was pasted before it.
-  const moved = same && pastedAt <= start ? ember.bufferSize() - before : 0;
-  ember.gotoChar(origin + moved);
+  const moved = same && pastedAt <= start ? gnista.bufferSize() - before : 0;
+  gnista.gotoChar(origin + moved);
   if (!keep) {
     edDelete(start + moved, end + moved);
-    ember.gotoChar(start + moved);
+    gnista.gotoChar(start + moved);
   }
-  const file = ember.withCurrentBuffer(t.buffer, () => ember.bufferFileName() ?? t.buffer);
-  ember.message(`${action} to "${name}" in file ${file}: done`);
+  const file = gnista.withCurrentBuffer(t.buffer, () => gnista.bufferFileName() ?? t.buffer);
+  gnista.message(`${action} to "${name}" in file ${file}: done`);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org--refile-to",
   doc: "File the subtree at point under the target given, as org-refile does once it has asked.",
   params: [{ name: "target", kind: "string", prompt: "Refile subtree to: " }],
   run: (target) => refile(target, false),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org--refile-copy-to",
   doc: "Copy the subtree at point under the target given, as org-refile-copy does once it has asked.",
   params: [{ name: "target", kind: "string", prompt: "Copy subtree to: " }],
@@ -229,28 +229,28 @@ ember.defineCommand({
 /** Goes to a target's heading, as org-refile with C-u does. */
 function gotoTarget(answer?: string): void {
   const [, t] = getLocation("Goto", answer);
-  if (t.buffer !== ember.bufferName()) ember.call("switch-to-buffer", t.buffer);
-  ember.gotoChar(t.start < 0 ? ember.pointMax() : t.start);
+  if (t.buffer !== gnista.bufferName()) gnista.call("switch-to-buffer", t.buffer);
+  gnista.gotoChar(t.start < 0 ? gnista.pointMax() : t.start);
   // The heading and those above it show, as org-fold-show-context does for org-goto.
   const all = headings();
   const i = all.findIndex((h) => h.start === t.start);
   if (i >= 0) for (const a of [i, ...ancestors(all, i)]) showHeadingLine(all[a]);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org--refile-goto",
   doc: "Go to the refile target given, as org-refile with C-u does.",
   params: [{ name: "target", kind: "string", prompt: "Goto: " }],
   run: (target) => gotoTarget(target),
 });
 
-export const refileCommand = ember.defineCommand({
+export const refileCommand = gnista.defineCommand({
   name: "org-refile",
   doc:
     "Move the subtree at point under another heading, asking which: one org-refile-targets names, by default " +
     "a top-level heading of this buffer. It goes in as that heading's last child. With C-u, go to the heading instead.",
   run: () => {
-    if (Array.isArray(ember.prefixArg())) gotoTarget();
+    if (Array.isArray(gnista.prefixArg())) gotoTarget();
     else {
       subtreeHeading();
       refile(undefined, false);
@@ -258,7 +258,7 @@ export const refileCommand = ember.defineCommand({
   },
 });
 
-export const refileCopyCommand = ember.defineCommand({
+export const refileCopyCommand = gnista.defineCommand({
   name: "org-refile-copy",
   doc: "Copy the subtree at point under another heading, asking which, as org-refile does but keeping the original.",
   run: () => {
