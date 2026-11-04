@@ -695,3 +695,68 @@ fn org_ellipsis_shows_after_a_folded_heading() {
     plain.redisplay();
     assert_eq!(&rows(&plain)[..2], ["* One...", "* Two"]);
 }
+
+/// config.org's TODO states: keys to pick them, and each change logged into LOGBOOK.
+fn logging_org(text: &str) -> (Editor, Scripting) {
+    let mut ed = Editor::new();
+    let s = Scripting::new(&mut ed).unwrap();
+    s.eval_expression(
+        &mut ed,
+        r#"(ember.setVariable("org-todo-keywords", [["TODO(t!)", "PROJ(p!)", "DOIN(g!)", "|", "DONE(d!)", "CANCELLED(c!)"]]),
+            ember.setVariable("org-log-into-drawer", true), ember.setVariable("org-log-done", "time"),
+            ember.setVariable("org-treat-insert-todo-heading-as-state-change", true), ember.setVariable("ember--today", "2026-11-04"), 1)"#,
+    )
+    .unwrap();
+    ed.window_buffer_mut().set_text(text);
+    ed.call("org-mode", vec![]).unwrap();
+    ed.set_window_size(ed.selected_window(), 80, 20);
+    (ed, s)
+}
+
+#[test]
+fn todo_keys_pick_states_and_changes_are_logged_as_emacs_does() {
+    // What Emacs 30 did with these settings, its clock at 12:00.
+    let (mut ed, _s) = logging_org("* Task\nbody\n* Other\n");
+    ed.press("C-f C-f C-c C-t t").unwrap();
+    assert_eq!(text(&ed), "* TODO Task\n:LOGBOOK:\n- State \"TODO\"       from              [2026-11-04 Wed 12:00]\n:END:\nbody\n* Other\n");
+    assert_eq!(ed.window_buffer().point(), 7);
+    let choices = ed.buffers().iter().find(|b| b.name == " *Org todo*").map(|b| b.slice(0..b.len())).unwrap();
+    assert_eq!(choices, "{   [t] TODO        [p] PROJ        [g] DOIN        [d] DONE        \n  [c] CANCELLED   }\n");
+    assert_eq!(ed.window_list().len(), 1, "the choices go");
+    ed.press("C-c C-t d").unwrap();
+    assert_eq!(
+        text(&ed),
+        "* DONE Task\nCLOSED: [2026-11-04 Wed 12:00]\n:LOGBOOK:\n- State \"DONE\"       from \"TODO\"       [2026-11-04 Wed 12:00]\n- State \"TODO\"       from              [2026-11-04 Wed 12:00]\n:END:\nbody\n* Other\n"
+    );
+    ed.press("C-c C-t SPC").unwrap();
+    assert_eq!(
+        text(&ed),
+        "* Task\n:LOGBOOK:\n- State \"DONE\"       from \"TODO\"       [2026-11-04 Wed 12:00]\n- State \"TODO\"       from              [2026-11-04 Wed 12:00]\n:END:\nbody\n* Other\n"
+    );
+    assert_eq!(ed.window_buffer().point(), 2);
+    ed.press("S-<right>").unwrap();
+    assert!(text(&ed).starts_with("* TODO Task\n:LOGBOOK:\n- State \"TODO\"       from              [2026-11-04 Wed 12:00]\n- State \"DONE\""), "{}", text(&ed));
+    assert_eq!(ed.window_buffer().point(), 7);
+}
+
+#[test]
+fn notes_go_at_the_top_of_an_existing_logbook_and_new_todo_headings_log() {
+    let (mut ed, _s) = logging_org("* Task\n:PROPERTIES:\n:ID: x\n:END:\n:LOGBOOK:\n- State \"TODO\"       from              [2026-11-01 Sun 10:00]\n:END:\nbody\n");
+    ed.press("C-f C-f C-c C-t g").unwrap();
+    assert_eq!(
+        text(&ed),
+        "* DOIN Task\n:PROPERTIES:\n:ID: x\n:END:\n:LOGBOOK:\n- State \"DOIN\"       from              [2026-11-04 Wed 12:00]\n- State \"TODO\"       from              [2026-11-01 Sun 10:00]\n:END:\nbody\n"
+    );
+    let (mut ed, _s) = logging_org("* Task\nbody\n");
+    ed.press("M-> M-S-<return>").unwrap();
+    assert_eq!(text(&ed), "* Task\nbody\n* TODO \n:LOGBOOK:\n- State \"TODO\"       from              [2026-11-04 Wed 12:00]\n:END:");
+    assert_eq!(ed.window_buffer().point(), 19);
+}
+
+#[test]
+fn a_new_logbook_is_folded() {
+    let (mut ed, _s) = logging_org("* Task\nbody\n");
+    ed.press("C-f C-f C-c C-t t").unwrap();
+    ed.redisplay();
+    assert_eq!(&rows(&ed)[..3], ["* TODO Task", ":LOGBOOK:...", "body"]);
+}

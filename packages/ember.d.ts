@@ -9076,6 +9076,12 @@ declare global {
        */
       "org-log-done": Value;
       /**
+       * Whether notes about state changes go into a drawer: t for LOGBOOK, or the drawer's name; nil puts them in the entry.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-log-into-drawer": Value;
+      /**
        * What marking a repeating task done records: "time" for a LAST_REPEAT property and a note of the change, false for nothing.
        *
        * Defined in packages/org.ts.
@@ -9259,6 +9265,18 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-todo-keywords": Value;
+      /**
+       * Whether inserting a TODO heading logs it as a change to that state.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-treat-insert-todo-heading-as-state-change": Value;
+      /**
+       * Whether C-c C-t asks for a state by its key, when the states have keys as TODO(t) gives them: auto does, nil cycles.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-use-fast-todo-selection": Value;
       /**
        * Whether C-y folds the subtrees it yanks, unless folding would hide text after them.
        *

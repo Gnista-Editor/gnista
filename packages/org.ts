@@ -117,6 +117,9 @@ const variables: [string, string, ember.Value][] = [
     "showeverything",
   ],
   ["org-startup-truncated", "Whether org-mode turns on truncate-lines, so long lines run off the window.", true],
+  ["org-use-fast-todo-selection", "Whether C-c C-t asks for a state by its key, when the states have keys as TODO(t) gives them: auto does, nil cycles.", "auto"],
+  ["org-log-into-drawer", "Whether notes about state changes go into a drawer: t for LOGBOOK, or the drawer's name; nil puts them in the entry.", false],
+  ["org-treat-insert-todo-heading-as-state-change", "Whether inserting a TODO heading logs it as a change to that state.", false],
   ["org-ellipsis", "What a folded heading shows after it in place of ..., a string, or nil for ....", null],
   ["org-return-follows-link", "Whether RET on a link follows it, as C-c C-o does, rather than breaking the line.", false],
   ["org-directory", "Where Org files are kept: relative names in org-agenda-files are in it.", "~/org"],
@@ -293,15 +296,38 @@ function shiftSelectError(): never {
 interface TodoSet {
   todo: string[];
   done: string[];
+  /** Each state's fast-access key, as (t) gives it, in order. */
+  keys: [string, string | undefined][];
+  /** How entering and leaving a state is logged, as (t!) and (w@/!) say: "time" or "note". */
+  logs: [string, string | undefined, string | undefined][];
 }
 
-/** Reads a list of states such as TODO NEXT | DONE, dropping fast-access keys like (t). */
+/**
+ * Reads a list of states such as TODO NEXT | DONE, as org-set-regexps-and-options
+ * does: each may have a fast-access key and logging, as TODO(t!) or WAIT(w@/!).
+ */
 function todoSetFrom(words: string[]): TodoSet | undefined {
-  const names = words.map((w) => w.replace(/\(.*\)$/, "")).filter((w) => w !== "");
-  if (names.length === 0) return undefined;
+  const keys: [string, string | undefined][] = [];
+  const logs: [string, string | undefined, string | undefined][] = [];
+  const names: string[] = [];
+  for (const w of words) {
+    if (w === "") continue;
+    if (w === "|") {
+      names.push(w);
+      continue;
+    }
+    // As org-extract-log-state-settings reads them.
+    const m = /^(.*?)(?:\(([^!@/])?([!@])?(?:\/([!@]))?\))?$/.exec(w)!;
+    const name = m[1].replace(/\(.*\)$/, "");
+    names.push(name);
+    keys.push([name, m[2]]);
+    const how = (x?: string) => (x === undefined ? undefined : x === "!" ? "time" : "note");
+    if (m[3] !== undefined || m[4] !== undefined) logs.push([name, how(m[3]), how(m[4])]);
+  }
+  if (names.filter((n) => n !== "|").length === 0) return undefined;
   const bar = names.indexOf("|");
-  if (bar >= 0) return { todo: names.slice(0, bar), done: names.slice(bar + 1) };
-  return names.length === 1 ? { todo: [], done: names } : { todo: names.slice(0, -1), done: names.slice(-1) };
+  if (bar >= 0) return { todo: names.slice(0, bar), done: names.slice(bar + 1), keys, logs };
+  return names.length === 1 ? { todo: [], done: names, keys, logs } : { todo: names.slice(0, -1), done: names.slice(-1), keys, logs };
 }
 
 /** The whole buffer's #+KEYWORD: lines, found in one pass. */
@@ -334,11 +360,28 @@ function readTodoSets(): TodoSet[] {
 function todoSets(): TodoSet[] {
   const value = ember.variable("org--todo-sets");
   if (!Array.isArray(value)) return readTodoSets();
-  return (value as string[][][]).map(([todo, done]) => ({ todo, done }));
+  return (value as unknown as [string[], string[], [string, string | null][], [string, string | null, string | null][]][]).map(([todo, done, keys, logs]) => ({
+    todo,
+    done,
+    keys: (keys ?? []).map(([k, c]) => [k, c ?? undefined] as [string, string | undefined]),
+    logs: (logs ?? []).map(([k, a, b]) => [k, a ?? undefined, b ?? undefined] as [string, string | undefined, string | undefined]),
+  }));
 }
 
 function storeTodoSets(): void {
-  ember.setVariable("org--todo-sets", readTodoSets().map((s) => [s.todo, s.done]));
+  ember.setVariable("org--todo-sets", readTodoSets().map((s) => [s.todo, s.done, s.keys.map(([k, c]) => [k, c ?? null]), s.logs.map(([k, a, b]) => [k, a ?? null, b ?? null])]));
+}
+
+/** How a change from one state to another is logged, as org-todo works out dolog: "time", "note" or nothing. */
+function logHow(state: string | undefined, previous: string | undefined): string | undefined {
+  const logs = todoSets().flatMap((s) => s.logs);
+  return (state === undefined ? undefined : logs.find(([k]) => k === state)?.[1]) ?? (previous === undefined ? undefined : logs.find(([k]) => k === previous)?.[2]);
+}
+
+/** The drawer notes go in, as org-log-into-drawer says: LOGBOOK for t, or the name given. */
+function logDrawer(): string | undefined {
+  const v = ember.variable("org-log-into-drawer");
+  return v === true ? "LOGBOOK" : typeof v === "string" && v !== "" ? v : undefined;
 }
 
 export function allKeywords(): string[] {
@@ -1054,7 +1097,40 @@ const narrowToBlock = ember.defineCommand({
 });
 
 /** Where notes about state changes go in a heading's entry, as org-log-beginning finds it. */
-function logBeginning(h: Heading): number {
+/** The line of a log drawer logBeginning has just made, to fold once the note is in, as Org folds it. */
+let newDrawerLine: number | undefined;
+
+function logBeginning(h: Heading, create = false): number {
+  const drawer = logDrawer();
+  if (drawer !== undefined) {
+    // As org-log-beginning: at the top of the drawer, newest first, made after the entry's metadata if need be.
+    const meta = endOfMetaData(h);
+    const all = headings();
+    const i = headingIndex(all, h.line);
+    const end = i === undefined ? ember.bufferSize() : (all[i + 1]?.start ?? ember.bufferSize());
+    const opener = new RegExp(`^[ \t]*:${escapeRegExp(drawer)}:[ \t]*$`, "i");
+    for (let l = lineAt(meta); l < ember.lineCount() && ember.lineStart(l) < end; l++) {
+      if (opener.test(ember.lineText(l))) return lineStartOrEnd(l + 1);
+    }
+    if (!create) return meta;
+    let at = meta;
+    // Before the next heading, at the end of the line before it.
+    if (at < ember.bufferSize() && at === end) at = Math.max(ember.lineStart(lineAt(at)) - 1, 0);
+    // As looking-at "^[ \t]*$": only at the start of a line.
+    const atBlank = at === ember.lineStart(lineAt(at)) && /^[ \t]*$/.test(ember.bufferText(at, ember.lineEnd(lineAt(at))));
+    const atNonBlankStart = at === ember.lineStart(lineAt(at)) && at < ember.lineEnd(lineAt(at));
+    withoutFoldChecks(() => {
+      if (at !== ember.lineStart(lineAt(at))) {
+        edInsert(at, "\n");
+        at++;
+      }
+      const text = `:${drawer}:\n:END:`;
+      edInsert(at, text);
+      if (atBlank || atNonBlankStart) edInsert(at + charCount(text), "\n");
+    });
+    newDrawerLine = lineAt(at);
+    return lineStartOrEnd(lineAt(at) + 1);
+  }
   const endpos = endOfMetaData(h);
   let p = endpos;
   while (p < ember.bufferSize() && /[ \t\n]/.test(ember.bufferText(p, p + 1))) p++;
@@ -1068,8 +1144,9 @@ function storeStateNote(headingLine: number, state: string, previous: string | u
   const h = parseHeading(headingLine);
   if (!h) return;
   const p = marker(ember.point());
+  newDrawerLine = undefined;
   withoutFoldChecks(() => {
-    let at = logBeginning(h);
+    let at = logBeginning(h, true);
     if (at !== ember.lineStart(lineAt(at))) {
       edInsert(at, "\n");
       at++;
@@ -1082,6 +1159,8 @@ function storeStateNote(headingLine: number, state: string, previous: string | u
     ember.gotoChar(at);
     indentLine(lineAt(at));
     edInsert(ember.point(), `- ${note}`);
+    if (newDrawerLine !== undefined) toggleDrawerOrBlock(newDrawerLine, true);
+    newDrawerLine = undefined;
   });
   ember.gotoChar(p.pos);
   dropMarker(p);
@@ -2485,6 +2564,8 @@ function insertTodoHeading(arg: ember.PrefixArg, force: boolean): void {
     ember.insert(`${state} `);
   }
   updateParentTodoStatistics(line);
+  // As org-insert-todo-heading logs the new state, when it is treated as a change.
+  if (ember.variable("org-treat-insert-todo-heading-as-state-change") === true && logHow(state, undefined) !== undefined) storeStateNote(line, state, undefined);
 }
 
 const metaReturn = ember.defineCommand({
@@ -3151,16 +3232,75 @@ function todo(direction: number, state?: string): void {
   const next = state === undefined ? nextState(before, direction) : state === "" ? undefined : state;
   replaceTodoKeyword(h, next);
   if (parseHeading(h.line)?.tagsAt !== undefined) alignTagsAway(h.line);
-  if (ember.variable("org-log-done") === "time") {
-    if (isDone(next) && !isDone(before)) setPlanning(h.line, "CLOSED", `[${formatTimestamp(today(true), true)}]`);
-    else if (!isDone(next) && isDone(before)) setPlanning(h.line, "CLOSED", undefined);
+  const logDone = ember.variable("org-log-done");
+  const dolog = logHow(next, before);
+  // As org-todo: CLOSED goes when the state does, or goes back to not done; it comes when done.
+  if (todoSets().some((s) => s.logs.length > 0) || (logDone !== null && logDone !== false)) {
+    const notDone = (k: string | undefined) => k !== undefined && !isDone(k);
+    if (next === undefined || (notDone(next) && !notDone(before))) setPlanning(h.line, "CLOSED", undefined);
+    if (isDone(next) && !isDone(before) && logDone !== null && logDone !== false) setPlanning(h.line, "CLOSED", `[${formatTimestamp(today(true), true)}]`);
   }
   updateParentTodoStatistics(h.line);
-  let note: [string, string] | undefined;
+  let note: [string, string | undefined] | undefined;
   if (isDone(next) && !isDone(before)) note = autoRepeat(h.line, before, next as string);
+  if (!note && next !== undefined && dolog !== undefined) note = [next, before];
   fixPositionAfterTodo(h.line);
   // Org stores the note from post-command-hook, after the command.
   if (note) storeStateNote(h.line, note[0], note[1]);
+}
+
+/**
+ * Asks for a state by its fast-access key, as org-fast-todo-selection:
+ * the states and their keys show in " *Org todo*" below; SPC clears the
+ * state, and C-g or a key no state has quits.
+ */
+function fastTodoSelection(current: string | undefined): string | undefined {
+  const sets = todoSets();
+  const keyed = sets.flatMap((s) => s.keys);
+  const field = 3 + 1 + 3 + Math.max(...keyed.map(([k]) => ember.stringWidth(k)));
+  const name = " *Org todo*";
+  ember.getBufferCreate(name);
+  return ember.saveWindowExcursion(() => {
+    const below = ember.splitWindow(undefined, "below");
+    ember.selectWindow(below);
+    ember.call("switch-to-buffer", name);
+    const perRow = Math.floor(((ember.windowSize()?.width ?? 80) - 4) / field);
+    ember.withCurrentBuffer(name, () => {
+      ember.letBind({ "inhibit-read-only": true }, () => {
+        ember.deleteRegion(0, ember.bufferSize());
+        let n = 0;
+        for (const set of sets) {
+          if (n !== 0) {
+            n = 0;
+            ember.insert("\n");
+          }
+          ember.insert("{ ");
+          set.keys.forEach(([kw, key], j) => {
+            if (n === 0) ember.insert("  ");
+            const at = ember.point() + 4;
+            ember.insert(`[${key ?? ""}] ${kw}${" ".repeat(Math.max(0, field - 4 - charCount(kw)))}`);
+            ember.putTextProperty(at, at + charCount(kw), "face", isDone(kw) ? "org-done" : "org-todo");
+            n++;
+            if (n === perRow && j < set.keys.length - 1) {
+              ember.insert("\n");
+              n = 0;
+            }
+          });
+          n = 0;
+          ember.insert("}\n");
+        }
+        ember.gotoChar(0);
+      });
+    });
+    ember.call("shrink-window-if-larger-than-buffer");
+    const key = ember.readKey("[a-z..]:Set [SPC]:clear");
+    if (key === "SPC" || key === " ") return undefined;
+    // A key of the current state's sequence wins over another sequence's.
+    const own = sets.find((s) => current !== undefined && s.keys.some(([k]) => k === current));
+    const found = own?.keys.find(([, k]) => k === key) ?? keyed.find(([, k]) => k === key);
+    if (found === undefined || key === "C-g") ember.signal("quit", "Quit");
+    return found[0];
+  });
 }
 
 /**
@@ -3232,7 +3372,19 @@ const todoCommand = ember.defineCommand({
     "date repeats, such as <2026-10-28 Wed +1w>, moves the date on and keeps it to do. With the region active, " +
     "every heading in it changes (org-loop-over-headlines-in-active-region).",
   run: () => {
-    if (!forEachHeadingInRegion(() => todo(1), true)) todo(1);
+    const arg = ember.prefixArg();
+    // A number picks that state; with fast-access keys, a key does, as org-use-fast-todo-selection says.
+    const fast = ember.variable("org-use-fast-todo-selection");
+    const change = () => {
+      if (typeof arg === "number" && arg > 0) {
+        const kw = allKeywords()[arg - 1];
+        todo(1, kw ?? "");
+      } else if (arg === null && fast !== null && fast !== false && todoSets().some((s) => s.keys.some(([, k]) => k !== undefined))) {
+        const [all, i] = backToHeading();
+        todo(1, fastTodoSelection(all[i].todo) ?? "");
+      } else todo(1);
+    };
+    if (!forEachHeadingInRegion(change, true)) change();
   },
 });
 
