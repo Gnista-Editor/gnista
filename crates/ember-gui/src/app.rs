@@ -1087,17 +1087,29 @@ fn draw_buffer(
     let clipped = painter.with_clip_rect(Rect::from_min_max(pos2(view.clip.left().max(area.left()), view.clip.top()), view.clip.max));
     let row_top = |row: usize| area.top() + tops[row] - view.scroll_offset;
     for (i, (galley, _)) in laid_out.iter().enumerate() {
-        // A face that extends fills the rest of the row with its background.
-        if let Some(bg) = rows[i].extend.as_ref().and_then(|s| s.background).filter(|_| !rows[i].continued) {
+        // A face that extends fills the rest of the row with its background,
+        // and its overline and underline go on there too, as in Emacs.
+        if let Some(style) = rows[i].extend.as_ref().filter(|_| !rows[i].continued) {
             // As high as the text's own background, which egui draws over
             // each glyph's logical rectangle; the row's for an empty line.
             let y = row_top(i) + (heights[i] - galley.size().y) / 2.0;
             let glyph = galley.rows.first().and_then(|r| r.row.glyphs.last().map(|g| g.logical_rect().translate(r.pos.to_vec2())));
             let (top, bottom) = glyph.map_or((row_top(i), row_top(i) + heights[i]), |g| (y + g.top(), y + g.bottom()));
-            let x = area.left() - hscroll + galley.size().x;
+            // From the last glyph's right edge, where the text's own
+            // background stops, so no seam shows between them.
+            let x = area.left() - hscroll + glyph.map_or(galley.size().x, |g| g.right().min(galley.size().x));
             // Left of a right-to-left row's text.
             let (from, to) = if rows[i].right_to_left { (area.left(), area.left() + offsets[i]) } else { (x, area.right()) };
-            clipped.rect_filled(Rect::from_min_max(pos2(from, top), pos2(to, bottom)), 0.0, color32(bg));
+            if let Some(bg) = style.background {
+                clipped.rect_filled(Rect::from_min_max(pos2(from, top), pos2(to, bottom)), 0.0, color32(bg));
+            }
+            let ink = style.foreground.or(default_style.foreground).map(color32).unwrap_or(t.ink);
+            if style.overline {
+                clipped.hline(from..=to, row_top(i) + 0.5, Stroke::new(1.0, style.overline_color.map(color32).unwrap_or(ink)));
+            }
+            if style.underline && !style.underline_wave {
+                clipped.hline(from..=to, bottom - 0.5, Stroke::new(1.0, style.underline_color.map(color32).unwrap_or(ink)));
+            }
         }
         if let Some(r) = &region
             && (rows[i].right_to_left || ember_core::display::reordered(laid_out[i].1))

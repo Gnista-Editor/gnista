@@ -308,7 +308,8 @@ fn row_line(
         // A face that extends fills the rest of the row with its background.
         let fill = hscroll + width - col.max(hscroll);
         let bg = terminal_style(extend, dark).bg.unwrap_or(Color::Reset);
-        push(&mut spans, &" ".repeat(fill), Style::new().bg(bg));
+        let style = if extend.underline { Style::new().bg(bg).add_modifier(Modifier::UNDERLINED) } else { Style::new().bg(bg) };
+        push(&mut spans, &" ".repeat(fill), style);
     }
     // A continued line ends with a backslash in the last column, as in
     // Emacs, unless it was broken after a space between words.

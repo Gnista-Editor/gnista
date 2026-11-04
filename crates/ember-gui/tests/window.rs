@@ -187,6 +187,31 @@ fn face_decorations() {
     harness(ed, Theme::Dark).snapshot("face_decorations_dark");
 }
 
+/// A source block as config.org's faces draw it: the #+begin line's
+/// overline and the #+end line's underline go on to the window's edge
+/// with their background, as faces that :extend do in Emacs.
+#[test]
+fn extended_overline_and_underline() {
+    let mut ed = Editor::new();
+    let scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    ed.type_text("* Block\n#+begin_src bash\nuname -a\n#+end_src\nafter\n");
+    scripting
+        .eval_typescript(
+            &mut ed,
+            "setup.ts",
+            r##"
+            ember.setFaceAttribute("org-block", { background: "#090A0C", extend: true });
+            ember.setFaceAttribute("org-block-begin-line", { overline: "#D08770", foreground: "#8FBCBB", background: "#3B4252", extend: true });
+            ember.setFaceAttribute("org-block-end-line", { underline: "#D08770", foreground: "#8FBCBB", background: "#3B4252", extend: true });
+            ember.call("org-mode");
+            "##
+            .into(),
+        )
+        .unwrap();
+    ed.press("M->").unwrap();
+    harness(ed, Theme::Dark).snapshot("extended_overline_and_underline");
+}
+
 /// Margins and fringes: margin text, a continued line's curly arrows, a
 /// fringe spec's triangle and a defined bitmap, beside the text.
 /// Hebrew and Arabic paragraphs, from the window's right edge, a Hebrew

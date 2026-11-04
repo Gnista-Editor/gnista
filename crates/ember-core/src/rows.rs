@@ -654,14 +654,14 @@ impl Editor {
                 let line_end = b.line_end(b.line_of(pos)).min(len);
                 if pos == line_end {
                     // A visible newline ends the row, its faces' background
-                    // going on to the edge if they extend.
+                    // and lines going on to the edge if they extend.
                     if let Some(dark) = dark
                         && pos < len
                     {
                         let faces = self.faces_at(b, pos);
                         if !faces.is_empty() {
                             let style = styles.entry(faces).or_insert_with_key(|f| self.style_for_in(b, f, dark)).clone();
-                            if style.extend && style.background.is_some() {
+                            if style.extend && (style.background.is_some() || style.underline || style.overline) {
                                 extend = Some(style);
                             }
                         }
