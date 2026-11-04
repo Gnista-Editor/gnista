@@ -1,26 +1,44 @@
 # How we work
 
-Ember was built in about a week, 27 October to 3 November 2026, in one long Claude Code session: 189 commits, from a terminal editor to Org mode, Dired, a shell, bidirectional text, images, the editor on its own thread and prompts that return their answer. This page says how that session works and what it taught us, so that the next stretch goes better. [CLAUDE.md](../CLAUDE.md) holds the rules every change follows; this is the why and the how.
+Ember was built in nine days, 27 October to 4 November 2026, in one long Claude Code session: 277 commits on `main`, from a terminal editor to Org mode, Dired, a shell, bidirectional text, images, the editor on its own thread, prompts that return their answer, and ports of the packages Mark's Emacs uses, until Ember could be Mark's daily editor. From then on the work is done differently: a session per feature, on a branch of its own, merged by pull request. This page says how, and what the first stretch taught, so that what follows goes better. [CLAUDE.md](../CLAUDE.md) holds the rules every change follows; this is the why and the how.
 
-## One session, followed from a phone
+## A session per feature
 
-- **The work stays in one session.** Mark follows and steers it over Remote Control from his phone. A sub-agent or another session needs the laptop to watch or answer, so the work is done here, in order, unless he asks for something else.
-- **Long commands run in the background**: the full test suite, release builds, the fuzzers, the bench, recording oracle cases. The session waits for them to finish rather than polling, and says what it is doing when it has been quiet for a while.
-- **Wait on a file or a process id, never on `pgrep -f` with the command's text**: the waiting loop's own command line holds that text, so it matches itself and never ends. Stop waits that are no longer needed, so the app does not list them for hours.
-- **Each turn ends with a message that stands on its own**: what changed, what was checked and how, what is not done or not verified. It is read on a phone, perhaps hours later, without the transcript.
-- **Each finished piece is committed and pushed**, so its progress shows away from the laptop and a stopped session loses nothing. Files are staged by name; `test.org` and other personal files are never committed.
+- **Each feature or fix has a session, a branch and a worktree of its own**, and ends in a pull request against `main` that Mark merges. The desktop app makes the worktree when a session starts in one; `claude --worktree NAME` does in a terminal. Worktrees live in `.claude/worktrees/`, branched from `origin/main`.
+- **A session knows only the repository.** Everything the first session learned that a later one needs is written down here, in CLAUDE.md, in the [ADRs](adr/) and in the docs they point to; a session that learns something a later one would need writes it down too, in the pull request that needed it.
+- **A worktree shares the main checkout's build directory** through a `target` symlink that `.claude/hooks/share-target.sh` makes: a target of its own means building V8, egui and tree-sitter again and tens of gigabytes per worktree (the main `target` reached 200 GB). Shared, a worktree's first test build compiles only Ember's crates, about a minute. Builds in two worktrees take turns on cargo's lock rather than both running.
+- **`target/Ember.app` is the app Mark uses every day.** `make app` in a worktree replaces it with the branch's build, so try a branch with `cargo run -p ember-gui` unless Mark asks for the app.
+- **Parallel branches meet in a few files.** `packages/ember.d.ts` is generated: after a merge, make it again rather than resolving its conflicts. The GUI snapshots are recorded again and looked at. An ADR's number is the next free on `main`, and the later of two branches that took the same one renumbers. New entries in features.md and differences.md go at the end of their section.
+- **Long commands run in the background**: the full test suite, release builds, the fuzzers, the bench, recording oracle cases. Wait for them to finish rather than polling, and say what is happening when it has been quiet for a while.
+- **Wait on a file or a process id, never on `pgrep -f` with the command's text**: the waiting loop's own command line holds that text, so it matches itself and never ends. Stop waits that are no longer needed.
+- **Each turn ends with a message that stands on its own**: what changed, what was checked and how, what is not done or not verified. Mark often reads it on a phone, hours later, without the transcript.
+- **Files are staged by name.** `test.org` and other personal files are never committed.
 
-## The session outlives its memory
+## The repository is the memory
 
-- **Over a week the conversation is summarised many times**, and what is only in the conversation is lost or blurred. So the state lives in the repository: decisions in [ADRs](adr/), plans with their steps in docs ([multithreading.md](multithreading.md), [plan.md](plan.md)), measurements in [performance.md](performance.md), where Ember differs from Emacs in [differences.md](differences.md), ideas for later in [departures.md](departures.md).
-- **A plan of several steps gets a doc** with a table of its steps and each one's state, updated as each lands, with what was measured and what was decided. After a summary, the doc is where the work resumes from.
-- **CLAUDE.md is read at every turn and after every summary.** It keeps what every change needs and points to the rest: what Ember does is in [features.md](features.md), what each file holds in [layout.md](layout.md), the decisions in the [ADR index](adr/README.md).
+- **What is only in a conversation is lost**: when it is summarised, and for every other session from the start. So the state lives in the repository: decisions in [ADRs](adr/), plans with their steps in docs ([multithreading.md](multithreading.md), [plan.md](plan.md)), measurements in [performance.md](performance.md), where Ember differs from Emacs in [differences.md](differences.md), ideas for later in [departures.md](departures.md).
+- **A plan of several steps gets a doc** with a table of its steps and each one's state, updated as each lands, with what was measured and what was decided. A later session resumes from the doc.
+- **CLAUDE.md is read at every turn.** It keeps what every change needs and points to the rest: what Ember does is in [features.md](features.md), what each file holds in [layout.md](layout.md), the decisions in the [ADR index](adr/README.md).
+
+## Mark's setup
+
+- **Mark's config is `~/.config/ember/init.ts`**, ported from Mark's Emacs config (`~/.emacs.d/init.el` and `config.org`). It loads the packages that do not ship, vertico, consult, magit, org-roam and the rest, from this repository's `examples/packages` along `load-path`, so a change there reaches Mark's Ember on its next start. Ask before changing anything in `~/.config/ember`.
+- **Mark's Emacs is the reference for what is expected.** Its config says which packages and settings give the look and behaviour Mark is used to; the packages' sources are in `~/.emacs.d/elpaca/repos/` (marginalia, vertico, consult, magit, org-roam), and Emacs's own Lisp is where `(locate-library "org")` finds it in the Nix store. The block faces in init.el's `custom-set-faces` are an example: a look that seemed to be Emacs's own came from the config.
+- **Mark's org files are private.** Read them only for counts and timings, never print what they hold, and never commit them.
 
 ## Behaving like Emacs
 
-- **Ask Emacs rather than guess.** An oracle case in `tests/emacs/cases/` records what GNU Emacs does with some keys, and the tests compare Ember with it. The fuzzers find what nobody thought to test: random documents and keys, recorded in Emacs and compared.
+- **Ask Emacs rather than guess.** An oracle case in `tests/emacs/cases/` records what GNU Emacs does with some keys, and the tests compare Ember with it. For a quick answer, ask batch Emacs directly, as `emacs -Q --batch --eval '(progn (require (quote org)) (with-temp-buffer (insert "...") (org-mode) (font-lock-ensure) (message "%S" (get-text-property 27 (quote face)))))'` shows which face a character gets. The fuzzers find what nobody thought to test: random documents and keys, recorded in Emacs and compared.
+- **Read the Lisp behind the behaviour.** What looked like Ember's bugs were often Emacs's own rules, there in the source: marginalia cuts its fields to half the window, vertico truncates its rows past four fifths of the width, `org-fontify-whole-block-delimiter-line` gives a block's #+begin line's newline its face, and the display engine draws an ellipsis over the face of the text it hides.
+- **Before changing what a package does, read its issue tracker** (`gh search issues --repo minad/marginalia "width"`). A complaint the maintainer has answered tells whether a behaviour is deliberate; an improvement Emacs's maintainers declined goes in [departures.md](departures.md), not the code, and a deliberate difference made now in [differences.md](differences.md) and `tests/emacs/known-gaps.txt`.
 - **Fix the fuzzer's seeds before a change that could alter behaviour.** Note how many differences fixed seeds show before (Org: seeds 7 and 11 at 1,000 cases, 7 and 1 differences on 2026-11-03) and check they are the same after.
-- **Port Emacs's Lisp closely**, its names, messages and structure too ([ADR 0013](adr/0013-following-org-closely.md)). Following Org's code is faster than rediscovering its behaviour, and its cache, markers and change hooks turned out to be what Ember needed as well.
+- **Port Emacs's Lisp closely**, its names, messages and structure too ([ADR 0013](adr/0013-following-org-closely.md)). Following Org's code is faster than rediscovering its behaviour, and its cache, markers and change hooks turned out to be what Ember needed as well. Reading Emacs, Org and the GPL packages is fine while Ember is GPL; ask before reading the source of anything under another licence ([licensing.md](licensing.md)).
+
+## Looking at the GUI
+
+- **Snapshots first.** A GUI change gets a snapshot in `crates/ember-gui/tests/`; record it with `UPDATE_SNAPSHOTS=1`, then look at the image, enlarged when the change is a pixel or two: a crop scaled up four times showed seams and lines a pixel apart that the full image hid.
+- **The snapshots are not in `make check`**, as each process spends a minute getting the GPU from Metal: run `cargo test -p ember-gui --test window --test images` after any change to drawing, and after a change to a package a snapshot shows, such as vertico, marginalia or magit. One went stale for a day because only drawing changes were thought to need it.
+- **To see the real app**, start `target/Ember.app/Contents/MacOS/ember-gui` with `EMBER_CONFIG_DIR` pointing at a copy of the config and a test file, never one of Mark's, and take a screenshot of its window alone, by id (`screencapture -x -o -l ID`, the id from `CGWindowListCopyWindowInfo`), never the whole screen. Delete the copy's `.ember.desktop.lock` first, or desktop asks whether to use a desktop another Ember holds. Close the app when done: it is open on Mark's screen. A second Ember cannot take the agent socket and says so in the echo area; that is harmless.
 
 ## Measure before optimising
 
@@ -39,8 +57,13 @@ Ember was built in about a week, 27 October to 3 November 2026, in one long Clau
 ## Tests on this Mac
 
 - **cargo-nextest**, one test binary per crate, and dependencies optimised in debug builds: the whole suite runs in about half a minute.
-- **Developer Tools must be on for the app running the builds** (System Settings, Privacy & Security, Developer Tools): Claude.app for the session's builds, Terminal.app for your own.
-- **When new test programs are slow to start, count the files in `target/debug/deps`.** macOS's check of a new program looks through its folder, and cargo leaves every debug build's object files there: at a million files each new program waited 45 s. `make tidy` deletes those over a day old; `make check` runs it first.
-- **Run `make check` before pushing a change to the engines, the natives or the packages**: every test and clippy on V8 and on QuickJS, which builds in `target/quickjs` so switching engines does not rebuild the workspace.
+- **A test should fail without its fix.** Set the fix aside (a temporary commit, or `git stash push` of just its files in the main checkout, as the stash is shared by every worktree) and run the test once to see it fail.
+- **One test is timing-sensitive under load**: `quit::a_script_that_never_checks_is_stopped_and_its_bindings_restored` can fail when the machine is busy, a quit left over landing on its last expression. If it fails alone in a run, run it by itself before suspecting the change.
+- **Developer Tools must be on for the app running the builds** (System Settings, Privacy & Security, Developer Tools): Claude.app for a session's builds, Terminal.app for your own.
+- **When new test programs are slow to start, count the files in `target/debug/deps`.** macOS's check of a new program looks through its folder, and cargo leaves every debug build's object files there: at a million files each new program waited 45 s. `make tidy` deletes those over a day old; `make check` runs it first. Worktrees sharing one target make this folder grow faster.
+- **Run `make check` before pushing**: every test and clippy on V8 and on QuickJS, which builds in `target/quickjs` so switching engines does not rebuild the workspace.
 - **Check a fix with a change that makes a new program**: relinking a file that was only touched can give the same binary, which macOS has already let run.
-- **The GUI's snapshot tests are run on their own** (`cargo test -p ember-gui --test window --test images`), when drawing changes: each process spends a minute getting the GPU from Metal.
+
+## GitHub
+
+- **When a push fails, look at GitHub's status before the keys**: `curl -s https://www.githubstatus.com/api/v2/status.json`. On 4 November pushes failed for a while during an incident while pulls worked, and nothing local was wrong. Never probe or test SSH private keys.
