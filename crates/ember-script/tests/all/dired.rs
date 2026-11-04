@@ -263,3 +263,28 @@ fn searching_marked_files_lists_matches_in_xref() {
     assert_eq!(ed.window_buffer().name, "*xref*");
     assert_eq!(text(&ed), "longer-name.org\n1:* two\n");
 }
+
+#[test]
+fn wdired_lets_only_names_be_edited() {
+    let (mut ed, _scripting) = setup();
+    let dir = sample();
+    dired(&mut ed, dir.path());
+    goto(&mut ed, dir.path(), "a.txt");
+    ed.press("C-x C-q").unwrap();
+    assert_eq!(ed.mode_name(), "Editable Dired");
+    assert!(!ed.window_buffer().read_only);
+    // The details, the newline and the header refuse; the name does not.
+    let before = text(&ed);
+    assert!(ed.press("C-a x").is_err() || text(&ed) == before);
+    assert_eq!(text(&ed), before);
+    ed.press("C-e C-d").ok();
+    assert_eq!(text(&ed), before);
+    ed.press("M-< x").ok();
+    assert_eq!(text(&ed), before);
+    ed.press("C-s a . t x t RET C-b C-b C-b C-b C-b").unwrap();
+    ed.press("b - C-c C-c").unwrap();
+    assert!(dir.path().join("b-a.txt").exists());
+    assert_eq!(ed.mode_name(), "Dired by name");
+    assert!(ed.window_buffer().read_only);
+    assert!(text(&ed).contains(" b-a.txt\n"), "{}", text(&ed));
+}

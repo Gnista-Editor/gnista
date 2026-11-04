@@ -72,6 +72,15 @@ ember.defineCommand({
   },
 });
 
+ember.defineCommand({
+  name: "undefined",
+  doc: "Beep and say the keys typed do nothing here, as keys bound to this command, to hide a binding, do.",
+  run: () => {
+    ember.ding();
+    ember.message(`${ember.thisSingleCommandKeys()} is undefined`);
+  },
+});
+
 ember.defineVariable({
   name: "read-hide-char",
   doc: "The character read-passwd shows in place of each character of a password; * when nil.",

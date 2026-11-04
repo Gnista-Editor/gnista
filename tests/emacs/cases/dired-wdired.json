@@ -1,0 +1,139 @@
+[
+ {
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "message": true,
+  "name": "wdired-rename",
+  "keys": "C-x C-j C-x C-q C-e 2 C-c C-c"
+ },
+ {
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "message": true,
+  "name": "wdired-rename-two",
+  "keys": "C-x C-j C-x C-q C-e 2 C-n C-e 3 C-c C-c"
+ },
+ {
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "message": true,
+  "name": "wdired-swap",
+  "keys": "C-x C-j C-x C-q C-e DEL DEL DEL DEL DEL b . t x t C-n C-e DEL DEL DEL DEL DEL a . t x t C-c C-c"
+ },
+ {
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "message": true,
+  "name": "wdired-rename-both-ends",
+  "keys": "C-x C-j C-x C-q C-e DEL b C-n C-e DEL a C-c C-c"
+ },
+ {
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "message": true,
+  "name": "wdired-delete-name",
+  "keys": "C-x C-j C-x C-q C-k C-c C-c"
+ },
+ {
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "message": true,
+  "name": "wdired-into-new-directory",
+  "keys": "C-x C-j C-x C-q n e w / C-c C-c"
+ },
+ {
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "message": true,
+  "name": "wdired-abort",
+  "keys": "C-x C-j C-x C-q C-e 2 C-c C-k"
+ },
+ {
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "message": true,
+  "name": "wdired-no-changes",
+  "keys": "C-x C-j C-x C-q C-x C-q"
+ },
+ {
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "message": true,
+  "name": "wdired-exit-saving",
+  "keys": "C-x C-j C-x C-q C-e 2 C-x C-q",
+  "answers": [
+   "y"
+  ]
+ },
+ {
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "message": true,
+  "name": "wdired-keeps-marks",
+  "keys": "C-x C-j m C-p C-x C-q C-e 2 C-c C-c"
+ },
+ {
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "message": true,
+  "name": "wdired-symlink-target",
+  "keys": "C-x C-j S C-x C-q C-e DEL DEL DEL DEL DEL b . t x t C-c C-c",
+  "answers": [
+   "link"
+  ]
+ }
+]

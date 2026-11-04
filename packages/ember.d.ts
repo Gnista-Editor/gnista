@@ -6168,6 +6168,12 @@ declare global {
        */
       "uncomment-region": [];
       /**
+       * Beep and say the keys typed do nothing here, as keys bound to this command, to hide a binding, do.
+       *
+       * Defined in packages/subr.ts.
+       */
+      "undefined": [];
+      /**
        * Undo the last change, or as many changes as the prefix argument says.
        *
        * Repeat to undo earlier changes. Undoing is itself a change, so after any other command, undo undoes the undos: it redoes.
@@ -6323,6 +6329,30 @@ declare global {
        * Defined in packages/simple.ts.
        */
       "visual-line-mode": [];
+      /**
+       * Take back the edits to the file names and go back to Dired.
+       *
+       * Defined in packages/wdired.ts.
+       */
+      "wdired-abort-changes": [];
+      /**
+       * Make this Dired buffer's file names editable, and the targets of its links. C-c C-c renames the files whose names you changed and flags for deletion those whose names you deleted; C-c C-k takes the edits back.
+       *
+       * Defined in packages/wdired.ts.
+       */
+      "wdired-change-to-wdired-mode": [];
+      /**
+       * Go back to Dired: if the names were edited, after asking whether to rename the files or take the edits back.
+       *
+       * Defined in packages/wdired.ts.
+       */
+      "wdired-exit": [];
+      /**
+       * Rename the files whose names you edited, point links at their edited targets, flag for deletion the files whose names you deleted, and go back to Dired.
+       *
+       * Defined in packages/wdired.ts.
+       */
+      "wdired-finish-edit": [];
       /**
        * Say what character is after point, in decimal, octal and hex, and how the file writes it if it is not ASCII; and where point is, as a position, a percentage of the buffer, and a column.
        *
@@ -9780,6 +9810,28 @@ declare global {
        */
       "visual-order-cursor-movement": Value;
       /**
+       * Whether the targets of symbolic links can be edited too, to point them elsewhere.
+       *
+       * Defined in packages/wdired.ts.
+       */
+      "wdired-allow-to-redirect-links": Value;
+      /**
+       * Whether renaming a file over one that exists asks first.
+       *
+       * Defined in packages/wdired.ts.
+       */
+      "wdired-confirm-overwrite": Value;
+      /**
+       * Whether renaming a file into a directory that does not exist makes it.
+       *
+       * Defined in packages/wdired.ts.
+       */
+      "wdired-create-parent-directories": Value;
+      /**
+       * Keymap wdired-mode-map.
+       */
+      "wdired-mode-map": Value;
+      /**
        * Spaces added before each column's keys.
        *
        * Defined in packages/which-key.ts.
@@ -11719,6 +11771,10 @@ declare global {
        * Run after Visual-Line mode is turned on.
        */
       "visual-line-mode-on-hook": Value;
+      /**
+       * Functions called when a Dired buffer becomes editable.
+       */
+      "wdired-mode-hook": Value;
       /**
        * Run after Which-Key mode is turned on or off.
        */

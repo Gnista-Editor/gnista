@@ -1,0 +1,366 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "wdired-rename",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j C-x C-q C-e 2 C-c C-c",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt2\n  b.txt\n  c.org\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt2\n  b.txt\n  c.org\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt2": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n"
+      },
+      "message": "Renaming...done"
+    },
+    {
+      "name": "wdired-rename-two",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j C-x C-q C-e 2 C-n C-e 3 C-c C-c",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt2\n  b.txt3\n  c.org\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt2\n  b.txt3\n  c.org\n",
+      "point": 27,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt2": "one\n",
+        "b.txt3": "two\n",
+        "c.org": "* c\n"
+      },
+      "message": "Renaming...done"
+    },
+    {
+      "name": "wdired-swap",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j C-x C-q C-e DEL DEL DEL DEL DEL b . t x t C-n C-e DEL DEL DEL DEL DEL a . t x t C-c C-c",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "two\n",
+        "b.txt": "one\n",
+        "c.org": "* c\n"
+      },
+      "message": "Renaming...done"
+    },
+    {
+      "name": "wdired-rename-both-ends",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j C-x C-q C-e DEL b C-n C-e DEL a C-c C-c",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txb\n  b.txa\n  c.org\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txb\n  b.txa\n  c.org\n",
+      "point": 26,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txb": "one\n",
+        "b.txa": "two\n",
+        "c.org": "* c\n"
+      },
+      "message": "Renaming...done"
+    },
+    {
+      "name": "wdired-delete-name",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j C-x C-q C-k C-c C-c",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\nD a.txt\n  b.txt\n  c.org\n",
+      "visible": "  DIR:\n  .\n  ..\nD a.txt\n  b.txt\n  c.org\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "a.txt"
+      ],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n"
+      },
+      "message": "Press C-c C-c when finished or C-c ESC to abort changes"
+    },
+    {
+      "name": "wdired-into-new-directory",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j C-x C-q n e w / C-c C-c",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  b.txt\n  c.org\n  new\n",
+      "visible": "  DIR:\n  .\n  ..\n  b.txt\n  c.org\n  new\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "new/": "",
+        "new/a.txt": "one\n"
+      },
+      "message": "Renaming...done"
+    },
+    {
+      "name": "wdired-abort",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j C-x C-q C-e 2 C-c C-k",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n"
+      },
+      "message": "Changes aborted"
+    },
+    {
+      "name": "wdired-no-changes",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j C-x C-q C-x C-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n"
+      },
+      "message": "(No changes need to be saved)"
+    },
+    {
+      "name": "wdired-exit-saving",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j C-x C-q C-e 2 C-x C-q",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "y"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt2\n  b.txt\n  c.org\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt2\n  b.txt\n  c.org\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt2": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n"
+      },
+      "message": "Renaming...done"
+    },
+    {
+      "name": "wdired-keeps-marks",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j m C-p C-x C-q C-e 2 C-c C-c",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n* a.txt2\n  b.txt\n  c.org\n",
+      "visible": "  DIR:\n  .\n  ..\n* a.txt2\n  b.txt\n  c.org\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt2": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n"
+      },
+      "message": "Renaming...done"
+    },
+    {
+      "name": "wdired-symlink-target",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j S C-x C-q C-e DEL DEL DEL DEL DEL b . t x t C-c C-c",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "link"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\nY link -> DIR/b.txt\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\nY link -> DIR/b.txt\n",
+      "point": 34,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "link": "two\n"
+      },
+      "message": "Press C-c C-c when finished or C-c ESC to abort changes"
+    }
+  ]
+}

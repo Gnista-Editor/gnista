@@ -88,7 +88,7 @@ ember.defineCommand({
 // Acting on files by regexp.
 
 /** Renames a file and the buffers visiting it, as dired-rename-file. */
-const rename: Creator = (from, to) => {
+export const diredRenameFile: Creator = (from, to) => {
   ember.renameFile(from, to, { okIfExists: true });
   for (const b of ember.bufferList()) {
     ember.withCurrentBuffer(b, () => {
@@ -150,7 +150,7 @@ function readRegexpOperation(operation: string, run: (regexp: string, newname: s
 }
 
 for (const [name, operation, creator, keep, doc] of [
-  ["dired-do-rename-regexp", "Rename", rename, "dired-keep-marker-rename", "Rename the marked files whose names match a regexp, asking about each."],
+  ["dired-do-rename-regexp", "Rename", diredRenameFile, "dired-keep-marker-rename", "Rename the marked files whose names match a regexp, asking about each."],
   ["dired-do-copy-regexp", "Copy", copy, "dired-keep-marker-copy", "Copy the marked files whose names match a regexp to names made from the match, asking about each."],
   ["dired-do-hardlink-regexp", "HardLink", hardlink, "dired-keep-marker-hardlink", "Hard link the marked files whose names match a regexp to names made from the match."],
   ["dired-do-symlink-regexp", "SymLink", symlink, "dired-keep-marker-symlink", "Symlink the marked files whose names match a regexp to names made from the match."],
@@ -177,7 +177,7 @@ function renameNonDirectory(basename: (name: string) => string, operation: strin
   createFiles(operation, files, (from) => {
     const to = (ember.fileNameDirectory(from) ?? "") + basename(ember.fileNameNondirectory(from));
     return ask(`${operation} \u2018${ember.fileNameNondirectory(from)}\u2019 to \u2018${ember.fileNameNondirectory(to)}\u2019`) ? to : undefined;
-  }, rename, keptMark("dired-keep-marker-rename"));
+  }, diredRenameFile, keptMark("dired-keep-marker-rename"));
 }
 
 ember.defineCommand({
