@@ -726,8 +726,11 @@ fn vertico_with_marginalia() {
 /// Magit's status buffer, a file's diff expanded, and its commit menu over it.
 #[test]
 fn magit_status_and_commit_menu() {
+    // A directory of a fixed name, which the mode line shows as the buffer's.
     let dir = tempfile::tempdir().unwrap();
-    let p = dir.path();
+    let project = dir.path().join("project");
+    std::fs::create_dir(&project).unwrap();
+    let p = project.as_path();
     let git = |args: &[&str]| {
         std::process::Command::new("git").args(args).current_dir(p).output().unwrap();
     };

@@ -189,9 +189,21 @@ impl Editor {
                 let height = self.window(id).map_or(24, |w| w.height) + 1;
                 let wrap = self.wrap_in(id, view.buffer);
                 let rows = self.rows_from(view.buffer, view.top_line, height, usize::MAX, None, wrap);
-                let (Some(first), Some(last)) = (rows.first(), rows.last()) else { break };
-                let range = first.start..last.end;
-                let fontified = self.with_current_buffer(index, |ed| ed.fontify_region(range));
+                if rows.is_empty() {
+                    break;
+                }
+                // Only what the rows show, as Emacs's display fontifies what
+                // it shows: text hidden in a folded subtree waits until it
+                // shows, rather than every edit fontifying the rest of the
+                // buffer through it.
+                let ranges = shown_ranges(&rows);
+                let fontified = self.with_current_buffer(index, |ed| {
+                    let mut any = false;
+                    for range in ranges {
+                        any |= ed.fontify_region(range)?;
+                    }
+                    Ok::<bool, crate::error::Error>(any)
+                });
                 // The faces it put are the text's, which other buffers may share.
                 self.sync_shared_text();
                 match fontified {
@@ -209,6 +221,28 @@ impl Editor {
         }
         done
     }
+}
+
+/// The stretches of text rows show, each row's from its start to the end
+/// of the last text it shows, so hidden text after it, behind an ellipsis,
+/// is left out; stretches that meet are joined.
+fn shown_ranges(rows: &[crate::rows::Row]) -> Vec<Range<usize>> {
+    let mut out: Vec<Range<usize>> = Vec::new();
+    for row in rows {
+        let shown_end = row
+            .segments
+            .iter()
+            .filter(|s| !s.ellipsis && !(s.string && s.covers.is_none()))
+            .map(|s| s.covers.unwrap_or(s.start + s.text.chars().count()))
+            .max()
+            .unwrap_or(row.start)
+            .max(row.start);
+        match out.last_mut() {
+            Some(last) if row.start <= last.end + 1 => last.end = last.end.max(shown_end),
+            _ => out.push(row.start..shown_end),
+        }
+    }
+    out
 }
 
 #[cfg(test)]

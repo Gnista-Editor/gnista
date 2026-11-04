@@ -936,3 +936,24 @@ fn habits_show_today_with_their_graphs_as_emacs_draws_them() {
         "clear-future clear-future clear-future clear-future clear-future clear-future clear clear-future alert-future overdue overdue overdue overdue overdue overdue clear-future alert-future overdue overdue clear-future alert-future overdue overdue-future overdue-future overdue-future overdue-future overdue-future overdue-future"
     );
 }
+
+#[test]
+fn an_edit_fontifies_what_shows_not_the_folded_rest() {
+    // Each edit used to fontify from it to the end of the buffer, through
+    // folded subtrees; as in Emacs, only what shows is fontified.
+    let body: String = (0..2_000).map(|i| format!("* Heading {i}\n*bold* text\n")).collect();
+    let (mut ed, s) = org(&body);
+    ed.press("S-TAB").unwrap();
+    ed.redisplay();
+    ed.press("C-e x").unwrap();
+    ed.redisplay();
+    let face = |ed: &mut Editor, line: usize| s.eval_expression(ed, &format!(r#"String(ember.getTextProperty(ember.lineStart({line}), "face"))"#)).unwrap();
+    // The last body line, hidden, is not fontified yet; the first heading is.
+    let face_at = |ed: &mut Editor, line: usize| s.eval_expression(ed, &format!(r#"String(ember.getTextProperty(ember.lineStart({line}) + 1, "face"))"#)).unwrap();
+    assert_eq!(face_at(&mut ed, 3999).trim_matches('"'), "undefined");
+    assert_eq!(face(&mut ed, 0).trim_matches('"'), "org-level-1");
+    // Unfolded and shown, it is.
+    ed.press("M-x o u t l i n e - s h o w - a l l RET M->").unwrap();
+    ed.redisplay();
+    assert_eq!(face_at(&mut ed, 3999).trim_matches('"'), "bold");
+}
