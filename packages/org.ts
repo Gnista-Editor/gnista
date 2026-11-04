@@ -2411,7 +2411,7 @@ function previousLineEmpty(): boolean {
  * org--blank-before-heading-p decides for org-blank-before-new-entry's
  * "auto": when the heading point is under, or its parent, has one.
  */
-function blankBeforeHeading(parent: boolean): boolean {
+export function blankBeforeHeading(parent: boolean): boolean {
   const all = headings();
   let i = headingIndex(all, lineAt());
   if (i === undefined) {

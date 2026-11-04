@@ -4,6 +4,7 @@
 // Ember narrows the target buffer itself.
 
 import { alignTags, formatTimestamp, type Heading, headings, parseHeading, subtreeRegion, today } from "org";
+import { findDateCreate } from "org-datetree";
 import { lineAt } from "org-macs";
 import { charCount } from "subr";
 
@@ -11,7 +12,8 @@ ember.defineVariable({
   name: "org-capture-templates",
   doc:
     "The capture templates: lists of a key, a description, the type (entry), a target such as " +
-    '["file", NAME] or ["file+headline", NAME, HEADING], and the template text.',
+    '["file", NAME], ["file+headline", NAME, HEADING], ["file+olp", NAME, HEADING, SUBHEADING...] or ' +
+    '["file+olp+datetree", NAME, HEADING...], the template text, and options such as ":tree-type", "week".',
   value: [],
 });
 ember.defineVariable({
@@ -20,7 +22,7 @@ ember.defineVariable({
   value: "~/.notes",
 });
 
-type CaptureTemplate = [string, string, string, string[], string];
+type CaptureTemplate = [string, string, string, string[], string, ...ember.Value[]];
 
 /** The templates, or Org's one default template if there are none. */
 function captureTemplates(): CaptureTemplate[] {
@@ -29,12 +31,41 @@ function captureTemplates(): CaptureTemplate[] {
   return [["t", "Task", "entry", ["file+headline", "", "Tasks"], "* TODO %?\n  %u\n  %a"]];
 }
 
+/** A template's option, as its properties plist gives it. */
+function option(t: CaptureTemplate, name: string): ember.Value | undefined {
+  const rest = t.slice(5);
+  for (let i = 0; i + 1 < rest.length; i += 2) if (rest[i] === name) return rest[i + 1];
+  return undefined;
+}
+
+/** What %a and %i stand for: a link to where the capture started, and its active region. */
+interface Context {
+  annotation: string;
+  initial: string;
+  /** The tags of the target file, to complete %^g. */
+  tags: string[];
+}
+
+/** A link to point's place, as org-store-link makes one for %a: the heading in an Org file, else the line. */
+function annotation(): string {
+  const file = ember.bufferFileName();
+  if (file === undefined) return "";
+  const path = ember.abbreviateFileName(file);
+  if (ember.derivedModeP("org-mode")) {
+    const h = headings().filter((x) => x.start <= ember.point()).at(-1);
+    return h ? `[[file:${path}::*${h.title}][${h.title}]]` : `[[file:${path}]]`;
+  }
+  const line = ember.lineText(lineAt()).trim();
+  return line === "" ? `[[file:${path}]]` : `[[file:${path}::${line}]]`;
+}
+
 /**
  * A template's text with its escapes filled in, as org-capture-fill-template
  * does for the ones Ember knows: dates (%t, %T, %u, %U), the region (%i),
- * a link back (%a, left empty) and %%; and where %? puts the cursor.
+ * a link back (%a), tags asked for (%^g) and %%; and where %? puts the
+ * cursor. Blank lines go from its start, and blanks from its end.
  */
-function fillTemplate(template: string): { text: string; cursor?: number } {
+function fillTemplate(template: string, context: Context = { annotation: "", initial: "", tags: [] }): { text: string; cursor?: number } {
   const now = today(true);
   const day = { year: now.year, month: now.month, day: now.day };
   let cursor: number | undefined;
@@ -63,7 +94,23 @@ function fillTemplate(template: string): { text: string; cursor?: number } {
         text += `[${formatTimestamp(now, true)}]`;
         break;
       case "i":
+        // Each line after the first indented as the line %i is on.
+        text += context.initial.replace(/\n/g, `\n${/[^\n]*$/.exec(text)![0].replace(/\S/g, " ")}`);
+        break;
       case "a":
+        text += context.annotation;
+        break;
+      case "^":
+        if (template[i + 1] === "g" || template[i + 1] === "G") {
+          i++;
+          const answer = ember.completingRead("Tags: ", context.tags, { history: "org-tags-history" });
+          const tags = answer.split(/[ \t]*:[ \t]*/).filter((t) => t !== "").join(":");
+          if (tags !== "") {
+            if (!text.endsWith(":")) text += ":";
+            text += tags;
+            if (template[i + 1] !== ":") text += ":";
+          }
+        } else text += "%^";
         break;
       case "%":
         text += "%";
@@ -72,7 +119,15 @@ function fillTemplate(template: string): { text: string; cursor?: number } {
         text += `%${next}`;
     }
   }
-  if (!text.endsWith("\n")) text += "\n";
+  // As org-capture-fill-template ends: no blank lines first, and a newline last.
+  const lead = /^[ \t\n]*/.exec(text)![0];
+  const cut = lead.lastIndexOf("\n") + 1;
+  if (cursor !== undefined) cursor = Math.max(0, cursor - charCount(text.slice(0, cut)));
+  text = text.slice(cut);
+  const body = text.replace(/[ \t\n]*$/, "");
+  const lastLine = body.length === 0 ? "" : text.slice(body.length).split("\n")[0];
+  text = body.length === 0 ? "" : `${body}${lastLine}\n`;
+  if (cursor !== undefined) cursor = Math.min(cursor, charCount(text));
   return { text, cursor };
 }
 
@@ -95,12 +150,41 @@ function captureWith(key: string): void {
   const from = ember.windowBuffer() ?? "";
   // A marker, as the buffer the capture came from stays editable below it.
   const point = ember.makeMarker(ember.point());
+  const mark = ember.mark();
+  const initial = ember.variable("mark-active") === true && mark !== undefined
+    ? ember.bufferSubstringNoProperties(Math.min(mark, ember.point()), Math.max(mark, ember.point()))
+    : "";
+  const link = annotation();
   const buffer = ember.findFileNoselect(file);
   const modified = ember.withCurrentBuffer(buffer, () => ember.bufferModified());
-  const filled = fillTemplate(template);
+  const tags = ember.withCurrentBuffer(buffer, () => [...new Set(headings().flatMap((h) => h.tags))]);
+  const filled = fillTemplate(template, { annotation: link, initial, tags });
   const placed = ember.withCurrentBuffer(buffer, () => {
     ember.widen();
     let level = 1;
+    /** The heading with this title under the one at `under`, as org-find-olp looks for each. */
+    const child = (title: string, under: Heading | undefined): Heading | undefined => {
+      const all = headings();
+      const [start, end] = under === undefined ? [0, ember.bufferSize()] : subtreeRegion(all, all.findIndex((x) => x.start === under.start));
+      const level = under === undefined ? Math.min(...all.map((h) => h.level)) : under.level + 1;
+      return all.find((h) => h.start >= start && h.start < end && h.title === title && (under === undefined ? true : h.level === level));
+    };
+    /** The heading an outline path names, as org-find-olp, which signals when one is missing. */
+    const olp = (path: string[]): Heading | undefined => {
+      let h: Heading | undefined;
+      path.forEach((title, n) => {
+        const found = child(title, h);
+        if (!found) ember.signal("error", `Heading not found on level ${n + 1}: ${title}`);
+        h = found;
+      });
+      return h;
+    };
+    /** Files the entry under a heading, after its subtree. */
+    const under = (h: Heading) => {
+      const all = headings();
+      level = h.level + 1;
+      ember.gotoChar(subtreeRegion(all, all.findIndex((x) => x.start === h.start))[1]);
+    };
     if (target[0] === "file+headline") {
       const name = target[2] ?? "";
       let h = headings().find((x) => x.title === name);
@@ -110,9 +194,19 @@ function captureWith(key: string): void {
         ember.insert(`* ${name}\n`);
         h = headings().find((x) => x.title === name) as Heading;
       }
+      under(h);
+    } else if (target[0] === "file+olp") {
+      const h = olp(target.slice(2));
+      if (h) under(h);
+      else ember.gotoChar(ember.bufferSize());
+    } else if (target[0] === "file+olp+datetree") {
+      const parent = olp(target.slice(2));
       const all = headings();
-      level = h.level + 1;
-      ember.gotoChar(subtreeRegion(all, all.findIndex((x) => x.start === h.start))[1]);
+      const [start, end] = parent === undefined ? [0, ember.bufferSize()] : subtreeRegion(all, all.findIndex((x) => x.start === parent.start));
+      const grouping = option(t, ":tree-type");
+      const now = today();
+      const at = findDateCreate(now, grouping === "week" ? "week" : grouping === "month" ? "month" : "day", parent === undefined ? 1 : parent.level + 1, start, end);
+      under(headings().find((h) => h.start === at) as Heading);
     } else if (target[0] === "file") {
       ember.gotoChar(ember.bufferSize());
     } else {

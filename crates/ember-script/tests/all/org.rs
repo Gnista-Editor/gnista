@@ -785,3 +785,35 @@ fn keywords_and_tags_take_their_own_faces() {
     assert_ne!(rgb(seg(0, "other").foreground), Some((0xd0, 0x87, 0x70)));
     assert_eq!(rgb(seg(1, "DONE").foreground), Some((0x8f, 0xbc, 0xbb)));
 }
+
+#[test]
+fn capture_files_into_date_trees_and_outline_paths_as_emacs_does() {
+    // config.org's templates, and what Emacs 30 made of them with Title typed, its clock at 12:00.
+    let dir = tempfile::tempdir_in(env!("CARGO_TARGET_TMPDIR")).unwrap();
+    std::fs::write(dir.path().join("meetings.org"), "#+title: Meetings\n* 2026\n** 2026-W44\n*** 2026-10-28 Wednesday\n**** Old meeting\n").unwrap();
+    std::fs::write(dir.path().join("people.org"), "* Inbox\n* Projects\n").unwrap();
+    let mut ed = Editor::new();
+    let s = Scripting::new(&mut ed).unwrap();
+    let d = dir.path().display().to_string();
+    s.eval_expression(
+        &mut ed,
+        &format!(
+            r#"(ember.setVariable("ember--today", "2026-11-04"), ember.setVariable("org-capture-templates", [
+              ["m", "Meeting", "entry", ["file+olp+datetree", "{d}/meetings.org"], "* %?  :meeting:%^g \n:Created: %T\n** Attendees\n*** \n** Notes\n** Action Items\n***   ", ":tree-type", "week", ":empty-lines", 0],
+              ["j", "Journal", "entry", ["file+olp+datetree", "{d}/journal.org"], "* %?\nEntered on %U\n  %i\n  %a"],
+              ["p", "Person", "entry", ["file+olp", "{d}/people.org", "Inbox"], "* %?  :person: \n:Created: %T\nRun (C-c n h)", ":empty-lines", 0]]), 1)"#
+        ),
+    )
+    .unwrap();
+    ed.set_frame_size(80, 24);
+    let read = |name: &str| std::fs::read_to_string(dir.path().join(name)).unwrap();
+    ed.press("M-x o r g - c a p t u r e RET m RET w o r k RET T i t l e C-c C-c").unwrap();
+    assert_eq!(
+        read("meetings.org"),
+        "#+title: Meetings\n* 2026\n** 2026-W44\n*** 2026-10-28 Wednesday\n**** Old meeting\n** 2026-W45\n*** 2026-11-04 Wednesday\n**** Title                                                     :meeting:work: \n:Created: <2026-11-04 Wed 12:00>\n***** Attendees\n****** \n***** Notes\n***** Action Items\n******   \n"
+    );
+    ed.press("M-x o r g - c a p t u r e RET j RET T i t l e C-c C-c").unwrap();
+    assert_eq!(read("journal.org"), "\n* 2026\n** 2026-11 November\n*** 2026-11-04 Wednesday\n**** Title\nEntered on [2026-11-04 Wed 12:00]\n");
+    ed.press("M-x o r g - c a p t u r e RET p RET T i t l e C-c C-c").unwrap();
+    assert_eq!(read("people.org"), "* Inbox\n** Title                                                             :person: \n:Created: <2026-11-04 Wed 12:00>\nRun (C-c n h)\n* Projects\n");
+}

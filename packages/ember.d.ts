@@ -8934,7 +8934,7 @@ declare global {
        */
       "org-capture-mode-map": Value;
       /**
-       * The capture templates: lists of a key, a description, the type (entry), a target such as ["file", NAME] or ["file+headline", NAME, HEADING], and the template text.
+       * The capture templates: lists of a key, a description, the type (entry), a target such as ["file", NAME], ["file+headline", NAME, HEADING], ["file+olp", NAME, HEADING, SUBHEADING...] or ["file+olp+datetree", NAME, HEADING...], the template text, and options such as ":tree-type", "week".
        *
        * Defined in packages/org-capture.ts.
        */
