@@ -6914,6 +6914,10 @@ declare global {
        */
       "bookmark-search-size": Value;
       /**
+       * This buffer's display table, a char-table of subtype display-table, or nil. Its extra slot 4, selective-display, holds the string hidden text with an ellipsis shows as in place of ..., as Org's org-ellipsis sets.
+       */
+      "buffer-display-table": Value;
+      /**
        * Whether Buffer-Face mode is on in this buffer. Use the command buffer-face-mode to change it.
        *
        * Defined in packages/face-remap.ts.
@@ -8978,6 +8982,12 @@ declare global {
        */
       "org-edit-src-content-indentation": Value;
       /**
+       * What a folded heading shows after it in place of ..., a string, or nil for ....
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-ellipsis": Value;
+      /**
        * What typing or deleting next to folded text does: "smart" unfolds it and goes ahead where the edit is predictable, and otherwise stops so it can be repeated with the text showing; "show" unfolds and goes ahead, "show-and-error" unfolds and stops, "error" stops, and false allows the edit.
        *
        * Defined in packages/org.ts.
@@ -9135,6 +9145,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-refile-use-outline-path": Value;
+      /**
+       * Whether RET on a link follows it, as C-c C-o does, rather than breaking the line.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-return-follows-link": Value;
       /**
        * Whether C-o in a table inserts a row rather than opening a line.
        *
@@ -9782,6 +9798,10 @@ declare global {
        * Keymap special-mode-map.
        */
       "special-mode-map": Value;
+      /**
+       * The display table of buffers without one of their own, or nil.
+       */
+      "standard-display-table": Value;
       /**
        * Strings given to C-x r t, newest first.
        *
@@ -11132,6 +11152,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-drawer": FaceAttributes;
+      /**
+       * The text a folded heading shows after it, as org-ellipsis says.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-ellipsis": FaceAttributes;
       /**
        * Footnotes, such as [fn:1].
        *

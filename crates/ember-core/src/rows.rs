@@ -642,7 +642,7 @@ impl Editor {
                 let (visible, ellipsis) = self.skip_invisible_in(b, pos);
                 if visible > pos {
                     if ellipsis && !segments.last().is_some_and(|s| s.ellipsis) {
-                        segments.push(Segment { ellipsis: true, ..Segment::text(pos, ELLIPSIS.to_string(), Style::default()) });
+                        segments.extend(self.ellipsis_segments(b, pos, dark, &mut styles));
                     }
                     pos = visible;
                     continue;
@@ -745,6 +745,28 @@ impl Editor {
     /// What a line or its continued rows start with, as Emacs's
     /// `line-prefix` and `wrap-prefix` give it: the property of the text at
     /// the line's start, or else the buffer's variable, if it is a string.
+    /// What hidden text with an ellipsis shows as: the string in the
+    /// selective-display slot of the buffer's display table, or else the
+    /// standard one's, in its own faces, as Emacs draws the glyphs there;
+    /// else "...".
+    fn ellipsis_segments(&self, b: &Buffer, pos: usize, dark: Option<bool>, styles: &mut HashMap<Vec<String>, Style>) -> Vec<Segment> {
+        let slot = ["buffer-display-table", "standard-display-table"].iter().find_map(|name| match self.variable_in(b, name) {
+            Some(Value::CharTable(id)) => self.char_table_extra_slot(id, 4).ok().filter(|v| v.as_str().is_some_and(|s| !s.is_empty())),
+            _ => None,
+        });
+        match slot {
+            Some(value) => {
+                let mut out = self.string_segments(b, pos, &value, None, &[], dark, styles);
+                for s in &mut out {
+                    s.ellipsis = true;
+                    s.string = false;
+                }
+                out
+            }
+            None => vec![Segment { ellipsis: true, ..Segment::text(pos, ELLIPSIS.to_string(), Style::default()) }],
+        }
+    }
+
     fn prefix_segments(&self, b: &Buffer, pos: usize, name: &str, dark: Option<bool>, styles: &mut HashMap<Vec<String>, Style>) -> Vec<Segment> {
         let at = if pos < b.len() { b.char_property(pos, name).cloned() } else { None };
         match at.or_else(|| self.variable_in(b, name)) {

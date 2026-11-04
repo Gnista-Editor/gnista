@@ -593,6 +593,17 @@ pub(crate) fn install(ed: &mut Editor) {
         Variable::new("mode-name", "The current buffer's major mode as the mode line shows it.", "Fundamental")
             .local(),
         Variable::new(
+            "buffer-display-table",
+            "This buffer's display table, a char-table of subtype display-table, or nil. Its extra slot 4, selective-display, holds the string hidden text with an ellipsis shows as in place of ..., as Org's org-ellipsis sets.",
+            Value::Null,
+        )
+        .local(),
+        Variable::new(
+            "standard-display-table",
+            "The display table of buffers without one of their own, or nil.",
+            Value::Null,
+        ),
+        Variable::new(
             "find-word-boundary-function-table",
             "A char-table of functions that find where words end, for the word commands: a word whose first character, or last going back, has one ends where it says, called with the position and the limit. Subword mode sets it.",
             Value::Null,

@@ -678,3 +678,20 @@ fn refile_targets_with_outline_paths_reach_other_files_as_emacs_does() {
     let main = dir.path().join("main.org").display().to_string();
     assert_eq!(ed.echo().map(str::to_string), Some(format!("Refile to \"Projects/Ember\" in file {main}: done")));
 }
+
+#[test]
+fn org_ellipsis_shows_after_a_folded_heading() {
+    let mut ed = Editor::new();
+    let s = Scripting::new(&mut ed).unwrap();
+    s.eval_expression(&mut ed, r#"(ember.setVariable("org-ellipsis", " [+] "), 1)"#).unwrap();
+    ed.window_buffer_mut().set_text("* One\nbody\n* Two\n");
+    ed.call("org-mode", vec![]).unwrap();
+    ed.set_window_size(ed.selected_window(), 80, 20);
+    ed.press("TAB").unwrap();
+    ed.redisplay();
+    assert_eq!(&rows(&ed)[..2], ["* One [+] ", "* Two"]);
+    let (mut plain, _s) = org("* One\nbody\n* Two\n");
+    plain.press("TAB").unwrap();
+    plain.redisplay();
+    assert_eq!(&rows(&plain)[..2], ["* One...", "* Two"]);
+}

@@ -117,6 +117,8 @@ const variables: [string, string, ember.Value][] = [
     "showeverything",
   ],
   ["org-startup-truncated", "Whether org-mode turns on truncate-lines, so long lines run off the window.", true],
+  ["org-ellipsis", "What a folded heading shows after it in place of ..., a string, or nil for ....", null],
+  ["org-return-follows-link", "Whether RET on a link follows it, as C-c C-o does, rather than breaking the line.", false],
   ["org-directory", "Where Org files are kept: relative names in org-agenda-files are in it.", "~/org"],
   ["org-startup-indented", "Whether org-mode turns on org-indent-mode, indenting text under its headings as it shows. #+STARTUP: indent or noindent says otherwise for a file.", false],
   ["org-hide-leading-stars", "Whether a heading shows only its last star, the others in the org-hide face, the colour of the background.", false],
@@ -232,6 +234,7 @@ const faces: [string, string, ember.FaceAttributes][] = [
   ["org-strike-through", "+Struck through+ text.", { strike: true }],
   ["org-footnote", "Footnotes, such as [fn:1].", { foreground: "accent-ink", underline: true }],
   ["org-target", "Link targets, such as <<target>>.", { underline: true }],
+  ["org-ellipsis", "The text a folded heading shows after it, as org-ellipsis says.", { foreground: "warn", underline: true }],
   ["org-hide", "The leading stars of headings org-hide-leading-stars hides, in the colour of the background.", { foreground: "bg" }],
 ];
 for (const [name, doc, attributes] of faces) ember.defineFace({ name, doc, attributes });
@@ -2060,6 +2063,11 @@ function orgReturnWith(electric: boolean): void {
       ember.call("org-table-justify-field-maybe");
       ember.call("org-table-next-row");
     }
+    return;
+  }
+  // On a link, RET follows it, as org-return-follows-link says.
+  if (ember.variable("org-return-follows-link") === true && linkHere() !== undefined) {
+    ember.callInteractively("org-open-at-point");
     return;
   }
   const h = p > ls ? parseHeading(line) : undefined;
@@ -5277,6 +5285,13 @@ ember.defineMajorMode({
     ember.addToInvisibilitySpec("org-link");
     storeTodoSets();
     if (ember.variable("org-startup-truncated") === true) ember.setVariable("truncate-lines", true);
+    // A folded heading ends in org-ellipsis, through the buffer's display table, as org-mode sets it up.
+    const ellipsis = ember.variable("org-ellipsis");
+    if (typeof ellipsis === "string" && ellipsis !== "") {
+      const table = ember.makeCharTable("display-table");
+      ember.setCharTableExtraSlot(table, 4, ember.propertize(ellipsis, { face: "org-ellipsis" }));
+      ember.setVariable("buffer-display-table", table);
+    }
     // As org-mode turns org-indent-mode on, from the variable or a #+STARTUP: line.
     let indented = ember.variable("org-startup-indented") === true;
     for (const [, , text] of keywordLines()) {

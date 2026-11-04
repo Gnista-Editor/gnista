@@ -1,85 +1,130 @@
 [
-  {
-    "name": "links-hide-their-brackets",
-    "text": "see [[https://x.org][desc]] now\n",
-    "keys": "C-a",
-    "modes": [
-      "org-mode"
-    ]
-  },
-  {
-    "name": "a-link-without-a-description",
-    "text": "[[file.org]]\n",
-    "keys": "C-a",
-    "modes": [
-      "org-mode"
-    ]
-  },
-  {
-    "name": "forward-char-into-a-link",
-    "text": "a [[https://x.org][desc]]\n",
-    "keys": "C-f C-f",
-    "point": 1,
-    "modes": [
-      "org-mode"
-    ]
-  },
-  {
-    "name": "forward-char-out-of-a-link",
-    "text": "a [[https://x.org][desc]] b\n",
-    "keys": "C-e C-b C-b C-b",
-    "modes": [
-      "org-mode"
-    ]
-  },
-  {
-    "name": "end-of-line-past-a-link",
-    "text": "a [[https://x.org][desc]]\n",
-    "keys": "C-e",
-    "modes": [
-      "org-mode"
-    ]
-  },
-  {
-    "name": "open-an-internal-link",
-    "text": "* One\n[[*Two]]\n* Two\n",
-    "keys": "C-c C-o",
-    "point": 8,
-    "modes": [
-      "org-mode"
-    ]
-  },
-  {
-    "name": "open-a-heading-link-by-title",
-    "text": "* One\n[[Two]]\n* Two\n",
-    "keys": "C-c C-o",
-    "point": 8,
-    "modes": [
-      "org-mode"
-    ]
-  },
-  {
-    "name": "angle-links-stay-visible",
-    "text": "<https://x.org> and https://y.org\n",
-    "keys": "C-a",
-    "modes": [
-      "org-mode"
-    ]
-  },
-  {
-    "name": "emphasis-markers-stay-visible",
-    "text": "*bold* /it/ =code=\n",
-    "keys": "C-a",
-    "modes": [
-      "org-mode"
-    ]
-  },
-  {
-    "name": "typing-a-link",
-    "text": "",
-    "keys": "[ [ x ] ]",
-    "modes": [
-      "org-mode"
-    ]
+ {
+  "name": "links-hide-their-brackets",
+  "text": "see [[https://x.org][desc]] now\n",
+  "keys": "C-a",
+  "modes": [
+   "org-mode"
+  ]
+ },
+ {
+  "name": "a-link-without-a-description",
+  "text": "[[file.org]]\n",
+  "keys": "C-a",
+  "modes": [
+   "org-mode"
+  ]
+ },
+ {
+  "name": "forward-char-into-a-link",
+  "text": "a [[https://x.org][desc]]\n",
+  "keys": "C-f C-f",
+  "point": 1,
+  "modes": [
+   "org-mode"
+  ]
+ },
+ {
+  "name": "forward-char-out-of-a-link",
+  "text": "a [[https://x.org][desc]] b\n",
+  "keys": "C-e C-b C-b C-b",
+  "modes": [
+   "org-mode"
+  ]
+ },
+ {
+  "name": "end-of-line-past-a-link",
+  "text": "a [[https://x.org][desc]]\n",
+  "keys": "C-e",
+  "modes": [
+   "org-mode"
+  ]
+ },
+ {
+  "name": "open-an-internal-link",
+  "text": "* One\n[[*Two]]\n* Two\n",
+  "keys": "C-c C-o",
+  "point": 8,
+  "modes": [
+   "org-mode"
+  ]
+ },
+ {
+  "name": "open-a-heading-link-by-title",
+  "text": "* One\n[[Two]]\n* Two\n",
+  "keys": "C-c C-o",
+  "point": 8,
+  "modes": [
+   "org-mode"
+  ]
+ },
+ {
+  "name": "angle-links-stay-visible",
+  "text": "<https://x.org> and https://y.org\n",
+  "keys": "C-a",
+  "modes": [
+   "org-mode"
+  ]
+ },
+ {
+  "name": "emphasis-markers-stay-visible",
+  "text": "*bold* /it/ =code=\n",
+  "keys": "C-a",
+  "modes": [
+   "org-mode"
+  ]
+ },
+ {
+  "name": "typing-a-link",
+  "text": "",
+  "keys": "[ [ x ] ]",
+  "modes": [
+   "org-mode"
+  ]
+ },
+ {
+  "name": "return-follows-link",
+  "text": "* One\nSee [[*Two]] here\n* Two\nbody\n",
+  "point": 12,
+  "keys": "RET",
+  "modes": [
+   "org-mode"
+  ],
+  "vars": {
+   "org-return-follows-link": true
   }
+ },
+ {
+  "name": "return-follows-link-off",
+  "text": "* One\nSee [[*Two]] here\n* Two\nbody\n",
+  "point": 12,
+  "keys": "RET",
+  "modes": [
+   "org-mode"
+  ]
+ },
+ {
+  "name": "return-follows-link-after-it",
+  "text": "* One\nSee [[*Two]] here\n* Two\nbody\n",
+  "point": 20,
+  "keys": "RET",
+  "modes": [
+   "org-mode"
+  ],
+  "vars": {
+   "org-return-follows-link": true
+  }
+ },
+ {
+  "name": "return-follows-plain-link",
+  "text": "* One\nSee [[#x]] here\n* Two\n:PROPERTIES:\n:CUSTOM_ID: x\n:END:\n",
+  "point": 11,
+  "keys": "RET",
+  "modes": [
+   "org-mode"
+  ],
+  "vars": {
+   "org-return-follows-link": true
+  }
+ }
 ]

@@ -211,6 +211,99 @@
       "kill_ring": [],
       "modified": true,
       "error": null
+    },
+    {
+      "name": "return-follows-link",
+      "input": {
+        "text": "* One\nSee [[*Two]] here\n* Two\nbody\n",
+        "point": 12,
+        "keys": "RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "org-return-follows-link": true
+        }
+      },
+      "text": "* One\nSee [[*Two]] here\n* Two\nbody\n",
+      "visible": "* One\nSee *Two here\n* Two\nbody\n",
+      "point": 24,
+      "mark": 12,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "return-follows-link-off",
+      "input": {
+        "text": "* One\nSee [[*Two]] here\n* Two\nbody\n",
+        "point": 12,
+        "keys": "RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "* One\nSee [[\n*Two]] here\n* Two\nbody\n",
+      "visible": "* One\nSee \n*Two here\n* Two\nbody\n",
+      "point": 13,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "return-follows-link-after-it",
+      "input": {
+        "text": "* One\nSee [[*Two]] here\n* Two\nbody\n",
+        "point": 20,
+        "keys": "RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "org-return-follows-link": true
+        }
+      },
+      "text": "* One\nSee [[*Two]] h\nere\n* Two\nbody\n",
+      "visible": "* One\nSee *Two h\nere\n* Two\nbody\n",
+      "point": 21,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "return-follows-plain-link",
+      "input": {
+        "text": "* One\nSee [[#x]] here\n* Two\n:PROPERTIES:\n:CUSTOM_ID: x\n:END:\n",
+        "point": 11,
+        "keys": "RET",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "org-return-follows-link": true
+        }
+      },
+      "text": "* One\nSee [[#x]] here\n* Two\n:PROPERTIES:\n:CUSTOM_ID: x\n:END:\n",
+      "visible": "* One\nSee #x here\n* Two\n:PROPERTIES:\n:CUSTOM_ID: x\n:END:\n",
+      "point": 22,
+      "mark": 11,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
     }
   ]
 }
