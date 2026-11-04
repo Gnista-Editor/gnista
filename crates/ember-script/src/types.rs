@@ -1002,12 +1002,13 @@ const API: &str = r##"
   /**
    * Add a face to the face property of the text from start to end, keeping
    * the faces already there (Emacs's add-face-text-property). The new face
-   * wins over them unless append is set.
+   * wins over them unless append is set. It is a face's name, or an
+   * anonymous face, a list of attributes such as [":foreground", "red"].
    */
   function addFaceTextProperty(
     start: number,
     end: number,
-    face: FaceName | (string & {}),
+    face: FaceName | (string & {}) | Value[],
     options?: { append?: boolean },
   ): void;
   function getTextProperty(position: number, name: string): Value | undefined;

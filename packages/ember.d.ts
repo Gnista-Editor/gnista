@@ -9242,6 +9242,12 @@ declare global {
        */
       "org-table-tab-jumps-over-hlines": Value;
       /**
+       * Faces for tags, as [tag, face] lists, as org-todo-keyword-faces gives them for keywords.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-tag-faces": Value;
+      /**
        * Where tags go on a heading line: a negative column aligns their end there, a positive one their start.
        *
        * Defined in packages/org.ts.
@@ -9259,6 +9265,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-time-stamp-rounding-minutes": Value;
+      /**
+       * Faces for TODO keywords, as [keyword, face] lists: a face's name, a colour, or a list of attributes such as [":foreground", "#b48ead", ":weight", "bold"].
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-todo-keyword-faces": Value;
       /**
        * The TODO states headings cycle through, in order: states before "|" are not done, those after it are. Without a "|", the last state is the done one. A #+TODO: line in a file gives that file its own.
        *
@@ -13939,12 +13951,13 @@ declare global {
     /**
      * Add a face to the face property of the text from start to end, keeping
      * the faces already there (Emacs's add-face-text-property). The new face
-     * wins over them unless append is set.
+     * wins over them unless append is set. It is a face's name, or an
+     * anonymous face, a list of attributes such as [":foreground", "red"].
      */
     function addFaceTextProperty(
       start: number,
       end: number,
-      face: FaceName | (string & {}),
+      face: FaceName | (string & {}) | Value[],
       options?: { append?: boolean },
     ): void;
     function getTextProperty(position: number, name: string): Value | undefined;

@@ -792,7 +792,7 @@
       treesit("treesit-query-capture", node, String(query), beg ?? null, end ?? null, Boolean(nodeOnly), Boolean(grouped)),
 
     addFaceTextProperty: (start, end, face, { append = false } = {}) =>
-      native.addFaceTextProperty(start, end, String(face), Boolean(append)),
+      native.addFaceTextProperty(start, end, Array.isArray(face) ? face : String(face), Boolean(append)),
     getTextProperty: (pos, name) => native.textPropertiesAt(pos)[String(name)],
     nextPropertyChange: (pos, limit) => native.propertyChange("next", pos, null, limit ?? null) ?? undefined,
     previousPropertyChange: (pos, limit) => native.propertyChange("previous", pos, null, limit ?? null) ?? undefined,

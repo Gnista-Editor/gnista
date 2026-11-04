@@ -16,11 +16,17 @@ fn font_value(font: ember_core::Font) -> EditorValue {
 }
 
 natives! {
-    fn addFaceTextProperty(ed, start: usize, end: usize, face: String, append: bool) {
+    /// `face` is a face's name or an anonymous face, a list of attributes.
+    fn addFaceTextProperty(ed, start: usize, end: usize, face: EditorValue, append: bool) {
         // Recorded for undo, as add-face-text-property is.
         let b = ed.buffer_mut();
         b.record_property_change(start, end, "face", |_| true);
-        b.add_face_text_property(start..end, &face, append);
+        // An anonymous face goes by the name standing for it.
+        let names = ember_core::face_names(&face);
+        let ordered: Vec<&String> = if append { names.iter().collect() } else { names.iter().rev().collect() };
+        for name in ordered {
+            b.add_face_text_property(start..end, name, append);
+        }
         Ok(())
     }
 

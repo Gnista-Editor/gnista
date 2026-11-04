@@ -120,6 +120,8 @@ const variables: [string, string, ember.Value][] = [
   ["org-use-fast-todo-selection", "Whether C-c C-t asks for a state by its key, when the states have keys as TODO(t) gives them: auto does, nil cycles.", "auto"],
   ["org-log-into-drawer", "Whether notes about state changes go into a drawer: t for LOGBOOK, or the drawer's name; nil puts them in the entry.", false],
   ["org-treat-insert-todo-heading-as-state-change", "Whether inserting a TODO heading logs it as a change to that state.", false],
+  ["org-todo-keyword-faces", "Faces for TODO keywords, as [keyword, face] lists: a face's name, a colour, or a list of attributes such as [\":foreground\", \"#b48ead\", \":weight\", \"bold\"].", null],
+  ["org-tag-faces", "Faces for tags, as [tag, face] lists, as org-todo-keyword-faces gives them for keywords.", null],
   ["org-ellipsis", "What a folded heading shows after it in place of ..., a string, or nil for ....", null],
   ["org-return-follows-link", "Whether RET on a link follows it, as C-c C-o does, rather than breaking the line.", false],
   ["org-directory", "Where Org files are kept: relative names in org-agenda-files are in it.", "~/org"],
@@ -1442,6 +1444,24 @@ function fontifyObjects(line: number, text: string, from: number, to = text.leng
   }
 }
 
+/**
+ * A face from a face's name, a colour, or a list of attributes, over the
+ * face `inherit`, as org-face-from-face-or-color makes one.
+ */
+function faceFromFaceOrColor(inherit: string, spec: ember.Value | undefined): ember.Value | undefined {
+  if (typeof spec === "string") return ember.facep(spec) ? spec : [":inherit", inherit, ":foreground", spec];
+  if (Array.isArray(spec)) return [":inherit", inherit, ...spec];
+  return undefined;
+}
+
+/** The value an alist of [key, value] lists gives a key. */
+function alistGet(name: string, key: string): ember.Value | undefined {
+  const alist = ember.variable(name);
+  if (!Array.isArray(alist)) return undefined;
+  const entry = alist.find((e) => Array.isArray(e) && e[0] === key) as ember.Value[] | undefined;
+  return entry === undefined ? undefined : entry.length === 2 ? entry[1] : entry.slice(1);
+}
+
 function fontifyHeading(h: Heading, text: string): void {
   ember.putTextProperty(h.start, h.end, "face", `org-level-${((h.level - 1) % 8) + 1}`);
   // All but the last star, as org-get-level-face gives them org-hide.
@@ -1449,10 +1469,24 @@ function fontifyHeading(h: Heading, text: string): void {
   if (h.todo !== undefined && h.todoAt !== undefined) {
     const done = isDone(h.todo);
     if (done && ember.variable("org-fontify-done-headline") === true) face(h.todoAt, h.end, "org-headline-done");
-    face(h.todoAt, h.todoAt + charCount(h.todo), done ? "org-done" : "org-todo");
+    // As org-get-todo-face: the keyword's own face from org-todo-keyword-faces, else org-done or org-todo.
+    const own = faceFromFaceOrColor("org-todo", alistGet("org-todo-keyword-faces", h.todo));
+    if (own !== undefined) ember.addFaceTextProperty(h.todoAt, h.todoAt + charCount(h.todo), own as ember.Value[] | string);
+    else face(h.todoAt, h.todoAt + charCount(h.todo), done ? "org-done" : "org-todo");
   }
   if (h.priorityAt !== undefined) face(h.priorityAt, h.priorityAt + 4, "org-priority");
-  if (h.tagsAt !== undefined) face(h.tagsAt, h.end, "org-tag");
+  if (h.tagsAt !== undefined) {
+    face(h.tagsAt, h.end, "org-tag");
+    // Each tag in its own face from org-tag-faces, as org-get-tag-face gives it.
+    if (Array.isArray(ember.variable("org-tag-faces"))) {
+      let at = h.tagsAt + 1;
+      for (const tag of h.tags) {
+        const own = faceFromFaceOrColor("org-tag", alistGet("org-tag-faces", tag));
+        if (own !== undefined) ember.addFaceTextProperty(at, at + charCount(tag), own as ember.Value[] | string);
+        at += charCount(tag) + 1;
+      }
+    }
+  }
   const titleIndex = indexOf(h.line, text, h.titleAt);
   const tagsIndex = h.tagsAt === undefined ? text.length : indexOf(h.line, text, h.tagsAt);
   fontifyObjects(h.line, text, titleIndex, tagsIndex);

@@ -760,3 +760,28 @@ fn a_new_logbook_is_folded() {
     ed.redisplay();
     assert_eq!(&rows(&ed)[..3], ["* TODO Task", ":LOGBOOK:...", "body"]);
 }
+
+#[test]
+fn keywords_and_tags_take_their_own_faces() {
+    let mut ed = Editor::new();
+    let s = Scripting::new(&mut ed).unwrap();
+    s.eval_expression(
+        &mut ed,
+        r##"(ember.setVariable("org-todo-keyword-faces", [["TODO", [":foreground", "#b48ead", ":weight", "bold"]], ["DONE", "#8fbcbb"]]),
+            ember.setVariable("org-tag-faces", [["nitwit", "#D08770"]]), 1)"##,
+    )
+    .unwrap();
+    ed.window_buffer_mut().set_text("* TODO Task :nitwit:other:\n* DONE Old\n");
+    ed.call("org-mode", vec![]).unwrap();
+    ed.set_window_size(ed.selected_window(), 80, 20);
+    ed.redisplay();
+    let rows = ed.window_rows(2, true);
+    let seg = |row: usize, text: &str| rows[row].segments.iter().find(|s| s.text.contains(text)).unwrap_or_else(|| panic!("no {text}")).style.clone();
+    let rgb = |c: Option<ember_core::Color>| c.map(|c| (c.r, c.g, c.b));
+    let todo = seg(0, "TODO");
+    assert_eq!(rgb(todo.foreground), Some((0xb4, 0x8e, 0xad)));
+    assert!(todo.bold);
+    assert_eq!(rgb(seg(0, "nitwit").foreground), Some((0xd0, 0x87, 0x70)));
+    assert_ne!(rgb(seg(0, "other").foreground), Some((0xd0, 0x87, 0x70)));
+    assert_eq!(rgb(seg(1, "DONE").foreground), Some((0x8f, 0xbc, 0xbb)));
+}
