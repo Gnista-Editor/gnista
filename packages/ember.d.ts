@@ -12833,6 +12833,10 @@ declare global {
        */
       "which-key-mode-on-hook": Value;
       /**
+       * Functions called after the selected frame's windows, or the buffers they show, change.
+       */
+      "window-configuration-change-hook": Value;
+      /**
        * Run after entering XREF mode, after the hooks of the modes it is built on.
        */
       "xref--xref-buffer-mode-hook": Value;

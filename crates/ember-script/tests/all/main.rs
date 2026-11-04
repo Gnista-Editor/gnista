@@ -52,6 +52,7 @@ mod org_select;
 mod org_src;
 mod parens;
 mod persistent_scratch;
+mod popper;
 mod processes;
 mod project;
 mod quit;

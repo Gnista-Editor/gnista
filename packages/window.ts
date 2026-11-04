@@ -767,3 +767,16 @@ export function windowStatePut(state: WindowState): void {
   fill(ember.selectedWindow(), state);
   if (toSelect !== undefined) ember.selectWindow(toSelect);
 }
+
+// window-configuration-change-hook: run after a command that changed which
+// windows the selected frame has or which buffers they show, where Emacs
+// runs it as redisplay finds the change.
+ember.defineHook("window-configuration-change-hook", "Functions called after the selected frame's windows, or the buffers they show, change.");
+let lastConfiguration: string | undefined;
+ember.addHook("post-command-hook", () => {
+  const now = ember.windowList().map((w) => `${w}:${ember.windowBuffer(w)}`).join(" ");
+  if (now === lastConfiguration) return;
+  const changed = lastConfiguration !== undefined;
+  lastConfiguration = now;
+  if (changed) ember.runHooks("window-configuration-change-hook");
+});
