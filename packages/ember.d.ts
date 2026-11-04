@@ -4167,6 +4167,36 @@ declare global {
        */
       "org-drag-line-forward": [arg?: number];
       /**
+       * Edit the element at point in a buffer of its own: a source or example block in its language's mode.
+       *
+       * Defined in packages/org-src.ts.
+       */
+      "org-edit-special": [];
+      /**
+       * Go back to the Org buffer, leaving the block as it was.
+       *
+       * Defined in packages/org-src.ts.
+       */
+      "org-edit-src-abort": [];
+      /**
+       * Edit the source or example block at point in a buffer of its own, in its language's mode. C-c ' there puts it back.
+       *
+       * Defined in packages/org-src.ts.
+       */
+      "org-edit-src-code": [];
+      /**
+       * Put the block's text back in the Org buffer, and go back there.
+       *
+       * Defined in packages/org-src.ts.
+       */
+      "org-edit-src-exit": [];
+      /**
+       * Put the block's text back in the Org buffer and save that, staying here.
+       *
+       * Defined in packages/org-src.ts.
+       */
+      "org-edit-src-save": [];
+      /**
        * Move to the end of the line, staying on a folded heading's line rather than going past its hidden text.
        *
        * Defined in packages/org.ts.
@@ -4664,6 +4694,14 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-speed-command-help": [];
+      /**
+       * On in a buffer editing an Org block's text: C-c ' puts it back, C-c C-k leaves the block as it was, C-x C-s saves.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/org-src.ts.
+       */
+      "org-src-mode": [];
       /**
        * Align the table at point: every column as wide as its widest field, numbers to the right.
        *
@@ -9132,6 +9170,12 @@ declare global {
        */
       "org-edit-src-content-indentation": Value;
       /**
+       * Whether the block's buffer says in its header line how to finish.
+       *
+       * Defined in packages/org-src.ts.
+       */
+      "org-edit-src-persistent-message": Value;
+      /**
        * What a folded heading shows after it in place of ..., a string, or nil for ....
        *
        * Defined in packages/org.ts.
@@ -9380,11 +9424,33 @@ declare global {
        */
       "org-speed-commands": Value;
       /**
+       * The major modes of source blocks' languages, as [language, mode] lists, the mode without -mode; others are LANGUAGE-mode.
+       *
+       * Defined in packages/org-src.ts.
+       */
+      "org-src-lang-modes": Value;
+      /**
+       * Whether Org-Src mode is on in this buffer. Use the command org-src-mode to change it.
+       *
+       * Defined in packages/org-src.ts.
+       */
+      "org-src-mode": Value;
+      /**
+       * Keymap org-src-mode-map.
+       */
+      "org-src-mode-map": Value;
+      /**
        * Whether a source block's code keeps its indentation when tangled, rather than losing what all its lines share.
        *
        * Defined in packages/ob-tangle.ts.
        */
       "org-src-preserve-indentation": Value;
+      /**
+       * Where C-c ' shows a block's text: reorganize-frame, current-window, other-window, split-window-below or split-window-right.
+       *
+       * Defined in packages/org-src.ts.
+       */
+      "org-src-window-setup": Value;
       /**
        * How much of a file org-mode shows when it starts: "showeverything", "showall" (drawers folded), "content" (all headings) or "overview" (top headings). A #+STARTUP: line in the file says otherwise.
        *
@@ -12424,6 +12490,18 @@ declare global {
        * Run after entering Org mode, after the hooks of the modes it is built on.
        */
       "org-mode-hook": Value;
+      /**
+       * Run after Org-Src mode is turned on or off.
+       */
+      "org-src-mode-hook": Value;
+      /**
+       * Run after Org-Src mode is turned off.
+       */
+      "org-src-mode-off-hook": Value;
+      /**
+       * Run after Org-Src mode is turned on.
+       */
+      "org-src-mode-on-hook": Value;
       /**
        * Functions TAB in Org tries where it would indent, not being on a heading, an item, a table or a block, each until one gives true.
        */

@@ -178,6 +178,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/org-agenda.ts", include_str!("../../../packages/org-agenda.ts")),
     ("packages/org-clock.ts", include_str!("../../../packages/org-clock.ts")),
     ("packages/org-capture.ts", include_str!("../../../packages/org-capture.ts")),
+    ("packages/org-src.ts", include_str!("../../../packages/org-src.ts")),
     ("packages/ob-tangle.ts", include_str!("../../../packages/ob-tangle.ts")),
 ];
 
