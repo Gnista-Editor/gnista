@@ -346,5 +346,23 @@
     "vars": {
       "org-cycle-separator-lines": 1
     }
+  },
+  {
+    "name": "blank-entry-at-startup",
+    "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+    "keys": "C-a",
+    "point": 41,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "blank-entry-folded-by-overview-and-tab",
+    "text": "#+STARTUP: overview\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+    "keys": "<backtab> <backtab>",
+    "point": 41,
+    "modes": [
+      "org-mode"
+    ]
   }
 ]

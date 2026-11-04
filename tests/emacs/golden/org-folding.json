@@ -855,6 +855,48 @@
       "kill_ring": [],
       "modified": false,
       "error": null
+    },
+    {
+      "name": "blank-entry-at-startup",
+      "input": {
+        "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+        "point": 41,
+        "keys": "C-a",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+      "visible": "#+STARTUP: content\n* Scratch\n** Recon\n** Privesc\n\n** ffuf",
+      "point": 40,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "blank-entry-folded-by-overview-and-tab",
+      "input": {
+        "text": "#+STARTUP: overview\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+        "point": 41,
+        "keys": "<backtab> <backtab>",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "#+STARTUP: overview\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+      "visible": "#+STARTUP: overview\n* Scratch\n** Recon\n** Privesc\n\n** ffuf",
+      "point": 41,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
     }
   ]
 }
