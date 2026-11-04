@@ -323,6 +323,16 @@ ember.addHook("org-after-todo-state-change-hook", () => {
   if (isDone(all[i].todo)) clockOut(true);
 });
 
+// Before exiting, a running clock is offered to be stopped and its file saved, as org-clock-kill-emacs-query.
+ember.addHook("kill-emacs-query-functions", () => {
+  const buffer = clock && ember.markerBuffer(clock.line);
+  if (buffer !== undefined && ember.yesOrNoP("Clock out and save? ")) {
+    clockOut();
+    ember.withCurrentBuffer(buffer, () => ember.call("save-buffer"));
+  }
+  return true;
+});
+
 for (const [keys, command] of [
   ["C-c C-x C-i", "org-clock-in"],
   ["C-c C-x C-o", "org-clock-out"],

@@ -12285,6 +12285,10 @@ declare global {
        */
       "kill-emacs-hook": Value;
       /**
+       * Functions called before Ember exits from save-buffers-kill-terminal; if one returns false, it does not exit.
+       */
+      "kill-emacs-query-functions": Value;
+      /**
        * Run when a prompt closes, in the minibuffer, before the answer is used.
        */
       "minibuffer-exit-hook": Value;

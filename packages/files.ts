@@ -356,9 +356,13 @@ ember.defineCommand({
       if (!ember.yesOrNoP("Active processes exist; kill them and exit anyway? ")) return;
       for (const p of running) ember.deleteProcess(p);
     }
+    // Then whatever else packages ask about, as Org's clock does; one saying no keeps Ember running.
+    if (!ember.runHookWithArgsUntilFailure("kill-emacs-query-functions")) return;
     ember.killEmacs();
   },
 });
+
+ember.defineHook("kill-emacs-query-functions", "Functions called before Ember exits from save-buffers-kill-terminal; if one returns false, it does not exit.");
 
 // Reverting buffers when their files change, after autorevert.el, by
 // looking every auto-revert-interval seconds.

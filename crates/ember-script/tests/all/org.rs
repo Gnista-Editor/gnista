@@ -977,3 +977,21 @@ fn fast_tag_selection_keeps_one_tag_of_a_group_as_emacs_does() {
     assert_eq!(menu, "Inherited:  work\nCurrent:    nitwit emacs\n\n{ [c] climateview   [n] nitwit        [p] private       }\n  [o] other         [e] emacs         \n");
     assert_eq!(ed.window_list().len(), 1);
 }
+
+#[test]
+fn exiting_with_a_clock_running_offers_to_stop_it() {
+    let dir = tempfile::tempdir_in(env!("CARGO_TARGET_TMPDIR")).unwrap();
+    let path = dir.path().join("work.org");
+    std::fs::write(&path, "* Task\n").unwrap();
+    let mut ed = Editor::new();
+    let s = Scripting::new(&mut ed).unwrap();
+    s.eval_expression(&mut ed, r#"(ember.setVariable("ember--today", "2026-11-04"), 1)"#).unwrap();
+    ed.set_frame_size(80, 24);
+    ed.call("find-file", vec![Arg::Str(path.display().to_string())]).unwrap();
+    ed.press("C-c C-x C-i C-x C-s").unwrap();
+    ed.press("C-x C-c y e s RET").unwrap();
+    assert_eq!(
+        std::fs::read_to_string(&path).unwrap(),
+        "* Task\n:LOGBOOK:\nCLOCK: [2026-11-04 Wed 12:00]--[2026-11-04 Wed 12:00] =>  0:00\n:END:\n"
+    );
+}
