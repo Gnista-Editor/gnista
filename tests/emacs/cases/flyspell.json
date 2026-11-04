@@ -1,0 +1,79 @@
+[
+ {
+  "name": "flyspell-auto-correct",
+  "text": "A speling mistake and and a wrod.\n",
+  "keys": "M-x M-f M-f C-.",
+  "message": true,
+  "answers": [
+   "flyspell-mode"
+  ]
+ },
+ {
+  "name": "flyspell-auto-correct-cycle",
+  "text": "A speling mistake and and a wrod.\n",
+  "keys": "M-x M-f M-f C-. C-.",
+  "message": true,
+  "answers": [
+   "flyspell-mode"
+  ]
+ },
+ {
+  "name": "flyspell-auto-correct-round",
+  "text": "teh\n",
+  "keys": "M-x C-e C-. C-. C-. C-. C-. C-. C-. C-.",
+  "message": true,
+  "answers": [
+   "flyspell-mode"
+  ]
+ },
+ {
+  "name": "flyspell-auto-correct-previous",
+  "text": "A speling mistake and and a wrod.\n",
+  "keys": "M-x C-e C-;",
+  "message": true,
+  "answers": [
+   "flyspell-mode"
+  ]
+ },
+ {
+  "name": "flyspell-buffer-next-error",
+  "text": "A speling mistake and and a wrod.\n",
+  "keys": "M-x M-x M-< C-,",
+  "message": true,
+  "answers": [
+   "flyspell-mode",
+   "flyspell-buffer"
+  ]
+ },
+ {
+  "name": "flyspell-buffer-next-error-twice",
+  "text": "A speling mistake and and a wrod.\n",
+  "keys": "M-x M-x M-< C-, C-,",
+  "message": true,
+  "answers": [
+   "flyspell-mode",
+   "flyspell-buffer"
+  ]
+ },
+ {
+  "name": "flyspell-typing",
+  "text": "x\n",
+  "keys": "M-x M-< t e h SPC",
+  "message": true,
+  "answers": [
+   "flyspell-mode"
+  ]
+ },
+ {
+  "name": "ispell-word-correct",
+  "text": "A speling mistake and and a wrod.\n",
+  "keys": "M-f M-$",
+  "message": true
+ },
+ {
+  "name": "ispell-word-root",
+  "text": "walked\n",
+  "keys": "M-f M-$",
+  "message": true
+ }
+]

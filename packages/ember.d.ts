@@ -2383,6 +2383,69 @@ declare global {
        */
       "flymake-goto-prev-error": [];
       /**
+       * Correct the nearest misspelling before point that the window shows, as C-. corrects the word at point; again, with the next correction.
+       *
+       * @param position point
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-auto-correct-previous-word": [position: number];
+      /**
+       * Replace the word at point with its first correction; again, with the next, and so round to the word as it was.
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-auto-correct-word": [];
+      /**
+       * Check the spelling of every word in the buffer, underlining the misspellings.
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-buffer": [];
+      /**
+       * Offer corrections for the nearest misspelling flyspell marked before point, as M-$ does for the word at point.
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-check-previous-highlighted-word": [];
+      /**
+       * Offer corrections for the misspelled word before point to choose from, with Save word to add it to your dictionary, Accept (session) to accept it until Ember quits, and Accept (buffer) to accept it in this file.
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-correct-word-before-point": [];
+      /**
+       * Go to the next word flyspell marked; with a prefix argument, the one before. After the last, start again from the top.
+       *
+       * @param previous raw prefix argument
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-goto-next-error": [previous?: PrefixArg | boolean];
+      /**
+       * Check spelling as you type: a word you leave is checked, and underlined if the spell checker does not know it, or if it is written twice. C-. or M-TAB cycles through corrections of the word at point, C-; corrects the misspelling before point, C-, goes to the next one and C-c $ offers corrections to choose from. M-x flyspell-buffer checks the whole buffer.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-mode": [];
+      /**
+       * Turn flyspell-mode on for comments and strings only.
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-prog-mode": [];
+      /**
+       * Check the spelling of every word in the region, underlining the misspellings.
+       *
+       * @param start region start
+       * @param end region end
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-region": [start: number, end: number];
+      /**
        * Fontify the whole buffer now, rather than as it comes into view.
        */
       "font-lock-ensure": [];
@@ -3026,6 +3089,14 @@ declare global {
        * Defined in packages/isearch.ts.
        */
       "isearch-yank-word-or-char": [n?: number];
+      /**
+       * Check the spelling of the word at point, or before it, and offer corrections in *Choices* if it is wrong: a character picks one, SPC leaves the word, i adds it to your dictionary, a accepts it for this session, A in this file's LocalWords, and r types a replacement.
+       *
+       * @param following raw prefix argument
+       *
+       * Defined in packages/ispell.ts.
+       */
+      "ispell-word": [following?: PrefixArg | boolean];
       /**
        * Indent the current line of code by the braces and parens it is in, as js-mode does, by js-indent-level, or the mode's own offset.
        *
@@ -7905,6 +7976,82 @@ declare global {
        */
       "find-word-boundary-function-table": Value;
       /**
+       * Whether words written twice count when their case differs.
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-case-fold-duplications": Value;
+      /**
+       * How many seconds of quiet after typing in a word before it is checked, rather than when you leave it.
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-delay": Value;
+      /**
+       * Commands after which the word is checked only after flyspell-delay seconds of quiet.
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-delayed-commands": Value;
+      /**
+       * Commands after which the word is checked only if the command before was another.
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-deplacement-commands": Value;
+      /**
+       * How far apart, in characters, a misspelling seen twice is marked as a duplicate rather than wrong; -1 for anywhere.
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-duplicate-distance": Value;
+      /**
+       * A function that says whether the word before point is to be checked, as flyspell-prog-mode sets.
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-generic-check-word-predicate": Value;
+      /**
+       * Whether flyspell says what it is doing.
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-issue-message-flag": Value;
+      /**
+       * Whether turning flyspell-mode on says how to correct words.
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-issue-welcome-flag": Value;
+      /**
+       * Regions bigger than this, in characters, are checked in one run of the spell checker.
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-large-region": Value;
+      /**
+       * Whether a word written twice in a row is marked.
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-mark-duplications-flag": Value;
+      /**
+       * Whether Flyspell mode is on in this buffer. Use the command flyspell-mode to change it.
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-mode": Value;
+      /**
+       * Keymap flyspell-mode-map.
+       */
+      "flyspell-mode-map": Value;
+      /**
+       * The faces of text flyspell-prog-mode checks.
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-prog-text-faces": Value;
+      /**
        * If non-nil, the function forward-sexp and the commands built on it call with the count, as tree-sitter modes set it.
        *
        * Defined in packages/lisp.ts.
@@ -8473,6 +8620,42 @@ declare global {
        * Defined in packages/isearch.ts.
        */
       "isearch-yank-flag": Value;
+      /**
+       * The dictionary to check with, nil for the checker's default.
+       *
+       * Defined in packages/ispell.ts.
+       */
+      "ispell-dictionary": Value;
+      /**
+       * More arguments to give the spell checker.
+       *
+       * Defined in packages/ispell.ts.
+       */
+      "ispell-extra-args": Value;
+      /**
+       * This buffer's dictionary, overriding ispell-dictionary.
+       *
+       * Defined in packages/ispell.ts.
+       */
+      "ispell-local-dictionary": Value;
+      /**
+       * The file of words you accept, nil for the checker's own.
+       *
+       * Defined in packages/ispell.ts.
+       */
+      "ispell-personal-dictionary": Value;
+      /**
+       * The spell checker to run: aspell, ispell, hunspell or enchant-2, the first of them found.
+       *
+       * Defined in packages/ispell.ts.
+       */
+      "ispell-program-name": Value;
+      /**
+       * Whether adding words to your personal dictionary saves it without asking.
+       *
+       * Defined in packages/ispell.ts.
+       */
+      "ispell-silently-savep": Value;
       /**
        * How far JavaScript indents each level.
        *
@@ -10520,6 +10703,18 @@ declare global {
        */
       "flymake-warning": FaceAttributes;
       /**
+       * Words written twice in a row.
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-duplicate": FaceAttributes;
+      /**
+       * Misspelled words.
+       *
+       * Defined in packages/flyspell.ts.
+       */
+      "flyspell-incorrect": FaceAttributes;
+      /**
        * Brackets.
        */
       "font-lock-bracket-face": FaceAttributes;
@@ -11450,6 +11645,26 @@ declare global {
        */
       "find-file-hook": Value;
       /**
+       * Functions called with the start, end and corrections of a misspelling before it is marked; one that returns true stops it being marked.
+       */
+      "flyspell-incorrect-hook": Value;
+      /**
+       * Run after Flyspell mode is turned on or off.
+       */
+      "flyspell-mode-hook": Value;
+      /**
+       * Run after Flyspell mode is turned off.
+       */
+      "flyspell-mode-off-hook": Value;
+      /**
+       * Run after Flyspell mode is turned on.
+       */
+      "flyspell-mode-on-hook": Value;
+      /**
+       * Functions called when flyspell-prog-mode starts.
+       */
+      "flyspell-prog-mode-hook": Value;
+      /**
        * Run after entering Fundamental mode, after the hooks of the modes it is built on.
        */
       "fundamental-mode-hook": Value;
@@ -11617,6 +11832,10 @@ declare global {
        * Run after each change the search shows.
        */
       "isearch-update-post-hook": Value;
+      /**
+       * Functions called after ispell changes or accepts a word, as flyspell uses to take its highlight off.
+       */
+      "ispell-update-post-hook": Value;
       /**
        * Called with a start and an end to fontify that stretch of whole lines, just before it is shown. A major mode adds its function here, buffer-locally, and the function puts face and other properties on the text. Editing a line refontifies it and everything after it.
        */

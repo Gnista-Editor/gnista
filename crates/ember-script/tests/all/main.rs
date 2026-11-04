@@ -31,6 +31,7 @@ mod faces;
 mod file_management;
 mod file_primitives;
 mod files;
+mod flyspell;
 mod fonts;
 mod hi_lock;
 mod images;

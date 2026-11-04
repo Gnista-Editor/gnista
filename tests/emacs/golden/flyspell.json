@@ -1,0 +1,218 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "flyspell-auto-correct",
+      "input": {
+        "text": "A speling mistake and and a wrod.\n",
+        "point": 0,
+        "keys": "M-x M-f M-f C-.",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "flyspell-mode"
+        ],
+        "message": true
+      },
+      "text": "A spelling mistake and and a wrod.\n",
+      "visible": "A spelling mistake and and a wrod.\n",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": "Corrections: spelling spelling spewing speling spelling spewing speling spelling"
+    },
+    {
+      "name": "flyspell-auto-correct-cycle",
+      "input": {
+        "text": "A speling mistake and and a wrod.\n",
+        "point": 0,
+        "keys": "M-x M-f M-f C-. C-.",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "flyspell-mode"
+        ],
+        "message": true
+      },
+      "text": "A spewing mistake and and a wrod.\n",
+      "visible": "A spewing mistake and and a wrod.\n",
+      "point": 8,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": "Corrections: spewing speling spelling spewing speling spelling spewing speling spelling"
+    },
+    {
+      "name": "flyspell-auto-correct-round",
+      "input": {
+        "text": "teh\n",
+        "point": 0,
+        "keys": "M-x C-e C-. C-. C-. C-. C-. C-. C-. C-.",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "flyspell-mode"
+        ],
+        "message": true
+      },
+      "text": "Tex\n",
+      "visible": "Tex\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": "Corrections: Tex th the teh eh tea tech Ted tee ten TeX Tex th the teh eh tea tech"
+    },
+    {
+      "name": "flyspell-auto-correct-previous",
+      "input": {
+        "text": "A speling mistake and and a wrod.\n",
+        "point": 0,
+        "keys": "M-x C-e C-;",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "flyspell-mode"
+        ],
+        "message": true
+      },
+      "text": "A speling mistake and and a prod.\n",
+      "visible": "A speling mistake and and a prod.\n",
+      "point": 33,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": "Corrections: prod prod rod trod wood word wrod prod rod trod wood word wrod prod"
+    },
+    {
+      "name": "flyspell-buffer-next-error",
+      "input": {
+        "text": "A speling mistake and and a wrod.\n",
+        "point": 0,
+        "keys": "M-x M-x M-< C-,",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "flyspell-mode",
+          "flyspell-buffer"
+        ],
+        "message": true
+      },
+      "text": "A speling mistake and and a wrod.\n",
+      "visible": "A speling mistake and and a wrod.\n",
+      "point": 2,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": "Mark set"
+    },
+    {
+      "name": "flyspell-buffer-next-error-twice",
+      "input": {
+        "text": "A speling mistake and and a wrod.\n",
+        "point": 0,
+        "keys": "M-x M-x M-< C-, C-,",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "flyspell-mode",
+          "flyspell-buffer"
+        ],
+        "message": true
+      },
+      "text": "A speling mistake and and a wrod.\n",
+      "visible": "A speling mistake and and a wrod.\n",
+      "point": 22,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": "Mark set"
+    },
+    {
+      "name": "flyspell-typing",
+      "input": {
+        "text": "x\n",
+        "point": 0,
+        "keys": "M-x M-< t e h SPC",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "flyspell-mode"
+        ],
+        "message": true
+      },
+      "text": "teh x\n",
+      "visible": "teh x\n",
+      "point": 4,
+      "mark": 0,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": "Mark set"
+    },
+    {
+      "name": "ispell-word-correct",
+      "input": {
+        "text": "A speling mistake and and a wrod.\n",
+        "point": 0,
+        "keys": "M-f M-$",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "message": true
+      },
+      "text": "A speling mistake and and a wrod.\n",
+      "visible": "A speling mistake and and a wrod.\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": "A is correct"
+    },
+    {
+      "name": "ispell-word-root",
+      "input": {
+        "text": "walked\n",
+        "point": 0,
+        "keys": "M-f M-$",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "message": true
+      },
+      "text": "walked\n",
+      "visible": "walked\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": "WALKED is correct because of root WALK"
+    }
+  ]
+}

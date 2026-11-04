@@ -31,6 +31,7 @@ What works today, in a terminal (`ember`) or a window (`ember-gui`). Where it di
 - Double and triple clicks and shift-click as Emacs mouse keys (`<mouse-1>`, `<drag-mouse-1>`, `<double-mouse-1>`).
 - Long lines continued by default.
 - `truncate-lines`, `visual-line-mode` and `global-visual-line-mode`.
+- Spell checking with ispell, aspell or hunspell: `M-$` (`ispell-word`, corrections in `*Choices*`), `flyspell-mode` (checks words as you type, underlining misspellings and doubled words; `C-.`/`M-TAB` cycle corrections, `C-;` corrects the misspelling before point, `C-,` goes to the next, `C-c $` offers corrections), `flyspell-prog-mode`, `flyspell-buffer` and `flyspell-region`.
 - `subword-mode` (the word commands stop inside CamelCase names) and `superword-mode` (a symbol is one word), and their global modes.
 - The kill ring with `M-y` (choosing a kill from the minibuffer when not after a yank).
 - The mark ring (`C-u C-SPC`).

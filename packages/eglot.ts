@@ -9,7 +9,7 @@
 // input and output as JSON-RPC, as the Language Server Protocol says.
 
 import { current as projectRoot } from "project";
-import { truthy } from "subr";
+import { executableFind, truthy } from "subr";
 import { defineXrefBackend, type Xref } from "xref";
 
 ember.defineVariable({
@@ -238,16 +238,7 @@ function serverCommand(mode: string): string[] | undefined {
     if (command[0] !== "eglot-alternatives") return command.map(String);
     // As eglot-alternatives: the first that is installed, else the first.
     const alternatives = command.slice(1).map((c) => (Array.isArray(c) ? c.map(String) : [String(c)]));
-    return alternatives.find((c) => findExecutable(c[0]) !== undefined) ?? alternatives[0];
-  }
-  return undefined;
-}
-
-/** Where a program is along PATH, as executable-find. */
-function findExecutable(program: string): string | undefined {
-  if (program.includes("/")) return ember.fileExecutableP(ember.expandFileName(program)) ? program : undefined;
-  for (const dir of (ember.getenv("PATH") ?? "").split(":")) {
-    if (dir && ember.fileExecutableP(`${dir}/${program}`)) return `${dir}/${program}`;
+    return alternatives.find((c) => executableFind(c[0]) !== undefined) ?? alternatives[0];
   }
   return undefined;
 }
@@ -434,7 +425,7 @@ function eglot(): void {
   if (!server) {
     const command = serverCommand(mode);
     if (!command) ember.userError(`[eglot] Couldn't guess LSP server for \`${mode}'`);
-    if (findExecutable(command[0]) === undefined) ember.userError(`[eglot] Couldn't start \`${command.join(" ")}': program not found`);
+    if (executableFind(command[0]) === undefined) ember.userError(`[eglot] Couldn't start \`${command.join(" ")}': program not found`);
     server = connect(mode, root, command);
   }
   // The project's other buffers of the mode too, as eglot--maybe-activate-editing-mode does.
@@ -456,7 +447,7 @@ ember.defineCommand({
 export function ensure(): void {
   if (!ember.bufferFileName() || managing.has(ember.currentBuffer().name!)) return;
   const command = serverCommand(String(ember.variable("major-mode")));
-  if (command && findExecutable(command[0]) !== undefined) {
+  if (command && executableFind(command[0]) !== undefined) {
     try {
       eglot();
     } catch (e) {

@@ -202,6 +202,15 @@ export function defineGlobalizedMinorMode(name: string, mode: ember.CommandName,
   });
 }
 
+/** Where a program is along PATH, as executable-find. */
+export function executableFind(program: string): string | undefined {
+  if (program.includes("/")) return ember.fileExecutableP(ember.expandFileName(program)) ? program : undefined;
+  for (const dir of (ember.getenv("PATH") ?? "").split(":")) {
+    if (dir && ember.fileExecutableP(`${dir}/${program}`)) return `${dir}/${program}`;
+  }
+  return undefined;
+}
+
 export class PerBuffer<T> {
   private readonly values = new Map<number, T>();
 
