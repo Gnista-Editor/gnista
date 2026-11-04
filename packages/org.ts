@@ -117,6 +117,7 @@ const variables: [string, string, ember.Value][] = [
     "showeverything",
   ],
   ["org-startup-truncated", "Whether org-mode turns on truncate-lines, so long lines run off the window.", true],
+  ["org-directory", "Where Org files are kept: relative names in org-agenda-files are in it.", "~/org"],
   ["org-startup-indented", "Whether org-mode turns on org-indent-mode, indenting text under its headings as it shows. #+STARTUP: indent or noindent says otherwise for a file.", false],
   ["org-hide-leading-stars", "Whether a heading shows only its last star, the others in the org-hide face, the colour of the background.", false],
   ["org-adapt-indentation", "Whether text under a heading is indented to line up with its title; org-indent-mode turns it off.", false],

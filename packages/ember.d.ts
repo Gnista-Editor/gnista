@@ -3783,7 +3783,7 @@ declare global {
        */
       "org--insert-named-drawer": [drawer: string];
       /**
-       * Copy the subtree at point under the target heading given, as org-refile-copy does once it has asked.
+       * Copy the subtree at point under the target given, as org-refile-copy does once it has asked.
        *
        * @param target text
        *
@@ -3799,7 +3799,7 @@ declare global {
        */
       "org--refile-goto": [target: string];
       /**
-       * File the subtree at point under the target heading given, as org-refile does once it has asked.
+       * File the subtree at point under the target given, as org-refile does once it has asked.
        *
        * @param target text
        *
@@ -4448,9 +4448,7 @@ declare global {
        */
       "org-promote-subtree": [];
       /**
-       * Move the subtree at point under another heading, asking which: one of the buffer's top-level headings.
-       *
-       * It goes in as that heading's last child. With C-u, go to the heading instead.
+       * Move the subtree at point under another heading, asking which: one org-refile-targets names, by default a top-level heading of this buffer. It goes in as that heading's last child. With C-u, go to the heading instead.
        *
        * Defined in packages/org.ts.
        */
@@ -8968,6 +8966,12 @@ declare global {
        */
       "org-default-notes-file": Value;
       /**
+       * Where Org files are kept: relative names in org-agenda-files are in it.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-directory": Value;
+      /**
        * How far the lines of a source block are indented past its #+begin_src line.
        *
        * Defined in packages/org.ts.
@@ -9078,6 +9082,12 @@ declare global {
        */
       "org-mode-map": Value;
       /**
+       * Whether outline paths complete a level at a time. Ember completes them whole.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-outline-path-complete-in-steps": Value;
+      /**
        * The priority S-<up> and S-<down> start from, and that headings without one count as.
        *
        * Defined in packages/org.ts.
@@ -9101,6 +9111,30 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-read-date-history": Value;
+      /**
+       * The targets chosen before, newest first.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-refile-history": Value;
+      /**
+       * A function called at each heading that may be a target, which says whether it is one.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-refile-target-verify-function": Value;
+      /**
+       * Where C-c C-w can file a subtree, as a list of [files, kind, value]: files nil for this buffer, a file, a list of them, or "org-agenda-files"; kind ":level" for headings of that level, ":maxlevel" for those up to it, ":tag" or ":todo" for those with that tag or state, or ":regexp". Nil means this buffer's top-level headings.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-refile-targets": Value;
+      /**
+       * Whether targets are named by their outline paths, Parent/Child, rather than their titles: t, or file, title, full-file-path or buffer-name to start the path with that.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-refile-use-outline-path": Value;
       /**
        * Whether C-o in a table inserts a row rather than opening a line.
        *
@@ -11954,6 +11988,10 @@ declare global {
        * Run after entering Occur mode, after the hooks of the modes it is built on.
        */
       "occur-mode-hook": Value;
+      /**
+       * Functions called where org-refile has put the subtree, before it goes from where it was.
+       */
+      "org-after-refile-insert-hook": Value;
       /**
        * Run after entering Org-Agenda mode, after the hooks of the modes it is built on.
        */

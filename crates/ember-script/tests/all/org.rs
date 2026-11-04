@@ -640,3 +640,41 @@ fn org_indent_mode_indents_a_big_buffer_a_piece_at_a_time() {
     }
     panic!("the end of the buffer was never indented");
 }
+
+#[test]
+fn refile_targets_with_outline_paths_reach_other_files_as_emacs_does() {
+    // config.org's settings; what Emacs 30 offered and did with them.
+    let dir = tempfile::tempdir_in(env!("CARGO_TARGET_TMPDIR")).unwrap();
+    std::fs::write(dir.path().join("main.org"), "* Projects\n** Ember\n*** Docs\n**** Deep\n***** Too deep\n** A/B test\n* TODO Inbox :work:\n** Note one\nbody\n").unwrap();
+    std::fs::write(dir.path().join("archive.org"), "* 2025\n** Old\n* 2026\n").unwrap();
+    let mut ed = Editor::new();
+    let s = Scripting::new(&mut ed).unwrap();
+    ed.call("find-file", vec![Arg::Str(dir.path().join("main.org").display().to_string())]).unwrap();
+    s.eval_typescript(
+        &mut ed,
+        "test.ts",
+        r#"ember.setVariable("org-refile-targets", [[null, ":maxlevel", 4], ["archive.org", ":maxlevel", 1]]);
+           ember.setVariable("org-refile-use-outline-path", true);
+           ember.setVariable("org-outline-path-complete-in-steps", false);
+           import("org-refile").then(({ refileTargets }) => ember.message(JSON.stringify(refileTargets().map((t) => t.name))));"#
+            .to_string(),
+    )
+    .unwrap();
+    assert_eq!(
+        ed.echo(),
+        Some(r#"["Projects","Projects/Ember","Projects/Ember/Docs","Projects/Ember/Docs/Deep","Projects/A\\/B test","Inbox","Inbox/Note one","2025","2026"]"#)
+    );
+    ed.press("C-s N o t e RET").unwrap();
+    ed.press("C-c C-w 2 0 2 6 / SPC ( a r c h i v e . o r g ) RET").unwrap();
+    assert_eq!(text(&ed), "* Projects\n** Ember\n*** Docs\n**** Deep\n***** Too deep\n** A/B test\n* TODO Inbox :work:\n");
+    let archive = ed.buffers().iter().find(|b| b.name == "archive.org").unwrap();
+    assert_eq!(archive.slice(0..archive.len()), "* 2025\n** Old\n* 2026\n** Note one\nbody\n");
+    assert!(archive.is_modified());
+    let file = dir.path().join("archive.org").display().to_string();
+    assert_eq!(ed.echo().map(str::to_string), Some(format!("Refile to \"2026/ (archive.org)\" in file {file}: done")));
+    // A path typed with its slash names the heading as found.
+    ed.press("M-< C-s A / B RET C-c C-w M-DEL M-DEL M-DEL M-DEL P r o j e c t s / E m b e r / RET").unwrap();
+    assert_eq!(text(&ed), "* Projects\n** Ember\n*** Docs\n**** Deep\n***** Too deep\n*** A/B test\n* TODO Inbox :work:\n");
+    let main = dir.path().join("main.org").display().to_string();
+    assert_eq!(ed.echo().map(str::to_string), Some(format!("Refile to \"Projects/Ember\" in file {main}: done")));
+}

@@ -128,7 +128,9 @@ function agendaLine(h: Heading, cat: string, leader: string, removeTimestamp: bo
 function agendaBuffers(): string[] {
   const files = ember.variable("org-agenda-files");
   if (!Array.isArray(files) || files.length === 0) return [];
-  return (files as string[]).map((file) => ember.findFileNoselect(String(file)));
+  // Relative names are in org-directory, as org-agenda-files expands them.
+  const dir = ember.variable("org-directory");
+  return (files as string[]).map((file) => ember.findFileNoselect(ember.expandFileName(String(file), typeof dir === "string" ? ember.expandFileName(dir) : undefined)));
 }
 
 /** A heading's planning timestamps: when it is scheduled and due, and where those timestamps are. */
