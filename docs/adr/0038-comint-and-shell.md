@@ -30,7 +30,7 @@ With programs on a pseudo-terminal ([ADR 0037](0037-terminals-sockets-and-proces
 **ANSI colours** (`packages/ansi-color.ts`, added after the rest), from ansi-color.el:
 - **What it does.** Comint's output goes through `ansi-color-apply-on-region`, as `ansi-color-process-output` does first among Emacs's `comint-output-filter-functions`. SGR sequences (`ESC [ ... m`) set bold, italic, underline, the eight colours and their bright forms, the 256-colour palette and RGB as faces, and other control sequences are removed.
 - **Carrying on.** The rendition carries on into the next output, and a sequence cut off between two reads is finished with the second.
-- **Faces.** The faces are Emacs's `ansi-color-*`, with its X colours in hex. Backgrounds and other colours are faces made for them, as Ember has no face attribute lists.
+- **Faces.** The faces are Emacs's `ansi-color-*`, with its X colours in hex. Backgrounds and other colours are faces made for them, as Gnista has no face attribute lists.
 - **Turning it off.** `ansi-color-for-comint-mode` set to `filter` only removes the sequences.
 
 **Passwords** (added after the rest):
@@ -59,7 +59,7 @@ Not done yet:
 - `comint-use-prompt-regexp`;
 - `M-r`, searching the history incrementally, which needed isearch's `isearch-search-fun-function` and the hooks around it ([ADR 0042](0042-isearch-state-and-comint-history-search.md) added them and it);
 - completing file names and commands at the prompt;
-- ANSI colours in compilation buffers, and inverse video and faint text, which Ember's faces lack;
+- ANSI colours in compilation buffers, and inverse video and faint text, which Gnista's faces lack;
 - `comint-accumulate`;
 - an error buffer for shell commands' standard error (`shell-command-default-error-buffer`).
 

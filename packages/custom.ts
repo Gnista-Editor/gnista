@@ -1,31 +1,31 @@
 // Themes, after Emacs's custom.el: a theme is a package named NAME-theme,
-// found along load-path as ember.require finds packages, that names itself
-// with ember.deftheme, gives faces their attributes with
-// ember.customThemeSetFaces and says it is done with ember.provideTheme.
+// found along load-path as gnista.require finds packages, that names itself
+// with gnista.deftheme, gives faces their attributes with
+// gnista.customThemeSetFaces and says it is done with gnista.provideTheme.
 // M-x load-theme loads one and enables it, which gives each face the
 // theme's attributes in place of its own; disable-theme gives them back.
 // The theme enabled last wins where two give a face.
 
 import { truthy } from "subr";
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "custom-enabled-themes",
   doc: "The themes enabled, the one enabled last first, whose faces win.",
   value: [],
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "custom-safe-themes",
-  doc: 'The themes load-theme loads without asking whether to run their code: names, or t for all. "default" stands for the ones Ember ships.',
+  doc: 'The themes load-theme loads without asking whether to run their code: names, or t for all. "default" stands for the ones Gnista ships.',
   value: ["default"],
 });
-ember.defineHook("enable-theme-functions", "Functions called with a theme's name after it is enabled.");
-ember.defineHook("disable-theme-functions", "Functions called with a theme's name after it is disabled.");
+gnista.defineHook("enable-theme-functions", "Functions called with a theme's name after it is enabled.");
+gnista.defineHook("disable-theme-functions", "Functions called with a theme's name after it is disabled.");
 
 /** What a theme gives, as its definitions in custom.el's theme-settings. */
 interface Theme {
   doc: string;
-  faces: [string, ember.FaceAttributes][];
-  variables: [string, ember.Value][];
+  faces: [string, gnista.FaceAttributes][];
+  variables: [string, gnista.Value][];
   provided: boolean;
 }
 
@@ -46,12 +46,12 @@ export function deftheme(name: string, doc = ""): void {
 
 function theme(name: string): Theme {
   const t = themes.get(name);
-  if (!t) ember.signal("error", `Undefined Custom theme ${name}`);
+  if (!t) gnista.signal("error", `Undefined Custom theme ${name}`);
   return t;
 }
 
 /** Gives a theme's faces their attributes, as custom-theme-set-faces: each [face, attributes]. */
-export function customThemeSetFaces(name: string, specs: [string, ember.FaceAttributes][]): void {
+export function customThemeSetFaces(name: string, specs: [string, gnista.FaceAttributes][]): void {
   const t = theme(name);
   for (const [face, attrs] of specs) {
     t.faces = t.faces.filter(([f]) => f !== face);
@@ -60,7 +60,7 @@ export function customThemeSetFaces(name: string, specs: [string, ember.FaceAttr
 }
 
 /** Gives a theme's variables their values, as custom-theme-set-variables: each [variable, value]. */
-export function customThemeSetVariables(name: string, specs: [string, ember.Value][]): void {
+export function customThemeSetVariables(name: string, specs: [string, gnista.Value][]): void {
   const t = theme(name);
   for (const [variable, value] of specs) {
     t.variables = t.variables.filter(([v]) => v !== variable);
@@ -73,13 +73,13 @@ export function provideTheme(name: string): void {
   theme(name).provided = true;
 }
 
-const enabled = (): string[] => (Array.isArray(ember.variable("custom-enabled-themes")) ? (ember.variable("custom-enabled-themes") as string[]) : []);
+const enabled = (): string[] => (Array.isArray(gnista.variable("custom-enabled-themes")) ? (gnista.variable("custom-enabled-themes") as string[]) : []);
 
 /** Gives each face of the enabled themes the attributes of the last one to give it, the face's own where none does, as custom-theme-recalc-face. */
 function recalcFaces(faces: Iterable<string>): void {
   const order = [...enabled()].reverse();
   for (const face of faces) {
-    let attrs: ember.FaceAttributes | undefined;
+    let attrs: gnista.FaceAttributes | undefined;
     for (const name of order) {
       const spec = themes.get(name)?.faces.find(([f]) => f === face);
       if (spec) attrs = spec[1];
@@ -88,46 +88,46 @@ function recalcFaces(faces: Iterable<string>): void {
       // No theme gives it now: its own attributes again.
       const copy = saved.get(face);
       if (copy !== undefined) {
-        ember.copyFace(copy, face);
+        gnista.copyFace(copy, face);
         saved.delete(face);
       }
       continue;
     }
     if (!saved.has(face)) {
-      const copy = ` ember-theme-saved-${face}`;
-      if (ember.facep(face)) ember.copyFace(face, copy);
-      else ember.makeFace(copy);
+      const copy = ` gnista-theme-saved-${face}`;
+      if (gnista.facep(face)) gnista.copyFace(face, copy);
+      else gnista.makeFace(copy);
       saved.set(face, copy);
     }
-    const reset: ember.FaceAttributes = {};
+    const reset: gnista.FaceAttributes = {};
     for (const key of REPLACED) (reset as Record<string, unknown>)[key] = "unspecified";
-    ember.setFaceAttribute(face, { ...reset, ...attrs });
+    gnista.setFaceAttribute(face, { ...reset, ...attrs });
   }
 }
 
 /** Enables a theme that is loaded, as enable-theme: its faces and variables win over those of the themes enabled before. */
 export function enableTheme(name: string): void {
   const t = theme(name);
-  ember.setVariable("custom-enabled-themes", [name, ...enabled().filter((n) => n !== name)]);
+  gnista.setVariable("custom-enabled-themes", [name, ...enabled().filter((n) => n !== name)]);
   recalcFaces(t.faces.map(([f]) => f));
-  for (const [variable, value] of t.variables) ember.setDefault(variable, value);
-  ember.runHooks("enable-theme-functions", name);
+  for (const [variable, value] of t.variables) gnista.setDefault(variable, value);
+  gnista.runHooks("enable-theme-functions", name);
 }
 
 /** Disables a theme, as disable-theme: its faces go back to what the other themes, or the faces themselves, give. */
 export function disableTheme(name: string): void {
   if (!enabled().includes(name)) return;
-  ember.setVariable(
+  gnista.setVariable(
     "custom-enabled-themes",
     enabled().filter((n) => n !== name),
   );
   recalcFaces((themes.get(name)?.faces ?? []).map(([f]) => f));
-  ember.runHooks("disable-theme-functions", name);
+  gnista.runHooks("disable-theme-functions", name);
 }
 
 /** Whether a theme can be loaded without asking, as custom-safe-themes says. */
 function safe(name: string): boolean {
-  const list = ember.variable("custom-safe-themes");
+  const list = gnista.variable("custom-safe-themes");
   return list === true || (Array.isArray(list) && list.includes(name));
 }
 
@@ -138,36 +138,36 @@ function safe(name: string): boolean {
  */
 export function loadTheme(name: string, noConfirm = false, noEnable = false): void {
   if (!themes.get(name)?.provided) {
-    if (!noConfirm && !safe(name) && !ember.yOrNP("Loading a theme can run Lisp code.  Really load? ")) ember.userError("Theme not loaded");
-    ember.require(`${name}-theme`);
-    if (!themes.get(name)?.provided) ember.signal("error", `Unable to find theme file for '${name}'`);
+    if (!noConfirm && !safe(name) && !gnista.yOrNP("Loading a theme can run Lisp code.  Really load? ")) gnista.userError("Theme not loaded");
+    gnista.require(`${name}-theme`);
+    if (!themes.get(name)?.provided) gnista.signal("error", `Unable to find theme file for '${name}'`);
   }
   if (!noEnable) enableTheme(name);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "load-theme",
-  doc: "Load a theme, NAME-theme along load-path, and enable it. A theme's code runs, so Ember asks first unless custom-safe-themes names it.",
+  doc: "Load a theme, NAME-theme along load-path, and enable it. A theme's code runs, so Gnista asks first unless custom-safe-themes names it.",
   params: [
     { name: "theme", prompt: "Load custom theme: ", collection: () => [...themes.keys()] },
     { name: "noConfirm", kind: "prefix" },
   ],
-  run: (name, noConfirm) => loadTheme(name, truthy(noConfirm as ember.Value)),
+  run: (name, noConfirm) => loadTheme(name, truthy(noConfirm as gnista.Value)),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "enable-theme",
   doc: "Enable a theme that is loaded, its faces winning over the other themes'.",
   params: [{ name: "theme", prompt: "Enable custom theme: ", collection: () => [...themes.keys()].filter((t) => themes.get(t)!.provided), requireMatch: true }],
   run: (name) => enableTheme(name),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "disable-theme",
   doc: "Disable a theme, its faces going back to what they were.",
   params: [{ name: "theme", prompt: "Disable custom theme: ", collection: () => enabled(), requireMatch: true }],
   run: (name) => disableTheme(name),
 });
 
-ember.defun("deftheme", (name: string, doc?: string) => deftheme(name, doc));
-ember.defun("custom-theme-set-faces", (name: string, specs: [string, ember.FaceAttributes][]) => customThemeSetFaces(name, specs));
-ember.defun("custom-theme-set-variables", (name: string, specs: [string, ember.Value][]) => customThemeSetVariables(name, specs));
-ember.defun("provide-theme", (name: string) => provideTheme(name));
+gnista.defun("deftheme", (name: string, doc?: string) => deftheme(name, doc));
+gnista.defun("custom-theme-set-faces", (name: string, specs: [string, gnista.FaceAttributes][]) => customThemeSetFaces(name, specs));
+gnista.defun("custom-theme-set-variables", (name: string, specs: [string, gnista.Value][]) => customThemeSetVariables(name, specs));
+gnista.defun("provide-theme", (name: string) => provideTheme(name));

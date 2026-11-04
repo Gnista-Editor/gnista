@@ -1,6 +1,6 @@
 // Repeating the last command: C-x z, after Emacs's repeat.el.
 
-const repeat = ember.defineCommand({
+const repeat = gnista.defineCommand({
   name: "repeat",
   doc:
     "Repeat the last command, with the same arguments.\n\n" +
@@ -9,12 +9,12 @@ const repeat = ember.defineCommand({
   run: () => {
     // The last key of this command's keys, read before the repeated command
     // changes it: typing it again repeats again.
-    const again = ember.lastKey();
-    const arg = ember.prefixArg();
-    ember.repeatLastCommand(arg === null ? undefined : arg);
+    const again = gnista.lastKey();
+    const arg = gnista.prefixArg();
+    gnista.repeatLastCommand(arg === null ? undefined : arg);
     if (again !== undefined) {
-      ember.setTransientMap({ [again]: "repeat" });
+      gnista.setTransientMap({ [again]: "repeat" });
     }
   },
 });
-ember.bindKey("C-x z", repeat);
+gnista.bindKey("C-x z", repeat);

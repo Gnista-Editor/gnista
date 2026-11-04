@@ -4,11 +4,11 @@
 //   import { truthy, forwardLine } from "subr";
 
 /** Whether a value counts as true, as anything but nil does in Emacs: not null, undefined or false. */
-export const truthy = (v: ember.Value | undefined): boolean => v !== undefined && v !== null && v !== false;
+export const truthy = (v: gnista.Value | undefined): boolean => v !== undefined && v !== null && v !== false;
 
 /** A variable's value as a number, or `fallback` if it is not one. */
 export function numberValue(name: string, fallback: number): number {
-  const v = ember.variable(name);
+  const v = gnista.variable(name);
   return typeof v === "number" ? v : fallback;
 }
 
@@ -46,47 +46,47 @@ export function charCount(s: string): number {
  * lines it fell short.
  */
 export function forwardLine(n: number): number {
-  const start = ember.point();
-  const line = ember.lineOf(start);
-  const first = ember.lineOf(ember.pointMin());
-  const last = ember.lineOf(ember.pointMax());
+  const start = gnista.point();
+  const line = gnista.lineOf(start);
+  const first = gnista.lineOf(gnista.pointMin());
+  const last = gnista.lineOf(gnista.pointMax());
   if (n <= 0) {
-    ember.gotoChar(Math.max(ember.pointMin(), ember.lineStart(Math.max(first, line + n))));
+    gnista.gotoChar(Math.max(gnista.pointMin(), gnista.lineStart(Math.max(first, line + n))));
     return Math.min(0, line + n - first);
   }
   if (line + n <= last) {
-    ember.gotoChar(ember.lineStart(line + n));
+    gnista.gotoChar(gnista.lineStart(line + n));
     return 0;
   }
-  ember.gotoChar(ember.pointMax());
+  gnista.gotoChar(gnista.pointMax());
   let shortfall = n - (last - line);
-  if (ember.point() !== start && ember.bufferText(ember.point() - 1, ember.point()) !== "\n") shortfall--;
+  if (gnista.point() !== start && gnista.bufferText(gnista.point() - 1, gnista.point()) !== "\n") shortfall--;
   return shortfall;
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "delete-minibuffer-contents",
   doc: "Delete all the input in the minibuffer, leaving the prompt.",
   run: () => {
-    ember.deleteRegion(ember.minibufferPromptEnd(), ember.pointMax());
+    gnista.deleteRegion(gnista.minibufferPromptEnd(), gnista.pointMax());
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "undefined",
   doc: "Beep and say the keys typed do nothing here, as keys bound to this command, to hide a binding, do.",
   run: () => {
-    ember.ding();
-    ember.message(`${ember.thisSingleCommandKeys()} is undefined`);
+    gnista.ding();
+    gnista.message(`${gnista.thisSingleCommandKeys()} is undefined`);
   },
 });
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "read-hide-char",
   doc: "The character read-passwd shows in place of each character of a password; * when nil.",
   value: null,
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "read-passwd--hide-password",
   doc: "Whether the password being read is shown as read-hide-char rather than as typed.",
   value: true,
@@ -94,35 +94,35 @@ ember.defineVariable({
 
 /** Shows each character of the input as read-hide-char, or as typed while visible, as read-passwd--hide-password. */
 function hidePassword(): void {
-  const hide = truthy(ember.variable("read-passwd--hide-password"));
-  const shown = String(ember.variable("read-hide-char") ?? "*");
-  const [beg, end] = [ember.minibufferPromptEnd(), ember.pointMax()];
+  const hide = truthy(gnista.variable("read-passwd--hide-password"));
+  const shown = String(gnista.variable("read-hide-char") ?? "*");
+  const [beg, end] = [gnista.minibufferPromptEnd(), gnista.pointMax()];
   if (beg === end) return;
-  // One string for the whole input: Ember joins adjacent display strings
+  // One string for the whole input: Gnista joins adjacent display strings
   // that are equal, where Emacs keeps each character's own string apart.
-  ember.letBind({ "inhibit-read-only": true }, () => {
-    if (hide) ember.putTextProperty(beg, end, "display", shown.repeat(end - beg));
-    else ember.removeTextProperty(beg, end, "display");
-    ember.putTextProperty(beg, end, "help-echo", "C-u: Clear password\nTAB: Toggle password visibility");
+  gnista.letBind({ "inhibit-read-only": true }, () => {
+    if (hide) gnista.putTextProperty(beg, end, "display", shown.repeat(end - beg));
+    else gnista.removeTextProperty(beg, end, "display");
+    gnista.putTextProperty(beg, end, "help-echo", "C-u: Clear password\nTAB: Toggle password visibility");
   });
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "read-passwd-toggle-visibility",
   doc: "Show the password being read as typed, or hide it again.",
   run: () => {
-    ember.setVariable("read-passwd--hide-password", !truthy(ember.variable("read-passwd--hide-password")));
+    gnista.setVariable("read-passwd--hide-password", !truthy(gnista.variable("read-passwd--hide-password")));
     hidePassword();
   },
 });
 
-ember.defineMinorMode({
+gnista.defineMinorMode({
   name: "read-passwd-mode",
   doc: "Hide the password being read in the minibuffer: C-u clears it and TAB shows or hides it.",
   bindings: { "C-u": "delete-minibuffer-contents", TAB: "read-passwd-toggle-visibility" },
   onChange: (on) => {
-    ember.setVariable("read-passwd--hide-password", false);
-    if (on) ember.call("read-passwd-toggle-visibility");
+    gnista.setVariable("read-passwd--hide-password", false);
+    if (on) gnista.call("read-passwd-toggle-visibility");
   },
 });
 
@@ -138,23 +138,23 @@ export async function readPasswd(prompt: string, confirm = false, def?: string):
       const first = await readPasswd(prompt, false, def);
       const second = await readPasswd("Confirm password: ", false, def);
       if (first === second) return first;
-      ember.message("Password not repeated accurately; please start over");
-      await ember.sitFor(1);
+      gnista.message("Password not repeated accurately; please start over");
+      await gnista.sitFor(1);
     }
   }
   const setup = () => {
-    ember.removeHook("minibuffer-setup-hook", setup);
-    for (const name of ["inhibit--record-char", "show-paren-mode"]) ember.makeLocalVariable(name);
-    ember.setVariable("inhibit--record-char", true);
-    ember.setVariable("show-paren-mode", false);
-    ember.call("read-passwd-mode");
-    ember.addHook("post-command-hook", hidePassword, { local: true });
+    gnista.removeHook("minibuffer-setup-hook", setup);
+    for (const name of ["inhibit--record-char", "show-paren-mode"]) gnista.makeLocalVariable(name);
+    gnista.setVariable("inhibit--record-char", true);
+    gnista.setVariable("show-paren-mode", false);
+    gnista.call("read-passwd-mode");
+    gnista.addHook("post-command-hook", hidePassword, { local: true });
   };
-  ember.addHook("minibuffer-setup-hook", setup);
+  gnista.addHook("minibuffer-setup-hook", setup);
   try {
-    return await ember.letBind({ "enable-recursive-minibuffers": true }, () => ember.readString(prompt, { default: def, history: "t" }));
+    return await gnista.letBind({ "enable-recursive-minibuffers": true }, () => gnista.readString(prompt, { default: def, history: "t" }));
   } finally {
-    ember.removeHook("minibuffer-setup-hook", setup);
+    gnista.removeHook("minibuffer-setup-hook", setup);
   }
 }
 
@@ -164,9 +164,9 @@ export async function readPasswd(prompt: string, confirm = false, def?: string):
  * bidi-string-mark-left-to-right: with an invisible left-to-right mark
  * after it if it has a right-to-left character.
  */
-export function bidiStringMarkLeftToRight(str: string): string | ember.PropertizedString {
-  if (typeof str !== "string") ember.signal("wrong-type-argument", "Wrong type argument: stringp", [str]);
-  return ember.stringMatch("\\cR", str) === undefined ? str : ember.concat(str, ember.propertize("\u200e", { invisible: true }));
+export function bidiStringMarkLeftToRight(str: string): string | gnista.PropertizedString {
+  if (typeof str !== "string") gnista.signal("wrong-type-argument", "Wrong type argument: stringp", [str]);
+  return gnista.stringMatch("\\cR", str) === undefined ? str : gnista.concat(str, gnista.propertize("\u200e", { invisible: true }));
 }
 
 /**
@@ -180,33 +180,33 @@ export function bidiStringMarkLeftToRight(str: string): string | ember.Propertiz
  * made later as their major modes start, as easy-mmode's
  * define-globalized-minor-mode does with a function that turns MODE on.
  */
-export function defineGlobalizedMinorMode(name: string, mode: ember.CommandName, doc: string): ember.DefinedCommand {
+export function defineGlobalizedMinorMode(name: string, mode: gnista.CommandName, doc: string): gnista.DefinedCommand {
   const turnOn = () => {
-    if (ember.variable(name) === true && !ember.bufferName().startsWith(" ") && ember.variable(mode) !== true) ember.callWithPrefix(1, mode);
+    if (gnista.variable(name) === true && !gnista.bufferName().startsWith(" ") && gnista.variable(mode) !== true) gnista.callWithPrefix(1, mode);
   };
-  return ember.defineMinorMode({
+  return gnista.defineMinorMode({
     name,
     global: true,
     doc,
     onChange: (enabled) => {
-      for (const b of ember.bufferList()) {
+      for (const b of gnista.bufferList()) {
         if (b.startsWith(" ")) continue;
-        ember.withCurrentBuffer(b, () => {
+        gnista.withCurrentBuffer(b, () => {
           if (enabled) turnOn();
-          else if (ember.variable(mode) === true) ember.callWithPrefix(-1, mode);
+          else if (gnista.variable(mode) === true) gnista.callWithPrefix(-1, mode);
         });
       }
-      if (enabled) ember.addHook("after-change-major-mode-hook", turnOn);
-      else ember.removeHook("after-change-major-mode-hook", turnOn);
+      if (enabled) gnista.addHook("after-change-major-mode-hook", turnOn);
+      else gnista.removeHook("after-change-major-mode-hook", turnOn);
     },
   });
 }
 
 /** Where a program is along PATH, as executable-find. */
 export function executableFind(program: string): string | undefined {
-  if (program.includes("/")) return ember.fileExecutableP(ember.expandFileName(program)) ? program : undefined;
-  for (const dir of (ember.getenv("PATH") ?? "").split(":")) {
-    if (dir && ember.fileExecutableP(`${dir}/${program}`)) return `${dir}/${program}`;
+  if (program.includes("/")) return gnista.fileExecutableP(gnista.expandFileName(program)) ? program : undefined;
+  for (const dir of (gnista.getenv("PATH") ?? "").split(":")) {
+    if (dir && gnista.fileExecutableP(`${dir}/${program}`)) return `${dir}/${program}`;
   }
   return undefined;
 }
@@ -218,26 +218,26 @@ export class PerBuffer<T> {
     perBufferValues.push(this.values);
   }
 
-  private static id(buffer: string | ember.Buffer): number | undefined {
-    return typeof buffer === "string" ? ember.getBuffer(buffer)?.id : buffer.id;
+  private static id(buffer: string | gnista.Buffer): number | undefined {
+    return typeof buffer === "string" ? gnista.getBuffer(buffer)?.id : buffer.id;
   }
 
-  get(buffer: string | ember.Buffer): T | undefined {
+  get(buffer: string | gnista.Buffer): T | undefined {
     const id = PerBuffer.id(buffer);
     return id === undefined ? undefined : this.values.get(id);
   }
 
-  has(buffer: string | ember.Buffer): boolean {
+  has(buffer: string | gnista.Buffer): boolean {
     const id = PerBuffer.id(buffer);
     return id !== undefined && this.values.has(id);
   }
 
-  set(buffer: string | ember.Buffer, value: T): void {
+  set(buffer: string | gnista.Buffer, value: T): void {
     const id = PerBuffer.id(buffer);
     if (id !== undefined) this.values.set(id, value);
   }
 
-  delete(buffer: string | ember.Buffer): void {
+  delete(buffer: string | gnista.Buffer): void {
     const id = PerBuffer.id(buffer);
     if (id !== undefined) this.values.delete(id);
   }
@@ -245,7 +245,7 @@ export class PerBuffer<T> {
 
 const perBufferValues: Map<number, unknown>[] = [];
 
-ember.addHook("kill-buffer-hook", () => {
-  const id = ember.currentBuffer().id;
+gnista.addHook("kill-buffer-hook", () => {
+  const id = gnista.currentBuffer().id;
   for (const values of perBufferValues) values.delete(id);
 });

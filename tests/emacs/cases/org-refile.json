@@ -10,7 +10,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "ember-oracle-refile.org"
+    "visit": "gnista-oracle-refile.org"
   },
   {
     "name": "refile-under-an-earlier-heading",
@@ -23,7 +23,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "ember-oracle-refile.org"
+    "visit": "gnista-oracle-refile.org"
   },
   {
     "name": "refile-under-the-last-heading",
@@ -36,7 +36,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "ember-oracle-refile.org"
+    "visit": "gnista-oracle-refile.org"
   },
   {
     "name": "refile-a-child",
@@ -49,7 +49,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "ember-oracle-refile.org"
+    "visit": "gnista-oracle-refile.org"
   },
   {
     "name": "refile-into-itself",
@@ -62,7 +62,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "ember-oracle-refile.org"
+    "visit": "gnista-oracle-refile.org"
   },
   {
     "name": "refile-to-no-target",
@@ -75,7 +75,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "ember-oracle-refile.org"
+    "visit": "gnista-oracle-refile.org"
   },
   {
     "name": "refile-before-the-first-heading",
@@ -88,7 +88,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "ember-oracle-refile.org"
+    "visit": "gnista-oracle-refile.org"
   },
   {
     "name": "refile-copy",
@@ -101,7 +101,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "ember-oracle-refile.org"
+    "visit": "gnista-oracle-refile.org"
   },
   {
     "name": "refile-goto",
@@ -114,7 +114,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "ember-oracle-refile.org"
+    "visit": "gnista-oracle-refile.org"
   },
   {
     "name": "refile-a-folded-subtree",
@@ -127,7 +127,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "ember-oracle-refile.org"
+    "visit": "gnista-oracle-refile.org"
   },
   {
     "name": "refile-with-todo-and-tags",
@@ -140,7 +140,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "ember-oracle-refile.org"
+    "visit": "gnista-oracle-refile.org"
   },
   {
     "name": "refile-then-undo",
@@ -153,7 +153,7 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "ember-oracle-refile.org"
+    "visit": "gnista-oracle-refile.org"
   },
   {
     "name": "refile-at-the-end-without-a-newline",
@@ -166,6 +166,6 @@
     "modes": [
       "org-mode"
     ],
-    "visit": "ember-oracle-refile.org"
+    "visit": "gnista-oracle-refile.org"
   }
 ]

@@ -24,7 +24,7 @@ Translate regexps to the `regex` crate, and give scripts the primitives for moda
 
 **Regular expressions** (`search.rs`): `\(`, `\)`, `\|`, `\{m,n\}`, `\(?:`, `\<`, `\>`, `\b`, `\w`, `\W`, `\s-` and the other syntax classes, `` \` ``, `\'`, `[[:alpha:]]` and the other classes, and bare `(`, `)`, `|`, `{` and `}` as literals. `*` at the start of an expression is literal, and `^` and `$` are anchors only where Emacs treats them so. `\<` and `\>` become the crate's `\b{start}` and `\b{end}`. Back-references are an error, and symbol boundaries are word boundaries.
 
-**Searching**: forward and backward search over the buffer, a backward match ending by where the search starts, as in Emacs. Match data with groups, `replace-match` with `\&` and `\N`, replacements following the case of what they replace, `case-fold-search` and `search-upper-case`. `search-forward`, `search-backward`, `re-search-forward` and `re-search-backward` are commands; scripts use `ember.search`, which does not move point.
+**Searching**: forward and backward search over the buffer, a backward match ending by where the search starts, as in Emacs. Match data with groups, `replace-match` with `\&` and `\N`, replacements following the case of what they replace, `case-fold-search` and `search-upper-case`. `search-forward`, `search-backward`, `re-search-forward` and `re-search-backward` are commands; scripts use `gnista.search`, which does not move point.
 
 **Modal commands**: `Editor::set_overriding_map` puts a named keymap ahead of all but a transient map, as Emacs's `overriding-terminal-local-map`. A keymap can have a default binding for keys it does not bind, as an Emacs keymap's `[t]`. `Editor::unread_keys` makes keys the next read, as `unread-command-events`. With these:
 

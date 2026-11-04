@@ -132,7 +132,7 @@
     "text": "one",
     "call": [
       "find-file-other-window",
-      "ember-oracle-new.txt"
+      "gnista-oracle-new.txt"
     ],
     "keys": "",
     "windows": true
@@ -158,7 +158,7 @@
     "text": "one",
     "call": [
       "display-buffer",
-      "*ember-oracle*"
+      "*gnista-oracle*"
     ],
     "keys": "",
     "windows": true

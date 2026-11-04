@@ -39,9 +39,9 @@ Org is fontified by a TypeScript function on `jit-lock-functions`, and it comes 
 
 - **Point and hidden text.** Point adjustment after a command follows Emacs's `adjust_point_for_property`. Point is inside hidden text when hidden characters lie on both sides of it, and it goes to the far end in the direction it moved, or to the near end if it came from outside. Where no ellipsis shows and the command did not edit, a move from one edge of the hidden text to the other goes a character further. So `C-f` onto a link's hidden `[[target][` lands after the first character of its description, as in Emacs.
 - **`kill-line`.** It kills to the end of the visible line, so `C-k` on a folded heading kills its subtree.
-- **Remapping.** Keymaps can remap commands (`ember.remapCommand`, Emacs's `[remap ...]`). A remapped typing command still amalgamates undo as `self-insert-command` does.
-- **Undo.** `ember.call` from inside a running command no longer starts a new undo step, so an org command undoes as one.
-- **Script functions.** `ember.callWithPrefix` passes a prefix argument on, and `ember.callInteractively` runs a command with minibuffer prompts. `ember.stringWidth` aligns tags and tables by display width, and `<return>`, `<tab>` and `<backtab>` parse as keys.
+- **Remapping.** Keymaps can remap commands (`gnista.remapCommand`, Emacs's `[remap ...]`). A remapped typing command still amalgamates undo as `self-insert-command` does.
+- **Undo.** `gnista.call` from inside a running command no longer starts a new undo step, so an org command undoes as one.
+- **Script functions.** `gnista.callWithPrefix` passes a prefix argument on, and `gnista.callInteractively` runs a command with minibuffer prompts. `gnista.stringWidth` aligns tags and tables by display width, and `<return>`, `<tab>` and `<backtab>` parse as keys.
 
 **Org** (`packages/org.ts`, `org-mode`, derived from `outline-mode` as in Emacs):
 
@@ -59,7 +59,7 @@ Org is fontified by a TypeScript function on `jit-lock-functions`, and it comes 
 - **Editing.** Rows and columns can be inserted, deleted and moved, and `C-c |` makes a table, either a new one or from the region.
 - **Typing.** `org-self-insert-command`, `org-delete-char` and `org-delete-backward-char`, remapped in `org-mode-map`, keep fields their width as you type. Typing straight after a move blanks the field.
 
-The Emacs oracle now records the text left visible after fontifying, which checks folding and link hiding. Oracle cases can turn on major modes such as `org-mode`. 168 org cases from Emacs 30.2's Org 9.7 cover folding, structure editing, TODO states, priorities, lists, checkboxes, timestamps, tables and links. Prompts, dates relative to today, faces and repeaters, which the oracle cannot check, have headless tests in `crates/ember-script/tests/org.rs`, and a GUI snapshot shows daily notes in both themes.
+The Emacs oracle now records the text left visible after fontifying, which checks folding and link hiding. Oracle cases can turn on major modes such as `org-mode`. 168 org cases from Emacs 30.2's Org 9.7 cover folding, structure editing, TODO states, priorities, lists, checkboxes, timestamps, tables and links. Prompts, dates relative to today, faces and repeaters, which the oracle cannot check, have headless tests in `crates/gnista-script/tests/org.rs`, and a GUI snapshot shows daily notes in both themes.
 
 ## Consequences
 

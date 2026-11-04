@@ -7,15 +7,15 @@
 
 import { keyChar } from "simple";
 
-ember.defineVariable({ name: "only-global-abbrevs", doc: "Whether the abbrev commands define only global abbrevs, not ones for the major mode.", value: false });
-ember.defineVariable({ name: "abbrev-all-caps", doc: "Whether an abbrev typed in capitals expands all in capitals, rather than with each word capitalized.", value: false });
+gnista.defineVariable({ name: "only-global-abbrevs", doc: "Whether the abbrev commands define only global abbrevs, not ones for the major mode.", value: false });
+gnista.defineVariable({ name: "abbrev-all-caps", doc: "Whether an abbrev typed in capitals expands all in capitals, rather than with each word capitalized.", value: false });
 
 /** The abbrev tables, by name, each abbrev's name in lower case to its expansion and how often it was used. */
 const tables = new Map<string, Map<string, { expansion: string; count: number }>>();
 
 const GLOBAL = "global-abbrev-table";
 /** The major mode's table, as local-abbrev-table names it. */
-const localTable = (): string => `${String(ember.variable("major-mode"))}-abbrev-table`;
+const localTable = (): string => `${String(gnista.variable("major-mode"))}-abbrev-table`;
 const table = (name: string) => {
   let t = tables.get(name);
   if (t === undefined) {
@@ -39,14 +39,14 @@ const activeTables = (): string[] => [localTable(), GLOBAL];
 
 /** The word before point and the abbrev it names, if any, as abbrev--before-point. */
 function abbrevBeforePoint(): { table: string; name: string; start: number; end: number } | undefined {
-  const pos = ember.point();
-  return ember.saveExcursion(() => {
-    ember.call("backward-word");
-    const start = ember.point();
-    ember.call("forward-word");
-    const end = Math.min(ember.point(), pos);
+  const pos = gnista.point();
+  return gnista.saveExcursion(() => {
+    gnista.call("backward-word");
+    const start = gnista.point();
+    gnista.call("forward-word");
+    const end = Math.min(gnista.point(), pos);
     if (end <= start) return undefined;
-    const name = ember.bufferSubstringNoProperties(start, end);
+    const name = gnista.bufferSubstringNoProperties(start, end);
     for (const t of activeTables()) {
       if (abbrevExpansion(name, t) !== undefined) return { table: t, name, start, end };
     }
@@ -58,45 +58,45 @@ function abbrevBeforePoint(): { table: string; name: string; start: number; end:
 function abbrevInsert(t: string, name: string, start: number, wordEnd: number): void {
   const entry = tables.get(t)!.get(name.toLowerCase())!;
   entry.count++;
-  ember.gotoChar(start);
+  gnista.gotoChar(start);
   // Inserted first, so markers at the end, point among them, stay after it.
-  ember.insert(entry.expansion);
-  const endMarker = ember.makeMarker(ember.point());
-  ember.deleteRegion(ember.point(), ember.point() + (wordEnd - start));
-  const end = ember.markerPosition(endMarker)!;
+  gnista.insert(entry.expansion);
+  const endMarker = gnista.makeMarker(gnista.point());
+  gnista.deleteRegion(gnista.point(), gnista.point() + (wordEnd - start));
+  const end = gnista.markerPosition(endMarker)!;
   if (name !== name.toLowerCase() && /\p{Lu}/u.test(name)) {
     if (!/\p{Ll}/u.test(name)) {
       // All in capitals: each word capitalized if there are several, else all capitals.
-      const severalWords = ember.saveExcursion(() => {
-        ember.call("backward-word");
-        const last = ember.point();
+      const severalWords = gnista.saveExcursion(() => {
+        gnista.call("backward-word");
+        const last = gnista.point();
         return last > start;
       });
-      if (ember.variable("abbrev-all-caps") !== true && severalWords) ember.call("upcase-initials-region", start, end);
-      else ember.call("upcase-region", start, end);
+      if (gnista.variable("abbrev-all-caps") !== true && severalWords) gnista.call("upcase-initials-region", start, end);
+      else gnista.call("upcase-region", start, end);
     } else {
       // Some capitals: the expansion's first initial.
-      ember.gotoChar(start);
-      ember.skipSyntaxForward("^w", end - 1);
-      ember.call("upcase-initials-region", ember.point(), ember.point() + 1);
+      gnista.gotoChar(start);
+      gnista.skipSyntaxForward("^w", end - 1);
+      gnista.call("upcase-initials-region", gnista.point(), gnista.point() + 1);
     }
   }
-  ember.gotoChar(ember.markerPosition(endMarker)!);
-  ember.deleteMarker(endMarker);
+  gnista.gotoChar(gnista.markerPosition(endMarker)!);
+  gnista.deleteMarker(endMarker);
 }
 
 /** Expands the abbrev before point, if there is one, as expand-abbrev; returns whether it did. */
 function expandAbbrev(): boolean {
   const found = abbrevBeforePoint();
   if (found === undefined) return false;
-  const pos = ember.point();
+  const pos = gnista.point();
   const after = pos - found.end;
   abbrevInsert(found.table, found.name, found.start, found.end);
-  ember.gotoChar(ember.point() + after);
+  gnista.gotoChar(gnista.point() + after);
   return true;
 }
 
-ember.defineMinorMode({
+gnista.defineMinorMode({
   name: "abbrev-mode",
   lighter: " Abbrev",
   doc: "Expand abbrevs as they are typed: a character that ends a word expands the word before it if it is an abbrev.",
@@ -104,15 +104,15 @@ ember.defineMinorMode({
 
 // Typing a character that is not part of a word, after a word, expands it
 // first, as self-insert-command does in Emacs.
-ember.adviceAdd("self-insert-command", "before", () => {
-  if (ember.variable("abbrev-mode") !== true) return;
-  const c = keyChar(ember.lastKey() ?? "");
-  if (c === undefined || ember.charSyntax(c) === "w") return;
-  if (ember.point() === ember.pointMin() || ember.charSyntax(ember.charAfter(ember.point() - 1) ?? "") !== "w") return;
+gnista.adviceAdd("self-insert-command", "before", () => {
+  if (gnista.variable("abbrev-mode") !== true) return;
+  const c = keyChar(gnista.lastKey() ?? "");
+  if (c === undefined || gnista.charSyntax(c) === "w") return;
+  if (gnista.point() === gnista.pointMin() || gnista.charSyntax(gnista.charAfter(gnista.point() - 1) ?? "") !== "w") return;
   expandAbbrev();
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "expand-abbrev",
   doc: "Expand the abbrev before point, if there is one.",
   run: () => {
@@ -121,74 +121,74 @@ ember.defineCommand({
 });
 
 /** Defines an abbrev for the words before point, or the region, as add-abbrev; a prefix argument of 0 means the region. */
-async function addAbbrev(tableName: string, type: string, arg: ember.PrefixArg): Promise<void> {
-  const n = ember.prefixNumericValue(arg);
-  const mark = ember.mark();
+async function addAbbrev(tableName: string, type: string, arg: gnista.PrefixArg): Promise<void> {
+  const n = gnista.prefixNumericValue(arg);
+  const mark = gnista.mark();
   let exp: string | undefined;
-  if ((arg === null && ember.regionActive() && mark !== undefined) || n === 0) {
-    exp = ember.bufferSubstringNoProperties(Math.min(mark!, ember.point()), Math.max(mark!, ember.point()));
+  if ((arg === null && gnista.regionActive() && mark !== undefined) || n === 0) {
+    exp = gnista.bufferSubstringNoProperties(Math.min(mark!, gnista.point()), Math.max(mark!, gnista.point()));
   } else if (n > 0) {
-    const start = ember.saveExcursion(() => {
-      ember.callWithPrefix(-n, "forward-word");
-      return ember.point();
+    const start = gnista.saveExcursion(() => {
+      gnista.callWithPrefix(-n, "forward-word");
+      return gnista.point();
     });
-    exp = ember.bufferSubstringNoProperties(start, ember.point());
+    exp = gnista.bufferSubstringNoProperties(start, gnista.point());
   }
-  const name = await ember.readString(exp !== undefined ? `${type} abbrev that expands into "${exp}": ` : `Undefine ${type} abbrev: `);
+  const name = await gnista.readString(exp !== undefined ? `${type} abbrev that expands into "${exp}": ` : `Undefine ${type} abbrev: `);
   const old = abbrevExpansion(name, tableName);
-  if (exp === undefined || old === undefined || (await ember.yOrNP(`${name} expands into "${old}"; redefine? `))) {
+  if (exp === undefined || old === undefined || (await gnista.yOrNP(`${name} expands into "${old}"; redefine? `))) {
     defineAbbrev(tableName, name, exp ?? "");
   }
 }
 
 /** Defines the word before point as an abbrev for an expansion asked for, and expands it, as inverse-add-abbrev. */
 async function inverseAddAbbrev(tableName: string, type: string, arg: number): Promise<void> {
-  const [start, end] = ember.saveExcursion(() => {
-    ember.callWithPrefix(1 - arg, "forward-word");
-    const e = ember.point();
-    ember.call("backward-word");
-    return [ember.point(), e];
+  const [start, end] = gnista.saveExcursion(() => {
+    gnista.callWithPrefix(1 - arg, "forward-word");
+    const e = gnista.point();
+    gnista.call("backward-word");
+    return [gnista.point(), e];
   });
-  const name = ember.bufferSubstringNoProperties(start, end);
-  const exp = await ember.readString(`${type} expansion for "${name}": `);
+  const name = gnista.bufferSubstringNoProperties(start, end);
+  const exp = await gnista.readString(`${type} expansion for "${name}": `);
   const old = abbrevExpansion(name, tableName);
-  if (old === undefined || (await ember.yOrNP(`${name} expands into "${old}"; redefine? `))) {
+  if (old === undefined || (await gnista.yOrNP(`${name} expands into "${old}"; redefine? `))) {
     defineAbbrev(tableName, name, exp);
-    ember.saveExcursion(() => {
-      ember.gotoChar(end);
+    gnista.saveExcursion(() => {
+      gnista.gotoChar(end);
       expandAbbrev();
     });
   }
 }
 
-const modeTable = () => (ember.variable("only-global-abbrevs") === true ? GLOBAL : localTable());
+const modeTable = () => (gnista.variable("only-global-abbrevs") === true ? GLOBAL : localTable());
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "add-global-abbrev",
   doc: "Define a global abbrev for the word before point, or that many words, or the region with 0, asking for its name.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: (arg: ember.PrefixArg) => addAbbrev(GLOBAL, "Global", arg),
+  run: (arg: gnista.PrefixArg) => addAbbrev(GLOBAL, "Global", arg),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "add-mode-abbrev",
   doc: "Define an abbrev for the major mode for the word before point, or that many words, or the region with 0, asking for its name.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: (arg: ember.PrefixArg) => addAbbrev(modeTable(), ember.variable("only-global-abbrevs") === true ? "Global" : "Mode", arg),
+  run: (arg: gnista.PrefixArg) => addAbbrev(modeTable(), gnista.variable("only-global-abbrevs") === true ? "Global" : "Mode", arg),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "inverse-add-global-abbrev",
   doc: "Make the word before point a global abbrev for an expansion asked for, and expand it.",
   params: [{ name: "arg", kind: "count" }],
   run: (arg: number) => inverseAddAbbrev(GLOBAL, "Global", arg),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "inverse-add-mode-abbrev",
   doc: "Make the word before point an abbrev for the major mode for an expansion asked for, and expand it.",
   params: [{ name: "arg", kind: "count" }],
-  run: (arg: number) => inverseAddAbbrev(modeTable(), ember.variable("only-global-abbrevs") === true ? "Global" : "Mode", arg),
+  run: (arg: number) => inverseAddAbbrev(modeTable(), gnista.variable("only-global-abbrevs") === true ? "Global" : "Mode", arg),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "define-global-abbrev",
   doc: "Define a global abbrev, asking for its name and expansion.",
   params: [
@@ -197,7 +197,7 @@ ember.defineCommand({
   ],
   run: (abbrev: string, expansion: string) => defineAbbrev(GLOBAL, abbrev, expansion),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "define-mode-abbrev",
   doc: "Define an abbrev for the major mode, asking for its name and expansion.",
   params: [
@@ -206,7 +206,7 @@ ember.defineCommand({
   ],
   run: (abbrev: string, expansion: string) => defineAbbrev(localTable(), abbrev, expansion),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "kill-all-abbrevs",
   doc: "Forget every abbrev in every table.",
   run: () => tables.clear(),
@@ -224,7 +224,7 @@ for (const [keys, command] of [
   ["C-x a '", "expand-abbrev"],
   ["C-x '", "expand-abbrev"],
 ] as const) {
-  ember.bindKey(keys, command);
+  gnista.bindKey(keys, command);
 }
 
 // Listing and editing the abbrevs, as list-abbrevs and edit-abbrevs: each
@@ -264,34 +264,34 @@ const tableNames = (): string[] => [GLOBAL, ...[...tables.keys()].filter((t) => 
 
 function prepareAbbrevList(): string {
   const buffer = "*Abbrevs*";
-  ember.getBufferCreate(buffer);
-  ember.withCurrentBuffer(buffer, () => {
-    if (ember.variable("major-mode") !== "edit-abbrevs-mode") ember.call("edit-abbrevs-mode");
-    ember.deleteRegion(ember.pointMin(), ember.pointMax());
-    ember.insert(tableNames().map(tableDescription).join(""));
-    ember.gotoChar(ember.pointMin());
-    ember.setBufferModified(false);
+  gnista.getBufferCreate(buffer);
+  gnista.withCurrentBuffer(buffer, () => {
+    if (gnista.variable("major-mode") !== "edit-abbrevs-mode") gnista.call("edit-abbrevs-mode");
+    gnista.deleteRegion(gnista.pointMin(), gnista.pointMax());
+    gnista.insert(tableNames().map(tableDescription).join(""));
+    gnista.gotoChar(gnista.pointMin());
+    gnista.setBufferModified(false);
   });
   return buffer;
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "list-abbrevs",
   doc: "Show the abbrevs in *Abbrevs*: each table, and each abbrev in it with how often it was used and its expansion.",
-  run: () => ember.call("display-buffer", prepareAbbrevList()),
+  run: () => gnista.call("display-buffer", prepareAbbrevList()),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "edit-abbrevs",
   doc: "Edit the abbrevs in *Abbrevs*; C-c C-c makes them the abbrevs again.",
-  run: () => ember.call("switch-to-buffer", prepareAbbrevList()),
+  run: () => gnista.call("switch-to-buffer", prepareAbbrevList()),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "edit-abbrevs-redefine",
   doc: "Make the abbrevs the ones *Abbrevs* lists now, as edit-abbrevs left them.",
   run: () => {
-    const text = ember.bufferText(ember.pointMin(), ember.pointMax());
+    const text = gnista.bufferText(gnista.pointMin(), gnista.pointMax());
     const read = new Map<string, Map<string, { expansion: string; count: number }>>();
     let current: Map<string, { expansion: string; count: number }> | undefined;
     const unquote = (s: string) => s.slice(1, -1).replace(/\\(.)/g, "$1");
@@ -306,13 +306,13 @@ ember.defineCommand({
       if (entry !== null && current !== undefined) current.set(unquote(entry[1]!).toLowerCase(), { expansion: unquote(entry[3]!), count: Number(entry[2]) });
     }
     for (const [name, entries] of read) tables.set(name, entries);
-    ember.setBufferModified(false);
+    gnista.setBufferModified(false);
   },
 });
 
-ember.defineMajorMode({
+gnista.defineMajorMode({
   name: "edit-abbrevs-mode",
   modeName: "Edit-Abbrevs",
   doc: "The mode of *Abbrevs*: edit the abbrevs listed, then C-c C-c to make them the abbrevs.",
-  bindings: { "C-c C-c": "edit-abbrevs-redefine", "C-x C-s": "edit-abbrevs-redefine" } as Record<string, ember.CommandName>,
+  bindings: { "C-c C-c": "edit-abbrevs-redefine", "C-x C-s": "edit-abbrevs-redefine" } as Record<string, gnista.CommandName>,
 });

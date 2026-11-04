@@ -4,13 +4,13 @@ Status: accepted · 2026-10-30
 
 ## Context
 
-Ember parsed buffers with tree-sitter only to highlight them ([ADR 0008](0008-tree-sitter-highlighting.md)), and scripts could ask for little more than the type of the node at a position. Emacs's tree-sitter modes do much more with the tree:
+Gnista parsed buffers with tree-sitter only to highlight them ([ADR 0008](0008-tree-sitter-highlighting.md)), and scripts could ask for little more than the type of the node at a position. Emacs's tree-sitter modes do much more with the tree:
 - they indent by rules over it (`treesit-simple-indent-rules`);
 - they move by defuns and other "things";
 - they name the defun at point;
 - they query it for whatever a package needs.
 
-All of that is written in Lisp (treesit.el and each mode's file) over the primitives of treesit.c. Ember's ts-modes had hand-written indentation instead: brace counting borrowed from js-mode, which only approximates what the tree says. There was no `C-M-a` or `C-M-e` at all. [docs/plan.md](../plan.md) lists these ninth among the gaps in the core.
+All of that is written in Lisp (treesit.el and each mode's file) over the primitives of treesit.c. Gnista's ts-modes had hand-written indentation instead: brace counting borrowed from js-mode, which only approximates what the tree says. There was no `C-M-a` or `C-M-e` at all. [docs/plan.md](../plan.md) lists these ninth among the gaps in the core.
 
 ## Options considered
 
@@ -32,7 +32,7 @@ Option 2.
 - **Out of date.** A node goes out of date when its tree is parsed again, as asking for a root does after an edit, and using it then is `treesit-node-outdated`. Until then it reads the tree it came from, as Emacs's do.
 - **The functions:** type, start, end, string, parent, child (negative from the end, named or not), child count, child by field name, field name for child, siblings, `first-child-for-pos` (Emacs's own, which works around a tree-sitter bug), `descendant-for-range`, `check` and `eq`.
 
-**Queries** are tree-sitter's syntax, compiled once for each language and source. `treesitQueryCapture` takes a node, a parser or a language, and returns `[name, node]` pairs, or nodes alone with NODE-ONLY, between BEG and END, and grouped by match with GROUPED. Emacs's predicates are there: `(#equal @a @b)`, `(#match "regexp" @a)` with an Emacs regexp, and `(#pred function @a)`. Ember renames them to names tree-sitter's parser accepts, and tree-sitter's own `#eq?` and `#match?` work as tree-sitter defines them.
+**Queries** are tree-sitter's syntax, compiled once for each language and source. `treesitQueryCapture` takes a node, a parser or a language, and returns `[name, node]` pairs, or nodes alone with NODE-ONLY, between BEG and END, and grouped by match with GROUPED. Emacs's predicates are there: `(#equal @a @b)`, `(#match "regexp" @a)` with an Emacs regexp, and `(#pred function @a)`. Gnista renames them to names tree-sitter's parser accepts, and tree-sitter's own `#eq?` and `#match?` work as tree-sitter defines them.
 
 **treesit.el** (`packages/treesit.ts`):
 - **Finding nodes and walking the tree:** `nodeAt`, `nodeOn`, `bufferRootNode`, `nodeText`, `parentUntil`, `parentWhile`, `nodeTopLevel`, `nodeChildren`, `filterChild`, `nodeIndex`, `nodeFieldName` and `nodeEnclosedP`.
@@ -64,7 +64,7 @@ Not done yet:
 - **Sentences** by `treesit-thing-settings`: `forward-sentence-function` is not set. Sexps came later: `forward-sexp` now goes through `forward-sexp-function`, which `treesit-forward-sexp` is when a mode defines a sexp thing, as js-ts-mode does, so `C-M-f`, `C-M-b` and `C-M-k` move by its nodes. Seven more cases check them.
 - **Lisp-form queries** (`treesit-query-expand`); queries are strings.
 - **The rest of treesit.c:** parser notifiers, `treesit-induce-sparse-tree`, Imenu and Outline from the tree, and `treesit-explore-mode`.
-- **Narrowing:** Emacs parses only a narrowed buffer's accessible part; Ember parses all of it.
+- **Narrowing:** Emacs parses only a narrowed buffer's accessible part; Gnista parses all of it.
 
 ## Dependencies introduced
 

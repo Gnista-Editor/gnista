@@ -2,7 +2,7 @@
 // rust-ts-mode.el, js.el, json-ts-mode.el, python.el, go-ts-mode.el and
 // sh-script.el's bash-ts-mode.
 // Each is built on prog-mode and asks for its grammar with
-// treesit-parser-create. Go's grammar does not ship with Ember: it is
+// treesit-parser-create. Go's grammar does not ship with Gnista: it is
 // loaded from libtree-sitter-go.dylib, as Emacs loads its grammars, and
 // highlighted by the mode's own font-lock rules.
 
@@ -121,33 +121,33 @@ const modes: ModeSpec[] = [
 
 // --- Python's Imenu, as python.el's python-imenu-treesit-create-index ------
 
-ember.defun("python--treesit-defun-name", (node: ember.TreesitNode) => {
-  const type = ember.treesitNodeType(node);
+gnista.defun("python--treesit-defun-name", (node: gnista.TreesitNode) => {
+  const type = gnista.treesitNodeType(node);
   if (type !== "function_definition" && type !== "class_definition") return undefined;
-  return nodeText(ember.treesitNodeChildByFieldName(node, "name"), true) as string | undefined;
+  return nodeText(gnista.treesitNodeChildByFieldName(node, "name"), true) as string | undefined;
 });
 
 /** How an item is labelled, as python-imenu-format-item-label: "name (def)". */
 const pythonLabel = (type: string, name: string) => `${name} (${type})`;
 
-type PythonSparse = [ember.TreesitNode | undefined, PythonSparse[]];
+type PythonSparse = [gnista.TreesitNode | undefined, PythonSparse[]];
 type PythonEntry = [string, number | PythonEntry[]];
 
 /** The index from a sparse tree of definitions, as python--imenu-treesit-create-index-1. */
 function pythonImenu1([node, children]: PythonSparse): PythonEntry[] {
   const subtrees = children.flatMap(pythonImenu1);
   if (node === undefined) return subtrees;
-  const type = ember.treesitNodeType(node) === "class_definition" ? "class" : "def";
+  const type = gnista.treesitNodeType(node) === "class_definition" ? "class" : "def";
   const name = defunName(node) ?? "Anonymous";
-  const start = ember.treesitNodeStart(node)!;
+  const start = gnista.treesitNodeStart(node)!;
   if (subtrees.length === 0) return [[pythonLabel(type, name), start]];
   // As python-imenu-format-parent-item-label and -jump-label.
   return [[`${pythonLabel(type, name)}...`, [[type === "class" ? "*class definition*" : "*function definition*", start], ...subtrees]]];
 }
 
-ember.defun("python-imenu-treesit-create-index", () => {
+gnista.defun("python-imenu-treesit-create-index", () => {
   const tree = induceSparseTree(bufferRootNode("python"), "^\\(?:function\\|class\\)_definition$", 1000) as PythonSparse;
-  return pythonImenu1(tree) as unknown as ember.Value;
+  return pythonImenu1(tree) as unknown as gnista.Value;
 });
 
 // --- Python's blocks for hideshow, as python.el's python-nav functions -------
@@ -158,128 +158,128 @@ const PY_BLOCK_START =
 /** python-nav-beginning-of-block-regexp: a line that starts a block. */
 const PY_BLOCK_START_LINE = `^[[:space:]]*${PY_BLOCK_START}`;
 
-const pyInStringOrComment = (pos = ember.point()): boolean => ember.syntaxPpss(pos).start !== null;
-const pyLineText = (pos = ember.point()): string => ember.bufferText(ember.lineBeginningPosition(pos), ember.lineEndPosition(pos));
+const pyInStringOrComment = (pos = gnista.point()): boolean => gnista.syntaxPpss(pos).start !== null;
+const pyLineText = (pos = gnista.point()): string => gnista.bufferText(gnista.lineBeginningPosition(pos), gnista.lineEndPosition(pos));
 const pyCommentOrEmptyLine = (): boolean => /^\s*(#.*)?$/.test(pyLineText());
 
 /** Goes to the start of the statement point is in, as python-nav-beginning-of-statement. */
 function pyBeginningOfStatement(): void {
   for (;;) {
-    ember.gotoChar(ember.lineBeginningPosition());
-    if (ember.point() === ember.pointMin()) break;
-    const ppss = ember.syntaxPpss();
+    gnista.gotoChar(gnista.lineBeginningPosition());
+    if (gnista.point() === gnista.pointMin()) break;
+    const ppss = gnista.syntaxPpss();
     const context = ppss.openParens.length > 0 ? ppss.openParens[0] : ppss.inString !== null ? ppss.start : null;
-    if (context !== null) ember.gotoChar(context);
-    else if (pyLineText(ember.point() - 1).endsWith("\\")) ember.gotoChar(ember.point() - 1);
+    if (context !== null) gnista.gotoChar(context);
+    else if (pyLineText(gnista.point() - 1).endsWith("\\")) gnista.gotoChar(gnista.point() - 1);
     else break;
   }
-  ember.gotoChar(ember.lineBeginningPosition());
-  ember.skipCharsForward(" \t");
+  gnista.gotoChar(gnista.lineBeginningPosition());
+  gnista.skipCharsForward(" \t");
 }
 
 /** Goes to the end of the statement point is in, as python-nav-end-of-statement: past brackets, strings and backslashes. */
 function pyEndOfStatement(): void {
   for (;;) {
-    ember.gotoChar(ember.lineEndPosition());
-    if (ember.point() >= ember.pointMax()) return;
-    const ppss = ember.syntaxPpss();
-    if (ppss.depth > 0 || ppss.inString !== null || pyLineText().endsWith("\\")) ember.gotoChar(ember.point() + 1);
+    gnista.gotoChar(gnista.lineEndPosition());
+    if (gnista.point() >= gnista.pointMax()) return;
+    const ppss = gnista.syntaxPpss();
+    if (ppss.depth > 0 || ppss.inString !== null || pyLineText().endsWith("\\")) gnista.gotoChar(gnista.point() + 1);
     else return;
   }
 }
 
 /** Goes to the next or previous line that starts a block, as python-nav-forward-block: whether it did. */
 function pyForwardBlock(arg: number): boolean {
-  const start = ember.point();
+  const start = gnista.point();
   if (arg > 0) {
     pyEndOfStatement();
-    while (ember.reSearchForward(PY_BLOCK_START_LINE, { noerror: true }) != null && pyInStringOrComment());
+    while (gnista.reSearchForward(PY_BLOCK_START_LINE, { noerror: true }) != null && pyInStringOrComment());
   } else {
     pyBeginningOfStatement();
-    while (ember.reSearchBackward(PY_BLOCK_START_LINE, { noerror: true }) != null && pyInStringOrComment());
+    while (gnista.reSearchBackward(PY_BLOCK_START_LINE, { noerror: true }) != null && pyInStringOrComment());
   }
   pyBeginningOfStatement();
-  if ((arg > 0 && ember.point() < start) || !ember.lookingAt(PY_BLOCK_START)) {
-    ember.gotoChar(start);
+  if ((arg > 0 && gnista.point() < start) || !gnista.lookingAt(PY_BLOCK_START)) {
+    gnista.gotoChar(start);
     return false;
   }
-  return ember.point() !== start;
+  return gnista.point() !== start;
 }
 
 /** Goes to the start of the block point is in, as python-nav-beginning-of-block: where, or undefined. */
 function pyBeginningOfBlock(): number | undefined {
-  const start = ember.point();
-  while (ember.point() > ember.pointMin()) {
+  const start = gnista.point();
+  while (gnista.point() > gnista.pointMin()) {
     pyBeginningOfStatement();
     if (!pyCommentOrEmptyLine()) break;
-    ember.gotoChar(ember.lineBeginningPosition() - 1);
+    gnista.gotoChar(gnista.lineBeginningPosition() - 1);
   }
   pyBeginningOfStatement();
-  if (ember.lookingAt(PY_BLOCK_START)) return ember.point();
-  const indent = ember.currentIndentation() - Number(ember.variable("python-indent-offset") ?? 4);
-  while (pyForwardBlock(-1) && ember.currentIndentation() > indent);
-  if (ember.lookingAt(PY_BLOCK_START) && ember.currentIndentation() === indent) return ember.point();
-  ember.gotoChar(start);
+  if (gnista.lookingAt(PY_BLOCK_START)) return gnista.point();
+  const indent = gnista.currentIndentation() - Number(gnista.variable("python-indent-offset") ?? 4);
+  while (pyForwardBlock(-1) && gnista.currentIndentation() > indent);
+  if (gnista.lookingAt(PY_BLOCK_START) && gnista.currentIndentation() === indent) return gnista.point();
+  gnista.gotoChar(start);
   return undefined;
 }
 
 /** Goes to the end of the block point is in, as python-nav-end-of-block. */
 function pyEndOfBlock(): number | undefined {
   if (pyBeginningOfBlock() === undefined) return undefined;
-  const indent = ember.currentIndentation();
+  const indent = gnista.currentIndentation();
   pyEndOfStatement();
   for (;;) {
-    const eol = ember.lineEndPosition();
-    if (eol >= ember.pointMax()) break;
-    ember.gotoChar(eol + 1);
-    if (ember.point() >= ember.pointMax()) break;
-    if (!pyCommentOrEmptyLine() && ember.currentIndentation() > indent) pyEndOfStatement();
+    const eol = gnista.lineEndPosition();
+    if (eol >= gnista.pointMax()) break;
+    gnista.gotoChar(eol + 1);
+    if (gnista.point() >= gnista.pointMax()) break;
+    if (!pyCommentOrEmptyLine() && gnista.currentIndentation() > indent) pyEndOfStatement();
     else if (!pyCommentOrEmptyLine()) break;
   }
   // Back over the comments and blank lines after it, as python-util-forward-comment.
-  ember.forwardComment(-ember.bufferSize());
-  return ember.point();
+  gnista.forwardComment(-gnista.bufferSize());
+  return gnista.point();
 }
 
 /** Whether point is at the start of a block, as python-info-looking-at-beginning-of-block. */
 function pyLookingAtBeginningOfBlock(): boolean {
-  const pos = ember.point();
-  return ember.saveExcursion(() => {
+  const pos = gnista.point();
+  return gnista.saveExcursion(() => {
     pyBeginningOfStatement();
-    ember.gotoChar(ember.lineBeginningPosition());
-    return ember.point() <= pos && pos <= ember.point() + ember.currentIndentation() && ember.lookingAt(PY_BLOCK_START_LINE);
+    gnista.gotoChar(gnista.lineBeginningPosition());
+    return gnista.point() <= pos && pos <= gnista.point() + gnista.currentIndentation() && gnista.lookingAt(PY_BLOCK_START_LINE);
   });
 }
 
-ember.defun("python-nav-beginning-of-block", () => pyBeginningOfBlock());
-ember.defun("python-info-looking-at-beginning-of-block", () => pyLookingAtBeginningOfBlock());
-ember.defun("python-hideshow-forward-sexp-function", () => {
+gnista.defun("python-nav-beginning-of-block", () => pyBeginningOfBlock());
+gnista.defun("python-info-looking-at-beginning-of-block", () => pyLookingAtBeginningOfBlock());
+gnista.defun("python-hideshow-forward-sexp-function", () => {
   pyEndOfBlock();
-  ember.gotoChar(ember.lineEndPosition());
+  gnista.gotoChar(gnista.lineEndPosition());
 });
-ember.defun("python-hideshow-find-next-block", (regexp: string, maxp: number, comments: ember.Value) => {
-  const nextBlock = ember.saveExcursion(() => {
-    if (pyLookingAtBeginningOfBlock() && ember.reSearchForward(PY_BLOCK_START, { bound: maxp, noerror: true }) != null) return ember.point();
-    if (pyForwardBlock(1) && ember.point() < maxp && ember.reSearchForward(PY_BLOCK_START, { bound: maxp, noerror: true }) != null) {
-      return ember.point();
+gnista.defun("python-hideshow-find-next-block", (regexp: string, maxp: number, comments: gnista.Value) => {
+  const nextBlock = gnista.saveExcursion(() => {
+    if (pyLookingAtBeginningOfBlock() && gnista.reSearchForward(PY_BLOCK_START, { bound: maxp, noerror: true }) != null) return gnista.point();
+    if (pyForwardBlock(1) && gnista.point() < maxp && gnista.reSearchForward(PY_BLOCK_START, { bound: maxp, noerror: true }) != null) {
+      return gnista.point();
     }
     return maxp + 1;
   });
   const nextComment =
     comments !== null && comments !== false && comments !== undefined
-      ? ember.saveExcursion(() => {
-          while (ember.reSearchForward("#", { bound: maxp, noerror: true }) != null) if (ember.syntaxPpss().inComment !== null) return ember.point();
+      ? gnista.saveExcursion(() => {
+          while (gnista.reSearchForward("#", { bound: maxp, noerror: true }) != null) if (gnista.syntaxPpss().inComment !== null) return gnista.point();
           return maxp + 1;
         })
       : maxp + 1;
   const next = Math.min(nextBlock, nextComment);
   if (next > maxp) return false;
-  ember.gotoChar(next);
-  return ember.saveExcursion(() => ember.lookingAt(regexp, ember.lineBeginningPosition()));
+  gnista.gotoChar(next);
+  return gnista.saveExcursion(() => gnista.lookingAt(regexp, gnista.lineBeginningPosition()));
 });
 
 {
-  const alist = ember.variable("hs-special-modes-alist");
+  const alist = gnista.variable("hs-special-modes-alist");
   const entries = (mode: string) => [
     mode,
     PY_BLOCK_START_LINE,
@@ -292,7 +292,7 @@ ember.defun("python-hideshow-find-next-block", (regexp: string, maxp: number, co
     "python-hideshow-find-next-block",
     "python-info-looking-at-beginning-of-block",
   ];
-  if (Array.isArray(alist)) ember.setDefault("hs-special-modes-alist", [entries("python-ts-mode"), entries("python-mode"), ...alist]);
+  if (Array.isArray(alist)) gnista.setDefault("hs-special-modes-alist", [entries("python-ts-mode"), entries("python-mode"), ...alist]);
 }
 
 // --- Indentation -------------------------------------------------------------
@@ -305,30 +305,30 @@ for (const [name, value, doc] of [
   ["python-indent-offset", 4, "How far Python indents each block."],
   ["sh-basic-offset", 4, "How far shell scripts indent each level."],
 ] as const) {
-  ember.defineVariable({ name, value, doc });
+  gnista.defineVariable({ name, value, doc });
 }
 
-const charAt = (p: number): string => ember.charAfter(p) ?? "";
+const charAt = (p: number): string => gnista.charAfter(p) ?? "";
 
-const indentationOf = (line: number): number => ember.currentIndentation(ember.lineStart(line));
+const indentationOf = (line: number): number => gnista.currentIndentation(gnista.lineStart(line));
 
 /** Indents point's line to `column`, point kept with the text after the indentation, as js-indent-line does. */
 function indentKeepingPoint(column: number): void {
-  const offset = ember.point() - (ember.lineBeginningPosition() + /^[ \t]*/.exec(ember.lineText(ember.lineOf(ember.point())))![0].length);
-  ember.indentLineTo(column);
-  if (offset > 0) ember.gotoChar(ember.point() + offset);
+  const offset = gnista.point() - (gnista.lineBeginningPosition() + /^[ \t]*/.exec(gnista.lineText(gnista.lineOf(gnista.point())))![0].length);
+  gnista.indentLineTo(column);
+  if (offset > 0) gnista.gotoChar(gnista.point() + offset);
 }
 
 const columnOf = (p: number): number =>
-  ember.saveExcursion(() => {
-    ember.gotoChar(p);
-    return ember.currentColumn();
+  gnista.saveExcursion(() => {
+    gnista.gotoChar(p);
+    return gnista.currentColumn();
   });
 
 const offsetFor = (): number => {
-  const mode = String(ember.variable("major-mode"));
+  const mode = String(gnista.variable("major-mode"));
   const name = mode === "rust-ts-mode" ? "rust-ts-mode-indent-offset" : mode === "json-ts-mode" ? "json-ts-mode-indent-offset" : "js-indent-level";
-  return Number(ember.variable(name) ?? 4);
+  return Number(gnista.variable(name) ?? 4);
 };
 
 /**
@@ -338,39 +338,39 @@ const offsetFor = (): number => {
  * same for its closing paren; with something after it, under that.
  */
 function bracedIndentation(line: number): number | undefined {
-  const start = ember.lineStart(line);
-  const st = ember.syntaxPpss(start);
+  const start = gnista.lineStart(line);
+  const st = gnista.syntaxPpss(start);
   // Strings and comments keep their indentation.
   if (st.inString !== null || st.inComment !== null) return undefined;
-  const text = ember.lineText(line);
+  const text = gnista.lineText(line);
   const first = start + /^[ \t]*/.exec(text)![0].length;
   const open = st.innermostStart;
   if (open === null) return 0;
-  const closing = ember.charSyntax(charAt(first)) === ")";
+  const closing = gnista.charSyntax(charAt(first)) === ")";
   // What follows the open paren on its line, if anything but a comment.
   let q = open + 1;
-  const lineEnd = ember.lineEnd(ember.lineOf(open));
+  const lineEnd = gnista.lineEnd(gnista.lineOf(open));
   while (q < lineEnd && " \t".includes(charAt(q))) q++;
-  const rest = ember.bufferText(q, lineEnd);
+  const rest = gnista.bufferText(q, lineEnd);
   if (q >= lineEnd || rest.startsWith("//") || rest.startsWith("/*")) {
     // The line the list starts on, from a condition's open paren if it closes just before.
     let p = open;
     while (p > 0 && " \t".includes(charAt(p - 1))) p--;
     if (charAt(p - 1) === ")") {
-      const back = ember.scanLists(p, -1, 0);
+      const back = gnista.scanLists(p, -1, 0);
       if (back !== null) p = back;
     }
-    const base = indentationOf(ember.lineOf(p));
+    const base = indentationOf(gnista.lineOf(p));
     return closing ? base : base + offsetFor();
   }
   return closing ? columnOf(open) : columnOf(q);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "js-indent-line",
   doc: "Indent the current line of code by the braces and parens it is in, as js-mode does, by js-indent-level, or the mode's own offset.",
   run: () => {
-    const line = ember.lineOf(ember.point());
+    const line = gnista.lineOf(gnista.point());
     const column = bracedIndentation(line);
     if (column !== undefined) indentKeepingPoint(column);
   },
@@ -378,39 +378,39 @@ ember.defineCommand({
 
 /** The column a line of Python goes to, as python-indent-line-function does on its first try. */
 function pythonIndentation(line: number): number | undefined {
-  const start = ember.lineStart(line);
-  const st = ember.syntaxPpss(start);
+  const start = gnista.lineStart(line);
+  const st = gnista.syntaxPpss(start);
   if (st.inString !== null) return undefined;
-  const offset = Number(ember.variable("python-indent-offset") ?? 4);
-  const text = ember.lineText(line).trim();
+  const offset = Number(gnista.variable("python-indent-offset") ?? 4);
+  const text = gnista.lineText(line).trim();
   // In parens: under what follows the open paren, or a block deeper than its line.
   if (st.innermostStart !== null) {
     const open = st.innermostStart;
     let q = open + 1;
-    const lineEnd = ember.lineEnd(ember.lineOf(open));
+    const lineEnd = gnista.lineEnd(gnista.lineOf(open));
     while (q < lineEnd && " \t".includes(charAt(q))) q++;
-    const closing = ember.charSyntax(text[0] ?? "") === ")";
-    if (q >= lineEnd || charAt(q) === "#") return indentationOf(ember.lineOf(open)) + (closing ? 0 : offset);
+    const closing = gnista.charSyntax(text[0] ?? "") === ")";
+    if (q >= lineEnd || charAt(q) === "#") return indentationOf(gnista.lineOf(open)) + (closing ? 0 : offset);
     return closing ? columnOf(open) : columnOf(q);
   }
   // The code line before, not blank or a comment.
   let prev = line - 1;
-  while (prev >= 0 && /^\s*(#.*)?$/.test(ember.lineText(prev))) prev--;
+  while (prev >= 0 && /^\s*(#.*)?$/.test(gnista.lineText(prev))) prev--;
   if (prev < 0) return 0;
   // A line ending a list goes from where the list started.
   let from = prev;
-  const prevSt = ember.syntaxPpss(ember.lineStart(prev));
-  if (prevSt.openParens.length > 0) from = ember.lineOf(prevSt.openParens[0]);
-  const prevText = ember.lineText(prev).replace(/\s*#.*$/, "").trimEnd();
+  const prevSt = gnista.syntaxPpss(gnista.lineStart(prev));
+  if (prevSt.openParens.length > 0) from = gnista.lineOf(prevSt.openParens[0]);
+  const prevText = gnista.lineText(prev).replace(/\s*#.*$/, "").trimEnd();
   let column = indentationOf(from);
   if (prevText.endsWith(":")) column += offset;
-  else if (/^\s*(return|pass|break|continue|raise)\b/.test(ember.lineText(prev))) column = Math.max(0, column - offset);
+  else if (/^\s*(return|pass|break|continue|raise)\b/.test(gnista.lineText(prev))) column = Math.max(0, column - offset);
   // A block's later parts go back to the block they belong to.
   const dedenter = /^(else|elif|except|finally)\b/.exec(text);
   if (dedenter !== null) {
     const opener = { else: /^(if|elif|for|while|try|except)\b/, elif: /^(if|elif)\b/, except: /^(try|except)\b/, finally: /^(try|except|else)\b/ }[dedenter[1] as "else"];
     for (let l = line - 1; l >= 0; l--) {
-      const t = ember.lineText(l).trim();
+      const t = gnista.lineText(l).trim();
       if (t === "" || t.startsWith("#")) continue;
       if (indentationOf(l) < column && opener.test(t)) return indentationOf(l);
       if (indentationOf(l) < column - offset) break;
@@ -420,11 +420,11 @@ function pythonIndentation(line: number): number | undefined {
   return column;
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "python-indent-line-function",
   doc: "Indent the current line of Python as its block says: deeper after a line ending in a colon, back after return, and else, elif, except and finally with their block.",
   run: () => {
-    const column = pythonIndentation(ember.lineOf(ember.point()));
+    const column = pythonIndentation(gnista.lineOf(gnista.point()));
     if (column !== undefined) indentKeepingPoint(column);
   },
 });
@@ -432,12 +432,12 @@ ember.defineCommand({
 // --- Tree-sitter indentation and navigation, as each mode's file has them ----------
 
 /** Whether a "*" starts the line, as c-ts-common-looking-at-star. */
-const lookingAtStar = (_n: unknown, _p: unknown, bol: number): boolean => ember.charAfter(bol) === "*";
+const lookingAtStar = (_n: unknown, _p: unknown, bol: number): boolean => gnista.charAfter(bol) === "*";
 
 /** Just after the "/*" a block comment starts with, as c-ts-common-comment-start-after-first-star. */
-const commentStartAfterFirstStar = (_n: unknown, parent: ember.TreesitNode): number => {
-  const start = ember.treesitNodeStart(parent)!;
-  return ember.bufferText(start, start + 2) === "/*" ? start + 2 : start;
+const commentStartAfterFirstStar = (_n: unknown, parent: gnista.TreesitNode): number => {
+  const start = gnista.treesitNodeStart(parent)!;
+  return gnista.bufferText(start, start + 2) === "/*" ? start + 2 : start;
 };
 
 const ruleFor = (type: string, offset: string) => [["parent-is", type], "parent-bol", offset];
@@ -468,8 +468,8 @@ const JSON_RULES = [
 
 /** JSX's rules for older or newer grammars, as js-jsx--treesit-indent-compatibility-bb1f97b chooses them. */
 function jsxCompatibility(): unknown[] {
-  const fragment = ember.conditionCase(
-    () => (ember.treesitQueryCompile("javascript", "(jsx_fragment) @capture"), true),
+  const fragment = gnista.conditionCase(
+    () => (gnista.treesitQueryCompile("javascript", "(jsx_fragment) @capture"), true),
     { error: () => false },
   );
   return fragment
@@ -514,36 +514,36 @@ const jsRules = (): unknown[] => {
   ];
 };
 
-const fieldText = (node: ember.TreesitNode, field: string): string =>
-  String(nodeText(ember.treesitNodeChildByFieldName(node, field), true) ?? "");
+const fieldText = (node: gnista.TreesitNode, field: string): string =>
+  String(nodeText(gnista.treesitNodeChildByFieldName(node, field), true) ?? "");
 
 /** rust-ts-mode--defun-name. */
-const rustDefunName = (node: ember.TreesitNode): string | null => {
-  const type = ember.treesitNodeType(node);
+const rustDefunName = (node: gnista.TreesitNode): string | null => {
+  const type = gnista.treesitNodeType(node);
   if (type === "impl_item") {
-    const trait = ember.treesitNodeChildByFieldName(node, "trait");
+    const trait = gnista.treesitNodeChildByFieldName(node, "trait");
     return `${trait ? `${nodeText(trait, true)} for ` : ""}${fieldText(node, "type")}`;
   }
   return ["enum_item", "function_item", "mod_item", "struct_item", "type_item"].includes(type ?? "") ? fieldText(node, "name") : null;
 };
 
 /** js--treesit-defun-name. */
-const jsDefunName = (node: ember.TreesitNode): string | null => {
-  const type = ember.treesitNodeType(node);
+const jsDefunName = (node: gnista.TreesitNode): string | null => {
+  const type = gnista.treesitNodeType(node);
   const named = type === "lexical_declaration" ? searchSubtree(node, "variable_declarator", false, false, 1) : ["function_declaration", "method_definition", "class_declaration"].includes(type ?? "") ? node : undefined;
   return named ? fieldText(named, "name") : null;
 };
 
 /** json-ts-mode--defun-name. */
-const jsonDefunName = (node: ember.TreesitNode): string | null =>
-  ["pair", "object"].includes(ember.treesitNodeType(node) ?? "") ? fieldText(node, "key").replace(/^"/, "").replace(/"$/, "") : null;
+const jsonDefunName = (node: gnista.TreesitNode): string | null =>
+  ["pair", "object"].includes(gnista.treesitNodeType(node) ?? "") ? fieldText(node, "key").replace(/^"/, "").replace(/"$/, "") : null;
 
 /** Any of these names as a whole symbol, as js--regexp-opt-symbol makes a regexp of them. */
 const symbolRegexp = (names: string[]): string => `\\_<\\(${names.map(regexpQuote).join("\\|")}\\)\\_>`;
 
 /** js--treesit-valid-imenu-entry, as Emacs has it. */
-const jsValidImenuEntry = (node: ember.TreesitNode): unknown =>
-  ember.treesitNodeType(node) === "lexical_declaration" ? nodeTopLevel(node) : true;
+const jsValidImenuEntry = (node: gnista.TreesitNode): unknown =>
+  gnista.treesitNodeType(node) === "lexical_declaration" ? nodeTopLevel(node) : true;
 
 // --- Go, as go-ts-mode.el ------------------------------------------------------
 
@@ -584,7 +584,7 @@ const GO_BUILTINS = [
 
 /** Whether the grammar has a node type, as go-ts-mode--iota-query-supported-p asks. */
 const goHas = (type: string): boolean =>
-  ember.conditionCase(() => (ember.treesitQueryCompile("go", `(${type}) @cap`), true), { error: () => false });
+  gnista.conditionCase(() => (gnista.treesitQueryCompile("go", `(${type}) @cap`), true), { error: () => false });
 
 const quoted = (names: string[]) => names.map((n) => JSON.stringify(n)).join(" ");
 
@@ -635,19 +635,19 @@ const GO_FEATURES = [
 ];
 
 /** go-ts-mode--defun-name: a method's name with its receiver's type, as (T).name. */
-function goDefunName(node: ember.TreesitNode): string | null {
-  switch (ember.treesitNodeType(node)) {
+function goDefunName(node: gnista.TreesitNode): string | null {
+  switch (gnista.treesitNodeType(node)) {
     case "function_declaration":
-      return (nodeText(ember.treesitNodeChildByFieldName(node, "name"), true) as string | undefined) ?? null;
+      return (nodeText(gnista.treesitNodeChildByFieldName(node, "name"), true) as string | undefined) ?? null;
     case "method_declaration": {
-      const field = ember.treesitNodeChildByFieldName(node, "receiver");
+      const field = gnista.treesitNodeChildByFieldName(node, "receiver");
       const receiver = field && searchSubtree(field, "type_identifier");
-      const method = nodeText(ember.treesitNodeChildByFieldName(node, "name"));
+      const method = nodeText(gnista.treesitNodeChildByFieldName(node, "name"));
       return `(${nodeText(receiver) ?? ""}).${method ?? ""}`;
     }
     case "type_declaration": {
-      const spec = ember.treesitNodeChild(node, 0, true);
-      return (nodeText(spec && ember.treesitNodeChildByFieldName(spec, "name"), true) as string | undefined) ?? null;
+      const spec = gnista.treesitNodeChild(node, 0, true);
+      return (nodeText(spec && gnista.treesitNodeChildByFieldName(spec, "name"), true) as string | undefined) ?? null;
     }
     default:
       return null;
@@ -655,11 +655,11 @@ function goDefunName(node: ember.TreesitNode): string | null {
 }
 
 /** Whether a type declaration is of a kind, as go-ts-mode--struct-node-p and its fellows ask. */
-const goTypeOf = (node: ember.TreesitNode, type: string, depth: number): boolean =>
-  ember.treesitNodeType(node) === "type_declaration" && searchSubtree(node, type, false, false, depth) !== undefined;
-const goStruct = (node: ember.TreesitNode) => goTypeOf(node, "struct_type", 2);
-const goInterface = (node: ember.TreesitNode) => goTypeOf(node, "interface_type", 2);
-const goAlias = (node: ember.TreesitNode) => goTypeOf(node, "type_alias", 1);
+const goTypeOf = (node: gnista.TreesitNode, type: string, depth: number): boolean =>
+  gnista.treesitNodeType(node) === "type_declaration" && searchSubtree(node, type, false, false, depth) !== undefined;
+const goStruct = (node: gnista.TreesitNode) => goTypeOf(node, "struct_type", 2);
+const goInterface = (node: gnista.TreesitNode) => goTypeOf(node, "interface_type", 2);
+const goAlias = (node: gnista.TreesitNode) => goTypeOf(node, "type_alias", 1);
 
 // --- Bash, as sh-script.el's bash-ts-mode ------------------------------------
 
@@ -702,8 +702,8 @@ const BASH_DECLARATIONS = ["declare", "typeset", "export", "readonly", "local"];
 
 const anyOf = (words: string[]) => `^(${words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})$`;
 
-ember.defineFace({ name: "sh-heredoc", doc: "A here-document.", light: { foreground: "tan1" }, dark: { foreground: "yellow1", bold: true } });
-ember.defineFace({ name: "sh-quoted-exec", doc: "A command substitution, as $(date).", light: { foreground: "magenta" }, dark: { foreground: "salmon" } });
+gnista.defineFace({ name: "sh-heredoc", doc: "A here-document.", light: { foreground: "tan1" }, dark: { foreground: "yellow1", bold: true } });
+gnista.defineFace({ name: "sh-quoted-exec", doc: "A command substitution, as $(date).", light: { foreground: "magenta" }, dark: { foreground: "salmon" } });
 
 /** sh-mode--treesit-settings, its queries in tree-sitter's syntax. */
 function bashFontLockSettings() {
@@ -746,7 +746,7 @@ const TREESIT_SETTINGS: Record<
   {
     rules: () => unknown[];
     defun: string;
-    name: (node: ember.TreesitNode) => string | null;
+    name: (node: gnista.TreesitNode) => string | null;
     electric: string;
     imenu: unknown[];
     things?: unknown[];
@@ -764,7 +764,7 @@ const TREESIT_SETTINGS: Record<
       ["Method", "\\`method_declaration\\'", null, null],
       ["Struct", "\\`type_declaration\\'", goStruct, null],
       ["Interface", "\\`type_declaration\\'", goInterface, null],
-      ["Type", "\\`type_declaration\\'", (n: ember.TreesitNode) => !goStruct(n) && !goInterface(n) && !goAlias(n), null],
+      ["Type", "\\`type_declaration\\'", (n: gnista.TreesitNode) => !goStruct(n) && !goInterface(n) && !goAlias(n), null],
       ["Alias", "\\`type_declaration\\'", goAlias, null],
     ],
     fontLock: () => ({ settings: goFontLockSettings(), features: GO_FEATURES }),
@@ -772,7 +772,7 @@ const TREESIT_SETTINGS: Record<
   bash: {
     rules: () => BASH_RULES,
     defun: "function_definition",
-    name: (node) => (nodeText(ember.treesitNodeChildByFieldName(node, "name"), true) as string | undefined) ?? null,
+    name: (node) => (nodeText(gnista.treesitNodeChildByFieldName(node, "name"), true) as string | undefined) ?? null,
     electric: "",
     imenu: [["Function", "\\`function_definition\\'", null, null]],
     things: [["sentence", "\\(?:comment\\|heredoc_\\(?:body\\|start\\)\\)"]],
@@ -821,7 +821,7 @@ const TREESIT_SETTINGS: Record<
   json: { rules: () => JSON_RULES, defun: "\\(?:object\\|pair\\)", name: jsonDefunName, electric: "{}():;,", imenu: [[null, "\\`pair\\'", null, null]] },
 };
 
-const alist = ember.defaultValue("auto-mode-alist");
+const alist = gnista.defaultValue("auto-mode-alist");
 const entries = Array.isArray(alist) ? [...alist] : [];
 
 /** A char literal, such as 'a', '"' or '\u{1F600}', rather than a lifetime. */
@@ -832,20 +832,20 @@ const RUST_CHAR = /'(?:\\(?:u\{[0-9a-fA-F]{1,6}\}|x[0-9a-fA-F]{2}|.)|[^\\'\n])'/
  * syntax-propertize does, so a quote inside one, as in '"', opens nothing.
  */
 function rustSyntaxPropertize(start: number, end: number): void {
-  const text = ember.bufferText(start, end);
+  const text = gnista.bufferText(start, end);
   for (const m of allMatches(RUST_CHAR, text)) {
     const at = start + charCount(text.slice(0, m.index));
     const close = at + charCount(m[0]) - 1;
     // As syntax-propertize puts them, silently.
-    ember.withSilentModifications(() => {
-      ember.putTextProperty(at, at + 1, "syntax-table", '"');
-      ember.putTextProperty(close, close + 1, "syntax-table", '"');
+    gnista.withSilentModifications(() => {
+      gnista.putTextProperty(at, at + 1, "syntax-table", '"');
+      gnista.putTextProperty(close, close + 1, "syntax-table", '"');
     });
   }
 }
 
 for (const mode of modes) {
-  ember.defineMajorMode({
+  gnista.defineMajorMode({
     name: mode.name,
     modeName: mode.modeName,
     parent: "prog-mode",
@@ -855,66 +855,66 @@ for (const mode of modes) {
     syntax: mode.syntax,
     setup: () => {
       // As treesit-ready-p: without the grammar, the mode is prog-mode with a warning.
-      if (!ember.treesitLanguageAvailableP(mode.language)) {
-        // Not from a buffer of Ember's own, such as the one Org fontifies a block in.
-        if (!ember.bufferName().startsWith(" ")) ember.message(`Cannot activate tree-sitter, because language grammar for ${mode.language} is unavailable`);
+      if (!gnista.treesitLanguageAvailableP(mode.language)) {
+        // Not from a buffer of Gnista's own, such as the one Org fontifies a block in.
+        if (!gnista.bufferName().startsWith(" ")) gnista.message(`Cannot activate tree-sitter, because language grammar for ${mode.language} is unavailable`);
         return;
       }
-      ember.treesitSetPrimaryLanguage(mode.language);
+      gnista.treesitSetPrimaryLanguage(mode.language);
       if (mode.comment !== undefined) {
-        ember.setVariable("comment-start", mode.comment.start);
-        ember.setVariable("comment-end", "");
-        ember.setVariable("comment-start-skip", mode.comment.skip);
+        gnista.setVariable("comment-start", mode.comment.start);
+        gnista.setVariable("comment-end", "");
+        gnista.setVariable("comment-start-skip", mode.comment.skip);
       }
-      ember.setVariable("parse-sexp-ignore-comments", true);
-      if (mode.tabs === false) ember.setVariable("indent-tabs-mode", false);
+      gnista.setVariable("parse-sexp-ignore-comments", true);
+      if (mode.tabs === false) gnista.setVariable("indent-tabs-mode", false);
       // Python reindents the line it leaves only by hand, as electric-indent-inhibit says.
-      ember.setVariable("electric-indent-inhibit", mode.language === "python");
+      gnista.setVariable("electric-indent-inhibit", mode.language === "python");
       const settings = TREESIT_SETTINGS[mode.language];
       if (settings === undefined) {
-        ember.setVariable("indent-line-function", "python-indent-line-function");
-        ember.setVariable("electric-indent-chars", ["\n"]);
-        ember.setVariable("imenu-create-index-function", "python-imenu-treesit-create-index");
-        ember.setVariable("treesit-defun-type-regexp", "\\(?:class\\|function\\)_definition");
-        ember.setVariable("treesit-defun-name-function", "python--treesit-defun-name");
+        gnista.setVariable("indent-line-function", "python-indent-line-function");
+        gnista.setVariable("electric-indent-chars", ["\n"]);
+        gnista.setVariable("imenu-create-index-function", "python-imenu-treesit-create-index");
+        gnista.setVariable("treesit-defun-type-regexp", "\\(?:class\\|function\\)_definition");
+        gnista.setVariable("treesit-defun-name-function", "python--treesit-defun-name");
         majorModeSetup(`${mode.name}-map`);
       } else {
         // Typing these reindents the line, as the mode's electric-indent-chars has them.
-        ember.setVariable("electric-indent-chars", ["\n", ...settings.electric]);
-        ember.setVariable("treesit-simple-indent-rules", [[mode.language, settings.rules()]] as unknown as ember.Value);
-        ember.setVariable("treesit-defun-type-regexp", settings.defun);
-        ember.setVariable("treesit-defun-name-function", ember.defun(`${mode.name}--defun-name`, settings.name));
-        ember.setVariable("treesit-simple-imenu-settings", settings.imenu as unknown as ember.Value);
-        if (settings.things) ember.setVariable("treesit-thing-settings", [[mode.language, settings.things]] as unknown as ember.Value);
+        gnista.setVariable("electric-indent-chars", ["\n", ...settings.electric]);
+        gnista.setVariable("treesit-simple-indent-rules", [[mode.language, settings.rules()]] as unknown as gnista.Value);
+        gnista.setVariable("treesit-defun-type-regexp", settings.defun);
+        gnista.setVariable("treesit-defun-name-function", gnista.defun(`${mode.name}--defun-name`, settings.name));
+        gnista.setVariable("treesit-simple-imenu-settings", settings.imenu as unknown as gnista.Value);
+        if (settings.things) gnista.setVariable("treesit-thing-settings", [[mode.language, settings.things]] as unknown as gnista.Value);
         if (settings.fontLock) {
           const { settings: rules, features } = settings.fontLock();
-          ember.setVariable("treesit-font-lock-settings", rules as unknown as ember.Value);
-          ember.setVariable("treesit-font-lock-feature-list", features);
+          gnista.setVariable("treesit-font-lock-settings", rules as unknown as gnista.Value);
+          gnista.setVariable("treesit-font-lock-feature-list", features);
         }
         majorModeSetup(`${mode.name}-map`);
       }
       if (mode.language === "rust") {
-        ember.setVariable("syntax-propertize-function", rustSyntaxPropertize);
-        ember.setVariable("parse-sexp-lookup-properties", true);
+        gnista.setVariable("syntax-propertize-function", rustSyntaxPropertize);
+        gnista.setVariable("parse-sexp-lookup-properties", true);
       }
     },
   });
   if (mode.alias !== undefined) {
-    ember.defineCommand({
+    gnista.defineCommand({
       name: mode.alias,
-      doc: `Edit ${mode.what}, in ${mode.name}: Ember's mode for it, as major-mode-remap-alist would have Emacs use.`,
-      run: () => ember.call(mode.name as ember.CommandName),
+      doc: `Edit ${mode.what}, in ${mode.name}: Gnista's mode for it, as major-mode-remap-alist would have Emacs use.`,
+      run: () => gnista.call(mode.name as gnista.CommandName),
     });
   }
   entries.push([mode.pattern, mode.name]);
 }
 
 // As js.el's (defalias 'javascript-mode 'js-mode), which Org's javascript blocks find.
-ember.defineCommand({
+gnista.defineCommand({
   name: "javascript-mode",
   doc: "Edit JavaScript, in js-ts-mode, as js-mode does.",
-  run: () => ember.call("js-mode" as ember.CommandName),
+  run: () => gnista.call("js-mode" as gnista.CommandName),
 });
-ember.defineKey("python-ts-mode-map", "C-c C-j", "imenu");
+gnista.defineKey("python-ts-mode-map", "C-c C-j", "imenu");
 
-ember.setDefault("auto-mode-alist", entries);
+gnista.setDefault("auto-mode-alist", entries);

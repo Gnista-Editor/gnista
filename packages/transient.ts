@@ -19,18 +19,18 @@
 
 import { truthy } from "subr";
 
-ember.defineFace({ name: "transient-heading", doc: "Face used for headings.", attributes: { inherit: "font-lock-keyword-face" } });
-ember.defineFace({ name: "transient-key", doc: "Face used for keys.", attributes: { inherit: "font-lock-builtin-face" } });
-ember.defineFace({ name: "transient-argument", doc: "Face used for enabled arguments.", attributes: { inherit: "font-lock-string-face", weight: "bold" } });
-ember.defineFace({ name: "transient-inactive-argument", doc: "Face used for inactive arguments.", attributes: { inherit: "shadow" } });
-ember.defineFace({ name: "transient-inapt-argument", doc: "Face used for enabled arguments of an inapt suffix.", attributes: { inherit: "shadow", weight: "bold" } });
-ember.defineFace({ name: "transient-value", doc: "Face used for values.", attributes: { inherit: "font-lock-string-face", weight: "bold" } });
-ember.defineFace({ name: "transient-inactive-value", doc: "Face used for inactive values.", attributes: { inherit: "shadow" } });
-ember.defineFace({ name: "transient-unreachable", doc: "Face used for suffixes unreachable from the current prefix sequence.", attributes: { inherit: "shadow" } });
-ember.defineFace({ name: "transient-inapt-suffix", doc: "Face used for suffixes that are inapt at this time.", attributes: { inherit: "shadow", slant: "italic" } });
-ember.defineFace({ name: "transient-active-infix", doc: "Face used for the infix for which the value is being read.", attributes: { inherit: "highlight" } });
-ember.defineFace({ name: "transient-delimiter", doc: "Face used for delimiters and separators.", attributes: { inherit: "shadow" } });
-ember.defineFace({ name: "transient-unreachable-key", doc: "Face used for keys unreachable from the current prefix sequence.", attributes: { inherit: "shadow", weight: "normal" } });
+gnista.defineFace({ name: "transient-heading", doc: "Face used for headings.", attributes: { inherit: "font-lock-keyword-face" } });
+gnista.defineFace({ name: "transient-key", doc: "Face used for keys.", attributes: { inherit: "font-lock-builtin-face" } });
+gnista.defineFace({ name: "transient-argument", doc: "Face used for enabled arguments.", attributes: { inherit: "font-lock-string-face", weight: "bold" } });
+gnista.defineFace({ name: "transient-inactive-argument", doc: "Face used for inactive arguments.", attributes: { inherit: "shadow" } });
+gnista.defineFace({ name: "transient-inapt-argument", doc: "Face used for enabled arguments of an inapt suffix.", attributes: { inherit: "shadow", weight: "bold" } });
+gnista.defineFace({ name: "transient-value", doc: "Face used for values.", attributes: { inherit: "font-lock-string-face", weight: "bold" } });
+gnista.defineFace({ name: "transient-inactive-value", doc: "Face used for inactive values.", attributes: { inherit: "shadow" } });
+gnista.defineFace({ name: "transient-unreachable", doc: "Face used for suffixes unreachable from the current prefix sequence.", attributes: { inherit: "shadow" } });
+gnista.defineFace({ name: "transient-inapt-suffix", doc: "Face used for suffixes that are inapt at this time.", attributes: { inherit: "shadow", slant: "italic" } });
+gnista.defineFace({ name: "transient-active-infix", doc: "Face used for the infix for which the value is being read.", attributes: { inherit: "highlight" } });
+gnista.defineFace({ name: "transient-delimiter", doc: "Face used for delimiters and separators.", attributes: { inherit: "shadow" } });
+gnista.defineFace({ name: "transient-unreachable-key", doc: "Face used for keys unreachable from the current prefix sequence.", attributes: { inherit: "shadow", weight: "normal" } });
 const keyFaces: [string, string, string, string][] = [
   ["transient-key-stay", "Face used for keys of suffixes that don't exit the menu.", "#22aa22", "#ddffdd"],
   ["transient-key-noop", "Face used for keys of suffixes that currently cannot be invoked.", "grey80", "grey30"],
@@ -40,20 +40,20 @@ const keyFaces: [string, string, string, string][] = [
   ["transient-key-exit", "Face used for keys of suffixes that exit the menu.", "#aa2222", "#ffdddd"],
 ];
 for (const [name, doc, light, dark] of keyFaces) {
-  ember.defineFace({ name, doc, attributes: { inherit: "transient-key" }, light: { foreground: light }, dark: { foreground: dark } });
+  gnista.defineFace({ name, doc, attributes: { inherit: "transient-key" }, light: { foreground: light }, dark: { foreground: dark } });
 }
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "transient-semantic-coloring",
   doc: "Whether keys are coloured by what their suffixes do: stay in the menu, exit it, or go into another.",
   value: true,
 });
-ember.defineVariable({ name: "transient-force-single-column", doc: "Whether to show the suffixes in one column, rather than side by side.", value: false });
-ember.defineVariable({ name: "transient-current-command", doc: "The transient prefix command from which the running suffix was invoked.", value: null });
-ember.defineVariable({ name: "transient-current-prefix", doc: "The name of the prefix whose menu is showing, or from which the running suffix was invoked.", value: null });
+gnista.defineVariable({ name: "transient-force-single-column", doc: "Whether to show the suffixes in one column, rather than side by side.", value: false });
+gnista.defineVariable({ name: "transient-current-command", doc: "The transient prefix command from which the running suffix was invoked.", value: null });
+gnista.defineVariable({ name: "transient-current-prefix", doc: "The name of the prefix whose menu is showing, or from which the running suffix was invoked.", value: null });
 
 /** Text, its faces with it. */
-type Text = string | ember.PropertizedString;
+type Text = string | gnista.PropertizedString;
 /** A description: text, or a function giving it, called in the buffer the menu was invoked from. */
 export type Description = Text | (() => Text | undefined);
 type Command = string;
@@ -146,7 +146,7 @@ interface Active {
   prefix: string;
   layout: Layout[];
   suffixes: Suffix[];
-  buffer: ember.Buffer;
+  buffer: gnista.Buffer;
   window: number;
 }
 let active: Active | undefined;
@@ -157,32 +157,32 @@ let values = new Map<string, string | boolean | undefined>();
 
 const BUFFER = " *transient*";
 const MAP = "transient--map";
-ember.defineKeymap(MAP);
+gnista.defineKeymap(MAP);
 
 // Setting a menu up.
 
 function oneOf(mode: string | string[] | undefined): boolean {
   const modes = mode === undefined ? [] : Array.isArray(mode) ? mode : [mode];
-  return modes.includes(String(ember.variable("major-mode")));
+  return modes.includes(String(gnista.variable("major-mode")));
 }
 
 /** Whether a suffix or group shows, as transient--do-suffix-p. */
 function shows(o: SuffixOptions | Group): boolean {
   const s = o as SuffixOptions;
-  if (s.if) return truthy(s.if() as ember.Value);
-  if (s.ifNot) return !truthy(s.ifNot() as ember.Value);
-  if (s.ifNonNil) return truthy(ember.variable(s.ifNonNil));
-  if (s.ifNil) return !truthy(ember.variable(s.ifNil));
+  if (s.if) return truthy(s.if() as gnista.Value);
+  if (s.ifNot) return !truthy(s.ifNot() as gnista.Value);
+  if (s.ifNonNil) return truthy(gnista.variable(s.ifNonNil));
+  if (s.ifNil) return !truthy(gnista.variable(s.ifNil));
   if (s.ifMode !== undefined) return oneOf(s.ifMode);
   if (s.ifNotMode !== undefined) return !oneOf(s.ifNotMode);
-  if (s.ifDerived !== undefined) return ember.derivedModeP(...[s.ifDerived].flat());
-  if (s.ifNotDerived !== undefined) return !ember.derivedModeP(...[s.ifNotDerived].flat());
+  if (s.ifDerived !== undefined) return gnista.derivedModeP(...[s.ifDerived].flat());
+  if (s.ifNotDerived !== undefined) return !gnista.derivedModeP(...[s.ifNotDerived].flat());
   return true;
 }
 
 function inapt(o: SuffixOptions): boolean {
-  if (o.inaptIf) return truthy(o.inaptIf() as ember.Value);
-  if (o.inaptIfNot) return !truthy(o.inaptIfNot() as ember.Value);
+  if (o.inaptIf) return truthy(o.inaptIf() as gnista.Value);
+  if (o.inaptIfNot) return !truthy(o.inaptIfNot() as gnista.Value);
   return false;
 }
 
@@ -190,7 +190,7 @@ function inapt(o: SuffixOptions): boolean {
 function commandName(prefix: string, key: string, command: Command | DefinedFunction): string {
   if (typeof command === "string") return command;
   const name = `transient:${prefix}:${key.replace(/ /g, "")}`;
-  if (!ember.fboundp(name)) ember.defineCommand({ name, doc: "A suffix of a transient menu.", run: () => void command() });
+  if (!gnista.fboundp(name)) gnista.defineCommand({ name, doc: "A suffix of a transient menu.", run: () => void command() });
   return name;
 }
 
@@ -271,7 +271,7 @@ function initialValue(prefix: string): string[] {
   if (value === undefined) return [];
   if (typeof value === "function") return value();
   if (typeof value === "string") {
-    const v = ember.variable(value);
+    const v = gnista.variable(value);
     return Array.isArray(v) ? v.map(String) : [];
   }
   return value;
@@ -306,7 +306,7 @@ function formatKey(s: Suffix, pad: number | undefined): Text {
 }
 
 function keyFace(s: Suffix): string {
-  if (!truthy(ember.variable("transient-semantic-coloring"))) return s.command ? "transient-key" : "transient-key-noop";
+  if (!truthy(gnista.variable("transient-semantic-coloring"))) return s.command ? "transient-key" : "transient-key-noop";
   const kind = behaviour(s);
   return kind === "stay" || kind === "infix" ? "transient-key-stay" : kind === "stack" ? "transient-key-stack" : kind === "recurse" ? "transient-key-recurse" : "transient-key-exit";
 }
@@ -320,7 +320,7 @@ function behaviour(s: Suffix): "exit" | "stay" | "stack" | "recurse" | "infix" {
 }
 
 function describe(d: Description | undefined): Text | undefined {
-  if (typeof d === "function") return active ? ember.withCurrentBuffer(active.buffer, d) : d();
+  if (typeof d === "function") return active ? gnista.withCurrentBuffer(active.buffer, d) : d();
   return d;
 }
 
@@ -334,14 +334,14 @@ function formatValue(s: Suffix): Text {
     const [before, after] = format.split("%s");
     const choices = (s.options.choices ?? []).flatMap((c, i) => [...(i > 0 ? [face("|", "transient-delimiter")] : []), face(c, format.replace("%s", c) === value ? "transient-value" : "transient-inactive-value")]);
     const f = value ? "transient-argument" : "transient-inactive-argument";
-    return ember.concat(face(before, f), face("[", "transient-delimiter"), ...choices, face("]", "transient-delimiter"), face(after ?? "", f));
+    return gnista.concat(face(before, f), face("[", "transient-delimiter"), ...choices, face("]", "transient-delimiter"), face(after ?? "", f));
   }
   if (value === undefined) return face(s.argument!, "transient-inactive-argument");
-  return ember.concat(face(s.argument!, s.inapt ? "transient-inapt-argument" : "transient-argument"), face(String(value), s.inapt ? "transient-inapt-argument" : "transient-value"));
+  return gnista.concat(face(s.argument!, s.inapt ? "transient-inapt-argument" : "transient-argument"), face(String(value), s.inapt ? "transient-inapt-argument" : "transient-value"));
 }
 
 /** TEXT in face F; text that has faces of its own keeps them, as transient-format-description leaves a description's faces. */
-const face = (text: Text, f: string): Text => (typeof text === "string" ? ember.propertize(text, { face: f }) : text);
+const face = (text: Text, f: string): Text => (typeof text === "string" ? gnista.propertize(text, { face: f }) : text);
 const width = (text: Text): number => [...String(text)].length;
 
 /** A suffix as a line of the menu, as transient-format. */
@@ -352,7 +352,7 @@ function formatSuffix(s: Suffix, pad: number | undefined): Text {
   if (s.inapt) desc = face(desc, "transient-inapt-suffix");
   const key = s.kind === "information" ? (s.key || " ") : formatKey(s, pad);
   const parts = format.split(/(%[kdv%])/).map((p) => (p === "%k" ? key : p === "%d" ? desc! : p === "%v" ? formatValue(s) : p === "%%" ? "%" : p));
-  return ember.concat(...parts);
+  return gnista.concat(...parts);
 }
 
 /** How wide a group's keys are padded, as transient--maybe-pad-keys. */
@@ -372,26 +372,26 @@ function groupDescription(layout: Layout): Text | undefined {
 function insertGroup(layout: Layout, parent?: Layout): void {
   const desc = groupDescription(layout);
   if (desc !== undefined) {
-    ember.insert(desc);
-    ember.insert("\n");
+    gnista.insert(desc);
+    gnista.insert("\n");
   }
-  const kind = truthy(ember.variable("transient-force-single-column")) && classOf(layout) === "columns" ? "single" : classOf(layout);
+  const kind = truthy(gnista.variable("transient-force-single-column")) && classOf(layout) === "columns" ? "single" : classOf(layout);
   const suffixes = (l: Layout) => l.children.filter((c): c is Suffix | string => typeof c === "string" || !("group" in c));
   const cell = (c: Suffix | string, pad: number | undefined) => (typeof c === "string" ? face(c, "transient-heading") : formatSuffix(c, pad));
   if (kind === "row") {
     const pad = padOf(layout, parent);
     for (const s of suffixes(layout)) {
-      ember.insert(cell(s, pad));
-      ember.insert("   ");
+      gnista.insert(cell(s, pad));
+      gnista.insert("   ");
     }
-    ember.insert("\n");
+    gnista.insert("\n");
   } else if (kind === "column") {
     const pad = padOf(layout, parent);
     for (const s of suffixes(layout)) {
       const str = cell(s, pad);
       if (String(str) === "") continue;
-      ember.insert(str);
-      if (!/.\n$/.test(String(str))) ember.insert("\n");
+      gnista.insert(str);
+      if (!/.\n$/.test(String(str))) gnista.insert("\n");
     }
   } else if (kind === "single") {
     for (const c of layout.children) if (typeof c !== "string" && "group" in c) insertGroup(c, layout);
@@ -411,18 +411,18 @@ function insertGroup(layout: Layout, parent?: Layout): void {
       columns.forEach((column, i) => {
         const text = column[row];
         if (text === undefined) return;
-        const at = ember.currentColumn();
-        if (stops[i] > 0) ember.insert(" ".repeat(Math.max(0, stops[i] - at)));
-        ember.insert(text);
+        const at = gnista.currentColumn();
+        if (stops[i] > 0) gnista.insert(" ".repeat(Math.max(0, stops[i] - at)));
+        gnista.insert(text);
       });
-      ember.insert("\n");
+      gnista.insert("\n");
     }
   } else {
     // Subgroups: each in turn, a blank line between.
     const subs = layout.children.filter((c): c is Layout => typeof c !== "string" && "group" in c);
     subs.forEach((sub, i) => {
       insertGroup(sub, layout);
-      if (i < subs.length - 1) ember.insert("\n");
+      if (i < subs.length - 1) gnista.insert("\n");
     });
   }
 }
@@ -430,51 +430,51 @@ function insertGroup(layout: Layout, parent?: Layout): void {
 /** Shows the menu, in a window along the bottom of the frame, as transient--show. */
 function show(): void {
   if (!active) return;
-  ember.getBufferCreate(BUFFER);
-  ember.withCurrentBuffer(BUFFER, () => {
-    ember.letBind({ "inhibit-read-only": true }, () => {
-      ember.deleteRegion(ember.pointMin(), ember.pointMax());
-      const groups = active!.layout.filter((l) => !(l.group.hide && truthy(ember.withCurrentBuffer(active!.buffer, l.group.hide) as ember.Value)));
+  gnista.getBufferCreate(BUFFER);
+  gnista.withCurrentBuffer(BUFFER, () => {
+    gnista.letBind({ "inhibit-read-only": true }, () => {
+      gnista.deleteRegion(gnista.pointMin(), gnista.pointMax());
+      const groups = active!.layout.filter((l) => !(l.group.hide && truthy(gnista.withCurrentBuffer(active!.buffer, l.group.hide) as gnista.Value)));
       groups.forEach((layout, i) => {
         insertGroup(layout);
-        if (i < groups.length - 1) ember.insert("\n");
+        if (i < groups.length - 1) gnista.insert("\n");
       });
-      ember.gotoChar(ember.pointMin());
+      gnista.gotoChar(gnista.pointMin());
     });
     for (const [name, value] of [
       ["mode-line-format", null],
       ["truncate-lines", true],
       ["cursor-type", null],
     ] as const) {
-      ember.makeLocalVariable(name);
-      ember.setVariable(name, value);
+      gnista.makeLocalVariable(name);
+      gnista.setVariable(name, value);
     }
-    ember.setBufferModified(false);
+    gnista.setBufferModified(false);
   });
-  const lines = ember.withCurrentBuffer(BUFFER, () => ember.bufferSubstringNoProperties(ember.pointMin(), ember.pointMax()).replace(/\n$/, "").split("\n").length);
-  const live = active.window !== 0 && ember.windowList().includes(active.window);
-  if (live && ember.windowSize(active.window)?.totalHeight !== lines) {
-    ember.deleteWindow(active.window);
+  const lines = gnista.withCurrentBuffer(BUFFER, () => gnista.bufferSubstringNoProperties(gnista.pointMin(), gnista.pointMax()).replace(/\n$/, "").split("\n").length);
+  const live = active.window !== 0 && gnista.windowList().includes(active.window);
+  if (live && gnista.windowSize(active.window)?.totalHeight !== lines) {
+    gnista.deleteWindow(active.window);
     active.window = 0;
   }
   if (!live || active.window === 0) {
-    const selected = ember.selectedWindow();
-    active.window = ember.splitRootWindow("below", -Math.max(1, lines));
-    ember.setWindowBuffer(active.window, BUFFER);
-    ember.setWindowDedicatedP(active.window, true);
-    ember.selectWindow(selected);
+    const selected = gnista.selectedWindow();
+    active.window = gnista.splitRootWindow("below", -Math.max(1, lines));
+    gnista.setWindowBuffer(active.window, BUFFER);
+    gnista.setWindowDedicatedP(active.window, true);
+    gnista.selectWindow(selected);
   }
 }
 
 /** Takes the menu's window away, as transient--delete-window. */
 function hide(): void {
-  if (active && active.window !== 0 && ember.windowList().includes(active.window)) ember.deleteWindow(active.window);
-  if (ember.bufferLiveP(ember.getBuffer(BUFFER))) ember.call("kill-buffer", BUFFER);
+  if (active && active.window !== 0 && gnista.windowList().includes(active.window)) gnista.deleteWindow(active.window);
+  if (gnista.bufferLiveP(gnista.getBuffer(BUFFER))) gnista.call("kill-buffer", BUFFER);
   if (active) active.window = 0;
 }
 
 /**
- * KEY in Ember's notation, as kbd reads transient's: a word that is no one
+ * KEY in Gnista's notation, as kbd reads transient's: a word that is no one
  * key, such as "-a", is its characters one after another.
  */
 function kbdKeys(key: string): string {
@@ -488,31 +488,31 @@ function kbdKeys(key: string): string {
 
 /** Binds the active suffixes' keys, as transient--make-transient-map, and takes over the keyboard. */
 function bindKeys(): void {
-  const map = ember.makeSparseKeymap();
+  const map = gnista.makeSparseKeymap();
   for (const s of active!.suffixes) {
     if (s.kind === "information" || !s.key) continue;
     const keys = kbdKeys(s.key);
-    if (ember.lookupKey(map, keys) === undefined) ember.defineKey(map, keys, dispatchCommand(s));
+    if (gnista.lookupKey(map, keys) === undefined) gnista.defineKey(map, keys, dispatchCommand(s));
   }
   for (const [key, command] of [
     ["C-g", quitOne],
     ["C-q", quitAll],
     ["ESC ESC ESC", quitAll],
   ] as const) {
-    if (ember.lookupKey(map, key) === undefined) ember.defineKey(map, key, command);
+    if (gnista.lookupKey(map, key) === undefined) gnista.defineKey(map, key, command);
   }
-  ember.setKeymapParent(MAP, null);
-  ember.setKeymapParent(MAP, map);
-  ember.setKeymapDefault(MAP, prefixes.get(active!.prefix)?.transientNonSuffix ? null : undefinedKey);
-  ember.setOverridingMap(MAP);
+  gnista.setKeymapParent(MAP, null);
+  gnista.setKeymapParent(MAP, map);
+  gnista.setKeymapDefault(MAP, prefixes.get(active!.prefix)?.transientNonSuffix ? null : undefinedKey);
+  gnista.setOverridingMap(MAP);
 }
 
 /** The command a suffix's key runs in the menu: one for each key, as transient's infix commands are one for each argument. */
-const dispatchers = new Map<string, ember.DefinedCommand>();
-function dispatchCommand(s: Suffix): ember.DefinedCommand {
+const dispatchers = new Map<string, gnista.DefinedCommand>();
+function dispatchCommand(s: Suffix): gnista.DefinedCommand {
   const name = `transient--dispatch:${s.key}`;
   if (!dispatchers.has(name)) {
-    dispatchers.set(name, ember.defineCommand({
+    dispatchers.set(name, gnista.defineCommand({
       name,
       doc: "Run the suffix of the menu showing that this key is.",
       run: () => {
@@ -543,7 +543,7 @@ function currentArgs(): string[] {
 let lastArgs: { prefix: string; args: string[] } | undefined;
 export function transientArgs(prefix: string | string[]): string[] {
   const names = Array.isArray(prefix) ? prefix : [prefix];
-  const current = ember.variable("transient-current-command");
+  const current = gnista.variable("transient-current-command");
   if (typeof current === "string" && names.includes(current) && lastArgs?.prefix === current) return lastArgs.args;
   return initialValue(names[0]);
 }
@@ -560,9 +560,9 @@ export function transientArgValue(arg: string, args: string[]): string | boolean
 function callSuffix(command: string): void {
   const prefix = active!.prefix;
   lastArgs = { prefix, args: currentArgs() };
-  ember.setOverridingMap(null);
-  ember.letBind({ "transient-current-command": prefix, "transient-current-prefix": prefix }, () => {
-    ember.callInteractively(command as ember.CommandName);
+  gnista.setOverridingMap(null);
+  gnista.letBind({ "transient-current-command": prefix, "transient-current-prefix": prefix }, () => {
+    gnista.callInteractively(command as gnista.CommandName);
   });
 }
 
@@ -581,7 +581,7 @@ function runSuffix(s: Suffix): void {
     stack.push({ prefix: active!.prefix, values, returnHere: kind === "recurse" });
     const buffer = active!.buffer;
     hide();
-    ember.setOverridingMap(null);
+    gnista.setOverridingMap(null);
     setup(s.command, buffer);
     return;
   }
@@ -603,11 +603,11 @@ function runSuffix(s: Suffix): void {
   exit(false);
   lastArgs = { prefix, args };
   try {
-    ember.letBind({ "transient-current-command": prefix, "transient-current-prefix": prefix }, () => ember.callInteractively(s.command as ember.CommandName));
+    gnista.letBind({ "transient-current-command": prefix, "transient-current-prefix": prefix }, () => gnista.callInteractively(s.command as gnista.CommandName));
   } finally {
     if (parent && !active) {
       values = parent.values;
-      setup(parent.prefix, ember.currentBuffer(), true);
+      setup(parent.prefix, gnista.currentBuffer(), true);
     } else if (!active) {
       stack.length = 0;
     }
@@ -617,10 +617,10 @@ function runSuffix(s: Suffix): void {
 /** Shows the menu again and binds its keys, its suffixes' predicates and descriptions worked out afresh. */
 function refresh(): void {
   if (!active) return;
-  const buffer = ember.bufferLiveP(active.buffer) ? active.buffer : ember.currentBuffer();
+  const buffer = gnista.bufferLiveP(active.buffer) ? active.buffer : gnista.currentBuffer();
   active.buffer = buffer;
   const defs = prefixes.get(active.prefix)!;
-  ember.withCurrentBuffer(buffer, () => {
+  gnista.withCurrentBuffer(buffer, () => {
     active!.layout = defs.groups.map((g) => makeLayout(active!.prefix, g)).filter((l): l is Layout => l !== undefined);
   });
   active.suffixes = flatten(active.layout);
@@ -648,35 +648,35 @@ function readInfix(s: Suffix): void {
     return;
   }
   const prompt = s.options.prompt ?? `${s.argument}`;
-  ember.setOverridingMap(null);
+  gnista.setOverridingMap(null);
   try {
     const value = s.options.reader
       ? s.options.reader(prompt, undefined)
       : s.options.choices
-        ? ember.completingRead(prompt, s.options.choices, { requireMatch: true })
-        : ember.readString(prompt);
+        ? gnista.completingRead(prompt, s.options.choices, { requireMatch: true })
+        : gnista.readString(prompt);
     values.set(s.command, value === "" ? undefined : value);
   } finally {
-    ember.setOverridingMap(MAP);
+    gnista.setOverridingMap(MAP);
   }
 }
 
 function invalid(message: string): void {
-  ember.ding();
-  ember.message(`${message}: \`${ember.thisSingleCommandKeys()}' (Use \`C-g' to abort, \`?' for help)`);
+  gnista.ding();
+  gnista.message(`${message}: \`${gnista.thisSingleCommandKeys()}' (Use \`C-g' to abort, \`?' for help)`);
 }
 
 /** Sets a prefix's menu up and shows it, as transient-setup. */
-function setup(prefix: string, buffer: ember.Buffer, keepValues = false): void {
+function setup(prefix: string, buffer: gnista.Buffer, keepValues = false): void {
   const defs = prefixes.get(prefix);
-  if (!defs) ember.signal("error", `Not a transient prefix: ${prefix}`);
+  if (!defs) gnista.signal("error", `Not a transient prefix: ${prefix}`);
   active = { prefix, layout: [], suffixes: [], buffer, window: 0 };
-  ember.withCurrentBuffer(buffer, () => {
+  gnista.withCurrentBuffer(buffer, () => {
     active!.layout = defs.groups.map((g) => makeLayout(prefix, g)).filter((l): l is Layout => l !== undefined);
   });
   active.suffixes = flatten(active.layout);
-  if (!keepValues) values = initValues(active.suffixes, ember.withCurrentBuffer(buffer, () => initialValue(prefix)));
-  ember.setVariable("transient-current-prefix", prefix);
+  if (!keepValues) values = initValues(active.suffixes, gnista.withCurrentBuffer(buffer, () => initialValue(prefix)));
+  gnista.setVariable("transient-current-prefix", prefix);
   show();
   bindKeys();
 }
@@ -684,19 +684,19 @@ function setup(prefix: string, buffer: ember.Buffer, keepValues = false): void {
 /** Leaves the menu, and with ALL every menu it was entered from. */
 function exit(all: boolean): void {
   hide();
-  ember.setOverridingMap(null);
+  gnista.setOverridingMap(null);
   active = undefined;
   if (all) stack.length = 0;
-  ember.setVariable("transient-current-prefix", null);
+  gnista.setVariable("transient-current-prefix", null);
 }
 
-const quitOne = ember.defineCommand({
+const quitOne = gnista.defineCommand({
   name: "transient-quit-one",
   doc: "Exit the current transient, returning to the outer one, if any.",
   run: () => {
     // Also from a suffix that runs it once the menu has gone, as casual's Back does.
     const parent = stack.pop();
-    const buffer = active?.buffer ?? ember.currentBuffer();
+    const buffer = active?.buffer ?? gnista.currentBuffer();
     exit(false);
     if (parent) {
       values = parent.values;
@@ -705,13 +705,13 @@ const quitOne = ember.defineCommand({
   },
 });
 
-const quitAll = ember.defineCommand({
+const quitAll = gnista.defineCommand({
   name: "transient-quit-all",
   doc: "Exit all transients without saving the transient stack.",
   run: () => exit(true),
 });
 
-const undefinedKey = ember.defineCommand({
+const undefinedKey = gnista.defineCommand({
   name: "transient-undefined",
   doc: "Warn the user that the pressed key is not bound to any suffix.",
   run: () => invalid("Unbound suffix"),
@@ -726,14 +726,14 @@ export function transientStackP(): boolean {
  * Defines a transient prefix command NAME, as transient-define-prefix: run,
  * it shows its groups below and takes the keys they show.
  */
-export function transientDefinePrefix(name: string, definition: PrefixDefinition): ember.DefinedCommand {
+export function transientDefinePrefix(name: string, definition: PrefixDefinition): gnista.DefinedCommand {
   prefixes.set(name, definition);
-  return ember.defineCommand({
+  return gnista.defineCommand({
     name,
     doc: definition.doc ?? "A transient menu.",
     run: () => {
       if (active) exit(true);
-      setup(name, ember.currentBuffer());
+      setup(name, gnista.currentBuffer());
     },
   });
 }
@@ -745,10 +745,10 @@ export function transientDefinePrefix(name: string, definition: PrefixDefinition
 export function transientDefineSuffix(
   name: string,
   definition: SuffixOptions & { key?: string; description?: Description; doc?: string; run: () => unknown },
-): ember.DefinedCommand {
+): gnista.DefinedCommand {
   definedSuffixes.set(name, definition);
-  return ember.defineCommand({ name, doc: definition.doc ?? "A transient suffix.", run: () => void definition.run() });
+  return gnista.defineCommand({ name, doc: definition.doc ?? "A transient suffix.", run: () => void definition.run() });
 }
 
 /** The suffix spec for transient-quit-one and transient-quit-all, for a layout to name. */
-transientDefineSuffix("transient-quit-one-suffix", { key: "C-g", description: "Quit", run: () => ember.call(quitOne) });
+transientDefineSuffix("transient-quit-one-suffix", { key: "C-g", description: "Quit", run: () => gnista.call(quitOne) });

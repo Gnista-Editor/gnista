@@ -1,12 +1,12 @@
 # Performance
 
-`crates/ember-script/tests/bench.rs` times large files as a user meets them:
+`crates/gnista-script/tests/bench.rs` times large files as a user meets them:
 
 ```bash
-cargo test --release -p ember-script --test bench -- --ignored --nocapture --test-threads 1
+cargo test --release -p gnista-script --test bench -- --ignored --nocapture --test-threads 1
 ```
 
-It opens a generated Org file of 50,000 lines (headings with states, tags, planning lines and property drawers, lists with checkboxes, tables, source blocks, links) and a 100 MB text file with `find-file`. Each key is timed with the redisplay and the rows a 120 × 50 window draws after it. `EMBER_BENCH_ORG_LINES` and `EMBER_BENCH_TEXT_MB` change the sizes.
+It opens a generated Org file of 50,000 lines (headings with states, tags, planning lines and property drawers, lists with checkboxes, tables, source blocks, links) and a 100 MB text file with `find-file`. Each key is timed with the redisplay and the rows a 120 × 50 window draws after it. `GNISTA_BENCH_ORG_LINES` and `GNISTA_BENCH_TEXT_MB` change the sizes.
 
 ## Results
 
@@ -81,7 +81,7 @@ On 2026-11-01, after the work of [multithreading.md](multithreading.md)'s steps 
 
 ### Where the slow keys' time goes
 
-Step 0 of [multithreading.md](multithreading.md): the bench's `profile_key` repeats one key in the 50,000-line Org file, and macOS's `sample` took a thousand samples a second of it for 10 seconds. Each sample counts for the nearest of three on its stack: QuickJS (interpreting scripts, its regexps and its memory), `ember-script`'s host functions and conversions, or `ember-core`'s primitives.
+Step 0 of [multithreading.md](multithreading.md): the bench's `profile_key` repeats one key in the 50,000-line Org file, and macOS's `sample` took a thousand samples a second of it for 10 seconds. Each sample counts for the nearest of three on its stack: QuickJS (interpreting scripts, its regexps and its memory), `gnista-script`'s host functions and conversions, or `gnista-core`'s primitives.
 
 | Key | Each | Interpreting | Host calls | Primitives | Where most of it is |
 | --- | ---: | ---: | ---: | ---: | --- |
@@ -93,18 +93,18 @@ So the rule in step 4 splits: `S-TAB` is primitives, and a faster engine would n
 
 Again on 2026-11-02, after the heading index and the overlay index, with the same Org file timed in GNU Emacs 30.2 (`emacs -nw -Q` in a 120 by 52 tmux, `execute-kbd-macro` and `(redisplay t)` after each key, the undo included as in `profile_key`):
 
-| Key | Ember | Interpreting | Host calls | Primitives | Emacs 30.2 |
+| Key | Gnista | Interpreting | Host calls | Primitives | Emacs 30.2 |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | `S-TAB`, from the start, repeated | 27.7 ms | 57% | 0% | 42% | 124 ms |
 | RET at a heading, then undo | 19.7 ms | 92% | 0% | 8% | 1.9 ms |
 | `C-c C-t` at a heading, then undo | 21.6 ms | 93% | 0% | 7% | 5.5 ms |
 | `find-file` of the file again | 23.0 ms | 36% | 0% | 64% | 89 ms |
 
-TAB on a heading takes 2.1 ms in Emacs and 10 in Ember. Of RET's and `C-c C-t`'s interpreting, a third is calls inside QuickJS and a fifth making objects and their properties (`JS_DefineProperty`, `add_shape_property`, `find_own_property`), most likely the new object Org's heading index makes for each heading after an edit, as [optimisation.md](optimisation.md) says. Host calls no longer show at all.
+TAB on a heading takes 2.1 ms in Emacs and 10 in Gnista. Of RET's and `C-c C-t`'s interpreting, a third is calls inside QuickJS and a fifth making objects and their properties (`JS_DefineProperty`, `add_shape_property`, `find_own_property`), most likely the new object Org's heading index makes for each heading after an edit, as [optimisation.md](optimisation.md) says. Host calls no longer show at all.
 
 Later on 2026-11-02, after Org's heading index stopped moving every heading after each edit (below), the same keys:
 
-| Key | Ember before | Ember after | Emacs 30.2 |
+| Key | Gnista before | Gnista after | Emacs 30.2 |
 | --- | ---: | ---: | ---: |
 | RET at a heading, then undo | 18.2 ms | 2.3 ms | 1.9 ms |
 | `C-c C-t` at a heading, then undo | 20.7 ms | 3.1 ms | 5.5 ms |
@@ -126,7 +126,7 @@ On 2026-11-03, with the V8 engine of [multithreading.md](multithreading.md)'s st
 | `find-file` of the file again | 21.1 ms | 15.2 ms | 89 ms |
 | startup, loading the packages | 40.9 ms | 25.6 ms | |
 
-In the bench's Org table, V8 against QuickJS: RET in a paragraph 4.97 against 11.92 ms, TAB on a heading 5.01 against 8.19, `C-c C-t` on a heading 2.07 against 3.10, `S-TAB` 14.0 against 22.6, `C-v` 1.46 against 1.73, typing 1.56 against 1.78; `(` and `)` with electric-pair (22.5 ms), `C-s` (6 ms) and `C-n` (0.5 ms) are the same on both, their time being in the editor's primitives. On V8 Ember is faster than Emacs 30.2 at every key measured against it, RET at a heading included.
+In the bench's Org table, V8 against QuickJS: RET in a paragraph 4.97 against 11.92 ms, TAB on a heading 5.01 against 8.19, `C-c C-t` on a heading 2.07 against 3.10, `S-TAB` 14.0 against 22.6, `C-v` 1.46 against 1.73, typing 1.56 against 1.78; `(` and `)` with electric-pair (22.5 ms), `C-s` (6 ms) and `C-n` (0.5 ms) are the same on both, their time being in the editor's primitives. On V8 Gnista is faster than Emacs 30.2 at every key measured against it, RET at a heading included.
 
 ## What changed
 
@@ -150,10 +150,10 @@ In the bench's Org table, V8 against QuickJS: RET in a paragraph 4.97 against 11
 - **Org's heading index moves headings only when they are read**, as Org's element cache shifts its elements lazily. An edit used to give every heading after it a new, frozen object; now it records a shift for the headings from an index on, and a heading is moved in place when it is read: the element parser reads the few around point through `headingsAsRead`, and `headings()` moves them all in one pass. Finding the heading a line is under, a heading's ancestors and the next heading at a level halve or stop early instead of passing over every heading, and copying the headings after one to search them (`all.slice(i + 1).find(...)`) became loops. `matchAll`, which compiles its regexp again on each call in QuickJS, became an `exec` loop in Org (`allMatches` in org-macs.ts). RET at a heading went from 18.2 to 2.3 ms, `C-c C-t` from 20.7 to 3.1, TAB on a heading from 3.2 to 0.9: Emacs 30.2 takes 1.9, 5.5 and 2.1.
 - **Opening a file reads only what it needs.** `normal-mode` took the whole buffer into a script to read its first line for a `-*-` cookie, and checking for a final newline when saving took it all to read the last character; each now reads only those, as Emacs does. Line ends are found by counting every line's end only when the file has a carriage return, which memchr looks for first. `find-file` of the 100 MB text file went from 138 to 65 ms; the 82 ms of 2026-10-28 was already 135 ms by 2026-10-31, before the work of that night.
 - **Balanced-expression scans pass plain text a run at a time.** A run of ASCII words, symbols, spaces and punctuation without syntax flags changes nothing in a list scan, nor anything but the count at the top of a sexp scan, which cannot run out when there are more expressions to pass than characters left, as electric-pair asks to check a balance to the buffer's end. `scan-lists` and `scan-sexps` read such runs from the rope's chunks a byte at a time; a test checks them against the character-at-a-time scan on 1,000 random texts. Typing `(` and `)` with electric-pair in the 100 MB file went from 1,963 to 270 ms.
-- **Org reads only the lines it needs when a file opens.** `#+TODO:` and `#+STARTUP:` lines, drawers and outline's headings came from a loop over every line, a call per line; `ember.matchingLines` finds the lines that can match in one pass. `find-file` of the 50,000-line Org file went from 93 to 22 ms.
+- **Org reads only the lines it needs when a file opens.** `#+TODO:` and `#+STARTUP:` lines, drawers and outline's headings came from a loop over every line, a call per line; `gnista.matchingLines` finds the lines that can match in one pass. `find-file` of the 50,000-line Org file went from 93 to 22 ms.
 - **Org's heading index follows changes.** Its after-change hook records each edit; the next time Org asks for its headings, those after an edit move by the edit's length, their line numbers found with one lookup per stretch between edits, and only the lines the edits touched are looked at again, as Org's element cache follows changes. Past 16 edits, or when the sizes show an edit ran no hooks, it finds every heading again. `org--headings-verify` checks the index against finding every heading again, which a test does after each of 400 random edits. RET went from 36 to 20 ms, `C-c C-t` from 23 to 9, `M-<down>` from 24 to 8.
-- **Org finds its headings in one pass in the editor and parses only new ones.** `ember.matchingLines` returns the lines an Emacs regexp matches at the start of, finding line starts a chunk of the text at a time and trying the regexp only where the first character can start it, and Org keeps each heading line's parse by its text, so after an edit only new or changed headings are parsed. In the 50,000-line Org file RET went from 63 to 36 ms, `C-c C-t` from 54 to 23, `M-<down>` from 53 to 24, and TAB on a heading from 19 to 10.
-- **The shipped packages are stripped when Ember is built**, as Emacs byte-compiles its preloaded Lisp: a new editor loads its packages in 42 ms (`startup` in the bench), where stripping them as it started took 60 ms, and 75 with the loop checks of [ADR 0049](adr/0049-quitting.md).
+- **Org finds its headings in one pass in the editor and parses only new ones.** `gnista.matchingLines` returns the lines an Emacs regexp matches at the start of, finding line starts a chunk of the text at a time and trying the regexp only where the first character can start it, and Org keeps each heading line's parse by its text, so after an edit only new or changed headings are parsed. In the 50,000-line Org file RET went from 63 to 36 ms, `C-c C-t` from 54 to 23, `M-<down>` from 53 to 24, and TAB on a heading from 19 to 10.
+- **The shipped packages are stripped when Gnista is built**, as Emacs byte-compiles its preloaded Lisp: a new editor loads its packages in 42 ms (`startup` in the bench), where stripping them as it started took 60 ms, and 75 with the loop checks of [ADR 0049](adr/0049-quitting.md).
 - **Overlays are found by id and by position without a pass over them all** (above): `S-TAB` in the 50,000-line Org file from 110 to 29 ms.
 - **Org's headings and element tree are kept between keys.** The element parser asked for the buffer's headings hundreds of times per key, and each time every line was read again. `headings()` and the parse are now kept until the text (the buffer's modified tick) or the TODO keywords change.
 - **The element parser parses only the branch it is asked about.** `elementAt` needs only the heading whose entry holds the position, its ancestors and their sections, as Org's `org-element-at-point` does, so the rest of the buffer is left unparsed.
@@ -162,17 +162,17 @@ In the bench's Org table, V8 against QuickJS: RET in a paragraph 4.97 against 11
 
 ## What is left
 
-[optimisation.md](optimisation.md) lists where Ember is still slower than it could be: Electric Pair mode's balance check in a large buffer, the objects Org's heading index makes after each edit, building the rope when a large file opens, and rows off the grid in the GUI.
+[optimisation.md](optimisation.md) lists where Gnista is still slower than it could be: Electric Pair mode's balance check in a large buffer, the objects Org's heading index makes after each edit, building the rope when a large file opens, and rows off the grid in the GUI.
 
 ## Running the tests
 
-Measured on 2026-11-02, on the same M1. Under `cargo test` the whole suite had run past 50 minutes without finishing, a binary at a time. With cargo-nextest, a hung test stopped after three minutes, dependencies optimised in debug builds, and ember-core's and ember-script's tests one binary each:
+Measured on 2026-11-02, on the same M1. Under `cargo test` the whole suite had run past 50 minutes without finishing, a binary at a time. With cargo-nextest, a hung test stopped after three minutes, dependencies optimised in debug builds, and gnista-core's and gnista-script's tests one binary each:
 
 | | Time |
 | --- | ---: |
-| Building every test after a change to the test crates | 11½ min, nearly all compiling ember-core and ember-script |
+| Building every test after a change to the test crates | 11½ min, nearly all compiling gnista-core and gnista-script |
 | Listing and running the 642 tests (`cargo nextest run --workspace`) | 28 s |
-| The GUI's snapshot tests (`cargo test -p ember-gui --test window --test images`) | 2½ min |
+| The GUI's snapshot tests (`cargo test -p gnista-gui --test window --test images`) | 2½ min |
 
 **macOS checks every new program before it first runs.** Before Developer Tools was turned on for the app running the commands (System Settings, Privacy & Security, Developer Tools), each newly linked test binary waited at `_dyld_start` for `syspolicyd`, and listing the tests after a change took 20 to 30 minutes. With it on, 28 seconds. On 2026-11-03 the session's builds waited 10 to 20 minutes again, with Developer Tools on for Claude.app and Terminal.app, and the cause was the folder: macOS's check of a new program looks through the folder it is in, and `target/debug/deps` held 1.1 million files, 137 GB, nearly all object files (`.o`) that cargo keeps beside each debug test program for its debug information and never deletes once a build has moved on (one build of the `all` test program leaves 512). A new two-line program took 45 s to start there, 0.3 s in an empty folder beside it, and so did a test program re-signed in another folder; release builds, with 4,000 files in their folder, started at once. Deleting the object files over a day old left 113,000 files, and a new program there starts in 0.7 s. `make tidy` does that, and `make check` runs it first. Merging the test files into one binary a crate cut the new programs per change from about seventy to about fifteen, which matters less once the check is off.
 

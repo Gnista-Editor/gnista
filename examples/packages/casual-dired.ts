@@ -5,7 +5,7 @@
 // and settings.
 //
 // Copyright (C) 2024-2025 Charles Y. Choi
-// Ported to Ember in 2026.
+// Ported to Gnista in 2026.
 //
 // This program is free software; you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -16,7 +16,7 @@ import { checkboxLabel, customizeVariable, unicodeDbGet } from "casual-lib";
 import { transientArgs, transientDefinePrefix, type Group, type SuffixSpec } from "transient";
 import { truthy } from "subr";
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "casual-dired-listing-switches",
   doc: 'The GNU ls arguments the "Sort By" menu starts with; -l is always given.',
   value: ["--all", "--human-readable", "--group-directories-first"],
@@ -37,13 +37,13 @@ const unicodeGet = (key: string): string => unicodeDbGet(key, unicodeDb);
 /** BUF with a space before it when TYPESET, as casual-dired-format-arrow. */
 const formatArrow = (buf: string, typeset: boolean): string => (typeset ? ` ${buf}` : buf);
 
-const useUnicode = (): boolean => truthy(ember.variable("casual-lib-use-unicode"));
+const useUnicode = (): boolean => truthy(gnista.variable("casual-lib-use-unicode"));
 
 /** Whether the buffer is the one find-lisp-find-dired makes, as casual-dired-lisp-dired-buffer-p. */
-const lispDiredBufferP = (): boolean => ember.derivedModeP("dired-mode") && ember.bufferName() === "*Find Lisp Dired*";
+const lispDiredBufferP = (): boolean => gnista.derivedModeP("dired-mode") && gnista.bufferName() === "*Find Lisp Dired*";
 
 /** Whether to show the "Sort By" menu, which needs GNU ls, as casual-dired-show-sort-by-tmenu-p. */
-const showSortByP = (): boolean => ember.variable("dired-use-ls-dired") === true && !lispDiredBufferP();
+const showSortByP = (): boolean => gnista.variable("dired-use-ls-dired") === true && !lispDiredBufferP();
 
 const nav = (key: string, arrow: string, what: string, command: string, more: object = {}): SuffixSpec => [
   key,
@@ -54,11 +54,11 @@ const nav = (key: string, arrow: string, what: string, command: string, more: ob
 
 const quitRow = (...items: SuffixSpec[]): Group => ({ class: "row", items: ["casual-lib-quit-one", ...items] });
 
-const findDiredRegexp = ember.defineCommand({
+const findDiredRegexp = gnista.defineCommand({
   name: "casual-dired-find-dired-regexp",
   doc: "Recursively find file names in the current directory matching a regexp, with find-lisp-find-dired.",
   params: [{ name: "regexp", prompt: "Find filenames with regex: " }],
-  run: (regexp: string) => ember.call("find-lisp-find-dired" as ember.CommandName, String(ember.variable("default-directory")), regexp),
+  run: (regexp: string) => gnista.call("find-lisp-find-dired" as gnista.CommandName, String(gnista.variable("default-directory")), regexp),
 });
 
 export const casualDiredTmenu = transientDefinePrefix("casual-dired-tmenu", {
@@ -80,7 +80,7 @@ export const casualDiredTmenu = transientDefinePrefix("casual-dired-tmenu", {
             ["w", "Copy Name", "dired-copy-filename-as-kill", { transient: false }],
             ["!", "Shell…", "dired-do-shell-command", { transient: false }],
             ["&", "Shell &… ", "dired-do-async-shell-command", { transient: false }],
-            [";", "Thumbnail", "image-dired-dired-toggle-marked-thumbs", { if: () => ember.displayGraphicP(), transient: true }],
+            [";", "Thumbnail", "image-dired-dired-toggle-marked-thumbs", { if: () => gnista.displayGraphicP(), transient: true }],
             ["W", "Browse", "browse-url-of-dired-file", { transient: false }],
           ],
         },
@@ -89,18 +89,18 @@ export const casualDiredTmenu = transientDefinePrefix("casual-dired-tmenu", {
           items: [
             ["s", "Sort By›", "casual-dired-sort-by-tmenu", { if: showSortByP, transient: true }],
             ["h", "Hide Details", "dired-hide-details-mode", {
-              description: () => checkboxLabel(ember.variable("dired-hide-details-mode"), "Hide Details"),
+              description: () => checkboxLabel(gnista.variable("dired-hide-details-mode"), "Hide Details"),
               ifNot: lispDiredBufferP,
               transient: true,
             }],
-            ["O", "Omit Mode", "dired-omit-mode", { description: () => checkboxLabel(ember.variable("dired-omit-mode"), "Omit Mode"), transient: true }],
+            ["O", "Omit Mode", "dired-omit-mode", { description: () => checkboxLabel(gnista.variable("dired-omit-mode"), "Omit Mode"), transient: true }],
             ["i", "Insert Subdir", "dired-maybe-insert-subdir", { ifNot: lispDiredBufferP, transient: true }],
             ["$", "Hide/Unhide Subdir", "dired-hide-subdir", { ifNot: lispDiredBufferP, transient: true }],
             ["k", "Kill (Hide) Line(s)", "dired-do-kill-lines", { transient: true }],
             ["g", "Revert", "revert-buffer", { transient: true }],
             ["f", "Filter by name…", findDiredRegexp],
             ["E", "Edit (wdired)", "wdired-change-to-wdired-mode"],
-            ["T", "Thumbnails…", "image-dired", { if: () => ember.displayGraphicP() }],
+            ["T", "Thumbnails…", "image-dired", { if: () => gnista.displayGraphicP() }],
             ["d", "Dired…", "dired"],
           ],
         },
@@ -342,8 +342,8 @@ function modeNameFromSort(criteria: string, reverse: boolean): string {
 
 /** Sorts the Dired buffer by CRITERIA with GNU ls's ARGS, as casual-dired--sort-by. */
 export function sortBy(criteria: string, args?: string[]): void {
-  if (truthy(ember.variable("dired-sort-inhibit"))) ember.signal("error", "Cannot sort this Dired buffer");
-  const listing = ember.variable("casual-dired-listing-switches");
+  if (truthy(gnista.variable("dired-sort-inhibit"))) gnista.signal("error", "Cannot sort this Dired buffer");
+  const listing = gnista.variable("casual-dired-listing-switches");
   let list = ["-l", ...(args && args.length > 0 ? args : Array.isArray(listing) ? listing.map(String) : [])];
   const sorts: { [c: string]: [string, string[]] } = {
     name: ["Sorted by name", []],
@@ -356,15 +356,15 @@ export function sortBy(criteria: string, args?: string[]): void {
     size: ["Sorted by size", ["-S"]],
   };
   const [message, extra] = sorts[criteria] ?? ["Default sorted by name", []];
-  ember.message(message);
+  gnista.message(message);
   list = [...extra, ...list];
-  ember.call("dired-sort-other" as ember.CommandName, list.join(" "));
-  ember.makeLocalVariable("mode-name");
-  ember.setVariable("mode-name", modeNameFromSort(criteria, list.includes("--reverse")));
+  gnista.call("dired-sort-other" as gnista.CommandName, list.join(" "));
+  gnista.makeLocalVariable("mode-name");
+  gnista.setVariable("mode-name", modeNameFromSort(criteria, list.includes("--reverse")));
 }
 
 const sortCommand = (criteria: string, label: string) =>
-  ember.defineCommand({
+  gnista.defineCommand({
     name: `casual-dired--sort-by-${criteria}`,
     doc: `Sort directory by ${label}, passing GNU ls the arguments of the Sort By menu.`,
     run: () => sortBy(criteria, transientArgs("casual-dired-sort-by-tmenu")),
@@ -412,17 +412,17 @@ transientDefinePrefix("casual-dired-sort-by-tmenu", {
 // Settings, after casual-dired-settings.el.
 
 const customize = (variable: string) =>
-  ember.defineCommand({
+  gnista.defineCommand({
     name: `casual-dired--customize-${variable}`,
     doc: `Customize ${variable}.`,
     run: () => customizeVariable(variable),
   });
 
-const about = ember.defineCommand({
+const about = gnista.defineCommand({
   name: "casual-dired-about",
   doc: "About Casual Dired.",
   run: () =>
-    ember.message("Casual Dired: a Transient user interface for Dired, by Charles Choi (https://github.com/kickingvegas/casual), ported to Ember."),
+    gnista.message("Casual Dired: a Transient user interface for Dired, by Charles Choi (https://github.com/kickingvegas/casual), ported to Gnista."),
 });
 
 transientDefinePrefix("casual-dired-settings-tmenu", {
@@ -436,17 +436,17 @@ transientDefinePrefix("casual-dired-settings-tmenu", {
             ["r", "Revert Policy", customize("dired-auto-revert-buffer"), { transient: false }],
             ["t", "Target Directory", customize("dired-dwim-target"), { transient: false }],
             ["T", "Use System Trash Can", customize("delete-by-moving-to-trash"), {
-              description: () => checkboxLabel(ember.variable("delete-by-moving-to-trash"), "Use System Trash Can"),
+              description: () => checkboxLabel(gnista.variable("delete-by-moving-to-trash"), "Use System Trash Can"),
               transient: false,
             }],
             "casual-lib-customize-unicode",
             "casual-lib-customize-hide-navigation",
             ["R", "Rename via VC", customize("dired-vc-rename-file"), {
-              description: () => checkboxLabel(ember.variable("dired-vc-rename-file"), "Rename via VC"),
+              description: () => checkboxLabel(gnista.variable("dired-vc-rename-file"), "Rename via VC"),
               transient: false,
             }],
             ["v", "Visit Truename", customize("find-file-visit-truename"), {
-              description: () => checkboxLabel(ember.variable("find-file-visit-truename"), "Visit Truename"),
+              description: () => checkboxLabel(gnista.variable("find-file-visit-truename"), "Visit Truename"),
             }],
           ],
         },
@@ -466,11 +466,11 @@ transientDefinePrefix("casual-dired-settings-tmenu", {
           description: "wdired",
           items: [
             ["p", "Allow Changing Permissions", customize("wdired-allow-to-change-permissions"), {
-              description: () => checkboxLabel(ember.variable("wdired-allow-to-change-permissions"), "Allow Changing Permissions"),
+              description: () => checkboxLabel(gnista.variable("wdired-allow-to-change-permissions"), "Allow Changing Permissions"),
               transient: false,
             }],
             ["L", "Allow Redirecting Links", customize("wdired-allow-to-redirect-links"), {
-              description: () => checkboxLabel(ember.variable("wdired-allow-to-redirect-links"), "Allow Redirecting Links"),
+              description: () => checkboxLabel(gnista.variable("wdired-allow-to-redirect-links"), "Allow Redirecting Links"),
               transient: false,
             }],
           ],

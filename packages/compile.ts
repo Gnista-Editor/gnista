@@ -23,10 +23,10 @@ for (const [name, doc, attributes] of [
   ["next-error", "The line next-error goes to, for a moment.", { inherit: "region" }],
   ["grep-match", "What grep matched.", { inherit: "match" }],
 ] as const) {
-  ember.defineFace({ name, doc, attributes });
+  gnista.defineFace({ name, doc, attributes });
 }
 
-const defvar = (name: string, value: ember.Value, doc: string, local = false) => ember.defineVariable({ name, value, doc, local });
+const defvar = (name: string, value: gnista.Value, doc: string, local = false) => gnista.defineVariable({ name, value, doc, local });
 defvar("compile-command", "make -k ", "The command M-x compile offers to run.");
 defvar("compilation-read-command", true, "Whether M-x compile asks for the command, rather than running compile-command.");
 defvar("compilation-ask-about-save", true, "Whether M-x compile asks before saving modified buffers; if nil, it saves them without asking.");
@@ -52,17 +52,17 @@ defvar("compilation-buffer-name-function", null, "A command naming the compilati
 defvar(
   "next-error-function",
   null,
-  "The function, named with ember.defun, that visits the next message's place in this buffer, as next-error calls it, in this buffer: with a count, and whether to start over.",
+  "The function, named with gnista.defun, that visits the next message's place in this buffer, as next-error calls it, in this buffer: with a count, and whether to start over.",
   true,
 );
 defvar("next-error-last-buffer", null, "The buffer next-error used last, which it uses again.");
 defvar("next-error-highlight", 0.5, "How many seconds next-error highlights the line it goes to, t to keep it until the next command, or nil not to.");
 defvar("next-error-verbose", true, "Whether next-error always says which buffer it used.");
 defvar("grep-command", "grep --color=auto -nH --null -e ", "The command M-x grep offers to run.");
-ember.defineHook("compilation-start-hook", "Run with the process just started, in its compilation buffer.");
-ember.defineHook("compilation-finish-functions", "Called with the compilation buffer and how it ended, as \"finished\\n\", when a compilation ends.");
-ember.defineHook("compilation-filter-hook", "Run in the compilation buffer after output is inserted.");
-ember.defineHook("next-error-hook", "Run after next-error visits a message's place.");
+gnista.defineHook("compilation-start-hook", "Run with the process just started, in its compilation buffer.");
+gnista.defineHook("compilation-finish-functions", "Called with the compilation buffer and how it ended, as \"finished\\n\", when a compilation ends.");
+gnista.defineHook("compilation-filter-hook", "Run in the compilation buffer after output is inserted.");
+gnista.defineHook("next-error-hook", "Run after next-error visits a message's place.");
 
 /** How many characters, as buffer positions count them, the first `i` UTF-16 units of `s` are. */
 const chars = (s: string, i = s.length): number => [...s.slice(0, i)].length;
@@ -113,7 +113,7 @@ type Message = {
   col?: number;
   type: 0 | 1 | 2;
   /** Where it points, once its file has been visited, moving with edits there as compile.el's markers do. */
-  marker?: ember.Marker;
+  marker?: gnista.Marker;
 };
 
 /**
@@ -121,17 +121,17 @@ type Message = {
  * read, kept by buffer rather than name, as a buffer-local variable would
  * be, so renaming the buffer keeps them.
  */
-const buffers = new Map<ember.Buffer, { messages: Message[]; parsed: number; current?: number; started: number; matches: number }>();
+const buffers = new Map<gnista.Buffer, { messages: Message[]; parsed: number; current?: number; started: number; matches: number }>();
 
 // A killed buffer's messages go with it, as its buffer-local variables would.
-ember.addHook("kill-buffer-hook", () => {
-  const key = ember.currentBuffer();
-  for (const m of buffers.get(key)?.messages ?? []) if (m.marker !== undefined) ember.deleteMarker(m.marker);
+gnista.addHook("kill-buffer-hook", () => {
+  const key = gnista.currentBuffer();
+  for (const m of buffers.get(key)?.messages ?? []) if (m.marker !== undefined) gnista.deleteMarker(m.marker);
   buffers.delete(key);
 });
 
-function state(buffer: ember.BufferLike = ember.currentBuffer()) {
-  const key = ember.getBuffer(buffer) ?? ember.signal("error", `No such buffer ${buffer}`);
+function state(buffer: gnista.BufferLike = gnista.currentBuffer()) {
+  const key = gnista.getBuffer(buffer) ?? gnista.signal("error", `No such buffer ${buffer}`);
   let s = buffers.get(key);
   if (s === undefined) {
     s = { messages: [], parsed: 0, started: Date.now(), matches: 0 };
@@ -145,15 +145,15 @@ const faceFor = (type: number): string => (type === 2 ? "compilation-error" : ty
 /** Finds the messages in the lines output has completed, highlighting them, as compilation--parse-region. */
 function parseNewLines(): void {
   const s = state();
-  const formats = (ember.variable("compilation-error-regexp-alist") as ember.Value[] | null ?? [])
+  const formats = (gnista.variable("compilation-error-regexp-alist") as gnista.Value[] | null ?? [])
     .filter((n): n is string => typeof n === "string" && FORMATS[n] !== undefined)
     .map((n) => FORMATS[n]);
-  const grep = ember.derivedModeP("grep-mode");
-  let line = ember.lineOf(s.parsed);
-  const last = ember.lineCount() - 1;
+  const grep = gnista.derivedModeP("grep-mode");
+  let line = gnista.lineOf(s.parsed);
+  const last = gnista.lineCount() - 1;
   while (line < last) {
-    const start = ember.lineStart(line);
-    const text = ember.lineText(line);
+    const start = gnista.lineStart(line);
+    const text = gnista.lineText(line);
     for (const f of formats) {
       const m = f.re.exec(text);
       if (m === null || m.groups === undefined) continue;
@@ -165,30 +165,30 @@ function parseNewLines(): void {
       // cargo says what it is on the line before the arrow.
       if (f === FORMATS.cargo && line > 0) {
         for (let l = line - 1; l >= 0 && l >= line - 3; l--) {
-          const t = ember.lineText(l);
+          const t = gnista.lineText(l);
           if (/^warning/.test(t)) type = 1;
           if (/^(?:note|help)/.test(t)) type = 0;
           if (/^(?:warning|error|note|help)/.test(t)) break;
         }
       }
       const fileAt = start + chars(text, m.index + m[0].indexOf(file));
-      s.messages.push({ start, end: ember.lineEnd(line), file, line: lineNo, col: g.col === undefined ? undefined : Number(g.col), type });
+      s.messages.push({ start, end: gnista.lineEnd(line), file, line: lineNo, col: g.col === undefined ? undefined : Number(g.col), type });
       if (grep) s.matches++;
       // As compilation-mode's font-lock puts them: silently.
-      ember.withSilentModifications(() => {
-        ember.putTextProperty(fileAt, fileAt + chars(file), "face", grep ? "compilation-info" : faceFor(type));
+      gnista.withSilentModifications(() => {
+        gnista.putTextProperty(fileAt, fileAt + chars(file), "face", grep ? "compilation-info" : faceFor(type));
         const lineText = String(lineNo);
         const lineAt = text.indexOf(lineText, m.index + m[0].indexOf(file) + file.length);
         if (lineAt >= 0) {
           const at = start + chars(text, lineAt);
-          ember.putTextProperty(at, at + lineText.length, "face", "compilation-line-number");
+          gnista.putTextProperty(at, at + lineText.length, "face", "compilation-line-number");
         }
       });
       break;
     }
     line++;
   }
-  s.parsed = ember.lineStart(last);
+  s.parsed = gnista.lineStart(last);
 }
 
 // --- Running a compilation ---------------------------------------------------
@@ -212,7 +212,7 @@ function duration(ms: number): string {
 
 /** Runs `fn` with the buffer writable, as inhibit-read-only. */
 function writable<T>(fn: () => T): T {
-  return ember.letBind({ "inhibit-read-only": true }, fn);
+  return gnista.letBind({ "inhibit-read-only": true }, fn);
 }
 
 /** The mode's name without -mode, as it goes in the -*- line: compilation or grep. */
@@ -238,37 +238,37 @@ function exitMessage(event: string, matches: number, grep: boolean): string {
 async function compilationStart(command: string, mode: string, directory: string): Promise<void> {
   const modeName = mode === "grep-mode" ? "Grep" : "Compilation";
   const bufferName = `*${modeStem(mode)}*`;
-  const existing = ember.getBufferProcess(bufferName);
+  const existing = gnista.getBufferProcess(bufferName);
   const start = () => {
-    if (existing !== undefined && ember.processStatus(existing) === "run") ember.deleteProcess(existing);
-    ember.getBufferCreate(bufferName);
-    ember.withCurrentBuffer(bufferName, () => {
-      writable(() => ember.deleteRegion(0, ember.bufferSize()));
-      ember.call(mode as ember.CommandName);
-      ember.setVariable("default-directory", directory);
-      ember.setVariable("compilation-directory", directory);
+    if (existing !== undefined && gnista.processStatus(existing) === "run") gnista.deleteProcess(existing);
+    gnista.getBufferCreate(bufferName);
+    gnista.withCurrentBuffer(bufferName, () => {
+      writable(() => gnista.deleteRegion(0, gnista.bufferSize()));
+      gnista.call(mode as gnista.CommandName);
+      gnista.setVariable("default-directory", directory);
+      gnista.setVariable("compilation-directory", directory);
       // And for recompile from anywhere, as compile sets its default.
-      ember.setDefault("compilation-directory", directory);
-      ember.setVariable("compilation-arguments", [command, mode]);
-      const key = ember.currentBuffer();
-      for (const m of buffers.get(key)?.messages ?? []) if (m.marker !== undefined) ember.deleteMarker(m.marker);
+      gnista.setDefault("compilation-directory", directory);
+      gnista.setVariable("compilation-arguments", [command, mode]);
+      const key = gnista.currentBuffer();
+      for (const m of buffers.get(key)?.messages ?? []) if (m.marker !== undefined) gnista.deleteMarker(m.marker);
       buffers.set(key, { messages: [], parsed: 0, started: Date.now(), matches: 0 });
       writable(() => {
-        ember.insert(
-          `-*- mode: ${modeStem(mode)}; default-directory: ${JSON.stringify(ember.abbreviateFileName(directory))} -*-\n` +
+        gnista.insert(
+          `-*- mode: ${modeStem(mode)}; default-directory: ${JSON.stringify(gnista.abbreviateFileName(directory))} -*-\n` +
             `${modeName} started at ${timeString()}\n\n${command}\n`,
         );
       });
-      state().parsed = ember.bufferSize();
-      ember.setBufferModified(false);
-      ember.gotoChar(truthy(ember.variable("compilation-scroll-output")) ? ember.bufferSize() : 0);
+      state().parsed = gnista.bufferSize();
+      gnista.setBufferModified(false);
+      gnista.gotoChar(truthy(gnista.variable("compilation-scroll-output")) ? gnista.bufferSize() : 0);
     });
-    ember.setVariable("next-error-last-buffer", ember.getBuffer(bufferName) ?? null);
-    const env: { [k: string]: string } = { INSIDE_EMACS: "ember,compile" };
-    for (const e of (ember.variable("compilation-environment") as ember.Value[] | null) ?? []) {
+    gnista.setVariable("next-error-last-buffer", gnista.getBuffer(bufferName) ?? null);
+    const env: { [k: string]: string } = { INSIDE_EMACS: "gnista,compile" };
+    for (const e of (gnista.variable("compilation-environment") as gnista.Value[] | null) ?? []) {
       if (typeof e === "string" && e.includes("=")) env[e.slice(0, e.indexOf("="))] = e.slice(e.indexOf("=") + 1);
     }
-    const proc = ember.makeProcess({
+    const proc = gnista.makeProcess({
       name: modeStem(mode),
       buffer: bufferName,
       command: ["/bin/sh", "-c", command],
@@ -277,12 +277,12 @@ async function compilationStart(command: string, mode: string, directory: string
       filter: (p, output) => compilationFilter(p, output),
       sentinel: (p, event) => compilationSentinel(p, event, modeName),
     });
-    ember.withCurrentBuffer(bufferName, () => ember.runHooks("compilation-start-hook", proc));
-    ember.call("display-buffer", bufferName);
+    gnista.withCurrentBuffer(bufferName, () => gnista.runHooks("compilation-start-hook", proc));
+    gnista.call("display-buffer", bufferName);
   };
-  if (existing !== undefined && ember.processStatus(existing) === "run" && !truthy(ember.variable("compilation-always-kill"))) {
-    if (!(await ember.yesOrNoP(`A ${modeStem(mode)} process is running; kill it? `))) {
-      ember.signal("error", `Cannot have two processes in ‘${bufferName}’ at once`);
+  if (existing !== undefined && gnista.processStatus(existing) === "run" && !truthy(gnista.variable("compilation-always-kill"))) {
+    if (!(await gnista.yesOrNoP(`A ${modeStem(mode)} process is running; kill it? `))) {
+      gnista.signal("error", `Cannot have two processes in ‘${bufferName}’ at once`);
     }
   }
   start();
@@ -290,122 +290,122 @@ async function compilationStart(command: string, mode: string, directory: string
 
 /** Inserts output at the process mark, as compilation-filter, and finds the messages in it. */
 function compilationFilter(proc: string, output: string): void {
-  const buffer = ember.processBuffer(proc);
-  if (buffer === undefined || !ember.bufferList().includes(buffer)) return;
-  ember.withCurrentBuffer(buffer, () => {
-    const mark = ember.processMark(proc)!;
-    const at = ember.markerPosition(mark) ?? ember.bufferSize();
-    const moving = ember.point() === at;
-    const point = ember.makeMarker();
+  const buffer = gnista.processBuffer(proc);
+  if (buffer === undefined || !gnista.bufferList().includes(buffer)) return;
+  gnista.withCurrentBuffer(buffer, () => {
+    const mark = gnista.processMark(proc)!;
+    const at = gnista.markerPosition(mark) ?? gnista.bufferSize();
+    const moving = gnista.point() === at;
+    const point = gnista.makeMarker();
     const text = stripAnsi(output);
     writable(() => {
-      ember.gotoChar(at);
-      ember.insert(text);
-      ember.setMarker(mark, ember.point());
+      gnista.gotoChar(at);
+      gnista.insert(text);
+      gnista.setMarker(mark, gnista.point());
     });
-    ember.gotoChar(moving ? ember.markerPosition(mark)! : ember.markerPosition(point)!);
-    ember.deleteMarker(point);
+    gnista.gotoChar(moving ? gnista.markerPosition(mark)! : gnista.markerPosition(point)!);
+    gnista.deleteMarker(point);
     parseNewLines();
     // grep separates the file name with a NUL, shown as a colon, as grep-mode's display property does.
     // Only in the lines read, so an unfinished one is still read with its NUL.
-    if (ember.derivedModeP("grep-mode")) writable(() => ember.substCharInRegion(at, Math.max(at, state().parsed), "\0", ":"));
-    ember.setBufferModified(false);
-    ember.runHooks("compilation-filter-hook");
+    if (gnista.derivedModeP("grep-mode")) writable(() => gnista.substCharInRegion(at, Math.max(at, state().parsed), "\0", ":"));
+    gnista.setBufferModified(false);
+    gnista.runHooks("compilation-filter-hook");
   });
 }
 
 /** Notes how the compilation ended, as compilation-handle-exit. */
 function compilationSentinel(proc: string, event: string, modeName: string): void {
-  const buffer = ember.processBuffer(proc);
-  if (buffer === undefined || !ember.bufferList().includes(buffer)) return;
+  const buffer = gnista.processBuffer(proc);
+  if (buffer === undefined || !gnista.bufferList().includes(buffer)) return;
   let message = "";
-  ember.withCurrentBuffer(buffer, () => {
+  gnista.withCurrentBuffer(buffer, () => {
     // Output not yet ended by a newline is a line too.
-    if (ember.bufferSize() > 0 && ember.bufferText(ember.bufferSize() - 1, ember.bufferSize()) !== "\n") {
+    if (gnista.bufferSize() > 0 && gnista.bufferText(gnista.bufferSize() - 1, gnista.bufferSize()) !== "\n") {
       writable(() => {
-        ember.gotoChar(ember.bufferSize());
-        ember.insert("\n");
+        gnista.gotoChar(gnista.bufferSize());
+        gnista.insert("\n");
       });
     }
     parseNewLines();
     const s = state();
-    const status = exitMessage(event, s.matches, ember.derivedModeP("grep-mode"));
-    const point = ember.makeMarker();
+    const status = exitMessage(event, s.matches, gnista.derivedModeP("grep-mode"));
+    const point = gnista.makeMarker();
     writable(() => {
-      ember.gotoChar(ember.bufferSize());
-      const from = ember.point();
-      ember.insert(`\n${modeName} ${status.replace(/\n$/, "")} at ${timeString()}, duration ${duration(Date.now() - s.started)}\n`);
-      const failed = !event.startsWith("finished") && !(ember.derivedModeP("grep-mode") && /code 1\n/.test(event));
+      gnista.gotoChar(gnista.bufferSize());
+      const from = gnista.point();
+      gnista.insert(`\n${modeName} ${status.replace(/\n$/, "")} at ${timeString()}, duration ${duration(Date.now() - s.started)}\n`);
+      const failed = !event.startsWith("finished") && !(gnista.derivedModeP("grep-mode") && /code 1\n/.test(event));
       // Emacs inserts these propertized, so they are no change of their own.
-      ember.withSilentModifications(() => {
-        ember.putTextProperty(from + 1, from + 1 + modeName.length, "face", "compilation-info");
+      gnista.withSilentModifications(() => {
+        gnista.putTextProperty(from + 1, from + 1 + modeName.length, "face", "compilation-info");
         const word = from + 2 + modeName.length;
-        ember.putTextProperty(word, word + status.replace(/\n$/, "").length, "face", failed ? "compilation-error" : "compilation-info");
+        gnista.putTextProperty(word, word + status.replace(/\n$/, "").length, "face", failed ? "compilation-error" : "compilation-info");
       });
     });
-    ember.gotoChar(ember.markerPosition(point)!);
-    ember.deleteMarker(point);
-    ember.setBufferModified(false);
+    gnista.gotoChar(gnista.markerPosition(point)!);
+    gnista.deleteMarker(point);
+    gnista.setBufferModified(false);
     message = `${modeName} ${status.replace(/\n$/, "")}`;
   });
-  ember.message(message);
-  ember.runHooks("compilation-finish-functions", buffer, event);
+  gnista.message(message);
+  gnista.runHooks("compilation-finish-functions", buffer, event);
 }
 
 /** The directory a buffer's commands run in, ending in a slash. */
-const currentDirectory = (): string => ember.fileNameAsDirectory(ember.expandFileName("."));
+const currentDirectory = (): string => gnista.fileNameAsDirectory(gnista.expandFileName("."));
 
 /** Saves modified buffers, asking as compilation-ask-about-save says. */
 function saveSomeBuffers(): void {
-  if (truthy(ember.variable("compilation-ask-about-save"))) {
-    ember.call("save-some-buffers");
+  if (truthy(gnista.variable("compilation-ask-about-save"))) {
+    gnista.call("save-some-buffers");
   } else {
-    ember.callWithPrefix([4], "save-some-buffers");
+    gnista.callWithPrefix([4], "save-some-buffers");
   }
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "compile",
   doc:
     "Run a shell command in the background, make -k by default, showing its output in *compilation*, where error messages are found and highlighted. " +
     "M-g n (next-error) then visits each error's place in turn. Asks to save modified buffers first.",
   run: async () => {
     const directory = currentDirectory();
-    let command = String(ember.variable("compile-command") ?? "");
+    let command = String(gnista.variable("compile-command") ?? "");
     // As compilation-read-command says, or always with a prefix argument.
-    if (truthy(ember.variable("compilation-read-command")) || ember.prefixArg() !== null) {
-      command = await ember.readString("Compile command: ", { initial: command, history: "compile-history" });
+    if (truthy(gnista.variable("compilation-read-command")) || gnista.prefixArg() !== null) {
+      command = await gnista.readString("Compile command: ", { initial: command, history: "compile-history" });
     }
-    ember.setDefault("compile-command", command);
+    gnista.setDefault("compile-command", command);
     saveSomeBuffers();
     compilationStart(command, "compilation-mode", directory);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "recompile",
   doc: "Run the last compilation again, or this buffer's, in the directory it ran in.",
   run: () => {
-    const args = ember.variable("compilation-arguments");
-    const command = Array.isArray(args) && typeof args[0] === "string" ? args[0] : String(ember.variable("compile-command") ?? "");
+    const args = gnista.variable("compilation-arguments");
+    const command = Array.isArray(args) && typeof args[0] === "string" ? args[0] : String(gnista.variable("compile-command") ?? "");
     const mode = Array.isArray(args) && typeof args[1] === "string" ? args[1] : "compilation-mode";
-    const dir = ember.variable("compilation-directory");
+    const dir = gnista.variable("compilation-directory");
     const directory = typeof dir === "string" ? dir : currentDirectory();
     saveSomeBuffers();
     compilationStart(command, mode, directory);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "kill-compilation",
   doc: "Kill the compilation this buffer shows, or the last one.",
   run: () => {
-    const buffer = ember.derivedModeP("compilation-mode") ? ember.bufferName() : String(ember.variable("next-error-last-buffer") ?? "*compilation*");
-    const proc = ember.getBufferProcess(buffer);
-    if (proc === undefined || ember.processStatus(proc) !== "run") {
+    const buffer = gnista.derivedModeP("compilation-mode") ? gnista.bufferName() : String(gnista.variable("next-error-last-buffer") ?? "*compilation*");
+    const proc = gnista.getBufferProcess(buffer);
+    if (proc === undefined || gnista.processStatus(proc) !== "run") {
       throw new Error(`The ${buffer.replace(/^\*|\*$/g, "")} process is not running`);
     }
-    ember.interruptProcess(proc);
+    gnista.interruptProcess(proc);
   },
 });
 
@@ -421,7 +421,7 @@ const counted = (m: Message): boolean => m.type >= num("compilation-skip-thresho
  */
 function nthMessage(n: number, from: number): Message {
   const s = state();
-  const word = String(ember.variable("compilation-error") ?? "error");
+  const word = String(gnista.variable("compilation-error") ?? "error");
   const list = s.messages.filter(counted);
   // From the message containing `from`, if any.
   const here = s.messages.findIndex((m) => m.start <= from && from <= m.end);
@@ -434,7 +434,7 @@ function nthMessage(n: number, from: number): Message {
   if (n > 0) {
     const after = list.filter((m) => m.start > pos);
     if (after.length < n) {
-      const running = ember.getBufferProcess(ember.bufferName()) !== undefined;
+      const running = gnista.getBufferProcess(gnista.bufferName()) !== undefined;
       throw new Error(running ? `No more ${word}s yet` : `Past last ${word}`);
     }
     return after[n - 1];
@@ -445,35 +445,35 @@ function nthMessage(n: number, from: number): Message {
 }
 
 function compilationNextError(n: number): void {
-  if (!ember.derivedModeP("compilation-mode")) throw new Error("Not in a compilation buffer");
-  ember.gotoChar(nthMessage(n, ember.point()).start);
+  if (!gnista.derivedModeP("compilation-mode")) throw new Error("Not in a compilation buffer");
+  gnista.gotoChar(nthMessage(n, gnista.point()).start);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "compilation-next-error",
   doc: "Move to the next error message, or as many as the prefix argument says, without visiting it.",
-  run: () => compilationNextError(ember.prefixNumericValue(ember.prefixArg())),
+  run: () => compilationNextError(gnista.prefixNumericValue(gnista.prefixArg())),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "compilation-previous-error",
   doc: "Move to the error message before, or as many back as the prefix argument says, without visiting it.",
-  run: () => compilationNextError(-ember.prefixNumericValue(ember.prefixArg())),
+  run: () => compilationNextError(-gnista.prefixNumericValue(gnista.prefixArg())),
 });
 
 /** The file a message names, relative to the directory its compilation ran in. */
 function messageFile(m: Message): string {
-  const dir = ember.variable("compilation-directory");
+  const dir = gnista.variable("compilation-directory");
   const base = typeof dir === "string" ? dir : currentDirectory();
-  return ember.expandFileName(m.file.startsWith("/") || m.file.startsWith("~") ? m.file : base + m.file);
+  return gnista.expandFileName(m.file.startsWith("/") || m.file.startsWith("~") ? m.file : base + m.file);
 }
 
 let highlight: number | undefined;
 let highlightBuffer: string | undefined;
 
 function clearHighlight(): void {
-  if (highlight !== undefined && highlightBuffer !== undefined && ember.bufferList().includes(highlightBuffer)) {
+  if (highlight !== undefined && highlightBuffer !== undefined && gnista.bufferList().includes(highlightBuffer)) {
     const o = highlight;
-    ember.withCurrentBuffer(highlightBuffer, () => ember.deleteOverlay(o));
+    gnista.withCurrentBuffer(highlightBuffer, () => gnista.deleteOverlay(o));
   }
   highlight = undefined;
 }
@@ -483,110 +483,110 @@ function clearHighlight(): void {
  * its file at its line and column, as compilation-goto-locus.
  */
 function gotoLocus(compilation: string, m: Message): void {
-  const file = ember.withCurrentBuffer(compilation, () => messageFile(m));
-  if (!ember.fileExists(file)) throw new Error(`Cannot find file ${file}`);
-  const firstColumn = ember.withCurrentBuffer(compilation, () => num("compilation-first-column", 1));
-  const fromCompilation = ember.windowBuffer() === compilation;
-  let window = ember.windowList().find((w) => ember.windowBuffer(w) === compilation);
+  const file = gnista.withCurrentBuffer(compilation, () => messageFile(m));
+  if (!gnista.fileExists(file)) throw new Error(`Cannot find file ${file}`);
+  const firstColumn = gnista.withCurrentBuffer(compilation, () => num("compilation-first-column", 1));
+  const fromCompilation = gnista.windowBuffer() === compilation;
+  let window = gnista.windowList().find((w) => gnista.windowBuffer(w) === compilation);
   if (!(fromCompilation && window !== undefined)) {
-    ember.call("display-buffer", compilation);
-    window = ember.windowList().find((w) => ember.windowBuffer(w) === compilation);
+    gnista.call("display-buffer", compilation);
+    window = gnista.windowList().find((w) => gnista.windowBuffer(w) === compilation);
   }
   // The message at the top of its window's view, point on it.
   if (window !== undefined) {
-    const selected = ember.selectedWindow();
-    ember.selectWindow(window);
-    ember.gotoChar(m.start);
-    ember.selectWindow(selected);
+    const selected = gnista.selectedWindow();
+    gnista.selectWindow(window);
+    gnista.gotoChar(m.start);
+    gnista.selectWindow(selected);
   }
-  const target = ember.findFileNoselect(file);
+  const target = gnista.findFileNoselect(file);
   // The first time a file's message is visited, every message in that file
   // gets a marker, so edits there before going to the next keep them right.
-  if (m.marker === undefined || ember.markerBuffer(m.marker) !== target) {
-    const all = ember.withCurrentBuffer(compilation, () => state().messages.filter((x) => x.marker === undefined && messageFile(x) === file));
-    ember.withCurrentBuffer(target, () => {
+  if (m.marker === undefined || gnista.markerBuffer(m.marker) !== target) {
+    const all = gnista.withCurrentBuffer(compilation, () => state().messages.filter((x) => x.marker === undefined && messageFile(x) === file));
+    gnista.withCurrentBuffer(target, () => {
       for (const x of all.includes(m) ? all : [...all, m]) {
-        ember.saveExcursion(() => {
-          ember.gotoChar(ember.lineStart(Math.max(0, Math.min(x.line - 1, ember.lineCount() - 1))));
-          if (x.col !== undefined) ember.moveToColumn(Math.max(0, x.col - firstColumn));
-          x.marker = ember.makeMarker();
+        gnista.saveExcursion(() => {
+          gnista.gotoChar(gnista.lineStart(Math.max(0, Math.min(x.line - 1, gnista.lineCount() - 1))));
+          if (x.col !== undefined) gnista.moveToColumn(Math.max(0, x.col - firstColumn));
+          x.marker = gnista.makeMarker();
         });
       }
     });
   }
-  if (fromCompilation || ember.selectedWindow() === window) ember.call("pop-to-buffer", target);
-  else ember.call("switch-to-buffer", target);
-  ember.gotoChar(ember.markerPosition(m.marker!)!);
+  if (fromCompilation || gnista.selectedWindow() === window) gnista.call("pop-to-buffer", target);
+  else gnista.call("switch-to-buffer", target);
+  gnista.gotoChar(gnista.markerPosition(m.marker!)!);
   // The line flashes, as next-error-highlight says.
   clearHighlight();
-  const secs = ember.variable("next-error-highlight");
+  const secs = gnista.variable("next-error-highlight");
   if (truthy(secs)) {
-    const line = ember.lineOf(ember.point());
-    highlight = ember.makeOverlay(ember.lineStart(line), ember.lineEnd(line), { face: "next-error", priority: 1000 });
-    highlightBuffer = ember.bufferName();
-    if (typeof secs === "number") ember.runWithTimer(secs, null, clearHighlight);
+    const line = gnista.lineOf(gnista.point());
+    highlight = gnista.makeOverlay(gnista.lineStart(line), gnista.lineEnd(line), { face: "next-error", priority: 1000 });
+    highlightBuffer = gnista.bufferName();
+    if (typeof secs === "number") gnista.runWithTimer(secs, null, clearHighlight);
   }
 }
 
 /** Moves `n` messages in a compilation buffer and visits the place, as compilation-next-error-function. */
 function compilationNextErrorFunction(n: number, reset: boolean): void {
-  const buffer = ember.bufferName();
+  const buffer = gnista.bufferName();
   const s = state();
   if (reset) s.current = undefined;
-  const from = s.current ?? (n === 0 ? ember.point() : 0);
+  const from = s.current ?? (n === 0 ? gnista.point() : 0);
   const m = nthMessage(n, from);
   s.current = m.start;
   // The overlay arrow at the message's line: a triangle in the fringe, or
   // nothing on a terminal, its string being empty here.
-  const at = ember.lineStart(ember.lineOf(m.start));
-  const arrow = ember.variable("overlay-arrow-position");
-  if (arrow instanceof ember.Marker) ember.setMarker(arrow, at);
-  else ember.setVariable("overlay-arrow-position", ember.makeMarker(at));
+  const at = gnista.lineStart(gnista.lineOf(m.start));
+  const arrow = gnista.variable("overlay-arrow-position");
+  if (arrow instanceof gnista.Marker) gnista.setMarker(arrow, at);
+  else gnista.setVariable("overlay-arrow-position", gnista.makeMarker(at));
   gotoLocus(buffer, m);
 }
 
-ember.defun("compilation-next-error-function", compilationNextErrorFunction);
+gnista.defun("compilation-next-error-function", compilationNextErrorFunction);
 
 /** Whether a buffer has messages next-error can go to, as next-error-buffer-p. */
-function nextErrorBuffer(b: ember.BufferLike): boolean {
-  const buffer = ember.getBuffer(b);
-  return buffer !== undefined && ember.withCurrentBuffer(buffer, () => typeof ember.variable("next-error-function") === "string");
+function nextErrorBuffer(b: gnista.BufferLike): boolean {
+  const buffer = gnista.getBuffer(b);
+  return buffer !== undefined && gnista.withCurrentBuffer(buffer, () => typeof gnista.variable("next-error-function") === "string");
 }
 
 /** The buffer next-error uses, as next-error-find-buffer. */
-function findNextErrorBuffer(): ember.Buffer {
+function findNextErrorBuffer(): gnista.Buffer {
   // The buffer it used last, kept as a buffer, so renaming it does not lose it.
-  const last = ember.variable("next-error-last-buffer");
-  if ((typeof last === "string" || ember.bufferLiveP(last)) && nextErrorBuffer(last as ember.BufferLike)) return ember.getBuffer(last as ember.BufferLike)!;
-  if (nextErrorBuffer(ember.currentBuffer())) return ember.currentBuffer();
-  const any = ember.bufferList().find(nextErrorBuffer);
-  if (any !== undefined) return ember.getBuffer(any)!;
+  const last = gnista.variable("next-error-last-buffer");
+  if ((typeof last === "string" || gnista.bufferLiveP(last)) && nextErrorBuffer(last as gnista.BufferLike)) return gnista.getBuffer(last as gnista.BufferLike)!;
+  if (nextErrorBuffer(gnista.currentBuffer())) return gnista.currentBuffer();
+  const any = gnista.bufferList().find(nextErrorBuffer);
+  if (any !== undefined) return gnista.getBuffer(any)!;
   throw new Error("No buffers contain error message locations");
 }
 
 /** Goes to the `n`th next message's place, as next-error. */
 function nextError(n: number, reset: boolean, select = true): void {
   const buffer = findNextErrorBuffer();
-  const selected = ember.selectedWindow();
-  const fn = ember.withCurrentBuffer(buffer, () => String(ember.variable("next-error-function")));
+  const selected = gnista.selectedWindow();
+  const fn = gnista.withCurrentBuffer(buffer, () => String(gnista.variable("next-error-function")));
   // In that buffer, as Emacs calls it; the windows it changes stay changed.
-  ember.withCurrentBuffer(buffer, () => ember.funcall(fn, n, reset));
-  const previous = ember.variable("next-error-last-buffer");
-  ember.setVariable("next-error-last-buffer", buffer);
-  ember.runHooks("next-error-hook");
-  if (truthy(ember.variable("next-error-verbose")) || previous !== buffer) {
+  gnista.withCurrentBuffer(buffer, () => gnista.funcall(fn, n, reset));
+  const previous = gnista.variable("next-error-last-buffer");
+  gnista.setVariable("next-error-last-buffer", buffer);
+  gnista.runHooks("next-error-hook");
+  if (truthy(gnista.variable("next-error-verbose")) || previous !== buffer) {
     const which = reset ? "First" : n === 0 ? "Current" : n < 0 ? "Previous" : "Next";
-    ember.message(`${which} locus from ${buffer.name}`);
+    gnista.message(`${which} locus from ${buffer.name}`);
   }
-  if (!select) ember.selectWindow(selected);
+  if (!select) gnista.selectWindow(selected);
 }
 
 const prefixCount = (): [number, boolean] => {
-  const arg = ember.prefixArg();
-  return Array.isArray(arg) ? [1, true] : [ember.prefixNumericValue(arg), false];
+  const arg = gnista.prefixArg();
+  return Array.isArray(arg) ? [1, true] : [gnista.prefixNumericValue(arg), false];
 };
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "next-error",
   doc:
     "Visit the place of the next error message, or grep hit, in the compilation or grep buffer used last: its file, at its line. " +
@@ -596,52 +596,52 @@ ember.defineCommand({
     nextError(n, reset);
   },
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "previous-error",
   doc: "Visit the place of the error message before, or as many back as the prefix argument says.",
-  run: () => nextError(-ember.prefixNumericValue(ember.prefixArg()), false),
+  run: () => nextError(-gnista.prefixNumericValue(gnista.prefixArg()), false),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "first-error",
   doc: "Visit the place of the first error message.",
-  run: () => nextError(ember.prefixNumericValue(ember.prefixArg()), true),
+  run: () => nextError(gnista.prefixNumericValue(gnista.prefixArg()), true),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "next-error-no-select",
   doc: "Show the next error message's place, keeping this window selected.",
-  run: () => nextError(ember.prefixNumericValue(ember.prefixArg()), false, false),
+  run: () => nextError(gnista.prefixNumericValue(gnista.prefixArg()), false, false),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "previous-error-no-select",
   doc: "Show the place of the error message before, keeping this window selected.",
-  run: () => nextError(-ember.prefixNumericValue(ember.prefixArg()), false, false),
+  run: () => nextError(-gnista.prefixNumericValue(gnista.prefixArg()), false, false),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "compile-goto-error",
   doc: "Visit the place of the error message at point.",
   run: () => {
-    if (!ember.derivedModeP("compilation-mode")) throw new Error("Not in a compilation buffer");
-    const m = nthMessage(0, ember.point());
+    if (!gnista.derivedModeP("compilation-mode")) throw new Error("Not in a compilation buffer");
+    const m = nthMessage(0, gnista.point());
     state().current = m.start;
-    ember.setVariable("next-error-last-buffer", ember.currentBuffer());
-    gotoLocus(ember.bufferName(), m);
+    gnista.setVariable("next-error-last-buffer", gnista.currentBuffer());
+    gotoLocus(gnista.bufferName(), m);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "compilation-display-error",
   doc: "Show the place of the error message at point in another window, keeping this one selected.",
   run: () => {
-    const window = ember.selectedWindow();
-    ember.call("compile-goto-error");
-    ember.selectWindow(window);
+    const window = gnista.selectedWindow();
+    gnista.call("compile-goto-error");
+    gnista.selectWindow(window);
   },
 });
 
 // --- The modes ------------------------------------------------------------------
 
-ember.defineMajorMode({
+gnista.defineMajorMode({
   name: "compilation-mode",
   modeName: "Compilation",
   doc:
@@ -664,28 +664,28 @@ ember.defineMajorMode({
     DEL: "scroll-down-command",
   },
   setup: () => {
-    ember.setReadOnly(true);
-    ember.setVariable("next-error-function", "compilation-next-error-function");
-    ember.setVariable("truncate-lines", false);
-    ember.makeLocalVariable("overlay-arrow-position");
-    ember.makeLocalVariable("overlay-arrow-string");
-    ember.setVariable("overlay-arrow-string", "");
+    gnista.setReadOnly(true);
+    gnista.setVariable("next-error-function", "compilation-next-error-function");
+    gnista.setVariable("truncate-lines", false);
+    gnista.makeLocalVariable("overlay-arrow-position");
+    gnista.makeLocalVariable("overlay-arrow-string");
+    gnista.setVariable("overlay-arrow-string", "");
   },
 });
 
-ember.defineMajorMode({
+gnista.defineMajorMode({
   name: "grep-mode",
   modeName: "Grep",
   parent: "compilation-mode",
   doc: "The mode of *grep*: grep's hits, each a place next-error can visit. RET visits the hit at point, n and p the next and previous, g runs the search again.",
   setup: () => {
-    ember.setVariable("compilation-error-regexp-alist", ["grep", "grep-binary"]);
-    ember.setVariable("compilation-error", "grep hit");
-    ember.setVariable("compilation-first-column", 0);
+    gnista.setVariable("compilation-error-regexp-alist", ["grep", "grep-binary"]);
+    gnista.setVariable("compilation-error", "grep hit");
+    gnista.setVariable("compilation-first-column", 0);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "grep",
   doc:
     "Run grep, with the arguments you give, in the background, showing its hits in *grep*. " +
@@ -693,7 +693,7 @@ ember.defineCommand({
   params: [{
     name: "command",
     prompt: "Run grep (like this): ",
-    initial: () => String(ember.variable("grep-command") ?? ""),
+    initial: () => String(gnista.variable("grep-command") ?? ""),
     history: "grep-history",
   }],
   run: (command: string) => compilationStart(command, "grep-mode", currentDirectory()),
@@ -706,5 +706,5 @@ for (const [keys, command] of [
   ["M-g p", "previous-error"],
   ["M-g M-p", "previous-error"],
 ] as const) {
-  ember.bindKey(keys, command);
+  gnista.bindKey(keys, command);
 }

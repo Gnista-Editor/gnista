@@ -418,14 +418,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*ember-oracle*",
+          "buffer": "*gnista-oracle*",
           "point": 11,
           "width": 80,
           "height": 12,
           "selected": false
         },
         {
-          "buffer": "*ember-oracle*::two",
+          "buffer": "*gnista-oracle*::two",
           "point": 32,
           "width": 80,
           "height": 12,
@@ -456,14 +456,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*ember-oracle*",
+          "buffer": "*gnista-oracle*",
           "point": 11,
           "width": 80,
           "height": 12,
           "selected": false
         },
         {
-          "buffer": "*ember-oracle*::two",
+          "buffer": "*gnista-oracle*::two",
           "point": 11,
           "width": 80,
           "height": 12,
@@ -494,14 +494,14 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*ember-oracle*",
+          "buffer": "*gnista-oracle*",
           "point": 39,
           "width": 80,
           "height": 12,
           "selected": false
         },
         {
-          "buffer": "*ember-oracle*::three",
+          "buffer": "*gnista-oracle*::three",
           "point": 39,
           "width": 80,
           "height": 12,

@@ -18,17 +18,17 @@
 
 import { truthy, regexpQuote } from "subr";
 
-ember.defineFace({
+gnista.defineFace({
   name: "isearch",
   doc: "The match incremental search is at.",
   attributes: { background: "accent", foreground: "bg" },
 });
-ember.defineFace({
+gnista.defineFace({
   name: "lazy-highlight",
   doc: "Other matches for the string incremental search is looking for.",
   attributes: { background: "selection" },
 });
-ember.defineFace({
+gnista.defineFace({
   name: "isearch-fail",
   doc: "The part of the search string that does not match.",
   attributes: { background: "bad", foreground: "bg" },
@@ -72,14 +72,14 @@ for (const [name, doc, value, local] of [
   ["isearch-yank-flag", "Whether text was just yanked into the search string.", false, false],
   ["isearch-mode-end-hook-quit", "Whether the search being ended was cancelled, while isearch-mode-end-hook runs.", false, false],
 ] as const) {
-  ember.defineVariable({ name, doc, value: value as unknown as ember.Value, local });
+  gnista.defineVariable({ name, doc, value: value as unknown as gnista.Value, local });
 }
-ember.defineHook("isearch-mode-hook", "Run as a search starts, in the buffer searched.");
-ember.defineHook("isearch-mode-end-hook", "Run as a search ends; isearch-mode-end-hook-quit is true if it was cancelled.");
-ember.defineHook("isearch-update-post-hook", "Run after each change the search shows.");
+gnista.defineHook("isearch-mode-hook", "Run as a search starts, in the buffer searched.");
+gnista.defineHook("isearch-mode-end-hook", "Run as a search ends; isearch-mode-end-hook-quit is true if it was cancelled.");
+gnista.defineHook("isearch-update-post-hook", "Run after each change the search shows.");
 
-const get = (name: string) => ember.variable(name);
-const set = (name: string, value: ember.Value) => ember.setVariable(name, value);
+const get = (name: string) => gnista.variable(name);
+const set = (name: string, value: gnista.Value) => gnista.setVariable(name, value);
 const flag = (name: string) => truthy(get(name));
 const str = (name: string) => String(get(name) ?? "");
 
@@ -94,8 +94,8 @@ interface State {
   error: string | undefined;
   wrapped: boolean;
   barrier: number;
-  caseFold: ember.Value;
-  popFun: ember.Value | undefined;
+  caseFold: gnista.Value;
+  popFun: gnista.Value | undefined;
   match: { start: number; end: number } | undefined;
 }
 
@@ -104,7 +104,7 @@ let cmds: State[] = [];
 /** Whether the search has not yet searched, as isearch-just-started. */
 let justStarted = false;
 /** The case folding before this search began, as isearch-last-case-fold-search. */
-let lastCaseFold: ember.Value = true;
+let lastCaseFold: gnista.Value = true;
 /** The match isearch-search found, as isearch-match-data. */
 let matchData: { start: number; end: number } | undefined;
 /** Where yanking a word goes on from after a failing search, as isearch--yank-prev-point. */
@@ -118,7 +118,7 @@ function getState(): State {
   return {
     string: str("isearch-string"),
     message: str("isearch-message"),
-    point: ember.point(),
+    point: gnista.point(),
     success: flag("isearch-success"),
     forward: flag("isearch-forward"),
     otherEnd: (get("isearch-other-end") as number | null) ?? undefined,
@@ -126,7 +126,7 @@ function getState(): State {
     wrapped: flag("isearch-wrapped"),
     barrier: Number(get("isearch-barrier") ?? 0),
     caseFold: get("isearch-case-fold-search") ?? null,
-    popFun: truthy(pushFn) ? (ember.funcall(pushFn as string) as ember.Value) : undefined,
+    popFun: truthy(pushFn) ? (gnista.funcall(pushFn as string) as gnista.Value) : undefined,
     match: matchData,
   };
 }
@@ -143,8 +143,8 @@ function setState(cmd: State): void {
   set("isearch-barrier", cmd.barrier);
   set("isearch-case-fold-search", cmd.caseFold);
   matchData = cmd.match;
-  if (typeof cmd.popFun === "function" || (typeof cmd.popFun === "string" && ember.fboundp(cmd.popFun))) ember.funcall(cmd.popFun as string, cmd as unknown as ember.Value);
-  ember.gotoChar(cmd.point);
+  if (typeof cmd.popFun === "function" || (typeof cmd.popFun === "string" && gnista.fboundp(cmd.popFun))) gnista.funcall(cmd.popFun as string, cmd as unknown as gnista.Value);
+  gnista.gotoChar(cmd.point);
 }
 
 const pushState = () => cmds.unshift(getState());
@@ -186,7 +186,7 @@ export function isearchMessagePrefix(ellipsis = false, nonincremental = flag("is
   const m =
     (success ? "" : "failing ") +
     (get("isearch-adjusted") === true ? "pending " : "") +
-    (wrapped && !truthy(get("isearch-wrap-function")) && (forward ? ember.point() > opoint : ember.point() < opoint) ? "over" : "") +
+    (wrapped && !truthy(get("isearch-wrap-function")) && (forward ? gnista.point() > opoint : gnista.point() < opoint) ? "over" : "") +
     (wrapped ? "wrapped " : "") +
     (!success && !truthy(get("isearch-case-fold-search")) ? "case-sensitive " : "") +
     (flag("isearch-regexp") ? "regexp " : "") +
@@ -204,50 +204,50 @@ function messageSuffix(): string {
 
 /** Says where the search stands in the echo area, as isearch-message. */
 export function isearchMessage(_cqHack = false, ellipsis = false): void {
-  ember.letBind({ "message-log-max": null }, () => ember.message(isearchMessagePrefix(ellipsis) + str("isearch-message") + messageSuffix()));
+  gnista.letBind({ "message-log-max": null }, () => gnista.message(isearchMessagePrefix(ellipsis) + str("isearch-message") + messageSuffix()));
 }
-ember.defun("isearch-message", (cq?: ember.Value, ellipsis?: ember.Value) => isearchMessage(truthy(cq), truthy(ellipsis)));
+gnista.defun("isearch-message", (cq?: gnista.Value, ellipsis?: gnista.Value) => isearchMessage(truthy(cq), truthy(ellipsis)));
 
 function callMessage(cqHack = false, ellipsis = false): void {
   const f = get("isearch-message-function");
-  if (truthy(f)) ember.funcall(f as string, cqHack, ellipsis);
+  if (truthy(f)) gnista.funcall(f as string, cqHack, ellipsis);
   else isearchMessage(cqHack, ellipsis);
 }
 
 /** The function searching the buffer for the string as a regexp or literally, in the search's direction, as isearch-search-fun-default gives. */
-export function isearchSearchFunDefault(): (string: string, bound?: ember.Value, noerror?: ember.Value) => number | undefined {
+export function isearchSearchFunDefault(): (string: string, bound?: gnista.Value, noerror?: gnista.Value) => number | undefined {
   return (string, bound, noerror) => {
     const forward = flag("isearch-forward");
     const options = { bound: typeof bound === "number" ? bound : undefined, noerror: truthy(noerror) };
-    if (flag("isearch-regexp")) return forward ? ember.reSearchForward(string, options) : ember.reSearchBackward(string, options);
+    if (flag("isearch-regexp")) return forward ? gnista.reSearchForward(string, options) : gnista.reSearchBackward(string, options);
     // A string is searched for literally, as search-forward does, which is
     // far faster in a large buffer than the regexp engine on it quoted.
-    const m = ember.search(string, { backward: !forward, bound: options.bound });
+    const m = gnista.search(string, { backward: !forward, bound: options.bound });
     if (m === undefined) {
       if (options.noerror) return undefined;
-      ember.signal("search-failed", `Search failed: "${string}"`, [string]);
+      gnista.signal("search-failed", `Search failed: "${string}"`, [string]);
     }
-    ember.gotoChar(forward ? m!.end : m!.start);
-    return ember.point();
+    gnista.gotoChar(forward ? m!.end : m!.start);
+    return gnista.point();
   };
 }
-ember.defun("isearch-search-fun-default", isearchSearchFunDefault);
+gnista.defun("isearch-search-fun-default", isearchSearchFunDefault);
 
 /** The function to search with, as isearch-search-fun: what isearch-search-fun-function gives. */
-export function isearchSearchFun(): (string: string, bound?: ember.Value, noerror?: ember.Value) => number | undefined {
+export function isearchSearchFun(): (string: string, bound?: gnista.Value, noerror?: gnista.Value) => number | undefined {
   const f = get("isearch-search-fun-function");
   if (!truthy(f) || f === "isearch-search-fun-default") return isearchSearchFunDefault();
-  return ember.funcall(f as string) as unknown as (string: string, bound?: ember.Value, noerror?: ember.Value) => number | undefined;
+  return gnista.funcall(f as string) as unknown as (string: string, bound?: gnista.Value, noerror?: gnista.Value) => number | undefined;
 }
 
-ember.defun("isearch-filter-visible", () => true);
+gnista.defun("isearch-filter-visible", () => true);
 
 /** Searches for the string, moving point to the match if found, as isearch-search-string. */
 function searchString(string: string, bound: number | undefined, noerror: boolean): number | undefined {
   const fn = isearchSearchFun();
-  const pos = ember.saveExcursion(() => fn(string, bound ?? null, noerror));
+  const pos = gnista.saveExcursion(() => fn(string, bound ?? null, noerror));
   if (pos === undefined || pos === null) return undefined;
-  ember.gotoChar(pos);
+  gnista.gotoChar(pos);
   return pos;
 }
 
@@ -256,29 +256,29 @@ function isearchSearch(): void {
   if (get("isearch-case-fold-search") === true && truthy(get("search-upper-case"))) {
     set("isearch-case-fold-search", isearchNoUpperCaseP(str("isearch-string"), flag("isearch-regexp")));
   }
-  ember.conditionCase(
+  gnista.conditionCase(
     () =>
-      ember.letBind({ "case-fold-search": truthy(get("isearch-case-fold-search")) }, () => {
+      gnista.letBind({ "case-fold-search": truthy(get("isearch-case-fold-search")) }, () => {
         set("isearch-error", null);
         const filter = get("isearch-filter-predicate");
         for (;;) {
           const found = searchString(str("isearch-string"), undefined, true) !== undefined;
           set("isearch-success", found);
           if (!found) break;
-          const [b, e] = [ember.matchBeginning(0)!, ember.matchEnd(0)!];
-          if (!truthy(filter) || filter === "isearch-filter-visible" || truthy(ember.funcall(filter as string, b, e))) break;
+          const [b, e] = [gnista.matchBeginning(0)!, gnista.matchEnd(0)!];
+          if (!truthy(filter) || filter === "isearch-filter-visible" || truthy(gnista.funcall(filter as string, b, e))) break;
           if (b === e) {
             const forward = flag("isearch-forward");
-            if (forward ? ember.point() >= ember.pointMax() : ember.point() <= ember.pointMin()) {
+            if (forward ? gnista.point() >= gnista.pointMax() : gnista.point() <= gnista.pointMin()) {
               set("isearch-success", false);
               break;
             }
-            ember.gotoChar(ember.point() + (forward ? 1 : -1));
+            gnista.gotoChar(gnista.point() + (forward ? 1 : -1));
           }
         }
         justStarted = false;
         if (flag("isearch-success")) {
-          const [b, e] = [ember.matchBeginning(0)!, ember.matchEnd(0)!];
+          const [b, e] = [gnista.matchBeginning(0)!, gnista.matchEnd(0)!];
           set("isearch-other-end", flag("isearch-forward") ? b : e);
           matchData = { start: b, end: e };
         }
@@ -297,15 +297,15 @@ function isearchSearch(): void {
   );
   if (!flag("isearch-success")) {
     const top = cmds[0];
-    if (typeof top.popFun === "function" || (typeof top.popFun === "string" && ember.fboundp(top.popFun))) ember.funcall(top.popFun as string, top as unknown as ember.Value);
-    ember.gotoChar(top.point);
+    if (typeof top.popFun === "function" || (typeof top.popFun === "string" && gnista.fboundp(top.popFun))) gnista.funcall(top.popFun as string, top as unknown as gnista.Value);
+    gnista.gotoChar(top.point);
   }
 }
 
 function clearHighlights(): void {
-  if (current !== undefined) ember.deleteOverlay(current);
+  if (current !== undefined) gnista.deleteOverlay(current);
   current = undefined;
-  for (const id of others) ember.deleteOverlay(id);
+  for (const id of others) gnista.deleteOverlay(id);
   others = [];
 }
 
@@ -314,26 +314,26 @@ function lazyHighlight(): void {
   const string = str("isearch-string");
   if (string === "" || truthy(get("isearch-error"))) return;
   const max = Number(get("lazy-highlight-max-at-a-time") ?? 200);
-  const line = ember.lineOf(ember.point());
-  const from = ember.lineStart(Math.max(0, line - 100));
-  const to = ember.lineEnd(Math.min(ember.lineCount() - 1, line + 100));
+  const line = gnista.lineOf(gnista.point());
+  const from = gnista.lineStart(Math.max(0, line - 100));
+  const to = gnista.lineEnd(Math.min(gnista.lineCount() - 1, line + 100));
   const forward = get("isearch-forward") ?? true;
-  ember.saveExcursion(() =>
-    ember.letBind({ "case-fold-search": truthy(get("isearch-case-fold-search")) }, () => {
+  gnista.saveExcursion(() =>
+    gnista.letBind({ "case-fold-search": truthy(get("isearch-case-fold-search")) }, () => {
       set("isearch-forward", true);
       try {
         const fn = isearchSearchFun();
-        ember.gotoChar(from);
+        gnista.gotoChar(from);
         while (others.length < max) {
-          const found = ember.ignoreErrors(() => fn(string, to, true));
+          const found = gnista.ignoreErrors(() => fn(string, to, true));
           if (found === undefined || found === null) break;
-          const [b, e] = [ember.matchBeginning(0)!, ember.matchEnd(0)!];
+          const [b, e] = [gnista.matchBeginning(0)!, gnista.matchEnd(0)!];
           if (b === e) {
-            if (ember.point() >= to) break;
-            ember.gotoChar(ember.point() + 1);
+            if (gnista.point() >= to) break;
+            gnista.gotoChar(gnista.point() + 1);
             continue;
           }
-          if (!(matchData && b === matchData.start && e === matchData.end)) others.push(ember.makeOverlay(b, e, { face: "lazy-highlight", priority: 1000 }));
+          if (!(matchData && b === matchData.start && e === matchData.end)) others.push(gnista.makeOverlay(b, e, { face: "lazy-highlight", priority: 1000 }));
         }
       } finally {
         set("isearch-forward", forward);
@@ -347,12 +347,12 @@ function isearchUpdate(): void {
   callMessage();
   clearHighlights();
   const otherEnd = get("isearch-other-end");
-  if (typeof otherEnd === "number" && otherEnd !== ember.point() && flag("isearch-success")) {
-    current = ember.makeOverlay(Math.min(otherEnd, ember.point()), Math.max(otherEnd, ember.point()), { face: "isearch", priority: 1001 });
+  if (typeof otherEnd === "number" && otherEnd !== gnista.point() && flag("isearch-success")) {
+    current = gnista.makeOverlay(Math.min(otherEnd, gnista.point()), Math.max(otherEnd, gnista.point()), { face: "isearch", priority: 1001 });
   }
   set("isearch-adjusted", false);
   set("isearch-yank-flag", false);
-  ember.runHooks("isearch-update-post-hook");
+  gnista.runHooks("isearch-update-post-hook");
   lazyHighlight();
 }
 
@@ -361,7 +361,7 @@ function updateRing(string: string, regexp: boolean): void {
   const name = regexp ? "regexp-search-ring" : "search-ring";
   const ring = get(name);
   const previous = Array.isArray(ring) ? ring.filter((s) => typeof s === "string" && s !== string) : [];
-  set(name, [string, ...previous].slice(0, Number(get(regexp ? "regexp-search-ring-max" : "search-ring-max") ?? 16)) as ember.Value);
+  set(name, [string, ...previous].slice(0, Number(get(regexp ? "regexp-search-ring-max" : "search-ring-max") ?? 16)) as gnista.Value);
 }
 
 function ring(regexp: boolean): string[] {
@@ -380,7 +380,7 @@ export function isearchMode(forward: boolean, regexp = false): void {
   cmds = [];
   set("isearch-success", true);
   set("isearch-wrapped", false);
-  set("isearch-barrier", ember.point());
+  set("isearch-barrier", gnista.point());
   set("isearch-adjusted", false);
   set("isearch-yank-flag", false);
   set("isearch-error", null);
@@ -388,10 +388,10 @@ export function isearchMode(forward: boolean, regexp = false): void {
   justStarted = true;
   matchData = undefined;
   yankPrevPoint = undefined;
-  set("isearch-opoint", ember.point());
+  set("isearch-opoint", gnista.point());
   set("isearch-mode", " Isearch");
-  ember.setOverridingMap("isearch-mode-map");
-  ember.runHooks("isearch-mode-hook");
+  gnista.setOverridingMap("isearch-mode-map");
+  gnista.runHooks("isearch-mode-hook");
   pushState();
   isearchUpdate();
 }
@@ -401,23 +401,23 @@ const searching = () => get("isearch-mode") !== null && get("isearch-mode") !== 
 
 /** Ends the search, as isearch-done: with `nopush` the string is not added to the ring. */
 export function isearchDone(nopush = false, edit = false): void {
-  ember.setOverridingMap(null);
+  gnista.setOverridingMap(null);
   clearHighlights();
   set("isearch-mode", null);
   const string = str("isearch-string");
   if (string !== "" && !nopush) updateRing(string, flag("isearch-regexp"));
-  ember.letBind({ "isearch-mode-end-hook-quit": nopush && !edit }, () => ember.runHooks("isearch-mode-end-hook"));
-  const opoint = Number(get("isearch-opoint") ?? ember.point());
-  if (ember.point() !== opoint) {
-    if (!(truthy(get("transient-mark-mode")) && ember.regionActive())) {
-      ember.pushMark(opoint);
-      if (ember.minibufferDepth() === 0 && !edit) ember.message("Mark saved where search started");
+  gnista.letBind({ "isearch-mode-end-hook-quit": nopush && !edit }, () => gnista.runHooks("isearch-mode-end-hook"));
+  const opoint = Number(get("isearch-opoint") ?? gnista.point());
+  if (gnista.point() !== opoint) {
+    if (!(truthy(get("transient-mark-mode")) && gnista.regionActive())) {
+      gnista.pushMark(opoint);
+      if (gnista.minibufferDepth() === 0 && !edit) gnista.message("Mark saved where search started");
     }
-  } else if (!edit) ember.message("");
+  } else if (!edit) gnista.message("");
 }
 
 function requireSearch(): void {
-  if (!searching()) ember.userError("Not searching");
+  if (!searching()) gnista.userError("Not searching");
 }
 
 /** Searches again with the string grown, as isearch-search-and-update. */
@@ -432,14 +432,14 @@ function searchAndUpdate(): void {
       const string = str("isearch-string");
       let fold = truthy(get("isearch-case-fold-search"));
       if (get("isearch-case-fold-search") === true && truthy(get("search-upper-case"))) fold = isearchNoUpperCaseP(string, flag("isearch-regexp"));
-      const here = ember.ignoreErrors(() => ember.lookingAt(flag("isearch-regexp") ? string : regexpQuote(string), undefined, { caseFold: fold }));
-      matchedHere = here === true && (flag("isearch-yank-flag") || ember.matchEnd(0)! <= Math.min(opoint, barrier));
+      const here = gnista.ignoreErrors(() => gnista.lookingAt(flag("isearch-regexp") ? string : regexpQuote(string), undefined, { caseFold: fold }));
+      matchedHere = here === true && (flag("isearch-yank-flag") || gnista.matchEnd(0)! <= Math.min(opoint, barrier));
     }
     if (matchedHere) {
       set("isearch-success", true);
       set("isearch-error", null);
-      set("isearch-other-end", ember.matchEnd(0)!);
-      matchData = { start: ember.matchBeginning(0)!, end: ember.matchEnd(0)! };
+      set("isearch-other-end", gnista.matchEnd(0)!);
+      matchData = { start: gnista.matchBeginning(0)!, end: gnista.matchEnd(0)! };
       if (get("isearch-case-fold-search") === true && truthy(get("search-upper-case"))) {
         set("isearch-case-fold-search", isearchNoUpperCaseP(str("isearch-string"), flag("isearch-regexp")));
       }
@@ -447,7 +447,7 @@ function searchAndUpdate(): void {
       callMessage(false, true);
       const otherEnd = get("isearch-other-end");
       if (typeof otherEnd === "number" && !flag("isearch-adjusted")) {
-        ember.gotoChar(forward ? otherEnd : Math.min(opoint, barrier, otherEnd + 1));
+        gnista.gotoChar(forward ? otherEnd : Math.min(opoint, barrier, otherEnd + 1));
       }
       isearchSearch();
     }
@@ -486,25 +486,25 @@ function isearchRepeat(direction: "forward" | "backward", count = 1): void {
     } else if (!flag("isearch-success")) {
       set("isearch-wrapped", true);
       const wrap = get("isearch-wrap-function");
-      if (truthy(wrap)) ember.funcall(wrap as string);
-      else ember.gotoChar(forward ? ember.pointMin() : ember.pointMax());
+      if (truthy(wrap)) gnista.funcall(wrap as string);
+      else gnista.gotoChar(forward ? gnista.pointMin() : gnista.pointMax());
     }
   } else {
     const otherEnd = get("isearch-other-end");
-    if (typeof otherEnd === "number" && flag("isearch-repeat-on-direction-change")) ember.gotoChar(otherEnd);
+    if (typeof otherEnd === "number" && flag("isearch-repeat-on-direction-change")) gnista.gotoChar(otherEnd);
     set("isearch-forward", !flag("isearch-forward"));
     set("isearch-success", true);
   }
-  set("isearch-barrier", ember.point());
+  set("isearch-barrier", gnista.point());
   if (str("isearch-string") === "") set("isearch-success", true);
   else {
     const saved = [...cmds];
     while (count-- > 0) {
-      if (flag("isearch-success") && ember.point() === get("isearch-other-end") && !justStarted) {
+      if (flag("isearch-success") && gnista.point() === get("isearch-other-end") && !justStarted) {
         // After an empty match, step on so the search moves.
-        if (flag("isearch-forward") ? ember.point() >= ember.pointMax() : ember.point() <= ember.pointMin()) set("isearch-success", false);
+        if (flag("isearch-forward") ? gnista.point() >= gnista.pointMax() : gnista.point() <= gnista.pointMin()) set("isearch-success", false);
         else {
-          ember.gotoChar(ember.point() + (flag("isearch-forward") ? 1 : -1));
+          gnista.gotoChar(gnista.point() + (flag("isearch-forward") ? 1 : -1));
           isearchSearch();
         }
       } else isearchSearch();
@@ -517,10 +517,10 @@ function isearchRepeat(direction: "forward" | "backward", count = 1): void {
   isearchUpdate();
 }
 
-ember.defineKeymap("isearch-mode-map");
+gnista.defineKeymap("isearch-mode-map");
 
 /** C-s, C-r and their regexp forms: start a search, or while searching, find the next match. */
-function startOrRepeat(forward: boolean, regexp: boolean, arg: ember.PrefixArg): void {
+function startOrRepeat(forward: boolean, regexp: boolean, arg: gnista.PrefixArg): void {
   if (searching()) {
     isearchRepeat(forward ? "forward" : "backward");
     return;
@@ -529,7 +529,7 @@ function startOrRepeat(forward: boolean, regexp: boolean, arg: ember.PrefixArg):
   isearchMode(forward, arg === null ? regexp : !regexp);
 }
 
-const isearchForward = ember.defineCommand({
+const isearchForward = gnista.defineCommand({
   name: "isearch-forward",
   doc:
     "Search forward incrementally: as you type, point moves to the next match of what you have typed.\n\n" +
@@ -539,31 +539,31 @@ const isearchForward = ember.defineCommand({
     "does the same and then runs. C-g goes back to where the search started, or while it fails, removes " +
     "what does not match. Case is ignored unless the string has a capital letter. With a prefix argument, searches for a regexp.",
   params: [{ name: "regexp", kind: "prefix" }],
-  run: (arg: ember.PrefixArg) => startOrRepeat(true, false, arg),
+  run: (arg: gnista.PrefixArg) => startOrRepeat(true, false, arg),
 });
 
-const isearchBackward = ember.defineCommand({
+const isearchBackward = gnista.defineCommand({
   name: "isearch-backward",
   doc: "Search backward incrementally. See isearch-forward for the keys that work while searching.",
   params: [{ name: "regexp", kind: "prefix" }],
-  run: (arg: ember.PrefixArg) => startOrRepeat(false, false, arg),
+  run: (arg: gnista.PrefixArg) => startOrRepeat(false, false, arg),
 });
 
-const isearchForwardRegexp = ember.defineCommand({
+const isearchForwardRegexp = gnista.defineCommand({
   name: "isearch-forward-regexp",
   doc: "Search forward incrementally for a regular expression, in Emacs's syntax. See isearch-forward.",
   params: [{ name: "regexp", kind: "prefix" }],
-  run: (arg: ember.PrefixArg) => startOrRepeat(true, true, arg),
+  run: (arg: gnista.PrefixArg) => startOrRepeat(true, true, arg),
 });
 
-const isearchBackwardRegexp = ember.defineCommand({
+const isearchBackwardRegexp = gnista.defineCommand({
   name: "isearch-backward-regexp",
   doc: "Search backward incrementally for a regular expression, in Emacs's syntax. See isearch-forward.",
   params: [{ name: "regexp", kind: "prefix" }],
-  run: (arg: ember.PrefixArg) => startOrRepeat(false, true, arg),
+  run: (arg: gnista.PrefixArg) => startOrRepeat(false, true, arg),
 });
 
-const repeatForward = ember.defineCommand({
+const repeatForward = gnista.defineCommand({
   name: "isearch-repeat-forward",
   doc: "Find the next match forward of the string being searched for.",
   run: () => {
@@ -572,7 +572,7 @@ const repeatForward = ember.defineCommand({
   },
 });
 
-const repeatBackward = ember.defineCommand({
+const repeatBackward = gnista.defineCommand({
   name: "isearch-repeat-backward",
   doc: "Find the next match backward of the string being searched for.",
   run: () => {
@@ -588,24 +588,24 @@ function printingChar(key: string | undefined): string | undefined {
   return Array.from(key).length === 1 ? key : undefined;
 }
 
-const printingCharCommand = ember.defineCommand({
+const printingCharCommand = gnista.defineCommand({
   name: "isearch-printing-char",
   doc:
     "Add the character typed to the search string, or for any other key, end the search and run the key.\n\n" +
     "Bound as the default of isearch-mode-map, so it sees every key that map does not bind.",
   run: () => {
-    const key = ember.lastKey();
+    const key = gnista.lastKey();
     const c = printingChar(key);
     if (c !== undefined) {
       processSearchString(c, charDescription(c));
       return;
     }
     isearchDone();
-    if (key !== undefined) ember.unreadKeys(key);
+    if (key !== undefined) gnista.unreadKeys(key);
   },
 });
 
-const deleteChar = ember.defineCommand({
+const deleteChar = gnista.defineCommand({
   name: "isearch-delete-char",
   doc: "Take back the last change to the search: the last character typed, or the last C-s or C-r.",
   run: () => {
@@ -615,7 +615,7 @@ const deleteChar = ember.defineCommand({
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "isearch-del-char",
   doc: "Take the last character off the search string and search again, keeping the effect of other commands.",
   params: [{ name: "n", kind: "count" }],
@@ -629,14 +629,14 @@ ember.defineCommand({
     }
     callMessage(false, true);
     const otherEnd = get("isearch-other-end");
-    if (typeof otherEnd === "number") ember.gotoChar(otherEnd);
+    if (typeof otherEnd === "number") gnista.gotoChar(otherEnd);
     isearchSearch();
     pushState();
     isearchUpdate();
   },
 });
 
-const exit = ember.defineCommand({
+const exit = gnista.defineCommand({
   name: "isearch-exit",
   doc: "End the search, leaving point at the match and the mark where the search started.",
   run: () => {
@@ -648,12 +648,12 @@ const exit = ember.defineCommand({
 /** Ends the search and goes back to where it started, as isearch-cancel. */
 function isearchCancel(): void {
   if (truthy(get("isearch-push-state-function")) && cmds.length > 0) setState(cmds[cmds.length - 1]);
-  else ember.gotoChar(Number(get("isearch-opoint")));
+  else gnista.gotoChar(Number(get("isearch-opoint")));
   isearchDone(true);
-  ember.message("Quit");
+  gnista.message("Quit");
 }
 
-const abort = ember.defineCommand({
+const abort = gnista.defineCommand({
   name: "isearch-abort",
   doc: "While the search fails, remove what does not match; otherwise end it and go back to where it started.",
   run: () => {
@@ -670,19 +670,19 @@ const abort = ember.defineCommand({
 
 /** Adds the text from point to where `jump` moves, as isearch-yank-internal. */
 function yankInternal(jump: () => number): void {
-  const text = ember.saveExcursion(() => {
+  const text = gnista.saveExcursion(() => {
     const otherEnd = get("isearch-other-end");
-    if (!flag("isearch-forward") && typeof otherEnd === "number") ember.gotoChar(otherEnd);
-    if (!flag("isearch-success") && yankPrevPoint !== undefined) ember.gotoChar(yankPrevPoint);
-    const start = ember.point();
+    if (!flag("isearch-forward") && typeof otherEnd === "number") gnista.gotoChar(otherEnd);
+    if (!flag("isearch-success") && yankPrevPoint !== undefined) gnista.gotoChar(yankPrevPoint);
+    const start = gnista.point();
     const end = jump();
     yankPrevPoint = flag("isearch-success") ? undefined : end;
-    return ember.bufferSubstringNoProperties(Math.min(start, end), Math.max(start, end));
+    return gnista.bufferSubstringNoProperties(Math.min(start, end), Math.max(start, end));
   });
   yankString(text);
 }
 
-const yankWord = ember.defineCommand({
+const yankWord = gnista.defineCommand({
   name: "isearch-yank-word-or-char",
   doc: "Add the rest of the word after point to the search string, or the next character if point is not before a word.",
   params: [{ name: "n", kind: "count" }],
@@ -690,39 +690,39 @@ const yankWord = ember.defineCommand({
     requireSearch();
     yankInternal(() => {
       for (let i = 0; i < n; i++) {
-        const word = (c: string | undefined) => c !== undefined && ember.charSyntax(c) === "w";
-        if (word(ember.charAfter()) || word(ember.charAfter(ember.point() + 1))) ember.call("forward-word", 1);
-        else if (ember.point() < ember.pointMax()) ember.gotoChar(ember.point() + 1);
+        const word = (c: string | undefined) => c !== undefined && gnista.charSyntax(c) === "w";
+        if (word(gnista.charAfter()) || word(gnista.charAfter(gnista.point() + 1))) gnista.call("forward-word", 1);
+        else if (gnista.point() < gnista.pointMax()) gnista.gotoChar(gnista.point() + 1);
       }
-      return ember.point();
+      return gnista.point();
     });
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "isearch-yank-char",
   doc: "Add the next character after point to the search string, or as many as the prefix argument says.",
   params: [{ name: "n", kind: "count" }],
   run: (n = 1) => {
     requireSearch();
     yankInternal(() => {
-      ember.gotoChar(Math.min(ember.pointMax(), ember.point() + n));
-      return ember.point();
+      gnista.gotoChar(Math.min(gnista.pointMax(), gnista.point() + n));
+      return gnista.point();
     });
   },
 });
 
-const yankKill = ember.defineCommand({
+const yankKill = gnista.defineCommand({
   name: "isearch-yank-kill",
   doc: "Add the last kill to the search string.",
   run: () => {
     if (!searching()) isearchMode(true);
-    const kill = ember.currentKill();
+    const kill = gnista.currentKill();
     if (kill !== undefined) yankString(kill);
   },
 });
 
-const toggleRegexp = ember.defineCommand({
+const toggleRegexp = gnista.defineCommand({
   name: "isearch-toggle-regexp",
   doc: "Switch between searching for a string and for a regular expression; what is typed next searches the new way.",
   run: () => {
@@ -734,12 +734,12 @@ const toggleRegexp = ember.defineCommand({
   },
 });
 
-ember.bindKey("C-s", isearchForward);
-ember.bindKey("C-r", isearchBackward);
-ember.bindKey("C-M-s", isearchForwardRegexp);
-ember.bindKey("C-M-r", isearchBackwardRegexp);
+gnista.bindKey("C-s", isearchForward);
+gnista.bindKey("C-r", isearchBackward);
+gnista.bindKey("C-M-s", isearchForwardRegexp);
+gnista.bindKey("C-M-r", isearchBackwardRegexp);
 
-ember.setKeymapDefault("isearch-mode-map", printingCharCommand);
+gnista.setKeymapDefault("isearch-mode-map", printingCharCommand);
 for (const [keys, command] of [
   ["C-s", repeatForward],
   ["C-r", repeatBackward],
@@ -753,5 +753,5 @@ for (const [keys, command] of [
   ["M-r", toggleRegexp],
   ["M-s r", toggleRegexp],
 ] as const) {
-  ember.bindKey(keys, command, "isearch-mode-map");
+  gnista.bindKey(keys, command, "isearch-mode-map");
 }

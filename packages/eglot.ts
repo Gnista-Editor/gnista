@@ -12,7 +12,7 @@ import { current as projectRoot } from "project";
 import { executableFind, truthy } from "subr";
 import { defineXrefBackend, type Xref } from "xref";
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "eglot-server-programs",
   doc:
     "How to start a language server for each major mode: a list of [modes, program], modes a mode or a list of them, " +
@@ -38,14 +38,14 @@ for (const [name, value, doc] of [
   ["eglot-workspace-configuration", [], "Settings given to servers that ask for them, as an object of sections, such as { gopls: { ... } }."],
   ["eglot-ignored-server-capabilities", [], "Capabilities not to use even when a server has them, such as \":hoverProvider\"."],
 ] as const) {
-  ember.defineVariable({ name, value: value as ember.Value, doc });
+  gnista.defineVariable({ name, value: value as gnista.Value, doc });
 }
-ember.defineHook("eglot-managed-mode-hook", "Run when eglot starts or stops managing a buffer.");
-ember.defineHook("eglot-server-initialized-hook", "Run with a server's name when it has started.");
+gnista.defineHook("eglot-managed-mode-hook", "Run when eglot starts or stops managing a buffer.");
+gnista.defineHook("eglot-server-initialized-hook", "Run with a server's name when it has started.");
 
-ember.defineFace({ name: "flymake-error", doc: "A diagnostic of an error.", attributes: { underline: { style: "wave", color: "Red1" } } });
-ember.defineFace({ name: "flymake-warning", doc: "A diagnostic of a warning.", attributes: { underline: { style: "wave", color: "DarkOrange" } } });
-ember.defineFace({ name: "flymake-note", doc: "A diagnostic of a note.", attributes: { underline: { style: "wave", color: "yellow green" } } });
+gnista.defineFace({ name: "flymake-error", doc: "A diagnostic of an error.", attributes: { underline: { style: "wave", color: "Red1" } } });
+gnista.defineFace({ name: "flymake-warning", doc: "A diagnostic of a warning.", attributes: { underline: { style: "wave", color: "DarkOrange" } } });
+gnista.defineFace({ name: "flymake-note", doc: "A diagnostic of a note.", attributes: { underline: { style: "wave", color: "yellow green" } } });
 
 // --- Positions and documents ------------------------------------------------
 
@@ -94,17 +94,17 @@ interface Range {
 }
 
 /** A buffer position as the protocol counts it: its line, and UTF-16 units from the line's start, as eglot--pos-to-lsp-position. */
-function lspPosition(pos = ember.point()): Position {
-  const line = ember.lineOf(pos);
-  return { line, character: ember.bufferText(ember.lineStart(line), pos).length };
+function lspPosition(pos = gnista.point()): Position {
+  const line = gnista.lineOf(pos);
+  return { line, character: gnista.bufferText(gnista.lineStart(line), pos).length };
 }
 
 /** The buffer position a protocol position names, as eglot--lsp-position-to-point. */
 function bufferPosition(p: Position): number {
-  const line = Math.max(0, Math.min(p.line, ember.lineCount() - 1));
-  const text = ember.lineText(line);
+  const line = Math.max(0, Math.min(p.line, gnista.lineCount() - 1));
+  const text = gnista.lineText(line);
   const units = Math.min(p.character, text.length);
-  return ember.lineStart(line) + [...text.slice(0, units)].length;
+  return gnista.lineStart(line) + [...text.slice(0, units)].length;
 }
 
 /** The language id the protocol names a mode's buffers by, as eglot--language-id. */
@@ -138,7 +138,7 @@ const documents = new Map<string, { version: number; dirty: boolean }>();
 
 function send(server: Server, message: object): void {
   const body = JSON.stringify({ jsonrpc: "2.0", ...message });
-  ember.processSendString(server.process, `Content-Length: ${utf8Length(body)}\r\n\r\n${body}`);
+  gnista.processSendString(server.process, `Content-Length: ${utf8Length(body)}\r\n\r\n${body}`);
 }
 
 const notify = (server: Server, method: string, params: unknown): void => send(server, { method, params });
@@ -148,19 +148,19 @@ function request(server: Server, method: string, params: unknown): unknown {
   flushChanges(server);
   const id = server.nextId++;
   send(server, { id, method, params });
-  const timeout = Number(ember.variable("eglot-sync-request-timeout") ?? 3);
+  const timeout = Number(gnista.variable("eglot-sync-request-timeout") ?? 3);
   const until = Date.now() + timeout * 1000;
   while (!server.answers.has(id)) {
-    if (!ember.processLiveP(server.process)) ember.userError(`[eglot] ${server.name} has stopped`);
+    if (!gnista.processLiveP(server.process)) gnista.userError(`[eglot] ${server.name} has stopped`);
     if (Date.now() > until) {
       send(server, { method: "$/cancelRequest", params: { id } });
-      ember.userError(`[eglot] Timed out waiting for ${method}`);
+      gnista.userError(`[eglot] Timed out waiting for ${method}`);
     }
-    ember.acceptProcessOutput(server.process, 0.05);
+    gnista.acceptProcessOutput(server.process, 0.05);
   }
   const answer = server.answers.get(id)!;
   server.answers.delete(id);
-  if (answer.error) ember.userError(`[eglot] ${answer.error.message}`);
+  if (answer.error) gnista.userError(`[eglot] ${answer.error.message}`);
   return answer.result;
 }
 
@@ -168,7 +168,7 @@ function request(server: Server, method: string, params: unknown): unknown {
 function serverRequest(server: Server, method: string, params: any): unknown {
   switch (method) {
     case "workspace/configuration": {
-      const config = ember.variable("eglot-workspace-configuration") as any;
+      const config = gnista.variable("eglot-workspace-configuration") as any;
       return (params?.items ?? []).map((item: { section?: string }) =>
         item.section && config && typeof config === "object" && !Array.isArray(config) ? (config[item.section] ?? null) : null,
       );
@@ -200,7 +200,7 @@ function handle(server: Server, message: any): void {
   } else if (message.method === "textDocument/publishDiagnostics") {
     showDiagnostics(message.params);
   } else if (message.method === "window/showMessage" && message.params?.message) {
-    ember.message(`[eglot] ${message.params.message}`);
+    gnista.message(`[eglot] ${message.params.message}`);
   }
 }
 
@@ -221,19 +221,19 @@ function filter(server: Server, output: string): void {
     try {
       handle(server, JSON.parse(split[0]));
     } catch (e) {
-      ember.message(`[eglot] Bad message from ${server.name}: ${String(e)}`);
+      gnista.message(`[eglot] Bad message from ${server.name}: ${String(e)}`);
     }
   }
 }
 
 /** The first program of a server entry that can be run, as eglot--guess-contact tries them. */
 function serverCommand(mode: string): string[] | undefined {
-  const programs = ember.variable("eglot-server-programs");
+  const programs = gnista.variable("eglot-server-programs");
   for (const entry of Array.isArray(programs) ? programs : []) {
     if (!Array.isArray(entry)) continue;
-    const [modes, program] = entry as [ember.Value, ember.Value];
+    const [modes, program] = entry as [gnista.Value, gnista.Value];
     const list = Array.isArray(modes) ? modes : [modes];
-    if (!list.includes(mode) && !ember.derivedModeAllParents(mode).some((m) => list.includes(m))) continue;
+    if (!list.includes(mode) && !gnista.derivedModeAllParents(mode).some((m) => list.includes(m))) continue;
     const command = Array.isArray(program) ? program : [program];
     if (command[0] !== "eglot-alternatives") return command.map(String);
     // As eglot-alternatives: the first that is installed, else the first.
@@ -245,7 +245,7 @@ function serverCommand(mode: string): string[] | undefined {
 
 /** Starts a server for a mode in a project and tells it what we can do, as eglot--connect. */
 function connect(mode: string, root: string, command: string[]): Server {
-  const name = `EGLOT (${ember.fileNameNondirectory(root.replace(/\/$/, ""))}/${mode})`;
+  const name = `EGLOT (${gnista.fileNameNondirectory(root.replace(/\/$/, ""))}/${mode})`;
   const server: Server = {
     name,
     process: "",
@@ -258,7 +258,7 @@ function connect(mode: string, root: string, command: string[]): Server {
     buffers: new Set(),
     initialized: false,
   };
-  server.process = ember.makeProcess({
+  server.process = gnista.makeProcess({
     name,
     command,
     directory: root,
@@ -268,8 +268,8 @@ function connect(mode: string, root: string, command: string[]): Server {
     coding: "utf-8-unix",
     filter: (_p, output) => filter(server, output),
     sentinel: (_p, event) => {
-      if (!ember.processLiveP(server.process)) {
-        ember.message(`[eglot] ${name} ${event.trim()}`);
+      if (!gnista.processLiveP(server.process)) {
+        gnista.message(`[eglot] ${name} ${event.trim()}`);
         disconnect(server);
       }
     },
@@ -277,7 +277,7 @@ function connect(mode: string, root: string, command: string[]): Server {
   servers.push(server);
   startTimers();
   const result = request(server, "initialize", {
-    processId: ember.emacsPid(),
+    processId: gnista.emacsPid(),
     rootPath: root,
     rootUri: fileUri(root),
     initializationOptions: {},
@@ -302,14 +302,14 @@ function connect(mode: string, root: string, command: string[]): Server {
   server.capabilities = result?.capabilities ?? {};
   notify(server, "initialized", {});
   server.initialized = true;
-  ember.runHooks("eglot-server-initialized-hook", name);
-  ember.message(`[eglot] Connected! Server \`${name}' now managing \`${mode}' buffers in project \`${root}'.`);
+  gnista.runHooks("eglot-server-initialized-hook", name);
+  gnista.message(`[eglot] Connected! Server \`${name}' now managing \`${mode}' buffers in project \`${root}'.`);
   return server;
 }
 
 function disconnect(server: Server): void {
   for (const buffer of [...server.buffers]) {
-    if (ember.getBuffer(buffer)) ember.withCurrentBuffer(buffer, () => manage(false));
+    if (gnista.getBuffer(buffer)) gnista.withCurrentBuffer(buffer, () => manage(false));
   }
   const k = servers.indexOf(server);
   if (k >= 0) servers.splice(k, 1);
@@ -318,44 +318,44 @@ function disconnect(server: Server): void {
 
 /** The server for the current buffer's project and mode, if one runs, as eglot-current-server. */
 function currentServer(): Server | undefined {
-  const name = ember.currentBuffer().name;
+  const name = gnista.currentBuffer().name;
   return name ? managing.get(name) : undefined;
 }
 
 function requireServer(): Server {
   const server = currentServer();
-  if (!server) ember.userError("No current JSON-RPC connection");
+  if (!server) gnista.userError("No current JSON-RPC connection");
   return server;
 }
 
 const hasCapability = (server: Server, name: string): boolean => {
-  const ignored = (ember.variable("eglot-ignored-server-capabilities") ?? []) as ember.Value[];
-  return truthy(server.capabilities[name] as ember.Value) && !(Array.isArray(ignored) && ignored.includes(`:${name}`));
+  const ignored = (gnista.variable("eglot-ignored-server-capabilities") ?? []) as gnista.Value[];
+  return truthy(server.capabilities[name] as gnista.Value) && !(Array.isArray(ignored) && ignored.includes(`:${name}`));
 };
 
 // --- Managing buffers -------------------------------------------------------
 
 /** The current buffer's document, as the protocol names it. */
-const textDocument = () => ({ uri: fileUri(ember.bufferFileName()!) });
+const textDocument = () => ({ uri: fileUri(gnista.bufferFileName()!) });
 
 /** Tells the server of the buffers' edits it has not heard of, with their whole text, as eglot--signal-textDocument/didChange. */
 function flushChanges(server: Server): void {
   for (const buffer of server.buffers) {
     const doc = documents.get(buffer);
-    if (!doc?.dirty || !ember.getBuffer(buffer)) continue;
+    if (!doc?.dirty || !gnista.getBuffer(buffer)) continue;
     doc.dirty = false;
     doc.version++;
-    ember.withCurrentBuffer(buffer, () =>
+    gnista.withCurrentBuffer(buffer, () =>
       notify(server, "textDocument/didChange", {
         textDocument: { ...textDocument(), version: doc.version },
-        contentChanges: [{ text: ember.bufferText(ember.pointMin(), ember.pointMax()) }],
+        contentChanges: [{ text: gnista.bufferText(gnista.pointMin(), gnista.pointMax()) }],
       }),
     );
   }
 }
 
 const afterChange = (): void => {
-  const doc = documents.get(ember.currentBuffer().name ?? "");
+  const doc = documents.get(gnista.currentBuffer().name ?? "");
   if (doc) doc.dirty = true;
 };
 
@@ -371,73 +371,73 @@ const killBuffer = (): void => {
   const server = currentServer();
   if (!server) return;
   notify(server, "textDocument/didClose", { textDocument: textDocument() });
-  const name = ember.currentBuffer().name!;
+  const name = gnista.currentBuffer().name!;
   server.buffers.delete(name);
   managing.delete(name);
   documents.delete(name);
-  if (server.buffers.size === 0 && truthy(ember.variable("eglot-autoshutdown"))) shutdown(server);
+  if (server.buffers.size === 0 && truthy(gnista.variable("eglot-autoshutdown"))) shutdown(server);
 };
 
 /** Starts or stops managing the current buffer with the server, as eglot--managed-mode. */
 function manage(on: boolean, server?: Server): void {
-  const name = ember.currentBuffer().name!;
+  const name = gnista.currentBuffer().name!;
   if (on && server) {
     managing.set(name, server);
     server.buffers.add(name);
     documents.set(name, { version: 0, dirty: false });
     notify(server, "textDocument/didOpen", {
-      textDocument: { ...textDocument(), languageId: languageId(String(ember.variable("major-mode"))), version: 0, text: ember.bufferText(ember.pointMin(), ember.pointMax()) },
+      textDocument: { ...textDocument(), languageId: languageId(String(gnista.variable("major-mode"))), version: 0, text: gnista.bufferText(gnista.pointMin(), gnista.pointMax()) },
     });
-    ember.addHook("after-change-functions", afterChange, { local: true });
-    ember.addHook("after-save-hook", afterSave, { local: true });
-    ember.addHook("kill-buffer-hook", killBuffer, { local: true });
-    ember.addHook("xref-backend-functions", () => "eglot", { local: true });
-    ember.addHook("completion-at-point-functions", completionAtPoint, { local: true });
-    if (!truthy(ember.variable("eglot--managed-mode"))) ember.callWithPrefix(1, "eglot--managed-mode");
+    gnista.addHook("after-change-functions", afterChange, { local: true });
+    gnista.addHook("after-save-hook", afterSave, { local: true });
+    gnista.addHook("kill-buffer-hook", killBuffer, { local: true });
+    gnista.addHook("xref-backend-functions", () => "eglot", { local: true });
+    gnista.addHook("completion-at-point-functions", completionAtPoint, { local: true });
+    if (!truthy(gnista.variable("eglot--managed-mode"))) gnista.callWithPrefix(1, "eglot--managed-mode");
   } else {
-    ember.removeHook("after-change-functions", afterChange, { local: true });
-    ember.removeHook("after-save-hook", afterSave, { local: true });
-    ember.removeHook("kill-buffer-hook", killBuffer, { local: true });
+    gnista.removeHook("after-change-functions", afterChange, { local: true });
+    gnista.removeHook("after-save-hook", afterSave, { local: true });
+    gnista.removeHook("kill-buffer-hook", killBuffer, { local: true });
     managing.get(name)?.buffers.delete(name);
     managing.delete(name);
     documents.delete(name);
     clearDiagnostics();
-    if (truthy(ember.variable("eglot--managed-mode"))) ember.callWithPrefix(-1, "eglot--managed-mode");
+    if (truthy(gnista.variable("eglot--managed-mode"))) gnista.callWithPrefix(-1, "eglot--managed-mode");
   }
 }
 
-ember.defineKeymap("eglot-mode-map");
-ember.defineMinorMode({
+gnista.defineKeymap("eglot-mode-map");
+gnista.defineMinorMode({
   name: "eglot--managed-mode",
   lighter: " eglot",
   doc: "Eglot manages this buffer: a language server hears of its text and answers M-., M-?, C-M-i and the eglot commands.",
-  onChange: () => ember.runHooks("eglot-managed-mode-hook"),
+  onChange: () => gnista.runHooks("eglot-managed-mode-hook"),
 });
-ember.setKeymapParent("eglot--managed-mode-map", "eglot-mode-map");
+gnista.setKeymapParent("eglot--managed-mode-map", "eglot-mode-map");
 
 /** Manages the current buffer, starting a server for its project and mode if none runs, as M-x eglot. */
 function eglot(): void {
-  const file = ember.bufferFileName();
-  if (!file) ember.userError("[eglot] This buffer is not visiting a file");
-  const mode = String(ember.variable("major-mode"));
-  const root = ember.fileNameAsDirectory(ember.expandFileName(projectRoot() ?? ember.fileNameDirectory(file) ?? "."));
-  let server = servers.find((s) => s.root === root && s.modes.includes(mode) && ember.processLiveP(s.process));
+  const file = gnista.bufferFileName();
+  if (!file) gnista.userError("[eglot] This buffer is not visiting a file");
+  const mode = String(gnista.variable("major-mode"));
+  const root = gnista.fileNameAsDirectory(gnista.expandFileName(projectRoot() ?? gnista.fileNameDirectory(file) ?? "."));
+  let server = servers.find((s) => s.root === root && s.modes.includes(mode) && gnista.processLiveP(s.process));
   if (!server) {
     const command = serverCommand(mode);
-    if (!command) ember.userError(`[eglot] Couldn't guess LSP server for \`${mode}'`);
-    if (executableFind(command[0]) === undefined) ember.userError(`[eglot] Couldn't start \`${command.join(" ")}': program not found`);
+    if (!command) gnista.userError(`[eglot] Couldn't guess LSP server for \`${mode}'`);
+    if (executableFind(command[0]) === undefined) gnista.userError(`[eglot] Couldn't start \`${command.join(" ")}': program not found`);
     server = connect(mode, root, command);
   }
   // The project's other buffers of the mode too, as eglot--maybe-activate-editing-mode does.
-  for (const name of ember.bufferList()) {
-    ember.withCurrentBuffer(name, () => {
-      const f = ember.bufferFileName();
-      if (f && f.startsWith(root) && ember.variable("major-mode") === mode && !managing.has(name)) manage(true, server);
+  for (const name of gnista.bufferList()) {
+    gnista.withCurrentBuffer(name, () => {
+      const f = gnista.bufferFileName();
+      if (f && f.startsWith(root) && gnista.variable("major-mode") === mode && !managing.has(name)) manage(true, server);
     });
   }
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "eglot",
   doc: "Start the language server eglot-server-programs names for this buffer's mode, in its project, and manage its buffers of that mode.",
   run: () => eglot(),
@@ -445,17 +445,17 @@ ember.defineCommand({
 
 /** Starts eglot in the current buffer if a server is known for it, as eglot-ensure does from a mode hook. */
 export function ensure(): void {
-  if (!ember.bufferFileName() || managing.has(ember.currentBuffer().name!)) return;
-  const command = serverCommand(String(ember.variable("major-mode")));
+  if (!gnista.bufferFileName() || managing.has(gnista.currentBuffer().name!)) return;
+  const command = serverCommand(String(gnista.variable("major-mode")));
   if (command && executableFind(command[0]) !== undefined) {
     try {
       eglot();
     } catch (e) {
-      ember.message(String(e instanceof Error ? e.message : e));
+      gnista.message(String(e instanceof Error ? e.message : e));
     }
   }
 }
-ember.defun("eglot-ensure", () => ensure());
+gnista.defun("eglot-ensure", () => ensure());
 
 function shutdown(server: Server): void {
   try {
@@ -464,23 +464,23 @@ function shutdown(server: Server): void {
   } catch {
     // A server that does not answer is killed.
   }
-  if (ember.processLiveP(server.process)) ember.deleteProcess(server.process);
+  if (gnista.processLiveP(server.process)) gnista.deleteProcess(server.process);
   disconnect(server);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "eglot-shutdown",
   doc: "Stop the current buffer's language server, and manage its buffers no more.",
   run: () => shutdown(requireServer()),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "eglot-shutdown-all",
   doc: "Stop every language server.",
   run: () => [...servers].forEach(shutdown),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "eglot-reconnect",
   doc: "Stop the current buffer's language server and start it again.",
   run: () => {
@@ -498,26 +498,26 @@ function xrefs(locations: unknown): Xref[] {
     const uri: string = l.uri ?? l.targetUri;
     const range: Range = l.range ?? l.targetSelectionRange ?? l.targetRange;
     const file = uriFile(uri);
-    const buffer = ember.getBuffer(file) ?? (ember.fileExists(file) ? ember.getBuffer(ember.findFileNoselect(file)) : undefined);
+    const buffer = gnista.getBuffer(file) ?? (gnista.fileExists(file) ? gnista.getBuffer(gnista.findFileNoselect(file)) : undefined);
     let summary = "";
     let col = range.start.character;
     if (buffer) {
-      ember.withCurrentBuffer(buffer, () => {
-        summary = ember.lineText(Math.min(range.start.line, ember.lineCount() - 1));
-        col = bufferPosition(range.start) - ember.lineStart(range.start.line);
+      gnista.withCurrentBuffer(buffer, () => {
+        summary = gnista.lineText(Math.min(range.start.line, gnista.lineCount() - 1));
+        col = bufferPosition(range.start) - gnista.lineStart(range.start.line);
       });
     }
-    return { file, line: range.start.line + 1, col, length: range.end.line === range.start.line ? range.end.character - range.start.character : 0, summary, group: ember.abbreviateFileName(file) };
+    return { file, line: range.start.line + 1, col, length: range.end.line === range.start.line ? range.end.character - range.start.character : 0, summary, group: gnista.abbreviateFileName(file) };
   });
 }
 
 defineXrefBackend("eglot", {
   identifierAtPoint: () =>
-    ember.saveExcursion(() => {
-      ember.skipSyntaxBackward("w_");
-      const start = ember.point();
-      ember.skipSyntaxForward("w_");
-      return ember.point() > start ? ember.bufferText(start, ember.point()) : "LSP identifier at point";
+    gnista.saveExcursion(() => {
+      gnista.skipSyntaxBackward("w_");
+      const start = gnista.point();
+      gnista.skipSyntaxForward("w_");
+      return gnista.point() > start ? gnista.bufferText(start, gnista.point()) : "LSP identifier at point";
     }),
   definitions: () => xrefs(request(requireServer(), "textDocument/definition", { textDocument: textDocument(), position: lspPosition() })),
   references: () =>
@@ -526,13 +526,13 @@ defineXrefBackend("eglot", {
 
 // --- Completion, as eglot-completion-at-point --------------------------------
 
-function completionAtPoint(): ember.Value {
+function completionAtPoint(): gnista.Value {
   const server = currentServer();
   if (!server || !hasCapability(server, "completionProvider")) return null;
-  const end = ember.point();
-  const start = ember.saveExcursion(() => {
-    ember.skipSyntaxBackward("w_");
-    return ember.point();
+  const end = gnista.point();
+  const start = gnista.saveExcursion(() => {
+    gnista.skipSyntaxBackward("w_");
+    return gnista.point();
   });
   const answer = request(server, "textDocument/completion", { textDocument: textDocument(), position: lspPosition(), context: { triggerKind: 1 } }) as any;
   const items: any[] = Array.isArray(answer) ? answer : (answer?.items ?? []);
@@ -540,35 +540,35 @@ function completionAtPoint(): ember.Value {
   return [start, end, [...new Set(words)]];
 }
 
-ember.defineKey("eglot--managed-mode-map", "C-M-i", "completion-at-point");
+gnista.defineKey("eglot--managed-mode-map", "C-M-i", "completion-at-point");
 
 // --- Diagnostics, as eglot's flymake backend ---------------------------------
 
 /** Each buffer's diagnostic overlays. */
 const diagnosticOverlays = new Map<string, number[]>();
 
-function clearDiagnostics(buffer = ember.currentBuffer().name!): void {
-  for (const o of diagnosticOverlays.get(buffer) ?? []) ember.deleteOverlay(o);
+function clearDiagnostics(buffer = gnista.currentBuffer().name!): void {
+  for (const o of diagnosticOverlays.get(buffer) ?? []) gnista.deleteOverlay(o);
   diagnosticOverlays.delete(buffer);
 }
 
 /** Shows a file's diagnostics as underlined overlays carrying their messages, as eglot--report-to-flymake does. */
 function showDiagnostics(params: { uri: string; diagnostics: { range: Range; severity?: number; message: string; source?: string }[] }): void {
   const file = uriFile(params.uri);
-  const buffer = [...managing.keys()].find((b) => ember.withCurrentBuffer(b, () => ember.bufferFileName()) === file);
+  const buffer = [...managing.keys()].find((b) => gnista.withCurrentBuffer(b, () => gnista.bufferFileName()) === file);
   if (!buffer) return;
-  ember.withCurrentBuffer(buffer, () => {
+  gnista.withCurrentBuffer(buffer, () => {
     clearDiagnostics(buffer);
     const overlays: number[] = [];
     for (const d of params.diagnostics) {
       let start = bufferPosition(d.range.start);
       let end = bufferPosition(d.range.end);
       // An empty range marks the thing at it, as flymake-diag-region does.
-      if (end <= start) end = Math.min(ember.lineEndPosition(start), start + 1);
+      if (end <= start) end = Math.min(gnista.lineEndPosition(start), start + 1);
       if (end <= start) start = Math.max(0, end - 1);
       const face = d.severity === 1 || d.severity === undefined ? "flymake-error" : d.severity === 2 ? "flymake-warning" : "flymake-note";
       const text = d.source ? `${d.source}: ${d.message}` : d.message;
-      overlays.push(ember.makeOverlay(start, end, { face, "flymake-diagnostic": text, "eglot-severity": d.severity ?? 1 }));
+      overlays.push(gnista.makeOverlay(start, end, { face, "flymake-diagnostic": text, "eglot-severity": d.severity ?? 1 }));
     }
     diagnosticOverlays.set(buffer, overlays);
   });
@@ -576,19 +576,19 @@ function showDiagnostics(params: { uri: string; diagnostics: { range: Range; sev
 
 /** The diagnostics' overlays in the current buffer, in order. */
 const diagnostics = (): number[] =>
-  (diagnosticOverlays.get(ember.currentBuffer().name ?? "") ?? []).filter((o) => ember.overlayStart(o) !== undefined).sort((a, b) => ember.overlayStart(a)! - ember.overlayStart(b)!);
+  (diagnosticOverlays.get(gnista.currentBuffer().name ?? "") ?? []).filter((o) => gnista.overlayStart(o) !== undefined).sort((a, b) => gnista.overlayStart(a)! - gnista.overlayStart(b)!);
 
 function gotoDiagnostic(n: number): void {
   const all = diagnostics();
-  const here = ember.point();
-  const next = n > 0 ? all.find((o) => ember.overlayStart(o)! > here) : [...all].reverse().find((o) => ember.overlayStart(o)! < here);
-  if (next === undefined) ember.userError(n > 0 ? "No more Flymake diagnostics" : "No more Flymake diagnostics before point");
-  ember.gotoChar(ember.overlayStart(next)!);
-  ember.message(String(ember.overlayGet(next, "flymake-diagnostic") ?? ""));
+  const here = gnista.point();
+  const next = n > 0 ? all.find((o) => gnista.overlayStart(o)! > here) : [...all].reverse().find((o) => gnista.overlayStart(o)! < here);
+  if (next === undefined) gnista.userError(n > 0 ? "No more Flymake diagnostics" : "No more Flymake diagnostics before point");
+  gnista.gotoChar(gnista.overlayStart(next)!);
+  gnista.message(String(gnista.overlayGet(next, "flymake-diagnostic") ?? ""));
 }
 
-ember.defineCommand({ name: "flymake-goto-next-error", doc: "Go to the next diagnostic and show its message.", run: () => gotoDiagnostic(1) });
-ember.defineCommand({ name: "flymake-goto-prev-error", doc: "Go to the diagnostic before point and show its message.", run: () => gotoDiagnostic(-1) });
+gnista.defineCommand({ name: "flymake-goto-next-error", doc: "Go to the next diagnostic and show its message.", run: () => gotoDiagnostic(1) });
+gnista.defineCommand({ name: "flymake-goto-prev-error", doc: "Go to the diagnostic before point and show its message.", run: () => gotoDiagnostic(-1) });
 
 // --- What point is on, as eglot's eldoc functions -----------------------------
 
@@ -596,21 +596,21 @@ ember.defineCommand({ name: "flymake-goto-prev-error", doc: "Go to the diagnosti
 let lastHoverAt: string | undefined;
 function showAtPoint(): void {
   const server = currentServer();
-  if (!server || ember.minibufferDepth() > 0) return;
-  const here = ember.point();
-  const at = `${ember.currentBuffer().name}:${here}:${documents.get(ember.currentBuffer().name!)?.version}`;
+  if (!server || gnista.minibufferDepth() > 0) return;
+  const here = gnista.point();
+  const at = `${gnista.currentBuffer().name}:${here}:${documents.get(gnista.currentBuffer().name!)?.version}`;
   if (at === lastHoverAt) return;
   lastHoverAt = at;
-  const diagnostic = diagnostics().find((o) => ember.overlayStart(o)! <= here && here < ember.overlayEnd(o)!);
+  const diagnostic = diagnostics().find((o) => gnista.overlayStart(o)! <= here && here < gnista.overlayEnd(o)!);
   if (diagnostic !== undefined) {
-    ember.message(String(ember.overlayGet(diagnostic, "flymake-diagnostic")));
+    gnista.message(String(gnista.overlayGet(diagnostic, "flymake-diagnostic")));
     return;
   }
   if (!hasCapability(server, "hoverProvider")) return;
   try {
     const hover = request(server, "textDocument/hover", { textDocument: textDocument(), position: lspPosition() }) as any;
     const text = hoverText(hover?.contents);
-    if (text) ember.letBind({ "message-log-max": null }, () => ember.message(text));
+    if (text) gnista.letBind({ "message-log-max": null }, () => gnista.message(text));
   } catch {
     // The server may not answer for what point is on.
   }
@@ -629,14 +629,14 @@ function hoverText(contents: unknown): string {
 function applyTextEdits(edits: { range: Range; newText: string }[]): void {
   const resolved = edits.map((e) => ({ start: bufferPosition(e.range.start), end: bufferPosition(e.range.end), text: e.newText }));
   resolved.sort((a, b) => b.start - a.start || b.end - a.end);
-  const point = ember.makeMarker(ember.point());
+  const point = gnista.makeMarker(gnista.point());
   for (const e of resolved) {
-    ember.deleteRegion(e.start, e.end);
-    ember.gotoChar(e.start);
-    ember.insert(e.text);
+    gnista.deleteRegion(e.start, e.end);
+    gnista.gotoChar(e.start);
+    gnista.insert(e.text);
   }
-  ember.gotoChar(ember.markerPosition(point)!);
-  ember.deleteMarker(point);
+  gnista.gotoChar(gnista.markerPosition(point)!);
+  gnista.deleteMarker(point);
 }
 
 /** Applies a WorkspaceEdit to the files it names, visiting them, as eglot--apply-workspace-edit. */
@@ -647,52 +647,52 @@ function applyWorkspaceEdit(edit: any): void {
   }
   for (const [uri, edits] of Object.entries(edit?.changes ?? {})) byFile.push([uriFile(uri), edits as { range: Range; newText: string }[]]);
   for (const [file, edits] of byFile) {
-    const buffer = ember.findFileNoselect(file);
-    ember.withCurrentBuffer(buffer, () => applyTextEdits(edits));
+    const buffer = gnista.findFileNoselect(file);
+    gnista.withCurrentBuffer(buffer, () => applyTextEdits(edits));
   }
-  if (byFile.length > 0) ember.message(`[eglot] Edited ${byFile.length} file${byFile.length === 1 ? "" : "s"}`);
+  if (byFile.length > 0) gnista.message(`[eglot] Edited ${byFile.length} file${byFile.length === 1 ? "" : "s"}`);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "eglot-rename",
   doc: "Rename the thing at point everywhere the server knows of it.",
   params: [{ name: "newname", prompt: () => "Rename to: " }],
   run: (newname) => {
     const server = requireServer();
-    if (!hasCapability(server, "renameProvider")) ember.userError("[eglot] Server can't rename");
+    if (!hasCapability(server, "renameProvider")) gnista.userError("[eglot] Server can't rename");
     applyWorkspaceEdit(request(server, "textDocument/rename", { textDocument: textDocument(), position: lspPosition(), newName: newname }));
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "eglot-format-buffer",
   doc: "Have the server format the whole buffer.",
   run: () => {
     const server = requireServer();
-    if (!hasCapability(server, "documentFormattingProvider")) ember.userError("[eglot] Server can't format");
-    const tabWidth = Number(ember.variable("tab-width") ?? 8);
+    if (!hasCapability(server, "documentFormattingProvider")) gnista.userError("[eglot] Server can't format");
+    const tabWidth = Number(gnista.variable("tab-width") ?? 8);
     const edits = request(server, "textDocument/formatting", {
       textDocument: textDocument(),
-      options: { tabSize: tabWidth, insertSpaces: !truthy(ember.variable("indent-tabs-mode")) },
+      options: { tabSize: tabWidth, insertSpaces: !truthy(gnista.variable("indent-tabs-mode")) },
     }) as { range: Range; newText: string }[] | null;
     if (edits) applyTextEdits(edits);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "eglot-code-actions",
   doc: "Choose one of the changes the server offers for point, or the region, and make it.",
   run: () => {
     const server = requireServer();
-    const [start, end] = ember.regionActive() ? [Math.min(ember.point(), ember.mark()!), Math.max(ember.point(), ember.mark()!)] : [ember.point(), ember.point()];
-    const here = diagnostics().filter((o) => ember.overlayStart(o)! <= end && start <= ember.overlayEnd(o)!);
+    const [start, end] = gnista.regionActive() ? [Math.min(gnista.point(), gnista.mark()!), Math.max(gnista.point(), gnista.mark()!)] : [gnista.point(), gnista.point()];
+    const here = diagnostics().filter((o) => gnista.overlayStart(o)! <= end && start <= gnista.overlayEnd(o)!);
     const actions = (request(server, "textDocument/codeAction", {
       textDocument: textDocument(),
       range: { start: lspPosition(start), end: lspPosition(end) },
-      context: { diagnostics: here.map((o) => ({ range: { start: lspPosition(ember.overlayStart(o)), end: lspPosition(ember.overlayEnd(o)) }, message: String(ember.overlayGet(o, "flymake-diagnostic")) })) },
+      context: { diagnostics: here.map((o) => ({ range: { start: lspPosition(gnista.overlayStart(o)), end: lspPosition(gnista.overlayEnd(o)) }, message: String(gnista.overlayGet(o, "flymake-diagnostic")) })) },
     }) ?? []) as any[];
-    if (actions.length === 0) ember.userError("[eglot] No code actions here");
-    const title = ember.completingRead("[eglot] Pick an action: ", actions.map((a) => String(a.title)), { requireMatch: true });
+    if (actions.length === 0) gnista.userError("[eglot] No code actions here");
+    const title = gnista.completingRead("[eglot] Pick an action: ", actions.map((a) => String(a.title)), { requireMatch: true });
     const action = actions.find((a) => a.title === title);
     if (action?.edit) applyWorkspaceEdit(action.edit);
     const command = action?.command && typeof action.command === "object" ? action.command : action?.command ? action : undefined;
@@ -706,15 +706,15 @@ let timers: number[] = [];
 function startTimers(): void {
   if (timers.length > 0) return;
   timers = [
-    // Edits are sent once Ember has been idle a moment, as eglot-send-changes-idle-time has it.
-    ember.runWithIdleTimer(Number(ember.variable("eglot-send-changes-idle-time") ?? 0.5), true, () => {
-      for (const server of servers) if (server.initialized && ember.processLiveP(server.process)) flushChanges(server);
+    // Edits are sent once Gnista has been idle a moment, as eglot-send-changes-idle-time has it.
+    gnista.runWithIdleTimer(Number(gnista.variable("eglot-send-changes-idle-time") ?? 0.5), true, () => {
+      for (const server of servers) if (server.initialized && gnista.processLiveP(server.process)) flushChanges(server);
     }),
-    ember.runWithIdleTimer(0.5, true, showAtPoint),
+    gnista.runWithIdleTimer(0.5, true, showAtPoint),
   ];
 }
 
 function stopTimers(): void {
-  for (const t of timers) ember.cancelTimer(t);
+  for (const t of timers) gnista.cancelTimer(t);
   timers = [];
 }

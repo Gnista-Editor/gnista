@@ -4,7 +4,7 @@ Status: accepted · 2026-10-27
 
 ## Context
 
-Much of Ember will be written by AI agents working across many sessions. Decisions that live only in a conversation are lost, and later agents re-open them or contradict them. The brief asks for decisions to be written down.
+Much of Gnista will be written by AI agents working across many sessions. Decisions that live only in a conversation are lost, and later agents re-open them or contradict them. The brief asks for decisions to be written down.
 
 ## Options considered
 

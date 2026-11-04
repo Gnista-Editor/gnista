@@ -1,6 +1,6 @@
 {
-  // Lets `tsc -p packages` check Ember's own packages against ember.d.ts,
-  // with the same settings Ember writes for a user's config directory.
+  // Lets `tsc -p packages` check Gnista's own packages against gnista.d.ts,
+  // with the same settings Gnista writes for a user's config directory.
   "compilerOptions": {
     "strict": true,
     "noEmit": true,
@@ -12,7 +12,7 @@
     "moduleDetection": "force",
     "module": "preserve",
     "paths": { "*": ["./*"] },
-    // Ember erases types rather than compiling them, so enums and the like are not allowed.
+    // Gnista erases types rather than compiling them, so enums and the like are not allowed.
     "erasableSyntaxOnly": true
   },
   "include": ["*.ts"]

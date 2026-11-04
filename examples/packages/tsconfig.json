@@ -1,9 +1,9 @@
 {
   // Lets `tsc -p examples/packages` check these packages as a user's are
-  // checked: against ember.d.ts, importing Ember's own packages by name.
+  // checked: against gnista.d.ts, importing Gnista's own packages by name.
   "extends": "../../packages/tsconfig.json",
   "compilerOptions": {
     "paths": { "*": ["./*", "../../packages/*"] }
   },
-  "include": ["*.ts", "../../packages/ember.d.ts"]
+  "include": ["*.ts", "../../packages/gnista.d.ts"]
 }

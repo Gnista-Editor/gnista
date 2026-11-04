@@ -2,146 +2,146 @@
 // matches them. C-x ] and C-x [ move by pages, C-x C-p marks one, C-x l
 // counts its lines and C-x n p narrows to it.
 
-ember.defineVariable({ name: "page-delimiter", doc: "The regexp for the start of a page: a form feed at the start of a line.", value: "^\f" });
+gnista.defineVariable({ name: "page-delimiter", doc: "The regexp for the start of a page: a form feed at the start of a line.", value: "^\f" });
 
-const delimiter = (): string => String(ember.variable("page-delimiter") ?? "^\f");
-const bobp = () => ember.point() === ember.pointMin();
-const eobp = () => ember.point() === ember.pointMax();
-const bolp = () => ember.point() === ember.lineBeginningPosition();
+const delimiter = (): string => String(gnista.variable("page-delimiter") ?? "^\f");
+const bobp = () => gnista.point() === gnista.pointMin();
+const eobp = () => gnista.point() === gnista.pointMax();
+const bolp = () => gnista.point() === gnista.lineBeginningPosition();
 
 /** Moves over `count` page delimiters, back if negative, as forward-page. */
 export function forwardPage(countIn = 1): void {
   let count = countIn;
   while (count > 0 && !eobp()) {
-    if (ember.lookingAt(delimiter()) && ember.matchEnd(0)! > ember.point()) {
-      ember.gotoChar(ember.matchEnd(0)!);
+    if (gnista.lookingAt(delimiter()) && gnista.matchEnd(0)! > gnista.point()) {
+      gnista.gotoChar(gnista.matchEnd(0)!);
     } else {
       // A delimiter matching nothing must not match without moving.
-      if (bolp()) ember.gotoChar(ember.point() + 1);
-      if (ember.reSearchForward(delimiter(), { noerror: true }) === undefined) ember.gotoChar(ember.pointMax());
+      if (bolp()) gnista.gotoChar(gnista.point() + 1);
+      if (gnista.reSearchForward(delimiter(), { noerror: true }) === undefined) gnista.gotoChar(gnista.pointMax());
     }
     count--;
   }
   while (count < 0 && !bobp()) {
-    const before = ember.saveExcursion(() => ember.reSearchBackward(delimiter(), { noerror: true }) !== undefined && ember.matchEnd(0) === ember.point());
-    if (before) ember.gotoChar(ember.matchBeginning(0)!);
+    const before = gnista.saveExcursion(() => gnista.reSearchBackward(delimiter(), { noerror: true }) !== undefined && gnista.matchEnd(0) === gnista.point());
+    if (before) gnista.gotoChar(gnista.matchBeginning(0)!);
     if (!bobp()) {
-      ember.gotoChar(ember.point() - 1);
-      if (ember.reSearchBackward(delimiter(), { noerror: true }) !== undefined) ember.gotoChar(ember.matchEnd(0)!);
-      else ember.gotoChar(ember.pointMin());
+      gnista.gotoChar(gnista.point() - 1);
+      if (gnista.reSearchBackward(delimiter(), { noerror: true }) !== undefined) gnista.gotoChar(gnista.matchEnd(0)!);
+      else gnista.gotoChar(gnista.pointMin());
     }
     count++;
   }
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "forward-page",
   doc: "Move to the end of this page, past the next form feed; with a prefix argument, that many pages, back if negative.",
   params: [{ name: "count", kind: "count" }],
   run: (count: number) => forwardPage(count),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "backward-page",
   doc: "Move to the start of this page, just after the form feed before; with a prefix argument, that many pages back.",
   params: [{ name: "count", kind: "count" }],
   run: (count: number) => forwardPage(-count),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "mark-page",
   doc: "Put point at the start of this page and the mark at its end; with a prefix argument, of the page that many after.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: (argIn: ember.PrefixArg) => {
-    const arg = argIn === null ? 0 : ember.prefixNumericValue(argIn);
+  run: (argIn: gnista.PrefixArg) => {
+    const arg = argIn === null ? 0 : gnista.prefixNumericValue(argIn);
     if (arg > 0) forwardPage(arg);
     else if (arg < 0) forwardPage(arg - 1);
     forwardPage();
-    ember.pushMark(ember.point(), { activate: true });
+    gnista.pushMark(gnista.point(), { activate: true });
     forwardPage(-1);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "narrow-to-page",
   doc: "Narrow to this page; with a prefix argument, to the page that many after, or before if negative.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: (argIn: ember.PrefixArg) => {
-    const arg = argIn === null ? 0 : ember.prefixNumericValue(argIn);
-    ember.saveExcursion(() => {
-      ember.widen();
+  run: (argIn: gnista.PrefixArg) => {
+    const arg = argIn === null ? 0 : gnista.prefixNumericValue(argIn);
+    gnista.saveExcursion(() => {
+      gnista.widen();
       if (arg > 0) {
         forwardPage(arg);
       } else if (arg < 0) {
-        const opoint = ember.point();
-        const atStart = ember.saveExcursion(() => {
-          ember.gotoChar(ember.lineBeginningPosition());
-          return ember.lookingAt(delimiter()) && ember.matchEnd(0) === opoint;
+        const opoint = gnista.point();
+        const atStart = gnista.saveExcursion(() => {
+          gnista.gotoChar(gnista.lineBeginningPosition());
+          return gnista.lookingAt(delimiter()) && gnista.matchEnd(0) === opoint;
         });
         forwardPage(arg - (atStart ? 0 : 1));
       }
       // The end of the page: before the delimiter that ends it, if any.
-      const from = ember.point();
+      const from = gnista.point();
       forwardPage();
-      const delim = ember.saveExcursion(() => ember.reSearchBackward(delimiter(), { bound: from, noerror: true }) !== undefined && ember.matchEnd(0) === ember.point());
-      if (delim) ember.gotoChar(ember.matchBeginning(0)!);
-      const end = ember.point();
+      const delim = gnista.saveExcursion(() => gnista.reSearchBackward(delimiter(), { bound: from, noerror: true }) !== undefined && gnista.matchEnd(0) === gnista.point());
+      if (delim) gnista.gotoChar(gnista.matchBeginning(0)!);
+      const end = gnista.point();
       forwardPage(-1);
       // Text after the delimiter on its line belongs to the page; else start on the next line.
-      if (ember.point() === ember.lineEndPosition() && !bobp()) ember.gotoChar(Math.min(ember.pointMax(), ember.point() + 1));
-      ember.narrowToRegion(ember.point(), end);
+      if (gnista.point() === gnista.lineEndPosition() && !bobp()) gnista.gotoChar(Math.min(gnista.pointMax(), gnista.point() + 1));
+      gnista.narrowToRegion(gnista.point(), end);
     });
   },
 });
 
 /** The page's lines in all, before point and after it, as page--count-lines-page. */
 function countLinesPage(): [number, number, number] {
-  return ember.saveExcursion(() => {
-    const opoint = ember.point();
+  return gnista.saveExcursion(() => {
+    const opoint = gnista.point();
     forwardPage();
-    ember.gotoChar(ember.lineBeginningPosition());
-    if (!ember.lookingAt(delimiter())) ember.gotoChar(ember.lineEndPosition());
-    const end = ember.point();
+    gnista.gotoChar(gnista.lineBeginningPosition());
+    if (!gnista.lookingAt(delimiter())) gnista.gotoChar(gnista.lineEndPosition());
+    const end = gnista.point();
     forwardPage(-1);
     const count = (a: number, b: number) => {
-      const text = ember.bufferSubstringNoProperties(Math.min(a, b), Math.max(a, b));
+      const text = gnista.bufferSubstringNoProperties(Math.min(a, b), Math.max(a, b));
       const n = text.split("\n").length - 1;
       return text === "" || text.endsWith("\n") ? n : n + 1;
     };
-    return [count(ember.point(), end), count(ember.point(), opoint), count(opoint, end)];
+    return [count(gnista.point(), end), count(gnista.point(), opoint), count(opoint, end)];
   });
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "count-lines-page",
   doc: "Say how many lines the page has, and how many are before and after point.",
   run: () => {
     const [total, before, after] = countLinesPage();
-    ember.message(`Page has ${total} line${total === 1 ? "" : "s"} (${before} + ${after})`);
+    gnista.message(`Page has ${total} line${total === 1 ? "" : "s"} (${before} + ${after})`);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "what-page",
   doc: "Say which page point is on, and which line of it.",
   run: () => {
-    const [page, line] = ember.saveRestriction(() => {
-      ember.widen();
-      return ember.saveExcursion(() => {
+    const [page, line] = gnista.saveRestriction(() => {
+      gnista.widen();
+      return gnista.saveExcursion(() => {
         let count = 1;
-        const opoint = ember.point();
-        const adjust = bolp() || (ember.point() > ember.pointMin() && ember.lookingAt(delimiter(), ember.lineBeginningPosition()) && ember.matchEnd(0) === opoint) ? 1 : 0;
-        ember.gotoChar(ember.pointMin());
-        while (ember.reSearchForward(delimiter(), { bound: opoint, noerror: true }) !== undefined) {
-          if (ember.matchBeginning(0) === ember.matchEnd(0)) ember.gotoChar(ember.point() + 1);
+        const opoint = gnista.point();
+        const adjust = bolp() || (gnista.point() > gnista.pointMin() && gnista.lookingAt(delimiter(), gnista.lineBeginningPosition()) && gnista.matchEnd(0) === opoint) ? 1 : 0;
+        gnista.gotoChar(gnista.pointMin());
+        while (gnista.reSearchForward(delimiter(), { bound: opoint, noerror: true }) !== undefined) {
+          if (gnista.matchBeginning(0) === gnista.matchEnd(0)) gnista.gotoChar(gnista.point() + 1);
           count++;
         }
-        const text = ember.bufferSubstringNoProperties(ember.point(), opoint);
+        const text = gnista.bufferSubstringNoProperties(gnista.point(), opoint);
         const lines = text === "" ? 0 : text.split("\n").length - (text.endsWith("\n") ? 1 : 0);
         return [count, adjust + lines];
       });
     });
-    ember.message(`Page ${page}, line ${line}`);
+    gnista.message(`Page ${page}, line ${line}`);
   },
 });
 
@@ -152,5 +152,5 @@ for (const [keys, command] of [
   ["C-x l", "count-lines-page"],
   ["C-x n p", "narrow-to-page"],
 ] as const) {
-  ember.bindKey(keys, command);
+  gnista.bindKey(keys, command);
 }

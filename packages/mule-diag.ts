@@ -34,7 +34,7 @@ function aliasesOf(coding: string): string[] {
  */
 export function codingSystemBriefly(coding: string | undefined): string {
   if (coding === undefined) return "nil\n";
-  const mnemonic = entry(splitEol(coding)[0])?.[0] ?? String(ember.codingSystemMnemonic(coding));
+  const mnemonic = entry(splitEol(coding)[0])?.[0] ?? String(gnista.codingSystemMnemonic(coding));
   let line = `${mnemonic} -- ${coding}`;
   const aliases = aliasesOf(coding);
   if (coding === aliases[0]) {
@@ -52,56 +52,56 @@ export function describeCodingSystemText(coding: string): string {
   const known = entry(name);
   if (known === undefined) return codingSystemBriefly(coding);
   const [, aliases, before, after] = known;
-  const eolType = ember.codingSystemEolType(coding);
+  const eolType = gnista.codingSystemEolType(coding);
   const eolLine = Array.isArray(eolType)
     ? `EOL type: Automatic selection from:\n\t[${EOL_NAMES.map((e) => `${aliases[0]}-${e}`).join(" ")}]\n`
     : `EOL type: ${["LF", "CRLF", "CR"][eol ?? (eolType as number)]}\n`;
   return `${codingSystemBriefly(coding)}${before.slice(1)}${eolLine}${after}`;
 }
 
-ember.defineVariable({ name: "selection-coding-system", doc: "The coding system for text cut and pasted between programs, or nil for the default.", value: null });
+gnista.defineVariable({ name: "selection-coding-system", doc: "The coding system for text cut and pasted between programs, or nil for the default.", value: null });
 
 /** What describe-current-coding-system shows: the coding systems in use now. */
 function describeCurrentText(): string {
-  const value = (v: ember.Value | undefined) => (typeof v === "string" ? v : undefined);
+  const value = (v: gnista.Value | undefined) => (typeof v === "string" ? v : undefined);
   let text = "Coding system for saving this buffer:\n  ";
-  text += ember.isLocalVariable("buffer-file-coding-system")
-    ? codingSystemBriefly(value(ember.variable("buffer-file-coding-system")))
+  text += gnista.isLocalVariable("buffer-file-coding-system")
+    ? codingSystemBriefly(value(gnista.variable("buffer-file-coding-system")))
     : "Not set locally, use the default.\n";
-  text += "Default coding system (for new files):\n  " + codingSystemBriefly(value(ember.defaultValue("buffer-file-coding-system")));
+  text += "Default coding system (for new files):\n  " + codingSystemBriefly(value(gnista.defaultValue("buffer-file-coding-system")));
   text += "Coding system for keyboard input:\n  " + codingSystemBriefly("utf-8-unix");
   text += "Coding system for terminal output:\n  " + codingSystemBriefly("utf-8-unix");
-  text += "Coding system for inter-client cut and paste:\n  " + codingSystemBriefly(value(ember.variable("selection-coding-system")));
-  const proc = ember.getBufferProcess(ember.bufferName());
+  text += "Coding system for inter-client cut and paste:\n  " + codingSystemBriefly(value(gnista.variable("selection-coding-system")));
+  const proc = gnista.getBufferProcess(gnista.bufferName());
   if (proc !== undefined) {
-    const [decoding, encoding] = ember.processCodingSystem(proc) ?? [undefined, undefined];
+    const [decoding, encoding] = gnista.processCodingSystem(proc) ?? [undefined, undefined];
     text += "Coding systems for process I/O:\n";
     text += "  encoding input to the process: " + codingSystemBriefly(encoding);
     text += "  decoding output from the process: " + codingSystemBriefly(decoding);
   }
-  const defaults = ember.variable("default-process-coding-system");
+  const defaults = gnista.variable("default-process-coding-system");
   const [decoding, encoding] = Array.isArray(defaults) ? defaults.map(value) : [undefined, undefined];
   text += "Defaults for subprocess I/O:\n  decoding: " + codingSystemBriefly(decoding) + "  encoding: " + codingSystemBriefly(encoding);
   return text;
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "describe-current-coding-system",
   doc: "Show the coding systems in use now: for saving the buffer, for new files, for the keyboard and terminal, and for processes.",
-  run: () => ember.showHelp(describeCurrentText()),
+  run: () => gnista.showHelp(describeCurrentText()),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "describe-coding-system",
   doc:
     "Show what a coding system is: its mnemonic, aliases, documentation, type, line ends and the charsets it can write.\n\n" +
     "With no name, show the coding systems in use now, as describe-current-coding-system.",
   run: async () => {
     const coding = await readCodingSystem("Describe coding system (default current choices): ", { asTyped: true });
-    ember.showHelp(coding === undefined ? describeCurrentText() : describeCodingSystemText(coding));
+    gnista.showHelp(coding === undefined ? describeCurrentText() : describeCodingSystemText(coding));
   },
 });
-ember.bindKey("C-h C", "describe-coding-system");
+gnista.bindKey("C-h C", "describe-coding-system");
 
 // The table below is written by tests/emacs/mule-diag.el.
 /** For each coding system: its mnemonic, its aliases, and Emacs's description before and after the line on its end-of-line conversion. */

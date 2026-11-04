@@ -3,23 +3,23 @@
 // buffer's directory. C-x p f visits one of its files, with completion; C-x p
 // d lists one of its directories and C-x p D its root in Dired; C-x p b
 // switches among its buffers and C-x p k kills them; C-x p p switches to
-// another project Ember knows. Projects used are remembered in the file
+// another project Gnista knows. Projects used are remembered in the file
 // project-list-file, as JSON where Emacs writes Lisp.
 
 import { regexpQuote } from "subr";
 import { matchesInFiles } from "xref";
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "project-list-file",
-  doc: "Where the projects Ember knows are saved: projects in user-emacs-directory if nil.",
+  doc: "Where the projects Gnista knows are saved: projects in user-emacs-directory if nil.",
   value: null,
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "project-vc-extra-root-markers",
   doc: "Names of files that mark a project's root as well as version control's, such as \"package.json\".",
   value: [],
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "project-vc-ignores",
   doc: "Names of files and directories a project outside version control leaves out of its files.",
   value: [],
@@ -28,15 +28,15 @@ ember.defineVariable({
 /** The files and directories that mark the root of a version-controlled project, as vc-handled-backends find them. */
 const VC_MARKERS = [".git", ".hg", ".bzr", ".svn", "_darcs", ".jj"];
 
-const strings = (v: ember.Value | undefined): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
+const strings = (v: gnista.Value | undefined): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
 
 /** The project directory `dir` is in, as project-current finds it: its root, abbreviated, with a slash. */
 function findRoot(dir: string): string | undefined {
-  const markers = [...VC_MARKERS, ...strings(ember.variable("project-vc-extra-root-markers"))];
-  let d = ember.fileNameAsDirectory(ember.expandFileName(dir));
+  const markers = [...VC_MARKERS, ...strings(gnista.variable("project-vc-extra-root-markers"))];
+  let d = gnista.fileNameAsDirectory(gnista.expandFileName(dir));
   for (;;) {
-    if (markers.some((m) => ember.fileAttributes(d + m) !== undefined)) return ember.abbreviateFileName(d);
-    const up = ember.fileNameDirectory(ember.directoryFileName(d));
+    if (markers.some((m) => gnista.fileAttributes(d + m) !== undefined)) return gnista.abbreviateFileName(d);
+    const up = gnista.fileNameDirectory(gnista.directoryFileName(d));
     if (up === undefined || up === d) return undefined;
     d = up;
   }
@@ -46,25 +46,25 @@ function findRoot(dir: string): string | undefined {
 let override: string | undefined;
 
 function listFile(): string | undefined {
-  const file = ember.variable("project-list-file");
-  if (typeof file === "string") return ember.expandFileName(file);
-  const dir = ember.variable("user-emacs-directory");
-  return typeof dir === "string" ? ember.expandFileName(`${dir}projects`) : undefined;
+  const file = gnista.variable("project-list-file");
+  if (typeof file === "string") return gnista.expandFileName(file);
+  const dir = gnista.variable("user-emacs-directory");
+  return typeof dir === "string" ? gnista.expandFileName(`${dir}projects`) : undefined;
 }
 
 let known: string[] | undefined;
 
-/** The projects Ember knows, most recently used first, read from project-list-file the first time. */
+/** The projects Gnista knows, most recently used first, read from project-list-file the first time. */
 function knownProjects(): string[] {
   if (known !== undefined) return known;
   known = [];
   const file = listFile();
-  if (file !== undefined && ember.fileExists(file)) {
+  if (file !== undefined && gnista.fileExists(file)) {
     try {
-      const list = JSON.parse(ember.readTextFile(file));
+      const list = JSON.parse(gnista.readTextFile(file));
       if (Array.isArray(list)) known = list.filter((p): p is string => typeof p === "string");
     } catch {
-      ember.message(`Error reading ${ember.abbreviateFileName(file)}`);
+      gnista.message(`Error reading ${gnista.abbreviateFileName(file)}`);
     }
   }
   return known;
@@ -72,7 +72,7 @@ function knownProjects(): string[] {
 
 function writeKnown(): void {
   const file = listFile();
-  if (file !== undefined) ember.writeTextFile(file, `${JSON.stringify(knownProjects(), null, 2)}\n`);
+  if (file !== undefined) gnista.writeTextFile(file, `${JSON.stringify(knownProjects(), null, 2)}\n`);
 }
 
 /** Puts a project first among those known, as project-remember-project, saving the list if it changed. */
@@ -101,22 +101,22 @@ async function projectCurrent(): Promise<string> {
 
 /** Asks for a known project, or any directory, as project-prompt-project-dir. */
 async function promptProjectDir(): Promise<string> {
-  const answer = await ember.completingRead("Select project: ", [...knownProjects(), CHOOSE_DIR], { requireMatch: true });
+  const answer = await gnista.completingRead("Select project: ", [...knownProjects(), CHOOSE_DIR], { requireMatch: true });
   if (answer !== CHOOSE_DIR && answer !== "") return answer;
-  return ember.readFileName("Select directory: ", { mustMatch: true });
+  return gnista.readFileName("Select directory: ", { mustMatch: true });
 }
 
 /** A directory taken as a project: the root of the one it is in, or itself. */
 function useProject(dir: string): string {
-  const root = findRoot(dir) ?? ember.abbreviateFileName(ember.fileNameAsDirectory(ember.expandFileName(dir)));
+  const root = findRoot(dir) ?? gnista.abbreviateFileName(gnista.fileNameAsDirectory(gnista.expandFileName(dir)));
   remember(root);
   return root;
 }
 
 /** A project's files, relative to its root. */
 function files(root: string): string[] {
-  const abs = ember.fileNameAsDirectory(ember.expandFileName(root));
-  return ember.projectFiles(abs, { ignores: strings(ember.variable("project-vc-ignores")) })
+  const abs = gnista.fileNameAsDirectory(gnista.expandFileName(root));
+  return gnista.projectFiles(abs, { ignores: strings(gnista.variable("project-vc-ignores")) })
     .map((f) => (f.startsWith(abs) ? f.slice(abs.length) : f));
 }
 
@@ -137,105 +137,105 @@ async function readFile(root: string, what: string, names: string[]): Promise<st
   const cpd = common.includes("/") ? common.slice(0, common.lastIndexOf("/") + 1) : "";
   const dir = root + cpd;
   const choices = names.map((n) => n.slice(cpd.length)).map((n) => (n === "" ? "./" : n));
-  const answer = await ember.completingRead(`${what} in ${dir}: `, choices, { category: "project-file", history: "file-name-history" });
-  if (answer === "") ember.userError("You didn't specify the file");
-  return ember.expandFileName(dir + answer);
+  const answer = await gnista.completingRead(`${what} in ${dir}: `, choices, { category: "project-file", history: "file-name-history" });
+  if (answer === "") gnista.userError("You didn't specify the file");
+  return gnista.expandFileName(dir + answer);
 }
 
-const findFile = ember.defineCommand({
+const findFile = gnista.defineCommand({
   name: "project-find-file",
   doc:
     "Visit one of the current project's files, with completion: those Git tracks and does not ignore.\n\n" +
     "Outside a project, it asks which one first.",
   run: async () => {
     const root = await projectCurrent();
-    ember.call("find-file", await readFile(root, "Find file", files(root)));
+    gnista.call("find-file", await readFile(root, "Find file", files(root)));
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "project-find-dir",
   doc: "List one of the current project's directories in Dired, with completion.",
   run: async () => {
     const root = await projectCurrent();
     const dirs = [...new Set(files(root).map((f) => f.slice(0, f.lastIndexOf("/") + 1)))];
-    ember.call("dired", ember.fileNameAsDirectory(await readFile(root, "Dired", dirs)));
+    gnista.call("dired", gnista.fileNameAsDirectory(await readFile(root, "Dired", dirs)));
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "project-dired",
   doc: "List the current project's root in Dired.",
-  run: async () => ember.call("dired", await projectCurrent()),
+  run: async () => gnista.call("dired", await projectCurrent()),
 });
 
 /** The buffers that belong to a project: those whose files or default directories are under its root. */
 function projectBuffers(root: string): string[] {
-  const abs = ember.fileNameAsDirectory(ember.expandFileName(root));
-  return ember.bufferList().filter((b) => {
+  const abs = gnista.fileNameAsDirectory(gnista.expandFileName(root));
+  return gnista.bufferList().filter((b) => {
     if (b.startsWith(" ")) return false;
-    return ember.withCurrentBuffer(b, () => {
-      const file = ember.bufferFileName();
-      const dir = ember.fileNameAsDirectory(ember.expandFileName("."));
-      return file !== undefined ? file.startsWith(abs) : ember.variable("major-mode") === "dired-mode" && dir.startsWith(abs);
+    return gnista.withCurrentBuffer(b, () => {
+      const file = gnista.bufferFileName();
+      const dir = gnista.fileNameAsDirectory(gnista.expandFileName("."));
+      return file !== undefined ? file.startsWith(abs) : gnista.variable("major-mode") === "dired-mode" && dir.startsWith(abs);
     });
   });
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "project-switch-to-buffer",
   doc: "Switch to one of the current project's buffers, with completion.",
   run: async () => {
     const root = await projectCurrent();
-    const here = ember.bufferName();
+    const here = gnista.bufferName();
     const buffers = projectBuffers(root);
     const other = buffers.find((b) => b !== here);
-    const b = await ember.completingRead(
+    const b = await gnista.completingRead(
       other === undefined ? "Switch to buffer: " : `Switch to buffer (default ${other}): `,
       buffers,
       { category: "buffer", default: other },
     );
-    ember.call("switch-to-buffer", b === "" ? other ?? here : b);
+    gnista.call("switch-to-buffer", b === "" ? other ?? here : b);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "project-kill-buffers",
   doc: "Kill the current project's buffers, after asking. With a prefix argument, without asking.",
   run: async () => {
     const root = await projectCurrent();
     const buffers = projectBuffers(root);
     if (buffers.length === 0) {
-      ember.message("No buffers to kill");
+      gnista.message("No buffers to kill");
       return;
     }
-    if (ember.prefixArg() === null && !(await ember.yesOrNoP(`Kill ${buffers.length} buffer${buffers.length === 1 ? "" : "s"} in ${root}? `))) return;
-    for (const b of buffers) ember.call("kill-buffer", b);
+    if (gnista.prefixArg() === null && !(await gnista.yesOrNoP(`Kill ${buffers.length} buffer${buffers.length === 1 ? "" : "s"} in ${root}? `))) return;
+    for (const b of buffers) gnista.call("kill-buffer", b);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "project-forget-project",
-  doc: "Forget a project Ember knows, so C-x p p no longer offers it.",
+  doc: "Forget a project Gnista knows, so C-x p p no longer offers it.",
   params: [{ name: "dir", prompt: "Forget project: ", requireMatch: true, collection: () => knownProjects() }],
   run: (dir: string) => {
     known = knownProjects().filter((p) => p !== dir);
     writeKnown();
-    ember.message(`Project ${dir} removed from known projects`);
+    gnista.message(`Project ${dir} removed from known projects`);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "project-forget-zombie-projects",
-  doc: "Forget the projects Ember knows whose directories are gone.",
+  doc: "Forget the projects Gnista knows whose directories are gone.",
   run: () => {
-    known = knownProjects().filter((p) => ember.fileDirectoryP(p));
+    known = knownProjects().filter((p) => gnista.fileDirectoryP(p));
     writeKnown();
   },
 });
 
 /** The commands C-x p p offers once a project is chosen, as project-switch-commands: key, command, what it says. */
-ember.defineVariable({
+gnista.defineVariable({
   name: "project-switch-commands",
   doc: "What C-x p p offers once a project is chosen, as [key, command, label] lists, the key pressed then running the command.",
   value: [
@@ -248,10 +248,10 @@ ember.defineVariable({
   ],
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "project-switch-project",
   doc:
-    "Switch to another project Ember knows, then choose what to do there, as project-switch-commands lists: " +
+    "Switch to another project Gnista knows, then choose what to do there, as project-switch-commands lists: " +
     "f finds a file, d a directory, D lists the root in Dired, b switches to a buffer and k kills its buffers.",
   params: [{
     name: "dir",
@@ -260,54 +260,54 @@ ember.defineCommand({
     collection: () => [...knownProjects(), CHOOSE_DIR],
   }],
   run: async (answer: string) => {
-    const root = useProject(answer === CHOOSE_DIR ? await ember.readFileName("Select directory: ", { mustMatch: true }) : answer);
-    const entries = (ember.variable("project-switch-commands") as ember.Value[])
+    const root = useProject(answer === CHOOSE_DIR ? await gnista.readFileName("Select directory: ", { mustMatch: true }) : answer);
+    const entries = (gnista.variable("project-switch-commands") as gnista.Value[])
       .filter((e): e is string[] => Array.isArray(e) && e.length >= 3 && e.every((x) => typeof x === "string"));
     const prompt = entries.map(([key, , label]) => `[${key}] ${label}`).join("  ");
-    const key = await ember.readCharChoice(`${prompt}\n`, entries.map(([key]) => key).join(""));
+    const key = await gnista.readCharChoice(`${prompt}\n`, entries.map(([key]) => key).join(""));
     const entry = entries.find(([k]) => k === key);
     if (entry === undefined) return;
     // As project-current-directory-override, bound while the command
     // starts; it finds its project before it asks anything.
     override = root;
     try {
-      ember.callInteractively(entry[1] as ember.CommandName);
+      gnista.callInteractively(entry[1] as gnista.CommandName);
     } finally {
       override = undefined;
     }
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "project-remember-projects-under",
   doc: "Remember the projects in a directory and the directories in it, so C-x p p offers them. Says how many were new.",
   params: [{ name: "dir", kind: "file", prompt: "Remember projects under: " }],
   run: (dir: string) => {
     const before = knownProjects().length;
-    const base = ember.fileNameAsDirectory(ember.expandFileName(dir));
-    for (const name of ember.directoryFiles(base)) {
+    const base = gnista.fileNameAsDirectory(gnista.expandFileName(dir));
+    for (const name of gnista.directoryFiles(base)) {
       if (name === "." || name === "..") continue;
       const sub = `${base}${name}/`;
-      if (!ember.fileDirectoryP(sub)) continue;
-      if (VC_MARKERS.some((m) => ember.fileAttributes(sub + m) !== undefined)) remember(ember.abbreviateFileName(sub));
+      if (!gnista.fileDirectoryP(sub)) continue;
+      if (VC_MARKERS.some((m) => gnista.fileAttributes(sub + m) !== undefined)) remember(gnista.abbreviateFileName(sub));
     }
     const found = knownProjects().length - before;
-    ember.message(found === 0 ? "No projects were found" : `Found ${found} new project${found === 1 ? "" : "s"}`);
+    gnista.message(found === 0 ? "No projects were found" : `Found ${found} new project${found === 1 ? "" : "s"}`);
   },
 });
 
 /** The symbol at point, for a default, as (thing-at-point 'symbol). */
 function symbolAtPoint(): string | undefined {
-  const p = ember.point();
+  const p = gnista.point();
   let a = p;
   let b = p;
-  const symbolic = (q: number) => q >= 0 && q < ember.bufferSize() && "w_".includes(ember.charSyntax(ember.bufferText(q, q + 1)));
+  const symbolic = (q: number) => q >= 0 && q < gnista.bufferSize() && "w_".includes(gnista.charSyntax(gnista.bufferText(q, q + 1)));
   while (symbolic(a - 1)) a--;
   while (symbolic(b)) b++;
-  return b > a ? ember.bufferText(a, b) : undefined;
+  return b > a ? gnista.bufferText(a, b) : undefined;
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "project-find-regexp",
   doc: "Find matches for a regexp in the current project's files, showing them in *xref*, grouped by file.",
   params: [{
@@ -324,16 +324,16 @@ ember.defineCommand({
     const regexp = input === "" ? (sym === undefined ? "" : regexpQuote(sym)) : input;
     if (regexp === "") throw new Error("No regexp");
     // Case folds, as grep-expand-template does, when case-fold-search says and the regexp has no capitals.
-    const fold = ember.variable("case-fold-search") !== false && ember.variable("case-fold-search") !== null && !/[A-Z]/.test(regexp);
+    const fold = gnista.variable("case-fold-search") !== false && gnista.variable("case-fold-search") !== null && !/[A-Z]/.test(regexp);
     const root = await projectCurrent();
-    const dir = ember.fileNameAsDirectory(ember.expandFileName(root));
+    const dir = gnista.fileNameAsDirectory(gnista.expandFileName(root));
     const xrefs = matchesInFiles(regexp, files(root), dir, fold);
-    if (xrefs.length === 0) ember.userError(`No matches for: ${regexp}`);
-    ember.funcall("xref-show-xrefs", xrefs);
+    if (xrefs.length === 0) gnista.userError(`No matches for: ${regexp}`);
+    gnista.funcall("xref-show-xrefs", xrefs);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "project-compile",
   doc: "Run a compilation in the current project's root, as M-x compile does there.",
   run: async () => {
@@ -341,21 +341,21 @@ ember.defineCommand({
     // As (let ((default-directory root)) (call-interactively #'compile)):
     // compile takes its directory before it asks for the command. Every
     // buffer has its own default-directory in Emacs, so the binding is local.
-    const had = ember.isLocalVariable("default-directory");
-    const old = ember.variable("default-directory");
-    ember.makeLocalVariable("default-directory");
-    ember.setVariable("default-directory", ember.fileNameAsDirectory(ember.expandFileName(root)));
+    const had = gnista.isLocalVariable("default-directory");
+    const old = gnista.variable("default-directory");
+    gnista.makeLocalVariable("default-directory");
+    gnista.setVariable("default-directory", gnista.fileNameAsDirectory(gnista.expandFileName(root)));
     try {
-      ember.callInteractively("compile");
+      gnista.callInteractively("compile");
     } finally {
-      if (had) ember.setVariable("default-directory", old ?? null);
-      else ember.killLocalVariable("default-directory");
+      if (had) gnista.setVariable("default-directory", old ?? null);
+      else gnista.killLocalVariable("default-directory");
     }
   },
 });
 
 /** The keys after C-x p, as project.el's project-prefix-map. */
-const projectPrefixMap = ember.defineKeymap("project-prefix-map");
+const projectPrefixMap = gnista.defineKeymap("project-prefix-map");
 for (const [keys, command] of [
   ["f", findFile],
   ["d", "project-find-dir"],
@@ -366,6 +366,6 @@ for (const [keys, command] of [
   ["g", "project-find-regexp"],
   ["c", "project-compile"],
 ] as const) {
-  ember.defineKey(projectPrefixMap, keys, command);
+  gnista.defineKey(projectPrefixMap, keys, command);
 }
-ember.defineKey("ctl-x-map", "p", projectPrefixMap);
+gnista.defineKey("ctl-x-map", "p", projectPrefixMap);

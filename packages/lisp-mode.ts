@@ -4,7 +4,7 @@
 // lisp-el-font-lock-keywords-2 does. emacs-lisp-mode is in elisp-mode.ts.
 //
 // Copyright (C) 1985-2025 Free Software Foundation, Inc.
-// Ported to Ember in 2026.
+// Ported to Gnista in 2026.
 //
 // This program is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -13,7 +13,7 @@
 
 import { allMatches, forwardLine } from "subr";
 
-const defvar = (name: string, value: ember.Value, doc: string) => ember.defineVariable({ name, value, doc });
+const defvar = (name: string, value: gnista.Value, doc: string) => gnista.defineVariable({ name, value, doc });
 defvar("lisp-body-indent", 2, "How many columns the body of a (def...) form is indented by, past the form's open paren.");
 defvar("lisp-indent-offset", null, "If a number, how far each level of a list indents past its open paren, in place of lining up under the first argument.");
 
@@ -163,33 +163,33 @@ export const lispDataSyntax: Record<string, string> = (() => {
 
 // Moving over expressions, as Lisp's forward-sexp: an error where there is none to move over.
 function forwardSexp(n = 1): void {
-  const to = ember.scanSexps(ember.point(), n);
-  if (to === null) ember.signal("scan-error", "Containing expression ends prematurely");
-  ember.gotoChar(to);
+  const to = gnista.scanSexps(gnista.point(), n);
+  if (to === null) gnista.signal("scan-error", "Containing expression ends prematurely");
+  gnista.gotoChar(to);
 }
 
 /** Moves to where the next expression starts, not past `limit`, as (parse-partial-sexp (point) limit 0 t). */
 function skipToSexp(limit: number): void {
-  while (ember.point() < limit) {
-    ember.forwardComment(ember.bufferSize());
-    if (ember.point() >= limit) {
-      ember.gotoChar(limit);
+  while (gnista.point() < limit) {
+    gnista.forwardComment(gnista.bufferSize());
+    if (gnista.point() >= limit) {
+      gnista.gotoChar(limit);
       return;
     }
-    const c = ember.charAfter();
-    if (c !== undefined && ember.charSyntax(c) === "'") ember.gotoChar(ember.point() + 1);
+    const c = gnista.charAfter();
+    if (c !== undefined && gnista.charSyntax(c) === "'") gnista.gotoChar(gnista.point() + 1);
     else return;
   }
 }
 
-const nextLineStart = (): number => ember.saveExcursion(() => (forwardLine(1), ember.point()));
+const nextLineStart = (): number => gnista.saveExcursion(() => (forwardLine(1), gnista.point()));
 
 /** Where `pos` is, as lisp-ppss: syntax-ppss, with the last complete expression in the innermost list. */
-function lispPpss(pos: number): ember.ParseState {
-  const st = ember.syntaxPpss(pos);
+function lispPpss(pos: number): gnista.ParseState {
+  const st = gnista.syntaxPpss(pos);
   if (st.lastComplete === null && st.openParens.length > 0) {
     const inner = st.openParens[st.openParens.length - 1];
-    return { ...st, lastComplete: ember.parsePartialSexp(inner + 1, pos).lastComplete };
+    return { ...st, lastComplete: gnista.parsePartialSexp(inner + 1, pos).lastComplete };
   }
   return st;
 }
@@ -197,28 +197,28 @@ function lispPpss(pos: number): ember.ParseState {
 type Indent = number | [number, number] | undefined;
 
 /** How to indent the body of a defun-like form, as lisp-indent-defform. */
-function indentDefform(state: ember.ParseState, last: number): Indent {
-  ember.gotoChar(state.innermostStart!);
+function indentDefform(state: gnista.ParseState, last: number): Indent {
+  gnista.gotoChar(state.innermostStart!);
   forwardLine(1);
-  if (ember.point() > last) {
-    ember.gotoChar(state.innermostStart!);
-    return Number(ember.variable("lisp-body-indent") ?? 2) + ember.currentColumn();
+  if (gnista.point() > last) {
+    gnista.gotoChar(state.innermostStart!);
+    return Number(gnista.variable("lisp-body-indent") ?? 2) + gnista.currentColumn();
   }
   return undefined;
 }
 
 /** How to indent a form whose first `count` arguments are special, as lisp-indent-specform. */
-function indentSpecform(count: number, state: ember.ParseState, indentPoint: number, normal: number): Indent {
+function indentSpecform(count: number, state: gnista.ParseState, indentPoint: number, normal: number): Indent {
   const start = state.innermostStart!;
   const i = count;
-  ember.gotoChar(start);
-  const column = ember.currentColumn();
-  const bodyIndentStep = Number(ember.variable("lisp-body-indent") ?? 2);
+  gnista.gotoChar(start);
+  const column = gnista.currentColumn();
+  const bodyIndentStep = Number(gnista.variable("lisp-body-indent") ?? 2);
   const bodyIndent = bodyIndentStep + column;
-  ember.gotoChar(start + 1);
+  gnista.gotoChar(start + 1);
   forwardSexp();
   skipToSexp(indentPoint);
-  while (ember.point() < indentPoint) {
+  while (gnista.point() < indentPoint) {
     count--;
     try {
       forwardSexp();
@@ -232,22 +232,22 @@ function indentSpecform(count: number, state: ember.ParseState, indentPoint: num
 }
 
 /** Whether a function's arguments indent specially, and how, as lisp-indent-function. */
-function lispIndentFunction(indentPoint: number, state: ember.ParseState, last: number): Indent {
-  const normal = ember.currentColumn();
-  ember.gotoChar(state.innermostStart! + 1);
+function lispIndentFunction(indentPoint: number, state: gnista.ParseState, last: number): Indent {
+  const normal = gnista.currentColumn();
+  gnista.gotoChar(state.innermostStart! + 1);
   skipToSexp(last);
-  if (!ember.lookingAt("\\sw\\|\\s_")) {
+  if (!gnista.lookingAt("\\sw\\|\\s_")) {
     if (!(nextLineStart() > last)) {
-      ember.gotoChar(last);
-      ember.gotoChar(ember.lineBeginningPosition());
+      gnista.gotoChar(last);
+      gnista.gotoChar(gnista.lineBeginningPosition());
       skipToSexp(last);
     }
-    ember.backwardPrefixChars();
-    return ember.currentColumn();
+    gnista.backwardPrefixChars();
+    return gnista.currentColumn();
   }
-  const from = ember.point();
+  const from = gnista.point();
   forwardSexp();
-  const method = indentSpecs.get(ember.bufferSubstringNoProperties(from, ember.point()));
+  const method = indentSpecs.get(gnista.bufferSubstringNoProperties(from, gnista.point()));
   if (method === "defun") return indentDefform(state, last);
   if (typeof method === "number") return indentSpecform(method, state, indentPoint, normal);
   return undefined;
@@ -255,33 +255,33 @@ function lispIndentFunction(indentPoint: number, state: ember.ParseState, last: 
 
 /** A keyword argument lines up under the keyword before it, as calculate-lisp-indent does. */
 function keywordIndent(indentPoint: number, containing: number, last: number): number | undefined {
-  ember.gotoChar(indentPoint);
-  ember.skipCharsForward(" \t");
-  if (!ember.lookingAt(":")) return undefined;
-  ember.gotoChar(last);
-  ember.backwardPrefixChars();
+  gnista.gotoChar(indentPoint);
+  gnista.skipCharsForward(" \t");
+  if (!gnista.lookingAt(":")) return undefined;
+  gnista.gotoChar(last);
+  gnista.backwardPrefixChars();
   for (;;) {
-    const p = ember.point();
-    ember.skipCharsBackward(" \t");
-    const stop = ember.point() === ember.lineBeginningPosition() || ember.point() === containing + 1;
-    ember.gotoChar(p);
+    const p = gnista.point();
+    gnista.skipCharsBackward(" \t");
+    const stop = gnista.point() === gnista.lineBeginningPosition() || gnista.point() === containing + 1;
+    gnista.gotoChar(p);
     if (stop) break;
     forwardSexp(-1);
-    ember.backwardPrefixChars();
+    gnista.backwardPrefixChars();
   }
-  last = ember.point();
-  ember.gotoChar(containing + 1);
+  last = gnista.point();
+  gnista.gotoChar(containing + 1);
   skipToSexp(last);
-  if (!(last > ember.point())) return undefined;
-  ember.gotoChar(last);
-  if (ember.lookingAt(":")) return ember.currentColumn();
-  const bol = ember.lineBeginningPosition();
+  if (!(last > gnista.point())) return undefined;
+  gnista.gotoChar(last);
+  if (gnista.lookingAt(":")) return gnista.currentColumn();
+  const bol = gnista.lineBeginningPosition();
   try {
     forwardSexp(-1);
   } catch {
     return undefined;
   }
-  return bol < ember.point() && ember.lookingAt(":") ? ember.currentColumn() : undefined;
+  return bol < gnista.point() && gnista.lookingAt(":") ? gnista.currentColumn() : undefined;
 }
 
 /**
@@ -290,46 +290,46 @@ function keywordIndent(indentPoint: number, containing: number, last: number): n
  * lines after it at the same depth need not line up with it.
  */
 export function calculateLispIndent(): Indent {
-  return ember.saveExcursion(() => {
-    ember.gotoChar(ember.lineBeginningPosition());
-    const indentPoint = ember.point();
+  return gnista.saveExcursion(() => {
+    gnista.gotoChar(gnista.lineBeginningPosition());
+    const indentPoint = gnista.point();
     const state = lispPpss(indentPoint);
     let desired: number | undefined;
     const last = state.depth > 0 ? state.lastComplete : null;
     const containing = state.depth > 0 ? state.innermostStart : null;
     if (containing !== null) {
-      ember.gotoChar(containing + 1);
-      const spaceAfterOpen = ember.lookingAt("\\s-");
-      if (last === null) desired = ember.currentColumn();
+      gnista.gotoChar(containing + 1);
+      const spaceAfterOpen = gnista.lookingAt("\\s-");
+      if (last === null) desired = gnista.currentColumn();
       else {
         skipToSexp(last);
-        if (ember.lookingAt("\\s(")) {
+        if (gnista.lookingAt("\\s(")) {
           // The first element is a list: indent under it.
         } else if (nextLineStart() > last) {
           // The first line in the list: under its second element, the first argument.
-          if (!(ember.point() === last || spaceAfterOpen)) {
+          if (!(gnista.point() === last || spaceAfterOpen)) {
             forwardSexp();
             skipToSexp(last);
           }
-          ember.backwardPrefixChars();
+          gnista.backwardPrefixChars();
         } else {
           // Under the first expression on the line of the last one.
-          ember.gotoChar(last);
-          ember.gotoChar(ember.lineBeginningPosition());
+          gnista.gotoChar(last);
+          gnista.gotoChar(gnista.lineBeginningPosition());
           skipToSexp(last);
-          ember.backwardPrefixChars();
+          gnista.backwardPrefixChars();
         }
       }
     }
-    const normal = ember.currentColumn();
+    const normal = gnista.currentColumn();
     if (state.inString !== null) return undefined;
-    const offset = ember.variable("lisp-indent-offset");
+    const offset = gnista.variable("lisp-indent-offset");
     if (typeof offset === "number" && containing !== null) {
-      ember.gotoChar(containing);
-      return ember.currentColumn() + offset;
+      gnista.gotoChar(containing);
+      return gnista.currentColumn() + offset;
     }
     if (last !== null && containing !== null) {
-      return ember.saveExcursion(() => lispIndentFunction(indentPoint, state, last)) ?? ember.saveExcursion(() => keywordIndent(indentPoint, containing, last)) ?? normal;
+      return gnista.saveExcursion(() => lispIndentFunction(indentPoint, state, last)) ?? gnista.saveExcursion(() => keywordIndent(indentPoint, containing, last)) ?? normal;
     }
     return desired ?? normal;
   });
@@ -337,56 +337,56 @@ export function calculateLispIndent(): Indent {
 
 /** Indents the current line as Lisp code, as lisp-indent-line, to `indent` if given. */
 export function lispIndentLine(indent?: Indent): void {
-  const fromEnd = ember.pointMax() - ember.point();
-  ember.gotoChar(ember.lineBeginningPosition());
+  const fromEnd = gnista.pointMax() - gnista.point();
+  gnista.gotoChar(gnista.lineBeginningPosition());
   const column = indent ?? calculateLispIndent();
-  ember.skipCharsForward(" \t");
-  if (column === undefined || ember.lookingAt("\\s<\\s<\\s<")) {
+  gnista.skipCharsForward(" \t");
+  if (column === undefined || gnista.lookingAt("\\s<\\s<\\s<")) {
     // A ;;; comment, or a line that starts in a string, stays as it is.
-    ember.gotoChar(ember.pointMax() - fromEnd);
+    gnista.gotoChar(gnista.pointMax() - fromEnd);
     return;
   }
-  if (ember.lookingAt("\\s<") && !ember.lookingAt("\\s<\\s<")) {
+  if (gnista.lookingAt("\\s<") && !gnista.lookingAt("\\s<\\s<")) {
     // A comment of one semicolon goes to comment-column.
-    ember.call("comment-indent");
-    ember.gotoChar(ember.point() - 1);
-  } else ember.indentLineTo(Array.isArray(column) ? column[0] : column);
-  if (ember.pointMax() - fromEnd > ember.point()) ember.gotoChar(ember.pointMax() - fromEnd);
+    gnista.call("comment-indent");
+    gnista.gotoChar(gnista.point() - 1);
+  } else gnista.indentLineTo(Array.isArray(column) ? column[0] : column);
+  if (gnista.pointMax() - fromEnd > gnista.point()) gnista.gotoChar(gnista.pointMax() - fromEnd);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "lisp-indent-line",
   doc: "Indent the current line as Lisp code.",
   run: () => lispIndentLine(),
 });
 
-const indentSexp = ember.defineCommand({
+const indentSexp = gnista.defineCommand({
   name: "indent-sexp",
   doc: "Indent each line of the list that starts just after point, as Lisp code.",
   run: () => {
-    const end = ember.saveExcursion(() => {
+    const end = gnista.saveExcursion(() => {
       try {
         forwardSexp();
       } catch {
-        ember.gotoChar(ember.pointMax());
+        gnista.gotoChar(gnista.pointMax());
       }
-      return ember.makeMarker(ember.point());
+      return gnista.makeMarker(gnista.point());
     });
-    ember.saveExcursion(() => {
-      while (forwardLine(1) === 0 && ember.point() < (ember.markerPosition(end) ?? 0)) {
-        if (ember.lineBeginningPosition() === ember.lineEnd(ember.lineOf(ember.point()))) continue;
+    gnista.saveExcursion(() => {
+      while (forwardLine(1) === 0 && gnista.point() < (gnista.markerPosition(end) ?? 0)) {
+        if (gnista.lineBeginningPosition() === gnista.lineEnd(gnista.lineOf(gnista.point()))) continue;
         lispIndentLine();
       }
     });
-    ember.deleteMarker(end);
+    gnista.deleteMarker(end);
   },
 });
 
 /** Sets what every Lisp mode has, as lisp-mode-variables. */
 export function lispModeVariables(): void {
-  const local = (name: string, value: ember.Value) => {
-    ember.makeLocalVariable(name);
-    ember.setVariable(name, value);
+  const local = (name: string, value: gnista.Value) => {
+    gnista.makeLocalVariable(name);
+    gnista.setVariable(name, value);
   };
   local("indent-line-function", "lisp-indent-line");
   local("comment-start", ";");
@@ -417,58 +417,58 @@ const KEYS = new RegExp(`(?<![^\\s()\\[\\]";'\`,#])[:&]${SYM}`, "g");
 /** Whether the string starting at `start` is a doc string, as lisp-string-in-doc-position-p and lisp-string-after-doc-keyword-p say. */
 function isDocString(listStart: number | null, start: number): boolean {
   if (listStart === null) return false;
-  return ember.saveExcursion(() => {
-    const head = new RegExp(`^\\([ \\t\\n]*(${SYM})`).exec(ember.bufferSubstringNoProperties(listStart, Math.min(listStart + 80, ember.pointMax())));
+  return gnista.saveExcursion(() => {
+    const head = new RegExp(`^\\([ \\t\\n]*(${SYM})`).exec(gnista.bufferSubstringNoProperties(listStart, Math.min(listStart + 80, gnista.pointMax())));
     let elt = head ? docStringElt.get(head[1]) : undefined;
     if (elt !== undefined) {
-      ember.gotoChar(listStart + 1);
+      gnista.gotoChar(listStart + 1);
       try {
-        while (elt > 0 && ember.point() < start) {
+        while (elt > 0 && gnista.point() < start) {
           forwardSexp();
           elt--;
         }
       } catch {
         // Fewer elements than that.
       }
-      if (elt === 0 && ember.point() <= start) {
-        ember.forwardComment(ember.bufferSize());
-        if (ember.point() === start) return true;
+      if (elt === 0 && gnista.point() <= start) {
+        gnista.forwardComment(gnista.bufferSize());
+        if (gnista.point() === start) return true;
       }
     }
-    ember.gotoChar(start);
+    gnista.gotoChar(start);
     try {
       forwardSexp(-1);
     } catch {
       return false;
     }
-    return ember.lookingAt(":documentation\\_>\\|:doc\\_>");
+    return gnista.lookingAt(":documentation\\_>\\|:doc\\_>");
   });
 }
 
 /** The strings and comments from `start` to `end`, and where the last of them ends, with their faces. */
 function fontifySyntactically(start: number, end: number): [number, number][] {
   const spans: [number, number][] = [];
-  let state = ember.syntaxPpss(start);
+  let state = gnista.syntaxPpss(start);
   let pos = start;
-  const text = ember.bufferSubstringNoProperties(start, end);
+  const text = gnista.bufferSubstringNoProperties(start, end);
   // Strings and comments can run on past the end.
-  const at = (p: number) => (p < end ? text[p - start] : ember.charAfter(p));
+  const at = (p: number) => (p < end ? text[p - start] : gnista.charAfter(p));
   const string = (from: number, listStart: number | null) => {
     let p = from + 1;
-    while (p < ember.pointMax() && at(p) !== '"') p += at(p) === "\\" ? 2 : 1;
-    const to = Math.min(p + 1, ember.pointMax());
-    ember.putTextProperty(from, to, "face", isDocString(listStart, from) ? "font-lock-doc-face" : "font-lock-string-face");
+    while (p < gnista.pointMax() && at(p) !== '"') p += at(p) === "\\" ? 2 : 1;
+    const to = Math.min(p + 1, gnista.pointMax());
+    gnista.putTextProperty(from, to, "face", isDocString(listStart, from) ? "font-lock-doc-face" : "font-lock-string-face");
     spans.push([from, to]);
     return to;
   };
   const comment = (from: number) => {
     let p = from;
-    while (p < ember.pointMax() && at(p) !== "\n") p++;
-    const to = Math.min(p + 1, ember.pointMax());
+    while (p < gnista.pointMax() && at(p) !== "\n") p++;
+    const to = Math.min(p + 1, gnista.pointMax());
     const delimiter = /^;+ */.exec(text.slice(from - start, to - start));
     const body = delimiter ? from + delimiter[0].length : from;
-    if (body > from) ember.putTextProperty(from, body, "face", "font-lock-comment-delimiter-face");
-    if (to > body) ember.putTextProperty(body, to, "face", "font-lock-comment-face");
+    if (body > from) gnista.putTextProperty(from, body, "face", "font-lock-comment-delimiter-face");
+    if (to > body) gnista.putTextProperty(body, to, "face", "font-lock-comment-face");
     spans.push([from, to]);
     return to;
   };
@@ -480,7 +480,7 @@ function fontifySyntactically(start: number, end: number): [number, number][] {
     else if (c === "?") pos += at(pos + 1) === "\\" ? 3 : 2;
     else if (c === ";") pos = comment(pos);
     else if (c === '"') {
-      state = ember.syntaxPpss(pos);
+      state = gnista.syntaxPpss(pos);
       pos = string(pos, state.innermostStart);
     } else pos++;
   }
@@ -490,41 +490,41 @@ function fontifySyntactically(start: number, end: number): [number, number][] {
 /** Whether a list at `pos` is evaluated, so its head is called, as lisp--el-funcall-position-p guesses. */
 function funcallPosition(pos: number): boolean {
   // '(lambda ...) is not called, but #'(lambda ...) is.
-  if (ember.charAfter(pos - 1) === "'") return ember.charAfter(pos - 2) === "#";
-  return ember.saveExcursion(() => {
+  if (gnista.charAfter(pos - 1) === "'") return gnista.charAfter(pos - 2) === "#";
+  return gnista.saveExcursion(() => {
     try {
-      const parens = ember.syntaxPpss(pos).openParens;
+      const parens = gnista.syntaxPpss(pos).openParens;
       if (parens.length === 0) return true;
       const inner = parens[parens.length - 1];
       let parent: string | undefined;
       const outer = parens.length > 1 ? parens[parens.length - 2] : undefined;
-      if (ember.charAfter(inner) === "(" && outer !== undefined && ember.lookingAt("(\\_<let\\*?\\_>", outer)) {
+      if (gnista.charAfter(inner) === "(" && outer !== undefined && gnista.lookingAt("(\\_<let\\*?\\_>", outer)) {
         parent = "let";
-        ember.gotoChar(outer + 1 + (ember.lookingAt("(let\\*", outer) ? 4 : 3));
+        gnista.gotoChar(outer + 1 + (gnista.lookingAt("(let\\*", outer) ? 4 : 3));
       } else {
-        const m = /^\((?:[\w-]|[^\s()\[\]";'`,#\\])+/.exec(ember.bufferSubstringNoProperties(inner, Math.min(inner + 80, ember.pointMax())));
+        const m = /^\((?:[\w-]|[^\s()\[\]";'`,#\\])+/.exec(gnista.bufferSubstringNoProperties(inner, Math.min(inner + 80, gnista.pointMax())));
         if (!m) return true;
         parent = m[0].slice(1);
-        ember.gotoChar(inner + m[0].length);
+        gnista.gotoChar(inner + m[0].length);
       }
       switch (parent) {
         case "declare":
           return false;
         case "let":
           forwardSexp();
-          return pos >= ember.point();
+          return pos >= gnista.point();
         case "defun":
         case "defmacro":
         case "cl-defmethod":
         case "cl-defun":
           forwardSexp(2);
-          return pos >= ember.point();
+          return pos >= gnista.point();
         case "condition-case": {
           if (parens.length > 1) return true;
           forwardSexp();
-          const after = ember.point();
+          const after = gnista.point();
           forwardSexp();
-          return after < pos && pos < ember.point();
+          return after < pos && pos < gnista.point();
         }
         default:
           return true;
@@ -537,14 +537,14 @@ function funcallPosition(pos: number): boolean {
 
 /** Fontifies Emacs Lisp from `start` to `end`, as font-lock does with lisp-el-font-lock-keywords-2. */
 export function fontifyElisp(start: number, end: number): void {
-  start = ember.lineBeginningPosition(start);
-  end = Math.min(ember.lineEnd(ember.lineOf(Math.max(end - 1, start))) + 1, ember.pointMax());
-  ember.removeTextProperty(start, end, "face");
+  start = gnista.lineBeginningPosition(start);
+  end = Math.min(gnista.lineEnd(gnista.lineOf(Math.max(end - 1, start))) + 1, gnista.pointMax());
+  gnista.removeTextProperty(start, end, "face");
   const spans = fontifySyntactically(start, end);
   const inSpan = (p: number) => spans.some(([a, b]) => p >= a && p < b);
-  const text = ember.bufferSubstringNoProperties(start, end);
+  const text = gnista.bufferSubstringNoProperties(start, end);
   const put = (from: number, to: number, face: string) => {
-    if (!inSpan(from)) ember.putTextProperty(start + from, start + to, "face", face);
+    if (!inSpan(from)) gnista.putTextProperty(start + from, start + to, "face", face);
   };
   for (const m of allMatches(DEFS, text)) {
     const at = m.index!;
@@ -559,7 +559,7 @@ export function fontifyElisp(start: number, end: number): void {
   for (const m of allMatches(CALLS, text)) {
     const at = m.index!;
     if (!keywordForms.has(m[1]) || !funcallPosition(start + at)) continue;
-    if (ember.getTextProperty(start + at + 1, "face") !== undefined) continue;
+    if (gnista.getTextProperty(start + at + 1, "face") !== undefined) continue;
     put(at + 1, at + 1 + m[1].length, "font-lock-keyword-face");
   }
   for (const m of allMatches(FEATURES, text)) {
@@ -570,13 +570,13 @@ export function fontifyElisp(start: number, end: number): void {
   for (const m of allMatches(QUOTED, text)) {
     const from = start + m.index! + 1;
     const to = from + m[1].length;
-    const under = ember.getTextProperty(from, "face");
-    ember.putTextProperty(from, to, "face", under === undefined ? "font-lock-constant-face" : ["font-lock-constant-face", ...(Array.isArray(under) ? under : [under])]);
+    const under = gnista.getTextProperty(from, "face");
+    gnista.putTextProperty(from, to, "face", under === undefined ? "font-lock-constant-face" : ["font-lock-constant-face", ...(Array.isArray(under) ? under : [under])]);
   }
   for (const m of allMatches(KEYS, text)) put(m.index!, m.index! + m[0].length, m[0][0] === ":" ? "font-lock-builtin-face" : "font-lock-type-face");
 }
 
-ember.defineMajorMode({
+gnista.defineMajorMode({
   name: "lisp-data-mode",
   modeName: "Lisp-Data",
   parent: "prog-mode",
@@ -586,8 +586,8 @@ ember.defineMajorMode({
   setup: () => lispModeVariables(),
 });
 
-const alist = ember.defaultValue("auto-mode-alist");
-ember.setDefault("auto-mode-alist", [
+const alist = gnista.defaultValue("auto-mode-alist");
+gnista.setDefault("auto-mode-alist", [
   ...(Array.isArray(alist) ? alist : []),
   ["\\.eld\\'", "lisp-data-mode"],
   ["\\.dir-locals\\(?:-2\\)?\\.el\\'", "lisp-data-mode"],

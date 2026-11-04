@@ -25,11 +25,11 @@ Mouse events are keys, and the core wraps display rows.
 **The mouse:**
 
 - `KeyCode::Mouse(kind, button)` covers `<down-mouse-N>`, `<mouse-N>`, `<drag-mouse-N>`, `<double-mouse-N>` and `<triple-mouse-N>`, with modifiers as for keys.
-- `Editor::mouse(key, event)` runs the key's binding. The `MouseEvent` says which window, the buffer position under the pointer, and where a drag started. Scripts read it with `ember.lastMouseEvent()`, as Emacs commands read their event.
+- `Editor::mouse(key, event)` runs the key's binding. The `MouseEvent` says which window, the buffer position under the pointer, and where a drag started. Scripts read it with `gnista.lastMouseEvent()`, as Emacs commands read their event.
 - As in Emacs, an unbound press is dropped, and an unbound drag or repeated click runs the plain click's binding.
-- Front ends hit-test through `display::position_at_column`. Below the text is the end of the buffer, and the mode line has no position. A drag sends `<drag-mouse-1>` as the pointer moves, so the region follows it; Emacs tracks the drag inside `mouse-drag-region`, which needs a nested event loop Ember does not have.
-- `packages/mouse.ts` follows `mouse.el`: `mouse-drag-region`, `mouse-set-point` and `mouse-set-region`. Emacs selects words and lines inside `mouse-drag-region` by counting clicks; Ember binds `<double-mouse-1>` and `<triple-mouse-1>` to `mouse-select-word` and `mouse-select-line`.
-- Emacs binds `S-<down-mouse-1>` to a font menu. Ember binds `S-<mouse-1>` to `mouse-extend-region`, which extends the region as most editors do. This is a deliberate difference.
+- Front ends hit-test through `display::position_at_column`. Below the text is the end of the buffer, and the mode line has no position. A drag sends `<drag-mouse-1>` as the pointer moves, so the region follows it; Emacs tracks the drag inside `mouse-drag-region`, which needs a nested event loop Gnista does not have.
+- `packages/mouse.ts` follows `mouse.el`: `mouse-drag-region`, `mouse-set-point` and `mouse-set-region`. Emacs selects words and lines inside `mouse-drag-region` by counting clicks; Gnista binds `<double-mouse-1>` and `<triple-mouse-1>` to `mouse-select-word` and `mouse-select-line`.
+- Emacs binds `S-<down-mouse-1>` to a font menu. Gnista binds `S-<mouse-1>` to `mouse-extend-region`, which extends the region as most editors do. This is a deliberate difference.
 - The wheel scrolls the window under the pointer without selecting it, as Emacs's `mouse-wheel-follow-mouse` does.
 
 **Wrapping:**
@@ -38,7 +38,7 @@ Mouse events are keys, and the core wraps display rows.
 - Rows wrap one column short of the window's width, keeping the last column for the continuation mark: `\` in the terminal, a faint `\` in the GUI where Emacs draws a fringe arrow. A row that continues is marked `continued`, and point at its end shows at the start of the next row.
 - With `word-wrap`, rows break after the last space or tab that fits. An ellipsis for hidden text is never split.
 - `C-n` and `C-p` move by screen lines, keeping the column on screen, unless `line-move-visual` is off. Keeping point visible and scrolling count screen rows. The window's top is still the start of a line of text, so a single line taller than the window cannot be scrolled through.
-- `visual-line-mode` and `toggle-truncate-lines` are in `simple.ts`, with `beginning-of-visual-line`, `end-of-visual-line` and `kill-visual-line` on `C-a`, `C-e` and `C-k` in the mode. They use `ember.screenLine`, standing in for Emacs's `vertical-motion`.
+- `visual-line-mode` and `toggle-truncate-lines` are in `simple.ts`, with `beginning-of-visual-line`, `end-of-visual-line` and `kill-visual-line` on `C-a`, `C-e` and `C-k` in the mode. They use `gnista.screenLine`, standing in for Emacs's `vertical-motion`.
 
 ## Consequences
 

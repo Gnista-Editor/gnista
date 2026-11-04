@@ -120,7 +120,7 @@
       "error": null,
       "windows": [
         {
-          "buffer": "*ember-oracle*",
+          "buffer": "*gnista-oracle*",
           "point": 0,
           "width": 80,
           "height": 24,

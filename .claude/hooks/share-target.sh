@@ -1,6 +1,6 @@
 #!/bin/sh
-# Gives a git worktree of Ember the main checkout's build directory, as a
-# symlink at its target, so a new worktree builds only Ember's own crates:
+# Gives a git worktree of Gnista the main checkout's build directory, as a
+# symlink at its target, so a new worktree builds only Gnista's own crates:
 # V8, egui, tree-sitter and the rest are built once and shared, where a
 # target of its own would build them again and take tens of gigabytes.
 # Cargo keeps each worktree's crates apart, as their paths differ, and

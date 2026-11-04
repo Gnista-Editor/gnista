@@ -4,11 +4,11 @@ Status: accepted · 2026-10-30
 
 ## Context
 
-Ember read and wrote UTF-8, UTF-8 with a signature and Latin-1, each with Unix, DOS or Mac line ends ([ADR 0018](0018-files-and-saving.md)). Emacs has dozens of coding systems, and the primitives Lisp uses to convert text itself: `encode-coding-string`, `decode-coding-region`, `detect-coding-string`, `find-coding-systems-region` and their kin, used for files, network data, hashing and process output. It also has charsets, with `encode-char` and `decode-char`. A file in Shift_JIS, GBK, KOI8-R or UTF-16 could not be opened in Ember. [docs/plan.md](../plan.md) lists these eighth among the gaps in the core.
+Gnista read and wrote UTF-8, UTF-8 with a signature and Latin-1, each with Unix, DOS or Mac line ends ([ADR 0018](0018-files-and-saving.md)). Emacs has dozens of coding systems, and the primitives Lisp uses to convert text itself: `encode-coding-string`, `decode-coding-region`, `detect-coding-string`, `find-coding-systems-region` and their kin, used for files, network data, hashing and process output. It also has charsets, with `encode-char` and `decode-char`. A file in Shift_JIS, GBK, KOI8-R or UTF-16 could not be opened in Gnista. [docs/plan.md](../plan.md) lists these eighth among the gaps in the core.
 
 ## Options considered
 
-1. **Tables of Ember's own**, generated from Emacs's charset maps as the character tables are ([ADR 0032](0032-character-tables.md)). This gives Emacs's mappings exactly, but means writing and maintaining every multibyte coder.
+1. **Tables of Gnista's own**, generated from Emacs's charset maps as the character tables are ([ADR 0032](0032-character-tables.md)). This gives Emacs's mappings exactly, but means writing and maintaining every multibyte coder.
 2. **`encoding_rs`**, the Encoding Standard's implementation that Firefox uses, for the multibyte and single-byte tables, with Emacs's names, mnemonics, defaults and detection around it, and the few places its mappings differ from Emacs's mended.
 
 ## Decision
@@ -30,7 +30,7 @@ Option 2.
 - **Mending the tables.** The Encoding Standard reads ISO 8859-9 and -11 as Windows code pages, with no C1 controls, so those come from tables built once. It reads Shift_JIS and EUC-JP as Microsoft does, with fullwidth forms, so Emacs's JIS mapping (U+301C for 81 60, and the rest) is restored for those codings, while code page 932 keeps Microsoft's. GB 2312 and EUC-KR are kept to their 94×94 sets.
 - **ISO 2022.** `iso-2022-7bit` reads the designations Emacs writes (JIS X 0208, 0212 and 0201, GB 2312, KS C 5601 and the ISO 8859 sets).
 
-**Raw bytes.** Bytes that are no text in their coding decode to raw-byte characters, as Emacs's eight-bit charset does, so they are written back as they were. Emacs's raw bytes lie beyond Unicode, where Ember's text cannot go. Ember's are the last 128 code points, U+10FF80 to U+10FFFF, which Unicode leaves for private use. They and the C1 controls show as octal escapes, `\351`, as in Emacs.
+**Raw bytes.** Bytes that are no text in their coding decode to raw-byte characters, as Emacs's eight-bit charset does, so they are written back as they were. Emacs's raw bytes lie beyond Unicode, where Gnista's text cannot go. Gnista's are the last 128 code points, U+10FF80 to U+10FFFF, which Unicode leaves for private use. They and the C1 controls show as octal escapes, `\351`, as in Emacs.
 
 **Visiting** finds a file's coding as Emacs's `set-auto-coding` and detection do:
 - a byte order mark for UTF-8 or UTF-16;
@@ -60,7 +60,7 @@ Emacs 30.2 checked the behaviour two ways:
 
 ## Consequences
 
-Ember opens and saves files in the codings people meet: Japanese, Chinese, Korean and Cyrillic, legacy Windows files, and UTF-16. Packages can convert text as their Lisp does. Detection costs one more pass over a file: opening 100 MB went from 131 to 138 ms.
+Gnista opens and saves files in the codings people meet: Japanese, Chinese, Korean and Cyrillic, legacy Windows files, and UTF-16. Packages can convert text as their Lisp does. Detection costs one more pass over a file: opening 100 MB went from 131 to 138 ms.
 
 What differs from Emacs is in [differences.md](../differences.md):
 - Decoded text has no `charset` property, so `iso-2022-7bit` chooses each character's set from the text's script rather than from where it was read.
@@ -68,7 +68,7 @@ What differs from Emacs is in [differences.md](../differences.md):
 - Detection has no language environment, so Shift_JIS and EUC-JP files without a cookie open as Latin-1. Emacs's own result without a Japanese environment is no better.
 
 Not done yet:
-- **Coding systems Emacs has and Ember lacks:** `emacs-mule`, UTF-7, the ISO-2022 variants beyond JIS, CNS 11643 and the Indic and Vietnamese ones.
+- **Coding systems Emacs has and Gnista lacks:** `emacs-mule`, UTF-7, the ISO-2022 variants beyond JIS, CNS 11643 and the Indic and Vietnamese ones.
 - **Choosing codings:** language environments, and `auto-coding-alist` by file name.
 - **The priority list** in `describe-current-coding-system`.
 
@@ -78,4 +78,4 @@ Then `prefer-coding-system`, from mule-cmds.el, with `set-coding-system-priority
 
 ## Dependencies introduced
 
-`encoding_rs` 0.8 in `ember-core`, for the single-byte and multibyte tables and their encoders and decoders: Mozilla's implementation of the WHATWG Encoding Standard, pure Rust, used by Firefox. It brings two small crates with it, `core_detect` and `multiversion_no_op`. It does no networking.
+`encoding_rs` 0.8 in `gnista-core`, for the single-byte and multibyte tables and their encoders and decoders: Mozilla's implementation of the WHATWG Encoding Standard, pure Rust, used by Firefox. It brings two small crates with it, `core_detect` and `multiversion_no_op`. It does no networking.

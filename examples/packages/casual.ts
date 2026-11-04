@@ -1,12 +1,12 @@
 // Casual, after casual.el from Casual 2 (https://github.com/kickingvegas/casual):
-// transient menus for Emacs's modes. Ember has Casual's Dired menu,
+// transient menus for Emacs's modes. Gnista has Casual's Dired menu,
 // casual-dired-tmenu, for a config to bind, usually to ? in Dired:
 //
-//   ember.require("casual");
-//   ember.defineKey("dired-mode-map", "?", "casual-dired-tmenu");
+//   gnista.require("casual");
+//   gnista.defineKey("dired-mode-map", "?", "casual-dired-tmenu");
 //
 // Copyright (C) 2024-2025 Charles Y. Choi
-// Ported to Ember in 2026.
+// Ported to Gnista in 2026.
 //
 // This program is free software; you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the

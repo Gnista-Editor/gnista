@@ -2,12 +2,12 @@ import { forwardLine } from "subr";
 // Small editing commands, after Emacs's misc.el: duplicating lines and the
 // region, and copying the line above.
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "duplicate-line-final-position",
   doc: "Where duplicate-line leaves point: 0 where it was, 1 on the first copy, -1 on the last.",
   value: 0,
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "duplicate-region-final-position",
   doc: "Where duplicate-dwim leaves the region: 0 where it was, 1 around the first copy, -1 around the last.",
   value: 0,
@@ -15,86 +15,86 @@ ember.defineVariable({
 
 /** Copies the line point is on `n` times below it, as duplicate-line. */
 function duplicateLine(n: number): void {
-  const line = ember.bufferSubstring(ember.lineBeginningPosition(), ember.lineEndPosition());
-  const pos = ember.point();
-  const col = ember.currentColumn();
+  const line = gnista.bufferSubstring(gnista.lineBeginningPosition(), gnista.lineEndPosition());
+  const pos = gnista.point();
+  const col = gnista.currentColumn();
   forwardLine(1);
   // The last line, with no newline after it, gets one first.
-  if (ember.point() !== ember.lineBeginningPosition()) ember.insert("\n");
+  if (gnista.point() !== gnista.lineBeginningPosition()) gnista.insert("\n");
   for (let i = 0; i < n; i++) {
-    ember.insert(line);
-    ember.insert("\n");
+    gnista.insert(line);
+    gnista.insert("\n");
   }
-  const final = Number(ember.variable("duplicate-line-final-position") ?? 0);
-  if (!(final < 0)) ember.gotoChar(pos);
+  const final = Number(gnista.variable("duplicate-line-final-position") ?? 0);
+  if (!(final < 0)) gnista.gotoChar(pos);
   if (final !== 0) {
     forwardLine(final);
-    ember.moveToColumn(col);
+    gnista.moveToColumn(col);
   }
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "duplicate-line",
   doc: "Copy the line point is on below it; with a prefix argument, that many copies.",
   params: [{ name: "n", kind: "count" }],
   run: (n: number) => duplicateLine(n),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "duplicate-dwim",
   doc: "Copy the region after itself, keeping it active, or else the line point is on; with a prefix argument, that many copies.",
   params: [{ name: "n", kind: "count" }],
   run: (n: number) => {
     if (n <= 0) return;
-    const mark = ember.mark();
-    if (!ember.regionActive() || mark === undefined) {
+    const mark = gnista.mark();
+    if (!gnista.regionActive() || mark === undefined) {
       duplicateLine(n);
       return;
     }
-    const [beg, end] = [Math.min(mark, ember.point()), Math.max(mark, ember.point())];
-    const text = ember.bufferSubstring(beg, end);
-    const [pt, mk] = [ember.point(), mark];
-    ember.saveExcursion(() => {
-      ember.gotoChar(end);
-      for (let i = 0; i < n; i++) ember.insert(text);
+    const [beg, end] = [Math.min(mark, gnista.point()), Math.max(mark, gnista.point())];
+    const text = gnista.bufferSubstring(beg, end);
+    const [pt, mk] = [gnista.point(), mark];
+    gnista.saveExcursion(() => {
+      gnista.gotoChar(end);
+      for (let i = 0; i < n; i++) gnista.insert(text);
     });
-    const final = Number(ember.variable("duplicate-region-final-position") ?? 0);
+    const final = Number(gnista.variable("duplicate-region-final-position") ?? 0);
     const d = (final < 0 ? n : final) * (end - beg);
     if (d !== 0) {
-      ember.pushMark(mk + d, { activate: true });
-      ember.gotoChar(pt + d);
+      gnista.pushMark(mk + d, { activate: true });
+      gnista.gotoChar(pt + d);
     } else {
-      ember.setMark(mk);
+      gnista.setMark(mk);
     }
     // The region stays active.
-    ember.setVariable("deactivate-mark", false);
+    gnista.setVariable("deactivate-mark", false);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "copy-from-above-command",
   doc: "Copy the rest of the line above, from the column point is at, after point; with a prefix argument, only that many characters.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: (arg: ember.PrefixArg) => {
-    const cc = ember.currentColumn();
-    const text = ember.saveExcursion(() => {
-      ember.gotoChar(ember.lineBeginningPosition());
-      if (ember.point() > ember.pointMin()) ember.gotoChar(ember.point() - 1);
-      ember.skipCharsBackward(" \t\n");
-      ember.moveToColumn(cc);
-      let n = arg === null ? ember.pointMax() : ember.prefixNumericValue(arg);
+  run: (arg: gnista.PrefixArg) => {
+    const cc = gnista.currentColumn();
+    const text = gnista.saveExcursion(() => {
+      gnista.gotoChar(gnista.lineBeginningPosition());
+      if (gnista.point() > gnista.pointMin()) gnista.gotoChar(gnista.point() - 1);
+      gnista.skipCharsBackward(" \t\n");
+      gnista.moveToColumn(cc);
+      let n = arg === null ? gnista.pointMax() : gnista.prefixNumericValue(arg);
       let s = "";
-      if (cc < ember.currentColumn()) {
-        if (ember.point() > ember.pointMin() && ember.charAfter(ember.point() - 1) === "\t") {
-          const spaces = Math.min(n, ember.currentColumn() - cc);
+      if (cc < gnista.currentColumn()) {
+        if (gnista.point() > gnista.pointMin() && gnista.charAfter(gnista.point() - 1) === "\t") {
+          const spaces = Math.min(n, gnista.currentColumn() - cc);
           s = " ".repeat(spaces);
           n -= spaces;
         } else {
-          ember.gotoChar(ember.point() - 1);
+          gnista.gotoChar(gnista.point() - 1);
         }
       }
-      return s + ember.bufferSubstringNoProperties(ember.point(), Math.min(ember.lineEndPosition(), ember.point() + n));
+      return s + gnista.bufferSubstringNoProperties(gnista.point(), Math.min(gnista.lineEndPosition(), gnista.point() + n));
     });
-    ember.insert(text);
+    gnista.insert(text);
   },
 });

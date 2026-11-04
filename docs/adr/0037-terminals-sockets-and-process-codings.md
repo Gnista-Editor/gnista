@@ -4,7 +4,7 @@ Status: accepted · 2026-10-30
 
 ## Context
 
-Ember's processes ran on pipes, decoded their output as UTF-8, and could only be programs ([ADR 0024](0024-processes-compiling-comments-and-indentation.md)). Several things in Emacs need more:
+Gnista's processes ran on pipes, decoded their output as UTF-8, and could only be programs ([ADR 0024](0024-processes-compiling-comments-and-indentation.md)). Several things in Emacs need more:
 - **A terminal.** Shells, `M-x shell`, REPLs and anything that asks a question expect to run on one: line editing, job control and C-c only work there.
 - **The network.** Language servers, IRC, `M-x server-start`'s socket and many packages talk over `make-network-process`.
 - **Codings.** Output in a coding other than UTF-8 came in garbled.

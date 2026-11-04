@@ -1,4 +1,4 @@
-;;; iso-transl.el --- Writes Emacs's C-x 8 character table for Ember  -*- lexical-binding: t -*-
+;;; iso-transl.el --- Writes Emacs's C-x 8 character table for Gnista  -*- lexical-binding: t -*-
 
 ;; Writes the table at the end of packages/iso-transl.ts: each key
 ;; sequence after C-x 8 in Emacs's `key-translation-map', and the
@@ -10,14 +10,14 @@
 (require 'iso-transl)
 (require 'json)
 
-(defun ember--translations (map prefix)
+(defun gnista--translations (map prefix)
   "Every (KEYS . STRING) under MAP, KEYS after PREFIX."
   (let (out)
     (map-keymap
      (lambda (event binding)
        (let ((keys (vconcat prefix (vector event))))
          (cond ((keymapp binding)
-                (setq out (append out (ember--translations binding keys))))
+                (setq out (append out (gnista--translations binding keys))))
                ((or (stringp binding) (vectorp binding))
                 (push (cons (key-description keys) (concat binding)) out)))))
      map)
@@ -26,7 +26,7 @@
 (let* ((root (file-name-directory (directory-file-name (file-name-directory load-file-name))))
        (out (expand-file-name "../packages/iso-transl.ts" root))
        (marker "// The table below is written by tests/emacs/iso-transl.el.\n")
-       (entries (sort (ember--translations (lookup-key key-translation-map (kbd "C-x 8")) [])
+       (entries (sort (gnista--translations (lookup-key key-translation-map (kbd "C-x 8")) [])
                       (lambda (a b) (string< (car a) (car b))))))
   (with-temp-file out
     (insert-file-contents out)

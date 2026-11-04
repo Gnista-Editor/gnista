@@ -6,7 +6,7 @@
 // follows them.
 //
 // Copyright (C) 2004-2025 Free Software Foundation, Inc.
-// Ported to Ember in 2026.
+// Ported to Gnista in 2026.
 //
 // This program is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -18,102 +18,102 @@ import { defineGlobalizedMinorMode } from "subr";
 const FORWARD = "\\W*\\(\\([[:upper:]]*\\(\\W\\)?\\)[[:lower:][:digit:]]*\\)";
 const BACKWARD = "\\(\\(\\W\\|[[:lower:][:digit:]]\\)\\([[:upper:]]+\\W*\\)\\|\\W\\w+\\)";
 
-const on = (name: string): boolean => ember.variable(name) === true;
+const on = (name: string): boolean => gnista.variable(name) === true;
 
 /** Moves over a symbol, or back over one, as thingatpt.el's forward-symbol. */
 function forwardSymbol(n: number): void {
   if (n >= 0) {
     for (let i = 0; i < n; i++) {
-      if (ember.reSearchForward("\\(\\sw\\|\\s_\\)+", { noerror: true }) === undefined) {
-        ember.gotoChar(ember.pointMax());
+      if (gnista.reSearchForward("\\(\\sw\\|\\s_\\)+", { noerror: true }) === undefined) {
+        gnista.gotoChar(gnista.pointMax());
         break;
       }
     }
     return;
   }
   for (; n < 0; n++) {
-    if (ember.reSearchBackward("\\(\\sw\\|\\s_\\)+", { noerror: true }) !== undefined) ember.skipSyntaxBackward("w_");
-    else ember.gotoChar(ember.pointMin());
+    if (gnista.reSearchBackward("\\(\\sw\\|\\s_\\)+", { noerror: true }) !== undefined) gnista.skipSyntaxBackward("w_");
+    else gnista.gotoChar(gnista.pointMin());
   }
 }
 
 /** Moves to the end of the next subword, as subword-forward-internal. */
 function forwardInternal(): void {
   if (on("superword-mode")) return forwardSymbol(1);
-  const found = ember.saveExcursion(() => ember.reSearchForward(FORWARD, { noerror: true, caseFold: false }));
-  if (found !== undefined && ember.matchEnd(0)! > ember.point()) {
-    const [b2, e2, e1] = [ember.matchBeginning(2)!, ember.matchEnd(2)!, ember.matchEnd(1)!];
+  const found = gnista.saveExcursion(() => gnista.reSearchForward(FORWARD, { noerror: true, caseFold: false }));
+  if (found !== undefined && gnista.matchEnd(0)! > gnista.point()) {
+    const [b2, e2, e1] = [gnista.matchBeginning(2)!, gnista.matchEnd(2)!, gnista.matchEnd(1)!];
     // An all-capitals word with no lower case or non-word after keeps its last letter for the next.
-    const allCaps = ember.matchBeginning(3) === undefined && e2 === e1;
-    ember.gotoChar(e2 - b2 > 1 && !allCaps ? e2 - 1 : ember.matchEnd(0)!);
+    const allCaps = gnista.matchBeginning(3) === undefined && e2 === e1;
+    gnista.gotoChar(e2 - b2 > 1 && !allCaps ? e2 - 1 : gnista.matchEnd(0)!);
   } else {
-    ember.call("forward-word", 1);
+    gnista.call("forward-word", 1);
   }
 }
 
 /** Moves to the start of the subword before, as subword-backward-internal. */
 function backwardInternal(): void {
   if (on("superword-mode")) return forwardSymbol(-1);
-  const found = ember.saveExcursion(() => ember.reSearchBackward(BACKWARD, { noerror: true, caseFold: false }));
+  const found = gnista.saveExcursion(() => gnista.reSearchBackward(BACKWARD, { noerror: true, caseFold: false }));
   if (found !== undefined) {
-    const [b3, e3] = [ember.matchBeginning(3), ember.matchEnd(3)];
-    ember.gotoChar(e3 !== undefined && b3 !== undefined && e3 - b3 > 1 && ember.point() !== e3 ? e3 - 1 : ember.matchBeginning(0)! + 1);
+    const [b3, e3] = [gnista.matchBeginning(3), gnista.matchEnd(3)];
+    gnista.gotoChar(e3 !== undefined && b3 !== undefined && e3 - b3 > 1 && gnista.point() !== e3 ? e3 - 1 : gnista.matchBeginning(0)! + 1);
   } else {
-    ember.call("backward-word", 1);
+    gnista.call("backward-word", 1);
   }
 }
 
 /** Not a word boundary function, so finding subwords does not find them again. */
-const empty = ember.makeCharTable("subword");
+const empty = gnista.makeCharTable("subword");
 
 /** Where the word at POS ends going towards LIMIT, as subword-find-word-boundary. */
 function findWordBoundary(pos: number, limit: number): number {
-  return ember.letBind({ "find-word-boundary-function-table": empty }, () =>
-    ember.saveExcursion(() =>
-      ember.saveRestriction(() => {
+  return gnista.letBind({ "find-word-boundary-function-table": empty }, () =>
+    gnista.saveExcursion(() =>
+      gnista.saveRestriction(() => {
         if (pos < limit) {
-          ember.gotoChar(pos);
-          ember.narrowToRegion(ember.pointMin(), limit);
+          gnista.gotoChar(pos);
+          gnista.narrowToRegion(gnista.pointMin(), limit);
           forwardInternal();
         } else {
-          ember.gotoChar(pos + 1);
-          ember.narrowToRegion(limit, ember.pointMax());
+          gnista.gotoChar(pos + 1);
+          gnista.narrowToRegion(limit, gnista.pointMax());
           backwardInternal();
         }
-        return ember.point();
+        return gnista.point();
       })
     )
   );
 }
-ember.defun("subword-find-word-boundary", (pos: ember.Value, limit: ember.Value) => findWordBoundary(Number(pos), Number(limit)));
+gnista.defun("subword-find-word-boundary", (pos: gnista.Value, limit: gnista.Value) => findWordBoundary(Number(pos), Number(limit)));
 
-const boundaryTable = ember.makeCharTable("subword");
-ember.setCharTableRange(boundaryTable, [0, 0x3fffff], "subword-find-word-boundary");
+const boundaryTable = gnista.makeCharTable("subword");
+gnista.setCharTableRange(boundaryTable, [0, 0x3fffff], "subword-find-word-boundary");
 
 /** Gives the buffer the boundary table while either mode is on, as subword-setup-buffer. */
 function setupBuffer(): void {
-  ember.makeLocalVariable("find-word-boundary-function-table");
-  ember.setVariable("find-word-boundary-function-table", on("subword-mode") || on("superword-mode") ? boundaryTable : empty);
+  gnista.makeLocalVariable("find-word-boundary-function-table");
+  gnista.setVariable("find-word-boundary-function-table", on("subword-mode") || on("superword-mode") ? boundaryTable : empty);
 }
 
-ember.defineMinorMode({
+gnista.defineMinorMode({
   name: "subword-mode",
   lighter: " ,",
   doc:
     "Make the word commands stop at each part of a name written in capitals: GetHttpResponse is three words, " +
     "Get, Http and Response. Turning it on turns superword-mode off.",
   onChange: (enabled) => {
-    if (enabled && on("superword-mode")) ember.callWithPrefix(-1, "superword-mode");
+    if (enabled && on("superword-mode")) gnista.callWithPrefix(-1, "superword-mode");
     setupBuffer();
   },
 });
 
-ember.defineMinorMode({
+gnista.defineMinorMode({
   name: "superword-mode",
   lighter: " ²",
   doc: "Make the word commands treat a symbol as one word: this_is_a_symbol is one. Turning it on turns subword-mode off.",
   onChange: (enabled) => {
-    if (enabled && on("subword-mode")) ember.callWithPrefix(-1, "subword-mode");
+    if (enabled && on("subword-mode")) gnista.callWithPrefix(-1, "subword-mode");
     setupBuffer();
   },
 });
@@ -126,14 +126,14 @@ function subwordForward(n: number): void {
   for (let i = 0; i < Math.abs(n); i++) (n > 0 ? forwardInternal : backwardInternal)();
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "subword-forward",
   doc: "Move to the end of the next subword, or as many as the prefix argument says.",
   params: [{ name: "n", kind: "count" }],
   shiftSelect: true,
   run: (n: number) => subwordForward(n),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "subword-backward",
   doc: "Move to the start of the subword before, or as many as the prefix argument says.",
   params: [{ name: "n", kind: "count" }],

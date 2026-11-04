@@ -1,6 +1,6 @@
 // Text mode, for writing prose, after Emacs's text-mode.el.
 
-ember.defineMajorMode({
+gnista.defineMajorMode({
   name: "text-mode",
   modeName: "Text",
   doc:
@@ -12,42 +12,42 @@ ember.defineMajorMode({
   syntax: { '"': ".", "\\": ".", "'": "w p", "\u05f3\u05f4\u00b7\u2027\uff1a": "w" },
   // As text-mode.el: files of prose end in a newline.
   setup: () => {
-    ember.setVariable("require-final-newline", ember.variable("mode-require-final-newline") ?? true);
+    gnista.setVariable("require-final-newline", gnista.variable("mode-require-final-newline") ?? true);
   },
 });
 
 /** Centers the line between the left margin and fill-column, as center-line does once. */
 function centerOneLine(): void {
-  ember.saveExcursion(() => {
-    const lm = Number(ember.variable("left-margin") ?? 0);
-    ember.gotoChar(ember.lineBeginningPosition());
-    ember.call("delete-horizontal-space");
-    ember.gotoChar(ember.lineEndPosition());
-    ember.call("delete-horizontal-space");
-    const space = Number(ember.variable("fill-column") ?? 70) - lm - ember.currentColumn();
-    if (space > 0) ember.indentLineTo(lm + Math.floor(space / 2));
+  gnista.saveExcursion(() => {
+    const lm = Number(gnista.variable("left-margin") ?? 0);
+    gnista.gotoChar(gnista.lineBeginningPosition());
+    gnista.call("delete-horizontal-space");
+    gnista.gotoChar(gnista.lineEndPosition());
+    gnista.call("delete-horizontal-space");
+    const space = Number(gnista.variable("fill-column") ?? 70) - lm - gnista.currentColumn();
+    if (space > 0) gnista.indentLineTo(lm + Math.floor(space / 2));
   });
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "center-line",
   doc: "Center the line between the left margin and fill-column; with a prefix argument, that many lines, back if negative.",
   params: [{ name: "nlines", kind: "prefix" }],
-  run: (nlinesIn: ember.PrefixArg) => {
-    let nlines = nlinesIn === null ? null : ember.prefixNumericValue(nlinesIn);
+  run: (nlinesIn: gnista.PrefixArg) => {
+    let nlines = nlinesIn === null ? null : gnista.prefixNumericValue(nlinesIn);
     while (nlines !== 0) {
       centerOneLine();
       if (nlines === null) nlines = 0;
       else {
-        const line = ember.lineOf(ember.point()) + (nlines > 0 ? 1 : -1);
+        const line = gnista.lineOf(gnista.point()) + (nlines > 0 ? 1 : -1);
         nlines += nlines > 0 ? -1 : 1;
-        ember.gotoChar(line < 0 ? ember.pointMin() : line >= ember.lineCount() ? ember.pointMax() : ember.lineStart(line));
+        gnista.gotoChar(line < 0 ? gnista.pointMin() : line >= gnista.lineCount() ? gnista.pointMax() : gnista.lineStart(line));
       }
     }
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "center-region",
   doc: "Center each line of the region that is not blank, as center-line does.",
   params: [
@@ -55,18 +55,18 @@ ember.defineCommand({
     { name: "to", kind: "region-end" },
   ],
   run: (from: number, to: number) => {
-    ember.saveExcursion(() =>
-      ember.saveRestriction(() => {
-        ember.narrowToRegion(from, to);
-        ember.gotoChar(from);
-        while (ember.point() < ember.pointMax()) {
-          const blank = ember.saveExcursion(() => {
-            ember.skipCharsForward(" \t");
-            return ember.point() === ember.lineEndPosition();
+    gnista.saveExcursion(() =>
+      gnista.saveRestriction(() => {
+        gnista.narrowToRegion(from, to);
+        gnista.gotoChar(from);
+        while (gnista.point() < gnista.pointMax()) {
+          const blank = gnista.saveExcursion(() => {
+            gnista.skipCharsForward(" \t");
+            return gnista.point() === gnista.lineEndPosition();
           });
           if (!blank) centerOneLine();
-          const next = ember.lineEndPosition() + 1;
-          ember.gotoChar(Math.min(next, ember.pointMax()));
+          const next = gnista.lineEndPosition() + 1;
+          gnista.gotoChar(Math.min(next, gnista.pointMax()));
         }
       }),
     );

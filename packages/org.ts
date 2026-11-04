@@ -104,7 +104,7 @@ export { PLANNING } from "org-element";
 
 // Variables
 
-const variables: [string, string, ember.Value][] = [
+const variables: [string, string, gnista.Value][] = [
   [
     "org-todo-keywords",
     'The TODO states headings cycle through, in order: states before "|" are not done, those after it are. ' +
@@ -186,13 +186,13 @@ const variables: [string, string, ember.Value][] = [
     [0, 5],
   ],
 ];
-for (const [name, doc, value] of variables) ember.defineVariable({ name, doc, value });
+for (const [name, doc, value] of variables) gnista.defineVariable({ name, doc, value });
 
-ember.defineHook(
+gnista.defineHook(
   "org-cycle-tab-first-hook",
   "Functions TAB in Org tries first, each until one gives true, which then is all TAB does. Emacs also calls it org-tab-first-hook.",
 );
-ember.defineHook(
+gnista.defineHook(
   "org-tab-before-tab-emulation-hook",
   "Functions TAB in Org tries where it would indent, not being on a heading, an item, a table or a block, each until one gives true.",
 );
@@ -202,17 +202,17 @@ for (const [name, doc] of [
   ["org-cycle-global-status", "What S-TAB last did: \"overview\", \"contents\" or \"all\"."],
   ["org--todo-sets", "The buffer's TODO state sequences: each a list of the states not done and the states done."],
 ]) {
-  ember.defineVariable({ name, doc, value: null, local: true });
+  gnista.defineVariable({ name, doc, value: null, local: true });
 }
 
 {
-  const alist = ember.variable("auto-mode-alist");
-  if (Array.isArray(alist)) ember.setDefault("auto-mode-alist", [["\\.org\\'", "org-mode"], ...alist]);
+  const alist = gnista.variable("auto-mode-alist");
+  if (Array.isArray(alist)) gnista.setDefault("auto-mode-alist", [["\\.org\\'", "org-mode"], ...alist]);
 }
 
 // Faces
 
-const faces: [string, string, ember.FaceAttributes][] = [
+const faces: [string, string, gnista.FaceAttributes][] = [
   ["org-todo", "TODO states that are not done.", { foreground: "bad", bold: true }],
   ["org-done", "Done TODO states, such as DONE.", { foreground: "good", bold: true }],
   ["org-headline-done", "The text of a heading that is done.", { foreground: "muted" }],
@@ -245,9 +245,9 @@ const faces: [string, string, ember.FaceAttributes][] = [
   ["org-ellipsis", "The text a folded heading shows after it, as org-ellipsis says.", { foreground: "warn", underline: true }],
   ["org-hide", "The leading stars of headings org-hide-leading-stars hides, in the colour of the background.", { foreground: "bg" }],
 ];
-for (const [name, doc, attributes] of faces) ember.defineFace({ name, doc, attributes });
+for (const [name, doc, attributes] of faces) gnista.defineFace({ name, doc, attributes });
 for (let i = 1; i <= 8; i++) {
-  ember.defineFace({ name: `org-level-${i}`, doc: `Level ${i} headings, and deeper levels in turn.`, attributes: { inherit: `outline-${i}` } });
+  gnista.defineFace({ name: `org-level-${i}`, doc: `Level ${i} headings, and deeper levels in turn.`, attributes: { inherit: `outline-${i}` } });
 }
 
 // Text and positions. Positions count characters; JavaScript strings count
@@ -256,12 +256,12 @@ for (let i = 1; i <= 8; i++) {
 
 /** The position of index `i` of a line's text. */
 export function at(line: number, text: string, i: number): number {
-  return ember.lineStart(line) + charCount(text.slice(0, i));
+  return gnista.lineStart(line) + charCount(text.slice(0, i));
 }
 
 /** The index in a line's text of a position on it. */
 function indexOf(line: number, text: string, pos: number): number {
-  const n = pos - ember.lineStart(line);
+  const n = pos - gnista.lineStart(line);
   if (!/[\uD800-\uDFFF]/.test(text)) return n;
   return Array.from(text).slice(0, n).join("").length;
 }
@@ -276,7 +276,7 @@ export function indentation(text: string): number {
 
 /** Replaces text and puts point back where it was, moved along with the text around it. */
 function replaceText(start: number, end: number, text: string): void {
-  let p = ember.point();
+  let p = gnista.point();
   const delta = charCount(text) - (end - start);
   const saved: [Marker, number][] = markers.map((m) => {
     const x = m.pos;
@@ -285,11 +285,11 @@ function replaceText(start: number, end: number, text: string): void {
   // As a marker would: text inserted at point goes after it.
   if (p > end || (p === end && start < end)) p += delta;
   else if (p > start) p = Math.min(p, start + charCount(text));
-  ember.deleteRegion(start, end);
-  ember.gotoChar(start);
-  ember.insert(text);
+  gnista.deleteRegion(start, end);
+  gnista.gotoChar(start);
+  gnista.insert(text);
   placeMarkers(saved);
-  ember.gotoChar(p);
+  gnista.gotoChar(p);
 }
 
 function shiftSelectError(): never {
@@ -298,7 +298,7 @@ function shiftSelectError(): never {
 
 // TODO states
 
-ember.defineHook("org-after-todo-state-change-hook", "Functions called after a heading's TODO state changes, at the heading.");
+gnista.defineHook("org-after-todo-state-change-hook", "Functions called after a heading's TODO state changes, at the heading.");
 
 interface TodoSet {
   todo: string[];
@@ -339,9 +339,9 @@ function todoSetFrom(words: string[]): TodoSet | undefined {
 
 /** The whole buffer's #+KEYWORD: lines, found in one pass. */
 export function keywordLines(): [number, number, string][] {
-  return ember.saveRestriction(() => {
-    ember.widen();
-    return ember.matchingLines("^#\\+", { caseFold: true });
+  return gnista.saveRestriction(() => {
+    gnista.widen();
+    return gnista.matchingLines("^#\\+", { caseFold: true });
   });
 }
 
@@ -354,8 +354,8 @@ function readTodoSets(): TodoSet[] {
     if (set) sets.push(set);
   }
   if (sets.length === 0) {
-    const value = ember.variable("org-todo-keywords");
-    const lists = Array.isArray(value) && value.every(Array.isArray) ? (value as ember.Value[][]) : [value as ember.Value[]];
+    const value = gnista.variable("org-todo-keywords");
+    const lists = Array.isArray(value) && value.every(Array.isArray) ? (value as gnista.Value[][]) : [value as gnista.Value[]];
     for (const list of lists) {
       const set = Array.isArray(list) ? todoSetFrom(list.map(String)) : undefined;
       if (set) sets.push(set);
@@ -365,7 +365,7 @@ function readTodoSets(): TodoSet[] {
 }
 
 function todoSets(): TodoSet[] {
-  const value = ember.variable("org--todo-sets");
+  const value = gnista.variable("org--todo-sets");
   if (!Array.isArray(value)) return readTodoSets();
   return (value as unknown as [string[], string[], [string, string | null][], [string, string | null, string | null][]][]).map(([todo, done, keys, logs]) => ({
     todo,
@@ -376,7 +376,7 @@ function todoSets(): TodoSet[] {
 }
 
 function storeTodoSets(): void {
-  ember.setVariable("org--todo-sets", readTodoSets().map((s) => [s.todo, s.done, s.keys.map(([k, c]) => [k, c ?? null]), s.logs.map(([k, a, b]) => [k, a ?? null, b ?? null])]));
+  gnista.setVariable("org--todo-sets", readTodoSets().map((s) => [s.todo, s.done, s.keys.map(([k, c]) => [k, c ?? null]), s.logs.map(([k, a, b]) => [k, a ?? null, b ?? null])]));
 }
 
 /** How a change from one state to another is logged, as org-todo works out dolog: "time", "note" or nothing. */
@@ -387,7 +387,7 @@ function logHow(state: string | undefined, previous: string | undefined): string
 
 /** The drawer notes go in, as org-log-into-drawer says: LOGBOOK for t, or the name given. */
 function logDrawer(): string | undefined {
-  const v = ember.variable("org-log-into-drawer");
+  const v = gnista.variable("org-log-into-drawer");
   return v === true ? "LOGBOOK" : typeof v === "string" && v !== "" ? v : undefined;
 }
 
@@ -428,9 +428,9 @@ const TAGS = /[ \t](:[\p{L}\p{N}_@#%:]+:)[ \t]*$/u;
  * the TODO keywords, longest first, when the caller has them already, as
  * headings() does for every heading in the buffer.
  */
-export function parseHeading(line: number, keywords = allKeywords(), text = ember.lineText(line), sorted?: string[]): Heading | undefined {
+export function parseHeading(line: number, keywords = allKeywords(), text = gnista.lineText(line), sorted?: string[]): Heading | undefined {
   const h = parseHeadingText(text, keywords, sorted);
-  return h && placeHeading(h, line, ember.lineStart(line));
+  return h && placeHeading(h, line, gnista.lineStart(line));
 }
 
 /** A heading parsed from its line's text, its positions counted from the line's start. */
@@ -541,21 +541,21 @@ const MAX_PENDING = 32;
 const headingIndexes = new Map<string, HeadingIndex>();
 
 /** The current buffer's index's key: its id, which outlives a rename, and a buffer killed and made again does not share. */
-const indexKey = (): string => String(ember.currentBuffer().id);
+const indexKey = (): string => String(gnista.currentBuffer().id);
 
 /** The changes to each indexed buffer since its index was last brought up to date, as after-change-functions gives them. */
 const headingChanges = new Map<string, [number, number, number][]>();
 
 // A killed buffer's index goes with it: indirect buffers, capture and the
 // agenda's visits each make one.
-ember.addHook("kill-buffer-hook", () => {
+gnista.addHook("kill-buffer-hook", () => {
   headingIndexes.delete(indexKey());
   headingChanges.delete(indexKey());
 });
 
 /** Records a change to an Org buffer, for headings() to follow it, and for the parse org-indent-region keeps. */
 function headingsAfterChange(beg: number, end: number, oldLen: number): void {
-  if (parseShifts && ember.currentBuffer().id === parseShifts.buffer) parseShifts.changes.push([beg, end, oldLen]);
+  if (parseShifts && gnista.currentBuffer().id === parseShifts.buffer) parseShifts.changes.push([beg, end, oldLen]);
   const name = indexKey();
   if (!headingIndexes.has(name)) return;
   const list = headingChanges.get(name);
@@ -568,9 +568,9 @@ function scanHeadings(keywords: string[], sorted: string[], start?: number, end?
   const found: Heading[] = [];
   // The heading lines in one pass in the editor, rather than a call per
   // line or the whole text copied here: much the faster in a large buffer.
-  const lines = ember.saveRestriction(() => {
-    ember.widen();
-    return ember.matchingLines("^\\*+ ", { caseFold: false, start, end });
+  const lines = gnista.saveRestriction(() => {
+    gnista.widen();
+    return gnista.matchingLines("^\\*+ ", { caseFold: false, start, end });
   });
   for (const [line, lineStart, text] of lines) {
     let h = parsed.get(text);
@@ -676,7 +676,7 @@ function followChanges(index: HeadingIndex, changes: [number, number, number][],
   if (changes.length > 16) return false;
   // Changes made without the hooks, which the sizes would not account for.
   const grown = changes.reduce((sum, [beg, end, oldLen]) => sum + (end - beg) - oldLen, 0);
-  if (index.size + grown !== ember.bufferSize()) return false;
+  if (index.size + grown !== gnista.bufferSize()) return false;
   // A caller may still hold the array.
   if (index.shared) {
     index.all = index.all.slice();
@@ -727,7 +727,7 @@ function followChanges(index: HeadingIndex, changes: [number, number, number][],
     if (k >= hs.length) break;
     if (startAt(index, k) > bound) continue;
     const [chars, lines] = pendingAt(index, k);
-    stretches.push([k, ember.lineOf(hs[k].start + chars) - (hs[k].line + lines)]);
+    stretches.push([k, gnista.lineOf(hs[k].start + chars) - (hs[k].line + lines)]);
     // The first heading past this bound starts the next stretch.
     let [lo, hi] = [k, hs.length];
     while (lo < hi) {
@@ -744,8 +744,8 @@ function followChanges(index: HeadingIndex, changes: [number, number, number][],
   }
   // The lines the changes touched, looked at again.
   for (const [from, to] of mergeRanges(dirty)) {
-    const start = ember.lineStart(ember.lineOf(Math.min(from, ember.bufferSize())));
-    const stop = ember.lineEnd(ember.lineOf(Math.min(to, ember.bufferSize())));
+    const start = gnista.lineStart(gnista.lineOf(Math.min(from, gnista.bufferSize())));
+    const stop = gnista.lineEnd(gnista.lineOf(Math.min(to, gnista.bufferSize())));
     const found = scanHeadings(keywords, sorted, start, stop, epoch);
     let [lo, hi] = [0, hs.length];
     while (lo < hi) {
@@ -778,12 +778,12 @@ function mergeRanges(ranges: [number, number][]): [number, number][] {
  * agrees with finding every heading again: nil if so, else where they
  * first differ, as Org's org-element--cache-self-verify checks its cache.
  */
-ember.defun("org--headings-verify", (only?: number) => {
+gnista.defun("org--headings-verify", (only?: number) => {
   // With an index, only that heading, read as the element parser reads
   // one, leaving the shifts pending for the rest.
   const kept = typeof only === "number" ? headingsAsRead() : headings();
   const keywords = allKeywords();
-  const fresh = scanHeadings(keywords, [...keywords].sort((a, b) => b.length - a.length)).filter((h) => h.start >= ember.pointMin() && h.start < ember.pointMax());
+  const fresh = scanHeadings(keywords, [...keywords].sort((a, b) => b.length - a.length)).filter((h) => h.start >= gnista.pointMin() && h.start < gnista.pointMax());
   const show = (h?: Heading) => (h === undefined ? "none" : JSON.stringify(h, (key, value) => (key === "synced" ? undefined : value)));
   if (typeof only === "number") {
     if (kept.length !== fresh.length) return `${kept.length} headings kept, ${fresh.length} found`;
@@ -805,7 +805,7 @@ function currentIndex(): HeadingIndex {
     parsedFor = keywordsKey;
   }
   const name = indexKey();
-  const tick = ember.bufferModifiedTick();
+  const tick = gnista.bufferModifiedTick();
   let index = headingIndexes.get(name);
   if (!index || index.keywords !== keywordsKey || index.tick !== tick) {
     const sorted = [...keywords].sort((a, b) => b.length - a.length);
@@ -813,11 +813,11 @@ function currentIndex(): HeadingIndex {
     headingChanges.delete(name);
     const followed = index !== undefined && index.keywords === keywordsKey && changes !== undefined && followChanges(index, changes, keywords, sorted);
     if (!followed) {
-      index = { tick, size: ember.bufferSize(), keywords: keywordsKey, all: scanHeadings(keywords, sorted), pending: [], epoch: 0, shared: false };
+      index = { tick, size: gnista.bufferSize(), keywords: keywordsKey, all: scanHeadings(keywords, sorted), pending: [], epoch: 0, shared: false };
       headingIndexes.set(name, index);
     }
     index!.tick = tick;
-    index!.size = ember.bufferSize();
+    index!.size = gnista.bufferSize();
     index!.view = undefined;
   }
   return index!;
@@ -834,8 +834,8 @@ export function headings(): Heading[] {
   const index = currentIndex();
   syncAll(index);
   index.shared = true;
-  const [min, max] = [ember.pointMin(), ember.pointMax()];
-  if (min === 0 && max === ember.bufferSize()) return index.all;
+  const [min, max] = [gnista.pointMin(), gnista.pointMax()];
+  if (min === 0 && max === gnista.bufferSize()) return index.all;
   if (index.view?.min !== min || index.view.max !== max) {
     index.view = { min, max, tick: index.tick, headings: index.all.filter((h) => h.start >= min && h.start < max) };
   }
@@ -850,7 +850,7 @@ export function headings(): Heading[] {
  */
 export function headingsAsRead(): Heading[] {
   const index = currentIndex();
-  if (ember.pointMin() !== 0 || ember.pointMax() !== ember.bufferSize()) return headings();
+  if (gnista.pointMin() !== 0 || gnista.pointMax() !== gnista.bufferSize()) return headings();
   // Not marked shared: the parser reads it and lets it go before any edit.
   if (index.pending.length === 0) return index.all;
   return new Proxy(index.all, {
@@ -886,9 +886,9 @@ function backToHeading(move = false): [Heading[], number] {
   const all = headings();
   const i = headingIndex(all, lineAt());
   if (i === undefined) {
-    const bol = ember.lineStart(lineAt());
-    if (move) ember.gotoChar(bol);
-    ember.userError(`Before first headline at position ${bol + 1} in buffer ${ember.bufferName()}`);
+    const bol = gnista.lineStart(lineAt());
+    if (move) gnista.gotoChar(bol);
+    gnista.userError(`Before first headline at position ${bol + 1} in buffer ${gnista.bufferName()}`);
   }
   return [all, i];
 }
@@ -900,13 +900,13 @@ function backToHeading(move = false): [Heading[], number] {
 function visibleHeadingIndex(all: Heading[], line: number): number | undefined {
   const i = headingIndex(all, line);
   if (i === undefined) return undefined;
-  for (const a of [i, ...ancestors(all, i)]) if (!ember.invisibleAt(all[a].start)) return a;
+  for (const a of [i, ...ancestors(all, i)]) if (!gnista.invisibleAt(all[a].start)) return a;
   return i;
 }
 
 /** The heading on point's line, if it is a heading line. */
 function headingHere(): [Heading[], number] | undefined {
-  if (!isHeadingLine(ember.lineText(lineAt()))) return undefined;
+  if (!isHeadingLine(gnista.lineText(lineAt()))) return undefined;
   const all = headings();
   const i = headingIndex(all, lineAt());
   return i === undefined ? undefined : [all, i];
@@ -949,12 +949,12 @@ export function nextSameOrHigher(all: Heading[], i: number): Heading | undefined
  */
 export function subtreeEnd(all: Heading[], i: number): number {
   const next = nextSameOrHigher(all, i);
-  return next ? next.start - 1 : ember.pointMax();
+  return next ? next.start - 1 : gnista.pointMax();
 }
 
 /** Where a heading's entry ends for showing it: at the next heading, as org-fold-show-entry takes it. */
 export function entryEnd(all: Heading[], i: number): number {
-  return all[i + 1]?.start ?? ember.pointMax();
+  return all[i + 1]?.start ?? gnista.pointMax();
 }
 
 /**
@@ -963,44 +963,44 @@ export function entryEnd(all: Heading[], i: number): number {
  */
 export function subtreeRegion(all: Heading[], i: number): [number, number] {
   const next = nextSameOrHigher(all, i);
-  return [all[i].start, next ? next.start : ember.pointMax()];
+  return [all[i].start, next ? next.start : gnista.pointMax()];
 }
 
 // Narrowing, as org.el's org-narrow-to-subtree and its kin.
 
-const narrowToSubtree = ember.defineCommand({
+const narrowToSubtree = gnista.defineCommand({
   name: "org-narrow-to-subtree",
   doc: "Narrow the buffer to the current subtree: the heading point is under and everything below it.",
   run: () => {
     const all = headings();
     const i = headingIndex(all, lineAt());
-    if (i === undefined || all[i].start < ember.pointMin()) throw new Error("Before first heading");
+    if (i === undefined || all[i].start < gnista.pointMin()) throw new Error("Before first heading");
     const end = subtreeRegion(all, i)[1];
     // The subtree's last newline stays outside, and an existing narrowing is not widened.
-    ember.narrowToRegion(all[i].start, Math.min(ember.pointMax(), end === ember.pointMax() ? end : end - 1));
+    gnista.narrowToRegion(all[i].start, Math.min(gnista.pointMax(), end === gnista.pointMax() ? end : end - 1));
   },
 });
 
 // Subtrees in indirect buffers, as org.el's org-tree-to-indirect-buffer.
 
 /** The buffer the last C-c C-x b made, which the next one kills, as org-last-indirect-buffer. */
-let lastIndirectBuffer: ember.Buffer | undefined;
+let lastIndirectBuffer: gnista.Buffer | undefined;
 /** The frame "dedicated-frame" shows indirect buffers in, as org-indirect-dedicated-frame. */
 let indirectDedicatedFrame: number | undefined;
 
 /** An indirect buffer of `buffer`'s base, named after it and `heading`, as org-get-indirect-buffer. */
-function getIndirectBuffer(buffer: ember.Buffer, heading?: string): ember.Buffer {
-  const base = ember.bufferBaseBuffer(buffer) ?? buffer;
-  const name = ember.generateNewBufferName(`${base.name}${heading === undefined ? "" : `::${heading}`}`);
-  return ember.makeIndirectBuffer(base, name, true);
+function getIndirectBuffer(buffer: gnista.Buffer, heading?: string): gnista.Buffer {
+  const base = gnista.bufferBaseBuffer(buffer) ?? buffer;
+  const name = gnista.generateNewBufferName(`${base.name}${heading === undefined ? "" : `::${heading}`}`);
+  return gnista.makeIndirectBuffer(base, name, true);
 }
 
 /** The window showing `buffer`, if one does. */
-function bufferWindow(buffer: ember.Buffer): number | undefined {
-  return buffer.live ? ember.windowList().find((w) => ember.windowBuffer(w) === buffer.name) : undefined;
+function bufferWindow(buffer: gnista.Buffer): number | undefined {
+  return buffer.live ? gnista.windowList().find((w) => gnista.windowBuffer(w) === buffer.name) : undefined;
 }
 
-const treeToIndirectBuffer = ember.defineCommand({
+const treeToIndirectBuffer = gnista.defineCommand({
   name: "org-tree-to-indirect-buffer",
   doc:
     "Show the current subtree in an indirect buffer of its own, narrowed to it: the same text, folded apart.\n\n" +
@@ -1009,10 +1009,10 @@ const treeToIndirectBuffer = ember.defineCommand({
     "is killed first; with C-u it is kept.",
   params: [{ name: "arg", kind: "prefix" }],
   run: (arg) => {
-    const cbuf = ember.currentBuffer();
-    const cwin = ember.selectedWindow();
-    const pos = ember.point();
-    const display = String(ember.variable("org-indirect-buffer-display"));
+    const cbuf = gnista.currentBuffer();
+    const cwin = gnista.selectedWindow();
+    const pos = gnista.point();
+    const display = String(gnista.variable("org-indirect-buffer-display"));
     const lastWindow = lastIndirectBuffer && bufferWindow(lastIndirectBuffer);
     const [all, found] = backToHeading();
     let i = found;
@@ -1031,75 +1031,75 @@ const treeToIndirectBuffer = ember.defineCommand({
     const beg = h.start;
     let end = subtreeRegion(all, i)[1];
     // Up to the next heading's line, not its start, as org-end-of-subtree leaves it.
-    if (end < ember.pointMax()) end--;
-    if (lastIndirectBuffer?.live && display !== "new-frame" && arg === null) ember.call("kill-buffer", lastIndirectBuffer.name ?? "");
+    if (end < gnista.pointMax()) end--;
+    if (lastIndirectBuffer?.live && display !== "new-frame" && arg === null) gnista.call("kill-buffer", lastIndirectBuffer.name ?? "");
     const ibuf = getIndirectBuffer(cbuf, heading);
     lastIndirectBuffer = ibuf;
     if (display === "new-frame" || (arg !== null && display === "dedicated-frame")) {
-      ember.makeFrame(ibuf);
+      gnista.makeFrame(ibuf);
     } else if (display === "dedicated-frame") {
-      if (indirectDedicatedFrame === undefined || !ember.frameList().includes(indirectDedicatedFrame)) {
-        indirectDedicatedFrame = ember.makeFrame(ibuf);
+      if (indirectDedicatedFrame === undefined || !gnista.frameList().includes(indirectDedicatedFrame)) {
+        indirectDedicatedFrame = gnista.makeFrame(ibuf);
       } else {
-        ember.selectFrame(indirectDedicatedFrame);
-        ember.setWindowBuffer(undefined, ibuf);
+        gnista.selectFrame(indirectDedicatedFrame);
+        gnista.setWindowBuffer(undefined, ibuf);
       }
     } else if (display === "current-window") {
-      ember.setWindowBuffer(undefined, ibuf);
+      gnista.setWindowBuffer(undefined, ibuf);
     } else if (display === "other-window") {
-      if (lastWindow !== undefined && ember.windowList().includes(lastWindow)) {
-        ember.setWindowBuffer(lastWindow, ibuf);
-        ember.selectWindow(lastWindow);
+      if (lastWindow !== undefined && gnista.windowList().includes(lastWindow)) {
+        gnista.setWindowBuffer(lastWindow, ibuf);
+        gnista.selectWindow(lastWindow);
       } else {
-        ember.call("pop-to-buffer", ibuf.name ?? "");
+        gnista.call("pop-to-buffer", ibuf.name ?? "");
       }
     } else {
       throw new Error("Invalid value");
     }
-    ember.withCurrentBuffer(ibuf, () => {
-      ember.narrowToRegion(beg, end);
-      ember.call("org-show-all");
-      ember.gotoChar(pos);
+    gnista.withCurrentBuffer(ibuf, () => {
+      gnista.narrowToRegion(beg, end);
+      gnista.call("org-show-all");
+      gnista.gotoChar(pos);
     });
-    if (ember.windowList().includes(cwin)) ember.selectWindow(cwin);
+    if (gnista.windowList().includes(cwin)) gnista.selectWindow(cwin);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-toggle-narrow-to-subtree",
   doc: "Narrow to the current subtree, or widen if the buffer is narrowed.",
   run: () => {
-    if (ember.bufferNarrowedP()) {
-      ember.widen();
-      ember.message("Buffer widen");
+    if (gnista.bufferNarrowedP()) {
+      gnista.widen();
+      gnista.message("Buffer widen");
     } else {
-      ember.call("org-narrow-to-subtree");
-      ember.message("Buffer narrowed to current subtree");
+      gnista.call("org-narrow-to-subtree");
+      gnista.message("Buffer narrowed to current subtree");
     }
   },
 });
 
-const narrowToElement = ember.defineCommand({
+const narrowToElement = gnista.defineCommand({
   name: "org-narrow-to-element",
   doc: "Narrow the buffer to the element at point: a heading's subtree, a greater element's contents, or the element.",
   run: () => {
-    const e = elementAt(ember.point());
-    if (!e) ember.userError("No element at point");
+    const e = elementAt(gnista.point());
+    if (!e) gnista.userError("No element at point");
     if (e.type !== "headline" && GREATER_ELEMENTS.includes(e.type) && e.contentsBegin !== undefined) {
-      ember.narrowToRegion(e.contentsBegin, e.contentsEnd ?? e.end);
+      gnista.narrowToRegion(e.contentsBegin, e.contentsEnd ?? e.end);
     } else {
-      ember.narrowToRegion(e.begin, e.end);
+      gnista.narrowToRegion(e.begin, e.end);
     }
   },
 });
 
-const narrowToBlock = ember.defineCommand({
+const narrowToBlock = gnista.defineCommand({
   name: "org-narrow-to-block",
   doc: "Narrow the buffer to the block at point.",
   run: () => {
-    const e = elementAt(ember.point());
-    if (!e || !e.type.includes("block")) ember.userError("Not in a block");
-    ember.call("org-narrow-to-element");
+    const e = elementAt(gnista.point());
+    if (!e || !e.type.includes("block")) gnista.userError("Not in a block");
+    gnista.call("org-narrow-to-element");
   },
 });
 
@@ -1114,20 +1114,20 @@ function logBeginning(h: Heading, create = false): number {
     const meta = endOfMetaData(h);
     const all = headings();
     const i = headingIndex(all, h.line);
-    const end = i === undefined ? ember.bufferSize() : (all[i + 1]?.start ?? ember.bufferSize());
+    const end = i === undefined ? gnista.bufferSize() : (all[i + 1]?.start ?? gnista.bufferSize());
     const opener = new RegExp(`^[ \t]*:${escapeRegExp(drawer)}:[ \t]*$`, "i");
-    for (let l = lineAt(meta); l < ember.lineCount() && ember.lineStart(l) < end; l++) {
-      if (opener.test(ember.lineText(l))) return lineStartOrEnd(l + 1);
+    for (let l = lineAt(meta); l < gnista.lineCount() && gnista.lineStart(l) < end; l++) {
+      if (opener.test(gnista.lineText(l))) return lineStartOrEnd(l + 1);
     }
     if (!create) return meta;
     let at = meta;
     // Before the next heading, at the end of the line before it.
-    if (at < ember.bufferSize() && at === end) at = Math.max(ember.lineStart(lineAt(at)) - 1, 0);
+    if (at < gnista.bufferSize() && at === end) at = Math.max(gnista.lineStart(lineAt(at)) - 1, 0);
     // As looking-at "^[ \t]*$": only at the start of a line.
-    const atBlank = at === ember.lineStart(lineAt(at)) && /^[ \t]*$/.test(ember.bufferText(at, ember.lineEnd(lineAt(at))));
-    const atNonBlankStart = at === ember.lineStart(lineAt(at)) && at < ember.lineEnd(lineAt(at));
+    const atBlank = at === gnista.lineStart(lineAt(at)) && /^[ \t]*$/.test(gnista.bufferText(at, gnista.lineEnd(lineAt(at))));
+    const atNonBlankStart = at === gnista.lineStart(lineAt(at)) && at < gnista.lineEnd(lineAt(at));
     withoutFoldChecks(() => {
-      if (at !== ember.lineStart(lineAt(at))) {
+      if (at !== gnista.lineStart(lineAt(at))) {
         edInsert(at, "\n");
         at++;
       }
@@ -1140,36 +1140,36 @@ function logBeginning(h: Heading, create = false): number {
   }
   const endpos = endOfMetaData(h);
   let p = endpos;
-  while (p < ember.bufferSize() && /[ \t\n]/.test(ember.bufferText(p, p + 1))) p++;
-  p = ember.lineStart(lineAt(p));
+  while (p < gnista.bufferSize() && /[ \t\n]/.test(gnista.bufferText(p, p + 1))) p++;
+  p = gnista.lineStart(lineAt(p));
   if (p < endpos) p = endpos;
-  return p === ember.lineStart(lineAt(p)) ? p : lineStartOrEnd(lineAt(p) + 1);
+  return p === gnista.lineStart(lineAt(p)) ? p : lineStartOrEnd(lineAt(p) + 1);
 }
 
 /** Adds a note about a state change to a heading's entry, as org-store-log-note does for a repeating task. */
 function storeStateNote(headingLine: number, state: string, previous: string | undefined): void {
   const h = parseHeading(headingLine);
   if (!h) return;
-  const p = marker(ember.point());
+  const p = marker(gnista.point());
   newDrawerLine = undefined;
   withoutFoldChecks(() => {
     let at = logBeginning(h, true);
-    if (at !== ember.lineStart(lineAt(at))) {
+    if (at !== gnista.lineStart(lineAt(at))) {
       edInsert(at, "\n");
       at++;
-    } else if (/^[ \t]*\S/.test(ember.bufferText(at, ember.lineEnd(lineAt(at))))) {
+    } else if (/^[ \t]*\S/.test(gnista.bufferText(at, gnista.lineEnd(lineAt(at))))) {
       edInsert(at, "\n");
     }
     const pad = (x: string): string => x.padEnd(12, " ");
     const time = `[${formatTimestamp(today(true), true)}]`;
     const note = `State ${pad(`"${state}"`)} from ${pad(previous === undefined ? "" : `"${previous}"`)} ${time}`;
-    ember.gotoChar(at);
+    gnista.gotoChar(at);
     indentLine(lineAt(at));
-    edInsert(ember.point(), `- ${note}`);
+    edInsert(gnista.point(), `- ${note}`);
     if (newDrawerLine !== undefined) toggleDrawerOrBlock(newDrawerLine, true);
     newDrawerLine = undefined;
   });
-  ember.gotoChar(p.pos);
+  gnista.gotoChar(p.pos);
   dropMarker(p);
 }
 
@@ -1182,23 +1182,23 @@ const HAS_COOKIE = /\[(\d*\/\d*|\d*%)\]/;
  * boxes, one elsewhere the top items of the section's lists.
  */
 export function updateCheckboxCount(): void {
-  const saved = marker(ember.point());
+  const saved = marker(gnista.point());
   try {
     const all = headings();
-    const p = ember.point();
+    const p = gnista.point();
     // From the heading before point, as outline-previous-heading finds it:
     // searching back, so a heading's own stars must end before point.
     const previousHeading = (pos: number) => all.filter((h) => h.start + h.level + 1 <= pos).at(-1)?.start ?? 0;
-    const nextHeading = (pos: number) => all.find((h) => h.start > pos)?.start ?? ember.bufferSize();
+    const nextHeading = (pos: number) => all.find((h) => h.start > pos)?.start ?? gnista.bufferSize();
     const start = previousHeading(p);
     const end = nextHeading(p);
     const cookies: { start: number; end: number; percent: boolean; count: [number, number] }[] = [];
     const countIn = (from: number, to: number, item: number | undefined): [number, number] => {
       let on = 0;
       let total = 0;
-      for (let l = lineAt(from); l < ember.lineCount() && ember.lineStart(l) < to; l++) {
-        if (ember.lineStart(l) < from) continue;
-        if (!/^[ \t]*(?:[-+*]|(?:\d+|[A-Za-z])[.)])[ \t]+(?:\[@(?:start:)?(?:\d+|[A-Za-z])\][ \t]*)?\[[- X]\]/.test(ember.lineText(l))) continue;
+      for (let l = lineAt(from); l < gnista.lineCount() && gnista.lineStart(l) < to; l++) {
+        if (gnista.lineStart(l) < from) continue;
+        if (!/^[ \t]*(?:[-+*]|(?:\d+|[A-Za-z])[.)])[ \t]+(?:\[@(?:start:)?(?:\d+|[A-Za-z])\][ \t]*)?\[[- X]\]/.test(gnista.lineText(l))) continue;
         if (!itemLine(l)) continue;
         const s = listStruct(l);
         const items = item !== undefined ? children(item, parentsAlist(s)) : allItems(s[0].pos, prevsAlist(s));
@@ -1213,10 +1213,10 @@ export function updateCheckboxCount(): void {
       }
       return [on, total];
     };
-    for (let l = lineAt(start); l < ember.lineCount() && ember.lineStart(l) < end; l++) {
-      const text = ember.lineText(l);
+    for (let l = lineAt(start); l < gnista.lineCount() && gnista.lineStart(l) < end; l++) {
+      const text = gnista.lineText(l);
       for (const m of allMatches(COOKIE, text)) {
-        const cs = ember.lineStart(l) + charCount(text.slice(0, m.index ?? 0));
+        const cs = gnista.lineStart(l) + charCount(text.slice(0, m.index ?? 0));
         if (cs < start || cs >= end) continue;
         const container = inItem(l);
         let count: [number, number];
@@ -1242,7 +1242,7 @@ export function updateCheckboxCount(): void {
       if (h && h.tagsAt !== undefined) alignTags(h.line);
     }
   } finally {
-    ember.gotoChar(saved.pos);
+    gnista.gotoChar(saved.pos);
     dropMarker(saved);
   }
 }
@@ -1252,10 +1252,10 @@ function writeCookies(line: number, done: number, total: number): void {
   // As org-update-parent-todo-statistics does, a cookie that changes gets
   // the new text inserted before it and the old deleted after, so point
   // inside it ends up after the new one.
-  const pt = marker(ember.point());
-  const count = allMatches(COOKIE, ember.lineText(line)).length;
+  const pt = marker(gnista.point());
+  const count = allMatches(COOKIE, gnista.lineText(line)).length;
   for (let k = 0; k < count; k++) {
-    const text = ember.lineText(line);
+    const text = gnista.lineText(line);
     const m = allMatches(COOKIE, text)[k];
     if (!m) break;
     const percent = m[1].endsWith("%");
@@ -1267,7 +1267,7 @@ function writeCookies(line: number, done: number, total: number): void {
     // org-fix-tags-on-the-fly, with org-auto-align-tags on.
     if (parseHeading(line)?.tagsAt !== undefined) alignTagsAway(line);
   }
-  ember.gotoChar(pt.pos);
+  gnista.gotoChar(pt.pos);
   dropMarker(pt);
 }
 
@@ -1278,16 +1278,16 @@ function writeCookies(line: number, done: number, total: number): void {
  */
 function updateHeadingCookies(all: Heading[], i: number): void {
   const h = all[i];
-  const end = all[i + 1]?.start ?? ember.bufferSize();
+  const end = all[i + 1]?.start ?? gnista.bufferSize();
   let boxes = false;
-  for (let l = h.line + 1; l < ember.lineCount() && ember.lineStart(l) < end; l++) {
-    if (/^[ \t]*([-+*]|[0-9]+[.)]) \[[- X]\]/.test(ember.lineText(l))) boxes = true;
+  for (let l = h.line + 1; l < gnista.lineCount() && gnista.lineStart(l) < end; l++) {
+    if (/^[ \t]*([-+*]|[0-9]+[.)]) \[[- X]\]/.test(gnista.lineText(l))) boxes = true;
   }
   if (boxes) {
-    const p = ember.point();
-    ember.gotoChar(h.end);
+    const p = gnista.point();
+    gnista.gotoChar(h.end);
     updateCheckboxCount();
-    ember.gotoChar(p);
+    gnista.gotoChar(p);
     return;
   }
   const next = all[i + 1];
@@ -1297,7 +1297,7 @@ function updateHeadingCookies(all: Heading[], i: number): void {
     for (let k = i + 1; k < all.length && all[k].start < sub; k++) if (all[k].level === next.level && all[k].todo !== undefined) states.push(all[k]);
     writeCookies(h.line, states.filter((x) => isDone(x.todo)).length, states.length);
   } else {
-    const text = ember.lineText(h.line);
+    const text = gnista.lineText(h.line);
     for (const m of allMatches(COOKIE, text).reverse()) {
       const start = at(h.line, text, m.index ?? 0);
       replaceText(start, start + charCount(m[0]), m[1].endsWith("%") ? "[100%]" : "[0/0]");
@@ -1307,7 +1307,7 @@ function updateHeadingCookies(all: Heading[], i: number): void {
 
 /** Folds or shows an item, as org-list-set-item-visibility does. */
 function setItemVisibility(item: number, struct: Struct, view: "folded" | "children" | "subtree"): void {
-  if (view === "folded") flag(ember.lineEnd(lineAt(item)), itemEndBeforeBlank(struct, item), true);
+  if (view === "folded") flag(gnista.lineEnd(lineAt(item)), itemEndBeforeBlank(struct, item), true);
   else if (view === "subtree") flag(item, getItem(struct, item).end, false);
   else {
     setItemVisibility(item, struct, "subtree");
@@ -1334,14 +1334,14 @@ interface Item {
 const ITEM = /^([ \t]*)([-+*]|\d+[.)])([ \t]+|$)/;
 
 function parseItem(line: number): Item | undefined {
-  if (line < 0 || line >= ember.lineCount()) return undefined;
-  const text = ember.lineText(line);
+  if (line < 0 || line >= gnista.lineCount()) return undefined;
+  const text = gnista.lineText(line);
   const m = ITEM.exec(text);
   if (!m || (m[1] === "" && m[2] === "*")) return undefined;
   const contentIndex = m[0].length;
   const item: Item = {
     line,
-    start: ember.lineStart(line),
+    start: gnista.lineStart(line),
     indent: indentation(text),
     bullet: m[2],
     bulletAt: at(line, text, m[1].length),
@@ -1371,11 +1371,11 @@ function itemHere(): Item | undefined {
 
 /** Puts a face on a stretch, ahead of the faces already there. */
 function face(start: number, end: number, name: string): void {
-  if (end > start) ember.addFaceTextProperty(start, end, name);
+  if (end > start) gnista.addFaceTextProperty(start, end, name);
 }
 
 function hide(start: number, end: number): void {
-  if (end > start) ember.putTextProperty(start, end, "invisible", "org-link");
+  if (end > start) gnista.putTextProperty(start, end, "invisible", "org-link");
 }
 
 export const LINK = /\[\[((?:[^\][\\]|\\.)+)\](?:\[([^\n]+?)\])?\]/g;
@@ -1404,7 +1404,7 @@ function fontifyObjects(line: number, text: string, from: number, to = text.leng
     const end = i + m[0].length;
     taken.push([i, end]);
     face(pos(i), pos(end), "org-link");
-    if (ember.variable("org-link-descriptive") === true) {
+    if (gnista.variable("org-link-descriptive") === true) {
       if (m[2] !== undefined) {
         const desc = i + 2 + m[1].length + 2;
         hide(pos(i), pos(desc));
@@ -1453,41 +1453,41 @@ function fontifyObjects(line: number, text: string, from: number, to = text.leng
  * A face from a face's name, a colour, or a list of attributes, over the
  * face `inherit`, as org-face-from-face-or-color makes one.
  */
-function faceFromFaceOrColor(inherit: string, spec: ember.Value | undefined): ember.Value | undefined {
-  if (typeof spec === "string") return ember.facep(spec) ? spec : [":inherit", inherit, ":foreground", spec];
+function faceFromFaceOrColor(inherit: string, spec: gnista.Value | undefined): gnista.Value | undefined {
+  if (typeof spec === "string") return gnista.facep(spec) ? spec : [":inherit", inherit, ":foreground", spec];
   if (Array.isArray(spec)) return [":inherit", inherit, ...spec];
   return undefined;
 }
 
 /** The value an alist of [key, value] lists gives a key. */
-function alistGet(name: string, key: string): ember.Value | undefined {
-  const alist = ember.variable(name);
+function alistGet(name: string, key: string): gnista.Value | undefined {
+  const alist = gnista.variable(name);
   if (!Array.isArray(alist)) return undefined;
-  const entry = alist.find((e) => Array.isArray(e) && e[0] === key) as ember.Value[] | undefined;
+  const entry = alist.find((e) => Array.isArray(e) && e[0] === key) as gnista.Value[] | undefined;
   return entry === undefined ? undefined : entry.length === 2 ? entry[1] : entry.slice(1);
 }
 
 function fontifyHeading(h: Heading, text: string): void {
-  ember.putTextProperty(h.start, h.end, "face", `org-level-${((h.level - 1) % 8) + 1}`);
+  gnista.putTextProperty(h.start, h.end, "face", `org-level-${((h.level - 1) % 8) + 1}`);
   // All but the last star, as org-get-level-face gives them org-hide.
-  if (h.level > 1 && ember.variable("org-hide-leading-stars") === true) ember.putTextProperty(h.start, h.start + h.level - 1, "face", "org-hide");
+  if (h.level > 1 && gnista.variable("org-hide-leading-stars") === true) gnista.putTextProperty(h.start, h.start + h.level - 1, "face", "org-hide");
   if (h.todo !== undefined && h.todoAt !== undefined) {
     const done = isDone(h.todo);
-    if (done && ember.variable("org-fontify-done-headline") === true) face(h.todoAt, h.end, "org-headline-done");
+    if (done && gnista.variable("org-fontify-done-headline") === true) face(h.todoAt, h.end, "org-headline-done");
     // As org-get-todo-face: the keyword's own face from org-todo-keyword-faces, else org-done or org-todo.
     const own = faceFromFaceOrColor("org-todo", alistGet("org-todo-keyword-faces", h.todo));
-    if (own !== undefined) ember.addFaceTextProperty(h.todoAt, h.todoAt + charCount(h.todo), own as ember.Value[] | string);
+    if (own !== undefined) gnista.addFaceTextProperty(h.todoAt, h.todoAt + charCount(h.todo), own as gnista.Value[] | string);
     else face(h.todoAt, h.todoAt + charCount(h.todo), done ? "org-done" : "org-todo");
   }
   if (h.priorityAt !== undefined) face(h.priorityAt, h.priorityAt + 4, "org-priority");
   if (h.tagsAt !== undefined) {
     face(h.tagsAt, h.end, "org-tag");
     // Each tag in its own face from org-tag-faces, as org-get-tag-face gives it.
-    if (Array.isArray(ember.variable("org-tag-faces"))) {
+    if (Array.isArray(gnista.variable("org-tag-faces"))) {
       let at = h.tagsAt + 1;
       for (const tag of h.tags) {
         const own = faceFromFaceOrColor("org-tag", alistGet("org-tag-faces", tag));
-        if (own !== undefined) ember.addFaceTextProperty(at, at + charCount(tag), own as ember.Value[] | string);
+        if (own !== undefined) gnista.addFaceTextProperty(at, at + charCount(tag), own as gnista.Value[] | string);
         at += charCount(tag) + 1;
       }
     }
@@ -1500,7 +1500,7 @@ function fontifyHeading(h: Heading, text: string): void {
 /** The block a line is inside, by looking back for its #+begin_ line. */
 function blockBefore(line: number): string | undefined {
   for (let l = line - 1; l >= 0; l--) {
-    const text = ember.lineText(l);
+    const text = gnista.lineText(l);
     if (BLOCK_END.test(text)) return undefined;
     const begin = BLOCK_BEGIN.exec(text);
     if (begin) return begin[1].toLowerCase();
@@ -1517,42 +1517,42 @@ const KEYWORD = /^([ \t]*#\+(\w+):)(.*)$/;
  * org-block face too, newlines and all, as Emacs does. The line it ends on, if it could.
  */
 function fontifySrcNatively(beginLine: number): number | undefined {
-  if (!truthy(ember.variable("org-src-fontify-natively")) || !ember.fboundp("org-src-font-lock-fontify-block")) return undefined;
-  const lang = /^[ \t]*#\+begin_src[ \t]+(\S+)/i.exec(ember.lineText(beginLine))?.[1];
+  if (!truthy(gnista.variable("org-src-fontify-natively")) || !gnista.fboundp("org-src-font-lock-fontify-block")) return undefined;
+  const lang = /^[ \t]*#\+begin_src[ \t]+(\S+)/i.exec(gnista.lineText(beginLine))?.[1];
   if (lang === undefined) return undefined;
   let endLine = beginLine + 1;
-  while (endLine < ember.lineCount() && !BLOCK_END.test(ember.lineText(endLine))) endLine++;
-  if (endLine >= ember.lineCount()) return undefined;
-  if (!truthy(ember.funcall("org-src-font-lock-fontify-block", lang, ember.lineStart(beginLine + 1), ember.lineStart(endLine)))) return undefined;
-  if (endLine > beginLine + 1) ember.addFaceTextProperty(ember.lineStart(beginLine + 1), ember.lineStart(endLine), "org-block", { append: true });
+  while (endLine < gnista.lineCount() && !BLOCK_END.test(gnista.lineText(endLine))) endLine++;
+  if (endLine >= gnista.lineCount()) return undefined;
+  if (!truthy(gnista.funcall("org-src-font-lock-fontify-block", lang, gnista.lineStart(beginLine + 1), gnista.lineStart(endLine)))) return undefined;
+  if (endLine > beginLine + 1) gnista.addFaceTextProperty(gnista.lineStart(beginLine + 1), gnista.lineStart(endLine), "org-block", { append: true });
   return endLine;
 }
 
 /** Where a block's #+begin or #+end line's face ends: after its newline, as org-fontify-whole-block-delimiter-line says. */
 function delimiterEnd(lineEnd: number): number {
-  return truthy(ember.variable("org-fontify-whole-block-delimiter-line")) ? Math.min(lineEnd + 1, ember.pointMax()) : lineEnd;
+  return truthy(gnista.variable("org-fontify-whole-block-delimiter-line")) ? Math.min(lineEnd + 1, gnista.pointMax()) : lineEnd;
 }
 
 /** Fontifies whole lines from start to end, for jit-lock-functions. */
 function fontify(start: number, end: number): void {
-  if (!ember.derivedModeP("org-mode")) return;
-  const first = ember.lineOf(start);
-  const from = ember.lineStart(first);
-  ember.removeTextProperty(from, end, "face");
-  ember.removeTextProperty(from, end, "invisible");
+  if (!gnista.derivedModeP("org-mode")) return;
+  const first = gnista.lineOf(start);
+  const from = gnista.lineStart(first);
+  gnista.removeTextProperty(from, end, "face");
+  gnista.removeTextProperty(from, end, "invisible");
   const keywords = allKeywords();
   let block = blockBefore(first);
   let firstLine = first;
   if (block === "src") {
     // In a source block: fontify all of it, from its #+begin_src line.
     let begin = first - 1;
-    while (begin >= 0 && !BLOCK_BEGIN.test(ember.lineText(begin))) begin--;
+    while (begin >= 0 && !BLOCK_BEGIN.test(gnista.lineText(begin))) begin--;
     if (begin >= 0) firstLine = fontifySrcNatively(begin) ?? first;
   }
-  for (let line = firstLine; line < ember.lineCount() && ember.lineStart(line) < Math.max(end, from + 1); line++) {
-    const text = ember.lineText(line);
-    const ls = ember.lineStart(line);
-    const le = ember.lineEnd(line);
+  for (let line = firstLine; line < gnista.lineCount() && gnista.lineStart(line) < Math.max(end, from + 1); line++) {
+    const text = gnista.lineText(line);
+    const ls = gnista.lineStart(line);
+    const le = gnista.lineEnd(line);
     if (block !== undefined) {
       // Each face takes the newline too, as Org's does, so a background
       // with :extend goes on to the window's edge.
@@ -1560,7 +1560,7 @@ function fontify(start: number, end: number): void {
         face(ls, delimiterEnd(le), "org-block-end-line");
         block = undefined;
       } else {
-        face(ls, Math.min(le + 1, ember.pointMax()), block === "quote" ? "org-quote" : block === "verse" ? "org-verse" : "org-block");
+        face(ls, Math.min(le + 1, gnista.pointMax()), block === "quote" ? "org-quote" : block === "verse" ? "org-verse" : "org-block");
       }
       continue;
     }
@@ -1634,7 +1634,7 @@ function fontify(start: number, end: number): void {
     if (footnote) face(ls, ls + footnote[0].length, "org-footnote");
     fontifyObjects(line, text, objectsFrom);
   }
-  fontifyLinksAcrossLines(from, Math.min(Math.max(end, from + 1), ember.bufferSize()));
+  fontifyLinksAcrossLines(from, Math.min(Math.max(end, from + 1), gnista.bufferSize()));
 }
 
 /**
@@ -1644,9 +1644,9 @@ function fontify(start: number, end: number): void {
 function fontifyLinksAcrossLines(start: number, end: number): void {
   // A line beyond each end too, as Org's font-lock extends its region for
   // these, so fontifying one line still finds a link it shares with the next.
-  const from = ember.lineStart(Math.max(0, lineAt(start) - 1));
+  const from = gnista.lineStart(Math.max(0, lineAt(start) - 1));
   const to = lineStartOrEnd(lineAt(Math.max(start, end - 1)) + 2);
-  const text = ember.bufferText(from, to);
+  const text = gnista.bufferText(from, to);
   if (!text.includes("\n")) return;
   const linkRe = /\[\[((?:[^\][\\]|\\.)+)\](?:\[([^]+?)\])?\]/g;
   for (const m of allMatches(linkRe, text)) {
@@ -1658,10 +1658,10 @@ function fontifyLinksAcrossLines(start: number, end: number): void {
     const lines = m[0].split("\n").length - 1;
     const first = lineAt(linkStart);
     let within = true;
-    for (let l = first + 1; l <= first + lines; l++) if (startsElement(l, ember.bufferSize())) within = false;
+    for (let l = first + 1; l <= first + lines; l++) if (startsElement(l, gnista.bufferSize())) within = false;
     if (!within) continue;
     face(linkStart, pos(m[0].length), "org-link");
-    if (ember.variable("org-link-descriptive") !== true) continue;
+    if (gnista.variable("org-link-descriptive") !== true) continue;
     if (m[2] !== undefined) {
       const desc = 2 + m[1].length + 2;
       hide(linkStart, pos(desc));
@@ -1677,9 +1677,9 @@ function fontifyLinksAcrossLines(start: number, end: number): void {
 
 /** The column an item's text starts at, after its bullet, as org-list-item-body-column says. */
 function listBodyColumn(pos: number): number {
-  const text = ember.lineText(lineAt(pos));
+  const text = gnista.lineText(lineAt(pos));
   const m = /^[ \t]*(\S+)/.exec(text);
-  return m ? ember.stringWidth(m[0].replace(/\t/g, "        ")) + 1 : 0;
+  return m ? gnista.stringWidth(m[0].replace(/\t/g, "        ")) + 1 : 0;
 }
 
 const GREATER_ELEMENTS = ["center-block", "drawer", "headline", "item", "plain-list", "property-drawer", "quote-block", "section", "special-block", "table"];
@@ -1687,15 +1687,15 @@ const GREATER_ELEMENTS = ["center-block", "drawer", "headline", "item", "plain-l
 /** The column Org expects a line to start at, given the element it is in, as org--get-expected-indentation works it out. */
 function expectedIndent(el: Elem | undefined, contentsp: boolean, line: number): number {
   const type = el?.type;
-  const indentOf = (pos: number): number => textIndentation(ember.lineText(lineAt(pos)));
+  const indentOf = (pos: number): number => textIndentation(gnista.lineText(lineAt(pos)));
   if (contentsp) {
     if (type === "section") return expectedIndent(el?.parent, true, line);
     if (type === undefined || type === "headline") return 0;
     if (type === "item" || type === "plain-list") return listBodyColumn((el as Elem).begin);
     return indentOf((el as Elem).begin);
   }
-  if (!el || type === "headline" || type === "org-data") return isBlank(ember.lineText(line)) ? expectedIndent(el, true, line) : 0;
-  const bol = ember.lineStart(line);
+  if (!el || type === "headline" || type === "org-data") return isBlank(gnista.lineText(line)) ? expectedIndent(el, true, line) : 0;
+  const bol = gnista.lineStart(line);
   const start = el.begin;
   if (bol < start) return expectedIndent(el.parent, true, line);
   if (bol === start) {
@@ -1704,14 +1704,14 @@ function expectedIndent(el: Elem | undefined, contentsp: boolean, line: number):
     for (let parent = previous; parent && parent.end <= start; parent = parent.parent) previous = parent;
     if (!previous || previous.type === "org-data") return 0;
     if (previous.end > start) return expectedIndent(previous, true, line);
-    if (previous.begin === ember.lineStart(lineAt(previous.begin))) return indentOf(previous.begin);
+    if (previous.begin === gnista.lineStart(lineAt(previous.begin))) return indentOf(previous.begin);
     return expectedIndent(previous.parent, true, line);
   }
   let q = bol;
-  while (q > 0 && /[ \r\t\n]/.test(ember.bufferText(q - 1, q))) q--;
+  while (q > 0 && /[ \r\t\n]/.test(gnista.bufferText(q - 1, q))) q--;
   if (type === "plain-list" && lineAt(bol) - lineAt(q) > 2) return indentOf(start);
-  if (ember.lineStart(lineAt(q)) < start) return expectedIndent(el.parent, true, line);
-  if (ember.lineStart(lineAt(q)) === start) return expectedIndent(el, true, line);
+  if (gnista.lineStart(lineAt(q)) < start) return expectedIndent(el.parent, true, line);
+  if (gnista.lineStart(lineAt(q)) === start) return expectedIndent(el, true, line);
   if (GREATER_ELEMENTS.includes(type ?? "") && el.contentsEnd !== undefined && el.contentsEnd <= bol) {
     if (type === "item" || type === "plain-list") {
       const last = elementAt(q);
@@ -1724,19 +1724,19 @@ function expectedIndent(el: Elem | undefined, contentsp: boolean, line: number):
 
 /** Indents a line as org-indent-line does, keeping point in the text or after the indentation. */
 function indentLine(line: number): void {
-  const text = ember.lineText(line);
-  const ls = ember.lineStart(line);
+  const text = gnista.lineText(line);
+  const ls = gnista.lineStart(line);
   const block = elementAt(ls);
   if (block?.type === "src-block" && line > lineAt(block.begin) && line < lineAt(endBeforeBlank(block))) {
     // An empty line gets the block's content indentation, then Org hands
     // the line to the language's mode, with org-src-tab-acts-natively.
-    if (!preservesIndentation(block) && text === "" && ember.point() === ls) {
-      const ind = textIndentation(ember.lineText(lineAt(block.begin))) + Number(ember.variable("org-edit-src-content-indentation") ?? 2);
+    if (!preservesIndentation(block) && text === "" && gnista.point() === ls) {
+      const ind = textIndentation(gnista.lineText(lineAt(block.begin))) + Number(gnista.variable("org-edit-src-content-indentation") ?? 2);
       indentLineTo(line, ind);
-      ember.gotoChar(ember.lineEnd(line));
+      gnista.gotoChar(gnista.lineEnd(line));
     }
-    if (truthy(ember.variable("org-src-tab-acts-natively")) && ember.fboundp("org-babel-do-key-sequence-in-edit-buffer")) {
-      ember.funcall("org-babel-do-key-sequence-in-edit-buffer", "indent-for-tab-command");
+    if (truthy(gnista.variable("org-src-tab-acts-natively")) && gnista.fboundp("org-babel-do-key-sequence-in-edit-buffer")) {
+      gnista.funcall("org-babel-do-key-sequence-in-edit-buffer", "indent-for-tab-command");
     }
     return;
   }
@@ -1745,18 +1745,18 @@ function indentLine(line: number): void {
   if (el && (el.type === "plain-list" || el.type === "item") && el.begin === ls) return;
   const want = expectedIndent(el, false, line);
   const ws = /^[ \t]*/.exec(text)?.[0] ?? "";
-  const p = ember.point();
+  const p = gnista.point();
   if (lineAt(p) === line && p - ls <= charCount(ws)) {
     indentLineTo(line, want);
-    ember.gotoChar(ls + charCount(/^[ \t]*/.exec(ember.lineText(line))?.[0] ?? ""));
+    gnista.gotoChar(ls + charCount(/^[ \t]*/.exec(gnista.lineText(line))?.[0] ?? ""));
   } else {
     const m = marker(p);
     indentLineTo(line, want);
-    ember.gotoChar(m.pos);
+    gnista.gotoChar(m.pos);
     dropMarker(m);
   }
   if (el?.type === "node-property") {
-    const column = ember.stringWidth(ember.bufferText(ls, ember.point()).replace(/\t/g, "        "));
+    const column = gnista.stringWidth(gnista.bufferText(ls, gnista.point()).replace(/\t/g, "        "));
     alignNodeProperty(line);
     moveToColumn(column);
   }
@@ -1765,14 +1765,14 @@ function indentLine(line: number): void {
 /** Moves point to a column on its line, or to the line's end, as move-to-column does. */
 export function moveToColumn(column: number): void {
   const line = lineAt();
-  let p = ember.lineStart(line);
+  let p = gnista.lineStart(line);
   let c = 0;
-  for (const ch of ember.lineText(line)) {
+  for (const ch of gnista.lineText(line)) {
     if (c >= column) break;
-    c = ch === "\t" ? (Math.floor(c / 8) + 1) * 8 : c + ember.stringWidth(ch);
+    c = ch === "\t" ? (Math.floor(c / 8) + 1) * 8 : c + gnista.stringWidth(ch);
     p++;
   }
-  ember.gotoChar(p);
+  gnista.gotoChar(p);
 }
 
 /** A node property line's parts, as org-property-re matches them: indentation, :KEY:, and value. */
@@ -1780,13 +1780,13 @@ const PROPERTY_RE = /^([ \t]*)(:(\S+):)(?:()$|[ \t]+(.*?))([ \t]*)$/;
 
 /** Aligns the node property on a line by org-property-format ("%-10s %s"), as org--align-node-property does. */
 export function alignNodeProperty(line: number): void {
-  const text = ember.lineText(line);
+  const text = gnista.lineText(line);
   const m = PROPERTY_RE.exec(text);
   if (!m) return;
   const key = m[2];
-  const formatted = `${key}${" ".repeat(Math.max(0, 10 - ember.stringWidth(key)))} ${m[5] ?? ""}`;
+  const formatted = `${key}${" ".repeat(Math.max(0, 10 - gnista.stringWidth(key)))} ${m[5] ?? ""}`;
   const replacement = m[1] + formatted.replace(/^[ \t\n\r]+|[ \t\n\r]+$/g, "");
-  const ls = ember.lineStart(line);
+  const ls = gnista.lineStart(line);
   // Deleted and inserted again rather than replaced, so markers in the line go to its start.
   const checks = !foldChecksOff;
   withoutFoldChecks(() => {
@@ -1799,10 +1799,10 @@ export function alignNodeProperty(line: number): void {
 /** Changes the indentation of the lines from start to end by offset, as indent-rigidly does. */
 function indentRigidly(start: number, end: number, offset: number): void {
   const endM = marker(end);
-  for (let line = lineAt(start); line < ember.lineCount() && ember.lineStart(line) < endM.pos; line++) {
-    const text = ember.lineText(line);
+  for (let line = lineAt(start); line < gnista.lineCount() && gnista.lineStart(line) < endM.pos; line++) {
+    const text = gnista.lineText(line);
     const ws = /^[ \t]*/.exec(text)?.[0] ?? "";
-    const ls = ember.lineStart(line);
+    const ls = gnista.lineStart(line);
     if (ws.length === text.length) edDelete(ls, ls + charCount(ws));
     else {
       const added = indentString(Math.max(0, textIndentation(text) + offset));
@@ -1820,26 +1820,26 @@ function orgIndentRegion(start: number, end: number): void {
 
 function indentRegionElements(start: number, end: number): void {
   const endM = marker(end);
-  const size = (): number => ember.bufferSize();
+  const size = (): number => gnista.bufferSize();
   let p = start;
-  while (p < size() && /[ \r\t\n]/.test(ember.bufferText(p, p + 1))) p++;
-  if (p < size()) p = ember.lineStart(lineAt(p));
+  while (p < size() && /[ \r\t\n]/.test(gnista.bufferText(p, p + 1))) p++;
+  if (p < size()) p = gnista.lineStart(lineAt(p));
   // Gives lines up to pos the indentation ind, leaving p after pos.
   const indentTo = (ind: number, pos: number): void => {
     const limit = marker(pos);
     while (p < limit.pos) {
       const line = lineAt(p);
-      if (!/^[ \t]*$/.test(ember.lineText(line))) indentLineTo(line, ind);
+      if (!/^[ \t]*$/.test(gnista.lineText(line))) indentLineTo(line, ind);
       p = lineStartOrEnd(line + 1);
-      if (line + 1 >= ember.lineCount()) p = size();
+      if (line + 1 >= gnista.lineCount()) p = size();
     }
     dropMarker(limit);
   };
   while (p < endM.pos) {
     const line = lineAt(p);
-    const el = isHeadingLine(ember.lineText(line)) ? undefined : elementAt(p);
+    const el = isHeadingLine(gnista.lineText(line)) ? undefined : elementAt(p);
     if (!el) {
-      p = line + 1 < ember.lineCount() ? ember.lineStart(line + 1) : size();
+      p = line + 1 < gnista.lineCount() ? gnista.lineStart(line + 1) : size();
       continue;
     }
     const type = el.type;
@@ -1847,35 +1847,35 @@ function indentRegionElements(start: number, end: number): void {
     const ind = expectedIndent(el, false, line);
     if (type === "export-block" || (type === "example-block" && !preservesIndentation(el))) {
       // Indented as a whole, keeping the lines' indentation relative to each other.
-      const offset = ind - textIndentation(ember.lineText(lineAt(p)));
+      const offset = ind - textIndentation(gnista.lineText(lineAt(p)));
       if (offset !== 0) indentRigidly(el.begin, el.end, offset);
       p = elementEnd.pos;
     } else if (type === "src-block" || type === "example-block") {
       // The lines between the block's first and last are left alone: Org
-      // hands a source block's to its language's mode, which Ember lacks.
+      // hands a source block's to its language's mode, which Gnista lacks.
       const lastLine = lineAt(endBeforeBlank(el));
       indentTo(ind, Math.min(lineStartOrEnd(lineAt(el.begin) + 1), endM.pos));
-      p = Math.max(p, Math.min(ember.lineStart(lastLine), endM.pos));
+      p = Math.max(p, Math.min(gnista.lineStart(lastLine), endM.pos));
       if (p < endM.pos) indentTo(ind, Math.min(elementEnd.pos, endM.pos));
     } else if (["paragraph", "table", "table-row"].includes(type) || el.contentsBegin === undefined) {
       if (type === "node-property") {
         const pm = marker(p);
         alignNodeProperty(lineAt(p));
-        p = ember.lineStart(lineAt(pm.pos));
+        p = gnista.lineStart(lineAt(pm.pos));
         dropMarker(pm);
       }
       indentTo(ind, Math.min(elementEnd.pos, endM.pos));
     } else {
       let cb = el.contentsBegin;
       if (type === "item" || type === "plain-list") {
-        let q = ember.lineEnd(lineAt(el.begin));
-        while (q < size() && /[ \r\t\n]/.test(ember.bufferText(q, q + 1))) q++;
-        cb = q >= size() ? q : ember.lineStart(lineAt(q));
+        let q = gnista.lineEnd(lineAt(el.begin));
+        while (q < size() && /[ \r\t\n]/.test(gnista.bufferText(q, q + 1))) q++;
+        cb = q >= size() ? q : gnista.lineStart(lineAt(q));
       }
       const cbeg = marker(cb);
       const cend = marker(el.contentsEnd ?? el.end, true);
       if (type === "plain-list") {
-        const offset = ind - textIndentation(ember.lineText(lineAt(p)));
+        const offset = ind - textIndentation(gnista.lineText(lineAt(p)));
         if (offset !== 0) indentRigidly(el.begin, elementEnd.pos, offset);
         p = cbeg.pos;
       } else if (type === "item") p = cbeg.pos;
@@ -1893,7 +1893,7 @@ function indentRegionElements(start: number, end: number): void {
   dropMarker(endM);
 }
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "org-edit-src-content-indentation",
   doc: "How far the lines of a source block are indented past its #+begin_src line.",
   value: 2,
@@ -1901,7 +1901,7 @@ ember.defineVariable({
 
 /** Whether an example block keeps its lines' indentation, with its -i switch or org-src-preserve-indentation. */
 function preservesIndentation(el: Elem): boolean {
-  return ember.variable("org-src-preserve-indentation") === true || /\s-i(\s|$)/.test(ember.lineText(lineAt(el.begin)));
+  return gnista.variable("org-src-preserve-indentation") === true || /\s-i(\s|$)/.test(gnista.lineText(lineAt(el.begin)));
 }
 
 const BLOCK_TYPES = ["comment-block", "center-block", "example-block", "export-block", "quote-block", "special-block", "src-block", "verse-block"];
@@ -1909,44 +1909,44 @@ const BLOCK_TYPES = ["comment-block", "center-block", "example-block", "export-b
 /** Whether point's line opens a block that is closed, as org-at-block-p checks with org-block-regexp. */
 function atBlock(): boolean {
   const line = lineAt();
-  const m = /^[ \t]*#\+begin_?([^ \n]+)/i.exec(ember.lineText(line));
+  const m = /^[ \t]*#\+begin_?([^ \n]+)/i.exec(gnista.lineText(line));
   if (!m) return false;
   const close = new RegExp(`^[ \\t]*#\\+end_?${escapeRegExp(m[1])}[ \\t]*$`, "i");
-  for (let l = line + 1; l < ember.lineCount(); l++) if (close.test(ember.lineText(l))) return true;
+  for (let l = line + 1; l < gnista.lineCount(); l++) if (close.test(gnista.lineText(l))) return true;
   return false;
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-indent-block",
   doc: "Indent the block at point.\nSignal an error when not at a block.",
   run: () => {
-    const el = elementAt(ember.point());
-    if (!el || !BLOCK_TYPES.includes(el.type)) ember.userError("Not at a block");
-    const pt = marker(ember.point());
+    const el = elementAt(gnista.point());
+    if (!el || !BLOCK_TYPES.includes(el.type)) gnista.userError("Not at a block");
+    const pt = marker(gnista.point());
     orgIndentRegion(el.begin, el.end);
-    ember.gotoChar(pt.pos);
+    gnista.gotoChar(pt.pos);
     dropMarker(pt);
-    ember.message("Block at point indented");
+    gnista.message("Block at point indented");
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-indent-drawer",
   doc: "Indent the drawer at point.\nSignal an error when not at a drawer.",
   run: () => {
-    const el = elementAt(ember.point());
-    if (el?.type !== "drawer" && el?.type !== "property-drawer") ember.userError("Not at a drawer");
-    const pt = marker(ember.point());
+    const el = elementAt(gnista.point());
+    if (el?.type !== "drawer" && el?.type !== "property-drawer") gnista.userError("Not at a drawer");
+    const pt = marker(gnista.point());
     orgIndentRegion(el.begin, el.end);
-    ember.gotoChar(pt.pos);
+    gnista.gotoChar(pt.pos);
     dropMarker(pt);
-    ember.message("Drawer at point indented");
+    gnista.message("Drawer at point indented");
   },
 });
 
 // Commands: visibility
 
-const cycle = ember.defineCommand({
+const cycle = gnista.defineCommand({
   name: "org-cycle",
   doc:
     "TAB in Org: fold and unfold.\n\n" +
@@ -1954,47 +1954,47 @@ const cycle = ember.defineCommand({
     "On a list item with items under it, the same for the item. On a drawer or block line, fold or unfold it. " +
     "In a table, move to the next field. Anywhere else, indent the line. " +
     "With C-u, cycle the whole buffer as S-TAB does.",
-  run: () => orgCycle(ember.prefixArg()),
+  run: () => orgCycle(gnista.prefixArg()),
 });
 
 /** TAB in Org, as org-cycle does with prefix argument arg. */
-function orgCycle(arg: ember.PrefixArg): void {
+function orgCycle(arg: gnista.PrefixArg): void {
   {
-    if (ember.runHookWithArgsUntilSuccess("org-cycle-tab-first-hook")) return;
+    if (gnista.runHookWithArgsUntilSuccess("org-cycle-tab-first-hook")) return;
     if (cycleLevel() || cycleItemIndentation()) return;
     if (Array.isArray(arg) && arg[0] === 4) {
       globalCycle();
       return;
     }
     if (Array.isArray(arg) && arg[0] === 16) {
-      ember.setVariable("org-cycle-global-status", null);
+      gnista.setVariable("org-cycle-global-status", null);
       startupVisibility();
-      ember.message("Startup visibility, plus VISIBILITY properties");
+      gnista.message("Startup visibility, plus VISIBILITY properties");
       return;
     }
     if (Array.isArray(arg) && arg[0] === 64) {
-      for (const spec of FOLD_SPECS) flag(0, ember.bufferSize(), false, spec);
-      ember.message("Entire buffer visible, including drawers");
+      for (const spec of FOLD_SPECS) flag(0, gnista.bufferSize(), false, spec);
+      gnista.message("Entire buffer visible, including drawers");
       return;
     }
     const line = lineAt();
-    const text = ember.lineText(line);
+    const text = gnista.lineText(line);
     if ((DRAWER.test(text) && !/^[ \t]*:END:/i.test(text)) || BLOCK_BEGIN.test(text)) {
       if (toggleDrawerOrBlock(line)) {
         // As org-fold--hide-wrapper-toggle does, point is left where it shows.
-        if (ember.point() > 0 && ember.invisibleAt(ember.point() - 1)) ember.gotoChar(ember.lineStart(line));
+        if (gnista.point() > 0 && gnista.invisibleAt(gnista.point() - 1)) gnista.gotoChar(gnista.lineStart(line));
         return;
       }
     }
     // On the closing line too, as org-fold--hide-wrapper-toggle allows.
     const opener = openerOf(line);
     if (opener !== undefined && toggleDrawerOrBlock(opener)) {
-      if (ember.point() > 0 && ember.invisibleAt(ember.point() - 1)) ember.gotoChar(ember.lineStart(opener));
+      if (gnista.point() > 0 && gnista.invisibleAt(gnista.point() - 1)) gnista.gotoChar(gnista.lineStart(opener));
       return;
     }
     if (/^[ \t]*[|+]/.test(text) && /^[ \t]*\|/.test(text)) {
-      ember.call("org-table-justify-field-maybe");
-      ember.call("org-table-next-field");
+      gnista.call("org-table-justify-field-maybe");
+      gnista.call("org-table-next-field");
       return;
     }
     const here = headingHere();
@@ -2003,7 +2003,7 @@ function orgCycle(arg: ember.PrefixArg): void {
       // as org-back-to-heading finds it.
       const [all, at] = here;
       let i = at;
-      while (i > 0 && ember.invisibleAt(all[i].start)) i--;
+      while (i > 0 && gnista.invisibleAt(all[i].start)) i--;
       cycleHeading(all, i, at);
       return;
     }
@@ -2012,16 +2012,16 @@ function orgCycle(arg: ember.PrefixArg): void {
       return;
     }
     // From there TAB emulation, after what else wants TAB, as org-tempo's templates.
-    if (ember.runHookWithArgsUntilSuccess("org-tab-before-tab-emulation-hook")) return;
+    if (gnista.runHookWithArgsUntilSuccess("org-tab-before-tab-emulation-hook")) return;
     // TAB as indent-for-tab-command does: the region if it is active, then
     // the mark goes, as indent-region sets deactivate-mark.
     if (orgRegionActive()) {
-      const mark = ember.mark() as number;
-      const pt = marker(ember.point());
-      orgIndentRegion(Math.min(mark, ember.point()), Math.max(mark, ember.point()));
-      ember.gotoChar(pt.pos);
+      const mark = gnista.mark() as number;
+      const pt = marker(gnista.point());
+      orgIndentRegion(Math.min(mark, gnista.point()), Math.max(mark, gnista.point()));
+      gnista.gotoChar(pt.pos);
       dropMarker(pt);
-      ember.deactivateMark();
+      gnista.deactivateMark();
       return;
     }
     indentLine(line);
@@ -2031,42 +2031,42 @@ function orgCycle(arg: ember.PrefixArg): void {
 /** Cycles an item's visibility, as org-cycle-internal-local does for items. */
 function cycleItem(line: number): void {
   const struct = listStruct(line);
-  const item = ember.lineStart(line);
-  const eoh = ember.lineEnd(line);
+  const item = gnista.lineStart(line);
+  const eoh = gnista.lineEnd(line);
   const eos = itemEndBeforeBlank(struct, item);
   const hasChildren = hasChild(struct, item) !== undefined;
   const eol = endOfHidden(line);
-  const again = ember.lastCommand() === ember.thisCommand();
-  const status = ember.variable("org-cycle-subtree-status");
+  const again = gnista.lastCommand() === gnista.thisCommand();
+  const status = gnista.variable("org-cycle-subtree-status");
   const all = headings();
   const inSection = headingIndex(all, line) !== undefined;
   const showFollowing = (): void => {
     const next = all.find((h) => h.start > eos);
-    if (next && next.start < ember.bufferSize() && ember.invisibleAt(next.start)) showHeadingLine(next);
+    if (next && next.start < gnista.bufferSize() && gnista.invisibleAt(next.start)) showHeadingLine(next);
   };
   if (eos === eoh) {
-    ember.message("EMPTY ENTRY");
-    ember.setVariable("org-cycle-subtree-status", null);
+    gnista.message("EMPTY ENTRY");
+    gnista.setVariable("org-cycle-subtree-status", null);
     showFollowing();
     return;
   }
-  const hiddenInOneLine = eol >= eos || /^\s*$/.test(ember.bufferText(eol, eos));
+  const hiddenInOneLine = eol >= eos || /^\s*$/.test(gnista.bufferText(eol, eos));
   const skipped = hiddenInOneLine && !hasChildren;
   if (hiddenInOneLine && hasChildren) {
     setItemVisibility(item, struct, "children");
-    ember.message("CHILDREN");
+    gnista.message("CHILDREN");
     showFollowing();
-    ember.setVariable("org-cycle-subtree-status", "children");
+    gnista.setVariable("org-cycle-subtree-status", "children");
     if (inSection) showEmptyLines("children");
   } else if (skipped || (again && status === "children")) {
     flag(eoh, eos, false);
-    ember.message(skipped ? "SUBTREE (NO CHILDREN)" : "SUBTREE");
-    ember.setVariable("org-cycle-subtree-status", "subtree");
+    gnista.message(skipped ? "SUBTREE (NO CHILDREN)" : "SUBTREE");
+    gnista.setVariable("org-cycle-subtree-status", "subtree");
     if (inSection) showEmptyLines("subtree");
   } else {
     flag(eoh, eos, true);
-    ember.message("FOLDED");
-    ember.setVariable("org-cycle-subtree-status", "folded");
+    gnista.message("FOLDED");
+    gnista.setVariable("org-cycle-subtree-status", "folded");
     if (inSection) showEmptyLines("folded");
   }
 }
@@ -2079,12 +2079,12 @@ function cycleItem(line: number): void {
 export function cycleLevel(): boolean {
   const line = lineAt();
   const h = parseHeading(line);
-  if (!h || !/^[ \t]*$/.test(ember.bufferText(ember.point(), h.end))) return false;
-  const rest = ember.lineText(line).slice(h.level);
+  if (!h || !/^[ \t]*$/.test(gnista.bufferText(gnista.point(), h.end))) return false;
+  const rest = gnista.lineText(line).slice(h.level);
   const keywords = allKeywords().map((k) => escapeRegExp(k)).join("|");
   const m = new RegExp(`^(?: +(?:${keywords}))?(?: +(.*?))?[ \t]*$`).exec(rest);
   if (!m || m[1] !== "") return false;
-  ember.setThisCommand("org-cycle-level");
+  gnista.setThisCommand("org-cycle-level");
   const cur = h.level;
   let prev = 0;
   if (h.start !== 0) {
@@ -2093,10 +2093,10 @@ export function cycleLevel(): boolean {
     prev = k === undefined ? 0 : all[k].level;
   }
   const promote = (n: number): void => {
-    for (let i = 0; i < n; i++) ember.call("org-do-promote");
+    for (let i = 0; i < n; i++) gnista.call("org-do-promote");
   };
   const demote = (n: number): void => {
-    for (let i = 0; i < n; i++) ember.call("org-do-demote");
+    for (let i = 0; i < n; i++) gnista.call("org-do-demote");
   };
   if (prev === 0) promote(cur - 1);
   else if (prev === cur) demote(1);
@@ -2107,22 +2107,22 @@ export function cycleLevel(): boolean {
   return true;
 }
 
-const shiftTab = ember.defineCommand({
+const shiftTab = gnista.defineCommand({
   name: "org-shifttab",
   doc:
     "S-TAB in Org: cycle the whole buffer between its top headings, all its headings and everything.\n\n" +
     "In a table, move to the previous field. With a number as prefix argument, show that many levels of headings.",
   run: () => {
-    if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) {
-      ember.call("org-table-previous-field");
+    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) {
+      gnista.call("org-table-previous-field");
       return;
     }
-    const prefix = ember.prefixArg();
+    const prefix = gnista.prefixArg();
     if (typeof prefix === "number") {
-      ember.message(`Content view to level: ${prefix}`);
+      gnista.message(`Content view to level: ${prefix}`);
       showLevels(prefix);
       showEmptyLines("t");
-      ember.setVariable("org-cycle-global-status", "overview");
+      gnista.setVariable("org-cycle-global-status", "overview");
       return;
     }
     // As org-cycle-global does: C-u means the startup visibility, else C-u TAB.
@@ -2130,40 +2130,40 @@ const shiftTab = ember.defineCommand({
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-global-cycle",
   doc: "Cycle the whole buffer: top headings only, then all headings, then everything.",
   run: () => orgCycle([4]),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-overview",
   doc: "Show only the top headings.",
   run: () => overview(),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-content",
   doc: "Show all headings, hiding the text under them.",
   run: () => contents(),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-show-all",
   doc: "Show everything accessible, drawers and blocks included.",
   run: () => {
     // As org-fold-show-all: what is outside a narrowing stays as it is.
-    for (const spec of ["outline", "org-hide-drawer", "org-hide-block"]) flag(ember.pointMin(), ember.pointMax(), false, spec);
+    for (const spec of ["outline", "org-hide-drawer", "org-hide-block"]) flag(gnista.pointMin(), gnista.pointMax(), false, spec);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-indent-line",
   doc: "Indent the line: text under a heading to the left margin, a list item's lines to its text, others as the line before.",
   run: () => indentLine(lineAt()),
 });
 
-const orgReturn = ember.defineCommand({
+const orgReturn = gnista.defineCommand({
   name: "org-return",
   doc:
     "RET in Org: in a table, move to the next row; elsewhere start a new line, indented as org-indent-line does.\n\n" +
@@ -2172,26 +2172,26 @@ const orgReturn = ember.defineCommand({
   run: () => orgReturnWith(true),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-return-and-maybe-indent",
   doc: "C-j in Org: what RET does, but the new line is not indented, as electric-indent-mode leaves C-j alone.",
   run: () => orgReturnWith(false),
 });
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "org-special-ctrl-o",
   doc: "Whether C-o in a table inserts a row rather than opening a line.",
   value: true,
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-open-line",
   doc: "C-o in Org: in a table, insert a row above; elsewhere, or at the very start of the buffer, open-line.",
   run: () => {
-    const p = ember.point();
-    if (ember.variable("org-special-ctrl-o") === true && p !== 0 && /^[ \t]*\|/.test(ember.lineText(lineAt())))
-      ember.call("org-table-insert-row");
-    else ember.callWithPrefix(ember.prefixArg(), "open-line");
+    const p = gnista.point();
+    if (gnista.variable("org-special-ctrl-o") === true && p !== 0 && /^[ \t]*\|/.test(gnista.lineText(lineAt())))
+      gnista.call("org-table-insert-row");
+    else gnista.callWithPrefix(gnista.prefixArg(), "open-line");
   },
 });
 
@@ -2203,38 +2203,38 @@ function orgReturnWith(electric: boolean): void {
   // Org's newline self-inserts, so the newlines take on the text properties
   // around them, and runs of them undo together.
   const newline = (n: number): void => {
-    ember.undoAutoAmalgamate();
+    gnista.undoAutoAmalgamate();
     if (electric) electricNewline(n);
-    else ember.insertAndInherit("\n".repeat(n));
+    else gnista.insertAndInherit("\n".repeat(n));
   };
   checkInvisibleEditMaybe();
   const line = lineAt();
-  const p = ember.point();
-  const [ls, le] = [ember.lineStart(line), ember.lineEnd(line)];
-  const n = Math.max(1, ember.prefixNumericValue());
-  if (/^[ \t]*\|/.test(ember.lineText(line))) {
+  const p = gnista.point();
+  const [ls, le] = [gnista.lineStart(line), gnista.lineEnd(line)];
+  const n = Math.max(1, gnista.prefixNumericValue());
+  if (/^[ \t]*\|/.test(gnista.lineText(line))) {
     // Before the first column or after the last, a table is split.
-    if (/^[ \t]*$/.test(ember.bufferText(p, le)) || /^[ \t]*$/.test(ember.bufferText(ls, p))) ember.insert("\n");
+    if (/^[ \t]*$/.test(gnista.bufferText(p, le)) || /^[ \t]*$/.test(gnista.bufferText(ls, p))) gnista.insert("\n");
     else {
-      ember.call("org-table-justify-field-maybe");
-      ember.call("org-table-next-row");
+      gnista.call("org-table-justify-field-maybe");
+      gnista.call("org-table-next-row");
     }
     return;
   }
   // On a link, RET follows it, as org-return-follows-link says.
-  if (ember.variable("org-return-follows-link") === true && linkHere() !== undefined) {
-    ember.callInteractively("org-open-at-point");
+  if (gnista.variable("org-return-follows-link") === true && linkHere() !== undefined) {
+    gnista.callInteractively("org-open-at-point");
     return;
   }
   const h = p > ls ? parseHeading(line) : undefined;
   // org-complex-heading-regexp also matches a line of bare stars, which
   // is not a heading, so the entry shown is the one it is in.
-  const bareStars = p > ls && /^\*+[ \t]*$/.test(ember.lineText(line));
+  const bareStars = p > ls && /^\*+[ \t]*$/.test(gnista.lineText(line));
   if (h || bareStars) {
     const titleEnd = h ? h.titleAt + charCount(h.title) : p;
-    const rest = h && h.title !== "" && p >= h.titleAt && p <= titleEnd ? ember.deleteRegion(p, titleEnd) : undefined;
+    const rest = h && h.title !== "" && p >= h.titleAt && p <= titleEnd ? gnista.deleteRegion(p, titleEnd) : undefined;
     if (rest !== undefined && h?.tagsAt !== undefined) alignTags(line);
-    ember.gotoChar(ember.lineEnd(line));
+    gnista.gotoChar(gnista.lineEnd(line));
     const all = headings();
     const i = headingIndex(all, line);
     if (i !== undefined) {
@@ -2242,26 +2242,26 @@ function orgReturnWith(electric: boolean): void {
       hideDrawersIn(all[i].line + 1, entryEnd(all, i));
     } else {
       // Before the first heading, org-fold-show-entry works from the buffer's start.
-      const end = all[0]?.start ?? ember.bufferSize();
+      const end = all[0]?.start ?? gnista.bufferSize();
       flag(0, end, false);
       hideDrawersIn(0, end);
     }
     newline(n);
     if (rest !== undefined) {
-      const q = ember.point();
-      ember.insert(rest.trim());
-      ember.gotoChar(q);
+      const q = gnista.point();
+      gnista.insert(rest.trim());
+      gnista.gotoChar(q);
     }
     return;
   }
   let context = elementAt(p)?.parent;
   while (context && context.type !== "item") context = context.parent;
   if (p < le && context) {
-    const rest = ember.deleteRegion(p, le);
+    const rest = gnista.deleteRegion(p, le);
     newline(n);
-    const q = ember.point();
-    ember.insert(rest);
-    ember.gotoChar(q);
+    const q = gnista.point();
+    gnista.insert(rest);
+    gnista.gotoChar(q);
     return;
   }
   newline(n);
@@ -2272,35 +2272,35 @@ function orgReturnWith(electric: boolean): void {
  * electric-indent-mode: spaces left at the end of the line before go.
  */
 function electricNewline(n: number): void {
-  ember.insertAndInherit("\n".repeat(n));
-  const before = ember.point() - 1;
-  const text = ember.bufferText(ember.lineStart(lineAt(before)), before);
+  gnista.insertAndInherit("\n".repeat(n));
+  const before = gnista.point() - 1;
+  const text = gnista.bufferText(gnista.lineStart(lineAt(before)), before);
   const spaces = text.length - text.replace(/[ \t]+$/, "").length;
-  if (spaces > 0) ember.deleteRegion(before - spaces, before);
+  if (spaces > 0) gnista.deleteRegion(before - spaces, before);
   indentLine(lineAt());
 }
 
 // Commands: moving between headings
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-end-of-line",
   doc: "Move to the end of the line, staying on a folded heading's line rather than going past its hidden text.",
   run: () => {
-    const n = ember.prefixNumericValue();
-    if (n !== 1) ember.callWithPrefix(n - 1, "next-line");
+    const n = gnista.prefixNumericValue();
+    if (n !== 1) gnista.callWithPrefix(n - 1, "next-line");
     // As move-beginning-of-line does, back to the start of the visible line first.
-    ember.gotoChar(ember.lineStart(lineAt()));
-    while (ember.point() > 0 && ember.invisibleAt(ember.point() - 1)) {
-      let q = ember.point() - 1;
-      while (q > 0 && ember.invisibleAt(q - 1)) q--;
-      ember.gotoChar(ember.lineStart(lineAt(q)));
+    gnista.gotoChar(gnista.lineStart(lineAt()));
+    while (gnista.point() > 0 && gnista.invisibleAt(gnista.point() - 1)) {
+      let q = gnista.point() - 1;
+      while (q > 0 && gnista.invisibleAt(q - 1)) q--;
+      gnista.gotoChar(gnista.lineStart(lineAt(q)));
     }
-    ember.gotoChar(ember.lineEnd(lineAt()));
+    gnista.gotoChar(gnista.lineEnd(lineAt()));
   },
 });
 
 function visible(h: Heading): boolean {
-  return h.start === 0 || !ember.invisibleAt(h.start - 1);
+  return h.start === 0 || !gnista.invisibleAt(h.start - 1);
 }
 
 /**
@@ -2311,38 +2311,38 @@ function visible(h: Heading): boolean {
 function nextVisibleHeading(arg: number): void {
   const regexp = "^\\*+ ";
   const searchFails = (found: number | undefined, to: number): boolean => {
-    if (found === undefined) ember.gotoChar(to);
+    if (found === undefined) gnista.gotoChar(to);
     return found === undefined;
   };
-  ember.gotoChar(arg < 0 ? ember.lineStart(lineAt()) : ember.lineEnd(lineAt()));
-  while (arg < 0 && !searchFails(ember.reSearchBackward(regexp, { noerror: true }), ember.pointMin())) {
-    if (ember.point() > ember.pointMin() && folded(ember.point())) {
-      ember.gotoChar(ember.previousSingleCharPropertyChange(ember.point(), "invisible"));
-      if (!ember.lookingAt(regexp)) searchFails(ember.reSearchBackward(regexp, { noerror: true }), ember.pointMin());
+  gnista.gotoChar(arg < 0 ? gnista.lineStart(lineAt()) : gnista.lineEnd(lineAt()));
+  while (arg < 0 && !searchFails(gnista.reSearchBackward(regexp, { noerror: true }), gnista.pointMin())) {
+    if (gnista.point() > gnista.pointMin() && folded(gnista.point())) {
+      gnista.gotoChar(gnista.previousSingleCharPropertyChange(gnista.point(), "invisible"));
+      if (!gnista.lookingAt(regexp)) searchFails(gnista.reSearchBackward(regexp, { noerror: true }), gnista.pointMin());
     }
     arg++;
   }
-  while (arg > 0 && !searchFails(ember.reSearchForward(regexp, { noerror: true }), ember.pointMax())) {
-    if (folded(ember.point())) {
-      ember.gotoChar(ember.nextSingleCharPropertyChange(ember.point(), "invisible"));
-      ember.skipCharsForward(" \t\n");
-      ember.gotoChar(ember.lineEnd(lineAt()));
+  while (arg > 0 && !searchFails(gnista.reSearchForward(regexp, { noerror: true }), gnista.pointMax())) {
+    if (folded(gnista.point())) {
+      gnista.gotoChar(gnista.nextSingleCharPropertyChange(gnista.point(), "invisible"));
+      gnista.skipCharsForward(" \t\n");
+      gnista.gotoChar(gnista.lineEnd(lineAt()));
     }
     arg--;
   }
-  ember.gotoChar(arg > 0 ? ember.pointMax() : ember.lineStart(lineAt()));
+  gnista.gotoChar(arg > 0 ? gnista.pointMax() : gnista.lineStart(lineAt()));
 }
 
-const nextHeading = ember.defineCommand({
+const nextHeading = gnista.defineCommand({
   name: "org-next-visible-heading",
   doc: "Move to the next heading that is not hidden, or to the end of the buffer.",
-  run: () => nextVisibleHeading(ember.prefixNumericValue()),
+  run: () => nextVisibleHeading(gnista.prefixNumericValue()),
 });
 
-const previousHeading = ember.defineCommand({
+const previousHeading = gnista.defineCommand({
   name: "org-previous-visible-heading",
   doc: "Move to the previous heading that is not hidden, or to the start of the buffer.",
-  run: () => nextVisibleHeading(-ember.prefixNumericValue()),
+  run: () => nextVisibleHeading(-gnista.prefixNumericValue()),
 });
 
 /** The sibling `by` headings on from heading i, skipping deeper ones, if any. */
@@ -2366,8 +2366,8 @@ function forwardHeadingSameLevel(arg: number): void {
   const all = headings();
   const current = visibleHeadingIndex(all, lineAt());
   if (current === undefined) {
-    if (backward) ember.gotoChar(0);
-    else ember.gotoChar(all.find((h) => h.start > ember.point())?.start ?? ember.bufferSize());
+    if (backward) gnista.gotoChar(0);
+    else gnista.gotoChar(all.find((h) => h.start > gnista.point())?.start ?? gnista.bufferSize());
     return;
   }
   const { level } = all[current];
@@ -2383,17 +2383,17 @@ function forwardHeadingSameLevel(arg: number): void {
       result = h.start;
     }
   }
-  ember.gotoChar(ember.lineStart(lineAt(result)));
+  gnista.gotoChar(gnista.lineStart(lineAt(result)));
 }
 
-const forwardSameLevel = ember.defineCommand({
+const forwardSameLevel = gnista.defineCommand({
   name: "org-forward-heading-same-level",
   doc: "Move to the next heading at the same level, under the same parent.",
   params: [{ name: "arg", kind: "count" }],
   run: (arg: number) => forwardHeadingSameLevel(arg),
 });
 
-const backwardSameLevel = ember.defineCommand({
+const backwardSameLevel = gnista.defineCommand({
   name: "org-backward-heading-same-level",
   doc: "Move to the previous heading at the same level, under the same parent.",
   params: [{ name: "arg", kind: "count" }],
@@ -2406,33 +2406,33 @@ const backwardSameLevel = ember.defineCommand({
  * as org-mark-element does.
  */
 function markElement(): void {
-  const mark = ember.mark();
-  const again = ember.lastCommand() === ember.thisCommand() && mark !== undefined;
-  if (ember.calledInteractively() && (again || (ember.regionActive() && mark !== undefined))) {
-    ember.setMark(elementAt(mark as number)?.end ?? (mark as number));
+  const mark = gnista.mark();
+  const again = gnista.lastCommand() === gnista.thisCommand() && mark !== undefined;
+  if (gnista.calledInteractively() && (again || (gnista.regionActive() && mark !== undefined))) {
+    gnista.setMark(elementAt(mark as number)?.end ?? (mark as number));
     return;
   }
-  const e = elementAt(ember.point());
+  const e = elementAt(gnista.point());
   if (!e) return;
-  ember.gotoChar(ember.lineEnd(lineAt()));
-  ember.pushMark(Math.min(ember.bufferSize(), e.end), { activate: true });
-  ember.gotoChar(e.begin);
+  gnista.gotoChar(gnista.lineEnd(lineAt()));
+  gnista.pushMark(Math.min(gnista.bufferSize(), e.end), { activate: true });
+  gnista.gotoChar(e.begin);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-mark-element",
   doc: "Make the region the element at point; repeated, or with the mark active, take in the next element too.",
   run: () => markElement(),
 });
 
-const markSubtree = ember.defineCommand({
+const markSubtree = gnista.defineCommand({
   name: "org-mark-subtree",
   doc: "Make the region the subtree point is in: point at its heading, the mark at its end.",
   run: () => {
     const line = lineAt();
-    if (parseHeading(line)) ember.gotoChar(ember.lineStart(line));
-    else if (headingIndex(headings(), line) === undefined) ember.userError("Not in a subtree");
-    else ember.call("org-previous-visible-heading");
+    if (parseHeading(line)) gnista.gotoChar(gnista.lineStart(line));
+    else if (headingIndex(headings(), line) === undefined) gnista.userError("Not in a subtree");
+    else gnista.call("org-previous-visible-heading");
     markElement();
   },
 });
@@ -2440,13 +2440,13 @@ const markSubtree = ember.defineCommand({
 // Commands: inserting headings and items
 
 function blankLineAt(line: number): boolean {
-  return line < ember.lineCount() && ember.lineText(line) === "";
+  return line < gnista.lineCount() && gnista.lineText(line) === "";
 }
 
 /** Whether the line before point's is empty, as org-previous-line-empty-p says. */
 function previousLineEmpty(): boolean {
-  if (ember.point() === 0) return false;
-  return /^[ \t]*$/.test(ember.lineText(Math.max(0, lineAt() - 1)));
+  if (gnista.point() === 0) return false;
+  return /^[ \t]*$/.test(gnista.lineText(Math.max(0, lineAt() - 1)));
 }
 
 /**
@@ -2462,47 +2462,47 @@ export function blankBeforeHeading(parent: boolean): boolean {
   let i = headingIndex(all, lineAt());
   if (i === undefined) {
     // Before the first heading, the next one counts.
-    i = all.findIndex((h) => h.start > ember.point());
+    i = all.findIndex((h) => h.start > gnista.point());
     if (i < 0) return false;
   }
   if (parent) i = ancestors(all, i)[0] ?? i;
   const h = all[i];
   // Within the accessible portion, as bobp and point-max are.
-  const [min, max] = [ember.pointMin(), ember.pointMax()];
-  if (h.start !== min) return isBlank(ember.lineText(h.line - 1));
+  const [min, max] = [gnista.pointMin(), gnista.pointMax()];
+  if (h.start !== min) return isBlank(gnista.lineText(h.line - 1));
   const next = all[i + 1];
-  if (next) return isBlank(ember.lineText(next.line - 1));
+  if (next) return isBlank(gnista.lineText(next.line - 1));
   // Trailing spaces on the last line are ignored.
   let q = max;
-  while (q > min && /[ \t]/.test(ember.bufferText(q - 1, q))) q--;
-  if (q !== ember.lineStart(lineAt(q)) || q === min) return false;
-  return isBlank(ember.lineText(lineAt(q) - 1));
+  while (q > min && /[ \t]/.test(gnista.bufferText(q - 1, q))) q--;
+  if (q !== gnista.lineStart(lineAt(q)) || q === min) return false;
+  return isBlank(gnista.lineText(lineAt(q) - 1));
 }
 
 /** Makes the number of empty lines before point's line exactly n, as org-N-empty-lines-before-current does. */
 function emptyLinesBeforeCurrent(n: number): void {
-  const column = ember.point() - ember.lineStart(lineAt());
-  ember.gotoChar(ember.lineStart(lineAt()));
-  if (ember.point() > 0) {
-    let q = ember.point();
-    while (q > 0 && /[ \r\t\n]/.test(ember.bufferText(q - 1, q))) q--;
-    const start = ember.lineEnd(lineAt(q));
-    if (start < ember.point() - 1) ember.deleteRegion(start, ember.point() - 1);
+  const column = gnista.point() - gnista.lineStart(lineAt());
+  gnista.gotoChar(gnista.lineStart(lineAt()));
+  if (gnista.point() > 0) {
+    let q = gnista.point();
+    while (q > 0 && /[ \r\t\n]/.test(gnista.bufferText(q - 1, q))) q--;
+    const start = gnista.lineEnd(lineAt(q));
+    if (start < gnista.point() - 1) gnista.deleteRegion(start, gnista.point() - 1);
   }
-  ember.insert("\n".repeat(n));
+  gnista.insert("\n".repeat(n));
   const line = lineAt();
-  ember.gotoChar(ember.lineStart(line) + Math.min(column, ember.lineEnd(line) - ember.lineStart(line)));
+  gnista.gotoChar(gnista.lineStart(line) + Math.min(column, gnista.lineEnd(line) - gnista.lineStart(line)));
 }
 
 /** Keeps an empty line before the heading after a new one, as org-insert-heading's maybe-add-blank-after does. */
 function maybeAddBlankAfter(blank: boolean): void {
-  const p = ember.point();
+  const p = gnista.point();
   const line = lineAt();
-  if (line + 1 < ember.lineCount() && blank && isHeadingLine(ember.lineText(line + 1))) {
-    ember.gotoChar(ember.lineStart(line + 1));
-    ember.insert("\n");
+  if (line + 1 < gnista.lineCount() && blank && isHeadingLine(gnista.lineText(line + 1))) {
+    gnista.gotoChar(gnista.lineStart(line + 1));
+    gnista.insert("\n");
   }
-  ember.gotoChar(p);
+  gnista.gotoChar(p);
 }
 
 /**
@@ -2511,7 +2511,7 @@ function maybeAddBlankAfter(blank: boolean): void {
  * text between them.
  */
 function insertPieces(...pieces: string[]): void {
-  for (const piece of pieces) if (piece !== "") ember.insert(piece);
+  for (const piece of pieces) if (piece !== "") gnista.insert(piece);
 }
 
 /**
@@ -2519,63 +2519,63 @@ function insertPieces(...pieces: string[]): void {
  * stars. `arg` is the raw prefix argument: C-u inserts after the subtree,
  * C-u C-u after the parent's.
  */
-function insertHeading(arg: ember.PrefixArg, invisibleOk = false): void {
+function insertHeading(arg: gnista.PrefixArg, invisibleOk = false): void {
   const parentEnd = Array.isArray(arg) && arg[0] === 16;
   const blank = blankBeforeHeading(parentEnd);
   const all = headings();
   const current = headingIndex(all, lineAt());
   // As org-current-level, from the whole buffer, so a heading above a narrowing counts.
-  const level = ember.saveRestriction(() => {
-    ember.widen();
+  const level = gnista.saveRestriction(() => {
+    gnista.widen();
     const wide = headings();
     const i = headingIndex(wide, lineAt());
     return i === undefined ? undefined : wide[i].level;
   });
   const stars = "*".repeat(level ?? 1);
-  const p = ember.point();
+  const p = gnista.point();
   const respect =
-    ember.variable("org-insert-heading-respect-content") === true ||
+    gnista.variable("org-insert-heading-respect-content") === true ||
     (Array.isArray(arg) && (arg[0] === 4 || arg[0] === 16)) ||
-    (!invisibleOk && ember.invisibleAt(Math.max(0, p - 1)));
-  const atBol = (): boolean => ember.point() === ember.lineStart(lineAt());
+    (!invisibleOk && gnista.invisibleAt(Math.max(0, p - 1)));
+  const atBol = (): boolean => gnista.point() === gnista.lineStart(lineAt());
   if (respect) {
     if (current === undefined) {
-      const from = atBol() && p < ember.bufferSize() ? p + 1 : p;
-      ember.gotoChar(all.find((h) => h.start >= from)?.start ?? ember.bufferSize());
+      const from = atBol() && p < gnista.bufferSize() ? p + 1 : p;
+      gnista.gotoChar(all.find((h) => h.start >= from)?.start ?? gnista.bufferSize());
     } else {
       let i = current;
       if (!invisibleOk) {
         // org-back-to-heading goes up to the first heading that is not
         // folded, leaving point at the last one it tried if none is.
         const lineage = [i, ...ancestors(all, i)];
-        const shown = lineage.find((a) => !ember.invisibleAt(all[a].start));
+        const shown = lineage.find((a) => !gnista.invisibleAt(all[a].start));
         if (shown === undefined) {
           const last = all[lineage[lineage.length - 1]].start;
-          ember.gotoChar(last);
-          ember.userError(`Before first headline at position ${last + 1} in buffer ${ember.bufferName()}`);
+          gnista.gotoChar(last);
+          gnista.userError(`Before first headline at position ${last + 1} in buffer ${gnista.bufferName()}`);
         }
         i = shown;
       }
       if (parentEnd) i = ancestors(all, i)[0] ?? i;
-      ember.gotoChar(subtreeRegion(all, i)[1]);
+      gnista.gotoChar(subtreeRegion(all, i)[1]);
     }
     // At the end of a file with no final newline, the heading gets a line of its own.
-    if (!atBol()) ember.insert("\n");
-    if (blank && headingIndex(headings(), lineAt(ember.point() - 1)) === undefined) {
-      ember.insert("\n");
-      ember.gotoChar(ember.point() - 1);
+    if (!atBol()) gnista.insert("\n");
+    if (blank && headingIndex(headings(), lineAt(gnista.point() - 1)) === undefined) {
+      gnista.insert("\n");
+      gnista.gotoChar(gnista.point() - 1);
     }
-    if (level === undefined && ember.point() < ember.bufferSize() && ember.point() > 0) {
-      if (isHeadingLine(ember.lineText(lineAt()))) ember.insert("\n");
-      ember.gotoChar(ember.point() - 1);
+    if (level === undefined && gnista.point() < gnista.bufferSize() && gnista.point() > 0) {
+      if (isHeadingLine(gnista.lineText(lineAt()))) gnista.insert("\n");
+      gnista.gotoChar(gnista.point() - 1);
     }
     if (!(blank && previousLineEmpty())) emptyLinesBeforeCurrent(blank ? 1 : 0);
     insertPieces(stars, " ", "\n");
-    ember.gotoChar(ember.point() - 1);
+    gnista.gotoChar(gnista.point() - 1);
     maybeAddBlankAfter(blank);
     if (!invisibleOk) {
       const line = lineAt();
-      if (folded(Math.max(0, ember.lineStart(line) - 1), "outline")) flag(Math.max(0, ember.lineStart(line) - 1), ember.lineEnd(line), false);
+      if (folded(Math.max(0, gnista.lineStart(line) - 1), "outline")) flag(Math.max(0, gnista.lineStart(line) - 1), gnista.lineEnd(line), false);
     }
     return;
   }
@@ -2584,29 +2584,29 @@ function insertHeading(arg: ember.PrefixArg, invisibleOk = false): void {
   if (h) {
     if (atBol()) {
       if (blank) {
-        ember.insert("\n");
-        ember.gotoChar(p);
+        gnista.insert("\n");
+        gnista.gotoChar(p);
       }
       insertPieces(stars, " \n");
-      ember.gotoChar(p);
+      gnista.gotoChar(p);
       if (!(blank && previousLineEmpty())) emptyLinesBeforeCurrent(blank ? 1 : 0);
-      ember.gotoChar(ember.lineEnd(lineAt()));
+      gnista.gotoChar(gnista.lineEnd(lineAt()));
       return;
     }
     const titleEnd = h.titleAt + charCount(h.title);
-    if (ember.variable("org-M-RET-may-split-line") !== false && h.title !== "" && p >= h.titleAt && p <= titleEnd) {
-      const split = ember.deleteRegion(p, titleEnd);
-      if (/^[ \t]*$/.test(ember.bufferText(p, ember.lineEnd(line)))) ember.deleteRegion(p, ember.lineEnd(line));
+    if (gnista.variable("org-M-RET-may-split-line") !== false && h.title !== "" && p >= h.titleAt && p <= titleEnd) {
+      const split = gnista.deleteRegion(p, titleEnd);
+      if (/^[ \t]*$/.test(gnista.bufferText(p, gnista.lineEnd(line)))) gnista.deleteRegion(p, gnista.lineEnd(line));
       else alignTags(line);
-      ember.gotoChar(ember.lineEnd(line));
-      if (blank) ember.insert("\n");
+      gnista.gotoChar(gnista.lineEnd(line));
+      if (blank) gnista.insert("\n");
       insertPieces("\n", stars, " ");
       maybeAddBlankAfter(blank);
-      if (/\S/.test(split)) ember.insert(split);
+      if (/\S/.test(split)) gnista.insert(split);
       return;
     }
-    ember.gotoChar(ember.lineEnd(line));
-    if (blank) ember.insert("\n");
+    gnista.gotoChar(gnista.lineEnd(line));
+    if (blank) gnista.insert("\n");
     insertPieces("\n", stars, " ");
     maybeAddBlankAfter(blank);
     return;
@@ -2617,7 +2617,7 @@ function insertHeading(arg: ember.PrefixArg, invisibleOk = false): void {
     maybeAddBlankAfter(blank);
     return;
   }
-  if (ember.variable("org-M-RET-may-split-line") === false) ember.gotoChar(ember.lineEnd(line));
+  if (gnista.variable("org-M-RET-may-split-line") === false) gnista.gotoChar(gnista.lineEnd(line));
   insertPieces("\n", stars, " ");
   if (!(blank && previousLineEmpty())) emptyLinesBeforeCurrent(blank ? 1 : 0);
   maybeAddBlankAfter(blank);
@@ -2627,28 +2627,28 @@ function insertHeading(arg: ember.PrefixArg, invisibleOk = false): void {
  * Inserts a heading with a TODO state, as org-insert-todo-heading does:
  * the state of the heading before it, unless that is done, or the first.
  */
-function insertTodoHeading(arg: ember.PrefixArg, force: boolean): void {
+function insertTodoHeading(arg: gnista.PrefixArg, force: boolean): void {
   if (!force && insertListItem(true)) return;
   insertHeading(force ? [4] : Array.isArray(arg) && arg[0] === 16 ? arg : null);
-  const p = ember.point();
+  const p = gnista.point();
   forwardHeadingSameLevel(-1);
   const previous = parseHeading(lineAt());
-  ember.gotoChar(p);
+  gnista.gotoChar(p);
   const first = todoSets()[0]?.todo[0] ?? "TODO";
   const state =
     (Array.isArray(arg) && arg[0] === 4) || previous?.todo === undefined || isDone(previous.todo) ? first : previous.todo;
   const line = lineAt();
-  const stars = /^\*+ /.exec(ember.lineText(line));
+  const stars = /^\*+ /.exec(gnista.lineText(line));
   if (stars) {
-    ember.gotoChar(ember.lineStart(line) + stars[0].length);
-    ember.insert(`${state} `);
+    gnista.gotoChar(gnista.lineStart(line) + stars[0].length);
+    gnista.insert(`${state} `);
   }
   updateParentTodoStatistics(line);
   // As org-insert-todo-heading logs the new state, when it is treated as a change.
-  if (ember.variable("org-treat-insert-todo-heading-as-state-change") === true && logHow(state, undefined) !== undefined) storeStateNote(line, state, undefined);
+  if (gnista.variable("org-treat-insert-todo-heading-as-state-change") === true && logHow(state, undefined) !== undefined) storeStateNote(line, state, undefined);
 }
 
-const metaReturn = ember.defineCommand({
+const metaReturn = gnista.defineCommand({
   name: "org-meta-return",
   doc:
     "M-RET in Org: insert a heading at the level of the one point is under, or an item in a list.\n\n" +
@@ -2656,13 +2656,13 @@ const metaReturn = ember.defineCommand({
     "(org-M-RET-may-split-line); at the end, after it.",
   run: () => {
     checkInvisibleEditMaybe();
-    const prefix = ember.prefixArg();
+    const prefix = gnista.prefixArg();
     if (prefix !== null) {
       insertHeading(prefix);
       return;
     }
-    if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) {
-      ember.call("org-table-wrap-region");
+    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) {
+      gnista.call("org-table-wrap-region");
       return;
     }
     if (inItem(lineAt()) !== undefined) insertListItem(false);
@@ -2670,35 +2670,35 @@ const metaReturn = ember.defineCommand({
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-insert-heading",
   doc: "Insert a heading at the level of the one point is under. See org-meta-return.",
-  run: () => insertHeading(ember.prefixArg()),
+  run: () => insertHeading(gnista.prefixArg()),
 });
 
-const respectContent = ember.defineCommand({
+const respectContent = gnista.defineCommand({
   name: "org-insert-heading-respect-content",
   doc: "Insert a heading after the subtree point is in, at its level.",
   run: () => insertHeading([4]),
 });
 
-const todoHeading = ember.defineCommand({
+const todoHeading = gnista.defineCommand({
   name: "org-insert-todo-heading",
   doc: "Insert a heading with the first TODO state, as M-RET does; in a list, an item with a checkbox.",
-  run: () => insertTodoHeading(ember.prefixArg(), false),
+  run: () => insertTodoHeading(gnista.prefixArg(), false),
 });
 
-const todoHeadingRespectContent = ember.defineCommand({
+const todoHeadingRespectContent = gnista.defineCommand({
   name: "org-insert-todo-heading-respect-content",
   doc: "Insert a heading with the first TODO state after the subtree point is in.",
-  run: () => insertTodoHeading(ember.prefixArg(), true),
+  run: () => insertTodoHeading(gnista.prefixArg(), true),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-insert-item",
   doc: "Insert an item in the list point is in, at its level: before the item if point is before its text, else after it.",
   run: () => {
-    insertListItem(Array.isArray(ember.prefixArg()));
+    insertListItem(Array.isArray(gnista.prefixArg()));
   },
 });
 
@@ -2710,7 +2710,7 @@ ember.defineCommand({
  * line's start, as save-excursion leaves it.
  */
 function changeLevel(h: Heading, by: number): void {
-  if (h.level + by < 1) ember.userError("Cannot promote to level 0.  UNDO to recover if necessary");
+  if (h.level + by < 1) gnista.userError("Cannot promote to level 0.  UNDO to recover if necessary");
   // Org checks folds after promoting, but not after demoting.
   const change = (): void => {
     replaceKeepingPoint(h.start, h.start + h.level + 1, `${"*".repeat(h.level + by)} `);
@@ -2724,19 +2724,19 @@ function changeLevel(h: Heading, by: number): void {
 function fixPositionAfterPromote(): void {
   const h = parseHeading(lineAt());
   if (!h) return;
-  const p = ember.point();
+  const p = gnista.point();
   const starsEnd = h.start + h.level;
   const todoEnd = h.todoAt !== undefined ? h.todoAt + charCount(h.todo ?? "") : undefined;
   if (p !== starsEnd && p !== todoEnd) return;
-  if (p === ember.lineEnd(lineAt())) ember.insert(" ");
-  else if (ember.bufferText(p, p + 1) === " ") ember.gotoChar(p + 1);
+  if (p === gnista.lineEnd(lineAt())) gnista.insert(" ");
+  else if (gnista.bufferText(p, p + 1) === " ") gnista.gotoChar(p + 1);
 }
 
 function changeSubtreeLevel(by: number): void {
   const [all, i] = backToHeading();
   const end = subtreeRegion(all, i)[1];
   const inside = all.filter((h, k) => k >= i && h.start < end);
-  if (inside.some((h) => h.level + by < 1)) ember.userError("Cannot promote to level 0.  UNDO to recover if necessary");
+  if (inside.some((h) => h.level + by < 1)) gnista.userError("Cannot promote to level 0.  UNDO to recover if necessary");
   for (const h of [...inside].reverse()) changeLevel(parseHeading(h.line) ?? h, by);
   fixPositionAfterPromote();
 }
@@ -2747,25 +2747,25 @@ function changeSubtreeLevel(by: number): void {
  */
 function headingsInRegion(): Heading[] | undefined {
   if (!orgRegionActive()) return undefined;
-  const mark = ember.mark() ?? ember.point();
-  const [from, to] = [Math.min(mark, ember.point()), Math.max(mark, ember.point())];
+  const mark = gnista.mark() ?? gnista.point();
+  const [from, to] = [Math.min(mark, gnista.point()), Math.max(mark, gnista.point())];
   return headings().filter((h) => h.start >= from && h.start < to);
 }
 
 /** Whether the active region begins on a heading's line, as org-metaleft and org-metaright check. */
 function regionStartsAtHeading(): boolean {
   if (!orgRegionActive()) return false;
-  const mark = ember.mark() ?? ember.point();
-  return parseHeading(lineAt(Math.min(mark, ember.point()))) !== undefined;
+  const mark = gnista.mark() ?? gnista.point();
+  return parseHeading(lineAt(Math.min(mark, gnista.point()))) !== undefined;
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-do-promote",
   doc: "Make the heading point is on one level higher: one star fewer.",
   run: () => {
     const region = headingsInRegion();
     if (region) {
-      ember.keepMarkActive(() => {
+      gnista.keepMarkActive(() => {
         // Forward, as org-map-region goes, so an error stops before the rest.
         for (const h of region) changeLevel(parseHeading(h.line) ?? h, -1);
       });
@@ -2777,13 +2777,13 @@ ember.defineCommand({
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-do-demote",
   doc: "Make the heading point is on one level lower: one star more.",
   run: () => {
     const region = headingsInRegion();
     if (region) {
-      ember.keepMarkActive(() => {
+      gnista.keepMarkActive(() => {
         // Forward, as org-map-region goes, so an error stops before the rest.
         for (const h of region) changeLevel(parseHeading(h.line) ?? h, 1);
       });
@@ -2795,13 +2795,13 @@ ember.defineCommand({
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-promote-subtree",
   doc: "Make the subtree point is in one level higher.",
   run: () => changeSubtreeLevel(-1),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-demote-subtree",
   doc: "Make the subtree point is in one level lower.",
   run: () => changeSubtreeLevel(1),
@@ -2809,12 +2809,12 @@ ember.defineCommand({
 
 /** Ensures the buffer ends with a newline, so whole lines can move. */
 function endWithNewline(): void {
-  const size = ember.bufferSize();
-  if (size > 0 && ember.bufferText(size - 1, size) !== "\n") {
-    const p = ember.point();
-    ember.gotoChar(size);
-    ember.insert("\n");
-    ember.gotoChar(p);
+  const size = gnista.bufferSize();
+  if (size > 0 && gnista.bufferText(size - 1, size) !== "\n") {
+    const p = gnista.point();
+    gnista.gotoChar(size);
+    gnista.insert("\n");
+    gnista.gotoChar(p);
   }
 }
 
@@ -2823,12 +2823,12 @@ function endWithNewline(): void {
  * it, keeping point's offset into it and folding it again if it was.
  */
 function moveText(start: number, end: number, to: number, refold?: (start: number) => void): void {
-  const offset = ember.point() - start;
-  const text = ember.deleteRegion(start, end);
+  const offset = gnista.point() - start;
+  const text = gnista.deleteRegion(start, end);
   const target = to > start ? to - (end - start) : to;
-  ember.gotoChar(target);
-  ember.insert(text);
-  ember.gotoChar(target + offset);
+  gnista.gotoChar(target);
+  gnista.insert(text);
+  gnista.gotoChar(target + offset);
   refold?.(target);
 }
 
@@ -2864,19 +2864,19 @@ function previousSiblingStart(all: Heading[], pos: number): number | undefined {
 
 /** Moves the subtree at point past arg siblings, back if negative, as org-move-subtree-down does. */
 export function moveSubtree(arg: number): void {
-  const col = ember.point() - ember.lineStart(lineAt());
+  const col = gnista.point() - gnista.lineStart(lineAt());
   const [all, found] = backToHeading(true);
   const i = visibleHeadingIndex(all, all[found].line) ?? found;
   const beg = all[i].start;
-  ember.gotoChar(beg);
+  gnista.gotoChar(beg);
   const wasFolded = folded(all[i].end, "outline");
   const end = subtreeRegion(all, i)[1];
   let at = beg;
   for (let n = Math.abs(arg); n > 0; n--) {
     const next = arg > 0 ? nextSiblingStart(all, at) : previousSiblingStart(all, at);
     if (next === undefined) {
-      ember.gotoChar(beg);
-      ember.userError("Cannot move past superior level or buffer limit");
+      gnista.gotoChar(beg);
+      gnista.userError("Cannot move past superior level or buffer limit");
     }
     at = next;
   }
@@ -2885,25 +2885,25 @@ export function moveSubtree(arg: number): void {
     ins = subtreeRegion(all, firstHeadingFrom(all, at))[1];
     // Over any empty lines back to the end of the text, which gets a newline if it has none.
     let q = ins;
-    while (q > 0 && /[ \t\n\r]/.test(ember.bufferText(q - 1, q))) q--;
+    while (q > 0 && /[ \t\n\r]/.test(gnista.bufferText(q - 1, q))) q--;
     q = Math.min(lineStartOrEnd(lineAt(q) + 1), ins);
-    if (q !== ember.lineStart(lineAt(q))) {
-      ember.gotoChar(q);
-      ember.insert("\n");
+    if (q !== gnista.lineStart(lineAt(q))) {
+      gnista.gotoChar(q);
+      gnista.insert("\n");
       if (q < ins) ins++;
     }
   }
-  const txt = ember.bufferText(beg, end);
+  const txt = gnista.bufferText(beg, end);
   edDelete(beg, end);
   let p = ins > beg ? ins - (end - beg) : ins;
   if (beg > 0) flag(beg - 1, beg, false);
   if (p > 0) flag(p - 1, p, false);
-  if (p !== ember.lineStart(lineAt(p)) && ember.bufferText(p, p + 1) === "\n") p++;
+  if (p !== gnista.lineStart(lineAt(p)) && gnista.bufferText(p, p + 1) === "\n") p++;
   edInsert(p, txt, true);
-  if (ember.point() !== ember.lineStart(lineAt())) edInsert(ember.point(), "\n");
-  ember.gotoChar(p);
-  while (ember.point() < ember.bufferSize() && /[ \t\n\r]/.test(ember.bufferText(ember.point(), ember.point() + 1))) {
-    ember.gotoChar(ember.point() + 1);
+  if (gnista.point() !== gnista.lineStart(lineAt())) edInsert(gnista.point(), "\n");
+  gnista.gotoChar(p);
+  while (gnista.point() < gnista.bufferSize() && /[ \t\n\r]/.test(gnista.bufferText(gnista.point(), gnista.point() + 1))) {
+    gnista.gotoChar(gnista.point() + 1);
   }
   const fresh = headings();
   const k = headingIndex(fresh, lineAt());
@@ -2917,7 +2917,7 @@ export function moveSubtree(arg: number): void {
     cleanVisibilityAfterMove(fresh, k);
   }
   const line = lineAt();
-  ember.gotoChar(ember.lineStart(line) + Math.min(col, ember.lineEnd(line) - ember.lineStart(line)));
+  gnista.gotoChar(gnista.lineStart(line) + Math.min(col, gnista.lineEnd(line) - gnista.lineStart(line)));
 }
 
 /**
@@ -2933,7 +2933,7 @@ function cleanVisibilityAfterMove(all: Heading[], k: number): void {
     return h?.start === pos ? h.level : 0;
   };
   const before = (pos: number): number => all[firstHeadingFrom(all, pos) - 1]?.start ?? 0;
-  const after = (pos: number): number => all[firstHeadingFrom(all, pos + 1)]?.start ?? ember.bufferSize();
+  const after = (pos: number): number => all[firstHeadingFrom(all, pos + 1)]?.start ?? gnista.bufferSize();
   const previous = (pos: number): [number, boolean] => {
     const level = levelAt(pos);
     let p = before(pos);
@@ -2944,8 +2944,8 @@ function cleanVisibilityAfterMove(all: Heading[], k: number): void {
   const next = (pos: number): [number, boolean] => {
     const level = levelAt(pos);
     let p = after(pos);
-    while (p !== ember.bufferSize() && levelAt(p) > level) p = after(p);
-    return [p, p !== ember.bufferSize() && levelAt(p) >= level];
+    while (p !== gnista.bufferSize() && levelAt(p) > level) p = after(p);
+    return [p, p !== gnista.bufferSize() && levelAt(p) >= level];
   };
   let [from, ok] = previous(all[k].start);
   if (ok) from = previous(from)[0];
@@ -2953,11 +2953,11 @@ function cleanVisibilityAfterMove(all: Heading[], k: number): void {
   [to, ok] = next(to);
   if (ok) [to, ok] = next(to);
   if (ok) [to] = next(to);
-  const end = levelAt(to) > 0 ? ember.lineEnd(lineAt(to)) : to;
+  const end = levelAt(to) > 0 ? gnista.lineEnd(lineAt(to)) : to;
   const re = new RegExp(`^${"\\*".repeat(all[k].level)} `);
   for (const h of all) {
-    if (h.start < from || h.start > end || !re.test(ember.lineText(h.line))) continue;
-    if (!ember.invisibleAt(h.start) && ember.invisibleAt(h.end)) showHeadingLine(h);
+    if (h.start < from || h.start > end || !re.test(gnista.lineText(h.line))) continue;
+    if (!gnista.invisibleAt(h.start) && gnista.invisibleAt(h.end)) showHeadingLine(h);
   }
   hideDrawersIn(lineAt(from), end);
   showEmptyLines("overview", [from, end]);
@@ -2973,43 +2973,43 @@ function cleanVisibilityAfterMove(all: Heading[], k: number): void {
  * that shows; otherwise, as org-cut-subtree calls it, what is really there.
  */
 export function copySubtree(cut: boolean, n: number, visible: boolean): void {
-  const p = ember.point();
+  const p = gnista.point();
   const [all, found] = backToHeading(true);
   let i = found;
   for (const a of [found, ...ancestors(all, found)]) {
     i = a;
-    if (!visible || !ember.invisibleAt(all[a].start)) break;
+    if (!visible || !gnista.invisibleAt(all[a].start)) break;
   }
   let j = i;
   for (let k = 1; k < n; k++) j = sibling(all, j, 1) ?? j;
   const [beg, end] = [all[i].start, subtreeRegion(all, j)[1]];
   if (end <= beg) return;
-  const mark = ember.mark();
+  const mark = gnista.mark();
   // Whether the tree shows folded, so pasting it back can fold it again.
-  const folded = ember.invisibleAt(all[i].end);
+  const folded = gnista.invisibleAt(all[i].end);
   // Point after the mark, as Org passes them in order, so a kill joining
   // an earlier one goes after it.
-  ember.setMark(beg);
-  ember.gotoChar(end);
-  ember.call(cut ? "kill-region" : "kill-ring-save");
-  ember.setVariable("org-subtree-clip-folded", folded);
-  ember.setVariable("org-subtree-clip", ember.currentKill());
+  gnista.setMark(beg);
+  gnista.gotoChar(end);
+  gnista.call(cut ? "kill-region" : "kill-ring-save");
+  gnista.setVariable("org-subtree-clip-folded", folded);
+  gnista.setVariable("org-subtree-clip", gnista.currentKill());
   const moved = (x: number): number => (!cut || x <= beg ? x : x >= end ? x - (end - beg) : beg);
-  ember.setMark(mark === undefined ? null : moved(mark));
-  ember.gotoChar(moved(p));
-  ember.message(`${cut ? "Cut" : "Copied"}: Subtree(s) with ${end - beg} characters`);
+  gnista.setMark(mark === undefined ? null : moved(mark));
+  gnista.gotoChar(moved(p));
+  gnista.message(`${cut ? "Cut" : "Copied"}: Subtree(s) with ${end - beg} characters`);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-cut-subtree",
   doc: "Kill the subtree point is in, so C-c C-x C-y or C-y can put it back.",
-  run: () => copySubtree(true, ember.prefixNumericValue(), false),
+  run: () => copySubtree(true, gnista.prefixNumericValue(), false),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-copy-subtree",
   doc: "Copy the subtree point is in to the kill ring.",
-  run: () => copySubtree(false, ember.prefixNumericValue(), ember.calledInteractively()),
+  run: () => copySubtree(false, gnista.prefixNumericValue(), gnista.calledInteractively()),
 });
 
 /** Whether text is one or more subtrees: it starts with a heading and none after is higher, as org-kill-is-subtree-p says. */
@@ -3030,19 +3030,19 @@ function levelHere(): number {
  * point, as org-paste-subtree does: before the heading point is at the
  * start of, or else before the next visible heading.
  */
-export function pasteSubtree(level: ember.PrefixArg): void {
-  const txt = ember.currentKill();
+export function pasteSubtree(level: gnista.PrefixArg): void {
+  const txt = gnista.currentKill();
   if (!killIsSubtree(txt)) throw new Error("The kill is not a (set of) tree(s).  Use \u2018C-y\u2019 to yank anyway");
-  const visible = !ember.invisibleAt(ember.point());
+  const visible = !gnista.invisibleAt(gnista.point());
   const old = /^(\*+) /m.exec(txt)?.[1].length ?? -1;
   const c4 = Array.isArray(level) && level[0] === 4;
   const c16 = Array.isArray(level) && level[0] === 16;
   const line = lineAt();
-  const text = ember.lineText(line);
-  const atBol = ember.point() === ember.lineStart(line);
+  const text = gnista.lineText(line);
+  const atBol = gnista.point() === gnista.lineStart(line);
   let indicator: number | undefined;
   let force: number | undefined;
-  if ((level === null || c4 || c16) && /^\*+[ \t]*$/.test(text) && ember.bufferText(ember.point(), ember.point() + 1) !== "*") {
+  if ((level === null || c4 || c16) && /^\*+[ \t]*$/.test(text) && gnista.bufferText(gnista.point(), gnista.point() + 1) !== "*") {
     indicator = (/^\*+/.exec(text) as RegExpExecArray)[0].length;
     force = indicator;
   } else if (c4) force = levelHere();
@@ -3054,31 +3054,31 @@ export function pasteSubtree(level: ember.PrefixArg): void {
   const next = shown.find((h) => h.line > line)?.level ?? 1;
   const fresh = force ?? Math.max(c16 ? prev + 1 : 0, prev, next);
   let shift = old === -1 || fresh === -1 || old === fresh ? 0 : fresh - old;
-  if (indicator !== undefined) ember.deleteRegion(ember.lineStart(line), lineStartOrEnd(line + 1));
+  if (indicator !== undefined) gnista.deleteRegion(gnista.lineStart(line), lineStartOrEnd(line + 1));
   const here = lineAt();
-  if (!(ember.point() === ember.lineStart(here) && parseHeading(here) && !c4 && !c16)) {
+  if (!(gnista.point() === gnista.lineStart(here) && parseHeading(here) && !c4 && !c16)) {
     if (c4) {
       const i = headingIndex(headings(), here);
-      if (i !== undefined) ember.gotoChar(subtreeEnd(headings(), i));
+      if (i !== undefined) gnista.gotoChar(subtreeEnd(headings(), i));
     }
     const after = headings().filter(visible_).find((h) => h.line > lineAt());
-    ember.gotoChar(after ? after.start : ember.bufferSize());
-    if (ember.point() !== ember.lineStart(lineAt())) ember.insert("\n");
+    gnista.gotoChar(after ? after.start : gnista.bufferSize());
+    if (gnista.point() !== gnista.lineStart(lineAt())) gnista.insert("\n");
   }
-  let beg = ember.point();
+  let beg = gnista.point();
   // Org combines the paste's changes into one, after which its fold checks
   // change nothing here.
   withoutFoldChecks(() => {
-    ember.insert(txt);
-    if (!txt.endsWith("\n")) ember.insert("\n");
+    gnista.insert(txt);
+    if (!txt.endsWith("\n")) gnista.insert("\n");
   });
-  const end = ember.point();
-  ember.gotoChar(beg);
-  while (ember.point() < ember.bufferSize() && /[ \t\n\r]/.test(ember.bufferText(ember.point(), ember.point() + 1))) {
-    ember.gotoChar(ember.point() + 1);
+  const end = gnista.point();
+  gnista.gotoChar(beg);
+  while (gnista.point() < gnista.bufferSize() && /[ \t\n\r]/.test(gnista.bufferText(gnista.point(), gnista.point() + 1))) {
+    gnista.gotoChar(gnista.point() + 1);
   }
-  beg = ember.point();
-  if (ember.invisibleAt(beg) && visible) showHeadingLine(parseHeading(lineAt(beg)) as Heading);
+  beg = gnista.point();
+  if (gnista.invisibleAt(beg) && visible) showHeadingLine(parseHeading(lineAt(beg)) as Heading);
   const endMark = marker(end);
   while (shift !== 0) {
     for (const h of headings().filter((x) => x.start >= beg && x.start < endMark.pos).reverse()) {
@@ -3087,10 +3087,10 @@ export function pasteSubtree(level: ember.PrefixArg): void {
     shift += shift > 0 ? -1 : 1;
   }
   dropMarker(endMark);
-  ember.gotoChar(beg);
-  ember.message(`Clipboard pasted as level ${fresh} subtree`);
+  gnista.gotoChar(beg);
+  gnista.message(`Clipboard pasted as level ${fresh} subtree`);
   // A tree folded when it was killed or copied comes back folded.
-  if (ember.variable("org-subtree-clip") === ember.currentKill() && ember.variable("org-subtree-clip-folded") === true) {
+  if (gnista.variable("org-subtree-clip") === gnista.currentKill() && gnista.variable("org-subtree-clip-folded") === true) {
     foldSubtree(lineAt());
   }
 }
@@ -3101,21 +3101,21 @@ function foldSubtree(line: number): void {
   const i = headingIndex(all, line);
   if (i === undefined) return;
   const next = subtreeRegion(all, i)[1];
-  const end = next >= ember.bufferSize() ? ember.bufferSize() : next - 1;
+  const end = next >= gnista.bufferSize() ? gnista.bufferSize() : next - 1;
   if (end > all[i].end) flag(all[i].end, end, true);
 }
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "org-subtree-clip",
   doc: "The last subtree org-cut-subtree or org-copy-subtree put on the kill ring.",
   value: null,
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "org-subtree-clip-folded",
   doc: "Whether the subtree in org-subtree-clip was folded when it was cut or copied.",
   value: false,
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "org-yank-folded-subtrees",
   doc: "Whether C-y folds the subtrees it yanks, unless folding would hide text after them.",
   value: true,
@@ -3125,52 +3125,52 @@ ember.defineVariable({
  * Yanks, as org-yank does: a kill that is a set of subtrees, yanked at the
  * start of a line, comes in folded, unless folding would hide text after it.
  */
-function orgYank(arg: ember.PrefixArg): void {
-  ember.setThisCommand("yank");
+function orgYank(arg: gnista.PrefixArg): void {
+  gnista.setThisCommand("yank");
   if (arg !== null) {
-    ember.callWithPrefix(arg, "yank");
+    gnista.callWithPrefix(arg, "yank");
     return;
   }
-  const p = ember.point();
-  const ls = ember.lineStart(lineAt());
+  const p = gnista.point();
+  const ls = gnista.lineStart(lineAt());
   // As org-kill-is-subtree-p does, an empty kill ring is no subtree.
   let kill = "";
   try {
-    kill = ember.currentKill();
+    kill = gnista.currentKill();
   } catch {
     kill = "";
   }
   const subtreep =
     killIsSubtree(kill) &&
-    (p === ls || (/^[ \t]*$/.test(ember.bufferText(p, ember.lineEnd(lineAt()))) && /^\*+$/.test(ember.bufferText(ls, p))));
-  if (!subtreep || ember.variable("org-yank-folded-subtrees") !== true) {
-    ember.call("yank");
+    (p === ls || (/^[ \t]*$/.test(gnista.bufferText(p, gnista.lineEnd(lineAt()))) && /^\*+$/.test(gnista.bufferText(ls, p))));
+  if (!subtreep || gnista.variable("org-yank-folded-subtrees") !== true) {
+    gnista.call("yank");
     return;
   }
   const beg = p;
-  ember.call("yank");
-  const end = ember.point();
-  ember.gotoChar(beg);
+  gnista.call("yank");
+  const end = gnista.point();
+  gnista.gotoChar(beg);
   const swallows = (): boolean => {
     let q = beg;
     while (q < end && !parseHeading(lineAt(q))) q = lineStartOrEnd(lineAt(q) + 1);
     const level = parseHeading(lineAt(Math.min(q, end)))?.level ?? 0;
     let r = end;
-    while (r < ember.bufferSize() && /[ \t\r\n\v\f]/.test(ember.bufferText(r, r + 1))) r++;
-    if (r >= ember.bufferSize()) return false;
-    const h = r === ember.lineStart(lineAt(r)) ? parseHeading(lineAt(r)) : undefined;
+    while (r < gnista.bufferSize() && /[ \t\r\n\v\f]/.test(gnista.bufferText(r, r + 1))) r++;
+    if (r >= gnista.bufferSize()) return false;
+    const h = r === gnista.lineStart(lineAt(r)) ? parseHeading(lineAt(r)) : undefined;
     return !(h && h.level <= level);
   };
-  if (beg === ember.lineStart(lineAt(beg))) {
-    if (swallows()) ember.message("Inserted text not folded because that would swallow text");
+  if (beg === gnista.lineStart(lineAt(beg))) {
+    if (swallows()) gnista.message("Inserted text not folded because that would swallow text");
     else {
       let q = beg;
       if (!parseHeading(lineAt(q))) {
         while (q < end && !parseHeading(lineAt(q))) q = lineStartOrEnd(lineAt(q) + 1);
         q = Math.min(q, end);
       }
-      while (q < end && q === ember.lineStart(lineAt(q)) && parseHeading(lineAt(q))) {
-        ember.gotoChar(q);
+      while (q < end && q === gnista.lineStart(lineAt(q)) && parseHeading(lineAt(q))) {
+        gnista.gotoChar(q);
         foldSubtree(lineAt(q));
         showEmptyLines("folded");
         const all = headings();
@@ -3181,60 +3181,60 @@ function orgYank(arg: ember.PrefixArg): void {
     }
   }
   let r = end;
-  while (r < ember.bufferSize() && /[ \t\n\r]/.test(ember.bufferText(r, r + 1))) r++;
-  ember.gotoChar(ember.lineStart(lineAt(r)));
-  ember.pushMark(beg);
+  while (r < gnista.bufferSize() && /[ \t\n\r]/.test(gnista.bufferText(r, r + 1))) r++;
+  gnista.gotoChar(gnista.lineStart(lineAt(r)));
+  gnista.pushMark(beg);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-yank",
   doc:
     "C-y in Org: yank, folding the subtrees yanked at the start of a line, as org-yank-folded-subtrees says, " +
     "unless that would hide text after them.",
-  run: () => orgYank(ember.prefixArg()),
+  run: () => orgYank(gnista.prefixArg()),
 });
 
 function visible_(h: Heading): boolean {
   return visible(h);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-paste-subtree",
   doc: "Paste the last kill as a subtree, its levels changed to fit the headings around point.",
-  run: () => pasteSubtree(ember.prefixArg()),
+  run: () => pasteSubtree(gnista.prefixArg()),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-fix-tags-on-the-fly",
   doc: "Align the tags of the heading point is on, if point is before them, as typing on a heading does.",
   run: () => {
     const line = lineAt();
-    const m = /^\*+ (?:.*[ \t])?(:[\p{L}\p{N}_@#%:]+:)[ \t]*$/u.exec(ember.lineText(line));
-    if (m && ember.point() < ember.lineStart(line) + charCount(ember.lineText(line).slice(0, m[0].length - m[1].length - (/[ \t]*$/.exec(m[0])?.[0].length ?? 0)))) {
+    const m = /^\*+ (?:.*[ \t])?(:[\p{L}\p{N}_@#%:]+:)[ \t]*$/u.exec(gnista.lineText(line));
+    if (m && gnista.point() < gnista.lineStart(line) + charCount(gnista.lineText(line).slice(0, m[0].length - m[1].length - (/[ \t]*$/.exec(m[0])?.[0].length ?? 0)))) {
       alignTags(line);
     }
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-paste-special",
   doc: "Paste a subtree at the right level, or in a table, the fields last cut or copied from one.",
   run: () => {
-    if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-paste-rectangle");
-    else ember.callWithPrefix(ember.prefixArg(), "org-paste-subtree");
+    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) gnista.call("org-table-paste-rectangle");
+    else gnista.callWithPrefix(gnista.prefixArg(), "org-paste-subtree");
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-cut-special",
   doc: "Cut the subtree point is in, or in a table, blank the field at point or the fields in the region.",
-  run: () => ember.callInteractively(/^[ \t]*\|/.test(ember.lineText(lineAt())) ? "org-table-cut-region" : "org-cut-subtree"),
+  run: () => gnista.callInteractively(/^[ \t]*\|/.test(gnista.lineText(lineAt())) ? "org-table-cut-region" : "org-cut-subtree"),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-copy-special",
   doc: "Copy the subtree point is in, or in a table, the field at point or the fields in the region.",
-  run: () => ember.callInteractively(/^[ \t]*\|/.test(ember.lineText(lineAt())) ? "org-table-copy-region" : "org-copy-subtree"),
+  run: () => gnista.callInteractively(/^[ \t]*\|/.test(gnista.lineText(lineAt())) ? "org-table-copy-region" : "org-copy-subtree"),
 });
 
 // Commands: TODO states, priorities and tags
@@ -3252,15 +3252,15 @@ export function setTodo(h: Heading, state: string | undefined): void {
 /** Replaces a heading's TODO keyword and the spaces around it, as org-todo does, so point there moves past the new one. */
 function replaceTodoKeyword(h: Heading, state: string | undefined): void {
   const from = h.start + h.level;
-  const rest = ember.bufferText(from, h.end);
+  const rest = gnista.bufferText(from, h.end);
   const kw = h.todo === undefined ? undefined : new RegExp(`^ +${escapeRegExp(h.todo)}(?: +|[ \t]*$)`).exec(rest);
   const old = kw ? kw[0] : (/^ */.exec(rest)?.[0] ?? "");
-  const p = marker(ember.point());
+  const p = marker(gnista.point());
   withoutFoldChecks(() => {
     edDelete(from, from + charCount(old));
     edInsert(from, state === undefined ? " " : ` ${state} `, true);
   });
-  ember.gotoChar(p.pos);
+  gnista.gotoChar(p.pos);
   dropMarker(p);
 }
 
@@ -3273,14 +3273,14 @@ function fixPositionAfterTodo(line: number): void {
   const fresh = parseHeading(line);
   if (!fresh) return;
   const end = fresh.todoAt !== undefined ? fresh.todoAt + charCount(fresh.todo ?? "") : fresh.start + fresh.level;
-  const after = ember.bufferText(end, ember.lineEnd(line));
+  const after = gnista.bufferText(end, gnista.lineEnd(line));
   if (!/^ /.test(after) || /^ *:/.test(after)) return;
   // just-one-space
   const spaces = /^[ \t]*/.exec(after)?.[0].length ?? 0;
   if (spaces > 1) {
-    const p = marker(ember.point());
+    const p = marker(gnista.point());
     edDelete(end + 1, end + spaces);
-    ember.gotoChar(p.pos);
+    gnista.gotoChar(p.pos);
     dropMarker(p);
   }
 }
@@ -3312,7 +3312,7 @@ function todo(direction: number, state?: string): void {
   const next = state === undefined ? nextState(before, direction) : state === "" ? undefined : state;
   replaceTodoKeyword(h, next);
   if (parseHeading(h.line)?.tagsAt !== undefined) alignTagsAway(h.line);
-  const logDone = ember.variable("org-log-done");
+  const logDone = gnista.variable("org-log-done");
   const dolog = logHow(next, before);
   // As org-todo: CLOSED goes when the state does, or goes back to not done; it comes when done.
   if (todoSets().some((s) => s.logs.length > 0) || (logDone !== null && logDone !== false)) {
@@ -3324,7 +3324,7 @@ function todo(direction: number, state?: string): void {
   let note: [string, string | undefined] | undefined;
   if (isDone(next) && !isDone(before)) note = autoRepeat(h.line, before, next as string);
   if (!note && next !== undefined && dolog !== undefined) note = [next, before];
-  ember.runHooks("org-after-todo-state-change-hook");
+  gnista.runHooks("org-after-todo-state-change-hook");
   fixPositionAfterTodo(h.line);
   // Org stores the note from post-command-hook, after the command.
   if (note) storeStateNote(h.line, note[0], note[1]);
@@ -3338,48 +3338,48 @@ function todo(direction: number, state?: string): void {
 function fastTodoSelection(current: string | undefined): string | undefined {
   const sets = todoSets();
   const keyed = sets.flatMap((s) => s.keys);
-  const field = 3 + 1 + 3 + Math.max(...keyed.map(([k]) => ember.stringWidth(k)));
+  const field = 3 + 1 + 3 + Math.max(...keyed.map(([k]) => gnista.stringWidth(k)));
   const name = " *Org todo*";
-  ember.getBufferCreate(name);
-  return ember.saveWindowExcursion(() => {
-    const below = ember.splitWindow(undefined, "below");
-    ember.selectWindow(below);
-    ember.call("switch-to-buffer", name);
-    const perRow = Math.floor(((ember.windowSize()?.width ?? 80) - 4) / field);
-    ember.withCurrentBuffer(name, () => {
-      ember.letBind({ "inhibit-read-only": true }, () => {
-        ember.deleteRegion(0, ember.bufferSize());
+  gnista.getBufferCreate(name);
+  return gnista.saveWindowExcursion(() => {
+    const below = gnista.splitWindow(undefined, "below");
+    gnista.selectWindow(below);
+    gnista.call("switch-to-buffer", name);
+    const perRow = Math.floor(((gnista.windowSize()?.width ?? 80) - 4) / field);
+    gnista.withCurrentBuffer(name, () => {
+      gnista.letBind({ "inhibit-read-only": true }, () => {
+        gnista.deleteRegion(0, gnista.bufferSize());
         let n = 0;
         for (const set of sets) {
           if (n !== 0) {
             n = 0;
-            ember.insert("\n");
+            gnista.insert("\n");
           }
-          ember.insert("{ ");
+          gnista.insert("{ ");
           set.keys.forEach(([kw, key], j) => {
-            if (n === 0) ember.insert("  ");
-            const at = ember.point() + 4;
-            ember.insert(`[${key ?? ""}] ${kw}${" ".repeat(Math.max(0, field - 4 - charCount(kw)))}`);
-            ember.putTextProperty(at, at + charCount(kw), "face", isDone(kw) ? "org-done" : "org-todo");
+            if (n === 0) gnista.insert("  ");
+            const at = gnista.point() + 4;
+            gnista.insert(`[${key ?? ""}] ${kw}${" ".repeat(Math.max(0, field - 4 - charCount(kw)))}`);
+            gnista.putTextProperty(at, at + charCount(kw), "face", isDone(kw) ? "org-done" : "org-todo");
             n++;
             if (n === perRow && j < set.keys.length - 1) {
-              ember.insert("\n");
+              gnista.insert("\n");
               n = 0;
             }
           });
           n = 0;
-          ember.insert("}\n");
+          gnista.insert("}\n");
         }
-        ember.gotoChar(0);
+        gnista.gotoChar(0);
       });
     });
-    ember.call("shrink-window-if-larger-than-buffer");
-    const key = ember.readKey("[a-z..]:Set [SPC]:clear");
+    gnista.call("shrink-window-if-larger-than-buffer");
+    const key = gnista.readKey("[a-z..]:Set [SPC]:clear");
     if (key === "SPC" || key === " ") return undefined;
     // A key of the current state's sequence wins over another sequence's.
     const own = sets.find((s) => current !== undefined && s.keys.some(([k]) => k === current));
     const found = own?.keys.find(([, k]) => k === key) ?? keyed.find(([, k]) => k === key);
-    if (found === undefined || key === "C-g") ember.signal("quit", "Quit");
+    if (found === undefined || key === "C-g") gnista.signal("quit", "Quit");
     return found[0];
   });
 }
@@ -3395,8 +3395,8 @@ function autoRepeat(line: number, last: string | undefined, done: string): [stri
   const end = entryEnd(all, headingIndex(all, line) as number);
   const repeating = /<[0-9]{4}-[0-9][0-9]-[0-9][0-9] [^>\n]*?([.+]?\+([0-9]+)[hdwmy](?:\/[0-9]+[hdwmy])?)/;
   let found = false;
-  for (let l = line + 1; l < ember.lineCount() && ember.lineStart(l) < end; l++) {
-    const m = repeating.exec(ember.lineText(l));
+  for (let l = line + 1; l < gnista.lineCount() && gnista.lineStart(l) < end; l++) {
+    const m = repeating.exec(gnista.lineText(l));
     if (m) {
       found = Number(m[2]) !== 0;
       break;
@@ -3406,16 +3406,16 @@ function autoRepeat(line: number, last: string | undefined, done: string): [stri
   // Back to the first state of its sequence, or to none.
   const set = todoSets().find((t) => last !== undefined && (t.todo.includes(last) || t.done.includes(last)));
   const to = set ? set.todo[0] ?? set.done[0] : undefined;
-  const p = marker(ember.point());
-  ember.gotoChar(h.start);
+  const p = marker(gnista.point());
+  gnista.gotoChar(h.start);
   replaceTodoKeyword(parseHeading(line) as Heading, to);
   if (parseHeading(line)?.tagsAt !== undefined) alignTagsAway(line);
   updateParentTodoStatistics(line);
   setPlanning(line, "CLOSED", undefined);
-  const log = ember.variable("org-log-repeat");
+  const log = gnista.variable("org-log-repeat");
   if (log) entryPut(line, "LAST_REPEAT", `[${formatTimestamp(today(true), true)}]`);
   repeatEntry(parseHeading(line) as Heading);
-  ember.gotoChar(p.pos);
+  gnista.gotoChar(p.pos);
   dropMarker(p);
   return log ? [done, last ?? ""] : undefined;
 }
@@ -3430,22 +3430,22 @@ function updateParentTodoStatistics(line: number): void {
   const i = headingIndex(all, line);
   if (i === undefined) return;
   const parent = ancestors(all, i)[0];
-  if (parent === undefined || !HAS_COOKIE.test(ember.lineText(all[parent].line))) return;
+  if (parent === undefined || !HAS_COOKIE.test(gnista.lineText(all[parent].line))) return;
   if (mapRegionStart && all[parent].start < mapRegionStart.pos) return;
   const level = all[i].level;
   const end = subtreeRegion(all, parent)[1];
   const children: Heading[] = [];
   for (let k = parent + 1; k < all.length && all[k].start < end; k++) if (all[k].level === level) children.push(all[k]);
-  const p = marker(ember.point());
+  const p = marker(gnista.point());
   withoutFoldChecks(() => {
     writeCookies(all[parent].line, children.filter((h) => isDone(h.todo)).length, children.filter((h) => h.todo !== undefined).length);
   });
   if (parseHeading(all[parent].line)?.tagsAt !== undefined) alignTagsAway(all[parent].line);
-  ember.gotoChar(p.pos);
+  gnista.gotoChar(p.pos);
   dropMarker(p);
 }
 
-const todoCommand = ember.defineCommand({
+const todoCommand = gnista.defineCommand({
   name: "org-todo",
   doc:
     "Change the TODO state of the heading point is under to the next one: none, TODO, DONE and back to none.\n\n" +
@@ -3453,9 +3453,9 @@ const todoCommand = ember.defineCommand({
     "date repeats, such as <2026-10-28 Wed +1w>, moves the date on and keeps it to do. With the region active, " +
     "every heading in it changes (org-loop-over-headlines-in-active-region).",
   run: () => {
-    const arg = ember.prefixArg();
+    const arg = gnista.prefixArg();
     // A number picks that state; with fast-access keys, a key does, as org-use-fast-todo-selection says.
-    const fast = ember.variable("org-use-fast-todo-selection");
+    const fast = gnista.variable("org-use-fast-todo-selection");
     const change = () => {
       if (typeof arg === "number" && arg > 0) {
         const kw = allKeywords()[arg - 1];
@@ -3481,23 +3481,23 @@ let mapRegionStart: Marker | undefined;
  * Returns whether it applied.
  */
 function forEachHeadingInRegion(body: () => void, todoQuirk = false): boolean {
-  const mark = ember.mark();
-  if (!orgRegionActive() || mark === undefined || ember.variable("org-loop-over-headlines-in-active-region") !== true) return false;
-  const [rb, re] = [Math.min(mark, ember.point()), Math.max(mark, ember.point())];
-  if (todoQuirk && ember.invisibleAt(ember.point())) {
+  const mark = gnista.mark();
+  if (!orgRegionActive() || mark === undefined || gnista.variable("org-loop-over-headlines-in-active-region") !== true) return false;
+  const [rb, re] = [Math.min(mark, gnista.point()), Math.max(mark, gnista.point())];
+  if (todoQuirk && gnista.invisibleAt(gnista.point())) {
     // org-todo gives org-map-entries (when (org-invisible-p) (org-end-of-subtree
     // nil t)) to skip with, which runs once, there and then: point goes to the
     // end of the hidden subtree, and that position skips every heading.
     const all = headings();
     const i = headingIndex(all, lineAt());
-    ember.gotoChar(i === undefined ? ember.bufferSize() : subtreeRegion(all, i)[1]);
+    gnista.gotoChar(i === undefined ? gnista.bufferSize() : subtreeRegion(all, i)[1]);
     return true;
   }
   const outer = mapRegionStart;
   mapRegionStart = marker(rb);
-  const atHeadingStart = re === ember.lineStart(lineAt(re)) && parseHeading(lineAt(re)) !== undefined;
-  const end = marker(atHeadingStart ? re : (headings().find((h) => h.start > re)?.start ?? ember.bufferSize()));
-  const origin = marker(ember.point());
+  const atHeadingStart = re === gnista.lineStart(lineAt(re)) && parseHeading(lineAt(re)) !== undefined;
+  const end = marker(atHeadingStart ? re : (headings().find((h) => h.start > re)?.start ?? gnista.bufferSize()));
+  const origin = marker(gnista.point());
   try {
     let at = marker(rb);
     for (;;) {
@@ -3505,13 +3505,13 @@ function forEachHeadingInRegion(body: () => void, todoQuirk = false): boolean {
       if (!h) break;
       dropMarker(at);
       at = marker(h.end);
-      if (ember.invisibleAt(h.start)) continue;
-      ember.gotoChar(h.start);
+      if (gnista.invisibleAt(h.start)) continue;
+      gnista.gotoChar(h.start);
       body();
     }
     dropMarker(at);
   } finally {
-    ember.gotoChar(origin.pos);
+    gnista.gotoChar(origin.pos);
     dropMarker(origin);
     dropMarker(end);
     dropMarker(mapRegionStart);
@@ -3520,7 +3520,7 @@ function forEachHeadingInRegion(body: () => void, todoQuirk = false): boolean {
   return true;
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-todo-set",
   doc: "Set the TODO state of the heading point is under, or remove it with an empty state.",
   params: [{ name: "state", prompt: "TODO state: " }],
@@ -3531,12 +3531,12 @@ ember.defineCommand({
 function priority(direction: number): void {
   const [all, i] = backToHeading();
   const h = all[i];
-  const highest = String(ember.variable("org-priority-highest") ?? "A").charCodeAt(0);
-  const lowest = String(ember.variable("org-priority-lowest") ?? "C").charCodeAt(0);
-  const fallback = String(ember.variable("org-priority-default") ?? "B").charCodeAt(0);
-  const text = ember.lineText(h.line);
+  const highest = String(gnista.variable("org-priority-highest") ?? "A").charCodeAt(0);
+  const lowest = String(gnista.variable("org-priority-lowest") ?? "C").charCodeAt(0);
+  const fallback = String(gnista.variable("org-priority-default") ?? "B").charCodeAt(0);
+  const text = gnista.lineText(h.line);
   const cookie = /^.*?(\[#([A-Z0-9]+)\] ?)/.exec(text);
-  const again = ember.lastCommand() === ember.thisCommand();
+  const again = gnista.lastCommand() === gnista.thisCommand();
   let next: number;
   if (cookie) next = cookie[2].charCodeAt(0) - direction;
   else next = again ? (direction > 0 ? lowest : highest) : fallback;
@@ -3545,7 +3545,7 @@ function priority(direction: number): void {
     if (!cookie && !again) throw new Error("The default can not be set, see \u2018org-priority-default\u2019 why");
     remove = true;
   }
-  const p = marker(ember.point());
+  const p = marker(gnista.point());
   if (cookie) {
     const start = h.start + charCount(cookie[0].slice(0, cookie[0].length - cookie[1].length));
     if (remove) edDelete(start, start + charCount(cookie[1]));
@@ -3555,31 +3555,31 @@ function priority(direction: number): void {
     }
   } else if (remove) {
     dropMarker(p);
-    ember.userError("No priority cookie found in line");
+    gnista.userError("No priority cookie found in line");
   } else if (h.todoAt !== undefined) {
     edInsert(h.todoAt + charCount(h.todo ?? ""), ` [#${String.fromCharCode(next)}]`);
   } else {
     edInsert(h.titleAt, `[#${String.fromCharCode(next)}] `);
   }
-  ember.gotoChar(p.pos);
+  gnista.gotoChar(p.pos);
   dropMarker(p);
   if (parseHeading(h.line)?.tagsAt !== undefined) alignTagsAway(h.line);
-  ember.message(remove ? "Priority removed" : `Priority of current item set to ${String.fromCharCode(next)}`);
+  gnista.message(remove ? "Priority removed" : `Priority of current item set to ${String.fromCharCode(next)}`);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-priority-up",
   doc: "Raise the priority of the heading point is under: none starts at the default, and above the highest is none.",
   run: () => priority(1),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-priority-down",
   doc: "Lower the priority of the heading point is under: none starts at the default, and below the lowest is none.",
   run: () => priority(-1),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-priority",
   doc: "Set the priority of the heading point is under to a letter, or remove it with SPC or an empty answer.",
   params: [{ name: "priority", prompt: "Priority A-C, SPC to remove: " }],
@@ -3589,50 +3589,50 @@ ember.defineCommand({
     const letter = answer.trim().toUpperCase();
     if (h.priorityAt !== undefined) {
       const end = h.priorityAt + 4;
-      replaceText(h.priorityAt, letter === "" ? (ember.bufferText(end, end + 1) === " " ? end + 1 : end) : end, letter === "" ? "" : `[#${letter}]`);
+      replaceText(h.priorityAt, letter === "" ? (gnista.bufferText(end, end + 1) === " " ? end + 1 : end) : end, letter === "" ? "" : `[#${letter}]`);
     } else if (letter !== "") {
       const at = h.todoAt !== undefined ? h.todoAt + charCount(h.todo ?? "") + 1 : h.start + h.level + 1;
       replaceText(Math.min(at, h.end), Math.min(at, h.end), at > h.end ? ` [#${letter}]` : `[#${letter}] `);
     }
     if (letter === "") {
-      if (h.priorityAt !== undefined) ember.message("Priority removed");
-    } else ember.message(`Priority of current item set to ${letter}`);
+      if (h.priorityAt !== undefined) gnista.message("Priority removed");
+    } else gnista.message(`Priority of current item set to ${letter}`);
   },
 });
 
 /** Puts a heading's tags at org-tags-column, or a space after the title if it is too long. */
 export function alignTags(line: number): void {
-  const text = ember.lineText(line);
+  const text = gnista.lineText(line);
   const m = /^\*+ (?:.*[ \t])?(:[\p{L}\p{N}_@#%:]+:)[ \t]*$/u.exec(text);
   if (!m) return;
-  const ls = ember.lineStart(line);
+  const ls = gnista.lineStart(line);
   const tagsIndex = m[0].length - m[1].length - (/[ \t]*$/.exec(m[0])?.[0].length ?? 0);
   const tagsStart = ls + charCount(text.slice(0, tagsIndex));
   const blankIndex = text.slice(0, tagsIndex).replace(/[ \t]+$/, "").length;
   const blankStart = ls + charCount(text.slice(0, blankIndex));
-  const column = Number(ember.variable("org-tags-column") ?? -77);
-  const blankColumn = ember.stringWidth(text.slice(0, blankIndex));
-  const want = Math.max(column >= 0 ? column : -column - ember.stringWidth(m[1]), blankColumn + 1);
-  const current = ember.stringWidth(text.slice(0, tagsIndex));
+  const column = Number(gnista.variable("org-tags-column") ?? -77);
+  const blankColumn = gnista.stringWidth(text.slice(0, blankIndex));
+  const want = Math.max(column >= 0 ? column : -column - gnista.stringWidth(m[1]), blankColumn + 1);
+  const current = gnista.stringWidth(text.slice(0, tagsIndex));
   if (want === current) return;
   // As org--align-tags-here does: point in the blanks keeps its column,
   // and elsewhere it moves as a marker does.
-  const p = ember.point();
+  const p = gnista.point();
   const inBlank = lineAt(p) === line && p > blankStart && p <= tagsStart;
   const origin = marker(p);
   edDelete(blankStart, tagsStart);
   edInsert(blankStart, " ".repeat(want - blankColumn));
-  if (inBlank) ember.gotoChar(Math.min(ls + (p - ls), ember.lineEnd(line)));
-  else ember.gotoChar(origin.pos);
+  if (inBlank) gnista.gotoChar(Math.min(ls + (p - ls), gnista.lineEnd(line)));
+  else gnista.gotoChar(origin.pos);
   dropMarker(origin);
 }
 
 /** Aligns a heading's tags with point at the heading, as Org does inside save-excursion, so point moves as a marker. */
 function alignTagsAway(line: number): void {
-  const p = marker(ember.point());
-  ember.gotoChar(ember.lineStart(line));
+  const p = marker(gnista.point());
+  gnista.gotoChar(gnista.lineStart(line));
   alignTags(line);
-  ember.gotoChar(p.pos);
+  gnista.gotoChar(p.pos);
   dropMarker(p);
 }
 
@@ -3642,36 +3642,36 @@ function setTags(tags: string[]): void {
   const h = all[i];
   if (tags.join(":") === h.tags.join(":")) return;
   // The tags go, and the spaces before them, or trailing spaces if there are none.
-  const text = ember.lineText(h.line);
+  const text = gnista.lineText(h.line);
   const before = text.slice(0, h.tagsAt !== undefined ? indexOf(h.line, text, h.tagsAt) : text.length).replace(/[ \t]+$/, "");
   replaceText(h.start + charCount(before), h.end, "");
-  if (!parseHeading(h.line)) replaceText(ember.lineEnd(h.line), ember.lineEnd(h.line), " ");
+  if (!parseHeading(h.line)) replaceText(gnista.lineEnd(h.line), gnista.lineEnd(h.line), " ");
   if (tags.length === 0) return;
-  const end = ember.lineEnd(h.line);
+  const end = gnista.lineEnd(h.line);
   replaceText(end, end, ` :${tags.join(":")}:`);
   alignTags(h.line);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-set-tags",
   doc: "Give the heading point is under these tags, written as :work:home: or work home; empty removes them.",
   params: [{ name: "tags", prompt: "Tags: ", history: "org-tags-history" }],
   run: (answer: string) => setTags(answer.split(/[:\s,]+/).filter((t) => t !== "")),
 });
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "org-tag-alist",
   doc:
     'The tags to offer, as [tag, key] lists, a key a character, or [":startgroup"] and [":endgroup"] around tags ' +
     'of which a heading has only one, and [":newline"]. With keys, C-c C-q picks tags by them.',
   value: [],
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "org-use-fast-tag-selection",
   doc: "Whether C-c C-q picks tags by single keys: auto when org-tag-alist gives keys, t always, nil never.",
   value: "auto",
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "org-fast-tag-selection-single-key",
   doc: "Whether picking a tag by its key in fast tag selection finishes at once.",
   value: false,
@@ -3693,11 +3693,11 @@ function inheritedTags(all: Heading[], i: number): string[] {
  * a key toggles its tag, keeping one tag of a group; SPC clears them, TAB
  * types one, RET accepts and C-g quits. Returns the tags, or undefined.
  */
-function fastTagSelection(current: string[], inherited: string[], table: ember.Value[][]): string[] | undefined {
+function fastTagSelection(current: string[], inherited: string[], table: gnista.Value[][]): string[] | undefined {
   type Entry = { tag?: string; key?: string; special?: string };
   const entries: Entry[] = table.map((e) => (typeof e[0] === "string" && e[0].startsWith(":") ? { special: e[0] } : { tag: String(e[0]), key: e[1] === undefined || e[1] === null ? undefined : String(e[1]) }));
   const tags = entries.filter((e) => e.tag !== undefined);
-  const field = 3 + 1 + 3 + Math.max(0, ...tags.map((e) => ember.stringWidth(e.tag!)));
+  const field = 3 + 1 + 3 + Math.max(0, ...tags.map((e) => gnista.stringWidth(e.tag!)));
   // Tags without keys get their first letters, or the next free key, as Org assigns them.
   const pool = [..."abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*+-=<>,.?/;|"];
   const used = new Set(tags.map((e) => e.key).filter((k): k is string => k !== undefined));
@@ -3709,15 +3709,15 @@ function fastTagSelection(current: string[], inherited: string[], table: ember.V
   }
   const groups: string[][] = [];
   let tagsNow = [...current];
-  let single = ember.variable("org-fast-tag-selection-single-key") === true;
+  let single = gnista.variable("org-fast-tag-selection-single-key") === true;
   const name = " *Org tags*";
   const draw = () => {
-    ember.letBind({ "inhibit-read-only": true }, () => {
-      ember.deleteRegion(0, ember.bufferSize());
+    gnista.letBind({ "inhibit-read-only": true }, () => {
+      gnista.deleteRegion(0, gnista.bufferSize());
       const put = (text: string, face?: string) => {
-        const at = ember.point();
-        ember.insert(text);
-        if (face) ember.putTextProperty(at, ember.point(), "face", face);
+        const at = gnista.point();
+        gnista.insert(text);
+        if (face) gnista.putTextProperty(at, gnista.point(), "face", face);
       };
       put(`${"Inherited:".padEnd(12)}`);
       put(inherited.join(" "), "org-done");
@@ -3725,12 +3725,12 @@ function fastTagSelection(current: string[], inherited: string[], table: ember.V
       put(tagsNow.join(" "), "org-todo");
       put("\n");
       // The third line says when the next key finishes, as org-fast-tag-show-exit.
-      if (single) put(`${" ".repeat(Math.max(0, (ember.windowSize()?.width ?? 80) - 19))} Next change exits`, "org-warning");
+      if (single) put(`${" ".repeat(Math.max(0, (gnista.windowSize()?.width ?? 80) - 19))} Next change exits`, "org-warning");
       put("\n");
       let n = 0;
       let inGroup = false;
       groups.length = 0;
-      const perRow = Math.max(1, Math.floor(((ember.windowSize()?.width ?? 80) - 4) / field));
+      const perRow = Math.max(1, Math.floor(((gnista.windowSize()?.width ?? 80) - 4) / field));
       for (const e of entries) {
         if (e.special === ":startgroup") {
           groups.push([]);
@@ -3763,7 +3763,7 @@ function fastTagSelection(current: string[], inherited: string[], table: ember.V
         }
       }
       put("\n");
-      ember.gotoChar(0);
+      gnista.gotoChar(0);
     });
   };
   /** Adds a tag or takes it away; adding one takes away the others of its group, as org--add-or-remove-tag. */
@@ -3778,23 +3778,23 @@ function fastTagSelection(current: string[], inherited: string[], table: ember.V
     const order = tags.map((e) => e.tag!);
     tagsNow.sort((a, b) => (order.indexOf(a) < 0 ? 1e6 : order.indexOf(a)) - (order.indexOf(b) < 0 ? 1e6 : order.indexOf(b)));
   };
-  return ember.saveWindowExcursion(() => {
-    ember.call("switch-to-buffer-other-window", name);
+  return gnista.saveWindowExcursion(() => {
+    gnista.call("switch-to-buffer-other-window", name);
     try {
       for (;;) {
         draw();
-        ember.call("shrink-window-if-larger-than-buffer");
-        const key = ember.readKey(`[a-z..]:toggle [SPC]:clear [RET]:accept [TAB]:edit [!] ${groups.length === 0 ? "no " : ""}groups [C-c]:${single ? "single" : "multi"}`);
+        gnista.call("shrink-window-if-larger-than-buffer");
+        const key = gnista.readKey(`[a-z..]:toggle [SPC]:clear [RET]:accept [TAB]:edit [!] ${groups.length === 0 ? "no " : ""}groups [C-c]:${single ? "single" : "multi"}`);
         let changed = false;
         if (key === "RET") return tagsNow;
-        if (key === "C-g" || (key === "q" && !tags.some((e) => e.key === "q"))) ember.signal("quit", "Quit");
+        if (key === "C-g" || (key === "q" && !tags.some((e) => e.key === "q"))) gnista.signal("quit", "Quit");
         if (key === "C-c") single = !single;
         else if (key === "SPC") {
           tagsNow = [];
           changed = true;
         } else if (key === "TAB") {
           const known = [...new Set([...tags.map((e) => e.tag!), ...headings().flatMap((h) => h.tags)])];
-          const typed = ember.completingRead("Tag: ", known).trim();
+          const typed = gnista.completingRead("Tag: ", known).trim();
           if (typed !== "") toggle(typed);
           changed = true;
         } else {
@@ -3808,40 +3808,40 @@ function fastTagSelection(current: string[], inherited: string[], table: ember.V
       }
     } finally {
       // The window goes; the buffer stays, as Org leaves it.
-      for (const w of ember.windowList()) if (ember.windowBuffer(w) === name && ember.windowList().length > 1) ember.deleteWindow(w);
+      for (const w of gnista.windowList()) if (gnista.windowBuffer(w) === name && gnista.windowList().length > 1) gnista.deleteWindow(w);
     }
   });
 }
 
-const setTagsCommand = ember.defineCommand({
+const setTagsCommand = gnista.defineCommand({
   name: "org-set-tags-command",
   doc:
     "Set the tags of the heading point is under. With keys in org-tag-alist, pick them by their keys in " +
     "*Org tags*; else type them, as :work:home: or work home, empty for none. With C-u C-u, type them anyway.",
   run: () => {
     const [all, i] = backToHeading();
-    const table = ember.variable("org-tag-alist");
-    const fast = ember.variable("org-use-fast-tag-selection");
+    const table = gnista.variable("org-tag-alist");
+    const fast = gnista.variable("org-use-fast-tag-selection");
     const keyed = Array.isArray(table) && table.some((e) => Array.isArray(e) && e[1] !== undefined && e[1] !== null && !String(e[0]).startsWith(":"));
-    const arg = ember.prefixArg();
+    const arg = gnista.prefixArg();
     const typed = Array.isArray(arg) && arg[0] === 16;
     if (!typed && Array.isArray(table) && table.length > 0 && (fast === true || (fast === "auto" && keyed))) {
-      const chosen = fastTagSelection(all[i].tags, inheritedTags(all, i), table as ember.Value[][]);
+      const chosen = fastTagSelection(all[i].tags, inheritedTags(all, i), table as gnista.Value[][]);
       if (chosen !== undefined) setTags(chosen);
       return;
     }
-    const answer = ember.readString("Tags: ", { history: "org-tags-history" });
+    const answer = gnista.readString("Tags: ", { history: "org-tags-history" });
     setTags(answer.split(/[:\s,]+/).filter((t) => t !== ""));
   },
 });
 
-ember.defineVariable({ name: "org-tags-history", doc: "Tags answered to org-set-tags-command, newest first.", value: [] });
+gnista.defineVariable({ name: "org-tags-history", doc: "Tags answered to org-set-tags-command, newest first.", value: [] });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-align-tags",
   doc: "Put the tags of the heading point is under at org-tags-column; with a prefix argument, every heading's.",
   run: () => {
-    if (ember.prefixArg() !== null) {
+    if (gnista.prefixArg() !== null) {
       for (const h of headings()) if (h.tags.length > 0) alignTags(h.line);
       return;
     }
@@ -3864,8 +3864,8 @@ export interface DateTime {
 }
 
 export function today(withTime = false): DateTime {
-  // Tests fix the day with ember--today, as "YYYY-MM-DD".
-  const fixed = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ember.variable("ember--today") ?? ""));
+  // Tests fix the day with gnista--today, as "YYYY-MM-DD".
+  const fixed = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(gnista.variable("gnista--today") ?? ""));
   if (fixed) return { year: Number(fixed[1]), month: Number(fixed[2]), day: Number(fixed[3]), ...(withTime ? { hour: 12, minute: 0 } : {}) };
   const now = new Date();
   const d: DateTime = { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
@@ -3917,7 +3917,7 @@ interface Timestamp {
 const TS = /([<[])(\d{4})-(\d{2})-(\d{2})((?: +[^\]+0-9>\r\n -]+)?)((?: +(\d{1,2}):(\d{2}))?)((?:-(\d{1,2}):(\d{2}))?)([^\]>\n]*)([>\]])/g;
 
 function timestampsOn(line: number): Timestamp[] {
-  const text = ember.lineText(line);
+  const text = gnista.lineText(line);
   const found: Timestamp[] = [];
   for (const m of allMatches(TS, text)) {
     const i = m.index ?? 0;
@@ -3944,7 +3944,7 @@ function timestampsOn(line: number): Timestamp[] {
 
 /** Whether point is in or just after a timestamp, as org-at-timestamp-p with lax says. */
 function timestampHere(): boolean {
-  const p = ember.point();
+  const p = gnista.point();
   return tsMatches(lineAt()).some((ts) => ts.start <= p && p <= ts.end);
 }
 
@@ -3970,7 +3970,7 @@ interface TsMatch {
 
 /** The timestamps on a line, matched as Org's org-ts-regexp3 matches them. */
 function tsMatches(line: number): TsMatch[] {
-  const text = ember.lineText(line);
+  const text = gnista.lineText(line);
   const re =
     /[[<](\d{4})-(\d{2})-(\d{2})(?:( *)([^\]+0-9>\r\n -]+))?(?:( )(\d{1,2}):(\d{2}))?[^\]>\n]{0,16}[\]>]/g;
   const out: TsMatch[] = [];
@@ -4094,21 +4094,21 @@ function modifyTsExtra(extra: string, pos: number, n: number, step: number): str
  * between active and inactive.
  */
 function changeTimestamp(n: number, what?: string, updown = true): void {
-  const origin = ember.point();
+  const origin = gnista.point();
   const ts = tsMatches(lineAt()).find((t) => t.start <= origin && origin <= t.end);
-  if (!ts) ember.userError("Not at a timestamp");
+  if (!ts) gnista.userError("Not at a timestamp");
   const category = timestampCategory(ts, origin);
   if (what === undefined && category === "bracket") {
     const swap: { [c: string]: string } = { "[": "<", "]": ">", "<": "[", ">": "]" };
     replaceText(ts.start, ts.start + 1, swap[ts.text[0]]);
     replaceText(ts.end - 1, ts.end, swap[ts.text[ts.text.length - 1]]);
-    ember.message(`Timestamp is now ${ts.text[0] === "[" ? "" : "in"}active`);
+    gnista.message(`Timestamp is now ${ts.text[0] === "[" ? "" : "in"}active`);
     return;
   }
   const field = what ?? category;
   const inactive = ts.text[0] === "[";
-  ember.deleteRegion(ts.start, ts.end);
-  ember.gotoChar(ts.start);
+  gnista.deleteRegion(ts.start, ts.end);
+  gnista.gotoChar(ts.start);
   const extra = /((?:-[012][0-9]:[0-5][0-9])?(?: +[.+]?-?[-+][0-9]+[hdwmy](?:\/[0-9]+[hdwmy])?)*)[\]>]/.exec(ts.text)?.[1] ?? "";
   const withTime = /^.{10}.*?[0-9]+:[0-9][0-9]/.test(ts.text);
   const parsed = /(\d{4})-(\d{2})-(\d{2})(?: +[^\]+0-9>\r\n -]+)?(?: +(\d{1,2}):(\d{2}))?/.exec(ts.text);
@@ -4119,9 +4119,9 @@ function changeTimestamp(n: number, what?: string, updown = true): void {
     hour: Number(parsed?.[4] ?? 0),
     minute: Number(parsed?.[5] ?? 0),
   };
-  let step = Math.max(Number((ember.variable("org-time-stamp-rounding-minutes") as number[] | null)?.[1] ?? 5), 1);
+  let step = Math.max(Number((gnista.variable("org-time-stamp-rounding-minutes") as number[] | null)?.[1] ?? 5), 1);
   let increment = n;
-  if (updown && field === "minute" && ember.prefixArg() === null) {
+  if (updown && field === "minute" && gnista.prefixArg() === null) {
     increment = step * Math.sign(n);
     const rem = (d.minute ?? 0) % step;
     if (rem !== 0) d.minute = (d.minute ?? 0) + (n > 0 ? -rem : step - rem);
@@ -4140,7 +4140,7 @@ function changeTimestamp(n: number, what?: string, updown = true): void {
   const [open, close] = inactive ? ["[", "]"] : ["<", ">"];
   // As org-insert-timestamp does, before markers: a mark that was in the
   // old timestamp ends up after the new one.
-  ember.insertBeforeMarkers(`${open}${formatTimestamp(date, withTime)}${tail}${close}`);
+  gnista.insertBeforeMarkers(`${open}${formatTimestamp(date, withTime)}${tail}${close}`);
   const fresh = tsMatches(lineAt(ts.start)).find((t) => t.start === ts.start);
   let target = origin;
   if (fresh) {
@@ -4150,7 +4150,7 @@ function changeTimestamp(n: number, what?: string, updown = true): void {
     else if (typeof category === "number") target = Math.min(fresh.end - 1, origin);
     else if (category === "after") target = fresh.end;
   }
-  ember.gotoChar(target);
+  gnista.gotoChar(target);
 }
 
 for (const [name, n, what, doc] of [
@@ -4159,7 +4159,7 @@ for (const [name, n, what, doc] of [
   ["org-timestamp-up-day", 1, "day", "Move the timestamp point is on a day later."],
   ["org-timestamp-down-day", -1, "day", "Move the timestamp point is on a day earlier."],
 ] as [string, number, string | undefined, string][]) {
-  ember.defineCommand({ name, doc, run: () => changeTimestamp(n * ember.prefixNumericValue(), what) });
+  gnista.defineCommand({ name, doc, run: () => changeTimestamp(n * gnista.prefixNumericValue(), what) });
 }
 
 /**
@@ -4205,7 +4205,7 @@ function parseDate(input: string, withTime = false): DateTime {
     d.minute = time[1];
   } else if (withTime) {
     const now = today(true);
-    const step = Number((ember.variable("org-time-stamp-rounding-minutes") as number[] | null)?.[0] ?? 0) || 1;
+    const step = Number((gnista.variable("org-time-stamp-rounding-minutes") as number[] | null)?.[0] ?? 0) || 1;
     d.hour = now.hour;
     d.minute = Math.round((now.minute ?? 0) / step) * step;
     d = normalize(d);
@@ -4214,19 +4214,19 @@ function parseDate(input: string, withTime = false): DateTime {
 }
 
 function insertTimestamp(input: string, active: boolean): void {
-  const withTime = Array.isArray(ember.prefixArg());
+  const withTime = Array.isArray(gnista.prefixArg());
   const date = parseDate(input, withTime);
   const text = active ? `<${formatTimestamp(date)}>` : `[${formatTimestamp(date)}]`;
-  const p = ember.point();
+  const p = gnista.point();
   const ts = tsMatches(lineAt()).find((t) => t.start <= p && p <= t.end);
   if (ts) {
-    ember.deleteRegion(ts.start, ts.end);
-    ember.gotoChar(ts.start);
+    gnista.deleteRegion(ts.start, ts.end);
+    gnista.gotoChar(ts.start);
   }
-  ember.insert(text);
+  gnista.insert(text);
 }
 
-const timestamp = ember.defineCommand({
+const timestamp = gnista.defineCommand({
   name: "org-timestamp",
   doc:
     "Insert an active timestamp, such as <2026-10-28 Wed>, for a date read in the minibuffer; on a timestamp, change it.\n\n" +
@@ -4236,56 +4236,56 @@ const timestamp = ember.defineCommand({
   run: (input) => insertTimestamp(input, true),
 });
 
-const inactiveTimestamp = ember.defineCommand({
+const inactiveTimestamp = gnista.defineCommand({
   name: "org-timestamp-inactive",
   doc: "Insert an inactive timestamp, such as [2026-10-28 Wed], which the agenda leaves out. See org-timestamp.",
   params: [{ name: "date", prompt: "Date: ", history: "org-read-date-history" }],
   run: (input) => insertTimestamp(input, false),
 });
 
-ember.defineVariable({ name: "org-read-date-history", doc: "Dates answered to Org's date prompt, newest first.", value: [] });
+gnista.defineVariable({ name: "org-read-date-history", doc: "Dates answered to Org's date prompt, newest first.", value: [] });
 
 /** Sets or, with undefined, removes a planning keyword's timestamp on the line after a heading. */
 function setPlanning(headingLine: number, keyword: string, ts: string | undefined): void {
   const next = headingLine + 1;
-  const planning = next < ember.lineCount() && /^[ \t]*(SCHEDULED|DEADLINE|CLOSED):/.test(ember.lineText(next));
+  const planning = next < gnista.lineCount() && /^[ \t]*(SCHEDULED|DEADLINE|CLOSED):/.test(gnista.lineText(next));
   if (!planning) {
     if (ts === undefined) return;
-    const end = ember.lineEnd(headingLine);
+    const end = gnista.lineEnd(headingLine);
     replaceText(end, end, `\n${keyword}: ${ts}`);
     return;
   }
-  const text = ember.lineText(next);
+  const text = gnista.lineText(next);
   const re = new RegExp(`${keyword}: *[<[][^>\\]\\n]*[>\\]]`);
   let updated: string;
   if (re.test(text)) updated = ts === undefined ? text.replace(re, "") : text.replace(re, `${keyword}: ${ts}`);
   else updated = ts === undefined ? text : `${text.trimEnd()} ${keyword}: ${ts}`;
   updated = updated.replace(/[ \t]{2,}/g, " ").replace(/^[ \t]+|[ \t]+$/g, "");
   if (updated === text) return;
-  const ls = ember.lineStart(next);
-  if (updated === "") replaceText(ls - 1, ember.lineEnd(next), "");
-  else replaceText(ls, ember.lineEnd(next), updated);
+  const ls = gnista.lineStart(next);
+  if (updated === "") replaceText(ls - 1, gnista.lineEnd(next), "");
+  else replaceText(ls, gnista.lineEnd(next), updated);
 }
 
 function plan(keyword: string, input: string): void {
   const [all, i] = backToHeading();
-  if (Array.isArray(ember.prefixArg())) {
+  if (Array.isArray(gnista.prefixArg())) {
     setPlanning(all[i].line, keyword, undefined);
-    ember.message(`Item is no longer ${keyword === "DEADLINE" ? "due" : "scheduled"}.`);
+    gnista.message(`Item is no longer ${keyword === "DEADLINE" ? "due" : "scheduled"}.`);
     return;
   }
   const date = parseDate(input);
   setPlanning(all[i].line, keyword, `<${formatTimestamp(date)}>`);
 }
 
-const schedule = ember.defineCommand({
+const schedule = gnista.defineCommand({
   name: "org-schedule",
   doc: "Schedule the heading point is under for a date read as org-timestamp reads it. With C-u, unschedule it.",
   params: [{ name: "date", prompt: "Date: ", history: "org-read-date-history" }],
   run: (input) => plan("SCHEDULED", input),
 });
 
-const deadline = ember.defineCommand({
+const deadline = gnista.defineCommand({
   name: "org-deadline",
   doc: "Give the heading point is under a deadline, read as org-timestamp reads it. With C-u, remove it.",
   params: [{ name: "date", prompt: "Date: ", history: "org-read-date-history" }],
@@ -4301,10 +4301,10 @@ function repeatEntry(h: Heading): boolean {
   const all = headings();
   const end = entryEnd(all, headingIndex(all, h.line) as number);
   let repeated = false;
-  for (let line = h.line + 1; line < ember.lineCount() && ember.lineStart(line) < end; line++) {
+  for (let line = h.line + 1; line < gnista.lineCount() && gnista.lineStart(line) < end; line++) {
     if (repeatTimestampsOn(line)) repeated = true;
   }
-  if (repeated) ember.message(`Entry repeats: ${ember.lineText(h.line + 1).trim()}`);
+  if (repeated) gnista.message(`Entry repeats: ${gnista.lineText(h.line + 1).trim()}`);
   return repeated;
 }
 
@@ -4341,15 +4341,15 @@ function repeatTimestampsOn(line: number): boolean {
 // Imenu, as org.el's org-imenu-get-tree: headings to org-imenu-depth, a
 // heading with headings under it a submenu of them.
 
-ember.defineVariable({ name: "org-imenu-depth", doc: "How deep in the outline M-x imenu lists headings.", value: 2 });
+gnista.defineVariable({ name: "org-imenu-depth", doc: "How deep in the outline M-x imenu lists headings.", value: 2 });
 
 /** A heading's text as Imenu lists it: no TODO, priority or tags, links as they read. */
 const imenuTitle = (h: Heading): string => h.title.replace(/\[\[([^\]]*)\](?:\[([^\]]*)\])?\]/g, (_m, link: string, desc?: string) => desc ?? link);
 
 type ImenuItem = [string, number | ImenuItem[]];
 
-const orgImenuGetTree = ember.defun("org-imenu-get-tree", () => {
-  const depth = Number(ember.variable("org-imenu-depth") ?? 2);
+const orgImenuGetTree = gnista.defun("org-imenu-get-tree", () => {
+  const depth = Number(gnista.variable("org-imenu-depth") ?? 2);
   const subs: ImenuItem[][] = Array.from({ length: depth + 1 }, () => []);
   let lastLevel = 0;
   for (const h of [...headings()].reverse()) {
@@ -4363,7 +4363,7 @@ const orgImenuGetTree = ember.defun("org-imenu-get-tree", () => {
     }
     lastLevel = h.level;
   }
-  return (subs[1] ?? []) as unknown as ember.Value;
+  return (subs[1] ?? []) as unknown as gnista.Value;
 });
 
 /**
@@ -4376,7 +4376,7 @@ function showAncestors(pos: number): void {
   let i = headingIndex(all, lineAt(pos));
   if (i === undefined) return;
   // Not at a heading, its entry shows, as org-fold-show-entry.
-  if (all[i]!.start !== ember.lineBeginningPosition(pos)) flag(all[i]!.end, entryEnd(all, i), false);
+  if (all[i]!.start !== gnista.lineBeginningPosition(pos)) flag(all[i]!.end, entryEnd(all, i), false);
   while (i !== undefined) {
     const h = all[i]!;
     flag(Math.max(0, h.start - 1), h.end, false);
@@ -4386,8 +4386,8 @@ function showAncestors(pos: number): void {
   }
 }
 
-ember.addHook("imenu-after-jump-hook", () => {
-  if (ember.derivedModeP("org-mode")) showAncestors(ember.point());
+gnista.addHook("imenu-after-jump-hook", () => {
+  if (gnista.derivedModeP("org-mode")) showAncestors(gnista.point());
 });
 
 /** What a link type does, as org-link-set-parameters keeps it: following it. */
@@ -4412,22 +4412,22 @@ function openLink(link: Link): void {
   const file = /^file:(.*)$/.exec(path)?.[1] ?? (/^(?:\/|~\/|\.\.?\/)/.test(path) ? path : undefined);
   if (file !== undefined) {
     const [name, search] = file.split("::");
-    const dir = (ember.bufferFileName() ?? "").replace(/[^/]*$/, "");
+    const dir = (gnista.bufferFileName() ?? "").replace(/[^/]*$/, "");
     const full = /^[/~]/.test(name) ? name : dir + name;
-    ember.call("find-file", full);
+    gnista.call("find-file", full);
     if (search) {
-      if (/^\d+$/.test(search)) ember.gotoChar(ember.lineStart(Number(search) - 1));
+      if (/^\d+$/.test(search)) gnista.gotoChar(gnista.lineStart(Number(search) - 1));
       else jump(searchInBuffer(search));
     }
     return;
   }
   if (/^[a-z][a-z0-9+.-]*:/i.test(path) && !/^(id|file):/.test(path)) {
-    throw new Error(`Ember cannot open ${path.split(":")[0]} links yet: ${path}`);
+    throw new Error(`Gnista cannot open ${path.split(":")[0]} links yet: ${path}`);
   }
   jump(searchInBuffer(path));
 }
 
-const openAtPoint = ember.defineCommand({
+const openAtPoint = gnista.defineCommand({
   name: "org-open-at-point",
   doc:
     "Follow the link point is on: [[*Heading]], [[#custom-id]], [[target]] and [[Heading]] within the buffer, " +
@@ -4448,24 +4448,24 @@ function openAtPoint_(): void {
   }
   const all = headings();
   const i = headingIndex(all, lineAt());
-  if (i === undefined) ember.userError("No link found");
+  if (i === undefined) gnista.userError("No link found");
   const h = all[i];
-  const p = ember.point();
+  const p = gnista.point();
   if (lineAt() === h.line && h.tagsAt !== undefined && p >= h.tagsAt && p < h.end) {
-    throw new Error("Ember cannot show the agenda for a tag yet");
+    throw new Error("Gnista cannot show the agenda for a tag yet");
   }
-  const end = all[i + 1]?.start ?? ember.bufferSize();
+  const end = all[i + 1]?.start ?? gnista.bufferSize();
   const { links, last } = linksIn(h.start, end);
   if (links.length === 0) {
-    ember.message("No links");
+    gnista.message("No links");
     return;
   }
-  if (links.length > 1) throw new Error("Ember cannot choose between an entry's links yet");
+  if (links.length > 1) throw new Error("Gnista cannot choose between an entry's links yet");
   // Org searches on from point to the end of the buffer, and when the link
   // is not there, goes where the last link it found in the entry starts.
-  const rest = ember.bufferText(p, ember.bufferSize());
+  const rest = gnista.bufferText(p, gnista.bufferSize());
   const at = rest.indexOf(links[0]);
-  ember.gotoChar(at < 0 ? last : p + charCount(rest.slice(0, at)));
+  gnista.gotoChar(at < 0 ? last : p + charCount(rest.slice(0, at)));
   openAtPoint_();
 }
 
@@ -4476,8 +4476,8 @@ function openAtPoint_(): void {
 function linksIn(from: number, to: number): { links: string[]; last: number } {
   const out: string[] = [];
   let last = from;
-  for (let l = lineAt(from); l < ember.lineCount() && ember.lineStart(l) < to; l++) {
-    const text = ember.lineText(l);
+  for (let l = lineAt(from); l < gnista.lineCount() && gnista.lineStart(l) < to; l++) {
+    const text = gnista.lineText(l);
     const found = [LINK, ANGLE_LINK, PLAIN_LINK]
       .flatMap((re) => allMatches(re, text).map((m) => ({ index: m.index ?? 0, text: m[0] })))
       .sort((a, b) => a.index - b.index);
@@ -4492,7 +4492,7 @@ function linksIn(from: number, to: number): { links: string[]; last: number } {
   return { links: out, last };
 }
 
-const insertLink = ember.defineCommand({
+const insertLink = gnista.defineCommand({
   name: "org-insert-link",
   doc: "Insert a link as [[link][description]], or [[link]] without a description; on a link, replace it.",
   params: [
@@ -4505,21 +4505,21 @@ const insertLink = ember.defineCommand({
     const text = description.trim() === "" ? `[[${escaped}]]` : `[[${escaped}][${description.trim()}]]`;
     const link = linkHere();
     if (link) {
-      ember.deleteRegion(link.start, link.end);
-      ember.gotoChar(link.start);
+      gnista.deleteRegion(link.start, link.end);
+      gnista.gotoChar(link.start);
     }
-    ember.insert(text);
+    gnista.insert(text);
   },
 });
 
-ember.defineVariable({ name: "org-link-history", doc: "Links answered to org-insert-link, newest first.", value: [] });
+gnista.defineVariable({ name: "org-link-history", doc: "Links answered to org-insert-link, newest first.", value: [] });
 
-const mouseFollow = ember.defineCommand({
+const mouseFollow = gnista.defineCommand({
   name: "org-mouse-follow-link",
   doc: "Move point where the mouse was clicked, and follow the link there if there is one, as mouse-1 does on Org links.",
   run: () => {
-    ember.call("mouse-set-point");
-    if (!ember.derivedModeP("org-mode")) return;
+    gnista.call("mouse-set-point");
+    if (!gnista.derivedModeP("org-mode")) return;
     const link = linkHere();
     if (link) openLink(link);
   },
@@ -4534,16 +4534,16 @@ const mouseFollow = ember.defineCommand({
 const BLANKING_COMMANDS = ["org-cycle", "org-return", "org-shifttab", "org-ctrl-c-ctrl-c"];
 
 function fixTagsOnTheFly(): void {
-  ember.call("org-fix-tags-on-the-fly");
+  gnista.call("org-fix-tags-on-the-fly");
 }
 
 /** Deletes n characters forward, or back if n is negative, as delete-char does from Lisp: without killing them. */
 function deleteChars(n: number, backward = false): void {
   const command = (n < 0) !== backward ? "delete-backward-char" : "delete-char";
-  for (let i = 0; i < Math.abs(n); i++) ember.call(command);
+  for (let i = 0; i < Math.abs(n); i++) gnista.call(command);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-self-insert-command",
   doc:
     "Insert the character typed, as self-insert-command does, keeping a table aligned.\n\n" +
@@ -4552,20 +4552,20 @@ ember.defineCommand({
     "On a heading, the tags are aligned again.",
   run: () => {
     if (speedCommand()) return;
-    ember.call("org-fold-check-before-invisible-edit-maybe");
-    if (ember.prefixNumericValue() === 1 && !orgRegionActive() && atTable()) {
-      if (ember.variable("org-table-auto-blank-field") === true && BLANKING_COMMANDS.includes(ember.lastCommand() ?? "")) {
+    gnista.call("org-fold-check-before-invisible-edit-maybe");
+    if (gnista.prefixNumericValue() === 1 && !orgRegionActive() && atTable()) {
+      if (gnista.variable("org-table-auto-blank-field") === true && BLANKING_COMMANDS.includes(gnista.lastCommand() ?? "")) {
         blankField();
       }
       if (/^[^|\n]*  \|/.test(restOfLine())) {
-        ember.call("self-insert-command");
+        gnista.call("self-insert-command");
         const rest = restOfLine();
-        const bar = ember.point() + charCount(rest.slice(0, rest.indexOf("|")));
-        ember.saveExcursion(() => edDelete(bar - 2, bar - 1));
+        const bar = gnista.point() + charCount(rest.slice(0, rest.indexOf("|")));
+        gnista.saveExcursion(() => edDelete(bar - 2, bar - 1));
         return;
       }
     }
-    ember.callWithPrefix(ember.prefixArg(), "self-insert-command");
+    gnista.callWithPrefix(gnista.prefixArg(), "self-insert-command");
     fixTagsOnTheFly();
   },
 });
@@ -4573,12 +4573,12 @@ ember.defineCommand({
 // Speed commands, as org-keys.el has them: at the start of a heading, with
 // org-use-speed-commands on, a key runs a command rather than typing.
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "org-use-speed-commands",
   doc: "Whether single keys at the start of a heading run org-speed-commands' commands rather than typing.",
   value: false,
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "org-speed-commands",
   doc:
     "The speed commands: [key, command] lists, or [key, [function, ...arguments]] for a function to call; a list of " +
@@ -4636,21 +4636,21 @@ ember.defineVariable({
   ],
 });
 
-ember.defun("org-speed-move-safe", (command: ember.Value) => {
+gnista.defun("org-speed-move-safe", (command: gnista.Value) => {
   // Moves, but only to a heading, as org-speed-move-safe: else back, with an error.
-  const pos = ember.point();
-  ember.callInteractively(String(command) as ember.CommandName);
-  if (!(ember.point() === ember.lineStart(lineAt()) && parseHeading(lineAt()) !== undefined)) {
-    ember.gotoChar(pos);
-    ember.signal("error", `Boundary reached while executing ${String(command)}`);
+  const pos = gnista.point();
+  gnista.callInteractively(String(command) as gnista.CommandName);
+  if (!(gnista.point() === gnista.lineStart(lineAt()) && parseHeading(lineAt()) !== undefined)) {
+    gnista.gotoChar(pos);
+    gnista.signal("error", `Boundary reached while executing ${String(command)}`);
   }
 });
-ember.defun("org-speed-refile-goto", () => ember.callWithPrefix([4], "org-refile"));
-ember.defun("org-speed-insert-heading", () => {
-  ember.gotoChar(ember.point() + 1);
-  ember.callInteractively("org-insert-heading-respect-content");
+gnista.defun("org-speed-refile-goto", () => gnista.callWithPrefix([4], "org-refile"));
+gnista.defun("org-speed-insert-heading", () => {
+  gnista.gotoChar(gnista.point() + 1);
+  gnista.callInteractively("org-insert-heading-respect-content");
 });
-ember.defun("org-speed-priority", (letter: ember.Value) => ember.call("org-priority", String(letter)));
+gnista.defun("org-speed-priority", (letter: gnista.Value) => gnista.call("org-priority", String(letter)));
 
 /**
  * Runs the speed command for the key typed, at the start of a heading, as
@@ -4658,56 +4658,56 @@ ember.defun("org-speed-priority", (letter: ember.Value) => ember.call("org-prior
  * did.
  */
 function speedCommand(): boolean {
-  if (ember.variable("org-use-speed-commands") !== true) return false;
-  if (!(ember.point() === ember.lineStart(lineAt()) && /^\*+ /.test(ember.lineText(lineAt())))) return false;
-  const keys = ember.thisCommandKeys();
+  if (gnista.variable("org-use-speed-commands") !== true) return false;
+  if (!(gnista.point() === gnista.lineStart(lineAt()) && /^\*+ /.test(gnista.lineText(lineAt())))) return false;
+  const keys = gnista.thisCommandKeys();
   const key = keys === "SPC" ? " " : keys;
-  const commands = ember.variable("org-speed-commands");
-  const entry = Array.isArray(commands) ? commands.find((e) => Array.isArray(e) && e.length > 1 && e[0] === key) as ember.Value[] | undefined : undefined;
+  const commands = gnista.variable("org-speed-commands");
+  const entry = Array.isArray(commands) ? commands.find((e) => Array.isArray(e) && e.length > 1 && e[0] === key) as gnista.Value[] | undefined : undefined;
   if (entry === undefined) return false;
   const action = entry[1];
   if (Array.isArray(action)) {
-    ember.funcall(String(action[0]), action.slice(1));
+    gnista.funcall(String(action[0]), action.slice(1));
     return true;
   }
   const name = String(action);
-  if (!ember.commandNames().includes(name)) ember.userError(`Ember does not have ${name} yet`);
-  ember.callInteractively(name as ember.CommandName);
+  if (!gnista.commandNames().includes(name)) gnista.userError(`Gnista does not have ${name} yet`);
+  gnista.callInteractively(name as gnista.CommandName);
   return true;
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-speed-command-help",
   doc: "Show the speed commands, the keys that run commands at the start of a heading.",
   run: () => {
-    if (ember.variable("org-use-speed-commands") !== true) ember.userError("Speed commands are not activated, customize `org-use-speed-commands'");
-    const commands = ember.variable("org-speed-commands");
+    if (gnista.variable("org-use-speed-commands") !== true) gnista.userError("Speed commands are not activated, customize `org-use-speed-commands'");
+    const commands = gnista.variable("org-speed-commands");
     let text = "Speed commands\n==============\n";
     for (const e of Array.isArray(commands) ? commands : []) {
       if (!Array.isArray(e)) continue;
       if (e.length === 1) text += `\n${String(e[0])}\n${"-".repeat(String(e[0]).length)}\n`;
       else text += `${String(e[0]).padEnd(4)}${Array.isArray(e[1]) ? `(${e[1].map(String).join(" ")})` : String(e[1])}\n`;
     }
-    ember.getBufferCreate("*Help*");
-    ember.withCurrentBuffer("*Help*", () => {
-      ember.letBind({ "inhibit-read-only": true }, () => {
-        ember.deleteRegion(0, ember.bufferSize());
-        ember.insert(text);
+    gnista.getBufferCreate("*Help*");
+    gnista.withCurrentBuffer("*Help*", () => {
+      gnista.letBind({ "inhibit-read-only": true }, () => {
+        gnista.deleteRegion(0, gnista.bufferSize());
+        gnista.insert(text);
       });
-      ember.gotoChar(0);
+      gnista.gotoChar(0);
     });
-    ember.call("display-buffer", "*Help*");
+    gnista.call("display-buffer", "*Help*");
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-toggle-comment",
   doc: "Make the heading point is under a comment, with COMMENT after its state and priority, or take that away.",
   run: () => {
     const [all, i] = backToHeading();
     const h = all[i];
     const at = h.titleAt;
-    const title = ember.bufferText(at, h.end);
+    const title = gnista.bufferText(at, h.end);
     if (/^COMMENT(?:[ \t]|$)/.test(title)) {
       const m = /^COMMENT[ \t]*/.exec(title)!;
       replaceText(at, at + m[0].length, "");
@@ -4715,21 +4715,21 @@ ember.defineCommand({
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-display-outline-path",
   doc: "Say where point is in the outline: its heading and the ones above it.",
   run: () => {
     const all = headings();
     const i = headingIndex(all, lineAt());
     if (i === undefined) {
-      ember.message("");
+      gnista.message("");
       return;
     }
-    ember.message([...ancestors(all, i).reverse(), i].map((k) => all[k].title).join("/"));
+    gnista.message([...ancestors(all, i).reverse(), i].map((k) => all[k].title).join("/"));
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-set-effort",
   doc: "Set the Effort property of the entry point is in, as 0:30 or 1h.",
   params: [{ name: "value", prompt: "Effort: " }],
@@ -4741,7 +4741,7 @@ ember.defineCommand({
 
 /** Deletes the character after point, putting a space back before the field's bar in a table, as org-delete-char does. */
 function orgDeleteChar(n: number): void {
-  if (n !== 1 || charAt(ember.point()) === "|" || /^[ \t]*$/.test(beforeOnLine()) || !atTable()) {
+  if (n !== 1 || charAt(gnista.point()) === "|" || /^[ \t]*$/.test(beforeOnLine()) || !atTable()) {
     deleteChars(n);
     fixTagsOnTheFly();
     return;
@@ -4750,26 +4750,26 @@ function orgDeleteChar(n: number): void {
   if (m) {
     const update = needsAlign();
     const noalign = /^.*?  \|/.test(restOfLine());
-    const p = ember.point();
+    const p = gnista.point();
     const end = p + charCount(m[0]);
     edDelete(p, p + 1);
     // Org goes back two characters from the match's end as it was. Org's
     // after-change functions save and restore the match data as markers,
     // though, which cannot be past the end of the buffer.
-    ember.saveExcursion(() => edInsert(Math.min(end, ember.bufferSize()) - 2, " "));
+    gnista.saveExcursion(() => edInsert(Math.min(end, gnista.bufferSize()) - 2, " "));
     if (noalign && !update) markAligned();
   } else deleteChars(n);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-delete-backward-char",
   doc: "Delete the character before point, as delete-backward-char does, keeping a table's field as wide as it was.",
   run: () => {
-    ember.call("org-fold-check-before-invisible-edit-maybe");
-    const p = ember.point();
+    gnista.call("org-fold-check-before-invisible-edit-maybe");
+    const p = gnista.point();
     if (
-      ember.prefixNumericValue() === 1 &&
-      ember.variable("overwrite-mode") !== true &&
+      gnista.prefixNumericValue() === 1 &&
+      gnista.variable("overwrite-mode") !== true &&
       !orgRegionActive() &&
       p > 0 &&
       charAt(p - 1) !== "|" &&
@@ -4777,57 +4777,57 @@ ember.defineCommand({
       restOfLine().includes("|") &&
       atTable()
     ) {
-      ember.gotoChar(p - 1);
+      gnista.gotoChar(p - 1);
       orgDeleteChar(1);
       return;
     }
-    deleteChars(ember.prefixNumericValue(), true);
+    deleteChars(gnista.prefixNumericValue(), true);
     fixTagsOnTheFly();
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-delete-char",
   doc: "Delete the character after point, as delete-char does, keeping a table's field as wide as it was.",
   run: () => {
-    ember.call("org-fold-check-before-invisible-edit-maybe");
-    orgDeleteChar(ember.prefixNumericValue());
+    gnista.call("org-fold-check-before-invisible-edit-maybe");
+    orgDeleteChar(gnista.prefixNumericValue());
   },
 });
 
 // Commands that depend on where point is, as Org's keys do
 
-const metaLeft = ember.defineCommand({
+const metaLeft = gnista.defineCommand({
   name: "org-metaleft",
   doc: "M-<left> in Org: promote a heading, outdent an item, move a table column left, or move back a word.",
   run: () => {
-    if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-move-column-left");
+    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) gnista.call("org-table-move-column-left");
     else if (regionStartsAtHeading() || headingHere()) {
       if (hiddenBelow("headlines")) hiddenTreeError();
-      ember.call("org-do-promote");
+      gnista.call("org-do-promote");
     } else if (itemHere()) {
       if (hiddenBelow("items")) hiddenTreeError();
-      ember.call("org-outdent-item");
+      gnista.call("org-outdent-item");
     }
-    else ember.callWithPrefix(ember.prefixArg(), "backward-word");
+    else gnista.callWithPrefix(gnista.prefixArg(), "backward-word");
   },
 });
 
-const metaRight = ember.defineCommand({
+const metaRight = gnista.defineCommand({
   name: "org-metaright",
   doc: "M-<right> in Org: demote a heading, indent an item, move a table column right, or move forward a word.",
   run: () => {
-    if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-move-column-right");
-    else if (DRAWER_RE.test(ember.lineText(lineAt()))) ember.call("org-indent-drawer");
-    else if (atBlock()) ember.call("org-indent-block");
+    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) gnista.call("org-table-move-column-right");
+    else if (DRAWER_RE.test(gnista.lineText(lineAt()))) gnista.call("org-indent-drawer");
+    else if (atBlock()) gnista.call("org-indent-block");
     else if (regionStartsAtHeading() || headingHere()) {
       if (hiddenBelow("headlines")) hiddenTreeError();
-      ember.call("org-do-demote");
+      gnista.call("org-do-demote");
     } else if (itemHere()) {
       if (hiddenBelow("items")) hiddenTreeError();
-      ember.call("org-indent-item");
+      gnista.call("org-indent-item");
     }
-    else ember.callWithPrefix(ember.prefixArg(), "forward-word");
+    else gnista.callWithPrefix(gnista.prefixArg(), "forward-word");
   },
 });
 
@@ -4838,8 +4838,8 @@ function transposeRegions(a: number, b: number, c: number, d: number): void {
   // As transpose-regions does, an empty region next to the other changes nothing.
   if ((r1[0] === r1[1] || r2[0] === r2[1]) && r1[1] === r2[0]) return;
   if (r1[1] > r2[0]) throw new Error("Transposed regions overlap");
-  const t1 = ember.bufferText(r1[0], r1[1]);
-  const t2 = ember.bufferText(r2[0], r2[1]);
+  const t1 = gnista.bufferText(r1[0], r1[1]);
+  const t2 = gnista.bufferText(r2[0], r2[1]);
   edDelete(r2[0], r2[1]);
   edInsert(r2[0], t1);
   edDelete(r1[0], r1[1]);
@@ -4853,9 +4853,9 @@ function transposeRegions(a: number, b: number, c: number, d: number): void {
  * Returns whether it applied.
  */
 function metaRegion(up: boolean): boolean {
-  const mark = ember.mark();
+  const mark = gnista.mark();
   if (!orgRegionActive() || mark === undefined) return false;
-  const pt = ember.point();
+  const pt = gnista.point();
   const [rb, re] = [Math.min(mark, pt), Math.max(mark, pt)];
   if (parseHeading(lineAt(rb))) {
     const origin = marker(pt);
@@ -4866,138 +4866,138 @@ function metaRegion(up: boolean): boolean {
         all.some((h) => h.level < level && h.start >= from && h.start + h.level + 1 <= to);
       if (up) {
         const end = marker(Math.max(rb, re - 1));
-        const before = all.filter((h) => h.level === level && h.start < ember.lineStart(lineAt(rb))).at(-1);
-        if ((level > 1 && higher(rb === ember.lineStart(lineAt(rb)) ? rb : lineStartOrEnd(lineAt(rb) + 1), end.pos)) || !before) {
+        const before = all.filter((h) => h.level === level && h.start < gnista.lineStart(lineAt(rb))).at(-1);
+        if ((level > 1 && higher(rb === gnista.lineStart(lineAt(rb)) ? rb : lineStartOrEnd(lineAt(rb) + 1), end.pos)) || !before) {
           dropMarker(end);
-          ember.userError("Cannot move past superior level or buffer limit");
+          gnista.userError("Cannot move past superior level or buffer limit");
         }
-        ember.gotoChar(before.start);
-        while (ember.point() < end.pos) ember.keepMarkActive(() => moveSubtree(1));
+        gnista.gotoChar(before.start);
+        while (gnista.point() < end.pos) gnista.keepMarkActive(() => moveSubtree(1));
         dropMarker(end);
       } else {
         const beg = marker(rb);
         const after = all.find((h) => h.level === level && h.start >= re && h.start + h.level + 1 > re);
-        if ((level > 1 && higher(rb === ember.lineStart(lineAt(rb)) ? rb : lineStartOrEnd(lineAt(rb) + 1), re)) || !after) {
+        if ((level > 1 && higher(rb === gnista.lineStart(lineAt(rb)) ? rb : lineStartOrEnd(lineAt(rb) + 1), re)) || !after) {
           dropMarker(beg);
-          ember.userError("Cannot move past superior level or buffer limit");
+          gnista.userError("Cannot move past superior level or buffer limit");
         }
-        ember.gotoChar(after.start);
-        while (ember.point() > beg.pos) ember.keepMarkActive(() => moveSubtree(-1));
+        gnista.gotoChar(after.start);
+        while (gnista.point() > beg.pos) gnista.keepMarkActive(() => moveSubtree(-1));
         dropMarker(beg);
       }
     } finally {
-      ember.gotoChar(origin.pos);
+      gnista.gotoChar(origin.pos);
       dropMarker(origin);
     }
     return true;
   }
-  const a = ember.lineStart(lineAt(rb));
-  const atBol = (x: number): boolean => x === ember.lineStart(lineAt(x));
-  const b = atBol(re) && re > 0 ? re - 1 : ember.lineEnd(lineAt(re));
+  const a = gnista.lineStart(lineAt(rb));
+  const atBol = (x: number): boolean => x === gnista.lineStart(lineAt(x));
+  const b = atBol(re) && re > 0 ? re - 1 : gnista.lineEnd(lineAt(re));
   const swap = pt < mark;
-  ember.keepMarkActive(() => transposeRegionLines(up, a, b));
-  if (swap) ember.call("exchange-point-and-mark");
+  gnista.keepMarkActive(() => transposeRegionLines(up, a, b));
+  if (swap) gnista.call("exchange-point-and-mark");
   return true;
 }
 
 /** The region case of org-metaup and org-metadown: the region's lines and the line before or after swap places. */
 function transposeRegionLines(up: boolean, a: number, b: number): void {
-  const atBol = (x: number): boolean => x === ember.lineStart(lineAt(x));
+  const atBol = (x: number): boolean => x === gnista.lineStart(lineAt(x));
   if (up) {
     const prev = Math.max(0, lineAt(a) - 1);
     // On the first line, move-beginning-of-line and move-end-of-line with 0 both stay at its start.
-    const [c, d] = lineAt(a) === 0 ? [0, 0] : [ember.lineStart(prev), ember.lineEnd(prev)];
+    const [c, d] = lineAt(a) === 0 ? [0, 0] : [gnista.lineStart(prev), gnista.lineEnd(prev)];
     transposeRegions(a, b, c, d);
-    ember.setMark(c);
-    ember.gotoChar(c + (b - a));
+    gnista.setMark(c);
+    gnista.gotoChar(c + (b - a));
   } else {
     const next = atBol(b) ? lineAt(b) : lineAt(b) + 1;
-    const [c, d] = next < ember.lineCount() ? [ember.lineStart(next), ember.lineEnd(next)] : [ember.bufferSize(), ember.bufferSize()];
+    const [c, d] = next < gnista.lineCount() ? [gnista.lineStart(next), gnista.lineEnd(next)] : [gnista.bufferSize(), gnista.bufferSize()];
     transposeRegions(a, b, c, d);
-    ember.setMark(1 + a + (d - c));
-    ember.gotoChar(1 + a + (d - c) + (b - a));
+    gnista.setMark(1 + a + (d - c));
+    gnista.gotoChar(1 + a + (d - c) + (b - a));
   }
 }
 
 /**
  * In a source block, M-<up> and M-<down> are Babel's first, from
  * org-metaup-hook and org-metadown-hook: they load the block into a session
- * or go to its session. Ember has no Babel sessions, so this fails as Org
+ * or go to its session. Gnista has no Babel sessions, so this fails as Org
  * does for a language without them.
  */
 function babelSessionHook(action: "load" | "pop"): void {
-  const el = elementAt(ember.point());
+  const el = elementAt(gnista.point());
   if (el?.type !== "src-block") return;
-  const header = ember.lineText(lineAt(el.begin));
+  const header = gnista.lineText(lineAt(el.begin));
   const lang = /^[ \t]*#\+begin_src[ \t]+([^ \t:]\S*)/i.exec(header)?.[1] ?? "nil";
   if (action === "load") throw new Error(`No org-babel-load-session function for ${lang}!`);
   if (!/:session/.test(header)) throw new Error("This block is not using a session!");
   throw new Error(`No org-babel-initiate-session function for ${lang}!`);
 }
 
-const metaUp = ember.defineCommand({
+const metaUp = gnista.defineCommand({
   name: "org-metaup",
   doc: "M-<up> in Org: move a subtree, an item or a table row up past the one before it.",
   run: () => {
     babelSessionHook("load");
     if (metaRegion(true)) return;
-    if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-move-row-up");
-    else if (headingHere()) ember.call("org-move-subtree-up");
-    else if (itemHere()) ember.call("org-move-item-up");
-    else ember.call("org-drag-element-backward");
+    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) gnista.call("org-table-move-row-up");
+    else if (headingHere()) gnista.call("org-move-subtree-up");
+    else if (itemHere()) gnista.call("org-move-item-up");
+    else gnista.call("org-drag-element-backward");
   },
 });
 
-const metaDown = ember.defineCommand({
+const metaDown = gnista.defineCommand({
   name: "org-metadown",
   doc: "M-<down> in Org: move a subtree, an item or a table row down past the one after it.",
   run: () => {
     babelSessionHook("pop");
     if (metaRegion(false)) return;
-    if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-move-row-down");
-    else if (headingHere()) ember.call("org-move-subtree-down");
-    else if (itemHere()) ember.call("org-move-item-down");
-    else ember.call("org-drag-element-forward");
+    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) gnista.call("org-table-move-row-down");
+    else if (headingHere()) gnista.call("org-move-subtree-down");
+    else if (itemHere()) gnista.call("org-move-item-down");
+    else gnista.call("org-drag-element-forward");
   },
 });
 
-const shiftMetaLeft = ember.defineCommand({
+const shiftMetaLeft = gnista.defineCommand({
   name: "org-shiftmetaleft",
   doc: "M-S-<left> in Org: promote a subtree, outdent an item with its children, or delete a table column.",
   run: () => {
-    if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-delete-column");
-    else if (headingHere()) ember.call("org-promote-subtree");
-    else if (itemHere()) ember.call("org-outdent-item-tree");
-    else ember.userError("This command is active in special context like tables, headlines or items");
+    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) gnista.call("org-table-delete-column");
+    else if (headingHere()) gnista.call("org-promote-subtree");
+    else if (itemHere()) gnista.call("org-outdent-item-tree");
+    else gnista.userError("This command is active in special context like tables, headlines or items");
   },
 });
 
-const shiftMetaRight = ember.defineCommand({
+const shiftMetaRight = gnista.defineCommand({
   name: "org-shiftmetaright",
   doc: "M-S-<right> in Org: demote a subtree, indent an item with its children, or insert a table column.",
   run: () => {
-    if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-insert-column");
-    else if (headingHere()) ember.call("org-demote-subtree");
-    else if (itemHere()) ember.call("org-indent-item-tree");
-    else ember.userError("This command is active in special context like tables, headlines or items");
+    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) gnista.call("org-table-insert-column");
+    else if (headingHere()) gnista.call("org-demote-subtree");
+    else if (itemHere()) gnista.call("org-indent-item-tree");
+    else gnista.userError("This command is active in special context like tables, headlines or items");
   },
 });
 
-const shiftMetaUp = ember.defineCommand({
+const shiftMetaUp = gnista.defineCommand({
   name: "org-shiftmetaup",
   doc: "M-S-<up> in Org: delete the table row point is on, or drag the line up.",
   run: () => {
-    if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-kill-row");
-    else ember.callWithPrefix(ember.prefixArg(), "org-drag-line-backward");
+    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) gnista.call("org-table-kill-row");
+    else gnista.callWithPrefix(gnista.prefixArg(), "org-drag-line-backward");
   },
 });
 
-const shiftMetaDown = ember.defineCommand({
+const shiftMetaDown = gnista.defineCommand({
   name: "org-shiftmetadown",
   doc: "M-S-<down> in Org: insert a table row above the one point is on, or drag the line down.",
   run: () => {
-    if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-insert-row");
-    else ember.callWithPrefix(ember.prefixArg(), "org-drag-line-forward");
+    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) gnista.call("org-table-insert-row");
+    else gnista.callWithPrefix(gnista.prefixArg(), "org-drag-line-forward");
   },
 });
 
@@ -5012,19 +5012,19 @@ function transposeLinesWithFolds(): void {
   const mover = (n: number): void => {
     if (n > 0) {
       let short = forwardLine(n);
-      if (ember.point() === 0 || ember.bufferText(ember.point() - 1, ember.point()) !== "\n") short++;
+      if (gnista.point() === 0 || gnista.bufferText(gnista.point() - 1, gnista.point()) !== "\n") short++;
       // Through newline, which amalgamates undo as self-insert-command does.
       if (short > 0) {
-        ember.undoAutoAmalgamate();
-        ember.insert("\n".repeat(short));
+        gnista.undoAutoAmalgamate();
+        gnista.insert("\n".repeat(short));
       }
     } else forwardLine(n);
   };
   const aux = (x: number): [number, number] => {
     mover(x);
-    const a = ember.point();
+    const a = gnista.point();
     mover(-x);
-    return [a, ember.point()];
+    return [a, gnista.point()];
   };
   const pos1 = aux(-1);
   const pos2 = aux(1);
@@ -5033,18 +5033,18 @@ function transposeLinesWithFolds(): void {
   if (a[0] > b[0]) [a, b] = [b, a];
   if (a[1] > b[0]) throw new Error("Don’t have two things to transpose");
   const lenA = a[1] - a[0];
-  const textB = ember.bufferText(b[0], b[1]);
+  const textB = gnista.bufferText(b[0], b[1]);
   const end = marker(pos2[0]);
   const boundary = marker(b[0]);
-  const wasModified = ember.bufferModified();
-  const mark = ember.mark();
+  const wasModified = gnista.bufferModified();
+  const mark = gnista.mark();
   // What to undo: insertions as [start, end], deletions as [position, text].
   const undo: ([number, number] | [number, string])[] = [];
   // Each step is recorded before it is made, so one whose fold check fails is undone too.
   try {
     undo.push([a[1], a[1] + charCount(textB)]);
     edInsert(a[1], textB, true);
-    const textA = ember.bufferText(a[0], a[0] + lenA);
+    const textA = gnista.bufferText(a[0], a[0] + lenA);
     undo.push([a[0], textA]);
     edDelete(a[0], a[0] + lenA);
     const at = boundary.pos;
@@ -5052,20 +5052,20 @@ function transposeLinesWithFolds(): void {
     edInsert(at, textA);
     undo.push([at + lenA, textB]);
     edDelete(at + lenA, at + lenA + charCount(textB));
-    ember.gotoChar(end.pos);
+    gnista.gotoChar(end.pos);
   } catch (e) {
     for (const step of undo.reverse()) {
       if (typeof step[1] === "number") {
-        ember.gotoChar(step[0]);
+        gnista.gotoChar(step[0]);
         edDelete(step[0], step[1]);
       } else {
         edInsert(step[0], step[1]);
-        ember.gotoChar(step[0]);
+        gnista.gotoChar(step[0]);
       }
     }
-    if (!wasModified) ember.setBufferModified(false);
+    if (!wasModified) gnista.setBufferModified(false);
     // Undoing puts the mark back too, as Emacs's undo restores markers.
-    if (mark !== undefined) ember.setMark(mark);
+    if (mark !== undefined) gnista.setMark(mark);
     throw e;
   } finally {
     dropMarker(end);
@@ -5077,7 +5077,7 @@ function transposeLinesWithFolds(): void {
 function dragLine(n: number): void {
   for (let i = 0; i < Math.abs(n); i++) {
     // As Org does with current-column and org-move-to-column: hidden link text takes no columns.
-    const column = ember.currentColumn();
+    const column = gnista.currentColumn();
     if (n > 0) {
       forwardLine(1);
       transposeLinesWithFolds();
@@ -5086,18 +5086,18 @@ function dragLine(n: number): void {
       transposeLinesWithFolds();
       forwardLine(-2);
     }
-    ember.moveToColumn(column);
+    gnista.moveToColumn(column);
   }
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-drag-line-forward",
   doc: "Drag the line at point down past the next line, or as many lines as the prefix argument says.",
   params: [{ name: "arg", kind: "count" }],
   run: (arg: number) => dragLine(arg),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-drag-line-backward",
   doc: "Drag the line at point up past the line before it, or as many lines as the prefix argument says.",
   params: [{ name: "arg", kind: "count" }],
@@ -5106,7 +5106,7 @@ ember.defineCommand({
 
 /**
  * What S-<left> and S-<right> do on a property, as
- * org-property-next-allowed-value does. Ember has no allowed values for
+ * org-property-next-allowed-value does. Gnista has no allowed values for
  * properties yet, so this is Org's error when none are defined.
  */
 function nextAllowedValue(): never {
@@ -5122,17 +5122,17 @@ function nextAllowedValue(): never {
 function hiddenBelow(what: "headlines" | "items"): boolean {
   if (orgRegionActive()) return false;
   let l = lineAt() + 1;
-  while (l < ember.lineCount() && ember.invisibleAt(ember.lineStart(l) - 1)) l++;
+  while (l < gnista.lineCount() && gnista.invisibleAt(gnista.lineStart(l) - 1)) l++;
   const end = lineStartOrEnd(l);
-  for (let k = lineAt() + 1; k < ember.lineCount() && ember.lineStart(k) < end; k++) {
-    const text = ember.lineText(k);
-    if ((what === "headlines" ? /^\*+ /.test(text) : ITEM_RE.test(text)) && ember.invisibleAt(ember.lineStart(k))) return true;
+  for (let k = lineAt() + 1; k < gnista.lineCount() && gnista.lineStart(k) < end; k++) {
+    const text = gnista.lineText(k);
+    if ((what === "headlines" ? /^\*+ /.test(text) : ITEM_RE.test(text)) && gnista.invisibleAt(gnista.lineStart(k))) return true;
   }
   return false;
 }
 
 function hiddenTreeError(): never {
-  ember.userError("Hidden subtree, open with TAB or use subtree command M-S-<left>/<right>");
+  gnista.userError("Hidden subtree, open with TAB or use subtree command M-S-<left>/<right>");
 }
 
 /**
@@ -5140,67 +5140,67 @@ function hiddenTreeError(): never {
  * table row does, and the parser, which sees the whole buffer, puts point in a table.
  */
 function atTableP(): boolean {
-  if (!/^[ \t]*\|/.test(ember.lineText(lineAt()))) return false;
-  const p = ember.point();
-  return ember.saveRestriction(() => {
-    ember.widen();
+  if (!/^[ \t]*\|/.test(gnista.lineText(lineAt()))) return false;
+  const p = gnista.point();
+  return gnista.saveRestriction(() => {
+    gnista.widen();
     for (let e = elementAt(p); e; e = e.parent) if (e.type === "table") return true;
     return false;
   });
 }
 
-const shiftUp = ember.defineCommand({
+const shiftUp = gnista.defineCommand({
   name: "org-shiftup",
   doc: "S-<up> in Org: make a timestamp later, raise a heading's priority, or move to the previous item.",
   run: () => {
-    if (timestampHere()) ember.callWithPrefix(ember.prefixArg(), "org-timestamp-up");
-    else if (headingHere()) ember.call("org-priority-up");
-    else if (itemHere()) ember.call("org-previous-item");
-    else if (atTableP()) ember.call("org-table-move-cell-up");
+    if (timestampHere()) gnista.callWithPrefix(gnista.prefixArg(), "org-timestamp-up");
+    else if (headingHere()) gnista.call("org-priority-up");
+    else if (itemHere()) gnista.call("org-previous-item");
+    else if (atTableP()) gnista.call("org-table-move-cell-up");
     else shiftSelectError();
   },
 });
 
-const shiftDown = ember.defineCommand({
+const shiftDown = gnista.defineCommand({
   name: "org-shiftdown",
   doc: "S-<down> in Org: make a timestamp earlier, lower a heading's priority, or move to the next item.",
   run: () => {
-    if (timestampHere()) ember.callWithPrefix(ember.prefixArg(), "org-timestamp-down");
-    else if (headingHere()) ember.call("org-priority-down");
-    else if (itemHere()) ember.call("org-next-item");
-    else if (atTableP()) ember.call("org-table-move-cell-down");
+    if (timestampHere()) gnista.callWithPrefix(gnista.prefixArg(), "org-timestamp-down");
+    else if (headingHere()) gnista.call("org-priority-down");
+    else if (itemHere()) gnista.call("org-next-item");
+    else if (atTableP()) gnista.call("org-table-move-cell-down");
     else shiftSelectError();
   },
 });
 
-const shiftRight = ember.defineCommand({
+const shiftRight = gnista.defineCommand({
   name: "org-shiftright",
   doc: "S-<right> in Org: move a timestamp a day on, change a heading to its next TODO state, or change list bullets.",
   run: () => {
-    if (timestampHere()) ember.callWithPrefix(ember.prefixArg(), "org-timestamp-up-day");
+    if (timestampHere()) gnista.callWithPrefix(gnista.prefixArg(), "org-timestamp-up-day");
     // org-todo, which loops over the headings in an active region.
     else if (headingHere()) {
       if (!forEachHeadingInRegion(() => todo(1), true)) todo(1);
     }
     else if (itemLine(lineAt())) cycleListBullet();
-    else if (elementAt(ember.point())?.type === "node-property") nextAllowedValue();
-    else if (atTableP()) ember.call("org-table-move-cell-right");
+    else if (elementAt(gnista.point())?.type === "node-property") nextAllowedValue();
+    else if (atTableP()) gnista.call("org-table-move-cell-right");
     else shiftSelectError();
   },
 });
 
-const shiftLeft = ember.defineCommand({
+const shiftLeft = gnista.defineCommand({
   name: "org-shiftleft",
   doc: "S-<left> in Org: move a timestamp a day back, change a heading to its previous TODO state, or change list bullets.",
   run: () => {
-    if (timestampHere()) ember.callWithPrefix(ember.prefixArg(), "org-timestamp-down-day");
+    if (timestampHere()) gnista.callWithPrefix(gnista.prefixArg(), "org-timestamp-down-day");
     // org-todo, which loops over the headings in an active region.
     else if (headingHere()) {
       if (!forEachHeadingInRegion(() => todo(-1), true)) todo(-1);
     }
     else if (itemLine(lineAt())) cycleListBullet("previous");
-    else if (elementAt(ember.point())?.type === "node-property") nextAllowedValue();
-    else if (atTableP()) ember.call("org-table-move-cell-left");
+    else if (elementAt(gnista.point())?.type === "node-property") nextAllowedValue();
+    else if (atTableP()) gnista.call("org-table-move-cell-left");
     else shiftSelectError();
   },
 });
@@ -5212,8 +5212,8 @@ function nothingUseful(): never {
 /** The statistics cookie point is in on its line, if any. */
 function cookieHere(): boolean {
   const line = lineAt();
-  const text = ember.lineText(line);
-  const p = ember.point();
+  const text = gnista.lineText(line);
+  const p = gnista.point();
   return allMatches(COOKIE, text).some((m) => {
     const start = at(line, text, m.index ?? 0);
     return start <= p && p <= start + charCount(m[0]);
@@ -5221,12 +5221,12 @@ function cookieHere(): boolean {
 }
 
 /** C-c C-c on an item's first line, as org-ctrl-c-ctrl-c does: toggles its checkbox, or repairs the list. */
-function ctrlCCtrlCItem(line: number, arg: ember.PrefixArg): void {
+function ctrlCCtrlCItem(line: number, arg: gnista.PrefixArg): void {
   const struct = listStruct(line);
   const old = copyStruct(struct);
   const parents = parentsAlist(struct);
   const prevs = prevsAlist(struct);
-  const item = getItem(struct, ember.lineStart(line));
+  const item = getItem(struct, gnista.lineStart(line));
   const box = item.checkbox;
   const c4 = Array.isArray(arg) && arg[0] === 4;
   const c16 = Array.isArray(arg) && arg[0] === 16;
@@ -5237,8 +5237,8 @@ function ctrlCCtrlCItem(line: number, arg: ember.PrefixArg): void {
   fixInd(struct, parents);
   fixBox(struct, parents);
   if (box && sameStruct(struct, old)) {
-    if (c16) ember.message("Checkboxes already reset");
-    else ember.userError(`Cannot toggle this checkbox: ${box === "[X]" ? "all subitems checked" : "unchecked subitems"}`);
+    if (c16) gnista.message("Checkboxes already reset");
+    else gnista.userError(`Cannot toggle this checkbox: ${box === "[X]" ? "all subitems checked" : "unchecked subitems"}`);
     return;
   }
   applyStruct(struct, old);
@@ -5254,37 +5254,37 @@ function cookieEndsTitleBeforePoint(): boolean {
   const h = parseHeading(lineAt());
   if (!h || h.title === "") return false;
   const titleEnd = h.titleAt + charCount(h.title);
-  if (ember.point() <= titleEnd) return false;
+  if (gnista.point() <= titleEnd) return false;
   return new RegExp(`(?:${COOKIE.source})$`).test(h.title);
 }
 
-const ctrlCCtrlC = ember.defineCommand({
+const ctrlCCtrlC = gnista.defineCommand({
   name: "org-ctrl-c-ctrl-c",
   doc:
     "C-c C-c in Org: tick or untick a checkbox, align a table, update a statistics cookie, set a heading's tags, " +
     "fix a timestamp, or re-read the buffer's #+ settings on a #+ line.",
   run: () => {
     const line = lineAt();
-    const text = ember.lineText(line);
+    const text = gnista.lineText(line);
     if (/^[ \t]*$/.test(text)) nothingUseful();
-    if (elementAt(ember.point())?.type === "table") {
+    if (elementAt(gnista.point())?.type === "table") {
       // At the table's start, Org recalculates every row and does not align.
-      ember.call("org-table-recalculate");
+      gnista.call("org-table-recalculate");
       return;
     }
     if (/^[ \t]*\|/.test(text)) {
-      ember.call("org-table-maybe-eval-formula");
-      ember.call("org-table-align");
+      gnista.call("org-table-maybe-eval-formula");
+      gnista.call("org-table-align");
       return;
     }
     if (/^#\+\S*:/.test(text)) {
       storeTodoSets();
-      ember.call("font-lock-flush");
-      ember.message("Local setup has been refreshed");
+      gnista.call("font-lock-flush");
+      gnista.message("Local setup has been refreshed");
       return;
     }
     if (cookieHere() || cookieEndsTitleBeforePoint()) {
-      ember.call("org-update-statistics-cookies");
+      gnista.call("org-update-statistics-cookies");
       return;
     }
     if (timestampHere()) {
@@ -5294,29 +5294,29 @@ const ctrlCCtrlC = ember.defineCommand({
     if (headingHere()) {
       // With the region active, Org sets the tags of each heading that starts
       // in it, which may be none.
-      const region = ember.variable("org-loop-over-headlines-in-active-region") === true ? headingsInRegion() : undefined;
+      const region = gnista.variable("org-loop-over-headlines-in-active-region") === true ? headingsInRegion() : undefined;
       if (region && region.length === 0) return;
-      if (region) ember.gotoChar(region[0].start);
-      ember.callInteractively("org-set-tags-command");
+      if (region) gnista.gotoChar(region[0].start);
+      gnista.callInteractively("org-set-tags-command");
       return;
     }
     if (itemLine(line)) {
-      ctrlCCtrlCItem(line, ember.prefixArg());
+      ctrlCCtrlCItem(line, gnista.prefixArg());
       return;
     }
     nothingUseful();
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-toggle-checkbox",
   doc:
     "Tick or untick the checkbox of the item point is on, or of the items in the region or under the heading. " +
     "With C-u, add a checkbox to the item, or remove its checkbox.",
-  run: () => toggleCheckbox(ember.prefixArg()),
+  run: () => toggleCheckbox(gnista.prefixArg()),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-update-statistics-cookies",
   doc: "Bring the statistics cookies, such as [1/3], of the heading or item point is in up to date.",
   run: () => {
@@ -5326,31 +5326,31 @@ ember.defineCommand({
     }
     // Point goes back where it was, kept by a marker, as in Org: inside a
     // cookie that changed, that is the cookie's start.
-    const pos = marker(ember.point());
+    const pos = marker(gnista.point());
     const all = headings();
     updateHeadingCookies(all, headingIndex(all, lineAt()) as number);
-    ember.gotoChar(pos.pos);
+    gnista.gotoChar(pos.pos);
     dropMarker(pos);
   },
 });
 
-const ctrlCMinus = ember.defineCommand({
+const ctrlCMinus = gnista.defineCommand({
   name: "org-ctrl-c-minus",
   doc: "C-c - in Org: insert a table rule, change a list's bullets, or turn the line into an item.",
   run: () => {
     const line = lineAt();
-    if (/^[ \t]*\|/.test(ember.lineText(line))) ember.callWithPrefix(ember.prefixArg(), "org-table-insert-hline");
-    else if (orgRegionActive()) ember.call("org-toggle-item");
+    if (/^[ \t]*\|/.test(gnista.lineText(line))) gnista.callWithPrefix(gnista.prefixArg(), "org-table-insert-hline");
+    else if (orgRegionActive()) gnista.call("org-toggle-item");
     else if (inItem(line) !== undefined) cycleListBullet();
-    else ember.call("org-toggle-item");
+    else gnista.call("org-toggle-item");
   },
 });
 
 /** Replaces text as replace-match does under save-excursion: point inside it goes to its start. */
 function replaceKeepingPoint(start: number, end: number, text: string): void {
-  const p = marker(ember.point());
+  const p = marker(gnista.point());
   edReplace(start, end, text);
-  ember.gotoChar(p.pos);
+  gnista.gotoChar(p.pos);
   dropMarker(p);
 }
 
@@ -5358,18 +5358,18 @@ function replaceKeepingPoint(start: number, end: number, text: string): void {
 function deleteMetadata(line: number): void {
   const h = parseHeading(line);
   if (!h) return;
-  const text = ember.lineText(line);
+  const text = gnista.lineText(line);
   if (h.tagsAt !== undefined) {
     const before = text.slice(0, indexOf(line, text, h.tagsAt)).trimEnd();
-    edDelete(ember.lineStart(line) + charCount(before), h.end);
+    edDelete(gnista.lineStart(line) + charCount(before), h.end);
     // As org-set-tags does, a heading that was only tags keeps its space.
-    if (!parseHeading(line)) replaceText(ember.lineEnd(line), ember.lineEnd(line), " ");
+    if (!parseHeading(line)) replaceText(gnista.lineEnd(line), gnista.lineEnd(line), " ");
   }
   const all = headings();
   const i = headingIndex(all, line) as number;
   let meta = endOfMetaData(all[i]);
-  while (meta < ember.bufferSize() && /[ \t\n\r]/.test(ember.bufferText(meta, meta + 1))) meta++;
-  if (meta < ember.bufferSize()) meta = ember.lineStart(lineAt(meta));
+  while (meta < gnista.bufferSize() && /[ \t\n\r]/.test(gnista.bufferText(meta, meta + 1))) meta++;
+  if (meta < gnista.bufferSize()) meta = gnista.lineStart(lineAt(meta));
   const next = lineStartOrEnd(line + 1);
   if (meta > next) edDelete(next, meta);
 }
@@ -5381,8 +5381,8 @@ function deleteMetadata(line: number): void {
  */
 function shiftText(ind: number, end: Marker): void {
   let min = 1000;
-  for (let l = lineAt(); l < ember.lineCount() && ember.lineStart(l) < end.pos; l++) {
-    const text = ember.lineText(l);
+  for (let l = lineAt(); l < gnista.lineCount() && gnista.lineStart(l) < end.pos; l++) {
+    const text = gnista.lineText(l);
     if (/^[ \t]*$/.test(text) || /^\*+ /.test(text)) continue;
     const i = textIndentation(text);
     if (i === 0) {
@@ -5392,53 +5392,53 @@ function shiftText(ind: number, end: Marker): void {
     min = Math.min(min, i);
   }
   const delta = ind - min;
-  while (ember.point() < end.pos) {
+  while (gnista.point() < end.pos) {
     const line = lineAt();
-    const text = ember.lineText(line);
+    const text = gnista.lineText(line);
     if (!/^[ \t]*$/.test(text) && !/^\*+ /.test(text)) indentLineTo(line, textIndentation(text) + delta);
-    if (line + 1 >= ember.lineCount()) {
-      ember.gotoChar(ember.bufferSize());
+    if (line + 1 >= gnista.lineCount()) {
+      gnista.gotoChar(gnista.bufferSize());
       break;
     }
-    ember.gotoChar(ember.lineStart(line + 1));
+    gnista.gotoChar(gnista.lineStart(line + 1));
   }
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-toggle-item",
   doc:
     "Turn the line, or the lines of the region, into list items; headings into items, their text into the " +
     "items' text; or items back into plain lines.",
   run: () => {
-    const mark = ember.mark();
+    const mark = gnista.mark();
     const region = orgRegionActive() && mark !== undefined;
     let beg: number;
     let end: Marker;
     if (region) {
-      const [rb, re] = [Math.min(mark as number, ember.point()), Math.max(mark as number, ember.point())];
+      const [rb, re] = [Math.min(mark as number, gnista.point()), Math.max(mark as number, gnista.point())];
       let q = rb;
-      while (q < ember.bufferSize() && /[ \r\t\n]/.test(ember.bufferText(q, q + 1))) q++;
-      beg = ember.lineStart(lineAt(q));
+      while (q < gnista.bufferSize() && /[ \r\t\n]/.test(gnista.bufferText(q, q + 1))) q++;
+      beg = gnista.lineStart(lineAt(q));
       end = marker(re);
     } else {
-      beg = ember.lineStart(lineAt());
-      end = marker(ember.lineEnd(lineAt()));
+      beg = gnista.lineStart(lineAt());
+      end = marker(gnista.lineEnd(lineAt()));
     }
-    const origin = marker(ember.point());
+    const origin = marker(gnista.point());
     try {
-      ember.gotoChar(beg);
+      gnista.gotoChar(beg);
       if (itemLine(lineAt())) {
-        while (ember.point() < end.pos) {
+        while (gnista.point() < end.pos) {
           const line = lineAt();
           const parts = itemLine(line) ? itemParts(line) : undefined;
           if (parts) edDelete(parts.bulletAt, parts.bulletAt + charCount(/^\S+[ \t]*/.exec(parts.bullet)?.[0] ?? ""));
-          if (line + 1 >= ember.lineCount()) break;
-          ember.gotoChar(ember.lineStart(line + 1));
+          if (line + 1 >= gnista.lineCount()) break;
+          gnista.gotoChar(gnista.lineStart(line + 1));
         }
       } else if (parseHeading(lineAt())) {
         deleteMetadata(lineAt());
         let refLevel = (parseHeading(lineAt()) as Heading).level;
-        while (ember.point() < end.pos) {
+        while (gnista.point() < end.pos) {
           const line = lineAt();
           const h = parseHeading(line);
           if (!h) break;
@@ -5448,7 +5448,7 @@ ember.defineCommand({
           // The stars and TODO state go; the title stays.
           const fresh = parseHeading(line) as Heading;
           const titleAt = fresh.title === "" && fresh.priorityAt === undefined ? fresh.end : (fresh.priorityAt ?? fresh.titleAt);
-          const ls = ember.lineStart(line);
+          const ls = gnista.lineStart(line);
           // Org checks folds after each change, and the line is neither a
           // heading nor an item between these two.
           edDelete(ls, titleAt);
@@ -5457,105 +5457,105 @@ ember.defineCommand({
           if (h.todo !== undefined) {
             const struct = listStruct(line);
             const old = copyStruct(struct);
-            getItem(struct, ember.lineStart(line)).checkbox = isDone(h.todo) ? "[X]" : "[ ]";
+            getItem(struct, gnista.lineStart(line)).checkbox = isDone(h.todo) ? "[X]" : "[ ]";
             writeStruct(struct, parentsAlist(struct), old);
           }
-          const sectionEnd = headings().find((x) => x.line > line)?.start ?? ember.bufferSize();
-          if (line + 1 >= ember.lineCount()) {
-            ember.gotoChar(ember.bufferSize());
+          const sectionEnd = headings().find((x) => x.line > line)?.start ?? gnista.bufferSize();
+          if (line + 1 >= gnista.lineCount()) {
+            gnista.gotoChar(gnista.bufferSize());
             break;
           }
-          ember.gotoChar(ember.lineStart(line + 1));
+          gnista.gotoChar(gnista.lineStart(line + 1));
           const limit = marker(Math.min(end.pos, sectionEnd));
           shiftText(2 * (delta + 1), limit);
           dropMarker(limit);
         }
       } else {
-        while (ember.point() < end.pos) {
+        while (gnista.point() < end.pos) {
           const line = lineAt();
-          const text = ember.lineText(line);
+          const text = gnista.lineText(line);
           const m = /^([ \t]*)(\S)/.exec(text);
           if (m && !isHeadingLine(text) && !itemLine(line)) {
-            const ls = ember.lineStart(line);
+            const ls = gnista.lineStart(line);
             replaceKeepingPoint(ls, ls + charCount(m[0]), `${m[1]}- ${m[2]}`);
           }
-          if (line + 1 >= ember.lineCount()) break;
-          ember.gotoChar(ember.lineStart(line + 1));
+          if (line + 1 >= gnista.lineCount()) break;
+          gnista.gotoChar(gnista.lineStart(line + 1));
         }
       }
     } finally {
-      ember.gotoChar(origin.pos);
+      gnista.gotoChar(origin.pos);
       dropMarker(origin);
       dropMarker(end);
     }
   },
 });
 
-const ctrlCStar = ember.defineCommand({
+const ctrlCStar = gnista.defineCommand({
   name: "org-ctrl-c-star",
   doc: "C-c * in Org: recalculate a table, or turn the line into a heading as org-toggle-heading does.",
   run: () => {
-    if (/^[ \t]*\|/.test(ember.lineText(lineAt()))) ember.call("org-table-recalculate");
-    else ember.callWithPrefix(ember.prefixArg(), "org-toggle-heading");
+    if (/^[ \t]*\|/.test(gnista.lineText(lineAt()))) gnista.call("org-table-recalculate");
+    else gnista.callWithPrefix(gnista.prefixArg(), "org-toggle-heading");
   },
 });
 
-const toggleHeading = ember.defineCommand({
+const toggleHeading = gnista.defineCommand({
   name: "org-toggle-heading",
   doc:
     "Turn lines into headings, or headings into plain text, as org-toggle-heading does.\n\n" +
     "Starting at a heading, take the stars off every heading in the region, or on the line. Starting at an item, " +
     "turn the lists in the region into headings, checkboxes into TODO states. Otherwise make every line of text a " +
     "heading, a level below the one it is under; with a number, at that level; with C-u, only the first line.",
-  run: () => orgToggleHeading(ember.prefixArg()),
+  run: () => orgToggleHeading(gnista.prefixArg()),
 });
 
 /** Whether a line is a comment, as org-at-comment-p says. */
 function commentLine(line: number): boolean {
-  return /^[ \t]*#(?: |$)/.test(ember.lineText(line));
+  return /^[ \t]*#(?: |$)/.test(gnista.lineText(line));
 }
 
-function orgToggleHeading(nstars: ember.PrefixArg): void {
+function orgToggleHeading(nstars: gnista.PrefixArg): void {
   // The start of the first line that is not blank or a comment, from pos's.
   const skipBlanks = (pos: number): number => {
     let line = lineAt(pos);
-    while (line < ember.lineCount() - 1 && commentLine(line)) line++;
-    let q = line === lineAt(pos) ? pos : ember.lineStart(line);
-    while (q < ember.bufferSize() && /[ \r\t\n]/.test(ember.bufferText(q, q + 1))) q++;
-    return ember.lineStart(lineAt(q));
+    while (line < gnista.lineCount() - 1 && commentLine(line)) line++;
+    let q = line === lineAt(pos) ? pos : gnista.lineStart(line);
+    while (q < gnista.bufferSize() && /[ \r\t\n]/.test(gnista.bufferText(q, q + 1))) q++;
+    return gnista.lineStart(lineAt(q));
   };
   if (nstars != null && itemLine(lineAt())) {
     // As org-mark-element does when called from code: the region is the item.
-    const el = elementAt(ember.point());
-    ember.gotoChar(ember.lineEnd(lineAt()));
+    const el = elementAt(gnista.point());
+    gnista.gotoChar(gnista.lineEnd(lineAt()));
     if (el) {
-      ember.pushMark(Math.min(ember.bufferSize(), el.end), { activate: true });
-      ember.gotoChar(el.begin);
+      gnista.pushMark(Math.min(gnista.bufferSize(), el.end), { activate: true });
+      gnista.gotoChar(el.begin);
     }
   }
-  const mark = ember.mark();
+  const mark = gnista.mark();
   const region = orgRegionActive() && mark !== undefined;
   let beg: number;
   let end: Marker;
   if (region) {
-    const [rb, re] = [Math.min(mark as number, ember.point()), Math.max(mark as number, ember.point())];
+    const [rb, re] = [Math.min(mark as number, gnista.point()), Math.max(mark as number, gnista.point())];
     beg = skipBlanks(rb);
-    end = marker(re === ember.lineStart(lineAt(re)) ? re : ember.lineEnd(lineAt(re)));
+    end = marker(re === gnista.lineStart(lineAt(re)) ? re : gnista.lineEnd(lineAt(re)));
   } else {
-    beg = skipBlanks(ember.lineStart(lineAt()));
-    end = marker(ember.lineEnd(lineAt()));
+    beg = skipBlanks(gnista.lineStart(lineAt()));
+    end = marker(gnista.lineEnd(lineAt()));
   }
-  const origin = marker(ember.point());
+  const origin = marker(gnista.point());
   let toggled = false;
   let p = beg;
   const forwardLine = (): void => {
     const l = lineAt(p);
-    p = l + 1 < ember.lineCount() ? ember.lineStart(l + 1) : ember.bufferSize();
+    p = l + 1 < gnista.lineCount() ? gnista.lineStart(l + 1) : gnista.bufferSize();
   };
   try {
     if (parseHeading(lineAt(beg))) {
       while (p < end.pos) {
-        const m = /^\*+ /.exec(ember.lineText(lineAt(p)));
+        const m = /^\*+ /.exec(gnista.lineText(lineAt(p)));
         if (parseHeading(lineAt(p)) && m) {
           edReplace(p, p + m[0].length, "");
           toggled = true;
@@ -5576,12 +5576,12 @@ function orgToggleHeading(nstars: ember.PrefixArg): void {
       const i = headingIndex(all, lineAt(beg));
       const count = typeof nstars === "number" ? nstars : i === undefined ? 0 : all[i].level;
       const stars = "*".repeat(count);
-      const add = nstars != null ? "" : stars === "" ? "*" : ember.variable("org-odd-levels-only") === true ? "**" : "*";
+      const add = nstars != null ? "" : stars === "" ? "*" : gnista.variable("org-odd-levels-only") === true ? "**" : "*";
       const rpl = `${stars}${add} `;
-      const limit = Array.isArray(nstars) && nstars[0] === 4 ? marker(ember.lineEnd(lineAt(beg))) : end;
+      const limit = Array.isArray(nstars) && nstars[0] === 4 ? marker(gnista.lineEnd(lineAt(beg))) : end;
       while (p < limit.pos) {
         const line = lineAt(p);
-        const m = /^([ \t]*)(\S)/.exec(ember.lineText(line));
+        const m = /^([ \t]*)(\S)/.exec(gnista.lineText(line));
         if (!parseHeading(line) && !itemLine(line) && !commentLine(line) && m) {
           edReplace(p, p + charCount(m[0]), rpl + m[2]);
           toggled = true;
@@ -5591,11 +5591,11 @@ function orgToggleHeading(nstars: ember.PrefixArg): void {
       if (limit !== end) dropMarker(limit);
     }
   } finally {
-    ember.gotoChar(origin.pos);
+    gnista.gotoChar(origin.pos);
     dropMarker(origin);
     dropMarker(end);
   }
-  if (!toggled) ember.message("Cannot toggle heading from here");
+  if (!toggled) gnista.message("Cannot toggle heading from here");
 }
 
 /**
@@ -5638,17 +5638,17 @@ function listToSubtree(pos: number, limit: number): number {
   // Each item's heading, without its stars, then the lines of text under it.
   const entries: { depth: number; title: string; body: string }[] = [];
   let blanks = 0;
-  for (let l = lineAt(pos); l < ember.lineCount() && ember.lineStart(l) < bottom; l++) {
-    const text = ember.lineText(l);
-    const item = items.find((e) => e.pos === ember.lineStart(l));
+  for (let l = lineAt(pos); l < gnista.lineCount() && gnista.lineStart(l) < bottom; l++) {
+    const text = gnista.lineText(l);
+    const item = items.find((e) => e.pos === gnista.lineStart(l));
     if (item) {
       // Org reads the list narrowed to the limit, so a line it cuts is read as far as it goes.
-      const lineEnd = Math.min(ember.lineEnd(l), limit);
+      const lineEnd = Math.min(gnista.lineEnd(l), limit);
       const parts = itemParts(l) as ItemParts;
       const within = parts.matchEnd <= lineEnd;
       const box = parts.checkbox === undefined || !within ? "" : `${parts.checkbox === "[X]" ? done : todo} `;
       const tag = item.tag !== undefined && within ? ` ${item.tag} ` : "";
-      const title = within ? ember.bufferText(parts.matchEnd, lineEnd) : "";
+      const title = within ? gnista.bufferText(parts.matchEnd, lineEnd) : "";
       entries.push({ depth: depth(item), title: box + tag + interpretTimestamps(title), body: "" });
       blanks = 0;
     } else if (/^[ \t]*$/.test(text)) blanks++;
@@ -5663,7 +5663,7 @@ function listToSubtree(pos: number, limit: number): number {
   const level = above === undefined ? 1 : all[above].level + 1;
   // org-blank-before-new-entry's "auto": a blank line before the heading above means one between these.
   const previous = [...all].reverse().find((h) => h.start < pos);
-  const blank = previous !== undefined && previous.start > 0 && /^[ \t]*$/.test(ember.lineText(previous.line - 1));
+  const blank = previous !== undefined && previous.start > 0 && /^[ \t]*$/.test(gnista.lineText(previous.line - 1));
   const text = entries.map((e) => `${"*".repeat(level + e.depth - 1)} ${e.title}${e.body}`).join(blank ? "\n\n" : "\n");
   edInsert(pos, `${text}\n`);
   return pos + charCount(text) + 1;
@@ -5671,7 +5671,7 @@ function listToSubtree(pos: number, limit: number): number {
 
 // Structure templates, as org-insert-structure-template
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "org-structure-template-alist",
   doc:
     'The kinds of block C-c C-, offers, each a key and a block type: ["s", "src"] makes #+begin_src and #+end_src. ' +
@@ -5692,7 +5692,7 @@ ember.defineVariable({
 
 /** org-structure-template-alist, as pairs of a key and a block type. */
 export function structureTemplates(): [string, string][] {
-  const alist = ember.variable("org-structure-template-alist");
+  const alist = gnista.variable("org-structure-template-alist");
   if (!Array.isArray(alist)) return [];
   return alist.filter((e): e is [string, string] => Array.isArray(e) && typeof e[0] === "string" && typeof e[1] === "string");
 }
@@ -5713,71 +5713,71 @@ function readStructureType(): string {
   const menu = templates.map(([key, type]) => `[${key}] ${type}`).join("  ");
   let typed = "";
   for (;;) {
-    const key = ember.readKey(`${menu}  [TAB] write the type\nKey: ${typed}`);
+    const key = gnista.readKey(`${menu}  [TAB] write the type\nKey: ${typed}`);
     if (typed === "" && key === "TAB") {
-      const type = ember.readString("Structure type: ");
-      if (type === "") ember.userError("Empty structure type");
+      const type = gnista.readString("Structure type: ");
+      if (type === "") gnista.userError("Empty structure type");
       return type;
     }
     const exact = templates.find(([k]) => k === typed);
     if (exact && (key === "TAB" || key === "RET" || key === "SPC")) return exact[1];
-    if ([...key].length !== 1) ember.userError("No such template");
+    if ([...key].length !== 1) gnista.userError("No such template");
     typed += key;
     const starting = templates.filter(([k]) => k.startsWith(typed));
-    if (starting.length === 0) ember.userError("No such template");
+    if (starting.length === 0) gnista.userError("No such template");
     if (starting.length === 1 && starting[0][0] === typed) return starting[0][1];
   }
 }
 
 /** Puts a block around the region, or an empty one at point, as org-insert-structure-template. */
 export function insertStructureTemplate(type: string): void {
-  if (type === "") throw ember.signal("error", `Invalid structure type: "${type}"`);
+  if (type === "") throw gnista.signal("error", `Invalid structure type: "${type}"`);
   const region = orgRegionActive();
-  const regionStart = region ? Math.min(ember.point(), ember.mark() as number) : 0;
-  const regionEnd = region ? marker(Math.max(ember.point(), ember.mark() as number)) : undefined;
+  const regionStart = region ? Math.min(gnista.point(), gnista.mark() as number) : 0;
+  const regionEnd = region ? marker(Math.max(gnista.point(), gnista.mark() as number)) : undefined;
   const extended = /^(src|export)$/i.test(type);
   const verbatim = /^(example|export|src|comment)/i.test(type);
   const up = upcaseBlock(type);
   const first = type.split(/\s+/).find((w) => w !== "") ?? "";
-  if (region) ember.gotoChar(regionStart);
-  const column = ember.currentIndentation();
-  const bol = ember.lineStart(lineAt());
-  if (/^[ \t]*$/.test(ember.bufferText(bol, ember.point()))) ember.gotoChar(bol);
-  else ember.insert("\n");
-  const start = ember.point();
-  ember.indentTo(column);
-  ember.insert(`#+${up ? "BEGIN" : "begin"}_${type}${extended ? " " : ""}\n`);
+  if (region) gnista.gotoChar(regionStart);
+  const column = gnista.currentIndentation();
+  const bol = gnista.lineStart(lineAt());
+  if (/^[ \t]*$/.test(gnista.bufferText(bol, gnista.point()))) gnista.gotoChar(bol);
+  else gnista.insert("\n");
+  const start = gnista.point();
+  gnista.indentTo(column);
+  gnista.insert(`#+${up ? "BEGIN" : "begin"}_${type}${extended ? " " : ""}\n`);
   if (regionEnd) {
     // As org-escape-code-in-region: a comma before lines Org would read as its own.
     if (verbatim) {
       let line = lineAt();
-      while (ember.lineStart(line) < regionEnd.pos && line < ember.lineCount()) {
-        const text = ember.lineText(line);
+      while (gnista.lineStart(line) < regionEnd.pos && line < gnista.lineCount()) {
+        const text = gnista.lineText(line);
         const m = /^[ \t]*(?=,*(?:\*|#\+))/.exec(text);
-        if (m) edInsert(ember.lineStart(line) + charCount(m[0]), ",");
+        if (m) edInsert(gnista.lineStart(line) + charCount(m[0]), ",");
         line++;
       }
     }
-    ember.gotoChar(regionEnd.pos);
+    gnista.gotoChar(regionEnd.pos);
     dropMarker(regionEnd);
-    ember.skipCharsBackward(" \r\t\n");
-    ember.gotoChar(ember.lineEnd(lineAt()));
+    gnista.skipCharsBackward(" \r\t\n");
+    gnista.gotoChar(gnista.lineEnd(lineAt()));
   }
-  if (ember.point() !== ember.lineStart(lineAt())) ember.insert("\n");
-  ember.indentTo(column);
-  ember.insert(`#+${up ? "END" : "end"}_${first}`);
-  if (ember.lookingAt("[ \t]*$")) ember.deleteRegion(ember.point(), ember.matchEnd(0)!);
-  else ember.insert("\n");
-  if (ember.point() === ember.bufferSize() && ember.point() !== ember.lineStart(lineAt())) ember.insert("\n");
-  ember.gotoChar(start);
-  if (extended) ember.gotoChar(ember.lineEnd(lineAt()));
+  if (gnista.point() !== gnista.lineStart(lineAt())) gnista.insert("\n");
+  gnista.indentTo(column);
+  gnista.insert(`#+${up ? "END" : "end"}_${first}`);
+  if (gnista.lookingAt("[ \t]*$")) gnista.deleteRegion(gnista.point(), gnista.matchEnd(0)!);
+  else gnista.insert("\n");
+  if (gnista.point() === gnista.bufferSize() && gnista.point() !== gnista.lineStart(lineAt())) gnista.insert("\n");
+  gnista.gotoChar(start);
+  if (extended) gnista.gotoChar(gnista.lineEnd(lineAt()));
   else {
     forwardLine(1);
-    ember.skipCharsForward(" \t");
+    gnista.skipCharsForward(" \t");
   }
 }
 
-const insertStructureTemplateCommand = ember.defineCommand({
+const insertStructureTemplateCommand = gnista.defineCommand({
   name: "org-insert-structure-template",
   doc:
     "Insert a block, #+begin_TYPE and #+end_TYPE, around the region if it is active. Asks for its type by the key " +
@@ -5787,7 +5787,7 @@ const insertStructureTemplateCommand = ember.defineCommand({
 
 // The mode
 
-const keys: { [keys: string]: ember.CommandName | ember.DefinedCommand } = {
+const keys: { [keys: string]: gnista.CommandName | gnista.DefinedCommand } = {
   "C-c C-,": insertStructureTemplateCommand,
   TAB: cycle,
   "S-TAB": shiftTab,
@@ -5845,7 +5845,7 @@ const keys: { [keys: string]: ember.CommandName | ember.DefinedCommand } = {
   "<mouse-1>": mouseFollow,
 };
 
-ember.defineMajorMode({
+gnista.defineMajorMode({
   name: "org-mode",
   modeName: "Org",
   parent: "outline-mode",
@@ -5860,22 +5860,22 @@ ember.defineMajorMode({
     "link and C-c C-o follows it. Lines starting with | are tables: TAB moves between fields and aligns them.",
   bindings: keys,
   setup: () => {
-    ember.setVariable("outline-regexp", "\\*+ ");
-    ember.setVariable("imenu-create-index-function", orgImenuGetTree);
-    ember.addToInvisibilitySpec("org-hide-drawer", { ellipsis: true });
-    ember.addToInvisibilitySpec("org-hide-block", { ellipsis: true });
-    ember.addToInvisibilitySpec("org-link");
+    gnista.setVariable("outline-regexp", "\\*+ ");
+    gnista.setVariable("imenu-create-index-function", orgImenuGetTree);
+    gnista.addToInvisibilitySpec("org-hide-drawer", { ellipsis: true });
+    gnista.addToInvisibilitySpec("org-hide-block", { ellipsis: true });
+    gnista.addToInvisibilitySpec("org-link");
     storeTodoSets();
-    if (ember.variable("org-startup-truncated") === true) ember.setVariable("truncate-lines", true);
+    if (gnista.variable("org-startup-truncated") === true) gnista.setVariable("truncate-lines", true);
     // A folded heading ends in org-ellipsis, through the buffer's display table, as org-mode sets it up.
-    const ellipsis = ember.variable("org-ellipsis");
+    const ellipsis = gnista.variable("org-ellipsis");
     if (typeof ellipsis === "string" && ellipsis !== "") {
-      const table = ember.makeCharTable("display-table");
-      ember.setCharTableExtraSlot(table, 4, ember.propertize(ellipsis, { face: "org-ellipsis" }));
-      ember.setVariable("buffer-display-table", table);
+      const table = gnista.makeCharTable("display-table");
+      gnista.setCharTableExtraSlot(table, 4, gnista.propertize(ellipsis, { face: "org-ellipsis" }));
+      gnista.setVariable("buffer-display-table", table);
     }
     // As org-mode turns org-indent-mode on, from the variable or a #+STARTUP: line.
-    let indented = ember.variable("org-startup-indented") === true;
+    let indented = gnista.variable("org-startup-indented") === true;
     for (const [, , text] of keywordLines()) {
       const m = /^#\+STARTUP:(.*)$/i.exec(text);
       for (const word of m ? m[1].trim().split(/\s+/) : []) {
@@ -5883,22 +5883,22 @@ ember.defineMajorMode({
         else if (word === "noindent") indented = false;
       }
     }
-    if (indented) ember.callWithPrefix(1, "org-indent-mode");
-    ember.addHook("jit-lock-functions", fontify, { local: true });
-    ember.addHook("after-change-functions", foldsAfterChange, { local: true });
-    ember.addHook("after-change-functions", headingsAfterChange, { local: true });
+    if (indented) gnista.callWithPrefix(1, "org-indent-mode");
+    gnista.addHook("jit-lock-functions", fontify, { local: true });
+    gnista.addHook("after-change-functions", foldsAfterChange, { local: true });
+    gnista.addHook("after-change-functions", headingsAfterChange, { local: true });
     startupVisibility();
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-force-self-insert",
   doc: "Insert the character typed, as self-insert-command does, without the table handling of org-self-insert-command.",
-  run: () => ember.callWithPrefix(ember.prefixArg(), "self-insert-command"),
+  run: () => gnista.callWithPrefix(gnista.prefixArg(), "self-insert-command"),
 });
-ember.bindKey("|", "org-force-self-insert", "org-mode-map");
+gnista.bindKey("|", "org-force-self-insert", "org-mode-map");
 
-ember.remapCommand("org-mode-map", "self-insert-command", "org-self-insert-command");
-ember.remapCommand("org-mode-map", "delete-backward-char", "org-delete-backward-char");
-ember.remapCommand("org-mode-map", "delete-char", "org-delete-char");
-ember.remapCommand("org-mode-map", "move-end-of-line", "org-end-of-line");
+gnista.remapCommand("org-mode-map", "self-insert-command", "org-self-insert-command");
+gnista.remapCommand("org-mode-map", "delete-backward-char", "org-delete-backward-char");
+gnista.remapCommand("org-mode-map", "delete-char", "org-delete-char");
+gnista.remapCommand("org-mode-map", "move-end-of-line", "org-end-of-line");

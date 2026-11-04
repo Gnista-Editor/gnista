@@ -8,41 +8,41 @@
 
 import { truthy } from "subr";
 
-ember.defineVariable({
+gnista.defineVariable({
   name: "electric-pair-pairs",
   doc: "Pairs of characters Electric Pair mode pairs even where the syntax table gives them no paren or quote syntax, as [open, close] lists.",
   value: [["\"", "\""], ["‘", "’"], ["“", "”"]],
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "electric-pair-text-pairs",
   doc: "Pairs Electric Pair mode pairs in comments and strings, as well as electric-pair-pairs.",
   value: [["\"", "\""], ["‘", "’"], ["“", "”"]],
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "electric-pair-preserve-balance",
   doc: "Whether Electric Pair mode pairs and skips only where that keeps the buffer's parens and quotes balanced.",
   value: true,
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "electric-pair-delete-adjacent-pairs",
   doc: "Whether DEL between an open and close pair deletes both.",
   value: true,
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "electric-pair-open-newline-between-pairs",
   doc: "Whether RET between an open and close pair puts the close on a line of its own too.",
   value: true,
 });
-ember.defineVariable({
+gnista.defineVariable({
   name: "electric-pair-skip-whitespace",
   doc: "Whether typing a close paren moves over whitespace to one already there; chomp deletes the whitespace too.",
   value: true,
 });
 
-const charAt = (p: number): string => ember.charAfter(p) ?? "";
-const charBefore = (p: number): string => ember.charBefore(p) ?? "";
+const charAt = (p: number): string => gnista.charAfter(p) ?? "";
+const charBefore = (p: number): string => gnista.charBefore(p) ?? "";
 const pairs = (name: string): [string, string][] => {
-  const v = ember.variable(name);
+  const v = gnista.variable(name);
   return Array.isArray(v) ? v.filter((p): p is [string, string] => Array.isArray(p) && p.length === 2).map((p) => [String(p[0]), String(p[1])]) : [];
 };
 type ScanError = Error & { symbol: "scan-error"; data: [string, number, number] };
@@ -52,7 +52,7 @@ const scanEnd = (e: ScanError): number => e.data[2] - 1;
 
 /** The typed character, as last-command-event. */
 function lastEvent(): string | undefined {
-  const key = ember.lastKey();
+  const key = gnista.lastKey();
   if (key === undefined) return undefined;
   if (key === "RET" || key === "C-j") return "\n";
   if (key === "SPC") return " ";
@@ -65,13 +65,13 @@ const TEXT_TABLE = "prog-mode-syntax-table";
 
 /** Runs `fn` with the text syntax table if in a string or comment, as electric-pair--with-syntax. */
 function withSyntax<T>(stringOrComment: unknown, fn: () => T): T {
-  if (!truthy(stringOrComment as ember.Value)) return fn();
-  const table = ember.syntaxTable();
-  ember.setSyntaxTable(TEXT_TABLE);
+  if (!truthy(stringOrComment as gnista.Value)) return fn();
+  const table = gnista.syntaxTable();
+  gnista.setSyntaxTable(TEXT_TABLE);
   try {
     return fn();
   } finally {
-    ember.setSyntaxTable(table);
+    gnista.setSyntaxTable(table);
   }
 }
 
@@ -79,11 +79,11 @@ type SyntaxInfo = { syntax: string; pair: string; unconditional: boolean; string
 
 /** What a character is to Electric Pair mode here, as electric-pair-syntax-info. */
 function syntaxInfo(ev: string): SyntaxInfo | undefined {
-  const p = ember.point();
-  const pre: number | true | null = p <= ember.pointMin() ? true : ember.syntaxPpss(p - 1).start;
-  const post = ember.syntaxPpss(p).start;
+  const p = gnista.point();
+  const pre: number | true | null = p <= gnista.pointMin() ? true : gnista.syntaxPpss(p - 1).start;
+  const post = gnista.syntaxPpss(p).start;
   const soc = post !== null && pre !== null ? pre : null;
-  const [syntax, pair] = withSyntax(soc, () => [ember.charSyntax(ev), ember.matchingParen(ev) ?? ev]);
+  const [syntax, pair] = withSyntax(soc, () => [gnista.charSyntax(ev), gnista.matchingParen(ev) ?? ev]);
   const fallback = soc !== null ? [...pairs("electric-pair-text-pairs"), ...pairs("electric-pair-pairs")] : pairs("electric-pair-pairs");
   const direct = fallback.find(([open]) => open === ev);
   const reverse = fallback.find(([, close]) => close === ev);
@@ -98,21 +98,21 @@ function syntaxInfo(ev: string): SyntaxInfo | undefined {
 }
 
 /** syntax-ppss, parsing a string's or comment's text with the text syntax table, as electric-pair--syntax-ppss. */
-function pairSyntaxPpss(pos = ember.point(), where: ("string" | "comment")[] = ["string", "comment"]): ember.ParseState {
-  const quick = ember.syntaxPpss(pos);
+function pairSyntaxPpss(pos = gnista.point(), where: ("string" | "comment")[] = ["string", "comment"]): gnista.ParseState {
+  const quick = gnista.syntaxPpss(pos);
   let start: number | undefined;
   if (quick.inString !== null && where.includes("string")) {
     start = quick.start! + 1;
   } else if (quick.inComment !== null && where.includes("comment")) {
-    const p = ember.point();
-    ember.gotoChar(quick.start!);
-    ember.forwardComment(-ember.pointMax());
-    ember.skipSyntaxForward(" >!");
-    start = ember.point();
-    ember.gotoChar(p);
+    const p = gnista.point();
+    gnista.gotoChar(quick.start!);
+    gnista.forwardComment(-gnista.pointMax());
+    gnista.skipSyntaxForward(" >!");
+    start = gnista.point();
+    gnista.gotoChar(p);
   }
   if (start === undefined) return quick;
-  return withSyntax(start, () => ember.parsePartialSexp(start!, pos));
+  return withSyntax(start, () => gnista.parsePartialSexp(start!, pos));
 }
 
 type Pairing = [boolean, string?];
@@ -129,62 +129,62 @@ function balanceInfo(direction: number, stringOrComment: number | true | null): 
     innermost ??= [true];
   };
   const endedPrematurely = () => {
-    const pos = ember.point();
+    const pos = gnista.point();
     let matched: boolean;
     if (direction < 0) {
       try {
-        const after = withSyntax(stringOrComment, () => ember.scanSexps(ember.point(), 1));
-        matched = after !== null && charAt(pos) === withSyntax(stringOrComment, () => ember.matchingParen(charBefore(after)));
+        const after = withSyntax(stringOrComment, () => gnista.scanSexps(gnista.point(), 1));
+        matched = after !== null && charAt(pos) === withSyntax(stringOrComment, () => gnista.matchingParen(charBefore(after)));
       } catch (e) {
         if (!isScanError(e)) throw e;
         matched = false;
       }
     } else {
-      const ppss = pairSyntaxPpss(ember.point() - 1);
+      const ppss = pairSyntaxPpss(gnista.point() - 1);
       const start = ppss.openParens[ppss.openParens.length - 1];
       const opener = start === undefined ? "" : charAt(start);
-      matched = start !== undefined && charBefore(pos) === (withSyntax(stringOrComment, () => ember.matchingParen(opener)) ?? opener);
+      matched = start !== undefined && charBefore(pos) === (withSyntax(stringOrComment, () => gnista.matchingParen(opener)) ?? opener);
     }
-    const actual = direction > 0 ? charBefore(ember.point()) : charAt(ember.point());
+    const actual = direction > 0 ? charBefore(gnista.point()) : charAt(gnista.point());
     innermost ??= [matched, actual];
     if (!matched) outermost = [matched, actual];
   };
-  const p = ember.point();
+  const p = gnista.point();
   try {
     while (outermost === undefined) {
       try {
-        withSyntax(stringOrComment, () => ember.scanSexps(ember.point(), direction > 0 ? ember.pointMax() : -ember.pointMax()));
+        withSyntax(stringOrComment, () => gnista.scanSexps(gnista.point(), direction > 0 ? gnista.pointMax() : -gnista.pointMax()));
         topLevel();
       } catch (e) {
         if (!isScanError(e)) throw e;
-        if (!e.data[0].includes("ends prematurely") || (stringOrComment !== null && ember.syntaxPpss().start === null)) {
+        if (!e.data[0].includes("ends prematurely") || (stringOrComment !== null && gnista.syntaxPpss().start === null)) {
           topLevel();
         } else {
-          ember.gotoChar(scanEnd(e));
+          gnista.gotoChar(scanEnd(e));
           endedPrematurely();
         }
       }
     }
   } finally {
-    ember.gotoChar(p);
+    gnista.gotoChar(p);
   }
   return [innermost!, outermost!];
 }
 
 /** Whether there are strings started by `ch` left open, as electric-pair--unbalanced-strings-p. */
 function unbalancedStrings(ch: string): boolean {
-  const selector = ember.syntaxPpss();
-  let relevant: ember.ParseState;
+  const selector = gnista.syntaxPpss();
+  let relevant: gnista.ParseState;
   if (selector.inComment !== null) {
-    const p = ember.point();
-    ember.gotoChar(selector.start!);
-    ember.forwardComment(ember.pointMax());
-    ember.skipSyntaxBackward(" >!");
-    const end = ember.point();
-    ember.gotoChar(p);
+    const p = gnista.point();
+    gnista.gotoChar(selector.start!);
+    gnista.forwardComment(gnista.pointMax());
+    gnista.skipSyntaxBackward(" >!");
+    const end = gnista.point();
+    gnista.gotoChar(p);
     relevant = pairSyntaxPpss(end);
   } else {
-    relevant = ember.syntaxPpss(ember.pointMax());
+    relevant = gnista.syntaxPpss(gnista.pointMax());
   }
   return relevant.inString === "|" || relevant.inString === ch;
 }
@@ -193,9 +193,9 @@ function unbalancedStrings(ch: string): boolean {
 function inhibitIfHelpsBalance(ch: string): boolean {
   const info = syntaxInfo(ch);
   if (info === undefined) return false;
-  const group = ember.prepareChangeGroup();
+  const group = gnista.prepareChangeGroup();
   try {
-    ember.deleteRegion(ember.point() - 1, ember.point());
+    gnista.deleteRegion(gnista.point() - 1, gnista.point());
     if (info.syntax === "(") {
       const [, outermost] = balanceInfo(1, info.stringOrComment);
       return outermost[0] ? false : outermost[1] === info.pair;
@@ -203,13 +203,13 @@ function inhibitIfHelpsBalance(ch: string): boolean {
     if (info.syntax === "\"") return unbalancedStrings(ch);
     return false;
   } finally {
-    ember.cancelChangeGroup(group);
+    gnista.cancelChangeGroup(group);
   }
 }
 
 /** Whether point is in a string started by `ch`, as electric-pair--inside-string-p. */
 const insideString = (ch: string): boolean => {
-  const s = pairSyntaxPpss(ember.point(), ["comment"]).inString;
+  const s = pairSyntaxPpss(gnista.point(), ["comment"]).inString;
   return s === "|" || s === ch;
 };
 
@@ -217,9 +217,9 @@ const insideString = (ch: string): boolean => {
 function skipIfHelpsBalance(ch: string): boolean {
   const info = syntaxInfo(ch);
   if (info === undefined) return false;
-  const group = ember.prepareChangeGroup();
+  const group = gnista.prepareChangeGroup();
   try {
-    ember.deleteRegion(ember.point() - 1, ember.point());
+    gnista.deleteRegion(gnista.point() - 1, gnista.point());
     if (info.syntax === ")") {
       const [innermost, outermost] = balanceInfo(-1, info.stringOrComment);
       if (outermost[0]) return innermost[0];
@@ -229,11 +229,11 @@ function skipIfHelpsBalance(ch: string): boolean {
     if (info.syntax === "\"") return insideString(ch);
     return false;
   } finally {
-    ember.cancelChangeGroup(group);
+    gnista.cancelChangeGroup(group);
   }
 }
 
-const preserving = (): boolean => truthy(ember.variable("electric-pair-preserve-balance"));
+const preserving = (): boolean => truthy(gnista.variable("electric-pair-preserve-balance"));
 
 /** Whether to move over a typed close instead of inserting it, as electric-pair-default-skip-self. */
 const skipSelf = (ch: string): boolean => (preserving() ? skipIfHelpsBalance(ch) : true);
@@ -242,152 +242,152 @@ const skipSelf = (ch: string): boolean => (preserving() ? skipIfHelpsBalance(ch)
 function inhibit(ch: string): boolean {
   if (preserving()) return inhibitIfHelpsBalance(ch);
   // As electric-pair-conservative-inhibit.
-  const p = ember.point();
-  return charAt(p) === ch || (charBefore(p) === ch && charBefore(p - 1) === ch) || ember.charSyntax(charAt(p)) === "w";
+  const p = gnista.point();
+  return charAt(p) === ch || (charBefore(p) === ch && charBefore(p - 1) === ch) || gnista.charSyntax(charAt(p)) === "w";
 }
 
 /** Inserts a character as Electric Pair mode does, without pairing it again. */
 function insertPairChar(ch: string): void {
-  ember.insertAndInherit(ch);
+  gnista.insertAndInherit(ch);
 }
 
 /** Where the character just typed ends, as electric--after-char-pos, or undefined. */
 function afterCharPos(ev: string): number | undefined {
-  let p = ember.point();
+  let p = gnista.point();
   if (charBefore(p) === ev) return p;
-  while (p > ember.pointMin() && " \t".includes(charBefore(p))) p--;
+  while (p > gnista.pointMin() && " \t".includes(charBefore(p))) p--;
   if (charBefore(p) === ev) return p;
-  while (p > ember.pointMin() && " \n\t".includes(charBefore(p))) p--;
+  while (p > gnista.pointMin() && " \n\t".includes(charBefore(p))) p--;
   return charBefore(p) === ev ? p : undefined;
 }
 
 /** Moves over whitespace, unless that leaves a string or comment, as electric-pair--skip-whitespace. */
 function skipWhitespace(): void {
-  const saved = ember.point();
-  const start = ember.syntaxPpss().start;
+  const saved = gnista.point();
+  const start = gnista.syntaxPpss().start;
   let p = saved;
-  while (p < ember.pointMax() && " \t\n".includes(charAt(p))) p++;
-  ember.gotoChar(p);
-  if (ember.syntaxPpss().start !== start) ember.gotoChar(saved);
+  while (p < gnista.pointMax() && " \t\n".includes(charAt(p))) p++;
+  gnista.gotoChar(p);
+  if (gnista.syntaxPpss().start !== start) gnista.gotoChar(saved);
 }
 
-const regionUsed = (): boolean => ember.regionActive() && ember.mark() !== undefined && ember.mark() !== ember.point();
+const regionUsed = (): boolean => gnista.regionActive() && gnista.mark() !== undefined && gnista.mark() !== gnista.point();
 
 /** What Electric Pair mode does after a character is typed, as electric-pair-post-self-insert-function. */
 function postSelfInsert(): void {
-  if (ember.variable("electric-pair-mode") !== true) return;
+  if (gnista.variable("electric-pair-mode") !== true) return;
   const ev = lastEvent();
   if (ev === undefined) return;
   const pos = afterCharPos(ev);
   const info = syntaxInfo(ev);
   if (info === undefined || pos === undefined) return;
   const { syntax, pair, unconditional } = info;
-  const mark = ember.mark();
+  const mark = gnista.mark();
   if (["(", ")", "\"", "$"].includes(syntax) && regionUsed() && mark !== undefined) {
-    if (syntax === "\"" || (syntax === ")" && ember.point() >= mark) || (syntax !== ")" && mark >= ember.point())) {
-      const p = ember.makeMarker();
-      ember.gotoChar(mark);
+    if (syntax === "\"" || (syntax === ")" && gnista.point() >= mark) || (syntax !== ")" && mark >= gnista.point())) {
+      const p = gnista.makeMarker();
+      gnista.gotoChar(mark);
       insertPairChar(pair);
-      ember.gotoChar(ember.markerPosition(p)!);
-      ember.deleteMarker(p);
+      gnista.gotoChar(gnista.markerPosition(p)!);
+      gnista.deleteMarker(p);
     } else {
-      ember.deleteRegion(pos - 1, pos);
+      gnista.deleteRegion(pos - 1, pos);
       insertPairChar(pair);
-      ember.gotoChar(ember.mark()!);
+      gnista.gotoChar(gnista.mark()!);
       insertPairChar(ev);
     }
     return;
   }
   // Not after an escape.
   let escapes = 0;
-  for (let p = pos - 1; p > ember.pointMin() && ember.charSyntax(charBefore(p)) === "\\"; p--) escapes++;
+  for (let p = pos - 1; p > gnista.pointMin() && gnista.charSyntax(charBefore(p)) === "\\"; p--) escapes++;
   if (escapes % 2 !== 0) return;
   if ([")", "\"", "$"].includes(syntax)) {
-    const here = ember.point();
-    ember.gotoChar(pos);
+    const here = gnista.point();
+    gnista.gotoChar(pos);
     const skips = unconditional || skipSelf(ev);
-    ember.gotoChar(here);
-    const skipWs = !(unconditional && syntax === "\"") && truthy(ember.variable("electric-pair-skip-whitespace"));
+    gnista.gotoChar(here);
+    const skipWs = !(unconditional && syntax === "\"") && truthy(gnista.variable("electric-pair-skip-whitespace"));
     const closeAhead =
       skips &&
       (() => {
-        const p = ember.point();
+        const p = gnista.point();
         if (skipWs) skipWhitespace();
-        const found = charAt(ember.point()) === ev;
-        ember.gotoChar(p);
+        const found = charAt(gnista.point()) === ev;
+        gnista.gotoChar(p);
         return found;
       })();
     if (closeAhead) {
       if (skipWs) skipWhitespace();
-      const chomp = ember.variable("electric-pair-skip-whitespace") === "chomp";
-      ember.deleteRegion(pos - 1, chomp ? ember.point() : pos);
-      ember.gotoChar(ember.point() + 1);
+      const chomp = gnista.variable("electric-pair-skip-whitespace") === "chomp";
+      gnista.deleteRegion(pos - 1, chomp ? gnista.point() : pos);
+      gnista.gotoChar(gnista.point() + 1);
       return;
     }
   }
-  if (["(", "\"", "$"].includes(syntax) && ember.variable("overwrite-mode") !== true) {
-    const here = ember.point();
-    ember.gotoChar(pos);
+  if (["(", "\"", "$"].includes(syntax) && gnista.variable("overwrite-mode") !== true) {
+    const here = gnista.point();
+    gnista.gotoChar(pos);
     const inhibited = !unconditional && inhibit(ev);
-    ember.gotoChar(here);
+    gnista.gotoChar(here);
     if (!inhibited) {
-      const p = ember.makeMarker();
+      const p = gnista.makeMarker();
       insertPairChar(pair);
-      ember.gotoChar(ember.markerPosition(p)!);
-      ember.deleteMarker(p);
+      gnista.gotoChar(gnista.markerPosition(p)!);
+      gnista.deleteMarker(p);
     }
   }
 }
 
 /** RET between a pair opens a line for the close too, as electric-pair-open-newline-between-pairs-psif. */
 function openNewlineBetweenPairs(): void {
-  if (ember.variable("electric-pair-mode") !== true || !truthy(ember.variable("electric-pair-open-newline-between-pairs"))) return;
+  if (gnista.variable("electric-pair-mode") !== true || !truthy(gnista.variable("electric-pair-open-newline-between-pairs"))) return;
   if (lastEvent() !== "\n") return;
-  const p = ember.point();
-  if (!(ember.pointMin() + 1 < p && p < ember.pointMax())) return;
+  const p = gnista.point();
+  if (!(gnista.pointMin() + 1 < p && p < gnista.pointMax())) return;
   let q = p;
-  while (q > ember.pointMin() && " \t".includes(charBefore(q))) q--;
+  while (q > gnista.pointMin() && " \t".includes(charBefore(q))) q--;
   const before = charBefore(q - 1);
-  if (before !== "" && before === ember.matchingParen(charAt(p))) {
+  if (before !== "" && before === gnista.matchingParen(charAt(p))) {
     // As (save-excursion (newline 1 t)).
-    const m = ember.makeMarker();
-    ember.callInteractively("newline");
-    ember.gotoChar(ember.markerPosition(m)!);
-    ember.deleteMarker(m);
+    const m = gnista.makeMarker();
+    gnista.callInteractively("newline");
+    gnista.gotoChar(gnista.markerPosition(m)!);
+    gnista.deleteMarker(m);
   }
 }
 
 /** Whether typing this character wraps the region, as electric-pair-will-use-region. */
 function willUseRegion(): boolean {
-  if (ember.variable("electric-pair-mode") !== true || !regionUsed()) return false;
+  if (gnista.variable("electric-pair-mode") !== true || !regionUsed()) return false;
   const ev = lastEvent();
   const info = ev === undefined ? undefined : syntaxInfo(ev);
   return info !== undefined && ["(", ")", "\"", "$"].includes(info.syntax);
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "electric-pair-delete-pair",
   doc: "Delete the open and close pair point is between, as DEL does there in Electric Pair mode.",
   run: () => {
-    ember.deleteRegion(ember.point(), ember.point() + 1);
-    ember.callWithPrefix(ember.prefixArg(), "delete-backward-char");
+    gnista.deleteRegion(gnista.point(), gnista.point() + 1);
+    gnista.callWithPrefix(gnista.prefixArg(), "delete-backward-char");
   },
 });
 
 /** DEL between an empty pair deletes both, as electric-pair-mode-map's DEL filter. */
 function deletePairBeforeCommand(): void {
-  if (ember.variable("electric-pair-mode") !== true || ember.lastKey() !== "DEL") return;
-  if (!truthy(ember.variable("electric-pair-delete-adjacent-pairs")) || ember.bufferReadOnly()) return;
-  const prev = charBefore(ember.point());
-  const next = charAt(ember.point());
+  if (gnista.variable("electric-pair-mode") !== true || gnista.lastKey() !== "DEL") return;
+  if (!truthy(gnista.variable("electric-pair-delete-adjacent-pairs")) || gnista.bufferReadOnly()) return;
+  const prev = charBefore(gnista.point());
+  const next = charAt(gnista.point());
   if (prev === "" || next === "") return;
   const info = syntaxInfo(prev);
   if (info !== undefined && ["(", "\"", "$"].includes(info.syntax) && info.pair === next) {
-    ember.setThisCommand("electric-pair-delete-pair");
+    gnista.setThisCommand("electric-pair-delete-pair");
   }
 }
 
-ember.defineMinorMode({
+gnista.defineMinorMode({
   name: "electric-pair-mode",
   global: true,
   doc:
@@ -400,8 +400,8 @@ ember.defineMinorMode({
       ["self-insert-uses-region-functions", willUseRegion],
       ["pre-command-hook", deletePairBeforeCommand],
     ] as const) {
-      if (on) ember.addHook(hook, fn);
-      else ember.removeHook(hook, fn);
+      if (on) gnista.addHook(hook, fn);
+      else gnista.removeHook(hook, fn);
     }
   },
 });

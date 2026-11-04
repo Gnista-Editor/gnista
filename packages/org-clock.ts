@@ -5,7 +5,7 @@
 // goes back to its entry.
 //
 // Copyright (C) 2004-2025 Free Software Foundation, Inc.
-// Ported to Ember in 2026.
+// Ported to Gnista in 2026.
 //
 // This program is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -17,20 +17,20 @@ import { toggleDrawerOrBlock } from "org-fold";
 import { endOfMetaData } from "org-list";
 import { lineAt, lineStartOrEnd } from "org-macs";
 
-const defvar = (name: string, value: ember.Value, doc: string) => ember.defineVariable({ name, value, doc });
+const defvar = (name: string, value: gnista.Value, doc: string) => gnista.defineVariable({ name, value, doc });
 defvar("org-clock-into-drawer", true, "Whether CLOCK: lines go into a drawer: t for LOGBOOK, or org-log-into-drawer's drawer if that names one, or the drawer's name.");
 defvar("org-clock-out-when-done", true, "Whether marking the clocked entry done stops the clock.");
 defvar("org-clock-out-remove-zero-time-clocks", false, "Whether a clock stopped after no time is taken out.");
 defvar("org-mode-line-string", "", "What the mode line shows of the running clock: its time and its entry's heading.");
-ember.defineHook("org-clock-in-hook", "Functions called when a clock starts.");
-ember.defineHook("org-clock-out-hook", "Functions called when a clock stops.");
-ember.defineHook("org-clock-cancel-hook", "Functions called when a clock is cancelled.");
-ember.defineFace({ name: "org-mode-line-clock", doc: "The running clock in the mode line.", attributes: { inherit: "mode-line" } });
+gnista.defineHook("org-clock-in-hook", "Functions called when a clock starts.");
+gnista.defineHook("org-clock-out-hook", "Functions called when a clock stops.");
+gnista.defineHook("org-clock-cancel-hook", "Functions called when a clock is cancelled.");
+gnista.defineFace({ name: "org-mode-line-clock", doc: "The running clock in the mode line.", attributes: { inherit: "mode-line" } });
 
 /** The running clock: its CLOCK: line, its heading's title, and when it started. */
 interface Clock {
-  line: ember.Marker;
-  heading: ember.Marker;
+  line: gnista.Marker;
+  heading: gnista.Marker;
   title: string;
   start: number;
   /** Minutes clocked on the entry before, for the mode line, as org-clock-total-time. */
@@ -39,7 +39,7 @@ interface Clock {
 
 let clock: Clock | undefined;
 /** Where the last clock ran, for C-c C-x C-j and C-c C-x C-x after it stops. */
-let last: ember.Marker | undefined;
+let last: gnista.Marker | undefined;
 let timer: number | undefined;
 
 /** Now, or the day tests fix at noon, as an Org time. */
@@ -62,10 +62,10 @@ export function durationFromMinutes(minutes: number): string {
 
 /** The drawer CLOCK: lines go in, as org-clock-drawer-name: nil for none. */
 function drawerName(): string | undefined {
-  const into = ember.variable("org-clock-into-drawer");
+  const into = gnista.variable("org-clock-into-drawer");
   if (typeof into === "string" && into !== "") return into;
   if (into === null || into === false) return undefined;
-  const log = ember.variable("org-log-into-drawer");
+  const log = gnista.variable("org-log-into-drawer");
   return typeof log === "string" && log !== "" ? log : "LOGBOOK";
 }
 
@@ -75,16 +75,16 @@ const CLOCK_LINE = /^[ \t]*CLOCK: \[(\d{4})-(\d\d)-(\d\d) \S+ (\d\d):(\d\d)\](?:
 function headingHere(): [Heading[], number] {
   const all = headings();
   const i = headingIndex(all, lineAt());
-  if (i === undefined) ember.userError("Before first headline at position " + (ember.point() + 1) + " in buffer " + ember.bufferName());
+  if (i === undefined) gnista.userError("Before first headline at position " + (gnista.point() + 1) + " in buffer " + gnista.bufferName());
   return [all, i];
 }
 
 /** The minutes the entry's closed clocks add up to, as org-clock-sum-current-item. */
 function clockedBefore(all: Heading[], i: number): number {
-  const end = all[i + 1]?.start ?? ember.bufferSize();
+  const end = all[i + 1]?.start ?? gnista.bufferSize();
   let minutes = 0;
-  for (let l = all[i].line + 1; l < ember.lineCount() && ember.lineStart(l) < end; l++) {
-    const m = CLOCK_LINE.exec(ember.lineText(l));
+  for (let l = all[i].line + 1; l < gnista.lineCount() && gnista.lineStart(l) < end; l++) {
+    const m = CLOCK_LINE.exec(gnista.lineText(l));
     if (m && m[7] !== undefined) minutes += Number(m[6] ?? 0) * 1440 + Number(m[7]) * 60 + Number(m[8]);
   }
   return minutes;
@@ -97,48 +97,48 @@ function clockedBefore(all: Heading[], i: number): number {
  */
 function findPosition(all: Heading[], i: number): number {
   const h = all[i];
-  const end = all[i + 1]?.start ?? ember.bufferSize();
+  const end = all[i + 1]?.start ?? gnista.bufferSize();
   const drawer = drawerName();
   if (drawer !== undefined) {
     const opener = new RegExp(`^[ \\t]*:${drawer.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:[ \\t]*$`, "i");
-    for (let l = h.line + 1; l < ember.lineCount() && ember.lineStart(l) < end; l++) {
-      if (opener.test(ember.lineText(l))) return lineStartOrEnd(l + 1);
+    for (let l = h.line + 1; l < gnista.lineCount() && gnista.lineStart(l) < end; l++) {
+      if (opener.test(gnista.lineText(l))) return lineStartOrEnd(l + 1);
     }
   }
   // Without a drawer, before the entry's first CLOCK: line, if it has one.
-  for (let l = h.line + 1; l < ember.lineCount() && ember.lineStart(l) < end; l++) {
-    if (drawer === undefined && CLOCK_LINE.test(ember.lineText(l))) return ember.lineStart(l);
+  for (let l = h.line + 1; l < gnista.lineCount() && gnista.lineStart(l) < end; l++) {
+    if (drawer === undefined && CLOCK_LINE.test(gnista.lineText(l))) return gnista.lineStart(l);
   }
   let at = endOfMetaData(h);
-  if (at !== ember.lineStart(lineAt(at))) {
-    ember.gotoChar(at);
-    ember.insert("\n");
-    at = ember.point();
+  if (at !== gnista.lineStart(lineAt(at))) {
+    gnista.gotoChar(at);
+    gnista.insert("\n");
+    at = gnista.point();
   }
   if (drawer === undefined) return at;
-  ember.gotoChar(at);
-  ember.insert(`:${drawer}:\n:END:\n`);
+  gnista.gotoChar(at);
+  gnista.insert(`:${drawer}:\n:END:\n`);
   toggleDrawerOrBlock(lineAt(at), true);
-  return ember.lineStart(lineAt(at) + 1);
+  return gnista.lineStart(lineAt(at) + 1);
 }
 
 /** Shows the clock in every mode line, as org-clock-update-mode-line. */
 function updateModeLine(): void {
   if (!clock) return;
   const minutes = Math.max(0, Math.floor((millis(now()) - clock.start) / 60000)) + clock.before;
-  ember.setVariable("org-mode-line-string", ember.propertize(`[${durationFromMinutes(minutes)}] (${clock.title}) `, { face: "org-mode-line-clock" }));
-  const global = ember.variable("global-mode-string");
-  const sym = ember.intern("org-mode-line-string");
+  gnista.setVariable("org-mode-line-string", gnista.propertize(`[${durationFromMinutes(minutes)}] (${clock.title}) `, { face: "org-mode-line-clock" }));
+  const global = gnista.variable("global-mode-string");
+  const sym = gnista.intern("org-mode-line-string");
   const list = Array.isArray(global) ? global : [""];
-  if (!list.includes(sym)) ember.setVariable("global-mode-string", [...list, sym]);
+  if (!list.includes(sym)) gnista.setVariable("global-mode-string", [...list, sym]);
 }
 
 /** Takes the clock out of the mode line. */
 function clearModeLine(): void {
-  const global = ember.variable("global-mode-string");
-  const sym = ember.intern("org-mode-line-string");
-  if (Array.isArray(global)) ember.setVariable("global-mode-string", global.filter((v) => v !== sym));
-  if (timer !== undefined) ember.cancelTimer(timer);
+  const global = gnista.variable("global-mode-string");
+  const sym = gnista.intern("org-mode-line-string");
+  if (Array.isArray(global)) gnista.setVariable("global-mode-string", global.filter((v) => v !== sym));
+  if (timer !== undefined) gnista.cancelTimer(timer);
   timer = undefined;
 }
 
@@ -147,8 +147,8 @@ export const clockingP = (): boolean => clock !== undefined;
 
 /** Where the running clock's entry is, its buffer and heading, or undefined. */
 export function runningEntry(): { buffer: string; start: number } | undefined {
-  const buffer = clock && ember.markerBuffer(clock.heading);
-  const start = clock && ember.markerPosition(clock.heading);
+  const buffer = clock && gnista.markerBuffer(clock.heading);
+  const start = clock && gnista.markerPosition(clock.heading);
   return buffer === undefined || start === undefined ? undefined : { buffer, start };
 }
 
@@ -157,9 +157,9 @@ export function clockIn(): void {
   const [all, i] = headingHere();
   const h = all[i];
   if (clock) {
-    const pos = ember.markerPosition(clock.heading);
-    if (ember.markerBuffer(clock.heading) === ember.bufferName() && pos === h.start) {
-      ember.message(`Clock continues in "${clock.title}"`);
+    const pos = gnista.markerPosition(clock.heading);
+    if (gnista.markerBuffer(clock.heading) === gnista.bufferName() && pos === h.start) {
+      gnista.message(`Clock continues in "${clock.title}"`);
       return;
     }
     clockOut();
@@ -168,21 +168,21 @@ export function clockIn(): void {
   const before = clockedBefore(all, i);
   const start = now();
   const stamp = `[${formatTimestamp(start, true)}]`;
-  ember.saveExcursion(() => {
-    ember.saveRestriction(() => {
-      ember.widen();
+  gnista.saveExcursion(() => {
+    gnista.saveRestriction(() => {
+      gnista.widen();
       const at = findPosition(headings(), headingIndex(headings(), h.line) as number);
-      ember.gotoChar(at);
-      ember.insert(`CLOCK: ${stamp}\n`);
-      clock = { line: ember.makeMarker(at), heading: ember.makeMarker(h.start), title, start: millis(start), before };
+      gnista.gotoChar(at);
+      gnista.insert(`CLOCK: ${stamp}\n`);
+      clock = { line: gnista.makeMarker(at), heading: gnista.makeMarker(h.start), title, start: millis(start), before };
     });
   });
-  if (last) ember.deleteMarker(last);
-  last = ember.makeMarker(h.start);
+  if (last) gnista.deleteMarker(last);
+  last = gnista.makeMarker(h.start);
   updateModeLine();
-  timer = ember.runWithTimer(60, 60, updateModeLine);
-  ember.message(`Clock starts at ${stamp} - `);
-  ember.runHooks("org-clock-in-hook");
+  timer = gnista.runWithTimer(60, 60, updateModeLine);
+  gnista.message(`Clock starts at ${stamp} - `);
+  gnista.runHooks("org-clock-in-hook");
 }
 
 /** Stops the running clock, writing its end and duration, as org-clock-out. */
@@ -190,124 +190,124 @@ export function clockOut(failQuietly = false): void {
   if (!clock) {
     clearModeLine();
     if (failQuietly) return;
-    ember.userError("No active clock");
+    gnista.userError("No active clock");
   }
   const running = clock;
-  const buffer = ember.markerBuffer(running.line);
+  const buffer = gnista.markerBuffer(running.line);
   if (buffer === undefined) {
     clock = undefined;
     clearModeLine();
-    ember.signal("error", "Clock start time is gone");
+    gnista.signal("error", "Clock start time is gone");
   }
   const end = now();
   const te = `[${formatTimestamp(end, true)}]`;
   let removed = false;
   let minutes = 0;
-  ember.withCurrentBuffer(buffer, () => {
-    ember.saveExcursion(() => {
-      ember.saveRestriction(() => {
-        ember.widen();
-        const line = lineAt(ember.markerPosition(running.line) ?? 0);
-        const m = /^([ \t]*CLOCK: \[[^\]]*\])/.exec(ember.lineText(line));
-        if (!m) ember.signal("error", "Clock start time is gone");
-        const from = ember.lineStart(line) + m[1].length;
+  gnista.withCurrentBuffer(buffer, () => {
+    gnista.saveExcursion(() => {
+      gnista.saveRestriction(() => {
+        gnista.widen();
+        const line = lineAt(gnista.markerPosition(running.line) ?? 0);
+        const m = /^([ \t]*CLOCK: \[[^\]]*\])/.exec(gnista.lineText(line));
+        if (!m) gnista.signal("error", "Clock start time is gone");
+        const from = gnista.lineStart(line) + m[1].length;
         minutes = Math.max(0, Math.floor((millis(end) - running.start) / 60000));
-        ember.deleteRegion(from, ember.lineEnd(line));
-        ember.gotoChar(from);
-        ember.insert(`--${te} => ${String(Math.floor(minutes / 60)).padStart(2)}:${String(minutes % 60).padStart(2, "0")}`);
-        if (minutes === 0 && ember.variable("org-clock-out-remove-zero-time-clocks") === true) {
+        gnista.deleteRegion(from, gnista.lineEnd(line));
+        gnista.gotoChar(from);
+        gnista.insert(`--${te} => ${String(Math.floor(minutes / 60)).padStart(2)}:${String(minutes % 60).padStart(2, "0")}`);
+        if (minutes === 0 && gnista.variable("org-clock-out-remove-zero-time-clocks") === true) {
           removed = true;
-          ember.deleteRegion(ember.lineStart(line), lineStartOrEnd(line + 1));
+          gnista.deleteRegion(gnista.lineStart(line), lineStartOrEnd(line + 1));
           removeEmptyDrawer(line);
         }
       });
     });
   });
-  ember.deleteMarker(running.line);
-  ember.deleteMarker(running.heading);
+  gnista.deleteMarker(running.line);
+  gnista.deleteMarker(running.heading);
   clock = undefined;
   clearModeLine();
-  ember.message(`Clock stopped at ${te} after ${durationFromMinutes(minutes)}${removed ? " => LINE REMOVED" : ""}`);
-  ember.runHooks("org-clock-out-hook");
+  gnista.message(`Clock stopped at ${te} after ${durationFromMinutes(minutes)}${removed ? " => LINE REMOVED" : ""}`);
+  gnista.runHooks("org-clock-out-hook");
 }
 
 /** Takes away the clock drawer the line before `line` opened, if it is now empty, as org-remove-empty-drawer-at. */
 function removeEmptyDrawer(line: number): void {
   const drawer = drawerName();
   if (drawer === undefined || line < 1) return;
-  if (new RegExp(`^[ \\t]*:${drawer}:[ \\t]*$`, "i").test(ember.lineText(line - 1)) && /^[ \t]*:END:[ \t]*$/i.test(ember.lineText(line))) {
-    ember.deleteRegion(ember.lineStart(line - 1), lineStartOrEnd(line + 1));
+  if (new RegExp(`^[ \\t]*:${drawer}:[ \\t]*$`, "i").test(gnista.lineText(line - 1)) && /^[ \t]*:END:[ \t]*$/i.test(gnista.lineText(line))) {
+    gnista.deleteRegion(gnista.lineStart(line - 1), lineStartOrEnd(line + 1));
   }
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-clock-in",
   doc: "Start a clock on the entry point is in: a CLOCK: line in its LOGBOOK drawer, the time shown in the mode line. A clock running elsewhere stops first.",
   run: () => clockIn(),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-clock-out",
   doc: "Stop the running clock, writing when it stopped and how long it ran.",
   run: () => clockOut(),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-clock-cancel",
   doc: "Cancel the running clock, taking its CLOCK: line away.",
   run: () => {
     if (!clock) {
-      ember.message("No active clock");
+      gnista.message("No active clock");
       return;
     }
     const running = clock;
-    const buffer = ember.markerBuffer(running.line);
+    const buffer = gnista.markerBuffer(running.line);
     if (buffer !== undefined) {
-      ember.withCurrentBuffer(buffer, () => {
-        ember.saveExcursion(() => {
-          const line = lineAt(ember.markerPosition(running.line) ?? 0);
-          if (/^[ \t]*CLOCK: \[[^\]]*\][ \t]*$/.test(ember.lineText(line))) {
-            ember.deleteRegion(ember.lineStart(line), lineStartOrEnd(line + 1));
+      gnista.withCurrentBuffer(buffer, () => {
+        gnista.saveExcursion(() => {
+          const line = lineAt(gnista.markerPosition(running.line) ?? 0);
+          if (/^[ \t]*CLOCK: \[[^\]]*\][ \t]*$/.test(gnista.lineText(line))) {
+            gnista.deleteRegion(gnista.lineStart(line), lineStartOrEnd(line + 1));
             removeEmptyDrawer(line);
           }
         });
       });
     }
-    ember.deleteMarker(running.line);
-    ember.deleteMarker(running.heading);
+    gnista.deleteMarker(running.line);
+    gnista.deleteMarker(running.heading);
     clock = undefined;
     clearModeLine();
-    ember.message("Clock canceled");
-    ember.runHooks("org-clock-cancel-hook");
+    gnista.message("Clock canceled");
+    gnista.runHooks("org-clock-cancel-hook");
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-clock-goto",
   doc: "Go to the entry with the running clock, or the last one clocked.",
   run: () => {
     const target = clock?.heading ?? last;
-    const buffer = target === undefined ? undefined : ember.markerBuffer(target);
-    if (target === undefined || buffer === undefined) ember.userError("No active or recent clock task");
-    ember.call("switch-to-buffer", buffer);
-    ember.gotoChar(ember.markerPosition(target) ?? 0);
-    ember.message(clock ? "Clock is running" : "No running clock, this is the most recently clocked task");
+    const buffer = target === undefined ? undefined : gnista.markerBuffer(target);
+    if (target === undefined || buffer === undefined) gnista.userError("No active or recent clock task");
+    gnista.call("switch-to-buffer", buffer);
+    gnista.gotoChar(gnista.markerPosition(target) ?? 0);
+    gnista.message(clock ? "Clock is running" : "No running clock, this is the most recently clocked task");
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "org-clock-in-last",
   doc: "Start a clock again on the entry clocked last.",
   run: () => {
     if (clock) {
-      ember.message(`Already clocking in on "${clock.title}"`);
+      gnista.message(`Already clocking in on "${clock.title}"`);
       return;
     }
-    const buffer = last === undefined ? undefined : ember.markerBuffer(last);
-    if (last === undefined || buffer === undefined) ember.userError("No last clock");
-    ember.withCurrentBuffer(buffer, () => {
-      ember.saveExcursion(() => {
-        ember.gotoChar(ember.markerPosition(last!) ?? 0);
+    const buffer = last === undefined ? undefined : gnista.markerBuffer(last);
+    if (last === undefined || buffer === undefined) gnista.userError("No last clock");
+    gnista.withCurrentBuffer(buffer, () => {
+      gnista.saveExcursion(() => {
+        gnista.gotoChar(gnista.markerPosition(last!) ?? 0);
         clockIn();
       });
     });
@@ -315,20 +315,20 @@ ember.defineCommand({
 });
 
 // Marking the clocked entry done stops its clock, as org-clock-out-if-current does.
-ember.addHook("org-after-todo-state-change-hook", () => {
-  if (!clock || ember.variable("org-clock-out-when-done") !== true) return;
+gnista.addHook("org-after-todo-state-change-hook", () => {
+  if (!clock || gnista.variable("org-clock-out-when-done") !== true) return;
   const all = headings();
   const i = headingIndex(all, lineAt());
-  if (i === undefined || ember.markerBuffer(clock.heading) !== ember.bufferName() || ember.markerPosition(clock.heading) !== all[i].start) return;
+  if (i === undefined || gnista.markerBuffer(clock.heading) !== gnista.bufferName() || gnista.markerPosition(clock.heading) !== all[i].start) return;
   if (isDone(all[i].todo)) clockOut(true);
 });
 
 // Before exiting, a running clock is offered to be stopped and its file saved, as org-clock-kill-emacs-query.
-ember.addHook("kill-emacs-query-functions", () => {
-  const buffer = clock && ember.markerBuffer(clock.line);
-  if (buffer !== undefined && ember.yesOrNoP("Clock out and save? ")) {
+gnista.addHook("kill-emacs-query-functions", () => {
+  const buffer = clock && gnista.markerBuffer(clock.line);
+  if (buffer !== undefined && gnista.yesOrNoP("Clock out and save? ")) {
     clockOut();
-    ember.withCurrentBuffer(buffer, () => ember.call("save-buffer"));
+    gnista.withCurrentBuffer(buffer, () => gnista.call("save-buffer"));
   }
   return true;
 });
@@ -340,5 +340,5 @@ for (const [keys, command] of [
   ["C-c C-x C-j", "org-clock-goto"],
   ["C-c C-x C-x", "org-clock-in-last"],
 ] as const) {
-  ember.defineKey("org-mode-map", keys, command);
+  gnista.defineKey("org-mode-map", keys, command);
 }

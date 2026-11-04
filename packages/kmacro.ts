@@ -7,28 +7,28 @@
 let counter = 0;
 
 function startMacro(): void {
-  if (ember.definingKbdMacro() || ember.executingKbdMacro()) {
+  if (gnista.definingKbdMacro() || gnista.executingKbdMacro()) {
     // Emacs only says so; it is not an error.
-    ember.message("Already defining keyboard macro.");
+    gnista.message("Already defining keyboard macro.");
     return;
   }
-  ember.startKbdMacro();
-  const arg = ember.prefixArg();
-  counter = arg === null ? 0 : ember.prefixNumericValue(arg);
-  ember.message("Defining kbd macro...");
+  gnista.startKbdMacro();
+  const arg = gnista.prefixArg();
+  counter = arg === null ? 0 : gnista.prefixNumericValue(arg);
+  gnista.message("Defining kbd macro...");
 }
 
 function endMacro(): void {
-  ember.endKbdMacro();
-  ember.message("Keyboard macro defined");
+  gnista.endKbdMacro();
+  gnista.message("Keyboard macro defined");
 }
 
 function insertCounter(): void {
-  ember.insert(String(counter));
-  counter += ember.prefixNumericValue();
+  gnista.insert(String(counter));
+  counter += gnista.prefixNumericValue();
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "kmacro-start-macro",
   doc:
     "Start recording a keyboard macro: the keys typed until C-x ) or F4.\n\n" +
@@ -36,25 +36,25 @@ ember.defineCommand({
   run: startMacro,
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "kmacro-end-macro",
   doc: "Finish recording the keyboard macro.",
   run: endMacro,
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "kmacro-insert-counter",
   doc: "Insert the macro counter, then add the prefix argument to it, 1 by default.",
   run: insertCounter,
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "kmacro-start-macro-or-insert-counter",
   doc:
     "Start recording a keyboard macro, or insert the macro counter if one is being recorded or run.\n\n" +
     "So F3 starts a macro, and F3 inside it inserts 0, 1, 2 and so on each time the macro runs.",
   run: () => {
-    if (ember.definingKbdMacro() || ember.executingKbdMacro()) {
+    if (gnista.definingKbdMacro() || gnista.executingKbdMacro()) {
       insertCounter();
     } else {
       startMacro();
@@ -62,42 +62,42 @@ ember.defineCommand({
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "kmacro-call-macro",
   doc:
     "Run the last keyboard macro, as many times as the prefix argument says.\n\n" +
     "An argument of 0 repeats it until it fails. The first error stops it.",
-  run: () => ember.callLastKbdMacro(ember.prefixNumericValue()),
+  run: () => gnista.callLastKbdMacro(gnista.prefixNumericValue()),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "kmacro-end-or-call-macro",
   doc: "Finish recording the keyboard macro, or run the last one if none is being recorded.",
   run: () => {
-    if (ember.definingKbdMacro()) {
+    if (gnista.definingKbdMacro()) {
       endMacro();
     } else {
-      ember.callLastKbdMacro(ember.prefixNumericValue());
+      gnista.callLastKbdMacro(gnista.prefixNumericValue());
     }
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "kmacro-end-and-call-macro",
   doc:
     "Finish recording the keyboard macro if one is being recorded, then run it.\n\n" +
     "Typing e again runs it again.",
   run: () => {
-    if (ember.definingKbdMacro()) {
+    if (gnista.definingKbdMacro()) {
       endMacro();
     }
-    ember.callLastKbdMacro(ember.prefixNumericValue());
-    ember.setTransientMap({ e: "kmacro-end-and-call-macro" });
+    gnista.callLastKbdMacro(gnista.prefixNumericValue());
+    gnista.setTransientMap({ e: "kmacro-end-and-call-macro" });
   },
 });
 
-ember.bindKey("<f3>", "kmacro-start-macro-or-insert-counter");
-ember.bindKey("<f4>", "kmacro-end-or-call-macro");
-ember.bindKey("C-x (", "kmacro-start-macro");
-ember.bindKey("C-x )", "kmacro-end-macro");
-ember.bindKey("C-x e", "kmacro-end-and-call-macro");
+gnista.bindKey("<f3>", "kmacro-start-macro-or-insert-counter");
+gnista.bindKey("<f4>", "kmacro-end-or-call-macro");
+gnista.bindKey("C-x (", "kmacro-start-macro");
+gnista.bindKey("C-x )", "kmacro-end-macro");
+gnista.bindKey("C-x e", "kmacro-end-and-call-macro");

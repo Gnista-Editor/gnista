@@ -1,4 +1,4 @@
-# Cases where Ember does not match Emacs yet, as `file/case  # reason`.
+# Cases where Gnista does not match Emacs yet, as `file/case  # reason`.
 # The oracle test fails if a listed case starts matching: remove it then.
 
 # Org's own list code edits at stale positions here: org-list-insert-item does
@@ -7,38 +7,38 @@
 org-fuzz-8/seed13-0613-c-e-m-s-return  # copying Org's stale match data
 
 # Org's element parser rejects the malformed timestamp in this planning line
-# ("Not an Org time string"), so C-<return> fails; Ember's parser does not read
+# ("Not an Org time string"), so C-<return> fails; Gnista's parser does not read
 # planning timestamps.
 org-fuzz-9/seed16-0666-m-s-right---c-return  # malformed planning timestamp
 
-# Ember's Org does not read org-adapt-indentation yet (docs/differences.md).
+# Gnista's Org does not read org-adapt-indentation yet (docs/differences.md).
 org-structure/indent-region-with-adapted-indentation  # no org-adapt-indentation
 
-# Ember sets this-command for a command another command calls, as the speed
+# Gnista sets this-command for a command another command calls, as the speed
 # key's org-speed-move-safe calls outline-up-heading; Emacs sets it only from
 # the command loop, so there outline-up-heading does not push the mark.
 org-speed/speed-up  # this-command set for nested calls
 
 # Intentional differences, not to be fixed.
-org-refile/refile-to-no-target  # the recorder answers completing-read directly, so Emacs reads a target its require-match refuses when typed; Ember refuses it with [No match], as Emacs does when it is typed.
-arguments/delete-more-than-there-is  # Emacs reports an internal "Args out of range" error naming the buffer; Ember says "End of buffer". The text is unchanged in both.
+org-refile/refile-to-no-target  # the recorder answers completing-read directly, so Emacs reads a target its require-match refuses when typed; Gnista refuses it with [No match], as Emacs does when it is typed.
+arguments/delete-more-than-there-is  # Emacs reports an internal "Args out of range" error naming the buffer; Gnista says "End of buffer". The text is unchanged in both.
 
-# describe-current-coding-system shows what Ember has: the coding systems in
+# describe-current-coding-system shows what Gnista has: the coding systems in
 # use, but not the detection priority list or the coding systems for
 # particular file names that follow them in Emacs.
 mule-diag/describe-current-coding-system  # no coding priority list yet
 
 # After a command that failed (C-f at the end of the buffer), Emacs's
 # undo-equiv-table no longer finds the undo on top, as the failure left an
-# undo boundary, so undo-only redoes; Ember's passes over the undo still.
+# undo boundary, so undo-only redoes; Gnista's passes over the undo still.
 everyday-3/undo-only  # undo boundary after a failed command
 # Passing over the only changes there are, Emacs's undo-only reaches the
 # list's first position entry and moves point to it, without an error, and
-# again; Ember's undo history has no such entries, so the second one fails.
+# again; Gnista's undo history has no such entries, so the second one fails.
 everyday-3/undo-only-chain  # position entries in buffer-undo-list
 
 # Deliberate (docs/departures.md): Org's TAB keeps showing an entry of only
-# blank lines once it is shown; Ember's folds it again.
+# blank lines once it is shown; Gnista's folds it again.
 org-folding/blank-entry-tab-twice  # TAB folds a shown blank entry
 org-folding/blank-entry-tab-twice-with-separator-lines-0  # TAB folds a shown blank entry
 org-folding/blank-entry-tab-twice-with-separator-lines-1  # TAB folds a shown blank entry

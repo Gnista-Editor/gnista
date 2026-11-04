@@ -24,18 +24,18 @@ for (const [name, value, doc] of [
   ["which-key-max-display-columns", null, "The most columns shown, or nil for as many as fit."],
   ["which-key-inhibit", false, "Whether showing is turned off for now."],
 ] as const) {
-  ember.defineVariable({ name, value: value as ember.Value, doc });
+  gnista.defineVariable({ name, value: value as gnista.Value, doc });
 }
 
-ember.defineFace({ name: "which-key-key-face", doc: "The keys which-key lists.", attributes: { inherit: "font-lock-constant-face" } });
-ember.defineFace({ name: "which-key-separator-face", doc: "Between a key and its description.", attributes: { inherit: "font-lock-comment-face" } });
-ember.defineFace({ name: "which-key-note-face", doc: "Notes, such as page numbers.", attributes: { inherit: "which-key-separator-face" } });
-ember.defineFace({
+gnista.defineFace({ name: "which-key-key-face", doc: "The keys which-key lists.", attributes: { inherit: "font-lock-constant-face" } });
+gnista.defineFace({ name: "which-key-separator-face", doc: "Between a key and its description.", attributes: { inherit: "font-lock-comment-face" } });
+gnista.defineFace({ name: "which-key-note-face", doc: "Notes, such as page numbers.", attributes: { inherit: "which-key-separator-face" } });
+gnista.defineFace({
   name: "which-key-command-description-face",
   doc: "A command's name in which-key's list.",
   attributes: { inherit: "font-lock-function-name-face" },
 });
-ember.defineFace({
+gnista.defineFace({
   name: "which-key-group-description-face",
   doc: "The description of a key that is a prefix.",
   attributes: { inherit: "font-lock-keyword-face" },
@@ -48,19 +48,19 @@ const prefixNames = new Map<string, string>();
 export function addKeyBasedReplacements(...pairs: string[]): void {
   for (let i = 0; i + 1 < pairs.length; i += 2) prefixNames.set(pairs[i], pairs[i + 1]);
 }
-ember.defun("which-key-add-key-based-replacements", (...pairs: string[]) => addKeyBasedReplacements(...pairs));
+gnista.defun("which-key-add-key-based-replacements", (...pairs: string[]) => addKeyBasedReplacements(...pairs));
 
-ember.defun("which-key-setup-side-window-bottom", () => {
-  ember.setVariable("which-key-popup-type", "side-window");
-  ember.setVariable("which-key-side-window-location", "bottom");
-  ember.setVariable("which-key-show-prefix", "echo");
+gnista.defun("which-key-setup-side-window-bottom", () => {
+  gnista.setVariable("which-key-popup-type", "side-window");
+  gnista.setVariable("which-key-side-window-location", "bottom");
+  gnista.setVariable("which-key-show-prefix", "echo");
 });
 
 // --- Sorting, as which-key-key-order ----------------------------------------
 
 /** As which-key--string<. */
 function stringLess(a: string, b: string): boolean {
-  if (truthy(ember.variable("which-key-sort-uppercase-first"))) return a < b;
+  if (truthy(gnista.variable("which-key-sort-uppercase-first"))) return a < b;
   const [aUp, bUp] = [a !== a.toLowerCase(), b !== b.toLowerCase()];
   return aUp === bUp ? a < b : bUp;
 }
@@ -96,10 +96,10 @@ interface Cell {
 
 /** The keys after a prefix, sorted and described, as which-key--get-bindings with which-key--format-and-replace. */
 function cells(prefix: string): Cell[] {
-  const max = Number(ember.variable("which-key-max-description-length") ?? 27);
-  const ellipsis = String(ember.variable("which-key-ellipsis") ?? "..");
-  const plus = String(ember.variable("which-key-prefix-prefix") ?? "+");
-  return ember
+  const max = Number(gnista.variable("which-key-max-description-length") ?? 27);
+  const ellipsis = String(gnista.variable("which-key-ellipsis") ?? "..");
+  const plus = String(gnista.variable("which-key-prefix-prefix") ?? "+");
+  return gnista
     .prefixBindings(prefix)
     .sort(([a], [b]) => (keyLess(a, b) ? -1 : keyLess(b, a) ? 1 : 0))
     .map(([key, command]) => {
@@ -113,25 +113,25 @@ function cells(prefix: string): Cell[] {
 }
 
 /** The lines a page of cells makes, columns of `height` cells within `width`, and how many cells it took, as which-key--list-to-pages. */
-function page(all: Cell[], height: number, width: number): { lines: (string | ember.PropertizedString)[]; shown: number } | undefined {
-  const padding = Number(ember.variable("which-key-add-column-padding") ?? 0);
-  const separator = String(ember.variable("which-key-separator") ?? " : ");
-  const minDesc = Number(ember.variable("which-key-min-column-description-width") ?? 0);
-  const maxColumns = ember.variable("which-key-max-display-columns");
-  const columns: { width: number; rows: (string | ember.PropertizedString)[] }[] = [];
+function page(all: Cell[], height: number, width: number): { lines: (string | gnista.PropertizedString)[]; shown: number } | undefined {
+  const padding = Number(gnista.variable("which-key-add-column-padding") ?? 0);
+  const separator = String(gnista.variable("which-key-separator") ?? " : ");
+  const minDesc = Number(gnista.variable("which-key-min-column-description-width") ?? 0);
+  const maxColumns = gnista.variable("which-key-max-display-columns");
+  const columns: { width: number; rows: (string | gnista.PropertizedString)[] }[] = [];
   for (let i = 0; i < all.length; i += height) {
     const column = all.slice(i, i + height);
     // As which-key--pad-column: keys right-aligned, descriptions padded.
-    const keyWidth = padding + Math.max(...column.map((c) => ember.stringWidth(c.key)));
-    const descWidth = Math.min(width - keyWidth - ember.stringWidth(separator), Math.max(minDesc, ...column.map((c) => ember.stringWidth(c.description))));
+    const keyWidth = padding + Math.max(...column.map((c) => gnista.stringWidth(c.key)));
+    const descWidth = Math.min(width - keyWidth - gnista.stringWidth(separator), Math.max(minDesc, ...column.map((c) => gnista.stringWidth(c.description))));
     columns.push({
-      width: keyWidth + ember.stringWidth(separator) + descWidth,
+      width: keyWidth + gnista.stringWidth(separator) + descWidth,
       rows: column.map((c) =>
-        ember.concat(
-          ember.propertize(" ".repeat(keyWidth - ember.stringWidth(c.key)) + c.key, { face: "which-key-key-face" }),
-          ember.propertize(separator, { face: "which-key-separator-face" }),
-          ember.propertize(c.description, { face: c.face }),
-          " ".repeat(Math.max(0, descWidth - ember.stringWidth(c.description))),
+        gnista.concat(
+          gnista.propertize(" ".repeat(keyWidth - gnista.stringWidth(c.key)) + c.key, { face: "which-key-key-face" }),
+          gnista.propertize(separator, { face: "which-key-separator-face" }),
+          gnista.propertize(c.description, { face: c.face }),
+          " ".repeat(Math.max(0, descWidth - gnista.stringWidth(c.description))),
         ),
       ),
     });
@@ -151,7 +151,7 @@ function page(all: Cell[], height: number, width: number): { lines: (string | em
   const shownColumns = columns.slice(0, count);
   const rows = Math.min(height, all.length);
   const lines = Array.from({ length: rows }, (_, r) =>
-    shownColumns.reduce<string | ember.PropertizedString>((line, c, k) => ember.concat(line, k > 0 ? " " : "", c.rows[r] ?? ""), ""),
+    shownColumns.reduce<string | gnista.PropertizedString>((line, c, k) => gnista.concat(line, k > 0 ? " " : "", c.rows[r] ?? ""), ""),
   );
   return { lines, shown: Math.min(all.length, count * height) };
 }
@@ -165,14 +165,14 @@ let shownPrefix: string | undefined;
 
 /** The tallest the window may be, in lines with its mode line, as which-key--side-window-max-dimensions. */
 function maxHeight(): number {
-  const h = Number(ember.variable("which-key-side-window-max-height") ?? 0.25);
-  return Number.isInteger(h) && h >= 1 ? h : Math.round(h * ember.frameHeight());
+  const h = Number(gnista.variable("which-key-side-window-max-height") ?? 0.25);
+  return Number.isInteger(h) && h >= 1 ? h : Math.round(h * gnista.frameHeight());
 }
 
-const popupLive = (): boolean => popup !== undefined && ember.windowList().includes(popup);
+const popupLive = (): boolean => popup !== undefined && gnista.windowList().includes(popup);
 
 function hide(): void {
-  if (popupLive()) ember.deleteWindow(popup);
+  if (popupLive()) gnista.deleteWindow(popup);
   popup = undefined;
   shownPrefix = undefined;
 }
@@ -181,80 +181,80 @@ function hide(): void {
 function show(prefix: string): void {
   const all = cells(prefix);
   if (all.length === 0) {
-    ember.message(`${prefix}-  which-key: There are no keys to show`);
+    gnista.message(`${prefix}-  which-key: There are no keys to show`);
     return;
   }
   const height = Math.max(1, maxHeight() - 1);
-  const width = ember.frameWidth() - Number(ember.variable("which-key-unicode-correction") ?? 3);
+  const width = gnista.frameWidth() - Number(gnista.variable("which-key-unicode-correction") ?? 3);
   const shownPage = page(all, height, width);
   if (!shownPage) return;
   let lines = shownPage.lines;
-  const showPrefix = ember.variable("which-key-show-prefix");
+  const showPrefix = gnista.variable("which-key-show-prefix");
   const pages = Math.ceil(all.length / Math.max(1, shownPage.shown));
   if (showPrefix === "left") {
     // As which-key--process-page: the prefix in a column of its own.
     const label = `${prefix}`;
     const count = pages > 1 ? `1/${pages}` : "";
-    const first = 2 + Math.max(ember.stringWidth(label), ember.stringWidth(count));
+    const first = 2 + Math.max(gnista.stringWidth(label), gnista.stringWidth(count));
     lines = lines.map((line, r) => {
       const head = r === 0 ? label : r === 1 ? count : "";
-      return ember.concat(ember.propertize(head.padEnd(first), { face: r === 0 ? "which-key-key-face" : "which-key-separator-face" }), line);
+      return gnista.concat(gnista.propertize(head.padEnd(first), { face: r === 0 ? "which-key-key-face" : "which-key-separator-face" }), line);
     });
   } else if (showPrefix === "top") {
-    lines = [ember.concat(ember.propertize(`${prefix}-`, { face: "which-key-key-face" }), pages > 1 ? ember.propertize(` (1 of ${pages})`, { face: "which-key-note-face" }) : ""), ...lines];
+    lines = [gnista.concat(gnista.propertize(`${prefix}-`, { face: "which-key-key-face" }), pages > 1 ? gnista.propertize(` (1 of ${pages})`, { face: "which-key-note-face" }) : ""), ...lines];
   }
-  const buffer = ember.getBufferCreate(BUFFER);
-  ember.withCurrentBuffer(buffer, () => {
-    ember.setReadOnly(false);
-    ember.deleteRegion(ember.pointMin(), ember.pointMax());
-    lines.forEach((line, k) => ember.insert(k > 0 ? ember.concat("\n", line) : line));
-    ember.gotoChar(ember.pointMin());
-    ember.setBufferModified(false);
-    ember.setReadOnly(true);
+  const buffer = gnista.getBufferCreate(BUFFER);
+  gnista.withCurrentBuffer(buffer, () => {
+    gnista.setReadOnly(false);
+    gnista.deleteRegion(gnista.pointMin(), gnista.pointMax());
+    lines.forEach((line, k) => gnista.insert(k > 0 ? gnista.concat("\n", line) : line));
+    gnista.gotoChar(gnista.pointMin());
+    gnista.setBufferModified(false);
+    gnista.setReadOnly(true);
     for (const [name, value] of [
       ["mode-line-format", ""],
       ["truncate-lines", true],
     ] as const) {
-      ember.makeLocalVariable(name);
-      ember.setVariable(name, value);
+      gnista.makeLocalVariable(name);
+      gnista.setVariable(name, value);
     }
   });
   const wanted = lines.length + 1;
-  if (popupLive() && ember.windowSize(popup)?.totalHeight !== wanted) hide();
-  if (!popupLive()) popup = ember.splitRootWindow("below", -wanted);
-  ember.setWindowBuffer(popup, BUFFER);
+  if (popupLive() && gnista.windowSize(popup)?.totalHeight !== wanted) hide();
+  if (!popupLive()) popup = gnista.splitRootWindow("below", -wanted);
+  gnista.setWindowBuffer(popup, BUFFER);
   shownPrefix = prefix;
   if (showPrefix === "echo") {
-    ember.message(`${prefix}-${pages > 1 ? ` (1 of ${pages})` : ""}`);
+    gnista.message(`${prefix}-${pages > 1 ? ` (1 of ${pages})` : ""}`);
   }
 }
 
 /** What the timer does when the keys pause, as which-key--update. */
 function update(): void {
-  const prefix = ember.thisSingleCommandKeys();
-  const waiting = prefix !== "" && ember.prefixBindings(prefix).length > 0 && ember.thisCommand() === undefined;
-  if (waiting && !truthy(ember.variable("which-key-inhibit")) && maxHeight() > 1) {
+  const prefix = gnista.thisSingleCommandKeys();
+  const waiting = prefix !== "" && gnista.prefixBindings(prefix).length > 0 && gnista.thisCommand() === undefined;
+  if (waiting && !truthy(gnista.variable("which-key-inhibit")) && maxHeight() > 1) {
     if (prefix !== shownPrefix) show(prefix);
   } else if (shownPrefix !== undefined) hide();
 }
 
 let timer: number | undefined;
 
-ember.defineMinorMode({
+gnista.defineMinorMode({
   name: "which-key-mode",
   global: true,
   doc:
     "After a prefix key such as C-x and a pause of which-key-idle-delay seconds, show in a window along the bottom of " +
     "the frame each key that can follow it, with the command it runs.",
   onChange: (enabled) => {
-    if (timer !== undefined) ember.cancelTimer(timer);
+    if (timer !== undefined) gnista.cancelTimer(timer);
     timer = undefined;
     if (enabled) {
-      timer = ember.runWithIdleTimer(Number(ember.variable("which-key-idle-delay") ?? 1), true, update);
+      timer = gnista.runWithIdleTimer(Number(gnista.variable("which-key-idle-delay") ?? 1), true, update);
     } else hide();
   },
 });
 
-ember.addHook("pre-command-hook", () => {
+gnista.addHook("pre-command-hook", () => {
   if (shownPrefix !== undefined) hide();
 });

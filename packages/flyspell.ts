@@ -6,7 +6,7 @@
 // flyspell-prog-mode checks only comments and strings.
 //
 // Copyright (C) 1998-2025 Free Software Foundation, Inc.
-// Ported to Ember in 2026.
+// Ported to Gnista in 2026.
 //
 // This program is free software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the
@@ -16,10 +16,10 @@
 import { type Poss, acceptForSession, acceptInBuffer, addPerFileWord, checkWords, getWord, insertPersonal, ispellWord } from "ispell";
 import { PerBuffer, regexpQuote } from "subr";
 
-ember.defineFace({ name: "flyspell-incorrect", doc: "Misspelled words.", attributes: { underline: { style: "wave", color: "Red1" } } });
-ember.defineFace({ name: "flyspell-duplicate", doc: "Words written twice in a row.", attributes: { underline: { style: "wave", color: "DarkOrange" } } });
+gnista.defineFace({ name: "flyspell-incorrect", doc: "Misspelled words.", attributes: { underline: { style: "wave", color: "Red1" } } });
+gnista.defineFace({ name: "flyspell-duplicate", doc: "Words written twice in a row.", attributes: { underline: { style: "wave", color: "DarkOrange" } } });
 
-const defvar = (name: string, value: ember.Value, doc: string) => ember.defineVariable({ name, value, doc });
+const defvar = (name: string, value: gnista.Value, doc: string) => gnista.defineVariable({ name, value, doc });
 defvar("flyspell-delay", 3, "How many seconds of quiet after typing in a word before it is checked, rather than when you leave it.");
 defvar("flyspell-mark-duplications-flag", true, "Whether a word written twice in a row is marked.");
 defvar("flyspell-case-fold-duplications", true, "Whether words written twice count when their case differs.");
@@ -28,33 +28,33 @@ defvar("flyspell-issue-message-flag", true, "Whether flyspell says what it is do
 defvar("flyspell-issue-welcome-flag", true, "Whether turning flyspell-mode on says how to correct words.");
 defvar("flyspell-large-region", 1000, "Regions bigger than this, in characters, are checked in one run of the spell checker.");
 defvar("flyspell-prog-text-faces", ["font-lock-string-face", "font-lock-comment-face", "font-lock-doc-face"], "The faces of text flyspell-prog-mode checks.");
-ember.defineVariable({ name: "flyspell-generic-check-word-predicate", value: null, local: true, doc: "A function that says whether the word before point is to be checked, as flyspell-prog-mode sets." });
+gnista.defineVariable({ name: "flyspell-generic-check-word-predicate", value: null, local: true, doc: "A function that says whether the word before point is to be checked, as flyspell-prog-mode sets." });
 defvar("flyspell-delayed-commands", ["self-insert-command", "delete-backward-char", "backward-or-forward-delete-char", "delete-char", "backward-delete-char-untabify"], "Commands after which the word is checked only after flyspell-delay seconds of quiet.");
 defvar("flyspell-deplacement-commands", ["next-line", "previous-line", "scroll-up", "scroll-down", "scroll-up-command", "scroll-down-command"], "Commands after which the word is checked only if the command before was another.");
-ember.defineHook("flyspell-incorrect-hook", "Functions called with the start, end and corrections of a misspelling before it is marked; one that returns true stops it being marked.");
-ember.defineHook("flyspell-prog-mode-hook", "Functions called when flyspell-prog-mode starts.");
+gnista.defineHook("flyspell-incorrect-hook", "Functions called with the start, end and corrections of a misspelling before it is marked; one that returns true stops it being marked.");
+gnista.defineHook("flyspell-prog-mode-hook", "Functions called when flyspell-prog-mode starts.");
 
-const truthy = (v: ember.Value | undefined): boolean => v !== null && v !== false && v !== undefined;
+const truthy = (v: gnista.Value | undefined): boolean => v !== null && v !== false && v !== undefined;
 const listOf = (name: string): string[] => {
-  const v = ember.variable(name);
+  const v = gnista.variable(name);
   return Array.isArray(v) ? v.map(String) : [];
 };
 
 // Marking words.
 
-const isFlyspell = (o: number): boolean => ember.overlayGet(o, "flyspell-overlay") === true;
+const isFlyspell = (o: number): boolean => gnista.overlayGet(o, "flyspell-overlay") === true;
 
 /** Takes flyspell's marks off a position, as flyspell-unhighlight-at. */
 function unhighlightAt(pos: number): void {
-  for (const o of ember.overlaysAt(pos)) if (isFlyspell(o)) ember.deleteOverlay(o);
+  for (const o of gnista.overlaysAt(pos)) if (isFlyspell(o)) gnista.deleteOverlay(o);
 }
 
 /** Marks a word as misspelled or doubled, as flyspell-highlight-incorrect-region. */
 function highlight(start: number, end: number, poss: Poss | "doublon"): void {
-  if (truthy(ember.runHookWithArgsUntilSuccess("flyspell-incorrect-hook", start, end, poss === "doublon" ? "doublon" : null))) return;
-  if (start + 1 < end) for (const o of ember.overlaysIn(start + 1, end)) if (isFlyspell(o)) ember.deleteOverlay(o);
+  if (truthy(gnista.runHookWithArgsUntilSuccess("flyspell-incorrect-hook", start, end, poss === "doublon" ? "doublon" : null))) return;
+  if (start + 1 < end) for (const o of gnista.overlaysIn(start + 1, end)) if (isFlyspell(o)) gnista.deleteOverlay(o);
   unhighlightAt(start);
-  ember.makeOverlay(start, end, {
+  gnista.makeOverlay(start, end, {
     face: poss === "doublon" ? "flyspell-duplicate" : "flyspell-incorrect",
     "mouse-face": "highlight",
     "flyspell-overlay": true,
@@ -65,32 +65,32 @@ function highlight(start: number, end: number, poss: Poss | "doublon"): void {
 
 /** Where `word` is, whole, in [bound, point), nearest first, as flyspell-word-search-backward. */
 function searchBackward(word: string, bound: number, ignoreCase = false): number | undefined {
-  return ember.saveExcursion(() => {
+  return gnista.saveExcursion(() => {
     const re = `\\(?:[^[:alpha:]]\\|\\\`\\)${regexpQuote(word)}[^[:alpha:]]`;
-    const limit = bound > ember.pointMin() ? bound - 1 : undefined;
+    const limit = bound > gnista.pointMin() ? bound - 1 : undefined;
     for (;;) {
-      if (ember.reSearchBackward(re, { bound: limit, noerror: true, caseFold: ignoreCase }) === undefined) return undefined;
-      if (ember.point() !== ember.pointMin()) ember.gotoChar(ember.point() + 1);
-      const p = ember.point();
+      if (gnista.reSearchBackward(re, { bound: limit, noerror: true, caseFold: ignoreCase }) === undefined) return undefined;
+      if (gnista.point() !== gnista.pointMin()) gnista.gotoChar(gnista.point() + 1);
+      const p = gnista.point();
       const found = getWord();
       if (found && (ignoreCase ? found.word.toLowerCase() === word.toLowerCase() : found.word === word)) return p;
-      ember.gotoChar(p);
+      gnista.gotoChar(p);
     }
   });
 }
 
 /** Where `word` is, whole, after point, before bound, as flyspell-word-search-forward. */
 function searchForward(word: string, bound: number): number | undefined {
-  return ember.saveExcursion(() => {
+  return gnista.saveExcursion(() => {
     const re = `[^[:alpha:]]${regexpQuote(word)}\\(?:[^[:alpha:]]\\|\\'\\)`;
-    const limit = bound < ember.pointMax() ? bound + 1 : undefined;
+    const limit = bound < gnista.pointMax() ? bound + 1 : undefined;
     for (;;) {
-      if (ember.reSearchForward(re, { bound: limit, noerror: true }) === undefined) return undefined;
-      if (ember.point() !== ember.pointMax()) ember.gotoChar(ember.point() - 1);
-      const p = ember.point();
+      if (gnista.reSearchForward(re, { bound: limit, noerror: true }) === undefined) return undefined;
+      if (gnista.point() !== gnista.pointMax()) gnista.gotoChar(gnista.point() - 1);
+      const p = gnista.point();
       const found = getWord();
       if (found?.word === word) return p;
-      ember.gotoChar(p + 1);
+      gnista.gotoChar(p + 1);
     }
   });
 }
@@ -104,26 +104,26 @@ const cache = new PerBuffer<{ start: number; end: number; word: string; result: 
  * known answer from the checker, `given`, saves asking it again.
  */
 export function flyspellWord(following = false, given?: Poss): boolean {
-  return ember.saveExcursion(() => {
+  return gnista.saveExcursion(() => {
     const found = getWord(following);
     if (found === undefined) return true;
-    const predicate = ember.variable("flyspell-generic-check-word-predicate");
-    if (truthy(predicate) && !ember.saveExcursion(() => {
-      ember.gotoChar(found.end);
-      return truthy(ember.funcall(predicate as string, []));
+    const predicate = gnista.variable("flyspell-generic-check-word-predicate");
+    if (truthy(predicate) && !gnista.saveExcursion(() => {
+      gnista.gotoChar(found.end);
+      return truthy(gnista.funcall(predicate as string, []));
     })) return true;
     const { word, start, end } = found;
     // A word written twice in a row is marked before anything is asked.
-    if (truthy(ember.variable("flyspell-mark-duplications-flag"))) {
-      const gap = ember.saveExcursion(() => {
-        ember.gotoChar(start);
-        return -ember.skipCharsBackward(" \t\n\f");
+    if (truthy(gnista.variable("flyspell-mark-duplications-flag"))) {
+      const gap = gnista.saveExcursion(() => {
+        gnista.gotoChar(start);
+        return -gnista.skipCharsBackward(" \t\n\f");
       });
       const bound = start - (end - start) - gap;
-      const p = bound >= ember.pointMin()
-        ? ember.saveExcursion(() => {
-          ember.gotoChar(start);
-          return searchBackward(word, bound, truthy(ember.variable("flyspell-case-fold-duplications")));
+      const p = bound >= gnista.pointMin()
+        ? gnista.saveExcursion(() => {
+          gnista.gotoChar(start);
+          return searchBackward(word, bound, truthy(gnista.variable("flyspell-case-fold-duplications")));
         })
         : undefined;
       if (p !== undefined && p !== start) {
@@ -131,25 +131,25 @@ export function flyspellWord(following = false, given?: Poss): boolean {
         return false;
       }
     }
-    const cached = cache.get(ember.currentBuffer());
+    const cached = cache.get(gnista.currentBuffer());
     if (given === undefined && cached && cached.start === start && cached.end === end && cached.word === word) return cached.result;
     const poss = given ?? checkWords([word])[0];
     const right = poss === true || typeof poss === "string" || poss === undefined;
-    cache.set(ember.currentBuffer(), { start, end, word, result: right });
+    cache.set(gnista.currentBuffer(), { start, end, word, result: right });
     if (right) {
       unhighlightAt(start);
       if (end > start) unhighlightAt(end - 1);
       return true;
     }
     // A misspelling seen again nearby is marked as a duplicate.
-    const distance = Number(ember.variable("flyspell-duplicate-distance") ?? 0);
-    const before = ember.saveExcursion(() => {
-      ember.gotoChar(start);
-      return searchBackward(word, distance < 0 ? ember.pointMin() : start - distance);
+    const distance = Number(gnista.variable("flyspell-duplicate-distance") ?? 0);
+    const before = gnista.saveExcursion(() => {
+      gnista.gotoChar(start);
+      return searchBackward(word, distance < 0 ? gnista.pointMin() : start - distance);
     });
-    const after = before !== undefined ? undefined : ember.saveExcursion(() => {
-      ember.gotoChar(end);
-      return searchForward(word, distance < 0 ? ember.pointMax() : end + distance);
+    const after = before !== undefined ? undefined : gnista.saveExcursion(() => {
+      gnista.gotoChar(end);
+      return searchForward(word, distance < 0 ? gnista.pointMax() : end + distance);
     });
     if (distance !== 0 && (before !== undefined || after !== undefined)) {
       highlight(start, end, "doublon");
@@ -171,20 +171,20 @@ export function flyspellWord(following = false, given?: Poss): boolean {
 
 const state = new PerBuffer<{ prePoint?: number; preColumn?: number; prePrePoint?: number; previous?: string; changes: [number, number][]; timer?: number }>();
 const stateOf = () => {
-  let s = state.get(ember.currentBuffer());
+  let s = state.get(gnista.currentBuffer());
   if (!s) {
     s = { changes: [] };
-    state.set(ember.currentBuffer(), s);
+    state.set(gnista.currentBuffer(), s);
   }
   return s;
 };
 
-const isWordChar = (pos: number): boolean => /[\p{L}']/u.test(ember.charAfter(pos) ?? "");
+const isWordChar = (pos: number): boolean => /[\p{L}']/u.test(gnista.charAfter(pos) ?? "");
 
 function preCommand(): void {
   const s = stateOf();
-  s.prePoint = ember.point();
-  s.preColumn = ember.currentColumn();
+  s.prePoint = gnista.point();
+  s.preColumn = gnista.currentColumn();
 }
 
 /** Whether the word point was at before the command is to be checked now, as flyspell-check-pre-word-p. */
@@ -193,15 +193,15 @@ function checkPreWordP(command: string | undefined): boolean {
   const pre = s.prePoint;
   if (pre === undefined) return false;
   if (s.prePrePoint === pre) return false;
-  const point = ember.point();
+  const point = gnista.point();
   if ((pre === point - 1 && isWordChar(pre)) || pre === point || pre === point + 1) return false;
-  if (command !== undefined && !ember.executingKbdMacro()) {
+  if (command !== undefined && !gnista.executingKbdMacro()) {
     const delayed = listOf("flyspell-delayed-commands").includes(command);
     const deplacement = listOf("flyspell-deplacement-commands").includes(command) && s.previous === command;
-    const col = ember.currentColumn();
-    if ((delayed || deplacement) && (col === 0 || col === s.preColumn || ember.charAfter(pre) === undefined || isWordChar(pre))) return false;
+    const col = gnista.currentColumn();
+    if ((delayed || deplacement) && (col === 0 || col === s.preColumn || gnista.charAfter(pre) === undefined || isWordChar(pre))) return false;
   }
-  const c = cache.get(ember.currentBuffer());
+  const c = cache.get(gnista.currentBuffer());
   if (!c) return true;
   return pre < c.start || pre > c.end;
 }
@@ -209,10 +209,10 @@ function checkPreWordP(command: string | undefined): boolean {
 /** Whether the word at point is to be checked now, as flyspell-check-word-p: else after a pause, for a delayed command. */
 function checkWordP(command: string | undefined): boolean | "later" {
   const s = stateOf();
-  if (ember.pointMax() - 1 <= ember.pointMin()) return false;
-  const col = ember.currentColumn();
+  if (gnista.pointMax() - 1 <= gnista.pointMin()) return false;
+  const col = gnista.currentColumn();
   if (col > 0 && col !== s.preColumn) {
-    const before = ember.charAfter(ember.point() - 1) ?? "";
+    const before = gnista.charAfter(gnista.point() - 1) ?? "";
     if (!/\p{L}/u.test(before) && before !== "'" && before !== "-") return true;
   }
   if (command === undefined) return true;
@@ -222,53 +222,53 @@ function checkWordP(command: string | undefined): boolean | "later" {
 }
 
 function postCommand(): void {
-  if (!truthy(ember.variable("flyspell-mode"))) return;
+  if (!truthy(gnista.variable("flyspell-mode"))) return;
   const s = stateOf();
-  const command = ember.thisCommand();
+  const command = gnista.thisCommand();
   if (s.timer !== undefined) {
-    ember.cancelTimer(s.timer);
+    gnista.cancelTimer(s.timer);
     s.timer = undefined;
   }
   if (command === "transpose-chars" && s.prePoint !== undefined) {
-    ember.saveExcursion(() => {
-      ember.gotoChar(s.prePoint! - 1);
+    gnista.saveExcursion(() => {
+      gnista.gotoChar(s.prePoint! - 1);
       flyspellWord();
     });
   }
   if (checkPreWordP(command)) {
-    ember.saveExcursion(() => {
-      ember.gotoChar(Math.min(s.prePoint!, ember.pointMax()));
+    gnista.saveExcursion(() => {
+      gnista.gotoChar(Math.min(s.prePoint!, gnista.pointMax()));
       flyspellWord();
     });
   }
   const now = checkWordP(command);
   if (now === true) {
     flyspellWord();
-    s.prePrePoint = ember.point();
+    s.prePrePoint = gnista.point();
   } else {
     s.prePrePoint = undefined;
     if (now === "later") {
       // As sit-for flyspell-delay: the word is checked once typing pauses.
-      const buffer = ember.currentBuffer();
-      const at = ember.point();
-      s.timer = ember.runWithIdleTimer(Number(ember.variable("flyspell-delay") ?? 3), false, () => {
+      const buffer = gnista.currentBuffer();
+      const at = gnista.point();
+      s.timer = gnista.runWithIdleTimer(Number(gnista.variable("flyspell-delay") ?? 3), false, () => {
         s.timer = undefined;
-        if (!ember.bufferLiveP(buffer)) return;
-        ember.withCurrentBuffer(buffer, () => {
-          if (ember.point() === at && truthy(ember.variable("flyspell-mode"))) flyspellWord();
+        if (!gnista.bufferLiveP(buffer)) return;
+        gnista.withCurrentBuffer(buffer, () => {
+          if (gnista.point() === at && truthy(gnista.variable("flyspell-mode"))) flyspellWord();
         });
       });
-      cache.delete(ember.currentBuffer());
+      cache.delete(gnista.currentBuffer());
     }
   }
   // The words changes touched, as flyspell-after-change-function records them.
-  const point = ember.point();
+  const point = gnista.point();
   for (const [start, stop] of s.changes) {
-    const space = /[\n ]/.test(ember.charAfter(start) ?? "") && stop > start;
+    const space = /[\n ]/.test(gnista.charAfter(start) ?? "") && stop > start;
     const near = s.prePoint !== undefined && ((s.prePoint >= start && s.prePoint <= stop) || point >= start || point <= stop || point === stop + 1);
     if (space || !near) {
-      ember.saveExcursion(() => {
-        ember.gotoChar(Math.min(start, ember.pointMax()));
+      gnista.saveExcursion(() => {
+        gnista.gotoChar(Math.min(start, gnista.pointMax()));
         flyspellWord();
       });
     }
@@ -281,7 +281,7 @@ function afterChange(start: number, stop: number): void {
   stateOf().changes.push([start, stop]);
 }
 
-export const flyspellMode = ember.defineMinorMode({
+export const flyspellMode = gnista.defineMinorMode({
   name: "flyspell-mode",
   lighter: " Fly",
   doc:
@@ -298,47 +298,47 @@ export const flyspellMode = ember.defineMinorMode({
   },
   onChange: (enabled) => {
     if (enabled) {
-      ember.addHook("pre-command-hook", preCommand, { local: true });
-      ember.addHook("post-command-hook", postCommand, { local: true });
-      ember.addHook("after-change-functions", afterChange, { local: true });
-      if (truthy(ember.variable("flyspell-issue-message-flag")) && truthy(ember.variable("flyspell-issue-welcome-flag")) && ember.thisCommand() === "flyspell-mode") {
-        ember.message("Welcome to Flyspell. Use ‘C-M-i’ or ‘Mouse-2’ to correct words.");
+      gnista.addHook("pre-command-hook", preCommand, { local: true });
+      gnista.addHook("post-command-hook", postCommand, { local: true });
+      gnista.addHook("after-change-functions", afterChange, { local: true });
+      if (truthy(gnista.variable("flyspell-issue-message-flag")) && truthy(gnista.variable("flyspell-issue-welcome-flag")) && gnista.thisCommand() === "flyspell-mode") {
+        gnista.message("Welcome to Flyspell. Use ‘C-M-i’ or ‘Mouse-2’ to correct words.");
       }
     } else {
-      ember.removeHook("pre-command-hook", preCommand, { local: true });
-      ember.removeHook("post-command-hook", postCommand, { local: true });
-      ember.removeHook("after-change-functions", afterChange, { local: true });
-      for (const o of ember.overlaysIn(ember.pointMin(), ember.pointMax())) if (isFlyspell(o)) ember.deleteOverlay(o);
-      state.delete(ember.currentBuffer());
+      gnista.removeHook("pre-command-hook", preCommand, { local: true });
+      gnista.removeHook("post-command-hook", postCommand, { local: true });
+      gnista.removeHook("after-change-functions", afterChange, { local: true });
+      for (const o of gnista.overlaysIn(gnista.pointMin(), gnista.pointMax())) if (isFlyspell(o)) gnista.deleteOverlay(o);
+      state.delete(gnista.currentBuffer());
     }
   },
 });
 
-ember.defun("turn-on-flyspell", () => ember.callWithPrefix(1, flyspellMode));
-ember.defun("turn-off-flyspell", () => ember.callWithPrefix(-1, flyspellMode));
+gnista.defun("turn-on-flyspell", () => gnista.callWithPrefix(1, flyspellMode));
+gnista.defun("turn-off-flyspell", () => gnista.callWithPrefix(-1, flyspellMode));
 
 /** Whether the word before point is in a comment or string, as flyspell-generic-progmode-verify. */
-ember.defun("flyspell-generic-progmode-verify", () => {
-  if (ember.point() === ember.pointMin()) return false;
-  const face = ember.getTextProperty(ember.point() - 1, "face");
-  // Tree-sitter's faces are not text properties in Ember: without one, the
+gnista.defun("flyspell-generic-progmode-verify", () => {
+  if (gnista.point() === gnista.pointMin()) return false;
+  const face = gnista.getTextProperty(gnista.point() - 1, "face");
+  // Tree-sitter's faces are not text properties in Gnista: without one, the
   // syntax state says whether the word is in a comment or string.
   if (face === undefined || face === null) {
-    const ppss = ember.syntaxPpss(ember.point() - 1);
+    const ppss = gnista.syntaxPpss(gnista.point() - 1);
     return ppss.inString !== null || ppss.inComment !== null;
   }
   const faces = listOf("flyspell-prog-text-faces");
   return (Array.isArray(face) ? face.map(String) : [String(face)]).some((f) => faces.includes(f));
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "flyspell-prog-mode",
   doc: "Turn flyspell-mode on for comments and strings only.",
   run: () => {
-    ember.makeLocalVariable("flyspell-generic-check-word-predicate");
-    ember.setVariable("flyspell-generic-check-word-predicate", "flyspell-generic-progmode-verify");
-    ember.callWithPrefix(1, flyspellMode);
-    ember.runHooks("flyspell-prog-mode-hook");
+    gnista.makeLocalVariable("flyspell-generic-check-word-predicate");
+    gnista.setVariable("flyspell-generic-check-word-predicate", "flyspell-generic-progmode-verify");
+    gnista.callWithPrefix(1, flyspellMode);
+    gnista.runHooks("flyspell-prog-mode-hook");
   },
 });
 
@@ -348,64 +348,64 @@ ember.defineCommand({
 function flyspellRegion(beg: number, end: number): void {
   if (beg === end) return;
   [beg, end] = [Math.min(beg, end), Math.max(beg, end)];
-  const verbose = truthy(ember.variable("flyspell-issue-message-flag"));
-  if (verbose) ember.message("Checking region...");
-  ember.saveExcursion(() => {
+  const verbose = truthy(gnista.variable("flyspell-issue-message-flag"));
+  if (verbose) gnista.message("Checking region...");
+  gnista.saveExcursion(() => {
     const words: { word: string; end: number }[] = [];
-    ember.gotoChar(beg);
-    while (ember.point() < end) {
+    gnista.gotoChar(beg);
+    while (gnista.point() < end) {
       const found = getWord(true);
       if (found === undefined || found.start >= end) break;
       words.push({ word: found.word, end: found.end });
-      ember.gotoChar(Math.max(found.end, ember.point() + 1));
+      gnista.gotoChar(Math.max(found.end, gnista.point() + 1));
     }
     const unique = [...new Set(words.map((w) => w.word))];
     const answers = new Map<string, Poss>();
     checkWords(unique).forEach((poss, i) => answers.set(unique[i], poss));
     for (const w of words) {
-      ember.gotoChar(w.end);
+      gnista.gotoChar(w.end);
       flyspellWord(false, answers.get(w.word));
     }
   });
-  if (verbose) ember.message("Spell Checking completed.");
+  if (verbose) gnista.message("Spell Checking completed.");
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "flyspell-region",
   doc: "Check the spelling of every word in the region, underlining the misspellings.",
   params: [{ name: "start", kind: "region-beginning" }, { name: "end", kind: "region-end" }],
   run: (start: number, end: number) => flyspellRegion(start, end),
 });
-ember.defineCommand({
+gnista.defineCommand({
   name: "flyspell-buffer",
   doc: "Check the spelling of every word in the buffer, underlining the misspellings.",
-  run: () => flyspellRegion(ember.pointMin(), ember.pointMax()),
+  run: () => flyspellRegion(gnista.pointMin(), gnista.pointMax()),
 });
 
 // Going to and correcting misspellings.
 
 let lastError: { buffer: string; pos: number } | undefined;
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "flyspell-goto-next-error",
   doc: "Go to the next word flyspell marked; with a prefix argument, the one before. After the last, start again from the top.",
   params: [{ name: "previous", kind: "prefix" }],
-  run: (previous: ember.PrefixArg) => {
+  run: (previous: gnista.PrefixArg) => {
     const back = previous !== null;
-    let pos = ember.point();
-    const max = back ? ember.pointMin() : ember.pointMax();
-    if (lastError && lastError.buffer === ember.bufferName() && lastError.pos === pos) {
+    let pos = gnista.point();
+    const max = back ? gnista.pointMin() : gnista.pointMax();
+    if (lastError && lastError.buffer === gnista.bufferName() && lastError.pos === pos) {
       if (pos === max) {
-        ember.message(back ? "Restarting from end of the buffer" : "Restarting from beginning of buffer");
-        ember.gotoChar(back ? ember.pointMax() : ember.pointMin());
-      } else ember.call(back ? "backward-word" : "forward-word", 1);
-      pos = ember.point();
+        gnista.message(back ? "Restarting from end of the buffer" : "Restarting from beginning of buffer");
+        gnista.gotoChar(back ? gnista.pointMax() : gnista.pointMin());
+      } else gnista.call(back ? "backward-word" : "forward-word", 1);
+      pos = gnista.point();
     }
-    while (pos !== max && !ember.overlaysAt(pos).some(isFlyspell)) pos += back ? -1 : 1;
-    ember.gotoChar(pos);
-    if (back) ember.call("backward-word", 1);
-    lastError = { buffer: ember.bufferName(), pos: ember.point() };
-    if (ember.point() === max) ember.message("No more miss-spelled words");
+    while (pos !== max && !gnista.overlaysAt(pos).some(isFlyspell)) pos += back ? -1 : 1;
+    gnista.gotoChar(pos);
+    if (back) gnista.call("backward-word", 1);
+    lastError = { buffer: gnista.bufferName(), pos: gnista.point() };
+    if (gnista.point() === max) gnista.message("No more miss-spelled words");
   },
 });
 
@@ -424,42 +424,42 @@ function displayNextCorrections(first: string[], ring: string[], at: number): vo
   let text = "Corrections:";
   for (const w of first) text += ` ${w}`;
   for (let i = at; text.length < 80; i++) text += ` ${ring[i % ring.length]}`;
-  ember.message(text);
+  gnista.message(text);
 }
 
 /** Moves point back where it was, shifted by what the correction changed, as flyspell-adjust-cursor-point. */
 function adjustCursor(save: number, cursor: number, oldMax: number): void {
-  if (save >= cursor) ember.gotoChar(Math.min(Math.max(save + ember.pointMax() - oldMax, ember.pointMin()), ember.pointMax()));
-  else ember.gotoChar(save);
+  if (save >= cursor) gnista.gotoChar(Math.min(Math.max(save + gnista.pointMax() - oldMax, gnista.pointMin()), gnista.pointMax()));
+  else gnista.gotoChar(save);
 }
 
 /** Replaces the word at point with its first correction, or the next if called again, as flyspell-auto-correct-word. */
 function autoCorrectWord(following = false): void {
-  const pos = ember.point();
-  const oldMax = ember.pointMax();
-  const last = ember.lastCommand();
+  const pos = gnista.point();
+  const oldMax = gnista.pointMax();
+  const last = gnista.lastCommand();
   if (last !== "flyspell-auto-correct-word" && last !== "flyspell-auto-correct-previous-word") autoCorrect = undefined;
   if (autoCorrect && autoCorrect.pos === pos) {
     const { start, length } = autoCorrect;
     unhighlightAt(start);
-    ember.deleteRegion(start, start + length);
+    gnista.deleteRegion(start, start + length);
     const { ring } = autoCorrect;
     autoCorrect.at = (autoCorrect.at + 1) % ring.length;
     const word = ring[autoCorrect.at];
-    ember.gotoChar(start);
-    ember.insert(word);
+    gnista.gotoChar(start);
+    gnista.insert(word);
     autoCorrect.length = [...word].length;
     flyspellWord();
     displayNextCorrections([], ring, autoCorrect.at);
-    adjustCursor(pos, ember.point(), oldMax);
-    autoCorrect.pos = ember.point();
+    adjustCursor(pos, gnista.point(), oldMax);
+    autoCorrect.pos = gnista.point();
     return;
   }
   const found = getWord(following);
   if (found === undefined) return;
   const { word, start, end } = found;
   const [poss] = checkWords([word]);
-  if (poss === undefined) ember.signal("error", "Ispell: error in Ispell process");
+  if (poss === undefined) gnista.signal("error", "Ispell: error in Ispell process");
   if (!Array.isArray(poss)) return;
   const replacements = poss[2];
   autoCorrect = undefined;
@@ -468,35 +468,35 @@ function autoCorrectWord(following = false): void {
   // The ring comes back round to the word as it was.
   const ring = [...replacements, poss[0]];
   unhighlightAt(start);
-  ember.deleteRegion(start, end);
-  ember.gotoChar(start);
-  ember.insert(fresh);
+  gnista.deleteRegion(start, end);
+  gnista.gotoChar(start);
+  gnista.insert(fresh);
   autoCorrect = { pos: 0, start, length: [...fresh].length, ring, at: 0 };
   flyspellWord();
   displayNextCorrections([fresh], ring, 0);
-  adjustCursor(pos, ember.point(), oldMax);
-  autoCorrect.pos = ember.point();
+  adjustCursor(pos, gnista.point(), oldMax);
+  autoCorrect.pos = gnista.point();
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "flyspell-auto-correct-word",
   doc: "Replace the word at point with its first correction; again, with the next, and so round to the word as it was.",
   run: () => autoCorrectWord(),
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "flyspell-auto-correct-previous-word",
   doc: "Correct the nearest misspelling before point that the window shows, as C-. corrects the word at point; again, with the next correction.",
   params: [{ name: "position", kind: "point" }],
   run: (position: number) => {
-    const top = ember.windowStart();
-    const misspelt = ember.overlaysIn(top, position)
-      .filter((o) => isFlyspell(o) && ember.overlayGet(o, "face") === "flyspell-incorrect")
-      .sort((a, b) => ember.overlayStart(b)! - ember.overlayStart(a)!);
-    const at = autoCorrect && ember.lastCommand() === "flyspell-auto-correct-previous-word" ? autoCorrect.start : misspelt.length > 0 ? ember.overlayStart(misspelt[0]) : undefined;
+    const top = gnista.windowStart();
+    const misspelt = gnista.overlaysIn(top, position)
+      .filter((o) => isFlyspell(o) && gnista.overlayGet(o, "face") === "flyspell-incorrect")
+      .sort((a, b) => gnista.overlayStart(b)! - gnista.overlayStart(a)!);
+    const at = autoCorrect && gnista.lastCommand() === "flyspell-auto-correct-previous-word" ? autoCorrect.start : misspelt.length > 0 ? gnista.overlayStart(misspelt[0]) : undefined;
     if (at === undefined) return;
-    ember.saveExcursion(() => {
-      ember.gotoChar(at);
+    gnista.saveExcursion(() => {
+      gnista.gotoChar(at);
       if (autoCorrect) autoCorrect.pos = at;
       autoCorrectWord(true);
       if (autoCorrect) autoCorrect.pos = at;
@@ -504,21 +504,21 @@ ember.defineCommand({
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "flyspell-correct-word-before-point",
   doc:
     "Offer corrections for the misspelled word before point to choose from, with Save word to add it to your " +
-    "dictionary, Accept (session) to accept it until Ember quits, and Accept (buffer) to accept it in this file.",
+    "dictionary, Accept (session) to accept it until Gnista quits, and Accept (buffer) to accept it in this file.",
   run: () => {
-    const opoint = ember.point();
+    const opoint = gnista.point();
     const found = getWord();
     if (found === undefined) return;
     const { word, start, end } = found;
     const [poss] = checkWords([word]);
-    if (poss === undefined) ember.signal("error", "Ispell: error in Ispell process");
+    if (poss === undefined) gnista.signal("error", "Ispell: error in Ispell process");
     if (!Array.isArray(poss)) return;
     const choices = [...poss[2], "Save word", "Accept (session)", "Accept (buffer)"];
-    const answer = ember.completingRead(`Correct ${word}: `, choices, { requireMatch: true });
+    const answer = gnista.completingRead(`Correct ${word}: `, choices, { requireMatch: true });
     if (answer === "Save word") {
       insertPersonal(word);
       unhighlightAt(opoint);
@@ -528,34 +528,34 @@ ember.defineCommand({
       unhighlightAt(opoint);
       if (answer === "Accept (buffer)") addPerFileWord(word);
     } else if (answer !== "" && answer !== poss[0]) {
-      const oldMax = ember.pointMax();
+      const oldMax = gnista.pointMax();
       unhighlightAt(opoint);
-      ember.deleteRegion(start, end);
-      ember.gotoChar(start);
-      ember.insert(answer);
+      gnista.deleteRegion(start, end);
+      gnista.gotoChar(start);
+      gnista.insert(answer);
       adjustCursor(opoint, opoint + [...word].length - (end - start), oldMax);
-    } else ember.gotoChar(opoint);
+    } else gnista.gotoChar(opoint);
   },
 });
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "flyspell-check-previous-highlighted-word",
   doc: "Offer corrections for the nearest misspelling flyspell marked before point, as M-$ does for the word at point.",
   run: () => {
-    const marked = ember.overlaysIn(ember.pointMin(), ember.point()).filter(isFlyspell).sort((a, b) => ember.overlayStart(b)! - ember.overlayStart(a)!);
-    if (marked.length === 0) ember.signal("error", "No word to correct before point");
-    ember.saveExcursion(() => {
-      ember.gotoChar(ember.overlayStart(marked[0])!);
+    const marked = gnista.overlaysIn(gnista.pointMin(), gnista.point()).filter(isFlyspell).sort((a, b) => gnista.overlayStart(b)! - gnista.overlayStart(a)!);
+    if (marked.length === 0) gnista.signal("error", "No word to correct before point");
+    gnista.saveExcursion(() => {
+      gnista.gotoChar(gnista.overlayStart(marked[0])!);
       ispellWord(true);
-      cache.delete(ember.currentBuffer());
+      cache.delete(gnista.currentBuffer());
       flyspellWord(true);
     });
   },
 });
 
 // Words ispell accepts or corrects lose their marks.
-ember.addHook("ispell-update-post-hook", () => {
-  if (!truthy(ember.variable("flyspell-mode"))) return;
-  cache.delete(ember.currentBuffer());
+gnista.addHook("ispell-update-post-hook", () => {
+  if (!truthy(gnista.variable("flyspell-mode"))) return;
+  cache.delete(gnista.currentBuffer());
   flyspellWord();
 });

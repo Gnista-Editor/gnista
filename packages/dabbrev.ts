@@ -16,13 +16,13 @@ for (const [name, doc, value] of [
   ["dabbrev-check-all-buffers", "Whether M-/ then looks in all other buffers.", true],
   ["dabbrev-ignored-buffer-names", "Buffers M-/ never looks in.", ["*Messages*", "*Buffer List*"]],
 ] as const) {
-  ember.defineVariable({ name, doc, value: value as ember.Value });
+  gnista.defineVariable({ name, doc, value: value as gnista.Value });
 }
 
 /** A variable's value, where `follow` names the variable to take it from, as dabbrev's case options do. */
 function option(name: string, follow: string): boolean {
-  const v = ember.variable(name);
-  return v === follow ? truthy(ember.variable(follow)) : truthy(v);
+  const v = gnista.variable(name);
+  return v === follow ? truthy(gnista.variable(follow)) : truthy(v);
 }
 
 /** What M-/ remembers between tries, as dabbrev's dabbrev--last- variables. */
@@ -31,7 +31,7 @@ interface State {
   /** The expansions found so far, as compared, to skip them again. */
   table: string[];
   /** Where the abbreviation ends, in the buffer expanded in. */
-  abbrevLocation: ember.Marker;
+  abbrevLocation: gnista.Marker;
   expansion: string;
   /** Where the search goes on from in the buffer searched, or undefined to start from point. */
   expansionLocation: number | undefined;
@@ -49,39 +49,39 @@ interface State {
 let last: State | undefined;
 
 const charRegexp = (): string => {
-  const own = ember.variable("dabbrev-abbrev-char-regexp");
+  const own = gnista.variable("dabbrev-abbrev-char-regexp");
   return typeof own === "string" ? own : "\\sw\\|\\s_";
 };
 
 /** Whether an abbreviation matches words of other cases, as dabbrev--ignore-case-p. */
 const ignoreCaseP = (abbrev: string): boolean =>
   option("dabbrev-case-fold-search", "case-fold-search") &&
-  (!truthy(ember.variable("dabbrev-upcase-means-case-search")) || abbrev === abbrev.toLowerCase());
+  (!truthy(gnista.variable("dabbrev-upcase-means-case-search")) || abbrev === abbrev.toLowerCase());
 
 /** Moves back over abbreviation characters, as dabbrev--goto-start-of-abbrev. */
 function gotoStartOfAbbrev(): void {
   const re = charRegexp();
-  const min = ember.minibufferPromptEnd();
-  if (ember.point() <= min) return;
-  ember.gotoChar(ember.point() - 1);
-  while (ember.lookingAt(re) && ember.point() > min && ember.point() !== ember.fieldBeginning(ember.point(), false, ember.point() - 1)) {
-    ember.gotoChar(ember.point() - 1);
+  const min = gnista.minibufferPromptEnd();
+  if (gnista.point() <= min) return;
+  gnista.gotoChar(gnista.point() - 1);
+  while (gnista.lookingAt(re) && gnista.point() > min && gnista.point() !== gnista.fieldBeginning(gnista.point(), false, gnista.point() - 1)) {
+    gnista.gotoChar(gnista.point() - 1);
   }
-  if (!ember.lookingAt(re)) ember.gotoChar(ember.point() + 1);
+  if (!gnista.lookingAt(re)) gnista.gotoChar(gnista.point() + 1);
 }
 
 /** The abbreviation before point, after any punctuation typed after it, as dabbrev--abbrev-at-point. */
 function abbrevAtPoint(): [string, number] {
-  if (ember.point() === ember.pointMin()) ember.userError("No possible abbreviation preceding point");
-  return ember.saveExcursion(() => {
-    const end = ember.point();
+  if (gnista.point() === gnista.pointMin()) gnista.userError("No possible abbreviation preceding point");
+  return gnista.saveExcursion(() => {
+    const end = gnista.point();
     const re = charRegexp();
-    if (!ember.lookingAt(re, ember.point() - 1)) {
-      if (ember.reSearchBackward(re, { noerror: true }) === undefined) ember.userError("No possible abbreviation preceding point");
-      ember.gotoChar(ember.point() + 1);
+    if (!gnista.lookingAt(re, gnista.point() - 1)) {
+      if (gnista.reSearchBackward(re, { noerror: true }) === undefined) gnista.userError("No possible abbreviation preceding point");
+      gnista.gotoChar(gnista.point() + 1);
     }
     gotoStartOfAbbrev();
-    return [ember.bufferSubstringNoProperties(ember.point(), end), end];
+    return [gnista.bufferSubstringNoProperties(gnista.point(), end), end];
   });
 }
 
@@ -95,28 +95,28 @@ function search(s: State, abbrev: string, reverse: boolean, ignoreCase: boolean)
   const pattern2 = `${regexpQuote(abbrev)}\\(\\(${re}\\)+\\)`;
   for (;;) {
     const found = reverse
-      ? ember.reSearchBackward(pattern1, { noerror: true, caseFold: ignoreCase })
-      : ember.reSearchForward(pattern1, { noerror: true, caseFold: ignoreCase });
+      ? gnista.reSearchBackward(pattern1, { noerror: true, caseFold: ignoreCase })
+      : gnista.reSearchForward(pattern1, { noerror: true, caseFold: ignoreCase });
     if (found === undefined) return undefined;
-    const matchStart = ember.matchBeginning(0)!;
-    ember.gotoChar(matchStart);
+    const matchStart = gnista.matchBeginning(0)!;
+    gnista.gotoChar(matchStart);
     // A match inside a word counts only from the word's start.
     gotoStartOfAbbrev();
     let result: string | undefined;
     let resume: number;
-    if (ember.lookingAt(pattern1, undefined, { caseFold: ignoreCase })) {
-      ember.reSearchForward(pattern2, { caseFold: ignoreCase });
-      result = ember.matchString(0)!;
+    if (gnista.lookingAt(pattern1, undefined, { caseFold: ignoreCase })) {
+      gnista.reSearchForward(pattern2, { caseFold: ignoreCase });
+      result = gnista.matchString(0)!;
       const compared = ignoreCase && option("dabbrev-case-distinction", "case-replace") ? result.toLowerCase() : result;
       if (s.table.includes(compared)) result = undefined;
       else s.table.push(compared);
-      resume = reverse ? ember.matchBeginning(0)! : ember.matchEnd(0)!;
+      resume = reverse ? gnista.matchBeginning(0)! : gnista.matchEnd(0)!;
     } else {
-      resume = reverse ? matchStart : ember.matchEnd(0) ?? matchStart + 1;
+      resume = reverse ? matchStart : gnista.matchEnd(0) ?? matchStart + 1;
     }
-    ember.gotoChar(resume);
+    gnista.gotoChar(resume);
     if (result !== undefined) {
-      ember.gotoChar(ember.matchBeginning(0)!);
+      gnista.gotoChar(gnista.matchBeginning(0)!);
       return result;
     }
   }
@@ -124,16 +124,16 @@ function search(s: State, abbrev: string, reverse: boolean, ignoreCase: boolean)
 
 /** Tries `n` times to find an expansion in the current buffer, from where the search stands, as dabbrev--try-find. */
 function tryFind(s: State, abbrev: string, reverse: boolean, n: number, ignoreCase: boolean): string | undefined {
-  return ember.saveExcursion(() =>
-    ember.saveRestriction(() => {
-      ember.widen();
-      if (s.expansionLocation !== undefined) ember.gotoChar(s.expansionLocation);
+  return gnista.saveExcursion(() =>
+    gnista.saveRestriction(() => {
+      gnista.widen();
+      if (s.expansionLocation !== undefined) gnista.gotoChar(s.expansionLocation);
       let expansion: string | undefined;
       for (let count = n; count > 0; count--) {
         expansion = search(s, abbrev, reverse, ignoreCase);
         if (expansion === undefined) break;
       }
-      if (expansion !== undefined) s.expansionLocation = ember.point();
+      if (expansion !== undefined) s.expansionLocation = gnista.point();
       return expansion;
     }),
   );
@@ -141,24 +141,24 @@ function tryFind(s: State, abbrev: string, reverse: boolean, n: number, ignoreCa
 
 /** The other buffers to look in, those in windows first, then the same mode's, then the rest, as dabbrev--make-friend-buffer-list. */
 function friendBuffers(): string[] {
-  if (!truthy(ember.variable("dabbrev-check-other-buffers"))) return [];
-  const here = ember.bufferName();
-  const ignored = (ember.variable("dabbrev-ignored-buffer-names") ?? []) as string[];
-  const mode = ember.variable("major-mode");
-  const others = ember.bufferList().filter((b) => b !== here && !ignored.includes(b));
-  const same = others.filter((b) => ember.bufferLocalValue("major-mode", b) === mode);
+  if (!truthy(gnista.variable("dabbrev-check-other-buffers"))) return [];
+  const here = gnista.bufferName();
+  const ignored = (gnista.variable("dabbrev-ignored-buffer-names") ?? []) as string[];
+  const mode = gnista.variable("major-mode");
+  const others = gnista.bufferList().filter((b) => b !== here && !ignored.includes(b));
+  const same = others.filter((b) => gnista.bufferLocalValue("major-mode", b) === mode);
   let list = same;
-  if (truthy(ember.variable("dabbrev-check-all-buffers"))) list = [...same, ...others.filter((b) => !same.includes(b))];
-  for (const w of ember.windowList().slice().reverse()) {
-    const b = ember.windowBuffer(w);
-    if (b !== undefined && w !== ember.selectedWindow() && list.includes(b)) list = [b, ...list.filter((x) => x !== b)];
+  if (truthy(gnista.variable("dabbrev-check-all-buffers"))) list = [...same, ...others.filter((b) => !same.includes(b))];
+  for (const w of gnista.windowList().slice().reverse()) {
+    const b = gnista.windowBuffer(w);
+    if (b !== undefined && w !== gnista.selectedWindow() && list.includes(b)) list = [b, ...list.filter((x) => x !== b)];
   }
   return list;
 }
 
 /** The next expansion, back then forward then in other buffers, as dabbrev--find-expansion. */
 function findExpansion(s: State, abbrev: string, direction: number, ignoreCase: boolean): string | undefined {
-  const inBuffer = (f: () => string | undefined) => (s.buffer !== undefined && ember.getBuffer(s.buffer) ? ember.withCurrentBuffer(s.buffer, f) : f());
+  const inBuffer = (f: () => string | undefined) => (s.buffer !== undefined && gnista.getBuffer(s.buffer) ? gnista.withCurrentBuffer(s.buffer, f) : f());
   const back = inBuffer(() => {
     if (direction < 0) return undefined;
     s.direction = Math.min(1, direction);
@@ -175,10 +175,10 @@ function findExpansion(s: State, abbrev: string, direction: number, ignoreCase: 
   if (s.buffer === undefined) s.friends ??= friendBuffers();
   while (s.friends !== undefined && s.friends.length > 0) {
     s.buffer = s.friends.shift()!;
-    if (!ember.getBuffer(s.buffer)) continue;
+    if (!gnista.getBuffer(s.buffer)) continue;
     s.expansionLocation = 0;
-    const found = ember.withCurrentBuffer(s.buffer, () => {
-      s.expansionLocation = ember.pointMin();
+    const found = gnista.withCurrentBuffer(s.buffer, () => {
+      s.expansionLocation = gnista.pointMin();
       return tryFind(s, abbrev, false, 1, ignoreCase);
     });
     if (found !== undefined) return found;
@@ -212,34 +212,34 @@ function substitute(s: State, old: string | undefined, abbrev: string, expansion
   if (recordCasePattern) {
     s.casePattern = useCaseReplace ? (abbrev === abbrev.toUpperCase() ? "upcase" : abbrev === abbrev.toLowerCase() ? "downcase" : undefined) : undefined;
   }
-  if (truthy(ember.variable("dabbrev-eliminate-newlines"))) {
+  if (truthy(gnista.variable("dabbrev-eliminate-newlines"))) {
     const from = abbrev === " " ? 0 : abbrev.length;
     expansion = expansion.slice(0, from) + expansion.slice(from).replace(/[\n \t]+/g, " ");
   }
   if (old !== undefined) {
-    ember.saveExcursion(() => ember.search(old, { backward: true, caseFold: false }));
+    gnista.saveExcursion(() => gnista.search(old, { backward: true, caseFold: false }));
   } else {
     // The abbreviation just before point, as search-backward then search-forward find it.
-    const m = ember.search(abbrev, { backward: true, caseFold: false });
-    ember.search(abbrev, { from: m?.start, caseFold: false });
+    const m = gnista.search(abbrev, { backward: true, caseFold: false });
+    gnista.search(abbrev, { from: m?.start, caseFold: false });
   }
-  ember.replaceMatch(expansion, { fixedCase: !useCaseReplace, literal: true });
+  gnista.replaceMatch(expansion, { fixedCase: !useCaseReplace, literal: true });
   return expansion;
 }
 
-ember.defineCommand({
+gnista.defineCommand({
   name: "dabbrev-expand",
   doc:
     "Expand the word before point to the nearest word before it that starts with it, else one after it, else one " +
     "in another buffer. Again, try the next one.\n\nA positive prefix argument takes the Nth distinct word back; " +
     "a negative one looks forward. After an expansion and a space, M-/ copies the word that followed the expansion.",
   params: [{ name: "arg", kind: "prefix" }],
-  run: (arg: ember.PrefixArg) => {
+  run: (arg: gnista.PrefixArg) => {
     const continuing =
       arg === null &&
       last !== undefined &&
-      ember.markerPosition(last.abbrevLocation) !== undefined &&
-      ember.lastCommand() === "dabbrev-expand";
+      gnista.markerPosition(last.abbrevLocation) !== undefined &&
+      gnista.lastCommand() === "dabbrev-expand";
     let s: State;
     let abbrev: string;
     let old: string | undefined;
@@ -250,25 +250,25 @@ ember.defineCommand({
       abbrev = s.abbrev;
       old = s.expansion;
     } else if (
-      ember.point() > ember.pointMin() &&
-      ember.charAfter(ember.point() - 1) === " " &&
+      gnista.point() > gnista.pointMin() &&
+      gnista.charAfter(gnista.point() - 1) === " " &&
       last !== undefined &&
-      ember.markerPosition(last.abbrevLocation) === ember.point() - 1
+      gnista.markerPosition(last.abbrevLocation) === gnista.point() - 1
     ) {
       // A space after an expansion: copy the word that followed it.
       s = last;
       abbrev = " ";
-      const inBuffer = <T,>(f: () => T): T => (s.buffer !== undefined && ember.getBuffer(s.buffer) ? ember.withCurrentBuffer(s.buffer, f) : f());
+      const inBuffer = <T,>(f: () => T): T => (s.buffer !== undefined && gnista.getBuffer(s.buffer) ? gnista.withCurrentBuffer(s.buffer, f) : f());
       expansion = inBuffer(() =>
-        ember.saveExcursion(() =>
-          ember.saveRestriction(() => {
-            ember.widen();
-            let at = s.expansionLocation ?? ember.point();
-            if (s.direction === 1 || (s.direction === 0 && at < ember.point())) at += s.expansion.length;
-            ember.gotoChar(at);
-            ember.reSearchForward(`\\(?:${charRegexp()}\\)+`);
-            const text = ember.bufferSubstringNoProperties(at, ember.point());
-            s.expansionLocation = ember.point();
+        gnista.saveExcursion(() =>
+          gnista.saveRestriction(() => {
+            gnista.widen();
+            let at = s.expansionLocation ?? gnista.point();
+            if (s.direction === 1 || (s.direction === 0 && at < gnista.point())) at += s.expansion.length;
+            gnista.gotoChar(at);
+            gnista.reSearchForward(`\\(?:${charRegexp()}\\)+`);
+            const text = gnista.bufferSubstringNoProperties(at, gnista.point());
+            s.expansionLocation = gnista.point();
             return text;
           }),
         ),
@@ -280,7 +280,7 @@ ember.defineCommand({
       s = {
         abbrev,
         table: [],
-        abbrevLocation: ember.makeMarker(end),
+        abbrevLocation: gnista.makeMarker(end),
         expansion: "",
         expansionLocation: undefined,
         direction: 0,
@@ -289,33 +289,33 @@ ember.defineCommand({
         casePattern: undefined,
         found: undefined,
       };
-      s.direction = arg === null ? (truthy(ember.variable("dabbrev-backward-only")) ? 1 : 0) : ember.prefixNumericValue(arg);
+      s.direction = arg === null ? (truthy(gnista.variable("dabbrev-backward-only")) ? 1 : 0) : gnista.prefixNumericValue(arg);
       recordCasePattern = true;
     }
-    expansion ??= ember.saveExcursion(() => findExpansion(s, abbrev, s.direction, ignoreCaseP(abbrev)));
+    expansion ??= gnista.saveExcursion(() => findExpansion(s, abbrev, s.direction, ignoreCaseP(abbrev)));
     if (expansion === undefined) {
       last = undefined;
       if (old !== undefined) {
         // Put back the abbreviation as it was typed.
-        ember.saveExcursion(() => {
-          const m = ember.search(old!, { backward: true, caseFold: false });
+        gnista.saveExcursion(() => {
+          const m = gnista.search(old!, { backward: true, caseFold: false });
           if (m !== undefined) {
-            ember.gotoChar(m.start);
-            ember.insert(abbrev);
-            ember.deleteRegion(ember.point(), ember.point() + old!.length);
+            gnista.gotoChar(m.start);
+            gnista.insert(abbrev);
+            gnista.deleteRegion(gnista.point(), gnista.point() + old!.length);
           }
         });
       }
-      ember.userError(`No${old !== undefined ? " further" : ""} dynamic expansion for ‘${abbrev}’ found`);
+      gnista.userError(`No${old !== undefined ? " further" : ""} dynamic expansion for ‘${abbrev}’ found`);
     }
     if (s.buffer !== s.found) {
-      if (s.buffer !== undefined) ember.message(`Expansion found in ‘${s.buffer}’`);
+      if (s.buffer !== undefined) gnista.message(`Expansion found in ‘${s.buffer}’`);
       s.found = s.buffer;
     }
     s.expansion = substitute(s, old, abbrev, expansion!, recordCasePattern);
     s.abbrev = abbrev;
-    ember.setMarker(s.abbrevLocation, ember.point());
+    gnista.setMarker(s.abbrevLocation, gnista.point());
     last = s;
   },
 });
-ember.bindKey("M-/", "dabbrev-expand");
+gnista.bindKey("M-/", "dabbrev-expand");

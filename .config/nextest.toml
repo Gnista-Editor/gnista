@@ -7,8 +7,8 @@
 slow-timeout = { period = "60s", terminate-after = 3 }
 # Every failure is reported, not only the first.
 fail-fast = false
-# The GUI's snapshot tests are left to `cargo test -p ember-gui --test window
+# The GUI's snapshot tests are left to `cargo test -p gnista-gui --test window
 # --test images`: each process spends about a minute getting the GPU's
 # adapters from Metal before its first render, which their tests share in
 # one process under cargo test, about a minute for them all.
-default-filter = "!(package(ember-gui) & (binary(window) | binary(images)))"
+default-filter = "!(package(gnista-gui) & (binary(window) | binary(images)))"
