@@ -173,6 +173,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/org-refile.ts", include_str!("../../../packages/org-refile.ts")),
     ("packages/ol.ts", include_str!("../../../packages/ol.ts")),
     ("packages/org-id.ts", include_str!("../../../packages/org-id.ts")),
+    ("packages/org-habit.ts", include_str!("../../../packages/org-habit.ts")),
     ("packages/org-datetree.ts", include_str!("../../../packages/org-datetree.ts")),
     ("packages/org-agenda.ts", include_str!("../../../packages/org-agenda.ts")),
     ("packages/org-clock.ts", include_str!("../../../packages/org-clock.ts")),

@@ -3,6 +3,7 @@
 // items, in the *Org Agenda* buffer, whose keys act on the entries they show.
 
 import { type DateTime, type Heading, PLANNING, allKeywords, at, entryEnd, headings, isDone, today } from "org";
+import { type Habit, buildGraph, habitUrgency, parseHabit } from "org-habit";
 import { allMatches, charCount } from "subr";
 
 ember.defineVariable({
@@ -88,6 +89,8 @@ interface AgendaItem {
   cat: string;
   leader: string;
   removeTimestamp: boolean;
+  /** The habit a scheduled line is, whose graph the line shows. */
+  habit?: Habit;
   /** Markers at `pos` and `heading`, once the agenda shows the line, so they follow edits there. */
   marks?: { pos: ember.Marker; heading: ember.Marker };
 }
@@ -173,6 +176,7 @@ interface Scanned {
   priority: number;
   /** The entry's active timestamps but its planning line's, in order: where each is, and whether it is in the heading. */
   stamps: { ts: { day: number; repeat?: [number, string] }; pos: number; inHeading: boolean }[];
+  habit?: Habit;
 }
 
 /** The current buffer's headings as the agenda reads them, and its category. */
@@ -191,7 +195,10 @@ function scanBuffer(): { cat: string; entries: Scanned[] } {
         if (ts) stamps.push({ ts, pos: at(l, text, m.index), inHeading: l === h.line });
       }
     }
-    return { h, done: isDone(h.todo), plan: planningOf(h), priority: priorityValue(h), stamps };
+    const plan = planningOf(h);
+    // Only a scheduled entry can be a habit, so only those have their properties read.
+    const habit = plan.scheduled !== undefined ? parseHabit(h) : undefined;
+    return { h, done: isDone(h.todo), plan, priority: priorityValue(h), stamps, ...(habit ? { habit } : {}) };
   });
   return { cat: category(), entries };
 }
@@ -203,7 +210,7 @@ function dayItems(scan: { cat: string; entries: Scanned[] }, day: number, today:
   const deadlines: AgendaItem[] = [];
   const scheduled: AgendaItem[] = [];
   const stamps: AgendaItem[] = [];
-  for (const { h, done, plan, priority, stamps: found } of scan.entries) {
+  for (const { h, done, plan, priority, stamps: found, habit } of scan.entries) {
     if (plan.deadline !== undefined) {
       const diff = plan.deadline - day;
       let leader: string | undefined;
@@ -222,10 +229,15 @@ function dayItems(scan: { cat: string; entries: Scanned[] }, day: number, today:
       const diff = day - plan.scheduled;
       const onDay = day === plan.scheduled || (day > today && occursOn(ts, day));
       const past = day === today && plan.scheduled < today && !done;
-      if ((onDay && !(done && plan.scheduled !== day)) || past) {
-        const leader = past ? `Sched.${String(diff).padStart(2)}x: ` : "Scheduled: ";
+      // A habit shows only today, as org-habit-show-habits-only-for-today says.
+      const hidden = habit !== undefined && (done || ember.variable("org-habit-show-habits") !== true ||
+        (ember.variable("org-habit-show-habits-only-for-today") === true && day !== today));
+      if (((onDay && !(done && plan.scheduled !== day)) || past) && !hidden) {
+        // A habit has no leader, its graph saying when it is due, and is as urgent as org-habit-get-urgency says.
+        const leader = habit !== undefined ? "" : past ? `Sched.${String(diff).padStart(2)}x: ` : "Scheduled: ";
         const item = { cat, leader, removeTimestamp: false, buffer, pos: plan.scheduledAt ?? h.start, heading: h.start };
-        scheduled.push({ ...item, text: agendaLine(h, cat, leader, false), urgency: 99 + (past ? diff : 0) + priority });
+        const urgency = habit !== undefined ? habitUrgency(habit, today) : 99 + (past ? diff : 0) + priority;
+        scheduled.push({ ...item, text: agendaLine(h, cat, leader, false), urgency, ...(habit ? { habit } : {}) });
       }
     }
     // The first active timestamp in the heading and its entry on the day.
@@ -238,14 +250,45 @@ function dayItems(scan: { cat: string; entries: Scanned[] }, day: number, today:
   return [...deadlines, ...scheduled, ...stamps];
 }
 
-/** Sorts a day's items by urgency, most urgent first, keeping their order otherwise. */
+/** Sorts a day's items with habits last, as org-agenda-sorting-strategy's habit-down, then by urgency, most urgent first, keeping their order otherwise. */
 function byUrgency(items: AgendaItem[]): AgendaItem[] {
-  return items.map((item, k) => ({ item, k })).sort((a, b) => b.item.urgency - a.item.urgency || a.k - b.k).map((x) => x.item);
+  const habit = (i: AgendaItem) => (i.habit !== undefined ? 1 : 0);
+  return items
+    .map((item, k) => ({ item, k }))
+    .sort((a, b) => habit(a.item) - habit(b.item) || b.item.urgency - a.item.urgency || a.k - b.k)
+    .map((x) => x.item);
 }
 
 /** What the agenda buffer shows, for its keys to act on and g to rebuild. */
 let agendaView: { kind: "week"; start: number } | { kind: "todo" } = { kind: "todo" };
 let agendaLines: (AgendaItem | undefined)[] = [];
+
+/**
+ * Puts each habit's graph on its line at org-habit-graph-column, over what
+ * is there, as org-habit-insert-consistency-graphs does: three weeks before
+ * today and a week after.
+ */
+function insertHabitGraphs(lines: { text: string; item?: AgendaItem }[]): void {
+  const now = dayNumber(today_());
+  const column = Number(ember.variable("org-habit-graph-column") ?? 40);
+  const before = Number(ember.variable("org-habit-preceding-days") ?? 21);
+  const after = Number(ember.variable("org-habit-following-days") ?? 7);
+  lines.forEach((l, line) => {
+    const habit = l.item?.habit;
+    if (habit === undefined) return;
+    const graph = buildGraph(habit, now - before, now, now + after);
+    const start = ember.lineStart(line);
+    const end = ember.lineEnd(line);
+    const length = end - start;
+    const at = start + Math.min(column, length);
+    ember.gotoChar(at);
+    if (length < column) ember.insert(" ".repeat(column - length));
+    const from = ember.point();
+    ember.deleteRegion(from, Math.min(from + before + after + 1, ember.lineEnd(line)));
+    ember.insert(`${graph.text} `);
+    graph.faces.forEach((face, k) => ember.putTextProperty(from + k, from + k + 1, "face", face));
+  });
+}
 
 /** Puts lines into the agenda buffer and shows it, as org-agenda-prepare and org-agenda-finalize do. */
 function showAgenda(lines: { text: string; item?: AgendaItem }[], pointLine: number): void {
@@ -254,6 +297,7 @@ function showAgenda(lines: { text: string; item?: AgendaItem }[], pointLine: num
     ember.setReadOnly(false);
     ember.deleteRegion(0, ember.bufferSize());
     ember.insert(lines.map((l) => l.text).join("\n") + "\n");
+    insertHabitGraphs(lines);
     if (ember.variable("major-mode") !== "org-agenda-mode") ember.call("org-agenda-mode");
     ember.setReadOnly(true);
     ember.gotoChar(ember.lineStart(pointLine));

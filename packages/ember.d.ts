@@ -9094,6 +9094,54 @@ declare global {
        */
       "org-fontify-done-headline": Value;
       /**
+       * What marks a day the habit was done in its graph.
+       *
+       * Defined in packages/org-habit.ts.
+       */
+      "org-habit-completed-glyph": Value;
+      /**
+       * How many days after today a habit's graph shows.
+       *
+       * Defined in packages/org-habit.ts.
+       */
+      "org-habit-following-days": Value;
+      /**
+       * The column of the agenda where habits' graphs start.
+       *
+       * Defined in packages/org-habit.ts.
+       */
+      "org-habit-graph-column": Value;
+      /**
+       * How many days before today a habit's graph shows.
+       *
+       * Defined in packages/org-habit.ts.
+       */
+      "org-habit-preceding-days": Value;
+      /**
+       * Whether a day the habit was done shows green, however late it was.
+       *
+       * Defined in packages/org-habit.ts.
+       */
+      "org-habit-show-done-always-green": Value;
+      /**
+       * Whether the agenda shows habits.
+       *
+       * Defined in packages/org-habit.ts.
+       */
+      "org-habit-show-habits": Value;
+      /**
+       * Whether habits show only on today in the agenda, not on the days after.
+       *
+       * Defined in packages/org-habit.ts.
+       */
+      "org-habit-show-habits-only-for-today": Value;
+      /**
+       * What marks today in a habit's graph.
+       *
+       * Defined in packages/org-habit.ts.
+       */
+      "org-habit-today-glyph": Value;
+      /**
        * Whether a heading shows only its last star, the others in the org-hide face, the colour of the background.
        *
        * Defined in packages/org.ts.
@@ -11310,6 +11358,54 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-footnote": FaceAttributes;
+      /**
+       * The day a habit is due.
+       *
+       * Defined in packages/org-habit.ts.
+       */
+      "org-habit-alert-face": FaceAttributes;
+      /**
+       * A day to come a habit is due.
+       *
+       * Defined in packages/org-habit.ts.
+       */
+      "org-habit-alert-future-face": FaceAttributes;
+      /**
+       * Days before a habit is due.
+       *
+       * Defined in packages/org-habit.ts.
+       */
+      "org-habit-clear-face": FaceAttributes;
+      /**
+       * Days to come before a habit is due.
+       *
+       * Defined in packages/org-habit.ts.
+       */
+      "org-habit-clear-future-face": FaceAttributes;
+      /**
+       * Days a habit is overdue.
+       *
+       * Defined in packages/org-habit.ts.
+       */
+      "org-habit-overdue-face": FaceAttributes;
+      /**
+       * Days to come a habit will be overdue.
+       *
+       * Defined in packages/org-habit.ts.
+       */
+      "org-habit-overdue-future-face": FaceAttributes;
+      /**
+       * Days a habit should be done on.
+       *
+       * Defined in packages/org-habit.ts.
+       */
+      "org-habit-ready-face": FaceAttributes;
+      /**
+       * Days to come a habit should be done on.
+       *
+       * Defined in packages/org-habit.ts.
+       */
+      "org-habit-ready-future-face": FaceAttributes;
       /**
        * The text of a heading that is done.
        *

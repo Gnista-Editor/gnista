@@ -911,3 +911,28 @@ fn org_agenda_window_setup_current_window_keeps_one_window() {
     assert_eq!(ed.window_list().len(), 1);
     assert_eq!(ed.window_buffer().name, "*Org Agenda*");
 }
+
+#[test]
+fn habits_show_today_with_their_graphs_as_emacs_draws_them() {
+    let (mut ed, s) = org("");
+    ed.set_frame_size(80, 24);
+    let dir = tempfile::tempdir_in(env!("CARGO_TARGET_TMPDIR")).unwrap();
+    let path = dir.path().join("h.org");
+    std::fs::write(
+        &path,
+        "* TODO Run\nSCHEDULED: <2026-11-03 Tue .+2d>\n:PROPERTIES:\n:STYLE:    habit\n:END:\n:LOGBOOK:\n- State \"DONE\"       from \"TODO\"       [2026-11-01 Sun 08:00]\n- State \"DONE\"       from \"TODO\"       [2026-10-28 Wed 08:00]\n- State \"DONE\"       from \"TODO\"       [2026-10-20 Tue 08:00]\n:END:\n* TODO Plain\nSCHEDULED: <2026-11-04 Wed>\n",
+    )
+    .unwrap();
+    s.eval_typescript(&mut ed, "files.ts", format!("ember.setVariable(\"org-agenda-files\", [{:?}]); ember.setVariable(\"ember--today\", \"2026-11-04\");", path.to_str().unwrap())).unwrap();
+    s.eval_typescript(&mut ed, "week.ts", "ember.call(\"org-agenda-list\");".to_string()).unwrap();
+    // What Emacs 30 shows on 4 November 2026, and the faces of its graph.
+    let agenda = text(&ed);
+    assert!(agenda.contains("Wednesday   4 November 2026\n  h:          Scheduled:  TODO Plain\n  h:          TODO Run                        *       *   *  !       \nThursday"), "{agenda}");
+    let faces = s
+        .eval_expression(&mut ed, r#"(() => { const l = ember.lineText(5).startsWith("  h:          TODO Run") ? 5 : 4; const b = ember.lineStart(l); return Array.from({ length: 28 }, (_, i) => String(ember.getTextProperty(b + 40 + i, "face")).replace("org-habit-", "").replace("-face", "")).join(" "); })()"#)
+        .unwrap();
+    assert_eq!(
+        faces.trim_matches('"'),
+        "clear-future clear-future clear-future clear-future clear-future clear-future clear clear-future alert-future overdue overdue overdue overdue overdue overdue clear-future alert-future overdue overdue clear-future alert-future overdue overdue-future overdue-future overdue-future overdue-future overdue-future overdue-future"
+    );
+}
