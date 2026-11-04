@@ -565,48 +565,44 @@ export function capture(target: Node | string, then?: (node: { id: string; title
   ember.runHooks("org-roam-capture-new-node-hook");
 }
 
-const captureFinalize = ember.defineCommand({
-  name: "org-capture-finalize",
-  doc: "Finish the capture: save the note, index it, and go back.",
-  run: () => {
-    const c = captures.get(ember.currentBuffer());
-    if (!c) ember.userError("This is not a capture buffer");
-    ember.call("save-buffer");
-    const buffer = ember.bufferName();
-    ember.callWithPrefix(-1, captureMode);
-    captures.delete(ember.currentBuffer());
-    ember.call("bury-buffer");
-    if (ember.windowList().includes(c.window)) ember.selectWindow(c.window);
-    if (c.fresh) ember.call("kill-buffer", buffer);
-    c.then?.(c.node);
-  },
+// Org's own C-c C-c and C-c C-k finish and abort org-roam's captures too, as
+// org-roam captures through org-capture; other captures are left to Org.
+ember.adviceAdd("org-capture-finalize", "before-until", () => {
+  const c = captures.get(ember.currentBuffer());
+  if (!c) return undefined;
+  ember.call("save-buffer");
+  const buffer = ember.bufferName();
+  ember.callWithPrefix(-1, captureMode);
+  captures.delete(ember.currentBuffer());
+  ember.call("bury-buffer");
+  if (ember.windowList().includes(c.window)) ember.selectWindow(c.window);
+  if (c.fresh) ember.call("kill-buffer", buffer);
+  c.then?.(c.node);
+  return true;
 });
 
-const captureKill = ember.defineCommand({
-  name: "org-capture-kill",
-  doc: "Abort the capture, removing what it added.",
-  run: () => {
-    const c = captures.get(ember.currentBuffer());
-    if (!c) ember.userError("This is not a capture buffer");
-    captures.delete(ember.currentBuffer());
-    ember.setBufferModified(false);
-    const buffer = ember.bufferName();
-    if (c.fresh) {
-      ember.call("kill-buffer", buffer);
-      if (ember.fileExists(c.file)) ember.deleteFile(c.file);
-    } else {
-      ember.call("revert-buffer");
-    }
-    if (ember.windowList().includes(c.window)) ember.selectWindow(c.window);
-    ember.message("Capture aborted");
-  },
+ember.adviceAdd("org-capture-kill", "before-until", () => {
+  const c = captures.get(ember.currentBuffer());
+  if (!c) return undefined;
+  captures.delete(ember.currentBuffer());
+  ember.setBufferModified(false);
+  const buffer = ember.bufferName();
+  if (c.fresh) {
+    ember.call("kill-buffer", buffer);
+    if (ember.fileExists(c.file)) ember.deleteFile(c.file);
+  } else {
+    ember.call("revert-buffer");
+  }
+  if (ember.windowList().includes(c.window)) ember.selectWindow(c.window);
+  ember.message("Capture aborted");
+  return true;
 });
 
 const captureMode = ember.defineMinorMode({
   name: "org-roam-capture-mode",
   lighter: " Cap",
   doc: "In a capture buffer: C-c C-c finishes, C-c C-k aborts.",
-  bindings: { "C-c C-c": captureFinalize, "C-c C-k": captureKill },
+  bindings: { "C-c C-c": "org-capture-finalize", "C-c C-k": "org-capture-kill" },
   onChange: (enabled) => {
     ember.makeLocalVariable("header-line-format");
     ember.setVariable("header-line-format", enabled ? "Capture buffer.  Finish ‘C-c C-c’, abort ‘C-c C-k’." : null);

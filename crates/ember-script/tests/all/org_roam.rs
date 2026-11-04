@@ -148,3 +148,25 @@ fn consult_org_roam_previews_nodes_and_lists_backlinks_and_notes() {
     assert!(shown.contains("Org-roam") && shown.contains("\nAlpha\n") && shown.contains("\nNotes\n"), "{shown:?}");
     d.press("C-g");
 }
+
+#[test]
+fn org_capture_still_finishes_and_aborts_its_own_captures() {
+    let dir = tempfile::tempdir().unwrap();
+    let d = setup(dir.path());
+    let inbox = dir.path().join("inbox.org");
+    std::fs::write(&inbox, "* Inbox\n").unwrap();
+    d.eval(&format!(r#"ember.setVariable("org-capture-templates", [["t", "Todo", "entry", ["file", {:?}], "* TODO %?"]]);"#, inbox.display().to_string()));
+    d.press("M-x");
+    d.type_text("org-capture");
+    d.press("RET t");
+    d.type_text("Kept");
+    d.press("C-c C-c");
+    assert_eq!(std::fs::read_to_string(&inbox).unwrap(), "* Inbox\n* TODO Kept\n");
+    d.press("M-x");
+    d.type_text("org-capture");
+    d.press("RET t");
+    d.type_text("Dropped");
+    d.press("C-c C-k");
+    let left = d.eval_expression(r#"ember.withCurrentBuffer(ember.getBuffer("inbox.org")!, () => ember.bufferSubstringNoProperties(ember.pointMin(), ember.pointMax()))"#);
+    assert_eq!(left, r#""* Inbox\n* TODO Kept\n""#);
+}
