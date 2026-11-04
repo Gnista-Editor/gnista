@@ -151,12 +151,12 @@ fn folded_headings_show_an_ellipsis() {
 #[test]
 fn tags_are_set_and_aligned() {
     let (mut ed, _s) = org("* TODO Write\n");
-    call(&mut ed, "org-set-tags-command", &["work home"]);
+    call(&mut ed, "org-set-tags", &["work home"]);
     let line = text(&ed).lines().next().unwrap().to_string();
     assert!(line.starts_with("* TODO Write "), "{line:?}");
     assert!(line.ends_with(" :work:home:"), "{line:?}");
     assert_eq!(line.chars().count(), 77, "tags end at column 77: {line:?}");
-    call(&mut ed, "org-set-tags-command", &[""]);
+    call(&mut ed, "org-set-tags", &[""]);
     assert_eq!(text(&ed), "* TODO Write\n");
 }
 
@@ -956,4 +956,24 @@ fn an_edit_fontifies_what_shows_not_the_folded_rest() {
     ed.press("M-x o u t l i n e - s h o w - a l l RET M->").unwrap();
     ed.redisplay();
     assert_eq!(face_at(&mut ed, 3999).trim_matches('"'), "bold");
+}
+
+#[test]
+fn fast_tag_selection_keeps_one_tag_of_a_group_as_emacs_does() {
+    // config.org's org-tag-alist, and what Emacs 30 did with n e RET.
+    let mut ed = Editor::new();
+    let s = Scripting::new(&mut ed).unwrap();
+    s.eval_expression(
+        &mut ed,
+        r#"(ember.setVariable("org-tag-alist", [[":startgroup"], ["climateview", "c"], ["nitwit", "n"], ["private", "p"], [":endgroup"], ["other", "o"], ["emacs", "e"]]), 1)"#,
+    )
+    .unwrap();
+    ed.window_buffer_mut().set_text("* Parent :work:\n** Task :private:\n");
+    ed.call("org-mode", vec![]).unwrap();
+    ed.set_frame_size(80, 24);
+    ed.press("C-n C-f C-f C-f C-c C-q n e RET").unwrap();
+    assert_eq!(text(&ed), "* Parent :work:\n** Task                                                        :nitwit:emacs:\n");
+    let menu = ed.buffers().iter().find(|b| b.name == " *Org tags*").map(|b| b.slice(0..b.len())).unwrap();
+    assert_eq!(menu, "Inherited:  work\nCurrent:    nitwit emacs\n\n{ [c] climateview   [n] nitwit        [p] private       }\n  [o] other         [e] emacs         \n");
+    assert_eq!(ed.window_list().len(), 1);
 }

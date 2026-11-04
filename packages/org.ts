@@ -3613,11 +3613,183 @@ function setTags(tags: string[]): void {
   alignTags(h.line);
 }
 
-const setTagsCommand = ember.defineCommand({
-  name: "org-set-tags-command",
-  doc: "Set the tags of the heading point is under, written as :work:home: or work home; empty removes them.",
+ember.defineCommand({
+  name: "org-set-tags",
+  doc: "Give the heading point is under these tags, written as :work:home: or work home; empty removes them.",
   params: [{ name: "tags", prompt: "Tags: ", history: "org-tags-history" }],
   run: (answer: string) => setTags(answer.split(/[:\s,]+/).filter((t) => t !== "")),
+});
+
+ember.defineVariable({
+  name: "org-tag-alist",
+  doc:
+    'The tags to offer, as [tag, key] lists, a key a character, or [":startgroup"] and [":endgroup"] around tags ' +
+    'of which a heading has only one, and [":newline"]. With keys, C-c C-q picks tags by them.',
+  value: [],
+});
+ember.defineVariable({
+  name: "org-use-fast-tag-selection",
+  doc: "Whether C-c C-q picks tags by single keys: auto when org-tag-alist gives keys, t always, nil never.",
+  value: "auto",
+});
+ember.defineVariable({
+  name: "org-fast-tag-selection-single-key",
+  doc: "Whether picking a tag by its key in fast tag selection finishes at once.",
+  value: false,
+});
+
+/** The tags of the headings above, as org-get-tags gives the inherited ones. */
+function inheritedTags(all: Heading[], i: number): string[] {
+  const out: string[] = [];
+  for (const a of ancestors(all, i).reverse()) for (const t of all[a].tags) if (!out.includes(t)) out.push(t);
+  return out;
+}
+
+/**
+ * Picks tags by single keys in " *Org tags*", as org-fast-tag-selection:
+ * a key toggles its tag, keeping one tag of a group; SPC clears them, TAB
+ * types one, RET accepts and C-g quits. Returns the tags, or undefined.
+ */
+function fastTagSelection(current: string[], inherited: string[], table: ember.Value[][]): string[] | undefined {
+  type Entry = { tag?: string; key?: string; special?: string };
+  const entries: Entry[] = table.map((e) => (typeof e[0] === "string" && e[0].startsWith(":") ? { special: e[0] } : { tag: String(e[0]), key: e[1] === undefined || e[1] === null ? undefined : String(e[1]) }));
+  const tags = entries.filter((e) => e.tag !== undefined);
+  const field = 3 + 1 + 3 + Math.max(0, ...tags.map((e) => ember.stringWidth(e.tag!)));
+  // Tags without keys get their first letters, or the next free key, as Org assigns them.
+  const pool = [..."abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*+-=<>,.?/;|"];
+  const used = new Set(tags.map((e) => e.key).filter((k): k is string => k !== undefined));
+  for (const e of tags) {
+    if (e.key !== undefined) continue;
+    const first = e.tag!.replace(/^@/, "")[0]?.toLowerCase();
+    e.key = first !== undefined && !used.has(first) ? first : pool.find((c) => !used.has(c)) ?? " ";
+    used.add(e.key);
+  }
+  const groups: string[][] = [];
+  let tagsNow = [...current];
+  let single = ember.variable("org-fast-tag-selection-single-key") === true;
+  const name = " *Org tags*";
+  const draw = () => {
+    ember.letBind({ "inhibit-read-only": true }, () => {
+      ember.deleteRegion(0, ember.bufferSize());
+      const put = (text: string, face?: string) => {
+        const at = ember.point();
+        ember.insert(text);
+        if (face) ember.putTextProperty(at, ember.point(), "face", face);
+      };
+      put(`${"Inherited:".padEnd(12)}`);
+      put(inherited.join(" "), "org-done");
+      put(`\n${"Current:".padEnd(12)}`);
+      put(tagsNow.join(" "), "org-todo");
+      put("\n");
+      // The third line says when the next key finishes, as org-fast-tag-show-exit.
+      if (single) put(`${" ".repeat(Math.max(0, (ember.windowSize()?.width ?? 80) - 19))} Next change exits`, "org-warning");
+      put("\n");
+      let n = 0;
+      let inGroup = false;
+      groups.length = 0;
+      const perRow = Math.max(1, Math.floor(((ember.windowSize()?.width ?? 80) - 4) / field));
+      for (const e of entries) {
+        if (e.special === ":startgroup") {
+          groups.push([]);
+          inGroup = true;
+          if (n !== 0) {
+            n = 0;
+            put("\n");
+          }
+          put("{ ");
+        } else if (e.special === ":endgroup") {
+          inGroup = false;
+          n = 0;
+          put("}\n");
+        } else if (e.special === ":newline") {
+          if (n !== 0) {
+            n = 0;
+            put("\n");
+          }
+        } else if (e.tag !== undefined) {
+          if (inGroup) groups[groups.length - 1].push(e.tag);
+          if (n === 0 && !inGroup) put("  ");
+          put(`[${e.key}] `);
+          put(e.tag, tagsNow.includes(e.tag) ? "org-todo" : inherited.includes(e.tag) ? "org-done" : undefined);
+          put(" ".repeat(Math.max(0, field - 4 - charCount(e.tag))));
+          if (++n === perRow) {
+            put("\n");
+            if (inGroup) put("  ");
+            n = 0;
+          }
+        }
+      }
+      put("\n");
+      ember.gotoChar(0);
+    });
+  };
+  /** Adds a tag or takes it away; adding one takes away the others of its group, as org--add-or-remove-tag. */
+  const toggle = (tag: string) => {
+    if (tagsNow.includes(tag)) tagsNow = tagsNow.filter((t) => t !== tag);
+    else {
+      const group = groups.find((g) => g.includes(tag));
+      if (group) tagsNow = tagsNow.filter((t) => !group.includes(t));
+      tagsNow.push(tag);
+    }
+    // In the order of the table, as Org sorts them.
+    const order = tags.map((e) => e.tag!);
+    tagsNow.sort((a, b) => (order.indexOf(a) < 0 ? 1e6 : order.indexOf(a)) - (order.indexOf(b) < 0 ? 1e6 : order.indexOf(b)));
+  };
+  return ember.saveWindowExcursion(() => {
+    ember.call("switch-to-buffer-other-window", name);
+    try {
+      for (;;) {
+        draw();
+        ember.call("shrink-window-if-larger-than-buffer");
+        const key = ember.readKey(`[a-z..]:toggle [SPC]:clear [RET]:accept [TAB]:edit [!] ${groups.length === 0 ? "no " : ""}groups [C-c]:${single ? "single" : "multi"}`);
+        let changed = false;
+        if (key === "RET") return tagsNow;
+        if (key === "C-g" || (key === "q" && !tags.some((e) => e.key === "q"))) ember.signal("quit", "Quit");
+        if (key === "C-c") single = !single;
+        else if (key === "SPC") {
+          tagsNow = [];
+          changed = true;
+        } else if (key === "TAB") {
+          const known = [...new Set([...tags.map((e) => e.tag!), ...headings().flatMap((h) => h.tags)])];
+          const typed = ember.completingRead("Tag: ", known).trim();
+          if (typed !== "") toggle(typed);
+          changed = true;
+        } else {
+          const entry = tags.find((e) => e.key === key);
+          if (entry) {
+            toggle(entry.tag!);
+            changed = true;
+          }
+        }
+        if (changed && single) return tagsNow;
+      }
+    } finally {
+      // The window goes; the buffer stays, as Org leaves it.
+      for (const w of ember.windowList()) if (ember.windowBuffer(w) === name && ember.windowList().length > 1) ember.deleteWindow(w);
+    }
+  });
+}
+
+const setTagsCommand = ember.defineCommand({
+  name: "org-set-tags-command",
+  doc:
+    "Set the tags of the heading point is under. With keys in org-tag-alist, pick them by their keys in " +
+    "*Org tags*; else type them, as :work:home: or work home, empty for none. With C-u C-u, type them anyway.",
+  run: () => {
+    const [all, i] = backToHeading();
+    const table = ember.variable("org-tag-alist");
+    const fast = ember.variable("org-use-fast-tag-selection");
+    const keyed = Array.isArray(table) && table.some((e) => Array.isArray(e) && e[1] !== undefined && e[1] !== null && !String(e[0]).startsWith(":"));
+    const arg = ember.prefixArg();
+    const typed = Array.isArray(arg) && arg[0] === 16;
+    if (!typed && Array.isArray(table) && table.length > 0 && (fast === true || (fast === "auto" && keyed))) {
+      const chosen = fastTagSelection(all[i].tags, inheritedTags(all, i), table as ember.Value[][]);
+      if (chosen !== undefined) setTags(chosen);
+      return;
+    }
+    const answer = ember.readString("Tags: ", { history: "org-tags-history" });
+    setTags(answer.split(/[:\s,]+/).filter((t) => t !== ""));
+  },
 });
 
 ember.defineVariable({ name: "org-tags-history", doc: "Tags answered to org-set-tags-command, newest first.", value: [] });

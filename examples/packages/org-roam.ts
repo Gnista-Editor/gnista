@@ -743,7 +743,7 @@ ember.defineCommand({
         }
       } else {
         orgIdGoto(node.id);
-        ember.call("org-set-tags-command" as ember.CommandName, [...node.tags.filter((t) => !node.tags.includes(t) || true), tag].join(":"));
+        ember.call("org-set-tags" as ember.CommandName, [...node.tags.filter((t) => !node.tags.includes(t) || true), tag].join(":"));
       }
     });
   },

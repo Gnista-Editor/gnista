@@ -4541,13 +4541,19 @@ declare global {
        */
       "org-set-property": [property: string, value: string];
       /**
-       * Set the tags of the heading point is under, written as :work:home: or work home; empty removes them.
+       * Give the heading point is under these tags, written as :work:home: or work home; empty removes them.
        *
        * @param tags text
        *
        * Defined in packages/org.ts.
        */
-      "org-set-tags-command": [tags: string];
+      "org-set-tags": [tags: string];
+      /**
+       * Set the tags of the heading point is under. With keys in org-tag-alist, pick them by their keys in *Org tags*; else type them, as :work:home: or work home, empty for none. With C-u C-u, type them anyway.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-set-tags-command": [];
       /**
        * S-<down> in Org: make a timestamp earlier, lower a heading's priority, or move to the next item.
        *
@@ -9084,6 +9090,12 @@ declare global {
        */
       "org-ellipsis": Value;
       /**
+       * Whether picking a tag by its key in fast tag selection finishes at once.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-fast-tag-selection-single-key": Value;
+      /**
        * What typing or deleting next to folded text does: "smart" unfolds it and goes ahead where the edit is predictable, and otherwise stops so it can be repeated with the text showing; "show" unfolds and goes ahead, "show-and-error" unfolds and stops, "error" stops, and false allows the edit.
        *
        * Defined in packages/org.ts.
@@ -9398,6 +9410,12 @@ declare global {
        */
       "org-table-tab-jumps-over-hlines": Value;
       /**
+       * The tags to offer, as [tag, key] lists, a key a character, or [":startgroup"] and [":endgroup"] around tags of which a heading has only one, and [":newline"]. With keys, C-c C-q picks tags by them.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-tag-alist": Value;
+      /**
        * Faces for tags, as [tag, face] lists, as org-todo-keyword-faces gives them for keywords.
        *
        * Defined in packages/org.ts.
@@ -9439,6 +9457,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-treat-insert-todo-heading-as-state-change": Value;
+      /**
+       * Whether C-c C-q picks tags by single keys: auto when org-tag-alist gives keys, t always, nil never.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-use-fast-tag-selection": Value;
       /**
        * Whether C-c C-t asks for a state by its key, when the states have keys as TODO(t) gives them: auto does, nil cycles.
        *
