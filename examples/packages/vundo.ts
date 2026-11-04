@@ -664,7 +664,7 @@ function diffQuit(): void {
   if (window !== undefined) {
     ember.selectWindow(window);
     ember.call("quit-window", kill);
-  } else if (kill && ember.bufferLiveP(name)) {
+  } else if (kill && ember.bufferLiveP(ember.getBuffer(name))) {
     ember.call("kill-buffer", name);
   }
 }
