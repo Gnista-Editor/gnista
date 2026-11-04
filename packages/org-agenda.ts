@@ -2,7 +2,7 @@
 // deadlines and timestamps from org-agenda-files, and the list of TODO
 // items, in the *Org Agenda* buffer, whose keys act on the entries they show.
 
-import { type DateTime, type Heading, PLANNING, allKeywords, at, entryEnd, headings, isDone, today } from "org";
+import { type DateTime, type Heading, PLANNING, allKeywords, at, entryEnd, headings, isDone, keywordLines, today } from "org";
 import { type Habit, buildGraph, habitUrgency, parseHabit } from "org-habit";
 import { allMatches, charCount } from "subr";
 
@@ -15,6 +15,11 @@ ember.defineVariable({
   name: "org-agenda-files",
   doc: "The files the agenda collects entries from, as a list of file names.",
   value: [],
+});
+ember.defineVariable({
+  name: "org-agenda-show-inherited-tags",
+  doc: "Whether agenda lines show the tags their headings inherit, from the file and the headings above, before their own.",
+  value: true,
 });
 ember.defineVariable({
   name: "org-deadline-warning-days",
@@ -121,13 +126,48 @@ function category(): string {
  * "Scheduled: ", the heading's text without its tags, and the tags against
  * the window's right edge.
  */
+/** Each heading's inherited tags, the file's #+FILETAGS: first, kept for the buffer as it is now. */
+let inheritedCache: { buffer: number; tick: number; map: Map<number, string[]> } | undefined;
+
+/** The tags a heading inherits, as org-get-tags gives them with inheritance: the file's, then each ancestor's. */
+function inheritedTags(h: Heading): string[] {
+  const buffer = ember.currentBuffer().id;
+  const tick = ember.bufferModifiedTick();
+  if (!inheritedCache || inheritedCache.buffer !== buffer || inheritedCache.tick !== tick) {
+    const map = new Map<number, string[]>();
+    const file: string[] = [];
+    for (const [, , text] of keywordLines()) {
+      const m = /^#\+FILETAGS:(.*)$/i.exec(text);
+      if (m) for (const t of m[1].split(/[:\s]+/)) if (t !== "" && !file.includes(t)) file.push(t);
+    }
+    const stack: Heading[] = [];
+    for (const x of headings()) {
+      while (stack.length > 0 && stack[stack.length - 1].level >= x.level) stack.pop();
+      const tags = [...file];
+      for (const a of stack) for (const t of a.tags) if (!tags.includes(t)) tags.push(t);
+      map.set(x.start, tags);
+      stack.push(x);
+    }
+    inheritedCache = { buffer, tick, map };
+  }
+  return inheritedCache.map.get(h.start) ?? [];
+}
+
+/** A line's tags as the agenda shows them, inherited ones first and :: before the heading's own, as org-agenda-fix-displayed-tags writes them. */
+function displayedTags(h: Heading): string {
+  const show = ember.variable("org-agenda-show-inherited-tags");
+  const inherited = show === null || show === false ? [] : inheritedTags(h).filter((t) => !h.tags.includes(t));
+  if (inherited.length === 0) return h.tags.length === 0 ? "" : `:${h.tags.join(":")}:`;
+  return `:${inherited.join(":")}:${h.tags.length === 0 ? ":" : `:${h.tags.join(":")}:`}`;
+}
+
 function agendaLine(h: Heading, cat: string, leader: string, removeTimestamp: boolean): string {
   let text = ember.lineText(h.line).replace(/^\*+[ \t]+/, "");
   if (h.tagsAt !== undefined) text = text.slice(0, text.length - (ember.lineEnd(h.line) - h.tagsAt) - 0).replace(/[ \t]+$/, "");
   if (removeTimestamp) text = text.replace(/<\d{4}-\d{2}-\d{2}[^>\n]*>/, "");
   const line = `  ${`${cat}:`.padEnd(12)}${leader === "" ? "" : `${leader} `}${text}`;
-  if (h.tags.length === 0) return line;
-  const tags = `:${h.tags.join(":")}:`;
+  const tags = displayedTags(h);
+  if (tags === "") return line;
   const width = (ember.windowSize()?.width ?? 80) - 1;
   return line + " ".repeat(Math.max(1, width - charCount(line) - charCount(tags))) + tags;
 }

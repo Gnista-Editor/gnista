@@ -9026,6 +9026,12 @@ declare global {
        */
       "org-agenda-mode-map": Value;
       /**
+       * Whether agenda lines show the tags their headings inherit, from the file and the headings above, before their own.
+       *
+       * Defined in packages/org-agenda.ts.
+       */
+      "org-agenda-show-inherited-tags": Value;
+      /**
        * Where the agenda shows: reorganize-frame, this window and the agenda's; current-window; only-window; or other-window.
        *
        * Defined in packages/org-agenda.ts.
