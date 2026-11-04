@@ -856,7 +856,8 @@ for (const mode of modes) {
     setup: () => {
       // As treesit-ready-p: without the grammar, the mode is prog-mode with a warning.
       if (!ember.treesitLanguageAvailableP(mode.language)) {
-        ember.message(`Cannot activate tree-sitter, because language grammar for ${mode.language} is unavailable`);
+        // Not from a buffer of Ember's own, such as the one Org fontifies a block in.
+        if (!ember.bufferName().startsWith(" ")) ember.message(`Cannot activate tree-sitter, because language grammar for ${mode.language} is unavailable`);
         return;
       }
       ember.treesitSetPrimaryLanguage(mode.language);
@@ -907,6 +908,13 @@ for (const mode of modes) {
   }
   entries.push([mode.pattern, mode.name]);
 }
+
+// As js.el's (defalias 'javascript-mode 'js-mode), which Org's javascript blocks find.
+ember.defineCommand({
+  name: "javascript-mode",
+  doc: "Edit JavaScript, in js-ts-mode, as js-mode does.",
+  run: () => ember.call("js-mode" as ember.CommandName),
+});
 ember.defineKey("python-ts-mode-map", "C-c C-j", "imenu");
 
 ember.setDefault("auto-mode-alist", entries);

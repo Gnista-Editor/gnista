@@ -255,7 +255,9 @@ export function tangle(only?: (block: Block, file: string) => boolean): string[]
     written.push(file);
   }
   ember.message(`Tangled ${count} code block${count === 1 ? "" : "s"} from ${ember.fileNameNondirectory(orgFile)}`);
-  if (ember.variable("org-babel-post-tangle-hook") !== undefined) {
+  // Each file is visited only for functions on the hook, as Emacs does.
+  const postTangle = ember.variable("org-babel-post-tangle-hook");
+  if (truthy(postTangle) && !(Array.isArray(postTangle) && postTangle.length === 0)) {
     for (const file of written) {
       const buffer = ember.findFileNoselect(file);
       ember.withCurrentBuffer(buffer, () => ember.runHooks("org-babel-post-tangle-hook"));

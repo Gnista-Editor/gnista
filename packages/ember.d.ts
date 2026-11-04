@@ -492,6 +492,14 @@ declare global {
        */
       "balance-windows": [];
       /**
+       * The major mode for editing shell scripts, highlighted from a tree-sitter syntax tree.
+       *
+       * Files matching \.\(?:ba\)?sh\'\|/\.bash\(?:rc\|_profile\)\' use it; see auto-mode-alist.
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "bash-ts-mode": [];
+      /**
        * Move point to the beginning of the buffer.
        *
        * Unless the region is active, leaves the mark where point was. With a numeric prefix argument N, move to N tenths of the way through the buffer instead, at the start of the next line. Plain C-u does not leave the mark.
@@ -3111,6 +3119,12 @@ declare global {
        * Defined in packages/ispell.ts.
        */
       "ispell-word": [following?: PrefixArg | boolean];
+      /**
+       * Edit JavaScript, in js-ts-mode, as js-mode does.
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "javascript-mode": [];
       /**
        * Indent the current line of code by the braces and parens it is in, as js-mode does, by js-indent-level, or the mode's own offset.
        *
@@ -5845,6 +5859,12 @@ declare global {
        */
       "set-mark-command": [];
       /**
+       * Edit shell scripts, in bash-ts-mode: Ember's mode for it, as major-mode-remap-alist would have Emacs use.
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "sh-mode": [];
+      /**
        * Run your shell in the buffer *shell*, or go to it if it runs there already.
        *
        * The shell is explicit-shell-file-name, else $ESHELL, else shell-file-name; bash runs with explicit-bash-args, and other shells with -i, or the variable explicit-NAME-args. With a prefix argument, ask for the buffer.
@@ -7011,6 +7031,10 @@ declare global {
        * Whether backups are made by copying the old file, rather than renaming it and writing a new one. Files with more than one hard link are always copied.
        */
       "backup-by-copying": Value;
+      /**
+       * Keymap bash-ts-mode-map.
+       */
+      "bash-ts-mode-map": Value;
       /**
        * If non-nil, the function beginning-of-defun calls with its count to find a defun's start.
        *
@@ -10079,6 +10103,12 @@ declare global {
        */
       "sentence-end-without-space": Value;
       /**
+       * How far shell scripts indent each level.
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "sh-basic-offset": Value;
+      /**
        * The name of the shell this buffer runs.
        *
        * Defined in packages/shell.ts.
@@ -11831,6 +11861,18 @@ declare global {
        */
       "region": FaceAttributes;
       /**
+       * A here-document.
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "sh-heredoc": FaceAttributes;
+      /**
+       * A command substitution, as $(date).
+       *
+       * Defined in packages/treesit-modes.ts.
+       */
+      "sh-quoted-exec": FaceAttributes;
+      /**
        * Text that matters less, such as hints.
        */
       "shadow": FaceAttributes;
@@ -12004,6 +12046,10 @@ declare global {
        * Run after Auto-Revert mode is turned on.
        */
       "auto-revert-mode-on-hook": Value;
+      /**
+       * Run after entering Bash mode, after the hooks of the modes it is built on.
+       */
+      "bash-ts-mode-hook": Value;
       /**
        * Called before each change to the text with where the stretch about to change starts and ends: an insertion's start and end are where it goes. Changes the functions make do not call them again.
        */

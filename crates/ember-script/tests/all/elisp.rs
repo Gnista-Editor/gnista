@@ -189,3 +189,14 @@ fn bash_blocks_get_bash_ts_mode_s_faces_where_its_grammar_is() {
     ed.press("C-c '").unwrap();
     assert_eq!(ed.variable("major-mode").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("bash-ts-mode"));
 }
+
+#[test]
+fn javascript_blocks_edit_in_js_ts_mode() {
+    let mut ed = Editor::new();
+    let _s = Scripting::new(&mut ed).unwrap();
+    ed.window_buffer_mut().set_text("* H\n#+begin_src javascript\nlet a = 1;\n#+end_src\n");
+    ed.call("org-mode", vec![]).unwrap();
+    ed.window_buffer_mut().set_point(30);
+    ed.press("C-c '").unwrap();
+    assert_eq!(ed.variable("major-mode").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("js-ts-mode"));
+}
