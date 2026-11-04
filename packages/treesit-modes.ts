@@ -1,5 +1,6 @@
 // Major modes that highlight with tree-sitter grammars, after Emacs's
-// rust-ts-mode.el, js.el, json-ts-mode.el, python.el and go-ts-mode.el.
+// rust-ts-mode.el, js.el, json-ts-mode.el, python.el, go-ts-mode.el and
+// sh-script.el's bash-ts-mode.
 // Each is built on prog-mode and asks for its grammar with
 // treesit-parser-create. Go's grammar does not ship with Ember: it is
 // loaded from libtree-sitter-go.dylib, as Emacs loads its grammars, and
@@ -34,6 +35,18 @@ const GO_SYNTAX: { [chars: string]: string } = {
   "/": ". 124b",
   "*": ". 23",
   "\n": "> b",
+};
+
+/** The shell's, as sh-mode-syntax-table: # starts a comment, three kinds of quotes, $ a prefix, most punctuation part of words. */
+const BASH_SYNTAX: { [chars: string]: string } = {
+  "#": "<",
+  "\n": ">#",
+  '"': '""',
+  "'": "\"'",
+  "`": "\"`",
+  $: "'",
+  "!%:.^~,": "_",
+  "=/;|&<>": ".",
 };
 
 type ModeSpec = {
@@ -82,6 +95,16 @@ const modes: ModeSpec[] = [
     comment: { start: "// ", skip: "\\(?://+\\|/\\*+\\)\\s *" },
     alias: "go-mode",
     tabs: true,
+  },
+  {
+    name: "bash-ts-mode",
+    modeName: "Bash",
+    language: "bash",
+    pattern: "\\.\\(?:ba\\)?sh\\'\\|/\\.bash\\(?:rc\\|_profile\\)\\'",
+    what: "shell scripts",
+    syntax: BASH_SYNTAX,
+    comment: { start: "# ", skip: "#+[\t ]*" },
+    alias: "sh-mode",
   },
   {
     name: "python-ts-mode",
@@ -280,6 +303,7 @@ for (const [name, value, doc] of [
   ["rust-ts-mode-indent-offset", 4, "How far Rust indents each level."],
   ["json-ts-mode-indent-offset", 2, "How far JSON indents each level."],
   ["python-indent-offset", 4, "How far Python indents each block."],
+  ["sh-basic-offset", 4, "How far shell scripts indent each level."],
 ] as const) {
   ember.defineVariable({ name, value, doc });
 }
@@ -637,6 +661,85 @@ const goStruct = (node: ember.TreesitNode) => goTypeOf(node, "struct_type", 2);
 const goInterface = (node: ember.TreesitNode) => goTypeOf(node, "interface_type", 2);
 const goAlias = (node: ember.TreesitNode) => goTypeOf(node, "type_alias", 1);
 
+// --- Bash, as sh-script.el's bash-ts-mode ------------------------------------
+
+/**
+ * How Bash indents. Emacs's bash-ts-mode indents with sh-mode's SMIE rules
+ * rather than tree-sitter ones; these put a block's lines sh-basic-offset in
+ * from the line it starts on, and its closing word back on that line.
+ */
+const BASH_RULES = [
+  [["parent-is", "program"], "column-0", 0],
+  ...["fi", "done", "esac", "then", "else", "elif", "}", ")", "do", "elif_clause", "else_clause"].map((t) => [["node-is", t], "parent-bol", 0]),
+  ...["heredoc_body", "heredoc_end", "string", "raw_string"].map((t) => [["parent-is", t], "no-indent", 0]),
+  ...["if_statement", "elif_clause", "else_clause", "do_group", "compound_statement", "case_statement", "case_item", "subshell", "while_statement"].map((t) =>
+    ruleFor(t, "sh-basic-offset"),
+  ),
+  ["no-node", "parent-bol", 0],
+];
+
+const BASH_KEYWORDS = ["case", "do", "done", "elif", "else", "esac", "export", "fi", "for", "function", "if", "in", "unset", "while", "then"];
+const BASH_OTHER_KEYWORDS = ["exit", "exec", "continue", "break", "return", "select", "logout", "bye", "until", "type", "trap", "!", "time"];
+const BASH_BUILTINS = [
+  ".", "alias", "bg", "bind", "builtin", "caller", "compgen", "complete", "declare", "dirs", "disown", "enable", "fc", "fg", "help",
+  "history", "jobs", "kill", "let", "local", "popd", "printf", "pushd", "shopt", "source", "suspend", "typeset", "unalias", "mapfile",
+  "readarray", "coproc", "command", "hash", "test", "type", "eval", "export", "getopts", "newgrp", "pwd", "read", "readonly", "times",
+  "ulimit", "cd", "echo", "set", "shift", "umask", "unset", "wait",
+];
+const BASH_VARIABLES = [
+  "allow_null_glob_expansion", "auto_resume", "BASH", "BASH_ENV", "BASH_VERSINFO", "BASH_VERSION", "cdable_vars", "COMP_CWORD",
+  "COMP_LINE", "COMP_POINT", "COMP_WORDS", "COMPREPLY", "DIRSTACK", "ENV", "EUID", "FCEDIT", "FIGNORE", "FUNCNAME",
+  "glob_dot_filenames", "GLOBIGNORE", "GROUPS", "histchars", "HISTCMD", "HISTCONTROL", "HISTFILE", "HISTFILESIZE", "HISTIGNORE",
+  "history_control", "HISTSIZE", "hostname_completion_file", "HOSTFILE", "HOSTTYPE", "IGNOREEOF", "ignoreeof", "INPUTRC", "LINENO",
+  "MACHTYPE", "MAIL_WARNING", "noclobber", "nolinks", "notify", "no_exit_on_failed_exec", "NO_PROMPT_VARS", "OLDPWD", "OPTERR",
+  "OSTYPE", "PIPESTATUS", "PPID", "POSIXLY_CORRECT", "PROMPT_COMMAND", "PS3", "PS4", "pushd_silent", "PWD", "RANDOM", "REPLY",
+  "SECONDS", "SHELLOPTS", "SHLVL", "TIMEFORMAT", "TMOUT", "UID", "CDPATH", "IFS", "OPTARG", "OPTIND", "PS1", "PS2", "COLUMNS",
+  "EDITOR", "HOME", "HUSHLOGIN", "LANG", "LC_COLLATE", "LC_CTYPE", "LC_MESSAGES", "LC_MONETARY", "LC_NUMERIC", "LC_TIME", "LINES",
+  "LOGNAME", "MAIL", "MAILCHECK", "MAILPATH", "PAGER", "PATH", "SHELL", "TERM", "TERMCAP", "TERMINFO", "VISUAL",
+];
+const BASH_OPERATORS = ["|", "|&", "||", "&&", ">", ">>", "<", "<<", "<<-", "<<<", "==", "!=", ";&", ";;&"];
+const BASH_DECLARATIONS = ["declare", "typeset", "export", "readonly", "local"];
+
+const anyOf = (words: string[]) => `^(${words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})$`;
+
+ember.defineFace({ name: "sh-heredoc", doc: "A here-document.", light: { foreground: "tan1" }, dark: { foreground: "yellow1", bold: true } });
+ember.defineFace({ name: "sh-quoted-exec", doc: "A command substitution, as $(date).", light: { foreground: "magenta" }, dark: { foreground: "salmon" } });
+
+/** sh-mode--treesit-settings, its queries in tree-sitter's syntax. */
+function bashFontLockSettings() {
+  return fontLockRules(
+    ":language", "bash", ":feature", "comment", "(comment) @font-lock-comment-face",
+    ":language", "bash", ":feature", "function", "(function_definition name: (word) @font-lock-function-name-face)",
+    ":language", "bash", ":feature", "string", "[(string) (raw_string)] @font-lock-string-face",
+    ":language", "bash", ":feature", "string-interpolation", ":override", "t",
+    "(command_substitution) @sh-quoted-exec (string (expansion (variable_name) @font-lock-variable-use-face))",
+    ":language", "bash", ":feature", "heredoc", "[(heredoc_start) (heredoc_body)] @sh-heredoc",
+    ":language", "bash", ":feature", "variable", "(variable_name) @font-lock-variable-name-face",
+    ":language", "bash", ":feature", "keyword",
+    `[${quoted(BASH_KEYWORDS)}] @font-lock-keyword-face
+     (command_name ((word) @font-lock-keyword-face (#match? @font-lock-keyword-face ${JSON.stringify(anyOf(BASH_OTHER_KEYWORDS))})))`,
+    ":language", "bash", ":feature", "command",
+    `(command_name (word) @font-lock-function-name-face)
+     (command_name ((word) @font-lock-builtin-face (#match? @font-lock-builtin-face ${JSON.stringify(anyOf(BASH_BUILTINS))})))`,
+    ":language", "bash", ":feature", "declaration-command", `[${quoted(BASH_DECLARATIONS)}] @font-lock-keyword-face`,
+    ":language", "bash", ":feature", "constant", "(case_item value: (word) @font-lock-constant-face) (file_descriptor) @font-lock-constant-face",
+    ":language", "bash", ":feature", "operator", `[${quoted(BASH_OPERATORS)}] @font-lock-operator-face`,
+    ":language", "bash", ":feature", "builtin-variable",
+    `((special_variable_name) @font-lock-builtin-face (#match? @font-lock-builtin-face ${JSON.stringify(anyOf(BASH_VARIABLES))}))`,
+    ":language", "bash", ":feature", "number", `((word) @font-lock-number-face (#match? @font-lock-number-face "^[0-9]+$"))`,
+    ":language", "bash", ":feature", "bracket", `["(" ")" "((" "))" "[" "]" "[[" "]]" "{" "}"] @font-lock-bracket-face`,
+    ":language", "bash", ":feature", "delimiter", `[";" ";;"] @font-lock-delimiter-face`,
+    ":language", "bash", ":feature", "misc-punctuation", `["$"] @font-lock-misc-punctuation-face`,
+  );
+}
+
+const BASH_FEATURES = [
+  ["comment", "function"],
+  ["command", "declaration-command", "keyword", "string"],
+  ["builtin-variable", "constant", "heredoc", "number", "string-interpolation", "variable"],
+  ["bracket", "delimiter", "misc-punctuation", "operator"],
+];
+
 /** What each language's mode sets for treesit.el, as its mode's body does. */
 const TREESIT_SETTINGS: Record<
   string,
@@ -665,6 +768,15 @@ const TREESIT_SETTINGS: Record<
       ["Alias", "\\`type_declaration\\'", goAlias, null],
     ],
     fontLock: () => ({ settings: goFontLockSettings(), features: GO_FEATURES }),
+  },
+  bash: {
+    rules: () => BASH_RULES,
+    defun: "function_definition",
+    name: (node) => (nodeText(ember.treesitNodeChildByFieldName(node, "name"), true) as string | undefined) ?? null,
+    electric: "",
+    imenu: [["Function", "\\`function_definition\\'", null, null]],
+    things: [["sentence", "\\(?:comment\\|heredoc_\\(?:body\\|start\\)\\)"]],
+    fontLock: () => ({ settings: bashFontLockSettings(), features: BASH_FEATURES }),
   },
   rust: {
     imenu: [

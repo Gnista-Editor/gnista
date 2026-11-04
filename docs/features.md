@@ -74,7 +74,7 @@ What works today, in a terminal (`ember`) or a window (`ember-gui`). Where it di
 - Themes (`load-theme`, `enable-theme`, `disable-theme`, `custom-enabled-themes`): a theme is a package, NAME-theme, along `load-path`; both front ends draw in its colours, the GUI's mode line, header line, tab bar and cursor too. `examples/packages/nord-theme.ts` is Nord, as a package that does not ship.
 - Indirect buffers (`C-x 4 c`, and Org's `C-c C-x b` for a subtree).
 - Fields (C-a and the word commands stop at a prompt's edge).
-- Tree-sitter highlighting (`rust-ts-mode`, `js-ts-mode`, `json-ts-mode`, `python-ts-mode`, and `go-ts-mode` with a grammar library), loading the grammars Emacs builds (`libtree-sitter-LANG.dylib` along `treesit-extra-load-path` or in `~/.config/ember/tree-sitter`), and modes' `treesit-font-lock-rules` by `treesit-font-lock-level`.
+- Tree-sitter highlighting (`rust-ts-mode`, `js-ts-mode`, `json-ts-mode`, `python-ts-mode`, and `go-ts-mode` and `bash-ts-mode`, which `sh-mode` and Org's `bash`, `sh` and `shell` blocks run, with a grammar library), loading the grammars Emacs builds (`libtree-sitter-LANG.dylib` along `treesit-extra-load-path` or in `~/.config/ember/tree-sitter`), and modes' `treesit-font-lock-rules` by `treesit-font-lock-level`.
 - Indentation by Emacs's tree-sitter rules.
 - Emacs Lisp mode (`emacs-lisp-mode` for `.el` files and Org's `emacs-lisp` and `elisp` blocks, `lisp-data-mode` for `.eld` and `.dir-locals.el`): indenting as Emacs does, by `lisp-indent-line`, `indent-region` and `C-M-q`, with Emacs's indent specs for its macros, and Emacs Lisp's faces, for doc strings, definitions, keywords, `:keywords` and `&optional`.
 - The tree for scripts (parsers, nodes, queries).

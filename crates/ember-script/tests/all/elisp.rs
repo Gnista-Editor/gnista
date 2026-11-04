@@ -167,3 +167,25 @@ fn tree_sitter_blocks_get_their_mode_s_faces_too() {
     assert!(has("def", "(font-lock-keyword-face org-block)"), "{got:?}");
     assert!(has("return", "(font-lock-keyword-face org-block)"), "{got:?}");
 }
+
+#[test]
+fn bash_blocks_get_bash_ts_mode_s_faces_where_its_grammar_is() {
+    let Some(dir) = std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join(".emacs.d/tree-sitter")).filter(|d| d.join("libtree-sitter-bash.dylib").exists()) else {
+        eprintln!("No libtree-sitter-bash in ~/.emacs.d/tree-sitter: skipped");
+        return;
+    };
+    let mut ed = Editor::new();
+    let _s = Scripting::new(&mut ed).unwrap();
+    ed.set_variable("treesit-extra-load-path", Value::List(vec![Value::Str(dir.display().to_string())]));
+    ed.window_buffer_mut().set_text("* H\n#+begin_src bash\nif true; then echo hi; fi\n#+end_src\n");
+    ed.call("rename-buffer", vec![Arg::Str("b.org".into())]).unwrap();
+    ed.call("org-mode", vec![]).unwrap();
+    ed.set_frame_size(100, 20);
+    ed.redisplay();
+    let got = face_runs(&ed);
+    assert!(got.iter().any(|(t, f)| t == "if" && f == "(font-lock-keyword-face org-block)"), "{got:?}");
+    assert!(got.iter().any(|(t, f)| t == "echo" && f == "(font-lock-function-name-face org-block)"), "{got:?}");
+    ed.window_buffer_mut().set_point(24);
+    ed.press("C-c '").unwrap();
+    assert_eq!(ed.variable("major-mode").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("bash-ts-mode"));
+}

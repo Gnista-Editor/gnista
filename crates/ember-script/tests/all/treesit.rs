@@ -292,3 +292,41 @@ fn go_ts_mode_loads_its_grammar_and_highlights_with_its_rules() {
     ed.press("C-M-a").unwrap();
     assert_eq!(ed.window_buffer().point(), 14);
 }
+
+#[test]
+fn bash_ts_mode_highlights_and_indents_as_emacs_does() {
+    let Some(grammars) = go_grammar().filter(|d| d.join("libtree-sitter-bash.dylib").exists()) else {
+        eprintln!("No libtree-sitter-bash in ~/.emacs.d/tree-sitter: skipped");
+        return;
+    };
+    let (mut ed, _s) = setup();
+    ed.set_variable("treesit-extra-load-path", ember_core::Value::List(vec![ember_core::Value::Str(grammars.display().to_string())]));
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("x.sh");
+    std::fs::write(&file, "#!/bin/bash\n# Note\nf() {\n  local x=1\n  if [ \"$x\" = 2 ]; then\n    echo \"hi $HOME\" $(date) | grep h\n  fi\n  return 0\n}\n").unwrap();
+    ed.visit_file(&file).unwrap();
+    assert_eq!(ed.mode_name(), "Bash");
+    let runs = face_runs(&mut ed);
+    let style_of = |text: &str| runs.iter().find(|(t, _)| t == text).map(|(_, f)| f.clone()).unwrap_or_else(|| panic!("no {text:?} in {runs:?}"));
+    // As Emacs 30's bash-ts-mode fontifies it at the default level.
+    for (text, face) in [
+        ("#!/bin/bash", "font-lock-comment-face"),
+        ("f", "font-lock-function-name-face"),
+        ("local", "font-lock-keyword-face"),
+        ("x", "font-lock-variable-name-face"),
+        ("if", "font-lock-keyword-face"),
+        ("\"$x\"", "font-lock-string-face"),
+        ("echo", "font-lock-function-name-face"),
+        ("$(date)", "sh-quoted-exec"),
+        ("grep", "font-lock-function-name-face"),
+        ("fi", "font-lock-keyword-face"),
+        ("return", "font-lock-keyword-face"),
+    ] {
+        assert_eq!(style_of(text), style(&ed, face), "{text}");
+    }
+    // Emacs's indentation, with tabs for each eight columns.
+    ed.window_buffer_mut().set_text("f() {\nlocal x=1\nif [ 1 ]; then\necho a\nfi\nfor i in 1 2; do\necho $i\ndone\n}\n");
+    ed.press("C-x h C-M-\\").unwrap();
+    let b = ed.window_buffer();
+    assert_eq!(b.slice(0..b.len()), "f() {\n    local x=1\n    if [ 1 ]; then\n\techo a\n    fi\n    for i in 1 2; do\n\techo $i\n    done\n}\n");
+}
