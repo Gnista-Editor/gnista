@@ -1,0 +1,519 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "speed-next",
+      "input": {
+        "text": "* One\nbody\n* Two\n** Sub\n",
+        "point": 0,
+        "keys": "n",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "message": true,
+        "vars": {
+          "org-use-speed-commands": true
+        }
+      },
+      "text": "* One\nbody\n* Two\n** Sub\n",
+      "visible": "* One\nbody\n* Two\n** Sub\n",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": null
+    },
+    {
+      "name": "speed-next-twice",
+      "input": {
+        "text": "* One\nbody\n* Two\n** Sub\n",
+        "point": 0,
+        "keys": "n n",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "message": true,
+        "vars": {
+          "org-use-speed-commands": true
+        }
+      },
+      "text": "* One\nbody\n* Two\n** Sub\n",
+      "visible": "* One\nbody\n* Two\n** Sub\n",
+      "point": 17,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": null
+    },
+    {
+      "name": "speed-previous",
+      "input": {
+        "text": "* One\nbody\n* Two\n",
+        "point": 0,
+        "keys": "C-n C-n p",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "message": true,
+        "vars": {
+          "org-use-speed-commands": true
+        }
+      },
+      "text": "* One\nbody\n* Two\n",
+      "visible": "* One\nbody\n* Two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": null
+    },
+    {
+      "name": "speed-forward-same-level",
+      "input": {
+        "text": "* One\n** a\n* Two\n",
+        "point": 0,
+        "keys": "f",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "message": true,
+        "vars": {
+          "org-use-speed-commands": true
+        }
+      },
+      "text": "* One\n** a\n* Two\n",
+      "visible": "* One\n** a\n* Two\n",
+      "point": 11,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": null
+    },
+    {
+      "name": "speed-up",
+      "input": {
+        "text": "* One\n** a\n",
+        "point": 0,
+        "keys": "C-n u",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "message": true,
+        "vars": {
+          "org-use-speed-commands": true
+        }
+      },
+      "text": "* One\n** a\n",
+      "visible": "* One\n** a\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "message": null
+    },
+    {
+      "name": "speed-boundary",
+      "input": {
+        "text": "* One\n",
+        "point": 0,
+        "keys": "n",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "message": true,
+        "vars": {
+          "org-use-speed-commands": true
+        }
+      },
+      "text": "* One\n",
+      "visible": "* One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": "Boundary reached while executing org-next-visible-heading",
+      "message": null
+    },
+    {
+      "name": "speed-todo",
+      "input": {
+        "text": "* One\n",
+        "point": 0,
+        "keys": "t",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "org-use-speed-commands": true
+        }
+      },
+      "text": "* TODO One\n",
+      "visible": "* TODO One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "speed-priority",
+      "input": {
+        "text": "* One\n",
+        "point": 0,
+        "keys": "1",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "message": true,
+        "vars": {
+          "org-use-speed-commands": true
+        }
+      },
+      "text": "* [#A] One\n",
+      "visible": "* [#A] One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": "Priority of current item set to A"
+    },
+    {
+      "name": "speed-priority-remove",
+      "input": {
+        "text": "* [#A] One\n",
+        "point": 0,
+        "keys": "0",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "message": true,
+        "vars": {
+          "org-use-speed-commands": true
+        }
+      },
+      "text": "* One\n",
+      "visible": "* One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": "Priority removed"
+    },
+    {
+      "name": "speed-cycle",
+      "input": {
+        "text": "* One\nbody\n* Two\n",
+        "point": 0,
+        "keys": "c",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "org-use-speed-commands": true
+        }
+      },
+      "text": "* One\nbody\n* Two\n",
+      "visible": "* One\n* Two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "speed-not-at-bol",
+      "input": {
+        "text": "* One\n",
+        "point": 0,
+        "keys": "C-f x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "message": true,
+        "vars": {
+          "org-use-speed-commands": true
+        }
+      },
+      "text": "*x One\n",
+      "visible": "*x One\n",
+      "point": 2,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": null
+    },
+    {
+      "name": "speed-unknown-key",
+      "input": {
+        "text": "* One\n",
+        "point": 0,
+        "keys": "x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "message": true,
+        "vars": {
+          "org-use-speed-commands": true
+        }
+      },
+      "text": "x* One\n",
+      "visible": "x* One\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": null
+    },
+    {
+      "name": "speed-metadown",
+      "input": {
+        "text": "* One\n* Two\n",
+        "point": 0,
+        "keys": "D",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "message": true,
+        "vars": {
+          "org-use-speed-commands": true
+        }
+      },
+      "text": "* Two\n* One\n",
+      "visible": "* Two\n* One\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": null
+    },
+    {
+      "name": "speed-demote",
+      "input": {
+        "text": "* One\n* Two\n",
+        "point": 0,
+        "keys": "C-n r",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "message": true,
+        "vars": {
+          "org-use-speed-commands": true
+        }
+      },
+      "text": "* One\n** Two\n",
+      "visible": "* One\n** Two\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": null
+    },
+    {
+      "name": "speed-insert",
+      "input": {
+        "text": "* One\nbody\n",
+        "point": 0,
+        "keys": "i x",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "message": true,
+        "vars": {
+          "org-use-speed-commands": true
+        }
+      },
+      "text": "* One\nbody\n* x\n",
+      "visible": "* One\nbody\n* x\n",
+      "point": 14,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": null
+    },
+    {
+      "name": "speed-comment",
+      "input": {
+        "text": "* TODO One\n",
+        "point": 0,
+        "keys": "#",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "message": true,
+        "vars": {
+          "org-use-speed-commands": true
+        }
+      },
+      "text": "* TODO COMMENT One\n",
+      "visible": "* TODO COMMENT One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": null
+    },
+    {
+      "name": "speed-uncomment",
+      "input": {
+        "text": "* COMMENT One\n",
+        "point": 0,
+        "keys": "#",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "message": true,
+        "vars": {
+          "org-use-speed-commands": true
+        }
+      },
+      "text": "* One\n",
+      "visible": "* One\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": null
+    },
+    {
+      "name": "speed-outline-path",
+      "input": {
+        "text": "* One\n** Two\n",
+        "point": 0,
+        "keys": "C-n SPC",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "org-use-speed-commands": true
+        }
+      },
+      "text": "* One\n** Two\n",
+      "visible": "* One\n** Two\n",
+      "point": 6,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "speed-kill",
+      "input": {
+        "text": "* One\nbody\n* Two\n",
+        "point": 0,
+        "keys": "k",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "message": true,
+        "vars": {
+          "org-use-speed-commands": true
+        }
+      },
+      "text": "* Two\n",
+      "visible": "* Two\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [
+        "* One\nbody\n"
+      ],
+      "modified": true,
+      "error": null,
+      "message": "Cut: Subtree(s) with 11 characters"
+    },
+    {
+      "name": "speed-off",
+      "input": {
+        "text": "* One\n",
+        "point": 0,
+        "keys": "n",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "message": true
+      },
+      "text": "n* One\n",
+      "visible": "n* One\n",
+      "point": 1,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "message": null
+    }
+  ]
+}

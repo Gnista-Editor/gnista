@@ -243,7 +243,7 @@ ember.defineCommand({
   run: () => {
     // As in Emacs, the mark is pushed and point goes to the start of its
     // line before anything can fail.
-    if (ember.calledInteractively() && ember.lastCommand() !== "outline-up-heading") ember.pushMark(ember.point());
+    if (ember.thisCommand() === "outline-up-heading" && ember.lastCommand() !== "outline-up-heading") ember.pushMark(ember.point());
     ember.gotoChar(ember.lineStart(ember.lineOf(ember.point())));
     const all = headings();
     let current = currentHeading(all);

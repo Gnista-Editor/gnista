@@ -1,0 +1,236 @@
+[
+ {
+  "name": "speed-next",
+  "text": "* One\nbody\n* Two\n** Sub\n",
+  "keys": "n",
+  "modes": [
+   "org-mode"
+  ],
+  "message": true,
+  "vars": {
+   "org-use-speed-commands": true
+  }
+ },
+ {
+  "name": "speed-next-twice",
+  "text": "* One\nbody\n* Two\n** Sub\n",
+  "keys": "n n",
+  "modes": [
+   "org-mode"
+  ],
+  "message": true,
+  "vars": {
+   "org-use-speed-commands": true
+  }
+ },
+ {
+  "name": "speed-previous",
+  "text": "* One\nbody\n* Two\n",
+  "keys": "C-n C-n p",
+  "modes": [
+   "org-mode"
+  ],
+  "message": true,
+  "vars": {
+   "org-use-speed-commands": true
+  }
+ },
+ {
+  "name": "speed-forward-same-level",
+  "text": "* One\n** a\n* Two\n",
+  "keys": "f",
+  "modes": [
+   "org-mode"
+  ],
+  "message": true,
+  "vars": {
+   "org-use-speed-commands": true
+  }
+ },
+ {
+  "name": "speed-up",
+  "text": "* One\n** a\n",
+  "keys": "C-n u",
+  "modes": [
+   "org-mode"
+  ],
+  "message": true,
+  "vars": {
+   "org-use-speed-commands": true
+  }
+ },
+ {
+  "name": "speed-boundary",
+  "text": "* One\n",
+  "keys": "n",
+  "modes": [
+   "org-mode"
+  ],
+  "message": true,
+  "vars": {
+   "org-use-speed-commands": true
+  }
+ },
+ {
+  "name": "speed-todo",
+  "text": "* One\n",
+  "keys": "t",
+  "modes": [
+   "org-mode"
+  ],
+  "vars": {
+   "org-use-speed-commands": true
+  }
+ },
+ {
+  "name": "speed-priority",
+  "text": "* One\n",
+  "keys": "1",
+  "modes": [
+   "org-mode"
+  ],
+  "message": true,
+  "vars": {
+   "org-use-speed-commands": true
+  }
+ },
+ {
+  "name": "speed-priority-remove",
+  "text": "* [#A] One\n",
+  "keys": "0",
+  "modes": [
+   "org-mode"
+  ],
+  "message": true,
+  "vars": {
+   "org-use-speed-commands": true
+  }
+ },
+ {
+  "name": "speed-cycle",
+  "text": "* One\nbody\n* Two\n",
+  "keys": "c",
+  "modes": [
+   "org-mode"
+  ],
+  "vars": {
+   "org-use-speed-commands": true
+  }
+ },
+ {
+  "name": "speed-not-at-bol",
+  "text": "* One\n",
+  "keys": "C-f x",
+  "modes": [
+   "org-mode"
+  ],
+  "message": true,
+  "vars": {
+   "org-use-speed-commands": true
+  }
+ },
+ {
+  "name": "speed-unknown-key",
+  "text": "* One\n",
+  "keys": "x",
+  "modes": [
+   "org-mode"
+  ],
+  "message": true,
+  "vars": {
+   "org-use-speed-commands": true
+  }
+ },
+ {
+  "name": "speed-metadown",
+  "text": "* One\n* Two\n",
+  "keys": "D",
+  "modes": [
+   "org-mode"
+  ],
+  "message": true,
+  "vars": {
+   "org-use-speed-commands": true
+  }
+ },
+ {
+  "name": "speed-demote",
+  "text": "* One\n* Two\n",
+  "keys": "C-n r",
+  "modes": [
+   "org-mode"
+  ],
+  "message": true,
+  "vars": {
+   "org-use-speed-commands": true
+  }
+ },
+ {
+  "name": "speed-insert",
+  "text": "* One\nbody\n",
+  "keys": "i x",
+  "modes": [
+   "org-mode"
+  ],
+  "message": true,
+  "vars": {
+   "org-use-speed-commands": true
+  }
+ },
+ {
+  "name": "speed-comment",
+  "text": "* TODO One\n",
+  "keys": "#",
+  "modes": [
+   "org-mode"
+  ],
+  "message": true,
+  "vars": {
+   "org-use-speed-commands": true
+  }
+ },
+ {
+  "name": "speed-uncomment",
+  "text": "* COMMENT One\n",
+  "keys": "#",
+  "modes": [
+   "org-mode"
+  ],
+  "message": true,
+  "vars": {
+   "org-use-speed-commands": true
+  }
+ },
+ {
+  "name": "speed-outline-path",
+  "text": "* One\n** Two\n",
+  "keys": "C-n SPC",
+  "modes": [
+   "org-mode"
+  ],
+  "vars": {
+   "org-use-speed-commands": true
+  }
+ },
+ {
+  "name": "speed-kill",
+  "text": "* One\nbody\n* Two\n",
+  "keys": "k",
+  "modes": [
+   "org-mode"
+  ],
+  "message": true,
+  "vars": {
+   "org-use-speed-commands": true
+  }
+ },
+ {
+  "name": "speed-off",
+  "text": "* One\n",
+  "keys": "n",
+  "modes": [
+   "org-mode"
+  ],
+  "message": true
+ }
+]

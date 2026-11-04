@@ -3555,6 +3555,9 @@ ember.defineCommand({
       const at = h.todoAt !== undefined ? h.todoAt + charCount(h.todo ?? "") + 1 : h.start + h.level + 1;
       replaceText(Math.min(at, h.end), Math.min(at, h.end), at > h.end ? ` [#${letter}]` : `[#${letter}] `);
     }
+    if (letter === "") {
+      if (h.priorityAt !== undefined) ember.message("Priority removed");
+    } else ember.message(`Priority of current item set to ${letter}`);
   },
 });
 
@@ -4333,6 +4336,7 @@ ember.defineCommand({
     "Typing right after TAB, S-TAB, RET or C-c C-c moved into a field first blanks it (org-table-auto-blank-field). " +
     "On a heading, the tags are aligned again.",
   run: () => {
+    if (speedCommand()) return;
     ember.call("org-fold-check-before-invisible-edit-maybe");
     if (ember.prefixNumericValue() === 1 && !orgRegionActive() && atTable()) {
       if (ember.variable("org-table-auto-blank-field") === true && BLANKING_COMMANDS.includes(ember.lastCommand() ?? "")) {
@@ -4348,6 +4352,175 @@ ember.defineCommand({
     }
     ember.callWithPrefix(ember.prefixArg(), "self-insert-command");
     fixTagsOnTheFly();
+  },
+});
+
+// Speed commands, as org-keys.el has them: at the start of a heading, with
+// org-use-speed-commands on, a key runs a command rather than typing.
+
+ember.defineVariable({
+  name: "org-use-speed-commands",
+  doc: "Whether single keys at the start of a heading run org-speed-commands' commands rather than typing.",
+  value: false,
+});
+ember.defineVariable({
+  name: "org-speed-commands",
+  doc:
+    "The speed commands: [key, command] lists, or [key, [function, ...arguments]] for a function to call; a list of " +
+    "one string is a heading for org-speed-command-help.",
+  value: [
+    ["Outline Navigation"],
+    ["n", ["org-speed-move-safe", "org-next-visible-heading"]],
+    ["p", ["org-speed-move-safe", "org-previous-visible-heading"]],
+    ["f", ["org-speed-move-safe", "org-forward-heading-same-level"]],
+    ["b", ["org-speed-move-safe", "org-backward-heading-same-level"]],
+    ["F", "org-next-block"],
+    ["B", "org-previous-block"],
+    ["u", ["org-speed-move-safe", "outline-up-heading"]],
+    ["j", "org-goto"],
+    ["g", ["org-speed-refile-goto"]],
+    ["Outline Visibility"],
+    ["c", "org-cycle"],
+    ["C", "org-shifttab"],
+    [" ", "org-display-outline-path"],
+    ["s", "org-toggle-narrow-to-subtree"],
+    ["k", "org-cut-subtree"],
+    ["=", "org-columns"],
+    ["Outline Structure Editing"],
+    ["U", "org-metaup"],
+    ["D", "org-metadown"],
+    ["r", "org-metaright"],
+    ["l", "org-metaleft"],
+    ["R", "org-shiftmetaright"],
+    ["L", "org-shiftmetaleft"],
+    ["i", ["org-speed-insert-heading"]],
+    ["^", "org-sort"],
+    ["w", "org-refile"],
+    ["a", "org-archive-subtree-default-with-confirmation"],
+    ["@", "org-mark-subtree"],
+    ["#", "org-toggle-comment"],
+    ["Clock Commands"],
+    ["I", "org-clock-in"],
+    ["O", "org-clock-out"],
+    ["Meta Data Editing"],
+    ["t", "org-todo"],
+    [",", "org-priority"],
+    ["0", ["org-speed-priority", " "]],
+    ["1", ["org-speed-priority", "A"]],
+    ["2", ["org-speed-priority", "B"]],
+    ["3", ["org-speed-priority", "C"]],
+    [":", "org-set-tags-command"],
+    ["e", "org-set-effort"],
+    ["E", "org-inc-effort"],
+    ["Agenda Views etc"],
+    ["v", "org-agenda"],
+    ["/", "org-sparse-tree"],
+    ["Misc"],
+    ["o", "org-open-at-point"],
+    ["?", "org-speed-command-help"],
+  ],
+});
+
+ember.defun("org-speed-move-safe", (command: ember.Value) => {
+  // Moves, but only to a heading, as org-speed-move-safe: else back, with an error.
+  const pos = ember.point();
+  ember.callInteractively(String(command) as ember.CommandName);
+  if (!(ember.point() === ember.lineStart(lineAt()) && parseHeading(lineAt()) !== undefined)) {
+    ember.gotoChar(pos);
+    ember.signal("error", `Boundary reached while executing ${String(command)}`);
+  }
+});
+ember.defun("org-speed-refile-goto", () => ember.callWithPrefix([4], "org-refile"));
+ember.defun("org-speed-insert-heading", () => {
+  ember.gotoChar(ember.point() + 1);
+  ember.callInteractively("org-insert-heading-respect-content");
+});
+ember.defun("org-speed-priority", (letter: ember.Value) => ember.call("org-priority", String(letter)));
+
+/**
+ * Runs the speed command for the key typed, at the start of a heading, as
+ * org-self-insert-command does with org-speed-command-activate; true if it
+ * did.
+ */
+function speedCommand(): boolean {
+  if (ember.variable("org-use-speed-commands") !== true) return false;
+  if (!(ember.point() === ember.lineStart(lineAt()) && /^\*+ /.test(ember.lineText(lineAt())))) return false;
+  const keys = ember.thisCommandKeys();
+  const key = keys === "SPC" ? " " : keys;
+  const commands = ember.variable("org-speed-commands");
+  const entry = Array.isArray(commands) ? commands.find((e) => Array.isArray(e) && e.length > 1 && e[0] === key) as ember.Value[] | undefined : undefined;
+  if (entry === undefined) return false;
+  const action = entry[1];
+  if (Array.isArray(action)) {
+    ember.funcall(String(action[0]), action.slice(1));
+    return true;
+  }
+  const name = String(action);
+  if (!ember.commandNames().includes(name)) ember.userError(`Ember does not have ${name} yet`);
+  ember.callInteractively(name as ember.CommandName);
+  return true;
+}
+
+ember.defineCommand({
+  name: "org-speed-command-help",
+  doc: "Show the speed commands, the keys that run commands at the start of a heading.",
+  run: () => {
+    if (ember.variable("org-use-speed-commands") !== true) ember.userError("Speed commands are not activated, customize `org-use-speed-commands'");
+    const commands = ember.variable("org-speed-commands");
+    let text = "Speed commands\n==============\n";
+    for (const e of Array.isArray(commands) ? commands : []) {
+      if (!Array.isArray(e)) continue;
+      if (e.length === 1) text += `\n${String(e[0])}\n${"-".repeat(String(e[0]).length)}\n`;
+      else text += `${String(e[0]).padEnd(4)}${Array.isArray(e[1]) ? `(${e[1].map(String).join(" ")})` : String(e[1])}\n`;
+    }
+    ember.getBufferCreate("*Help*");
+    ember.withCurrentBuffer("*Help*", () => {
+      ember.letBind({ "inhibit-read-only": true }, () => {
+        ember.deleteRegion(0, ember.bufferSize());
+        ember.insert(text);
+      });
+      ember.gotoChar(0);
+    });
+    ember.call("display-buffer", "*Help*");
+  },
+});
+
+ember.defineCommand({
+  name: "org-toggle-comment",
+  doc: "Make the heading point is under a comment, with COMMENT after its state and priority, or take that away.",
+  run: () => {
+    const [all, i] = backToHeading();
+    const h = all[i];
+    const at = h.titleAt;
+    const title = ember.bufferText(at, h.end);
+    if (/^COMMENT(?:[ \t]|$)/.test(title)) {
+      const m = /^COMMENT[ \t]*/.exec(title)!;
+      replaceText(at, at + m[0].length, "");
+    } else replaceText(at, at, title === "" ? "COMMENT" : "COMMENT ");
+  },
+});
+
+ember.defineCommand({
+  name: "org-display-outline-path",
+  doc: "Say where point is in the outline: its heading and the ones above it.",
+  run: () => {
+    const all = headings();
+    const i = headingIndex(all, lineAt());
+    if (i === undefined) {
+      ember.message("");
+      return;
+    }
+    ember.message([...ancestors(all, i).reverse(), i].map((k) => all[k].title).join("/"));
+  },
+});
+
+ember.defineCommand({
+  name: "org-set-effort",
+  doc: "Set the Effort property of the entry point is in, as 0:30 or 1h.",
+  params: [{ name: "value", prompt: "Effort: " }],
+  run: (value: string) => {
+    const [all, i] = backToHeading();
+    entryPut(all[i].line, "Effort", value);
   },
 });
 

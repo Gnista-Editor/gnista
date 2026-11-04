@@ -4081,6 +4081,12 @@ declare global {
        */
       "org-demote-subtree": [];
       /**
+       * Say where point is in the outline: its heading and the ones above it.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-display-outline-path": [];
+      /**
        * Make the heading point is on one level lower: one star more.
        *
        * Defined in packages/org.ts.
@@ -4520,6 +4526,14 @@ declare global {
        */
       "org-self-insert-command": [];
       /**
+       * Set the Effort property of the entry point is in, as 0:30 or 1h.
+       *
+       * @param value text
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-set-effort": [value: string];
+      /**
        * In the current entry, set a property to a value, adding a property drawer if there is none.
        *
        * @param property text
@@ -4598,6 +4612,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-show-all": [];
+      /**
+       * Show the speed commands, the keys that run commands at the start of a heading.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-speed-command-help": [];
       /**
        * Align the table at point: every column as wide as its widest field, numbers to the right.
        *
@@ -4826,6 +4846,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-toggle-checkbox": [];
+      /**
+       * Make the heading point is under a comment, with COMMENT after its state and priority, or take that away.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-toggle-comment": [];
       /**
        * Turn lines into headings, or headings into plain text, as org-toggle-heading does.
        *
@@ -9238,6 +9264,12 @@ declare global {
        */
       "org-special-ctrl-o": Value;
       /**
+       * The speed commands: [key, command] lists, or [key, [function, ...arguments]] for a function to call; a list of one string is a heading for org-speed-command-help.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-speed-commands": Value;
+      /**
        * Whether a source block's code keeps its indentation when tangled, rather than losing what all its lines share.
        *
        * Defined in packages/ob-tangle.ts.
@@ -9363,6 +9395,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-use-fast-todo-selection": Value;
+      /**
+       * Whether single keys at the start of a heading run org-speed-commands' commands rather than typing.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-use-speed-commands": Value;
       /**
        * Whether C-y folds the subtrees it yanks, unless folding would hide text after them.
        *

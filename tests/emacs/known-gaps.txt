@@ -14,6 +14,11 @@ org-fuzz-9/seed16-0666-m-s-right---c-return  # malformed planning timestamp
 # Ember's Org does not read org-adapt-indentation yet (docs/differences.md).
 org-structure/indent-region-with-adapted-indentation  # no org-adapt-indentation
 
+# Ember sets this-command for a command another command calls, as the speed
+# key's org-speed-move-safe calls outline-up-heading; Emacs sets it only from
+# the command loop, so there outline-up-heading does not push the mark.
+org-speed/speed-up  # this-command set for nested calls
+
 # Intentional differences, not to be fixed.
 org-refile/refile-to-no-target  # the recorder answers completing-read directly, so Emacs reads a target its require-match refuses when typed; Ember refuses it with [No match], as Emacs does when it is typed.
 arguments/delete-more-than-there-is  # Emacs reports an internal "Args out of range" error naming the buffer; Ember says "End of buffer". The text is unchanged in both.
