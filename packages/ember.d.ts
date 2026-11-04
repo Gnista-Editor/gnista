@@ -9270,6 +9270,12 @@ declare global {
        */
       "org-fontify-done-headline": Value;
       /**
+       * Whether a block's #+begin and #+end lines take their faces to the line's end, newline and all, so a background with :extend reaches the window's edge.
+       *
+       * Defined in packages/org.ts.
+       */
+      "org-fontify-whole-block-delimiter-line": Value;
+      /**
        * What marks a day the habit was done in its graph.
        *
        * Defined in packages/org-habit.ts.

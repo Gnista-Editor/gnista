@@ -105,7 +105,9 @@ const STACK: usize = 64 << 20;
 impl Driver {
     /// Starts the editor's thread. `setup` makes the editor ready there,
     /// loading scripts, and returns what must live as long as the editor,
-    /// as the script runtime. `describe` lays the frames out and describes
+    /// as the script runtime; it runs in the command loop, so a question it
+    /// asks waits for the front end's keys, and `Input::Run` meanwhile sees
+    /// nothing kept yet. `describe` lays the frames out and describes
     /// them after redisplay, as the front end draws them. `wake` tells the
     /// front end there is something new to draw.
     pub fn spawn(
@@ -130,9 +132,8 @@ impl Driver {
                 ed.set_process_waker(Arc::new(move || {
                     let _ = waker.lock().unwrap_or_else(|e| e.into_inner()).send(Input::Wake);
                 }));
-                let keep = setup(&mut ed);
                 let _ = quit_tx.send(ed.quit_handle());
-                run(ed, keep, rx, describe, wake, shared, loop_idle);
+                run(ed, setup, rx, describe, wake, shared, loop_idle);
             })
             .expect("the editor's thread starts");
         let quit = quit_rx.recv().expect("the editor's thread sends its quit flag");
@@ -234,7 +235,8 @@ pub trait NestedLoop {
 /// only when no input is pending.
 struct CommandLoop<D> {
     rx: Receiver<Input>,
-    keep: Box<dyn Any>,
+    /// What setup kept, once it is done; nothing while it runs.
+    keep: RefCell<Box<dyn Any>>,
     describe: RefCell<D>,
     wake: Box<dyn Fn()>,
     published: Arc<Mutex<Published>>,
@@ -280,7 +282,7 @@ impl<D: FnMut(&mut Editor) -> Vec<FrameDescription>> CommandLoop<D> {
                     guarded(ed, |ed| ed.handle_key(Key { code: KeyCode::Char('g'), ctrl: true, meta: false, shift: false }));
                 }
             }
-            Input::Run(f) => guarded(ed, |ed| f(ed, &*self.keep)),
+            Input::Run(f) => guarded(ed, |ed| f(ed, &**self.keep.borrow())),
             Input::Wake => {}
             Input::Close => return false,
         }
@@ -353,7 +355,7 @@ fn counted(input: &Input) -> u64 {
 /// Runs the command loop until the editor exits or the front end closes.
 fn run(
     mut ed: Editor,
-    keep: Box<dyn Any>,
+    setup: impl FnOnce(&mut Editor) -> Box<dyn Any>,
     rx: Receiver<Input>,
     describe: impl FnMut(&mut Editor) -> Vec<FrameDescription> + 'static,
     wake: impl Fn() + 'static,
@@ -362,7 +364,7 @@ fn run(
 ) {
     let command_loop = Rc::new(CommandLoop {
         rx,
-        keep,
+        keep: RefCell::new(Box::new(())),
         describe: RefCell::new(describe),
         wake: Box::new(wake),
         published,
@@ -370,6 +372,12 @@ fn run(
         idle,
     });
     ed.command_loop = Some(command_loop.clone());
+    // Setup runs with the loop there, so what init.ts and the startup hooks
+    // ask, as desktop's question about a locked desktop, waits for an
+    // answer while the window draws, as Emacs's startup asks in the
+    // minibuffer.
+    let kept = setup(&mut ed);
+    *command_loop.keep.borrow_mut() = kept;
     let _ = command_loop.wait(&mut ed, &|ed| ed.should_quit());
     command_loop.publish(&mut ed);
     // The loop holds what setup kept, as the script runtime, which goes

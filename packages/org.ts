@@ -179,6 +179,7 @@ const variables: [string, string, ember.Value][] = [
     "other-window",
   ],
   ["org-fontify-done-headline", "Whether the text of a done heading gets the face org-headline-done.", true],
+  ["org-fontify-whole-block-delimiter-line", "Whether a block's #+begin and #+end lines take their faces to the line's end, newline and all, so a background with :extend reaches the window's edge.", true],
   [
     "org-time-stamp-rounding-minutes",
     "Minutes are rounded to the first of these when a time is inserted, and S-<up> and S-<down> change them by the second.",
@@ -231,7 +232,7 @@ const faces: [string, string, ember.FaceAttributes][] = [
   ["org-document-title", "The title from #+TITLE:.", { foreground: "accent-ink", bold: true }],
   ["org-document-info", "Values of #+AUTHOR:, #+DATE: and #+EMAIL:.", { foreground: "accent-ink" }],
   ["org-document-info-keyword", "Keywords such as #+TITLE:.", { inherit: "shadow" }],
-  ["org-block", "The text in blocks, such as #+begin_src.", { inherit: "shadow" }],
+  ["org-block", "The text in blocks, such as #+begin_src.", { inherit: "shadow", extend: true }],
   ["org-block-begin-line", "The line starting a block.", { inherit: "org-meta-line" }],
   ["org-block-end-line", "The line ending a block.", { inherit: "org-meta-line" }],
   ["org-quote", "The text in quote blocks.", { inherit: "org-block", italic: true }],
@@ -1527,6 +1528,11 @@ function fontifySrcNatively(beginLine: number): number | undefined {
   return endLine;
 }
 
+/** Where a block's #+begin or #+end line's face ends: after its newline, as org-fontify-whole-block-delimiter-line says. */
+function delimiterEnd(lineEnd: number): number {
+  return truthy(ember.variable("org-fontify-whole-block-delimiter-line")) ? Math.min(lineEnd + 1, ember.pointMax()) : lineEnd;
+}
+
 /** Fontifies whole lines from start to end, for jit-lock-functions. */
 function fontify(start: number, end: number): void {
   if (!ember.derivedModeP("org-mode")) return;
@@ -1548,17 +1554,19 @@ function fontify(start: number, end: number): void {
     const ls = ember.lineStart(line);
     const le = ember.lineEnd(line);
     if (block !== undefined) {
+      // Each face takes the newline too, as Org's does, so a background
+      // with :extend goes on to the window's edge.
       if (BLOCK_END.test(text)) {
-        face(ls, le, "org-block-end-line");
+        face(ls, delimiterEnd(le), "org-block-end-line");
         block = undefined;
       } else {
-        face(ls, le, block === "quote" ? "org-quote" : block === "verse" ? "org-verse" : "org-block");
+        face(ls, Math.min(le + 1, ember.pointMax()), block === "quote" ? "org-quote" : block === "verse" ? "org-verse" : "org-block");
       }
       continue;
     }
     const begin = BLOCK_BEGIN.exec(text);
     if (begin) {
-      face(ls, le, "org-block-begin-line");
+      face(ls, delimiterEnd(le), "org-block-begin-line");
       block = begin[1].toLowerCase();
       if (block === "src") {
         const endLine = fontifySrcNatively(line);

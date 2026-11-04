@@ -247,3 +247,29 @@ fn a_timer_cancelled_by_one_before_it_in_the_round_does_not_run() {
     ed.run_timers();
     assert!(ed.variable("ran").is_none(), "the cancelled timer ran");
 }
+
+#[test]
+fn what_setup_asks_waits_for_an_answer() {
+    // As desktop asks in after-init-hook about a desktop another Ember has locked.
+    let d = Driver::spawn(
+        |ed| {
+            let answer = ed.y_or_n_p("Use it anyway? ");
+            ed.set_variable("answer", ember_core::Value::Str(format!("{answer:?}")));
+            Box::new(())
+        },
+        |ed| {
+            ed.redisplay();
+            vec![ed.describe_frame(ed.selected_frame(), true, 1.0)]
+        },
+        || {},
+    );
+    // The question is drawn while it waits.
+    let until = Instant::now() + Duration::from_secs(5);
+    while d.with(|ed| ed.prompt().is_none()) {
+        assert!(Instant::now() < until, "no question asked");
+        std::thread::yield_now();
+    }
+    d.key(key("y"));
+    let answer = d.with(|ed| ed.variable("answer").and_then(|v| v.as_str().map(String::from)));
+    assert_eq!(answer.as_deref(), Some("Ok(true)"));
+}

@@ -138,7 +138,7 @@ fn org_s_elisp_blocks_get_emacs_lisp_s_faces() {
         got,
         vec![
             ("* H", "org-level-1"),
-            ("#+begin_src emacs-lisp", "org-block-begin-line"),
+            ("#+begin_src emacs-lisp\n", "org-block-begin-line"),
             ("(", "org-block"),
             ("setq", "(font-lock-keyword-face org-block)"),
             (" a ", "org-block"),
@@ -146,7 +146,8 @@ fn org_s_elisp_blocks_get_emacs_lisp_s_faces() {
             (") ", "org-block"),
             ("; ", "(font-lock-comment-delimiter-face org-block)"),
             ("c\n", "(font-lock-comment-face org-block)"),
-            ("#+end_src", "org-block-end-line"),
+            // The delimiter lines' newlines too, as org-fontify-whole-block-delimiter-line has it.
+            ("#+end_src\n", "org-block-end-line"),
         ]
     );
 }
