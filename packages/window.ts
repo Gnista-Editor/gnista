@@ -164,14 +164,27 @@ function largestWindow(notSelected: boolean, dedicatedOk = false): number | unde
 const WINDOW_MIN_HEIGHT = 4;
 const WINDOW_MIN_WIDTH = 10;
 
-/** Whether a window is big enough to split, as window-splittable-p decides. */
+ember.defineVariable({
+  name: "split-height-threshold",
+  doc: "How tall a window must be, in lines, for display-buffer to split it into one above the other; nil never.",
+  value: 80,
+});
+ember.defineVariable({
+  name: "split-width-threshold",
+  doc: "How wide a window must be, in columns, for display-buffer to split it side by side; nil never.",
+  value: 160,
+});
+
+/** Whether a window is big enough to split, as window-splittable-p decides: a threshold of nil never is. */
 function splittable(window: number, horizontal: boolean, heightThreshold?: number): boolean {
   const s = size(window);
   if (horizontal) {
-    const threshold = Number(ember.variable("split-width-threshold") ?? 160);
+    const threshold = ember.variable("split-width-threshold");
+    if (typeof threshold !== "number") return false;
     return s.width >= Math.max(threshold, 2 * Math.max(WINDOW_MIN_WIDTH, 2));
   }
-  const threshold = heightThreshold ?? Number(ember.variable("split-height-threshold") ?? 80);
+  const threshold = heightThreshold ?? ember.variable("split-height-threshold");
+  if (typeof threshold !== "number") return false;
   return s.totalHeight >= Math.max(threshold, 2 * Math.max(WINDOW_MIN_HEIGHT, 2));
 }
 

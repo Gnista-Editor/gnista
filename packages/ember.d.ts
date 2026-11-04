@@ -9989,6 +9989,18 @@ declare global {
        */
       "special-mode-map": Value;
       /**
+       * How tall a window must be, in lines, for display-buffer to split it into one above the other; nil never.
+       *
+       * Defined in packages/window.ts.
+       */
+      "split-height-threshold": Value;
+      /**
+       * How wide a window must be, in columns, for display-buffer to split it side by side; nil never.
+       *
+       * Defined in packages/window.ts.
+       */
+      "split-width-threshold": Value;
+      /**
        * The display table of buffers without one of their own, or nil.
        */
       "standard-display-table": Value;

@@ -438,3 +438,19 @@ fn m_r_moves_to_the_middle_then_the_top_then_the_bottom_line() {
     ed.press("M-2 M-r").unwrap();
     assert_eq!(line(&ed), 42, "line 2 of the window");
 }
+
+#[test]
+fn split_height_threshold_nil_splits_side_by_side() {
+    // A frame tall enough to split below and wide enough to split beside.
+    let (mut ed, s) = setup("x");
+    ed.set_frame_size(200, 90);
+    ed.call("display-buffer", vec![ember_core::Arg::Str("*other*".into())]).unwrap();
+    let below = s.eval_expression(&mut ed, r#"String(ember.windowSize(ember.windowList()[1]).fullWidth)"#).unwrap();
+    assert_eq!(below.trim_matches('"'), "true", "split below by default");
+    let (mut ed, s) = setup("x");
+    ed.set_frame_size(200, 90);
+    s.eval_expression(&mut ed, r#"(ember.setVariable("split-height-threshold", null), 1)"#).unwrap();
+    ed.call("display-buffer", vec![ember_core::Arg::Str("*other*".into())]).unwrap();
+    let beside = s.eval_expression(&mut ed, r#"String(ember.windowSize(ember.windowList()[1]).fullWidth)"#).unwrap();
+    assert_eq!(beside.trim_matches('"'), "false", "split beside when nil");
+}
