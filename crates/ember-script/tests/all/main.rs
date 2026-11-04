@@ -25,6 +25,7 @@ mod desktop;
 mod diff;
 mod dired;
 mod editorconfig;
+mod elisp;
 mod eglot;
 mod face_attributes;
 mod faces;

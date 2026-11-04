@@ -1,0 +1,92 @@
+[
+ {
+  "name": "elisp-indent-region-sample",
+  "text": ";;; sample.el --- A sample  -*- lexical-binding: t -*-\n;; A comment\n(defvar my-var 42 \"A variable.\")\n(defcustom my-option nil \"An option.\" :type 'boolean :group 'my)\n(defface my-face '((t :weight bold)) \"A face.\")\n(defun my-fun (a &optional b)\n\"Do A, then `my-var' with B.\"\n(let ((x (+ a 1)) ; trailing\n(y \"str\"))\n(when (and x y)\n(message \"%s %s\" x ?\\\"))\n(if b (error \"Bad %s\" b) nil)))\n(defmacro my-mac (&rest body) `(progn ,@body))\n(use-package org :ensure t :config (setq org-x 1))\n(cl-defstruct my-struct a b)\n(defalias 'my-alias #'my-fun)\n",
+  "keys": "C-x h C-M-\\",
+  "point": 0,
+  "modes": [
+   "emacs-lisp-mode"
+  ]
+ },
+ {
+  "name": "elisp-indent-keywords",
+  "text": "(use-package org\n:ensure t\n:hook (org-mode . visual-line-mode)\n:config\n(setq org-x 1)\n(setq org-y 2))\n",
+  "keys": "C-x h C-M-\\",
+  "point": 0,
+  "modes": [
+   "emacs-lisp-mode"
+  ]
+ },
+ {
+  "name": "elisp-indent-specforms",
+  "text": "(let ((a 1)\n(b 2))\n(if a\nb\nc\nd)\n(condition-case err\n(foo)\n(error\n(bar err)))\n(progn\n(x)\n(y))\n(lambda (x)\n(* x 2)))\n",
+  "keys": "C-x h C-M-\\",
+  "point": 0,
+  "modes": [
+   "emacs-lisp-mode"
+  ]
+ },
+ {
+  "name": "elisp-indent-calls",
+  "text": "(foo bar\nbaz\n(qux 1\n2))\n(foo\nbar\nbaz)\n( foo bar\nbaz)\n((a b)\nc)\n'(a\nb\nc)\n`(,a\n,@b)\n",
+  "keys": "C-x h C-M-\\",
+  "point": 0,
+  "modes": [
+   "emacs-lisp-mode"
+  ]
+ },
+ {
+  "name": "elisp-indent-comments-and-strings",
+  "text": "(defun f ()\n;;; Three\n;; Two\n; One\n\"line one\nline two\"\n(g \"a\nb\"\nc))\n",
+  "keys": "C-x h C-M-\\",
+  "point": 0,
+  "modes": [
+   "emacs-lisp-mode"
+  ]
+ },
+ {
+  "name": "elisp-indent-cond-and-defs",
+  "text": "(cond ((a)\n(b))\n(t\n(c)))\n(defvar x\n1\n\"Doc.\")\n(defcustom y nil\n\"Doc.\"\n:type 'boolean)\n(with-eval-after-load 'org\n(setq z 1))\n(when x\ny)\n(dolist (x xs)\n(f x))\n(add-hook 'foo-hook\n#'bar)\n",
+  "keys": "C-x h C-M-\\",
+  "point": 0,
+  "modes": [
+   "emacs-lisp-mode"
+  ]
+ },
+ {
+  "name": "elisp-tab-keeps-point-in-line",
+  "text": "(defun f ()\n(foo bar))\n",
+  "keys": "C-n C-f C-f TAB",
+  "point": 0,
+  "modes": [
+   "emacs-lisp-mode"
+  ]
+ },
+ {
+  "name": "elisp-tab-at-top-level",
+  "text": "   (foo)\n",
+  "keys": "TAB",
+  "point": 0,
+  "modes": [
+   "emacs-lisp-mode"
+  ]
+ },
+ {
+  "name": "elisp-c-m-q",
+  "text": "(defun f (x)\n(let ((y x))\n(when y\n(g y))))\n",
+  "keys": "C-M-q",
+  "point": 0,
+  "modes": [
+   "emacs-lisp-mode"
+  ]
+ },
+ {
+  "name": "elisp-indent-vectors-and-dots",
+  "text": "(setq a [1\n2]\nb '(x .\ny))\n(define-key map (kbd \"C-c\")\n#'foo)\n",
+  "keys": "C-x h C-M-\\",
+  "point": 0,
+  "modes": [
+   "emacs-lisp-mode"
+  ]
+ }
+]

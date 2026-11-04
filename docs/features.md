@@ -76,6 +76,7 @@ What works today, in a terminal (`ember`) or a window (`ember-gui`). Where it di
 - Fields (C-a and the word commands stop at a prompt's edge).
 - Tree-sitter highlighting (`rust-ts-mode`, `js-ts-mode`, `json-ts-mode`, `python-ts-mode`, and `go-ts-mode` with a grammar library), loading the grammars Emacs builds (`libtree-sitter-LANG.dylib` along `treesit-extra-load-path` or in `~/.config/ember/tree-sitter`), and modes' `treesit-font-lock-rules` by `treesit-font-lock-level`.
 - Indentation by Emacs's tree-sitter rules.
+- Emacs Lisp mode (`emacs-lisp-mode` for `.el` files and Org's `emacs-lisp` and `elisp` blocks, `lisp-data-mode` for `.eld` and `.dir-locals.el`): indenting as Emacs does, by `lisp-indent-line`, `indent-region` and `C-M-q`, with Emacs's indent specs for its macros, and Emacs Lisp's faces, for doc strings, definitions, keywords, `:keywords` and `&optional`.
 - The tree for scripts (parsers, nodes, queries).
 - Incremental search (`C-s`, `C-r`, `C-M-s`).
 - `query-replace` (`M-%`, `C-M-%`).

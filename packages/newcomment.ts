@@ -300,6 +300,9 @@ function commentIndent(): void {
     reindent(chooseIndent(0));
   } else if (!alone) {
     reindent(chooseIndent(num("comment-column", 32)));
+  } else if (starts === 1 && !doubled && num("comment-add", 0) > 0) {
+    // A comment alone of one starter, where comment-region doubles them, goes to comment-column.
+    reindent(num("comment-column", 32));
   } else {
     ember.call("indent-according-to-mode");
   }

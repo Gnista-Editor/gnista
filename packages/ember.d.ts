@@ -2167,6 +2167,14 @@ declare global {
        */
       "electric-pair-mode": [];
       /**
+       * The major mode for Emacs Lisp.
+       *
+       * TAB indents as Emacs indents Lisp, C-M-q indents the list after point, and M-; comments. Ember cannot run Emacs Lisp, so there is no evaluating or byte-compiling it.
+       *
+       * Defined in packages/elisp-mode.ts.
+       */
+      "emacs-lisp-mode": [];
+      /**
        * Enable a theme that is loaded, its faces winning over the other themes'.
        *
        * @param theme text
@@ -2922,6 +2930,12 @@ declare global {
        */
       "indent-rigidly-right-to-tab-stop": [];
       /**
+       * Indent each line of the list that starts just after point, as Lisp code.
+       *
+       * Defined in packages/lisp-mode.ts.
+       */
+      "indent-sexp": [];
+      /**
        * Insert text at point.
        *
        * @param text text
@@ -3347,6 +3361,18 @@ declare global {
        * Defined in packages/bindings.ts.
        */
       "left-word": [n?: number];
+      /**
+       * The major mode for files of data written in Lisp syntax.
+       *
+       * Defined in packages/lisp-mode.ts.
+       */
+      "lisp-data-mode": [];
+      /**
+       * Indent the current line as Lisp code.
+       *
+       * Defined in packages/lisp-mode.ts.
+       */
+      "lisp-indent-line": [];
       /**
        * Show the abbrevs in *Abbrevs*: each table, and each abbrev in it with how often it was used and its expansion.
        *
@@ -8034,6 +8060,10 @@ declare global {
        */
       "electric-pair-text-pairs": Value;
       /**
+       * Keymap emacs-lisp-mode-map.
+       */
+      "emacs-lisp-mode-map": Value;
+      /**
        * Whether a command can use the minibuffer while it is open, as M-x does run from the minibuffer: the new prompt opens inside the open one, which waits until it is done.
        */
       "enable-recursive-minibuffers": Value;
@@ -8870,6 +8900,22 @@ declare global {
        * A string shown at the start of each line, before its text, unless the text there has a line-prefix property of its own. Org's indent mode uses it.
        */
       "line-prefix": Value;
+      /**
+       * How many columns the body of a (def...) form is indented by, past the form's open paren.
+       *
+       * Defined in packages/lisp-mode.ts.
+       */
+      "lisp-body-indent": Value;
+      /**
+       * Keymap lisp-data-mode-map.
+       */
+      "lisp-data-mode-map": Value;
+      /**
+       * If a number, how far each level of a list indents past its open paren, in place of lining up under the first argument.
+       *
+       * Defined in packages/lisp-mode.ts.
+       */
+      "lisp-indent-offset": Value;
       /**
        * The text list-faces-display shows in each face.
        *
@@ -12147,6 +12193,10 @@ declare global {
        */
       "electric-pair-mode-on-hook": Value;
       /**
+       * Run after entering ELisp mode, after the hooks of the modes it is built on.
+       */
+      "emacs-lisp-mode-hook": Value;
+      /**
        * Run after after-init-hook, once Ember has started and loaded init.ts.
        */
       "emacs-startup-hook": Value;
@@ -12402,6 +12452,10 @@ declare global {
        * Functions called before Ember exits from save-buffers-kill-terminal; if one returns false, it does not exit.
        */
       "kill-emacs-query-functions": Value;
+      /**
+       * Run after entering Lisp-Data mode, after the hooks of the modes it is built on.
+       */
+      "lisp-data-mode-hook": Value;
       /**
        * Run when a prompt closes, in the minibuffer, before the answer is used.
        */

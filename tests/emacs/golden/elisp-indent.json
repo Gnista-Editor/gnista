@@ -1,0 +1,216 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "elisp-indent-region-sample",
+      "input": {
+        "text": ";;; sample.el --- A sample  -*- lexical-binding: t -*-\n;; A comment\n(defvar my-var 42 \"A variable.\")\n(defcustom my-option nil \"An option.\" :type 'boolean :group 'my)\n(defface my-face '((t :weight bold)) \"A face.\")\n(defun my-fun (a &optional b)\n\"Do A, then `my-var' with B.\"\n(let ((x (+ a 1)) ; trailing\n(y \"str\"))\n(when (and x y)\n(message \"%s %s\" x ?\\\"))\n(if b (error \"Bad %s\" b) nil)))\n(defmacro my-mac (&rest body) `(progn ,@body))\n(use-package org :ensure t :config (setq org-x 1))\n(cl-defstruct my-struct a b)\n(defalias 'my-alias #'my-fun)\n",
+        "point": 0,
+        "keys": "C-x h C-M-\\",
+        "modes": [
+          "emacs-lisp-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": ";;; sample.el --- A sample  -*- lexical-binding: t -*-\n;; A comment\n(defvar my-var 42 \"A variable.\")\n(defcustom my-option nil \"An option.\" :type 'boolean :group 'my)\n(defface my-face '((t :weight bold)) \"A face.\")\n(defun my-fun (a &optional b)\n  \"Do A, then `my-var' with B.\"\n  (let ((x (+ a 1)) ; trailing\n\t(y \"str\"))\n    (when (and x y)\n      (message \"%s %s\" x ?\\\"))\n    (if b (error \"Bad %s\" b) nil)))\n(defmacro my-mac (&rest body) `(progn ,@body))\n(use-package org :ensure t :config (setq org-x 1))\n(cl-defstruct my-struct a b)\n(defalias 'my-alias #'my-fun)\n",
+      "visible": ";;; sample.el --- A sample  -*- lexical-binding: t -*-\n;; A comment\n(defvar my-var 42 \"A variable.\")\n(defcustom my-option nil \"An option.\" :type 'boolean :group 'my)\n(defface my-face '((t :weight bold)) \"A face.\")\n(defun my-fun (a &optional b)\n  \"Do A, then `my-var' with B.\"\n  (let ((x (+ a 1)) ; trailing\n\t(y \"str\"))\n    (when (and x y)\n      (message \"%s %s\" x ?\\\"))\n    (if b (error \"Bad %s\" b) nil)))\n(defmacro my-mac (&rest body) `(progn ,@body))\n(use-package org :ensure t :config (setq org-x 1))\n(cl-defstruct my-struct a b)\n(defalias 'my-alias #'my-fun)\n",
+      "point": 0,
+      "mark": 563,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "elisp-indent-keywords",
+      "input": {
+        "text": "(use-package org\n:ensure t\n:hook (org-mode . visual-line-mode)\n:config\n(setq org-x 1)\n(setq org-y 2))\n",
+        "point": 0,
+        "keys": "C-x h C-M-\\",
+        "modes": [
+          "emacs-lisp-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "(use-package org\n  :ensure t\n  :hook (org-mode . visual-line-mode)\n  :config\n  (setq org-x 1)\n  (setq org-y 2))\n",
+      "visible": "(use-package org\n  :ensure t\n  :hook (org-mode . visual-line-mode)\n  :config\n  (setq org-x 1)\n  (setq org-y 2))\n",
+      "point": 0,
+      "mark": 112,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "elisp-indent-specforms",
+      "input": {
+        "text": "(let ((a 1)\n(b 2))\n(if a\nb\nc\nd)\n(condition-case err\n(foo)\n(error\n(bar err)))\n(progn\n(x)\n(y))\n(lambda (x)\n(* x 2)))\n",
+        "point": 0,
+        "keys": "C-x h C-M-\\",
+        "modes": [
+          "emacs-lisp-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "(let ((a 1)\n      (b 2))\n  (if a\n      b\n    c\n    d)\n  (condition-case err\n      (foo)\n    (error\n     (bar err)))\n  (progn\n    (x)\n    (y))\n  (lambda (x)\n    (* x 2)))\n",
+      "visible": "(let ((a 1)\n      (b 2))\n  (if a\n      b\n    c\n    d)\n  (condition-case err\n      (foo)\n    (error\n     (bar err)))\n  (progn\n    (x)\n    (y))\n  (lambda (x)\n    (* x 2)))\n",
+      "point": 0,
+      "mark": 170,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "elisp-indent-calls",
+      "input": {
+        "text": "(foo bar\nbaz\n(qux 1\n2))\n(foo\nbar\nbaz)\n( foo bar\nbaz)\n((a b)\nc)\n'(a\nb\nc)\n`(,a\n,@b)\n",
+        "point": 0,
+        "keys": "C-x h C-M-\\",
+        "modes": [
+          "emacs-lisp-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "(foo bar\n     baz\n     (qux 1\n\t  2))\n(foo\n bar\n baz)\n( foo bar\n  baz)\n((a b)\n c)\n'(a\n  b\n  c)\n`(,a\n  ,@b)\n",
+      "visible": "(foo bar\n     baz\n     (qux 1\n\t  2))\n(foo\n bar\n baz)\n( foo bar\n  baz)\n((a b)\n c)\n'(a\n  b\n  c)\n`(,a\n  ,@b)\n",
+      "point": 0,
+      "mark": 106,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "elisp-indent-comments-and-strings",
+      "input": {
+        "text": "(defun f ()\n;;; Three\n;; Two\n; One\n\"line one\nline two\"\n(g \"a\nb\"\nc))\n",
+        "point": 0,
+        "keys": "C-x h C-M-\\",
+        "modes": [
+          "emacs-lisp-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun f ()\n;;; Three\n  ;; Two\n\t\t\t\t\t; One\n  \"line one\nline two\"\n  (g \"a\nb\"\n     c))\n",
+      "visible": "(defun f ()\n;;; Three\n  ;; Two\n\t\t\t\t\t; One\n  \"line one\nline two\"\n  (g \"a\nb\"\n     c))\n",
+      "point": 0,
+      "mark": 84,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "elisp-indent-cond-and-defs",
+      "input": {
+        "text": "(cond ((a)\n(b))\n(t\n(c)))\n(defvar x\n1\n\"Doc.\")\n(defcustom y nil\n\"Doc.\"\n:type 'boolean)\n(with-eval-after-load 'org\n(setq z 1))\n(when x\ny)\n(dolist (x xs)\n(f x))\n(add-hook 'foo-hook\n#'bar)\n",
+        "point": 0,
+        "keys": "C-x h C-M-\\",
+        "modes": [
+          "emacs-lisp-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "(cond ((a)\n       (b))\n      (t\n       (c)))\n(defvar x\n  1\n  \"Doc.\")\n(defcustom y nil\n  \"Doc.\"\n  :type 'boolean)\n(with-eval-after-load 'org\n  (setq z 1))\n(when x\n  y)\n(dolist (x xs)\n  (f x))\n(add-hook 'foo-hook\n\t  #'bar)\n",
+      "visible": "(cond ((a)\n       (b))\n      (t\n       (c)))\n(defvar x\n  1\n  \"Doc.\")\n(defcustom y nil\n  \"Doc.\"\n  :type 'boolean)\n(with-eval-after-load 'org\n  (setq z 1))\n(when x\n  y)\n(dolist (x xs)\n  (f x))\n(add-hook 'foo-hook\n\t  #'bar)\n",
+      "point": 0,
+      "mark": 221,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "elisp-tab-keeps-point-in-line",
+      "input": {
+        "text": "(defun f ()\n(foo bar))\n",
+        "point": 0,
+        "keys": "C-n C-f C-f TAB",
+        "modes": [
+          "emacs-lisp-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun f ()\n  (foo bar))\n",
+      "visible": "(defun f ()\n  (foo bar))\n",
+      "point": 16,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "elisp-tab-at-top-level",
+      "input": {
+        "text": "   (foo)\n",
+        "point": 0,
+        "keys": "TAB",
+        "modes": [
+          "emacs-lisp-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "(foo)\n",
+      "visible": "(foo)\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "elisp-c-m-q",
+      "input": {
+        "text": "(defun f (x)\n(let ((y x))\n(when y\n(g y))))\n",
+        "point": 0,
+        "keys": "C-M-q",
+        "modes": [
+          "emacs-lisp-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "(defun f (x)\n  (let ((y x))\n    (when y\n      (g y))))\n",
+      "visible": "(defun f (x)\n  (let ((y x))\n    (when y\n      (g y))))\n",
+      "point": 0,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    },
+    {
+      "name": "elisp-indent-vectors-and-dots",
+      "input": {
+        "text": "(setq a [1\n2]\nb '(x .\ny))\n(define-key map (kbd \"C-c\")\n#'foo)\n",
+        "point": 0,
+        "keys": "C-x h C-M-\\",
+        "modes": [
+          "emacs-lisp-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "(setq a [1\n\t 2]\n      b '(x .\n\t    y))\n(define-key map (kbd \"C-c\")\n\t    #'foo)\n",
+      "visible": "(setq a [1\n\t 2]\n      b '(x .\n\t    y))\n(define-key map (kbd \"C-c\")\n\t    #'foo)\n",
+      "point": 0,
+      "mark": 79,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null
+    }
+  ]
+}

@@ -110,6 +110,8 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/case-table.ts", include_str!("../../../packages/case-table.ts")),
     ("packages/outline.ts", include_str!("../../../packages/outline.ts")),
     ("packages/prog-mode.ts", include_str!("../../../packages/prog-mode.ts")),
+    ("packages/lisp-mode.ts", include_str!("../../../packages/lisp-mode.ts")),
+    ("packages/elisp-mode.ts", include_str!("../../../packages/elisp-mode.ts")),
     ("packages/subword.ts", include_str!("../../../packages/subword.ts")),
     ("packages/imenu.ts", include_str!("../../../packages/imenu.ts")),
     ("packages/treesit.ts", include_str!("../../../packages/treesit.ts")),
