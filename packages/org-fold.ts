@@ -238,7 +238,7 @@ export function cycleHeading(all: Heading[], i: number, at = i): void {
   }
   // Org takes an entry of only blank lines for folded whether they show or
   // not, so once shown TAB never folds it again; Ember folds it when none of
-  // it is hidden (docs/departures.md).
+  // it is hidden (docs/differences.md).
   const shownBlank = !hasChildren && eol < eos && /^\s*$/.test(ember.bufferText(eoh, eos)) && !anyFolded(eoh, eos);
   const hiddenInOneLine = !shownBlank && (eol >= eos || /^\s*$/.test(ember.bufferText(eol, eos)));
   if (hiddenInOneLine && !hasChildren) skipped = true;

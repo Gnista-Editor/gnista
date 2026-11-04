@@ -1,6 +1,14 @@
-/target/
+# A worktree's target is a symlink to the main checkout's (.claude/hooks/share-target.sh).
+/target
+# A worktree's own app, which make app builds there.
+/Ember.app
 spikes/*/target/
 .DS_Store
+
+# Claude Code's worktrees, one per session working on a branch.
+.claude/worktrees/
+# Settings and approvals of this machine's own.
+.claude/settings.local.json
 
 # Secrets and personal data never belong in this repository.
 .env
