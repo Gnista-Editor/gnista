@@ -3807,13 +3807,11 @@ declare global {
        */
       "org--refile-to": [target: string];
       /**
-       * Show an agenda view, asking which by its key: a for the week's agenda, t for the TODO list.
-       *
-       * @param key text
+       * Show an agenda view, asking which by its key in *Agenda Commands*: a for the week's agenda, t for the TODO list.
        *
        * Defined in packages/org-agenda.ts.
        */
-      "org-agenda": [key: string];
+      "org-agenda": [];
       /**
        * Show the week before in the agenda.
        *
@@ -3917,7 +3915,7 @@ declare global {
        */
       "org-backward-heading-same-level": [arg?: number];
       /**
-       * Capture a note, asking for the key of one of org-capture-templates: its entry goes into its target file, shown narrowed to it. C-c C-c files it and C-c C-k takes it away.
+       * Capture a note, asking for one of org-capture-templates by its key in *Org Select*: its entry goes into its target file, shown narrowed to it. C-c C-c files it and C-c C-k takes it away.
        *
        * Defined in packages/org-capture.ts.
        */

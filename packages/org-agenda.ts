@@ -427,14 +427,54 @@ const todoListCommand = ember.defineCommand({
 
 ember.defineCommand({
   name: "org-agenda",
-  doc: "Show an agenda view, asking which by its key: a for the week's agenda, t for the TODO list.",
-  params: [{ name: "key", kind: "string", prompt: "Agenda view (a: week, t: TODO list): " }],
-  run: (key) => {
+  doc: "Show an agenda view, asking which by its key in *Agenda Commands*: a for the week's agenda, t for the TODO list.",
+  run: () => {
+    const key = agendaDispatch();
     if (key === "a") weekAgenda(weekStart(dayNumber(today_())));
     else if (key === "t") todoList();
-    else throw new Error(`No agenda view ${key}`);
+    else ember.userError(`Ember does not have that agenda view yet: ${key}`);
   },
 });
+
+/** The menu of agenda views, as org-agenda-get-restriction-and-command shows it. */
+const DISPATCH_HEADER = `Press key for an agenda command:
+--------------------------------        <   Buffer, subtree/region restriction
+a   Agenda for current week or day      >   Remove restriction
+/   Multi-occur                         e   Export agenda views
+t   List of all TODO entries            T   Entries with special TODO kwd
+m   Match a TAGS/PROP/TODO query        M   Like m, but only TODO entries
+s   Search for keywords                 S   Like s, but only TODO entries
+?   Find :FLAGGED: entries              C   Configure custom agenda commands
+*   Toggle sticky agenda views          #   List stuck projects (!=configure)
+`;
+
+/** Asks for an agenda view by its key, showing the menu in *Agenda Commands*: q or C-g aborts. */
+function agendaDispatch(): string {
+  const name = "*Agenda Commands*";
+  return ember.saveWindowExcursion(() => {
+    ember.call("delete-other-windows");
+    ember.call("switch-to-buffer-other-window", name);
+    try {
+      ember.letBind({ "inhibit-read-only": true }, () => {
+        ember.deleteRegion(0, ember.bufferSize());
+        ember.insert(DISPATCH_HEADER);
+        // The keys in bold, as Org shows them.
+        const text = DISPATCH_HEADER;
+        for (const m of allMatches(/(^|   |\()(\S)( |=)/gm, text)) {
+          const at = charCount(text.slice(0, m.index + m[1].length));
+          ember.putTextProperty(at, at + 1, "face", "bold");
+        }
+      });
+      ember.gotoChar(0);
+      ember.call("shrink-window-if-larger-than-buffer");
+      const key = ember.readKey("Press key for agenda command:");
+      if (key === "q" || key === "C-g") ember.userError("Abort");
+      return key;
+    } finally {
+      if (ember.bufferList().includes(name)) ember.call("kill-buffer", name);
+    }
+  });
+}
 
 /** The entry the agenda line at point shows, or Org's error if it shows none. */
 function agendaItemHere(): AgendaItem {

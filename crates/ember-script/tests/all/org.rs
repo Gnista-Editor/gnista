@@ -807,14 +807,14 @@ fn capture_files_into_date_trees_and_outline_paths_as_emacs_does() {
     .unwrap();
     ed.set_frame_size(80, 24);
     let read = |name: &str| std::fs::read_to_string(dir.path().join(name)).unwrap();
-    ed.press("M-x o r g - c a p t u r e RET m RET w o r k RET T i t l e C-c C-c").unwrap();
+    ed.press("M-x o r g - c a p t u r e RET m w o r k RET T i t l e C-c C-c").unwrap();
     assert_eq!(
         read("meetings.org"),
         "#+title: Meetings\n* 2026\n** 2026-W44\n*** 2026-10-28 Wednesday\n**** Old meeting\n** 2026-W45\n*** 2026-11-04 Wednesday\n**** Title                                                     :meeting:work: \n:Created: <2026-11-04 Wed 12:00>\n***** Attendees\n****** \n***** Notes\n***** Action Items\n******   \n"
     );
-    ed.press("M-x o r g - c a p t u r e RET j RET T i t l e C-c C-c").unwrap();
+    ed.press("M-x o r g - c a p t u r e RET j T i t l e C-c C-c").unwrap();
     assert_eq!(read("journal.org"), "\n* 2026\n** 2026-11 November\n*** 2026-11-04 Wednesday\n**** Title\nEntered on [2026-11-04 Wed 12:00]\n");
-    ed.press("M-x o r g - c a p t u r e RET p RET T i t l e C-c C-c").unwrap();
+    ed.press("M-x o r g - c a p t u r e RET p T i t l e C-c C-c").unwrap();
     assert_eq!(read("people.org"), "* Inbox\n** Title                                                             :person: \n:Created: <2026-11-04 Wed 12:00>\nRun (C-c n h)\n* Projects\n");
 }
 
@@ -865,7 +865,7 @@ fn capture_clocks_in_and_resumes_the_clock_it_stopped() {
     ed.set_frame_size(80, 24);
     ed.call("find-file", vec![Arg::Str(format!("{d}/tasks.org"))]).unwrap();
     ed.press("C-c C-x C-i").unwrap();
-    ed.press("M-x o r g - c a p t u r e RET m RET T a l k").unwrap();
+    ed.press("M-x o r g - c a p t u r e RET m T a l k").unwrap();
     let mode_line = s.eval_expression(&mut ed, r#"String(ember.variable("org-mode-line-string"))"#).unwrap();
     // The heading as it was when the clock started, before its title was typed, as Org takes it.
     assert_eq!(mode_line.trim_matches('"'), "[0:00] () ");

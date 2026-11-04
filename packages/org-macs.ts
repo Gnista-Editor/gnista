@@ -93,3 +93,68 @@ export function edDelete(from: number, to: number): string {
   return ember.deleteRegion(from, to);
 }
 
+
+/**
+ * Asks for one of a table's entries by its keys, a key at a time, as
+ * org-mks does: *Org Select* lists the entries and prefixes a key can
+ * choose, under `title`; a prefix, an entry of a key and a description
+ * only, lists those under it. Returns the entry, or for one of `specials`
+ * its key; C-g aborts.
+ */
+export function orgMks(table: ember.Value[][], title: string, prompt = "Select: ", specials: [string, string][] = []): ember.Value[] | string {
+  const name = "*Org Select*";
+  return ember.saveWindowExcursion(() => {
+    ember.call("switch-to-buffer-other-window", name);
+    try {
+      let current = "";
+      for (;;) {
+        const allowed = new Set<string>();
+        const prefixes = new Set<string>();
+        let text = `${title}\n\n`;
+        const prefix = current === "" ? "" : `${current} `;
+        for (const entry of table) {
+          const key = String(entry[0] ?? "");
+          if (!key.startsWith(current) || [...key].length !== [...current].length + 1) continue;
+          const k = [...key].at(-1)!;
+          if (entry.length === 2) {
+            prefixes.add(k);
+            allowed.add(k === " " || k === "\r" ? "\t" : k);
+            text += `${prefix}[${k}]...  ${String(entry[1])}...\n`;
+          } else if (entry.length > 2) {
+            allowed.add(k);
+            text += `${prefix}[${k}]     ${String(entry[1])}\n`;
+          }
+        }
+        if (specials.length > 0) {
+          text += `${"-".repeat(79)}\n`;
+          for (const [key, description] of specials) {
+            text += `[${key}]     ${description}\n`;
+            allowed.add(key);
+          }
+        }
+        ember.letBind({ "inhibit-read-only": true }, () => {
+          ember.deleteRegion(0, ember.bufferSize());
+          ember.insert(text);
+        });
+        ember.gotoChar(0);
+        ember.call("shrink-window-if-larger-than-buffer");
+        let pressed: string;
+        for (;;) {
+          const key = ember.readKey(prompt);
+          pressed = key === "SPC" || key === "TAB" || key === "RET" ? "\t" : key;
+          if (pressed === "C-g" || allowed.has(pressed)) break;
+          ember.message(`Invalid key: ‘${pressed}’`);
+        }
+        if (pressed === "C-g") ember.userError("Abort");
+        current += pressed;
+        if (prefixes.has(pressed)) continue;
+        const entry = table.find((e) => e[0] === current);
+        if (entry) return entry;
+        if (specials.some(([k]) => k === current)) return current;
+        ember.signal("error", "No entry available");
+      }
+    } finally {
+      if (ember.bufferList().includes(name)) ember.call("kill-buffer", name);
+    }
+  });
+}

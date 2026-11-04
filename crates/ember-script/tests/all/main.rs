@@ -47,6 +47,7 @@ mod modes;
 mod mouse;
 mod org;
 mod org_roam;
+mod org_select;
 mod parens;
 mod persistent_scratch;
 mod processes;

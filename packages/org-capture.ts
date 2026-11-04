@@ -6,7 +6,7 @@
 import { alignTags, formatTimestamp, type Heading, headings, parseHeading, subtreeRegion, today } from "org";
 import { clockIn, clockOut, runningEntry } from "org-clock";
 import { findDateCreate } from "org-datetree";
-import { lineAt } from "org-macs";
+import { lineAt, orgMks } from "org-macs";
 import { charCount } from "subr";
 
 ember.defineVariable({
@@ -304,9 +304,21 @@ ember.defineCommand({
 ember.defineCommand({
   name: "org-capture",
   doc:
-    "Capture a note, asking for the key of one of org-capture-templates: its entry goes into its target file, " +
-    "shown narrowed to it. C-c C-c files it and C-c C-k takes it away.",
-  run: () => ember.callInteractively("org--capture-with"),
+    "Capture a note, asking for one of org-capture-templates by its key in *Org Select*: its entry goes into its " +
+    "target file, shown narrowed to it. C-c C-c files it and C-c C-k takes it away.",
+  run: () => {
+    // As org-capture-select-template, Org's one default template when there are none.
+    const chosen = orgMks(captureTemplates() as unknown as ember.Value[][], "Select a capture template\n=========================", "Template key: ", [
+      ["C", "Customize org-capture-templates"],
+      ["q", "Abort"],
+    ]);
+    if (chosen === "q") ember.userError("Abort");
+    if (chosen === "C") {
+      ember.call("describe-variable", "org-capture-templates");
+      return;
+    }
+    captureWith(String((chosen as ember.Value[])[0]));
+  },
 });
 
 const captureFinalize = ember.defineCommand({
