@@ -28,8 +28,15 @@ pub(crate) trait Scope {
     type Error;
     type Held: Held;
 
+    /// A script object the editor keeps as a value, freed when the value is.
+    type Kept: 'static;
+
     /// A function kept for the editor to call, or `None` if it is not one.
     fn hold(&mut self, value: &Self::Value) -> Option<Self::Held>;
+    /// Keeps a script value, an object, for the editor to give back.
+    fn keep(&mut self, value: &Self::Value) -> Self::Kept;
+    /// The value kept, as itself.
+    fn restore(&mut self, kept: &Self::Kept) -> Result<Self::Value, Self::Error>;
 
     fn null(&mut self) -> Self::Value;
     fn undefined(&mut self) -> Self::Value;
@@ -88,6 +95,12 @@ pub(crate) fn value_to_js<S: Scope>(s: &mut S, value: &EditorValue) -> Result<S:
             s.array(items)?
         }
         EditorValue::Function(function) => s.function_to_js(function)?,
+        // A script's own object, given back as itself; one another engine
+        // keeps is nothing this one can see.
+        EditorValue::Object(object) => match object.origin().downcast_ref::<S::Kept>() {
+            Some(kept) => s.restore(kept)?,
+            None => s.undefined(),
+        },
         // The prelude's object for the buffer, the same one each time.
         EditorValue::Buffer(id) => {
             let id = s.number(*id as f64);
@@ -145,11 +158,11 @@ pub(crate) fn value_to_js<S: Scope>(s: &mut S, value: &EditorValue) -> Result<S:
 }
 
 /// A script value as an editor value, throwing a TypeError if it is not
-/// one, such as an object.
+/// one, a BigInt.
 pub(crate) fn value_from_js<S: Scope>(s: &mut S, value: S::Value) -> Result<EditorValue, S::Error> {
     match convert_from_js(s, value)? {
         Some(value) => Ok(value),
-        None => Err(s.throw_type("A variable holds null, a boolean, a number, a string, a function, or an array of these")),
+        None => Err(s.throw_type("A variable cannot hold a BigInt")),
     }
 }
 
@@ -165,7 +178,9 @@ fn numbers_property<S: Scope>(s: &mut S, object: &S::Value, key: &str) -> Result
     Ok(items.iter().map(|v| s.as_number(v)).collect())
 }
 
-/// A script value as an editor value, or `None` if it is not one, such as an object.
+/// A script value as an editor value: a plain object, or any other the
+/// editor has no value of its own for, kept as itself, as a Lisp record.
+/// `None` for what no value can hold, a BigInt.
 pub(crate) fn convert_from_js<S: Scope>(s: &mut S, value: S::Value) -> Result<Option<EditorValue>, S::Error> {
     if s.is_nullish(&value) {
         return Ok(Some(EditorValue::Null));
@@ -277,7 +292,11 @@ pub(crate) fn convert_from_js<S: Scope>(s: &mut S, value: S::Value) -> Result<Op
         }
         return Ok(Some(EditorValue::Text(ember_core::Text { string, props })));
     }
-    Ok(None)
+    // The prelude's identity for the object, so one object is one value, `eq` to itself.
+    let id = s.call_global("__emberObjectId", vec![object.clone()])?;
+    let id = s.as_number(&id).unwrap_or(0.0) as u64;
+    let kept = s.keep(&object);
+    Ok(Some(EditorValue::Object(ember_core::ScriptObject::new(id, std::rc::Rc::new(kept)))))
 }
 
 /// A string or propertized string from a script, as text to insert.

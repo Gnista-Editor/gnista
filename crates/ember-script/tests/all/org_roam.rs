@@ -170,3 +170,17 @@ fn org_capture_still_finishes_and_aborts_its_own_captures() {
     let left = d.eval_expression(r#"ember.withCurrentBuffer(ember.getBuffer("inbox.org")!, () => ember.bufferSubstringNoProperties(ember.pointMin(), ember.pointMax()))"#);
     assert_eq!(left, r#""* Inbox\n* TODO Kept\n""#);
 }
+
+#[test]
+fn node_find_with_consult_org_roam_visits_a_heading_node() {
+    let dir = tempfile::tempdir().unwrap();
+    let d = setup(dir.path());
+    d.eval(r#"ember.require("consult"); ember.require("consult-org-roam"); ember.call("consult-org-roam-mode");"#);
+    let path = dir.path().canonicalize().unwrap().display().to_string();
+    d.eval(&format!("ember.call(\"dired\", {path:?});"));
+    d.start(|ed| ed.call("org-roam-node-find", vec![]).unwrap());
+    d.type_text("Beta");
+    d.press("RET");
+    let (name, line, echo) = d.with(|ed| (ed.buffer().name.clone(), ed.buffer().line_of(ed.buffer().point()), ed.echo().map(str::to_string)));
+    assert_eq!((name.as_str(), line, echo), ("beta.org", 2, None));
+}

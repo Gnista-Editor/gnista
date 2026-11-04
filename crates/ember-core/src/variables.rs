@@ -38,6 +38,10 @@ pub enum Value {
     Marker(u64),
     /// A font spec, entity or object, as Emacs's font vectors.
     Font(Box<crate::font::Font>),
+    /// A script's own object, such as an org-roam node, which the editor
+    /// holds without looking inside and gives back as itself, as Lisp passes
+    /// a record through advice and variables.
+    Object(ScriptObject),
 }
 
 impl Value {
@@ -146,6 +150,43 @@ impl fmt::Debug for Function {
     }
 }
 
+/// A script's object held as a value. Two are the same only if they are
+/// one object, as `eq` compares them.
+#[derive(Clone)]
+pub struct ScriptObject {
+    id: u64,
+    origin: Rc<dyn std::any::Any>,
+}
+
+impl ScriptObject {
+    /// An object the script engine keeps in `origin`, by the identity `id`
+    /// it gave it.
+    pub fn new(id: u64, origin: Rc<dyn std::any::Any>) -> ScriptObject {
+        ScriptObject { id, origin }
+    }
+
+    /// What the engine keeps, to give the object back as itself.
+    pub fn origin(&self) -> &dyn std::any::Any {
+        &*self.origin
+    }
+
+    pub fn id(&self) -> u64 {
+        self.id
+    }
+}
+
+impl PartialEq for ScriptObject {
+    fn eq(&self, other: &ScriptObject) -> bool {
+        self.id == other.id
+    }
+}
+
+impl fmt::Debug for ScriptObject {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "#<object {}>", self.id)
+    }
+}
+
 impl fmt::Display for Value {
     /// As a script would write it: `null`, `true`, `8`, `"text"`, `["a", 1]`.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -175,6 +216,7 @@ impl fmt::Display for Value {
             Value::Treesit(crate::treesitfns::TsObject::Node(_)) => write!(f, "#<treesit-node>"),
             Value::Marker(id) => write!(f, "#<marker {id}>"),
             Value::Font(font) => write!(f, "#<{} {}>", font.kind.name(), font.xlfd_name(true)),
+            Value::Object(object) => write!(f, "{object:?}"),
         }
     }
 }

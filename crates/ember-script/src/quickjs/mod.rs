@@ -237,6 +237,13 @@ fn throw_error(ctx: &Ctx<'_>, e: &Error) -> rquickjs::Error {
     ctx.throw(exception.into_value())
 }
 
+/// A script object the editor holds as a value.
+pub(crate) struct KeptObject {
+    // Declared before `context` so the object is freed before the runtime can be.
+    value: Persistent<Value<'static>>,
+    _context: Option<Context>,
+}
+
 /// A script function the editor holds on to, as a command or a hook function.
 pub(crate) struct ScriptFunction {
     // Declared before `context` so the function is freed before the runtime can be.
@@ -257,7 +264,7 @@ impl ScriptFunction {
     }
 
     /// Calls the function with editor values and returns what it returns,
-    /// as a function value's call; what is not an editor value, such as an object, is t.
+    /// as a function value's call.
     fn call_returning(&self, ed: &mut Editor, args: &[EditorValue]) -> Result<EditorValue> {
         enter(&self.context, ed, |ctx| {
             let run = self.run.clone().restore(&ctx).map_err(|e| js_error(&ctx, e))?;
@@ -267,7 +274,7 @@ impl ScriptFunction {
                 .collect::<rquickjs::Result<Vec<_>>>()
                 .map_err(|e| js_error(&ctx, e))?;
             let value: Value = run.call((Rest(args),)).map_err(|e| js_error(&ctx, e))?;
-            // What is no editor value, such as an object, is still not nil: t.
+            // What no value can hold, a BigInt, is still not nil: t.
             convert_from_js(&ctx, value).map(|v| v.unwrap_or(EditorValue::Bool(true))).map_err(|e| js_error(&ctx, e))
         })
     }
@@ -441,11 +448,20 @@ impl<'js> values::Scope for Ctx<'js> {
     type Value = Value<'js>;
     type Error = rquickjs::Error;
     type Held = ScriptFunction;
+    type Kept = KeptObject;
 
     fn hold(&mut self, value: &Value<'js>) -> Option<ScriptFunction> {
         let f = value.as_function()?;
         let context = CONTEXTS.with_borrow(|c| c.last().cloned())?;
         Some(ScriptFunction { run: Persistent::save(self, f.clone()), context })
+    }
+
+    fn keep(&mut self, value: &Value<'js>) -> KeptObject {
+        KeptObject { value: Persistent::save(self, value.clone()), _context: CONTEXTS.with_borrow(|c| c.last().cloned()) }
+    }
+
+    fn restore(&mut self, kept: &KeptObject) -> rquickjs::Result<Value<'js>> {
+        kept.value.clone().restore(self)
     }
 
     fn null(&mut self) -> Value<'js> {

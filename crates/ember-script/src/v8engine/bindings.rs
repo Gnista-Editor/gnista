@@ -190,7 +190,7 @@ impl Conv for Fields {
         let mut fields = Vec::new();
         for name in super::keys(scope, object) {
             let value = super::get(scope, object, &name).ok_or(Thrown)?;
-            if let Some(value) = super::convert_from_js(scope, value)? {
+            if let Some(value) = super::convert_from_js(scope, value)?.filter(|v| !matches!(v, ember_core::Value::Object(_))) {
                 fields.push((name, value));
             }
         }

@@ -697,8 +697,8 @@ fn local_hooks_bind_locally_and_go_when_emptied() {
           return [ran, success, ember.isLocalVariable("test-hook"), ember.variable("test-hook")];
         })()"#,
     );
-    // let binds the local value; an object is success; the emptied local value goes.
-    assert_eq!(result, "[1,true,false,[]]");
+    // let binds the local value; an object is success, and is what the hook gives; the emptied local value goes.
+    assert_eq!(result, r#"[1,{"found":true},false,[]]"#);
 }
 
 #[test]

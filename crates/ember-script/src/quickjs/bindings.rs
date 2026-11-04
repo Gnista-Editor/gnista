@@ -137,7 +137,7 @@ impl Conv for Fields {
         let mut fields = Vec::new();
         for entry in object.props::<String, Value>() {
             let (name, value) = entry?;
-            if let Some(value) = super::convert_from_js(ctx, value)? {
+            if let Some(value) = super::convert_from_js(ctx, value)?.filter(|v| !matches!(v, ember_core::Value::Object(_))) {
                 fields.push((name, value));
             }
         }

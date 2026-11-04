@@ -278,7 +278,7 @@ impl Editor {
                     }
                 }
             },
-            Value::Null | Value::Bool(_) | Value::Number(_) | Value::Buffer(_) | Value::Keymap(_) | Value::CharTable(_) | Value::Treesit(_) | Value::Marker(_) | Value::Font(_) => {}
+            Value::Null | Value::Bool(_) | Value::Number(_) | Value::Buffer(_) | Value::Keymap(_) | Value::CharTable(_) | Value::Treesit(_) | Value::Marker(_) | Value::Font(_) | Value::Object(_) => {}
         }
     }
 

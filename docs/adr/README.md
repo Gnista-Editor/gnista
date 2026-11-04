@@ -58,3 +58,4 @@ One record per decision, in the order they were made; a later one can change an 
 - [0054](0054-v8-as-the-script-engine.md) V8 as the script engine
 - [0055](0055-require-frame-parameters-and-the-tab-bar.md) Require, frame parameters and the tab bar
 - [0056](0056-grammars-from-shared-libraries.md) Grammars from shared libraries
+- [0057](0057-script-objects-as-values.md) Script objects as values

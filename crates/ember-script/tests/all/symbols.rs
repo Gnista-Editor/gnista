@@ -56,6 +56,23 @@ fn seen_clear(ed: &mut Editor, s: &Scripting) {
 }
 
 #[test]
+fn a_script_object_passes_through_advice_and_variables_as_itself() {
+    let (mut ed, s) = setup();
+    // As a Lisp record passes through advice: consult-org-roam overrides org-roam-node-read, whose answer is a node.
+    let code = r#"(() => {
+      const node = { id: "a", todo: undefined, olp: [] };
+      ember.defun("read-node", () => undefined);
+      ember.adviceAdd("read-node", "override", () => node);
+      const back = ember.funcall("read-node");
+      ember.defineVariable({ name: "test-node", value: null });
+      ember.setVariable("test-node", [node, 1]);
+      const held = ember.variable("test-node");
+      return JSON.stringify([back === node, held[0] === node, held[1]]);
+    })()"#;
+    assert_eq!(eval(&mut ed, &s, code), "[true,true,1]");
+}
+
+#[test]
 fn the_newest_advice_is_outermost_within_its_depth() {
     let (mut ed, s) = setup();
     eval(

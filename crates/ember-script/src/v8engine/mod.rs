@@ -567,6 +567,13 @@ fn number<'s>(scope: &mut v8::PinScope<'s, '_>, n: f64) -> v8::Local<'s, v8::Val
     v8::Number::new(scope, n).into()
 }
 
+/// A script object the editor holds as a value.
+pub(crate) struct KeptObject {
+    // Declared before `engine` so the handle is freed while the isolate lives.
+    value: v8::Global<v8::Value>,
+    _engine: Rc<Inner>,
+}
+
 /// A script function the editor holds on to, as a command or a hook function.
 pub(crate) struct ScriptFunction {
     // Declared before `engine` so the handle is freed while the isolate lives.
@@ -607,7 +614,7 @@ impl ScriptFunction {
     }
 
     /// Calls the function with editor values and returns what it returns,
-    /// as a function value's call; what is not an editor value, such as an object, is t.
+    /// as a function value's call; what no value can hold, a BigInt, is t.
     fn call_returning(&self, ed: &mut Editor, args: &[EditorValue]) -> Result<EditorValue> {
         self.invoke(
             ed,
@@ -838,10 +845,19 @@ impl<'s> values::Scope for v8::PinScope<'s, '_> {
     type Value = v8::Local<'s, v8::Value>;
     type Error = Thrown;
     type Held = ScriptFunction;
+    type Kept = KeptObject;
 
     fn hold(&mut self, value: &v8::Local<'s, v8::Value>) -> Option<ScriptFunction> {
         let f = v8::Local::<v8::Function>::try_from(*value).ok()?;
         Some(ScriptFunction::new(self, f))
+    }
+
+    fn keep(&mut self, value: &v8::Local<'s, v8::Value>) -> KeptObject {
+        KeptObject { value: v8::Global::new(self, *value), _engine: current() }
+    }
+
+    fn restore(&mut self, kept: &KeptObject) -> Js<'s> {
+        Ok(v8::Local::new(self, &kept.value))
     }
 
     fn null(&mut self) -> v8::Local<'s, v8::Value> {

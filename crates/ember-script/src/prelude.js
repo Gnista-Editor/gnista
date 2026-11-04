@@ -88,6 +88,18 @@
       return "#<keymap>";
     }
   }
+  // A script object's identity as an editor value, the same each time, kept
+  // beside the object rather than on it.
+  const objectIds = new WeakMap();
+  let nextObjectId = 1;
+  globalThis.__emberObjectId = (object) => {
+    let id = objectIds.get(object);
+    if (id === undefined) {
+      id = nextObjectId++;
+      objectIds.set(object, id);
+    }
+    return id;
+  };
   const keymaps = new Map();
   globalThis.__emberKeymap = (id) => {
     let k = keymaps.get(id);
@@ -974,9 +986,8 @@
     symbolFunction: (name) => functions.get(symbolName(name)) ?? native.symbolFunction(symbolName(name)),
     funcall(f, ...args) {
       if (typeof f === "function") return f(...args);
-      // A script's own function is called directly, so it can take objects;
-      // others, and commands, through the editor.
-      // Advice runs in the editor, so a call through it takes editor values only.
+      // A script's own function is called directly; others, commands and
+      // advised functions, through the editor, which gives objects back as themselves.
       const name = symbolName(f);
       const fn = functions.get(name);
       if (fn !== undefined && !native.advised(name)) return fn(...args);
