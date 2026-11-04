@@ -90,6 +90,11 @@ natives! {
         Ok(if ed.minibuffer_window_selected() { ember_core::MINIBUFFER_WINDOW } else { ed.selected_window() })
     }
 
+    /// The window that was selected when the minibuffer was entered, while the minibuffer's window is selected, as minibuffer-selected-window.
+    pub fn minibufferSelectedWindow(ed) -> Option<u64> {
+        Ok(ed.minibuffer_window_selected().then(|| ed.selected_window()))
+    }
+
     /// How many minibuffers are open, one inside another, as minibuffer-depth.
     pub fn minibufferDepth(ed) -> usize {
         Ok(ed.minibuffer_depth())

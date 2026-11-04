@@ -140,6 +140,24 @@ fn nord_theme() {
     harness(ed, Theme::Dark).snapshot("nord_theme");
 }
 
+/// A macOS window with its title bar made transparent: the frame drawn
+/// below it, and the bar in Nord's background, as Emacs's frames with
+/// `ns-transparent-titlebar` show it.
+#[test]
+fn transparent_title_bar_takes_the_theme_background() {
+    let mut ed = sample();
+    let scripting = ember_script::Scripting::new(&mut ed).unwrap();
+    let examples = concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples/packages");
+    ed.set_variable("load-path", ember_core::Value::List(vec![ember_core::Value::Str(examples.into())]));
+    scripting.eval_expression(&mut ed, r#"ember.call("load-theme", "nord", true)"#).unwrap();
+    let mut harness = Harness::builder().with_size(vec2(640.0, 360.0)).with_theme(Theme::Light).with_step_dt(0.25).build_eframe(move |cc| {
+        ember_gui::theme::install_fonts(&cc.egui_ctx, false);
+        EmberApp::new(ed).silent().with_title_bar(&cc.egui_ctx)
+    });
+    harness.run();
+    harness.snapshot("transparent_title_bar");
+}
+
 /// Emacs's face attributes drawn: a coloured wavy underline, an overline,
 /// a box, a coloured strike-through, inverse video, colour names, and a
 /// background that extends to the window's edge.

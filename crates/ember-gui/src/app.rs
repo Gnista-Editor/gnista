@@ -27,6 +27,16 @@ const PAD_X: f32 = 16.0;
 const PAD_Y: f32 = 12.0;
 /// Space above and below the text of the mode line and echo area.
 const BAR_PAD: f32 = 6.0;
+/// The height of a macOS window's title bar, which a transparent one
+/// leaves the window to draw under.
+const TITLE_BAR_HEIGHT: f32 = 28.0;
+
+/// A window whose title bar is transparent, drawn under by the window, as
+/// Emacs's frames with `ns-transparent-titlebar`: macOS draws the title and
+/// buttons, and dragging the bar still moves the window.
+pub fn transparent_title_bar(builder: egui::ViewportBuilder) -> egui::ViewportBuilder {
+    builder.with_titlebar_shown(false).with_fullsize_content_view(true)
+}
 
 pub struct EmberApp {
     /// The editor: on a thread of its own, or on this one, for tests.
@@ -68,6 +78,12 @@ pub struct EmberApp {
     /// What each frame's layout last told the editor, so it is told again
     /// only when it changes.
     told: std::collections::HashMap<FrameId, Sizes>,
+    /// Whether frames' windows draw under a transparent title bar, in the
+    /// theme's background, as Emacs's `ns-transparent-titlebar` has them.
+    title_bar: bool,
+    /// Whether each frame's window was last told to look dark, so its
+    /// title and buttons show against the background drawn under them.
+    appearance: std::collections::HashMap<FrameId, bool>,
 }
 
 /// Where the editor runs.
@@ -148,6 +164,12 @@ impl EmberApp {
             },
             move |editor| {
                 let (dark, scale) = *described.lock().unwrap_or_else(|e| e.into_inner());
+                // The echo area grows for a minibuffer of several lines, as
+                // vertico's list makes it, before the frame is described: the
+                // window is told sizes only when they change, and the
+                // minibuffer's lines change without them.
+                let frame_lines = editor.frame_lines();
+                editor.mini_window_height(frame_lines);
                 editor.redisplay();
                 editor.frame_list().into_iter().map(|f| editor.describe_frame(f, dark, scale)).collect()
             },
@@ -177,6 +199,8 @@ impl EmberApp {
             button_down: false,
             fonts_loaded: false,
             told: std::collections::HashMap::new(),
+            title_bar: false,
+            appearance: std::collections::HashMap::new(),
         }
     }
 
@@ -210,6 +234,16 @@ impl EmberApp {
     /// The same window with a bell that makes no sound, for tests.
     pub fn silent(mut self) -> EmberApp {
         self.audible_bell = false;
+        self
+    }
+
+    /// The same window drawing under a title bar made transparent, as
+    /// macOS windows built with [`transparent_title_bar`] have: the bar
+    /// takes the theme's background, and the window looks dark or light
+    /// as that background is, rather than as egui's theme is.
+    pub fn with_title_bar(mut self, ctx: &egui::Context) -> EmberApp {
+        ctx.options_mut(|o| o.sync_window_theme = false);
+        self.title_bar = true;
         self
     }
 
@@ -362,7 +396,10 @@ impl EmberApp {
                 continue;
             }
             let title = self.titles.get(&frame).cloned().unwrap_or_else(|| "Ember".into());
-            let builder = egui::ViewportBuilder::default().with_title(title).with_inner_size([960.0, 680.0]);
+            let mut builder = egui::ViewportBuilder::default().with_title(title).with_inner_size([960.0, 680.0]);
+            if self.title_bar {
+                builder = transparent_title_bar(builder);
+            }
             ctx.show_viewport_immediate(frame_viewport(frame), builder, |ctx, _class| {
                 // Closing a frame's window deletes the frame.
                 if ctx.input(|i| i.viewport().close_requested()) {
@@ -413,6 +450,27 @@ impl EmberApp {
     /// in an Emacs frame selects it.
     fn show_frame(&mut self, ui: &mut Ui, frame: FrameId) {
         let ctx = ui.ctx().clone();
+        // Full screen, macOS hides the title bar until the pointer reaches it.
+        if !self.title_bar || ctx.input(|i| i.viewport().fullscreen.unwrap_or(false)) {
+            self.show_frame_below(ui, frame);
+            return;
+        }
+        let (bar, below) = ui.max_rect().split_top_bottom_at_y(ui.max_rect().top() + TITLE_BAR_HEIGHT);
+        let mut inner = ui.new_child(egui::UiBuilder::new().max_rect(below));
+        let t = self.show_frame_below(&mut inner, frame).unwrap_or_else(|| Tokens::get(&ctx));
+        ui.painter().rect_filled(bar, 0.0, t.bg);
+        let [r, g, b, _] = t.bg.to_normalized_gamma_f32();
+        let dark = 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.5;
+        if self.appearance.get(&frame) != Some(&dark) {
+            self.appearance.insert(frame, dark);
+            ctx.send_viewport_cmd(ViewportCommand::SetTheme(if dark { egui::SystemTheme::Dark } else { egui::SystemTheme::Light }));
+        }
+    }
+
+    /// Shows a frame in `ui`, below any title bar, and gives the colours
+    /// it was drawn in.
+    fn show_frame_below(&mut self, ui: &mut Ui, frame: FrameId) -> Option<Tokens> {
+        let ctx = ui.ctx().clone();
         let events = ctx.input(|i| i.events.clone());
         let input = events.iter().any(|e| {
             matches!(
@@ -432,7 +490,7 @@ impl EmberApp {
         }
         let selected = frame == self.frame_list().1;
         // Window sizes first, for the commands this frame's keys run.
-        let Some(before) = self.layout(ui, frame) else { return };
+        let Some(before) = self.layout(ui, frame) else { return None };
         if selected {
             let time = ctx.input(|i| i.time);
             for event in &events {
@@ -446,11 +504,11 @@ impl EmberApp {
             }
         }
         if !self.frame_list().0.contains(&frame) {
-            return;
+            return None;
         }
         let frame_selected = frame == self.frame_list().1;
         // Input may have split or deleted windows.
-        let Some(layout) = self.layout(ui, frame) else { return };
+        let Some(layout) = self.layout(ui, frame) else { return None };
         if frame_selected {
             self.scroll(&ctx, &layout);
         }
@@ -463,7 +521,7 @@ impl EmberApp {
             }
             Backend::Thread { .. } => match self.frames.iter().find(|f| f.frame == frame) {
                 Some(fd) => fd.clone(),
-                None => return,
+                None => return None,
             },
         };
         // A theme's colours, where its faces give them.
@@ -492,6 +550,7 @@ impl EmberApp {
             (0, 0.0)
         };
         draw(ui, &description, &layout, t, focused, scroll);
+        Some(t)
     }
 
     /// Turns presses, moves and releases of the primary button into

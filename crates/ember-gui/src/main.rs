@@ -34,13 +34,13 @@ fn main() -> eframe::Result {
         }
     }
 
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_title("Ember")
-            .with_inner_size([960.0, 680.0])
-            .with_min_inner_size([360.0, 200.0]),
-        ..Default::default()
-    };
+    let mut viewport = egui::ViewportBuilder::default().with_title("Ember").with_inner_size([960.0, 680.0]).with_min_inner_size([360.0, 200.0]);
+    // On macOS the title bar takes the theme's background.
+    let title_bar = cfg!(target_os = "macos");
+    if title_bar {
+        viewport = ember_gui::transparent_title_bar(viewport);
+    }
+    let options = eframe::NativeOptions { viewport, ..Default::default() };
     eframe::run_native(
         "Ember",
         options,
@@ -72,6 +72,9 @@ fn main() -> eframe::Result {
                     None
                 }
             };
+            if title_bar {
+                app = app.with_title_bar(&cc.egui_ctx);
+            }
             Ok(Box::new(app.with_agent(requests, None)))
         }),
     )

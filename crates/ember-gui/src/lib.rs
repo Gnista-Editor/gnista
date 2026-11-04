@@ -11,4 +11,4 @@ pub mod modeline;
 pub mod shell_path;
 pub mod theme;
 
-pub use app::EmberApp;
+pub use app::{EmberApp, transparent_title_bar};

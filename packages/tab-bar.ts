@@ -85,18 +85,23 @@ const closedTabs: { frame: number; index: number; tab: Tab }[] = [];
 function autoName(): string {
   const fn = ember.variable("tab-bar-tab-name-function");
   const name = typeof fn === "string" || typeof fn === "function" ? ember.funcall(fn as string) : undefined;
-  return typeof name === "string" ? name : (ember.windowBuffer() ?? "");
+  return typeof name === "string" ? name : currentName();
 }
 
-ember.defun("tab-bar-tab-name-current", () => ember.windowBuffer() ?? "");
+/** The name of the buffer a tab is named after: the window's the minibuffer was entered from, while it is open, as Emacs's tab-bar names do. */
+function currentName(): string {
+  return ember.windowBuffer(ember.minibufferSelectedWindow() ?? ember.selectedWindow()) ?? "";
+}
+
+ember.defun("tab-bar-tab-name-current", () => currentName());
 ember.defun("tab-bar-tab-name-current-with-count", () => {
   const count = ember.windowList().length;
-  const name = ember.windowBuffer() ?? "";
+  const name = currentName();
   return count > 1 ? `${name} (${count})` : name;
 });
 ember.defun("tab-bar-tab-name-all", () => [...new Set(ember.windowList().map((w) => ember.windowBuffer(w)))].join(", "));
 ember.defun("tab-bar-tab-name-truncated", () => {
-  const name = ember.windowBuffer() ?? "";
+  const name = currentName();
   const max = Number(ember.variable("tab-bar-tab-name-truncated-max") ?? 20);
   return [...name].length < max ? name : `${[...name].slice(0, max - 1).join("")}…`;
 });

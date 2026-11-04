@@ -69,6 +69,18 @@ fn the_tab_bar_shows_each_tab_one_width() {
 }
 
 #[test]
+fn a_tab_is_named_after_the_window_the_minibuffer_was_entered_from() {
+    let (mut ed, _s) = setup();
+    buffer(&mut ed, "one");
+    ed.press("C-x t 2").unwrap();
+    // A prompt open in the second tab names it still after its buffer, as
+    // tab-bar-tab-name-current names it after minibuffer-selected-window's.
+    ed.press("M-x").unwrap();
+    assert!(tab_bar(&mut ed).starts_with(&format!("|one{} x|one{} x|", " ".repeat(14), " ".repeat(14))), "{:?}", tab_bar(&mut ed));
+    ed.press("C-g").unwrap();
+}
+
+#[test]
 fn long_names_are_cut_to_the_width() {
     let (mut ed, _s) = setup();
     buffer(&mut ed, "a-buffer-with-a-very-long-name");

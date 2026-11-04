@@ -99,6 +99,7 @@ Ember reorders text as Emacs 30.2 does, and `tests/emacs/bidi/` compares the two
 - **`posn-at-point`'s y** (not yet) is the top of the row, where Emacs gives the top of the glyph: below it for text beside a taller image, by the row's ascent less the font's. Emacs gives the row's top for some characters before or just after an image too.
 - **Quitting a window** (not yet): `quit-window` does not restore the window's old height, and does not hide a frame made for the buffer, where Emacs iconifies it ([ADR 0028](adr/0028-windows-as-objects.md)).
 - **The buffer list** (not yet): frames have no buffer lists of their own, and a buffer made after another was buried comes before it, where Emacs puts it after. `previous-buffer`'s skip options (`switch-to-prev-buffer-skip`, `switch-to-visible-buffer`) are not there.
+- **The title bar** (deliberate): on macOS a window's title bar is transparent, taking the theme's background, and the window looks dark or light as that background is, as Emacs's frames do with the `ns-transparent-titlebar` and `ns-appearance` parameters set. Emacs shows the system's title bar unless they are; Ember has no frame parameters to turn it back. Full screen, the frame takes the whole screen.
 - **Window configurations** (not yet): a previous-buffer entry a window dropped after the configuration was saved comes back as it was then, not as a marker that followed edits.
 
 ## Files and the clipboard

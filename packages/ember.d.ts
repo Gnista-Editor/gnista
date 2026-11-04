@@ -13353,6 +13353,8 @@ declare global {
     /** Make a window the selected one, whose buffer commands act on. */
     function selectWindow(window: number): void;
     function selectedWindow(): number;
+    /** The window that was selected when the minibuffer was entered, while the minibuffer's window is selected, as minibuffer-selected-window. */
+    function minibufferSelectedWindow(): number | undefined;
     /** How many minibuffers are open, one inside another, as minibuffer-depth. */
     function minibufferDepth(): number;
     /** Make the current buffer read-only, or writable again, as setting buffer-read-only does. */

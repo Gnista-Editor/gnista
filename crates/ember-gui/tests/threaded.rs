@@ -71,3 +71,15 @@ fn the_window_draws_while_a_command_runs_and_c_g_stops_it() {
     assert!(ran >= 300.0, "it ran through the frames, until C-g: {ran} ms");
     assert!(asked.elapsed() < Duration::from_secs(1), "promptly: {:?}", asked.elapsed());
 }
+
+#[test]
+fn the_echo_area_grows_for_a_minibuffer_of_several_lines() {
+    let mut h = harness();
+    // A prompt of three lines, as vertico's list of candidates makes the minibuffer.
+    h.state_mut().run(|ed| {
+        let _ = ed.read_from_minibuffer(ember_core::Reading::new("one\ntwo\nthree: ", ember_core::ParamKind::String));
+    });
+    step_until(&mut h, |h| h.state_mut().with_editor(|ed| ed.mini_window_lines()) == 3);
+    h.key_press_modifiers(Modifiers::CTRL, Key::G);
+    h.step();
+}
