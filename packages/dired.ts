@@ -32,10 +32,12 @@ defvar("dired-auto-revert-buffer", false, "Whether going back to a Dired buffer 
 defvar("dired-directory", null, "The directory a Dired buffer lists.");
 defvar("dired-actual-switches", null, "The switches this Dired buffer lists with, which s changes.");
 
-const MARKER = "*";
-const DEL_MARKER = "D";
+ember.defineHook("dired-after-readin-hook", "Functions called after a Dired buffer lists its directory, in that buffer.");
 
-const on = (name: string): boolean => {
+export const MARKER = "*";
+export const DEL_MARKER = "D";
+
+export const on = (name: string): boolean => {
   const v = ember.variable(name);
   return v !== null && v !== false && v !== undefined;
 };
@@ -67,14 +69,14 @@ function humanSize(size: number): string {
   return i === 0 ? String(n) : n >= 10 ? `${Math.round(n)}${units[i]}` : `${n.toFixed(1).replace(/\.0$/, "")}${units[i]}`;
 }
 
-function switchesOf(): string {
+export function switchesOf(): string {
   const own = ember.variable("dired-actual-switches");
   if (typeof own === "string") return own;
   return String(ember.variable("dired-listing-switches") ?? "-al");
 }
 
 /** The lines listing a directory, as ls-lisp-insert-directory makes them for ls -l with these switches. */
-function listing(dir: string, switches: string, only?: string[]): string[] {
+export function listing(dir: string, switches: string, only?: string[]): string[] {
   const flags = new Set(switches.replace(/--\S+/g, "").replace(/[\s-]/g, ""));
   let names = only ?? ember.directoryFiles(dir);
   if (only === undefined) {
@@ -105,7 +107,7 @@ function listing(dir: string, switches: string, only?: string[]): string[] {
 /** A file line: two columns for the mark, the details, then the name. */
 const LINE = /^(.)\s([-dlbcps][-rwxsStT]{9}[@+.]?\s*\d+ .*? (?:[A-Z][a-z]{2} [ \d]\d (?:\d\d:\d\d| \d{4}))) (.*)$/;
 
-interface FileLine {
+export interface FileLine {
   mark: string;
   /** Where the name starts, in the buffer. */
   start: number;
@@ -114,7 +116,7 @@ interface FileLine {
   isLink: boolean;
 }
 
-function fileLine(line: number): FileLine | undefined {
+export function fileLine(line: number): FileLine | undefined {
   if (line < 0 || line >= ember.lineCount()) return undefined;
   const text = ember.lineText(line);
   const m = LINE.exec(text);
@@ -134,7 +136,7 @@ function fileLine(line: number): FileLine | undefined {
 const currentLine = (): number => ember.lineOf(ember.point());
 
 /** Moves to the start of the file name on this line, as dired-move-to-filename: else to the line's start. */
-function moveToFilename(): number | undefined {
+export function moveToFilename(): number | undefined {
   const line = currentLine();
   const f = fileLine(line);
   ember.gotoChar(f ? f.start : ember.lineStart(line));
@@ -142,31 +144,31 @@ function moveToFilename(): number | undefined {
 }
 
 /** The directory this buffer lists, ending in a slash. */
-function currentDirectory(): string {
+export function currentDirectory(): string {
   const dir = ember.variable("dired-directory");
   if (typeof dir !== "string") throw new Error("Not in a Dired buffer");
   return ember.fileNameAsDirectory(ember.expandFileName(dir));
 }
 
-const isDot = (name: string): boolean => name === "." || name === "..";
+export const isDot = (name: string): boolean => name === "." || name === "..";
 
 /** The absolute name of the file on this line, as dired-get-filename, or undefined on a line with none. */
-function filenameAt(line = currentLine()): string | undefined {
+export function filenameAt(line = currentLine()): string | undefined {
   const f = fileLine(line);
   return f === undefined ? undefined : currentDirectory() + f.name;
 }
 
-function requireDired(): void {
+export function requireDired(): void {
   if (ember.variable("major-mode") !== "dired-mode") throw new Error("Not in a Dired buffer");
 }
 
 /** Runs `fn` with the read-only buffer writable, as inhibit-read-only. */
-function writable<T>(fn: () => T): T {
+export function writable<T>(fn: () => T): T {
   return ember.letBind({ "inhibit-read-only": true }, fn);
 }
 
 /** Puts a mark on a line, as dired-mark's delete-char and insert: the buffer is modified even if it had the mark. */
-function setMark(line: number, char: string): void {
+export function setMark(line: number, char: string): void {
   const start = ember.lineStart(line);
   writable(() => {
     const point = ember.point();
@@ -199,7 +201,7 @@ function repeatOverLines(arg: number, fn: (line: number) => void): void {
 }
 
 /** The lines with `marker`, from the top. */
-function markedLines(marker = MARKER): number[] {
+export function markedLines(marker = MARKER): number[] {
   const lines: number[] = [];
   for (let l = 0; l < ember.lineCount(); l++) {
     const f = fileLine(l);
@@ -212,7 +214,7 @@ function markedLines(marker = MARKER): number[] {
  * The files a command acts on, as dired-get-marked-files: those marked,
  * else the next `arg` from point if it is a number, else the one at point.
  */
-function markedFiles(
+export function markedFiles(
   arg: ember.PrefixArg | null,
   marker = MARKER,
   dotsError = false,
@@ -237,7 +239,7 @@ function markedFiles(
 }
 
 /** How a prompt names the files: foo.txt, or * [3 files], as dired-mark-prompt. */
-function markPrompt(arg: ember.PrefixArg | null, files: string[], marker = MARKER): string {
+export function markPrompt(arg: ember.PrefixArg | null, files: string[], marker = MARKER): string {
   if (files.length === 1) return ember.fileNameNondirectory(files[0]);
   return typeof arg === "number" ? `[next ${arg} files]` : `${marker} [${files.length} files]`;
 }
@@ -251,7 +253,7 @@ function insertListing(dir: string): void {
 }
 
 /** Lists the directory in the current buffer again, as dired-revert: marks and point stay with their files. */
-function readin(keepState: boolean): void {
+export function readin(keepState: boolean): void {
   const dir = currentDirectory();
   const marks = new Map<string, string>();
   let pointFile: string | undefined;
@@ -267,6 +269,7 @@ function readin(keepState: boolean): void {
     ember.deleteRegion(0, ember.bufferSize());
     insertListing(dir);
   });
+  ember.runHooks("dired-after-readin-hook");
   // As dired-readin, the new listing is unmodified; restoring marks
   // modifies it again, as dired-mark-remembered does.
   ember.setBufferModified(false);
@@ -292,7 +295,7 @@ function setMarkRaw(line: number, char: string): void {
   ember.insert(char);
 }
 
-function findLine(name: string): number | undefined {
+export function findLine(name: string): number | undefined {
   for (let l = 0; l < ember.lineCount(); l++) if (fileLine(l)?.name === name) return l;
   return undefined;
 }
@@ -336,6 +339,7 @@ function diredNoselect(input: string): string {
     ember.makeLocalVariable("dired-directory");
     ember.setVariable("dired-directory", short);
     writable(() => insertListing(dir));
+    ember.runHooks("dired-after-readin-hook");
     ember.setBufferModified(false);
     initialPosition();
   });
@@ -525,7 +529,7 @@ ember.defineCommand({
 });
 
 /** Goes to the line of a file in this listing, as dired-goto-file; false if it is not there. */
-function gotoFile(file: string): boolean {
+export function gotoFile(file: string): boolean {
   const name = ember.fileNameNondirectory(ember.directoryFileName(ember.expandFileName(file)));
   const dir = ember.fileNameDirectory(ember.directoryFileName(ember.expandFileName(file)));
   if (dir !== currentDirectory()) return false;
@@ -722,7 +726,7 @@ ember.defineCommand({
 });
 
 /** Marks the files a test picks, as dired-mark-if, saying how many. */
-function markIf(test: (f: FileLine) => boolean, what: string, char = MARKER): void {
+export function markIf(test: (f: FileLine) => boolean, what: string, char = MARKER): void {
   const doing = char === " " ? "Unmarking" : char === DEL_MARKER ? "Flagging" : "Marking";
   ember.message(`${doing} ${what}s${char === DEL_MARKER ? " for deletion" : ""}...`);
   let n = 0;
@@ -737,7 +741,7 @@ function markIf(test: (f: FileLine) => boolean, what: string, char = MARKER): vo
   ember.message(`${n} ${what}${n === 1 ? "" : "s"} ${verb}${char === DEL_MARKER ? "flagged" : "marked"}`);
 }
 
-const regexpParam = (prompt: string): ember.Param => ({ name: "regexp", prompt, history: "dired-regexp-history" });
+export const regexpParam = (prompt: string): ember.Param => ({ name: "regexp", prompt, history: "dired-regexp-history" });
 
 ember.defineCommand({
   name: "dired-mark-files-regexp",
@@ -810,7 +814,7 @@ ember.defineCommand({
 // Acting on files.
 
 /** Takes a file's line out of every Dired buffer listing its directory, as dired-remove-file. */
-function removeEntry(file: string): void {
+export function removeEntry(file: string): void {
   const dir = ember.fileNameDirectory(file);
   const name = ember.fileNameNondirectory(file);
   for (const b of ember.bufferList()) {
@@ -824,7 +828,7 @@ function removeEntry(file: string): void {
 }
 
 /** Adds a line for a new file at point, if this buffer lists its directory, as dired-add-entry. */
-function addEntry(file: string, marker?: string): void {
+export function addEntry(file: string, marker?: string): void {
   const dir = ember.fileNameDirectory(ember.directoryFileName(file));
   const name = ember.fileNameNondirectory(ember.directoryFileName(file));
   if (dir !== currentDirectory()) return;
@@ -914,7 +918,7 @@ ember.defineCommand({
 });
 
 /** Where a copy or rename suggests going, as dired-dwim-target-directory. */
-function dwimTarget(): string {
+export function dwimTarget(): string {
   if (on("dired-dwim-target")) {
     const here = ember.selectedWindow();
     for (const w of ember.windowList()) {
@@ -927,34 +931,57 @@ function dwimTarget(): string {
   return currentDirectory();
 }
 
-type Creator = (from: string, to: string) => void;
+export type Creator = (from: string, to: string) => void;
 
 /**
- * Copies or renames the marked files, as dired-do-create-files: asking where
- * to, into a directory for several, and before overwriting each file.
+ * A question asked of each file in turn, as dired-query: y or SPC says yes
+ * and n or DEL no to this one, ! yes and q or ESC no to the rest without
+ * asking again.
  */
-function createFiles(operation: string, op1: string, creator: Creator, marker: (from: string) => string | undefined): void {
-  requireDired();
-  const arg = ember.prefixArg();
-  const { files } = markedFiles(arg, MARKER, false, "No files specified");
-  const one = files.length === 1;
-  const targetDir = dwimTarget();
-  const prompt = `${one ? op1 : operation} ${markPrompt(arg, files)} to: `;
-  const dflt = one && !on("dired-dwim-target") ? targetDir + ember.fileNameNondirectory(files[0]) : undefined;
-  const target = ember.expandFileName(ember.readFileName(prompt, { dir: targetDir, default: dflt }));
-  const intoDir = ember.fileDirectoryP(target);
-  if (!one && !intoDir) throw new Error(`Marked ${operation}: target must be a directory: ${target}`);
-  const to = (from: string) => intoDir ? ember.fileNameAsDirectory(target) + ember.fileNameNondirectory(from) : ember.directoryFileName(target);
+export function makeQuery(): (prompt: string) => boolean {
+  let answer = "";
+  return (prompt) => {
+    if (answer === "!") return true;
+    if (answer === "q" || answer === "\x1b") return false;
+    answer = ember.readCharChoice(`${prompt} [Type yn!q or C-h] `, "y n\x7f!q\x1b");
+    return answer === "y" || answer === " " || answer === "!";
+  };
+}
+
+/** States how a command over several files went, as dired-log-summary: one failure shows what was logged for it. */
+function logSummary(summary: string, files: string[], logged: string): void {
+  if (files.length === 1) ember.message(logged);
+  else ember.message(`${summary}--type ? for details (${files.map((f) => ember.fileNameNondirectory(f)).join(" ")})`);
+}
+
+/**
+ * Makes a new file from each of `files`, as dired-create-files: `nameOf`
+ * gives each one's new name, or undefined to skip it; a file already there
+ * is overwritten only if you say so; and the new files are listed, marked
+ * as `marker` says.
+ */
+export function createFiles(
+  operation: string,
+  files: string[],
+  nameOf: (from: string) => string | undefined,
+  creator: Creator,
+  marker: (from: string) => string | undefined,
+): void {
   let done = 0;
   const failures: string[] = [];
+  const skipped: string[] = [];
   // The last failure, as dired-log writes it.
   let logged = "";
-  let query: string | undefined;
+  const overwriteQuery = makeQuery();
   for (const from of files) {
     gotoFile(from);
-    const dest = to(from);
+    let dest = nameOf(from);
     if (dest === from) {
-      failures.push(from);
+      logged = `Cannot ${operation.toLowerCase()} to same file: ${from}\n`;
+      dest = undefined;
+    }
+    if (dest === undefined) {
+      skipped.push(from);
       continue;
     }
     // As dired-create-files, before trying: a directory cannot be copied into itself.
@@ -966,12 +993,10 @@ function createFiles(operation: string, op1: string, creator: Creator, marker: (
       }
     }
     const overwrite = ember.fileExists(dest);
-    if (overwrite && query !== "!") {
-      if (query !== "q") query = ember.readCharChoice(`Overwrite \u2018${dest}\u2019? [Type y, n, q or !] `, "yn!q");
-      if (query !== "y" && query !== "!") {
-        failures.push(from);
-        continue;
-      }
+    if (overwrite && !overwriteQuery(`Overwrite \u2018${dest}\u2019?`)) {
+      failures.push(from);
+      logged = `${operation}: \u2018${from}\u2019 to \u2018${dest}\u2019 failed:\n(file-already-exists File already exists ${dest})\n`;
+      continue;
     }
     // As dired-create-files, a file error is a failure to log; anything
     // else, as quitting a question the creator asks, goes on up.
@@ -990,16 +1015,43 @@ function createFiles(operation: string, op1: string, creator: Creator, marker: (
       logged = `${operation}: \u2018${from}\u2019 to \u2018${dest}\u2019 failed:\n${printed}\n`;
     }
   }
-  // As dired-log-summary: one failure shows what was logged for it.
-  if (failures.length === 1) ember.message(logged);
-  else if (failures.length > 0) {
-    const names = failures.map((f) => ember.fileNameNondirectory(f)).join(" ");
-    ember.message(`${operation}: ${failures.length} of ${files.length} file${files.length === 1 ? "" : "s"} failed--type ? for details (${names})`);
-  } else ember.message(`${operation}: ${done} file${done === 1 ? "" : "s"} done`);
+  const total = files.length;
+  if (failures.length > 0) logSummary(`${operation}: ${failures.length} of ${total} file${total === 1 ? "" : "s"} failed`, failures, logged);
+  else if (skipped.length > 0) logSummary(`${operation}: ${skipped.length} of ${total} file${total === 1 ? "" : "s"} skipped`, skipped, logged);
+  else ember.message(`${operation}: ${done} file${done === 1 ? "" : "s"} done`);
   moveToFilename();
 }
 
-const markOf = (file: string): string => {
+/**
+ * Makes a new file from each marked file, as dired-do-create-files: asking
+ * where, a new name for one file or a directory to put several in. Links
+ * are made from the name asked for, so their prompts say from, not to.
+ */
+export function doCreateFiles(operation: string, op1: string, creator: Creator, marker: (from: string) => string | undefined, link = false): void {
+  requireDired();
+  const arg = ember.prefixArg();
+  const { files } = markedFiles(arg, MARKER, false, "No files specified");
+  const one = files.length === 1;
+  const targetDir = dwimTarget();
+  const prompt = `${one ? op1 : operation} ${markPrompt(arg, files)} ${link ? "from" : "to"}: `;
+  const dflt = one && !on("dired-dwim-target") ? targetDir + ember.fileNameNondirectory(files[0]) : undefined;
+  const target = ember.expandFileName(ember.readFileName(prompt, { dir: targetDir, default: dflt }));
+  // A rename that only changes the case of one name, on a file system that
+  // ignores case, is a rename, not a move into the directory it names.
+  const caseOnly = one && operation === "Move" && files[0].toLowerCase() === target.toLowerCase() &&
+    ember.fileNameNondirectory(files[0]) !== ember.fileNameNondirectory(target);
+  const intoDir = !caseOnly && ember.fileDirectoryP(target);
+  if (!one && !intoDir) throw new Error(`Marked ${operation}: target must be a directory: ${target}`);
+  createFiles(
+    operation,
+    files,
+    (from) => intoDir ? ember.fileNameAsDirectory(target) + ember.fileNameNondirectory(from) : ember.directoryFileName(target),
+    creator,
+    marker,
+  );
+}
+
+export const markOf = (file: string): string => {
   const line = findLine(ember.fileNameNondirectory(file));
   return line === undefined ? " " : fileLine(line)!.mark;
 };
@@ -1015,7 +1067,7 @@ ember.defineCommand({
     // holds if dired-recursive-copies is always, or you say so; otherwise
     // copy-file refuses it.
     const recursive = ember.variable("dired-recursive-copies");
-    createFiles(
+    doCreateFiles(
       "Copy",
       "Copy",
       (from, to) => {
@@ -1040,7 +1092,7 @@ ember.defineCommand({
     const { files } = markedFiles(ember.prefixArg(), MARKER, false, "No files specified");
     if (files.some((f) => isDot(ember.fileNameNondirectory(f)))) throw new Error(`Can\u2019t rename "." or ".." files`);
     const keep = ember.variable("dired-keep-marker-rename");
-    createFiles("Move", "Rename", (from, to) => {
+    doCreateFiles("Move", "Rename", (from, to) => {
       ember.renameFile(from, to, { okIfExists: true });
       for (const b of ember.bufferList()) {
         ember.withCurrentBuffer(b, () => {

@@ -29,6 +29,23 @@ natives! {
         ed.set_file_times(&file, time.0.flatten())
     }
 
+    /// Whether the file system holding a file ignores the case of names, as file-name-case-insensitive-p.
+    pub fn fileNameCaseInsensitiveP(ed, file: String) -> bool {
+        Ok(ed.file_name_case_insensitive_p(&file))
+    }
+
+    /// Make `link` a symbolic link to `target`, kept as written, as make-symbolic-link; a file already there is replaced only if `okIfExists`.
+    pub fn makeSymbolicLink(ed, target: String, link: String, ok_if_exists: Opt<bool>) {
+        let link = ed.expand_file_name(&link);
+        ed.make_symbolic_link(&target, &link, ok_if_exists.0.unwrap_or(false))
+    }
+
+    /// Give a file another name, a hard link, as add-name-to-file; a file already there is replaced only if `okIfExists`.
+    pub fn addNameToFile(ed, file: String, newname: String, ok_if_exists: Opt<bool>) {
+        let (file, new) = (ed.expand_file_name(&file), ed.expand_file_name(&newname));
+        ed.add_name_to_file(&file, &new, ok_if_exists.0.unwrap_or(false))
+    }
+
     /// A file's name with the symbolic links in it followed, as file-truename.
     pub fn fileTruename(ed, file: String) -> String {
         ed.file_truename(&file)

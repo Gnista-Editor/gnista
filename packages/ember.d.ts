@@ -1529,6 +1529,36 @@ declare global {
        */
       "dired-display-file": [];
       /**
+       * Run a shell command on the marked files in the background, as ! does with & on the end.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-do-async-shell-command": [];
+      /**
+       * Change the group of the marked files, or the one on this line.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-do-chgrp": [];
+      /**
+       * Change the mode of the marked files, or the one on this line: octal, as 644, or symbolic, as g+w. M-n brings this file's.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-do-chmod": [];
+      /**
+       * Change the owner of the marked files, or the one on this line.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-do-chown": [];
+      /**
+       * Compress or uncompress the marked files, or the one on this line: gzip a file, make a directory a .tar.gz, and unpack an archive, .tar.gz, .zip and the like.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-do-compress": [];
+      /**
        * Copy the marked files, or the one on this line, asking where to: a new name for one, a directory for several.
        *
        * Copies are marked C, as dired-keep-marker-copy says, and keep their modification times.
@@ -1537,11 +1567,33 @@ declare global {
        */
       "dired-do-copy": [];
       /**
+       * Copy the marked files whose names match a regexp to names made from the match, asking about each.
+       *
+       * The new name may hold \\& and \\N for the match and its groups, as in query-replace-regexp. With a zero prefix argument, the regexp matches the whole file name.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-do-copy-regexp": [];
+      /**
        * Delete the marked files, or the one on this line, after asking. With a prefix argument, the next that many.
        *
        * Defined in packages/dired.ts.
        */
       "dired-do-delete": [];
+      /**
+       * Visit all the marked files, each in a window of its own, splitting this one evenly between them. With a prefix argument, visit them without showing them.
+       *
+       * Defined in packages/dired-x.ts.
+       */
+      "dired-do-find-marked-files": [];
+      /**
+       * Find the matches of a regexp in the marked files, listing them in an *xref* buffer.
+       *
+       * @param regexp text
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-do-find-regexp": [regexp: string];
       /**
        * Delete the files flagged with d, after asking. Deleting goes to the trash, as delete-by-moving-to-trash says.
        *
@@ -1549,11 +1601,34 @@ declare global {
        */
       "dired-do-flagged-delete": [];
       /**
+       * Give the marked files, or the one on this line, other names, as hard links: a new name for one, a directory for several.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-do-hardlink": [];
+      /**
+       * Hard link the marked files whose names match a regexp to names made from the match.
+       *
+       * The new name may hold \\& and \\N for the match and its groups, as in query-replace-regexp. With a zero prefix argument, the regexp matches the whole file name.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-do-hardlink-regexp": [];
+      /**
        * Take the marked files' lines out of the listing; with a prefix argument, the next that many lines instead. The files stay; g brings the lines back.
        *
        * Defined in packages/dired.ts.
        */
       "dired-do-kill-lines": [];
+      /**
+       * Replace the matches of a regexp in the marked files, asking about each, as query-replace-regexp does, file by file.
+       *
+       * @param from text
+       * @param to text
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-do-query-replace-regexp": [from: string, to: string];
       /**
        * List the directory again, as g does.
        *
@@ -1561,11 +1636,67 @@ declare global {
        */
       "dired-do-redisplay": [];
       /**
+       * Make relative symbolic links to the marked files, or the one on this line, as foo -> ../bar/foo rather than an absolute name.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-do-relsymlink": [];
+      /**
+       * Relative symlink the marked files whose names match a regexp to names made from the match.
+       *
+       * The new name may hold \\& and \\N for the match and its groups, as in query-replace-regexp. With a zero prefix argument, the regexp matches the whole file name.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-do-relsymlink-regexp": [];
+      /**
        * Rename the marked files, or the one on this line, asking to what: a new name for one, a directory for several, to move them there. Buffers visiting them follow.
        *
        * Defined in packages/dired.ts.
        */
       "dired-do-rename": [];
+      /**
+       * Rename the marked files whose names match a regexp, asking about each.
+       *
+       * The new name may hold \\& and \\N for the match and its groups, as in query-replace-regexp. With a zero prefix argument, the regexp matches the whole file name.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-do-rename-regexp": [];
+      /**
+       * Run a shell command on the marked files, or the one on this line.
+       *
+       * A * on its own in the command stands for all the files, and runs it once; a ? on its own runs it on each file, standing for its name; otherwise each file's name goes on the end, a run for each. A command ending in & runs in the background.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-do-shell-command": [];
+      /**
+       * Make symbolic links to the marked files, or the one on this line: a new name for one, a directory for several, where links of the same names are made. The links name the files absolutely; Y makes relative ones.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-do-symlink": [];
+      /**
+       * Symlink the marked files whose names match a regexp to names made from the match.
+       *
+       * The new name may hold \\& and \\N for the match and its groups, as in query-replace-regexp. With a zero prefix argument, the regexp matches the whole file name.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-do-symlink-regexp": [];
+      /**
+       * Change the times of the marked files, or the one on this line, with touch: to now, or a time written as touch -t takes it.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-do-touch": [];
+      /**
+       * Rename the marked files, or the next prefix-argument many, to lower case.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-downcase": [];
       /**
        * Visit the file or directory on this line in place of this Dired buffer, which is killed.
        *
@@ -1657,6 +1788,14 @@ declare global {
        */
       "dired-mark-executables": [];
       /**
+       * Mark the files whose text matches a regexp; with a prefix argument, unmark them. A file a buffer visits is searched in its buffer, unless dired-always-read-filesystem says to read it from disk.
+       *
+       * @param regexp text
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-mark-files-containing-regexp": [regexp: string];
+      /**
        * Mark the files whose names match a regular expression. With a prefix argument, unmark them.
        *
        * @param regexp text
@@ -1702,6 +1841,14 @@ declare global {
        * Defined in packages/dired.ts.
        */
       "dired-number-of-marked-files": [];
+      /**
+       * Leave uninteresting files out of Dired listings: those whose names match dired-omit-files or end in one of dired-omit-extensions. Turning it off lists them again.
+       *
+       * Run from a key or M-x, it turns the mode on if it is off and off if it is on. A positive prefix argument turns it on and zero or a negative one turns it off. Called from code without an argument, it turns the mode on.
+       *
+       * Defined in packages/dired-x.ts.
+       */
+      "dired-omit-mode": [];
       /**
        * List a directory in another frame, as dired does.
        *
@@ -1750,6 +1897,12 @@ declare global {
        * Defined in packages/dired.ts.
        */
       "dired-revert": [];
+      /**
+       * Say what kind of file is on this line, as the file program tells it. With a prefix argument, what a link points to.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-show-file-type": [];
       /**
        * Sort the listing by date if it is sorted by name, else by name. With a prefix argument, type the switches.
        *
@@ -1806,6 +1959,12 @@ declare global {
        * Defined in packages/dired.ts.
        */
       "dired-up-directory": [];
+      /**
+       * Rename the marked files, or the next prefix-argument many, to upper case.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-upcase": [];
       /**
        * Visit the file on this line read-only, or list it if it is a directory.
        *
@@ -7208,11 +7367,35 @@ declare global {
        */
       "dired-actual-switches": Value;
       /**
+       * Whether searching the marked files reads them from disk even when a buffer visits them.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-always-read-filesystem": Value;
+      /**
        * Whether going back to a Dired buffer lists its directory again.
        *
        * Defined in packages/dired.ts.
        */
       "dired-auto-revert-buffer": Value;
+      /**
+       * The program O runs to change the files' owners.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-chown-program": Value;
+      /**
+       * The suffix Z gives the archive it makes of a directory.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-compress-directory-default-suffix": Value;
+      /**
+       * Whether ! asks first when a * or ? in the command is not on its own, and so not a file name.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-confirm-shell-command": Value;
       /**
        * Whether a copy keeps the modification time of what it copies.
        *
@@ -7248,11 +7431,29 @@ declare global {
        */
       "dired-keep-marker-copy": Value;
       /**
+       * The mark hard links get, or true for the mark the file had, or nil for none.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-keep-marker-hardlink": Value;
+      /**
+       * The mark relative symbolic links get, or true for the mark the file had, or nil for none.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-keep-marker-relsymlink": Value;
+      /**
        * Whether renamed files keep their marks, or a mark they get instead.
        *
        * Defined in packages/dired.ts.
        */
       "dired-keep-marker-rename": Value;
+      /**
+       * The mark symbolic links get, or true for the mark the file had, or nil for none.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-keep-marker-symlink": Value;
       /**
        * Whether visiting a directory from Dired kills the Dired buffer it came from.
        *
@@ -7270,6 +7471,46 @@ declare global {
        */
       "dired-mode-map": Value;
       /**
+       * Whether omitting ignores case: filesystem as the file system does, else true or nil.
+       *
+       * Defined in packages/dired-x.ts.
+       */
+      "dired-omit-case-fold": Value;
+      /**
+       * The endings of the names Dired-Omit mode leaves out: compiled files, backups and what TeX leaves behind.
+       *
+       * Defined in packages/dired-x.ts.
+       */
+      "dired-omit-extensions": Value;
+      /**
+       * The names Dired-Omit mode leaves out, as a regexp: . and .., and auto-save and lock files.
+       *
+       * Defined in packages/dired-x.ts.
+       */
+      "dired-omit-files": Value;
+      /**
+       * Whether Dired-Omit mode is on in this buffer. Use the command dired-omit-mode to change it.
+       *
+       * Defined in packages/dired-x.ts.
+       */
+      "dired-omit-mode": Value;
+      /**
+       * Keymap dired-omit-mode-map.
+       */
+      "dired-omit-mode-map": Value;
+      /**
+       * Dired-Omit mode leaves nothing out of a listing bigger than this, in characters, as it would be slow; nil for no limit.
+       *
+       * Defined in packages/dired-x.ts.
+       */
+      "dired-omit-size-limit": Value;
+      /**
+       * Whether Dired-Omit mode says how many lines it left out.
+       *
+       * Defined in packages/dired-x.ts.
+       */
+      "dired-omit-verbose": Value;
+      /**
        * Whether copying a directory copies what it holds: top or always do, and nil refuses.
        *
        * Defined in packages/dired.ts.
@@ -7281,6 +7522,12 @@ declare global {
        * Defined in packages/dired.ts.
        */
       "dired-recursive-deletes": Value;
+      /**
+       * The program T runs to change the files' times.
+       *
+       * Defined in packages/dired-aux.ts.
+       */
+      "dired-touch-program": Value;
       /**
        * Names Dired passes over when it puts point on the first file, as a regular expression: . and .., and auto-save and lock files.
        *
@@ -10905,6 +11152,10 @@ declare global {
        */
       "diff-mode-hook": Value;
       /**
+       * Functions called after a Dired buffer lists its directory, in that buffer.
+       */
+      "dired-after-readin-hook": Value;
+      /**
        * Run after Dired-Hide-Details mode is turned on or off.
        */
       "dired-hide-details-mode-hook": Value;
@@ -10920,6 +11171,18 @@ declare global {
        * Run after entering Dired by name mode, after the hooks of the modes it is built on.
        */
       "dired-mode-hook": Value;
+      /**
+       * Run after Dired-Omit mode is turned on or off.
+       */
+      "dired-omit-mode-hook": Value;
+      /**
+       * Run after Dired-Omit mode is turned off.
+       */
+      "dired-omit-mode-off-hook": Value;
+      /**
+       * Run after Dired-Omit mode is turned on.
+       */
+      "dired-omit-mode-on-hook": Value;
       /**
        * Functions called with a theme's name after it is disabled.
        */
@@ -12011,6 +12274,12 @@ declare global {
     function setFileModes(file: string, mode: number): void;
     /** Set when a file was last modified and read, in milliseconds since 1970, or to now, as set-file-times. */
     function setFileTimes(file: string, time?: number): void;
+    /** Whether the file system holding a file ignores the case of names, as file-name-case-insensitive-p. */
+    function fileNameCaseInsensitiveP(file: string): boolean;
+    /** Make `link` a symbolic link to `target`, kept as written, as make-symbolic-link; a file already there is replaced only if `okIfExists`. */
+    function makeSymbolicLink(target: string, link: string, ok_if_exists?: boolean): void;
+    /** Give a file another name, a hard link, as add-name-to-file; a file already there is replaced only if `okIfExists`. */
+    function addNameToFile(file: string, newname: string, ok_if_exists?: boolean): void;
     /** A file's name with the symbolic links in it followed, as file-truename. */
     function fileTruename(file: string): string;
     /** A file name with $VAR and ${VAR} from the environment, and starting again after // or /~, as substitute-in-file-name. */

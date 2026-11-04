@@ -149,3 +149,117 @@ fn going_back_to_a_listing_reuses_its_buffer() {
 }
 
 
+
+fn goto(ed: &mut Editor, dir: &Path, name: &str) {
+    ed.call("dired-goto-file", vec![Arg::Str(dir.join(name).display().to_string())]).unwrap();
+}
+
+#[test]
+fn changing_modes_takes_octal_and_symbolic_modes() {
+    use std::os::unix::fs::PermissionsExt;
+    let (mut ed, _scripting) = setup();
+    let dir = sample();
+    dired(&mut ed, dir.path());
+    goto(&mut ed, dir.path(), "a.txt");
+    ed.press("M 6 0 0 RET").unwrap();
+    let mode = |_: &Editor| fs::metadata(dir.path().join("a.txt")).unwrap().permissions().mode() & 0o7777;
+    assert_eq!(mode(&ed), 0o600);
+    assert!(line_of(&ed, " a.txt").starts_with("  -rw-------"), "{}", line_of(&ed, " a.txt"));
+    ed.press("M g + r , o = g RET").unwrap();
+    assert_eq!(mode(&ed), 0o644);
+    ed.press("M u - w RET").unwrap();
+    assert_eq!(mode(&ed), 0o444);
+}
+
+#[test]
+fn touching_sets_the_time_touch_takes() {
+    let (mut ed, _scripting) = setup();
+    let dir = sample();
+    dired(&mut ed, dir.path());
+    goto(&mut ed, dir.path(), "a.txt");
+    ed.press("T 2 0 2 0 0 1 0 2 1 2 0 0 RET").unwrap();
+    let modified = fs::metadata(dir.path().join("a.txt")).unwrap().modified().unwrap();
+    let year = 1970 + modified.duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() / 31_556_952;
+    assert_eq!(year, 2020);
+    assert!(line_of(&ed, " a.txt").contains("2020"), "{}", line_of(&ed, " a.txt"));
+}
+
+#[test]
+fn compressing_gzips_and_uncompressing_unpacks() {
+    let (mut ed, _scripting) = setup();
+    let dir = sample();
+    dired(&mut ed, dir.path());
+    goto(&mut ed, dir.path(), "a.txt");
+    ed.press("Z").unwrap();
+    assert!(dir.path().join("a.txt.gz").exists());
+    assert!(!dir.path().join("a.txt").exists());
+    line_of(&ed, " a.txt.gz");
+    assert_eq!(ed.echo(), Some("Compress or uncompress: 1 file"));
+    goto(&mut ed, dir.path(), "a.txt.gz");
+    ed.press("Z").unwrap();
+    assert_eq!(fs::read_to_string(dir.path().join("a.txt")).unwrap(), "one\n");
+    // A directory becomes a .tar.gz beside it.
+    fs::write(dir.path().join("sub/x.txt"), "x\n").unwrap();
+    goto(&mut ed, dir.path(), "sub");
+    ed.press("Z").unwrap();
+    assert!(dir.path().join("sub.tar.gz").exists());
+    line_of(&ed, " sub.tar.gz");
+}
+
+#[test]
+fn shell_commands_take_the_files_as_star_and_question_mark_say() {
+    let (mut ed, _scripting) = setup();
+    let dir = sample();
+    fs::write(dir.path().join("b.txt"), "two\n").unwrap();
+    dired(&mut ed, dir.path());
+    // Each file's name at the end, a run for each.
+    goto(&mut ed, dir.path(), "a.txt");
+    ed.press("m m").unwrap();
+    ed.press("! c a t RET").unwrap();
+    assert_eq!(ed.echo(), Some("one\ntwo"));
+    // * runs it once on them all; ? on each, in its place.
+    ed.press("! e c h o SPC * SPC e n d RET").unwrap();
+    assert_eq!(ed.echo(), Some("a.txt b.txt end"));
+    ed.press("! e c h o SPC x SPC ? SPC y RET").unwrap();
+    assert_eq!(ed.echo(), Some("x a.txt y\nx b.txt y"));
+}
+
+#[test]
+fn omitting_leaves_out_auto_saves_and_compiled_files_until_turned_off() {
+    let (mut ed, _scripting) = setup();
+    let dir = sample();
+    fs::write(dir.path().join("#a.txt#"), "").unwrap();
+    fs::write(dir.path().join("x.elc"), "").unwrap();
+    dired(&mut ed, dir.path());
+    ed.press("C-x M-o").unwrap();
+    let names = |ed: &Editor| text(ed).lines().skip(1).map(|l| l.rsplit(' ').next().unwrap().to_string()).collect::<Vec<_>>();
+    assert_eq!(names(&ed), ["a.txt", "longer-name.org", "sub"]);
+    // Listing again leaves them out again.
+    ed.press("g").unwrap();
+    assert_eq!(names(&ed), ["a.txt", "longer-name.org", "sub"]);
+    ed.press("C-x M-o").unwrap();
+    assert_eq!(names(&ed), ["#a.txt#", ".", "..", "a.txt", "longer-name.org", "sub", "x.elc"]);
+}
+
+#[test]
+fn finding_marked_files_shows_each_in_a_window() {
+    let (mut ed, _scripting) = setup();
+    let dir = sample();
+    dired(&mut ed, dir.path());
+    ed.press("% m \\ . RET").unwrap();
+    ed.press("F").unwrap();
+    let mut shown: Vec<String> = ed.window_list().into_iter().map(|w| ed.window_buffer_name(w).unwrap().to_string()).collect();
+    shown.sort();
+    assert_eq!(shown, ["a.txt", "longer-name.org"]);
+}
+
+#[test]
+fn searching_marked_files_lists_matches_in_xref() {
+    let (mut ed, _scripting) = setup();
+    let dir = sample();
+    dired(&mut ed, dir.path());
+    ed.press("% m \\ . RET").unwrap();
+    ed.press("A t w o RET").unwrap();
+    assert_eq!(ed.window_buffer().name, "*xref*");
+    assert_eq!(text(&ed), "longer-name.org\n1:* two\n");
+}

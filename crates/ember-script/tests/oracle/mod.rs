@@ -240,7 +240,8 @@ fn dired_normalize(text: &str, dir: Option<&tempfile::TempDir>) -> (String, Box<
         let len = body.chars().count();
         let name = line_re.captures(body).map(|c| len - c[3].chars().count());
         let shown = match name {
-            Some(n) => format!("{}{}", body.chars().take(2.min(n)).collect::<String>(), body.chars().skip(n).collect::<String>()),
+            // A link's target, absolute, is in the case's directory too.
+            Some(n) => without_dir(&format!("{}{}", body.chars().take(2.min(n)).collect::<String>(), body.chars().skip(n).collect::<String>()), dir),
             None => without_dir(body, dir),
         };
         let start = out.chars().count();

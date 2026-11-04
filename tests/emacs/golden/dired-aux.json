@@ -1,0 +1,436 @@
+{
+  "emacs_version": "30.2",
+  "system_type": "darwin",
+  "cases": [
+    {
+      "name": "dired-symlink",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j S",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "link.txt"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\nY link.txt -> DIR/a.txt\n  a.txt\n  b.txt\n  c.org\n",
+      "visible": "  DIR:\n  .\n  ..\nY link.txt -> DIR/a.txt\n  a.txt\n  b.txt\n  c.org\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "link.txt": "one\n"
+      },
+      "message": "Symlink: 1 file done"
+    },
+    {
+      "name": "dired-relsymlink",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j Y",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "rel.txt"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\nS rel.txt -> a.txt\n  a.txt\n  b.txt\n  c.org\n",
+      "visible": "  DIR:\n  .\n  ..\nS rel.txt -> a.txt\n  a.txt\n  b.txt\n  c.org\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "rel.txt": "one\n"
+      },
+      "message": "RelSymLink: 1 file done"
+    },
+    {
+      "name": "dired-hardlink",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j H",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "hard.txt"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\nH hard.txt\n  a.txt\n  b.txt\n  c.org\n",
+      "visible": "  DIR:\n  .\n  ..\nH hard.txt\n  a.txt\n  b.txt\n  c.org\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n",
+        "hard.txt": "one\n"
+      },
+      "message": "Hardlink: 1 file done"
+    },
+    {
+      "name": "dired-upcase",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j m m % u",
+        "modes": [],
+        "call": [],
+        "platform": "darwin",
+        "answers": [
+          "!",
+          "!"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n* A.TXT\n* B.TXT\n  c.org\n",
+      "visible": "  DIR:\n  .\n  ..\n* A.TXT\n* B.TXT\n  c.org\n",
+      "point": 26,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "A.TXT": "one\n",
+        "B.TXT": "two\n",
+        "c.org": "* c\n"
+      },
+      "message": "Rename upcase: 2 files done"
+    },
+    {
+      "name": "dired-downcase",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j % l",
+        "modes": [],
+        "call": [],
+        "platform": "darwin",
+        "answers": [
+          "!",
+          "!"
+        ],
+        "files": {
+          "A.TXT": "one\n",
+          "B.ORG": "* b\n"
+        },
+        "find": "A.TXT",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  B.ORG\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  B.ORG\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "B.ORG": "* b\n",
+        "a.txt": "one\n"
+      },
+      "message": "Rename downcase: 1 file done"
+    },
+    {
+      "name": "dired-copy-regexp",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j % m % C",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "\\.txt$",
+          "\\.txt$",
+          ".bak",
+          "!"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\nC a.bak\n* a.txt\nC b.bak\n* b.txt\n  c.org\n",
+      "visible": "  DIR:\n  .\n  ..\nC a.bak\n* a.txt\nC b.bak\n* b.txt\n  c.org\n",
+      "point": 34,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.bak": "one\n",
+        "a.txt": "one\n",
+        "b.bak": "two\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n"
+      },
+      "message": "Copy [-p]: 2 files done"
+    },
+    {
+      "name": "dired-rename-regexp",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j % m % R",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "\\.txt$",
+          "^\\(.\\)",
+          ">\\1<",
+          "!"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n* >a<.txt\n* >b<.txt\n  c.org\n",
+      "visible": "  DIR:\n  .\n  ..\n* >a<.txt\n* >b<.txt\n  c.org\n",
+      "point": 28,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        ">a<.txt": "one\n",
+        ">b<.txt": "two\n",
+        "c.org": "* c\n"
+      },
+      "message": "Rename: 2 files done"
+    },
+    {
+      "name": "dired-mark-files-containing-regexp",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j % g",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "tw"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n* b.txt\n  c.org\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n* b.txt\n  c.org\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n"
+      },
+      "message": "1 matching file marked"
+    },
+    {
+      "name": "dired-shell-command",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j !",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "wc -c"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n"
+      },
+      "message": "4 a.txt"
+    },
+    {
+      "name": "dired-shell-command-on-marked",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j m m !",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "cat"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n* a.txt\n* b.txt\n  c.org\n",
+      "visible": "  DIR:\n  .\n  ..\n* a.txt\n* b.txt\n  c.org\n",
+      "point": 34,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": true,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n"
+      },
+      "message": "two"
+    },
+    {
+      "name": "dired-show-file-type",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j y",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "files": {
+          "a.txt": "one\n",
+          "b.txt": "two\n",
+          "c.org": "* c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n",
+      "visible": "  DIR:\n  .\n  ..\n  a.txt\n  b.txt\n  c.org\n",
+      "point": 18,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "a.txt": "one\n",
+        "b.txt": "two\n",
+        "c.org": "* c\n"
+      },
+      "message": "a.txt: ASCII text"
+    },
+    {
+      "name": "dired-omit-mode",
+      "input": {
+        "text": "",
+        "point": 0,
+        "keys": "C-x C-j M-x",
+        "modes": [],
+        "call": [],
+        "platform": null,
+        "answers": [
+          "dired-omit-mode"
+        ],
+        "files": {
+          "a.txt": "one\n",
+          "#a.txt#": "x\n",
+          "b.elc": "z\n",
+          "c.org": "c\n"
+        },
+        "find": "a.txt",
+        "message": true
+      },
+      "text": "  DIR:\n  a.txt\n  c.org\n",
+      "visible": "  DIR:\n  a.txt\n  c.org\n",
+      "point": 9,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null,
+      "files": {
+        "#a.txt#": "x\n",
+        "a.txt": "one\n",
+        "b.elc": "z\n",
+        "c.org": "c\n"
+      },
+      "message": "Dired-Omit mode enabled in current buffer"
+    }
+  ]
+}

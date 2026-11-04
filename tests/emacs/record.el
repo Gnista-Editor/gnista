@@ -426,8 +426,10 @@ buffer positions to positions in it."
                (name (save-excursion (dired-move-to-filename)))
                (start (length out))
                (line (if name
-                         (concat (buffer-substring-no-properties bol (min (+ bol 2) eol))
-                                 (buffer-substring-no-properties name eol))
+                         ;; A link's target, absolute, is in the case's directory too.
+                         (ember-oracle--without-dir
+                          (concat (buffer-substring-no-properties bol (min (+ bol 2) eol))
+                                  (buffer-substring-no-properties name eol)))
                        (ember-oracle--without-dir (buffer-substring-no-properties bol eol)))))
           (setq out (concat out line "\n"))
           (push (list bol eol name start (length line)) lines))

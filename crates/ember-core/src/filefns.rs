@@ -177,6 +177,30 @@ impl Editor {
         Ok(fs::read_link(&file).ok().map(|t| t.display().to_string()))
     }
 
+    /// Whether the file system holding `file` ignores the case of names, as
+    /// `file-name-case-insensitive-p`: asked of the nearest directory that
+    /// exists, on macOS by pathconf, as Emacs asks; elsewhere case counts.
+    pub fn file_name_case_insensitive_p(&mut self, file: &str) -> bool {
+        let mut path = PathBuf::from(self.absolute(file));
+        while !path.exists() {
+            if !path.pop() {
+                return false;
+            }
+        }
+        #[cfg(target_os = "macos")]
+        {
+            use std::os::unix::ffi::OsStrExt;
+            let Ok(c) = std::ffi::CString::new(path.as_os_str().as_bytes()) else { return false };
+            // 0 for a file system that ignores case.
+            unsafe { libc::pathconf(c.as_ptr(), libc::_PC_CASE_SENSITIVE) == 0 }
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            let _ = path;
+            false
+        }
+    }
+
     /// Whether one file was modified after another, as
     /// `file-newer-than-file-p`: if only the first exists, it is newer.
     pub fn file_newer_than_file_p(&mut self, a: &str, b: &str) -> Result<bool> {

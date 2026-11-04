@@ -1,0 +1,189 @@
+[
+ {
+  "name": "dired-symlink",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j S",
+  "answers": [
+   "link.txt"
+  ],
+  "message": true
+ },
+ {
+  "name": "dired-relsymlink",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j Y",
+  "answers": [
+   "rel.txt"
+  ],
+  "message": true
+ },
+ {
+  "name": "dired-hardlink",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j H",
+  "answers": [
+   "hard.txt"
+  ],
+  "message": true
+ },
+ {
+  "name": "dired-upcase",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j m m % u",
+  "message": true,
+  "answers": [
+   "!",
+   "!"
+  ],
+  "platform": "darwin"
+ },
+ {
+  "name": "dired-downcase",
+  "files": {
+   "A.TXT": "one\n",
+   "B.ORG": "* b\n"
+  },
+  "find": "A.TXT",
+  "text": "",
+  "keys": "C-x C-j % l",
+  "message": true,
+  "answers": [
+   "!",
+   "!"
+  ],
+  "platform": "darwin"
+ },
+ {
+  "name": "dired-copy-regexp",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j % m % C",
+  "answers": [
+   "\\.txt$",
+   "\\.txt$",
+   ".bak",
+   "!"
+  ],
+  "message": true
+ },
+ {
+  "name": "dired-rename-regexp",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j % m % R",
+  "answers": [
+   "\\.txt$",
+   "^\\(.\\)",
+   ">\\1<",
+   "!"
+  ],
+  "message": true
+ },
+ {
+  "name": "dired-mark-files-containing-regexp",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j % g",
+  "answers": [
+   "tw"
+  ],
+  "message": true
+ },
+ {
+  "name": "dired-shell-command",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j !",
+  "answers": [
+   "wc -c"
+  ],
+  "message": true
+ },
+ {
+  "name": "dired-shell-command-on-marked",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j m m !",
+  "answers": [
+   "cat"
+  ],
+  "message": true
+ },
+ {
+  "name": "dired-show-file-type",
+  "files": {
+   "a.txt": "one\n",
+   "b.txt": "two\n",
+   "c.org": "* c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j y",
+  "message": true
+ },
+ {
+  "name": "dired-omit-mode",
+  "files": {
+   "a.txt": "one\n",
+   "#a.txt#": "x\n",
+   "b.elc": "z\n",
+   "c.org": "c\n"
+  },
+  "find": "a.txt",
+  "text": "",
+  "keys": "C-x C-j M-x",
+  "answers": [
+   "dired-omit-mode"
+  ],
+  "message": true
+ }
+]

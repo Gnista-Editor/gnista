@@ -11,6 +11,40 @@ ember.defineFace({ name: "xref-match", doc: "What matched, in *xref*.", attribut
 /** A place found: its file, line and column, and the text shown for it. */
 export type Xref = { file: string; line: number; col: number; length: number; summary: string; group: string };
 
+/** Grep's extended regexps for Emacs's, as xref--regexp-to-extended: groups and alternatives unescaped. */
+const toExtended = (re: string): string => re.replace(/\\([(){}|])|([(){}|])/g, (_, escaped, plain) => (escaped ?? `\\${plain}`));
+
+/**
+ * The matches of an Emacs regexp in files, named relative to `dir`, as
+ * xref-matches-in-files: grep over the files, their names from standard
+ * input, grouped by file.
+ */
+export function matchesInFiles(regexp: string, files: string[], dir: string, fold = false): Xref[] {
+  const result = ember.callProcess(
+    ["xargs", "-0", "grep", ...(fold ? ["-i"] : []), "--null", "-snHE", "-e", toExtended(regexp)],
+    { directory: dir, input: files.join("\0") },
+  );
+  // grep says 1 for no matches; more is a failure, as of the regexp.
+  if (result.exit > 1 && !/\0\d+:/.test(result.output)) ember.userError(`Search failed with status ${result.exit}: ${result.output.trim()}`);
+  let js: RegExp | undefined;
+  try {
+    js = new RegExp(toExtended(regexp).replace(/\\</g, "\\b").replace(/\\>/g, "\\b"), fold ? "iu" : "u");
+  } catch {
+    js = undefined;
+  }
+  return result.output
+    .split("\n")
+    .map((line) => /^([^\0]+)\0(\d+):(.*)$/.exec(line))
+    .filter((m): m is RegExpExecArray => m !== null)
+    .map((m) => {
+      const hit = js?.exec(m[3]);
+      // In characters, as buffer positions count them.
+      const col = hit ? [...m[3].slice(0, hit.index)].length : 0;
+      const length = hit ? [...hit[0]].length : 0;
+      return { file: m[1].startsWith("/") ? m[1] : dir + m[1], line: Number(m[2]), col, length, summary: m[3], group: m[1] };
+    });
+}
+
 /** What each *xref* buffer shows, kept by buffer so renaming it keeps it. */
 const shown = new Map<ember.Buffer, { byLine: Map<number, Xref>; current?: number }>();
 ember.addHook("kill-buffer-hook", () => shown.delete(ember.currentBuffer()));

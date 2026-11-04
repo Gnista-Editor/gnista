@@ -323,6 +323,41 @@ impl Editor {
         Ok(to)
     }
 
+    /// Makes `link` a symbolic link to `target`, as Emacs's
+    /// `make-symbolic-link`: `target` is kept as written, so a relative one
+    /// is relative to the link's directory. A file already at `link` is
+    /// replaced only if `ok_if_exists`.
+    pub fn make_symbolic_link(&mut self, target: &str, link: &Path, ok_if_exists: bool) -> Result<()> {
+        if fs::symlink_metadata(link).is_ok() {
+            if !ok_if_exists {
+                return Err(Error::new(format!("File already exists: {}", link.display())));
+            }
+            self.check_permission(&format!("replace {} with a link to {target}", abbreviate_path(link)))?;
+            fs::remove_file(link).map_err(|e| file_error("Making symbolic link", &e, &[link]))?;
+        } else {
+            self.check_permission(&format!("make {} a link to {target}", abbreviate_path(link)))?;
+        }
+        #[cfg(unix)]
+        return std::os::unix::fs::symlink(target, link).map_err(|e| file_error("Making symbolic link", &e, &[Path::new(target), link]));
+        #[cfg(not(unix))]
+        Err(Error::new("Symbolic links are not supported here"))
+    }
+
+    /// Gives `file` another name, `new`, as Emacs's `add-name-to-file`: a
+    /// hard link. A file already at `new` is replaced only if `ok_if_exists`.
+    pub fn add_name_to_file(&mut self, file: &Path, new: &Path, ok_if_exists: bool) -> Result<()> {
+        if fs::symlink_metadata(new).is_ok() {
+            if !ok_if_exists {
+                return Err(Error::new(format!("File already exists: {}", new.display())));
+            }
+            self.check_permission(&format!("replace {} with another name for {}", abbreviate_path(new), abbreviate_path(file)))?;
+            fs::remove_file(new).map_err(|e| file_error("Adding new name", &e, &[new]))?;
+        } else {
+            self.check_permission(&format!("give {} the name {}", abbreviate_path(file), abbreviate_path(new)))?;
+        }
+        fs::hard_link(file, new).map_err(|e| file_error("Adding new name", &e, &[file, new]))
+    }
+
     /// Deletes a file, as Emacs's `delete-file`: to the system's trash if
     /// `trash` and `delete-by-moving-to-trash` say so. A file that does not
     /// exist is no error.

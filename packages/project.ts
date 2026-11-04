@@ -7,6 +7,7 @@
 // project-list-file, as JSON where Emacs writes Lisp.
 
 import { regexpQuote } from "subr";
+import { matchesInFiles } from "xref";
 
 ember.defineVariable({
   name: "project-list-file",
@@ -306,10 +307,6 @@ function symbolAtPoint(): string | undefined {
   return b > a ? ember.bufferText(a, b) : undefined;
 }
 
-/** Grep's extended regexps for Emacs's, as xref--regexp-to-extended: groups and alternatives unescaped. */
-const toExtended = (re: string): string => re.replace(/\\([(){}|])|([(){}|])/g, (_, escaped, plain) => (escaped ?? `\\${plain}`));
-
-
 ember.defineCommand({
   name: "project-find-regexp",
   doc: "Find matches for a regexp in the current project's files, showing them in *xref*, grouped by file.",
@@ -329,32 +326,8 @@ ember.defineCommand({
     // Case folds, as grep-expand-template does, when case-fold-search says and the regexp has no capitals.
     const fold = ember.variable("case-fold-search") !== false && ember.variable("case-fold-search") !== null && !/[A-Z]/.test(regexp);
     const root = await projectCurrent();
-    const names = files(root);
     const dir = ember.fileNameAsDirectory(ember.expandFileName(root));
-    // As xref-matches-in-files: grep over the files, their names from standard input.
-    const result = ember.callProcess(
-      ["xargs", "-0", "grep", ...(fold ? ["-i"] : []), "--null", "-snHE", "-e", toExtended(regexp)],
-      { directory: dir, input: names.join("\0") },
-    );
-    // grep says 1 for no matches; more is a failure, as of the regexp.
-    if (result.exit > 1 && !/\0\d+:/.test(result.output)) ember.userError(`Search failed with status ${result.exit}: ${result.output.trim()}`);
-    let js: RegExp | undefined;
-    try {
-      js = new RegExp(toExtended(regexp).replace(/\\</g, "\\b").replace(/\\>/g, "\\b"), fold ? "iu" : "u");
-    } catch {
-      js = undefined;
-    }
-    const xrefs = result.output
-      .split("\n")
-      .map((line) => /^([^\0]+)\0(\d+):(.*)$/.exec(line))
-      .filter((m): m is RegExpExecArray => m !== null)
-      .map((m) => {
-        const hit = js?.exec(m[3]);
-        // In characters, as buffer positions count them.
-        const col = hit ? [...m[3].slice(0, hit.index)].length : 0;
-        const length = hit ? [...hit[0]].length : 0;
-        return { file: dir + m[1], line: Number(m[2]), col, length, summary: m[3], group: m[1] };
-      });
+    const xrefs = matchesInFiles(regexp, files(root), dir, fold);
     if (xrefs.length === 0) ember.userError(`No matches for: ${regexp}`);
     ember.funcall("xref-show-xrefs", xrefs);
   },
