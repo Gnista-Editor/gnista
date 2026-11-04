@@ -295,6 +295,8 @@ function shiftSelectError(): never {
 
 // TODO states
 
+ember.defineHook("org-after-todo-state-change-hook", "Functions called after a heading's TODO state changes, at the heading.");
+
 interface TodoSet {
   todo: string[];
   done: string[];
@@ -3278,6 +3280,7 @@ function todo(direction: number, state?: string): void {
   let note: [string, string | undefined] | undefined;
   if (isDone(next) && !isDone(before)) note = autoRepeat(h.line, before, next as string);
   if (!note && next !== undefined && dolog !== undefined) note = [next, before];
+  ember.runHooks("org-after-todo-state-change-hook");
   fixPositionAfterTodo(h.line);
   // Org stores the note from post-command-hook, after the command.
   if (note) storeStateNote(h.line, note[0], note[1]);

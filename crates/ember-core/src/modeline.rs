@@ -479,17 +479,27 @@ pub(crate) fn install(ed: &mut Editor) {
                 s(")%] "),
             ]),
         ),
+        (
+            "mode-line-misc-info",
+            "What the mode line shows after the modes: global-mode-string, where packages such as Org's clock put what they show in every mode line.",
+            Value::List(vec![Value::List(vec![sym("global-mode-string"), Value::List(vec![s(""), sym("global-mode-string")])])]),
+        ),
     ];
     for (name, doc, value) in vars {
         ed.define_variable(Variable::new(name, doc, value));
     }
+    ed.define_variable(Variable::new(
+        "global-mode-string",
+        "What every mode line shows after the modes, a mode line construct, as Org's running clock adds to it.",
+        Value::Null,
+    ));
     ed.define_variable(
         Variable::new(
             "mode-line-format",
             "What each window's mode line shows, as a mode line construct: a string, whose %-specs show the buffer's state (%b its name, %* and %+ whether it is read-only or modified, %l and %c point's line and column, %n Narrow when narrowed, %Z the coding, %p how far through the buffer the window is, %- dashes to the end); a symbol, whose value is shown, a string as it is; a list of constructs; [\":eval\", function], whose result is shown; [\":propertize\", construct, \"face\", face]; [symbol, then, else], which shows then when the symbol's value is true; or [width, ...constructs], padded to at least width columns, or cut to -width.",
             // It starts with a string, as Emacs's does with "%e", since a
             // list that starts with a symbol is a conditional.
-            Value::List(vec![s("%e"), sym("mode-line-mule-info"), sym("mode-line-modified"), s("-  "), sym("mode-line-buffer-identification"), s(" "), sym("mode-line-position"), s(" "), sym("mode-line-modes"), s("%-")]),
+            Value::List(vec![s("%e"), sym("mode-line-mule-info"), sym("mode-line-modified"), s("-  "), sym("mode-line-buffer-identification"), s(" "), sym("mode-line-position"), s(" "), sym("mode-line-modes"), sym("mode-line-misc-info"), s("%-")]),
         )
         .local(),
     );

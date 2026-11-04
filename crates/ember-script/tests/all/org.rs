@@ -817,3 +817,62 @@ fn capture_files_into_date_trees_and_outline_paths_as_emacs_does() {
     ed.press("M-x o r g - c a p t u r e RET p RET T i t l e C-c C-c").unwrap();
     assert_eq!(read("people.org"), "* Inbox\n** Title                                                             :person: \n:Created: <2026-11-04 Wed 12:00>\nRun (C-c n h)\n* Projects\n");
 }
+
+#[test]
+fn clocks_go_into_the_logbook_as_emacs_puts_them() {
+    // What Emacs 30 did, its clock stopped at 12:00.
+    let mut ed = Editor::new();
+    let s = Scripting::new(&mut ed).unwrap();
+    s.eval_expression(&mut ed, r#"(ember.setVariable("ember--today", "2026-11-04"), 1)"#).unwrap();
+    ed.window_buffer_mut().set_text("* TODO Task\nSCHEDULED: <2026-11-04 Wed>\nbody\n* Other\n");
+    ed.call("org-mode", vec![]).unwrap();
+    ed.set_frame_size(80, 24);
+    let entry = |clocks: &str| format!("* TODO Task\nSCHEDULED: <2026-11-04 Wed>\n:LOGBOOK:\n{clocks}:END:\nbody\n* Other\n");
+    ed.press("C-f C-f C-f C-f C-f C-f C-f C-c C-x C-i").unwrap();
+    assert_eq!(text(&ed), entry("CLOCK: [2026-11-04 Wed 12:00]\n"));
+    assert_eq!(ed.window_buffer().point(), 7);
+    assert_eq!(ed.echo(), Some("Clock starts at [2026-11-04 Wed 12:00] - "));
+    let mode_line = s.eval_expression(&mut ed, r#"String(ember.variable("org-mode-line-string"))"#).unwrap();
+    assert_eq!(mode_line.trim_matches('"'), "[0:00] (Task) ");
+    ed.press("C-c C-x C-o").unwrap();
+    let done = "CLOCK: [2026-11-04 Wed 12:00]--[2026-11-04 Wed 12:00] =>  0:00\n";
+    assert_eq!(text(&ed), entry(done));
+    assert_eq!(ed.echo(), Some("Clock stopped at [2026-11-04 Wed 12:00] after 0:00"));
+    ed.press("C-c C-x C-i").unwrap();
+    assert_eq!(text(&ed), entry(&format!("CLOCK: [2026-11-04 Wed 12:00]\n{done}")));
+    ed.press("C-c C-x C-q").unwrap();
+    assert_eq!(text(&ed), entry(done));
+    // Done stops the clock, as org-clock-out-when-done says.
+    ed.press("C-c C-x C-i C-c C-t").unwrap();
+    assert_eq!(text(&ed), entry(&format!("{done}{done}")).replace("TODO", "DONE"));
+}
+
+#[test]
+fn capture_clocks_in_and_resumes_the_clock_it_stopped() {
+    let dir = tempfile::tempdir_in(env!("CARGO_TARGET_TMPDIR")).unwrap();
+    std::fs::write(dir.path().join("tasks.org"), "* TODO Work\n").unwrap();
+    let mut ed = Editor::new();
+    let s = Scripting::new(&mut ed).unwrap();
+    let d = dir.path().display().to_string();
+    s.eval_expression(
+        &mut ed,
+        &format!(
+            r#"(ember.setVariable("ember--today", "2026-11-04"), ember.setVariable("org-capture-templates", [
+              ["m", "Meeting", "entry", ["file", "{d}/meetings.org"], "* %?", ":clock-in", true, ":clock-resume", true]]), 1)"#
+        ),
+    )
+    .unwrap();
+    ed.set_frame_size(80, 24);
+    ed.call("find-file", vec![Arg::Str(format!("{d}/tasks.org"))]).unwrap();
+    ed.press("C-c C-x C-i").unwrap();
+    ed.press("M-x o r g - c a p t u r e RET m RET T a l k").unwrap();
+    let mode_line = s.eval_expression(&mut ed, r#"String(ember.variable("org-mode-line-string"))"#).unwrap();
+    // The heading as it was when the clock started, before its title was typed, as Org takes it.
+    assert_eq!(mode_line.trim_matches('"'), "[0:00] () ");
+    ed.press("C-c C-c").unwrap();
+    let meetings = std::fs::read_to_string(dir.path().join("meetings.org")).unwrap();
+    assert_eq!(meetings, "* Talk\n:LOGBOOK:\nCLOCK: [2026-11-04 Wed 12:00]--[2026-11-04 Wed 12:00] =>  0:00\n:END:\n");
+    let mode_line = s.eval_expression(&mut ed, r#"String(ember.variable("org-mode-line-string"))"#).unwrap();
+    assert_eq!(mode_line.trim_matches('"'), "[0:00] (Work) ");
+    assert_eq!(text(&ed), "* TODO Work\n:LOGBOOK:\nCLOCK: [2026-11-04 Wed 12:00]\nCLOCK: [2026-11-04 Wed 12:00]--[2026-11-04 Wed 12:00] =>  0:00\n:END:\n");
+}

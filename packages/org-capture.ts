@@ -4,6 +4,7 @@
 // Ember narrows the target buffer itself.
 
 import { alignTags, formatTimestamp, type Heading, headings, parseHeading, subtreeRegion, today } from "org";
+import { clockIn, clockOut, runningEntry } from "org-clock";
 import { findDateCreate } from "org-datetree";
 import { lineAt } from "org-macs";
 import { charCount } from "subr";
@@ -133,7 +134,17 @@ function fillTemplate(template: string, context: Context = { annotation: "", ini
 
 /** What a capture under way changed, to finish or undo it. */
 let capturing:
-  | { buffer: string; from: string; point: ember.Marker; level: number; modified: boolean }
+  | {
+    buffer: string;
+    from: string;
+    point: ember.Marker;
+    level: number;
+    modified: boolean;
+    /** Whether the capture started a clock, and the clock it stopped, to start again with :clock-resume. */
+    clocked?: boolean;
+    interrupted?: { buffer: string; marker: ember.Marker };
+    resume?: boolean;
+  }
   | undefined;
 
 /**
@@ -246,6 +257,21 @@ function captureWith(key: string): void {
     return { beg, end: endPos, level, cursor: ember.point() };
   });
   capturing = { buffer, from, point, level: placed.level, modified };
+  // :clock-in starts a clock on the entry, stopping one running, as org-capture does.
+  const clockOption = option(t, ":clock-in");
+  if (clockOption !== undefined && clockOption !== null && clockOption !== false) {
+    const running = runningEntry();
+    if (running) capturing.interrupted = { buffer: running.buffer, marker: ember.withCurrentBuffer(running.buffer, () => ember.makeMarker(running.start)) };
+    const resume = option(t, ":clock-resume");
+    capturing.resume = resume !== undefined && resume !== null && resume !== false;
+    ember.withCurrentBuffer(buffer, () => {
+      ember.saveExcursion(() => {
+        ember.gotoChar(placed.beg);
+        clockIn();
+      });
+    });
+    capturing.clocked = true;
+  }
   // The capture above, the buffer it came from below, as org-capture's windows are.
   ember.call("delete-other-windows");
   ember.splitWindow(undefined, "below");
@@ -288,6 +314,22 @@ const captureFinalize = ember.defineCommand({
   doc: "Finish the capture: the entry stays in its file, which is saved, and the windows go back to how they were.",
   run: () => {
     const buffer = capturing?.buffer;
+    const state = capturing;
+    // The capture's clock stops, and the one it stopped starts again with :clock-resume.
+    if (state?.clocked) {
+      clockOut(true);
+      const interrupted = state.interrupted;
+      if (interrupted && state.resume && ember.bufferList().includes(interrupted.buffer)) {
+        ember.withCurrentBuffer(interrupted.buffer, () => {
+          ember.saveExcursion(() => {
+            ember.gotoChar(ember.markerPosition(interrupted.marker) ?? 0);
+            clockIn();
+          });
+        });
+        ember.message("Interrupted clock resumed");
+      }
+      if (interrupted) ember.deleteMarker(interrupted.marker);
+    }
     endCapture();
     if (buffer !== undefined) {
       ember.withCurrentBuffer(buffer, () => {
@@ -303,6 +345,17 @@ const captureKill = ember.defineCommand({
   run: () => {
     const state = capturing;
     if (!state) throw new Error("This does not seem to be a capture buffer for Org mode");
+    // The capture's clock goes with its entry, and the one it stopped starts again.
+    if (state.clocked && runningEntry()?.buffer === state.buffer) ember.call("org-clock-cancel");
+    if (state.clocked && state.interrupted && state.resume && ember.bufferList().includes(state.interrupted.buffer)) {
+      const interrupted = state.interrupted;
+      ember.withCurrentBuffer(interrupted.buffer, () => {
+        ember.saveExcursion(() => {
+          ember.gotoChar(ember.markerPosition(interrupted.marker) ?? 0);
+          clockIn();
+        });
+      });
+    }
     // The entry as it is now: what the narrowing shows, and the newline after it.
     ember.withCurrentBuffer(state.buffer, () => {
       const [start, end] = [ember.pointMin(), ember.pointMax()];

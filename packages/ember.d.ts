@@ -3943,6 +3943,36 @@ declare global {
        */
       "org-capture-mode": [];
       /**
+       * Cancel the running clock, taking its CLOCK: line away.
+       *
+       * Defined in packages/org-clock.ts.
+       */
+      "org-clock-cancel": [];
+      /**
+       * Go to the entry with the running clock, or the last one clocked.
+       *
+       * Defined in packages/org-clock.ts.
+       */
+      "org-clock-goto": [];
+      /**
+       * Start a clock on the entry point is in: a CLOCK: line in its LOGBOOK drawer, the time shown in the mode line. A clock running elsewhere stops first.
+       *
+       * Defined in packages/org-clock.ts.
+       */
+      "org-clock-in": [];
+      /**
+       * Start a clock again on the entry clocked last.
+       *
+       * Defined in packages/org-clock.ts.
+       */
+      "org-clock-in-last": [];
+      /**
+       * Stop the running clock, writing when it stopped and how long it ran.
+       *
+       * Defined in packages/org-clock.ts.
+       */
+      "org-clock-out": [];
+      /**
        * Show all headings, hiding the text under them.
        *
        * Defined in packages/org.ts.
@@ -8114,6 +8144,10 @@ declare global {
        */
       "global-mark-ring-max": Value;
       /**
+       * What every mode line shows after the modes, a mode line construct, as Org's running clock adds to it.
+       */
+      "global-mode-string": Value;
+      /**
        * Whether Global-Subword mode is on. Use the command global-subword-mode to change it.
        *
        * Defined in packages/subword.ts.
@@ -8796,6 +8830,10 @@ declare global {
        */
       "mode-line-format": Value;
       /**
+       * What the mode line shows after the modes: global-mode-string, where packages such as Org's clock put what they show in every mode line.
+       */
+      "mode-line-misc-info": Value;
+      /**
        * The major mode and the minor modes that are on, in the mode line, in parentheses, inside a bracket for each recursive edit.
        */
       "mode-line-modes": Value;
@@ -8939,6 +8977,24 @@ declare global {
        * Defined in packages/org-capture.ts.
        */
       "org-capture-templates": Value;
+      /**
+       * Whether CLOCK: lines go into a drawer: t for LOGBOOK, or org-log-into-drawer's drawer if that names one, or the drawer's name.
+       *
+       * Defined in packages/org-clock.ts.
+       */
+      "org-clock-into-drawer": Value;
+      /**
+       * Whether a clock stopped after no time is taken out.
+       *
+       * Defined in packages/org-clock.ts.
+       */
+      "org-clock-out-remove-zero-time-clocks": Value;
+      /**
+       * Whether marking the clocked entry done stops the clock.
+       *
+       * Defined in packages/org-clock.ts.
+       */
+      "org-clock-out-when-done": Value;
       /**
        * What S-TAB last did: "overview", "contents" or "all".
        *
@@ -9093,6 +9149,12 @@ declare global {
        * Defined in packages/org.ts.
        */
       "org-loop-over-headlines-in-active-region": Value;
+      /**
+       * What the mode line shows of the running clock: its time and its entry's heading.
+       *
+       * Defined in packages/org-clock.ts.
+       */
+      "org-mode-line-string": Value;
       /**
        * Keymap org-mode-map.
        */
@@ -11279,6 +11341,12 @@ declare global {
        */
       "org-meta-line": FaceAttributes;
       /**
+       * The running clock in the mode line.
+       *
+       * Defined in packages/org-clock.ts.
+       */
+      "org-mode-line-clock": FaceAttributes;
+      /**
        * Priority cookies, such as [#A].
        *
        * Defined in packages/org.ts.
@@ -12049,6 +12117,10 @@ declare global {
        */
       "org-after-refile-insert-hook": Value;
       /**
+       * Functions called after a heading's TODO state changes, at the heading.
+       */
+      "org-after-todo-state-change-hook": Value;
+      /**
        * Run after entering Org-Agenda mode, after the hooks of the modes it is built on.
        */
       "org-agenda-mode-hook": Value;
@@ -12076,6 +12148,18 @@ declare global {
        * Run after Org-Capture mode is turned on.
        */
       "org-capture-mode-on-hook": Value;
+      /**
+       * Functions called when a clock is cancelled.
+       */
+      "org-clock-cancel-hook": Value;
+      /**
+       * Functions called when a clock starts.
+       */
+      "org-clock-in-hook": Value;
+      /**
+       * Functions called when a clock stops.
+       */
+      "org-clock-out-hook": Value;
       /**
        * Functions TAB in Org tries first, each until one gives true, which then is all TAB does. Emacs also calls it org-tab-first-hook.
        */
