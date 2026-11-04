@@ -9470,6 +9470,12 @@ declare global {
        */
       "org-speed-commands": Value;
       /**
+       * Whether a source block's text has the faces its language's mode gives it.
+       *
+       * Defined in packages/org-src.ts.
+       */
+      "org-src-fontify-natively": Value;
+      /**
        * The major modes of source blocks' languages, as [language, mode] lists, the mode without -mode; others are LANGUAGE-mode.
        *
        * Defined in packages/org-src.ts.

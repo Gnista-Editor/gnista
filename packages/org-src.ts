@@ -20,6 +20,7 @@ defvar("org-src-lang-modes", [
 ], "The major modes of source blocks' languages, as [language, mode] lists, the mode without -mode; others are LANGUAGE-mode.");
 defvar("org-src-window-setup", "reorganize-frame", "Where C-c ' shows a block's text: reorganize-frame, current-window, other-window, split-window-below or split-window-right.");
 defvar("org-src-tab-acts-natively", true, "Whether TAB in a source block indents its line as the language's mode would.");
+defvar("org-src-fontify-natively", true, "Whether a source block's text has the faces its language's mode gives it.");
 defvar("org-edit-src-persistent-message", true, "Whether the block's buffer says in its header line how to finish.");
 
 /** What a block's buffer edits: where in which buffer, and how its text goes back. */
@@ -311,3 +312,40 @@ const editSpecial = ember.defineCommand({
 });
 
 ember.defineKey("org-mode-map", "C-c '", editSpecial);
+
+/**
+ * Fontifies a source block's text from start to end as its language's mode
+ * does, as org-src-font-lock-fontify-block: in a buffer of its own, whose
+ * faces are copied back. False if there is no mode for the language.
+ */
+ember.defun("org-src-font-lock-fontify-block", (lang: ember.Value, start: ember.Value, end: ember.Value) => {
+  const mode = langMode(String(lang));
+  if (!ember.commandNames().includes(mode)) return false;
+  const from = Number(start);
+  const text = ember.bufferSubstringNoProperties(from, Number(end));
+  const name = ` *org-src-fontification:${mode}*`;
+  const fresh = ember.getBuffer(name) === undefined;
+  ember.getBufferCreate(name);
+  const runs: [number, number, ember.Value][] = [];
+  ember.withCurrentBuffer(name, () => {
+    if (fresh) ember.bufferDisableUndo();
+    ember.deleteRegion(0, ember.bufferSize());
+    ember.insert(`${text} `);
+    if (ember.variable("org-src--fontification-mode") !== mode) {
+      ember.call(mode as ember.CommandName);
+      ember.makeLocalVariable("org-src--fontification-mode");
+      ember.setVariable("org-src--fontification-mode", mode);
+    }
+    ember.call("font-lock-ensure");
+    const size = ember.bufferSize() - 1;
+    for (let p = 0; p < size; ) {
+      const next = Math.min(ember.nextSinglePropertyChange(p, "face", size) ?? size, size);
+      const face = ember.getTextProperty(p, "face");
+      if (face !== undefined && face !== null && face !== false) runs.push([p, next, face]);
+      p = next;
+    }
+    ember.setBufferModified(false);
+  });
+  for (const [a, b, face] of runs) ember.putTextProperty(from + a, from + b, "face", face);
+  return true;
+});

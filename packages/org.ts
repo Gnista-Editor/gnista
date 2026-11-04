@@ -1510,6 +1510,23 @@ function blockBefore(line: number): string | undefined {
 
 const KEYWORD = /^([ \t]*#\+(\w+):)(.*)$/;
 
+/**
+ * Fontifies the source block that starts on `beginLine` as its language's
+ * mode would, with org-src-fontify-natively, then gives its text the
+ * org-block face too, newlines and all, as Emacs does. The line it ends on, if it could.
+ */
+function fontifySrcNatively(beginLine: number): number | undefined {
+  if (!truthy(ember.variable("org-src-fontify-natively")) || !ember.fboundp("org-src-font-lock-fontify-block")) return undefined;
+  const lang = /^[ \t]*#\+begin_src[ \t]+(\S+)/i.exec(ember.lineText(beginLine))?.[1];
+  if (lang === undefined) return undefined;
+  let endLine = beginLine + 1;
+  while (endLine < ember.lineCount() && !BLOCK_END.test(ember.lineText(endLine))) endLine++;
+  if (endLine >= ember.lineCount()) return undefined;
+  if (!truthy(ember.funcall("org-src-font-lock-fontify-block", lang, ember.lineStart(beginLine + 1), ember.lineStart(endLine)))) return undefined;
+  if (endLine > beginLine + 1) ember.addFaceTextProperty(ember.lineStart(beginLine + 1), ember.lineStart(endLine), "org-block", { append: true });
+  return endLine;
+}
+
 /** Fontifies whole lines from start to end, for jit-lock-functions. */
 function fontify(start: number, end: number): void {
   if (!ember.derivedModeP("org-mode")) return;
@@ -1519,7 +1536,14 @@ function fontify(start: number, end: number): void {
   ember.removeTextProperty(from, end, "invisible");
   const keywords = allKeywords();
   let block = blockBefore(first);
-  for (let line = first; line < ember.lineCount() && ember.lineStart(line) < Math.max(end, from + 1); line++) {
+  let firstLine = first;
+  if (block === "src") {
+    // In a source block: fontify all of it, from its #+begin_src line.
+    let begin = first - 1;
+    while (begin >= 0 && !BLOCK_BEGIN.test(ember.lineText(begin))) begin--;
+    if (begin >= 0) firstLine = fontifySrcNatively(begin) ?? first;
+  }
+  for (let line = firstLine; line < ember.lineCount() && ember.lineStart(line) < Math.max(end, from + 1); line++) {
     const text = ember.lineText(line);
     const ls = ember.lineStart(line);
     const le = ember.lineEnd(line);
@@ -1536,6 +1560,10 @@ function fontify(start: number, end: number): void {
     if (begin) {
       face(ls, le, "org-block-begin-line");
       block = begin[1].toLowerCase();
+      if (block === "src") {
+        const endLine = fontifySrcNatively(line);
+        if (endLine !== undefined) line = endLine - 1;
+      }
       continue;
     }
     const heading = text.startsWith("*") ? parseHeading(line, keywords) : undefined;

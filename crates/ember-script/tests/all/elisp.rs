@@ -121,3 +121,32 @@ fn el_files_and_org_s_elisp_blocks_use_emacs_lisp_mode() {
     let b = ed.window_buffer();
     assert_eq!(b.slice(0..b.len()), "* H\n#+begin_src emacs-lisp\n  (setq a\n        1)\n#+end_src\n");
 }
+
+#[test]
+fn org_s_elisp_blocks_get_emacs_lisp_s_faces() {
+    // As Emacs 30 fontifies it, with org-src-fontify-natively on as by default;
+    // Emacs writes org-block alone as (org-block).
+    let mut ed = Editor::new();
+    let _s = Scripting::new(&mut ed).unwrap();
+    ed.window_buffer_mut().set_text("* H\n#+begin_src emacs-lisp\n(setq a \"s\") ; c\n#+end_src\ntext\n");
+    ed.call("org-mode", vec![]).unwrap();
+    ed.set_frame_size(100, 20);
+    ed.redisplay();
+    let got = face_runs(&ed);
+    let got: Vec<(&str, &str)> = got.iter().map(|(t, f)| (t.as_str(), f.as_str())).collect();
+    assert_eq!(
+        got,
+        vec![
+            ("* H", "org-level-1"),
+            ("#+begin_src emacs-lisp", "org-block-begin-line"),
+            ("(", "org-block"),
+            ("setq", "(font-lock-keyword-face org-block)"),
+            (" a ", "org-block"),
+            ("\"s\"", "(font-lock-string-face org-block)"),
+            (") ", "org-block"),
+            ("; ", "(font-lock-comment-delimiter-face org-block)"),
+            ("c\n", "(font-lock-comment-face org-block)"),
+            ("#+end_src", "org-block-end-line"),
+        ]
+    );
+}
