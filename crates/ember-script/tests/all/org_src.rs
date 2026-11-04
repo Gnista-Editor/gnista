@@ -112,3 +112,39 @@ fn saving_puts_the_text_back_and_stays() {
     let org = &ed.buffers()[ed.find_buffer("t.org").unwrap()];
     assert_eq!(org.slice(0..org.len()), "* H\n#+begin_src python\n  yx = 1\n#+end_src\n");
 }
+
+#[test]
+fn tab_in_a_source_block_indents_as_the_language_s_mode_does() {
+    // What Emacs 30 gives, with org-src-tab-acts-natively on as by default.
+    for (before, at, after, point) in [
+        (
+            "* H\n#+begin_src emacs-lisp\n  (let ((a 1))\n(foo a))\n#+end_src\n",
+            "(foo",
+            "* H\n#+begin_src emacs-lisp\n    (let ((a 1))\n      (foo a))\n#+end_src\n",
+            50,
+        ),
+        (
+            "- item\n  #+begin_src emacs-lisp\n    (when x\n  y)\n  #+end_src\n",
+            "y)",
+            "- item\n  #+begin_src emacs-lisp\n      (when x\n        y)\n  #+end_src\n",
+            54,
+        ),
+        ("* H\n#+begin_src emacs-lisp\n  (let ((a 1))\n    (foo a))\n#+end_src\n", "foo", "* H\n#+begin_src emacs-lisp\n  (let ((a 1))\n    (foo a))\n#+end_src\n", 47),
+    ] {
+        let (mut ed, _s) = org(before, at);
+        ed.press("TAB").unwrap();
+        assert_eq!(text(&ed), after);
+        assert_eq!(ed.window_buffer().point(), point, "{before:?}");
+        assert_eq!(name(&ed), "t.org");
+        assert!(ed.find_buffer("*Org Src t.org[ emacs-lisp ]*").is_none());
+    }
+}
+
+#[test]
+fn tab_natively_uses_the_org_buffer_s_content_indentation() {
+    let (mut ed, s) = org("* H\n#+begin_src emacs-lisp\n(let ((a 1))\n(foo a))\n#+end_src\n", "(foo");
+    s.eval_expression(&mut ed, r#"(ember.makeLocalVariable("org-edit-src-content-indentation"), ember.setVariable("org-edit-src-content-indentation", 0))"#).unwrap();
+    ed.press("TAB").unwrap();
+    assert_eq!(text(&ed), "* H\n#+begin_src emacs-lisp\n(let ((a 1))\n  (foo a))\n#+end_src\n");
+    assert_eq!(ed.window_buffer().point(), 42);
+}

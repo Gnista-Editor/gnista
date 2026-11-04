@@ -19,6 +19,7 @@ defvar("org-src-lang-modes", [
   ["calc", "fundamental"], ["dot", "fundamental"], ["sqlite", "sql"], ["toml", "conf-toml"],
 ], "The major modes of source blocks' languages, as [language, mode] lists, the mode without -mode; others are LANGUAGE-mode.");
 defvar("org-src-window-setup", "reorganize-frame", "Where C-c ' shows a block's text: reorganize-frame, current-window, other-window, split-window-below or split-window-right.");
+defvar("org-src-tab-acts-natively", true, "Whether TAB in a source block indents its line as the language's mode would.");
 defvar("org-edit-src-persistent-message", true, "Whether the block's buffer says in its header line how to finish.");
 
 /** What a block's buffer edits: where in which buffer, and how its text goes back. */
@@ -97,10 +98,14 @@ function switchTo(buffer: string, context: "edit" | "exit"): void {
   } else ember.call("switch-to-buffer", buffer);
 }
 
-/** Edits the block at point in its language's mode, as org-edit-src-code. */
-function editSrcCode(): void {
-  const block = blockAt();
-  if (!block) ember.userError("Not in a source or example block");
+type Block = NonNullable<ReturnType<typeof blockAt>>;
+
+/**
+ * Makes the buffer that edits a block, as org-src--edit-element does: its
+ * text without the indentation its lines share, in the language's mode,
+ * point where it was in the block. The current buffer stays as it was.
+ */
+function openEdit(block: Block): { name: string; edit: Edit } {
   const lang = block.kind === "src" ? block.lang ?? "" : "example";
   const mode = block.kind === "src" ? langMode(lang) : undefined;
   if (mode !== undefined && !ember.commandNames().includes(mode)) ember.signal("error", `No such language mode: ${mode}`);
@@ -109,12 +114,44 @@ function editSrcCode(): void {
   const source = ember.bufferName();
   // Where point is, by line and column within the block, as org-src--coordinates.
   const point = ember.point();
-  const coords: [number, number] | "end" = point >= endPos ? "end" : [ember.lineOf(Math.max(point, begPos)) - (block.begin + 1), Math.max(point, begPos) - ember.lineStart(ember.lineOf(Math.max(point, begPos)))];
+  const from = Math.max(point, begPos);
+  const coords: [number, number] | "end" = point >= endPos ? "end" : [ember.lineOf(from) - (block.begin + 1), from - ember.lineStart(ember.lineOf(from))];
   const preserve = ember.variable("org-src-preserve-indentation") === true || /(^|\s)-i(\s|$)/.test(block.switches);
-  const windows = ember.currentWindowConfiguration();
   let text = ember.bufferSubstringNoProperties(begPos, endPos);
   const removed = preserve ? 0 : commonIndentation(text);
+  text = removeIndentation(text, removed);
+  const edit: Edit = {
+    beg: ember.makeMarker(begPos),
+    end: ember.makeMarker(endPos, { advances: true }),
+    source,
+    blockIndentation: block.indent,
+    contentIndentation: Number(ember.variable("org-edit-src-content-indentation") ?? 2),
+    preserve,
+  };
   const name = `*Org Src ${source}[ ${lang} ]*`;
+  ember.getBufferCreate(name);
+  ember.withCurrentBuffer(name, () => {
+    ember.deleteRegion(0, ember.bufferSize());
+    ember.insert(text);
+    if (mode !== undefined) ember.call(mode as ember.CommandName);
+    edits.set(ember.currentBuffer(), edit);
+    ember.callWithPrefix(1, orgSrcMode);
+    ember.setBufferModified(false);
+    if (coords === "end") ember.gotoChar(Math.max(ember.bufferSize() - 1, 0));
+    else {
+      const line = Math.min(coords[0], ember.lineCount() - 1);
+      ember.gotoChar(Math.min(ember.lineStart(line) + Math.max(coords[1] - removed, 0), ember.lineEnd(line)));
+    }
+  });
+  return { name, edit };
+}
+
+/** Edits the block at point in its language's mode, as org-edit-src-code. */
+function editSrcCode(): void {
+  const block = blockAt();
+  if (!block) ember.userError("Not in a source or example block");
+  const source = ember.bufferName();
+  const begPos = ember.lineStart(block.begin + 1);
   // An edit of this block already under way is gone back to, as org-src--edit-buffer finds it.
   const existing = ember.bufferList().find((b) => {
     const e = ember.getBuffer(b) && edits.get(b);
@@ -124,29 +161,10 @@ function editSrcCode(): void {
     switchTo(existing, "edit");
     return;
   }
-  const edit: Edit = {
-    beg: ember.makeMarker(begPos),
-    end: ember.makeMarker(endPos, { advances: true }),
-    source,
-    blockIndentation: block.indent,
-    contentIndentation: Number(ember.variable("org-edit-src-content-indentation") ?? 2),
-    preserve,
-    windows,
-  };
-  ember.getBufferCreate(name);
+  const windows = ember.currentWindowConfiguration();
+  const { name, edit } = openEdit(block);
+  edit.windows = windows;
   switchTo(name, "edit");
-  ember.deleteRegion(0, ember.bufferSize());
-  text = removeIndentation(text, removed);
-  ember.insert(text);
-  if (mode !== undefined) ember.call(mode as ember.CommandName);
-  edits.set(ember.currentBuffer(), edit);
-  ember.callWithPrefix(1, orgSrcMode);
-  ember.setBufferModified(false);
-  if (coords === "end") ember.gotoChar(Math.max(ember.bufferSize() - 1, 0));
-  else {
-    const line = Math.min(coords[0], ember.lineCount() - 1);
-    ember.gotoChar(Math.min(ember.lineStart(line) + Math.max(coords[1] - removed, 0), ember.lineEnd(line)));
-  }
 }
 
 /** The block's buffer's text as it goes back: each non-blank line indented by the block's and its content's indentation. */
@@ -186,14 +204,61 @@ function exit(abort: boolean): void {
   if (edit.windows) ember.setWindowConfiguration(edit.windows);
   switchTo(edit.source, "exit");
   ember.call("kill-buffer", name);
-  // Point back where it was in the block's text, as org-src--goto-coordinates.
+  returnPoint(edit, abort ? undefined : [lineInEdit, colInEdit]);
+}
+
+/** Puts point back in the Org buffer where it was in the block's buffer, as org-src--goto-coordinates, and frees the edit's markers. */
+function returnPoint(edit: Edit, at: [number, number] | undefined): void {
   const beg = ember.markerPosition(edit.beg) ?? 0;
-  const line = ember.lineOf(beg) + lineInEdit;
-  const offset = abort ? 0 : (edit.preserve ? 0 : edit.blockIndentation + edit.contentIndentation);
-  ember.gotoChar(abort ? beg : Math.min(ember.lineStart(line) + colInEdit + offset, ember.lineEnd(line)));
+  if (at === undefined) ember.gotoChar(beg);
+  else {
+    const line = ember.lineOf(beg) + at[0];
+    const offset = edit.preserve ? 0 : edit.blockIndentation + edit.contentIndentation;
+    ember.gotoChar(Math.min(ember.lineStart(line) + at[1] + offset, ember.lineEnd(line)));
+  }
   ember.deleteMarker(edit.beg);
   ember.deleteMarker(edit.end);
 }
+
+/**
+ * Runs `command` on the block at point in its language's mode, unseen, and
+ * puts the text back, as org-babel-do-key-sequence-in-edit-buffer does with
+ * org-src-window-setup switch-invisibly: how TAB indents a source block's
+ * line with org-src-tab-acts-natively.
+ */
+ember.defun("org-babel-do-key-sequence-in-edit-buffer", (command: ember.Value) => {
+  const block = blockAt();
+  if (!block || block.kind !== "src") return;
+  const outside = ember.lineBeginningPosition() <= ember.lineStart(block.begin) ? ember.makeMarker(ember.point()) : undefined;
+  let opened: { name: string; edit: Edit };
+  try {
+    opened = openEdit(block);
+  } catch {
+    if (outside) ember.deleteMarker(outside);
+    return;
+  }
+  const { name, edit } = opened;
+  let at: [number, number] = [0, 0];
+  let text = "";
+  ember.withCurrentBuffer(name, () => {
+    try {
+      ember.call(String(command) as ember.CommandName);
+    } finally {
+      const line = ember.lineOf(ember.point());
+      at = [line, ember.point() - ember.lineStart(line)];
+      text = contentsForWriteBack(edit);
+      edits.delete(ember.currentBuffer());
+      ember.setBufferModified(false);
+    }
+  });
+  writeBack(edit, text);
+  ember.call("kill-buffer", name);
+  returnPoint(edit, at);
+  if (outside) {
+    ember.gotoChar(ember.markerPosition(outside) ?? ember.point());
+    ember.deleteMarker(outside);
+  }
+});
 
 const exitCommand = ember.defineCommand({
   name: "org-edit-src-exit",

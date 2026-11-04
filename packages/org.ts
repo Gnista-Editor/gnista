@@ -99,7 +99,7 @@ import {
 } from "org-macs";
 import { refileCommand, refileCopyCommand } from "org-refile";
 import { atTable, beforeOnLine, blankField, markAligned, needsAlign, restOfLine } from "org-table";
-import { allMatches, charCount, escapeRegExp, forwardLine } from "subr";
+import { allMatches, charCount, escapeRegExp, forwardLine, truthy } from "subr";
 export { PLANNING } from "org-element";
 
 // Variables
@@ -1692,12 +1692,15 @@ function indentLine(line: number): void {
   const ls = ember.lineStart(line);
   const block = elementAt(ls);
   if (block?.type === "src-block" && line > lineAt(block.begin) && line < lineAt(endBeforeBlank(block))) {
-    // Org hands the line to the language's mode, which Ember lacks, then
-    // gives an empty line the block's content indentation.
+    // An empty line gets the block's content indentation, then Org hands
+    // the line to the language's mode, with org-src-tab-acts-natively.
     if (!preservesIndentation(block) && text === "" && ember.point() === ls) {
       const ind = textIndentation(ember.lineText(lineAt(block.begin))) + Number(ember.variable("org-edit-src-content-indentation") ?? 2);
       indentLineTo(line, ind);
       ember.gotoChar(ember.lineEnd(line));
+    }
+    if (truthy(ember.variable("org-src-tab-acts-natively")) && ember.fboundp("org-babel-do-key-sequence-in-edit-buffer")) {
+      ember.funcall("org-babel-do-key-sequence-in-edit-buffer", "indent-for-tab-command");
     }
     return;
   }

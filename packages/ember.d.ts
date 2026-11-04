@@ -9492,6 +9492,12 @@ declare global {
        */
       "org-src-preserve-indentation": Value;
       /**
+       * Whether TAB in a source block indents its line as the language's mode would.
+       *
+       * Defined in packages/org-src.ts.
+       */
+      "org-src-tab-acts-natively": Value;
+      /**
        * Where C-c ' shows a block's text: reorganize-frame, current-window, other-window, split-window-below or split-window-right.
        *
        * Defined in packages/org-src.ts.
