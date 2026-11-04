@@ -115,3 +115,20 @@ fn each_minibuffer_aligns_its_annotations_afresh() {
     assert!(after.contains("an-test-variable                 v       42"), "{after:?}");
     d.press("C-g");
 }
+
+#[test]
+fn vertico_cuts_rows_at_the_window_edge_rather_than_continuing_them() {
+    let d = setup();
+    d.with(|ed| ed.set_frame_size(60, 30));
+    d.eval(r#"ember.call("vertico-mode"); ember.call("marginalia-mode");
+      ember.defineCommand({ name: "an-command-whose-name-is-longer-than-most", doc: "Long, with documentation that goes past the edge.", run: () => undefined });"#);
+    d.press("M-x");
+    d.press("a n - c");
+    // The prompt and the candidate, a row each, as Emacs's vertico sets truncate-lines.
+    d.with(|ed| assert_eq!(ed.mini_window_height(30), 2));
+    // Input past four fifths of the width continues on the next line again.
+    d.press("C-a C-k");
+    d.press(&["x"; 70].join(" "));
+    d.with(|ed| assert_eq!(ed.minibuffer_rows(true).len(), 2, "M-x and 70 x's in 60 columns"));
+    d.press("C-g");
+}

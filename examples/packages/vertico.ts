@@ -347,6 +347,10 @@ function exhibit(): void {
     const lines = arrangeCandidates(s);
     ember.moveOverlay(s.candidatesOv, ember.pointMax(), ember.pointMax());
     ember.overlayPut(s.candidatesOv, "after-string", ember.concat(ember.propertize(" ", { cursor: true }), ...(lines.length > 0 ? ["\n"] : []), ...lines));
+    // Rows are cut at the window's edge, not continued, unless the input
+    // itself runs long, as vertico--resize-window has it.
+    ember.makeLocalVariable("truncate-lines");
+    ember.setVariable("truncate-lines", ember.point() - ember.pointMin() + 1 < 0.8 * minibufferWidth());
   });
 }
 
