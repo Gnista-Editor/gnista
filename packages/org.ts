@@ -3638,9 +3638,13 @@ ember.defineVariable({
   value: false,
 });
 
-/** The tags of the headings above, as org-get-tags gives the inherited ones. */
+/** The tags of the file and the headings above, as org-get-tags gives the inherited ones. */
 function inheritedTags(all: Heading[], i: number): string[] {
   const out: string[] = [];
+  for (const [, , text] of keywordLines()) {
+    const m = /^#\+FILETAGS:(.*)$/i.exec(text);
+    if (m) for (const t of m[1].split(/[:\s]+/)) if (t !== "" && !out.includes(t)) out.push(t);
+  }
   for (const a of ancestors(all, i).reverse()) for (const t of all[a].tags) if (!out.includes(t)) out.push(t);
   return out;
 }
