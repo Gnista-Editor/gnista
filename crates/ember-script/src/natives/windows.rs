@@ -200,6 +200,11 @@ natives! {
     }
 
     fn windowSize(ed, window: u64) -> Option<Vec<usize>> {
+        // The minibuffer's window spans the frame, as many lines as it shows.
+        if window == ember_core::MINIBUFFER_WINDOW {
+            let (width, lines) = (ed.frame_cells().0, ed.mini_window_lines());
+            return Ok(Some(vec![width, lines, width, lines, 1]));
+        }
         let total = ed.window_total_sizes().into_iter().find(|s| s.0 == window);
         let full = usize::from(ed.window_full_width(window));
         Ok(ed.window_size(window).zip(total).map(|((w, h), (_, tw, th))| vec![w, h, tw, th, full]))

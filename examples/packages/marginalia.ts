@@ -457,15 +457,16 @@ function annotatorFor(cat: string): Annotator | "builtin" | undefined {
   return annotators[String(first)] ?? ((c) => ember.funcall(String(first), c) as Text | undefined);
 }
 
-/** The widest candidate and its annotation's left part seen, rounded up to 10, as marginalia--cand-width-max. */
-let candWidthMax = 20;
+ember.defineVariable({
+  name: "marginalia--cand-width-max",
+  doc: "The widest candidate and its annotation's left part seen, rounded up to 10: local to the minibuffer, so each starts again.",
+  value: 20,
+});
 
 /** The candidates with their annotations, aligned as marginalia-align says, as marginalia--affixate and marginalia--align. */
 function affixate(annotator: Annotator, cands: string[]): [string, Text, Text][] {
   const win = ember.windowSize(ember.minibufferWindow())?.width ?? 80;
-  const saved = ember.variable("marginalia-field-width");
   return ember.letBind({ "marginalia-field-width": Math.min(Math.trunc(win / 2), fieldWidth()) }, () => {
-    void saved;
     const anns = cands.map((c) => {
       const ann = cache(annotator, c) ?? "";
       return String(ann).trim() === "" ? "" : ann;
@@ -476,9 +477,17 @@ function affixate(annotator: Annotator, cands: string[]): [string, Text, Text][]
       const run = runs.find(([, , p]) => p["marginalia--align"] === true);
       return run ? run[0] : -1;
     };
-    cands.forEach((c, i) => {
-      const at = alignAt(anns[i]);
-      if (at >= 0) candWidthMax = Math.max(candWidthMax, Math.ceil((ember.stringWidth(c) + ember.stringWidth(String(anns[i]).slice(0, at))) / 10) * 10);
+    // Kept in the minibuffer, whose locals each new prompt clears, as Emacs's is.
+    const mini = ember.windowBuffer(ember.minibufferWindow()) ?? ember.currentBuffer();
+    const candWidthMax = ember.withCurrentBuffer(mini, () => {
+      let max = Number(ember.variable("marginalia--cand-width-max"));
+      cands.forEach((c, i) => {
+        const at = alignAt(anns[i]);
+        if (at >= 0) max = Math.max(max, Math.ceil((ember.stringWidth(c) + ember.stringWidth(String(anns[i]).slice(0, at))) / 10) * 10);
+      });
+      ember.makeLocalVariable("marginalia--cand-width-max");
+      ember.setVariable("marginalia--cand-width-max", max);
+      return max;
     });
     const align = String(ember.variable("marginalia-align"));
     const offset = Number(ember.variable("marginalia-align-offset") ?? 0);

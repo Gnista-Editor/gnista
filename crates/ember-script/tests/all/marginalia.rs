@@ -84,3 +84,34 @@ fn vertico_shows_annotations_aligned_beside_the_candidates() {
     assert!(after.contains("an-test-command (C-c t)         Run the test thing."), "{after:?}");
     d.press("C-g");
 }
+
+#[test]
+fn documentation_is_cut_to_half_the_frame_width() {
+    let d = setup();
+    d.with(|ed| ed.set_frame_size(120, 30));
+    d.eval(r#"ember.call("vertico-mode"); ember.call("marginalia-mode");"#);
+    d.press("M-x");
+    d.press("a n - u n b o u n d");
+    let (_, after) = d.with(|ed| ed.minibuffer_strings());
+    // marginalia-field-width is the smaller of 80 and half the minibuffer's window, 60 here, not 40.
+    assert!(after.contains("Do nothing much, for a test that has a very long first line…"), "{after:?}");
+    d.press("C-g");
+}
+
+#[test]
+fn each_minibuffer_aligns_its_annotations_afresh() {
+    let d = setup();
+    d.eval(r#"ember.call("vertico-mode"); ember.call("marginalia-mode");
+      ember.defineCommand({ name: "an-command-whose-name-is-longer-than-most", doc: "Long.", run: () => undefined });"#);
+    d.press("M-x");
+    d.press("a n - c o m m a n d");
+    let (_, after) = d.with(|ed| ed.minibuffer_strings());
+    assert!(after.contains("an-command-whose-name-is-longer-than-most           Long."), "{after:?}");
+    d.press("C-g");
+    // The wider candidate the last minibuffer showed no longer pushes the annotations right.
+    d.press("C-h v");
+    d.press("a n - t e s t - v");
+    let (_, after) = d.with(|ed| ed.minibuffer_strings());
+    assert!(after.contains("an-test-variable                 v       42"), "{after:?}");
+    d.press("C-g");
+}

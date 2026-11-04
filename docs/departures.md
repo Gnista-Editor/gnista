@@ -11,3 +11,11 @@ Two rules for when one is taken up. A departure leaves files as Emacs and Org wo
 **Idea.** Align tags on screen only: a display property on the spaces before a heading's tags, `(space :align-to (- right WIDTH))`, stretches them so the tags end at the window's right edge, whatever its width and whatever the font, as long as the heading leaves room; the file keeps Org's spacing. Emacs's display engine supports such specs, and packages do this for Emacs, so it is a mode in Org's spirit rather than a change to it, off by default.
 
 **Needs.** `:align-to` with `right`, `center` and arithmetic on them, as Emacs's pixel specifications have them ([ADR 0029](adr/0029-redisplay-beyond-rows.md) supports a plain column so far), and a jit-lock function in a small mode, about fifteen lines of TypeScript.
+
+## marginalia's documentation to the window's right edge
+
+**marginalia.** An annotation's fields are cut to `marginalia-field-width`, 80 columns, or half the window's width if that is less, so in a wide frame a command's documentation stops well short of the edge with room to spare. Its column is the widest candidate seen so far in this minibuffer, rounded up to ten, so it moves right as longer names scroll into view and stays there. The maintainer keeps both, because the completion APIs give the annotator no better way to know how much room there is ([minad/marginalia#150](https://github.com/minad/marginalia/issues/150), [#169](https://github.com/minad/marginalia/issues/169), [#145](https://github.com/minad/marginalia/issues/145)).
+
+**Idea.** Ember's vertico knows the rows it shows, so it could cut each annotation's last field where the minibuffer's window ends instead, and line the annotations up by the candidates on screen, not every one seen. An option of Ember's vertico and marginalia, off by default, since it changes what every completion looks like.
+
+**Needs.** A way for vertico to tell the annotator the width left on each row, or to cut the annotation itself, as it already cuts candidates that run past the edge.
