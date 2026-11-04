@@ -476,6 +476,55 @@ function agendaDispatch(): string {
   });
 }
 
+/** Writes the lines showing an entry again where they are, as org-agenda-change-all-lines does, rather than the agenda rebuilt. */
+function redrawEntry(item: AgendaItem): void {
+  const heading = headingOf(item);
+  ember.withCurrentBuffer(AGENDA, () => ember.letBind({ "inhibit-read-only": true }, () => {
+    const point = ember.point();
+    for (const [l, other] of agendaLines.entries()) {
+      if (!other || other.buffer !== item.buffer || headingOf(other) !== heading) continue;
+      const text = ember.withCurrentBuffer(item.buffer, () => {
+        const h = headings().find((x) => x.start === heading);
+        return h ? agendaLine(h, other.cat, other.leader, other.removeTimestamp) : other.text;
+      });
+      other.text = text;
+      ember.deleteRegion(ember.lineStart(l), ember.lineEnd(l));
+      ember.gotoChar(ember.lineStart(l));
+      ember.insert(text);
+    }
+    ember.gotoChar(point);
+  }));
+}
+
+/**
+ * Runs a command at the heading of the entry the line at point shows, as
+ * the agenda's commands do with org-agenda-with-point-at, then writes the
+ * entry's lines again, its heading changed.
+ */
+function atEntry(command: ember.CommandName, interactive = true): void {
+  const item = agendaItemHere();
+  ember.withCurrentBuffer(item.buffer, () => {
+    ember.saveExcursion(() => {
+      ember.gotoChar(headingOf(item));
+      if (interactive) ember.callInteractively(command);
+      else ember.call(command);
+    });
+  });
+  redrawEntry(item);
+}
+
+for (const [name, command, doc] of [
+  ["org-agenda-clock-in", "org-clock-in", "Start a clock on the entry the agenda line at point shows."],
+  ["org-agenda-set-tags", "org-set-tags-command", "Set the tags of the entry the agenda line at point shows."],
+  ["org-agenda-priority", "org-priority", "Set the priority of the entry the agenda line at point shows."],
+  ["org-agenda-refile", "org-refile", "Refile the entry the agenda line at point shows."],
+] as const) {
+  ember.defineCommand({ name, doc, run: () => atEntry(command as ember.CommandName) });
+}
+ember.defineCommand({ name: "org-agenda-clock-out", doc: "Stop the running clock, from the agenda.", run: () => ember.call("org-clock-out") });
+ember.defineCommand({ name: "org-agenda-clock-cancel", doc: "Cancel the running clock, from the agenda.", run: () => ember.call("org-clock-cancel") });
+ember.defineCommand({ name: "org-agenda-clock-goto", doc: "Go to the entry with the running clock, from the agenda.", run: () => ember.call("org-clock-goto") });
+
 /** The entry the agenda line at point shows, or Org's error if it shows none. */
 function agendaItemHere(): AgendaItem {
   const item = agendaLines[ember.lineOf(ember.point())];
@@ -528,24 +577,7 @@ const agendaTodo = ember.defineCommand({
       ember.gotoChar(headingOf(item));
       ember.callWithPrefix(ember.prefixArg(), "org-todo");
     });
-    // The lines showing the entry are written again where they are, as
-    // org-agenda-change-all-lines does, rather than the agenda rebuilt.
-    const heading = headingOf(item);
-    ember.withCurrentBuffer(AGENDA, () => ember.letBind({ "inhibit-read-only": true }, () => {
-      const point = ember.point();
-      for (const [l, other] of agendaLines.entries()) {
-        if (!other || other.buffer !== item.buffer || headingOf(other) !== heading) continue;
-        const text = ember.withCurrentBuffer(item.buffer, () => {
-          const h = headings().find((x) => x.start === heading);
-          return h ? agendaLine(h, other.cat, other.leader, other.removeTimestamp) : other.text;
-        });
-        other.text = text;
-        ember.deleteRegion(ember.lineStart(l), ember.lineEnd(l));
-        ember.gotoChar(ember.lineStart(l));
-        ember.insert(text);
-      }
-      ember.gotoChar(point);
-    }));
+    redrawEntry(item);
   },
 });
 
@@ -624,6 +656,13 @@ ember.defineMajorMode({
     ".": agendaToday,
     q: agendaQuit,
     x: agendaQuit,
+    I: "org-agenda-clock-in",
+    O: "org-agenda-clock-out",
+    X: "org-agenda-clock-cancel",
+    J: "org-agenda-clock-goto",
+    ":": "org-agenda-set-tags",
+    ",": "org-agenda-priority",
+    w: "org-agenda-refile",
   },
 });
 

@@ -995,3 +995,20 @@ fn exiting_with_a_clock_running_offers_to_stop_it() {
         "* Task\n:LOGBOOK:\nCLOCK: [2026-11-04 Wed 12:00]--[2026-11-04 Wed 12:00] =>  0:00\n:END:\n"
     );
 }
+
+#[test]
+fn the_agenda_clocks_in_on_the_entry_of_its_line() {
+    let (mut ed, s) = org("");
+    ed.set_frame_size(80, 24);
+    let dir = tempfile::tempdir_in(env!("CARGO_TARGET_TMPDIR")).unwrap();
+    let path = dir.path().join("a.org");
+    std::fs::write(&path, "* TODO Task\nSCHEDULED: <2026-11-04 Wed>\n").unwrap();
+    s.eval_typescript(&mut ed, "files.ts", format!("ember.setVariable(\"org-agenda-files\", [{:?}]); ember.setVariable(\"ember--today\", \"2026-11-04\");", path.to_str().unwrap())).unwrap();
+    s.eval_typescript(&mut ed, "week.ts", "ember.call(\"org-agenda-list\");".to_string()).unwrap();
+    ed.press("M-< C-s T a s k RET I").unwrap();
+    let file = ed.buffers().iter().find(|b| b.name == "a.org").map(|b| b.slice(0..b.len())).unwrap();
+    assert_eq!(file, "* TODO Task\nSCHEDULED: <2026-11-04 Wed>\n:LOGBOOK:\nCLOCK: [2026-11-04 Wed 12:00]\n:END:\n");
+    ed.press("O").unwrap();
+    let file = ed.buffers().iter().find(|b| b.name == "a.org").map(|b| b.slice(0..b.len())).unwrap();
+    assert!(file.contains("=>  0:00"), "{file}");
+}

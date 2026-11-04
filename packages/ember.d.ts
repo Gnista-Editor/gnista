@@ -3813,6 +3813,30 @@ declare global {
        */
       "org-agenda": [];
       /**
+       * Cancel the running clock, from the agenda.
+       *
+       * Defined in packages/org-agenda.ts.
+       */
+      "org-agenda-clock-cancel": [];
+      /**
+       * Go to the entry with the running clock, from the agenda.
+       *
+       * Defined in packages/org-agenda.ts.
+       */
+      "org-agenda-clock-goto": [];
+      /**
+       * Start a clock on the entry the agenda line at point shows.
+       *
+       * Defined in packages/org-agenda.ts.
+       */
+      "org-agenda-clock-in": [];
+      /**
+       * Stop the running clock, from the agenda.
+       *
+       * Defined in packages/org-agenda.ts.
+       */
+      "org-agenda-clock-out": [];
+      /**
        * Show the week before in the agenda.
        *
        * Defined in packages/org-agenda.ts.
@@ -3861,6 +3885,12 @@ declare global {
        */
       "org-agenda-previous-line": [];
       /**
+       * Set the priority of the entry the agenda line at point shows.
+       *
+       * Defined in packages/org-agenda.ts.
+       */
+      "org-agenda-priority": [];
+      /**
        * Leave the agenda: its window goes, or another buffer takes its place.
        *
        * Defined in packages/org-agenda.ts.
@@ -3872,6 +3902,18 @@ declare global {
        * Defined in packages/org-agenda.ts.
        */
       "org-agenda-redo": [];
+      /**
+       * Refile the entry the agenda line at point shows.
+       *
+       * Defined in packages/org-agenda.ts.
+       */
+      "org-agenda-refile": [];
+      /**
+       * Set the tags of the entry the agenda line at point shows.
+       *
+       * Defined in packages/org-agenda.ts.
+       */
+      "org-agenda-set-tags": [];
       /**
        * Go to the entry the agenda line at point shows, in this window.
        *
