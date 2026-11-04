@@ -262,5 +262,89 @@
     "modes": [
       "org-mode"
     ]
+  },
+  {
+    "name": "blank-entry-tab-once",
+    "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+    "keys": "TAB",
+    "point": 41,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "blank-entry-tab-twice",
+    "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+    "keys": "TAB TAB",
+    "point": 41,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "blank-entry-tab-three-times",
+    "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+    "keys": "TAB TAB TAB",
+    "point": 41,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "one-blank-line-entry-tab-twice",
+    "text": "#+STARTUP: content\n* Scratch\n** Privesc\n\n** ffuf\nf\n",
+    "keys": "TAB TAB",
+    "point": 30,
+    "modes": [
+      "org-mode"
+    ]
+  },
+  {
+    "name": "blank-entry-tab-with-separator-lines-0",
+    "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+    "keys": "TAB",
+    "point": 41,
+    "modes": [
+      "org-mode"
+    ],
+    "vars": {
+      "org-cycle-separator-lines": 0
+    }
+  },
+  {
+    "name": "blank-entry-tab-twice-with-separator-lines-0",
+    "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+    "keys": "TAB TAB",
+    "point": 41,
+    "modes": [
+      "org-mode"
+    ],
+    "vars": {
+      "org-cycle-separator-lines": 0
+    }
+  },
+  {
+    "name": "blank-entry-tab-with-separator-lines-1",
+    "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+    "keys": "TAB",
+    "point": 41,
+    "modes": [
+      "org-mode"
+    ],
+    "vars": {
+      "org-cycle-separator-lines": 1
+    }
+  },
+  {
+    "name": "blank-entry-tab-twice-with-separator-lines-1",
+    "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+    "keys": "TAB TAB",
+    "point": 41,
+    "modes": [
+      "org-mode"
+    ],
+    "vars": {
+      "org-cycle-separator-lines": 1
+    }
   }
 ]

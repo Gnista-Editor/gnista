@@ -675,6 +675,186 @@
       "kill_ring": [],
       "modified": false,
       "error": null
+    },
+    {
+      "name": "blank-entry-tab-once",
+      "input": {
+        "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+        "point": 41,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+      "visible": "#+STARTUP: content\n* Scratch\n** Recon\n** Privesc\n\n\n\n** ffuf",
+      "point": 41,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "blank-entry-tab-twice",
+      "input": {
+        "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+        "point": 41,
+        "keys": "TAB TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+      "visible": "#+STARTUP: content\n* Scratch\n** Recon\n** Privesc\n\n\n\n** ffuf",
+      "point": 41,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "blank-entry-tab-three-times",
+      "input": {
+        "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+        "point": 41,
+        "keys": "TAB TAB TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+      "visible": "#+STARTUP: content\n* Scratch\n** Recon\n** Privesc\n\n\n\n** ffuf",
+      "point": 41,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "one-blank-line-entry-tab-twice",
+      "input": {
+        "text": "#+STARTUP: content\n* Scratch\n** Privesc\n\n** ffuf\nf\n",
+        "point": 30,
+        "keys": "TAB TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null
+      },
+      "text": "#+STARTUP: content\n* Scratch\n** Privesc\n\n** ffuf\nf\n",
+      "visible": "#+STARTUP: content\n* Scratch\n** Privesc\n\n** ffuf",
+      "point": 30,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "blank-entry-tab-with-separator-lines-0",
+      "input": {
+        "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+        "point": 41,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "org-cycle-separator-lines": 0
+        }
+      },
+      "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+      "visible": "#+STARTUP: content\n* Scratch\n** Recon\n** Privesc\n\n\n\n** ffuf",
+      "point": 41,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "blank-entry-tab-twice-with-separator-lines-0",
+      "input": {
+        "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+        "point": 41,
+        "keys": "TAB TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "org-cycle-separator-lines": 0
+        }
+      },
+      "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+      "visible": "#+STARTUP: content\n* Scratch\n** Recon\n** Privesc\n\n\n\n** ffuf",
+      "point": 41,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "blank-entry-tab-with-separator-lines-1",
+      "input": {
+        "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+        "point": 41,
+        "keys": "TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "org-cycle-separator-lines": 1
+        }
+      },
+      "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+      "visible": "#+STARTUP: content\n* Scratch\n** Recon\n** Privesc\n\n\n\n** ffuf",
+      "point": 41,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
+    },
+    {
+      "name": "blank-entry-tab-twice-with-separator-lines-1",
+      "input": {
+        "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+        "point": 41,
+        "keys": "TAB TAB",
+        "modes": [
+          "org-mode"
+        ],
+        "call": [],
+        "platform": null,
+        "vars": {
+          "org-cycle-separator-lines": 1
+        }
+      },
+      "text": "#+STARTUP: content\n* Scratch\n** Recon\nr\n** Privesc\n\n\n\n** ffuf\nf\n",
+      "visible": "#+STARTUP: content\n* Scratch\n** Recon\n** Privesc\n\n\n\n** ffuf",
+      "point": 41,
+      "mark": null,
+      "mark_active": false,
+      "kill_ring": [],
+      "modified": false,
+      "error": null
     }
   ]
 }
