@@ -332,4 +332,3 @@ for (const [keys, command] of [
 ] as const) {
   ember.defineKey("org-mode-map", keys, command);
 }
-ember.bindKey("C-c C-x C-j", "org-clock-goto");
