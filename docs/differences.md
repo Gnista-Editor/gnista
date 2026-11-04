@@ -43,7 +43,7 @@ Each entry says whether the difference is **deliberate**, which keeps it, or **n
 
 ## Text and search
 
-- **Source blocks' faces** (not yet): `org-src-fontify-natively` copies the faces a language's mode puts as text properties, as Emacs Lisp mode does, but tree-sitter modes draw theirs from the syntax tree, so a Python or Rust block has only `org-block`. `org-src-block-faces` is not read.
+- **Source blocks' faces** (not yet): `org-src-block-faces` is not read, and a block in a language with no mode in Ember, such as shell, has only `org-block`. Python blocks have python-ts-mode's faces, which differ in detail from python.el's.
 - **Emacs Lisp mode** (deliberate): Ember cannot run Emacs Lisp, so there is no `C-M-x`, `eval-last-sexp`, byte-compiling or completion of Lisp symbols. How a macro indents comes from a table of the indent specs `emacs -Q` has, not from `declare` forms in the code, so macros of other packages indent as calls. Faces leave out autoload cookies, `\\[command]` and `\\<map>` in doc strings, regexp grouping constructs and ineffective backslashes; characters beyond the Basic Multilingual Plane put the faces after them out of place.
 - **Explicitly numbered groups** (deliberate): `\(?N:...\)` takes N up to 65,535 and says "Regular expression too big" above, where Emacs takes N up to 2³¹ − 1; Ember's matcher keeps a slot for every group up to the highest.
 - **Literal searches** (not yet) fold case by the standard case table, not by a buffer's own; regexp searches follow the buffer's.

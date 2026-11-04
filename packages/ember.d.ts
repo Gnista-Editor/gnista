@@ -13260,6 +13260,8 @@ declare global {
     function treesitLanguages(): string[];
     /** The current buffer's tree-sitter language, if it has one. */
     function treesitLanguage(): string | undefined;
+    /** Put the faces the syntax tree gives the text from start to end on it as face properties, as Emacs's treesit-font-lock-fontify-region. */
+    function treesitFontLockFontifyRegion(start: number, end: number): void;
     /**
      * Split the frame's root window, as split-root-window-below and -right:
      * the new window takes the whole bottom of the frame, or its right side.

@@ -17,6 +17,12 @@ natives! {
         Ok(ed.buffer_language().map(String::from))
     }
 
+    /// Put the faces the syntax tree gives the text from start to end on it as face properties, as Emacs's treesit-font-lock-fontify-region.
+    pub fn treesitFontLockFontifyRegion(ed, start: usize, end: usize) {
+        ed.treesit_font_lock_fontify_region(start, end);
+        Ok(())
+    }
+
     fn treesitNodeAt(ed, pos: usize) -> Option<Record> {
         Ok(ed.syntax_node_at(pos).map(|(kind, start, end)| Record::new().with("type", kind).with("start", start).with("end", end)))
     }

@@ -150,3 +150,20 @@ fn org_s_elisp_blocks_get_emacs_lisp_s_faces() {
         ]
     );
 }
+
+#[test]
+fn tree_sitter_blocks_get_their_mode_s_faces_too() {
+    // Ember's python-mode is python-ts-mode, whose rules differ in detail
+    // from the python.el Emacs fontifies with; its keywords and strings agree.
+    let mut ed = Editor::new();
+    let _s = Scripting::new(&mut ed).unwrap();
+    ed.window_buffer_mut().set_text("* H\n#+begin_src python\nx = \"s\"\ndef f(): return 1\n#+end_src\n");
+    ed.call("org-mode", vec![]).unwrap();
+    ed.set_frame_size(100, 20);
+    ed.redisplay();
+    let got = face_runs(&ed);
+    let has = |text: &str, face: &str| got.iter().any(|(t, f)| t == text && f == face);
+    assert!(has("\"s\"", "(font-lock-string-face org-block)"), "{got:?}");
+    assert!(has("def", "(font-lock-keyword-face org-block)"), "{got:?}");
+    assert!(has("return", "(font-lock-keyword-face org-block)"), "{got:?}");
+}

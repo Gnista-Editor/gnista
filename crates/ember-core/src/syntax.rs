@@ -404,6 +404,33 @@ impl crate::editor::Editor {
         Ok(())
     }
 
+    /// Puts the faces the current buffer's syntax tree gives the text from
+    /// `start` to `end` on it as `face` properties, as Emacs's
+    /// treesit-font-lock-fontify-region does, for code that copies faces
+    /// from a buffer, as Org's source blocks do. Redisplay draws them from
+    /// the tree without this.
+    pub fn treesit_font_lock_fontify_region(&mut self, start: usize, end: usize) {
+        let b = self.buffer();
+        let end = end.min(b.len());
+        let Some(syntax) = b.primary_syntax() else { return };
+        if start >= end {
+            return;
+        }
+        let faces = syntax.faces(b.text(), start, end);
+        let mut runs: Vec<(usize, usize, &'static str)> = Vec::new();
+        for (i, face) in faces.iter().enumerate() {
+            let Some(face) = face else { continue };
+            match runs.last_mut() {
+                Some((_, e, f)) if *e == start + i && f == face => *e += 1,
+                _ => runs.push((start + i, start + i + 1, face)),
+            }
+        }
+        let b = self.buffer_mut();
+        for (s, e, face) in runs {
+            b.change_text_property(s..e, "face", Some(Value::Str(face.to_string())));
+        }
+    }
+
     /// The current buffer's language, if it has a syntax tree.
     pub fn buffer_language(&self) -> Option<&str> {
         self.buffer().primary_syntax().map(|s| s.language.as_str())

@@ -338,6 +338,8 @@ ember.defun("org-src-font-lock-fontify-block", (lang: ember.Value, start: ember.
     }
     ember.call("font-lock-ensure");
     const size = ember.bufferSize() - 1;
+    // A tree-sitter mode's faces come from its syntax tree, not properties, until asked for.
+    if (ember.treesitLanguage() !== undefined) ember.treesitFontLockFontifyRegion(0, size);
     for (let p = 0; p < size; ) {
       const next = Math.min(ember.nextSinglePropertyChange(p, "face", size) ?? size, size);
       const face = ember.getTextProperty(p, "face");
