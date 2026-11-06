@@ -4,8 +4,7 @@ use crate::buffer::Buffer;
 use crate::command::{Arg, Command, ParamKind};
 use crate::editor::Editor;
 use crate::error::{Error, Result};
-use crate::key::{Key, KeyCode, format_keys};
-use crate::keymap::Lookup;
+use crate::key::{Key, KeyCode};
 use crate::prefix::PrefixArg;
 use crate::variables::Value;
 
@@ -61,7 +60,6 @@ pub(crate) fn install(ed: &mut Editor) {
     killing(ed);
     files_and_buffers(ed);
     minibuffer(ed);
-    help(ed);
     searching(ed);
     fontifying(ed);
     recursive_editing(ed);
@@ -1613,77 +1611,6 @@ fn minibuffer(ed: &mut Editor) {
     );
 }
 
-fn help(ed: &mut Editor) {
-    ed.define_command(
-        Command::new("describe-command", "Show the documentation of a command.", |ed, args| {
-            let text = describe(ed, args[0].as_str()?)?;
-            ed.show_help(&text);
-            Ok(())
-        })
-        .param("command", ParamKind::Command, "Describe command: "),
-    );
-    ed.define_command(
-        Command::new("describe-key", "Show which command a key sequence runs.", |ed, args| {
-            let keys = args[0].as_keys()?;
-            // Fall back to the key without Shift, as typing it would.
-            let unshifted: Vec<_> = keys.iter().map(|k| k.unshifted()).collect();
-            let found = match ed.lookup(keys) {
-                Lookup::Unbound => ed.lookup(&unshifted),
-                found => found,
-            };
-            let name = match found {
-                Lookup::Command(name) => name,
-                _ if keys.len() == 1 && keys[0].printable().is_some() => {
-                    "self-insert-command".to_string()
-                }
-                _ => return Err(Error::new(format!("{} is undefined", format_keys(keys)))),
-            };
-            let text = format!("{} runs the command {name}.\n\n{}", format_keys(keys), describe(ed, &name)?);
-            ed.show_help(&text);
-            Ok(())
-        })
-        .param("key", ParamKind::Keys, "Describe key: "),
-    );
-    def(ed, "describe-bindings", "List all key bindings.", |ed, _| {
-        let mut text = String::from("Key             Command\n---             -------\n");
-        for (keys, command) in ed.keymaps().bindings(ed.global_map()) {
-            text += &format!("{:<15} {command}\n", format_keys(&keys));
-        }
-        ed.show_help(&text);
-        Ok(())
-    });
-}
-
-fn describe(ed: &Editor, name: &str) -> Result<String> {
-    let command = ed
-        .command(name)
-        .ok_or_else(|| Error::new(format!("No such command: {name}")))?;
-    let mut text = format!("{name} is a command.\n\n");
-    let keys = ed.keys_for(name);
-    if keys.is_empty() {
-        text += "It is not bound to any keys.\n\n";
-    } else {
-        let keys: Vec<String> = keys.iter().map(|k| format_keys(k)).collect();
-        text += &format!("It is bound to {}.\n\n", keys.join(", "));
-    }
-    if !command.params.is_empty() {
-        text += "Parameters:\n";
-        for p in &command.params {
-            text += &format!("  {} ({})\n", p.name, p.kind.describe());
-        }
-        text += "\n";
-    }
-    text += &command.doc;
-    text.push('\n');
-    if command.shift_select {
-        text += "\nWith Shift held, it selects text as it moves (shift selection).\n";
-    }
-    if let Some(source) = &command.source {
-        text += &format!("\nDefined in {source}.\n");
-    }
-    Ok(text)
-}
-
 fn bind_defaults(ed: &mut Editor) {
     // The prefix maps Emacs names, so code binds into them as Emacs's
     // Lisp does with (define-key ctl-x-4-map ...).
@@ -1764,9 +1691,6 @@ fn bind_defaults(ed: &mut Editor) {
         ("C-x x r", "rename-buffer"),
         ("C-x n n", "narrow-to-region"),
         ("C-x n w", "widen"),
-        ("C-h f", "describe-command"),
-        ("C-h k", "describe-key"),
-        ("C-h b", "describe-bindings"),
     ];
     for (keys, command) in global {
         let map = ed.global_map();
