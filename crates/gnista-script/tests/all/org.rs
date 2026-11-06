@@ -461,7 +461,14 @@ fn the_week_agenda_reads_each_file_once() {
     let took = started.elapsed();
     let agenda = text(&ed);
     assert!(agenda.contains("Task 9999"), "{}", &agenda[..agenda.len().min(400)]);
-    assert!(took < std::time::Duration::from_secs(10), "took {took:?}");
+    assert!(took < time_limit(10), "took {took:?}");
+}
+
+/// A limit for work that would take minutes if it were done the slow way,
+/// as parsing again for each line would: three times as long on CI, whose
+/// shared machines are slower and busier than a developer's.
+fn time_limit(secs: u64) -> std::time::Duration {
+    std::time::Duration::from_secs(if std::env::var_os("CI").is_some() { secs * 3 } else { secs })
 }
 
 /// Indenting a region keeps its parse through the indentation it changes,
@@ -476,7 +483,7 @@ fn indenting_a_long_section_keeps_its_parse() {
     let took = started.elapsed();
     let indented = text(&ed);
     assert!(indented.contains("\nparagraph 1999\n") && !indented.contains("   paragraph"), "{}", &indented[..200]);
-    assert!(took < std::time::Duration::from_secs(10), "took {took:?}");
+    assert!(took < time_limit(10), "took {took:?}");
 }
 
 /// Org's errors in what the user did are `user-error`, as Emacs signals

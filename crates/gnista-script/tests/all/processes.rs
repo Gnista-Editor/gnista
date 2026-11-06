@@ -90,9 +90,17 @@ fn killing_ends_it_and_what_it_started() {
     assert_eq!(ed.process_list(), ["sleeper"]);
     assert!(ed.next_timer_in().is_some_and(|d| d <= Duration::from_millis(30)), "front ends wake to take output in");
     eval(&mut ed, &s, r#"gnista.message(gnista.processStatus("sleeper") ?? "none"); gnista.interruptProcess("sleeper");"#);
-    ed.accept_process_output(Duration::from_secs(5));
+    // It returns as soon as the process has ended; the time is for a
+    // runner busy with the whole suite, where 5 s was sometimes too little.
+    ed.accept_process_output(Duration::from_secs(20));
     assert!(ed.messages().iter().any(|m| m == "run"));
-    assert_eq!(ed.messages().last().map(String::as_str), Some("interrupt\n"));
+    // What was still running, if it never ended, for a failure on CI.
+    let left = || {
+        let ps = std::process::Command::new("ps").args(["-A", "-o", "pid,ppid,pgid,stat,args"]).output().map(|o| String::from_utf8_lossy(&o.stdout).into_owned());
+        let ps = ps.unwrap_or_default().lines().filter(|l| l.contains("sleep 30")).collect::<Vec<_>>().join("\n");
+        format!("processes {:?}, *s* {:?}, ps:\n{ps}", ed.process_list(), buffer_text(&ed, "*s*"))
+    };
+    assert_eq!(ed.messages().last().map(String::as_str), Some("interrupt\n"), "{}", left());
     assert!(!buffer_text(&ed, "*s*").contains("late"));
 }
 
