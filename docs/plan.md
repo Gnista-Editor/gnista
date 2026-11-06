@@ -100,11 +100,11 @@ Started: `gnista-mcp` serves the command registry over MCP, so an agent such as 
 - The next foundations, after a third review ([ADR 0026](adr/0026-the-next-foundations.md)): symbols' values and functions in one table, with advice, `mode-line-format` and keymaps as values, and the minibuffer as a buffer with its prompt as text, a window of its own and recursive minibuffers, all landed; then windows as objects, completion tables as functions, `syntax-table` properties and autoloads.
 
 **Packages as git repositories** ([ADR 0059](adr/0059-packages-are-git-repositories.md)), each step a pull request of its own:
-1. `gnista-version`, stamped in `gnista.d.ts`, for a package to require.
-2. Declarations of the shipped packages written beside `gnista.d.ts`, and `gnista --print-types DIR`, so a package outside the tree type-checks.
-3. Batch mode, `gnista --batch -l FILE -f FUNCTION`, and `ert.ts`.
+1. Done: `gnista-version`, stamped in `gnista.d.ts`, for a package to require.
+2. Done: the shipped packages written in `shipped/` beside `gnista.d.ts`, and `gnista --print-types DIR`, so a package outside the tree type-checks.
+3. Done: batch mode, `gnista --batch -l FILE -f FUNCTION --eval EXPRESSION`, and `ert.ts`.
 4. Releases of Gnista, for package repositories' CI to download one.
-5. `package-vc.ts` and `use-package.ts`: `gnista.usePackage`, installing with git, `gnista-lock.json`, `package-vc-upgrade`, `package-delete` and `list-packages`.
+5. Done but for `list-packages`, which waits for the organisation's list: `package-vc.ts` and `use-package.ts`, with `gnista.usePackage`, installing with git, `gnista-lock.json`, `package-vc-install`, `package-vc-upgrade`, `package-vc-upgrade-all` and `package-delete`.
 6. The ports in `examples/packages/` moved to `Gnista-Editor` repositories one at a time, smallest first, with their tests, and a job in Gnista's CI running the curated set's tests against `main`.
 
 Later, fetching tarballs over HTTPS with `urlRetrieve` for machines without git.

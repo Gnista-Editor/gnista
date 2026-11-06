@@ -341,9 +341,10 @@ natives! {
         Ok(ed.auto_saving())
     }
 
-    /// Ask the front end to exit, as Emacs's kill-emacs.
-    pub fn killEmacs(ed) {
-        ed.kill_emacs()
+    /// Ask the front end to exit, as Emacs's kill-emacs, the program
+    /// exiting with `status`, 0 if it is left out.
+    pub fn killEmacs(ed, status: Opt<f64>) {
+        ed.kill_emacs_with_status(status.0.unwrap_or(0.0) as i32)
     }
 
     pub fn commandExists(ed, name: String) -> bool {

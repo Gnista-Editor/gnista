@@ -90,10 +90,12 @@ What works today, in a terminal (`gnista`) or a window (`gnista-gui`). Where it 
 - The minibuffer (a buffer with its prompt as read-only text, `C-x o` out of it and back, and recursive minibuffers with `enable-recursive-minibuffers`).
 - `C-h f`, `C-h k` and `C-h b`.
 - TypeScript extensions: `init.ts` defines commands and key bindings, `M-x load-file` reloads it, and `M-:` evaluates an expression.
+- Packages from git repositories, as package-vc and use-package's `:vc` install them ([ADR 0059](adr/0059-packages-are-git-repositories.md)): `gnista.usePackage("owner/name", { rev })` in `init.ts` installs a package into `elpa/` at its newest version tag, or the revision given, puts it on `load-path` and requires it; `gnista-lock.json` records each package's commit, so another machine installs the same; `package-vc-install`, `package-vc-upgrade`, `package-vc-upgrade-all` and `package-delete`. A package's `gnista-package.json` names it, the oldest Gnista it runs on (`gnista-version`) and the packages it requires.
+- Batch mode, as `emacs --batch`: `gnista --batch -l FILE -f FUNCTION --eval EXPRESSION`, with messages on standard error and `kill-emacs`'s status as the program's, and ERT (`ert.ts`: `ertDeftest`, `should`, `shouldEqual`, `shouldError`, `skipUnless`, `ert-run-tests-batch-and-exit`, `M-x ert`), so a package's repository runs its tests in CI. `gnista --print-types DIR` writes `gnista.d.ts` and the shipped packages there, for `tsc` to check a package against, as Gnista writes them beside `init.ts`.
 
 ## Packages that do not ship
 
-Ports of packages from outside Emacs, in `examples/packages/`, for a config to copy into `~/.config/gnista/packages` and load with `gnista.require`, as a config loads them from ELPA or MELPA in Emacs:
+Ports of packages from outside Emacs, in `examples/packages/`, for a config to copy into `~/.config/gnista/packages` and load with `gnista.require`, as a config loads them from ELPA or MELPA in Emacs. They are to move to repositories of their own in `Gnista-Editor`, installed with `gnista.usePackage` ([ADR 0059](adr/0059-packages-are-git-repositories.md)):
 
 - `nord-theme`: the Nord theme (`gnista.call("load-theme", "nord", true)`).
 - `vundo`: the undo history as a tree (`M-x vundo`: `f`, `b`, `n`, `p`, `a`, `w`, `e`, `l`, `r`, `m`, `u`, `d` for a diff, `RET`, `q`), after vundo 2.4.

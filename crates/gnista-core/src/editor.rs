@@ -319,6 +319,10 @@ pub struct Editor {
     pub(crate) selected_frame: crate::window::FrameId,
     pub(crate) next_frame_id: crate::window::FrameId,
     pub(crate) quit: bool,
+    /// The status the program exits with once `quit` is set, as `kill-emacs`'s argument.
+    pub(crate) exit_status: i32,
+    /// Running without a frame, as `emacs --batch`: messages go to standard error.
+    noninteractive: bool,
     /// A question a command asked, waiting for its answer.
     pub(crate) question: Option<crate::questions::Question>,
     pub(crate) timers: crate::timers::Timers,
@@ -467,6 +471,8 @@ impl Editor {
             next_frame_id: 1,
             window_use: 0,
             quit: false,
+            exit_status: 0,
+            noninteractive: false,
             question: None,
             timers: Default::default(),
             permissions: Default::default(),
@@ -2407,6 +2413,9 @@ impl Editor {
     /// rather than logged again.
     pub fn message(&mut self, text: impl Into<String>) {
         let text = text.into();
+        if self.noninteractive {
+            eprintln!("{text}");
+        }
         self.log_message(&text, false);
         self.message = Some(text);
     }
@@ -2543,6 +2552,24 @@ impl Editor {
 
     pub fn should_quit(&self) -> bool {
         self.quit
+    }
+
+    /// The status the program should exit with, as `kill-emacs` was given.
+    pub fn exit_status(&self) -> i32 {
+        self.exit_status
+    }
+
+    /// Whether the editor runs without a frame, as Emacs's `noninteractive`.
+    pub fn noninteractive(&self) -> bool {
+        self.noninteractive
+    }
+
+    /// Runs the editor without a frame, as `emacs --batch` does: each
+    /// message is printed to standard error as well as logged, and the
+    /// `noninteractive` variable says so to scripts.
+    pub fn set_noninteractive(&mut self, on: bool) {
+        self.noninteractive = on;
+        self.set_variable("noninteractive", crate::Value::Bool(on));
     }
 }
 

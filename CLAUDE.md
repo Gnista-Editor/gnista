@@ -50,6 +50,7 @@ make app
 
 - Gnista loads `init.ts` from `$GNISTA_CONFIG_DIR`, else `$XDG_CONFIG_HOME/gnista`, else `~/.config/gnista`. `-q` skips it. At startup Gnista writes `gnista.d.ts` there, and `tsconfig.json` if missing, so `tsc -p ~/.config/gnista` type-checks the config.
 - `cargo run -p gnista -- --print-types` prints the generated declarations.
+- `gnista --batch -l test/foo-tests.ts -f ert-run-tests-batch-and-exit` runs a package's ERT tests without a terminal, as `emacs --batch` does, exiting 1 if any failed; `gnista --print-types DIR` writes `gnista.d.ts` and the shipped packages into DIR for a package's `tsc`. Packages from git repositories are installed with `gnista.usePackage` into `elpa/` beside `init.ts`, pinned by `gnista-lock.json` ([ADR 0059](docs/adr/0059-packages-are-git-repositories.md)).
 - `claude mcp add gnista -- target/release/gnista-mcp` (after `cargo build --release -p gnista-mcp`) lets Claude Code use Gnista: the open GUI if there is one, else a headless editor.
 - The GUI uses Geist Mono and Inter if they are installed, and egui's built-in fonts otherwise. Without Geist Mono Bold, bold text is drawn twice, slightly apart.
 - GUI snapshots live in `crates/gnista-gui/tests/snapshots/`. After an intended visual change, run `UPDATE_SNAPSHOTS=1 cargo test -p gnista-gui`, then look at the new images before committing them.

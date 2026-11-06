@@ -9,6 +9,7 @@ mod driven;
 
 mod abbrev;
 mod awaiting;
+mod batch;
 mod blocking;
 mod bookmark;
 mod buff_menu;
@@ -50,6 +51,7 @@ mod org;
 mod org_roam;
 mod org_select;
 mod org_src;
+mod package_vc;
 mod parens;
 mod persistent_scratch;
 mod popper;

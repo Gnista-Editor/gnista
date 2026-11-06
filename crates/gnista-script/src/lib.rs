@@ -6,6 +6,7 @@
 //! the `gnista` global; [`type_definitions`] generates its TypeScript
 //! declarations from the command registry.
 
+pub mod batch;
 pub mod config;
 mod natives;
 #[cfg(feature = "quickjs")]
@@ -182,15 +183,26 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/org-capture.ts", include_str!("../../../packages/org-capture.ts")),
     ("packages/org-src.ts", include_str!("../../../packages/org-src.ts")),
     ("packages/ob-tangle.ts", include_str!("../../../packages/ob-tangle.ts")),
+    // Preloaded for its commands, which Emacs autoloads.
+    ("packages/package-vc.ts", include_str!("../../../packages/package-vc.ts")),
 ];
 
 /// The packages that ship with Gnista but load only when a configuration
 /// requires them (`gnista.require("org-tempo")`), as Emacs's Lisp that is
 /// not preloaded and that loading turns on.
 const LIBRARY: &[(&str, &str)] = &[
+    ("packages/ert.ts", include_str!("../../../packages/ert.ts")),
     ("packages/org-tempo.ts", include_str!("../../../packages/org-tempo.ts")),
     ("packages/transient.ts", include_str!("../../../packages/transient.ts")),
+    ("packages/use-package.ts", include_str!("../../../packages/use-package.ts")),
 ];
+
+/// The packages that ship with Gnista, preloaded or not, as each one's file
+/// name (`subr.ts`) and TypeScript: what a package outside the tree imports
+/// by name, written beside `gnista.d.ts` for `tsc` to check it against.
+pub fn shipped_packages() -> impl Iterator<Item = (&'static str, &'static str)> {
+    PACKAGES.iter().chain(LIBRARY).map(|(file, source)| (file.trim_start_matches("packages/"), *source))
+}
 
 /// How long a script may run before it is stopped, unless changed with
 /// [`Scripting::set_time_limit`]: a backstop for a script that ignores
@@ -266,6 +278,27 @@ impl Scripting {
         let source = fs::read_to_string(path).map_err(|e| Error::new(format!("{name}: {e}")))?;
         LOADING.with_borrow_mut(|files| files.push(name.clone()));
         let result = self.eval_typescript(ed, &name, source);
+        LOADING.with_borrow_mut(|files| files.pop());
+        result
+    }
+
+    /// Imports a TypeScript file as an ES module, as `gnista --batch -l`
+    /// does, so it can import packages by name (`import { should } from
+    /// "ert"`) and they it, along `load-path` as it is now. A file already
+    /// imported is not run again.
+    pub fn load_module(&self, ed: &mut Editor, path: &Path) -> Result<()> {
+        let path = if path.is_absolute() { path.to_path_buf() } else { std::env::current_dir().unwrap_or_default().join(path) };
+        if !path.is_file() {
+            return Err(Error::signal(
+                "file-missing",
+                format!("Cannot open load file: No such file or directory, {}", path.display()),
+                vec![EditorValue::Str(path.display().to_string())],
+            ));
+        }
+        prepare_require(ed, "");
+        let name = path.display().to_string();
+        LOADING.with_borrow_mut(|files| files.push(abbreviate_path(&path)));
+        let result = self.engine.import(ed, &name);
         LOADING.with_borrow_mut(|files| files.pop());
         result
     }

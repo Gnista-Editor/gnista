@@ -20,7 +20,7 @@ For fetching there were two ways: the `git` program, run with `gnista.callProces
 
 ## Decision
 
-A Gnista package is a git repository, installed by a checkout into `package-user-dir` (`elpa/` beside `init.ts`, as Emacs's, kept apart from the user's own `packages/`) and activated by adding that checkout to `load-path`, as package-vc does. The package manager is TypeScript, `package-vc.ts` and `use-package.ts` after the Emacs files of those names, shipped with Gnista in `LIBRARY` and loaded when first used; nothing about it is in `gnista-core`.
+A Gnista package is a git repository, installed by a checkout into `package-user-dir` (`elpa/` beside `init.ts`, as Emacs's, kept apart from the user's own `packages/`) and activated by adding that checkout to `load-path`, as package-vc does. The package manager is TypeScript, `package-vc.ts` and `use-package.ts` after the Emacs files of those names, shipped with Gnista: `package-vc.ts` preloaded for its commands, which Emacs autoloads, and `use-package.ts` in `LIBRARY`, loaded when first used; nothing about it is in `gnista-core`.
 
 **A repository** holds, at its root:
 
@@ -78,7 +78,7 @@ Publishing the organisation's repositories is distributing their source, which t
 Three pieces of Gnista, each a pull request of its own and each worth having without the rest, come before the package manager:
 
 1. **A version to require.** `gnista-version`, as `emacs-version`, from the workspace version, stamped at the head of the generated `gnista.d.ts` and compared by the loader with a manifest's `gnista`. The version means something only once Gnista has releases ([plan](../plan.md)); until then it is the workspace version, bumped when the script API changes in a way a package would notice.
-2. **Packages outside the tree, typed.** Activating a checkout puts it on `load-path`, which `require` and imports already search. What is missing is checking one: Gnista writes `gnista.d.ts` to the config directory, but not the shipped packages a package imports by name (`subr`, `org-macs`), so `tsc` in a package's repository cannot see them. Gnista writes their declarations there too, and `gnista --print-types DIR` writes them anywhere, for a package's CI.
+2. **Packages outside the tree, typed.** Activating a checkout puts it on `load-path`, which `require` and imports already search. What is missing is checking one: Gnista writes `gnista.d.ts` to the config directory, but not the shipped packages a package imports by name (`subr`, `org-macs`), so `tsc` in a package's repository cannot see them. Gnista writes them there too, in `shipped/`, and `gnista --print-types DIR` writes both anywhere, for a package's CI.
 3. **Tests in batch mode.** `gnista --batch -l FILE -f FUNCTION`, as `emacs --batch`, running with no frame, printing messages to standard error and exiting with the function's status; and `ert.ts`, after ERT, with `ertDeftest`, `should` and `ert-run-tests-batch-and-exit`. A package's repository then runs its tests in CI against a Gnista binary, which needs Gnista's releases to download one from.
 
 Then the package manager itself, then moving the ports out of `examples/packages/` one by one, smallest first, each with its tests.
