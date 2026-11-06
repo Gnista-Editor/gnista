@@ -167,8 +167,14 @@ impl Editor {
     }
 
     /// Waits `secs` seconds, as Emacs's `sleep-for`. Keys typed meanwhile
-    /// run their commands, and `C-g` quits it.
+    /// run their commands, and `C-g` quits it. In batch mode, with no
+    /// command loop to read keys, it waits on the clock, running timers and
+    /// process output, and reads no input, as batch Emacs's does.
     pub fn sleep_for(&mut self, secs: f64) -> Result<()> {
+        if self.noninteractive() && self.command_loop.is_none() {
+            self.sleep_without_input(secs);
+            return Ok(());
+        }
         let asker = self.resume_point();
         let answer = AnswerSlot::default();
         let done = answer.clone();
@@ -185,6 +191,28 @@ impl Editor {
         self.keyboard.sleeping.retain(|s| !std::rc::Rc::ptr_eq(s, &answer));
         self.cancel_timer(timer);
         result.map(|_| ())
+    }
+
+    /// Waits `secs` seconds of real time, running timers as they come due
+    /// and output as processes write it, as Emacs's wait_reading_process_output
+    /// does when it is not reading the keyboard.
+    fn sleep_without_input(&mut self, secs: f64) {
+        let until = self.now() + std::time::Duration::from_secs_f64(secs.max(0.0));
+        loop {
+            self.run_timers();
+            let now = self.now();
+            if now >= until {
+                return;
+            }
+            let mut wait = until - now;
+            if let Some(timer) = self.next_timer_in() {
+                wait = wait.min(timer);
+            }
+            if self.processes_running() {
+                wait = wait.min(std::time::Duration::from_millis(5));
+            }
+            std::thread::sleep(wait.max(std::time::Duration::from_micros(100)));
+        }
     }
 
     /// Whether code is waiting for a key, which the next key goes to.
