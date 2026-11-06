@@ -22,7 +22,7 @@ E8 was built in nine days, 27 October to 4 November 2026, in one long Claude Cod
 
 ## Mark's setup
 
-- **Mark's config is `~/.config/e8/init.ts`**, ported from Mark's Emacs config (`~/.emacs.d/init.el` and `config.org`). It loads the packages that do not ship, vertico, consult, magit, org-roam and the rest, from this repository's `examples/packages` along `load-path`, so a change there reaches Mark's E8 on its next start. Ask before changing anything in `~/.config/e8`.
+- **Mark's config is `~/.config/e8/init.ts`**, ported from Mark's Emacs config (`~/.emacs.d/init.el` and `config.org`). It installs the packages that do not ship, vertico, consult, magit, org-roam and the rest, from their repositories in `e8-editor` with `e8.usePackage`, into `~/.config/e8/repos/`, pinned by `e8-lock.json`; a change to one reaches Mark's E8 once it is tagged and `package-vc-upgrade` is run, or at once by working in that checkout. Ask before changing anything in `~/.config/e8`.
 - **Mark's Emacs is the reference for what is expected.** Its config says which packages and settings give the look and behaviour Mark is used to; the packages' sources are in `~/.emacs.d/elpaca/repos/` (marginalia, vertico, consult, magit, org-roam), and Emacs's own Lisp is where `(locate-library "org")` finds it in the Nix store. The block faces in init.el's `custom-set-faces` are an example: a look that seemed to be Emacs's own came from the config.
 - **Mark's org files are private.** Read them only for counts and timings, never print what they hold, and never commit them.
 
@@ -37,7 +37,7 @@ E8 was built in nine days, 27 October to 4 November 2026, in one long Claude Cod
 ## Looking at the GUI
 
 - **Snapshots first.** A GUI change gets a snapshot in `crates/e8-gui/tests/`; record it with `UPDATE_SNAPSHOTS=1`, then look at the image, enlarged when the change is a pixel or two: a crop scaled up four times showed seams and lines a pixel apart that the full image hid.
-- **The snapshots are not in `make check`**, as each process spends a minute getting the GPU from Metal: run `cargo test -p e8-gui --test window --test images` after any change to drawing, and after a change to a package a snapshot shows, such as vertico, marginalia or magit. One went stale for a day because only drawing changes were thought to need it.
+- **The snapshots are not in `make check`**, as each process spends a minute getting the GPU from Metal: run `cargo test -p e8-gui --test window --test images` after any change to drawing, and after a change to a shipped package a snapshot shows, such as icomplete or transient. One went stale for a day because only drawing changes were thought to need it.
 - **To see the real app**, start `target/E8.app/Contents/MacOS/e8-gui` with `E8_CONFIG_DIR` pointing at a copy of the config and a test file, never one of Mark's, and take a screenshot of its window alone, by id (`screencapture -x -o -l ID`, the id from `CGWindowListCopyWindowInfo`), never the whole screen. Delete the copy's `.e8.desktop.lock` first, or desktop asks whether to use a desktop another E8 holds. Close the app when done: it is open on Mark's screen. A second E8 cannot take the agent socket and says so in the echo area; that is harmless.
 
 ## Measure before optimising
