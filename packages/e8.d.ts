@@ -337,7 +337,7 @@ declare global {
       /**
        * The mode of a conversation with a coding agent, started with M-x agent-shell.
        *
-       * Type a request under the last * You heading and send it with C-c RET. The agent's reply streams in under * Agent; each tool call is a line, with its output or diff in the block below it, folded once the turn ends (TAB shows it). The agent asks before its tools act. C-c C-k stops the turn.
+       * Type a request under the last * You heading and send it with C-c RET. The agent's reply streams in under * Agent, its Markdown made Org; each tool call is a line, with its output or diff folded under it once the turn ends (TAB on the line shows it). The agent asks before its tools act. C-c C-k stops the turn. The mode line shows whether the agent is working and how much of its context the conversation fills.
        *
        * Defined in packages/agent-shell.ts.
        */
@@ -9285,6 +9285,10 @@ declare global {
        * Where point is, in the mode line: its line and column.
        */
       "mode-line-position": Value;
+      /**
+       * What the mode line shows of the buffer's process after the mode's name, a mode line construct, as shell and compilation buffers show ":run"; nil for nothing.
+       */
+      "mode-line-process": Value;
       /**
        * The current buffer's major mode as the mode line shows it.
        */

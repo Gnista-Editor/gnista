@@ -74,6 +74,13 @@ fn each_buffer_can_have_its_own_and_minor_modes_show_their_lighters() {
     ed.make_local_variable("test-mode");
     ed.set_variable("test-mode", Value::Bool(true));
     assert!(line(&mut ed).contains("(Fundamental Test)"), "{}", line(&mut ed));
+    // A buffer's process state follows its mode's name, as a shell's :run does.
+    ed.set_variable("mode-line-process", s(":run"));
+    assert!(line(&mut ed).contains("(Fundamental:run Test)"), "{}", line(&mut ed));
+    ed.press("C-x b").unwrap();
+    ed.type_text("third");
+    ed.press("RET").unwrap();
+    assert!(line(&mut ed).contains("(Fundamental)"), "only that buffer's: {}", line(&mut ed));
     ed.set_variable("test-mode", Value::Bool(false));
     assert!(line(&mut ed).contains("(Fundamental)"), "{}", line(&mut ed));
 }
