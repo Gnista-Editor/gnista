@@ -9,6 +9,7 @@ Each step is one of:
                         these keys and values (a subset); a mismatch is
                         written to standard error and ends it with status 2
   {"stderr": "text"}    write this to standard error
+  {"write": [path, text]} write a file, as an agent's own tools do
   {"sleep": seconds}
   {"exit": status}
 
@@ -59,6 +60,9 @@ def main():
         elif "stderr" in step:
             sys.stderr.write(step["stderr"])
             sys.stderr.flush()
+        elif "write" in step:
+            with open(step["write"][0], "w") as f:
+                f.write(step["write"][1])
         elif "sleep" in step:
             time.sleep(step["sleep"])
         elif "exit" in step:

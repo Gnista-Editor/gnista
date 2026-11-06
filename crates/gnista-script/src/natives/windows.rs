@@ -100,6 +100,15 @@ natives! {
         Ok(ed.minibuffer_depth())
     }
 
+    /// What waits for the user's input now, a prompt or a command reading a
+    /// key, as a number no other has had, or undefined when nothing waits.
+    /// Code that asks the user from a timer, as agent-shell asks for an
+    /// agent's permission, waits until it is undefined, so its question
+    /// never takes the keys meant for another.
+    pub fn waitingForInput(ed) -> Option<u64> {
+        Ok(ed.waiting_for_input())
+    }
+
     fn windowBuffer(ed, window: u64) -> Option<String> {
         if window == gnista_core::MINIBUFFER_WINDOW {
             return Ok(Some(ed.minibuffer().name.clone()));

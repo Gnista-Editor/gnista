@@ -186,6 +186,7 @@ const PACKAGES: &[(&str, &str)] = &[
     ("packages/ob-tangle.ts", include_str!("../../../packages/ob-tangle.ts")),
     // Preloaded for its commands, which Emacs autoloads.
     ("packages/package-vc.ts", include_str!("../../../packages/package-vc.ts")),
+    ("packages/agent-shell.ts", include_str!("../../../packages/agent-shell.ts")),
 ];
 
 /// The packages that ship with Gnista but load only when a configuration

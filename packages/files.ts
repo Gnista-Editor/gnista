@@ -721,3 +721,20 @@ export function fileRelativeName(file: string, directory?: string): string {
   const rel = [...from.slice(common).map(() => ".."), ...to.slice(common)].join("/");
   return rel === "" ? "." : rel;
 }
+
+/**
+ * The buffer visiting a file, by its name or, failing that, its true name,
+ * so a link or another spelling of the same file finds it, as
+ * find-buffer-visiting.
+ */
+export function findBufferVisiting(file: string): string | undefined {
+  const name = gnista.expandFileName(file);
+  const visited = (b: string) => gnista.withCurrentBuffer(b, () => gnista.bufferFileName());
+  const exact = gnista.bufferList().find((b) => visited(b) === name);
+  if (exact !== undefined) return exact;
+  const truename = gnista.fileTruename(name);
+  return gnista.bufferList().find((b) => {
+    const f = visited(b);
+    return f !== undefined && gnista.fileTruename(f) === truename;
+  });
+}

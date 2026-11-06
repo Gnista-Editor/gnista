@@ -317,6 +317,38 @@ declare global {
        */
       "add-mode-abbrev": [arg?: PrefixArg | boolean];
       /**
+       * Talk to a coding agent in a buffer of its own, in another window: one of agent-shell-agents, asked for unless agent-shell-default-agent names one. Type a request under * You and send it with C-c RET. The agent works in the current project, and asks before its tools act.
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell": [];
+      /**
+       * Talk to Claude Code, through claude-agent-acp, in a buffer of its own: M-x agent-shell with the claude agent.
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell-anthropic-start-claude-code": [];
+      /**
+       * Stop the agent's turn in this buffer: it is told to cancel, and its questions are answered as cancelled.
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell-interrupt": [];
+      /**
+       * The mode of a conversation with a coding agent, started with M-x agent-shell.
+       *
+       * Type a request under the last * You heading and send it with C-c RET. The agent's reply streams in under * Agent; each tool call is a line, with its output or diff in the block below it, folded once the turn ends (TAB shows it). The agent asks before its tools act. C-c C-k stops the turn.
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell-mode": [];
+      /**
+       * Send the request under the last * You heading to the agent.
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell-send": [];
+      /**
        * Make the next kill join onto the last one on the kill ring, as consecutive kills do.
        *
        * Defined in packages/simple.ts.
@@ -7018,6 +7050,22 @@ declare global {
        */
       "adaptive-fill-regexp": Value;
       /**
+       * The agents M-x agent-shell can start: a list of [name, command], or [name, command, environment], the command a program and its arguments that speak the Agent Client Protocol, and the environment "VAR=value" strings. Claude Code's is claude-agent-acp: npm install -g @agentclientprotocol/claude-agent-acp.
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell-agents": Value;
+      /**
+       * The agent M-x agent-shell starts without asking, by its name in agent-shell-agents; null to ask.
+       *
+       * Defined in packages/agent-shell.ts.
+       */
+      "agent-shell-default-agent": Value;
+      /**
+       * Keymap agent-shell-mode-map.
+       */
+      "agent-shell-mode-map": Value;
+      /**
        * What comint does with ANSI escape sequences in output: t colours the text, filter removes them, nil leaves them.
        *
        * Defined in packages/ansi-color.ts.
@@ -12107,6 +12155,10 @@ declare global {
        */
       "after-save-hook": Value;
       /**
+       * Run after entering Agent Shell mode, after the hooks of the modes it is built on.
+       */
+      "agent-shell-mode-hook": Value;
+      /**
        * Run after Auto-Fill mode is turned on or off.
        */
       "auto-fill-mode-hook": Value;
@@ -13451,6 +13503,14 @@ declare global {
     function minibufferSelectedWindow(): number | undefined;
     /** How many minibuffers are open, one inside another, as minibuffer-depth. */
     function minibufferDepth(): number;
+    /**
+     * What waits for the user's input now, a prompt or a command reading a
+     * key, as a number no other has had, or undefined when nothing waits.
+     * Code that asks the user from a timer, as agent-shell asks for an
+     * agent's permission, waits until it is undefined, so its question
+     * never takes the keys meant for another.
+     */
+    function waitingForInput(): number | undefined;
     /** Make the current buffer read-only, or writable again, as setting buffer-read-only does. */
     function setReadOnly(on: boolean): void;
     /** Whether the current buffer is read-only, as Emacs's buffer-read-only. */
