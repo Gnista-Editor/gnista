@@ -1,6 +1,6 @@
 # 0060. Releases
 
-Status: proposed · 2026-11-06
+Status: accepted · 2026-11-06
 
 ## Context
 
@@ -30,7 +30,7 @@ To release: bump `version` in the workspace `Cargo.toml` in a pull request, merg
 
 Left for later, each when it is wanted:
 
-- **The GUI app.** A downloaded app that is not signed with a Developer ID and notarised is quarantined by macOS, and opening it means overriding Gatekeeper by hand. Until there is an Apple developer account, `make app` stays the way to get `Gnista.app`.
+- **Signing the app.** Since 0.2.1 the macOS release carries `Gnista.app`, signed ad hoc as `make app` signs it. macOS opens it when `curl` or Homebrew fetched it, but quarantines it when a browser did, and then asks the user to override Gatekeeper; a Developer ID and notarisation would end that, at $99 a year.
 - **Intel Macs, Linux on ARM and Windows.** A line in the workflow's matrix each, once someone needs them.
 - **A Homebrew tap**, `Gnista-Editor/homebrew-tap`, with a formula pointing at the release tarballs.
 - **The update check**: `check-for-updates`, opt-in, at most daily, through a `urlRetrieve` native in the script API, never in `gnista-core`.

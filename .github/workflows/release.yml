@@ -1,5 +1,6 @@
-# Builds Gnista's terminal editor and gnista-mcp for each platform, and on a
-# version tag makes a GitHub Release of them (docs/adr/0060-releases.md).
+# Builds Gnista's terminal editor and gnista-mcp for each platform, and
+# Gnista.app on macOS, and on a version tag makes a GitHub Release of them
+# (docs/adr/0060-releases.md).
 #
 # To release: bump `version` in the workspace Cargo.toml in a pull request,
 # merge it, then tag the merge and push the tag:
@@ -20,6 +21,8 @@ on:
       - Cargo.toml
       - Cargo.lock
       - crates/*/Cargo.toml
+      - crates/gnista-gui/macos/**
+      - Makefile
   workflow_dispatch:
 
 permissions:
@@ -38,6 +41,7 @@ jobs:
         include:
           - target: aarch64-apple-darwin
             os: macos-15
+            app: true
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-24.04
     runs-on: ${{ matrix.os }}
@@ -88,6 +92,20 @@ jobs:
           if command -v sha256sum >/dev/null; then sha256sum "$name.tar.gz"; else shasum -a 256 "$name.tar.gz"; fi > "$name.tar.gz.sha256"
           cat "$name.tar.gz.sha256"
 
+      # The GUI as macOS's app, signed ad hoc as make app signs it: with no
+      # Developer ID, macOS opens it when curl or Homebrew fetched it, but
+      # not when a browser did, which marks it quarantined.
+      - name: Build Gnista.app
+        if: matrix.app
+        run: |
+          make app
+          codesign --verify --deep --strict --verbose=2 target/Gnista.app
+          name="Gnista-${{ steps.version.outputs.version }}-${{ matrix.target }}.app"
+          tar -C target -czf "dist/$name.tar.gz" Gnista.app
+          cd dist
+          shasum -a 256 "$name.tar.gz" > "$name.tar.gz.sha256"
+          cat "$name.tar.gz.sha256"
+
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}
@@ -127,7 +145,15 @@ jobs:
           curl -fsSL https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/gnista-$version-aarch64-apple-darwin.tar.gz | tar xz
           \`\`\`
 
-          On Linux, take \`x86_64-unknown-linux-gnu\` in place of \`aarch64-apple-darwin\`. The folder holds \`gnista\`, the terminal editor, and \`gnista-mcp\`. If a browser downloaded it on a Mac, \`xattr -dr com.apple.quarantine gnista-$version-aarch64-apple-darwin\` lets it run.
+          On Linux, take \`x86_64-unknown-linux-gnu\` in place of \`aarch64-apple-darwin\`. The folder holds \`gnista\`, the terminal editor, and \`gnista-mcp\`.
+
+          The GUI, as an app for Apple silicon, into /Applications:
+
+          \`\`\`bash
+          curl -fsSL https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/Gnista-$version-aarch64-apple-darwin.app.tar.gz | tar xz -C /Applications
+          \`\`\`
+
+          If a browser downloaded either on a Mac, \`xattr -dr com.apple.quarantine\` on what it unpacked lets it run.
           NOTES
           )
           gh release create "$GITHUB_REF_NAME" dist/* \
