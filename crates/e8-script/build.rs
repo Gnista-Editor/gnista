@@ -10,7 +10,12 @@ use std::path::Path;
 mod strip_js;
 
 fn main() {
-    let packages = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../packages");
+    // The checkout being built, read when the script runs: env! would fix
+    // it when the script is compiled, and checkouts sharing a target
+    // directory share the compiled script, which then stripped whichever
+    // checkout's packages compiled it first.
+    let manifest = std::env::var("CARGO_MANIFEST_DIR").expect("cargo sets CARGO_MANIFEST_DIR");
+    let packages = Path::new(&manifest).join("../../packages");
     let out = std::path::PathBuf::from(std::env::var("OUT_DIR").expect("cargo sets OUT_DIR"));
     std::fs::create_dir_all(out.join("packages")).expect("OUT_DIR is writable");
     println!("cargo:rerun-if-changed=src/strip_js.rs");
