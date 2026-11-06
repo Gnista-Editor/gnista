@@ -563,7 +563,7 @@ fn live_claude_code_s_markdown_becomes_org() {
     }
     let text = d.text();
     eprintln!("{text}");
-    let reply = &text[text.find("* Agent\n").unwrap()..];
+    let reply = &text[text.find("* Agent\n").unwrap()..text.rfind("\n* You\n").unwrap()];
     assert!(reply.contains("#+begin_src sh") && reply.contains("#+end_src"), "{text}");
     assert!(!reply.contains("```") && !reply.contains("**") && !reply.contains("\n## ") && !reply.contains("\n* "), "{text}");
 }
