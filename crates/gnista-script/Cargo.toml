@@ -5,7 +5,7 @@ version.workspace = true
 license.workspace = true
 
 [dependencies]
-gnista-core = { version = "0.2.0", path = "../gnista-core" }
+gnista-core = { version = "0.2.1", path = "../gnista-core" }
 rquickjs = { version = "0.14", features = ["loader"], optional = true }
 v8 = { version = "152.2", optional = true }
 swc_common = "26"
