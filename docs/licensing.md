@@ -8,6 +8,7 @@ Nothing here is legal advice. These notes record what we know, what we have done
 
 - Gnista is GPL-3.0-or-later as a whole for now ([ADR 0014](adr/0014-gpl.md)): `LICENSE` holds the licence and `Cargo.toml` says so. Porting from Emacs and Org can go on.
 - Nothing has been distributed: the repository is private.
+- Ports of packages Emacs does not ship are to move to repositories of their own in `Gnista-Editor`, one per package, each under its upstream's licence, with its authors' copyright, a notice that it is a port, the full licence text and a README saying it is unofficial ([ADR 0059](adr/0059-packages-are-git-repositories.md)). Making those repositories public distributes their source, which the GPL and the permissive licences allow with those notices. Only licences that combine with GPL-3.0-or-later are taken, so not GPL-2.0-only.
 - The rest of these notes stay for if a permissive core or an App Store build becomes important later.
 
 ## The long-term aim

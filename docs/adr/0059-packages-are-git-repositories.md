@@ -60,6 +60,17 @@ gnista.usePackage("vertico", { url: "https://codeberg.org/someone/gnista-vertico
 
 **`Gnista-Editor` is a curated set.** It holds ports the project stands behind, each in its own repository, and a list of them that `list-packages` shows, as GNU ELPA keeps its list. Anything else anywhere installs the same way; being in the organisation is a recommendation, not a requirement.
 
+**Licences and credit.** A port is a derivative of the package it follows, so it keeps that package's licence and its authors' credit, and says plainly that it is a port. Each repository in `Gnista-Editor` has:
+
+- the upstream's licence, in full, in `LICENSE`: the GPL asks for a copy of it to go with the code, which a header alone does not give;
+- in each file, an `SPDX-License-Identifier` line, the upstream's copyright lines as they stand, a line for the port's own work (`Copyright (C) 2026 The Gnista contributors`), and the notice that it was ported, naming the upstream file and version it follows and when, as the files in `examples/packages/` already do;
+- a README that names the upstream package and the version ported, links to it, says that the port is not the upstream authors' and not endorsed by them, and asks for the port's bugs to be reported to the port;
+- documentation of its own: the upstream's manual, if it has one under the GFDL, is described in our words rather than copied, as Gnista does with Emacs's manuals. Doc strings that come with the code are the code's, under its licence.
+
+The organisation takes only packages whose licences can be combined with GPL-3.0-or-later, as every port imports Gnista's GPL packages: GPL-3.0-or-later, and permissive licences such as MIT and BSD, which a port keeps; not GPL-2.0-only. A template repository, `Gnista-Editor/gnista-package-template`, holds the `LICENSE`, the README's credit, the manifest, the `tsconfig.json` and the CI, so that each port starts with them. Telling a package's maintainers that a port exists is a courtesy the project means to keep, not a requirement.
+
+Publishing the organisation's repositories is distributing their source, which the licences allow with the notices above; [licensing.md](../licensing.md) records it. `list-packages` shows links, not copies.
+
 **Package code runs with the user's rights**, as Emacs's does: there is no sandbox ([ADR 0002](0002-start-simple.md)). Installing runs `git` through `gnista.callProcess`, so an agent that installs a package waits for the user's approval as for any other program ([ADR 0019](0019-agent-buffer.md)). A package installed from a configuration is one the user named; nothing installs a package because another source suggested it.
 
 ### What has to exist first
