@@ -143,11 +143,12 @@ Kept for completeness, as they cannot be seen:
 
 - **Installing packages** (not yet): only from git repositories, as package-vc does, with git on PATH; there are no archives, so no `list-packages` to browse, no `package-install` by name, and no tarball downloads. Upgrading a package takes effect when Gnista next starts, as a module once imported is not imported again. Packages are installed in `repos/` beside `init.ts`, where Emacs's go in `elpa/` (deliberate: they are neither Emacs Lisp nor from an archive). There are no autoloads, so `package-vc.ts` is preloaded for its commands ([ADR 0059](adr/0059-packages-are-git-repositories.md)).
 - **ERT** (deliberate): `should` is given a value, or a function whose source it shows, not a form, so `shouldEqual` stands for `(should (equal A B))` to show both values; there are no `ert-explain` explanations, no `M-x ert` results buffer commands, and test bodies run without awaiting.
-- **Batch mode** (not yet): `--batch` runs `-l`, `-f` and `--eval`, not Emacs's other options; prompts are not read from standard input, and timers and processes run only while a script waits on them.
+- **Batch mode** (not yet): `--batch` runs `-L`, `-l`, `-f` and `--eval`, not Emacs's other options; prompts are not read from standard input, and timers and processes run only while a script waits on them.
 
 ## Packages that do not ship
 
-- **vundo** (not yet): `l` and `r` say a node was saved but not when, as Gnista counts saves rather than keeping their times; there is no `vundo-popup-mode`. Gnista's undo history is steps, which vundo reads with `gnista.undoHistory` rather than from `buffer-undo-list` and `undo-equiv-table`.
+Ports in repositories of their own list their differences in their READMEs, as [gnista-vundo](https://github.com/Gnista-Editor/gnista-vundo#differences-from-vundoel) does.
+
 - **persistent-scratch** (not yet): `text-properties` in `persistent-scratch-what-to-save` saves the text without its properties, and a file Emacs wrote with them is read without them.
 - **transient** (not yet): no help (`?`, `C-h`), saving or setting a prefix's value (`C-x s`, `C-x C-s`) or history (`C-M-p`), levels, edit mode, moving about the menu with the mouse or keys, `transient-switches` with choices to cycle, or `C-z` to suspend. Prefixes and their groups are defined with `transientDefinePrefix` and objects, not Lisp's vectors and lists.
 - **casual** (not yet): the Dired menu shows every suffix Casual's does, but a few run Dired commands Gnista does not have yet (inserted subdirectories, wdired's permission editing, `dired-sort-other`, `dired-do-isearch`, `dired-do-search`, image-dired, byte-compiling and loading), which say so when run.
