@@ -3,7 +3,7 @@
 #   make app                  E8.app, optimised, on V8 (the default engine)
 #   make app ENGINE=quickjs   on QuickJS: a smaller app, about 41 MB against 97
 #   make check                every test and clippy, on V8 and on QuickJS
-#   make tidy                 delete the build's day-old leftover object files
+#   make tidy                 delete old test programs and caches the build leaves
 #
 # make app builds target/E8.app; open it, or copy it to /Applications.
 # In a git worktree it builds E8.app in the worktree's own folder
@@ -58,16 +58,30 @@ check: tidy
 	$(QUICKJS) cargo nextest run --workspace $(QUICKJS_FEATURES)
 	$(QUICKJS) cargo clippy --all-targets $(QUICKJS_FEATURES)
 
-# Cargo keeps each debug build's object files beside the test programs and
-# never deletes old ones. macOS's check of a new program looks through the
-# folder it is in, so with a million of them every new test program waited
-# 45 s to start (docs/performance.md). Deleting those over a day old keeps
-# every current program and its debug information.
+# Cargo never deletes what a debug build leaves once a build has moved
+# on: each change to a crate links its test programs again under a new
+# hash, 50 to 130 MB each, beside the old ones, with the workspace's own
+# libraries and an incremental cache to match, and every branch adds a
+# set. On 2026-11-06 target held 1,752 test programs, 94 GB, and 57 GB of
+# incremental caches, 227 GB in all (docs/performance.md). The object
+# files matter by count rather than size: macOS's check of a new program
+# looks through the folder it is in, so with a million of them every new
+# test program waited 45 s to start. Deleting what has not been touched
+# for two days (find's -mtime +1) keeps every current program and its
+# debug information; the dependencies, which a build rarely touches but
+# the next one needs, are never deleted, so a build makes again only what
+# it needs of the workspace.
 tidy:
-	@for dir in target/debug/deps target/quickjs/debug/deps; do \
-		if [ -d $$dir ]; then \
-			before=$$(ls -f $$dir | wc -l); \
-			find $$dir -maxdepth 1 -name '*.o' -mtime +1 -delete; \
-			echo "$$dir: $$before files, now $$(ls -f $$dir | wc -l)"; \
+	@for profile in target/debug target/quickjs/debug; do \
+		deps=$$profile/deps; \
+		if [ -d $$deps ]; then \
+			before=$$(ls -f $$deps | wc -l); \
+			find $$deps -maxdepth 1 -name '*.o' -mtime +1 -delete; \
+			find $$deps -maxdepth 1 -type f ! -name '*.*' -mtime +1 -delete; \
+			find $$deps -maxdepth 1 \( -name 'libe8_*' -o -name 'libe8-*' \) -mtime +1 -delete; \
+			echo "$$deps: $$before files, now $$(ls -f $$deps | wc -l)"; \
+		fi; \
+		if [ -d $$profile/incremental ]; then \
+			find $$profile/incremental -mindepth 1 -maxdepth 1 -type d -mtime +1 -exec rm -rf {} +; \
 		fi; \
 	done

@@ -119,22 +119,6 @@ cd tests/emacs/icomplete && script -q /dev/null emacs -Q -nw -l $PWD/record.el
 
 `cargo test -p e8-script --test icomplete` compares E8 with it, and `icomplete_behaves_like_emacs_on_random_cases`, ignored by default, makes random cases with `E8_FUZZ_SEED` and `E8_FUZZ_CASES`, records them and prints where E8 differs, writing them to `target/tmp/icomplete-fuzz/differences.json`.
 
-## vertico, orderless and marginalia
+## Ports of packages Emacs does not ship
 
-`tests/emacs/completion/` holds an oracle for packages that do not ship with E8, from `examples/packages/`: `record.el` drives an interactive Emacs on a terminal, as the icomplete oracle does, loading vertico, orderless and marginalia from `E8_ELPA` (else `~/.emacs.d/elpaca/repos`), and records what each case of `cases.json` shows into `golden.json`:
-
-```bash
-TERM=xterm-256color script -q /dev/null emacs -Q -nw -l tests/emacs/completion/record.el
-```
-
-`vertico::vertico_and_orderless_show_what_emacs_shows` in `crates/e8-script/tests/all/vertico.rs` replays the cases in E8.
-
-## magit
-
-`tests/emacs/magit/record.el` records the menus Magit's prefix keys show in a repository it makes, the one `crates/e8-script/tests/all/magit.rs` makes, into `menus.json`, loading Magit and its dependencies from `E8_ELPA_BUILDS` (else `~/.emacs.d/elpaca/builds`):
-
-```bash
-emacs -Q --batch -l tests/emacs/magit/record.el
-```
-
-`magit::the_menus_show_as_magits_do` compares E8's with them.
+The oracles for vertico, orderless, marginalia and Magit moved with the ports, into the `test/` of [e8-vertico](https://github.com/e8-editor/e8-vertico), [e8-orderless](https://github.com/e8-editor/e8-orderless), [e8-marginalia](https://github.com/e8-editor/e8-marginalia) and [e8-magit](https://github.com/e8-editor/e8-magit): each has its recorder, `record.el` or `annotations.el`, its recorded JSON, and ERT tests that replay the cases in E8. The `Ports` job in `.github/workflows/test.yml` runs them against `main`.

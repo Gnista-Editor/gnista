@@ -411,3 +411,31 @@ fn transposing_into_the_prompt_changes_nothing() {
     assert!(s.eval_expression(&mut ed, "e8.bufferText()").unwrap().ends_with(r#": ab cd""#));
     ed.press("C-g").unwrap();
 }
+
+/// The minibuffer grows past a quarter of the frame for the lines an
+/// overlay shows below the input, when the minibuffer's own
+/// max-mini-window-height lets it, as vertico sets it to 1.0 for
+/// vertico-count lines, and the window's own buffer keeps the quarter once
+/// the prompt is gone.
+#[test]
+fn the_minibuffer_grows_for_lines_an_overlay_shows_when_its_height_lets_it() {
+    let d = Driven::new("");
+    d.with(|ed| ed.set_frame_size(80, 28));
+    d.eval(
+        r#"e8.addHook("minibuffer-setup-hook", () => {
+          e8.makeLocalVariable("max-mini-window-height"); e8.setVariable("max-mini-window-height", 1.0);
+          e8.makeLocalVariable("resize-mini-windows"); e8.setVariable("resize-mini-windows", "grow-only");
+          const lines = Array.from({ length: 12 }, (_, i) => `c${i + 1}`).join("\n");
+          e8.overlayPut(e8.makeOverlay(e8.pointMax(), e8.pointMax()), "after-string", "\n" + lines);
+        });
+        e8.defineCommand({ name: "cr-read", run: () => e8.readString("Pick: ") });
+        e8.bindKey("<f5>", "cr-read");"#,
+    );
+    d.press("<f5>");
+    // A quarter of the 30 lines would be 7: the prompt and twelve lines are 13.
+    let (lines, after) = d.with(|ed| (ed.mini_window_height(30), ed.minibuffer_strings().1));
+    assert_eq!(lines, 13, "{after:?}");
+    assert!(after.contains("c12"), "{after:?}");
+    d.press("C-g");
+    assert_eq!(d.with(|ed| ed.max_mini_window_lines(30)), 7);
+}

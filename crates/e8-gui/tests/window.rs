@@ -747,56 +747,34 @@ fn an_installed_family_is_loaded() {
     assert_eq!(e8_gui::metrics::family_loaded("Menlo"), Some(true));
 }
 
-/// Packages that do not ship, from examples/packages: vertico's list down
-/// the minibuffer with marginalia's annotations beside it, matched by
-/// orderless.
+/// A transient menu, as Magit's and Casual's are built, below the buffer:
+/// columns of suffixes, a switch on, an option, and keys coloured by
+/// whether their suffixes stay in the menu, leave it or go into another.
 #[test]
-fn vertico_with_marginalia() {
-    let mut ed = sample();
-    let scripting = e8_script::Scripting::new(&mut ed).unwrap();
-    let examples = concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples/packages");
-    ed.set_variable("load-path", e8_core::Value::List(vec![e8_core::Value::Str(examples.into())]));
-    scripting
-        .eval_expression(
-            &mut ed,
-            r#"(e8.require("vertico"), e8.require("orderless"), e8.require("marginalia"), e8.call("vertico-mode"), e8.call("marginalia-mode"), e8.setVariable("completion-styles", ["orderless", "basic"]))"#,
-        )
-        .unwrap();
-    ed.press("M-x").unwrap();
-    ed.type_text("fi fil");
-    ed.press("C-n").unwrap();
-    harness(ed, Theme::Dark).snapshot("vertico_marginalia_dark");
-}
-
-/// Magit's status buffer, a file's diff expanded, and its commit menu over it.
-#[test]
-fn magit_status_and_commit_menu() {
-    // A directory of a fixed name, which the mode line shows as the buffer's.
-    let dir = tempfile::tempdir().unwrap();
-    let project = dir.path().join("project");
-    std::fs::create_dir(&project).unwrap();
-    let p = project.as_path();
-    let git = |args: &[&str]| {
-        std::process::Command::new("git").args(args).current_dir(p).output().unwrap();
-    };
-    git(&["init", "-q", "-b", "main"]);
-    git(&["config", "user.email", "t@example.com"]);
-    git(&["config", "user.name", "Tester"]);
-    std::fs::write(p.join("a.txt"), "one\ntwo\nthree\n").unwrap();
-    std::fs::write(p.join("b.txt"), "keep\n").unwrap();
-    git(&["add", "."]);
-    git(&["commit", "-q", "-m", "First commit"]);
-    std::fs::write(p.join("a.txt"), "one\nTWO\nthree\nfour\n").unwrap();
-    std::fs::write(p.join("c.txt"), "new\n").unwrap();
-    std::fs::write(p.join("b.txt"), "keep\nmore\n").unwrap();
-    git(&["add", "b.txt"]);
+fn transient_menu() {
     let mut ed = Editor::new();
     let scripting = e8_script::Scripting::new(&mut ed).unwrap();
-    let examples = concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples/packages");
-    ed.set_variable("load-path", e8_core::Value::List(vec![e8_core::Value::Str(examples.into())]));
-    ed.set_variable("default-directory", e8_core::Value::Str(format!("{}/", p.canonicalize().unwrap().display())));
-    scripting.eval_expression(&mut ed, r#"e8.require("magit")"#).unwrap();
-    ed.call("magit-status", vec![]).unwrap();
-    ed.press("n n TAB c").unwrap();
-    harness(ed, Theme::Dark).snapshot("magit_status_commit_menu_dark");
+    let pkgs = tempfile::tempdir().unwrap();
+    std::fs::write(
+        pkgs.path().join("tm-menu.ts"),
+        r#"import { transientDefinePrefix } from "transient";
+        transientDefinePrefix("tm-sub", { groups: [{ description: "Sub", items: [["x", "Hello", "ignore"]] }] });
+        transientDefinePrefix("tm-menu", {
+          value: ["--all"],
+          groups: [
+            { description: "Arguments", items: [["-a", "All", "--all"], ["-v", "Verbose", "--verbose"], ["=a", "Author", "--author="]] },
+            { items: [
+              { description: "Stay", items: [["n", "Next line", "next-line", { transient: true }]] },
+              { description: "Leave", items: [["q", "Quit", "ignore"], ["s", "Sub menu", "tm-sub"]] },
+            ] },
+          ],
+        });"#,
+    )
+    .unwrap();
+    ed.set_variable("load-path", e8_core::Value::List(vec![e8_core::Value::Str(pkgs.path().display().to_string())]));
+    scripting.eval_expression(&mut ed, r#"(e8.require("tm-menu"), e8.bindKey("<f5>", "tm-menu"))"#).unwrap();
+    // The frame as the harness's window holds it, so the menu's window is as tall as the menu.
+    ed.set_frame_size(80, 13);
+    ed.press("<f5> - v").unwrap();
+    harness(ed, Theme::Dark).snapshot("transient_menu_dark");
 }
